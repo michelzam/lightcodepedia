@@ -7,10 +7,11 @@ layout: default
 
 Using Markdown & Jekyll plugin!
 
+[Play](play.md)
+
 [About](about.md)
 
 {% include copyright.md %}
 
 Published: {{ site.time | date: "%Y-%m-%d %H:%M" }}
 
-<p><iframe src="https://www.light-code.org/?module=patterns" width="100%" height="1600" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"></iframe></p>
