@@ -5,5 +5,7 @@ defaults:
       path: ""   # applies to all files
     values:
       title: "💡lightcodepedia"
+exclude:
+  - modules
 plugins:
   - jekyll-last-modified-at
