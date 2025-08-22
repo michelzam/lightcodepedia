@@ -1,9 +1,21 @@
 title: Lightcodepedia
 description: A GitHub Pages site
+
+collections:
+  modules:
+    output: true
+    permalink: /modules/:name.yaml   # URLs like /modules/ex1.yaml
+
 defaults:
   - scope:
       path: ""   # applies to all files
     values:
+      layout: default
       title: "💡lightcodepedia"
+  - scope:
+      type: modules   # applies to the collection
+    values:
+      layout: null
+      sitemap: false
 plugins:
   - jekyll-last-modified-at
