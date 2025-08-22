@@ -1,4 +1,9 @@
 title: Lightcodepedia
 description: A GitHub Pages site
+defaults:
+  - scope:
+      path: ""   # applies to all files
+    values:
+      title: "💡lightcodepedia"
 plugins:
   - jekyll-last-modified-at
