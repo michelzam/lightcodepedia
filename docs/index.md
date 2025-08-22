@@ -7,6 +7,8 @@ layout: default
 
 Using Markdown & Jekyll plugin!
 
+[About](about.md)
+
 {% include copyright.md %}
 
 Site last built: {{ site.time | date: "%Y-%m-%d %H:%M" }}
