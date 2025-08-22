@@ -1,0 +1,4 @@
+title: Lightcodepedia
+description: A GitHub Pages site
+plugins:
+  - jekyll-last-modified-at
