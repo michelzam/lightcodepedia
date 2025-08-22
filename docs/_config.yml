@@ -6,6 +6,6 @@ defaults:
     values:
       title: "💡lightcodepedia"
 exclude:
-  - modules
+  - modules/**
 plugins:
   - jekyll-last-modified-at
