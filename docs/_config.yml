@@ -1,22 +1,17 @@
 title: Lightcodepedia
 description: A GitHub Pages site
 
-collections:
-  modules:
-    output: true
-    permalink: /modules/:name.yaml   # URLs like /modules/ex1.yaml
-
 defaults:
   - scope:
-      path: ""   # applies to all files
-      type: pages
+      path: ""   # all files
     values:
-      layout: default
       title: "💡lightcodepedia"
   - scope:
-      type: modules   # applies to the collection
+      path: "modules"   # only /modules
     values:
-      layout: null
-      sitemap: false
-plugins:
-  - jekyll-last-modified-at
+      layout: null      # don’t wrap them in HTML
+
+# Important: tell Jekyll to copy .yaml as-is
+include:
+  - modules
+  - modules/*.yaml
