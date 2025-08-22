@@ -11,8 +11,6 @@ Using Markdown & Jekyll plugin!
 
 {% include copyright.md %}
 
-Site last built: {{ site.time | date: "%Y-%m-%d %H:%M" }}
-
-Last updated: {{ page.last_modified_at | date: "%Y-%m-%d %H:%M" }}
+Published: {{ site.time | date: "%Y-%m-%d %H:%M" }}
 
 <p><iframe src="https://www.light-code.org/?module=patterns" width="100%" height="1600" loading="lazy" allowfullscreen="allowfullscreen"></iframe></p>
