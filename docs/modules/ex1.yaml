@@ -9,17 +9,7 @@ classes:
 
 instances:
 
-  - !Scene
-    icon: "🆕"
-    as_name: scene
-    title: Scene+++
-    lines:
-    - 2
-    - 2
-    - 2
-    - 2
-    show_backstage: true
-
   - !Text
     title: "Hi from GH Pages"
     # border: False
+    media: https://youtu.be/f26KI43FK58?si=SAREyF0Nk96YI3Sd
