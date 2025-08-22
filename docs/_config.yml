@@ -9,6 +9,7 @@ collections:
 defaults:
   - scope:
       path: ""   # applies to all files
+      type: pages
     values:
       layout: default
       title: "💡lightcodepedia"
