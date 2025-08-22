@@ -13,4 +13,4 @@ Using Markdown & Jekyll plugin!
 
 Published: {{ site.time | date: "%Y-%m-%d %H:%M" }}
 
-<p><iframe src="https://www.light-code.org/?module=patterns" width="100%" height="1600" loading="lazy" allowfullscreen="allowfullscreen"></iframe></p>
+<p><iframe src="https://www.light-code.org/?module=patterns" width="100%" height="1600" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"></iframe></p>
