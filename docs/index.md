@@ -9,7 +9,7 @@ Using Markdown & Jekyll plugin!
 
 [Play](play.md)
 
-[Help] (help.md)
+[Help](help.md)
 
 [About](about.md)
 
