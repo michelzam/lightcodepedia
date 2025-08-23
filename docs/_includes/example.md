@@ -1,4 +1,4 @@
-{% if include.module %}
+{% if include.name %}
 <iframe src="https://www.light-code.org/?module={{include.name}}" 
   width="100%" height="1600" loading="lazy" 
   allowfullscreen="allowfullscreen" style="border:none;">
