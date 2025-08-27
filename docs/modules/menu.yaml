@@ -19,6 +19,7 @@ instances:
   - !Text
     title: "Explore 👇"
     border: False
+    as_name: explore
 
   - !Page
     title: Tutorial 1o1
