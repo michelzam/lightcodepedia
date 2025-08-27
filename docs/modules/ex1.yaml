@@ -12,5 +12,5 @@ instances:
   - !Text
     title: "Hi from GH Pages"
     # border: False
-    as_name: hi
+    as_name: hi 
     media: https://youtu.be/f26KI43FK58?si=SAREyF0Nk96YI3Sd
