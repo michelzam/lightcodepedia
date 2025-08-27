@@ -12,7 +12,8 @@ instances:
   - !Text
     title: "Hi from GH Pages"
     # border: False
-    as_name: hi 
-    media: https://youtu.be/f26KI43FK58?si=SAREyF0Nk96YI3Sd
+    as_name: hi
+    media: https://www.youtube.com/embed/a9u2yZvsqHA
+    # media: https://youtu.be/f26KI43FK58?si=SAREyF0Nk96YI3Sd
     text: Welcome to GitHub pages
     footer: Oh, yeah!
