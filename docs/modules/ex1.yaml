@@ -14,5 +14,5 @@ instances:
     # border: False
     as_name: hi 
     media: https://youtu.be/f26KI43FK58?si=SAREyF0Nk96YI3Sd
-    test: Welcome to GitHub pages
+    text: Welcome to GitHub pages
     footer: Oh, yeah!
