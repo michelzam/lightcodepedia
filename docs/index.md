@@ -1,17 +1,19 @@
 ---
-title: Lightcodepedia
+title: 💡 Lightcodepedia
 layout: default
 ---
 
 # Hello from Lightcodepedia 👋
 
-Using Markdown & Jekyll plugin!
+📖 Learn how to build apps with little or no code.
 
-[Play](play.md)
+[▶️ Play](play.md)
 
-[Help](help.md)
+[🛟 Help](help.md)
 
-[About](about.md)
+[ℹ️ About](about.md)
+
+[🏡 Home](https://lightcodepedia.org)
 
 
 {% include copyright.md %}
