@@ -7,7 +7,7 @@ layout: default
 
 📖 Learn how to build apps with little or no code.
 
-[▶️ Play](play.md)
+[🏀 Play](play.md)
 
 [🛟 Help](help.md)
 
