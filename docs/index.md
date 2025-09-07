@@ -9,6 +9,8 @@ layout: default
 
 [🏀 Play](play.md)
 
+[📐 Diagram](diagram.md)
+
 [🛟 Help](help.md)
 
 [ℹ️ About](about.md)
