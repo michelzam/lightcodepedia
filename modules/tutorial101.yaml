@@ -1,0 +1,233 @@
+module:
+  - doc: "Welcome to the light side of the forcee"
+    icon: "👋"
+    is_admin: True
+
+imports:
+  - !Module
+    name: designers
+  - !Module
+    name: blocks
+  - !Module
+    name: users
+  - !Module
+    name: numpy
+    as_name: np
+  - !Module
+    name: charts
+  - !Module
+    name: pets
+  - !Module
+    name: inspectors
+  - !Module
+    name: tutorials
+
+classes:
+
+instances:
+
+  - !Scene
+    title: "Tutorial 101"
+    icon: "💡"
+    lines: [2, 2, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 2, 2]
+    as_name: scene
+
+  - !Text
+    title: "Welcome!"
+    icon: "👋"
+    border: True
+    text: |
+      👩‍🎓 This tutorial is a _light_-code `module` that demonstrates basic **building blocks**, or just `blocks`:
+      
+      - [x] Formatted `text` with *item lists* like __this__ one. 
+
+      - [x] Basic blocks such as `image`, `text`, and `videos`.
+
+      - [x] Interactive `maps`, `proxies` including content form other modules, and more ...
+
+      - [x] Data components: `forms`, `grids` or `charts`.
+
+      - [x] `Objects` — encapsulating `data`, `state` and behavior — and customized `functions`.
+
+      - [x] `Quizzes` to test your knowledge.
+
+    footer: Go ahead, explore, play, learn and have fun! 🎉
+
+  - !Text
+    title: "This block is a `text`"
+    icon: "📖"
+    border: True
+    help: "This is the help for a block"
+    text: |
+      👩‍🎓 A `text` block is a simple block that displays formatted text.:
+      
+      - [x] Formatted `text`, with **bold**, *italic*, and :red[colors]. 
+
+      - [x] *item lists* like __this__ one.   
+      - [x] Here's a bouquet — 🌷🌸🌹🌺🌻🌼
+      - [x] Text blocks use hints / helps. Did you find this one?
+      - [x] Actually, all blocks use hints / helps.
+
+
+    footer: |
+      Lightcode relies on streamlit. Here, we used markdown.
+      
+      Please feel free to explore the [streamlit documentation](https://docs.streamlit.io/en/stable/)
+
+  - !Text
+    title: "This text block has an image "
+    as_name: dog
+    icon: "🐕"
+    border: True
+    foldable: False
+    text: "Man's best friend :dog:"
+    help: Dogs are cute and fast
+    # media: https://picsum.photos/id/237/500/400
+    media: dog.png
+    footer: Cute, huh this local dog?
+
+  - !Text
+    title: "Doc"
+    foldable: False
+    icon: "📖"
+    border: True
+    help: The story behind the dog's tail
+    text: |
+      Docs about dogs can 
+      use **bold** and _italic_ text and 
+      also be quite long and boring ...
+      
+          In the haze of a London fog,
+          A riff emerges, cutting like a saw.
+          Strumming strings and pounding drums,
+          Led Zeppelin, their magic comes.
+      
+          Amid the mist, a black dog roams,
+          Guiding the band to rock and roll thrones.
+          Not just a pet, but a symbol, a sign,
+          Of music that transcends all time.
+
+          Amid the crowd, the thunder roars,  
+          With every note, the spirit soars.  
+          From stairways high to oceans deep,  
+          Their legacy forever to keep.
+
+    footer: |
+      ### Read more about ...
+      
+      ... the [streamlit markdown component](https://docs.streamlit.io/develop/api-reference/text/st.markdown/)
+      
+
+  - !Text
+    title: Video
+    icon: 🎥
+    media: https://www.youtube.com/embed/6tlSx0jkuLM
+    text: 🎵 Man's best song. Go ahead. Play it!
+
+
+  - !Proxy
+    title: "Proxy"
+    help: "This is a proxy, including content from another module"
+    module_name: dog_ui
+    variable_name: dog
+    foldable: False
+    border: False
+    footer: "This is a `proxy`, including content from another module"
+
+  - !Proxy
+    title: "Proxy too"
+    help: "This one is a `proxy` too, including content from the same module, now twice."
+    module_name: dog_ui
+    variable_name: dog
+    foldable: False
+    border: False
+    footer: "Just another `proxy` to the same module."
+
+  - !Map
+    title: Map
+    help: Interactive map
+    icon: 🗺️
+    height: 200
+    text: This `map` is interactive. You can zoom in and out to spot parcs in Paris
+      if you want to walk your dog.
+
+  - !Proxy
+    title: "Data proxy"
+    help: "This is a proxy, including content from another module"
+    module_name: charts
+    foldable: False
+    border: False
+    footer: "This is a proxy, including content from another module"
+
+  - !Pet &lucky
+    name: "Lucky"
+    icon: "🐶"
+    as_name: lucky
+
+  - !Fish &wanda
+    name: "Wanda"
+    icon: "🐠"
+    bestie: *lucky
+    friends:
+      - !Fish {name: "Nemo"}
+      - !Fish {name: "Dory"}
+
+  - !Form
+    source: *lucky
+    attributes: [name, energy, bestie]
+    border: True
+    on_post_init:
+      - !Function
+        code: |
+          print("👋 Hello from PythonLand!")
+
+  - !Form
+    source: *wanda
+    attributes: [name, energy, bestie]
+    border: True
+    on_post_init:
+      - !Function
+        code: |
+          print("🖖 Hello to you PythonLand neighbor!")
+
+  - !Text
+    title: "Your first riddle: Lucky & Wanda"
+    icon: "🧩"
+    text: |
+      First, while you play with your pets, observe carefully the energy levels of your pets and their interplay.
+      Then, try to solve the riddle below.
+      
+      ---
+    footer: "🎈Riddles are fun!"
+
+
+  - !Riddle &riddle0
+    title: "Riddle: Lucky & Wanda"
+    text: "What happens if Lucky's sleeping and his bestie barks?"
+    correct_answer: "Lucky is awakening"
+    difficulty: 1
+    as_name: riddle0
+    options: [ "Nothing", "It barks too", "Lucky is awakening" ]
+    hints: [ "Try to bark yourself to see", "Did I snore too loudly?", "Does my bestie need help?" ]
+
+  - !Step &step0
+    name: "First step: The first story"
+    as_name: step0
+    icon: "🎯"
+    description: |
+      Please assess the whole experience, then hit Check.
+    comment: | 
+      🏟️ ⇢ 🟩 Everything in one place. Bottom-up: Lucky and Wanda first.
+      ▶️ ⇢ 🟩 One story/topic at a time. Outside-in: interactive Form before code.  
+      🕗 ⇢ 🟩 Short feedback loop. From the future: running example before specs.
+
+
+  - !Inspector
+    title: InspectRiddle0
+    border: True
+    source: *riddle0
+    attributes: [title, text, hints, answer]
+    methods: [check_answer]
+    foldable: False
+    show_details: True
+

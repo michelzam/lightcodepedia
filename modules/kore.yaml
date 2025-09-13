@@ -1,0 +1,627 @@
+module:
+  - name: kore
+    doc: Kore components
+    icon: "⚙️"
+    is_admin: True
+
+imports:
+  - !Module
+    name: lightcode
+    hidden: True
+
+classes:
+  - !Class
+    name: Function
+    doc: "Forward declaration"
+
+  - !Class
+    name: Object
+    doc: Abstract object, potentially persistent
+    icon: "◻️"
+    hidden: True
+    attributes:
+      - !Attribute
+        name: _id
+        type: int
+        default: 0
+        advanced: True
+        read_only: True
+        doc: |
+          Unique persistent identifier. 
+          If zero, the object is not persistent (yet). 
+          If positive, it is already persistent.
+          If negative (e.g. -7), then abs(id) (e.g. 7) should be deleted from the database.
+      - !Attribute
+        name: _owner_id
+        type: int
+        default: 0
+        advanced: True
+        read_only: True
+        doc: |
+          User_id that owns this object. 
+          If zero, the owner is not registered (yet). 
+          If positive, it is already persistent.
+      - !Attribute
+        name: icon
+        type: str
+        advanced: False
+        # default: "⚪️"
+      - !Attribute
+        name: as_name
+        type: str
+        doc: Exposed name for the object
+        advanced: True
+        following: 1
+      - !Attribute
+        name: doc
+        type: str
+        is_long: True
+        advanced: False
+      - !Attribute
+        name: _class
+        type: typing.Any
+        advanced: True
+      - !Attribute
+        name: functions
+        type: List[Function]
+        hidden: True
+      - !Attribute
+        name: _module
+        type: typing.Any
+        advanced: True
+    methods:
+
+      - !Method
+        name: label
+        hidden: True
+        code: |
+          if self.icon is None or len(self.icon) == 0:
+            icon = type(self).icon
+          else:
+            icon = self.icon
+          return f"{icon} {type(self).__name__.capitalize()}"
+
+      - !Method
+        name: __repr__
+        code: |
+          wrapper = type(self)._class
+          return f"{wrapper.icon} {wrapper.name}"
+
+      - !Method
+        name: _label
+        code: |
+          result = ''          
+          cls = type(self)._class
+          if hasattr(self, 'icon'):
+            result = f"{self.icon} "
+          else:
+            if hasattr(cls, 'icon'):
+              result = f"{cls.icon} "
+          if hasattr(self, 'name'):
+            if self.name is not None:
+              result = f"{result} {self.name}"
+          else:
+            if hasattr(cls, 'name'):
+              result = f"{result} {cls.name}"
+          return result
+
+      - !Method
+        name: clone
+        hidden: True
+        code: |
+          from dataclasses import replace
+          myclone = replace(self)
+          return myclone
+
+      - !Method
+        name: _declare
+        doc: obj self declare in the module ...
+        code: |
+          self._module = kwargs.get("module", None)
+          mo = self._module
+          if mo:
+            if len(self.as_name) > 0:
+              setattr(mo.value, self.as_name, self)
+
+      - !Method
+        name: __str__
+        code: |
+          return self._label() 
+
+
+
+  - !Class
+    name: Var
+    doc: Named variable
+    icon: 🏷️
+    bases: [Object]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: "var_1"
+      - !Attribute
+        name: value
+        type: str  # or Object??
+        following: 1
+      - !Attribute
+        name: type
+        type: typing.Any
+        advanced: True
+    methods:
+
+      - !Method
+        name: label
+        hidden: True
+        code: |
+          if self.icon is None or len(self.icon) == 0:
+            icon = type(self).icon
+          else:
+            icon = self.icon
+          value = self.value.label() if self.value is not None else ""
+          return f"{icon} {self.name}={value}"
+
+      - !Method
+        name: _declare
+        doc: obj self declare in the module ...
+        code: |
+          self._module = kwargs.get("module", None)
+          mo = self._module
+          if mo:
+            if len(self.name) > 0:
+              setattr(mo.value, self.name, self.value)
+
+      - !Method
+        name: __repr__
+        doc: fancy display
+        code: |
+          if self.value is not None:
+            return f"{self.icon} {self.value}"
+          else:
+            return f"{self.icon} {self.name}"
+
+  - !Class
+    name: Function
+    doc: "Function to be called"
+    icon: "▶️"
+    bases: [Object]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: "func_1"
+      - !Attribute
+        name: target
+        type: Object
+        advanced: True
+      - !Attribute
+        name: params
+        type: List[Var]
+        owned: True
+        advanced: True
+      - !Attribute
+        name: expected_result
+        type: typing.Any
+      - !Attribute
+        name: result
+        type: typing.Any
+        advanced: True
+      - !Attribute
+        name: code
+        type: str
+        default: "return 1"
+      - !Attribute
+        name: value
+        type: typing.Any
+        advanced: True
+    states: [undefined, defined]
+    methods:
+      - !Method
+        name: _test_call
+        code: |    
+          assert self.call() == 1
+
+      - !Method
+        name: _declare
+        preconditions: [undefined]
+        postcondition: defined
+        doc: |
+          Declare function in the module
+          params: module
+
+        code: |    
+          self._module = kwargs.get("module", None)
+          mo = self._module
+
+          if self.name == '_': # anonymous is not an option
+            self.name = f"anon_{id(self)}" 
+
+          try:  
+            code = self.code
+            # Create the function from code
+            # new_code = f"def {self.name}(self, *args, **kwargs):"
+            new_code = f"def {self.name}(*args, **kwargs):"
+            new_code += "\n\tfrom print2st import print"
+            new_code += "\n\t" + code.replace("\n", "\n\t")
+
+            exec(new_code, mo.value.__dict__)
+
+            self.value = getattr(mo.value, self.name, None)
+          except Exception as e:
+            print(f"Error in {self.name}")
+            print(e)
+            print(new_code)
+            print(traceback.format_exc())
+
+          return self.value
+
+      - !Method
+        name: _new_call
+        code: |    
+          if self.state in ['undefined']:
+            self._declare(module=self._module)
+        
+          try:
+            result = None
+
+            target = self.target if self.target is not None else None
+            local_scope = {'self': target}
+            explicit_globals = globals().copy()
+
+            # exec(new_code, explicit_globals, local_scope)
+
+            result = local_scope[self.name](target) # (*self.params)
+            self.result = result
+
+            #if self.value is not None:
+            #  result = self.value() ## calls the function
+            #else:
+            #  print(f"Function {self._module.name}.{self.name} not declared")
+          
+            self.result = result
+          except Exception as e:
+            print(f"Error in {self.name}")
+            print(e)
+            print(self.code)
+            print(traceback.format_exc())
+
+          # print(result)
+          return result
+
+      - !Method
+        name: call
+        code: |    
+          target = kwargs.get("target", self.target)
+
+          def _call(target):
+            try:
+              # print(f"Calling function: {self.name} on {type(self.target).__name__}")
+              #print(f'  {dir(self) = }')
+              result = None
+              code = self.code
+  
+              new_code = ""
+  
+              # Create the function from code
+  
+              #new_code = "import streamlit as st\n"
+              #new_code += f"@st.fragment\n"
+  
+              new_code += f"def {self.name}(self, *args, **kwargs):"
+              # new_code += "\n\tlocals().update(kwargs)"
+              
+              new_code += "\n\tfrom print2st import print"
+  
+              #new_code += "\n\tfor k, v in kwargs.items():"
+              #new_code += "\n\t\texec(f'{k} = v')"
+  
+              #NEW
+              #target = self.target if self.target is not None else None              
+              
+              pymodule = target._module.value
+              # **Dynamically generate explicit variable assignments**
+              kwargs_keys = [name for name in dir(pymodule) if not name.startswith("_")]
+              new_code += "\n\t" + "\n\t".join(f"{key} = kwargs['{key}']" for key in kwargs_keys)
+              
+              if True:  # Add new fake local vars to access other module vars
+                for k, v in target._module.imports.items():
+                  if k not in kwargs_keys:              
+                    new_code += f"\n\t{v.as_name} = self._module.imports['{v.as_name}'].value"
+              
+              new_code += "\n\t" + code.replace("\n", "\n\t")
+              if False:
+                tree = ast.parse(new_code)
+                func_def = tree.body[0]
+    
+                # Compile the AST to code object
+                code_obj = compile(tree, filename=f"{type(self)._class._module.name}_{self.name}", mode="exec")
+    
+                # Execute the code object
+                # result = exec(code_obj, globals(), locals())
+  
+              # NEW
+              #target = self.target if self.target is not None else None
+              
+              local_scope = {'self': target}
+              #args = self.params
+              #args.append(self)
+              # local_scope = {}
+              explicit_globals = globals().copy()
+              exec(new_code, explicit_globals, local_scope)  # define function!
+  
+              pymodule = target._module.value
+              args_dict = {name: getattr(pymodule, name) for name in dir(pymodule) if not name.startswith("_")}
+              
+              result = local_scope[self.name](target, **args_dict) # (*self.params)
+  
+              # print(result)
+              self.result = result
+            except Exception as e:
+              print(f"Error in {self.name}")
+              print(e)
+              print(new_code)
+              print(traceback.format_exc())
+  
+            # print(result)
+            return result
+
+          #from line_profiler import LineProfiler
+          #lp = LineProfiler()
+          #lp.add_function(_call)
+          #lp.enable()
+          result = _call(target=target)
+          #lp.disable()
+          #print(lp.print_stats())
+          return result
+
+      - !Method
+        name: __repr__
+        code: |
+            return f"{self.icon} {self.name}"
+
+      - !Method
+        name: assert_result
+        code: |
+          try:
+            assert self.expected_result == self.result
+            return True
+          except Exception as e:
+            return False
+
+      - !Method
+        name: count_python_concepts
+        doc: |
+            Analyzes a Python function and counts the distinct Python concepts it uses.
+            :return: The count of unique Python concepts used.
+        code: |
+          import ast
+          import tokenize
+          from io import StringIO
+          # Parse the function into an AST
+          tree = ast.parse(self.code)
+          
+          # Collect unique AST node types
+          node_types = {type(node).__name__ for node in ast.walk(tree)}
+
+          comments = []
+          tokens = tokenize.generate_tokens(StringIO(self.code).readline)
+          for token in tokens:
+              if token.type == tokenize.COMMENT:
+                  comments.append(token.string.strip())  # Collect comments
+                  node_types.add("Comment")  # Add comments as a concept
+                  break
+          node_types.remove("Module")
+          print(node_types)              
+          return len(node_types)          
+
+      - !Method
+        name: __call__
+        code: |
+          return self.call() 
+
+      - !Method
+        name: _test
+        doc: Validate function code by parsing it into an AST.
+        code: |
+          import ast
+          try:
+              ast.parse(self.code)
+              return True
+          except SyntaxError as e:
+              print(f"⚠️ SyntaxError in function '{self.name}': {e}")
+              print(self.code)
+              return False
+
+
+  - !Class
+    name: Module
+    doc: Class handler for designers (hack)
+    bases: [Object, lightcode.Module]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+      - !Attribute
+        name: hidden
+        type: bool
+      - !Attribute
+        name: instances
+        type: List[Object]
+      - !Attribute
+        name: _nb_errors
+        type: int
+        default: 0
+        hidden: True
+    states: [unloaded, saved, running, tested, failed️]
+    methods:
+      - !Method
+        name: edit
+        icon: ⚙️
+        doc: Edit the module information
+        preconditions: [saved, modified, running, tested, failed]
+        code: |
+          @st.dialog("⚙️Edit", width="large")
+          def edit_module():
+            with st.form(key="edit_module"):
+              name = st.text_input("🔤 Name", value=self.name, disabled=True)
+              icon = st.text_input("🔅 Icon", value=self.icon)
+              doc = st.text_area("ℹ️ Doc", value=self.doc)
+              if st.form_submit_button("Apply", type="primary"):
+                # module.name = name
+                self.icon = icon
+                self.doc = doc
+                st.rerun()
+
+          edit_module()
+
+      - !Method
+        name: load
+        doc: Load the module metadata from yaml
+        preconditions: [unloaded]
+        postcondition: saved
+        code: |
+          if not self.value:
+            self._loader.load()
+
+      - !Method
+        name: unload
+        doc: Unload the metadata
+        preconditions: [saved, running, tested, failed]
+        postcondition: unloaded
+        code: |
+          if self.value:
+            self._loader.unload()
+
+      - !Method
+        name: run
+        doc: Build python module from metadata
+        preconditions: [saved]
+        postcondition: running
+        code: |
+          if self.value:
+            self._loader.run()
+
+      - !Method
+        name: stop
+        doc: Stop the running module
+        preconditions: [running]
+        postcondition: saved
+        code: |
+          if self.value:
+            self._loader.unload()
+            self._loader.load()
+
+      - !Method
+        name: test
+        doc: Test the module
+        preconditions: [saved]
+        code: |
+          if self.value:
+            import io
+            from contextlib import redirect_stdout
+            buffer = io.StringIO()
+            with st.spinner("Testing ..."):
+              with redirect_stdout(buffer):
+                try:     
+                  nb_errors = self._loader.test()
+                except Exception as e:  
+                  nb_errors = 1
+                  print(f"Error during testing: {e}")
+                  # print(traceback.format_exc())
+
+            if nb_errors == 0:
+              st.balloons()
+            st.write(f"{nb_errors} error(s) found.")
+            self.state = "tested" if self._nb_errors == 0 else "failed"
+            st.code(buffer.getvalue())
+
+      - !Method
+        name: save
+        doc: Save the module to the repository
+        preconditions: [tested, failed]
+        postcondition: saved
+        code: |
+          repo = self._loader._repo  
+          assert repo, "⚠️ No repository found"
+          yaml_content = lightcode.dump_module(self)
+          if repo.file_name == "":
+            repo.file_name = f"{self.name}.yaml"
+          try:
+              repo.save_content(yaml_content)
+              lightcode.toast("Module saved successfully!")
+          except Exception as e:
+              st.error(f"Error saving module: {e}")
+      
+
+      - !Method
+        name: __str__
+        code: |
+          if self.icon is None or len(self.icon) == 0:
+            self.icon = "🛄️"
+          return f"{self.icon} {self.name}"
+
+  - !Class
+    name: Class
+    doc: Class handler for designers (hack)
+    bases: [Object, lightcode.Class]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+      - !Attribute
+        name: states
+        type: str
+
+  - !Class
+    name: Attribute
+    doc: Attribute handler for designers (hack)
+    bases: [Object, lightcode.Attribute]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+      - !Attribute
+        name: type
+        type: str
+
+  - !Class
+    name: Method
+    doc: Method handler for designers (hack)
+    bases: [Object, lightcode.Method]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+      - !Attribute
+        name: code
+        type: str
+        default: pass
+      - !Attribute
+        name: preconditions
+        type: List[str]
+      - !Attribute
+        name: postcondition
+        type: str
+
+
+instances:
+  - &var !Var
+    name: "a"
+  - &fct !Function
+    name: "compute_1"
+    code: |
+      return 1
+
+  - !Function
+    name: "compute_error"
+    code: |
+      return "error"
+
+
+  - !Class
+    name: Person
+    icon: "👤"
+    attributes:
+      - !Attribute
+        name: passion
+        type: str

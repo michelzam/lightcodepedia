@@ -1,0 +1,24 @@
+module:
+  - name: dogs
+    tag: "🆕"
+    doc: |
+      👋 Hello!
+      This light example demonstrates basic capabilities of LightCode:
+      For a deeper introduction, please open `Hello world` example
+
+    icon: "👋"
+
+imports:
+  - !Module {name: pets}
+  - !Module {name: mod2, as_name: mod2}
+
+classes:
+
+instances:
+
+  - !Pet
+    name: Luna1
+
+  - !Pet
+    name: Luna2
+

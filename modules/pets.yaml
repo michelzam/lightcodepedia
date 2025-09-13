@@ -1,0 +1,145 @@
+module:
+  - name: pets
+    icon: "🐾"
+    doc: |
+      Love your pets
+      
+      And your friends!
+
+imports:
+    - !Module {name: kore, hidden: True}
+
+classes:
+  # forward declarations:
+  - !Class {name: Pet}
+  - !Class {name: Fish}
+
+  - !Class
+    name: Pet
+    bases: [kore.Object]
+    icon: '🐰'
+    doc: "Kid's best friend"
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: Noname
+      - !Attribute
+        name: energy
+        type: int
+        default: 100
+        read_only: True
+        following: 1
+      - !Attribute
+        name: bestie
+        type: Pet
+        default : None
+        advanced: True
+        doc: "Best friend"
+      - !Attribute
+        name: friends
+        type: List[Pet]
+    states: [inactive, active]
+    methods:
+      - !Method
+        name: wake_up
+        preconditions: [inactive]
+        postcondition: active
+        code: |
+          self.energy += 20
+
+      - !Method
+        name: eat
+        preconditions: [active]
+        doc: Eating will recharge the energy
+        code: |
+          self.energy += 30
+
+      - !Method
+        name: run
+        preconditions: [active]
+        code: |
+          self.energy -= 10
+
+      - !Method
+        name: bark
+        preconditions: [active]
+        doc: Might wake up the bestie
+        code: |
+          self.energy -= 5
+          if self.bestie:
+            self.bestie.wake_up()
+
+      - !Method
+        name: sleep
+        preconditions: [active]
+        postcondition: inactive
+        doc: Resting recharges the energy
+        code: |
+          self.energy += 10
+          return "Zzz..."
+
+      - !Method
+        name: _test_name
+        doc: "Checks if the name is not empty"
+        code: |
+          assert len(self.name) > 0
+
+      - !Method
+        name: _test_bestie
+        doc: "Checks if the bestie is not None"
+        code: |
+          pet = type(self)(name="Iron")
+          bestie = type(self)(name="Lucky")
+          pet.bestie = bestie
+          st.write(pet)
+          assert pet.bestie is not None
+
+      - !Method
+        name: _run
+        code: "..."
+      - !Method
+        name: __repr__
+        doc: fancy display
+        code: |
+            return f"{self.icon} {self.name}"
+
+  - !Class
+    name: Fish
+    doc: forward declaration
+
+  - !Class
+    name: Fish
+    bases: [Pet]
+    icon: "🐟"
+    attributes:
+      - !Attribute
+        name: pets
+        type: List[Fish]
+      - !Attribute
+        name: mentor
+        type: List[Pet]
+    methods:
+      - !Method
+        name: __repr__
+        code: |
+            return f"{self.icon} {self.name}"  
+
+instances:
+  - !Pet &lucky
+    name: "Lucky"
+
+  - !Pet
+    name: "Iron"
+    doc: |
+      Hi, this is {self.name if self.name is not None else 'Timmy'}.
+      He loves pets 🐶😺 
+
+      He wanna make them games so they can play
+      when he's not around. From behind the scene, 
+      you might not see all the colors, but you can discover secrets.
+
+  - !Fish
+    name: "Dory"
+  - !Pet
+    name: "Silver"

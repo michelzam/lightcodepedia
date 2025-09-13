@@ -1,0 +1,121 @@
+module:
+  - name: charts
+    doc: |
+      This enlightening example demonstrates basic capabilities of LightCode!
+      
+      Enjoy the journey!
+
+    icon: "👋"
+    tag: "🥇 Start with me, please!"
+imports:
+  - !Module {name: kore, hidden: True}
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: pandas, as_name: pd}
+
+classes:
+
+  - !Class
+    name: Grid
+    icon: "🗒"
+    doc: Editable data grid
+    bases: [ blocks.Block ]
+    attributes:
+      - !Attribute
+        name: text
+        type: str
+      - !Attribute
+        name: source
+        type: typing.Any
+      - !Attribute
+        name: _data_buffer
+        type: typing.Any
+    methods:
+      - !Method
+        name: build
+        code: |
+          if len(self.title) > 0: 
+            st.subheader(f"{self.icon if len(self.icon) > 0 else ''} {self.title}", help=self.help)
+            # st.subheader(f"{self.icon} {self.title}", help=self.help)
+          if self.source is None:
+            self._data_buffer = pd.DataFrame(
+                [
+                  {"Dog": "Husky", "Speed": 5, "Cute": False},
+                  {"Dog": "Shiny", "Speed": 3, "Cute": True},
+                  {"Dog": "Blaze", "Speed": 4, "Cute": True},
+                  {"Dog": "Misty", "Speed": 2, "Cute": True},
+                  {"Dog": "Rocket", "Speed": 6, "Cute": False},
+                  {"Dog": "Whisper", "Speed": 3, "Cute": True}
+                ]
+            )
+          else:
+            if isinstance(self.source, Grid):
+                self.source = self.source.source
+          edited_df = st.data_editor(self._data_buffer, num_rows="dynamic", use_container_width=True,
+            key=f"K_Grid{id(self)}") # , on_change=on_change, args=[data)
+          dog = edited_df.loc[edited_df["Speed"].idxmax()]["Dog"]
+          self._data_buffer = edited_df
+          st.markdown(f"The fastest dog right now is **{dog}** 🐕💨")
+          st.caption("You can edit the data in the grid and see what's happening.")
+          return True
+      - !Method
+        name: test_run
+        code: |
+          assert self._run()
+
+  - !Class
+    name: Chart
+    icon: "📊"
+    doc: Chart ...
+    bases: [blocks.Block]
+    attributes:
+      - !Attribute
+        name: text
+        type: str
+      - !Attribute
+        name: columns
+        type: List[str]
+      - !Attribute
+        name: grid
+        type: Grid
+    methods:
+      - !Method
+        name: build
+        code: |
+          if len(self.title) > 0: 
+            st.subheader(f"{self.icon} {self.title}", help=self.help)
+          if self.columns == []:
+            self.columns = ["a", "b", "c"]
+          chart_data = pd.DataFrame(np.random.randn(20, len(self.columns)), columns=self.columns)
+          # st.area_chart(chart_data)
+          st.caption(self.text, help=self.help)
+          if self.grid is not None:
+            st.bar_chart(self.grid._data_buffer, 
+              x=self.columns[0], y=self.columns[1],
+              color=self.columns[1])
+          return True
+      - !Method
+        name: test_run
+        code: |
+            assert self._run()
+
+instances:
+  - !Scene
+    title: "Data blocks"
+    icon: "📈"
+    lines: [2]
+    as_name: scene
+
+  - &id005 !Grid
+    title: Grid
+    icon: 🗒️
+    border: true
+    text: This is a grid component.
+  - !Chart
+    title: Chart
+    icon: 📊
+    border: true
+    columns:
+    - Dog
+    - Speed
+    - Cute
+    grid: *id005

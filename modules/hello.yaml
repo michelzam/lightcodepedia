@@ -1,0 +1,437 @@
+module:
+  - name: hello
+    doc: |
+      This enlightening example demonstrates basic capabilities of LightCode!
+      
+      Enjoy the journey!
+      
+    icon: "👋"
+    tag: "🥇 Start with me, please!"
+imports:
+  - !Module {name: kore, hidden: True}
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: pandas, as_name: pd}
+
+classes:
+  # forward declarations:
+  - !Class {name: Student}
+  - !Class {name: Dog}
+
+  - !Class
+    name: Student
+    doc: A student
+    icon: '👨‍🎓'
+    attributes:
+    - !Attribute
+      name: name
+      type: str
+      default: student
+    - !Attribute
+      name: age
+      type: int
+      default: 18
+      read_only: True
+    - !Attribute
+      name: friend
+      type: Student
+    - !Attribute
+      name: passion
+      type: str
+    - !Attribute
+      name: pets
+      type: List[Dog]
+    states: ['sleepy', 'active']
+    methods:
+    - !Method
+      name: hello
+      preconditions: ['sleepy']
+      postcondition: active
+      code: |
+        print(f"Hello, I'm {self.name}.")
+        print(f"I just dreamt about `data`, `states` and `behavior` ")
+        
+    - !Method
+      name: hello_friend
+      preconditions: ['sleepy']
+      postcondition: active
+      code: |
+        print(f"Hello, I'm {self.name}.")
+        print(f"Discover `data`, `states` and `behavior` ")
+        if self.friend is not None:
+          print(f"Let me introduce you to my friend:")
+          self.friend.hello()
+        
+    - !Method
+      name: _test_hello
+      code: |
+        student = Student()
+        assert student.state == "sleepy"
+        student.hello()
+        assert True  #  "No exceptions ... so far so good ;-)"
+        
+    - !Method
+      name: _test_hello_friend
+      code: |
+        student = Student(name= "Alice", friend=Student(name="Bob"))
+        assert student.state == "sleepy"
+        assert student.friend.name == "Bob"
+        student.hello_friend()
+        assert True  #  "No exceptions ... so far so good ;-)"
+        
+    - !Method
+      name: happy_birthday
+      preconditions: ['active']
+      code: |
+        self.age += 1
+        st.balloons()
+        print(f"Hello, I'm {self.name}")
+        
+    - !Method
+      name: _test_happy_birthday
+      code: |
+        student = Student()
+        student.happy_birthday()
+        assert student.age == 19
+        
+    - !Method
+      name: bye
+      preconditions: ['active']
+      postcondition: sleepy
+      code: |
+        print(f"Bye, I'm 🥱")
+        
+    - !Method
+      name: count_pets
+      preconditions: ['active']
+      postcondition: sleepy
+      code: |
+        print(f"So I have ...")
+        print(self.pets)
+        count = len(self.pets)
+        # print(f"That's ... {', '.join([ str(p + 1) for p in range(count) ])} pets.")
+        print(f"That's ... {count * '🐕'} pets.")
+        print(f"Bye, I'm exhausted 🥱")
+        return count
+        
+    - !Method
+      name: _test_bye
+      code: |
+        student = Student()
+        student.hello()
+        student.bye()
+        assert True  #  "No exceptions ... so far so good ;-)"
+        
+    - !Method
+      name: __repr__
+      code: |
+        return f"{self.icon} {self.name}"
+        
+  - !Class
+    name: Dog
+    doc: Man's best friend
+    icon: '🐕'
+    attributes:
+    - !Attribute
+      name: name
+      type: str
+    - !Attribute
+      name: speed
+      type: int
+      default: 4
+    - !Attribute
+      name: cute
+      type: bool
+    methods:
+    - !Method
+      name: __repr__
+      code: |
+        return f"{self.icon} {self.name}"
+        
+
+instances:
+  - &id001 !Dog
+    name: Blacky
+    cute: true
+  - &id002 !Dog
+    name: Husky
+    speed: 5
+    cute: false
+  - &id003 !Dog
+    name: Shiny
+    speed: 3
+    cute: true
+  - &id004 !Student
+    name: George
+    passion: Dogs & maths
+    pets:
+    - *id001
+    - *id002
+    - *id003
+  - &id006 !Function
+    doc: |
+      Congrats the target object
+    name: greetings
+    target: *id004
+    code: |
+      print(f"Ready to say hello to {self.name}?")
+      return self.happy_birthday()
+
+  - !Text
+    title: Lightcode 101 — your first app
+    help: |
+      *😀 Experience the joy of using and creating web apps with ease and simplicity.*
+    icon: 🌎
+    # layout: p
+    # page: 3
+
+  - !Text
+    title: Welcome
+    help: Discover what's in this app
+    icon: 👋
+    # layout: x
+    text: |
+
+      🧩 This app demonstrates various types of lightcode `components` your users can interact with:
+
+      * [x] Formatted `text` with *item lists* like __this__ one. Then, in the following pages ...
+      * [x] Basic components such as `image`, `text`, and `videos` that can be grouped in `containers`
+      * [x] Data components: `forms`, `grids` or `charts`
+      * [x] `Objects` — encapsulating `data`, `state` and behavior — and customized `functions`
+      * [x] Interactive `maps`
+      * [?] `Quizzes` to test your knowledge
+      * [x] Apply for an early educator access
+
+        ---
+  - !Text
+    title: ' '
+    icon: ' '
+    media: poster1.jpg
+    height: 450
+  - !Text
+    title: ' '
+    icon: ' '
+    footer: |
+      🐕 Ready to walk the dog together and discover the ways to interact with the app?
+      🚀 Just select the next page to learn about `components`.
+
+
+  - !Text
+    title: Components
+    help: Basic components
+    # layout: x
+    footer: Enjoy basic components ...
+    text: |
+      Here are three basic, simple, visual `components`.
+      They can be static or interactive, with or without borders.
+
+      When available, clicking on the
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round" class="icon"><circle cx="12" cy="12" r="10"></circle>
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+      <line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      icon can display additional help. Go on, try it.
+
+  - !Text
+    title: Image
+    help: This is a `text` component, with optional text & media.
+    icon: 🖼️
+    media: https://picsum.photos/id/237/500/400
+    text: 🐕 Man's best friend
+  - !Text
+    title: Text
+    icon: 📖
+    text: |
+      Text about dogs can
+      use **bold** and _italic_ text. Here is a quote:
+
+          In the haze of a London fog,
+          A riff emerges, cutting like a saw.
+          Strumming strings and pounding drums,
+          Led Zeppelin, their magic comes.
+
+      You can copy the quote. Just hover the mouse over it to disclose the copy icon.
+  - !Text
+    title: Video
+    icon: 🎥
+    media: https://www.youtube.com/embed/6tlSx0jkuLM
+    text: 🎵 Man's best song. Go ahead. Play it!
+
+  - !Text
+    title: Data
+    help: Data components
+    icon: 📈
+    # layout: x
+
+more:
+      - !Form
+        title: G
+        help: Help for G
+        source: *id004
+        border: true
+        show_details: false
+        attributes:
+        - name
+        - age
+        - passion
+      - &id005 !Grid
+        title: Data
+        icon: 🗒️
+        border: true
+        text: This is a grid component.
+      - !Chart
+        title: Chart
+        icon: 📊
+        border: true
+        columns:
+        - Dog
+        - Speed
+        - Cute
+        grid: *id005
+      text: |
+        Example of data components: a student `form`, a `grid` of pets and a `chart`.
+        They are all interactive. Go ahead, play ▶️ with them.
+    - !Text
+      title: Objects
+      help: Interact with objects
+      icon: 🎊
+      layout: x
+      components:
+      - !Form
+        help: |
+          Therefore, `George` has:
+          - attributes: name, age and passion
+          - state: sleeping or active
+          - behavior: hello, ... shown as buttons
+  
+          Behavior depends on the current state. This will enable or disable buttons
+        source: *id004
+        border: true
+        attributes:
+        - name
+        - age
+        - passion
+      - !Form
+        help: |
+          This is a custom `function`.
+          You can call it to see the result.
+        source: *id006
+        border: true
+        before_init: |
+          age = self.source.target.age
+          self._hidden = age < 20 or age > 22
+        attributes:
+        - name
+        - doc
+        - target
+        - code
+      - !Form
+        help: |
+          This is a custom `variable`.
+          You can store a value.
+        source: !Var
+          name: student
+          value: *id004
+        border: true
+        before_init: |
+          self._hidden = self.source.value.age < 22
+      text: |
+        Objects encapsulate attributes, state and behavior.
+
+    - !Map
+      title: Maps
+      help: Interactive maps
+      icon: 🗺️
+      height: 200
+      text: This `map` is interactive. You can zoom in and out to spot parcs in Paris
+        if you want to walk your dog.
+
+    - !Text
+      title: Next
+      help: Next steps
+      icon: 🌟
+      components:
+      - !Text
+        title: Consent
+        icon: 🌟
+        source: *id008
+        components:
+        - !Frame
+          source: &id009 !Quizzer
+            title: Consent 101
+            questions:
+            - !Question
+              title: I accept the use of cookies and tracking for improvement purposes.
+            - !Question
+              title: I acknowledge that this is a research experiment.
+            - !Question
+              title: I understand that there are no warranties provided.
+            - !Question
+              title: I agree not to use any part of this software for commercial purposes
+                without explicit consent from KarmicSoft.
+            - !Question
+              title: I understand that all intellectual property related to LightCode
+                is owned by KarmicSoft.
+            - !Question
+              title: I agree not to distribute, copy, or modify any part of LightCode
+                without permission.
+            - !Question
+              title: I accept that KarmicSoft is not liable for any damages or losses
+                resulting from the use of LightCode.
+            - !Question
+              title: I agree to use LightCode in accordance with all applicable laws
+                and regulations.
+            - !Question
+              title: I understand that any feedback or suggestions I provide may be
+                used by KarmicSoft without any obligation to me.
+            - !Question
+              title: I agree to be accountable for my use of LightCode and will not
+                engage in any activity that could harm KarmicSoft or its users.
+            - !Question
+              title: I acknowledge that my use of LightCode is subject to KarmicSoft's
+                privacy policy and terms of service.
+            - !Question
+              title: I acknowledge that KarmicSoft reserves the right to modify the terms 
+                of service at any time. I understand that I will have the opportunity to accept 
+                these changes or discontinue using the service.
+            - !Question
+              title: I commit to respect the code of conduct and community guidelines
+                for the platform.
+            - !Question
+              title: I acknowledge access is not automatically granted and that KarmicSoft
+                reserves the right to deny access to LightCode at any time.
+        - !Text
+          title: Thank you. Now you can ask for your access
+          icon: 🎁
+          source: *id009
+          components:
+          - !Text
+            title: Request your access
+            icon: 📧
+            source: *id009
+            on_init: |
+              body_text = "Greetings,"
+              body_text += "\n\nI am interested in learning more about Lightcode and having an early access."
+              body_text += f"\n\nThank you for considering my request."
+              body_text += f"\n\nName: "
+              body_text += f"\n\nAffiliation: "
+              body_text += f"\n\nContact information: "
+              body_text += f"\n\n\nFull consent: "
+              for q in self.source.questions:
+                body_text += f"\n\n - {q.title}"
+              body_text += f"\n\nThank you for considering my request."
+              body_text = body_text.replace("\n", "%0A").replace(" ", "%20")
+              st.markdown(f'Simply use [this link](mailto:contact@karmicsoft.com?subject=[Lightcode]%20I%20want%20my%20award&body={body_text}.) to request your access', unsafe_allow_html=True)
+          before_init: |
+            self._hidden = self.source.score < 1
+          text: |
+            🎉 Request an invitation to become a Lightcode early adopter!
+        before_init: |
+          self._hidden = self.source.score < 1
+        text: |
+          Prior to request an early adopter access, you need to consent the following conditions:
+          ...
+      text: |
+        Based on your knowledge level, here are the rewards you can apply for, if any:
+        ...
+  

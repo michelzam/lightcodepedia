@@ -1,0 +1,760 @@
+module:
+  - name: inspectors
+    doc: "Inspectors"
+    icon: "🔬"
+    is_admin: True
+
+imports:
+  - !Module
+    name: kore
+    hidden: True
+  - !Module
+    name: blocks
+    hidden: True
+  - !Module
+    name: pets
+    hidden: True
+  - !Module
+    name: streamlit_antd_components
+    as_name: sac
+  - !Module
+    name: streamlit_ace
+  - !Module
+    name: lightcode
+  - !Module
+    name: designers
+    hidden: True
+
+classes:
+
+  - !Class
+    name: Inspector
+    doc: Generic form
+    icon: "🔬"
+    bases: [ designers.Form ]
+    hidden: True
+    attributes:
+      - !Attribute
+        name: selections
+        type: List[str]
+        # hidden: True
+      - !Attribute
+        name: debug
+        type: bool
+      - !Attribute
+        name: expand
+        type: bool
+
+    methods:
+      - !Method
+        name: __str__
+        hidden: True
+        code: |
+          if len(self.title) > 0:
+            return f"{self.title}"
+          else:
+            try:
+              return f"{str(self.source)}: {type(self.source).__name__}"
+            except:
+              return f"Inspector"
+
+      - !Method
+        name: build
+        hidden: True
+        code: |
+          from datetime import date, datetime
+          from streamlit_extras.row import row
+          
+          # self.border = True
+          
+          self._before_build()
+
+          source = self._get_source()
+          if not self.source:
+            st.caption("No source")
+            return True # ???
+          
+          if not source:
+            # st.caption("No selection")
+            return False
+                    
+          try:
+            wrapper = type(source)._class 
+            if wrapper is None:
+              st.caption("No wrapper")
+              return False
+          except:
+            st.warning(f"{source} has no wrapper")
+            return True
+                      
+          # st.subheader(f"`{str(source)}`", help=self.help)
+          icon = "⚙️" if self._module.designing else "🔄"
+          
+          def on_inspect():
+            if self._module.designing:
+              self._show_designer()
+            else:
+              lightcode.toast("Refreshing ...", icon="🔄")
+          
+          help_object = source.doc if len(source.doc) > 0 else type(source)._class.doc
+          
+          if wrapper is None:
+            print(f"wrapper: {wrapper is None = }")
+            return False
+
+          st.button(f"`{wrapper.icon} {str(source)}`", help=help_object, type="tertiary", 
+            icon=icon, on_click=on_inspect, key=f"KINSPECTOR_{str(id(self))}_{str(id(source))}")
+          
+          def get_attributes(wrapper: Class) -> List[Attribute]:
+            if wrapper is None:
+              return []
+            attributes = []
+            for base in wrapper.bases:
+              attributes += get_attributes(base)
+            for attr in wrapper.attributes:
+              attributes.append(attr)
+            return attributes
+
+          import ctypes
+          def get_object_by_id(object_id: int):
+            return ctypes.cast(object_id, ctypes.py_object).value
+
+          def on_change(key):
+          
+            parts = key.split("_", 3)
+            
+            #print(f"{parts = }")
+          
+            self_id, source_id, attr_name = parts[1], parts[2], parts[3]
+            value = st.session_state[key]
+            wrapper = type(source)._class
+            last_val = getattr(source, attr_name)
+            
+            # print(" >> ", f"{self_id = } {source_id = } {attr_name = } {id(value) = }")
+
+            try:
+              attributes = get_attributes(wrapper)
+              attr = [attr for attr in attributes if attr.name == attr_name][0]
+              attr_type = eval(attr.type)
+                    
+            except:
+              st.error(f"{ self_id = } {source_id = } {attr_name = } {id(value) = }")
+              st.error(f"Unknown type: {attr_name = } {id(value) = }")
+              attr_type = str
+            if isinstance(value, list):
+              st.caption(f"{attr_name} {value = }")
+              if len(value) > 0 and hasattr(value[0], "_class"):
+                # convert values if custom
+                value = [v for v in wrapper._module.instances 
+                                if isinstance(v, pytype) and str(v) in value]
+                # otherwise, keep them as is
+            elif value == "None":
+              value = None
+            elif hasattr(attr_type, "_class"): 
+                    
+              values = [v for v in source._module.instances if id(v) == value]
+              # if isinstance(v, attr_type) and id(v) == value]
+              
+              if len(values) > 0:
+                value = values[0]
+              else:
+                # value = last_val
+                value = None
+
+            if attr.read_only:
+              print(f"🔒 {attr_name} is read-only")
+            else:
+              #print(f"{type(source).__name__}.{attr_name} -> {last_val}")
+              #print(f"{type(source).__name__}.{attr_name} <- {value }")
+              pass
+              
+              try:
+                if last_val != value:
+                  # print(f"---> setattr: {id(source) = } {attr_name = } {id(value) = }")
+                  setattr(source, attr_name, value)
+              except:
+                print(f"Error: {id(source) = } {attr_name = } {id(value) = }")
+                
+            
+          @st.fragment
+          def _show_inspector(selection, title):
+            try:
+              inspector = Inspector(source=selection, _module=self._module, 
+                title=title, show_details=self.show_details)
+              with st.container(border=True):
+                inspector.build()
+            except st.errors.FragmentHandledException as e:
+                # Handle the exception gracefully
+                st.warning(f"🤪 Too many moving parts!")
+            except st.errors.StreamlitDuplicateElementId as e:
+                st.warning(f"🤪 Toooo many moving parts!")          
+            
+          # @st.fragment
+          def _show_table(attr: Attribute):
+            # title = attr.title
+            title = attr.doc
+            cols = attr.type
+            # print(f"{attr.name = } {cols = } ")
+            type_ = eval(attr.type).__args__[0]
+            # print(f"{type_ = } { type(type_).__name__ = }")
+            cols = ["ID"]          
+            if hasattr(type_, "_class"):
+              cols += [a.name for a in type_._class.get_attributes() 
+                      if not a.hidden  
+                        and not a.type.startswith('List[') 
+                        and not a.advanced 
+                        and not a.name.startswith("_")]
+              # print(f"{type_ = }, {cols = }")
+              elements = [{**{"ID": str(id(obj))}, **{col:
+                            str(getattr(obj, col, '')) 
+                            if isinstance(getattr(obj, col, ''), object) 
+                            else getattr(obj, col, "")  
+                          for col in cols[1:]}}
+                          for obj in getattr(self.source, attr.name, [])]
+            if len(cols) == 1:
+              cols = ["ID", f"{title}"]          
+              elements = [{id(value), str(value)} for value in getattr(self.source, attr.name, [])]        
+            
+            #st.write(elements)
+            
+            df = pd.DataFrame(elements, columns=cols)
+
+
+            # display_dataframe(df, key=key, title=self.title)
+          
+          
+            key = f"KDF_{str(id(self))}_{str(id(self.source))}_{str(id(attr))}"
+            # elements = [{id(value), str(value)} for value in multi_options]
+            # df = pd.DataFrame(elements, columns=["ID", f"{title}"])
+
+            # event = st.dataframe(df[[title]], use_container_width=True, 
+            event = st.dataframe(df[cols[1:]], use_container_width=True, 
+              on_select="rerun", hide_index=True, key=key,
+              selection_mode="single-row")
+            #print(f"{event = }")
+            #st.write(event)
+            rows = event["selection"]["rows"] 
+            #print(f"{ rows = }")
+            prefix = f"{attr.name}__"
+            lst = self.selections
+            index_sel = next((i for i, s in enumerate(lst) if s.startswith(prefix)), -1)
+            if len(rows) > 0: 
+              # st.write(df.iloc[rows[0]])
+              # print(f"Selected ID value: {df.at[rows[0], 'ID']}")
+              selection = get_object_by_id(int(df.at[rows[0], 'ID']))
+
+              if self.show_details:
+                _show_inspector(selection, title)          
+              if index_sel >= 0:
+                self.selections[index_sel] = f"{prefix}{str(id(selection))}"
+              else:
+                self.selections.append(f"{prefix}{str(id(selection))}")
+              
+            else:
+              self.selection = None
+              # st.caption("No selection")
+              if index_sel >= 0:
+                self.selections.pop(index_sel)
+          
+            self._notify() ## case: is a list (show table)
+  
+          try:
+            attributes = get_attributes(wrapper)    
+          except Exception as e:
+            print(f"Error: {wrapper.name = }")
+            print(e)
+            print(traceback.format_exc())
+            return False
+          
+          if len(self.attributes) > 0:
+            # use custom attr list and order
+            attrs = []
+            for a_name in self.attributes:
+              attrs.extend([a for a in attributes if a.name == a_name])
+            attributes = attrs
+          
+          def get_attr_label(attr: Attribute, pytype) -> str:
+            if pytype.__module__ == "builtins":
+              return f"{attr.icon} {attr.name.capitalize().replace('_', ' ')}"
+            else:
+              return f"{pytype._class.icon} {attr.name.capitalize().replace('_', ' ')}"
+          
+          # advanced not hidden:
+          advanced = len([a for a in attributes if a.advanced and not a.hidden])
+
+          tab_labels = ["🏷️", "…"]
+          for i, attr in enumerate(attributes):
+            if attr.hidden:
+              continue            
+            if attr.type.startswith("List["):
+              stype = attr.type[5:-1]
+              pytype = eval(stype)
+              tab_labels.append(get_attr_label(attr, pytype))
+
+          tab_labels.append("🔬")
+
+          # if advanced > 0 and len(self.attributes) == 0:
+          tabz = st.tabs(tab_labels)
+          
+          with tabz[len(tab_labels) - 1]:
+            with st.expander(f"self: {type(self.source).__name__}", expanded=False):
+              if st.checkbox("Show details", value=False, key=f"KEY_INSP_show_details_{str(id(self))}"):
+                st.write(self.source)
+            if self.debug:
+              with st.expander("Uber-inspector", expanded=False):
+                if st.checkbox("Show details", value=False, key=f"KEY_INSP_show_uber_details_{str(id(self))}"):
+                  st.write(self)
+              sline = st.text_input("Debug me", key=f'KDEBUG_{str(id(self))}')
+              if len(sline) > 0:
+                try:
+                  for i in self._module.instances:
+                    if type(i).__name__ == "Var":
+                      setattr(self._module.value, i.name, i.value)
+          
+                  new_vars = vars(self._module.value).copy()
+                  # new_vars["lightcode"] = lightcode
+                  new_vars["self"] = self.source
+                  for imp_name, imported in self._module.imports.items():
+                    if not imported.hidden:
+                      new_vars[imported.as_name] = imported.value
+                  result = eval(sline, new_vars)
+                  for i in self._module.instances:
+                    if type(i).__name__ == "Var":
+                      m = self._module.value
+                      i.value = getattr(m, i.name)
+                      #print(f"{i.value = } {type(i).__name__ = } {vars(m)[i.name] = }")
+                  st.write(result)
+                except Exception as e:
+                  st.warning(e)
+                      
+          last_group = None
+          for i, attr in enumerate(attributes):
+            if attr.hidden:
+              continue
+            if advanced > 0 and len(self.attributes) == 0:
+              tab = tabz[1] if attr.advanced else tabz[0]
+            else:
+              tab = tabz[0]
+            key = f"KF_{str(id(self))}_{str(id(self.source))}_{attr.name}"
+            label = attr.get_label()  # wrapper._module._get_label(attr.name, attr.type, capitalize=True)
+            label = label.replace('_', ' ')
+            is_read_only = attr.read_only or self.disabled
+            if attr.name.startswith("_"):
+              continue
+            if attr.type.startswith("List["):
+              stype = attr.type[5:-1]
+              # print(f"{stype = }")
+              pytype = eval(stype)
+          
+              tab = tabz[tab_labels.index(get_attr_label(attr, pytype))]
+              # tab = tabz[tab_labels.index(pytype.get_label())]
+              # st.caption(f"{attr.name = } {pytype = }")
+              if hasattr(pytype, "_class"): # custom type
+                # instances = [v for v in wrapper._module.instances if isinstance(v, pytype)]
+                # instances = [v for v in self._class._module.instances if isinstance(v, pytype)]
+                instances = [v for v in self._module.instances if isinstance(v, pytype)]
+              else: # primitive type => use default/actual values
+                instances = getattr(source, attr.name)
+          
+              multi_options = [str(item) for item in instances]
+              # multi_options = [item for item in instances]
+              # st.caption(f"{attr.name = } {multi_options = }")
+                  
+              default_options = [str(item) for item in getattr(source, attr.name)]
+              # st.caption(f"{attr.name = } {multi_options = } {default_options = }")
+
+              if (len(multi_options) > 0) and set(default_options).issubset(set(multi_options)):
+                # st.caption(f"{attr.name = } {multi_options = } {default_options = }")
+                # with st.expander(f"{len(default_options)} {label}", expanded=False):          
+                if is_read_only:
+                  df = pd.DataFrame(default_options, columns=[label])
+                  with st.expander(f"{label}", expanded=False):
+                  # with st.container(border=True):
+                    def on_select():
+                      st.caption("select")
+          
+                    dfkey = f"KDF_{str(id(self))}_{str(id(source))}_{attr.name}"
+                    event = st.dataframe(df, use_container_width=True, 
+                      on_select="rerun", hide_index=True, 
+                      selection_mode="single-row")
+
+                    # st.write(event)
+                    rows = event["selection"]["rows"] 
+                    if len(rows) > 0: 
+                      st.caption(df.iloc[rows[0], 0])
+                  
+                else:
+                  with tab:
+                    # st.caption(f"xxx -> {label = } {multi_options = }")
+                    _show_table(attr)
+          
+              else:
+                with tab:
+                  _show_table(attr)
+                
+            else:  # non a list!
+              last_tab = tab
+              idx = 0
+              spec = [1]
+              if attr.following == 0:
+                last_lead = i
+                # we need a new col. But how big?
+                j = 0  # just in case??
+                for j in range(i + 1, len(attributes) - 1):
+                  # print(f'{j = } {attributes[j].name = } {attributes[j].following = }')
+                  if attributes[j].following == 0:
+                    break
+                  else:
+                    spec.append(attributes[j].following)
+                size = j - last_lead
+                if size <= 0: 
+                  size = 1
+            
+                # print(f"l:{attr.name = } {i = } {j = } {last_lead = } {idx = } {size = }")
+                # last_group = last_tab.columns(size)
+                last_group = last_tab.columns(spec)
+                tab = last_group[0]             
+                # groups.append(...)
+              else:
+                size = 1 
+                if "last_lead" in locals():
+                  idx = i - last_lead
+                  tab = last_group[idx]             
+                # print(f"f:{attr.name = } {i = } {j = } {last_lead = } {idx = } {size = }")
+
+              # old, classic tab, before groups!
+              # tab = last_tab.columns(size)[0]
+                    
+              stype = attr.type
+              pytype = eval(stype)
+              
+  
+              if hasattr(pytype, "_class"): # custom type
+                ref_wrapper = pytype._class
+
+                def find_instances_by_type(instances, target_type):
+                  target_name = target_type.__name__
+                  target_module = target_type.__module__
+              
+                  def class_matches(cls) -> bool:
+                    return cls.__name__ == target_name and cls.__module__ == target_module
+              
+                  return [
+                    instance for instance in instances
+                    if any(class_matches(cls) for cls in instance.__class__.mro())
+                  ]
+
+                instances = find_instances_by_type(self._module.instances, pytype)
+                                    
+                instances.insert(0, None)
+                value = getattr(source, attr.name)
+
+                index = None
+                try:
+                  index = instances.index(value) if value else None
+                except: 
+                  instances.append(value)
+                  index = len(instances) - 1
+          
+                if False:  # deactivated for now; not ready yet ...
+                  label_visibility = "hidden" if value is not None else "visible"
+                  tab.checkbox(f"{label}",  
+                    help=attr.doc,
+                    disabled=is_read_only)
+
+                if True:
+                  st.markdown("""
+                      <style>
+                      /* Adjust the spacing for the selectbox */
+                      div[data-baseweb="select"] > div {
+                          margin-top: 0px;  /* Reduce the gap between the button and the selectbox */
+                          padding: 2px;      /* Reduce padding inside the selectbox */
+                      }
+                      /* Center the button close to the selectbox */
+                      .button-row {
+                          display: flex;
+                          align-items: center;
+                          gap: 0px;  /* Adjust gap between the button and the selectbox */
+                      }
+                      </style>
+                      """, unsafe_allow_html=True)
+        
+                # print(f"{attr.name = } {len(str(value)) = } {index = }")
+                with tab.container():
+                  st.markdown('<div class="button-row">', unsafe_allow_html=True)
+                  show_details = st.checkbox(f"{str(label)}", help=attr.doc, 
+                    disabled=value is None, key=f"FCKB_{key}")
+                  # print(instances)
+                  
+                  # options = [str(item) for item in instances]          
+
+                  options = [id(i) for i in instances]          
+                  # options=[id(value), None]
+                  index = instances.index(value) if value else None
+                  
+                  index = options.index(id(value)) # if value else None
+                  #print(options)
+                  #print(id(value), index)
+          
+
+                  st.selectbox(f"{label}", key=key, 
+                    options=options,                    
+                    format_func=lambda x: "None" if x is None else str(get_object_by_id(x)),
+                    help=attr.doc, label_visibility="collapsed",
+                    #options=[str(item) for item in getattr(source, attr.name)],
+                    
+                    ## index=index, ## default index is zero!
+                    index=index,                    
+                    disabled=is_read_only, on_change=on_change, args=[key])  
+                  st.markdown('</div>', unsafe_allow_html=True)
+                  prefix = f"{attr.name}__"
+                  sel = f"{prefix}{str(id(value))}"
+                  lst = self.selections
+                  index_sel = next((i for i, s in enumerate(lst) if s.startswith(prefix)), -1)
+                  if show_details:
+                    prefix = f"{attr.name}__"
+                    if index_sel >= 0:
+                      self.selections[index_sel] = sel
+                    else:
+                      self.selections.append(sel)
+                  else:
+                    if index_sel >= 0:
+                      self.selections.pop(index_sel)
+          
+                # self._notify()  ## case: not a list
+          
+                if self.show_details and show_details:
+                    _show_inspector(value, label)
+              else:
+                if pytype in [int, float]:
+                  tab.number_input(f"{label}", key=key,
+                    help=attr.doc,
+                    value=pytype(getattr(source, attr.name)),
+                    disabled=is_read_only, on_change=on_change, args=[key])
+                elif pytype == bool:
+                  tab.toggle(f"{attr.name.capitalize().replace('_', ' ')}", key=key,
+                    help=attr.doc,
+                    value=getattr(source, attr.name),
+                    disabled=is_read_only, on_change=on_change, args=[key])
+                elif pytype in [date, datetime]:
+                  tab.date_input(f"{attr.name.capitalize()}", key=key,
+                    help=attr.doc,
+                    value=getattr(source, attr.name),
+                    disabled=is_read_only, on_change=on_change, args=[key])
+                elif attr.is_long and len(attr.language) == 0:
+                  tab.text_area(f"{label}", key=key,
+                    help=attr.doc,
+                    value=str(getattr(source, attr.name)),
+                    disabled=is_read_only, on_change=on_change, args=[key])
+                elif attr.name == "code" or len(attr.language) > 0:
+                  with st.expander(f"{label}", expanded=False):
+                    language = attr.language if len(attr.language) > 0 else "python"
+                    value = str(getattr(source, attr.name)) 
+                    st.code(value, language=language, line_numbers=True)
+                elif attr.name.startswith("on_"):
+                  value_list = getattr(source, attr.name) 
+                  if instance(value_list, list):
+                    for val in value_list:          
+                      with st.expander(f"{label}", expanded=False):
+                        value = str(val) 
+                        st.code(value, language="python", line_numbers=True)
+        
+                else:
+                  pass_type = "password" if "password" in attr.name.lower() else "default"
+                  # pass_type = "default"
+                  if len(attr.options) > 0:
+                    try:
+                      index = attr.options.index(getattr(source, attr.name)) 
+                    except:
+                      index = None
+                    tab.selectbox(f"{label}", key=key,
+                      options=attr.options,
+                      help=attr.doc,
+                      index=index,
+                      disabled=is_read_only, on_change=on_change, args=[key])
+                  elif len(attr.option_field) > 0:  # pickup options from another field?
+                    if hasattr(source, attr.option_field):
+                      option_attr = wrapper.find_attribute(attr.option_field)
+                      if option_attr and option_attr.type.startswith("List["):
+                        options = getattr(source, option_attr.name)
+
+                    try:
+                      index = options.index(getattr(source, attr.name)) 
+                    except:
+                      index = None
+
+                    if len(options) > 0:
+                      tab.selectbox(f"{label}", key=key,
+                        options=options,
+                        help=attr.doc,
+                        index=index,
+                        disabled=is_read_only, on_change=on_change, args=[key])
+                    else: 
+                      tab.text_input(f"{label}", key=key,
+                        help=attr.doc, type=pass_type,
+                        value=str(getattr(source, attr.name)),
+                        disabled=is_read_only, on_change=on_change, args=[key])
+
+                  else:            
+                    tab.text_input(f"{label}", key=key,
+                      help=attr.doc, type=pass_type,
+                      value=str(getattr(source, attr.name)),
+                      disabled=is_read_only, on_change=on_change, args=[key])
+                    if attr.name == "image" and attr.type == "str":
+                      value = getattr(source, attr.name)
+                      if value is not None and len(value) > 0:
+                        with tab:
+                          with st.expander(" Image", expanded=self.expand, icon="🖼️"):
+                            if value.startswith("http"):
+                              st.image(value, caption="Image from URL", use_container_width=True)
+                            else:
+                              path = os.path.join(os.getcwd(), f"modules/_media/{value}")
+                              st.caption(path)
+                              if os.path.exists(path):
+                                from PIL import Image
+                                image = Image.open(path)
+                                st.image(image, use_container_width=self.fit_media)
+              
+              # ends here
+          
+          
+          if self.show_details:
+            self._show_details()
+
+          self._after_build()
+      
+          return True
+
+
+      - !Method
+        name: get_selection_by_key
+        hidden: True
+        doc: |
+          Get the selection by key
+          Params: 
+            key: str  # the key to search for (e.g. an attribute)
+          Returns: The selection, converted as an object
+        code: |
+          key = kwargs.get("key", "")
+          prefix = f"{key}__"
+          # get the first selection that starts with the key, if any
+          selection = next((s for s in self.selections if s.startswith(prefix)), None)
+          if selection:
+            # extract the string after "__" and convert it to an integer
+            id = int(selection.split("__")[1])
+            # get the object by its id
+            obj = self._get_object_by_id(object_id=id)
+            return obj
+          else:
+            return None
+
+instances:
+
+  - !Scene
+    title: "Tutorial for Inspectors"
+    icon: "🔬"
+    lines: [4, 2, 4, 1, 2, 2, 2, 2, 2, 2]
+    as_name: inspector_scene
+
+  - !Pet &dory
+    name: Dory
+
+  - !Pet &dora
+    name: Dora
+
+  - !Pet &lucky
+    name: Lucky
+    friends: [*dory, *dora]
+    bestie: *dory
+
+  - !Pet &iron
+    name: Iron
+    bestie: *lucky
+
+  - !Text
+    title: "Simple inspectors for connected pets"
+    icon: "1️⃣"
+    border: False
+
+  - !Text
+    title: "Dynamic inspectors"
+    icon: "2️⃣"
+    border: False
+
+  - !Inspector &iiron
+    title: Iron's inspector
+    border: True
+    source: *iron
+    debug: True
+    show_details: False
+    footer: Inspector without detail
+
+  - !Inspector &ilucky
+    title: Lucky's inspector
+    border: True
+    source: *lucky
+    debug: True
+    show_details: False
+    footer: |
+      Inspector without detail.
+      
+      Bestie and fiends are observed ...
+
+  - !Inspector
+    footer: Selected bestie
+    border: True
+    subjects: [*ilucky]
+    debug: True
+    show_details: False
+    on_update:
+      - !Function
+        code: |
+          obj = self.subjects[0].get_selection_by_key(key="bestie")
+          self.source = obj
+          if obj is None:
+            self.source = f"No bestie selected for {self.subjects[0].source.name}"
+
+  - !Inspector
+    footer: Selected friend
+    border: True
+    subjects: [*ilucky]
+    debug: True
+    show_details: False
+    on_update:
+      - !Function
+        code: |
+
+          obj = self.subjects[0].get_selection_by_key(key="friends")
+          self.source = obj
+          if obj is None:
+            self.source = f"No friend selected for {self.subjects[0].source.name}"
+
+  - !Text
+    title: "Inspectors with details"
+    icon: "3️⃣"
+    border: False
+
+  - !Inspector
+    border: True
+    source: !Pet &buddy
+      name: Buddy
+    debug: True
+    show_details: True  # default
+    footer: |
+      Inspector with details, and self debug.
+      Play with buttons / functions and observe the changes.
+    help: |
+      More help
+
+  - !Inspector
+    border: True
+    source: !Pet
+      name: Speedy
+      bestie: *buddy
+    debug: True
+    show_details: True  # default
+    footer: |
+      Inspector with details, and self debug.
+      If bestie is speeping and I bark, what happens?
+    help: |
+      More help

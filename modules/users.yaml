@@ -1,0 +1,287 @@
+module:
+  - name: users
+    doc: "User management"
+    icon: "👥"
+    is_admin: True
+
+imports:
+  - !Module
+    name: blocks
+    hidden: True
+  - !Module
+    name: designers
+    hidden: True
+  - !Module
+    name: streamlit
+    as_name: st
+  - !Module
+    name: lightcode
+    hidden: True
+  - !Module
+    name: repository
+    hidden: True
+
+classes:
+
+  - !Class
+    name: User
+    icon: 👤
+    hidden: True
+    doc: |
+      Lightcode platform app user.
+      Join us!
+    attributes:
+      - !Attribute
+        name: login
+        type: str
+      - !Attribute
+        name: pseudo
+        type: str
+      - !Attribute
+        name: first_name
+        type: str
+      - !Attribute
+        name: last_name
+        type: str
+      - !Attribute
+        name: email
+        type: str
+      - !Attribute
+        name: password
+        type: str
+      - !Attribute
+        name: github_name
+        type: str
+      - !Attribute
+        name: credits
+        type: int
+        default: 100
+      - !Attribute
+        name: credentials
+        type: int
+        default: 001
+      - !Attribute
+        name: working_dir
+        type: int
+        default: 001
+      - !Attribute
+        name: access_token
+        type: str
+        doc: |
+          Access token to access the platform.
+          You can use it to access the API.
+          https://github.com/settings/personal-access-tokens
+      - !Attribute
+        name: last_open_module
+        type: str
+    methods:
+      - !Method
+        name: _run
+        code: |
+          return True
+      - !Method
+        name: __str__
+        code: |
+          return f"{self.icon} {self.login}"
+      - !Method
+        name: __repr__
+        code: |
+          return f"{self.icon} {self.login}"
+          
+  - !Class
+    name: Login
+    icon: "👤"
+    doc: User login
+    hidden: True
+    attributes:
+      - !Attribute
+        name: user_name
+        type: str
+        doc: |
+          User name. You might need to ask your instructor for an account.
+
+          It also should be your user login for github.
+
+      - !Attribute
+        name: password
+        icon: "🔑"
+        type: str
+      - !Attribute
+        name: new_password
+        icon: "🔑"
+        type: str
+      - !Attribute
+        icon: "🔑"
+        name: new_password_again
+        type: str
+      - !Attribute
+        name: repo
+        type: str
+        doc: |
+          Repository name. 
+          Needs to contain a folder called `modules`.
+          If properly configured, modules/menu.yaml will be created in your github repo.
+
+      - !Attribute
+        name: token
+        type: str
+        doc: |
+          Access token to access the platform.
+          You can use it to access the API.
+          https://github.com/settings/personal-access-tokens
+
+      - !Attribute
+        name: credits
+        icon: "🏅"
+        type: int
+        default: 100
+        read_only: True
+      - !Attribute
+        name: user
+        type: User
+        hidden: True
+      - !Attribute
+        name: messages
+        type: List[str]
+        hidden: True
+        default:
+            - "Please enter your user name and password!"
+            - "You're in. Enjoy!"
+            - "Incorrect password. Reset and try again."
+            - "Signing in for a new account"
+    states: [unverified, verified, incorrect, signing_in]
+    methods:
+      - !Method
+        name: __str__
+        code: |
+          return f"{self.icon} {self.user_name}"
+      - !Method
+        name: __repr__
+        code: |
+          return f"{self.icon} {self.user_name}"
+
+      - !Method
+        name: log_in
+        preconditions: [unverified]
+        doc: |
+          Login to the platform.
+        code: |
+          # st.sidebar.write(self)
+          # if self.password.lower() != "abc":  # TODO: TO BE REPLACED
+          if not lightcode.login(self.user_name, self.password):
+            self.state = "incorrect"
+            st.session_state.user_name = ""
+          else:
+            self.state = "verified"
+            st.session_state.user_name = self.user_name
+            st.session_state.user_info = lightcode.get_user_info(
+              user_name=self.user_name, password=self.password)
+          st.session_state.status = self.state
+
+          try:
+            repo = lightcode.get_dynamic_repo()
+          except:
+            return
+
+          if repo:
+            access, message = repo.check_access()
+            if not access:
+              st.warning(message)
+              return 
+            #with st.spinner("Scanning repo..."):
+            lightcode.toast("Scanning repo...")
+            file_names = repo.scan_files()
+
+      - !Method
+        name: log_out
+        preconditions: [verified]
+        postcondition: unverified
+        code: |
+          self.password = ""
+          st.session_state.status = "unverified"
+
+      - !Method
+        name: edit
+        preconditions: [verified]
+        code: |
+          print("TODO: Edit here user_name, password and token.")
+          import copy
+
+          @st.dialog("👤 Edit user", width="large")
+          def on_update(clone):
+
+            form = Form(source=clone, show_details=False, 
+              attributes=["password", "new_password", "new_password_again", "repo", "token"])
+            form._run()
+
+            if st.button("▶︎ Apply", type="primary"):
+
+              if len(clone.new_password) > 0:
+                if clone.new_password != clone.new_password_again:
+                  st.warning("Passwords don't match.")
+                  return
+          
+              if lightcode.update_user(
+                    user_name=clone.user_name, 
+                    password=clone.password,
+                    new_password=clone.new_password,
+                    repo=clone.repo, 
+                    token=clone.token):
+
+                if False:  ## Later
+                  if clone.repo and clone.token:
+                    user_repo = lightcode.get_dynamic_repo()
+                    if user_repo.configure():
+                      st.success("Repository configured.")
+                    else:
+                      st.error("Repository not configured. Check your repo and token.")
+          
+                st.success("User updated.")
+                st.rerun()
+              else:
+                st.error("User not updated.") 
+
+
+
+              
+          clone = copy.copy(self)
+          clone.repo, clone.token = lightcode.get_user_info(
+            user_name=self.user_name, password=self.password)
+          on_update(clone)
+
+      - !Method
+        name: reset
+        preconditions: [incorrect, signing_in]
+        postcondition: unverified
+        code: |
+          # self.user_name = ""
+          self.password = ""
+          print("Ask your instructor for help.")
+
+      - !Method
+        name: _sign_in
+        preconditions: [unverified]
+        postcondition: signing_in
+        code: |
+          print("Ask your instructor for an account.")
+
+      - !Method
+        name: _check_password
+        code: |
+          from dotenv import load_dotenv
+          import os
+          load_dotenv()
+          password = os.getenv("PASSWORD")
+          if hmac.compare_digest(st.session_state.password, password):
+              st.session_state.status = "verified"
+          else:
+              st.session_state.status = "incorrect"
+          st.session_state.password = ""
+
+
+instances:
+  - !Login &login {}
+
+  - !Form
+    source: *login
+

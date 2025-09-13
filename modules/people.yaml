@@ -1,0 +1,77 @@
+module:
+  - doc: People and pets
+    icon: "👨‍👩‍👧‍👦"
+
+imports:
+  - !Module {name: kore, hidden: True}
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: inspectors, hidden: True}
+
+classes:
+  - !Class
+    name: Person
+
+  - !Class
+    name: Person
+    bases: [kore.Object]
+    icon: "👤"
+    doc: Dog's best friend
+    attributes:      
+      - !Attribute {name: name, type: str, default: Noname}
+      - !Attribute {name: age, type: int, default: 30, read_only: True}
+      - !Attribute {name: friend, type: Person, default: None}
+    states: [hungry, strong]
+    methods:
+      - !Method
+        name: eat
+        preconditions: [hungry]
+        postcondition: strong
+        code: |            
+          st.balloons()
+
+      - !Method
+        name: sail
+        preconditions: [strong]
+        postcondition: hungry
+        code: |            
+          st.balloons()
+
+      - !Method
+        name: happy_birthday
+        doc: increments age
+        code: |            
+          self.age += 1
+          st.balloons()
+
+      - !Method
+        name: _test_happy_birthday
+        doc: increments age
+        code: |            
+          p = type(self)()
+          assert p.age == 30
+          p.happy_birthday()
+          assert p.age == 31
+
+      - !Method
+        name: _hi
+        doc: greetings
+        code: |            
+          return f"Hi, I'm {self.name}"
+
+      - !Method
+        name: _test_hi
+        code: |
+          assert self._hi().startswith("Hi, I'm ")
+
+      - !Method
+        name: __repr__
+        code: |
+            return f"{self.icon} {self.name}"
+
+instances:
+  - !Person &popeye
+    name: Popeye
+
+  - !Inspector
+    title: Product inspector
+    source: *popeye

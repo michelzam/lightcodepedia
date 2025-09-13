@@ -1,0 +1,226 @@
+module:
+  - name: tef_irn
+    doc: "Test d'Evaulation de Français - IRN"
+    icon: "🇫🇷"
+
+imports:
+  - !Module
+    name: designers
+    hidden: True
+  - !Module
+    name: blocks
+    hidden: True
+  - !Module
+    name: inspectors
+    hidden: True
+  - !Module
+    name: tutorials
+    hidden: True
+
+classes:
+
+
+instances:
+
+  - !Riddle &riddleA2_01
+    title: "A2: Au café ☕"
+    text: |
+      Tu es dans un café. Le client dit :  
+      — Bonjour, je voudrais un thé, s’il vous plaît.  
+      Le serveur répond :  
+      — _______________________  
+      
+      Quelle est la réponse la plus naturelle ?
+    correct_answer: "Bien sûr, ce sera tout ?"
+    difficulty: 1
+    as_name: riddleA2_01
+    options:
+      - "Deux cafés s’il vous plaît"
+      - "Bien sûr, ce sera tout ?"
+      - "Je préfère le chocolat"
+    hints: [ "Observe le type de demande", "La réponse doit suivre logiquement", "Tu es le serveur." ]
+
+  - !Riddle &riddleA2_02
+    title: "A2: À la gare 🚉"
+    text: |
+      Tu entends cette annonce dans une gare :  
+      « Le train pour Marseille partira à 14h52 voie 3. »  
+      
+      Que dois-tu faire si tu veux prendre ce train ?
+    correct_answer: "Aller voie 3 avant 14h52"
+    difficulty: 1
+    as_name: riddleA2_02
+    options:
+      - "Chercher un bus pour Paris"
+      - "Attendre sur le quai 7"
+      - "Aller voie 3 avant 14h52"
+    hints: [ "Heure et voie = informations clés", "Ce n’est pas un bus", "Tu veux monter dans ce train" ]
+
+  - !Riddle &riddleA2_03
+    title: "A2: L'invitation 📅"
+    text: |
+      Lisa écrit à son amie :  
+      « Salut ! Je fais une fête samedi soir chez moi. Tu veux venir ? »  
+      
+      Quelle est la meilleure réponse ?
+    correct_answer: "Oui, avec plaisir ! À quelle heure ?"
+    difficulty: 1
+    as_name: riddleA2_03
+    options:
+      - "Je suis fatiguée tous les samedis"
+      - "Oui, avec plaisir ! À quelle heure ?"
+      - "J’aime les fêtes en juillet"
+    hints: [ "C’est une invitation", "On attend une réponse positive ou polie", "Et une question utile" ]
+
+  - !Riddle &riddleA2_04
+    title: "A2: Message du médecin 🩺"
+    text: |
+      Message : « Bonjour. Votre rendez-vous est confirmé pour lundi à 10h. »  
+      
+      Que dois-tu faire ?
+    correct_answer: "Aller chez le médecin lundi à 10h"
+    difficulty: 1
+    as_name: riddleA2_04
+    options:
+      - "Appeler le médecin à 11h"
+      - "Annuler le rendez-vous"
+      - "Aller chez le médecin lundi à 10h"
+    hints: [ "Lis bien la date", "C’est une confirmation, pas une question", "Le rendez-vous est maintenu" ]
+
+  - !Riddle &riddleA2_05
+    title: "A2: Acheter du pain 🥖"
+    text: |
+      Tu es à la boulangerie. Tu dis : « Bonjour, une baguette s’il vous plaît. »  
+      
+      Que peut répondre le boulanger ?
+    correct_answer: "Voilà, 1 euro s’il vous plaît"
+    difficulty: 1
+    as_name: riddleA2_05
+    options:
+      - "Je préfère le fromage"
+      - "Voilà, 1 euro s’il vous plaît"
+      - "Vous avez une voiture rouge ?"
+    hints: [ "On parle de pain", "La réponse doit être en lien avec la commande", "Pense à la politesse" ]
+
+  - !Riddle &riddleA2_06
+    title: "A2: Email de travail 📧"
+    text: |
+      Objet : « Réunion lundi »  
+      Texte : « Bonjour, la réunion est déplacée à 15h. Merci de confirmer. »  
+      
+      Quelle est la bonne réponse ?
+    correct_answer: "Merci, c’est noté. Je confirme."
+    difficulty: 2
+    as_name: riddleA2_06
+    options:
+      - "Je suis malade depuis mardi"
+      - "Merci, c’est noté. Je confirme."
+      - "Je vais au cinéma lundi"
+    hints: [ "Réponds au sujet", "C’est professionnel", "Tu dois dire que tu viens" ]
+
+  - !Riddle &riddleA2_07
+    title: "A2: Dans la rue 🚶‍♂️"
+    text: |
+      Quelqu’un te demande : « Excusez-moi, où est la poste ? »  
+      
+      Quelle est la réponse la plus utile ?
+    correct_answer: "C’est à gauche, après la pharmacie"
+    difficulty: 2
+    as_name: riddleA2_07
+    options:
+      - "Je ne vais jamais à la poste"
+      - "C’est à gauche, après la pharmacie"
+      - "Ma cousine habite à Paris"
+    hints: [ "Pense orientation", "Sois concret", "L’autre personne cherche un lieu" ]
+
+  - !Riddle &riddleA2_08
+    title: "A2: Compréhension du mot 'métro' 🚇"
+    text: |
+      Le mot "métro" désigne :
+    correct_answer: "Un moyen de transport sous la ville"
+    difficulty: 1
+    as_name: riddleA2_08
+    options:
+      - "Un restaurant rapide"
+      - "Un moyen de transport sous la ville"
+      - "Un jeu vidéo français"
+    hints: [ "On le prend pour aller au travail", "Il roule sous terre", "Paris en a beaucoup" ]
+
+  - !Riddle &riddleA2_09
+    title: "A2: Dialogue au téléphone 📱"
+    text: |
+      — Allô ?  
+      — Bonjour Madame Dupont, je vous appelle pour confirmer votre commande.  
+      — ________  
+      
+      Complète la réponse logique :
+    correct_answer: "Merci, je la recevrai quand ?"
+    difficulty: 2
+    as_name: riddleA2_09
+    options:
+      - "Non, je suis au travail"
+      - "Merci, je la recevrai quand ?"
+      - "Je déteste les téléphones"
+    hints: [ "On parle d’une commande", "Demande des infos utiles", "Pas de hors-sujet" ]
+
+  - !Riddle &riddleA2_10
+    title: "A2: Choix du verbe correct 🧠"
+    text: |
+      Complète la phrase :  
+      « Je ______ français depuis deux ans. »
+    correct_answer: "parle"
+    difficulty: 1
+    as_name: riddleA2_10
+    options:
+      - "parle"
+      - "parlé"
+      - "parler"
+    hints: [ "Présent", "Je = 1ère personne", "Pas d'infinitif ici" ]
+
+  - !Riddle &riddleA2_11
+    title: "A2: À la pharmacie 💊"
+    text: |
+      Tu dis au pharmacien : « J’ai mal à la tête. »  
+      Quelle est la réponse logique ?
+    correct_answer: "Prenez ce médicament deux fois par jour"
+    difficulty: 1
+    as_name: riddleA2_11
+    options:
+      - "J’ai une voiture rouge"
+      - "Prenez ce médicament deux fois par jour"
+      - "Vous avez aimé le film ?"
+    hints: [ "On est chez le pharmacien", "Tu as mal", "Il propose une solution" ]
+
+  - !Riddle &riddleA2_12
+    title: "A2: Comprendre un SMS 📲"
+    text: |
+      Message :  
+      « Je suis en retard, j’arrive dans 10 minutes. »  
+      Que dois-tu faire ?
+    correct_answer: "Attendre encore 10 minutes"
+    difficulty: 1
+    as_name: riddleA2_12
+    options:
+      - "Partir maintenant"
+      - "Appeler la police"
+      - "Attendre encore 10 minutes"
+    hints: [ "Lis le temps estimé", "Ce n’est pas une urgence", "C’est un petit retard" ]
+
+
+  - !Table &katas_table
+    title: Exercices
+    source: [*riddleA2_01, *riddleA2_02, *riddleA2_03, *riddleA2_04, *riddleA2_05, *riddleA2_06, *riddleA2_07, *riddleA2_08, *riddleA2_09, *riddleA2_10, *riddleA2_11, *riddleA2_12]
+
+
+  - !Inspector
+    title: Problem
+    subjects: [*katas_table]
+    attributes: [text, hints, answer]
+    methods: [check_answer]
+    border: True
+    on_init:
+      - !Function
+        code: |
+          self._hidden = (len(self.subjects[0].source) == 0) or (self.subjects[0].selection is None)
+          if not self._hidden:
+            self.source = self.subjects[0].selection

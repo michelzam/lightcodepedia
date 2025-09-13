@@ -1,0 +1,29 @@
+[global]
+# To be switched on true in prod?
+disableWidgetStateDuplicationWarning = false
+
+[logger]
+# Level of logging: 'error', 'warning', 'info', or 'debug'.
+# Default: 'info'
+# level = "info"
+level = "info"
+
+[server]
+enableXsrfProtection = false
+enableCORS = false
+# disconnectedSessionTTL=xxx # from st v1.39+
+
+[client]
+# can be switched to false if needed by the global design (ipads, ...)
+showSidebarNavigation = false
+
+[browser]
+gatherUsageStats = false
+
+
+# [theme]
+# primaryColor = "#F63366"
+# backgroundColor = "black"
+
+# [runner]
+# magicEnabled = false

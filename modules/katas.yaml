@@ -1,0 +1,680 @@
+module:
+  - name: katas
+    doc: |
+      Check katas
+
+    icon: "🥋"
+imports:
+  - !Module {name: kore, hidden: True}
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: pets, hidden: True}
+  - !Module {name: inspectors, hidden: True}
+
+classes:
+
+  - !Class
+    name: Kata
+    doc: Exercise to practice skills
+    icon: "🥋"
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: number
+      type: int
+    - !Attribute
+      name: title
+      type: str
+    - !Attribute
+      name: instructions
+      type: str
+      is_long: True
+    - !Attribute
+      name: example
+      type: str
+      is_long: True
+      language: gherkin
+    - !Attribute
+      name: hints
+      type: str
+      is_long: True
+    - !Attribute
+      name: solution
+      type: str
+      is_long: True
+      language: gherkin
+    - !Attribute
+      name: learning_outcomes
+      type: str
+      is_long: True
+    methods:
+      - !Method
+        name: __str__
+        code: |
+          return f"{self.icon} Kata {self.number}: {self.title}"
+
+instances:
+  
+  - !Scene
+    icon: "🥋"
+    as_name: scene
+    title: Katas
+    lines:
+    - 12
+    - 1
+    - 2
+    - 1
+    - 2
+    - 2
+    - 2
+
+  - !Kata &kata1
+    number: 1
+    title: Fix the smells
+    instructions: |
+      • Review the original scenario and identify the quality issues  
+      • Apply best practices in user story writing and Gherkin syntax  
+      • Improve clarity, completeness, and business alignment
+    example: |
+      Feature: Beverages list
+        I need to see drinks
+
+        Scenario: Show drinks
+          Knowing that the system has some drinks
+          When I look for them
+          And I am thirsty
+          Then I can see them
+    hints: |
+      • Is the title clear and user-focused?  
+      • Is the user role explicit?  
+      • Are the steps using proper Gherkin keywords?  
+      • Are the inputs and expected outputs concrete?  
+      • Is “thirsty” a state or an event?
+    solution: |
+      The following issues were identified:
+
+      | Issue                            | Fix                                                                 |
+      |----------------------------------|----------------------------------------------------------------------|
+      | Feature title is vague           | Use a clearer and user-focused title: "View Available Beverages"   |
+      | User role is missing             | Use "As a [user], I want [goal] so that [benefit]" format          |
+      | Scenario lacks details           | Use specific data (e.g., names & prices of beverages)              |
+      | Step definitions are unclear     | Use precise Gherkin wording (Given-When-Then instead of "Knowing") |
+      | No acceptance criteria           | Specify clear expected outcomes                                     |
+      | No business motivation           | Explain why the feature is valuable                                 |
+      | "When" is not atomic             | Split it into one action per step                                   |
+      | "Thirsty" is a state, not action | Move it to motivation / outside the GWT block                      |
+
+      Refactored scenario:
+
+      Feature: View Available Beverages
+        As a customer  
+        I want to see a list of available drinks  
+        So that I can choose one and place an order
+
+        Scenario: Viewing available beverages
+          Given the system has the following beverages available:
+            | name       | price |
+            | Green Tea  | 2.50  |
+            | Coffee     | 3.00  |
+            | Matcha     | 4.00  |
+          When I open the beverage menu
+          Then I should see the available beverages with their prices
+    learning_outcomes: |
+      • Improve poorly written scenarios through concrete refactoring  
+      • Use clear and user-focused titles  
+      • Express user roles and goals using the user story format  
+      • Write testable, specific Gherkin steps  
+      • Distinguish actions from states  
+      • Clarify acceptance criteria and business motivation  
+
+
+  - !Kata &kata2
+    number: 2
+    title: Fill the gaps
+    instructions: |
+      • Fill in the blanks using realistic user behavior  
+      • Focus on user intent and expected system response  
+      • Use clear, testable language for each step  
+      • Complete the scenario title based on the action and outcome
+    example: |
+      Scenario: _______
+        Given the system is available
+        When _______
+        Then the order should be _______
+    hints: |
+      • Refer to earlier katas: ordering, payment, cancellation  
+      • Ask yourself: What action is the user taking?  
+      • What system result makes that action meaningful?
+    solution: |
+      Scenario: Confirming an order after payment
+        Given the system is available
+        When the user completes payment
+        Then the order should be confirmed
+    learning_outcomes: |
+      • Practice writing minimal, meaningful Gherkin scenarios  
+      • Make user intent and system behavior explicit  
+      • Choose precise verbs for **When** and **Then** steps  
+      • Use titles to clarify scenario purpose  
+      • Reinforce the Given–When–Then structure as a thinking tool  
+      • Develop habits of testable, readable language  
+  
+  - !Kata &kata3
+    number: 3
+    title: Split in two smaller stories
+    instructions: |
+      • Identify where the scenario mixes responsibilities  
+      • Break it into two clear, focused flows  
+      • Respect the Single Responsibility Principle
+    example: |
+      Scenario: Ordering and paying for a drink
+        Given the system is available
+        When the user selects "Green Tea"
+        Then the selection should be added to the order
+        When the user completes payment
+        Then the order should be confirmed
+    hints: |
+      • Look for two distinct actions or outcomes  
+      • Start by naming two scenarios based on verbs: "select", "pay"
+    solution: |
+      Scenario: Selecting a beverage
+        Given the system is available
+        When the user selects "Green Tea"
+        Then the selection should be added to the order
+  
+      Scenario: Paying for the selected beverage
+        Given the order contains "Green Tea"
+        When the user completes payment
+        Then the order should be confirmed
+    learning_outcomes: |
+      • Practice scenario splitting for clarity  
+      • Understand and apply the Single Responsibility Principle  
+      • Improve readability and maintainability  
+      • Design focused tests for each business action  
+
+  - !Kata &kata4
+    number: 4
+    title: Generalize with scenario outline
+    instructions: |
+      • Replace specific examples with placeholders  
+      • Use a table to explore variations without duplicating logic
+    example: |
+      Scenario: Selecting a drink
+        Given the system is available
+        When the user selects "Green Tea"
+        Then the selection should be added to the order
+    hints: |
+      • Think of other drinks the user might choose  
+      • What changes in the steps? What stays the same?
+    solution: |
+      Scenario Outline: Selecting a beverage
+        Given the system is available
+        When the user selects "<beverage>"
+        Then the selection should be added to the order
+  
+      Examples:
+        | beverage   |
+        | Green Tea  |
+        | Coffee     |
+        | Matcha     |
+    learning_outcomes: |
+      • Practice generalizing scenarios for multiple inputs  
+      • Learn to use Gherkin Scenario Outlines effectively  
+      • Reduce duplication while improving test coverage  
+
+  - !Kata &kata5
+    number: 5
+    title: Write a new story (missing step)
+    instructions: |
+      • Based on the journey, what’s a feature that’s missing?  
+      • Turn it into a clear user story and scenario
+    example: |
+      Feature: ______
+        As a _____
+        I want _____  
+        So that _____
+      
+      Scenario: _____
+        Given _____
+        When _____
+        Then _____
+
+    hints: |
+      • Think about post-payment or documentation needs  
+      • Use “Then” to express visible confirmation
+    solution: |
+
+      Feature: Receipt Generation
+        As a customer  
+        I want to receive a receipt  
+        So that I can please my accountant
+
+      Scenario: Receiving a receipt after payment
+        Given the order has been confirmed
+        When the user requests a receipt
+        Then a receipt should be generated
+        And it should include the beverage name, price, and payment status
+    learning_outcomes: |
+      • Identify gaps in the user journey  
+      • Express new requirements using BDD style  
+      • Understand how to support secondary user needs  
+
+  - !Kata &kata6
+    number: 6
+    title: Write a new story (innovation)
+    instructions: |
+      • Think like a product designer: what would delight or anticipate user needs?  
+      • Add a feature that’s not strictly required, but improves flow
+    example: |
+      
+      Scenario: _____
+        Given _____
+        When _____
+        Then _____
+    hints: |
+      • Use past behavior or preference  
+      • Think: personalization, automation, prediction
+    solution: |
+      Scenario: Suggesting a preferred drink to returning customers
+        Given the customer has previously ordered "Matcha"
+        And they return to the system
+        When the beverage menu is displayed
+        Then "Matcha" should be highlighted as their usual choice
+    learning_outcomes: |
+      • Practice designing forward-thinking user stories  
+      • Consider customer delight and speed  
+      • Learn to frame anticipatory behavior in Gherkin  
+
+  - !Kata &kata7
+    number: 7
+    title: Merge happy and unhappy flows
+    instructions: |
+      • Take two flows (one successful, one not)  
+      • Use a scenario outline with a <success> column  
+      • Keep structure identical but vary expectations
+    example: |
+
+      Scenario: ✅ Happy path — Receipt is issued after successful payment
+        Given the order contains "Green Tea"
+        And the payment is successful
+        When the user requests a receipt
+        Then a receipt should be generated
+        And it should include the beverage name, price, and payment status
+
+      Scenario: ❌Unhappy Path — Receipt is not issued if payment failed
+        Given the order contains "Matcha"
+        And the payment has failed
+        When the user requests a receipt
+        Then no receipt should be generated
+
+    hints: |
+      • Think about what changes when success = False  
+      • What result no longer happens?
+    solution: |
+      Scenario Outline: Completing a drink order
+        Given the order contains "<beverage>"
+        And the payment was <success>
+        When the user requests a receipt
+        Then a receipt should be generated: <success>
+  
+      Examples:
+        | beverage   | success |
+        | Green Tea  | True    |
+        | Matcha     | False   |
+
+    learning_outcomes: |
+      • Use Scenario Outline to eliminate repetition  
+      • Merge happy and unhappy flows cleanly  
+      • Express outcomes declaratively via the examples table  
+      • Separate logic from data for clarity  
+      • Test both success and failure with the same structure  
+      • Improve communication by making variation visible, not buried  
+      • Merging is a refactoring that can come later: start with the happy flow, implement and test it, then add the alternative flow, then merge  
+
+  - !Kata &kata8
+    number: 8
+    title: Write an Ab-User Scenario
+    instructions: |
+      • Think like an abuser, hacker, or system misuser  
+      • Write a story from their point of view  
+      • Defend the system with a GWT scenario
+    example: |
+
+      Scenario: _____
+        Given _____
+        When _____
+        Then _____
+
+    hints: |
+      • Try to break business rules or sneak through workflows  
+      • What does the system need to prevent?
+    solution: |
+      Scenario: Prevent cancellation after order is served
+        Given the order for "Matcha" has already been served
+        When the user attempts to cancel the order
+        Then the cancellation should be rejected
+        And no refund should be issued
+    learning_outcomes: |
+      • Practice writing malicious or confused-user scenarios  
+      • Improve system resilience through behavioral tests  
+      • Design for prevention and control logic  
+
+  - !Kata &kata9
+    number: 9
+    title: Write a LeadTime constraint as a scenario
+    instructions: |
+      • Express a constraint on how fast a user should receive value  
+      • Make time-to-value visible and measurable in Gherkin
+    example: |
+
+      Scenario: _____
+        Given _____
+        When _____
+        Then _____
+
+    hints: |
+      • Think of the full user-visible flow: order → served  
+      • Use a clear threshold the team can measure
+    solution: |
+      Scenario: Receiving my drink quickly after ordering
+        Given I place an order for "Green Tea"
+        When the drink is served
+        Then the total time should be less than 5 minutes
+    learning_outcomes: |
+      • Connect user flow with time-to-value  
+      • Make non-functional expectations testable  
+      • Align team on what “fast enough” looks like  
+
+  - !Kata &kata10
+    number: 10
+    title: Write a Resource constraint
+    instructions: |
+      • Define a system behavior under resource pressure  
+      • Use thresholds for CPU, memory, or disk  
+      • Tie it to a meaningful outcome for the user
+    example: |
+      
+      Scenario: _____
+        Given _____
+        When _____
+        Then _____
+
+
+    hints: |
+      • Consider burst traffic or system scale  
+      • Use realistic thresholds for observability
+    solution: |
+      Scenario: Avoiding server overload during order processing
+        Given the system is running and accepting drink orders
+        When 50 users place orders simultaneously
+        Then the CPU usage should remain below 80%
+        And the system should continue to respond within 1 second
+
+    learning_outcomes: |
+      • Translate infrastructure limits into behavioral scenarios  
+      • Write testable constraints on performance under load  
+      • Protect UX and delivery under pressure  
+
+  - !Kata &kata11
+    number: 11
+    title: Add commands, views and flows to the workflow
+    instructions: |
+      • Map the user flow from start to finish  
+      • Add the command (action), the view (what’s seen), and the event/state change
+    example: | 
+      | Step | Command  | View  | Event/State Change  |
+      |------|----------|-------|---------------------|
+      | 1    | ...      |       |                     |
+      | 2    | ...      |       |                     |
+
+    hints: |
+      • Walk through the full experience  
+      • Ask: what did the user do, see, and trigger?
+    solution: |
+      | Step | Command                          | View                         | Event/State Change        |
+      |------|----------------------------------|------------------------------|---------------------------|
+      | 1    | Request beverage menu            | Drink list is displayed      | BeverageListDisplayed     |
+      | 2    | Select a beverage                | Drink preview                | BeverageSelected          |
+      | 3    | Place the order                  | Order summary                | OrderPlaced               |
+      | 4    | Complete payment                 | Payment confirmed            | PaymentConfirmed          |
+      | 5    | Start drink preparation          | Status: "Preparing..."       | OrderConfirmed → InProgress |
+      | 6    | Mark as served                   | "Your drink is ready!" popup | OrderServed               |
+      | 7    | Request receipt (optional)       | Receipt screen/download      | ReceiptGenerated          |
+    learning_outcomes: |
+      • Model systems using commands, views, and events  
+      • Visualize the entire experience  
+      • Build foundations for event-driven or UX-aligned architecture  
+
+  - !Kata &kata12
+    number: 12
+    title: Identify the MVP happy flow with lead time
+    instructions: |
+      • Define the shortest complete flow that delivers value  
+      • Add a constraint that defines "fast enough" for the user
+    example: |
+
+      Scenario: _____
+        Given _____
+        When _____
+        Then _____
+
+
+    hints: |
+      • Keep it simple and focused  
+      • Express the "minimum valuable" version of the full flow
+    solution: |
+      Scenario: Ordering and receiving a drink within the expected time
+        Given the system is available
+        When I order a "Green Tea" and complete payment
+        Then the drink should be served
+        And the total lead time should be less than 5 minutes
+    learning_outcomes: |
+      • Practice defining a minimum valuable flow  
+      • Tie user satisfaction to lead time constraints  
+      • Anchor MVP delivery in behavior and outcome    
+    
+
+  - !Kata &a2kata101
+    number: 101
+    title: Complète le dialogue
+    instructions: |
+      • Lis le court dialogue proposé  
+      • Choisis la bonne réponse pour compléter la phrase manquante  
+      • Utilise ton intuition et les indices du contexte  
+      • Ne choisis pas au hasard : justifie-toi mentalement
+    example: |
+      Scenario: Trouver la bonne réponse
+        Given le client dit : "Bonjour, je voudrais un café s’il vous plaît."
+        And le serveur répond : "_____"
+        Then la réponse correcte est :
+          a) Deux cafés s’il vous plaît  
+          b) Bien sûr, ce sera tout ?  
+          c) Non merci, j’ai déjà bu
+    hints: |
+      • Lis les indices dans la phrase du client ("je voudrais")  
+      • Le serveur doit répondre logiquement dans le contexte  
+      • "Je voudrais" appelle une réponse de type "Bien sûr" ou "Très bien"
+    solution: |
+      Réponse correcte : b) Bien sûr, ce sera tout ?
+
+      Justification :
+        - a) n’a aucun lien logique, c’est une nouvelle commande  
+        - b) est une réponse naturelle et polie d’un serveur  
+        - c) est une phrase personnelle, pas une réponse de serveur
+    learning_outcomes: |
+      • S’entraîner à repérer les phrases logiques dans un dialogue  
+      • Choisir des réponses adaptées au contexte courant  
+      • Développer une compréhension implicite du français parlé  
+      • S’auto-corriger en réfléchissant à l’intention des locuteurs
+
+  - !Table &katas_table
+    title: Katas
+    source: [*kata1, *kata2, *kata3, *kata4, *kata5, *kata6, *kata7, *kata8, *kata9, *kata10, *kata11, *kata12, *a2kata101]
+
+  - !Form
+    subjects: [*katas_table]
+    attributes: [instructions]
+    border: True
+    on_init:
+      - !Function
+        code: |
+          self._hidden = (len(self.subjects[0].source) == 0) or (self.subjects[0].selection is None)
+          if not self._hidden:
+            self.source = self.subjects[0].selection
+
+  - !Inspector
+    title: Problem
+    subjects: [*katas_table]
+    attributes: [example]
+    border: True
+    on_init:
+      - !Function
+        code: |
+          self._hidden = (len(self.subjects[0].source) == 0) or (self.subjects[0].selection is None)
+          if not self._hidden:
+            self.source = self.subjects[0].selection
+
+  - !Text
+    title: Pontential solution
+    border: False
+
+  - !Inspector
+    subjects: [*katas_table]
+    attributes: [hints, learning_outcomes]
+    border: True
+    on_init:
+      - !Function
+        code: |
+          self._hidden = (len(self.subjects[0].source) == 0) or (self.subjects[0].selection is None)
+          if not self._hidden:
+            self.source = self.subjects[0].selection
+
+  - !Inspector
+    subjects: [*katas_table]
+    attributes: [solution]
+    border: True
+    on_init:
+      - !Function
+        code: |
+          self._hidden = (len(self.subjects[0].source) == 0) or (self.subjects[0].selection is None)
+          if not self._hidden:
+            self.source = self.subjects[0].selection
+
+
+
+wwww:
+  - &id001 !Beverage
+    name: Coffee
+    price: 3.5
+    icon: ☕
+  
+  - &id003 !Beverage
+    name: Green Tea
+    price: 2.5
+    icon: 🍵
+    doc: |
+      Green tea is a type of tea that is made from the Camellia sinensis plant. It has a light, refreshing flavor and is known for its health benefits.
+  
+  - &id009 !Beverage
+    name: Lipton Tea
+    price: 4.0
+    icon: 🫖
+  
+  - &id002 !Order
+    doc: |
+      Order 001 for a delicious cup of coffee.
+    order_id: '001'
+    beverage: *id001
+  
+  - &id004 !Payment
+    payment_id: 123
+    order: *id002
+  
+  - !Text
+    icon: 🎯
+    title: "A Thirsty Journey"
+    height: 500
+    text: |
+      Emma, a disciplined judoka and passionate light-coder, just wrapped up a
+      challenging training session. Her muscles ache, and her mind races through the
+      techniques she practiced. One thing is clear—she needs a refreshing drink. Fast.
+      
+      She pulls out her phone and opens the **SwiftSip™** app. Within seconds, she
+      finds her favorite Matcha tea on the menu. A simple tap, and her order is placed.
+      Another tap, and payment is complete. No confusing menus, no endless confirmations.
+      Just smooth, disciplined efficiency—just like her judo practice. Before she
+      even finishes catching her breath, her tea is ready. She takes a long, satisfying
+      sip.  
+      
+      **SwiftSip™** did exactly what it promised—delivering refreshment without distractions.
+
+  - !Text
+    title: Persona
+    icon: 👤
+    height: 500
+    text: |      
+      **Background**: Emma is a focused creator who loves simplicity—in her projects and her life. She builds minimalist low-code apps and practices Judo 🥋 to stay sharp.
+      
+      **Needs**:  
+      - A fast, structured way to order drinks after training.  
+      - Simple, clean interfaces without distractions.  
+      - Instant feedback when actions are completed.
+      
+      **Pain Points**:  
+      - Dislikes cluttered menus and slow apps.  
+      - Hates waiting and repetitive confirmations.  
+      - Prefers smooth, focused experiences.
+      
+  - !Text
+    title: Meet Emma
+    icon: 🥋
+    media: emma.jpg
+    height: 500
+    footer: |
+      💡 *Design Tip*: For Emma, less is more. Keep it simple, fast, and efficient.
+
+
+  - !Text
+    title: Workflow
+    icon: 🎏
+    media: workflow.jpg
+
+  - !Table &drinks
+    title: Drinks
+    source: [*id001, *id003, *id009]
+
+  - !Form
+    title: Selection
+    subjects: [*drinks]
+    attributes: [name, price, available, stock, doc]
+    border: True
+    on_init:
+      - !Function
+        code: |
+          self._hidden = (len(self.subjects[0].source) == 0) or (self.subjects[0].selection is None)
+          if not self._hidden:
+            self.source = self.subjects[0].selection
+
+
+  - !Inspector
+    title: Coffee
+    source: *id001
+  
+  - !Inspector
+    title: Tea
+    source: *id003
+  
+  - !Inspector
+    title: Order
+    source: *id002
+  
+  - !Inspector
+    title: Payment
+    source: *id004
+
+  - !Assistant &assistant
+    beverage: *id003
+
+  - !Inspector
+    attributes: [beverage]
+    source: *assistant
+
+

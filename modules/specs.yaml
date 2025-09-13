@@ -1,0 +1,363 @@
+module:
+  - doc: Specs components
+    icon: "☀️"
+    tag: ""
+    is_admin: True
+
+imports:
+  - !Module {name: kore, hidden: True}
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: inspectors, hidden: True}
+  - !Module {name: people}
+
+classes:
+  # forward declarations:
+  - !Class {name: Persona}
+  - !Class {name: Feature}
+  - !Class {name: Product}
+  - !Class {name: Step}
+  - !Class {name: Scenario}
+
+  - !Class
+    name: Persona
+    doc: Feature offered by this module
+    icon: '👤'
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: name
+      type: str
+    - !Attribute
+      name: jtbd
+      type: str
+      doc: Job to be done
+    - !Attribute
+      name: pain
+      type: str
+    methods:
+    - !Method
+      name: __repr__
+      icon: 
+      code: |
+        return f"{self.icon} {self.name}"
+        
+  - !Class
+    name: Feature
+    doc: Feature offered by this module
+    icon: '🦄'
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: headline
+      type: str
+    - !Attribute
+      name: as_a
+      type: Persona
+    - !Attribute
+      name: i_want
+      type: str
+    - !Attribute
+      name: so_that
+      type: str
+    - !Attribute
+      name: story_points
+      type: int
+      default: 0
+      options: [1, 2, 3, 5, 8, 13, 21]
+    - !Attribute
+      name: gwt
+      type: str
+      is_long: True
+      language: gherkin
+    - !Attribute
+      name: step_defs
+      type: str
+      is_long: True
+      language: python
+    - !Attribute
+      name: scenarios
+      type: List[Scenario]
+    - !Attribute
+      name: features
+      type: List[Feature]
+
+    states: ['todo', 'doing', 'done']
+
+    methods:
+    - !Method
+      name: check
+      code: |
+        
+        import subprocess
+
+        def run_behave_subprocess(features_dir):
+          result = subprocess.run(
+            ["behave", "--no-capture", "--no-skipped", "--color", features_dir],
+            capture_output=True,
+            text=True
+          )
+          return result.stdout
+        
+        import tempfile
+        import os
+        import io
+        from behave.__main__ import main as behave_main
+        from contextlib import redirect_stdout 
+        import builtins
+        from ansi2html import Ansi2HTMLConverter        
+        
+        feature_text = self.gwt
+        step_defs_text = self.step_defs
+
+        
+        with tempfile.TemporaryDirectory() as tmp_dir:
+          features_dir = os.path.join(tmp_dir, "features")
+          steps_dir = os.path.join(features_dir, "steps")
+          os.makedirs(steps_dir)
+
+          # Write Feature File
+          feature_path = os.path.join(features_dir, "person.feature")
+          st.code(feature_text, language="gherkin")
+          st.code(step_defs_text, language="python")
+          with builtins.open(feature_path, "w") as f:
+            f.write(feature_text)
+
+          # Write Steps File
+          steps_path = os.path.join(steps_dir, "steps.py")
+          with builtins.open(steps_path, "w") as f:
+            f.write(step_defs_text)
+        
+          # Capture Behave Output
+          f_output = io.StringIO()
+          with redirect_stdout(f_output):
+            result = run_behave_subprocess(features_dir)
+        
+          output = f_output.getvalue()        
+          st.code(output)
+          conv = Ansi2HTMLConverter(inline=True)
+          html = conv.convert(output, full=False)
+          #st.markdown(html, unsafe_allow_html=True)
+          st.code(html, language="html")
+  
+          if result == 0:
+            st.success("All tests passed")
+            st.balloons()
+            self.state = "done"
+
+        return result
+ 
+
+  - !Class
+    name: Product
+    doc: A product, system, module, component, etc.
+    icon: '🎯'
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: vision
+      type: str
+      default: "We believe in a world where everyone can be strong"
+    - !Attribute
+      name: mission
+      type: str
+      default: "Make spinach available to everyone"
+    - !Attribute
+      name: name
+      type: str
+      default: MVP#1
+    - !Attribute
+      name: kind
+      type: str
+    - !Attribute
+      name: persona
+      type: List[Persona]
+    - !Attribute
+      name: features
+      type: List[Feature]
+    methods:
+    - !Method
+      name: __repr__
+      icon: 
+      code: |
+        return f"{self.icon} {self.name}"
+
+
+    - !Method
+      name: pitch
+      icon: 
+      code: |
+        # for each persona
+        # who jtbd and has pain
+        # our product is a kind
+        # that offers a benefit
+        # unlike competitors
+        # our product has unique advantages
+        result = []
+        result.append("### Vision")
+        result.append(f"- {self.vision}")
+        result.append("")
+        result.append("### Mission")
+        result.append(f"- {self.mission}")
+        result.append("")
+        result.append("### Our Users")
+        result.append("**For**")
+        for persona in self.persona:
+          result.append(f"- {persona.name} who {persona.jtbd} and {persona.pain}")
+        result.append("")
+        result.append(f"**Our product is a** {self.kind} **that** offers benefits:")
+        for feature in self.features:
+          result.append(f"- {feature.headline}: **As a** {persona.name} **I want** {feature.i_want} **so that** {feature.so_that}")
+        
+        return "\n".join(result)
+        
+    - !Method
+      name: _test_pitch
+      icon: 
+      code: |
+        p = Product()
+        assert len(p.pitch()) > 0
+        
+
+  - !Class
+    name: Step
+    doc: Step of a scenario
+    icon: '🩴'
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: kind
+      type: str
+      options: ['Given', 'When', 'Then']
+    - !Attribute
+      name: sentence
+      type: str
+      default: step sentence
+    - !Attribute
+      name: func
+      type: Function
+  - !Class
+    name: Scenario
+    doc: Scenario of a feature
+    icon: '🎬'
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: title
+      type: str
+    - !Attribute
+      name: steps
+      type: List[Step]
+
+instances:
+  
+  - !Scene
+    icon: 🏜
+    as_name: scene
+    title: Scene+++
+    lines:
+    - 1
+    - 3
+    - 3
+    - 1
+    show_backstage: false
+  
+  - &id004 !Persona
+    icon: 🏴‍☠️
+    name: Popeye
+    jtbd: sails the seven seas
+    pain: is always hungry
+  
+  - &id001 !Function
+    name: init_persona
+    code: |
+      self.persona = Persona()
+      print("Popeye is a sailor")
+
+  - &id002 !Function
+    name: say_spinach
+    code: |
+      self.result = self.persona.say_spinach()
+
+  - &id003 !Function
+    name: assert_watering
+    code: |
+      assert self.result.startswith("Hi"), "🥵 Not watering"
+
+  - &id005 !Scenario
+    icon: 🎬
+    title: Happy flow
+    steps:
+    - !Step
+      kind: Given
+      sentence: sailor named Popeye
+      func: *id001
+    - !Step
+      kind: When
+      sentence: you say "spinach"
+      func: *id002
+    - !Step
+      kind: Then
+      sentence: Popeye's mouth is watering
+      func: *id003
+  
+  - &id006 !Feature
+    icon: 🦄
+    as_a: *id004
+    i_want: to order spinach
+    so_that: I can be strong
+    story_points: 5
+    headline: deliver yummy spinach
+    gwt: |
+      Feature: Deliver yummy spinach 
+        As a sailor named Popeye
+        I want to order spinach
+        So that I can be stronger
+
+        Scenario: Happy flow
+          Given a sailor named Popeye
+          When you say spinach
+          Then Popeye_s mouth is watering
+
+    step_defs: |
+      from behave import given, when, then
+      from dataclasses import dataclass
+      
+      @dataclass
+      class Person:
+        name: str = 'Popeye'
+        mouth_is_watering: bool = False
+      
+        def hears_spinach(self):
+          self.mouth_is_watering = True
+      
+      # This will act like shared context
+      popeye = None
+      
+      @given('a sailor named Popeye')
+      def init_persona(context):
+        global popeye
+        popeye = Person('Popeye')
+      
+      @when('you say spinach')
+      def say_spinach(context):
+        popeye.hears_spinach()
+      
+      @then('Popeye_s mouth is watering')
+      def assert_watering(context):
+        assert popeye.mouth_is_watering, 'Popeye is not reacting to spinach!'
+
+    scenarios:
+    - *id005
+  
+  - &id007 !Product
+    icon: 🎯
+    kind: Web/mobile app
+    persona:
+    - *id004
+    features:
+    - *id006
+  
+  - !Inspector
+    title: Product inspector
+    source: *id007
+  

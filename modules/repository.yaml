@@ -1,0 +1,166 @@
+module:
+  - name: repository
+    doc: Repo for dynamic modules
+    icon: "📦"
+
+imports:
+  - !Module
+    name: kore
+  - !Module
+    name: blocks
+  - !Module
+    name: inspectors
+  - !Module
+    name: lightcode
+
+classes:
+
+  - !Class
+    name: Repository
+    icon: "📦"
+    doc: Repository for dynamic modules
+    bases: [kore.Object]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        read_only: True
+      - !Attribute
+        name: module_name
+        type: str
+      - !Attribute
+        name: repo
+        type: Any
+        hidden: True
+      - !Attribute
+        name: loader
+        type: Any
+        hidden: True
+    states: [inactive, active, scanned]
+    methods:
+      - !Method
+        name: open
+        preconditions: [inactive]
+        # postcondition: active
+        code: |
+          if "user_name" in st.session_state.keys():
+            st.caption(f"{st.session_state.user_name = }")
+            repo_name = st.session_state.user_info[0]  # repo (name)
+            repo = lightcode.get_dynamic_repo()
+            self.repo = repo
+            access, message = repo.check_access()
+            if not access:
+              st.caption(message)
+              return False
+
+            self.name = repo_name
+            self.state = "active"
+          
+            st.write(repo)
+          
+            return True
+          else:
+            st.caption("You need to login first")
+            return False
+
+      - !Method
+        name: scan
+        preconditions: [active, scanned]
+        postcondition: scanned
+        code: |
+          # repo = lightcode.get_dynamic_repo()
+          file_names = self.repo.scan_files()
+          st.table(file_names)
+          # st.write(repo.files)          
+
+      - !Method
+        name: play
+        preconditions: [scanned]
+        # postcondition: active
+        code: |
+          print(f"Playing module {self.module_name} :")
+          st.write(f"Playing module {self.module_name} :")
+          repo = self.repo  # lightcode.get_dynamic_repo()
+          st.write(repo.files.keys())
+          st.write(repo.files[f"{self.module_name}.yaml"])
+          
+          # TODO
+          # - load the module through GitHub (example from unit tests) 
+          sel_file = self.module_name
+          
+          yaml_str = repo.read_content(f"{sel_file}.yaml")
+          debug = False
+          loader = ModuleLoader(module_name=sel_file, yaml_str=yaml_str,
+                                _debug=debug, _repo=repo)
+          self.loader = loader
+          st.write(loader)
+          loader.load()
+
+          # - add it to keyloaders (?)
+          st.session_state.key_loaders[self.module_name] = loader
+
+          # - check if it's available in the repo
+          st.caption("loader._repo")
+          st.write(loader._repo)
+          
+          # - let the user click on the "Page" button
+          
+          
+          return f"Playing {self.module_name} :"
+
+
+
+      - !Method
+        name: close
+        preconditions: [active, scanned]
+        postcondition: inactive
+        code: |
+          self.name = ""
+          self.repo = None
+
+      - !Method
+        name: __repr__
+        code: |
+          return f"{self.icon} {self.name}"
+      - !Method
+        name: __str__
+        code: |
+          return f"{self.icon} {self.name}"
+
+instances:
+
+  - !Repository &repo
+    as_name: repo
+
+  - !Inspector
+    title: "My Repo"
+    source: *repo
+    debug: True
+    on_init:
+      - !Function
+        code: |          
+          status = lightcode.get_status()
+          self._hidden = status != "verified"
+
+  - !Page
+    as_name: page
+    title: Stay tuned
+    border: False
+    icon: "🍹"
+    file_name: _play
+    next_page: ""
+    _hidden: True
+    on_init:
+      - !Function
+        code: | 
+          return
+          self.next_page = repo.module_name
+          st.caption(f"{self.next_page = }")
+          self.title = f"Go to {self.next_page}"
+          loaders = {k: type(v._repo).__name__ for k, v in st.session_state.key_loaders.items()}
+          st.write(loaders)
+          if repo.repo is not None:
+            st.write(repo.repo.files.keys())
+          
+          
+

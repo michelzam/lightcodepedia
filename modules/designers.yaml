@@ -1,0 +1,950 @@
+module:
+  - name: designers
+    doc: "Designers"
+    icon: "🖼️"
+    is_admin: True
+
+imports:
+  - !Module
+    name: kore
+    hidden: True
+  - !Module
+    name: blocks
+    hidden: True
+  - !Module
+    name: pets
+    hidden: True
+  - !Module
+    name: streamlit_antd_components
+    as_name: sac
+    hidden: True
+  - !Module
+    name: streamlit_ace
+    hidden: True
+  - !Module
+    name: lightcode
+    hidden: True
+
+classes:
+
+  - !Class
+    name: Form
+    doc: Generic form
+    icon: "𝍌"
+    bases: [ blocks.Block ]
+    hidden: True
+    attributes:
+      - !Attribute
+        name: source
+        type: Object
+        # or typing.Any
+
+        doc: Can be Any, Table ...
+      - !Attribute
+        name: use_selection
+        type: bool
+        doc: |
+          if True, uses Table(self.source).selection 
+          instead of just self.source
+        default: False
+      - !Attribute
+        name: show_details
+        type: bool
+        default: True
+      - !Attribute
+        name: attributes
+        type: List[str]
+      - !Attribute
+        name: methods
+        type: List[str]
+      - !Attribute
+        name: silent_execution
+        type: bool
+        default: False
+      - !Attribute
+        name: _button_area
+        type: typing.Any
+        hidden: True
+    methods:
+      - !Method
+        name: label
+        code: |
+          return f"{self._get_source()}"
+
+      - !Method
+        name: _get_source
+        code: |
+          if isinstance(self.source, Table) and self.use_selection: 
+            return self.source.selection
+          else:
+            return self.source
+
+      - !Method
+        name: _show_state
+        code: |
+          if not self._get_source():
+            st.error("No source")
+            return False
+
+          source = self._get_source()
+          wrapper = type(source)._class 
+
+          #if hasattr(source, "state"):
+          #  st.caption(f"🔄 {source.state}")
+          if True:
+            state_tags = [] # [sac.Tag(label=f"🔄", color='white', bordered=False)]
+            _wrapper = wrapper  # closes statemachine
+            while len(_wrapper.states) == 0:
+               if len(_wrapper.bases) == 0:
+                 # print("No states?")
+                 return
+               _wrapper = _wrapper.bases[0]
+          
+            for state in _wrapper.states:
+              label = state.replace('_', ' ')
+              if state == source.state:
+                state_tags.append(sac.Tag(label=label, color='red', bordered=False))
+              else:
+                state_tags.append(sac.Tag(label=label, bordered=False))
+            sac.tags(state_tags, align='start', key=f"K_{str(id(self))}_{str(id(source))}_state")
+
+      - !Method
+        name: build
+        hidden: True
+        code: |
+          from datetime import date, datetime
+          
+          # self.border = True
+          
+          self._before_build()
+
+          source = self._get_source()
+          if not self.source:
+            st.caption("No source")
+            return False
+          if not source:
+            st.caption("No selection")
+            return False
+                    
+          try:
+            wrapper = type(source)._class 
+          except:
+            st.caption(source)
+            return True
+            
+          st.subheader(f"`{str(source)}`", help=self.help)
+          
+          def get_attributes(wrapper: Class) -> List[Attribute]:
+            attributes = []
+            if wrapper is None:
+              return attributes
+            for base in wrapper.bases:
+              attributes += get_attributes(base)
+            for attr in wrapper.attributes:
+              attributes.append(attr)
+            return attributes
+
+          import ctypes
+          def get_object_by_id(object_id: int):
+            return ctypes.cast(object_id, ctypes.py_object).value
+
+          def on_change(key):
+            parts = key.split("_", 3)
+
+            #print(f"{parts = }")            
+          
+            self_id, source_id, attr_name = parts[1], parts[2], parts[3]
+            value = st.session_state[key]
+            wrapper = type(source)._class 
+            attributes = get_attributes(wrapper)
+            #print(" >> ", f"{self_id = } {source_id = } {attr_name = } {value = }")
+            
+            try:
+              attr = [attr for attr in attributes if attr.name == attr_name][0]
+              attr_type = eval(attr.type)
+            except:
+              with st.sidebar:
+                st.error(f"Unknown type: {attr_name = } {value = }")
+              attr_type = str
+            if isinstance(value, list):
+              st.caption(f"{attr_name} {value = }")
+              if len(value) > 0 and hasattr(value[0], "_class"):
+                # convert values if custom
+                value = [v for v in wrapper._module.instances 
+                                if isinstance(v, pytype) and str(v) in value]
+                # otherwise, keep them as is
+            elif value == "None":
+              value = None
+            elif hasattr(attr_type, "_class"): 
+              values0 = [v for v in source._module.instances]
+
+              values = [v for v in source._module.instances 
+                              if isinstance(v, attr_type) and id(v) == value]
+          
+              #print(f"f: {values0 = }")
+              #print(f"f: {values = }")
+                    
+          
+              if len(values) > 0:
+                value = values[0]
+              else:
+                value = None
+            setattr(source, attr_name, value)
+            
+          attributes = get_attributes(wrapper)    
+          if len(self.attributes) > 0:
+            # use custom attr list and order
+            attrs = []
+            for a_name in self.attributes:
+              attrs.extend([a for a in attributes if a.name == a_name])
+            attributes = attrs
+          
+          # advanced not hidden:
+          advanced = len([a for a in attributes if a.advanced and not a.hidden])
+          if advanced > 0 and len(self.attributes) == 0:
+            tabz = st.tabs(["🏷️", "…"])
+          for attr in attributes:
+            if attr.hidden:
+              continue
+            if advanced > 0 and len(self.attributes) == 0:
+              tab = tabz[1] if attr.advanced else tabz[0]
+            else:
+              tab = st
+            key = f"KF_{str(id(self))}_{str(id(self.source))}_{attr.name}"
+            label = attr.get_label()  # wrapper._module._get_label(attr.name, attr.type, capitalize=True)
+            label = label.replace('_', ' ')
+            is_read_only = attr.read_only or self.disabled
+            if attr.name.startswith("_"):
+              continue
+            if attr.type.startswith("List["):
+              stype = attr.type[5:-1]
+              # print(f"{stype = }")
+              pytype = eval(stype)
+              # st.caption(f"{attr.name = } {pytype = }")
+              if hasattr(pytype, "_class"): # custom type
+                # instances = [v for v in wrapper._module.instances if isinstance(v, pytype)]
+                # instances = [v for v in self._class._module.instances if isinstance(v, pytype)]
+                instances = [v for v in self._module.instances if isinstance(v, pytype)]
+              else: # primitive type => use default/actual values
+                instances = getattr(source, attr.name)
+          
+              multi_options = [str(item) for item in instances]
+              # multi_options = [item for item in instances]
+              # st.caption(f"{attr.name = } {multi_options = }")
+                  
+              default_options = [str(item) for item in getattr(source, attr.name)]
+              # st.caption(f"{attr.name = } {multi_options = } {default_options = }")
+
+              if (len(multi_options) > 0) and set(default_options).issubset(set(multi_options)):
+                # st.caption(f"{attr.name = } {multi_options = } {default_options = }")
+                # with st.expander(f"{len(default_options)} {label}", expanded=False):          
+                if is_read_only:
+                  df = pd.DataFrame(default_options, columns=[label])
+                  with st.expander(f"{label}", expanded=False):
+                  # with st.container(border=True):
+                    def on_select():
+                      st.caption("select")
+          
+                    dfkey = f"KDF_{str(id(self))}_{str(id(source))}_{attr.name}"
+                    event = st.dataframe(df, use_container_width=True, 
+                      on_select="rerun", hide_index=True, 
+                      selection_mode="single-row")
+
+                    # st.write(event)
+                    rows = event["selection"]["rows"] 
+                    if len(rows) > 0: 
+                      st.caption(df.iloc[rows[0], 0])
+                  
+                else:
+                  tab.multiselect(f"{label}", key=key,
+                    options=multi_options,
+                    help=attr.doc,
+                    placeholder=f"Choose options",
+                    default=default_options,
+                    # label_visibility="hidden",
+                    disabled=is_read_only, on_change=on_change, args=[key])
+              else:
+                tab.text_input(f"{label}", key=key,
+                  help=attr.doc, 
+                  value=str(getattr(source, attr.name)),
+                  disabled=True)
+            else:
+              stype = attr.type
+              pytype = eval(stype)
+              if hasattr(pytype, "_class"): # custom type
+                ref_wrapper = pytype._class
+
+                #st.caption(f"{ref_wrapper.name = }: {type(ref_wrapper).name = } => {ref_wrapper._module.name =}")
+                #st.caption(f"{ref_wrapper._module.instances =}")
+                #st.caption(f"{self._class._module.instances =}")
+                #st.caption(dir(self))
+                #st.write(self._module)
+          
+                instances = [v for v in self._module.instances if isinstance(v, pytype)]
+                # instances = [v for v in self._class._module.instances if isinstance(v, pytype)]
+                # instances = [v for v in ref_wrapper._module.instances if isinstance(v, pytype)]
+                # st.caption(f"{instances2 = }")
+                instances.insert(0, None)
+                value = getattr(source, attr.name)
+
+                index = None
+                # st.caption(f"DEBUG: {attr.name = } {instances2 = } {index = }")
+                try:
+                  index = instances.index(value) if value else None
+                except: 
+                  instances.append(value)
+                  index = len(instances) - 1
+          
+                tab.selectbox(f"{label}", key=key, 
+                  #options=[str(item) for item in instances],
+                  options=[id(item) for item in instances],
+                  help=attr.doc,
+                  format_func=lambda x: "None" if x is None else str(get_object_by_id(x)),
+                  #options=[str(item) for item in getattr(source, attr.name)],
+                  index=index,
+                  disabled=is_read_only, on_change=on_change, args=[key])  
+              else:
+                if pytype in [int, float]:
+                  tab.number_input(f"{label}", key=key,
+                    help=attr.doc,
+                    value=pytype(getattr(source, attr.name)),
+                    disabled=is_read_only, on_change=on_change, args=[key])
+                elif pytype == bool:
+                  tab.toggle(f"{attr.name.capitalize().replace('_', ' ')}", key=key,
+                    help=attr.doc,
+                    value=getattr(source, attr.name),
+                    disabled=is_read_only, on_change=on_change, args=[key])
+                elif pytype in [date, datetime]:
+                  tab.date_input(f"{attr.name.capitalize()}", key=key,
+                    help=attr.doc,
+                    value=getattr(source, attr.name),
+                    disabled=is_read_only, on_change=on_change, args=[key])
+                elif attr.is_long:
+                  tab.text_area(f"{label}", key=key,
+                    help=attr.doc,
+                    value=str(getattr(source, attr.name)),
+                    disabled=is_read_only, on_change=on_change, args=[key])
+                elif attr.name == "code":
+                  with st.expander(f"{label}", expanded=False):
+                    value = str(getattr(source, attr.name)) 
+                    st.code(value, language="python", line_numbers=True)
+                elif attr.name.startswith("on_"):
+                  value_list = getattr(source, attr.name) 
+                  if instance(value_list, list):
+                    for val in value_list:          
+                      with st.expander(f"{label}", expanded=False):
+                        value = str(val) 
+                        st.code(value, language="python", line_numbers=True)
+        
+                else:
+                  pass_type = "password" if "password" in attr.name.lower() else "default"
+                  # pass_type = "default"
+                  tab.text_input(f"{label}", key=key,
+                    help=attr.doc, type=pass_type,
+                    value=str(getattr(source, attr.name)),
+                    disabled=is_read_only, on_change=on_change, args=[key])
+          
+          if self.show_details:
+            self._show_details()
+
+          self._after_build()
+      
+          return True
+
+      - !Method
+        name: _before_build
+        code: |
+          pass
+
+      - !Method
+        name: _after_build
+        code: |
+          pass
+
+      - !Method
+        name: _show_details
+        code: |
+          # st.caption(f"show_details")
+          self._show_state()
+          self._show_methods(silent_execution=self.silent_execution)
+          self._show_events()
+          # st.write(self.source)
+
+
+      - !Method
+        name: _show_methods
+        doc: |
+          arg: silent_execution:bool = False
+        code: |
+          source = self._get_source()
+          if not self.source:
+            st.caption("No source")
+            return False
+          if not source:
+            st.caption("No selection")
+            return False
+          silent_execution = kwargs.get("silent_execution", False)
+
+          wrapper = type(source)._class 
+
+  
+          def get_methods(wrapper: Class) -> List[Method]:
+            methods = []
+            if wrapper is None:
+              return methods
+            for base in wrapper.bases:
+              new_methods = get_methods(base)
+              methods.extend(new_methods)
+          
+            for m in wrapper.methods:
+              if m.hidden:
+                continue
+              if len(self.methods) > 0 and m.name not in self.methods:
+                continue
+              if m.name.startswith('_'):
+                continue
+              # index = next((i for i, x in enumerate(methods) if x.name == m.name), None)
+              index = -1
+              
+              if index == -1:  # not found
+                methods.append(m)  # add
+              else:
+                methods[index] = m  # replace
+            # st.caption(f"{wrapper.name = } {methods = }")
+            return methods
+
+          # all_ops = [m.name for m in wrapper.methods if not m.name.startswith('_')]
+          all_ops = get_methods(wrapper)
+          # st.write(all_ops)
+          
+          _wrapper = wrapper  # closes statemachine
+          while len(_wrapper.states) == 0:
+             if len(_wrapper.bases) == 0:
+               _wrapper = wrapper  # no statemachine found. Back to the wrapper
+               break
+             else:
+               _wrapper = _wrapper.bases[0]  # ignore multiple inheritance for now
+          
+          if len(_wrapper.states) > 0:
+            ops = [m for m in all_ops \
+              if (len(m.preconditions) > 0 and source.state in m.preconditions) \
+                or len(m.preconditions) == 0] 
+          else:
+            ops = all_ops
+
+          #methods = [method for method in dir(source) \
+          #  if callable(getattr(source, method)) and not method.startswith('_')]
+
+          methods = get_methods(wrapper)
+
+          key_buttonz = f"K_{str(id(self))}_buttonz"
+          key_buttonz_index = f"{key_buttonz}_index"
+
+          if key_buttonz_index not in st.session_state:
+            st.session_state[key_buttonz_index] = 0
+
+          #if self._button_area is None:
+          #  self._button_area = st.container()
+          #button_area = self._button_area
+
+          button_area = st.container()
+          
+          import time
+
+          def on_change(index):  # index: button index
+            key = f"WWK{key_buttonz_index}_{st.session_state[key_buttonz_index]}"
+            # index = st.session_state[key]
+            # st.sidebar.caption(f"{key = } {index}")
+            # st.sidebar.caption(f"{[o.name for o in all_ops] = }")
+          
+            method = [m for m in methods if m.name == all_ops[index].name][0]
+            
+            source = self._get_source()
+            
+            if silent_execution:
+              try:
+                # st.sidebar.caption(f"Calling {all_ops[index].name}")
+                ret = getattr(source, all_ops[index].name)()
+                if len(method.postcondition) > 0:
+                  source.state = method.postcondition
+                # st.sidebar.caption(f"Returning: {ret}")
+              except Exception as e:
+                st.error(e)
+                st.write(traceback.print_exc())
+                st.write(source)
+
+            else:
+          
+              label = f"{method.name.replace('_', ' ').capitalize()}"
+              with button_area:
+                with st.status(f"Calling `{label}`", expanded=True):
+                  try:
+                    exec_call = f"{str(source)}.{method.name}"
+                    transition_message = ""
+                    if len(method.preconditions) > 0:
+                      exec_message = f" ▹ {exec_call}"
+                      transition_message = f"{source.state} ▹ "
+                    else:
+                      exec_message = f" {exec_call}"    
+            
+                    # with st.chat_message("user", avatar=source.icon):
+                    old_state = ""
+                    if hasattr(source, "state"):
+                      old_state = source.state
+                      st.info(f"{source.icon} was `{source.state}`")
+                    # time.sleep(1)
+                    with st.chat_message(name="🧑‍💻"):
+                      #st.caption(f"{exec_call}")
+                      sac.buttons([sac.ButtonsItem(label=f"▶︎ {label}", icon=None,  # color="gray", 
+                                                   disabled=True)], 
+                                  size='sm', index=None)
+                    # time.sleep(.25)
+                    # icon = source.icon if source.icon not None else "user"
+                    try:
+                      icon = source.icon if len(source.icon) > 0 else type(source).icon
+                    except: 
+                      icon = None
+                    with st.chat_message(name="user"): #, avatar=icon):
+
+                      import time
+                      import psutil
+                      import os
+
+                      start_time = time.perf_counter()
+                      process = psutil.Process(os.getpid())  # Get current process                      
+                      # Measure before execution
+                      cpu_before = process.cpu_percent(interval=0.1)
+                      mem_before = process.memory_info().rss / (1024 * 1024)  # MB
+                      method_name = all_ops[index].name
+                      try:
+                        ret = getattr(source, method_name)()
+                      finally:
+                        end_time = time.perf_counter()
+                        duration = end_time - start_time
+                        cpu_after = process.cpu_percent(interval=0.1)
+                        mem_after = process.memory_info().rss / (1024 * 1024)  # MB
+
+                      exec_message += f" ➡ {ret}"
+
+                      if len(method.postcondition) > 0:
+                        source.state = method.postcondition
+                        transition_message = f" | {transition_message}{source.state}"
+                        # st.sidebar.caption(f"{method.postcondition =  }")
+                    with st.chat_message(name="ai", avatar="🤖"):
+                      st.success(f"{ret}")
+                      st.caption(f"💾 {mem_after - mem_before:.2f} MB  🖥 {cpu_after - cpu_before:.2f} %   ⏱️ {duration:.2f} sec")
+                      print(ret)
+                    # time.sleep(.25)
+                    if hasattr(source, "state"):
+                      qualifier = "became" if old_state != source.state else "is still"
+                      st.info(f"{source.icon} {qualifier} `{source.state}`")
+                  except Exception as e:
+                    with st.chat_message("ai"):
+                      st.error(e)
+                      st.write(traceback.print_exc())
+                      st.write(source)
+                      st.write(f'{index = }')
+                      st.write(all_ops)
+                  # time.sleep(.5)
+              
+              # self._button_area = button_area
+
+            del st.session_state[key]
+            st.session_state[key_buttonz_index] += 1
+
+          buttons = []
+          docs = []
+          for method in all_ops:
+            if not method.name.startswith("test_"):
+              label = f"{method.name.replace('_', ' ').capitalize()}"
+              if method in ops:
+                label = f"▶︎ {label}"
+              if label not in [b.label for b in buttons]:
+                # st.caption(f"{label = } {method.name = }")
+                buttons.append(sac.ButtonsItem(label=label, icon=None, disabled=method not in ops)) 
+                docs.append(method.doc)
+
+          key = f"WWK{key_buttonz_index}_{st.session_state[key_buttonz_index]}"
+          # st.caption(f"{key = }")
+          st.session_state[key] = 0
+
+          with button_area:
+            if False:
+              idx = sac.buttons(buttons, align='start', index=None, size="small",
+                key=key, on_change=on_change, return_index=True) 
+                # label="You can call", # compact=True
+            else:
+              # Make standard buttons     
+              if len(buttons) > 0:
+                btn_cols = st.columns(len(buttons))
+              for index, button in enumerate(buttons):
+                  key = f"WWK{key}_{index}"
+                  # type_ = "primary" if index == 0 else "secondary"
+                  type_ = "secondary"
+                  with btn_cols[index]:
+                    with st.container():
+                      if button.disabled or self.disabled:
+                          st.button(button.label, disabled=True, key=key, type=type_, use_container_width=False)
+                      else:
+                          st.button(
+                            button.label, on_click=on_change, type=type_,
+                            key=key, args=[index], help=docs[index], use_container_width=False)
+ 
+          lightcode.check_refresh()
+
+      - !Method
+        name: _show_events
+        code: |
+          source = self._get_source()
+          if not source:
+            st.error("No source")
+            return False
+
+          wrapper = type(source)._class 
+          # wrapper_name = wrapper.__name__
+          
+          def get_events(wrapper: Class) -> List[Attribute]:
+            attributes = []
+            if wrapper is None:
+              return attributes
+            for base in wrapper.bases:
+              attributes += get_events(base)
+            for attr in wrapper.attributes:
+              if attr.name.startswith('on_'):
+                attributes.append(attr)
+            return attributes
+
+          all_events = get_events(wrapper)
+          if len(all_events) > 0:
+            with st.expander("Events", expanded=False):
+              # st.caption(f"{wrapper.name = } {all_events = }")
+              tabs = st.tabs([f"⚡️ {e.name.capitalize().replace('_', ' ')}" for e in all_events])
+              for index, event in enumerate(all_events):
+                with tabs[index]:
+                  if event.type.startswith("List["):
+                    for item in getattr(source, event.name):
+                      st.caption(f"`{item.name}`") 
+                      st.code(item.code)
+          
+                  else:
+                    new_code = streamlit_ace.st_ace(language="python", 
+                      value=getattr(source, event.name),
+                      height=200, key=f"key_code_{id(self)}_{event.name}")
+                    setattr(source, event.name, new_code)          
+          return True 
+
+
+  - !Class
+    name: ModuleInfo
+    icon: "⬛️"
+    hidden: True
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: "module"
+        doc: "Module name"
+      - !Attribute
+        name: icon
+        type: str
+      - !Attribute
+        name: doc
+        type: str
+        is_long: True
+      - !Attribute
+        name: imports
+        type: List[str]
+      - !Attribute
+        name: classes
+        type: List[str]
+      - !Attribute
+        name: instances
+        type: List[str]
+      - !Attribute
+        name: selected_index
+        type: int
+        hidden: True
+      - !Attribute
+        name: _module
+        type: typing.Any
+        hidden: True
+      - !Attribute
+        name: repo_table
+        type: blocks.Table
+    states: [inactive, active, modified, new]
+    methods:
+      - !Method
+        name: __str__
+        code: |
+            return f"{self.icon} {self.name.capitalize()}"
+
+      - !Method
+        name: open
+        preconditions: [inactive]
+        postcondition: active
+        code: |         
+          if self.repo_table:
+            if len(self.repo_table.selection) > 0:
+              with st.container(border=True):
+                module = lightcode.import_module(self.repo_table.selection)
+                self._module = module
+                self.name = module._module.name
+                self.icon = module._module.icon
+                self.instances = module._module.instances
+                st.session_state.module_info = self
+
+      - !Method
+        name: close
+        preconditions: [active]
+        postcondition: inactive
+        code: |
+          st.session_state.module_info = None
+          # self._module = None
+          self.name = None
+          self.icon = None
+          self.instances = None
+
+      - !Method
+        name: new
+        preconditions: [inactive]
+        postcondition: new
+        code: |
+          st.session_state.module_info = self
+
+
+      - !Method
+        name: edit
+        preconditions: [active, new]
+        icon: "📝"
+        doc: |
+          Edit the module
+        code: |
+          @st.dialog("📦️ Module editor", width="large")
+          def edit_cache(cache):
+            form = Form(source=cache, show_details=False, attributes=["name", "icon", "doc"])
+            form._run()
+            if st.button("▶︎ Apply", type="primary"):
+              self._module.name = form.source.name
+              self._module.icon = form.source.icon
+              self._module.doc = form.source.doc
+              #for attr, value in form.source.__dict__.items():
+              #  setattr(self._module, attr, value)
+
+              st.rerun()
+
+          import copy
+          clone = copy.copy(self)
+          edit_cache(clone)
+
+      - !Method
+        name: _inspect
+        icon: "🔍"
+        doc: |
+          Inspect an instance
+        code: |
+          instance = kwargs.get("instance", self._module.instances[3])
+                    
+          @st.dialog("📦️ Inspector", width="large")
+          def inspect_cache(cache):
+            form = Form(source=cache, show_details=False)
+            form._run(module=self._module)
+            if st.button("▶︎ Apply", type="primary"):
+              #st.subheader("Applying changes")
+              cols = st.columns(2)
+              cols[0].write(instance)
+              cols[1].write(cache)
+              for attr, value in clone.__dict__.items():
+                if not isinstance(value, list):
+                  st.caption(f"Setting {attr} to {value}")
+                  setattr(instance, attr, value)
+              
+              st.rerun()
+
+          import copy
+          clone = copy.copy(instance)
+          inspect_cache(clone)
+
+      - !Method
+        name: layout
+        preconditions: [active, new]
+        code: |
+          for instance in self._module.instances:
+              if hasattr(instance, "_layout"):
+                  instance._layout(module=self._module)
+                  found = True
+                  break
+
+      - !Method
+        name: add
+        preconditions: [active, new]
+        code: |
+          @st.dialog("🧩️️ Add element", width="large")
+          def add_instance():            
+            classes = [c for c in self._module.get_classes() if not c.hidden]
+            # classes = list(set(classes))
+            st.caption(type(classes[0]))
+            
+            if True:
+              class_names = [c.name for c in classes]
+              label = "Select a class"
+              class_names.insert(0, label)
+              class_name = st.selectbox(label, 
+                options=[item for item in class_names])
+
+            if st.button("Create", disabled=class_name == label):
+              class_ = classes[class_names.index(class_name) - 1]
+              clz = class_.value
+              instance = clz()
+              self._module.instances.insert(1, instance)                    
+              self.state = "modified"
+              st.rerun()
+
+          add_instance()
+
+      - !Method
+        name: test
+        preconditions: [active]
+        code: |
+          from contextlib import redirect_stdout
+          import io
+          buffer = io.StringIO()
+          result = "✅"
+          with redirect_stdout(buffer):
+            try:
+              lightcode.create_module(self._module.name).test()
+              # st.caption("Testing >>")
+              st.code(buffer.getvalue())
+              # st.caption("\n<< Module tested!")
+              # st.caption(result)
+            except Exception as e:
+              st.warning(f"❌ {e}")
+              result = "❌"
+          
+          return result 
+
+      - !Method
+        name: _test_init
+        code: |
+          print("Testing module!!!\n")
+          #module_info = ModuleInfo(_module=self._module) 
+          #assert module_info._module.name == "welcome"
+          assert True
+
+      - !Method
+        name: _test_fake
+        code: |
+          assert False
+          assert 3 / 0 == 0
+
+
+  - !Class
+    name: MetaTable
+    icon: "〒"
+    bases: [blocks.Table]
+    attributes:
+      - !Attribute
+        name: mud
+        type: str
+        hidden: True
+    methods:
+      - !Method
+        name: setup
+        code: |
+          if self.mud != st.session_state.mud:
+            self.source = []            
+
+instances:
+
+  - !Scene
+    title: "Scene designers"
+    icon: "🎬"
+    lines: [2, 2, 2, 2, 2]
+
+  - !Text &txt1
+    title: "Text 1a"
+    icon: "📝"
+    text: "Hello, world!"
+    border: True
+    on_init:
+      - !Function
+        code: |
+          print("Hello init!")
+
+    on_post_init:
+      - !Function
+        code: |
+          print("Hello post init!")
+
+  - !Form
+    source: *txt1
+    border: True
+    show_details: True
+
+  - !Text &txt2
+    title: "Text 2"
+    icon: "📝"
+    text: "Hello, worlds!"
+    on_init:
+      - !Function
+        code: |
+          print(f"{self.title = }")
+
+  - !Form
+    source: *txt2
+    border: True
+    show_details: True
+
+
+  - !Table &table1
+    title: "Table 11"
+    icon: "📋"
+    source: [*txt1, *txt2]
+    on_post_init:
+      - !Function
+        code: |
+          import time
+          st.caption(time.time())
+          # print(self)
+    
+
+  - !Form
+    title: "Table 12 sel"
+    source: *table1
+    use_selection: True
+    subjects: [*table1]
+    on_post_init:
+      - !Function
+        code: |
+          import time
+          st.caption(time.time())
+          # print(self)
+          for subject in self.subjects:
+            st.caption(f"{subject.title = }")
+            st.caption(f"{len(subject.observers) = }")
+
+  - !Form
+    title: "Table 12 nosel"
+    source: *table1
+    use_selection: False
+
+
+
+  - !Form
+    source: !Pet &lucky
+      name: "Lucky"
+    title: One
+    border: True
+    on_init:
+      - !Function
+        code: |
+          print("Hello")
+
+  - !Form
+    title: Two
+    source: !Fish
+      name: "Wanda"
+      bestie: *lucky
+      friends:
+        - !Fish {name: "Nemo"}
+        - !Fish {name: "Dory"}
+    border: True

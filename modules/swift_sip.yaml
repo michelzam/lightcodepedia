@@ -1,0 +1,210 @@
+module:
+  - name: swift_sip
+    doc: |
+      Order drinks efficiently
+      
+      Stay refreshed, stay productive!
+      
+    icon: "🥤"
+    tag: ""
+imports:
+  - !Module {name: kore, hidden: True}
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: pets, hidden: True}
+  - !Module {name: inspectors, hidden: True}
+  - !Module {name: drinks}
+
+classes:
+
+  - !Class
+    name: Assistant
+    doc: Assists with beverage ordering
+    icon: "🤖"
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: beverage
+      type: Beverage
+    states: ['ready', 'done', 'error']
+    methods:
+    - !Method
+      name: place_order
+      doc: Automates beverage serving (happy flow)
+      preconditions: ['ready']
+      postcondition: done
+      code: |
+        assert self.beverage, "⚠️Please make a choice first"
+        order = Order(beverage=self.beverage)
+        order.beverage = self.beverage
+        order.place_order()
+        payment = Payment(order=order)
+        payment.initiate()
+        order.confirm()
+        order.serve()
+
+    - !Method
+      name: _test_place_order
+      code: |
+        fixture = type(self)()
+        stock = 5
+        fixture.beverage = Beverage(name="Test Drink", price=2.5, stock=stock)
+        fixture.place_order()
+        assert fixture.state == 'done', f"⚠️ Order not placed, {fixture.state}"
+        assert fixture.beverage.stock == stock - 1  # given no concurrency
+
+
+    - !Method
+      name: _test_abuser_serve_directly
+      doc: |
+        AbUser test – tries to serve without confirmation.
+      code: |
+        order = Order(beverage=Beverage(name="Test Drink", price=2.5, stock=5))
+        order.place_order()
+        payment = Payment(order=order)
+        payment.initiate()
+        order.confirm()
+        order.serve()
+        assert order.state == "served", f"🚨 Order should not be served yet. Is {order.state}"
+
+
+    - !Method
+      name: _test_more
+      code: |
+        assert True, "⚠️ Test method to be customized ..."
+
+
+instances:
+  
+  - !Scene
+    icon: 🥤
+    as_name: scene
+    title: SwiftSip™
+    lines:
+    - 5
+    - 3
+    - 1
+    - 2
+    - 2
+    - 2
+    - 2
+  
+  - &id001 !Beverage
+    name: Coffee
+    price: 3.5
+    doc: Mysterious dark liquid that low-coders transmute into working programs through ritual consumption.
+    icon: ☕
+  
+  - &id003 !Beverage
+    name: Green Tea
+    price: 2.5
+    icon: 🍵
+    doc: |
+      Green tea is a type of tea that is made from the Camellia sinensis plant. It has a light, refreshing flavor and is known for its health benefits.
+  
+  - &id009 !Beverage
+    name: Lipton Tea
+    price: 4.0
+    icon: 🫖
+  
+  - &id002 !Order
+    doc: |
+      Order 001 for a delicious cup of coffee.
+    order_id: '001'
+    beverage: *id001
+  
+  - &id004 !Payment
+    payment_id: 123
+    order: *id002
+  
+  - !Text
+    icon: 🎯
+    title: "A Thirsty Journey"
+    height: 500
+    text: |
+      Emma, a disciplined judoka and passionate light-coder, just wrapped up a
+      challenging training session. Her muscles ache, and her mind races through the
+      techniques she practiced. One thing is clear—she needs a refreshing drink. Fast.
+      
+      She pulls out her phone and opens the **SwiftSip™** app. Within seconds, she
+      finds her favorite Matcha tea on the menu. A simple tap, and her order is placed.
+      Another tap, and payment is complete. No confusing menus, no endless confirmations.
+      Just smooth, disciplined efficiency—just like her judo practice. Before she
+      even finishes catching her breath, her tea is ready. She takes a long, satisfying
+      sip.  
+      
+      **SwiftSip™** did exactly what it promised—delivering refreshment without distractions.
+
+  - !Text
+    title: Persona
+    icon: 👤
+    height: 500
+    text: |      
+      **Background**: Emma is a focused creator who loves simplicity—in her projects and her life. She builds minimalist low-code apps and practices Judo 🥋 to stay sharp.
+      
+      **Needs**:  
+      - A fast, structured way to order drinks after training.  
+      - Simple, clean interfaces without distractions.  
+      - Instant feedback when actions are completed.
+      
+      **Pain Points**:  
+      - Dislikes cluttered menus and slow apps.  
+      - Hates waiting and repetitive confirmations.  
+      - Prefers smooth, focused experiences.
+      
+  - !Text
+    title: Meet Emma
+    icon: 🥋
+    media: emma.jpg
+    height: 500
+    footer: |
+      💡 *Design Tip*: For Emma, less is more. Keep it simple, fast, and efficient.
+
+
+  - !Text
+    title: Workflow
+    icon: 🎏
+    media: workflow.jpg
+
+  - !Table &drinks
+    title: Drinks
+    source: [*id001, *id003, *id009]
+
+  - !Form
+    title: Selection
+    subjects: [*drinks]
+    attributes: [name, price, available, stock, doc]
+    border: True
+    on_init:
+      - !Function
+        code: |
+          self._hidden = (len(self.subjects[0].source) == 0) or (self.subjects[0].selection is None)
+          if not self._hidden:
+            self.source = self.subjects[0].selection
+
+
+  - !Inspector
+    title: Coffee
+    attributes: [icon, name, price, available, stock, doc]
+    source: *id001
+  
+  - !Inspector
+    title: Tea
+    source: *id003
+  
+  - !Inspector
+    title: Order
+    attributes: [order_id, doc, beverage]
+    source: *id002
+  
+  - !Inspector
+    title: Payment
+    source: *id004
+
+  - !Assistant &assistant
+    beverage: *id003
+
+  - !Inspector
+    attributes: [beverage]
+    source: *assistant
+
+

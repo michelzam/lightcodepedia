@@ -1,0 +1,40 @@
+module:
+  - name: dogs_to_mod2
+    tag: "🆕"
+    doc: |
+
+    icon: "👋"
+
+imports:
+  - !Module {name: pets}
+  - !Module {name: mod2, as_name: mod2}
+
+classes:
+
+  - !Class
+    name: Dummy
+    states: [inactive, active]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: "Dummy"
+    methods:
+      - !Method
+        name: _test_call_mod2
+        code: |
+          res = mod2.dummy(self.name)
+          print('*** THE RES IS ***')
+          print(res)
+          assert len(res) > 0
+
+instances:
+
+  - !Pet
+    name: Luna1
+
+  - !Pet
+    name: Luna2
+
+  - !Dummy
+    name: "Dummy1"

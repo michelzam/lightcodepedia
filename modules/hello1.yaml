@@ -1,0 +1,78 @@
+module:
+  - doc: Hello
+    icon: "👋"
+
+imports:
+  - !Module
+    name: blocks
+  - !Module
+    name: tutorial101
+
+classes:
+
+instances:
+
+  #  - !Scene
+  #    title: "Discover"
+  #    icon: "🔭"
+  #    lines: [1, 5]
+  #    as_name: scene
+
+  - !Text
+    title: "Explore 👇"
+    border: False
+
+  - !Page
+    title: Tutorial 1o1
+    border: False
+    icon: "👨🏻‍🏫"
+    next_page: tutorial101
+
+  - !Page
+    title: People
+    border: False
+    icon: "👤"
+    next_page: people
+
+  - !Page
+    title: Beverages
+    border: False
+    icon: "🍹"
+    next_page: beverages
+
+  - !Page
+    title: Drinks
+    border: False
+    icon: "🥤"
+    next_page: drinks
+
+  - !Page
+    title: Specs
+    border: False
+    icon: "📜"
+    next_page: specs
+
+  - !Page
+    title: SwiftSip
+    border: False
+    icon: "🥤"
+    next_page: swift_sip
+
+  - !Page
+    title: Patterns
+    border: False
+    icon: "🧩"
+    next_page: patterns
+
+  - !Page
+    title: Katas
+    border: False
+    icon: "🥋"
+    next_page: katas
+
+  - !Page
+    title: Learn French
+    border: False
+    icon: "🇫🇷"
+    next_page: tef_irn
+

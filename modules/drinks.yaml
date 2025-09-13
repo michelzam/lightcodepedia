@@ -1,0 +1,246 @@
+module:
+  - doc: |
+      Order drinks efficiently
+      
+      Stay refreshed, stay productive!
+      
+    icon: "🥤"
+    tag: ""
+imports:
+  - !Module {name: kore, hidden: True}
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: inspectors, hidden: True}
+
+classes:
+  - !Class
+    name: Beverage
+    doc: A refreshing drink
+    icon: '☕'
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: name
+      type: str
+      default: Unknown
+    - !Attribute
+      name: price
+      type: float
+      default: 0.0
+    - !Attribute
+      name: available
+      type: bool
+      default: True
+      read_only: True
+    - !Attribute
+      name: stock
+      type: int
+      default: 3
+      read_only: True
+    methods:
+    - !Method
+      name: __repr__
+      doc: Fancy display
+      code: |
+        return self.name
+        return f"{self.icon} {self.name} - ${self.price:.2f}"
+
+    - !Method
+      name: _book
+      doc: Book a beverage
+      code: |
+        if self.stock > 0:
+          self.stock -= 1
+          self.available = self.stock > 0
+          return True
+        else:
+          return False
+
+
+  - !Class
+    name: Order
+    doc: Represents a beverage order
+    icon: '📦'
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: order_id
+      type: str
+      icon: "🔤"
+      read_only: True
+    - !Attribute
+      name: beverage
+      type: Beverage
+    states: ['pending', 'placed', 'paid', 'confirmed', 'served', 'cancelled']
+    methods:
+    - !Method
+      name: place_order
+      doc: User places an order and initiates payment
+      preconditions: ['pending']
+      postcondition: placed
+      code: |
+        assert self.beverage, "⚠️ Please make a choice first"
+        ...
+        if self.beverage._book():
+          self.state = 'paid'
+        else:
+          raise ValueError("Beverage not available")
+
+    - !Method
+      name: _pay
+      doc: Barista confirms the order
+      preconditions: [placed]
+      postcondition: paid
+      code: |
+        pass  # Transition happens automatically
+
+
+    - !Method
+      name: confirm
+      doc: Barista confirms the order
+      preconditions: ['paid']
+      postcondition: confirmed
+      code: |
+        pass  # Transition happens automatically
+
+    - !Method
+      name: serve
+      doc: Barista serves the order
+      preconditions: ['confirmed']
+      postcondition: served
+      code: |
+        pass  # Transition happens automatically
+        
+    - !Method
+      name: cancel
+      doc: User cancels the order before it's served
+      preconditions: [paid]
+      postcondition: cancelled
+      code: |
+        self.beverage.stock += 1
+        
+    - !Method
+      name: __repr__
+      doc: Fancy display
+      code: |
+        return f"{self.icon} Order {self.order_id} - {self.state}"
+        
+    - !Method
+      name: __str__
+      doc: Fancy display
+      code: |
+        return f"{self.icon} Order#: {self.order_id} - {self.state}"
+        
+  - !Class
+    name: Payment
+    doc: Handles payment for an order
+    icon: '💳'
+    bases: [kore.Object]
+    attributes:
+    - !Attribute
+      name: payment_id
+      type: str
+      icon: "🔤"
+    - !Attribute
+      name: order
+      type: Order
+    - !Attribute
+      name: amount
+      type: float
+      default: 0
+    states: ['pending', 'successful', 'failed', 'refunded']
+    methods:
+    - !Method
+      name: initiate
+      doc: User initiates payment
+      preconditions: ['pending']
+      postcondition: successful
+      code: |
+        assert self.order, "⚠️ No order attached"
+        assert self.order.state == 'placed', f"⚠️ Order should be placed first. Is `{self.order.state}`."
+        self.order._pay()
+        
+    - !Method
+      name: fail
+      doc: Payment fails
+      preconditions: ['pending']
+      postcondition: failed
+      code: |
+        pass  # Transition happens automatically
+        
+    - !Method
+      name: refund
+      doc: Refund payment upon order cancellation
+      preconditions: ['successful']
+      postcondition: refunded
+      code: |
+        pass  # Transition happens automatically
+        
+    - !Method
+      name: __repr__
+      doc: Fancy display
+      code: |
+        return f"{self.icon} Payment {self.payment_id} - {self.state}"
+        
+
+instances:
+  
+  - !Scene
+    icon: ☕
+    as_name: scene
+    title: Order your drink
+    lines:
+    - 5
+    - 2
+    - 2
+    - 2
+    - 2
+    - 2
+    - 2
+    - 2
+  
+  - !Beverage &coffee
+    name: Coffee
+    price: 3.5
+  
+  - !Beverage &tea
+    name: Green Tea
+    price: 2.5
+  
+  - !Beverage
+    name: Matcha
+    price: 4.0
+  
+  - !Order &order
+    doc: |
+      Order 001 for a delicious cup of coffee.
+    order_id: '001'
+    beverage: *coffee
+
+  - !Payment &payment
+    payment_id: 123
+    order: *order
+
+  - !Inspector
+    title: Coffee
+    source: *coffee
+
+  - !Inspector
+    title: Tea
+    source: *tea
+
+  - !Inspector
+    title: Order
+    source: *order
+
+  - !Inspector
+    title: Payment
+    source: *payment
+
+  - !Class &person
+    name: Person
+    doc: Represents a person
+    icon: '👤'
+
+  - !Inspector
+    title: Person
+    source: *person

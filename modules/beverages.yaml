@@ -1,0 +1,197 @@
+module:
+  - icon: "🥤"
+    doc: |
+      Order beverages efficiently
+      
+      Stay refreshed, stay productive!
+    is_admin: True
+
+imports:
+    - !Module {name: kore, hidden: True}
+
+classes:
+
+  - !Class
+    name: Beverage
+    bases: [kore.Object]
+    icon: '☕'
+    doc: "A refreshing drink"
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: Unknown
+      - !Attribute
+        name: price
+        type: float
+        default: 0.0
+      - !Attribute
+        name: available
+        type: bool
+        default: True
+    methods:
+      - !Method
+        name: __repr__
+        doc: Fancy display
+        code: |
+            return f"{self.icon} {self.name} - ${self.price:.2f}"
+
+  - !Class
+    name: Order
+    bases: [kore.Object]
+    icon: "📦"
+    doc: "Represents a beverage order"
+    attributes:
+      - !Attribute
+        name: order_id
+        type: str
+        default: ""
+      - !Attribute
+        name: beverage
+        type: Beverage
+    states: [pending, paid, confirmed, served, cancelled]
+    methods:
+      - !Method
+        name: place_order
+        preconditions: [pending]
+        postcondition: paid
+        doc: "User places an order and initiates payment"
+        code: |
+          pass  # Transition happens automatically
+
+      - !Method
+        name: confirm
+        preconditions: [paid]
+        postcondition: confirmed
+        doc: "Barista confirms the order"
+        code: |
+          pass  # Transition happens automatically
+
+      - !Method
+        name: serve
+        preconditions: [confirmed]
+        postcondition: served
+        doc: "Barista serves the order"
+        code: |
+          pass  # Transition happens automatically
+
+      - !Method
+        name: cancel
+        preconditions: [pending, paid]
+        postcondition: cancelled
+        doc: "User cancels the order before it's served"
+        code: |
+          pass  # Transition happens automatically
+
+      - !Method
+        name: __repr__
+        doc: Fancy display
+        code: |
+            return f"{self.icon} Order {self.order_id} - {self.state}"
+
+      - !Method
+        name: __str__
+        doc: Fancy display
+        code: |
+            return f"{self.icon} Order#: {self.order_id} - {self.state}"
+
+  - !Class
+    name: Payment
+    bases: [kore.Object]
+    icon: "💳"
+    doc: "Handles payment for an order"
+    attributes:
+      - !Attribute
+        name: payment_id
+        type: str
+        default: ""
+      - !Attribute
+        name: order
+        type: Order
+      - !Attribute
+        name: amount
+        type: float
+    states: [pending, successful, failed, refunded]
+    methods:
+      - !Method
+        name: initiate
+        preconditions: [pending]
+        postcondition: successful
+        doc: "User initiates payment"
+        code: |
+          pass  # Transition happens automatically
+
+      - !Method
+        name: fail
+        preconditions: [pending]
+        postcondition: failed
+        doc: "Payment fails"
+        code: |
+          pass  # Transition happens automatically
+
+      - !Method
+        name: refund
+        preconditions: [successful]
+        postcondition: refunded
+        doc: "Refund payment upon order cancellation"
+        code: |
+          pass  # Transition happens automatically
+
+      - !Method
+        name: __repr__
+        doc: Fancy display
+        code: |
+            return f"{self.icon} Payment {self.payment_id} - {self.state}"
+
+instances:
+
+  - !Scene
+    title: "Judo Cafe"
+    icon: "☕"
+    lines: [5, 2, 2, 2, 2, 2, 2, 2]
+    as_name: scene
+
+  - !Beverage &coffee
+    name: "Coffee"
+    price: 3.50
+
+  - !Beverage &tea
+    name: "Green Tea"
+    price: 2.50
+
+  - !Beverage &matcha
+    name: "Matcha"
+    price: 4.00
+
+  - !Order &001
+    order_id: "001"
+    beverage: *coffee
+    doc: |
+      Order 001 for a delicious cup of coffee.
+
+  - !Payment &P001
+    payment_id: "P001"
+    order: *001
+    amount: 3.50
+
+  - !Inspector
+    source: *coffee
+    title: Coffee
+    border: True
+    foldable: False
+
+  - !Inspector
+    source: *tea
+    title: Tea
+    border: True
+    foldable: False
+
+  - !Inspector
+    source: *001
+    border: True
+    foldable: False
+
+  - !Inspector
+    source: *P001
+    border: True
+    foldable: False

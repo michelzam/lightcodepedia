@@ -1,0 +1,149 @@
+module:
+  - doc: "Pat plays with Patterns"
+    icon: "🧩"
+    is_admin: True
+
+imports:
+  - !Module
+    name: designers
+    hidden: True
+  - !Module
+    name: blocks
+    hidden: True
+  - !Module
+    name: inspectors
+    hidden: True
+  - !Module
+    name: tutorials
+    hidden: True
+
+classes:
+
+  - !Class
+    name: Person
+    bases: [kore.Object]
+    icon: "👤"
+    doc: "Anonymous person"
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: Anonymous
+    states: [outgoing, reserved]
+    methods:
+      - !Method
+        name: hello
+        doc: | 
+          Responds to hello, by calling hi()
+
+          `return self.hi()`
+        code: |
+          return self.hi()
+
+      - !Method
+        name: _test_hello
+        doc: "Testing hello"
+        code: |
+          fixture = type(self)()
+          result = fixture.hello()
+          assert result.startswith("Hi")
+
+      - !Method
+        name: hi
+        preconditions: [reserved]
+        doc: "Say hi"
+        code: |
+          return f"Hi, I'm {self.name}!"
+
+  - !Class
+    name: Student
+    bases: [Person]
+    icon: "👩‍🎓"
+    doc: "Pet's best friend"
+    attributes:
+      - !Attribute
+        name: major
+        type: str
+        default: Computer Science
+    methods:
+      - !Method
+        name: _test_hello
+        doc: "Testing hello"
+        code: |
+          fixture = type(self)()
+          result = fixture.hello()
+          assert result.startswith("Hi")
+          assert result.endswith(f"{fixture.major}!")
+
+      - !Method
+        name: hi
+        doc: "Say hi in a different way"
+        preconditions: [reserved]
+        code: |
+          return f"Hi, I'm {self.name}. My major is {self.major}!"
+
+instances:
+
+  - !Scene
+    title: ":red[Pat] Plays with :red[Pat]terns"
+    icon: "🧩"
+    lines: [2, 1, 2, 1, 1]
+    as_name: scene
+
+  - !Person &anonymous
+    as_name: anomymous
+    icon: "👤"
+    doc: "That's all we know..."
+
+  - !Student &pat
+    name: Pat
+    as_name: pat
+    icon: "🧑🏻‍🎓"
+    doc: "Loves to play with patterns"
+
+  - !Text
+    title: "Welcome"
+    icon: "👋"
+    border: True
+    text: |
+      👩‍🎓 This Pattern demonstrates basic **building blocks** useful for Desgn patterns:
+      
+      - [x] Templates & Hooks
+      - [x] Template Method ...
+      - [ ] Factory Method ...
+      - [ ] Command ...
+      - [ ] Composite.
+      - [x] `Quiz` to test your knowledge.
+
+    footer: Go ahead, explore, play, learn and have fun! 🎉
+
+  - !Form
+    source: *anonymous
+
+    border: True
+
+  - !Form
+    source: *pat
+    border: True
+
+  - !Riddle &riddle00
+    title: "Riddle: Anonymous & Pat"
+    text: "Pick the right answer about the template and the hook."
+    correct_answer: "The template Hello (T) calls Hi, the Hook (H)"
+    difficulty: 1
+    as_name: riddle0
+    options:
+      - "Anonymous is the template (T) and Pat is the (Hook)"
+      - "Student is the template (T) and Person is the (Hook)"
+      - "The template Hello (T) calls Hi, the Hook (H)"
+    hints: [ "T & H are methods", "Who calls who?", "Meta meta is better better" ]
+
+  - !Inspector
+    border: True
+    source: *riddle00
+    attributes: [title, text, hints, answer]
+    methods: [check_answer]
+    foldable: False
+    show_details: True
+
+

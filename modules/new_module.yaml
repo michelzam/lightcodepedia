@@ -1,0 +1,26 @@
+module:
+  - name: new_module
+    doc: New module
+    icon: "🆕"
+
+imports:
+  - !Module {name: blocks, hidden: True}
+
+classes:
+
+instances:
+
+  - !Scene
+    icon: "🆕"
+    as_name: scene
+    title: Scene+++
+    lines:
+    - 2
+    - 2
+    - 2
+    - 2
+    show_backstage: true
+
+  - !Text
+    title: "Empty space. No module here"
+    # border: False

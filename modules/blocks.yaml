@@ -1,0 +1,1072 @@
+module:
+  - name: blocks
+    doc: "Basic User Interface components"
+    icon: "🧩"
+    is_admin: True
+
+imports:
+  - !Module
+    name: kore
+  - !Module
+    name: streamlit
+    as_name: st
+  - !Module
+    name: lightcode
+    hidden: True
+  - !Module
+    name: typing
+  - !Module
+    name: numpy
+    as_name: np
+  - !Module
+    name: os
+
+classes:
+  - !Class
+    name: Block
+    doc: (forward declaration)
+
+  - !Class
+    name: Block
+    bases: [kore.Object]
+    doc: UI blocks
+    icon: "🧩"
+    hidden: True
+    attributes:
+      - !Attribute
+        name: title
+        type: str
+        default: "New block"
+      - !Attribute
+        name: help
+        type: str
+        doc: "Help text"
+      #- !Attribute
+      #  name: icon
+      #  type: str
+      #  default: "🧩"
+      - !Attribute
+        name: footer
+        type: str
+        is_long: True
+        advanced: True
+      - !Attribute
+        name: media
+        type: str
+        doc: |
+          Url for a web site, a video, an image, etc.
+          Or local file (from modules/_media)
+        advanced: False
+      - !Attribute
+        name: fit_media
+        type: bool
+        default: True
+        doc: |
+          Idem to `use_container_with`
+
+      - !Attribute
+        name: disabled
+        type: bool
+        default: False
+        doc: "Disabled widget"
+        advanced: True
+      - !Attribute
+        name: _hidden
+        type: bool
+        default: False
+        doc: "Hidden widget"
+        advanced: True
+      - !Attribute
+        name: foldable
+        type: bool
+        default: False
+        doc: "Foldable widget"
+        advanced: True
+      - !Attribute
+        name: expanded
+        type: bool
+        default: True
+        doc: "Expanded widget"
+        advanced: True
+      - !Attribute
+        name: popover
+        type: bool
+        default: False
+        doc: "Popover widget"
+        advanced: True
+      - !Attribute
+        name: height
+        type: int
+        default: 400
+        doc: "Media height in pixels"
+        advanced: True
+      - !Attribute
+        name: width
+        type: int
+        default: 400
+        doc: "Media width in pixels"
+        advanced: True
+      - !Attribute
+        name: border
+        type: bool
+        default: True
+        doc: "Display a border"
+        advanced: True
+      - !Attribute
+        name: _module
+        type: typing.Any
+        hidden: True
+      - !Attribute
+        name: on_init
+        type: List[Function]
+        advanced: True
+      - !Attribute
+        name: on_post_init
+        type: List[Function]
+        advanced: True
+      - !Attribute
+        name: on_update
+        doc: |
+          To be implemented by the observer instance.
+          Called by subject(s) when they change.
+        type: List[Function]
+        advanced: True
+      - !Attribute
+        name: subjects
+        type: List[Block]
+        advanced: True
+      - !Attribute
+        name: observers
+        type: List[Block]
+        advanced: True
+    methods:
+
+      - !Method
+        name: __str__
+        code: |
+            return f"{self.icon} {self.title}"
+
+      - !Method
+        name: enable
+        hidden: True
+        doc: |
+          Enables the block (default) or disables it
+          Params: 
+            disabled: bool = False
+        code: |
+            disabled = kwargs.get("disabled", False)
+            self.disabled = disabled
+
+
+      - !Method
+        name: update
+        hidden: True
+        doc: |
+          To be implemented by the observer.
+          Called by subject(s) when they change.
+          By default, it calls the on_update functions, if any.
+        code: |
+          for fct in self.on_update:
+            # fct._declare(module=self._module)
+            if fct.target is None:
+              # fct.target = self
+              target = self
+            # print(f"fct.call(target={type(target).__name__})")
+            fct.call(target=target)
+
+      - !Method
+        name: _notify
+        hidden: True
+        doc: |
+          Notifies all my observers
+        code: |
+          for observer in self.observers:
+            observer.update(self)
+
+      - !Method
+        name: label
+        hidden: True
+        code: |
+          if self.icon is None or len(self.icon) == 0:
+            icon = type(self).icon
+          else:
+            icon = self.icon
+          return f"{icon} {self.title.lstrip('#')}"
+
+      - !Method
+        name: _run
+        doc: |
+          Run the block
+          - display the following instances by lines, based on self.lines
+          - display the rest of the instances as they are
+          kargs:
+            module: executing module
+        code: |
+          
+          my_default_module = type(self)._class._module
+          self._module = kwargs.get("module", my_default_module)
+          # st.write(self._module)
+
+          if len(self.on_init) > 0:
+            for fct in self.on_init:
+              # fct._declare(module=self._module)
+              if hasattr(fct, "target"):
+                # fct.target = self
+                target = self
+              if hasattr(fct, "call"):
+                fct.call(target=target)
+
+          if self.foldable:
+
+            # keeps the Form expanded temporarily. Driven by on_init events          
+            if hasattr(self, "_expanded"):
+              expanded = self._expanded
+            else:
+               expanded = self.expanded
+                  
+            if self.popover:
+              with st.popover(label=self.label(), help=self.help, use_container_width=True):
+                self._run_me()
+            else:
+              with st.expander(label=self.label(), expanded=expanded):
+                self._run_me()
+          else:
+            with st.container(border=self.border):
+              self._run_me()
+                 
+          self._show_functions()
+          
+          self._show_designer()
+
+          self._register_observers()
+        
+          if len(self.on_post_init) > 0:
+            for fct in self.on_post_init:
+              # fct._declare(module=self._module)
+              
+              if hasattr(fct, "target"):
+                #  fct.target = self
+                target = self
+              if hasattr(fct, "call"):
+                fct.call(target=target) # NEW!!
+
+          return True
+
+      - !Method
+        name: _register_observers
+        doc: |
+          Register the observers based on other's subjects
+        hidden: True
+        code: |
+          import inspect
+          if len(self.subjects) > 0:
+            ...
+            #print("> _register_observers() !")
+            #stack = [frame.function for frame in inspect.stack()]
+            #print(stack)
+          for subject in self.subjects:
+            if self not in subject.observers:
+              subject.observers.append(self)
+              #print(f">> {self.title}._register_observer() !")
+              #print(f">>>  {subject.title}'o: {[o.title for o in subject.observers]}")
+
+
+      - !Method
+        name: _show_designer
+        code: |
+          import designers
+          import inspectors
+          import copy
+          
+          @st.dialog("🔍", width="large")
+          def on_design(clone):
+            # form = designers.Form(source=clone, show_details=False)
+            form = inspectors.Inspector(source=clone, show_details=False)
+            # print("before _run")
+            form._run(module=self._module)
+            if st.button("▶︎ Apply", type="primary"):
+              #cols = st.columns(2)
+              #cols[0].write(self)
+              #cols[1].write(clone)
+              for attr, value in clone.__dict__.items():
+                if not isinstance(value, list):
+                  if value !=  getattr(self, attr):
+                    st.caption(f"Setting {attr} to {value}")
+                    setattr(self, attr, value)
+              
+              st.rerun()
+
+          clone = copy.copy(self)
+          instance = self
+          # print(f"=> {type(instance).__name__} {instance._module.name = } {instance._module.designing = } {id(instance._module)}")
+          
+          if self._module.designing:
+            # st.caption(f"Designing {self._module.name} {st.session_state.mud = }")
+            key = f"WWKD_{id(self)}"
+            try:
+              st.button("⚙️", key=key, on_click=on_design, args=(clone,), type="tertiary")
+            except Exception as e:
+              st.button("⚙️", key=f"{key}_0", on_click=on_design, args=(clone,))
+              #st.caption(f"Just a clone")
+
+      - !Method
+        name: _run_me
+        code: |
+          if not self._hidden:
+            self.build()
+          else:
+            # st.caption(self.help)
+            return True
+
+          if len(self.footer) > 0:
+            st.caption(self.footer)
+          return True
+
+
+      - !Method
+        name: _show_functions
+        hidden: True
+        code: |
+
+          if len(self.functions) > 0:
+            button_area = st.container()
+        
+            key = f"WWTbl_{id(self)}"
+            def on_change(index):
+              function = self.functions[index]
+              with button_area:
+                if hasattr(function, "call"):
+                  if function.target is None:
+                    #function.target = self
+                    target = self
+                  ret = function.call(target=target)
+                  st.caption(ret)
+                else:
+                  st.warning(f"Function {function} has no call method")          
+  
+            with button_area:
+              btn_cols = st.columns(len(self.functions))
+              for index, button in enumerate(self.functions):
+                key = f"WWKFct_{key}_{index}"
+                with btn_cols[index]:
+                  with st.container():
+                    st.markdown(
+                      """
+                      <style>
+                      .fixed-width-button {
+                        width: 300px; /* Set your desired width */
+                        height: 40px; /* Optional: set height */
+                        font-size: 16px; /* Optional: set font size */
+                      }
+                      </style>
+                      """,
+                      unsafe_allow_html=True
+                    )
+                    label = button.name
+                    st.button(
+                      label, on_click=on_change, 
+                      key=key, args=[index], help=button.doc, use_container_width=False)
+
+      - !Method
+        name: build
+        hidden: True
+        code: |
+          if not self._hidden:
+            st.caption(self.help)
+
+          return True
+
+      - !Method
+        name: test_build
+        code: |
+          assert len(self.title) > 0
+
+      - !Method
+        name: test_on_init
+        code: |
+          function = kore.Function(code="return True")
+          text1 = Text(title="Welcome1", on_init=[function])          
+          assert text1._run(module=self._module)
+
+      - !Method
+        name: __repr__
+        code: |
+            return f"{self.icon} {self.name}"
+
+      - !Method
+        name: _get_object_by_id
+        hidden: True
+        doc: |
+          Get the object by its id
+          Params: object_id: int
+          return: object if found, None otherwise
+        code: |
+          import ctypes
+          object_id = kwargs.get("object_id", None)
+          return ctypes.cast(object_id, ctypes.py_object).value
+
+      - !Method
+        name: _test
+        doc: Run _test on all attached functions/events
+        code: |
+          try:
+            for fct in self.on_init + self.on_post_init + self.on_update:
+              if hasattr(fct, "_test") and callable(fct._test):
+                if not fct._test():
+                  print(f"Function '{fct.name}' test failed")  
+                  print(fct.code)  
+                  return False
+            return True
+          except Exception as e:
+            print(f"Block '{self.title}' test failed: {e}")
+            return False
+
+  - !Class
+    name: Blank
+    icon: " 🔲 "
+    doc: Blank block
+    bases: [ Block ]
+    methods:
+      - !Method
+        name: build
+        hidden: True
+        code: |
+          return True
+      
+
+  - !Class
+    name: Text
+    icon: " 𝒜 "
+    doc: text, title, header, etc ...
+    bases: [ Block ]
+    attributes:
+      - !Attribute
+        name: text
+        type: str
+        is_long: True
+    methods:
+
+      - !Method
+        name: _show_title
+        code: |
+          if len(self.title) > 0: 
+            st.subheader(f"{self.icon if len(self.icon) > 0 else ''} {self.title}", help=self.help)
+
+      - !Method
+        name: _show_text
+        code: |
+          if len(self.text) > 0: 
+            st.markdown(f"{self.text} ", help=self.help if len(self.title.strip()) == 0 else None, unsafe_allow_html=True)
+          params = {}
+
+      - !Method
+        name: _show_media
+        code: |
+          from PIL import Image
+          from streamlit.components.v1 import iframe
+          if len(self.media) > 0: 
+            with st.container(height=self.height, border=False):
+              if self.media.startswith("http"):
+                iframe(
+                  src=self.media, height=self.height)  #, width=self.width)
+
+              else:
+                # Local file
+                path = os.path.join(os.getcwd(), f"modules/_media/{self.media}")
+                if os.path.exists(path):
+                  if self.media.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    image = Image.open(path)
+                    st.image(image, use_container_width=self.fit_media)
+                  else:
+                    st.video(path)
+                else:
+                  #st.image(self.media, use_container_width=True)
+                  st.caption(f"Media not found: {path}")
+
+                # st.caption(self.media)
+
+      - !Method
+        name: build
+        hidden: True
+        code: |
+          self._show_title()          
+          self._show_text()
+          self._show_media()
+
+          return True
+
+      - !Method
+        name: test_run
+        code: |
+            assert self._run(module=self._module)
+
+  - !Class
+    name: Page
+    icon: "📄"
+    doc: Navigate to this page
+    bases: [ Block ]
+    attributes:
+      - !Attribute
+        name: file_name
+        type: str
+        default: "_play"
+        doc: "Name of the py file, without extension"
+      - !Attribute
+        name: next_page
+        type: str
+        doc: "Name of the yaml file, without extension"
+      - !Attribute
+        name: mud
+        type: str
+        doc: "yaml Module Under Design, without extension"
+    methods:
+
+      - !Method
+        name: _show_title
+        code: |
+          if len(self.title) > 0: 
+            if self.foldable:
+              st.subheader(f"{self.icon if len(self.icon) > 0 else ''} {self.title}", help=self.help)
+
+      - !Method
+        name: _show_link
+        code: |
+          if len(self.icon) == 0:
+            self.icon = "🕸️"
+          key = f"KNAV_BTN_{id(self)}"
+          # print(f"{self.next_page = } {self._module.name = }")
+          if len(self.file_name) > 0:
+            if st.button(f"{self.icon}️ {self.title}  ↗️", 
+              help=self.help, key=key, disabled=self.disabled):
+              # st.session_state.next_page = self.next_page
+              lightcode.set_next_page(self.next_page)
+              st.session_state.mud = self.mud
+              st.switch_page(f"pages/{self.file_name}.py")
+
+      - !Method
+        name: build
+        hidden: True
+        code: |
+          self._show_title()          
+          self._show_link()
+          return True
+
+      - !Method
+        name: test_run
+        code: |
+            assert self._run(self._module)
+
+
+  - !Class
+    name: Multipage
+    icon: "📄"
+    doc: Navigate to this page
+    bases: [ Block ]
+    attributes:
+      - !Attribute
+        name: file_name
+        type: str
+        default: "_play"
+        doc: "Name of the py file, without extension"
+      - !Attribute
+        name: labels
+        type: List[str]
+        doc: "Labels fo pages"
+      - !Attribute
+        name: next_pages
+        type: List[str]
+        doc: "Name of the yaml files, without extension"
+      - !Attribute
+        name: mud
+        type: str
+        doc: "yaml Module Under Design, without extension"
+    methods:
+
+      - !Method
+        name: _show_title
+        code: |
+          if len(self.title) > 0: 
+            if self.foldable:
+              st.subheader(f"{self.icon if len(self.icon) > 0 else ''} {self.title}", help=self.help)
+
+      - !Method
+        name: _show_link
+        code: |
+          if len(self.icon) == 0:
+            self.icon = "🕸️"
+          key = f"KNAV_BTNS_{id(self)}"
+          # print(f"{self.next_page = } {self._module.name = }")
+          def on_change():
+            selection = st.session_state[key]   
+            if selection not in options:
+              return
+            index = options.index(selection)
+            next_page = self.next_pages[index]
+            lightcode.set_next_page(next_page)
+        
+          if len(self.file_name) > 0:
+            last_page = lightcode.get_next_page()
+            options = self.labels
+            selection = st.segmented_control(
+              "🧭 Navigation", options, selection_mode="single", 
+              key=key, label_visibility="hidden", on_change=on_change)
+            if selection is not None:
+              # st.caption(f"{selection = }")
+              if last_page != lightcode.get_next_page():
+                st.switch_page(f"pages/{self.file_name}.py")
+
+      - !Method
+        name: build
+        hidden: True
+        code: |
+          self._show_title()          
+          self._show_link()
+          return True
+
+      - !Method
+        name: test_run
+        code: |
+            assert self._run(self._module)
+
+  - !Class
+    name: Table
+    icon: " ≣ "
+    doc: Table of elements
+    bases: [ Text ]
+    attributes:
+      - !Attribute
+        name: source
+        type: List[Object]
+      - !Attribute
+        name: attribute
+        type: str
+      - !Attribute
+        name: header
+        type: str
+      - !Attribute
+        name: selection
+        type: typing.Any
+        hidden: True
+    methods:
+
+      - !Method
+        name: build
+        hidden: True
+        code: |
+          self._show_title()          
+          self._show_text()
+          self._show_media()
+          self._show_table()
+          return True
+
+      - !Method
+        name: _show_table
+        code: |
+          import ctypes
+          def get_object_by_id(object_id: int):
+            # return ctypes.cast(object_id, ctypes.py_object).value
+            return self._get_object_by_id(object_id=object_id)
+
+          def display_dataframe(df: pd.DataFrame, key: str, title: str = ""):
+
+            event = st.dataframe(df[[title]], use_container_width=True, 
+              on_select="rerun", hide_index=True, key=key,
+              height=self.height if self.height > 0 else None, 
+              selection_mode="single-row")
+            rows = event["selection"]["rows"] 
+            if len(rows) > 0: 
+              self.selection = get_object_by_id(int(df.iloc[rows[0]]["ID"]))
+              st.caption(str(self.selection))
+            else:
+              self.selection = None
+              st.caption("No selection")
+            self._notify()
+                    
+          st.caption(self.help)
+          key = f"KKG_{id(self.source)}_{id(self.attribute)}"
+          if isinstance(self.source, list): 
+            if len(self.source) > 0:
+              elements = [{id(value), str(value)} for value in self.source]
+              df = pd.DataFrame(elements, columns=["ID", f"{self.header}"])
+              display_dataframe(df, key=key, title=self.header)
+            else:
+              st.caption("No data to display ...")
+          elif len(self.attribute) > 0:
+            elements = [str(getattr(self.source, self.attribute))]
+            df = pd.DataFrame(elements, columns=[f"{self.header}"])
+            display_dataframe(df, key=key, title=self.header)
+          else:
+            st.caption("No data to display ...")
+
+      - !Method
+        name: test_run
+        code: |
+            assert self._run(self._module)
+
+  - !Class
+    name: Scene
+    doc: |
+      Sets the stage for a play. 
+      Has to be the first instance in the module.
+      Ignores the ones that do not have a seat on the stage.
+      Designing can bring them in from backstage.
+    icon: "🎬"
+    bases: [ Text ]
+    attributes:
+      - !Attribute
+        name: lines
+        type: List[int]
+        default: [1, 2, 2, 2, 2, 2, 2, 2, 2]
+        hidden: True
+      - !Attribute
+        name: show_backstage
+        type: bool
+    methods:
+      - !Method
+        name: _run
+        doc: |
+          Run the scene
+          - display the following instances by lines, based on self.lines
+          - display the rest of the instances as they are
+          kargs:
+            module: executing module
+        code: |
+          my_default_module = type(self)._class._module
+          my_module = kwargs.get("module", my_default_module)
+          self._module = my_module
+
+          if self != my_module.instances[0]:
+            st.warning("A scene can only be the first component in the module. Please ignored this message in test mode.")
+            return True  # Let other components to be displayed
+          
+          from streamlit_extras.grid import grid
+          if len(self.title) > 0:
+            st.title(self.label())
+          
+          max_instances = sum(self.lines)          
+          my_grid = grid(*self.lines, vertical_align="center")
+          
+          for i in range(1, max_instances + 1):  # skip myself ;-)
+            if i >= len(my_module.instances):
+              break
+            with my_grid.container(border=False):
+              if hasattr(my_module.instances[i], "_run"):
+                my_module.instances[i]._run(module=self._module)
+                #st.write(f"Instance {i}")        
+
+          # Do NOT display other components. The scene is leading the game.
+          # Except by design, if show_backstage is True
+
+
+          if self.show_backstage or self._module.designing:
+            st.markdown("---")
+            st.subheader("🎭 Backstage 👇")
+                                
+            for i in range(max_instances + 1, len(my_module.instances)):
+              with st.container(border=False):
+                if hasattr(my_module.instances[i], "_run"):
+                  my_module.instances[i]._run(module=self._module)
+                  # st.write(f"Instance {i}")        
+
+          return False  # stop displaying my guys ...
+
+      - !Method
+        name: _test_run
+        code: |
+          result = self._run(module=self._module)
+          # Basic test: assert True
+          return result
+
+      - !Method
+        name: customize
+        doc: |
+          Design the scene
+          - drag and drop the instances in the right order
+          - add new lines
+          - apply the changes
+        code: |
+          self._layout()
+
+      - !Method
+        name: _layout
+        code: |
+          from streamlit_sortables import sort_items
+
+          ## Testing: Increment "version" ...
+          self.title += "+"
+          
+          @st.dialog("🏜️ Scene", width="large")
+          def drag_n_drop(scene: Scene, *, module: Module = None):
+            st.caption(f"Drag and drop the blocks in the right order")
+
+            # st.caption(scene.lines)
+            my_default_module = type(self)._class._module
+            my_module = kwargs.get("module", my_default_module)
+            max_instances = sum(scene.lines)
+          
+            # print(f"len(my_module.instances) = ")
+
+            #instances = [f"{value.label()}({index + 1})" 
+            instances = [f"{str(value)}:{type(value).__name__}({index + 1})" 
+                         for index, value in enumerate(my_module.instances[1:])]  
+
+            # print(f"len(instances) = ")
+            lines_str = []
+            cursor: int = 0
+            for i, number in enumerate(scene.lines):
+              items = instances[cursor:number + cursor]
+              lines_str.append({'header': f'Line {i + 1}', 'items': items})     
+              cursor += number
+            reminding = instances[cursor:]
+            lines_str.append({'header': f'Line {i + 2}', 'items': []})     
+            lines_str.append({'header': f'Backstage', 'items': reminding})     
+
+            sorted_items = sort_items(lines_str,
+                                      # direction=direction,
+                                      multi_containers=True, 
+                                      key='key_sort')
+
+            if st.button("▶︎ Apply", type="primary"):
+              new_lines = [len(line['items']) for line in sorted_items[:-1]]
+
+              # reshape the scene lines    
+              scene.lines = [x for x in new_lines if x != 0] 
+              
+              # st.caption(f"New lines: {scene.lines}")
+
+              # change order of instances
+              new_order = []
+              for line in sorted_items[:-1]:  # without backstage
+                for item in line['items']:
+                  number = int(item[item.find('(') + 1:-1])
+                  new_order.append(my_module.instances[number])
+                  # new_order.append(number)
+
+              #print(f"MARK1: {len(new_order) = }")
+              #print(f"MARK1: {len(my_module.instances) = }")
+
+              used_ids = set(id(i) for i in new_order)
+              rest_of_instances = [i for i in my_module.instances[1:] if id(i) not in used_ids]
+
+              # rest_of_instances = [i for i in my_module.instances[1:] if i not in new_order]
+              my_module_instances = [self] + new_order + rest_of_instances
+              my_module.instances = my_module_instances
+              if my_module.revision >= 0:
+                my_module.revision += 1
+
+              my_module._need_refresh = True
+              st.rerun()
+              return True
+            return False
+
+          return drag_n_drop(self, **kwargs)
+
+  - !Class
+    name: Proxy
+    icon: " 🔗 "
+    doc: proxy to another block/module
+    bases: [ Block ]
+    attributes:
+      - !Attribute
+        name: module_name
+        type: str
+      - !Attribute
+        name: variable_name
+        type: str
+    methods:
+
+      - !Method
+        name: build
+        hidden: True
+        code: |
+
+          if len(self.title) > 0: 
+            if not self.foldable:
+              st.subheader(f"{self.icon} {self.title}", help=self.help)
+
+          with st.container(border=self.border):
+            if len(self.module_name) == 0:
+              st.warning("No module to proxy to")
+              return True
+            try:
+              module = lightcode.import_module(module_name=self.module_name, designing=self._module.designing)
+            except Exception as e:
+              st.warning(f"Module {self.module_name} not found")
+              st.caption(f"💡 You might need to log in first ...")
+              return True
+
+            if False:
+              if len(self.variable_name) > 0:
+                dog = getattr(module, self.variable_name)
+                dog.title = "New dog"
+                dog._run(self._module)
+
+          return True
+
+  - !Class
+    name: Map
+    icon: "🗺️"
+    doc: Map ...
+    bases: [ Block ]
+    attributes:
+      - !Attribute
+        name: text
+        type: str
+      - !Attribute
+        name: latitude
+        type: float
+        default: 48.8566
+      - !Attribute
+        name: longitude
+        type: float
+        default: 2.3522
+      - !Attribute
+        name: zoom
+        type: int
+        default: 10
+    methods:
+      - !Method
+        name: build
+        hidden: True
+        code: |
+          if len(self.title) > 0: 
+            st.subheader(f"{self.icon} {self.title}", help=self.help)
+            # st.markdown(self.title, unsafe_allow_html=True)
+          df = pd.DataFrame(
+              # np.random.randn(1000, 2) / [50, 50] + [37.76, -122.4],
+              np.random.randn(10, 2) / [50, 50] + [self.latitude, self.longitude],
+              columns=['lat', 'lon'])          
+          st.map(df, zoom=self.zoom)
+          if len(self.text) > 0: 
+            text = self.text # eval(f"f'''{self.text}'''")
+            st.markdown(f"{text} ", help=self.help)
+          return True
+
+      - !Method
+        name: test_run
+        code: |
+            assert self._run(module=self._module)
+
+
+instances:
+
+  - !Scene
+    title: "Scene 1"
+    icon: "🎬"
+    lines: [2, 2, 1, 2, 2, 2, 2]
+
+  - !Text &text1
+    title: "Welcome1"
+    icon: "👋"
+    help: Welcome to the light side of the force
+    text: Welcome to the light side of the force
+
+  - !Text &text2
+    title: "Foldable text"
+    icon: "👤"
+    foldable: True
+    text: |
+      Welcome to the light side of the force:
+
+      👨🏻‍🏫 Learn about the force
+      ⚡️Use the force      
+      💥Feel the force
+
+  - !Text
+    title: "Dog "
+    icon: "🐕"
+    border: True
+    foldable: True
+    text: "Man's best friend :dog:"
+    help: Dogs are cute and fast
+    media: https://picsum.photos/id/237/500/400
+
+  - !Text
+    title: "Doc"
+    foldable: True
+    icon: "📖"
+    border: True
+    help: The story behind the dog's tail
+    text: |
+      Docs about dogs can 
+      use **bold** and _italic_ text and 
+      also be quite long and boring ...
+      
+          In the haze of a London fog,
+          A riff emerges, cutting like a saw.
+          Strumming strings and pounding drums,
+          Led Zeppelin, their magic comes.
+      
+          Amid the mist, a black dog roams,
+          Guiding the band to rock and roll thrones.
+          Not just a pet, but a symbol, a sign,
+          Of music that transcends all time.
+
+  - !Text
+    title: Video
+    icon: 🎥
+    media: https://www.youtube.com/embed/6tlSx0jkuLM
+    text: 🎵 Man's best song. Go ahead. Play it!
+
+  - !Table &compos
+    title: "Components"
+    icon: "📦"
+    source: [*text1, *text2]
+    help: "Demonstrates a table of blocks, with selection and update to observers"
+
+  - !Table &pets
+    title: "Pets"
+    help: "Demonstrates a table of strings, and is an observer updated by subject"
+    icon: "🐾"
+    source: ["🐈 Iron", "🦊 Foxy"]
+    subjects: [*compos]
+    on_post_init:
+      - !Function
+        code: |
+          st.caption(f'Hello from {self.title} to {self.subjects[0].title}')
+          return True
+    on_update:
+      - !Function
+        code: |
+          import time
+          st.caption(f'Update received by observer, {self.title} @ {time.strftime("%H:%M:%S", time.localtime())}')
+          if self.subjects[0].selection is not None:
+            self.title = f"{self.subjects[0].selection}'s pets"
+          else:
+            self.title = f"{self.subjects[0].title}' pets"
+          return True
+
+  - !Text &txt1
+    title: "Post 1"
+    icon: "✉️"
+
+  - !Text &txt2
+    title: "Post 2"
+    icon: "💌"
+    subjects: [*txt1]
+    on_post_init:
+      - !Function
+        code: |
+          st.caption(f'Hello from {self.title} to {self.subjects[0].title}')
+          return True
+    on_update:
+      - !Function
+        code: |
+          import time
+          st.caption(f'Updated @ {time.time()}')
+          return True
+
+  - !Blank {}
+
+  - !Text
+    title: "After blank"
+    text: 👈 The component on my left is a Blank. It is simply not displayed.
+    border: False
+
+  - !Multipage
+    title: "Multipage navigator"
+    border: False
+    file_name: _play
+    labels: ["🐶 Blocks", "👋 Hello1", "🐾 Pets"]
+    next_pages: ["blocks", "hello1", "pets"]
+

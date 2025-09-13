@@ -1,0 +1,1475 @@
+module:
+  - doc: "Welcome to the light side of the forcee"
+    icon: "🎓"
+    is_admin: True
+
+imports:
+  - !Module
+    name: kore
+    hidden: True
+  - !Module
+    name: designers
+    hidden: True
+  - !Module
+    name: blocks
+    hidden: True
+  - !Module
+    name: lightcode
+    hidden: True
+  - !Module
+    name: inspectors
+    hidden: True
+
+classes:
+
+  - !Class
+    name: Persona
+    doc: forward declaration
+
+  - !Class
+    name: Ressource
+    doc: forward declaration
+
+  - !Class
+    name: Topic
+    doc: forward declaration
+
+  - !Class
+    name: Func
+    doc: forward declaration
+
+
+  - !Class
+    name: Ressource
+    bases: [kore.Object]
+    doc: |
+      A ressource is a thing that can be learned, explored, or used.
+      It is ment for a given (optional) learner and can be a 
+      customization of another ressource, it's `origin`.
+    attributes:
+      - !Attribute
+        name: learner
+        type: Persona
+        advanced: True
+        # read_only: True
+      - !Attribute
+        name: description
+        type: str
+        is_long: True
+      - !Attribute
+        name: media
+        type: str
+      - !Attribute
+        name: origin
+        type: Ressource
+        advanced: True
+        following: 1
+      - !Attribute
+        name: progression
+        type: float
+        following: 1
+    states: [standard, customized]
+    methods:
+      - !Method
+        name: __str__x
+        hidden: True
+        code: |
+          return f"{str(self.origin) if self.origin is not None else ''} {self.progression:.0%}"
+
+      - !Method
+        name: story
+        # hidden: True
+        code: |
+          if self.learner is None:
+            return f"This {type(self).__name__} is about {self.description} \n"
+          else:
+            result = f"For {self.learner.name}, this {type(self).__name__} is about {self.description} \n"
+
+          origin = self.origin
+          while origin is not None:            
+            result += f" which is a customization of {origin.story()}"
+            origin = origin.origin
+
+          return result
+
+      - !Method
+        name: customize
+        preconditions: [standard]
+        postcondition: customized
+        hidden: True
+        code: |
+          assert self.learner is not None, "Learner is not defined"
+          learner = self.learner.name if self.learner is not None else " ..."
+          origin = self.origin.name if self.origin is not None else " ..."
+          st.warning(f"TODO: Custom {origin} for {learner}")
+
+  - !Class
+    name: Topic
+    doc: forward declaration
+    bases: [Ressource]
+
+  - !Class
+    name: Riddle
+    doc: forward declaration
+    bases: [Ressource]
+
+
+  - !Class
+    name: Persona
+    bases: [kore.Object]
+    doc: |
+      Learner persona. Someone who needs to learn skills and you care about. 
+      Could be yourself, your student, your avatar, your pet.
+      They need to learn, practice, and grow. By helping them, you help yourself.
+    icon: "👤"
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: "Noah"
+      - !Attribute
+        name: spin
+        type: str
+        doc: "SPecial INterest or passion. A key element to engage the learner."
+        default: "Hot chocolate"
+        following: 1
+      - !Attribute
+        name: description
+        type: str
+        is_long: True
+        doc: "Learner description"
+        default: |
+          Blond hair, blue eyes, wearing glasses, 
+          18 yo young boy, neuro-divergent learner
+      - !Attribute
+        name: jtbd
+        type: str
+        doc: "Job to be done. The goal of the learner."
+        default: "Learn to code"
+      - !Attribute
+        name: topic
+        type: Topic
+        doc: "The hard topic to learn."
+      - !Attribute
+        name: pain
+        type: str
+        doc: "Pain point"
+        default: "Boring classes. Cryptic error messages. No tutor available."
+        following: 1
+      - !Attribute
+        name: score
+        type: int
+        default: 1
+        read_only: True
+        doc: "Your score reflects your journey. It's your own way to the top! 🏔️"
+      - !Attribute
+        name: credits
+        type: int
+        default: 100
+        read_only: True
+        following: 1
+        doc: |
+          Your credits empower you to explore. 
+          
+          Impactful actions, including helping others, will earn you more!"
+      - !Attribute
+        name: agent
+        type: str
+        advanced: True
+        # default: !Agent {}
+      - !Attribute
+        name: image
+        type: str
+        doc: "Image url"
+        hidden: False
+        read_only: True
+      - !Attribute
+        name: karma
+        icon: "👣"
+        type: List[Ressource]
+        doc: "Ressources explored"
+
+    states: [without_photo, with_photo]
+
+    methods:
+
+      - !Method
+        name: generate_story
+        code: |
+          ret = "Learning story:\n\n" + \
+            f"**As a** learner focused on {self.spin}. \n\n" + \
+            f"**I want** to play and learn my way,\n\n" + \
+            f"**So that** I can {self.jtbd}\n\n" + \
+            f"**and** I can avoid the usual pains, such as:\n\n" + \
+            f"  {self.pain}\n\n\n"
+
+          if len(self.karma) > 0:
+            ret += "Here's my learning journey:\n"          
+          for k in self.karma:
+            ret += f"  - {k.story()}\n"
+          
+          ret += f"\n\n**Score**: {self.score} 🏆\n"
+          ret += f"**Credits**: {self.credits} 💰\n"
+          ret += f"\n\nThanks a lot for your help! 🙏\n"
+          
+          return ret
+
+      - !Method
+        name: generate_image
+        preconditions: [without_photo]
+        postcondition: with_photo
+        code: |
+          assert self.agent is not None, "Agent is not defined"
+          
+          def _generate_image(prompt: str = "Generate an image") -> str:
+            self.agent.prompt = prompt
+            return self.agent.generate_image()
+
+          import json
+          from dataclasses import asdict
+
+          slines = []
+          attr_names = ["name", "description", "spin", "jtbd", "pain", "score", "credits"]
+          for a in attr_names:
+            slines.append(f'"{a}": "{getattr(self, a, "")}"')
+
+          sprompt = "{" + ", ".join(slines) + "}"
+
+          new_prompt = (
+            "I need you to generate an illustration that should have a friendly and engaging aesthetic. \n" +
+            "First, generate a prompt for the description below:\n" + sprompt +
+            "\n\nthat reflects all the attribute values." +
+            "\n\nGiven the following meaning if the attributes: \n" +
+            ", ".join([ f"{a.name}: {a.doc}" for a in type(self)._class.attributes if not a.name.startswith("_")]) 
+          )
+          print(f"🖼️ {new_prompt = }")
+          # generated_prompt = self.agent.chat(new_prompt)
+
+          url = _generate_image(prompt=new_prompt)  # self.description)
+          print(f"🖼️ {url = }")
+          self.image = url
+
+      - !Method
+        name: discard_image
+        preconditions: [with_photo]
+        postcondition: without_photo
+        code: |
+          self.image = ""
+
+      - !Method
+        name: _add_karma
+        doc: |
+          Add karma to the learner
+          kargs:
+            riddle: Riddle
+        code: |
+          riddle = kwargs.get("riddle", None)
+          assert riddle is not None
+          self.karma.append(riddle)
+          self.score = sum(k.points for k in self.karma) / len(self.karma)          
+
+      - !Method
+        name: _OLD_generate_topic
+        hidden: True
+        doc: |
+          Generates a customized topic based on given one and adds it to it's karma.
+          Optional kwarg:
+            topic: Topic # default: self.topic
+        code: |
+          
+          topic = kwargs.get("topic", self.topic)  # original topic!
+          if topic is None:
+            topic = Topic(name="OOP", description="Object oriented python")
+          assert topic is not None, "Topic is not defined"
+          
+          # st.caption(f"Generating a customized topic for {self.name} ... Input is:")
+
+          attrs = [a for a in type(topic)._class.attributes if a.name in ["name", "description"]]
+
+          attr_prompt = (
+            "\n\nGiven the following leaning topic with attributes a, such as: \n" +
+            ", ".join([ f"{a.name}:{a.type=} = {getattr(topic, a.name, None)} doc: {getattr(a, 'doc', 'No doc available')}" for a in attrs]) 
+          )
+
+          self.agent.prompt = f"""
+            {attr_prompt},
+            and given a learner {self.name}, 
+            a {self.description} 
+            with {self.spin} as a special interest,
+            and {self.jtbd} as a goal,
+            and {self.pain} as pain points,
+            please customize the topic in an engaging, playful, and interactive way,
+            with only name and description, please.
+          """
+          # st.caption("Input topic:")
+          # st.write(topic)
+          #st.caption(f"{self.agent.prompt = }")
+          obj = self.agent.generate_object(dataclass_type=Topic)
+          obj.learner = self
+          obj.origin = topic
+          st.write(obj)
+          self.karma.append(obj)
+
+
+      - !Method
+        name: generate_topic_object
+        # hidden: True
+        doc: |
+          Generates a customized topic based on given one and adds it to it's karma.
+          Optional kwarg:
+            topic: Topic # default: self.topic
+        code: |
+          import json
+          from dataclasses import dataclass, asdict, is_dataclass
+
+          topic = kwargs.get("topic", self.topic)  # original topic!
+          if topic is None:
+            topic = Topic(name="OOP", description="Object oriented python")
+          assert topic is not None, "Topic is not defined"                                     
+          assert isinstance(topic, Topic), "Not a Topic instance"
+          
+        
+          def safe_asdict(obj):
+            """Recursively convert a dataclass to a dictionary, skipping non-serializable attributes."""
+            try:
+              # Directly return JSON-compatible types
+              if obj is None or isinstance(obj, (int, float, str, bool)):
+                return obj
+              elif isinstance(obj, (list, tuple, set)):  # Recursively process lists, tuples, and sets
+                return [safe_asdict(v) for v in obj]
+              elif isinstance(obj, dict):  # Recursively process dictionaries
+                return {k: safe_asdict(v) for k, v in obj.items()}
+              elif is_dataclass(obj) and not isinstance(obj, type):  # Ensure obj is a dataclass instance
+                result = {}
+                for k, v in obj.__dict__.items():  # Access attributes directly
+                  if k == "src":
+                    continue
+                  try:
+                    json.dumps(v)  # Test if it's JSON serializable
+                    result[k] = safe_asdict(v)  # Recurse into the value
+                  except (TypeError, ValueError):
+                    pass  # Ignore non-serializable attributes
+                return result
+            except Exception as e:
+              return {"error": f"Error processing object: {str(e)}"}  # Return a clean JSON error message
+                                             
+
+          dict_topic = safe_asdict(topic)     
+          st.write(dict_topic)
+          topic_js = json.dumps(dict_topic, indent=4)
+          st.json(topic_js)
+
+          self.agent.prompt = f"Use this instance but generate a different object: {topic_js}"
+
+          obj = self.agent.generate_object(dataclass_type=Topic)
+
+          obj.learner = self
+          obj.origin = topic
+
+          st.json(obj)
+          self.karma.append(obj)
+
+      - !Method
+        name: _test_generate_topic_object_direct
+        code: |
+          from dataclasses import dataclass, asdict, is_dataclass
+          from pydantic import create_model, BaseModel
+          from typing import Type
+          import json
+
+          agent = Agent()
+
+          topic = Topic(name="function", description="A block of code with a name that returns something")
+          topic.riddles.append(Riddle(title="What is a function?"))
+          topic.riddles.append(Riddle(title="How to call a function?"))
+          
+          topic_js = json.dumps(asdict(topic), indent=4)
+          agent.prompt = f"Use this instance but generate a different object: {topic_js}"
+
+          obj = agent.generate_object(dataclass_type=Topic)
+          assert obj is not None
+          
+          st.caption(f"{type(obj).__name__ = }")
+          st.json(obj)
+          
+          assert is_dataclass(obj), "Not a dataclass instance"
+          assert isinstance(obj, Topic), "Not a Topic instance"
+
+      - !Method
+        name: _test_generate_topic_object2
+
+        code: |
+          from dataclasses import dataclass, asdict, is_dataclass
+          from pydantic import create_model, BaseModel
+          from typing import Type
+          import json
+
+          agent = Agent()
+
+          topic = Topic(name="function", description="A block of code with a name that returns something")
+          topic.riddles.append(Riddle(title="What is a function?"))
+          topic.riddles.append(Riddle(title="How to call a function?"))
+          
+          topic_js = json.dumps(asdict(topic), indent=4)
+          agent.prompt = f"Use this instance but generate a different object: {topic_js}"
+
+          obj = agent.generate_object(dataclass_type=Topic)
+          assert obj is not None
+          
+          st.caption(f"{type(obj).__name__ = }")
+          st.write(obj)
+          
+          assert is_dataclass(obj), "Not a dataclass instance"
+          assert isinstance(obj, Topic), "Not a Topic instance"
+          
+
+      - !Method
+        name: OLD_test_generate_topic
+        hidden: True
+        code: |
+          persona = Persona(name="Noah2", agent=Agent(), description="A learner", 
+            spin="Hot chocolate", jtbd="Learn to code", pain="Boring classes")
+
+          persona.topic = Topic(name="function", learner=persona, description="A function is a block of code")
+          
+          obj = persona.generate_topic()
+          assert obj is not None
+          
+          #st.caption(f"{type(obj).__name__ = }")
+          #st.write(obj)
+          
+          assert instanceof(obj, Topic), "Not a Topic"
+
+      - !Method
+        name: generate_deep_topic
+        hidden: True
+        doc: |
+          Generates a customized topic based on given one and adds it to it's karma.
+          Optional kwarg:
+            topic: Topic # default: self.topic
+        code: |
+          
+          topic = kwargs.get("topic", self.topic)
+          if topic is None:
+            topic = Topic(name="OOP", description="Object oriented python")
+          assert topic is not None, "Topic is not defined"
+          
+          st.caption(f"Generating a customized topic for {self.name} ... Input is:")
+
+          attr_prompt = (
+            "\n\nGiven the following meaning of all attributes a, such as: \n" +
+            ", ".join([ f"{a.name=}, {a.type=} doc: {a.doc=}" for a in type(topic)._class.attributes if not a.name.startswith("_")]) 
+          )
+
+          self.agent.prompt = f"""
+            Given {self.name}, 
+            a {self.description} 
+            with {self.spin} as a special interest,
+            and {self.jtbd} as a goal,
+            and {self.pain} as pain points,
+            and {attr_prompt},
+            please customize the topic {topic.generate_json()}
+          """
+          st.caption("Input topic:")
+          st.write(topic)
+          st.caption(f"{self.agent.prompt = }")
+          obj = self.agent.generate_object(dataclass_type=Topic)
+          st.write(obj)
+          self.karma.append(obj)
+
+      - !Method
+        name: DEACTIVATED_test_generate_deep_topic
+        hidden: True
+
+        code: |
+          from dataclasses import dataclass, asdict, is_dataclass
+          from typing import Type
+          import json
+
+          persona = Persona(name="Noah2", agent=Agent(), description="A learner", 
+            spin="Hot chocolate", jtbd="Learn to code", pain="Boring classes")
+
+          fct = Topic(name="function", learner=persona, description="A function is a block of code", 
+            riddles=[Riddle(title="What is a function?"), Riddle(title="How to define a function?")])
+          
+          fct_js = json.dumps(asdict(fct), indent=4)
+          persona.agent.prompt = f"Use the following instance but generate a different object: {fct_js}"
+
+          obj = persona.generate_deep_topic(topic=fct)
+          assert obj is not None
+          
+          st.caption(f"{type(obj).__name__ = }")
+          st.write(obj)
+          
+          assert is_dataclass(obj), "Not a dataclass instance"
+
+  - !Class
+    name: Relationship
+    icon: "🔗"
+    bases: [kore.Object]
+    attributes:
+      - !Attribute
+        name: label
+        type: str
+      - !Attribute
+        name: to
+        type: Topic
+    methods:
+      - !Method
+        name: __str__
+        code: |
+          return f"{self.label} {getattr(self.to, 'name', '')}"
+
+
+  - !Class
+    name: Topic
+    doc: |
+      A topic is a unit of knowledge.
+    icon: "📚"
+    bases: [Ressource]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+      - !Attribute
+        name: subtopics
+        type: List[Topic]
+        doc: "Subtopics of this topic"
+      - !Attribute
+        name: relationships
+        type: List[Relationship]
+        doc: "Relationships with other topics"
+      - !Attribute
+        name: riddles
+        type: List[Riddle]
+        doc: "Riddles related to this topic"
+    methods:
+      - !Method
+        name: __str__
+        code: |
+          return f"{self.name}"
+      - !Method
+        name: add_riddle
+        code: |
+          self.riddles.append(Riddle(title="New riddle", learner=self.learner))
+
+
+      - !Method
+        name: generate_json
+        hidden: True
+        code: |
+          from dataclasses import dataclass, asdict, is_dataclass, fields
+          from typing import Any
+          import json
+          
+          def safe_asdict(obj: Any) -> dict:
+            if not is_dataclass(obj):
+              raise ValueError("Provided object is not a dataclass instance.")
+        
+            def is_serializable(value):
+              try:
+                json.dumps(value)  # Check if the value is serializable
+                return True
+              except (TypeError, OverflowError):
+                return False
+        
+            result = {}
+            for field in fields(obj):
+              value = getattr(obj, field.name)
+              if field.name.startswith("_"):  # Exclude private fields
+                continue
+              if is_dataclass(value):  # Recurse into nested dataclasses
+                result[field.name] = safe_asdict(value)
+              elif isinstance(value, (list, tuple)):
+                result[field.name] = [
+                  safe_asdict(v) if is_dataclass(v) else v
+                  for v in value
+                  if is_serializable(v)
+                ]
+              elif is_serializable(value):
+                result[field.name] = value
+            return result
+
+          def is_serializable(value):
+            try:
+              json.dumps(value)  # Try JSON serialization
+              return True
+            except (TypeError, OverflowError):
+              return False
+
+          def dataclass_to_json(dataclass_instance):
+            return {
+              key: value
+              for key, value in safe_asdict(dataclass_instance).items()
+              if is_serializable(value) and not key.startswith("_")
+            }
+
+          if False:
+            js = dataclass_to_json(self)
+            st.json(js)
+            return js
+          
+          
+          serialized_data = safe_asdict(self)
+          js = json.dumps(serialized_data, indent=4)
+          st.json(js)
+          
+
+      - !Method
+        name: generate_story
+        code: |
+          ret = \
+            f"Given {self.name}, a {type(self).__name__}" + \
+            f"customized from {self.origin.name if self.origin else ''}:\n" + \
+            f"when I explore {self.name}, " + \
+            f"then I earned {self.name}.\n"
+
+
+      - !Method
+        name: display
+        code: |
+            st.header(self.name)
+            st.caption(f"{id(self)}: {self.description}")
+            if len(self.subtopics) > 0:
+              st.subheader(f"{self.name}.subtopics:")
+            for sub in self.subtopics:
+                sub.display()
+            if len(self.relationships) > 0:
+              st.subheader(f"{self.name}.relationships:")
+            for rel in self.relationships:
+                st.caption(f"  -- {rel.label} -> {rel.to.name} {id(rel.to)}")
+
+      - !Method
+        name: _get_group_id
+        code: |
+          # if there is a "is a relationship, then assign group to that node
+          for rel in self.relationships:
+            if rel.label == "is a":
+              return id(rel.to)          
+          return id(self)
+
+      - !Method
+        name: graph
+        code: |
+          from pyvis.network import Network
+          import json
+
+          # Collect nodes and edges for the current graph
+          current_nodes = [{'id': id(t), 'label': t.name, 'title': t.description, 'group': 'current'} for t in self.subtopics]
+          current_edges = [{'from': id(t), 'to': id(r.to), 'label': r.label} 
+                           for t in self.subtopics for r in t.relationships if r.to is not None]
+
+          # Collect nodes and edges for the initial graph (origin topics)
+          origin_containers = {id(t.origin): t.origin for t in self.subtopics if t.origin is not None}
+          origin_nodes = [{'id': id(c), 'label': c.name, 'title': c.description, 'group': 'origin'} for c in origin_containers.values()]
+          origin_edges = [{'from': id(c), 'to': id(r.to), 'label': r.label, 'dashes': True} 
+                          for c in origin_containers.values() for r in c.relationships if id(r.to) in origin_containers]
+
+          # Create dotted edges between current graph nodes and their origins
+          dotted_edges_to_origins = [{'from': id(t), 'to': id(t.origin), 'label': 'origin', 'dashes': True} 
+                                     for t in self.subtopics if t.origin is not None]
+
+          # Combine all nodes and edges
+          nodes = current_nodes + [node for node in origin_nodes if node not in current_nodes]
+          edges = current_edges + origin_edges + dotted_edges_to_origins
+
+          # Properly format the data as JSON
+          data = json.dumps({'nodes': nodes, 'edges': edges})
+
+          def render_graph(data: dict) -> str:
+            net = Network(height="750px", width="100%", bgcolor="white", font_color="black")
+
+            # Add nodes
+            for node in data["nodes"]:
+              net.add_node(node["id"], label=node["label"], group=node["group"], title=node["title"])
+
+            # Add edges
+            for edge in data["edges"]:
+              net.add_edge(edge["from"], edge["to"], title=edge.get("label", ""),
+                           label=edge.get("label", ""), arrows="to", dashes=edge.get("dashes", False))
+
+            return net
+
+          # Process the data and render the graph
+          network_data = json.loads(data)
+          net = render_graph(network_data)
+          html_content = net.generate_html()
+          st.components.v1.html(html_content, height=750, scrolling=True)
+      
+
+      - !Method
+        name: graph1
+        code: |
+          from pyvis.network import Network
+          import tempfile
+          import json
+          import builtins
+
+          nodes = [{'id': id(t), 'label': t.name, 'title': t.description, 'group': t._get_group_id()} for t in self.subtopics]
+          edges = [{'from': id(t), 'to': id(r.to), 'label': r.label} 
+                   for t in self.subtopics for r in t.relationships if r.to is not None]
+
+          data = json.dumps({'nodes': nodes, 'edges': edges})  # Properly format the data as JSON
+
+          def render_graph(data: dict) -> str:
+            net = Network(height="750px", width="100%", bgcolor="white", font_color="black")
+        
+            for node in data["nodes"]:
+              net.add_node(node["id"], label=node["label"], group=node["group"], title=node["title"])
+        
+            for edge in data["edges"]:
+          
+              net.add_edge(edge["from"], edge["to"], title=edge.get("label", ""),
+                           label=edge.get("label", ""), arrows="to")        
+
+            return net
+
+          network_data = json.loads(data)
+          
+          net = render_graph(network_data)
+          html_content = net.generate_html()
+          st.components.v1.html(html_content, height=750, scrolling=True)
+
+      - !Method
+        name: customize
+        preconditions: [standard]
+        postcondition: customized
+        code: |
+          assert self.learner is not None, "Learner is not defined"
+          assert self.origin is not None, "Origin is not defined"
+          for t in self.origin.subtopics:
+            new_t = type(t)(name=f"my {t.name}", description=f"custom {t.description}", origin=t)
+            self.subtopics.append(new_t)
+
+          for t in self.subtopics:
+            # print(f" {t.name = }")
+            for rel in t.origin.relationships:
+              new_rel = type(rel)(label=f"{rel.label}")
+              # print(f"  🔗 {new_rel.label = }")
+              new_rel.to = [e for e in self.subtopics if e.origin == rel.to][0]
+              t.relationships.append(new_rel)
+          
+          for r in self.origin.riddles:
+            _r = r.clone()
+            _r.title = f"my {r.title}" 
+            _r.text = f"custom {r.text}" 
+            _r.origin = r
+            self.riddles.append(_r)
+
+  - !Class
+    name: Riddle
+    icon: "🧩"
+    doc: |
+      An interactive & gamified way to explore and validate a topic.
+    bases: [Ressource]
+    attributes:
+      - !Attribute
+        name: title
+        type: str
+        default: "Riddle title"
+      - !Attribute
+        name: difficulty
+        type: int
+        default: 3
+        following: 1
+      - !Attribute
+        name: points
+        type: int
+        default: 10
+        following: 1
+      - !Attribute
+        name: text
+        type: str
+        is_long: True
+      - !Attribute
+        name: correct_answer
+        type: str
+        hidden: True
+      - !Attribute
+        name: proxy_module_name
+        type: str
+        advanced: True
+      - !Attribute
+        name: options
+        type: List[str]
+        advanced: True
+      - !Attribute
+        name: answer
+        type: str
+        doc: "Type your answer here, or pick one"
+        option_field: options
+        # options: ["Yes", "No", "Donno"]
+      - !Attribute
+        name: hints
+        type: List[str]
+        default: ["Hint 1", "Hint 2", "Hint 3"]
+      - !Attribute
+        name: topics
+        type: List[Topic]
+    methods:
+      - !Method
+        name: __str__
+        code: |
+          return self.title
+          result = f"{self.title} {self.difficulty * '⭐️'} ({self.points} points) {self.answer}"
+          if self.origin is not None:
+            result += f" {'✅' if self.origin.points == self.points else ''}"
+          return result
+      - !Method
+        name: check_answer
+        code: |          
+          learner_name = self.learner.name if self.learner is not None else " (unknown)"
+          # print(f"before: {learner_name = }")
+          points = 0
+          if str(self.answer).lower() == str(self.correct_answer).lower():
+            points = self.points
+            st.success(f"🎉 Correct! You win `{points}` points!")
+            st.balloons()
+            result = f"🎉 {self.answer} == {self.correct_answer}"
+          else:
+            points = 2
+            st.warning(f"🤔 Almost there! You win `{points}` points for trying!")
+            result = f" {self.answer} is not the correct answer. Try again! Use Hints!"
+          
+          if self.learner is not None:
+            riddle = type(self)(title=self.title, origin=self, answer=self.answer,
+              text=self.text, correct_answer=self.correct_answer, learner=self.learner,
+              difficulty=self.difficulty, hints=self.hints, points=points, progression=points / self.points)
+            riddle.description=str(riddle)
+            self.learner._add_karma(riddle=riddle)
+          else:
+            st.warning("No learner defined!!!")
+            # print(f"after: {self.learner.name = }")
+          
+          return result
+
+      - !Method
+        name: play
+        code: |
+          with st.container(border=True):
+            if len(self.proxy_module_name) == 0:
+              st.warning("No module to proxy to")
+              return True
+            module = lightcode.import_module(module_name=self.proxy_module_name)
+
+
+      - !Method
+        name: customize
+        preconditions: [standard]
+        postcondition: customized
+        code: |
+          import json
+          from dataclasses import asdict
+          
+          learner = self.learner.name if self.learner is not None else " ..."
+          st.warning(f"TODO: Customizing riddle for {learner}")
+        
+          self.learner.agent.prompt = f"""
+            Given {self.learner.name}, 
+            a {self.learner.description}
+            with {self.learner.spin} as a special interest,
+            please customize the riddle:
+            {self.title}
+            {self.text}
+            with the hints:
+            {self.hints}
+            with the correct answer:
+            {self.correct_answer}
+          """
+          st.write(self.learner.agent)
+          obj = self.learner.agent.generate_object(dataclass_type=Riddle)
+          st.write(obj)
+          self.learner.karma.append(obj)
+
+      - !Method
+        name: story
+        # hidden: True
+        code: |
+
+          #result = f"For {self.learner.name}, this {type(self).__name__} is about {self.description} \n"
+
+          result = f"Playing with {self.title} {self.difficulty * '⭐️'} ({self.points} points) {self.answer}"
+
+          if self.origin is not None:
+            result += f" {'🎈' if self.origin.points == self.points else ''}"
+
+
+          if False:
+            origin = self.origin
+            while origin is not None:            
+              result += f" which is a customization of {origin.story()}"
+              origin = origin.origin
+
+          return result
+
+
+  - !Class
+    name: Play
+    bases: [Riddle]
+    attributes:
+      - !Attribute
+        name: variables
+        type: List[Var]
+      - !Attribute
+        name: functions
+        type: List[Func]
+      - !Attribute
+        name: checker
+        type: Func
+      - !Attribute
+        name: objects
+        type: List[Object]
+    states: [inactive, active]
+    methods:
+      - !Method
+        name: start
+        preconditions: [inactive]
+        postcondition: active
+        code: |
+          assert self.learner
+          self.learner.karma.append(self)
+
+      - !Method
+        name: stop
+        preconditions: [active]
+        postcondition: inactive
+        code: |
+          pass
+
+      - !Method
+        name: check_answer
+        preconditions: [active]
+        code: |
+          result = False          
+          if checker is not None:
+            check = checker.call()
+            if check:
+              clone = type(self)(title=self.title, origin=self,
+                text=self.text, learner=self.learner,
+                difficulty=self.difficulty, hints=self.hints, points=points, progression=points / self.points)
+              points = self.points
+              st.success(f"🎉 Correct! You win `{points}` points!")
+              st.balloons()
+              result = f"🎉 Well done! You win `{points}` points!"
+            else:
+              points = 2
+              st.warning(f"🤔 Almost there! You win `{points}` points for trying!")
+              result = f" {self.answer} is not the correct answer. Try again! Use Hints!"
+            if self.learner is not None:
+              self.learner._add_karma(riddle=clone)
+          return result
+
+
+  - !Class
+    name: Func
+    doc: "Function to be called"
+    icon: "▶️"
+    bases: [kore.Object]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: "_"
+      - !Attribute
+        name: target
+        type: Object
+        advanced: True
+      - !Attribute
+        name: params
+        type: List[Var]
+        owned: True
+        advanced: True
+      - !Attribute
+        name: expected_result
+        type: typing.Any
+      - !Attribute
+        name: result
+        type: typing.Any
+        advanced: True
+      - !Attribute
+        name: code
+        type: str
+        default: "return 1"
+      - !Attribute
+        name: _value
+        type: typing.Any
+        advanced: True
+    states: [undefined, defined, called, tested]
+    methods:
+      - !Method
+        name: _test_call
+        code: |    
+          fixture = type(self)(name="fixture", as_name="fixture", code="return 1")
+          st.caption(f"{self._module is None = }")
+          # fixture._declare(module=self._module)
+          fixture.define(module=self._module)
+          st.caption("Testing fixture")
+          st.write(fixture)
+          result = fixture.call()
+          st.caption(f"Testing call: {result = }")
+          assert result == 1
+
+      - !Method
+        name: undefine
+        preconditions: [defined, called, tested]
+        postcondition: undefined
+        code: |
+          pass
+
+      - !Method
+        name: define
+        preconditions: [undefined]
+        postcondition: defined
+        code: |
+          self._declare(module=self._module)
+
+      - !Method
+        name: _declare
+        #preconditions: [undefined]
+        #postcondition: defined
+        doc: |
+          Declare function in the module
+          params: module
+
+        code: |    
+          self._module = kwargs.get("module", None)
+          mo = self._module
+
+          if self.name == '_': # anonymous is not an option
+            self.name = f"anon_{id(self)}" 
+
+          try:  
+            code = self.code
+            # Create the function from code
+            # new_code = f"def {self.name}(self, *args, **kwargs):"
+            new_code = f"def {self.name}(*args, **kwargs):"
+            new_code += "\n\tfrom print2st import print"
+            new_code += "\n\t" + code.replace("\n", "\n\t")
+
+            exec(new_code, mo.value.__dict__)
+
+            self._value = getattr(mo.value, self.name, None)
+          except Exception as e:
+            print(f"Error in {self.name}")
+            print(e)
+            print(new_code)
+            print(traceback.format_exc())
+
+          return self._value
+
+      - !Method
+        name: call
+        preconditions: [defined, called, tested]
+        postcondition: called
+        code: |    
+          print(f"Calling func: {self.name}")
+          #if self.state in ['undefined']:
+          #  self._declare(module=self._module)
+        
+          try:
+            result = None
+
+            target = self.target if self.target is not None else None
+            local_scope = {'self': target}
+            explicit_globals = globals().copy()
+
+            # exec(new_code, explicit_globals, local_scope)
+
+            #result = local_scope[self.name](target) # (*self.params)
+            #self.result = result
+
+            if self._value is not None:
+              result = self._value() ## calls the function
+            else:
+              print(f"Func {self._module.name}.{self.name} not declared")
+          
+            self.result = result
+          except Exception as e:
+            print(f"Error in {self.name}")
+            print(e)
+            print(self.code)
+            print(traceback.format_exc())
+
+          # print(result)
+          return result
+
+      - !Method
+        name: _old_call
+        code: |    
+          try:
+            result = None
+            code = self.code
+
+            # Create the function from code
+            new_code = f"def {self.name}(self, *args, **kwargs):"
+            new_code += "\n\tfrom print2st import print"
+            new_code += "\n\t" + code.replace("\n", "\n\t")
+            if False:
+              tree = ast.parse(new_code)
+              func_def = tree.body[0]
+  
+              # Compile the AST to code object
+              code_obj = compile(tree, filename=f"{type(self)._class._module.name}_{self.name}", mode="exec")
+  
+              # Execute the code object
+              # result = exec(code_obj, globals(), locals())
+
+            target = self.target if self.target is not None else None
+            local_scope = {'self': target}
+            #args = self.params
+            #args.append(self)
+            # local_scope = {}
+            explicit_globals = globals().copy()
+            exec(new_code, explicit_globals, local_scope)
+            result = local_scope[self.name](target) # (*self.params)
+            # print(result)
+            self.result = result
+          except Exception as e:
+            print(f"Error in {self.name}")
+            print(e)
+            print(new_code)
+            print(traceback.format_exc())
+
+          # print(result)
+          return result
+
+      - !Method
+        name: __repr__
+        code: |
+            return f"{self.icon} {self.name}"
+
+      - !Method
+        name: assert_result
+        preconditions: [called, tested]
+        code: |
+          try:
+            assert self.expected_result == self.result
+            self.state = 'tested'
+            lightcode.balloons()
+            return True
+          except Exception as e:
+            return False
+
+      - !Method
+        name: count_python_concepts
+        preconditions: [defined, called, tested]
+        doc: |
+            Analyzes a Python function and counts the distinct Python concepts it uses.
+            :return: The count of unique Python concepts used.
+        code: |
+          import ast
+          import tokenize
+          from io import StringIO
+          # Parse the function into an AST
+          tree = ast.parse(self.code)
+          
+          # Collect unique AST node types
+          node_types = {type(node).__name__ for node in ast.walk(tree)}
+
+          comments = []
+          tokens = tokenize.generate_tokens(StringIO(self.code).readline)
+          for token in tokens:
+              if token.type == tokenize.COMMENT:
+                  comments.append(token.string.strip())  # Collect comments
+                  node_types.add("Comment")  # Add comments as a concept
+                  break
+          node_types.remove("Module")
+          st.write(node_types)              
+          return len(node_types)          
+
+      - !Method
+        name: __call__
+        code: |
+          return self.call(module=self._module) 
+
+  - !Class
+    name: Step
+    bases: [Ressource]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: "step"
+      - !Attribute
+        name: mandatory
+        type: bool
+        advanced: True
+      - !Attribute
+        name: feedback
+        doc: "Your feedback for this learning journey step"
+        icon: "👍"
+        type: str
+        is_long: True
+      - !Attribute
+        name: comment
+        icon: "💬"
+        type: str
+        is_long: True
+      - !Attribute
+        name: explanation
+        icon: "📖"
+        type: str
+        # following: 1
+        is_long: True
+        read_only: True
+      - !Attribute
+        name: place
+        icon: "🏟️"
+        type: str
+        options: ["🟥 Poor", "🟨 Average", "🟩 Great"]
+        doc: |
+          Aristotelian `unity of place`. Everything happens in a single place.
+      - !Attribute
+        name: action
+        icon: "▶️"
+        type: str
+        options: ["🟥 Poor", "🟨 Average", "🟩 Great"]
+        following: 1
+        doc: |
+          Aristotelian `unity of action`. Only one new topic at a time.
+      - !Attribute
+        name: time
+        icon: "🕗️"
+        type: str
+        options: ["🟥 Poor", "🟨 Average", "🟩 Great"]
+        following: 1
+        doc: |
+          Aristotelian `unity of time`. It's all about short feedback loops.
+    states: [none, checked, done]
+    methods:
+      - !Method
+        name: check
+        preconditions: [none, checked]
+        doc: |
+          Please assess the 3 metrics then check them.
+        code: |
+          
+          @st.dialog("Warning")
+          def _check():
+            st.warning("Please assess the 3 metrics before checking them.")
+            if st.button("OK", type="primary"):
+              st.rerun()          
+          
+          if not self.mandatory:
+            self.state = 'checked'
+          elif "" not in [self.time, self.action, self.place]:
+            self.state = 'checked'
+          else:
+            _check()
+            return "Please assess the 3 metrics before checking them."
+          self.explanation = self.comment
+
+
+      - !Method
+        name: do
+        preconditions: [checked]
+        postcondition: done
+        code: |
+          pass
+
+      - !Method
+        name: reset
+        preconditions: [checked, done]
+        postcondition: none
+        code: |
+          self.explanation = "Please adjust your feedback and check again."
+
+
+instances:
+
+  - !Scene
+    title: "Tutorials"
+    icon: "💡"
+    lines: [5, 2, 2, 2, 2, 2, 2, 2]
+    as_name: scene
+
+  - !Func &fg_pour
+    name: fg_pour
+    as_name: fg_pour
+    code: |
+      return "☕️ (delicious hot chocolate)"
+
+  - !Func &f_add
+    name: add
+    doc: "Adds 1 to Noah's score"
+    code: |
+      noah.score += 1
+
+    expected_result: 3
+
+
+  - !Persona &noah0
+    name: "Noah0"
+    as_name: noah0
+
+  - !Topic &py
+    name: "Python concepts"
+    learner: *noah0
+    subtopics:
+      - !Topic &comment
+        name: "Comment"
+        description: "Comments are used to explain the code."
+      - !Topic &data_type
+        name: "Data Type"
+        description: "Data types are the classification or categorization of data items."
+      - !Topic &integer
+          name: "Integer"
+          description: "A kind of data."
+          relationships:
+          - !Relationship
+            label: "is a"
+            to: *data_type
+      - !Topic &string
+          name: "String"
+          description: "A kind of data."
+          relationships:
+          - !Relationship
+            label: "is a"
+            to: *data_type
+      - !Topic &list
+          name: "List"
+          description: "A kind of data that stores multiple values."
+          relationships:
+          - !Relationship
+            label: "is a"
+            to: *data_type
+      - !Topic &parameter
+          name: "Parameter"
+          description: "A kind of data."
+          relationships:
+          - !Relationship
+            label: "has a"
+            to: *data_type
+      - !Topic &function
+          name: "Function"
+          description: "Block of code which only runs when it is called."
+          relationships:
+          - !Relationship
+            label: "returns"
+            to: *data_type
+          - !Relationship
+            label: "has"
+            to: *parameter
+      - !Topic &variables
+        name: "Variable"
+        description: "Variables are used to store data values."
+        relationships:
+        - !Relationship
+          label: "has"
+          to: *data_type
+    relationships:
+      - !Relationship
+        label: "is a"
+        to: *variables
+      - !Relationship
+        label: "is a"
+        to: *data_type
+
+    riddles:
+      - !Riddle &riddle1
+        title: "Riddle 1"
+        learner: *noah0
+        text: "I am ... I can ... What I am?"
+        correct_answer: "Python"
+        difficulty: 1
+        hints: ["Hint 1", "Hint 2", "Hint 3"]
+        options: ["Monkey", "Snake", "Python"]
+        topics: [*comment, *data_type, *integer, *string, *list, *parameter, *function, *variables]
+      - !Riddle &riddle2
+        learner: *noah0
+        title: "Riddle 2"
+        text: "I am ... I can ... What I am?"
+        answer: "Python"
+        difficulty: 3
+        hints: ["Hint 1", "Hint 2", "Hint 3"]
+        topics: [*comment, *data_type, *integer, *string, *list, *parameter, *function, *variables]
+        proxy_module_name: "blocks"
+      - !Play
+        title: Fun with :red[Fun]ctions
+        description: Play with functions
+        functions:
+          - *f_add
+          - *fg_pour
+        variables:
+          - !Var
+            name: jar
+          - !Var &cup
+            name: cup
+            type: str
+            value: "🍫"
+            as_name: cup
+
+  - !Persona &noah
+    name: "Noah"
+    as_name: noah
+    topic: *py
+
+
+  - !Inspector &iinoah
+    source: *noah
+    title: One
+    border: True
+    debug: True
+
+  - !Text
+    title: "Profiler"
+    as_name: profiler
+    subjects: [*iinoah]
+    icon: "👤"
+    border: True
+    height: 800
+    foldable: False
+    text: "Learner"
+    help: Dogs are cute and fast
+    media: noah.png
+    #on_post_init:
+    #  - !Function
+    #    name: update_learner
+    #    code: |
+    #      noah = self.subjects[0].source
+    #      st.code(noah.generate_story(), language="gherkin")
+
+
+  - !Inspector
+    title: Python concepts
+    border: True
+    source: *py
+    debug: True
+
+
+  - !Table &compos
+    title: "Components"
+    icon: "📦"
+    source: [*riddle1, *riddle2]
+
+  - !Inspector
+    title: Python concepts
+    border: True
+    source: *f_add
+    debug: True
+
+  - !Inspector
+    source: *fg_pour
+    border: True
+    foldable: False
+    debug: True
+
+  - !Inspector
+    title: Noah0
+    border: True
+    source: *noah0
+    debug: True
+
+
+
+more:
+  - !Page
+    title: Examples
+    border: False
+    icon: "👨🏻‍🏫"
+    file_name: _play
+    next_page: tutorials_examples
+
+  - !Page
+    title: Back
+    border: False

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myapp-bundle"
+version = "0.1.0"
+description = "My app is built with Lightcode and Streamlit."
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.runtime.txt"] }
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+py-modules = ["main", "launcher", "lightcode"]      # modules at src/main.py and src/launcher.py
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["usecases*", "modules*", "pages*", "config*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.json", "*.csv"]
+
