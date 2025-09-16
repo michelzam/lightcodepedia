@@ -1,0 +1,71 @@
+module:
+  - doc: "Welcome to the playground. It's all about fun...xions!"
+    icon: "🎈"
+
+imports:
+  - !Module
+    name: blocks
+  - !Module
+    name: inspectors
+  - !Module
+    name: designers
+  - !Module
+    name: tutorials
+  - !Module
+    name: lightcode
+
+classes:
+
+  - !Class
+    name: Temperature
+    bases: [kore.Object]
+    icon: ☕︎
+    doc: Colling temperature experiment.
+    attributes:
+      - !Attribute
+        name: temperature
+        type: int
+        default: 140
+      - !Attribute
+        name: drops
+        type: int
+        default: 2
+      - !Attribute
+        name: DEGREES_PER_DROP
+        type: int
+        default: 5
+      - !Attribute
+        name: expected_result
+        type: int
+    methods:
+      - !Method
+        name: cool_it
+        code: |
+          return self.temperature - self.drops * self.DEGREES_PER_DROP
+      - !Method
+        name: assert_it
+        code: |
+          ret = self.cool_it() == self.expected_result
+          if ret:
+            lightcode.balloons()
+            return "Great!"
+          else:
+            return "Almost. Try again!"
+
+instances:
+
+  - !Scene
+    title: ":red[Fun] with :red[fun]ctions"
+    icon: "💡"
+    lines: [1, 1, 1]
+
+  - !Temperature &temp1 {}
+
+  - !Form
+    title: "Experiment"
+    attributes: [temperature, drops, DEGREES_PER_DROP, expected_result]
+    source: *temp1
+    border: True
+    foldable: False
+
+

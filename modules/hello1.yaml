@@ -29,6 +29,12 @@ instances:
     next_page: tutorial101
 
   - !Page
+    title: Fun
+    border: False
+    icon: "🎈"
+    next_page: fun
+
+  - !Page
     title: People
     border: False
     icon: "👤"
