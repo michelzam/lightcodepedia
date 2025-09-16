@@ -61,7 +61,7 @@ instances:
 
   - !Temperature &temp1 {}
 
-  - !Form
+  - !Inspector
     title: "Experiment"
     attributes: [temperature, drops, DEGREES_PER_DROP, expected_result]
     source: *temp1
