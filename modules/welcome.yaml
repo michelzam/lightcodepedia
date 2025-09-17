@@ -16,7 +16,7 @@ classes:
 instances:
 
   - !Scene
-    title: "Welcome to Lightcode runtime!"
+    title: "Welcome to Lightcode root!"
     icon: "💡"
     lines: [3]
     as_name: scene
