@@ -11,3 +11,7 @@ defaults:
 include:
   - modules
   - modules/*.yaml
+
+mermaid:
+  # pick any version listed on jsDelivr
+  version: "10.9.1"
