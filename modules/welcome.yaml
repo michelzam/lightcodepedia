@@ -52,6 +52,7 @@ instances:
   - !Text
     title: "Copyright"
     icon: "©"
+    media: EN_Co-fundedbytheEU_RGB_POS.png
     as_name: copyright
     foldable: True
     expanded: True
@@ -71,4 +72,5 @@ instances:
       be held responsible for them.
 
       [LightCode](https://www.lightcodepedia.org)
-
+      
+  
