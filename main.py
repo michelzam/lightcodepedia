@@ -1,3 +1,7 @@
+"""
+(c) 2021 KarmicSoft. All rights reserved.
+"""
+
 import sys
 import streamlit as st
 
