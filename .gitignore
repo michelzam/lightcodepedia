@@ -1,0 +1,5 @@
+/.venv310/*
+.idea/*
+.venv310/*
+lib/*
+.devcontainer/*
