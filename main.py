@@ -25,4 +25,8 @@ st.session_state.mud = ""
 
 about()
 
-welcome_page("welcome")
+if "module" in st.query_params:
+    module_name = st.query_params["module"]
+    module_page(sel_file=module_name)
+else:
+    welcome_page("welcome")
