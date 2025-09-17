@@ -39,13 +39,13 @@ classes:
         type: int
     methods:
       - !Method
-        name: cool_it
+        name: cool
         code: |
           return self.temperature - self.drops * self.DEGREES_PER_DROP
       - !Method
-        name: assert_it
+        name: guess
         code: |
-          ret = self.cool_it() == self.expected_result
+          ret = self.cool() == self.expected_result
           if ret:
             lightcode.balloons()
             return "Great!"
