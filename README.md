@@ -42,7 +42,7 @@ Made with Streamlit, Smalljects and Lighcode
 
 ## Step 2 — Deploy on **Streamlit Community Cloud**
 
-1. Go to Streamlit Community Cloud and click **Continue to sign-in**.
+1. Go to Streamlit Community Cloud https://streamlit.io/cloud and click **Continue to sign-in**.
    
    ![Streamlit: Continue to sign-in](assets/streamlit_continue_to_signin.png)
 
