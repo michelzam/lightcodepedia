@@ -1,5 +1,5 @@
 ## Welcome ##
-Made with Streamlit, Smalljects and 
+Made with Streamlit, Smalljects and Lighcode
 
 
 # Deploy **LightCodePedia** to Streamlit Community Cloud (via GitHub)
@@ -22,7 +22,7 @@ Made with Streamlit, Smalljects and
    
    ![GitHub sign-up form](assets/github_signup_form.png)
 
-3. Go to the repository **MichelZam/lightcodepedia** and open the **Fork** menu.
+3. Go to the repository https://github.com/MichelZam/lightcodepedia and open the **Fork** menu.
    
    ![Fork dropdown](assets/github_fork_dropdown.png)
 
