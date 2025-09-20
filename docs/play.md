@@ -5,7 +5,7 @@
 
 ---
 
-{% include example.md name="fun" %}
+{% include example2.md name="fun" %}
 
 ---
 ## iframe
