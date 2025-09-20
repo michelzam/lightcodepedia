@@ -8,7 +8,7 @@
   //    Map those to .mermaid before initializing:
   document.querySelectorAll("code.language-mermaid").forEach(code => {
     const pre = code.parentElement;
-    const container = document.createElement("div"); 
+    const container = document.createElement("div");
     container.className = "mermaid";
     container.textContent = code.textContent;
     pre.replaceWith(container);
