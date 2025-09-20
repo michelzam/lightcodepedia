@@ -1,11 +1,12 @@
-{% if include.name %}
-<iframe src="https://lightcodepedia1.streamlit.app/?module={{include.name}}" 
-  width="100%" height="1600" loading="lazy" 
-  allowfullscreen="allowfullscreen" style="border:none;">
-</iframe>
-{% else %}
-<p style="color:red; font-weight:bold;">
-  ⚠️ Missing <code>name=</code> parameter in include call.
-  Example:: <code>{% raw %}{% include example.md name="hello" %}{% endraw %}</code>
+{% assign module = include.module | default: "welcome" %}
+
+<p>
+  <iframe
+    src="https://lightcodepedia1.streamlit.app/?module={{ module | uri_escape }}&embed=true&embed_options=hide_toolbar"
+    width="100%"
+    height="1600"
+    loading="lazy"
+    allowfullscreen
+    style="border:none;">
+  </iframe>
 </p>
-{% endif %}
