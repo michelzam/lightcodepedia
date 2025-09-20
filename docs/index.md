@@ -3,7 +3,7 @@ title: 💡 Lightcodepedia
 layout: default
 ---
 
-# Hello from Lightcodepedia 👋
+# Hello Learner 👋
 
 📖 Learn how to build apps with little or no code.
 
