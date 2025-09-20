@@ -1,6 +1,5 @@
 ---
 title: 💡 Lightcodepedia
-layout: home
 ---
 
 # Hello from Lightcodepedia 👋
