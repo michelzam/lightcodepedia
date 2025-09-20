@@ -6,6 +6,6 @@
 {% else %}
 <p style="color:red; font-weight:bold;">
   ⚠️ Missing <code>name=</code> parameter in include call.
-  Example: <code>{% raw %}{% include example.md name=hello %}{% endraw %}</code>
+  Example: <code>{% raw %}{% include example.md name="hello" %}{% endraw %}</code>
 </p>
 {% endif %}

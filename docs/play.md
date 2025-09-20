@@ -9,6 +9,6 @@ _and ..._
 
 ---
 
-{% include example.md name=fun %}
+{% include example.md name="fun" %}
 
 ---
