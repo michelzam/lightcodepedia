@@ -11,6 +11,8 @@ layout: default
 
 [📐 Diagram](diagram.md)
 
+[🚚 Deploy](deploy.md)
+
 [🛟 Help](help.md)
 
 [ℹ️ About](about.md)
