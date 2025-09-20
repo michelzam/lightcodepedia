@@ -3,9 +3,9 @@ title: 💡 Lightcodepedia
 layout: default
 ---
 
-# Hello Learner 👋
+# 👋 Hello Learner 
 
-📖 Learn how to build apps with little or no code.
+📖 _Learn how to build apps with little or no code._
 
 [🏀 Play](play.md)
 
