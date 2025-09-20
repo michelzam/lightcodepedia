@@ -1,5 +1,6 @@
 ---
 title: 💡 Lightcodepedia
+layout: default
 ---
 
 # Hello from Lightcodepedia 👋
