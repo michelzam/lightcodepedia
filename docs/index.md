@@ -1,6 +1,6 @@
 ---
 title: 💡 Lightcodepedia
-layout: default
+layout: home
 ---
 
 # Hello from Lightcodepedia 👋
@@ -11,13 +11,17 @@ layout: default
 
 [📐 Diagram](diagram.md)
 
-[🚚 Deploy](deploy.md)
+[🚚 Deploy on Cloud](deploy.md)
 
 [🛟 Help](help.md)
 
-[ℹ️ About](about.md)
+[🏛️ Alpha Home](https://lightcodepedia.org)
 
-[🏡 Home](https://lightcodepedia.org)
+[🕸️ Registered nodes](nodes.md)
+
+[🔗 Links](links.md)
+
+[ℹ️ About](about.md)
 
 
 {% include copyright.md %}

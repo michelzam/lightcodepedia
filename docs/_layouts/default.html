@@ -1,0 +1,19 @@
+<!-- Mermaid (ESM) -->
+<script type="module">
+  // 1) Load Mermaid
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  // 2) Jekyll wraps fenced ```mermaid blocks as <pre><code class="language-mermaid">
+  //    Mermaid expects elements with class "mermaid".
+  //    Map those to .mermaid before initializing:
+  document.querySelectorAll("code.language-mermaid").forEach(code => {
+    const pre = code.parentElement;
+    const container = document.createElement("div"); 
+    container.className = "mermaid";
+    container.textContent = code.textContent;
+    pre.replaceWith(container);
+  });
+
+  // 3) Render on load
+  mermaid.initialize({ startOnLoad: true });
+</script>
