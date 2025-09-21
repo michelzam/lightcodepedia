@@ -7,6 +7,8 @@ layout: default
 
 📖 _Learn how to build apps with little or no code._
 
+[🏛 Academy](academy.md) 👈 Start here!
+
 [🏀 Play](play.md)
 
 [📐 Diagram](diagram.md)
