@@ -88,3 +88,8 @@ instances:
     icon: "🇫🇷"
     next_page: tef_irn
 
+  - !Page
+    title: Quiz 2️⃣
+    border: False
+    icon: "2️⃣"
+    next_page: quiz_chapter2

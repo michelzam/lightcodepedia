@@ -1,5 +1,25 @@
 Made with ❤️ for learners around the world. 
 
-{% include example.md module="patterns" %}
+Thanks to all contributors:
 
-{% include gdrive_pdf.md id="1OpKLKVLLndlqaXsZR6Z5ex9VAoGOaSTk" %}
+- Alexis Tsoukias
+- Mireille Moulin
+- Maude Manouvrier
+- Emmanuel Lepinette
+- Emmanuel Lazard
+- Olivier Cailloux
+
+- Philippe Rigaux
+- James Powell
+
+- Jacek Urbanski
+- Corentin Ginesty
+- Alexandre Daniel
+- Ari Ugarte
+- Hamed Ky
+
+- Bruno Deluard
+- Georges Zam
+- Tara Bogart
+
+- ... and so many more

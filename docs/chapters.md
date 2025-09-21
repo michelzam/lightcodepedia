@@ -9,6 +9,7 @@ Chapters of Course Materials
 </details>
 
 ## Chapter 2
+[Chapter2](chapter2.md)
 <details>
 <summary>Click to expand</summary>
 {% include gdrive_pdf.md id="1OpKLKVLLndlqaXsZR6Z5ex9VAoGOaSTk" %}

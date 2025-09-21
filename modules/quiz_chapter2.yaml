@@ -1,0 +1,197 @@
+module:
+  - name: quiz_chapter2
+    doc: "Quiz Chapter 2 — Fundamentals of Low-Code Development"
+    icon: "2️⃣"
+
+imports:
+  - !Module
+    name: designers
+    hidden: True
+  - !Module
+    name: blocks
+    hidden: True
+  - !Module
+    name: inspectors
+    hidden: True
+  - !Module
+    name: tutorials
+    hidden: True
+
+classes:
+
+
+instances:
+  - !Riddle &riddleA2_01
+    title: "A2: Definition of Low-Code ⚡"
+    text: |
+      Low-code development is mainly defined by:
+    correct_answer: "Visual tools and minimal manual coding"
+    difficulty: 1
+    as_name: riddleA2_01
+    options:
+      - "Only writing code in Java"
+      - "Visual tools and minimal manual coding"
+      - "Hardware installation"
+    hints: [ "Think about visual development", "It reduces manual coding", "It's not about hardware" ]
+
+  - !Riddle &riddleA2_02
+    title: "A2: Core Components 🧩"
+    text: |
+      Which of these is a core component of low-code platforms?
+    correct_answer: "Visual development interfaces"
+    difficulty: 1
+    as_name: riddleA2_02
+    options:
+      - "DVD drives"
+      - "Visual development interfaces"
+      - "Cooking recipes"
+    hints: [ "Focus on platform design", "It lets you build with drag and drop", "Not hardware or food" ]
+
+  - !Riddle &riddleA2_03
+    title: "A2: Benefits of Low-Code 🚀"
+    text: |
+      One benefit of low-code development is:
+    correct_answer: "Faster application delivery"
+    difficulty: 1
+    as_name: riddleA2_03
+    options:
+      - "Slower project completion"
+      - "Faster application delivery"
+      - "More manual coding"
+    hints: [ "Think speed", "Low-code saves time", "Not about writing more code" ]
+
+  - !Riddle &riddleA2_04
+    title: "A2: Design Principles 🎨"
+    text: |
+      Which principle is important in low-code design?
+    correct_answer: "Design Thinking"
+    difficulty: 1
+    as_name: riddleA2_04
+    options:
+      - "Astrology"
+      - "Design Thinking"
+      - "Random guessing"
+    hints: [ "Think user-centered", "It starts with empathy", "Not mystical" ]
+
+  - !Riddle &riddleA2_05
+    title: "A2: Model-Driven Development 📐"
+    text: |
+      Model-Driven Development (MDD) means:
+    correct_answer: "Creating models before generating code"
+    difficulty: 2
+    as_name: riddleA2_05
+    options:
+      - "Cooking before coding"
+      - "Creating models before generating code"
+      - "Ignoring structure"
+    hints: [ "Models come first", "They generate code", "It’s structured" ]
+
+  - !Riddle &riddleA2_06
+    title: "A2: Agile Integration 🔄"
+    text: |
+      Agile methods and low-code both encourage:
+    correct_answer: "Incremental and collaborative development"
+    difficulty: 2
+    as_name: riddleA2_06
+    options:
+      - "One big release only"
+      - "Incremental and collaborative development"
+      - "Ignoring feedback"
+    hints: [ "Think small steps", "Users give feedback", "Not waterfall" ]
+
+  - !Riddle &riddleA2_07
+    title: "A2: Low-Code UI 🖥️"
+    text: |
+      In low-code, the user interface is built with:
+    correct_answer: "Reusable visual components"
+    difficulty: 2
+    as_name: riddleA2_07
+    options:
+      - "Reusable visual components"
+      - "Complex assembly code"
+      - "Musical notes"
+    hints: [ "Think drag and drop", "Components can be buttons, forms, menus", "Not music" ]
+
+  - !Riddle &riddleA2_08
+    title: "A2: Data Modeling 📊"
+    text: |
+      What does data modeling in low-code involve?
+    correct_answer: "Defining entities and their relationships visually"
+    difficulty: 2
+    as_name: riddleA2_08
+    options:
+      - "Designing new clothes"
+      - "Defining entities and their relationships visually"
+      - "Driving a car"
+    hints: [ "It’s about databases", "Entities and links", "Not fashion" ]
+
+  - !Riddle &riddleA2_09
+    title: "A2: Business Logic ⚙️"
+    text: |
+      Business logic in low-code is implemented with:
+    correct_answer: "Workflows and conditional rules"
+    difficulty: 2
+    as_name: riddleA2_09
+    options:
+      - "Poetry writing"
+      - "Workflows and conditional rules"
+      - "Random clicks"
+    hints: [ "Think logic", "If-then rules", "It’s not art" ]
+
+  - !Riddle &riddleA2_10
+    title: "A2: Deployment 🚢"
+    text: |
+      Many low-code platforms support:
+    correct_answer: "One-click deployment"
+    difficulty: 1
+    as_name: riddleA2_10
+    options:
+      - "One-click deployment"
+      - "Ten days of manual setup"
+      - "Cooking lessons"
+    hints: [ "Think simplicity", "Deployment is quick", "Not about cooking" ]
+
+  - !Riddle &riddleA2_11
+    title: "A2: Challenges ⚠️"
+    text: |
+      A common challenge of low-code is:
+    correct_answer: "Over-reliance on custom code"
+    difficulty: 2
+    as_name: riddleA2_11
+    options:
+      - "Over-reliance on custom code"
+      - "Too much pizza at work"
+      - "Having no applications"
+    hints: [ "Think maintenance", "Too much custom code breaks low-code idea", "Not about food" ]
+
+  - !Riddle &riddleA2_12
+    title: "A2: Best Practices ✅"
+    text: |
+      One best practice in low-code projects is:
+    correct_answer: "Start with clear requirements and design thinking"
+    difficulty: 2
+    as_name: riddleA2_12
+    options:
+      - "Ignore the users"
+      - "Start with clear requirements and design thinking"
+      - "Never test anything"
+    hints: [ "User needs matter", "Clarity first", "Testing is good" ]
+
+
+  - !Table &katas_table
+    title: Exercices
+    source: [*riddleA2_01, *riddleA2_02, *riddleA2_03, *riddleA2_04, *riddleA2_05, *riddleA2_06, *riddleA2_07, *riddleA2_08, *riddleA2_09, *riddleA2_10, *riddleA2_11, *riddleA2_12]
+
+
+  - !Inspector
+    title: Problem
+    subjects: [*katas_table]
+    attributes: [text, hints, answer]
+    methods: [check_answer]
+    border: True
+    on_init:
+      - !Function
+        code: |
+          self._hidden = (len(self.subjects[0].source) == 0) or (self.subjects[0].selection is None)
+          if not self._hidden:
+            self.source = self.subjects[0].selection
