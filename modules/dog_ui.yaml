@@ -1,6 +1,5 @@
 module:
-  - name: dog_ui
-    doc: "Just a Text"
+  - doc: "Just a Text"
     icon: "🐕"
 
 imports:
