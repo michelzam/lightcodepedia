@@ -18,7 +18,7 @@
    
    ![GitHub sign-up form](assets/github_signup_form.png)
 
-3. Go to the repository https://github.com/MichelZam/lightcodepedia and open the **Fork** menu.
+3. Go to the repository [lightcodepedia](https://github.com/MichelZam/lightcodepedia) and open the **Fork** menu.
    
    ![Fork dropdown](assets/github_fork_dropdown.png)
 
