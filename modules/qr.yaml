@@ -1,6 +1,7 @@
 module:
-  - doc: QR Code playground
-    icon: 🏷️
+  - name: qr
+    doc: QR Code playground
+    icon: "🏷"️
 
 imports:
   - !Module {name: kore, hidden: True}
