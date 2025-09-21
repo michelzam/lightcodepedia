@@ -44,7 +44,7 @@ classes:
         name: _test_hello
         doc: "Testing hello"
         code: |
-          fixture = type(self)()
+          fixture = self.clone()
           result = fixture.hello()
           assert result.startswith("Hi")
 
@@ -70,7 +70,7 @@ classes:
         name: _test_hello
         doc: "Testing hello"
         code: |
-          fixture = type(self)()
+          fixture = self.clone()
           result = fixture.hello()
           assert result.startswith("Hi")
           assert result.endswith(f"{fixture.major}!")

@@ -1,0 +1,63 @@
+module:
+  - doc: QR Code playground
+    icon: 🏷️
+
+imports:
+  - !Module {name: kore, hidden: True}
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: inspectors, hidden: True}
+
+classes:
+  - !Class
+    name: QRCode
+
+  - !Class
+    name: QRCode
+    bases: [kore.Object]
+    icon: 🔖
+    doc: QR code generator
+    attributes:
+      - !Attribute {name: url, type: str, default: "https://lightcodepedia.org"}
+    methods:
+      - !Method
+        name: generate
+        code: |            
+          import qrcode
+          from PIL import Image
+          qr = qrcode.QRCode(
+              version=1,
+              box_size=10,
+              border=5)
+          qr.add_data(self.url)
+          qr.make(fit=True)
+          img = qr.make_image(fill='black', back_color='white')
+          img.save('qrcode001.png')
+          self._image = Image.open('qrcode001.png')
+          st.image(self._image, caption='QR code')
+
+      - !Method
+        name: please_test_the_module
+        code: |            
+          self._test_module()
+
+      - !Method
+        name: _test_generate
+        code: |            
+          q = self.clone()
+          assert len(q.url) > 0, "Url should not be empty"
+          q.generate()
+          assert q._image, "Image should be generated"
+
+
+      - !Method
+        name: __repr__
+        code: |
+            return f"{self.icon} {self.url}"
+
+instances:
+  - !QRCode &q {}
+
+  - !Inspector
+    title: Product inspector
+    attributes: [url]
+    source: *q

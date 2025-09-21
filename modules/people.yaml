@@ -47,7 +47,7 @@ classes:
         name: _test_happy_birthday
         doc: increments age
         code: |            
-          p = type(self)()
+          p = self.clone()
           assert p.age == 30
           p.happy_birthday()
           assert p.age == 31

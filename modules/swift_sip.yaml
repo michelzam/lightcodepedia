@@ -45,7 +45,7 @@ classes:
     - !Method
       name: _test_place_order
       code: |
-        fixture = type(self)()
+        fixture = self.clone()
         stock = 5
         fixture.beverage = Beverage(name="Test Drink", price=2.5, stock=stock)
         fixture.place_order()

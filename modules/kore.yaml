@@ -128,7 +128,31 @@ classes:
         code: |
           return self._label() 
 
+      - !Method
+        name: _test_module
+        code: |
+            import io
+            import time
+            from contextlib import redirect_stdout
 
+            loader = self._module._loader
+            buffer = io.StringIO()
+            mybar = st.progress(0, text="Testing ...")
+            with st.spinner("Testing ..."):
+              mybar.progress(0.1, text="Testing module ...")
+              time.sleep(0.5)  # simulate loading time
+              mybar.progress(0.2, text="Testing module ...")
+              with redirect_stdout(buffer):
+                  nb_errors = loader.test()
+              time.sleep(0.5)  # simulate loading time
+              mybar.progress(0.8, text="Testing module ...")
+
+            time.sleep(0.5)  # simulate loading time
+            mybar.progress(1., text="Testing module ...")
+            if nb_errors == 0:
+                st.balloons()
+            st.write(f"{nb_errors} error(s) found.")
+            st.code(buffer.getvalue())
 
   - !Class
     name: Var
@@ -512,7 +536,7 @@ classes:
             self._loader.load()
 
       - !Method
-        name: test
+        name: _test_module
         doc: Test the module
         preconditions: [saved]
         code: |

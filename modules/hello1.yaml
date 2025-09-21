@@ -41,6 +41,12 @@ instances:
     next_page: people
 
   - !Page
+    title: QR Code
+    border: False
+    icon: "🏷️"
+    next_page: qr
+
+  - !Page
     title: Beverages
     border: False
     icon: "🍹"
