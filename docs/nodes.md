@@ -1,1 +1,4 @@
-[ℹ️ Georges](GeorgesZam.github.io/lightcodepedia) |
+# Registered nodes
+
+[ℹ️ Georges](https://GeorgesZam.github.io/lightcodepedia) 
+
