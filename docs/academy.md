@@ -5,5 +5,5 @@ Welcome to **Lightcode Academy**! This is your go-to resource for learning how t
 _Miro board:_
 
 <iframe src="https://miro.com/app/board/uXjVJFPwN_U=/?share_link_id=623867549831" 
-width="100%" height="1600" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"> 
+width="100%" height="800" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"> 
 </iframe> 
