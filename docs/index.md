@@ -1,9 +1,15 @@
-# 👋 Hello Lightcode Learner, this is the root Node 
+💬 **Lightcode** is a distributed open-source no-code/low-code platform 
+meant to build digital skills. **Lightcode**pedia 
+is a network fo LightNodes, managed by the community members, LightCoders.
+
+# 👋 Hello Lightcode Learner, this is the Root LightNode 
 ℹ️ _You can fork this repo and customize it_
 
 📖 _Learn how to build apps with little or no code._
 
 [🏛 Academy](academy.md) 👈 Start here!
+
+[👤 Author](author.md)
 
 [🏀 Play](play.md)
 
@@ -15,7 +21,7 @@
 
 [🫜 Root node](https://lightcodepedia.org)
 
-[🕸️ Registered nodes](nodes.md)
+[🕸️ Registered LightNodes](nodes.md)
 
 [🔗 Links](links.md)
 
