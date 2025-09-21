@@ -1,9 +1,5 @@
----
-title: 💡 Lightcodepedia
-layout: default
----
-
-# 👋 Hello this is **Michel's** Node 
+# 👋 Hello Lightcode Learner, this is the root Node 
+ℹ️ _You can fork this repo and customize it_
 
 📖 _Learn how to build apps with little or no code._
 
@@ -17,7 +13,7 @@ layout: default
 
 [🛟 Help](help.md)
 
-[🏛️ Alpha Home](https://lightcodepedia.org)
+[🫜 Root node](https://lightcodepedia.org)
 
 [🕸️ Registered nodes](nodes.md)
 
