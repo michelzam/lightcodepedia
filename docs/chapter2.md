@@ -10,7 +10,7 @@ Université Paris Dauphine – PSL
 
 ---
 
-## Why Low-Code?  
+## ❓ Why Low-Code?  
 
 - Rising demand for digital applications  
 - Shortage of skilled developers  
@@ -19,7 +19,7 @@ Université Paris Dauphine – PSL
 
 ---
 
-## Learning Outcomes  
+## 🎯 Learning Outcomes  
 
 By the end, you will be able to:  
 1. Explain the evolution leading to low-code platforms  
@@ -32,7 +32,7 @@ By the end, you will be able to:
 
 ---
 
-## What is Low-Code?  
+## ⚡ What is Low-Code?  
 
 - Visual interactive interfaces  
 - Reusable components  
@@ -43,7 +43,7 @@ By the end, you will be able to:
 
 ---
 
-## Core Components  
+## 🧩 Core Components  
 
 1. Visual Development Interfaces  
 2. Pre-built Functions & Templates  
@@ -52,7 +52,7 @@ By the end, you will be able to:
 
 ---
 
-## Principles of Low-Code  
+## 🎨 Principles of Low-Code  
 
 - **Design Thinking**: empathize, prototype, test  
 - **Model-Driven Development (MDD)**: models before code  
@@ -60,7 +60,7 @@ By the end, you will be able to:
 
 ---
 
-## Anatomy of a Low-Code App  
+## 🖥️ Anatomy of a Low-Code App  
 
 - **UI Design**: responsive, accessible, component-based  
 - **Data Modeling**: visual, external integration, logic  
@@ -70,7 +70,7 @@ By the end, you will be able to:
 
 ---
 
-## Challenges  
+## ⚠️ Challenges  
 
 - Over-reliance on custom code  
 - Weak UX design if rushed  
@@ -79,7 +79,7 @@ By the end, you will be able to:
 
 ---
 
-## Best Practices  
+## ✅ Best Practices  
 
 - Start with clear requirements + design thinking  
 - Fully leverage platform capabilities  
@@ -90,7 +90,7 @@ By the end, you will be able to:
 
 ---
 
-## Case Studies  
+## 📚 Case Studies  
 
 **Education** 🎓  
 - Student/faculty portals, streamlined workflows  
@@ -103,7 +103,7 @@ By the end, you will be able to:
 
 ---
 
-## Conceptual Activities  
+## 🧩 Conceptual Activities  
 
 - Design a low-code solution for a non-profit  
 - Evaluate a platform (features, scalability, integration)  
