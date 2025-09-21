@@ -14,13 +14,27 @@ See [more ressources](#More-resources) below.
 ```python
 print("Hello world!")  # print function outputs text to the console
 ```
-_You can copy-paste this code in the Python playground below._
+_You can copy-paste this code in the [Python playground](#python-playground) below._
 
 ## Hello world with variable
 ```python
+# comment: this line, starting with `#` is ignored by python, yet useful for documentation
 message = "Hello world!"  # variable assignment
-print(message)  # print function outputs the value of the variable
+print(message)            # print function outputs the value of the variable
 ```
+_You can copy-paste this code in the [Python playground](#python-playground) below._
+
+## Hello world with input, computation and output
+```python
+"""
+This is the official way to write multi-line comments in Python.
+"""
+name = input("What is your name? ")  # input function gets user input
+message = "Hello " + name            # adding 2 strings
+print(message)             
+```
+_You can copy-paste this code in the [Python playground](#python-playground) below._
+
 
 
 ## Python playground

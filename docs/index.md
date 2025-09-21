@@ -23,6 +23,8 @@ is a network fo LightNodes, managed by the community members, LightCoders.
 
 [🕸️ Registered LightNodes](nodes.md)
 
+[📚 Course materials](chapters.md)
+
 [🔗 Links](links.md)
 
 [ℹ️ About](about.md)
