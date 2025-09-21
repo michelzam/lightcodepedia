@@ -1,4 +1,4 @@
-# Welcome to my Lightnode
+# Welcome to my LightNode
 
 _Please customize this page to introduce yourself to the Lightcode community._
 _Use Markdown syntax to format your text and add links, images, and other media._
@@ -14,9 +14,9 @@ My journey with Lightcode began when I applied for Lightcode Academy.
 During the Academy I learned:
 - [x] Github — repository management
 - [x] GitHub Pages — website hosting & deployment
-- [ ] Markdown — text formatting, including **bold**, _italic_, and :red[colors]
+- [ ] Markdown — text formatting, including **bold**, _italic_, and checkboxes
 - [ ] StreamlitCloud deployment — app deployment
-- [ ] Python — basics of the most popular programming language
+- [ ] [Python](python.md) — basics of the most popular programming language
 - [ ] No-code/Low-code platforms — basics of visual programming
 - [ ] Lightcode — building apps with little or no code
 
