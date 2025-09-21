@@ -1,0 +1,21 @@
+module:
+  - name: dog_ui
+    doc: "Just a Text"
+    icon: "🐕"
+
+imports:
+  - !Module
+    name: blocks
+
+classes:
+
+instances:
+
+  - !Text
+    title: "Dog"
+    icon: "🐕"
+    as_name: dog
+    border: False
+    text: "Man's best friend :dog:"
+    help: Dogs are cute and fast
+    media: https://picsum.photos/id/237/500/400
