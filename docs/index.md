@@ -1,4 +1,4 @@
-💬 **Lightcode** is a distributed open-source no-code/low-code platform 
+💬 **Lightcode** is a distributed open-access no-code/low-code platform 
 meant to build digital skills. **Lightcode**pedia 
 is a network fo LightNodes, managed by the community members, LightCoders.
 
