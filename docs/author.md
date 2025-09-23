@@ -5,6 +5,8 @@ _Use Markdown syntax to format your text and add links, images, and other media.
 
 # About Me 
 
+![me](docs/IMG_0725.jpeg)
+
 I'm [Your Name], a [Your Profession/Role] based in [Your Location]. I have a passion for [Your Interests or Hobbies].
 
 # My journey
