@@ -4,8 +4,8 @@ _Please customize this page to introduce yourself to the Lightcode community._
 _Use Markdown syntax to format your text and add links, images, and other media._
 
 # About Me 
-
-![me](IMG_0725.jpeg)
+__Drop your photo here:__
+![Me]()
 
 I'm [Your Name], a [Your Profession/Role] based in [Your Location]. I have a passion for [Your Interests or Hobbies].
 
