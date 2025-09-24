@@ -7,7 +7,7 @@ _Use Markdown syntax to format your text and add links, images, and other media.
 __Drop your photo here:__
 ![Me]()
 
-I'm [Your Name], a [Your Profession/Role] based in [Your Location]. I have a passion for [Your Interests or Hobbies].
+I'm Rayan Madjid, a i am student based in Paris. I have a passion for calligraphy.
 
 # My journey
 My journey with Lightcode began when I applied for Lightcode Academy.
