@@ -22,3 +22,4 @@ During the Academy I learned:
 - [ ] No-code/Low-code platforms — basics of visual programming
 - [ ] Lightcode — building apps with little or no code
 
+![LightCoders](https://github.com/user-attachments/assets/15102631-0611-4e06-8d51-8a7d4f3e88fa)
