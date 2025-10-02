@@ -7,7 +7,9 @@ is a network to LightNodes, managed by community members, LightCoders.
 This is the **nexus** of the **Lightcode Universe** made of LightNodes. 
 It is hosted on _GitHub_ and _StreamlitCloud_.
 
-💡️ _You can fork this repo and customize it_
+💡️ _You can **fork** this repo and customize it_ 
+
+![Forks](https://img.shields.io/github/forks/michelzam/lightcodepedia?style=flat)
 
 📖 _Learn how to build apps with little or no code._
 
