@@ -44,7 +44,7 @@ classes:
       - !Attribute
         name: icon
         type: str
-        advanced: False
+        advanced: True
         # default: "⚪️"
       - !Attribute
         name: as_name
@@ -56,7 +56,7 @@ classes:
         name: doc
         type: str
         is_long: True
-        advanced: False
+        advanced: True
       - !Attribute
         name: _class
         type: typing.Any
