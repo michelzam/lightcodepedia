@@ -1,8 +1,10 @@
 Made with ❤️ for learners around the world. 
 
-Thanks to all contributors:
+✨ _With gratitude to contributors and inspirators across space and time._
 
 ## 🇫🇷 France
+<details>
+<summary>Click to expand</summary>
 - Michel Zam
 - Alexis Tsoukias
 - Mireille Moulin
@@ -11,7 +13,6 @@ Thanks to all contributors:
 - Emmanuel Lazard
 - Olivier Cailloux
 - Philippe Rigaux
-- James Powell
 - Jacek Urbanski
 - Corentin Ginesty
 - Alexandre Daniel
@@ -20,6 +21,43 @@ Thanks to all contributors:
 - Bruno Deluard
 - Jean Schielé
 - Georges Zam
+- Geneviève Jomier, RIP 
+- and so many more
+</details>
+
+## 🇬🇷 Greece
+<details>
+<summary>Click to expand</summary>
+- Jason Papathanasiou
+- Giota DigKoglou
+- Kostas
+</details>
+
+## 🇷🇸 Serbia
+<details>
+<summary>Click to expand</summary>
+- ...
+</details>
+
+## 🇷🇸 Croatia
+<details>
+<summary>Click to expand</summary>
+- ...
+</details>
+
+## 🇦🇹 Austria
+<details>
+<summary>Click to expand</summary>
+- ...
+</details>
+
+## 🇺🇸 USA
+<details>
+<summary>Click to expand</summary>
 - Tara Bogart
-- Geneviève Jomier, RIP
-- _and so many more_
+- Kate Siekman
+- Chris Willey
+- James Powell
+- Nathan Schmitt
+</details>
+
