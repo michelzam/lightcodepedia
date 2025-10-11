@@ -13,9 +13,11 @@ It is hosted on _GitHub_ and _StreamlitCloud_.
 
 📖 _Learn how to build apps with little or no code._
 
+[🎬 Demo](demo.md)  👈 Start here
+
 [🤖 Learn with Ari](ari.md) 👈 🆕
 
-[🏛 Academy](academy.md) 👈 Start here!
+[🏛 Academy](academy.md) 
 
 [👤 Author](author.md)
 
