@@ -18,23 +18,35 @@ classes:
       - !Attribute
         name: name
         type: str
-        default: Demo
+        default: Demo instance
     states: [running, designing, testing, documenting]
     methods:
       - !Method
         name: run
         preconditions: [ designing, testing, documenting ]
         postcondition: running
+        doc: Switch to running mode
         code: |
           scene = self._module.instances[0]
           scene.show_backstage = False
+
+      - !Method
+        name: hello
+        preconditions: [ running ]
+        doc: Hello World
+        code: |
+          return f"Hello from Lightcode! 🎉 I'm {self.name}. Eager to guide you."
+
       - !Method
         name: design
         preconditions: [ running, testing, documenting ]
         postcondition: designing
+        doc: Switch to designing mode
         code: |
           scene = self._module.instances[0]
           scene.show_backstage = True
+          return "Check out the model diagram in the backstage area below."
+
       - !Method
         name: layout
         preconditions: [ designing ]
@@ -50,19 +62,22 @@ classes:
         doc: Show the code
         code: |
           my_type = type(self)._class
-          print(my_type.methods)
-          my_codes = [m for m in my_type.methods if m.name == "code"]
+          my_codes = [m for m in my_type.methods if m.name == "hello"]
+          py_code = 'def hello(self):\n    '
           if len(my_codes) > 0:
-            st.code(my_codes[0].code, language='python')
+            py_code += my_codes[0].code
+            st.code(py_code, language='python')
 
       - !Method
         name: test
         preconditions: [ designing, running, documenting ]
         postcondition: testing
+        doc: Switch to testing mode
 
       - !Method
         name: run_tests
         preconditions: [ testing ]
+        doc: Run the tests
         code: |            
           self._test_module()
                     
@@ -75,18 +90,19 @@ instances:
     title: Demo
     lines:
     - 1
-    - 2
+    - 1
+    - 1
     show_backstage: false
 
   - !Demo &demo
-    name: Demo Instance
+    name: Lucky
 
   - !Text
     icon: 🐶
     title: "Ready to play and learn?"
     text: |
-      Click around to change states, then
-      hit `layout` to switch places.
+      Hover the mouse over buttons, click around to change states, disclose behavior with interaction traces, 
+      and discover the lightcode perspective.
     media: dog.png
 
   - !Inspector
