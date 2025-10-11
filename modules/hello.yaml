@@ -258,6 +258,13 @@ instances:
     text: 🎵 Man's best song. Go ahead. Play it!
 
   - !Text
+    title: Model
+    icon: 📐
+    media: https://www.light-code.org/?module=demos
+    text: Demos
+
+
+  - !Text
     title: Data
     help: Data components
     icon: 📈

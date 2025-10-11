@@ -23,6 +23,12 @@ instances:
     border: False
 
   - !Page
+    title: Demo
+    border: False
+    icon: "🎬"
+    next_page: demo
+
+  - !Page
     title: Tutorial 1o1
     border: False
     icon: "👨🏻‍🏫"
