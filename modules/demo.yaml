@@ -38,6 +38,14 @@ classes:
           return f"Hello from Lightcode! 🎉 I'm {self.name}. Eager to guide you."
 
       - !Method
+        name: _test_hello
+        preconditions: [ running ]
+        doc: Hello World
+        code: |
+          fixture = self.clone()
+          assert fixture.hello().startswith("Hello")
+
+      - !Method
         name: design
         preconditions: [ running, testing, documenting ]
         postcondition: designing
