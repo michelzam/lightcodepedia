@@ -1,0 +1,102 @@
+module:
+  - name: demo
+    doc: Demo for SIGCSE
+    icon: 🎭
+
+imports:
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: inspectors, hidden: True}
+  - !Module {streamlit: inspectors, hidden: True, as_name: st}
+
+classes:
+
+  - !Class
+    name: Demo
+    bases: [ kore.Object ]
+    doc: Demo class
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: Demo
+    states: [running, designing, testing, documenting]
+    methods:
+      - !Method
+        name: run
+        preconditions: [ designing, testing, documenting ]
+        postcondition: running
+        code: |
+          scene = self._module.instances[0]
+          scene.show_backstage = False
+      - !Method
+        name: design
+        preconditions: [ running, testing, documenting ]
+        postcondition: designing
+        code: |
+          scene = self._module.instances[0]
+          scene.show_backstage = True
+      - !Method
+        name: layout
+        preconditions: [ designing ]
+        doc: Layout the scene
+        code: |
+          scene = self._module.instances[0]
+          if scene:
+            if type(scene).__name__ == "Scene":
+              scene._layout(module=scene._module)
+      - !Method
+        name: code
+        preconditions: [ designing ]
+        doc: Show the code
+        code: |
+          my_type = type(self)._class
+          print(my_type.methods)
+          my_codes = [m for m in my_type.methods if m.name == "code"]
+          if len(my_codes) > 0:
+            st.code(my_codes[0].code, language='python')
+
+      - !Method
+        name: test
+        preconditions: [ designing, running, documenting ]
+        postcondition: testing
+
+      - !Method
+        name: run_tests
+        preconditions: [ testing ]
+        code: |            
+          self._test_module()
+                    
+
+instances:
+
+  - !Scene
+    icon: "🎬"
+    as_name: scene
+    title: Demo
+    lines:
+    - 1
+    - 2
+    show_backstage: false
+
+  - !Demo &demo
+    name: Demo Instance
+
+  - !Text
+    icon: 🐶
+    title: "Ready to play and learn?"
+    text: |
+      Click around to change states, then
+      hit `layout` to switch places.
+    media: dog.png
+
+  - !Inspector
+    source: *demo
+
+
+  - !Text
+    icon: "📐"
+    title: "Model"
+    text: |
+      Class diagram with state machine.
+
+    media: demo_diagram.png
