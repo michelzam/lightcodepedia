@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  {%- include head.html -%}
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <header role="banner">
+    <h1><a href="{{ "/" | relative_url }}">{{ site.title }}</a></h1>
+    <p>{{ site.description }}</p>
+  </header>
+
+  <nav aria-label="Primary">
+    <ul>
+      <li><a href="{{ "/" | relative_url }}">Home</a></li>
+      <li><a href="{{ "/docs/" | relative_url }}">Docs</a></li>
+      <li><a href="{{ "/workshops/" | relative_url }}">Workshops</a></li>
+      <li><a href="{{ "/about/" | relative_url }}">About</a></li>
+    </ul>
+  </nav>
+
+  <main id="main-content" role="main">
+    {{ content }}
+  </main>
+
+  <footer role="contentinfo">
+    © {{ site.time | date: "%Y" }} {{ site.title }}
+  </footer>
+</body>
+</html>
