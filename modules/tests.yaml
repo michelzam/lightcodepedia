@@ -1,0 +1,66 @@
+module:
+  - name: tests
+    doc: Tests
+    icon: 🧪
+
+imports:
+  - !Module {name: blocks, hidden: True}
+  - !Module {name: inspectors, hidden: True}
+  - !Module {streamlit: inspectors, hidden: True, as_name: st}
+
+classes:
+
+  - !Class
+    name: Tester
+    bases: [ kore.Object ]
+    doc: Demo class
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+        default: tester
+      - !Attribute
+        name: url
+        type: str
+        default: http://lightcodepedia.org
+      - !Attribute
+        name: hits
+        type: int
+        default: 100
+    # states: [running, designing, testing, documenting]
+    methods:
+      - !Method
+        name: run_tests
+        code: |
+          import requests, random, time
+          for i in range(self.hits):
+            requests.get(self.url)
+            time.sleep(random.uniform(0.2, 1.5))
+                    
+
+instances:
+
+  - !Scene
+    icon: "🧪"
+    as_name: scene
+    title: Tester
+    lines:
+    - 1
+    - 1
+    - 1
+    show_backstage: false
+
+  - !Tester &tester
+    name: Lucky the tester
+
+  - !Text
+    icon: 🐶
+    title: "Ready to test and learn?"
+    text: |
+      Hover the mouse over buttons, click around to change states, disclose behavior with interaction traces, 
+      and discover the lightcode perspective.
+    media: dog.png
+
+  - !Inspector
+    source: *tester
+
