@@ -1,0 +1,78 @@
+module:
+  - doc: "Welcome to the light side of the force!"
+    icon: "👋"
+    is_admin: True
+
+imports:
+  - !Module
+    name: blocks
+  - !Module
+    name: pets
+  - !Module
+    name: inspectors
+  - !Module
+    name: tutorials
+
+classes:
+
+instances:
+
+  - !Scene
+    title: "Tutorial 350a"
+    icon: "💡"
+    lines: [3, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2]
+    as_name: scene
+
+  - !Pet &lucky
+    name: "Lucky"
+    icon: "🐶"
+    as_name: lucky
+
+  - !Fish &wanda
+    name: "Wanda"
+    icon: "🐠"
+    bestie: *lucky
+    friends:
+      - !Fish {name: "Nemo"}
+      - !Fish {name: "Dory"}
+
+
+  - !Riddle &riddle0
+    title: "Riddle: Lucky & Wanda"
+    text: "What happens if Lucky's sleeping and his bestie barks?"
+    correct_answer: "Lucky is awakening"
+    difficulty: 1
+    as_name: riddle0
+    options: [ "Nothing", "It barks too", "Lucky is awakening" ]
+    hints: [ "Try to bark yourself to see", "Did I snore too loudly?", "Does my bestie need help?" ]
+
+
+  - !Form
+    source: *lucky
+    attributes: [name, energy, bestie]
+    border: True
+
+  - !Form
+    source: *wanda
+    attributes: [name, energy, bestie]
+    border: True
+
+  - !Text
+    title: "Your first riddle: Lucky & Wanda"
+    icon: "🧩"
+    text: |
+      First, while you play with your pets, observe carefully the energy levels of your pets and their interplay.
+      Then, try to solve the riddle below.
+      
+      ---
+    footer: "🎈Riddles are fun!"
+
+
+  - !Inspector
+    title: InspectRiddle0
+    border: True
+    source: *riddle0
+    attributes: [title, text, hints, answer]
+    methods: [check_answer]
+    foldable: False
+    show_details: True
