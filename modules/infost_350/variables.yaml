@@ -1,0 +1,87 @@
+module:
+  - doc: Variables
+    icon: "🐾"
+
+imports:
+  - !Module
+    name: blocks
+  - !Module
+    name: inspectors
+  - !Module
+    name: streamlit
+    as_name: st
+
+classes:
+
+  - !Class
+    name: Type
+    icon: 🏷️
+    bases: [ kore.Object ]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+      - !Attribute
+        name: type
+        type: str
+        default: str
+
+  - !Class
+    name: Variable
+    icon: 🧃
+    bases: [ kore.Object ]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+      - !Attribute
+        name: type
+        type: Type
+      - !Attribute
+        name: value
+        type: str
+    states: [undeclared, declared]
+    methods:
+      - !Method
+        name: declare
+        doc: Declare and assign.
+        preconditions: [ undeclared ]
+        postcondition: declared
+
+      - !Method
+        name: assign
+        preconditions: [ declared ]
+        doc: Assign again
+
+      - !Method
+        name: evaluate
+        code: |
+          return self.value
+
+
+instances:
+
+  - !Scene
+    title: Memorable variables
+    icon: 🎛️
+    lines: [2, 2, 2]
+
+  - !Type &int
+    name: 🔢 int
+
+  - !Type &str
+    name: 🔤 str
+
+  - !Variable &name
+    name: name
+    type: *str
+
+  - !Variable &message
+    name: message
+    type: *str
+
+  - !Inspector
+    source: *name
+
+  - !Inspector
+    source: *message
