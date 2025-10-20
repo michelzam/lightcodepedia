@@ -62,25 +62,64 @@ classes:
           return f"{self.distance * '-'} 🤖 {self.name}"
 
 
+  - !Class
+    name: Race
+    bases: [ kore.Object ]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+      - !Attribute
+        name: distance
+        type: int
+        default: 20
+      - !Attribute
+        name: participants
+        type: List[Pet]
+    methods:
+      - !Method
+        name: ready
+        code: |
+          for p in self.participants:
+            p.distance = self.distance
+
+      - !Method
+        name: run
+        code: |
+          import time
+          placeholder = st.empty()
+          finish: bool = False
+
+          while not finish:
+            positions = []
+            for p in self.participants:
+              positions.append(p.come())
+              if p.distance <= 0:
+                finish = True 
+                positions.append(f"🏆 {p.name} wins the race!")          
+            placeholder.text("\n".join(positions))
+            time.sleep(0.5)
+
+
 instances:
 
-  #  - !Scene
-  #    title: "Discover"
-  #    icon: "🔭"
-  #    lines: [1, 5]
-  #    as_name: scene
-
-
-  - !Text
-    title: "Explore 👇"
-    border: False
+  - !Scene
+    title: "Pet race"
+    icon: "🏁"
+    lines: [3, 2, 1]
+    as_name: scene
 
   - !Pet &lucky
     name: 🐕 Lucky
+    speed: 2
 
-  - !Pet &muppets
+  - !RoboPet &muppets
     name: 🐩 Muppets
+    distance: 12
 
+  - !Race &uwmrace
+    name: 🏇 UWM Race
+    participants: [*lucky, *muppets]
 
   - !Inspector
     source: *lucky
@@ -88,3 +127,6 @@ instances:
 
   - !Inspector
     source: *muppets
+
+  - !Inspector
+    source: *uwmrace
