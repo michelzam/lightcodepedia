@@ -57,7 +57,22 @@ instances:
   - !Scene
     title: ":red[Fun] with :red[fun]ctions"
     icon: "💡"
-    lines: [1, 1, 1]
+    lines: [1, 1, 1, 1]
+
+  - !Text
+    title: Choco
+    foldable: True
+    expanded: False
+    icon: ☕️
+    text: |
+      **For** Alex, a freshman in a hurry, who loves hot chocolate
+      
+      **Who** wants to adjust the right temperature without burning themselves
+      
+      **Our** app is a learning tool like his favorite _cup of hot chocolate_
+      
+      **With** simple steps that comfort, not confuse
+
 
   - !Temperature &temp1 {}
 
@@ -67,5 +82,7 @@ instances:
     source: *temp1
     border: True
     foldable: False
+
+
 
 
