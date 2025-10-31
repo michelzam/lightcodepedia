@@ -1,6 +1,6 @@
 # Deploy your **LightCode** app to Streamlit Community Cloud (via GitHub)
 
-> Follow this guide to create a GitHub account, fork the `MichelZam/lightcodepedia` repo, sign in to Streamlit with GitHub, create & deploy the app, and (if needed) fix a build error by switching Python to **3.10**.
+> Follow this guide to create a GitHub account, fork this repo, sign in to Streamlit with GitHub, create & deploy the app, and (if needed) fix a build error by switching Python to **3.10**.
 
 ## Prerequisites
 - A web browser and internet connection.
