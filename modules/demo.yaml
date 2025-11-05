@@ -1,6 +1,6 @@
 module:
   - name: demo
-    doc: Demo for SIGCSE
+    doc: Demo for SIGCSE!
     icon: 🎭
 
 imports:
