@@ -1,0 +1,82 @@
+module:
+  - doc: Lucky the Pet
+    icon: "🐾"
+
+imports:
+  - !Module
+    name: blocks
+  - !Module
+    name: inspectors
+  - !Module
+    name: tutorial101
+  - !Module
+    name: streamlit
+    as_name: st
+
+classes:
+
+  - !Class
+    name: Pet
+    bases: [ kore.Object ]
+    attributes:
+      - !Attribute
+        name: name
+        type: str
+      - !Attribute
+        name: distance
+        type: int
+        default: 20
+    methods:
+      - !Method
+        name: run
+        code: |
+          placeholder = st.empty()
+          for _ in range(5):
+            placeholder.markdown(self.come())
+            import time
+            time.sleep(0.5)
+
+      - !Method
+        name: come
+        doc: Come closer
+        code: |
+          self.distance -= 1
+          return self.display()
+
+      - !Method
+        name: display
+        code: |
+          return f"{self.distance * '-'} {self.name}"
+
+  - !Class
+    name: RoboPet
+    bases: [ Pet ]
+    methods:
+      - !Method
+        name: display
+        code: |
+          return f"{self.distance * '-'} 🤖 {self.name}"
+
+
+instances:
+
+  - !Scene
+    title: "Lucky the Pet"
+    icon: "🏁"
+    lines: [2, 2, 1]
+    as_name: scene
+
+  - !Pet &lucky
+    name: 🐕 Lucky
+
+  - !RoboPet &muppets
+    name: 🐩 Muppets
+    distance: 12
+
+  - !Inspector
+    source: *lucky
+    # border: False
+
+  - !Inspector
+    source: *muppets
+

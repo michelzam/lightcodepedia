@@ -32,3 +32,5 @@ def print_one(arg:Any = ""):
 def print(*args):
     for arg in args:
         print_one(arg)
+
+input("Press Enter to continue...")
