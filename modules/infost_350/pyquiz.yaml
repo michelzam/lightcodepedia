@@ -1,0 +1,337 @@
+module:
+  - name: pyquiz
+    doc: "Quiz covering Modules 1–10 — INFOST 350/350G"
+    icon: "🐍"
+
+imports:
+  - !Module
+    name: designers
+    hidden: True
+  - !Module
+    name: blocks
+    hidden: True
+  - !Module
+    name: inspectors
+    hidden: True
+  - !Module
+    name: tutorials
+    hidden: True
+
+classes:
+
+
+instances:
+
+  - !Riddle &quiz01
+    title: "M1: First Script 🧾"
+    text: |
+      What's the correct way to greet the user using their input?
+    correct_answer: 'print(f"Hello {name}")'
+    difficulty: 1
+    as_name: quiz01
+    options:
+      - 'print("Hello name")'
+      - 'print(f"Hello {name}")'
+      - 'print("Hello", name)'
+    hints: [ "See f-string usage, Module 1", "The variable needs to be embedded inside the string" ]
+
+  - !Riddle &quiz02
+    title: "M2: What happens first? 🔁"
+    text: |
+      What does Python execute first when this runs?
+      ```python
+      temp = int(input("Temp? "))
+      print(temp - 5)
+      ```
+    correct_answer: 'Reads user input'
+    difficulty: 1
+    as_name: quiz02
+    options:
+      - 'Prints the result'
+      - 'Reads user input'
+      - 'Subtracts 5'
+    hints: [ "See data flow: input → compute → print (Module 2)" ]
+
+  - !Riddle &quiz03
+    title: "M3: Functions & Control 🧪"
+    text: |
+      Which line *defines* a function?
+    correct_answer: "def cool_down(temp):"
+    difficulty: 1
+    as_name: quiz03
+    options:
+      - "cool_down(140)"
+      - "def cool_down(temp):"
+      - "return temp - 5"
+    hints: [ "Definition vs. call", "Starts with def..." ]
+
+  - !Riddle &quiz04
+    title: "M5: Strings & Slicing 🔡"
+    text: |
+      What does this print?
+      ```python
+      word = "Python"
+      print(word[2:5])
+      ```
+    correct_answer: "tho"
+    difficulty: 2
+    as_name: quiz04
+    options:
+      - "yth"
+      - "tho"
+      - "hon"
+    hints: [ "Start at index 2, stop before 5", "See slicing: Module 5" ]
+
+  - !Riddle &quiz05
+    title: "M6: Lists or Strings? 📦"
+    text: |
+      Which returns the number of times 2 appears in the list?
+    correct_answer: "[1, 2, 2, 3].count(2)"
+    difficulty: 1
+    as_name: quiz05
+    options:
+      - "[1, 2, 2, 3].index(2)"
+      - "[1, 2, 2, 3].count(2)"
+      - "len([1, 2, 2, 3])"
+    hints: [ "count vs. index vs. len", "Only one counts occurrences" ]
+
+  - !Riddle &quiz06
+    title: "M7: Objects & Methods 🐾"
+    text: |
+      Given:
+      ```python
+      class Pet:
+          def __init__(self, name):
+              self.name = name
+      p = Pet("Lucky")
+      ```
+      What does `p.name` return?
+    correct_answer: "Lucky"
+    difficulty: 2
+    as_name: quiz06
+    options:
+      - "name"
+      - "Lucky"
+      - "None"
+    hints: [ "Attribute access", "See object construction in Module 7" ]
+
+  - !Riddle &quiz07
+    title: "M8: Encapsulation 🎁"
+    text: |
+      Which line customizes how a class prints?
+    correct_answer: "def __str__(self):"
+    difficulty: 2
+    as_name: quiz07
+    options:
+      - "def __init__(self):"
+      - "def __str__(self):"
+      - "def display(self):"
+    hints: [ "Printing needs a special method", "See Module 8" ]
+
+  - !Riddle &quiz08
+    title: "M9: Tests & Proof 🧪"
+    text: |
+      What does `doctest.testmod(verbose=True)` do?
+    correct_answer: "Runs embedded tests and prints output"
+    difficulty: 2
+    as_name: quiz08
+    options:
+      - "Prints all variables"
+      - "Runs embedded tests and prints output"
+      - "Shows all functions"
+    hints: [ "See doctest examples in Module 9" ]
+
+  - !Riddle &quiz09
+    title: "M10: Clean Code 🛀"
+    text: |
+      What tool checks for type mismatches using hints?
+    correct_answer: "mypy"
+    difficulty: 2
+    as_name: quiz09
+    options:
+      - "doctest"
+      - "mypy"
+      - "pep8"
+    hints: [ "Which one checks types?", "See Module 10 — 'Dr. Mypy'" ]
+
+
+
+  - !Riddle &riddleM11
+    title: "M11: Looping with Indexes 🔁"
+    text: |
+      What does this print?
+
+      word = "race"
+      for i in range(len(word)):
+          print(word[i])
+
+    correct_answer: "r\na\nc\ne"
+    difficulty: 2
+    as_name: riddleM11
+    options:
+      - "race"
+      - "r\na\nc\ne"
+      - "0123"
+    hints: [ "Loop over index range", "Access by index" ]
+
+  - !Riddle &riddleM12
+    title: "M12: String Replace 🔄"
+    text: |
+      What does this output?
+
+      msg = "hi"
+      print(msg.replace("h", "b"))
+
+    correct_answer: "bi"
+    difficulty: 1
+    as_name: riddleM12
+    options:
+      - "hi"
+      - "bi"
+      - "hb"
+    hints: [ "See string methods", "replace changes one char to another" ]
+
+  - !Riddle &riddleM13
+    title: "M13: Method Call Syntax ☎"
+    text: |
+      What is the correct way to call a method on a string?
+
+    correct_answer: "'Hello'.lower()"
+    difficulty: 1
+    as_name: riddleM13
+    options:
+      - "lower('Hello')"
+      - "'Hello'.lower()"
+      - "lower = Hello()"
+    hints: [ "Dot notation method call" ]
+
+  - !Riddle &riddleM14
+    title: "M14: File Write ✍"
+    text: |
+      What does this do?
+
+      with open("out.txt", "w") as f:
+          f.write("hi")
+
+    correct_answer: "Writes 'hi' into a file named out.txt"
+    difficulty: 2
+    as_name: riddleM14
+    options:
+      - "Reads a file"
+      - "Deletes a file"
+      - "Writes 'hi' into a file named out.txt"
+    hints: [ "Mode 'w' is for writing", "with handles closing" ]
+
+  - !Riddle &riddleM15
+    title: "M15: File Read 📂"
+    text: |
+      What does this do?
+
+      with open("data.txt", "r") as f:
+          print(f.read())
+
+    correct_answer: "Reads and prints the content of data.txt"
+    difficulty: 2
+    as_name: riddleM15
+    options:
+      - "Writes to data.txt"
+      - "Reads and prints the content of data.txt"
+      - "Closes the file"
+    hints: [ "Mode 'r' is for reading" ]
+
+  - !Riddle &riddleM16
+    title: "M16: Append Mode ➕"
+    text: |
+      What happens when you write with mode "a"?
+
+    correct_answer: "Appends to the file"
+    difficulty: 1
+    as_name: riddleM16
+    options:
+      - "Deletes file"
+      - "Overwrites file"
+      - "Appends to the file"
+    hints: [ "'a' means append" ]
+
+  - !Riddle &riddleM17
+    title: "M17: Encrypt Step 1 🔐"
+    text: |
+      If you shift each letter by 1, what does 'abc' become?
+
+    correct_answer: "bcd"
+    difficulty: 2
+    as_name: riddleM17
+    options:
+      - "abc"
+      - "bcd"
+      - "def"
+    hints: [ "Shift using ord() and chr()", "Wrap around logic is optional" ]
+
+  - !Riddle &riddleM18
+    title: "M18: Function Default 🛠"
+    text: |
+      What does this do?
+
+      def greet(name="Doc"):
+          print("Hi", name)
+
+      greet()
+
+    correct_answer: "Prints 'Hi Doc'"
+    difficulty: 1
+    as_name: riddleM18
+    options:
+      - "Prints 'Hi name'"
+      - "Prints 'Hi Doc'"
+      - "Error"
+    hints: [ "Default argument used" ]
+
+  - !Riddle &riddleM19
+    title: "M19: Type Hint ➡"
+    text: |
+      What does the ': str' mean here?
+
+      def shout(word: str) -> str:
+          return word.upper()
+
+    correct_answer: "word is expected to be a string"
+    difficulty: 2
+    as_name: riddleM19
+    options:
+      - "Declare a string"
+      - "word is expected to be a string"
+      - "This is the return value"
+    hints: [ "Hint to the reader and tools like mypy" ]
+
+  - !Riddle &riddleM20
+    title: "M20: mypy ✅"
+    text: |
+      What does mypy help you detect?
+
+    correct_answer: "Type mismatches"
+    difficulty: 2
+    as_name: riddleM20
+    options:
+      - "Syntax errors"
+      - "Missing semicolons"
+      - "Type mismatches"
+    hints: [ "Static type checking tool" ]
+
+  - !Table &python_quiz_table
+    title: Python Quiz Table
+    source: [*quiz01, *quiz02, *quiz03, *quiz04, *quiz05, *quiz06, *quiz07, *quiz08, *quiz09,
+             *riddleM11, *riddleM12, *riddleM13, *riddleM14, *riddleM15, *riddleM16, *riddleM17, *riddleM18,
+             *riddleM19, *riddleM20]
+
+  - !Inspector
+    title: Quiz Inspector
+    subjects: [*python_quiz_table]
+    attributes: [text, hints, answer]
+    methods: [check_answer]
+    border: True
+    on_init:
+      - !Function
+        code: |
+          self._hidden = (len(self.subjects[0].source) == 0) or (self.subjects[0].selection is None)
+          if not self._hidden:
+            self.source = self.subjects[0].selection
