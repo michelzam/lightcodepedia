@@ -317,11 +317,288 @@ instances:
       - "Type mismatches"
     hints: [ "Static type checking tool" ]
 
+  - !Riddle &riddleM21
+    title: "M21: Reading Input Again 🔁"
+    text: |
+      What type is returned by input()?
+    correct_answer: "str"
+    difficulty: 1
+    as_name: riddleM21
+    options:
+      - "int"
+      - "str"
+      - "float"
+    hints: [ "Always a string", "Use int() or float() to convert" ]
+
+  - !Riddle &riddleM22
+    title: "M22: Writing Clean Code 🧼"
+    text: |
+      What’s the purpose of PEP-8?
+    correct_answer: "Style guide for Python code"
+    difficulty: 1
+    as_name: riddleM22
+    options:
+      - "File encryption method"
+      - "Function testing framework"
+      - "Style guide for Python code"
+    hints: [ "Formatting, naming, spacing", "Introduced early" ]
+
+  - !Riddle &riddleM23
+    title: "M23: Using continue 🔄"
+    text: |
+      What does `continue` do in a loop?
+    correct_answer: "Skips the rest of the loop and moves to the next iteration"
+    difficulty: 2
+    as_name: riddleM23
+    options:
+      - "Stops the program"
+      - "Skips the rest of the loop and moves to the next iteration"
+      - "Repeats the loop from the top"
+    hints: [ "Doesn’t exit, just skips" ]
+
+  - !Riddle &riddleM24
+    title: "M24: String Building 🧱"
+    text: |
+      What does this print?
+
+      name = \"Zam\"
+      print(\"Hi \" + name)
+    correct_answer: "Hi Zam"
+    difficulty: 1
+    as_name: riddleM24
+    options:
+      - "Hi name"
+      - "Zam Hi"
+      - "Hi Zam"
+    hints: [ "String concatenation with +", "Exact spaces matter" ]
+
+  - !Riddle &riddleM25
+    title: "M25: Counting Characters 🔢"
+    text: |
+      What does len(\"python\") return?
+    correct_answer: "6"
+    difficulty: 1
+    as_name: riddleM25
+    options:
+      - "5"
+      - "6"
+      - "7"
+    hints: [ "Count the letters", "See Module 5" ]
+
+  - !Riddle &riddleM26
+    title: "M26: Breaking Loops 🔓"
+    text: |
+      What does `break` do inside a loop?
+    correct_answer: "Exits the loop immediately"
+    difficulty: 2
+    as_name: riddleM26
+    options:
+      - "Skips one item"
+      - "Repeats the loop"
+      - "Exits the loop immediately"
+    hints: [ "Compare with continue", "See Module 4" ]
+
+  - !Riddle &riddleM27
+    title: "M27: Reversing Slices 🔁"
+    text: |
+      What does \"hello\"[::-1] return?
+    correct_answer: "olleh"
+    difficulty: 2
+    as_name: riddleM27
+    options:
+      - "hello"
+      - "olleh"
+      - "error"
+    hints: [ "Step -1 reverses a string", "Module 5 slicing" ]
+
+  - !Riddle &riddleM28
+    title: "M28: Trace the Print 🔍"
+    text: |
+      What prints?
+
+      for i in range(2):
+          print(\"loop\", i)
+    correct_answer: "loop 0\\nloop 1"
+    difficulty: 1
+    as_name: riddleM28
+    options:
+      - "loop 1\\nloop 2"
+      - "loop 0\\nloop 1"
+      - "loop i"
+    hints: [ "Range(2) gives 0 and 1", "i is the index" ]
+
+  - !Riddle &riddleM29
+    title: "M29: String Method 🔠"
+    text: |
+      What does \"abc\".upper() return?
+    correct_answer: "ABC"
+    difficulty: 1
+    as_name: riddleM29
+    options:
+      - "abc"
+      - "ABC"
+      - "Abc"
+    hints: [ "Uppercase version", "Method from Module 6" ]
+
+  - !Riddle &riddleM30
+    title: "M30: File Close 🔚"
+    text: |
+      What does `with open(...)` automatically do?
+    correct_answer: "Closes the file when the block ends"
+    difficulty: 2
+    as_name: riddleM30
+    options:
+      - "Keeps file open forever"
+      - "Closes the file when the block ends"
+      - "Deletes the file"
+    hints: [ "Automatic close with context manager", "Introduced in file I/O module" ]
+
+  - !Riddle &riddleM31
+    title: "M31: Function Return 🎯"
+    text: |
+      What is the purpose of return?
+    correct_answer: "Send a value back to the caller"
+    difficulty: 1
+    as_name: riddleM31
+    options:
+      - "Show a printout"
+      - "Send a value back to the caller"
+      - "Exit the script"
+    hints: [ "Different from print()", "Defined in Module 3" ]
+
+  - !Riddle &riddleM32
+    title: "M32: String Check ✅"
+    text: |
+      What does \"x\" in \"text\" return?
+    correct_answer: "True"
+    difficulty: 1
+    as_name: riddleM32
+    options:
+      - "False"
+      - "True"
+      - "Error"
+    hints: [ "Membership test in Module 5", "x is inside 'text'" ]
+
+  - !Riddle &riddleM33
+    title: "M33: Using range() 📏"
+    text: |
+      What does list(range(3)) return?
+    correct_answer: "[0, 1, 2]"
+    difficulty: 2
+    as_name: riddleM33
+    options:
+      - "[1, 2, 3]"
+      - "[0, 1, 2]"
+      - "[0, 1, 2, 3]"
+    hints: [ "Start at 0, stop before 3", "Module 3 loops" ]
+
+  - !Riddle &riddleM34
+    title: "M34: Testing with >>>"
+    text: |
+      What does >>> mean in a docstring?
+    correct_answer: "Example of code to be tested"
+    difficulty: 2
+    as_name: riddleM34
+    options:
+      - "It runs a program"
+      - "It defines a string"
+      - "Example of code to be tested"
+    hints: [ "See doctest examples", "Module 9" ]
+
+  - !Riddle &riddleM35
+    title: "M35: File Modes ⚙️"
+    text: |
+      What does mode \"a\" mean in open()?
+    correct_answer: "Append to the file"
+    difficulty: 1
+    as_name: riddleM35
+    options:
+      - "Analyze file"
+      - "Append to the file"
+      - "Ask user for permission"
+    hints: [ "Write adds new content to the end", "See Module 6" ]
+
+  - !Riddle &riddleM36
+    title: "M36: .count() Method 🔢"
+    text: |
+      What does \"banana\".count(\"a\") return?
+    correct_answer: "3"
+    difficulty: 2
+    as_name: riddleM36
+    options:
+      - "2"
+      - "3"
+      - "1"
+    hints: [ "Count specific character", "Module 6 methods" ]
+
+  - !Riddle &riddleM37
+    title: "M37: chr and ord 🔄"
+    text: |
+      What does chr(ord(\"a\") + 1) return?
+    correct_answer: "b"
+    difficulty: 2
+    as_name: riddleM37
+    options:
+      - "a"
+      - "b"
+      - "1"
+    hints: [ "Unicode shift", "Encryption base in Module 6" ]
+
+  - !Riddle &riddleM38
+    title: "M38: Error Reading 🐛"
+    text: |
+      What does this error mean?
+
+      ValueError: invalid literal for int()
+    correct_answer: "Tried to convert a non-number string to int"
+    difficulty: 2
+    as_name: riddleM38
+    options:
+      - "File not found"
+      - "Tried to convert a non-number string to int"
+      - "Too many arguments"
+    hints: [ "See exception diagnostics", "Introduced in Module 2" ]
+
+  - !Riddle &riddleM39
+    title: "M39: Custom Input 🧃"
+    text: |
+      What’s the purpose of this input?
+
+      drink = input(\"Your drink: \")
+    correct_answer: "Reads text from the user"
+    difficulty: 1
+    as_name: riddleM39
+    options:
+      - "Declares a variable"
+      - "Reads text from the user"
+      - "Prints a drink"
+    hints: [ "input() waits for typing", "See Module 1–2" ]
+
+  - !Riddle &riddleM40
+    title: "M40: Final Check 🔁"
+    text: |
+      What does this do?
+
+      print(greet(\"Ari\"))
+      
+      def greet(name): return \"Hi \" + name
+    correct_answer: "Prints 'Hi Ari'"
+    difficulty: 2
+    as_name: riddleM40
+    options:
+      - "Returns nothing"
+      - "Prints 'Hi Ari'"
+      - "Error: wrong order"
+    hints: [ "Python reads from top to bottom unless defined earlier", "See function usage" ]
+
   - !Table &python_quiz_table
     title: Python Quiz Table
     source: [*quiz01, *quiz02, *quiz03, *quiz04, *quiz05, *quiz06, *quiz07, *quiz08, *quiz09,
              *riddleM11, *riddleM12, *riddleM13, *riddleM14, *riddleM15, *riddleM16, *riddleM17, *riddleM18,
-             *riddleM19, *riddleM20]
+             *riddleM19, *riddleM20, *riddleM21, *riddleM22, *riddleM23, *riddleM24, *riddleM25, *riddleM26,
+             *riddleM27, *riddleM28, *riddleM29, *riddleM30, *riddleM31, *riddleM32, *riddleM33, *riddleM34,
+             *riddleM35, *riddleM36, *riddleM37, *riddleM38, *riddleM39, *riddleM40]
+    
 
   - !Inspector
     title: Quiz Inspector
