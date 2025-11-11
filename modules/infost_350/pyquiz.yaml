@@ -39,10 +39,10 @@ instances:
     title: "M2: What happens first? 🔁"
     text: |
       What does Python execute first when this runs?
-      ```python
+
       temp = int(input("Temp? "))
       print(temp - 5)
-      ```
+
     correct_answer: 'Reads user input'
     difficulty: 1
     as_name: quiz02
@@ -69,10 +69,10 @@ instances:
     title: "M5: Strings & Slicing 🔡"
     text: |
       What does this print?
-      ```python
+
       word = "Python"
       print(word[2:5])
-      ```
+
     correct_answer: "tho"
     difficulty: 2
     as_name: quiz04
@@ -99,13 +99,14 @@ instances:
     title: "M7: Objects & Methods 🐾"
     text: |
       Given:
-      ```python
+
       class Pet:
           def __init__(self, name):
               self.name = name
       p = Pet("Lucky")
-      ```
+
       What does `p.name` return?
+
     correct_answer: "Lucky"
     difficulty: 2
     as_name: quiz06
@@ -375,7 +376,7 @@ instances:
   - !Riddle &riddleM25
     title: "M25: Counting Characters 🔢"
     text: |
-      What does len(\"python\") return?
+      What does len("python") return?
     correct_answer: "6"
     difficulty: 1
     as_name: riddleM25
@@ -401,7 +402,7 @@ instances:
   - !Riddle &riddleM27
     title: "M27: Reversing Slices 🔁"
     text: |
-      What does \"hello\"[::-1] return?
+      What does "hello"[::-1] return?
     correct_answer: "olleh"
     difficulty: 2
     as_name: riddleM27
@@ -417,7 +418,8 @@ instances:
       What prints?
 
       for i in range(2):
-          print(\"loop\", i)
+          print("loop", i)
+
     correct_answer: "loop 0\\nloop 1"
     difficulty: 1
     as_name: riddleM28
@@ -425,7 +427,7 @@ instances:
       - "loop 1\\nloop 2"
       - "loop 0\\nloop 1"
       - "loop i"
-    hints: [ "Range(2) gives 0 and 1", "i is the index" ]
+    hints: [ "range(2) gives 0 and 1", "i is the index" ]
 
   - !Riddle &riddleM29
     title: "M29: String Method 🔠"
@@ -508,7 +510,7 @@ instances:
   - !Riddle &riddleM35
     title: "M35: File Modes ⚙️"
     text: |
-      What does mode \"a\" mean in open()?
+      What does mode "a" mean in open()?
     correct_answer: "Append to the file"
     difficulty: 1
     as_name: riddleM35
@@ -521,7 +523,7 @@ instances:
   - !Riddle &riddleM36
     title: "M36: .count() Method 🔢"
     text: |
-      What does \"banana\".count(\"a\") return?
+      What does "banana".count("a") return?
     correct_answer: "3"
     difficulty: 2
     as_name: riddleM36
@@ -534,7 +536,8 @@ instances:
   - !Riddle &riddleM37
     title: "M37: chr and ord 🔄"
     text: |
-      What does chr(ord(\"a\") + 1) return?
+      What does chr(ord("a") + 1) return?
+
     correct_answer: "b"
     difficulty: 2
     as_name: riddleM37
@@ -564,7 +567,8 @@ instances:
     text: |
       What’s the purpose of this input?
 
-      drink = input(\"Your drink: \")
+      drink = input("Your drink: ")
+
     correct_answer: "Reads text from the user"
     difficulty: 1
     as_name: riddleM39
@@ -579,10 +583,11 @@ instances:
     text: |
       What does this do?
 
-      print(greet(\"Ari\"))
+      print(greet("Ari"))
       
-      def greet(name): return \"Hi \" + name
+      def greet(name): return "Hi " + name
     correct_answer: "Prints 'Hi Ari'"
+
     difficulty: 2
     as_name: riddleM40
     options:
@@ -598,7 +603,7 @@ instances:
              *riddleM19, *riddleM20, *riddleM21, *riddleM22, *riddleM23, *riddleM24, *riddleM25, *riddleM26,
              *riddleM27, *riddleM28, *riddleM29, *riddleM30, *riddleM31, *riddleM32, *riddleM33, *riddleM34,
              *riddleM35, *riddleM36, *riddleM37, *riddleM38, *riddleM39, *riddleM40]
-    
+
 
   - !Inspector
     title: Quiz Inspector
