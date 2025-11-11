@@ -66,7 +66,7 @@ instances:
     hints: [ "Definition vs. call", "Starts with def..." ]
 
   - !Riddle &quiz04
-    title: "M5: Strings & Slicing 🔡"
+    title: "M4: Strings & Slicing 🔡"
     text: |
       What does this print?
 
@@ -83,7 +83,7 @@ instances:
     hints: [ "Start at index 2, stop before 5", "See slicing: Module 5" ]
 
   - !Riddle &quiz05
-    title: "M6: Lists or Strings? 📦"
+    title: "M5: Lists or Strings? 📦"
     text: |
       Which returns the number of times 2 appears in the list?
     correct_answer: "[1, 2, 2, 3].count(2)"
@@ -96,7 +96,7 @@ instances:
     hints: [ "count vs. index vs. len", "Only one counts occurrences" ]
 
   - !Riddle &quiz06
-    title: "M7: Objects & Methods 🐾"
+    title: "M6: Objects & Methods 🐾"
     text: |
       Given:
 
@@ -117,7 +117,7 @@ instances:
     hints: [ "Attribute access", "See object construction in Module 7" ]
 
   - !Riddle &quiz07
-    title: "M8: Encapsulation 🎁"
+    title: "M7: Encapsulation 🎁"
     text: |
       Which line customizes how a class prints?
     correct_answer: "def __str__(self):"
@@ -130,7 +130,7 @@ instances:
     hints: [ "Printing needs a special method", "See Module 8" ]
 
   - !Riddle &quiz08
-    title: "M9: Tests & Proof 🧪"
+    title: "M8: Tests & Proof 🧪"
     text: |
       What does `doctest.testmod(verbose=True)` do?
     correct_answer: "Runs embedded tests and prints output"
@@ -142,8 +142,9 @@ instances:
       - "Shows all functions"
     hints: [ "See doctest examples in Module 9" ]
 
+
   - !Riddle &quiz09
-    title: "M10: Clean Code 🛀"
+    title: "M9: Clean Code 🛀"
     text: |
       What tool checks for type mismatches using hints?
     correct_answer: "mypy"
@@ -155,7 +156,24 @@ instances:
       - "pep8"
     hints: [ "Which one checks types?", "See Module 10 — 'Dr. Mypy'" ]
 
+  - !Riddle &riddleM10
+    title: "M10: Type Hints 🎯"
+    text: |
+      What does this function return?
 
+      def triple(x: int) -> int:
+          return x * 3
+
+      triple(2)
+
+    correct_answer: "6"
+    difficulty: 2
+    as_name: riddleM10
+    options:
+      - "5"
+      - "6"
+      - "9"
+    hints: [ "2 * 3", "The type hints help, but it works like usual math" ]
 
   - !Riddle &riddleM11
     title: "M11: Looping with Indexes 🔁"
@@ -432,7 +450,7 @@ instances:
   - !Riddle &riddleM29
     title: "M29: String Method 🔠"
     text: |
-      What does \"abc\".upper() return?
+      What does "abc".upper() return?
     correct_answer: "ABC"
     difficulty: 1
     as_name: riddleM29
@@ -471,7 +489,7 @@ instances:
   - !Riddle &riddleM32
     title: "M32: String Check ✅"
     text: |
-      What does \"x\" in \"text\" return?
+      What does "x" in "text" return?
     correct_answer: "True"
     difficulty: 1
     as_name: riddleM32
@@ -598,7 +616,7 @@ instances:
 
   - !Table &python_quiz_table
     title: Python Quiz Table
-    source: [*quiz01, *quiz02, *quiz03, *quiz04, *quiz05, *quiz06, *quiz07, *quiz08, *quiz09,
+    source: [*quiz01, *quiz02, *quiz03, *quiz04, *quiz05, *quiz06, *quiz07, *quiz08, *quiz09, *riddleM10,
              *riddleM11, *riddleM12, *riddleM13, *riddleM14, *riddleM15, *riddleM16, *riddleM17, *riddleM18,
              *riddleM19, *riddleM20, *riddleM21, *riddleM22, *riddleM23, *riddleM24, *riddleM25, *riddleM26,
              *riddleM27, *riddleM28, *riddleM29, *riddleM30, *riddleM31, *riddleM32, *riddleM33, *riddleM34,
