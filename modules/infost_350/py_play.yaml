@@ -1,6 +1,6 @@
 module:
-  - doc: Hello
-    icon: "👋"
+  - doc: Play with python
+    icon: "🎲"
 
 imports:
   - !Module
@@ -23,28 +23,22 @@ instances:
     border: False
 
   - !Page
-    title: Demo
+    title: Lucky & Muppets
     border: False
-    icon: "🎬"
-    next_page: demo
+    icon: "🍀"
+    next_page: infost_350/lucky
 
   - !Page
-    title: Tutorial 1o1
+    title: Lucky & Wanda
     border: False
-    icon: "👨🏻‍🏫"
-    next_page: tutorial101
+    icon: 🐕& 🐩
+    next_page: infost_350/lucky_wanda
 
   - !Page
-    title: Fun
+    title: Pets
     border: False
-    icon: "🎈"
-    next_page: fun
-
-  - !Page
-    title: People
-    border: False
-    icon: "👤"
-    next_page: people
+    icon: "🐕"
+    next_page: infost_350/pets
 
   - !Page
     title: QR Code
@@ -81,27 +75,3 @@ instances:
     border: False
     icon: "🧩"
     next_page: patterns
-
-  - !Page
-    title: Katas
-    border: False
-    icon: "🥋"
-    next_page: katas
-
-  - !Page
-    title: Learn French
-    border: False
-    icon: "🇫🇷"
-    next_page: tef_irn
-
-  - !Page
-    title: Quiz 2️⃣
-    border: False
-    icon: "2️⃣"
-    next_page: quiz_chapter2
-
-  - !Page
-    title: 350 python
-    border: False
-    icon: "🐍"
-    next_page: infost_350/py_play
