@@ -94,3 +94,11 @@ Chapters of Course Materials
 <summary>Click to expand</summary>
 {% include doc.md name="Course_chapter01" path="chapters" %}
 </details>
+
+## Chapter 01 b
+<details>
+<summary>Click to expand</summary>
+
+{% include gdrive_pdf.md id="1sokz1VNzrReWrLPMhyWpbqVEYdBhXIGB" %}
+</details>
+
