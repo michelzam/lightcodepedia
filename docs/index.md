@@ -1,10 +1,11 @@
 💬 **Lightcode** is a scalable distributed open-access no-code/low-code platform 
-meant to build digital skills. **Lightcode**pedia 
-is a network of LightNodes, managed by community members, LightCoders.
+meant to build digital skills. 
+
+️**Lightcode**pedia is a network 🕸 of LightNodes💡🪢, managed by community members, LightCoders 👩‍🔬.
 
 # 👋 Hello Lightcoder
 ## Welcome to LightHub, the root _LightNode_ 
-This _lightnode_ is the **nexus** of the **Lightcode Universe** made of LightNodes. 
+This 🪢_lightnode_ is the **nexus** of the **Lightcode Universe** made of LightNodes. 
 It is hosted on _GitHub_ and _StreamlitCloud_ for free.
 
 💡️ _You can **fork** this repo and customize it._  
