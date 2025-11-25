@@ -12,8 +12,8 @@ Chapters of Course Materials
 <details>
 <summary>Click to expand</summary>
 {% include gdrive_pdf.md id="19akOXma5JNrhJ68a-aXZ3Qmevehf1cXm" %}
-[Chapter2](chapter2.md)
 </details>
+[Chapter2](chapter2.md)
 
 ## Chapter 03 — 
 <details>
