@@ -17,7 +17,7 @@ It is hosted on _GitHub_ and _StreamlitCloud_.
 
 [🤖 Learn with Ari](ari.md) 👈 🆕
 
-[🏛 Academy](events.md) 
+[🎭 Events](events.md) 
 
 [👤 Author](author.md)
 
