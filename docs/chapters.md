@@ -92,5 +92,5 @@ Chapters of Course Materials
 ## Chapter 01 - local
 <details>
 <summary>Click to expand</summary>
-{% include doc.md name="chapters" path="Course_chapter01" %}
+{% include doc.md name="Course_chapter01" path="chapters" %}
 </details>
