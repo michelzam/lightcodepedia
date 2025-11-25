@@ -1,4 +1,4 @@
-# Course Material
+# 📚 Course Material
 
 Chapters of Course Materials
 
