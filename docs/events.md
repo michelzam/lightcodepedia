@@ -3,7 +3,8 @@
 [🏛 LightCode Academy](academy.md) Septembre 2025, Paris, France 🇫🇷
 
 ## 🎓 Publications
-[ACM MODELS 22 — Conference and Poster](https://conf.researchr.org/home/models-2022) - October 2022, Montreal, Canada  🇨🇦
+[ACM MODELS 22 — Conference and Poster](https://conf.researchr.org/home/models-2022) - October 2022, Montreal, Canada  🇨🇦 [🎬](https://www.youtube.com/watch?v=fLoV7TiLIew)
+
 
 [ACM SIGCSE 23 — Exhibitor](https://sigcse2023.sigcse.org/info/supporters) - March 2023, Toronto, Canada 🇨🇦
 
