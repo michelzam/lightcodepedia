@@ -22,7 +22,7 @@ It is hosted on _GitHub_ and _StreamlitCloud_ for free.
 
 [👤 Author](author.md)
 
-[🏀 Play](play.md)
+[🎈 Play](play.md)
 
 [📐 Diagram](diagram.md)
 
