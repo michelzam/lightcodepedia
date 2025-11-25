@@ -88,3 +88,9 @@ Chapters of Course Materials
 {% include gdrive_pdf.md id="14ZE2wnlPwQjzSk2wHXU-gnXgEKrwWLo1" %}
 </details>
 
+
+## Chapter 01 - local
+<details>
+<summary>Click to expand</summary>
+{% include doc.md name="chapters" path="Course_chapter01" %}
+</details>
