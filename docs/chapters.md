@@ -8,10 +8,9 @@ Chapters of Course Materials
 {% include gdrive_pdf.md id="1L0_VZUOUYlCykK-PcxJyZramrqtABB-X" %}
 </details>
 
-## Chapter 02 — Fundamentals elements of Low-Code
+## Chapter 02 — Fundamentals elements of Low-Code [💬](chapter2.md)
 <details>
 <summary>Click to expand</summary>
-[Chapter2](chapter2.md)
 {% include gdrive_pdf.md id="19akOXma5JNrhJ68a-aXZ3Qmevehf1cXm" %}
 </details>
 
