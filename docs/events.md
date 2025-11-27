@@ -1,6 +1,6 @@
 
 ## 🎭 Events
-[🏛 LightCode Academy](academy.md) Septembre 2025, Paris, France 🇫🇷
+[🏛 LightCode Academy](academy.md) - September 2025, Paris, France 🇫🇷
 
 ## 🎓 Publications
 [ACM MODELS 22 — Conference paper & Poster](https://conf.researchr.org/profile/models-2022/michelzam1) - October 2022, Montreal, Canada  🇨🇦 [🎬](https://www.youtube.com/watch?v=fLoV7TiLIew) [📜](https://www.researchgate.net/publication/362733911_Teaching_Modeling_to_Anyone_the_Aristotelian_Way_Anyone_can_cook_a_sound_model)
@@ -21,3 +21,29 @@
 [🎙️](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-lightning-talks/15/Enlightning-Learning-Experiences)
 [🤹](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-demos/12/Lightcodepedia-A-Distributed-Model-Driven-Low-Code-Platform-for-Computing-Education)
 [📰](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-posters/83/Enlightening-Pathways-into-Computing)
+
+### 🗣️ Feedback & Quotes
+
+Anonymous Peer Feedback from Educators and Evaluation Committees — ACM SIGCSE TS 2026
+
+💬 _This demo delivers a rare fusion of low-code technology and computing pedagogy that feels both innovative and grounded._
+
+💬 _The progression from visual exploration to executable models supports authentic learning while maintaining accessibility for diverse learners._
+
+💬 _The distributed, open-source design adds impressive scalability and autonomy, aligning perfectly with SIGCSE’s educational and technical spirit._
+
+💬 _Lightcodepedia presents a deeply thoughtful and forward-thinking contribution that bridges professional software practices with approachable computing education._
+
+💬 _The paper introduces a unique integration of low-code platforms, computational thinking and metaphor that is of humanistic design nature. Also demonstrates global adoption across multiple institutions._
+
+💬 _The low-code, distributed model has significant potential for scalability and democratization of computing skills across disciplines._
+
+💬 _The submission has creative conceptual framing linking classical theory with modern pedagogy, and addresses global inclusivity and interdisciplinary computing literacy. It also shows early practical success with multiple pilot sites._
+
+💬 _This poster addresses a very relevant and timely challenge in workforce development, highlighting the importance of expanding computer science and coding literacy beyond traditional software roles. The background is strong, and the problem framing is thoughtful and well articulated._
+
+💬 _The submission stands out for its creativity, global scope, and relevance._
+
+💬 _Very relevant and timely submission._
+
+💬 _Fascinating work, would love to see it._
