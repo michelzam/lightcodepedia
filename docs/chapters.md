@@ -11,9 +11,9 @@ Chapters of Course Materials
 ## Chapter 02 — Fundamentals elements of Low-Code
 <details>
 <summary>Click to expand</summary>
+[Chapter2](chapter2.md)
 {% include gdrive_pdf.md id="19akOXma5JNrhJ68a-aXZ3Qmevehf1cXm" %}
 </details>
-[Chapter2](chapter2.md)
 
 ## Chapter 03 — Application Development for All
 <details>
