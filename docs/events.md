@@ -14,6 +14,7 @@
 [GND & ICDSST 24 — Conference paper](https://www.euro-online.org/websites/dss/news/gdn-icdsst-2024-porto-portugal/) - June 2024, Porto, Portugal 🇵🇹 [📜](https://zenodo.org/records/17642455)
 
 [ACM SIGCSE 25 — Tutorial and Workshop presentation]() - 2025, Portand, Oregon 🇺🇸 [🧰](https://sigcse2025.sigcse.org/details/sigcse-ts-2025-tutorials/17/Tutorial-402-Customize-Your-Class-for-Anyone-An-AI-Aristotelian-Gamified-Approach-t) 
+[📜](pdfs/zam-talk-workshop-short.pdf)
 
 ## 🗓️ Upcoming
 
