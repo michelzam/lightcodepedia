@@ -1,9 +1,9 @@
 ## 🎭 Events
 [🏛 LightCode Academy](academy.md) - Summer 2025, Paris, France 🇫🇷
 
-[🏛 LightCode Certificate](certificate.md) - Fall 2025, Paris, France 🇫🇷
+[🏛 LightCode Certificate](pdfs/Dauphine-Certificat.pdf) - Fall 2025, Paris, France 🇫🇷
 
-[🏛 LightCode at Dauphine-MIAGE](miage.md) - Fall 2025, Paris, France 🇫🇷
+[🏛 LightCode at Dauphine-MIAGE](https://dauphine.psl.eu/formations/masters/miage/m2/vie-du-master) - Fall 2025, Paris, France 🇫🇷
 
 [🏛 LightCode at CESI](cesi.md) - Fall 2025, Nanterre, France 🇫🇷
 
