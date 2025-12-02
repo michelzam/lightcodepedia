@@ -24,6 +24,8 @@ It is hosted on _GitHub_ and _StreamlitCloud_ for free.
 
 [🎈 Play](play.md)
 
+[🎡 Examples](examples.md)
+
 [🚚 Deploy on Cloud](deploy.md)
 
 [🛟 Help](help.md)
