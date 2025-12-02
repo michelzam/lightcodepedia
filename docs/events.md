@@ -1,6 +1,6 @@
-
 ## 🎭 Events
 [🏛 LightCode Academy](academy.md) - September 2025, Paris, France 🇫🇷
+
 
 ## 🎓 Publications
 [ACM MODELS 22 — Conference paper & Poster](https://conf.researchr.org/profile/models-2022/michelzam1) - October 2022, Montreal, Canada  🇨🇦 [🎬](https://www.youtube.com/watch?v=fLoV7TiLIew) [📜](https://www.researchgate.net/publication/362733911_Teaching_Modeling_to_Anyone_the_Aristotelian_Way_Anyone_can_cook_a_sound_model)
@@ -48,3 +48,5 @@ Anonymous Peer Feedback from Educators and Evaluation Committees — ACM SIGCSE 
 💬 _Very relevant and timely submission._
 
 💬 _Fascinating work, would love to see it._
+
+
