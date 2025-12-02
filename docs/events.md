@@ -1,20 +1,31 @@
 ## 🎭 Events
-[🏛 LightCode Academy](academy.md) - September 2025, Paris, France 🇫🇷
+[🏛 LightCode Academy](academy.md) - Summer 2025, Paris, France 🇫🇷
+
+[🏛 LightCode Certificate](certificate.md) - Fall 2025, Paris, France 🇫🇷
+
+[🏛 LightCode at Dauphine-MIAGE](miage.md) - Fall 2025, Paris, France 🇫🇷
+
+[🏛 LightCode at CESI](cesi.md) - Fall 2025, Nanterre, France 🇫🇷
+
+[🇪🇺 LightCode at Erasmus+ Bordeaux](erasmus.md) - Summer 2024, Bordeaux, France 🇫🇷
+
+[🏛 LightCode at University of Macedonia](uom.md) - Summer 2024, Thessaloniki, Greece 🇬🇷
 
 
-## 🎓 Publications
-[ACM MODELS 22 — Conference paper & Poster](https://conf.researchr.org/profile/models-2022/michelzam1) - October 2022, Montreal, Canada  🇨🇦 [🎬](https://www.youtube.com/watch?v=fLoV7TiLIew) [📜](https://www.researchgate.net/publication/362733911_Teaching_Modeling_to_Anyone_the_Aristotelian_Way_Anyone_can_cook_a_sound_model)
-
-[ACM SIGCSE 23 — Exhibitor](https://sigcse2023.sigcse.org/info/supporters) - March 2023, Toronto, Canada 🇨🇦 [📷](pdfs/Sigcse23-Exibitors.pdf)
-
-[ACM MODELS 23 — Poster](https://conf.researchr.org/home/models-2023) - October 2023, Vasterås, Sweden 🇸🇪 [📜](https://dl.acm.org/doi/pdf/10.1109/MODELS-C59198.2023.00029)
-
-[ACM SIGCSE 24 — Poster Jury](https://sigcse2024.sigcse.org/track/sigcse-ts-2024-posters#program) - March 2024, Portland, Oregon 🇺🇸
+## 🎓 Publications & Presentations
+[ACM SIGCSE 25 — Tutorial and Workshop presentation]() - 2025, Portand, Oregon 🇺🇸 [🧰](https://sigcse2025.sigcse.org/details/sigcse-ts-2025-tutorials/17/Tutorial-402-Customize-Your-Class-for-Anyone-An-AI-Aristotelian-Gamified-Approach-t) 
+[📜](pdfs/zam-talk-workshop-short.pdf)
 
 [GND & ICDSST 24 — Conference paper](https://www.euro-online.org/websites/dss/news/gdn-icdsst-2024-porto-portugal/) - June 2024, Porto, Portugal 🇵🇹 [📜](https://zenodo.org/records/17642455)
 
-[ACM SIGCSE 25 — Tutorial and Workshop presentation]() - 2025, Portand, Oregon 🇺🇸 [🧰](https://sigcse2025.sigcse.org/details/sigcse-ts-2025-tutorials/17/Tutorial-402-Customize-Your-Class-for-Anyone-An-AI-Aristotelian-Gamified-Approach-t) 
-[📜](pdfs/zam-talk-workshop-short.pdf)
+[ACM SIGCSE 24 — Poster Jury](https://sigcse2024.sigcse.org/track/sigcse-ts-2024-posters#program) - March 2024, Portland, Oregon 🇺🇸
+
+[ACM MODELS 23 — Poster](https://conf.researchr.org/home/models-2023) - October 2023, Vasterås, Sweden 🇸🇪 [📜](https://dl.acm.org/doi/pdf/10.1109/MODELS-C59198.2023.00029)
+
+[ACM SIGCSE 23 — Exhibitor](https://sigcse2023.sigcse.org/info/supporters) - March 2023, Toronto, Canada 🇨🇦 [📷](pdfs/Sigcse23-Exibitors.pdf)
+
+[ACM MODELS 22 — Conference paper & Poster](https://conf.researchr.org/profile/models-2022/michelzam1) - October 2022, Montreal, Canada  🇨🇦 [🎬](https://www.youtube.com/watch?v=fLoV7TiLIew) [📜](https://www.researchgate.net/publication/362733911_Teaching_Modeling_to_Anyone_the_Aristotelian_Way_Anyone_can_cook_a_sound_model)
+
 
 ## 🗓️ Upcoming
 
