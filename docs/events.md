@@ -7,7 +7,7 @@
 
 [🏛 LightCode Academy](academy.md) - Summer 2025, Paris, France 🇫🇷
 
-[🇪🇺 LightCode at Erasmus+ Bordeaux](erasmus.md) - Summer 2024, Bordeaux, France 🇫🇷
+[🇪🇺 LightCode at Erasmus+ Bordeaux](https://agence.erasmusplus.fr/publications/recueil-de-projet-erasmus-enseignement-superieur/) - Summer 2024, Bordeaux, France 🇫🇷
 
 [🏛 LightCode at University of Macedonia](uom.md) - Summer 2024, Thessaloniki, Greece 🇬🇷
 
