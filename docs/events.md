@@ -13,6 +13,8 @@
 
 
 ## 🎓 Publications & Presentations
+[ACM MODELS 26 — Lightning talk, Demo & Poster](#upcoming) - 2026 St. Louis, Missouri 🇺🇸
+
 [ACM SIGCSE 25 — Tutorial and Workshop presentation]() - 2025, Portand, Oregon 🇺🇸 [🧰](https://sigcse2025.sigcse.org/details/sigcse-ts-2025-tutorials/17/Tutorial-402-Customize-Your-Class-for-Anyone-An-AI-Aristotelian-Gamified-Approach-t) 
 [📜](pdfs/zam-talk-workshop-short.pdf)
 
@@ -29,7 +31,7 @@
 
 ## 🗓️ Upcoming
 
-[ACM MODELS 26 — Lightning talk, demo & poster](https://conf.researchr.org/profile/michelzam1) - 2026 St. Louis, Missouri 🇺🇸
+[ACM SIGCSE 26 — Lightning talk, demo & poster](https://conf.researchr.org/profile/michelzam1) - 2026 St. Louis, Missouri 🇺🇸
 [🎙️](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-lightning-talks/15/Enlightning-Learning-Experiences)
 [🤹](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-demos/12/Lightcodepedia-A-Distributed-Model-Driven-Low-Code-Platform-for-Computing-Education)
 [📰](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-posters/83/Enlightening-Pathways-into-Computing)
