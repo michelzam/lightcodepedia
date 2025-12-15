@@ -12,12 +12,15 @@ jobs:
       - name: Check app
         run: |
           URL="https://lightcodepedia1.streamlit.app"
-          STATUS=$(curl -L -o /dev/null -s -w "%{http_code}" --max-time 30 "$URL")
-          if [ $? -ne 0 ]; then
+      
+          STATUS=$(curl -L -o /dev/null -s -w "%{http_code}" --max-time 30 "$URL" || true)
+      
+          if [ -z "$STATUS" ]; then
             STATUS=503
           fi
+      
           TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
+      
           echo "{\"url\":\"$URL\",\"status\":$STATUS,\"timestamp\":\"$TS\"}" > status.json
 
       - name: Update gist
