@@ -21,9 +21,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GIST_TOKEN }}
         run: |
+          CONTENT=$(cat status.json | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+      
           curl -s -X PATCH \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/gists/44a30e5475ac6a6bf2272556836aa858 \
-            -d "$(jq -n --arg content "$(cat status.json)" \
-              '{files:{\"status.json\":{content:$content}}}')"
+            -d "{
+              \"files\": {
+                \"status.json\": {
+                  \"content\": $CONTENT
+                }
+              }
+            }"
