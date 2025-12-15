@@ -11,4 +11,6 @@ jobs:
     steps:
       - name: Ping app
         run: |
+          curl -L --max-time 20 https://lightcodepedia1.streamlit.app \
           curl -L --max-time 20 https://lightcodepedia1.streamlit.app || true
+          
