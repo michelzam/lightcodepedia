@@ -9,13 +9,12 @@
     .then(s => {
       const code = s.status;
       let label = "DOWN", color = "red";
-
-      if (code >= 200 && code < 300) {
+      
+      if (code >= 200 && code < 400) {
         label = "UP"; color = "green";
-      } else if (code >= 300 && code < 400) {
-        label = "STARTING"; color = "orange";
+      } else {
+        label = "DOWN"; color = "red";
       }
-
       document.getElementById("status").innerHTML = `
         <p>Status: <strong style="color:${color}">${label}</strong></p>
         <p>HTTP: ${code}</p>
