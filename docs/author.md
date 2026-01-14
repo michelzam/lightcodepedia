@@ -18,7 +18,7 @@ During the Academy I learned:
 - [x] GitHub Pages — website hosting & deployment
 - [x] Markdown — text formatting, including **bold**, _italic_, and checkboxes
 - [x] StreamlitCloud deployment — app deployment
-- [c] [Python](python.md) — basics of the most popular programming language
+- [x] [Python](python.md) — basics of the most popular programming language
 - [x] No-code/Low-code platforms — basics of visual programming
 - [x] Lightcode — building apps with little or no code
 
