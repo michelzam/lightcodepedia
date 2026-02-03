@@ -5,10 +5,6 @@ on:
     - cron: "*/30 * * * *"
   workflow_dispatch:
 
-concurrency:
-  group: ping-streamlit
-  cancel-in-progress: true
-
 jobs:
   ping:
     runs-on: ubuntu-latest
