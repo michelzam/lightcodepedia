@@ -11,6 +11,7 @@ level = "info"
 [server]
 enableXsrfProtection = false
 enableCORS = false
+fileWatcherType = "none"
 # disconnectedSessionTTL=xxx # from st v1.39+
 
 [client]
