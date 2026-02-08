@@ -1,0 +1,16 @@
+name: Ping Streamlit
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping app
+        run: |
+          curl -L --max-time 20 https://lightcodepedia1.streamlit.app || \
+          curl -L --max-time 20 https://lightcodepedia1.streamlit.app || true
+          
