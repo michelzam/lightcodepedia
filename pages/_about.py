@@ -25,3 +25,10 @@ with st.expander("Licence", expanded=False, icon="🗣️"):
         st.error(f"An error occurred while reading the licence file: {e}")
 
 
+with st.expander("More"):
+    import psutil, os
+
+    if st.button("Show psutil"):
+        process = psutil.Process(os.getpid())
+        ram_mb = process.memory_info().rss / 1024 / 1024
+        st.metric("RAM used (MB)", f"{ram_mb:.0f}")
