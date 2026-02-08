@@ -531,8 +531,12 @@ classes:
                         transition_message = f" | {transition_message}{source.state}"
                         # st.sidebar.caption(f"{method.postcondition =  }")
                     with st.chat_message(name="ai", avatar="🤖"):
-                      st.success(f"{ret}")
-                      st.caption(f"💾 {mem_after - mem_before:.2f} MB  🖥 {cpu_after - cpu_before:.2f} %   ⏱️ {duration:.2f} sec")
+                      st.success(f"{ret}")  
+                      import psutil, os
+                      process = psutil.Process(os.getpid())
+                      ram_mb = process.memory_info().rss / 1024 / 1024
+                      sram_mb = f"  🧠 {ram_mb:.0f} Mb"
+                      st.caption(f"💾 {mem_after - mem_before:.2f} MB  🖥 {cpu_after - cpu_before:.2f} %   ⏱️ {duration:.2f} sec {sram_mb}")
                       print(ret)
                     # time.sleep(.25)
                     if hasattr(source, "state"):
