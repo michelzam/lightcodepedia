@@ -1,0 +1,27 @@
+<div id="status">Loading…</div>
+
+<script>
+  const URL =
+    "https://gist.githubusercontent.com/michelzam/44a30e5475ac6a6bf2272556836aa858/raw/status.json";
+
+  fetch(URL, { cache: "no-store" })
+    .then(r => r.json())
+    .then(s => {
+      const code = s.status;
+      let label = "DOWN", color = "red";
+      
+      if (code >= 200 && code < 400) {
+        label = "UP"; color = "green";
+      } else {
+        label = "DOWN"; color = "red";
+      }
+      document.getElementById("status").innerHTML = `
+        <p>Status: <strong style="color:${color}">${label}</strong></p>
+        <p>HTTP: ${code}</p>
+        <p>Last check: ${s.timestamp}</p>
+      `;
+    })
+    .catch(() => {
+      document.getElementById("status").textContent = "Status unavailable";
+    });
+</script>

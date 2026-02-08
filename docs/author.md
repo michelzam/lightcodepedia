@@ -16,10 +16,10 @@ My journey with Lightcode began when I applied for Lightcode Academy.
 During the Academy I learned:
 - [x] Github — repository management
 - [x] GitHub Pages — website hosting & deployment
-- [ ] Markdown — text formatting, including **bold**, _italic_, and checkboxes
-- [ ] StreamlitCloud deployment — app deployment
-- [ ] [Python](python.md) — basics of the most popular programming language
-- [ ] No-code/Low-code platforms — basics of visual programming
-- [ ] Lightcode — building apps with little or no code
+- [x] Markdown — text formatting, including **bold**, _italic_, and checkboxes
+- [x] StreamlitCloud deployment — app deployment
+- [x] [Python](python.md) — basics of the most popular programming language
+- [x] No-code/Low-code platforms — basics of visual programming
+- [x] Lightcode — building apps with little or no code
 
 ![LightCoders](https://github.com/user-attachments/assets/15102631-0611-4e06-8d51-8a7d4f3e88fa)
