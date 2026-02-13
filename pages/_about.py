@@ -2,6 +2,7 @@ import streamlit as st
 import os
 
 from usecases.common.common import page_config, get_params
+from config.settings import ACTIVE_SESSIONS
 
 page_config(__file__)
 
@@ -28,7 +29,8 @@ with st.expander("Licence", expanded=False, icon="🗣️"):
 with st.expander("More"):
     import psutil, os
 
-    if st.button("Show psutil"):
+    if st.button("Users and RAM(psutil)"):
+        st.metric("Active users", len(ACTIVE_SESSIONS))
         process = psutil.Process(os.getpid())
         ram_mb = process.memory_info().rss / 1024 / 1024
         st.metric("RAM used (MB)", f"{ram_mb:.0f}")
