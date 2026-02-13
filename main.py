@@ -7,6 +7,7 @@ import streamlit as st
 
 from lightcode import page_config, import_module, about
 
+
 page_config(__file__)
 
 if sys.flags.optimize > 0:

@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from usecases.common.backend.services import ScriptManager
 from usecases.common.backend.tracing import trace_execution_time
 from PIL import ImageFont
+from config.settings import ACTIVE_SESSIONS, SESSION_TTL
+import uuid, time
 
 
 @dataclass
@@ -266,6 +268,15 @@ class LayoutMaker:
 def page_config(file_name: str = ""):
 
     store_url_args()
+
+    if "sid" not in st.session_state:
+        st.session_state.sid = str(uuid.uuid4())
+        ACTIVE_SESSIONS[st.session_state.sid] = time.time()
+
+    now = time.time()
+    for sid, ts in list(ACTIVE_SESSIONS.items()):
+        if now - ts > SESSION_TTL:
+            del ACTIVE_SESSIONS[sid]
 
     if "status" not in st.session_state:
         st.session_state.status = "unverified"

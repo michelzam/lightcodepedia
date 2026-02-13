@@ -1,4 +1,3 @@
-
 DEFAULT_CODE = "import streamlit as st \n\nst.title('Hi')"
 
 # Editor configuration
@@ -12,3 +11,6 @@ DEFAULT_MODULE_DIRECTORY = "modules"
 GITHUB_ACCESS_TOKEN="GITHUB_ACCESS_TOKEN"
 GITHUB_USER_NAME="GITHUB_USER_NAME"
 GITHUB_REPO_NAME="GITHUB_REPO_NAME"
+
+ACTIVE_SESSIONS: dict[str, float] = {}
+SESSION_TTL = 120  # seconds
