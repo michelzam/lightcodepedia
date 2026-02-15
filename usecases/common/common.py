@@ -177,7 +177,7 @@ class LayoutMaker:
             #st.markdown("---")
             st.caption("  ")
             row_footer = row(2)
-            row_footer.caption("Copyright © 2025 KarmicSoft - All Rights Reserved.")
+            row_footer.caption("Copyright © 2021-2026 KarmicSoft - All Rights Reserved.")
             try:
                 first_name = st.session_state.user_name
             except Exception:
