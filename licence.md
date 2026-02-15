@@ -73,4 +73,4 @@ This software is provided **“as is”** without warranties of any kind. Karmic
 
 ---
 
-**© 2025 KarmicSoft. All Rights Reserved.**
+**© 2026 KarmicSoft. All Rights Reserved.**

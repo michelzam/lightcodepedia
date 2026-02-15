@@ -21,15 +21,15 @@ def about():
                 e.preventDefault();
                 e.stopPropagation();
                 alert(
-                  "💡 LightCode 2025\\n" +
+                  "💡 LightCode 2026\\n" +
                   "-----------------------------\\n" +
                   "Made with:\\n" +
                   "- Streamlit v1.41.0\\n" +
                   "  https://streamlit.io\\n" +
-                  "  Copyright 2025 Snowflake Inc. All rights reserved.\\n\\n" +
+                  "  Copyright 2026 Snowflake Inc. All rights reserved.\\n\\n" +
                   "- Smalljects v2.2.0\\n" +
                   "  https://www.karmicsoft.com\\n" +
-                  "  Copyright 2025 KarmicSoft. All rights reserved.\\n"
+                  "  Copyright 2021-2026 KarmicSoft. All rights reserved.\\n"
                 );
               }, { once: false });
             }

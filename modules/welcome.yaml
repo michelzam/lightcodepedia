@@ -1,5 +1,6 @@
 module:
-  - doc: "Welcome to the light side of the forcee"
+  - name: welcome
+    doc: "Welcome to the light side of the forcee"
     icon: "👋"
     is_admin: True
 
