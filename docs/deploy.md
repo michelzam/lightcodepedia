@@ -75,4 +75,4 @@ If the build fails with a Python version error:
 
 
 Lightcode.
-(c) KarmicSoft 2025
+(c) KarmicSoft 2026
