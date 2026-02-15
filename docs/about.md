@@ -64,6 +64,6 @@ Made with ❤️ for learners around the world.
 # 🩺 Status
 {% include status.html %}
 
-# Docker / Azure 🆕
+# Docker / Azure 🆕 
 
 <iframe src="https://lightcodepedia.org" width="100%" height="800" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"> </iframe>
