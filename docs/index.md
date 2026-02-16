@@ -36,7 +36,7 @@ It is hosted on _GitHub_ and _StreamlitCloud_ for free.
 
 [📚 Course materials](chapters.md)
 
-[🔗 Links](links.md)
+[⚙️ Setup](links.md)
 
 [ℹ️ About](about.md)
 
