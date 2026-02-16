@@ -41,12 +41,8 @@ It is hosted on _GitHub_ and _StreamlitCloud_ for free.
 [ℹ️ About](about.md)
 
 
-{% include copyright.md %}
 
 _Published: {{ site.time | date: "%Y-%m-%d %H:%M" }}_
-
-© Copyright
-© 2020-2023 KarmicSoft — All rights reserved
 
 **🇪🇺 Co-funded by the EU**
 <details>
@@ -57,3 +53,5 @@ The LightCode Erasmus+ Project (Nr.2022-1-FR01-KA220-HED-00086863) is co-funded 
 ![](images/EN_cofundedbytheEU_RGB_POS.png)
 
 </details>
+
+{% include copyright.md %}
