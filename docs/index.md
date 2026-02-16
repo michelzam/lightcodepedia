@@ -30,11 +30,9 @@ It is hosted on _GitHub_ and _StreamlitCloud_ for free.
 
 [🛟 Help](help.md)
 
-[🫜 Root node](https://lightcodepedia.org)
+[🕸️ Network](nodes.md)
 
-[🕸️ Registered LightNodes](nodes.md)
-
-[📚 Course materials](chapters.md)
+[📚 Readings](chapters.md)
 
 [⚙️ Setup](links.md)
 
