@@ -3,7 +3,7 @@ layout: default
 title: Home
 ---
 
-{% include carousel.html id="hero" img1="/assets/img/slide1.jpg" img2="/assets/img/slide2.jpg" %}
+{% include carousel.html id="hero" img1="assets/img/ari1.jpeg" img2="assets/img/ari2.jpeg" %}
 
 <div class="row g-4">
   {% include card.html title="Project A" text="Short description." link="/project-a/" %}
