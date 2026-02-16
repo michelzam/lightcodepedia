@@ -1,0 +1,14 @@
+<div class="col-md-4">
+  <div class="card shadow-sm h-100">
+    {% if include.img %}
+      <img src="{{ include.img | relative_url }}" class="card-img-top" alt="">
+    {% endif %}
+    <div class="card-body">
+      <h5 class="card-title">{{ include.title }}</h5>
+      <p class="card-text">{{ include.text }}</p>
+      {% if include.link %}
+        <a class="btn btn-primary" href="{{ include.link | relative_url }}">Open</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
