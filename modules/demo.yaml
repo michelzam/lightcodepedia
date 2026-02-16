@@ -11,14 +11,14 @@ imports:
 classes:
 
   - !Class
-    name: Demo
+    name: Guide
     bases: [ kore.Object ]
-    doc: Demo class
+    doc: Guiding dog
     attributes:
       - !Attribute
         name: name
         type: str
-        default: Demo instance
+        default: Lucky
     states: [running, designing, testing, documenting]
     methods:
       - !Method
@@ -100,10 +100,26 @@ instances:
     - 1
     - 1
     - 1
+    - 1
     show_backstage: false
 
-  - !Demo &demo
-    name: Lucky
+  - !Text
+    title: Pitch
+    foldable: True
+    expanded: False
+    icon: 🐾
+    text: |
+      **For** Alex, a freshman entering computing
+      
+      **Who** wants guidance without being overwhelmed
+      
+      **Our** pathway is like a well-trained companion
+      
+      **With** steady steps that build confidence before complexity
+
+
+  - !Guide &ari
+    name: Ari
 
   - !Text
     icon: 🐶
@@ -114,7 +130,7 @@ instances:
     media: dog.png
 
   - !Inspector
-    source: *demo
+    source: *ari
 
 
   - !Text
