@@ -1,17 +1,4 @@
----
-layout: default
-title: Home
----
-
 {% include carousel.html id="hero" img1="assets/img/ari1.jpg" img2="assets/img/ari2.jpg" %}
-
-<div class="row g-4">
-  {% include card.html title="Project A" text="Short description." link="/project-a/" %}
-  {% include card.html title="Project B" text="Short description." link="/project-b/" %}
-  {% include card.html title="Project C" text="Short description." link="/project-c/" %}
-</div>
-
-
 
 💬 **Lightcode** is a scalable distributed open-access no-code/low-code platform 
 meant to build digital skills. 
