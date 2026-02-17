@@ -106,3 +106,10 @@ instances:
     border: False
     icon: "🐍"
     next_page: infost_350/py_play
+
+  - !Page
+    title: Demo2
+    border: False
+    icon: "🎬"
+    next_page: demo2
+

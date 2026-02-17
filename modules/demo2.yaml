@@ -1,5 +1,5 @@
 module:
-  - name: demo
+  - name: demo2
     doc: Demo for SIGCSE!
     icon: 🎭
 
@@ -12,13 +12,21 @@ classes:
 
   - !Class
     name: Guide
+
+  - !Class
+    name: Guide
     bases: [ kore.Object ]
     doc: Guiding dog
+    icon: 🐕‍🦺
     attributes:
       - !Attribute
         name: name
         type: str
         default: Lucky
+      - !Attribute
+        name: bestie
+        type: Guide
+        advanced: True
     states: [running, designing, testing, documenting]
     methods:
       - !Method
@@ -53,7 +61,25 @@ classes:
         code: |
           scene = self._module.instances[0]
           scene.show_backstage = True
+          if self.bestie:
+            self.bestie.test()
           return "Check out the model diagram in the backstage area below."
+
+      - !Method
+        name: clone_me
+        preconditions: [ designing ]
+        code: |
+          ari2 = type(self)(name=f"{self.name}2", _module=self._module)
+          self._module.instances.append(ari2)
+          self.bestie = ari2
+          self._module.instances.append(Inspector(source=ari2))
+
+      - !Method
+        name: new_map
+        preconditions: [ designing ]
+        code: |
+          map = Map(title= "Local map", icon = "🗺️", latitude=38.631034, longitude=-90.1909179)
+          self._module.instances.append(map)
 
       - !Method
         name: layout
@@ -68,6 +94,19 @@ classes:
         name: code
         preconditions: [ designing ]
         doc: Show the code
+        code: |
+          my_type = type(self)._class
+          my_codes = [m for m in my_type.methods if m.name == "hello"]
+          py_code = 'def hello(self):\n    '
+          if len(my_codes) > 0:
+            py_code += my_codes[0].code
+            st.code(py_code, language='python')
+
+      - !Method
+        name: clone
+        hidden: true
+        preconditions: [ designing ]
+        doc: Clone me
         code: |
           my_type = type(self)._class
           my_codes = [m for m in my_type.methods if m.name == "hello"]
