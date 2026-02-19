@@ -1,3 +1,7 @@
+# SIGCSE'26 — Welcome & Feedback
+
+![sigcse-feedback](https://github.com/user-attachments/assets/ad13cd8e-38d9-4aee-8baa-28e9f9c4ca91)
+
 💬 **Lightcode** is a scalable distributed open-access no-code/low-code platform 
 meant to build digital skills. 
 
