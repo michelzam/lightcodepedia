@@ -9,7 +9,9 @@ meant to build digital skills.
 
 # 👋 Hello Lightcoder
 ## Welcome to LightHub, the root _LightNode_ 
+
 This 🪢_lightnode_ is the **nexus** of the **Lightcode Universe** made of LightNodes. 
+
 It is hosted on _GitHub_ and _StreamlitCloud_ for free.
 
 💡️ _You can **fork** this repo and customize it._  
