@@ -75,3 +75,9 @@ instances:
     border: False
     icon: "🧩"
     next_page: patterns
+
+  - !Page
+    title: PyQuiz
+    border: False
+    icon: "🎡"
+    next_page: infost_350/pyquiz

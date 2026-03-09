@@ -80,6 +80,8 @@ classes:
         code: |
           map = Map(title= "Local map", icon = "🗺️", latitude=38.631034, longitude=-90.1909179)
           self._module.instances.append(map)
+          imap = Inspector(source=map)
+          self._module.instances.append(imap)
 
       - !Method
         name: layout
