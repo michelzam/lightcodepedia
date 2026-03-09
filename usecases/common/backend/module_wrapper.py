@@ -132,6 +132,7 @@ class Attribute(Wrapper):
     options: List[str] = field(default_factory=list)
     option_field: str = field(default="")
     captions: List[str] = field(default_factory=list)
+    height: int = field(default=0)
 
     def __post_init__(self):
         icon_map = {

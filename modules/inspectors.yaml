@@ -265,14 +265,14 @@ classes:
             print(e)
             print(traceback.format_exc())
             return False
-          
+
           if len(self.attributes) > 0:
             # use custom attr list and order
             attrs = []
             for a_name in self.attributes:
               attrs.extend([a for a in attributes if a.name == a_name])
             attributes = attrs
-          
+                    
           def get_attr_label(attr: Attribute, pytype) -> str:
             if pytype.__module__ == "builtins":
               return f"{attr.icon} {attr.name.capitalize().replace('_', ' ')}"
@@ -544,6 +544,7 @@ classes:
                 elif attr.is_long and len(attr.language) == 0:
                   tab.text_area(f"{label}", key=key,
                     help=attr.doc,
+                    height=attr.height if attr.height > 0 else None,
                     value=str(getattr(source, attr.name)),
                     disabled=is_read_only, on_change=on_change, args=[key])
                 elif attr.name == "code" or len(attr.language) > 0:
