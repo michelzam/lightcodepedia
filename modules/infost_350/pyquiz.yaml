@@ -19,12 +19,23 @@ imports:
 
 classes:
 
+  - !Class
+    name: PyRiddle
+    bases: [ tutorials.Riddle ]
+    doc: Python riddle
+    attributes:
+      - !Attribute
+        name: question
+        type: str
+        read_only: True
+        is_long: True
+        height: 200
 
 instances:
 
-  - !Riddle &quiz01
+  - !PyRiddle &quiz01
     title: "M1: First Script 🧾"
-    text: |
+    question: |
       What's the correct way to greet the user using their input?
     correct_answer: 'print(f"Hello {name}")'
     difficulty: 1
@@ -35,9 +46,9 @@ instances:
       - 'print("Hello", name)'
     hints: [ "See f-string usage, Module 1", "The variable needs to be embedded inside the string" ]
 
-  - !Riddle &quiz02
+  - !PyRiddle &quiz02
     title: "M2: What happens first? 🔁"
-    text: |
+    question: |
       What does Python execute first when this runs?
 
       temp = int(input("Temp? "))
@@ -52,9 +63,9 @@ instances:
       - 'Subtracts 5'
     hints: [ "See data flow: input → compute → print (Module 2)" ]
 
-  - !Riddle &quiz03
+  - !PyRiddle &quiz03
     title: "M3: Functions & Control 🧪"
-    text: |
+    question: |
       Which line *defines* a function?
     correct_answer: "def cool_down(temp):"
     difficulty: 1
@@ -65,9 +76,9 @@ instances:
       - "return temp - 5"
     hints: [ "Definition vs. call", "Starts with def..." ]
 
-  - !Riddle &quiz04
+  - !PyRiddle &quiz04
     title: "M4: Strings & Slicing 🔡"
-    text: |
+    question: |
       What does this print?
 
       word = "Python"
@@ -82,9 +93,9 @@ instances:
       - "hon"
     hints: [ "Start at index 2, stop before 5", "See slicing: Module 5" ]
 
-  - !Riddle &quiz05
+  - !PyRiddle &quiz05
     title: "M5: Lists or Strings? 📦"
-    text: |
+    question: |
       Which returns the number of times 2 appears in the list?
     correct_answer: "[1, 2, 2, 3].count(2)"
     difficulty: 1
@@ -95,14 +106,15 @@ instances:
       - "len([1, 2, 2, 3])"
     hints: [ "count vs. index vs. len", "Only one counts occurrences" ]
 
-  - !Riddle &quiz06
+  - !PyRiddle &quiz06
     title: "M6: Objects & Methods 🐾"
-    text: |
+    question: |
       Given:
 
       class Pet:
           def __init__(self, name):
               self.name = name
+
       p = Pet("Lucky")
 
       What does `p.name` return?
@@ -116,9 +128,9 @@ instances:
       - "None"
     hints: [ "Attribute access", "See object construction in Module 7" ]
 
-  - !Riddle &quiz07
+  - !PyRiddle &quiz07
     title: "M7: Encapsulation 🎁"
-    text: |
+    question: |
       Which line customizes how a class prints?
     correct_answer: "def __str__(self):"
     difficulty: 2
@@ -129,9 +141,9 @@ instances:
       - "def display(self):"
     hints: [ "Printing needs a special method", "See Module 8" ]
 
-  - !Riddle &quiz08
+  - !PyRiddle &quiz08
     title: "M8: Tests & Proof 🧪"
-    text: |
+    question: |
       What does `doctest.testmod(verbose=True)` do?
     correct_answer: "Runs embedded tests and prints output"
     difficulty: 2
@@ -143,9 +155,9 @@ instances:
     hints: [ "See doctest examples in Module 9" ]
 
 
-  - !Riddle &quiz09
+  - !PyRiddle &quiz09
     title: "M9: Clean Code 🛀"
-    text: |
+    question: |
       What tool checks for type mismatches using hints?
     correct_answer: "mypy"
     difficulty: 2
@@ -156,9 +168,9 @@ instances:
       - "pep8"
     hints: [ "Which one checks types?", "See Module 10 — 'Dr. Mypy'" ]
 
-  - !Riddle &riddleM10
+  - !PyRiddle &riddleM10
     title: "M10: Type Hints 🎯"
-    text: |
+    question: |
       What does this function return?
 
       def triple(x: int) -> int:
@@ -175,9 +187,9 @@ instances:
       - "9"
     hints: [ "2 * 3", "The type hints help, but it works like usual math" ]
 
-  - !Riddle &riddleM11
+  - !PyRiddle &riddleM11
     title: "M11: Looping with Indexes 🔁"
-    text: |
+    question: |
       What does this print?
 
       word = "race"
@@ -193,9 +205,9 @@ instances:
       - "0123"
     hints: [ "Loop over index range", "Access by index" ]
 
-  - !Riddle &riddleM12
+  - !PyRiddle &riddleM12
     title: "M12: String Replace 🔄"
-    text: |
+    question: |
       What does this output?
 
       msg = "hi"
@@ -210,9 +222,9 @@ instances:
       - "hb"
     hints: [ "See string methods", "replace changes one char to another" ]
 
-  - !Riddle &riddleM13
+  - !PyRiddle &riddleM13
     title: "M13: Method Call Syntax ☎"
-    text: |
+    question: |
       What is the correct way to call a method on a string?
 
     correct_answer: "'Hello'.lower()"
@@ -224,9 +236,9 @@ instances:
       - "lower = Hello()"
     hints: [ "Dot notation method call" ]
 
-  - !Riddle &riddleM14
+  - !PyRiddle &riddleM14
     title: "M14: File Write ✍"
-    text: |
+    question: |
       What does this do?
 
       with open("out.txt", "w") as f:
@@ -241,9 +253,9 @@ instances:
       - "Writes 'hi' into a file named out.txt"
     hints: [ "Mode 'w' is for writing", "with handles closing" ]
 
-  - !Riddle &riddleM15
+  - !PyRiddle &riddleM15
     title: "M15: File Read 📂"
-    text: |
+    question: |
       What does this do?
 
       with open("data.txt", "r") as f:
@@ -258,9 +270,9 @@ instances:
       - "Closes the file"
     hints: [ "Mode 'r' is for reading" ]
 
-  - !Riddle &riddleM16
+  - !PyRiddle &riddleM16
     title: "M16: Append Mode ➕"
-    text: |
+    question: |
       What happens when you write with mode "a"?
 
     correct_answer: "Appends to the file"
@@ -272,9 +284,9 @@ instances:
       - "Appends to the file"
     hints: [ "'a' means append" ]
 
-  - !Riddle &riddleM17
+  - !PyRiddle &riddleM17
     title: "M17: Encrypt Step 1 🔐"
-    text: |
+    question: |
       If you shift each letter by 1, what does 'abc' become?
 
     correct_answer: "bcd"
@@ -286,9 +298,9 @@ instances:
       - "def"
     hints: [ "Shift using ord() and chr()", "Wrap around logic is optional" ]
 
-  - !Riddle &riddleM18
+  - !PyRiddle &riddleM18
     title: "M18: Function Default 🛠"
-    text: |
+    question: |
       What does this do?
 
       def greet(name="Doc"):
@@ -305,9 +317,9 @@ instances:
       - "Error"
     hints: [ "Default argument used" ]
 
-  - !Riddle &riddleM19
+  - !PyRiddle &riddleM19
     title: "M19: Type Hint ➡"
-    text: |
+    question: |
       What does the ': str' mean here?
 
       def shout(word: str) -> str:
@@ -322,9 +334,9 @@ instances:
       - "This is the return value"
     hints: [ "Hint to the reader and tools like mypy" ]
 
-  - !Riddle &riddleM20
+  - !PyRiddle &riddleM20
     title: "M20: mypy ✅"
-    text: |
+    question: |
       What does mypy help you detect?
 
     correct_answer: "Type mismatches"
@@ -336,9 +348,9 @@ instances:
       - "Type mismatches"
     hints: [ "Static type checking tool" ]
 
-  - !Riddle &riddleM21
+  - !PyRiddle &riddleM21
     title: "M21: Reading Input Again 🔁"
-    text: |
+    question: |
       What type is returned by input()?
     correct_answer: "str"
     difficulty: 1
@@ -349,9 +361,9 @@ instances:
       - "float"
     hints: [ "Always a string", "Use int() or float() to convert" ]
 
-  - !Riddle &riddleM22
+  - !PyRiddle &riddleM22
     title: "M22: Writing Clean Code 🧼"
-    text: |
+    question: |
       What’s the purpose of PEP-8?
     correct_answer: "Style guide for Python code"
     difficulty: 1
@@ -362,9 +374,9 @@ instances:
       - "Style guide for Python code"
     hints: [ "Formatting, naming, spacing", "Introduced early" ]
 
-  - !Riddle &riddleM23
+  - !PyRiddle &riddleM23
     title: "M23: Using continue 🔄"
-    text: |
+    question: |
       What does `continue` do in a loop?
     correct_answer: "Skips the rest of the loop and moves to the next iteration"
     difficulty: 2
@@ -375,9 +387,9 @@ instances:
       - "Repeats the loop from the top"
     hints: [ "Doesn’t exit, just skips" ]
 
-  - !Riddle &riddleM24
+  - !PyRiddle &riddleM24
     title: "M24: String Building 🧱"
-    text: |
+    question: |
       What does this print?
 
       name = \"Zam\"
@@ -391,9 +403,9 @@ instances:
       - "Hi Zam"
     hints: [ "String concatenation with +", "Exact spaces matter" ]
 
-  - !Riddle &riddleM25
+  - !PyRiddle &riddleM25
     title: "M25: Counting Characters 🔢"
-    text: |
+    question: |
       What does len("python") return?
     correct_answer: "6"
     difficulty: 1
@@ -404,9 +416,9 @@ instances:
       - "7"
     hints: [ "Count the letters", "See Module 5" ]
 
-  - !Riddle &riddleM26
+  - !PyRiddle &riddleM26
     title: "M26: Breaking Loops 🔓"
-    text: |
+    question: |
       What does `break` do inside a loop?
     correct_answer: "Exits the loop immediately"
     difficulty: 2
@@ -417,9 +429,9 @@ instances:
       - "Exits the loop immediately"
     hints: [ "Compare with continue", "See Module 4" ]
 
-  - !Riddle &riddleM27
+  - !PyRiddle &riddleM27
     title: "M27: Reversing Slices 🔁"
-    text: |
+    question: |
       What does "hello"[::-1] return?
     correct_answer: "olleh"
     difficulty: 2
@@ -430,9 +442,9 @@ instances:
       - "error"
     hints: [ "Step -1 reverses a string", "Module 5 slicing" ]
 
-  - !Riddle &riddleM28
+  - !PyRiddle &riddleM28
     title: "M28: Trace the Print 🔍"
-    text: |
+    question: |
       What prints?
 
       for i in range(2):
@@ -447,9 +459,9 @@ instances:
       - "loop i"
     hints: [ "range(2) gives 0 and 1", "i is the index" ]
 
-  - !Riddle &riddleM29
+  - !PyRiddle &riddleM29
     title: "M29: String Method 🔠"
-    text: |
+    question: |
       What does "abc".upper() return?
     correct_answer: "ABC"
     difficulty: 1
@@ -460,9 +472,9 @@ instances:
       - "Abc"
     hints: [ "Uppercase version", "Method from Module 6" ]
 
-  - !Riddle &riddleM30
+  - !PyRiddle &riddleM30
     title: "M30: File Close 🔚"
-    text: |
+    question: |
       What does `with open(...)` automatically do?
     correct_answer: "Closes the file when the block ends"
     difficulty: 2
@@ -473,9 +485,9 @@ instances:
       - "Deletes the file"
     hints: [ "Automatic close with context manager", "Introduced in file I/O module" ]
 
-  - !Riddle &riddleM31
+  - !PyRiddle &riddleM31
     title: "M31: Function Return 🎯"
-    text: |
+    question: |
       What is the purpose of return?
     correct_answer: "Send a value back to the caller"
     difficulty: 1
@@ -486,9 +498,9 @@ instances:
       - "Exit the script"
     hints: [ "Different from print()", "Defined in Module 3" ]
 
-  - !Riddle &riddleM32
+  - !PyRiddle &riddleM32
     title: "M32: String Check ✅"
-    text: |
+    question: |
       What does "x" in "text" return?
     correct_answer: "True"
     difficulty: 1
@@ -499,9 +511,9 @@ instances:
       - "Error"
     hints: [ "Membership test in Module 5", "x is inside 'text'" ]
 
-  - !Riddle &riddleM33
+  - !PyRiddle &riddleM33
     title: "M33: Using range() 📏"
-    text: |
+    question: |
       What does list(range(3)) return?
     correct_answer: "[0, 1, 2]"
     difficulty: 2
@@ -512,9 +524,9 @@ instances:
       - "[0, 1, 2, 3]"
     hints: [ "Start at 0, stop before 3", "Module 3 loops" ]
 
-  - !Riddle &riddleM34
+  - !PyRiddle &riddleM34
     title: "M34: Testing with >>>"
-    text: |
+    question: |
       What does >>> mean in a docstring?
     correct_answer: "Example of code to be tested"
     difficulty: 2
@@ -525,9 +537,9 @@ instances:
       - "Example of code to be tested"
     hints: [ "See doctest examples", "Module 9" ]
 
-  - !Riddle &riddleM35
+  - !PyRiddle &riddleM35
     title: "M35: File Modes ⚙️"
-    text: |
+    question: |
       What does mode "a" mean in open()?
     correct_answer: "Append to the file"
     difficulty: 1
@@ -538,9 +550,9 @@ instances:
       - "Ask user for permission"
     hints: [ "Write adds new content to the end", "See Module 6" ]
 
-  - !Riddle &riddleM36
+  - !PyRiddle &riddleM36
     title: "M36: .count() Method 🔢"
-    text: |
+    question: |
       What does "banana".count("a") return?
     correct_answer: "3"
     difficulty: 2
@@ -551,9 +563,9 @@ instances:
       - "1"
     hints: [ "Count specific character", "Module 6 methods" ]
 
-  - !Riddle &riddleM37
+  - !PyRiddle &riddleM37
     title: "M37: chr and ord 🔄"
-    text: |
+    question: |
       What does chr(ord("a") + 1) return?
 
     correct_answer: "b"
@@ -565,9 +577,9 @@ instances:
       - "1"
     hints: [ "Unicode shift", "Encryption base in Module 6" ]
 
-  - !Riddle &riddleM38
+  - !PyRiddle &riddleM38
     title: "M38: Error Reading 🐛"
-    text: |
+    question: |
       What does this error mean?
 
       ValueError: invalid literal for int()
@@ -580,9 +592,9 @@ instances:
       - "Too many arguments"
     hints: [ "See exception diagnostics", "Introduced in Module 2" ]
 
-  - !Riddle &riddleM39
+  - !PyRiddle &riddleM39
     title: "M39: Custom Input 🧃"
-    text: |
+    question: |
       What’s the purpose of this input?
 
       drink = input("Your drink: ")
@@ -596,9 +608,9 @@ instances:
       - "Prints a drink"
     hints: [ "input() waits for typing", "See Module 1–2" ]
 
-  - !Riddle &riddleM40
+  - !PyRiddle &riddleM40
     title: "M40: Final Check 🔁"
-    text: |
+    question: |
       What does this do?
 
       print(greet("Ari"))
@@ -626,7 +638,7 @@ instances:
   - !Inspector
     title: Quiz Inspector
     subjects: [*python_quiz_table]
-    attributes: [text, hints, answer]
+    attributes: [question, hints, answer]
     methods: [check_answer]
     border: True
     on_init:
