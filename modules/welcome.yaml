@@ -51,12 +51,12 @@ instances:
     border: False
 
   - !Text
-    title: "Copyright"
-    icon: "©"
+    title: "About"
+    icon: "ℹ️"
     media: EN_Co-fundedbytheEU_RGB_POS.png
     as_name: copyright
     foldable: True
-    expanded: True
+    expanded: False
 
     text: |
       © 2020-2023 KarmicSoft — All rights reserved

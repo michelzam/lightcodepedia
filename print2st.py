@@ -24,7 +24,7 @@ def print_one(arg:Any = ""):
                        key=key,
                        hide_index=True,
                        disabled=True,
-                       use_container_width=True)
+                       width='stretch')
     else:
         st.write(arg)
 

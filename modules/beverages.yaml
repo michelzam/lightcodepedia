@@ -8,6 +8,7 @@ module:
 
 imports:
     - !Module {name: kore, hidden: True}
+    - !Module {name: designers, hidden: True}
 
 classes:
 

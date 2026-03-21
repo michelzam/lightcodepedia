@@ -100,13 +100,37 @@ classes:
                  return
                _wrapper = _wrapper.bases[0]
           
-            for state in _wrapper.states:
-              label = state.replace('_', ' ')
-              if state == source.state:
-                state_tags.append(sac.Tag(label=label, color='red', bordered=False))
-              else:
-                state_tags.append(sac.Tag(label=label, bordered=False))
-            sac.tags(state_tags, align='start', key=f"K_{str(id(self))}_{str(id(source))}_state")
+            st.markdown("""
+              <style>
+              .stMarkdownBadge {
+              border-radius: 999px !important;            
+              padding: 0.2rem 0.7rem !important;
+              line-height: 1 !important;          
+              display: inline-flex !important;
+              align-items: center !important;
+              }
+              .stMarkdownBadge:not([style*="255, 43, 43"]) {
+                color: black !important;
+              }
+              </style>
+              """, unsafe_allow_html=True)
+            with st.container(horizontal=True, horizontal_alignment="left", width="stretch", gap="xxsmall"):
+              for state in _wrapper.states:
+                label = state.replace('_', ' ')
+                if state == source.state:
+                  st.badge(f"{label}", color="red")
+                else:
+                  st.badge(f"{label}", color="gray")
+
+            if False: # OLD STYLE / SAC!
+              for state in _wrapper.states:
+                label = state.replace('_', ' ')
+                if state == source.state:
+                  state_tags.append(sac.Tag(label=label, color='red', bordered=False))
+                else:
+                  state_tags.append(sac.Tag(label=label, bordered=False))
+              sac.tags(state_tags, align='start', key=f"K_{str(id(self))}_{str(id(source))}_state")
+
 
       - !Method
         name: build
@@ -246,7 +270,7 @@ classes:
                       st.caption("select")
           
                     dfkey = f"KDF_{str(id(self))}_{str(id(source))}_{attr.name}"
-                    event = st.dataframe(df, use_container_width=True, 
+                    event = st.dataframe(df, width='stretch', 
                       on_select="rerun", hide_index=True, 
                       selection_mode="single-row")
 
@@ -578,6 +602,19 @@ classes:
                 key=key, on_change=on_change, return_index=True) 
                 # label="You can call", # compact=True
             else:
+
+              with st.container(horizontal=True, gap="small"):
+                for index, button in enumerate(buttons):
+                  key = f"WWK{key}_{index}"
+                  type_ = "secondary"
+                  if button.disabled or self.disabled:
+                      st.button(button.label, disabled=True, key=key, type=type_, width='content')
+                  else:
+                      st.button(
+                        button.label, on_click=on_change, type=type_,
+                        key=key, args=[index], help=docs[index], width='content')
+
+            if False:
               # Make standard buttons     
               if len(buttons) > 0:
                 btn_cols = st.columns(len(buttons))
@@ -588,11 +625,11 @@ classes:
                   with btn_cols[index]:
                     with st.container():
                       if button.disabled or self.disabled:
-                          st.button(button.label, disabled=True, key=key, type=type_, use_container_width=False)
+                          st.button(button.label, disabled=True, key=key, type=type_, width='content')
                       else:
                           st.button(
                             button.label, on_click=on_change, type=type_,
-                            key=key, args=[index], help=docs[index], use_container_width=False)
+                            key=key, args=[index], help=docs[index], width='content')
  
           lightcode.check_refresh()
 
