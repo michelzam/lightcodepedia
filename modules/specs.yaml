@@ -96,19 +96,23 @@ classes:
             capture_output=True,
             text=True
           )
-          return result.stdout
+          return result.returncode, result.stdout, result.stderr
         
         import tempfile
         import os
-        import io
-        from behave.__main__ import main as behave_main
-        from contextlib import redirect_stdout 
         import builtins
-        from ansi2html import Ansi2HTMLConverter        
         
         feature_text = self.gwt
         step_defs_text = self.step_defs
 
+        if not hasattr(self, "last_check_output"):
+          self.last_check_output = ""
+        if not hasattr(self, "last_check_feature_text"):
+          self.last_check_feature_text = ""
+        if not hasattr(self, "last_check_step_defs_text"):
+          self.last_check_step_defs_text = ""
+        if not hasattr(self, "last_check_passed"):
+          self.last_check_passed = False
         
         with tempfile.TemporaryDirectory() as tmp_dir:
           features_dir = os.path.join(tmp_dir, "features")
@@ -117,8 +121,6 @@ classes:
 
           # Write Feature File
           feature_path = os.path.join(features_dir, "person.feature")
-          st.code(feature_text, language="gherkin")
-          st.code(step_defs_text, language="python")
           with builtins.open(feature_path, "w") as f:
             f.write(feature_text)
 
@@ -128,24 +130,30 @@ classes:
             f.write(step_defs_text)
         
           # Capture Behave Output
-          f_output = io.StringIO()
-          with redirect_stdout(f_output):
-            result = run_behave_subprocess(features_dir)
-        
-          output = f_output.getvalue()        
-          st.code(output)
-          conv = Ansi2HTMLConverter(inline=True)
-          html = conv.convert(output, full=False)
-          #st.markdown(html, unsafe_allow_html=True)
-          st.code(html, language="html")
-  
-          if result == 0:
-            st.success("All tests passed")
-            st.balloons()
+          return_code, stdout, stderr = run_behave_subprocess(features_dir)
+          output = stdout if stdout else stderr
+
+          self.last_check_feature_text = feature_text
+          self.last_check_step_defs_text = step_defs_text
+          self.last_check_output = output
+          self.last_check_passed = (return_code == 0)
+
+          if return_code == 0:
             self.state = "done"
 
-        return result
- 
+        return return_code
+
+    - !Method
+      name: show_check_results
+      code: |
+        if getattr(self, "last_check_feature_text", ""):
+          st.code(self.last_check_feature_text, language="gherkin")
+        if getattr(self, "last_check_step_defs_text", ""):
+          st.code(self.last_check_step_defs_text, language="python")
+        if getattr(self, "last_check_output", ""):
+          st.code(self.last_check_output)
+        if getattr(self, "last_check_passed", False):
+          st.success("All tests passed")
 
   - !Class
     name: Product

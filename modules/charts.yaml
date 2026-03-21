@@ -50,7 +50,7 @@ classes:
           else:
             if isinstance(self.source, Grid):
                 self.source = self.source.source
-          edited_df = st.data_editor(self._data_buffer, num_rows="dynamic", use_container_width=True,
+          edited_df = st.data_editor(self._data_buffer, num_rows="dynamic", width='stretch',
             key=f"K_Grid{id(self)}") # , on_change=on_change, args=[data)
           dog = edited_df.loc[edited_df["Speed"].idxmax()]["Dog"]
           self._data_buffer = edited_df

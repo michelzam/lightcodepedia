@@ -115,9 +115,40 @@ classes:
               attributes.append(attr)
             return attributes
 
-          import ctypes
           def get_object_by_id(object_id: int):
-            return ctypes.cast(object_id, ctypes.py_object).value
+            if object_id is None:
+              return None
+            try:
+              if id(None) == object_id:
+                return None
+            except:
+              pass
+
+            candidates = []
+            try:
+              candidates.extend(getattr(self._module, "instances", []))
+            except:
+              pass
+            try:
+              candidates.extend(getattr(source._module, "instances", []))
+            except:
+              pass
+            try:
+              candidates.append(source)
+            except:
+              pass
+
+            seen = set()
+            for obj in candidates:
+              if obj is None:
+                continue
+              oid = id(obj)
+              if oid in seen:
+                continue
+              seen.add(oid)
+              if oid == object_id:
+                return obj
+            return None
 
           def on_change(key):
           
@@ -227,8 +258,8 @@ classes:
             # elements = [{id(value), str(value)} for value in multi_options]
             # df = pd.DataFrame(elements, columns=["ID", f"{title}"])
 
-            # event = st.dataframe(df[[title]], use_container_width=True, 
-            event = st.dataframe(df[cols[1:]], use_container_width=True, 
+            # event = st.dataframe(df[[title]], width='stretch', 
+            event = st.dataframe(df[cols[1:]], width='stretch', 
               on_select="rerun", hide_index=True, key=key,
               selection_mode="single-row")
             #print(f"{event = }")
@@ -242,6 +273,8 @@ classes:
               # st.write(df.iloc[rows[0]])
               # print(f"Selected ID value: {df.at[rows[0], 'ID']}")
               selection = get_object_by_id(int(df.at[rows[0], 'ID']))
+              if selection is None:
+                return
 
               if self.show_details:
                 _show_inspector(selection, title)          
@@ -374,7 +407,7 @@ classes:
                       st.caption("select")
           
                     dfkey = f"KDF_{str(id(self))}_{str(id(source))}_{attr.name}"
-                    event = st.dataframe(df, use_container_width=True, 
+                    event = st.dataframe(df, width='stretch', 
                       on_select="rerun", hide_index=True, 
                       selection_mode="single-row")
 
@@ -607,14 +640,14 @@ classes:
                         with tab:
                           with st.expander(" Image", expanded=self.expand, icon="🖼️"):
                             if value.startswith("http"):
-                              st.image(value, caption="Image from URL", use_container_width=True)
+                              st.image(value, caption="Image from URL", width='stretch')
                             else:
                               path = os.path.join(os.getcwd(), f"modules/_media/{value}")
                               st.caption(path)
                               if os.path.exists(path):
                                 from PIL import Image
                                 image = Image.open(path)
-                                st.image(image, use_container_width=self.fit_media)
+                                st.image(image, width='stretch' if self.fit_media else 'content')
               
               # ends here
           

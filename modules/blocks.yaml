@@ -225,7 +225,7 @@ classes:
                expanded = self.expanded
                   
             if self.popover:
-              with st.popover(label=self.label(), help=self.help, use_container_width=True):
+              with st.popover(label=self.label(), help=self.help, width='stretch'):
                 self._run_me()
             else:
               with st.expander(label=self.label(), expanded=expanded):
@@ -365,7 +365,7 @@ classes:
                     label = button.name
                     st.button(
                       label, on_click=on_change, 
-                      key=key, args=[index], help=button.doc, use_container_width=False)
+                      key=key, args=[index], help=button.doc, width='content')
 
       - !Method
         name: build
@@ -476,11 +476,11 @@ classes:
                 if os.path.exists(path):
                   if self.media.lower().endswith(('.png', '.jpg', '.jpeg')):
                     image = Image.open(path)
-                    st.image(image, use_container_width=self.fit_media)
+                    st.image(image, width='stretch' if self.fit_media else 'content')
                   else:
                     st.video(path)
                 else:
-                  #st.image(self.media, use_container_width=True)
+                  #st.image(self.media, width='stretch')
                   st.caption(f"Media not found: {path}")
 
                 # st.caption(self.media)
@@ -669,7 +669,7 @@ classes:
 
           def display_dataframe(df: pd.DataFrame, key: str, title: str = ""):
 
-            event = st.dataframe(df[[title]], use_container_width=True, 
+            event = st.dataframe(df[[title]], width='stretch', 
               on_select="rerun", hide_index=True, key=key,
               height=self.height if self.height > 0 else None, 
               selection_mode="single-row")

@@ -29,7 +29,7 @@ except Exception as e:
     st.warning(f"🧐 Something's wrong. Please go back to the main page.")
     st.caption(f"⚠️Refreshing your browser would lead to a new session, and you will lose all unsaved changes.")
     st.caption(f"👇 You can also click on the link below go back to the main page.")
-    st.page_link("main.py", label="Lightcode", help="", icon="💡")  # , use_container_width=True)
+    st.page_link("main.py", label="Lightcode", help="", icon="💡")  # , width='stretch')
     with st.expander("Show errors"):
         st.warning(f"Error: {e}")
 

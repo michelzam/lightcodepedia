@@ -263,7 +263,7 @@ class ModuleDecorator:
                     if debug:
                         # with st.expander("Debug"):
                         print(s)
-                    #st.graphviz_chart(s, use_container_width=True)
+                    #st.graphviz_chart(s, width='stretch')
                     return s
                 else:
                     return imports + my_border + cls + NL + "}" + NL
