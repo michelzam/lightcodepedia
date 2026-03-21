@@ -209,6 +209,22 @@ class LayoutMaker:
                 </style>""",
                         unsafe_allow_html=True)
 
+        if True:
+            st.markdown("""
+              <style>
+              .stMarkdownBadge {
+              border-radius: 999px !important;            
+              padding: 0.2rem 0.7rem !important;
+              line-height: 1 !important;          
+              display: inline-flex !important;
+              align-items: center !important;
+              }
+              .stMarkdownBadge:not([style*="255, 43, 43"]) {
+                color: black !important;
+              }
+              </style>
+              """, unsafe_allow_html=True)
+
         visibility = "visible" if self.show_header else "hidden"
 
         st.markdown("""

@@ -475,8 +475,9 @@ classes:
                 path = os.path.join(os.getcwd(), f"modules/_media/{self.media}")
                 if os.path.exists(path):
                   if self.media.lower().endswith(('.png', '.jpg', '.jpeg')):
-                    image = Image.open(path)
-                    st.image(image, width='stretch' if self.fit_media else 'content')
+                    #image = Image.open(path)
+                    #st.image(image, width='stretch' if self.fit_media else 'content')
+                    st.image(path, width='stretch' if self.fit_media else 'content')
                   else:
                     st.video(path)
                 else:
@@ -484,6 +485,7 @@ classes:
                   st.caption(f"Media not found: {path}")
 
                 # st.caption(self.media)
+
 
       - !Method
         name: build
