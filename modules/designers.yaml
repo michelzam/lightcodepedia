@@ -196,24 +196,22 @@ classes:
               if len(value) > 0 and hasattr(value[0], "_class"):
                 # convert values if custom
                 value = [v for v in wrapper._module.instances 
-                                if isinstance(v, pytype) and str(v) in value]
+                                if isinstance(v, attr_type) and str(v) in value]
                 # otherwise, keep them as is
             elif value == "None":
               value = None
-            elif hasattr(attr_type, "_class"): 
-              values0 = [v for v in source._module.instances]
-
-              values = [v for v in source._module.instances 
+            elif hasattr(attr_type, "_class"):
+              values = [v for v in source._module.instances
                               if isinstance(v, attr_type) and id(v) == value]
-          
-              #print(f"f: {values0 = }")
-              #print(f"f: {values = }")
-                    
-          
               if len(values) > 0:
                 value = values[0]
               else:
                 value = None
+            else:
+              if attr_type is int and value is not None:
+                value = int(value)
+              elif attr_type is float and value is not None:
+                value = float(value)
             setattr(source, attr_name, value)
             
           attributes = get_attributes(wrapper)    
@@ -296,6 +294,31 @@ classes:
             else:
               stype = attr.type
               pytype = eval(stype)
+ 
+              current_value = getattr(source, attr.name)
+              if not hasattr(pytype, "_class"):
+                if pytype is int and current_value is not None:
+                  current_value = int(current_value)
+                elif pytype is float and current_value is not None:
+                  current_value = float(current_value)
+                elif pytype is str and current_value is not None:
+                  current_value = str(current_value)
+              
+                source_key = f"{key}__source"
+              
+                if attr.read_only:
+                  st.session_state[key] = current_value
+                  st.session_state[source_key] = current_value
+                else:
+                  if key not in st.session_state:
+                    st.session_state[key] = current_value
+                    st.session_state[source_key] = current_value
+                  else:
+                    last_source_value = st.session_state.get(source_key, current_value)
+                    if last_source_value != current_value:
+                      st.session_state[key] = current_value
+                      st.session_state[source_key] = current_value          
+                                            
               if hasattr(pytype, "_class"): # custom type
                 ref_wrapper = pytype._class
 
@@ -308,46 +331,43 @@ classes:
                 instances = [v for v in self._module.instances if isinstance(v, pytype)]
                 # instances = [v for v in self._class._module.instances if isinstance(v, pytype)]
                 # instances = [v for v in ref_wrapper._module.instances if isinstance(v, pytype)]
-                # st.caption(f"{instances2 = }")
                 instances.insert(0, None)
                 value = getattr(source, attr.name)
-
-                index = None
-                # st.caption(f"DEBUG: {attr.name = } {instances2 = } {index = }")
-                try:
-                  index = instances.index(value) if value else None
-                except: 
+                if value is not None and value not in instances:
                   instances.append(value)
-                  index = len(instances) - 1
+
+                options = [None if item is None else id(item) for item in instances]
+                if key not in st.session_state:
+                  st.session_state[key] = None if value is None else id(value)
           
-                tab.selectbox(f"{label}", key=key, 
-                  #options=[str(item) for item in instances],
-                  options=[id(item) for item in instances],
+                tab.selectbox(f"{label}", key=key,
+                  options=options,
                   help=attr.doc,
                   format_func=lambda x: "None" if x is None else str(get_object_by_id(x)),
-                  #options=[str(item) for item in getattr(source, attr.name)],
-                  index=index,
-                  disabled=is_read_only, on_change=on_change, args=[key])  
+                  disabled=is_read_only, on_change=on_change, args=[key])
               else:
                 if pytype in [int, float]:
-                  tab.number_input(f"{label}", key=key,
-                    help=attr.doc,
-                    value=pytype(getattr(source, attr.name)),
-                    disabled=is_read_only, on_change=on_change, args=[key])
+                  if pytype is int:
+                    tab.number_input(f"{label}", key=key,
+                      help=attr.doc,
+                      step=1,
+                      format="%d",
+                      disabled=is_read_only, on_change=on_change, args=[key])
+                  else:
+                    tab.number_input(f"{label}", key=key,
+                      help=attr.doc,
+                      disabled=is_read_only, on_change=on_change, args=[key])
                 elif pytype == bool:
                   tab.toggle(f"{attr.name.capitalize().replace('_', ' ')}", key=key,
                     help=attr.doc,
-                    value=getattr(source, attr.name),
                     disabled=is_read_only, on_change=on_change, args=[key])
                 elif pytype in [date, datetime]:
                   tab.date_input(f"{attr.name.capitalize()}", key=key,
                     help=attr.doc,
-                    value=getattr(source, attr.name),
                     disabled=is_read_only, on_change=on_change, args=[key])
                 elif attr.is_long:
                   tab.text_area(f"{label}", key=key,
                     help=attr.doc,
-                    value=str(getattr(source, attr.name)),
                     disabled=is_read_only, on_change=on_change, args=[key])
                 elif attr.name == "code":
                   with st.expander(f"{label}", expanded=False):
@@ -355,7 +375,7 @@ classes:
                     st.code(value, language="python", line_numbers=True)
                 elif attr.name.startswith("on_"):
                   value_list = getattr(source, attr.name) 
-                  if instance(value_list, list):
+                  if isinstance(value_list, list):
                     for val in value_list:          
                       with st.expander(f"{label}", expanded=False):
                         value = str(val) 
@@ -366,7 +386,6 @@ classes:
                   # pass_type = "default"
                   tab.text_input(f"{label}", key=key,
                     help=attr.doc, type=pass_type,
-                    value=str(getattr(source, attr.name)),
                     disabled=is_read_only, on_change=on_change, args=[key])
           
           if self.show_details:

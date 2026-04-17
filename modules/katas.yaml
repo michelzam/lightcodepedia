@@ -59,10 +59,12 @@ instances:
     as_name: scene
     title: Katas
     lines:
-    - 12
+    - 13
+    - 1
     - 1
     - 2
     - 1
+    - 2
     - 2
     - 2
     - 2
@@ -509,6 +511,11 @@ instances:
     title: Katas
     source: [*kata1, *kata2, *kata3, *kata4, *kata5, *kata6, *kata7, *kata8, *kata9, *kata10, *kata11, *kata12, *a2kata101]
 
+  - !Text
+    title: Problem to solve
+    border: False
+    icon: 🏁
+
   - !Form
     subjects: [*katas_table]
     attributes: [instructions]
@@ -535,6 +542,7 @@ instances:
   - !Text
     title: Pontential solution
     border: False
+    icon: 👍
 
   - !Inspector
     subjects: [*katas_table]
