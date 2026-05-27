@@ -290,13 +290,21 @@
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
     var codeNode = el.querySelector("code");
-    var code = codeNode ? codeNode.textContent.replace(/\n+$/, "") : "";
+    var raw = codeNode ? codeNode.textContent.replace(/\n+$/, "") : "";
+    var code = raw;
+    var initFromCode = "";
+    var sepRe = /^#\s*-{3,}\s*$\n?/m;
+    var sepMatch = raw.match(sepRe);
+    if (sepMatch) {
+      initFromCode = raw.substring(0, sepMatch.index).replace(/\n+$/, "");
+      code = raw.substring(sepMatch.index + sepMatch[0].length);
+    }
     var id = el.id || ("r" + (++RUN_ID));
     var opts = {
       id: id,
       code: code,
       bound: el.getAttribute("bound") || "",
-      init: el.getAttribute("init") || "",
+      init: el.getAttribute("init") || initFromCode || "",
       rows: parseInt(el.getAttribute("rows"), 10) || 6,
       folded: el.hasAttribute("folded") && el.getAttribute("folded") !== "false"
     };

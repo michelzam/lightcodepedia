@@ -156,19 +156,23 @@ Optional attributes: `bound="o"`, `folded="true"`, `rows="3"`, `init="short_pyth
 
 A pre-defined `Object` (a `SimpleNamespace`-style holder, baked into the runner) is created on load and rendered as a card. The editor below is **folded** — click to open, hit ▶ Run, and watch the card mirror your change.
 
-{% capture _bound_init %}o = Object(name='🐕 Lucky', age=3){% endcapture %}
-{% capture _bound_code %}o.age += 1
+Convention: a `# ---` line inside the fenced block splits it. Everything **above** the separator is **init** (runs once on page load, populates the bound card). Everything **below** becomes the **editor body** and is rerun on every ▶ Run click.
+
+```python
+o = Object(name='🐕 Lucky', age=3)
+# ---
+o.age += 1
 print(o)
-{% endcapture %}
-{% include python_run.md id="bound1" init=_bound_init code=_bound_code bound="o" folded=true rows="3" %}
+```
+{: .run bound="o" folded="true" rows="3" }
 
-Three new include parameters make this work:
+Three attributes make this work:
 
-| Parameter | Description |
+| Attribute | Description |
 |---|---|
-| `init` | Python that runs once on page load, before the user clicks anything. Use it to create the bound object(s). |
-| `bound` | Name of a variable to mirror as a card above the editor. Repaints after every Run. |
-| `folded` | When `true`, the editor starts collapsed behind a click-to-expand toggle. |
+| `bound="o"` | Name of a variable to mirror as a card above the editor. Repaints after every Run. |
+| `folded="true"` | The editor starts collapsed behind a click-to-expand toggle. |
+| `# ---` | Magic separator inside the fence: above = init, below = editor body. |
 
 The Python only ever mutates an in-memory object (`o.age += 1`). The page redraws because `bound="o"` registered the card. No view code, no Streamlit, no DOM calls inside Python.
 
