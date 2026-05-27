@@ -117,4 +117,57 @@ Python from the same repo:
 - **`code.md`** when you want a file-viewer look and the content is short enough to keep in the page.
 - **`code_file.md`** for long source files you want to keep in sync — the page becomes a live mirror.
 
+## 🐍 Bonus — actually run Python in the browser
+
+The `python_run.md` include boots **MicroPython compiled to WebAssembly** the first time you click ▶ Run (~300 KB, then cached). Edit the code in the box and click Run again.
+
+{% raw %}
+```liquid
+{% capture _py %}
+# Lightcoder's first interactive snippet
+def woof(name, n=3):
+    for i in range(1, n + 1):
+        print(f"{i}. Woof! I'm {name}.")
+
+woof("Lucky")
+woof("Wanda", 2)
+{% endcapture %}
+{% include python_run.md id="demo1" code=_py %}
+```
+{% endraw %}
+
+{% capture _py %}
+# Lightcoder's first interactive snippet
+def woof(name, n=3):
+    for i in range(1, n + 1):
+        print(f"{i}. Woof! I'm {name}.")
+
+woof("Lucky")
+woof("Wanda", 2)
+{% endcapture %}
+{% include python_run.md id="demo1" code=_py %}
+
+A second runner with a more numeric example:
+
+{% capture _py2 %}
+# Compute factorials
+def fact(n):
+    return 1 if n <= 1 else n * fact(n - 1)
+
+for i in range(1, 8):
+    print(f"{i}! = {fact(i)}")
+{% endcapture %}
+{% include python_run.md id="demo2" code=_py2 rows="8" %}
+
+### Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `id` | `default` | Unique id — required if you have multiple runners on the same page |
+| `code` | `print('Hello…')` | Initial code shown in the editor (use `{% raw %}{% capture %}…{% endcapture %}{% endraw %}` for multi-line) |
+| `rows` | `6` | Initial height of the editor in lines |
+
+✅ Native Python syntax, runs entirely in the browser, no server.  
+⚠️ MicroPython has a slim stdlib — no `numpy`, no `pandas`, no `requests`. For the full Python ecosystem you'd switch to Pyodide (~10 MB).
+
 {% include backtotop.md %}

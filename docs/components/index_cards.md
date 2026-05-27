@@ -53,6 +53,6 @@ Free-form layout grid — cells can hold any content.
 [Open →](grid)
 
 ### 💻 Code
-Show YAML, Python, JSON, … with a title bar — or live-fetch from a URL.
+Show YAML, Python, JSON, … with a title bar, live-fetch from a URL, or actually run Python in the browser.
 
 [Open →](code)
