@@ -32,6 +32,13 @@ if (location.search.indexOf('embed=true') >= 0) {
   margin-right: 1rem;
 }
 #lc-topbar .lc-links a:hover { color: #0066cc; }
+#lc-topbar .lc-link-icon { margin-right: 0.35em; }
+@media (max-width: 700px) {
+  #lc-topbar { padding: 0 0.7rem; gap: 0.8rem; }
+  #lc-topbar .lc-link-label { display: none; }
+  #lc-topbar .lc-link-icon { margin-right: 0; font-size: 1.15em; }
+  #lc-topbar .lc-links a { margin-right: 0.5rem; }
+}
 body { padding-top: 56px; }
 .lc-page-title {
   font-size: 1.9em;
@@ -52,3 +59,15 @@ body { padding-top: 56px; }
   </div>
 </div>
 {% if include.title %}<h1 class="lc-page-title">{{ include.title }}</h1>{% endif %}
+<script>
+(function(){
+  var links = document.querySelectorAll('#lc-topbar .lc-links a');
+  links.forEach(function(a){
+    var t = a.textContent.trim();
+    var i = t.indexOf(' ');
+    if (i > 0) {
+      a.innerHTML = '<span class="lc-link-icon">' + t.substring(0, i) + '</span><span class="lc-link-label">' + t.substring(i + 1) + '</span>';
+    }
+  });
+})();
+</script>
