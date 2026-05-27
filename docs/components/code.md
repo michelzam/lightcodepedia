@@ -27,25 +27,35 @@ module:
 ✅ Zero setup, syntax-highlighted, native markdown.  
 ⚠️ No title bar, no file label, plain visual chrome.
 
-## Option 2 — `code.md` include (inline content with chrome)
+## Option 2 — Fenced block + `{: .code }` (chrome via kramdown attribute list)
 
-Wraps a fenced block in a styled "file viewer" card with a title bar and language badge.
+Just write a normal fenced code block and add `{: .code }` on the line right after the closing fence. A global scanner wraps the block in the styled "file viewer" card. Add `title="…"` for a file label, leave it off for chrome-only.
 
 {% raw %}
-```liquid
-{% capture _yaml %}
-module:
-  - name: dog_ui
-    doc: "Just a Text"
-    icon: "🐕"
-{% endcapture %}
-{% include code.md content=_yaml lang="yaml" title="dog_ui.yaml" %}
+````markdown
+```python
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet("Lightcoder")
 ```
+{: .code title="hello.py" }
+````
 {% endraw %}
 
 Renders to:
 
-{% capture _yaml %}
+```python
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet("Lightcoder")
+```
+{: .code title="hello.py" }
+
+YAML, same recipe:
+
+```yaml
 module:
   - name: dog_ui
     doc: "Just a Text"
@@ -65,21 +75,18 @@ instances:
     text: "Man's best friend :dog:"
     help: Dogs are cute and fast
     media: https://picsum.photos/id/237/500/400
-{% endcapture %}
-{% include code.md content=_yaml lang="yaml" title="dog_ui.yaml" %}
+```
+{: .code title="dog_ui.yaml" }
 
-Same trick for Python:
+Or without a file label — just border + language badge:
 
-{% capture _py %}
-def greet(name):
-    print(f"Hello, {name}!")
+```json
+{"name": "Lucky", "age": 3}
+```
+{: .code }
 
-greet("Lightcoder")
-{% endcapture %}
-{% include code.md content=_py lang="python" title="hello.py" %}
-
-✅ Pretty chrome, server-side highlighting, supports yaml / python / json / html / css / bash / ruby / javascript / liquid.  
-⚠️ Content is inline — you have to copy-paste it into the page, so it can drift from the real file.
+✅ Pure markdown — no Liquid `{% raw %}{% capture %}{% endraw %}` dance. Server-side Rouge highlighting is preserved. Works for any language Rouge knows.  
+⚠️ The `{: …}` must sit on its own line immediately after the closing fence (kramdown rule). Section titles for the snippet go above as normal markdown headings.
 
 ## Option 3 — `code_file.md` include (live fetch from URL)
 
@@ -100,17 +107,17 @@ Renders to:
 
 ## Options
 
-| Parameter | Default | Description |
+| Where | Knob | Description |
 |---|---|---|
-| `content` | required for `code.md` | The raw code string (use `{% raw %}{% capture %}…{% endcapture %}{% endraw %}` for multi-line) |
-| `src` | required for `code_file.md` | URL to fetch the code from |
-| `lang` | `text` | Language tag for highlighting / class. `yaml`, `python`, `json`, `html`, `css`, `bash`, `ruby`, `javascript`, `liquid` |
-| `title` | (defaults to `src` for `code_file`) | File label shown in the title bar |
+| `{: .code … }` | `title="…"` | File label shown in the title bar; omit for chrome-only |
+| `code_file.md` | `src="…"` | URL to fetch the code from (required) |
+| `code_file.md` | `lang="…"` | Language tag for the badge (`yaml`, `python`, `json`, …). Defaults to `text` |
+| `code_file.md` | `title="…"` | File label; defaults to `src` |
 
 ## When to use which
 
 - **Plain fenced** for ad-hoc snippets inside prose.
-- **`code.md`** when you want a file-viewer look and the content is short enough to keep in the page.
+- **`{: .code }`** when you want a file-viewer look and the content lives in the page.
 - **`code_file.md`** for long source files you want to keep in sync — the page becomes a live mirror.
 
 ## 🐍 Bonus — actually run Python in the browser
