@@ -45,13 +45,11 @@ It is hosted on _GitHub_ and _StreamlitCloud_ for free.
 _Published: {{ site.time | date: "%Y-%m-%d %H:%M" }}_
 
 **🇪🇺 Co-funded by the EU**
-<details>
-<summary>Click to expand</summary>
-
+{% capture _c %}
 The LightCode Erasmus+ Project (Nr.2022-1-FR01-KA220-HED-00086863) is co-funded by the European Union. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Education and Culture Executive Agency (EACEA). Neither the European Union nor EACEA can be held responsible for them. 
 
 ![🇪🇺 Co-funded by the EU](images/EN_cofundedbytheEU_RGB_POS.png)
-
-</details>
+{% endcapture %}
+{% include collapsible.md content=_c %}
 
 {% include copyright.md %}
