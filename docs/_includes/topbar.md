@@ -21,17 +21,17 @@
 }
 #lc-topbar .lc-links { display: flex; gap: 1.2rem; }
 #lc-topbar .lc-links p { margin: 0; }
-#lc-topbar a.lc-link {
+#lc-topbar .lc-links a {
   text-decoration: none;
   color: #333;
   margin-right: 1rem;
 }
-#lc-topbar a.lc-link:hover { color: #0066cc; }
+#lc-topbar .lc-links a:hover { color: #0066cc; }
 body { padding-top: 56px; }
 </style>
 <div id="lc-topbar">
   <a class="lc-brand" href="/">💡 Lightcodepedia</a>
-  <div class="lc-links">
+  <div class="lc-links" markdown="1">
 {% include menu.md %}
   </div>
 </div>
