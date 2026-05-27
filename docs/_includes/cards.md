@@ -30,6 +30,18 @@
 .lc-cards .lc-card p:last-child { margin-bottom: 0; }
 .lc-cards .lc-card a { color: #0066cc; text-decoration: none; font-weight: 500; }
 .lc-cards .lc-card a:hover { text-decoration: underline; }
+@media (max-width: 700px) {
+  .lc-cards .lc-card { padding: 0.9em 1em; }
+  .lc-cards .lc-card h3 { font-size: 1em; margin-bottom: 0.3em; }
+  .lc-cards .lc-card p:first-of-type {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.4em;
+  }
+}
 </style>
 
 <div class="lc-cards" style="grid-template-columns: {% if _cols == 'auto' %}repeat(auto-fit, minmax(240px, 1fr)){% else %}repeat({{ _cols }}, 1fr){% endif %};">
