@@ -89,8 +89,29 @@
     "            self._card(title or type(obj).__name__, '<div class=\"lc-rt-val\">' + self._esc(obj) + '</div>')",
     "    def clear(self):",
     "        self._view.innerHTML = ''",
-    "show = _Showable('lc-pyrun-' + '" + ID + "' + '-view')"
+    "show = _Showable('lc-pyrun-' + '" + ID + "' + '-view')",
+    "try:",
+    "    import json as _json",
+    "    from js import jsyaml as _jsyaml, JSON as _JSON",
+    "    class _Yaml:",
+    "        def load(self, s):",
+    "            return _json.loads(_JSON.stringify(_jsyaml.load(s)))",
+    "    yaml = _Yaml()",
+    "    yaml.safe_load = yaml.load",
+    "except Exception:",
+    "    pass"
   ].join("\n");
+
+  function loadJsYaml() {
+    if (window.jsyaml) return Promise.resolve();
+    return new Promise(function(resolve){
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js";
+      s.onload = function(){ resolve(); };
+      s.onerror = function(){ resolve(); };
+      document.head.appendChild(s);
+    });
+  }
 
   function setOut(text, isErr) {
     out.classList.remove("lc-empty");
@@ -110,9 +131,12 @@
     if (loading) return loading;
     runBtn.disabled = true;
     status.textContent = "loading runtime…";
-    loading = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
-      .then(function(mod){
-        return mod.loadMicroPython({
+    loading = Promise.all([
+      import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs"),
+      loadJsYaml()
+    ])
+      .then(function(results){
+        return results[0].loadMicroPython({
           stdout: function(t){ buf += t; },
           stderr: function(t){ buf += t; }
         });
