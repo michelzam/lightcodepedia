@@ -1,3 +1,5 @@
+{% include topbar.md %}
+
 # 🤖Ari @ lightcode: your AI pair lightcoder
 
 Ari is your AI pair lightcoder, trained to help you learn about lightcoding.
@@ -8,3 +10,5 @@ Ari is your AI pair lightcoder, trained to help you learn about lightcoding.
 
 Or use your favorite light-QR-code scanner:
 ![📱Use the light-QR-code](images/AriGpt.jpg)
+
+{% include backtotop.md %}

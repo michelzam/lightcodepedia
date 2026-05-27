@@ -1,3 +1,5 @@
+{% include topbar.md %}
+
 # Welcome to my LightNode
 
 _Please customize this page to introduce yourself to the Lightcode community._
@@ -23,3 +25,5 @@ During the Academy I learned:
 - [x] Lightcode — building apps with little or no code
 
 ![LightCoders](https://github.com/user-attachments/assets/15102631-0611-4e06-8d51-8a7d4f3e88fa)
+
+{% include backtotop.md %}

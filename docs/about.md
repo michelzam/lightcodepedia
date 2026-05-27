@@ -1,3 +1,5 @@
+{% include topbar.md %}
+
 Made with ❤️ for learners around the world. 
 
 ✨ _With gratitude to contributors and inspirators across space and time._
@@ -67,3 +69,5 @@ Made with ❤️ for learners around the world.
 # Docker / Azure 🆕 
 
 {% include embed.md src="https://lightcodepedia.org" height="800" %}
+
+{% include backtotop.md %}

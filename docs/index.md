@@ -1,3 +1,5 @@
+{% include topbar.md %}
+
 💬 **Lightcode** is a scalable distributed open-access no-code/low-code platform 
 meant to build digital skills. 
 
@@ -53,3 +55,5 @@ The LightCode Erasmus+ Project (Nr.2022-1-FR01-KA220-HED-00086863) is co-funded 
 {% include collapsible.md content=_c %}
 
 {% include copyright.md %}
+
+{% include backtotop.md %}
