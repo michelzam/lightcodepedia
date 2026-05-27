@@ -124,6 +124,34 @@ Renders to:
 
 The `python_run.md` include boots **MicroPython compiled to WebAssembly** the first time you click ▶ Run (~300 KB, then cached). Edit the code in the box and click Run again.
 
+### Tiniest possible runner — `{: .run }` on a fenced block
+
+Just tag a fenced code block with `{: .run }` and the page upgrades it into a live runner. The fence content becomes the editor's initial code.
+
+{% raw %}
+````markdown
+```python
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet("Lightcoder")
+```
+{: .run }
+````
+{% endraw %}
+
+Renders to:
+
+```python
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet("Lightcoder")
+```
+{: .run }
+
+Optional attributes: `bound="o"`, `folded="true"`, `rows="3"`, `init="short_python"`, `id="myrunner"`. For multi-line `init` or anything fancier, fall back to the explicit `{% raw %}{% include python_run.md … %}{% endraw %}` form below.
+
 ### Smallest live loop — a bound object
 
 A pre-defined `Object` (a `SimpleNamespace`-style holder, baked into the runner) is created on load and rendered as a card. The editor below is **folded** — click to open, hit ▶ Run, and watch the card mirror your change.
