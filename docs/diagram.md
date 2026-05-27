@@ -1,3 +1,5 @@
+{% include topbar.md %}
+
 This is a diagram:
 
 ```mermaid
@@ -10,3 +12,4 @@ graph TD
 ```python
 print("Hello world!")
 ```
+{% include backtotop.md %}

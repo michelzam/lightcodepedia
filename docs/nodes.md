@@ -1,3 +1,5 @@
+{% include topbar.md %}
+
 # Registered nodes
 
 [🫜 Root node](https://lightcodepedia.org)
@@ -6,3 +8,5 @@
 
 [🇫🇷 Georges](https://GeorgesZam.github.io/lightcodepedia) 
 
+
+{% include backtotop.md %}

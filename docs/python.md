@@ -1,3 +1,5 @@
+{% include topbar.md %}
+
 # Welcome to Python basics
 
 🐍 Python is the most popular and accessible programming language. 
@@ -52,3 +54,5 @@ _You can copy-paste this code in the [Python playground](#python-playground) bel
 [📋 Python cheat sheet](https://www.pythoncheatsheet.org/)
 
 [🧐 Python examples](https://www.programiz.com/python-programming/examples)
+
+{% include backtotop.md %}

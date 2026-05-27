@@ -1,3 +1,5 @@
+{% include topbar.md %}
+
 # 📚 Course Material
 
 Chapters of Course Materials
@@ -40,3 +42,5 @@ Chapters of Course Materials
 
 ## 📖 Chapter 13 — Securing your Application
 {% include collapsible.md gdrive_id="1iYgRZ4VPQlpQ5RYA6bnwfcyuLAYeUvSI" %}
+
+{% include backtotop.md %}

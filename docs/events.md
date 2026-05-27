@@ -1,3 +1,5 @@
+{% include topbar.md %}
+
 ## 🎭 Events
 [🏛 LightCode Certificate](pdfs/Dauphine-Certificat.pdf) - Fall 2025, Paris, France 🇫🇷
 
@@ -63,3 +65,5 @@ Anonymous Peer Feedback from Educators and Evaluation Committees — ACM SIGCSE 
 💬 _Fascinating work, would love to see it._
 
 
+
+{% include backtotop.md %}
