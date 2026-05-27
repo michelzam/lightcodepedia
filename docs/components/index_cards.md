@@ -51,3 +51,8 @@ Responsive grid of bordered cards with hover effect.
 Free-form layout grid — cells can hold any content.
 
 [Open →](grid)
+
+### 💻 Code
+Show YAML, Python, JSON, … with a title bar — or live-fetch from a URL.
+
+[Open →](code)
