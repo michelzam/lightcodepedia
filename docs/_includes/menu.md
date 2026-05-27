@@ -1,1 +1,1 @@
-[🎬 Demo](demo){:.lc-link} [📚 Chapters](chapters){:.lc-link} [🤖 Ari](ari){:.lc-link} [🎭 Events](events){:.lc-link} [ℹ️ About](about){:.lc-link}
+[🎬 Demo](demo) [📚 Chapters](chapters) [🤖 Ari](ari) [🎭 Events](events) [ℹ️ About](about)
