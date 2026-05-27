@@ -31,7 +31,8 @@ body { padding-top: 56px; }
 </style>
 <div id="lc-topbar">
   <a class="lc-brand" href="/">💡 Lightcodepedia</a>
-  <div class="lc-links" markdown="1">
-{% include menu.md %}
+  {% assign _menu = site.pages | where: "path", "menu.md" | first %}
+  <div class="lc-links">
+    {{ _menu.content | markdownify }}
   </div>
 </div>
