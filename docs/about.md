@@ -65,5 +65,4 @@ Made with ❤️ for learners around the world.
 {% include status.html %}
 
 # Docker / Azure 🆕 
-
-<iframe src="https://lightcodepedia.org" width="100%" height="800" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"> </iframe>
+{% include embed.md src="https://lightcodepedia.org" height="800" %}
