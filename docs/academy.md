@@ -6,7 +6,3 @@ _Miro board:_
 
 {% include embed.md src="https://miro.com/app/board/uXjVJFPwN_U=/?share_link_id=623867549831" height="800" %}
 
-
-<iframe src="https://miro.com/app/board/uXjVJFPwN_U=/?share_link_id=623867549831" 
-width="100%" height="800" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"> 
-</iframe> 
