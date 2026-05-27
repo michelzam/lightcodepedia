@@ -13,16 +13,25 @@
   font-size: 0.9rem;
   backdrop-filter: blur(4px);
 }
-#lc-topbar a { text-decoration: none; color: #333; }
-#lc-topbar a:hover { color: #0066cc; }
-#lc-topbar .lc-brand { font-weight: bold; margin-right: auto; }
+#lc-topbar .lc-brand {
+  font-weight: bold;
+  text-decoration: none;
+  color: #333;
+  margin-right: auto;
+}
+#lc-topbar .lc-links { display: flex; gap: 1.2rem; }
+#lc-topbar .lc-links p { margin: 0; }
+#lc-topbar a.lc-link {
+  text-decoration: none;
+  color: #333;
+  margin-right: 1rem;
+}
+#lc-topbar a.lc-link:hover { color: #0066cc; }
 body { padding-top: 56px; }
 </style>
 <div id="lc-topbar">
   <a class="lc-brand" href="/">💡 Lightcodepedia</a>
-  <a href="demo">🎬 Demo</a>
-  <a href="chapters">📚 Chapters</a>
-  <a href="ari">🤖 Ari</a>
-  <a href="events">🎭 Events</a>
-  <a href="about">ℹ️ About</a>
+  <div class="lc-links">
+{% include menu.md %}
+  </div>
 </div>
