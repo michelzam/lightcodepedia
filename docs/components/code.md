@@ -159,6 +159,46 @@ for i in range(1, 8):
 {% endcapture %}
 {% include python_run.md id="demo2" code=_py2 rows="8" %}
 
+### Show objects as cards on the page
+
+Every runner also exposes a built-in `show(obj)` helper. It introspects the value and renders a card in a grid right below the output. Works for **strings, numbers, dicts, lists, and your own classes** (it reads `__dict__`).
+
+{% capture _py3 %}
+# A list of "little objects" — rendered as cards
+dogs = [
+    {"name": "Lucky", "age": 3, "breed": "Beagle", "icon": "🐶"},
+    {"name": "Wanda", "age": 5, "breed": "Poodle", "icon": "🐩"},
+    {"name": "Max",   "age": 2, "breed": "Husky",  "icon": "🐺"},
+]
+
+for d in dogs:
+    show(d)
+
+print(f"Showed {len(dogs)} dogs.")
+{% endcapture %}
+{% include python_run.md id="demo3" code=_py3 rows="10" %}
+
+Works with custom classes too — `show()` reads `__dict__`:
+
+{% capture _py4 %}
+class Pet:
+    def __init__(self, name, age, breed):
+        self.name = name
+        self.age = age
+        self.breed = breed
+
+pets = [Pet("Lucky", 3, "Beagle"), Pet("Wanda", 5, "Poodle")]
+for p in pets:
+    show(p)
+
+# Modify and re-show
+pets[0].age += 1
+show(pets[0], title="Lucky (one year later)")
+{% endcapture %}
+{% include python_run.md id="demo4" code=_py4 rows="11" %}
+
+You can also call `show.clear()` to wipe the card area, and pass `title="…"` to override the card heading.
+
 ### Parameters
 
 | Parameter | Default | Description |
@@ -166,6 +206,14 @@ for i in range(1, 8):
 | `id` | `default` | Unique id — required if you have multiple runners on the same page |
 | `code` | `print('Hello…')` | Initial code shown in the editor (use `{% raw %}{% capture %}…{% endcapture %}{% endraw %}` for multi-line) |
 | `rows` | `6` | Initial height of the editor in lines |
+
+### Built-in helpers (available inside the runner)
+
+| Symbol | What it does |
+|---|---|
+| `print(...)` | Writes to the dark output pane |
+| `show(obj, title=None)` | Renders `obj` as a card in the grid below the output. Dicts and instances become labelled rows; lists/tuples render each item as its own card. |
+| `show.clear()` | Removes all cards from the grid |
 
 ✅ Native Python syntax, runs entirely in the browser, no server.  
 ⚠️ MicroPython has a slim stdlib — no `numpy`, no `pandas`, no `requests`. For the full Python ecosystem you'd switch to Pyodide (~10 MB).
