@@ -16,6 +16,8 @@ Welcome, c-dev! This page lists every interactive component you can use in your 
 - [🪗 Accordion](accordion) — multiple collapsibles from one file
 - [📜 Scrollable pane](scrollable) — fixed-height scrolling container
 - [🪟 Embed page](embed_page) — embed another page in an iframe (safe nesting)
+- [🃏 Cards](cards) — row/grid of content cards with hover effect
+- [📐 Grid](grid) — free-form layout grid for any content
 
 ## How each one works
 
