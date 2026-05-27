@@ -8,6 +8,21 @@
 </style>
 <script>
 (function(){
+  document.querySelectorAll("p").forEach(function(p){
+    var t = (p.textContent || "").trim();
+    var m = t.match(/^\{:\s*(.+?)\s*\}$/);
+    if (!m) return;
+    var prev = p.previousElementSibling;
+    if (!prev) return;
+    var body = m[1];
+    var c, classRe = /\.([\w-]+)/g;
+    while ((c = classRe.exec(body)) !== null) prev.classList.add(c[1]);
+    var idM = body.match(/#([\w-]+)/);
+    if (idM) prev.id = idM[1];
+    var kv, kvRe = /([\w-]+)="([^"]*)"/g;
+    while ((kv = kvRe.exec(body)) !== null) prev.setAttribute(kv[1], kv[2]);
+    p.parentNode.removeChild(p);
+  });
   function upgrade(el){
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
