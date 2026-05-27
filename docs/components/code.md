@@ -95,10 +95,6 @@ Renders to:
 
 {% include code_file.md src="https://cdn.jsdelivr.net/gh/michelzam/lightcodepedia@main/modules/dog_ui.yaml" lang="yaml" title="modules/dog_ui.yaml" %}
 
-Python from the same repo:
-
-{% include code_file.md src="https://cdn.jsdelivr.net/gh/michelzam/lightcodepedia@main/main.py" lang="python" title="main.py" %}
-
 ✅ Always live, single source of truth.  
 ⚠️ No syntax highlighting (no Rouge — content arrives after build). Depends on the URL serving CORS-friendly text (jsDelivr does; `raw.githubusercontent.com` usually does too).
 
@@ -120,6 +116,26 @@ Python from the same repo:
 ## 🐍 Bonus — actually run Python in the browser
 
 The `python_run.md` include boots **MicroPython compiled to WebAssembly** the first time you click ▶ Run (~300 KB, then cached). Edit the code in the box and click Run again.
+
+### Smallest live loop — a bound object
+
+A pre-defined `Object` (a `SimpleNamespace`-style holder, baked into the runner) is created on load and rendered as a card. The editor below is **folded** — click to open, hit ▶ Run, and watch the card mirror your change.
+
+{% capture _bound_init %}o = Object(name='🐕 Lucky', age=3){% endcapture %}
+{% capture _bound_code %}o.age += 1
+print(o)
+{% endcapture %}
+{% include python_run.md id="bound1" init=_bound_init code=_bound_code bound="o" folded=true rows="3" %}
+
+Three new include parameters make this work:
+
+| Parameter | Description |
+|---|---|
+| `init` | Python that runs once on page load, before the user clicks anything. Use it to create the bound object(s). |
+| `bound` | Name of a variable to mirror as a card above the editor. Repaints after every Run. |
+| `folded` | When `true`, the editor starts collapsed behind a click-to-expand toggle. |
+
+The Python only ever mutates an in-memory object (`o.age += 1`). The page redraws because `bound="o"` registered the card. No view code, no Streamlit, no DOM calls inside Python.
 
 {% raw %}
 ```liquid
@@ -217,12 +233,16 @@ You can also call `show.clear()` to wipe the card area, and pass `title="…"` t
 | `id` | `default` | Unique id — required if you have multiple runners on the same page |
 | `code` | `print('Hello…')` | Initial code shown in the editor (use `{% raw %}{% capture %}…{% endcapture %}{% endraw %}` for multi-line) |
 | `rows` | `6` | Initial height of the editor in lines |
+| `init` | _empty_ | Python that runs once on page load (before the user clicks Run). Typically used to create bound objects. |
+| `bound` | _empty_ | Name of a variable to mirror as a card above the editor; repaints after every Run. Forces the runtime to load eagerly. |
+| `folded` | `false` | When `true`, the editor starts collapsed behind a click-to-expand toggle. |
 
 ### Built-in helpers (available inside the runner)
 
 | Symbol | What it does |
 |---|---|
 | `print(...)` | Writes to the dark output pane |
+| `Object(**kw)` | `SimpleNamespace`-style holder. `o = Object(name='Lucky', age=3)` then `o.age += 1`. Pair with `bound="o"` to mirror it as a live card. |
 | `show(obj, title=None)` | Renders `obj` as a card in the grid below the output. Dicts and instances become labelled rows; lists/tuples render each item as its own card. |
 | `show.clear()` | Removes all cards from the grid |
 | `yaml.load(s)` | Parses a YAML string into Python objects (dicts, lists, scalars). Powered by `js-yaml` — loaded once, alongside the runtime. |

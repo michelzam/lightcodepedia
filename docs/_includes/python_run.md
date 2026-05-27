@@ -1,6 +1,8 @@
 {% assign _id = include.id | default: "default" %}
 {% assign _code = include.code | default: "print('Hello from MicroPython!')" %}
 {% assign _rows = include.rows | default: 6 %}
+{% assign _init = include.init | default: "" %}
+{% assign _bound = include.bound | default: "" %}
 
 <style>
 .lc-pyrun { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: white; }
@@ -25,10 +27,24 @@
 .lc-pyrun-view .lc-rt-card .lc-rt-row { margin: 0.15em 0; font-size: 0.88em; color: #444; }
 .lc-pyrun-view .lc-rt-card .lc-rt-row b { color: #0066cc; margin-right: 0.4em; }
 .lc-pyrun-view .lc-rt-card .lc-rt-val { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; color: #333; word-break: break-word; }
+.lc-pyrun-bound { padding: 0.9em 1em; background: #fafbfc; border-bottom: 1px solid #d0d0d0; }
+.lc-pyrun-bound:empty { display: none; }
+.lc-pyrun-bound .lc-rt-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 0.8em 1em; background: white; transition: transform 0.15s, box-shadow 0.15s; }
+.lc-pyrun-bound .lc-rt-card h3 { margin: 0 0 0.4em; font-size: 1em; color: #222; }
+.lc-pyrun-bound .lc-rt-card .lc-rt-row { margin: 0.15em 0; font-size: 0.88em; color: #444; }
+.lc-pyrun-bound .lc-rt-card .lc-rt-row b { color: #0066cc; margin-right: 0.4em; }
+.lc-pyrun-bound .lc-rt-card .lc-rt-val { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; color: #333; word-break: break-word; }
+.lc-pyrun-fold > summary { padding: 0.45em 0.9em; cursor: pointer; background: #f3f4f6; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; user-select: none; list-style: none; display: flex; align-items: center; gap: 0.5em; }
+.lc-pyrun-fold > summary::-webkit-details-marker { display: none; }
+.lc-pyrun-fold > summary::before { content: "▶"; font-size: 0.7em; transition: transform 0.15s; color: #888; }
+.lc-pyrun-fold[open] > summary::before { transform: rotate(90deg); }
+.lc-pyrun-fold > summary:hover { background: #e8e9eb; }
+.lc-pyrun-fold[open] > summary { border-bottom: 1px solid #d0d0d0; }
 </style>
 
 <div class="lc-pyrun" id="lc-pyrun-{{ _id }}">
-  <div class="lc-pyrun-title">🐍 <span>MicroPython runner</span><span class="lc-pyrun-lang">python</span></div>
+  {% if _bound != "" %}<div class="lc-pyrun-bound" id="lc-pyrun-{{ _id }}-bound"></div>{% endif %}
+  {% if include.folded %}<details class="lc-pyrun-fold"><summary>🐍 Edit &amp; run Python</summary>{% else %}<div class="lc-pyrun-title">🐍 <span>MicroPython runner</span><span class="lc-pyrun-lang">python</span></div>{% endif %}
   <textarea class="lc-pyrun-code" rows="{{ _rows }}" spellcheck="false">{{ _code | escape }}</textarea>
   <div class="lc-pyrun-bar">
     <button class="lc-pyrun-run">▶ Run</button>
@@ -37,11 +53,14 @@
   </div>
   <pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>
   <div class="lc-pyrun-view" id="lc-pyrun-{{ _id }}-view"></div>
+  {% if include.folded %}</details>{% endif %}
 </div>
 
 <script>
 (function(){
   var ID = "{{ _id }}";
+  var BOUND = {{ _bound | jsonify }};
+  var INIT = {{ _init | jsonify }};
   var root = document.getElementById("lc-pyrun-" + ID);
   var codeEl = root.querySelector(".lc-pyrun-code");
   var runBtn = root.querySelector(".lc-pyrun-run");
@@ -52,6 +71,11 @@
   var buf = "";
   var mp = null;
   var loading = null;
+
+  function repaintBound() {
+    if (!BOUND || !mp) return;
+    try { mp.runPython("_render_bound(" + JSON.stringify(BOUND) + ")"); } catch (e) { }
+  }
 
   var BOOTSTRAP = [
     "from js import document",
@@ -90,6 +114,31 @@
     "    def clear(self):",
     "        self._view.innerHTML = ''",
     "show = _Showable('lc-pyrun-' + '" + ID + "' + '-view')",
+    "class Object:",
+    "    def __init__(self, **kw):",
+    "        for k, v in kw.items():",
+    "            setattr(self, k, v)",
+    "    def __repr__(self):",
+    "        attrs = ', '.join(k + '=' + repr(v) for k, v in self.__dict__.items())",
+    "        return 'Object(' + attrs + ')'",
+    "_BOUND_ID = 'lc-pyrun-' + '" + ID + "' + '-bound'",
+    "def _render_bound(name):",
+    "    g = globals()",
+    "    if name not in g:",
+    "        return",
+    "    obj = g[name]",
+    "    container = document.getElementById(_BOUND_ID)",
+    "    if container is None:",
+    "        return",
+    "    container.innerHTML = ''",
+    "    c = document.createElement('div')",
+    "    c.className = 'lc-rt-card'",
+    "    d = getattr(obj, '__dict__', None) or {}",
+    "    rows = ''",
+    "    for k, v in d.items():",
+    "        rows += '<div class=\"lc-rt-row\"><b>' + str(k) + '</b><span class=\"lc-rt-val\">' + str(v) + '</span></div>'",
+    "    c.innerHTML = '<h3>' + name + '</h3>' + rows",
+    "    container.appendChild(c)",
     "try:",
     "    import json as _json",
     "    from js import jsyaml as _jsyaml, JSON as _JSON",
@@ -144,6 +193,10 @@
       .then(function(instance){
         mp = instance;
         try { mp.runPython(BOOTSTRAP); } catch (e) { /* show() unavailable, user still has print */ }
+        if (INIT) {
+          try { mp.runPython(INIT); } catch (e) { }
+        }
+        repaintBound();
         runBtn.disabled = false;
         status.textContent = "ready";
         return mp;
@@ -170,6 +223,7 @@
         setOut(buf + (buf ? "\n" : "") + (e.message || String(e)), true);
         status.textContent = "error";
       }
+      repaintBound();
     }).catch(function(e){
       setOut("Failed to load MicroPython: " + (e.message || String(e)), true);
     });
@@ -181,5 +235,9 @@
     view.innerHTML = "";
     status.textContent = mp ? "ready" : "";
   });
+
+  if (BOUND) {
+    loadMp().catch(function(){ /* card will stay empty if runtime fails */ });
+  }
 })();
 </script>
