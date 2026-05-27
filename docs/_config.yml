@@ -1,6 +1,9 @@
 title: Lightcodepedia
 description: A GitHub Pages site
 
+remote_theme: just-the-docs/just-the-docs   # ← add this
+plugins: [jekyll-remote-theme] 
+
 defaults:
   - scope:
       path: "modules"   # only /modules
