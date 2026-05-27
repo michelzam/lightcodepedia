@@ -3,8 +3,7 @@ Made with ❤️ for learners around the world.
 ✨ _With gratitude to contributors and inspirators across space and time._
 
 ## 🇫🇷 France
-<details>
-<summary>Click to expand</summary>
+{% capture _c %}
 - Michel Zam
 - Alexis Tsoukias
 - Mireille Moulin
@@ -23,47 +22,48 @@ Made with ❤️ for learners around the world.
 - Georges Zam
 - Geneviève Jomier, RIP 
 - and so many more
-</details>
+{% endcapture %}
+{% include collapsible.md content=_c %}
 
 ## 🇬🇷 Greece
-<details>
-<summary>Click to expand</summary>
+{% capture _c %}
 - Jason Papathanasiou
 - Giota DigKoglou
 - Kostas
-</details>
+{% endcapture %}
+{% include collapsible.md content=_c %}
 
 ## 🇷🇸 Serbia
-<details>
-<summary>Click to expand</summary>
+{% capture _c %}
 - ...
-</details>
+{% endcapture %}
+{% include collapsible.md content=_c %}
 
 ## 🇷🇸 Croatia
-<details>
-<summary>Click to expand</summary>
+{% capture _c %}
 - ...
-</details>
+{% endcapture %}
+{% include collapsible.md content=_c %}
 
 ## 🇦🇹 Austria
-<details>
-<summary>Click to expand</summary>
+{% capture _c %}
 - ...
-</details>
+{% endcapture %}
+{% include collapsible.md content=_c %}
 
 ## 🇺🇸 USA
-<details>
-<summary>Click to expand</summary>
+{% capture _c %}
 - Tara Bogart
 - Kate Siekman
 - Chris Willey
 - James Powell
 - Nathan Schmitt
-</details>
+{% endcapture %}
+{% include collapsible.md content=_c %}
 
 # 🩺 Status
 {% include status.html %}
 
 # Docker / Azure 🆕 
 
-<iframe src="https://lightcodepedia.org" width="100%" height="800" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"> </iframe>
+{% include embed.md src="https://lightcodepedia.org" height="800" %}
