@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 🎠 Carousel
+{% include topbar.md title="🎠 Carousel" %}
 
 Auto-rotating items — perfect for quotes, testimonials, or rotating tips. Auto-advances every few seconds, and you can click the dots to jump.
 

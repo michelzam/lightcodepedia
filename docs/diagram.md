@@ -1,4 +1,4 @@
-{% include topbar.md %}
+{% include topbar.md title="📊 Diagram" %}
 
 This is a diagram:
 

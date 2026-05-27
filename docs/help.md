@@ -1,7 +1,4 @@
-{% include topbar.md %}
-
-
-### Play with Python
+{% include topbar.md title="🛟 Help" %}
 
 Looking for help? This is the right place.
 

@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 🃏 Cards
+{% include topbar.md title="🃏 Cards" %}
 
 A row or grid of content cards — each with a title, description, and optional link. Responsive: auto-stacks on mobile.
 

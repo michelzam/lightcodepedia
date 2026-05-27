@@ -1,4 +1,4 @@
-{% include topbar.md %}
+{% include topbar.md title="ℹ️ About" %}
 
 Made with ❤️ for learners around the world. 
 

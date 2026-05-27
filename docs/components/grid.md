@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 📐 Grid
+{% include topbar.md title="📐 Grid" %}
 
 A free-form layout grid. Each cell can hold any content — text, images, even other components. Use it for dashboards or side-by-side comparisons.
 

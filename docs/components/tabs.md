@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 📑 Tabs
+{% include topbar.md title="📑 Tabs" %}
 
 Show alternative content panels — only one visible at a time.
 

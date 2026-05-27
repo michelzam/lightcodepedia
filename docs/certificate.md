@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# LightCode Certificate @ Dauphine 
+{% include topbar.md title="🏛 LightCode Certificate @ Dauphine" %}
 
 Ari is your AI pair lightcoder, trained to help you learn about lightcoding.
 

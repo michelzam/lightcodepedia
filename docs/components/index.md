@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 🧩 Component Gallery
+{% include topbar.md title="🧩 Component Gallery" %}
 
 Welcome, lowcoder! This page lists every interactive component you can use in your `.md` pages.
 
