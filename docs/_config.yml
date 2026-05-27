@@ -3,6 +3,10 @@ description: A GitHub Pages site
 
 defaults:
   - scope:
+      path: ""
+    values:
+      layout: default
+  - scope:
       path: "modules"   # only /modules
     values:
       layout: null      # don’t wrap them in HTML
