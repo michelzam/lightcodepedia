@@ -163,20 +163,31 @@ for i in range(1, 8):
 
 Every runner also exposes a built-in `show(obj)` helper. It introspects the value and renders a card in a grid right below the output. Works for **strings, numbers, dicts, lists, and your own classes** (it reads `__dict__`).
 
+Lightcoding-style: describe the objects in **YAML**, then iterate and `show()`. The runner exposes a built-in `yaml.load(s)` helper (powered by `js-yaml`).
+
 {% capture _py3 %}
-# A list of "little objects" — rendered as cards
-dogs = [
-    {"name": "Lucky", "age": 3, "breed": "Beagle", "icon": "🐶"},
-    {"name": "Wanda", "age": 5, "breed": "Poodle", "icon": "🐩"},
-    {"name": "Max",   "age": 2, "breed": "Husky",  "icon": "🐺"},
-]
+# Describe the objects in YAML, render them as cards
+dogs = yaml.load("""
+- name: Lucky
+  age: 3
+  breed: Beagle
+  icon: 🐶
+- name: Wanda
+  age: 5
+  breed: Poodle
+  icon: 🐩
+- name: Max
+  age: 2
+  breed: Husky
+  icon: 🐺
+""")
 
 for d in dogs:
     show(d)
 
 print(f"Showed {len(dogs)} dogs.")
 {% endcapture %}
-{% include python_run.md id="demo3" code=_py3 rows="10" %}
+{% include python_run.md id="demo3" code=_py3 rows="16" %}
 
 Works with custom classes too — `show()` reads `__dict__`:
 
@@ -214,6 +225,7 @@ You can also call `show.clear()` to wipe the card area, and pass `title="…"` t
 | `print(...)` | Writes to the dark output pane |
 | `show(obj, title=None)` | Renders `obj` as a card in the grid below the output. Dicts and instances become labelled rows; lists/tuples render each item as its own card. |
 | `show.clear()` | Removes all cards from the grid |
+| `yaml.load(s)` | Parses a YAML string into Python objects (dicts, lists, scalars). Powered by `js-yaml` — loaded once, alongside the runtime. |
 
 ✅ Native Python syntax, runs entirely in the browser, no server.  
 ⚠️ MicroPython has a slim stdlib — no `numpy`, no `pandas`, no `requests`. For the full Python ecosystem you'd switch to Pyodide (~10 MB).
