@@ -1,3 +1,8 @@
+<script>
+if (location.search.indexOf('embed=true') >= 0) {
+  document.documentElement.classList.add('lc-embed-mode');
+}
+</script>
 <style>
 #lc-topbar {
   position: fixed;
@@ -28,6 +33,8 @@
 }
 #lc-topbar .lc-links a:hover { color: #0066cc; }
 body { padding-top: 56px; }
+.lc-embed-mode #lc-topbar { display: none !important; }
+.lc-embed-mode body { padding-top: 0 !important; }
 </style>
 <div id="lc-topbar">
   <a class="lc-brand" href="/">💡 Lightcodepedia</a>

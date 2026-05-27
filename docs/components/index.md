@@ -15,6 +15,7 @@ Welcome, c-dev! This page lists every interactive component you can use in your 
 - [📻 Radio group](radio) — pick-one with reveal
 - [🪗 Accordion](accordion) — multiple collapsibles from one file
 - [📜 Scrollable pane](scrollable) — fixed-height scrolling container
+- [🪟 Embed page](embed_page) — embed another page in an iframe (safe nesting)
 
 ## How each one works
 
