@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 📻 Radio group
+{% include topbar.md title="📻 Radio group" %}
 
 A pick-one selector that reveals different content depending on the choice. Like tabs, but with a different visual style.
 

@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 🔘 Button
+{% include topbar.md title="🔘 Button" %}
 
 A styled link that looks like a clickable button.
 

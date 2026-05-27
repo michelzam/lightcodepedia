@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# Registered nodes
+{% include topbar.md title="🕸️ Network" %}
 
 [🫜 Root node](https://lightcodepedia.org)
 

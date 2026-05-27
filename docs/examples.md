@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-## 🎡 Examples and quotes from learners
+{% include topbar.md title="🎡 Examples" %}
 
 {% include example.md module="infost_350/lucky_wanda" %}
 

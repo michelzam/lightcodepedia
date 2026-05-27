@@ -1,12 +1,9 @@
-{% include topbar.md %}
+{% include topbar.md title="👋 Hello Lightcoder — welcome to LightHub" %}
 
 💬 **Lightcode** is a scalable distributed open-access no-code/low-code platform 
 meant to build digital skills. 
 
 ️✨ **Lightcode**pedia is a network 🕸 of LightNodes💡🪢 managed by community members, LightCoders 👩‍🔬
-
-# 👋 Hello Lightcoder
-## Welcome to LightHub, the root _LightNode_ 
 
 This 🪢_lightnode_ is the **nexus** of the **Lightcode Universe** made of LightNodes. 
 

@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 📋 Dropdown menu
+{% include topbar.md title="📋 Dropdown menu" %}
 
 A button that reveals a vertical list of links when clicked.
 

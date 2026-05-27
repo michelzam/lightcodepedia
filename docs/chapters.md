@@ -1,8 +1,6 @@
-{% include topbar.md %}
+{% include topbar.md title="📚 Readings" %}
 
-# 📚 Course Material
-
-Chapters of Course Materials
+Chapters of Course Materials.
 
 ## 📖 Chapter 01 — Introduction to Low-Code
 {% include collapsible.md gdrive_id="1L0_VZUOUYlCykK-PcxJyZramrqtABB-X" %}

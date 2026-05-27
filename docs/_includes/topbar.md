@@ -33,8 +33,16 @@ if (location.search.indexOf('embed=true') >= 0) {
 }
 #lc-topbar .lc-links a:hover { color: #0066cc; }
 body { padding-top: 56px; }
+.lc-page-title {
+  font-size: 1.9em;
+  margin: 0.2em 0 0.8em;
+  color: #222;
+  border-bottom: 2px solid #0066cc;
+  padding-bottom: 0.25em;
+}
 .lc-embed-mode #lc-topbar { display: none !important; }
 .lc-embed-mode body { padding-top: 0 !important; }
+.lc-embed-mode .lc-page-title { display: none !important; }
 </style>
 <div id="lc-topbar">
   <a class="lc-brand" href="/">💡 Lightcodepedia</a>
@@ -43,3 +51,4 @@ body { padding-top: 56px; }
     {{ _menu.content | markdownify }}
   </div>
 </div>
+{% if include.title %}<h1 class="lc-page-title">{{ include.title }}</h1>{% endif %}

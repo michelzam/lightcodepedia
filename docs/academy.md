@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-## 👋 Welcome
+{% include topbar.md title="🏛 LightCode Academy" %}
 
 Welcome to **Lightcode Academy**! This is your go-to resource for learning how to use the Lightcode platform effectively. Whether you're a beginner or an experienced user, you'll find valuable information and tutorials here to help you get the most out of Lightcode.
 

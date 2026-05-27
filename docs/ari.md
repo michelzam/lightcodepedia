@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 🤖Ari @ lightcode: your AI pair lightcoder
+{% include topbar.md title="🤖 Ari — your AI pair lightcoder" %}
 
 Ari is your AI pair lightcoder, trained to help you learn about lightcoding.
 

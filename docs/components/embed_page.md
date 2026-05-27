@@ -1,6 +1,4 @@
-{% include topbar.md %}
-
-# 🪟 Embed page (internal)
+{% include topbar.md title="🪟 Embed page" %}
 
 Embed another page from this same site inside an iframe. Perfect for **safely nesting components** — each iframe is its own document, so there are no ID collisions, no shared CSS, no double JavaScript.
 
