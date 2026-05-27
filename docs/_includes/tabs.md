@@ -3,7 +3,23 @@
 {% assign _gid = include.file | replace: "/", "-" | replace: ".", "-" %}
 {% assign _nl = "
 " %}
-{% assign _sections = _page.content | split: "### " %}
+
+{% if _page == nil %}
+<div style="background:#fee;color:#900;padding:1em;border:1px solid #c00;border-radius:6px;margin:1em 0">
+⚠️ <strong>tabs.md:</strong> content file not found at <code>{{ _file }}</code>.
+Make sure the file exists and pass the path without <code>.md</code>, e.g. <code>file="components/my_tabs"</code>.
+</div>
+{% else %}
+
+{% assign _raw = _page.content %}
+{% comment %} Detect raw markdown vs already-rendered HTML and split accordingly. {% endcomment %}
+{% if _raw contains "### " %}
+  {% assign _sections = _raw | split: "### " %}
+  {% assign _mode = "md" %}
+{% else %}
+  {% assign _sections = _raw | split: "<h3" %}
+  {% assign _mode = "html" %}
+{% endif %}
 
 <style>
 .lc-tabs { border: 1px solid #ddd; border-radius: 6px; margin: 1em 0; overflow: hidden; }
@@ -18,15 +34,25 @@
 <div class="lc-tabs" id="lc-tabs-{{ _gid }}">
   <div class="lc-tab-bar">
     {% for s in _sections offset:1 %}
-      {% assign _title = s | split: _nl | first | strip %}
+      {% if _mode == "md" %}
+        {% assign _title = s | split: _nl | first | strip %}
+      {% else %}
+        {% assign _after_gt = s | split: ">" | shift %}
+        {% assign _title = s | split: ">" | slice: 1 | first | split: "<" | first | strip %}
+      {% endif %}
       <button class="lc-tab-btn{% if forloop.first %} active{% endif %}" data-tab="lc-panel-{{ _gid }}-{{ forloop.index0 }}">{{ _title }}</button>
     {% endfor %}
   </div>
   {% for s in _sections offset:1 %}
-    {% assign _title = s | split: _nl | first %}
-    {% assign _body = s | remove_first: _title %}
-<div id="lc-panel-{{ _gid }}-{{ forloop.index0 }}" class="lc-tab-panel{% if forloop.first %} active{% endif %}" markdown="1">
-{{ _body }}
+    {% if _mode == "md" %}
+      {% assign _title = s | split: _nl | first %}
+      {% assign _body = s | remove_first: _title %}
+      {% assign _html = _body | markdownify %}
+    {% else %}
+      {% assign _html = "<h3" | append: s %}
+    {% endif %}
+<div id="lc-panel-{{ _gid }}-{{ forloop.index0 }}" class="lc-tab-panel{% if forloop.first %} active{% endif %}">
+{{ _html }}
 </div>
   {% endfor %}
 </div>
@@ -44,3 +70,5 @@
   });
 })();
 </script>
+
+{% endif %}
