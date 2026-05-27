@@ -2,7 +2,7 @@
 
 # 🧩 Component Gallery
 
-Welcome, c-dev! This page lists every interactive component you can use in your `.md` pages.
+Welcome, lowcoder! This page lists every interactive component you can use in your `.md` pages.
 
 **The rule of the game:** you only write markdown and `{% raw %}{% include ... %}{% endraw %}` calls. No HTML, no CSS, no JavaScript. The components live in `_includes/` and you never need to open that folder.
 
