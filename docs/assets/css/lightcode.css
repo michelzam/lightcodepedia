@@ -1,26 +1,17 @@
-:root {
-  --lc-bg: #f8fafc;
-  --lc-panel: #ffffff;
-  --lc-text: #172033;
-  --lc-muted: #64748b;
-  --lc-accent: #2563eb;
-  --lc-accent-soft: #dbeafe;
-  --lc-radius: 18px;
-  --lc-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-}
-
 body {
-  background: radial-gradient(circle at top left, #e0f2fe, transparent 32rem),
-              var(--lc-bg);
-  color: var(--lc-text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.65;
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  line-height: 1.6;
+  font-family: system-ui, sans-serif;
 }
 
-.lc-card {
-  background: var(--lc-panel);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: var(--lc-radius);
-  box-shadow: var(--lc-shadow);
-  padding: 1.25rem;
+iframe {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+}
+
+details {
+  margin: 1rem 0;
 }
