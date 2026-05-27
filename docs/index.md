@@ -18,41 +18,15 @@ It is hosted on _GitHub_ and _StreamlitCloud_ for free.
 
 📖 _Learn how to build apps with little or no code._
 
-[🎬 Demo](demo.md)  👈 Start here
+{% include cards.md file="index_cards" cols="3" %}
 
-[🤖 Learn with Ari](ari.md) 👈 🆕
+## 🗣️ What people say
 
-[🎭 Events](events.md) 
+{% include carousel.md id="home_quotes" delay="8000" items="💬 This demo delivers a rare fusion of low-code technology and computing pedagogy that feels both innovative and grounded.|💬 The progression from visual exploration to executable models supports authentic learning while maintaining accessibility for diverse learners.|💬 The distributed, open-source design adds impressive scalability and autonomy, aligning perfectly with SIGCSE’s educational and technical spirit.|💬 Lightcodepedia presents a deeply thoughtful and forward-thinking contribution that bridges professional software practices with approachable computing education.|💬 The paper introduces a unique integration of low-code platforms, computational thinking and metaphor that is of humanistic design nature. Also demonstrates global adoption across multiple institutions.|💬 The low-code, distributed model has significant potential for scalability and democratization of computing skills across disciplines.|💬 The submission has creative conceptual framing linking classical theory with modern pedagogy, and addresses global inclusivity and interdisciplinary computing literacy. It also shows early practical success with multiple pilot sites.|💬 This poster addresses a very relevant and timely challenge in workforce development, highlighting the importance of expanding computer science and coding literacy beyond traditional software roles.|💬 The submission stands out for its creativity, global scope, and relevance.|💬 Very relevant and timely submission.|💬 Fascinating work, would love to see it." %}
 
-[👤 Author](author.md)
-
-[🎈 Play](play.md)
-
-[🎡 Examples](examples.md)
-
-[🚚 Deploy on Cloud](deploy.md)
-
-[🛟 Help](help.md)
-
-[🕸️ Network](nodes.md)
-
-[📚 Readings](chapters.md)
-
-[⚙️ Setup](links.md)
-
-[ℹ️ About](about.md)
-
-
+_— Anonymous peer feedback, ACM SIGCSE TS 2026_
 
 _Published: {{ site.time | date: "%Y-%m-%d %H:%M" }}_
-
-**🇪🇺 Co-funded by the EU**
-{% capture _c %}
-The LightCode Erasmus+ Project (Nr.2022-1-FR01-KA220-HED-00086863) is co-funded by the European Union. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Education and Culture Executive Agency (EACEA). Neither the European Union nor EACEA can be held responsible for them. 
-
-![🇪🇺 Co-funded by the EU](images/EN_cofundedbytheEU_RGB_POS.png)
-{% endcapture %}
-{% include collapsible.md content=_c %}
 
 {% include copyright.md %}
 
