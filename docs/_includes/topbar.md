@@ -59,6 +59,7 @@ body { padding-top: 56px; }
   </div>
 </div>
 {% if include.title %}<h1 class="lc-page-title">{{ include.title }}</h1>{% endif %}
+{% include code_chrome.md %}
 <script>
 (function(){
   var links = document.querySelectorAll('#lc-topbar .lc-links a');
