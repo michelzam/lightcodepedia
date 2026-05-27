@@ -8,24 +8,15 @@ Welcome, c-dev! This page lists every interactive component you can use in your 
 
 ## Available components
 
-- [📑 Tabs](tabs) — alternative content panels
-- [🎠 Carousel](carousel) — auto-rotating quotes/items
-- [📋 Dropdown menu](dropdown) — click-to-reveal link list
-- [🔘 Button](button) — styled link button
-- [📻 Radio group](radio) — pick-one with reveal
-- [🪗 Accordion](accordion) — multiple collapsibles from one file
-- [📜 Scrollable pane](scrollable) — fixed-height scrolling container
-- [🪟 Embed page](embed_page) — embed another page in an iframe (safe nesting)
-- [🃏 Cards](cards) — row/grid of content cards with hover effect
-- [📐 Grid](grid) — free-form layout grid for any content
+{% include cards.md file="components/index_cards" cols="3" %}
 
 ## How each one works
 
 Two kinds of components:
 
 1. **Inline-config** (carousel, dropdown, button) — you pass everything as parameters on the include line. Best for short content.
-2. **File-config** (tabs, radio, accordion, scrollable) — content lives in a separate `.md` file under `docs/components/`. Best for rich content with formatting.
+2. **File-config** (tabs, radio, accordion, scrollable, cards, grid) — content lives in a separate `.md` file under `docs/components/`. Best for rich content with formatting.
 
-Click any component above to see how to use it.
+Click any card above to see how to use each component.
 
 {% include backtotop.md %}
