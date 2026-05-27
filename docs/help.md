@@ -22,9 +22,9 @@ _You can copy-paste this code in the Python playground below._
 
 
 ## Python playground
-<iframe src="https://www.onlineide.pro/playground/python?utm_source=online-python&utm_medium=navbar&utm_campaign=onlineidepro" width="100%" height="1600" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"> </iframe> 
+{% include embed.md src="https://www.onlineide.pro/playground/python?utm_source=online-python&utm_medium=navbar&utm_campaign=onlineidepro" height="1600" %}
 
 ## Python Tutor
-<iframe src="https://pythontutor.com/python-compiler.html#mode=edit" width="100%" height="1600" loading="lazy" allowfullscreen="allowfullscreen" style="border:none;"> </iframe> 
+{% include embed.md src="https://pythontutor.com/python-compiler.html#mode=edit" height="1600" %}
 
 💬 _“Python Tutor visualization changed everything for me.”_
