@@ -39,8 +39,26 @@ if (location.search.indexOf('embed=true') >= 0) {
   #lc-topbar .lc-link-icon { margin-right: 0; font-size: 1.15em; }
   #lc-topbar .lc-links a { margin-right: 0.5rem; }
 }
-body { padding-top: 56px; margin: 0; }
+body {
+  padding-top: 56px;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 16px;
+  line-height: 1.5;
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+}
 .markdown-body { max-width: 980px; margin: 0 auto; padding: 1em 1.2rem 2em; }
+.markdown-body a { color: #2a7ae2; }
+.markdown-body a:visited { color: #1756a9; }
+.markdown-body code, .markdown-body pre { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace; }
+.markdown-body code { background: #eef; padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9em; }
+.markdown-body pre code { background: transparent; padding: 0; }
+.markdown-body pre { background: #f8f8f8; padding: 0.8em 1em; border-radius: 6px; overflow-x: auto; }
+.markdown-body blockquote { border-left: 4px solid #ddd; padding: 0 1em; color: #555; margin: 1em 0; }
+.markdown-body table { border-collapse: collapse; }
+.markdown-body table th, .markdown-body table td { border: 1px solid #e0e0e0; padding: 0.4em 0.7em; }
+.markdown-body table th { background: #f3f4f6; }
 .markdown-body > h1:first-of-type {
   font-size: 1.9em;
   margin: 0.2em 0 0.8em;
