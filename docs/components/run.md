@@ -180,4 +180,50 @@ for i in range(1, 8):
 ✅ Native Python syntax, runs entirely in the browser, no server.  
 ⚠️ MicroPython's stdlib is slim — no `numpy`, no `pandas`, no `requests`. For the full Python ecosystem you'd switch to Pyodide (~10 MB).
 
+## What is `>>>` ? — a live REPL
+
+In doctests (and Python tutorials everywhere), every interactive line starts with `>>>`. That's the **Python REPL prompt** — REPL stands for **R**ead → **E**val → **P**rint → **L**oop. It's the interactive "type a Python expression, see the result, type the next one" cursor that ships with Python itself.
+
+The widget below is a real REPL running entirely in your browser. State persists across lines — assign a variable on one line, query it on the next.
+
+```python
+```
+{: .repl }
+
+Try typing these one at a time, hitting Enter after each:
+
+| You type | What happens |
+|---|---|
+| `2 + 2` | prints `4` — an expression evaluates and shows its repr |
+| `name = "Lucky"` | no output — assignments are statements, they return nothing |
+| `name` | prints `'Lucky'` — the variable's value (note the quotes — that's `repr`) |
+| `len(name)` | prints `5` |
+| `[1, 2, 3] * 3` | prints `[1, 2, 3, 1, 2, 3, 1, 2, 3]` |
+| `import math` | no output — imports are statements |
+| `math.sqrt(2)` | prints `1.4142135623730951` |
+| `1 / 0` | prints `ZeroDivisionError: divide by zero` — errors are caught |
+
+Use ↑ / ↓ to walk through history.
+
+### `{: .repl }` knobs
+
+| Attribute | Description |
+|---|---|
+| (fence content) | Optional — runs once silently on load to preload state (e.g. `import math`) |
+| `init="…"` | Single-line equivalent of the fence content |
+| `id="myrepl"` | Required if you have multiple REPLs on the same page |
+
+A pre-warmed REPL with `math` already imported:
+
+```python
+import math
+greeting = "Hello from a pre-warmed REPL!"
+print(greeting)
+```
+{: .repl id="prewarmed" }
+
+Type `math.pi`, `greeting`, or `greeting.upper()` to see the preloaded state in action.
+
+**Limitations:** single-line input only. For multi-line `def` / `class` / `for`, use a `{: .run }` block instead.
+
 {% include backtotop.md %}
