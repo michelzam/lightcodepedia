@@ -55,6 +55,18 @@
 .lc-pyrun-tests .lc-pyrun-test-pass { color: #2a7a2a; }
 .lc-pyrun-tests .lc-pyrun-test-fail { color: #b00; background: #fff5f5; }
 .lc-pyrun-tests .lc-pyrun-test-empty { color: #888; font-style: italic; }
+
+.lc-pyrepl { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #1e1e1e; }
+.lc-pyrepl-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
+.lc-pyrepl-title .lc-pyrepl-status { margin-left: auto; font-size: 0.78em; color: #888; font-style: italic; }
+.lc-pyrepl-transcript { margin: 0; padding: 0.9em 1em; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; min-height: 4em; max-height: 320px; overflow-y: auto; }
+.lc-pyrepl-transcript:empty::before { content: "type a Python expression below and press Enter"; color: #888; font-style: italic; }
+.lc-pyrepl-transcript .lc-pyrepl-prompt-line { color: #6aa84f; }
+.lc-pyrepl-transcript .lc-pyrepl-err { color: #ff6b6b; }
+.lc-pyrepl-input-row { display: flex; align-items: center; gap: 0.5em; padding: 0.5em 1em; background: #1e1e1e; border-top: 1px solid #333; }
+.lc-pyrepl-marker { color: #6aa84f; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; font-weight: bold; user-select: none; }
+.lc-pyrepl-input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; padding: 0; }
+.lc-pyrepl-input:disabled { color: #666; }
 </style>
 <script>
 (function(){
@@ -432,6 +444,160 @@
     return div;
   }
 
+  var REPL_BOOTSTRAP = [
+    "def _repl_eval(line):",
+    "    try:",
+    "        _code = compile(line, '<repl>', 'eval')",
+    "        _val = eval(_code)",
+    "        if _val is not None:",
+    "            print(repr(_val))",
+    "    except SyntaxError:",
+    "        try:",
+    "            exec(compile(line, '<repl>', 'exec'))",
+    "        except SyntaxError as e:",
+    "            print('SyntaxError: ' + str(e))",
+    "        except Exception as e:",
+    "            print(type(e).__name__ + ': ' + str(e))",
+    "    except Exception as e:",
+    "        print(type(e).__name__ + ': ' + str(e))"
+  ].join("\n");
+
+  function buildRepl(opts) {
+    var id = opts.id;
+    var div = document.createElement("div");
+    div.className = "lc-pyrepl";
+    div.id = "lc-pyrepl-" + id;
+    div.innerHTML =
+      '<div class="lc-pyrepl-title">🐍 <span>Python REPL</span><span class="lc-pyrepl-status"></span></div>' +
+      '<pre class="lc-pyrepl-transcript"></pre>' +
+      '<div class="lc-pyrepl-input-row"><span class="lc-pyrepl-marker">&gt;&gt;&gt;</span><input class="lc-pyrepl-input" type="text" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" /></div>';
+    return div;
+  }
+
+  function attachRepl(rootId, opts) {
+    opts = opts || {};
+    var root = document.getElementById(rootId);
+    if (!root || root.dataset.lcAttached) return;
+    root.dataset.lcAttached = "1";
+    var transcript = root.querySelector(".lc-pyrepl-transcript");
+    var input = root.querySelector(".lc-pyrepl-input");
+    var status = root.querySelector(".lc-pyrepl-status");
+    var INIT = opts.init || "";
+    var buf = "";
+    var mp = null;
+    var loading = null;
+    var history = [];
+    var historyIdx = -1;
+
+    function append(text, cls) {
+      if (cls) {
+        var span = document.createElement("span");
+        span.className = cls;
+        span.textContent = text;
+        transcript.appendChild(span);
+      } else {
+        transcript.appendChild(document.createTextNode(text));
+      }
+      transcript.scrollTop = transcript.scrollHeight;
+    }
+
+    function loadMp() {
+      if (mp) return Promise.resolve(mp);
+      if (loading) return loading;
+      input.disabled = true;
+      status.textContent = "loading runtime…";
+      loading = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
+        .then(function(mod){
+          return mod.loadMicroPython({
+            stdout: function(t){ buf += t; },
+            stderr: function(t){ buf += t; }
+          });
+        })
+        .then(function(instance){
+          mp = instance;
+          try { mp.runPython(REPL_BOOTSTRAP); } catch (e) { }
+          if (INIT) {
+            try { mp.runPython(INIT); } catch (e) { }
+          }
+          input.disabled = false;
+          input.focus();
+          status.textContent = "";
+          return mp;
+        })
+        .catch(function(e){
+          input.disabled = false;
+          status.textContent = "load failed";
+          loading = null;
+          throw e;
+        });
+      return loading;
+    }
+
+    function submit(line) {
+      if (!line) {
+        append(">>> \n", "lc-pyrepl-prompt-line");
+        return;
+      }
+      history.push(line);
+      historyIdx = history.length;
+      loadMp().then(function(m){
+        append(">>> " + line + "\n", "lc-pyrepl-prompt-line");
+        buf = "";
+        try {
+          m.runPython("_repl_eval(" + JSON.stringify(line) + ")");
+          if (buf) {
+            var isErr = /^(SyntaxError|NameError|TypeError|ValueError|ZeroDivisionError|IndexError|KeyError|AttributeError|ImportError|RuntimeError|Exception)/.test(buf);
+            append(buf, isErr ? "lc-pyrepl-err" : null);
+          }
+        } catch (e) {
+          append((e.message || String(e)) + "\n", "lc-pyrepl-err");
+        }
+      }).catch(function(e){
+        append("Failed to load MicroPython: " + (e.message || String(e)) + "\n", "lc-pyrepl-err");
+      });
+    }
+
+    input.addEventListener("keydown", function(e){
+      if (e.key === "Enter") {
+        e.preventDefault();
+        var line = input.value;
+        input.value = "";
+        submit(line);
+      } else if (e.key === "ArrowUp") {
+        if (history.length === 0) return;
+        e.preventDefault();
+        historyIdx = Math.max(0, historyIdx - 1);
+        input.value = history[historyIdx] || "";
+      } else if (e.key === "ArrowDown") {
+        if (history.length === 0) return;
+        e.preventDefault();
+        historyIdx = Math.min(history.length, historyIdx + 1);
+        input.value = history[historyIdx] || "";
+      }
+    });
+
+    // Focus input when the transcript area is clicked
+    root.addEventListener("click", function(e){
+      if (e.target !== input) input.focus();
+    });
+  }
+
+  var REPL_ID = 0;
+  function upgradeRepl(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var codeNode = el.querySelector("code");
+    var raw = codeNode ? codeNode.textContent.replace(/\n+$/, "") : "";
+    var id = el.id || ("repl" + (++REPL_ID));
+    var opts = {
+      id: id,
+      init: el.getAttribute("init") || raw || ""
+    };
+    var widget = buildRepl(opts);
+    el.parentNode.replaceChild(widget, el);
+    attachRepl("lc-pyrepl-" + id, opts);
+  }
+
   function upgradeCode(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
@@ -502,6 +668,7 @@
       p.parentNode.removeChild(p);
     });
     document.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(upgradeRun);
+    document.querySelectorAll(".highlighter-rouge.repl, pre.repl").forEach(upgradeRepl);
     document.querySelectorAll(".highlighter-rouge.code, pre.code").forEach(upgradeCode);
   }
 
