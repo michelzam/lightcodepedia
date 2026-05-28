@@ -58,7 +58,9 @@
 
 .lc-pyrepl { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #1e1e1e; }
 .lc-pyrepl-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
-.lc-pyrepl-title .lc-pyrepl-status { margin-left: auto; font-size: 0.78em; color: #888; font-style: italic; }
+.lc-pyrepl-title .lc-pyrepl-reset { margin-left: auto; background: #e5e5e5; color: #333; border: none; border-radius: 4px; padding: 0.15em 0.55em; cursor: pointer; font-size: 0.95em; line-height: 1; }
+.lc-pyrepl-title .lc-pyrepl-reset:hover { background: #d0d0d0; }
+.lc-pyrepl-title .lc-pyrepl-status { font-size: 0.78em; color: #888; font-style: italic; margin-left: 0.5em; }
 .lc-pyrepl-transcript { margin: 0; padding: 0.9em 1em; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; min-height: 4em; max-height: 320px; overflow-y: auto; }
 .lc-pyrepl-transcript:empty::before { content: "type a Python expression below and press Enter"; color: #888; font-style: italic; }
 .lc-pyrepl-transcript .lc-pyrepl-prompt-line { color: #6aa84f; }
@@ -454,12 +456,10 @@
     "    except SyntaxError:",
     "        try:",
     "            exec(compile(line, '<repl>', 'exec'))",
-    "        except SyntaxError as e:",
-    "            print('SyntaxError: ' + str(e))",
-    "        except Exception as e:",
-    "            print(type(e).__name__ + ': ' + str(e))",
-    "    except Exception as e:",
-    "        print(type(e).__name__ + ': ' + str(e))"
+    "        except BaseException as e:",
+    "            print(repr(e))",
+    "    except BaseException as e:",
+    "        print(repr(e))"
   ].join("\n");
 
   function buildRepl(opts) {
@@ -468,7 +468,7 @@
     div.className = "lc-pyrepl";
     div.id = "lc-pyrepl-" + id;
     div.innerHTML =
-      '<div class="lc-pyrepl-title">🐍 <span>Python REPL</span><span class="lc-pyrepl-status"></span></div>' +
+      '<div class="lc-pyrepl-title">🐍 <span>Python REPL</span><button class="lc-pyrepl-reset" title="reset runtime — clears state">↻</button><span class="lc-pyrepl-status"></span></div>' +
       '<pre class="lc-pyrepl-transcript"></pre>' +
       '<div class="lc-pyrepl-input-row"><span class="lc-pyrepl-marker">&gt;&gt;&gt;</span><input class="lc-pyrepl-input" type="text" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" /></div>';
     return div;
@@ -482,6 +482,7 @@
     var transcript = root.querySelector(".lc-pyrepl-transcript");
     var input = root.querySelector(".lc-pyrepl-input");
     var status = root.querySelector(".lc-pyrepl-status");
+    var resetBtn = root.querySelector(".lc-pyrepl-reset");
     var INIT = opts.init || "";
     var buf = "";
     var mp = null;
@@ -551,10 +552,26 @@
             append(buf, isErr ? "lc-pyrepl-err" : null);
           }
         } catch (e) {
-          append((e.message || String(e)) + "\n", "lc-pyrepl-err");
+          var msg = e.message || String(e);
+          append(msg + "\n", "lc-pyrepl-err");
+          append("(runtime crashed — state lost, reloading on next command)\n", "lc-pyrepl-err");
+          mp = null;
+          loading = null;
         }
       }).catch(function(e){
         append("Failed to load MicroPython: " + (e.message || String(e)) + "\n", "lc-pyrepl-err");
+      });
+    }
+
+    if (resetBtn) {
+      resetBtn.addEventListener("click", function(){
+        mp = null;
+        loading = null;
+        history = [];
+        historyIdx = -1;
+        transcript.innerHTML = "";
+        append("(runtime reset — state cleared)\n", "lc-pyrepl-err");
+        input.focus();
       });
     }
 
