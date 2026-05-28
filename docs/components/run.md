@@ -98,6 +98,49 @@ show(pets[0], title="Lucky (one year later)")
 ```
 {: .run id="custom-class" rows="11" }
 
+## Doctests — click 🧪 Test
+
+Every runner has a **🧪 Test** button next to ▶ Run. It scans the editor for `>>> expr` lines inside triple-quoted docstrings, runs each one, and compares `repr(value)` to the expected output on the next line. Pass/fail rendered inline.
+
+```python
+def fact(n: int) -> int:
+    """
+    Recursive factorial.
+
+    >>> fact(0)
+    1
+    >>> fact(1)
+    1
+    >>> fact(5)
+    120
+    >>> fact(10)
+    3628800
+    """
+    return 1 if n <= 1 else n * fact(n - 1)
+
+
+def greet(name: str) -> str:
+    """
+    >>> greet("Lucky")
+    'Hello, Lucky!'
+    >>> greet("")
+    'Hello, !'
+    """
+    return "Hello, " + name + "!"
+```
+{: .run id="doctests-demo" rows="22" }
+
+▶ Run executes the module (no output unless you call something). 🧪 Test runs every `>>>` line and shows a pass/fail summary. Try editing one of the expected values to see a red row.
+
+### Doctest rules
+
+- Tests live inside `"""…"""` or `'''…'''` docstrings.
+- Each test is `>>> <expression>` followed by **one line** of expected output.
+- The expression is `eval()`-d. Its **`repr()`** is compared against the expected line (so strings need their quotes: `'Hello, Lucky!'` not `Hello, Lucky!`).
+- Expressions that return `None` should have a blank line after — or just nothing.
+- `print(...)`-based doctests aren't captured (the runner uses `eval`, not stdout). Test return values instead.
+- Function definitions and module-level code run first, so doctests see your full namespace.
+
 ## Built-in helpers (available inside every runner)
 
 | Symbol | What it does |
@@ -107,6 +150,7 @@ show(pets[0], title="Lucky (one year later)")
 | `show(obj, title=None)` | Renders `obj` as a card in the grid below the output |
 | `show.clear()` | Removes all cards from the grid |
 | `yaml.load(s)` | Parses YAML into Python objects (powered by `js-yaml`) |
+| 🧪 Test button | Scans the editor for `>>>` doctests, runs each, compares `repr(value)` against expected |
 
 ## When `{: .run }` isn't enough — explicit `{% raw %}{% include python_run.md %}{% endraw %}`
 
