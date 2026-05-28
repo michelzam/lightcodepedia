@@ -10,11 +10,13 @@
   <textarea class="lc-pyrun-code" rows="{{ _rows }}" spellcheck="false">{{ _code | escape }}</textarea>
   <div class="lc-pyrun-bar">
     <button class="lc-pyrun-run">▶ Run</button>
+    <button class="lc-pyrun-test">🧪 Test</button>
     <button class="lc-pyrun-clear">Clear</button>
     <span class="lc-pyrun-status"></span>
   </div>
   <pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>
   <div class="lc-pyrun-view" id="lc-pyrun-{{ _id }}-view"></div>
+  <div class="lc-pyrun-tests" id="lc-pyrun-{{ _id }}-tests"></div>
   {% if include.folded %}</details>{% endif %}
 </div>
 

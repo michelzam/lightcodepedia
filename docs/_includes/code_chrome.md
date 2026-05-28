@@ -16,6 +16,8 @@
 .lc-pyrun-bar button:disabled { background: #888; cursor: progress; }
 .lc-pyrun-bar .lc-pyrun-clear { background: #e5e5e5; color: #333; }
 .lc-pyrun-bar .lc-pyrun-clear:hover:not(:disabled) { background: #d0d0d0; }
+.lc-pyrun-bar .lc-pyrun-test { background: #4a8a3d; }
+.lc-pyrun-bar .lc-pyrun-test:hover:not(:disabled) { background: #3d7330; }
 .lc-pyrun-bar .lc-pyrun-status { margin-left: auto; font-size: 0.78em; color: #666; }
 .lc-pyrun-out { margin: 0; padding: 0.9em 1em; background: #1e1e1e; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; min-height: 2em; max-height: 300px; overflow-y: auto; }
 .lc-pyrun-out.lc-empty { color: #888; font-style: italic; }
@@ -41,10 +43,66 @@
 .lc-pyrun-fold[open] > summary::before { transform: rotate(90deg); }
 .lc-pyrun-fold > summary:hover { background: #e8e9eb; }
 .lc-pyrun-fold[open] > summary { border-bottom: 1px solid #d0d0d0; }
+.lc-pyrun-tests { background: #fafbfc; border-top: 1px solid #e0e0e0; }
+.lc-pyrun-tests:empty { display: none; }
+.lc-pyrun-tests .lc-pyrun-test-summary { padding: 0.5em 0.9em; font-weight: 600; background: #f3f4f6; border-bottom: 1px solid #d0d0d0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #333; }
+.lc-pyrun-tests .lc-pyrun-test-row { padding: 0.4em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; border-bottom: 1px solid #f0f0f0; white-space: pre-wrap; }
+.lc-pyrun-tests .lc-pyrun-test-row:last-child { border-bottom: none; }
+.lc-pyrun-tests .lc-pyrun-test-pass { color: #2a7a2a; }
+.lc-pyrun-tests .lc-pyrun-test-fail { color: #b00; background: #fff5f5; }
+.lc-pyrun-tests .lc-pyrun-test-empty { color: #888; font-style: italic; }
 </style>
 <script>
 (function(){
   if (window.lcPyrun) return;
+
+  // Parse a Python source string and extract simple doctests:
+  //   >>> expr
+  //   expected_repr
+  // Only single-line expected output, only inside triple-quoted docstrings.
+  function parseDoctests(source) {
+    var tests = [];
+    var lines = source.split("\n");
+    var inDoc = false, quote = "", pending = null;
+    for (var i = 0; i < lines.length; i++) {
+      var L = lines[i];
+      if (!inDoc) {
+        var dm = L.match(/("""|''')/);
+        if (dm) {
+          quote = dm[1];
+          var after = L.substring(L.indexOf(quote) + 3);
+          // Skip single-line docstrings like """one-liner"""
+          if (after.indexOf(quote) >= 0) continue;
+          inDoc = true;
+        }
+        continue;
+      }
+      // Inside a docstring
+      if (L.indexOf(quote) >= 0) {
+        if (pending) { tests.push(pending); pending = null; }
+        inDoc = false;
+        continue;
+      }
+      var em = L.match(/^\s*>>>\s*(.*)$/);
+      if (em) {
+        if (pending) { tests.push(pending); }
+        pending = { expr: em[1], expected: "", lineno: i + 1 };
+        continue;
+      }
+      if (pending) {
+        var t = L.replace(/^\s+/, "").replace(/\s+$/, "");
+        if (t === "" || /^\s*>>>/.test(L)) {
+          tests.push(pending);
+          pending = null;
+          if (em) { pending = { expr: em[1], expected: "", lineno: i + 1 }; }
+        } else if (pending.expected === "") {
+          pending.expected = t;
+        }
+      }
+    }
+    if (pending) tests.push(pending);
+    return tests;
+  }
 
   var BOOTSTRAP_TPL = [
     "from js import document",
@@ -142,9 +200,11 @@
     var codeEl = root.querySelector(".lc-pyrun-code");
     var runBtn = root.querySelector(".lc-pyrun-run");
     var clearBtn = root.querySelector(".lc-pyrun-clear");
+    var testBtn = root.querySelector(".lc-pyrun-test");
     var status = root.querySelector(".lc-pyrun-status");
     var out = root.querySelector(".lc-pyrun-out");
     var view = root.querySelector(".lc-pyrun-view");
+    var testsEl = root.querySelector(".lc-pyrun-tests");
     if (!codeEl || !runBtn) return;
     var buf = "";
     var mp = null;
@@ -169,10 +229,15 @@
       }
     }
 
+    function clearTests() {
+      if (testsEl) testsEl.innerHTML = "";
+    }
+
     function loadMp() {
       if (mp) return Promise.resolve(mp);
       if (loading) return loading;
       runBtn.disabled = true;
+      if (testBtn) testBtn.disabled = true;
       status.textContent = "loading runtime…";
       loading = Promise.all([
         import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs"),
@@ -192,11 +257,13 @@
           }
           repaintBound();
           runBtn.disabled = false;
+          if (testBtn) testBtn.disabled = false;
           status.textContent = "ready";
           return mp;
         })
         .catch(function(e){
           runBtn.disabled = false;
+          if (testBtn) testBtn.disabled = false;
           status.textContent = "";
           loading = null;
           throw e;
@@ -204,29 +271,111 @@
       return loading;
     }
 
+    function runUserCode(m) {
+      buf = "";
+      view.innerHTML = "";
+      try {
+        m.runPython(codeEl.value);
+        setOut(buf || "(no print output)", false);
+        return true;
+      } catch (e) {
+        setOut(buf + (buf ? "\n" : "") + (e.message || String(e)), true);
+        return false;
+      }
+    }
+
     runBtn.addEventListener("click", function(){
       loadMp().then(function(m){
-        buf = "";
-        view.innerHTML = "";
+        clearTests();
         status.textContent = "running…";
-        try {
-          m.runPython(codeEl.value);
-          setOut(buf || "(no print output)", false);
-          status.textContent = "done";
-        } catch (e) {
-          setOut(buf + (buf ? "\n" : "") + (e.message || String(e)), true);
-          status.textContent = "error";
-        }
+        var ok = runUserCode(m);
+        status.textContent = ok ? "done" : "error";
         repaintBound();
       }).catch(function(e){
         setOut("Failed to load MicroPython: " + (e.message || String(e)), true);
       });
     });
 
+    if (testBtn) {
+      testBtn.addEventListener("click", function(){
+        loadMp().then(function(m){
+          status.textContent = "running…";
+          var ok = runUserCode(m);
+          if (!ok) {
+            status.textContent = "error in code";
+            return;
+          }
+          var tests = parseDoctests(codeEl.value);
+          clearTests();
+          if (tests.length === 0) {
+            var empty = document.createElement("div");
+            empty.className = "lc-pyrun-test-row lc-pyrun-test-empty";
+            empty.textContent = "No doctests found. Add >>> lines inside a triple-quoted docstring.";
+            testsEl.appendChild(empty);
+            status.textContent = "no tests";
+            repaintBound();
+            return;
+          }
+          var driver = [
+            "from js import document",
+            "_tests_el = document.getElementById('lc-pyrun-" + ID + "-tests')",
+            "_tests_el.innerHTML = ''",
+            "_summary = document.createElement('div')",
+            "_summary.className = 'lc-pyrun-test-summary'",
+            "_summary.textContent = 'running…'",
+            "_tests_el.appendChild(_summary)",
+            "_pass = 0",
+            "_fail = 0",
+            "def _doctest(expr, expected, lineno):",
+            "    global _pass, _fail",
+            "    try:",
+            "        v = eval(expr)",
+            "        actual = '' if v is None else repr(v)",
+            "        err = None",
+            "    except Exception as e:",
+            "        actual = ''",
+            "        err = type(e).__name__ + ': ' + str(e)",
+            "    passed = err is None and actual == expected",
+            "    row = document.createElement('div')",
+            "    row.className = 'lc-pyrun-test-row ' + ('lc-pyrun-test-pass' if passed else 'lc-pyrun-test-fail')",
+            "    icon = '✅' if passed else '❌'",
+            "    if passed:",
+            "        _pass += 1",
+            "        row.textContent = icon + ' line ' + str(lineno) + '  ' + expr",
+            "    else:",
+            "        _fail += 1",
+            "        if err:",
+            "            row.textContent = icon + ' line ' + str(lineno) + '  ' + expr + '  →  raised ' + err",
+            "        else:",
+            "            row.textContent = icon + ' line ' + str(lineno) + '  ' + expr + '  →  got ' + (actual or '(no value)') + ', expected ' + expected",
+            "    _tests_el.appendChild(row)"
+          ].join("\n");
+          var calls = tests.map(function(t){
+            return "_doctest(" + JSON.stringify(t.expr) + ", " + JSON.stringify(t.expected) + ", " + t.lineno + ")";
+          }).join("\n");
+          var finish = "_summary.textContent = str(_pass) + ' passed, ' + str(_fail) + ' failed'";
+          try {
+            m.runPython(driver + "\n" + calls + "\n" + finish);
+            status.textContent = "tests done";
+          } catch (e) {
+            var row = document.createElement("div");
+            row.className = "lc-pyrun-test-row lc-pyrun-test-fail";
+            row.textContent = "Test runner error: " + (e.message || String(e));
+            testsEl.appendChild(row);
+            status.textContent = "test error";
+          }
+          repaintBound();
+        }).catch(function(e){
+          setOut("Failed to load MicroPython: " + (e.message || String(e)), true);
+        });
+      });
+    }
+
     clearBtn.addEventListener("click", function(){
       out.textContent = "click ▶ Run to execute";
       out.classList.add("lc-empty");
       view.innerHTML = "";
+      clearTests();
       status.textContent = mp ? "ready" : "";
     });
 
@@ -251,9 +400,10 @@
       html += '<div class="lc-pyrun-title">🐍 <span>MicroPython runner</span><span class="lc-pyrun-lang">python</span></div>';
     }
     html += '<textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false"></textarea>';
-    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
+    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-test">🧪 Test</button><button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
     html += '<pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>';
     html += '<div class="lc-pyrun-view" id="lc-pyrun-' + id + '-view"></div>';
+    html += '<div class="lc-pyrun-tests" id="lc-pyrun-' + id + '-tests"></div>';
     if (folded) html += '</details>';
     div.innerHTML = html;
     div.querySelector(".lc-pyrun-code").value = opts.code || "";
