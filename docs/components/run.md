@@ -1,5 +1,4 @@
-{% include topbar.md title="🐍 Run" %}
-
+# 🐍 Run
 Edit Python in the browser and run it on the spot. Powered by **MicroPython compiled to WebAssembly** (~300 KB, loaded on first ▶ Run, cached after). To just **display** code without running it, see [💻 Code](/components/code).
 
 ## Tiniest runner — `{: .run }` on a fenced block

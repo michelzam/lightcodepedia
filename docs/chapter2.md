@@ -1,5 +1,3 @@
-{% include topbar.md %}
-
 ---
 marp: true
 theme: default

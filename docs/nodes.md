@@ -1,5 +1,4 @@
-{% include topbar.md title="🕸️ Network" %}
-
+# 🕸️ Network
 [🫜 Root node](https://lightcodepedia.org)
 
 ![Forks](https://img.shields.io/github/forks/michelzam/lightcodepedia?style=flat)

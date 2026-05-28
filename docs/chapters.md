@@ -1,5 +1,4 @@
-{% include topbar.md title="📚 Readings" %}
-
+# 📚 Readings
 Chapters of Course Materials.
 
 ## 📖 Chapter 01 — Introduction to Low-Code

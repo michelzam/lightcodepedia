@@ -1,5 +1,4 @@
-{% include topbar.md title="🎈 Play" %}
-
+# 🎈 Play
 {% include example.md module="fun" %}
 
 

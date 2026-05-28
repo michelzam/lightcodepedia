@@ -1,5 +1,4 @@
-{% include topbar.md title="👤 Author" %}
-
+# 👤 Author
 _Please customize this page to introduce yourself to the Lightcode community._
 _Use Markdown syntax to format your text and add links, images, and other media._
 

@@ -1,5 +1,4 @@
-{% include topbar.md title="🪗 Accordion" %}
-
+# 🪗 Accordion
 Multiple collapsible sections stacked together. Each can open/close independently.
 
 ## How to use

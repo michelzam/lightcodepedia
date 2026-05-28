@@ -1,5 +1,4 @@
-{% include topbar.md title="⚙️ Setup" %}
-
+# ⚙️ Setup
 [Quickstart for GitHub Pages](https://docs.github.com/en/pages/quickstart)
 
 [Quickstart for StreamlitCloud]()

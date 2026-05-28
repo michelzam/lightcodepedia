@@ -1,5 +1,4 @@
-{% include topbar.md title="👋 Hello Lightcoder — welcome to LightHub" %}
-
+# 👋 Hello Lightcoder — welcome to LightHub
 💬 **Lightcode** is a scalable distributed open-access no-code/low-code platform 
 meant to build digital skills. 
 

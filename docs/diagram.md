@@ -1,5 +1,4 @@
-{% include topbar.md title="📊 Diagram" %}
-
+# 📊 Diagram
 This is a diagram:
 
 ```mermaid

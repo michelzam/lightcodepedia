@@ -39,8 +39,9 @@ if (location.search.indexOf('embed=true') >= 0) {
   #lc-topbar .lc-link-icon { margin-right: 0; font-size: 1.15em; }
   #lc-topbar .lc-links a { margin-right: 0.5rem; }
 }
-body { padding-top: 56px; }
-.lc-page-title {
+body { padding-top: 56px; margin: 0; }
+.markdown-body { max-width: 980px; margin: 0 auto; padding: 1em 1.2rem 2em; }
+.markdown-body > h1:first-of-type {
   font-size: 1.9em;
   margin: 0.2em 0 0.8em;
   color: #222;
@@ -49,7 +50,7 @@ body { padding-top: 56px; }
 }
 .lc-embed-mode #lc-topbar { display: none !important; }
 .lc-embed-mode body { padding-top: 0 !important; }
-.lc-embed-mode .lc-page-title { display: none !important; }
+.lc-embed-mode .markdown-body > h1:first-of-type { display: none !important; }
 </style>
 <div id="lc-topbar">
   <a class="lc-brand" href="/">💡 Lightcodepedia</a>
@@ -58,7 +59,6 @@ body { padding-top: 56px; }
     {{ _menu.content | markdownify }}
   </div>
 </div>
-{% if include.title %}<h1 class="lc-page-title">{{ include.title }}</h1>{% endif %}
 {% include code_chrome.md %}
 <script>
 (function(){

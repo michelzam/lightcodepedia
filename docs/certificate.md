@@ -1,5 +1,4 @@
-{% include topbar.md title="🏛 LightCode Certificate @ Dauphine" %}
-
+# 🏛 LightCode Certificate @ Dauphine
 Ari is your AI pair lightcoder, trained to help you learn about lightcoding.
 
 💡 _Using ArI requests your own (potentially free) ChatGPT account._

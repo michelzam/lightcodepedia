@@ -1,5 +1,4 @@
-{% include topbar.md title="🤖 Ari — your AI pair lightcoder" %}
-
+# 🤖 Ari — your AI pair lightcoder
 Ari is your AI pair lightcoder, trained to help you learn about lightcoding.
 
 💡 _Using Ari requests your own (potentially free) ChatGPT account._
