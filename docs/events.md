@@ -1,5 +1,4 @@
-{% include topbar.md title="🎭 Events" %}
-
+# 🎭 Events
 [🏛 LightCode Certificate](pdfs/Dauphine-Certificat.pdf) - Fall 2025, Paris, France 🇫🇷
 
 [🏛 LightCode at Dauphine-MIAGE](https://dauphine.psl.eu/formations/masters/miage/m2/vie-du-master) - Fall 2025, Paris, France 🇫🇷

@@ -1,5 +1,4 @@
-{% include topbar.md title="🚚 Deploy on Cloud" %}
-
+# 🚚 Deploy on Cloud
 > Follow this guide to create a GitHub account, fork this repo, sign in to Streamlit with GitHub, create & deploy the app, and (if needed) fix a build error by switching Python to **3.10**.
 
 ## Prerequisites

@@ -1,5 +1,4 @@
-{% include topbar.md title="🎡 Examples" %}
-
+# 🎡 Examples
 {% include example.md module="infost_350/lucky_wanda" %}
 
 

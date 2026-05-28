@@ -1,5 +1,4 @@
-{% include topbar.md title="🐍 Python basics" %}
-
+# 🐍 Python basics
 🐍 Python is the most popular and accessible programming language. 
 It is widely used in various fields, including web development, data science, 
 artificial intelligence, scientific computing, and more. 

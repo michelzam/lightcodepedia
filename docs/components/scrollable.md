@@ -1,5 +1,4 @@
-{% include topbar.md title="📜 Scrollable pane" %}
-
+# 📜 Scrollable pane
 Wrap a content file in a fixed-height container with its own scrollbar. Great for long lists you don't want to dominate the page.
 
 ## How to use

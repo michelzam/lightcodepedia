@@ -1,5 +1,6 @@
 ---
 sitemap: false
+layout: null
 ---
 
 ## Long contributor list

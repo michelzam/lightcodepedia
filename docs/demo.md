@@ -1,5 +1,4 @@
-{% include topbar.md title="🎬 Demo" %}
-
+# 🎬 Demo
 {% include example.md module="demo" %}
 
 

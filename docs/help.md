@@ -1,5 +1,4 @@
-{% include topbar.md title="🛟 Help" %}
-
+# 🛟 Help
 Looking for help? This is the right place.
 
 You'll find here tons of docs. 

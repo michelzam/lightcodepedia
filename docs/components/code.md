@@ -1,5 +1,4 @@
-{% include topbar.md title="💻 Code" %}
-
+# 💻 Code
 Show source code (YAML, Python, JSON, …) elegantly. Three options, from least to most powerful. To **run** Python in the browser, see [🐍 Run](/components/run).
 
 ## Option 1 — Plain fenced code (built into markdown)

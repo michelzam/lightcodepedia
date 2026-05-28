@@ -1,0 +1,17 @@
+---
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title | default: site.title }}</title>
+  {% if page.permalink == "/404.html" %}<meta name="robots" content="noindex">{% endif %}
+</head>
+<body>
+{% include topbar.md %}
+<main class="markdown-body">
+{{ content }}
+</main>
+</body>
+</html>
