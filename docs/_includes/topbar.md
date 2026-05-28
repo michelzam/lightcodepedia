@@ -54,7 +54,7 @@ body {
 .markdown-body code, .markdown-body pre { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace; }
 .markdown-body code { background: #eef; padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9em; }
 .markdown-body pre code { background: transparent; padding: 0; }
-.markdown-body pre { background: #f8f8f8; padding: 0.8em 1em; border-radius: 6px; overflow-x: auto; }
+.markdown-body pre:not([class*="lc-"]) { background: #f8f8f8; padding: 0.8em 1em; border-radius: 6px; overflow-x: auto; }
 .markdown-body blockquote { border-left: 4px solid #ddd; padding: 0 1em; color: #555; margin: 1em 0; }
 .markdown-body table { border-collapse: collapse; }
 .markdown-body table th, .markdown-body table td { border: 1px solid #e0e0e0; padding: 0.4em 0.7em; }
