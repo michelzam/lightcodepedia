@@ -7,7 +7,7 @@
 <div class="lc-pyrun" id="lc-pyrun-{{ _id }}">
   {% if _bound != "" %}<div class="lc-pyrun-bound" id="lc-pyrun-{{ _id }}-bound"></div>{% endif %}
   {% if include.folded %}<details class="lc-pyrun-fold"><summary>🐍 Edit &amp; run Python</summary>{% else %}<div class="lc-pyrun-title">🐍 <span>MicroPython runner</span><span class="lc-pyrun-lang">python</span></div>{% endif %}
-  <textarea class="lc-pyrun-code" rows="{{ _rows }}" spellcheck="false">{{ _code | escape }}</textarea>
+  <div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><textarea class="lc-pyrun-code" rows="{{ _rows }}" spellcheck="false">{{ _code | escape }}</textarea></div>
   <div class="lc-pyrun-bar">
     <button class="lc-pyrun-run">▶ Run</button>
     <button class="lc-pyrun-test">🧪 Test</button>

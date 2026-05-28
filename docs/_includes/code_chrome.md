@@ -10,6 +10,10 @@
 .lc-pyrun-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
 .lc-pyrun-title .lc-pyrun-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.05em; }
 .lc-pyrun textarea { display: block; width: 100%; box-sizing: border-box; border: none; outline: none; padding: 0.9em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; resize: vertical; background: #fafafa; color: #111; }
+.lc-pyrun-editor { display: flex; background: #fafafa; align-items: stretch; }
+.lc-pyrun-editor .lc-pyrun-code { flex: 1; min-width: 0; padding-left: 0.6em; }
+.lc-pyrun-gutter { position: relative; overflow: hidden; background: #f3f4f6; border-right: 1px solid #e8e8e8; user-select: none; min-width: 2.5em; }
+.lc-pyrun-gutter-inner { padding: 0.9em 0.5em 0.9em 0.6em; color: #aaa; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; text-align: right; white-space: pre; pointer-events: none; will-change: transform; }
 .lc-pyrun-bar { display: flex; align-items: center; gap: 0.6em; padding: 0.5em 0.9em; background: #f3f4f6; border-top: 1px solid #e0e0e0; }
 .lc-pyrun-bar button { background: #0066cc; color: white; border: none; border-radius: 4px; padding: 0.35em 0.9em; cursor: pointer; font-size: 0.85em; font-weight: 500; }
 .lc-pyrun-bar button:hover:not(:disabled) { background: #0052a3; }
@@ -198,6 +202,7 @@
     if (!root || root.dataset.lcAttached) return;
     root.dataset.lcAttached = "1";
     var codeEl = root.querySelector(".lc-pyrun-code");
+    var gutterInner = root.querySelector(".lc-pyrun-gutter-inner");
     var runBtn = root.querySelector(".lc-pyrun-run");
     var clearBtn = root.querySelector(".lc-pyrun-clear");
     var testBtn = root.querySelector(".lc-pyrun-test");
@@ -231,6 +236,23 @@
 
     function clearTests() {
       if (testsEl) testsEl.innerHTML = "";
+    }
+
+    function updateGutter() {
+      if (!gutterInner) return;
+      var n = (codeEl.value.match(/\n/g) || []).length + 1;
+      var s = "";
+      for (var i = 1; i <= n; i++) s += (i > 1 ? "\n" : "") + i;
+      gutterInner.textContent = s;
+    }
+    function syncGutter() {
+      if (!gutterInner) return;
+      gutterInner.style.transform = "translateY(" + (-codeEl.scrollTop) + "px)";
+    }
+    if (gutterInner) {
+      updateGutter();
+      codeEl.addEventListener("input", updateGutter);
+      codeEl.addEventListener("scroll", syncGutter);
     }
 
     function loadMp() {
@@ -399,7 +421,7 @@
     } else {
       html += '<div class="lc-pyrun-title">🐍 <span>MicroPython runner</span><span class="lc-pyrun-lang">python</span></div>';
     }
-    html += '<textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false"></textarea>';
+    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false"></textarea></div>';
     html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-test">🧪 Test</button><button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
     html += '<pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>';
     html += '<div class="lc-pyrun-view" id="lc-pyrun-' + id + '-view"></div>';
