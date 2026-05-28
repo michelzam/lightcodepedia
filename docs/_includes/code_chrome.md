@@ -546,6 +546,7 @@
         try {
           m.runPython("_repl_eval(" + JSON.stringify(line) + ")");
           if (buf) {
+            if (buf.charAt(buf.length - 1) !== "\n") buf += "\n";
             var isErr = /^(SyntaxError|NameError|TypeError|ValueError|ZeroDivisionError|IndexError|KeyError|AttributeError|ImportError|RuntimeError|Exception)/.test(buf);
             append(buf, isErr ? "lc-pyrepl-err" : null);
           }
