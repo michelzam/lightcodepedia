@@ -37,6 +37,21 @@ greet("Lightcoder")
 | `bound="o"` | Mirror the variable `o` as a card above the editor; repaints after every Run |
 | `init="…"` | Single-line Python that runs once on page load |
 | `# ---` (inside the block) | Magic separator: above = init, below = editor body |
+| `silent="true"` | Run the block at page load with no UI — useful for setup side-effects (rendering into a `<div>`, computing globals, registering pieces). Errors go to the browser console |
+
+## Silent auto-exec — `silent="true"`
+
+A `.run` block with `silent="true"` doesn't render an editor or output area. It just loads MicroPython in the background and executes the code once, with `stdout` swallowed and `stderr` sent to the browser console. Useful for page-level setup that doesn't deserve UI.
+
+```python
+from js import document
+el = document.getElementById("hello-target")
+if el is not None:
+    el.innerHTML = "✨ rendered by silent Python ✨"
+```
+{: .run silent="true" }
+
+<div id="hello-target" style="padding: 0.6em; background: #f3f4f6; border-radius: 6px;">(loading…)</div>
 
 ## Bound card — a live in-memory object
 

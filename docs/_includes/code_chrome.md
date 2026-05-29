@@ -11,7 +11,18 @@
 .lc-pyrun-title .lc-pyrun-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.05em; }
 .lc-pyrun textarea { display: block; width: 100%; box-sizing: border-box; border: none; outline: none; padding: 0.9em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; resize: vertical; background: #fafafa; color: #111; }
 .lc-pyrun-editor { display: flex; background: #fafafa; align-items: stretch; }
-.lc-pyrun-editor .lc-pyrun-code { flex: 1; min-width: 0; padding-left: 0.6em; }
+.lc-pyrun-codewrap { position: relative; flex: 1; min-width: 0; }
+.lc-pyrun-codewrap .lc-pyrun-code { flex: none; width: 100%; padding-left: 0.6em; }
+.lc-pyrun-hl { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 0.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; pointer-events: none; overflow: hidden; background: transparent; color: #111; white-space: pre-wrap; word-wrap: break-word; box-sizing: border-box; }
+.lc-pyrun-hl code { font: inherit; background: transparent; padding: 0; color: inherit; display: block; will-change: transform; }
+.lc-pyrun-codewrap .lc-pyrun-code { position: relative; background: transparent !important; color: transparent !important; caret-color: #111; }
+.lc-pyrun-codewrap .lc-pyrun-code::selection { background: rgba(0, 102, 204, 0.18); color: transparent; }
+.lc-pyrun .token.keyword, .lc-pyrun .token.boolean, .lc-pyrun .token.null { color: #cf222e; font-weight: 500; }
+.lc-pyrun .token.string, .lc-pyrun .token.triple-quoted-string { color: #0a3069; }
+.lc-pyrun .token.number { color: #0550ae; }
+.lc-pyrun .token.comment { color: #6e7781; font-style: italic; }
+.lc-pyrun .token.function, .lc-pyrun .token.class-name, .lc-pyrun .token.builtin, .lc-pyrun .token.decorator { color: #8250df; }
+.lc-pyrun .token.operator, .lc-pyrun .token.punctuation { color: #24292f; }
 .lc-pyrun-gutter { position: relative; overflow: hidden; background: #f3f4f6; border-right: 1px solid #e8e8e8; user-select: none; min-width: 2.5em; }
 .lc-pyrun-gutter-inner { padding: 0.9em 0.5em 0.9em 0.6em; color: #aaa; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; text-align: right; white-space: pre; pointer-events: none; will-change: transform; }
 .lc-pyrun-bar { display: flex; align-items: center; gap: 0.6em; padding: 0.5em 0.9em; background: #f3f4f6; border-top: 1px solid #e0e0e0; }
@@ -290,6 +301,24 @@
     });
   }
 
+  var _prismLoading = null;
+  function loadPrism() {
+    if (window.Prism && window.Prism.languages && window.Prism.languages.python) return Promise.resolve();
+    if (_prismLoading) return _prismLoading;
+    function injectScript(src) {
+      return new Promise(function(resolve){
+        var s = document.createElement("script");
+        s.src = src;
+        s.onload = function(){ resolve(); };
+        s.onerror = function(){ resolve(); };
+        document.head.appendChild(s);
+      });
+    }
+    _prismLoading = injectScript("https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js")
+      .then(function(){ return injectScript("https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"); });
+    return _prismLoading;
+  }
+
   function attach(rootId, opts) {
     opts = opts || {};
     var ID = opts.id || rootId.replace(/^lc-pyrun-/, "");
@@ -351,6 +380,39 @@
       codeEl.addEventListener("input", updateGutter);
       codeEl.addEventListener("scroll", syncGutter);
     }
+
+    var hlPre = root.querySelector(".lc-pyrun-hl");
+    var hlCode = hlPre ? hlPre.querySelector("code") : null;
+    function syncHighlight() {
+      if (!hlCode) return;
+      var text = codeEl.value;
+      hlCode.textContent = text + (text.slice(-1) === "\n" ? " " : "");
+      if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
+        try { window.Prism.highlightElement(hlCode); } catch (e) {}
+      }
+      syncHlScroll();
+    }
+    function syncHlScroll() {
+      if (!hlCode) return;
+      hlCode.style.transform = "translate(" + (-codeEl.scrollLeft) + "px, " + (-codeEl.scrollTop) + "px)";
+    }
+    if (hlCode) {
+      syncHighlight();
+      loadPrism().then(syncHighlight);
+      codeEl.addEventListener("input", syncHighlight);
+      codeEl.addEventListener("scroll", syncHlScroll);
+    }
+
+    codeEl.addEventListener("keydown", function(e){
+      if (e.key !== "Tab") return;
+      e.preventDefault();
+      var start = codeEl.selectionStart, end = codeEl.selectionEnd;
+      var v = codeEl.value;
+      codeEl.value = v.substring(0, start) + "    " + v.substring(end);
+      codeEl.selectionStart = codeEl.selectionEnd = start + 4;
+      updateGutter();
+      syncHighlight();
+    });
 
     function loadMp() {
       if (mp) return Promise.resolve(mp);
@@ -518,7 +580,7 @@
     } else {
       html += '<div class="lc-pyrun-title">🐍 <span>MicroPython runner</span><span class="lc-pyrun-lang">python</span></div>';
     }
-    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false"></textarea></div>';
+    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-hl" aria-hidden="true"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false"></textarea></div></div>';
     html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-test">🧪 Test</button><button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
     html += '<pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>';
     html += '<div class="lc-pyrun-view" id="lc-pyrun-' + id + '-view"></div>';
@@ -1339,6 +1401,12 @@
     el.dataset.lcUpgraded = "1";
     var codeNode = el.querySelector("code");
     var raw = codeNode ? codeNode.textContent.replace(/\n+$/, "") : "";
+    var silent = el.hasAttribute("silent") && el.getAttribute("silent") !== "false";
+    if (silent) {
+      el.parentNode.removeChild(el);
+      runSilent(raw);
+      return;
+    }
     var code = raw;
     var initFromCode = "";
     var sepRe = /^#\s*-{3,}\s*$\n?/m;
@@ -1359,6 +1427,34 @@
     var runner = buildRunner(opts);
     el.parentNode.replaceChild(runner, el);
     attach("lc-pyrun-" + id, opts);
+  }
+
+  function runSilent(code) {
+    var id = "silent" + (++RUN_ID);
+    var view = document.createElement("div");
+    view.id = "lc-pyrun-" + id + "-view";
+    view.style.display = "none";
+    var bound = document.createElement("div");
+    bound.id = "lc-pyrun-" + id + "-bound";
+    bound.style.display = "none";
+    document.body.appendChild(view);
+    document.body.appendChild(bound);
+    var BOOTSTRAP = BOOTSTRAP_TPL.replace(/__ID__/g, id);
+    Promise.all([
+      import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs"),
+      loadJsYaml()
+    ])
+      .then(function(results){
+        return results[0].loadMicroPython({
+          stdout: function(){},
+          stderr: function(t){ if (window.console) console.warn("[lc silent stderr]", t); }
+        });
+      })
+      .then(function(mp){
+        try { mp.runPython(BOOTSTRAP); } catch (e) { if (window.console) console.warn("[lc silent bootstrap]", e.message || e); }
+        try { mp.runPython(code); } catch (e) { if (window.console) console.warn("[lc silent code]", e.message || e); }
+      })
+      .catch(function(e){ if (window.console) console.warn("[lc silent load]", e.message || e); });
   }
 
   function scan() {
