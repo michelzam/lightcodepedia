@@ -53,7 +53,18 @@ notes: null
 ```
 {: .form }
 
-Type-aware formatting: booleans as **✓ True** / **✗ False** (Python-style), numbers in green, `null` as italic em-dash, nested objects and lists pretty-printed as JSON. Attribute labels are auto-prettified — `weight_kg` becomes **Weight Kg**, `favorite_toys` becomes **Favorite Toys**.
+Type-aware rendering, one per type:
+
+| Type | Look | Editable in v1? |
+|---|---|---|
+| `string` | plain text | ✅ single-click to edit |
+| `number` | green number | ✅ single-click to edit (rejects non-numeric) |
+| `boolean` | checkbox + colored **True** / **False** label | ✅ click the checkbox to toggle |
+| `null` | italic em-dash `—` | ✅ click to enter a string |
+| `list` (array) | streamlit-style **pills** | ❌ read-only |
+| `dict` (object) | streamlit-style **selectbox** button with the dict's `__str__`-equivalent label (`name`/`title`/`label`/`id` fields are tried; otherwise truncated JSON) — hover for the full JSON | ❌ read-only |
+
+Attribute labels are auto-prettified — `weight_kg` becomes **Weight Kg**, `favorite_toys` becomes **Favorite Toys**.
 
 The title bar auto-picks `name` (then `title`, then `label`, then `id`) from the object — override with `title="..."`.
 
@@ -69,7 +80,7 @@ The title bar auto-picks `name` (then `title`, then `label`, then `id`) from the
 
 ## Editable form — `editable="true"`
 
-Single-click any value cell to edit. AG Grid picks the right editor based on the value's type — `agTextCellEditor` for strings, `agNumberCellEditor` for numbers, `agCheckboxCellEditor` for booleans. Edits update the underlying object **in memory** — refresh discards them.
+Single-click any primitive (string/number/null) value cell to edit. Booleans toggle directly via their checkbox — no edit-mode dance. Edits update the underlying object **in memory** — refresh discards them.
 
 ```yaml
 name: Lucky
@@ -80,7 +91,7 @@ adopted: true
 ```
 {: .form editable="true" id="edit-form-demo" }
 
-Numbers stay numeric (so the back-end value is `3`, not `"3"`). Booleans use AG Grid's checkbox editor — single-click the cell, click the checkbox to toggle, click away to commit. Nested objects and arrays stay read-only — those need richer editors, deferred.
+Numbers stay numeric — the editor is `agTextCellEditor` with a `valueParser` that converts to `Number()` on commit, rejecting non-numeric input by reverting to the old value. Booleans use a real interactive checkbox embedded in the renderer (not AG Grid's edit mode), so a single click toggles. Lists and dicts (rendered as pills and selectbox respectively) stay read-only — editing them needs richer UI, deferred.
 
 ### Combined with `bound=` — edit a row via the form
 
@@ -233,9 +244,9 @@ show.form(obj, title=None)
 
 ## Limitations of v1
 
-- **Single record only.** For lists, use `.datagrid`. The widgets pair naturally — datagrid as overview, form as detail.
-- **Nested objects / arrays** are pretty-printed as JSON and stay read-only in editable mode. Recursive subform rendering is doable later.
+- **Single record only.** For lists of records, use `.datagrid`. The widgets pair naturally — datagrid as overview, form as detail.
+- **Lists (pills) and dicts (selectbox) are read-only.** Editing them needs richer UI — a real multiselect with an options universe for lists, and either a nested subform or a selectbox with a known options list for dicts. Both deferred to v2.
 - **Edits are in-memory only.** Refresh discards them. No persistence layer yet.
-- **No validation hooks yet.** A number input accepts any number; a text input accepts any string. Ask if you want `pattern=` / `min=` / `required=`.
+- **No validation hooks yet.** A number input only rejects non-numeric input (via `valueParser`); strings accept anything. Ask if you want `pattern=` / `min=` / `required=`.
 
 {% include backtotop.md %}

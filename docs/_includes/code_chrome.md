@@ -85,6 +85,18 @@
 .lc-form-grid .ag-cell.lc-form-label-cell { color: #0066cc; font-weight: 600; background: #fafbfc; }
 .lc-form-grid .ag-cell.lc-form-label-cell:hover { background: #fafbfc !important; }
 .lc-form-grid .ag-row-hover .lc-form-label-cell { background: #fafbfc !important; }
+.lc-form-bool { display: flex; align-items: center; gap: 0.5em; height: 100%; }
+.lc-form-bool .lc-form-bool-cb { margin: 0; accent-color: #0066cc; cursor: pointer; }
+.lc-form-bool .lc-form-bool-cb:disabled { cursor: default; }
+.lc-form-bool .lc-form-bool-t { color: #2a7a2a; font-weight: 600; }
+.lc-form-bool .lc-form-bool-f { color: #b00; font-weight: 600; }
+.lc-form-null { color: #aaa; font-style: italic; }
+.lc-form-num { color: #0a5; }
+.lc-form-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; line-height: 1.2; padding: 4px 0; }
+.lc-form-pill { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 12px; background: #e7f1fe; color: #1756a9; font-size: 0.82em; border: 1px solid #c5dcf5; white-space: nowrap; }
+.lc-form-selectbox { display: inline-flex; align-items: center; gap: 0.5em; padding: 2px 10px 2px 12px; border: 1px solid #c5dcf5; background: #f5f9ff; border-radius: 4px; color: #1756a9; font-size: 0.88em; max-width: 100%; }
+.lc-form-selectbox-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lc-form-selectbox-arrow { color: #6892c4; font-size: 0.85em; }
 .lc-form-empty { padding: 0.9em 1em; color: #888; font-style: italic; font-size: 0.9em; }
 .lc-form-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 </style>
@@ -1005,46 +1017,103 @@
     if (typeof v === "boolean") return "boolean";
     if (typeof v === "number") return "number";
     if (typeof v === "string") return "string";
+    if (Array.isArray(v)) return "array";
     return "object";
   }
 
-  function formCellRenderer(params) {
-    var t = params.data._type;
-    var v = params.value;
-    if (t === "boolean") {
-      var bs = document.createElement("span");
-      bs.textContent = v ? "✓ True" : "✗ False";
-      bs.style.color = v ? "#2a7a2a" : "#b00";
-      bs.style.fontWeight = "600";
-      return bs;
-    }
-    if (t === "null" || v === null || v === undefined) {
-      var ns = document.createElement("span");
-      ns.textContent = "—";
-      ns.style.color = "#aaa";
-      ns.style.fontStyle = "italic";
-      return ns;
-    }
-    if (t === "object") {
-      var pre = document.createElement("pre");
-      pre.style.margin = "0";
-      pre.style.padding = "0";
-      pre.style.background = "transparent";
-      pre.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, monospace";
-      pre.style.fontSize = "0.85em";
-      pre.style.lineHeight = "1.35";
-      pre.style.whiteSpace = "pre";
-      try { pre.textContent = JSON.stringify(v, null, 2); }
-      catch (e) { pre.textContent = String(v); }
-      return pre;
-    }
-    if (t === "number") {
-      var nSpan = document.createElement("span");
-      nSpan.textContent = String(v);
-      nSpan.style.color = "#0a5";
-      return nSpan;
-    }
-    return String(v);
+  function stringifyObject(o) {
+    var label = (o && typeof o === "object" && !Array.isArray(o))
+      ? (o.name || o.title || o.label || o.id || "")
+      : "";
+    if (label) return String(label);
+    try {
+      var s = JSON.stringify(o);
+      if (s && s.length > 60) s = s.substring(0, 57) + "…";
+      return s || String(o);
+    } catch (e) { return String(o); }
+  }
+
+  function makeFormCellRenderer(opts) {
+    return function(params) {
+      var t = params.data._type;
+      var v = params.value;
+
+      if (t === "boolean") {
+        var w = document.createElement("div");
+        w.className = "lc-form-bool";
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !!v;
+        cb.disabled = !opts.editable;
+        cb.className = "lc-form-bool-cb";
+        var lab = document.createElement("span");
+        lab.textContent = v ? "True" : "False";
+        lab.className = v ? "lc-form-bool-t" : "lc-form-bool-f";
+        if (opts.editable) {
+          cb.addEventListener("click", function(e){ e.stopPropagation(); });
+          cb.addEventListener("change", function(){
+            params.node.setDataValue("value", cb.checked);
+          });
+        }
+        w.appendChild(cb);
+        w.appendChild(lab);
+        return w;
+      }
+
+      if (t === "null" || v === null || v === undefined) {
+        var ns = document.createElement("span");
+        ns.textContent = "—";
+        ns.className = "lc-form-null";
+        return ns;
+      }
+
+      if (t === "array") {
+        var pc = document.createElement("div");
+        pc.className = "lc-form-pills";
+        if (!v.length) {
+          var empty = document.createElement("span");
+          empty.className = "lc-form-null";
+          empty.textContent = "(empty)";
+          pc.appendChild(empty);
+          return pc;
+        }
+        v.forEach(function(item){
+          var pill = document.createElement("span");
+          pill.className = "lc-form-pill";
+          var label;
+          if (item === null || item === undefined) label = "—";
+          else if (typeof item === "object") label = stringifyObject(item);
+          else label = String(item);
+          pill.textContent = label;
+          pc.appendChild(pill);
+        });
+        return pc;
+      }
+
+      if (t === "object") {
+        var sb = document.createElement("div");
+        sb.className = "lc-form-selectbox";
+        var txt = document.createElement("span");
+        txt.className = "lc-form-selectbox-label";
+        txt.textContent = stringifyObject(v);
+        var arrow = document.createElement("span");
+        arrow.className = "lc-form-selectbox-arrow";
+        arrow.textContent = "▾";
+        sb.appendChild(txt);
+        sb.appendChild(arrow);
+        sb.title = (function(){ try { return JSON.stringify(v, null, 2); } catch (e) { return String(v); }})();
+        return sb;
+      }
+
+      if (t === "number") {
+        var nSpan = document.createElement("span");
+        nSpan.textContent = String(v);
+        nSpan.className = "lc-form-num";
+        return nSpan;
+      }
+
+      return String(v);
+    };
   }
 
   function renderFormBody(bodyEl, obj, opts) {
@@ -1077,6 +1146,8 @@
     gridDiv.className = "lc-form-grid ag-theme-alpine";
     bodyEl.appendChild(gridDiv);
 
+    var cellRenderer = makeFormCellRenderer(opts);
+
     loadAgGrid().then(function(){
       var columnDefs = [
         {
@@ -1097,16 +1168,27 @@
           sortable: false,
           filter: false,
           suppressMovable: true,
+          // Only primitives (string/number/null) go through the text editor.
+          // Booleans are handled by the renderer's interactive checkbox.
+          // Arrays and objects are read-only in v1.
           editable: function(params){
-            return !!opts.editable && params.data._type !== "object";
-          },
-          cellEditorSelector: function(params){
+            if (!opts.editable) return false;
             var t = params.data._type;
-            if (t === "number") return { component: "agNumberCellEditor" };
-            if (t === "boolean") return { component: "agCheckboxCellEditor" };
-            return { component: "agTextCellEditor" };
+            return t === "string" || t === "number" || t === "null";
           },
-          cellRenderer: formCellRenderer
+          cellEditor: "agTextCellEditor",
+          // Coerce string -> number for number cells (agTextCellEditor always returns string)
+          valueParser: function(params) {
+            var t = params.data._type;
+            if (t === "number") {
+              if (params.newValue === "" || params.newValue === null) return null;
+              var n = Number(params.newValue);
+              if (isNaN(n)) return params.oldValue;
+              return n;
+            }
+            return params.newValue;
+          },
+          cellRenderer: cellRenderer
         }
       ];
 
@@ -1122,28 +1204,21 @@
         animateRows: false,
         defaultColDef: { sortable: false, filter: false, suppressHeaderMenuButton: true, resizable: true },
         getRowHeight: function(params) {
-          if (params.data._type === "object") {
-            try {
-              var s = JSON.stringify(params.data.value, null, 2);
-              var lines = (s.match(/\n/g) || []).length + 1;
-              return Math.max(28, lines * 18 + 12);
-            } catch (e) { return 28; }
+          var t = params.data._type;
+          if (t === "array") {
+            var n = (params.data.value || []).length;
+            if (n <= 4) return null; // default
+            if (n <= 10) return 56;
+            return 80;
           }
           return null;
         },
         onCellValueChanged: function(event) {
           var k = event.data._key;
           var nv = event.newValue;
-          if (event.data._type === "number" && typeof nv === "string" && nv !== "") {
-            var n = Number(nv);
-            if (!isNaN(n)) nv = n;
-          }
           obj[k] = nv;
-          if (typeof nv === "boolean") event.data._type = "boolean";
-          else if (typeof nv === "number") event.data._type = "number";
-          else if (nv === null || nv === undefined) event.data._type = "null";
-          else event.data._type = "string";
-          event.api.refreshCells({ rowNodes: [event.node], columns: ["value"], force: true });
+          // Re-derive type from the new value
+          event.data._type = typeOfValue(nv);
           if (opts.onChange) opts.onChange(obj, k, nv);
         }
       };
