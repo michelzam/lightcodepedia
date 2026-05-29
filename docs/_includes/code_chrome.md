@@ -92,9 +92,10 @@
 .lc-form-bool .lc-form-bool-f { color: #b00; font-weight: 600; }
 .lc-form-null { color: #aaa; font-style: italic; }
 .lc-form-num { color: #0a5; }
+.lc-form-cellbox { display: flex; align-items: center; height: 100%; overflow: hidden; }
 .lc-form-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; line-height: 1.2; padding: 4px 0; }
-.lc-form-pill { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 12px; background: #e7f1fe; color: #1756a9; font-size: 0.82em; border: 1px solid #c5dcf5; white-space: nowrap; }
-.lc-form-selectbox { display: inline-flex; align-items: center; gap: 0.5em; padding: 2px 10px 2px 12px; border: 1px solid #c5dcf5; background: #f5f9ff; border-radius: 4px; color: #1756a9; font-size: 0.88em; max-width: 100%; }
+.lc-form-pill { display: inline-flex; align-items: center; padding: 1px 9px; border-radius: 12px; background: #e7f1fe; color: #1756a9; font-size: 0.82em; border: 1px solid #c5dcf5; white-space: nowrap; line-height: 1.4; }
+.lc-form-selectbox { display: inline-flex; align-items: center; gap: 0.4em; padding: 0 8px 0 10px; border: 1px solid #c5dcf5; background: #f5f9ff; border-radius: 4px; color: #1756a9; font-size: 0.88em; line-height: 1.7; max-width: 100%; box-sizing: border-box; }
 .lc-form-selectbox-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lc-form-selectbox-arrow { color: #6892c4; font-size: 0.85em; }
 .lc-form-empty { padding: 0.9em 1em; color: #888; font-style: italic; font-size: 0.9em; }
@@ -1068,6 +1069,8 @@
       }
 
       if (t === "array") {
+        var aBox = document.createElement("div");
+        aBox.className = "lc-form-cellbox";
         var pc = document.createElement("div");
         pc.className = "lc-form-pills";
         if (!v.length) {
@@ -1075,23 +1078,26 @@
           empty.className = "lc-form-null";
           empty.textContent = "(empty)";
           pc.appendChild(empty);
-          return pc;
+        } else {
+          v.forEach(function(item){
+            var pill = document.createElement("span");
+            pill.className = "lc-form-pill";
+            var label;
+            if (item === null || item === undefined) label = "—";
+            else if (typeof item === "object") label = stringifyObject(item);
+            else label = String(item);
+            pill.textContent = label;
+            pc.appendChild(pill);
+          });
         }
-        v.forEach(function(item){
-          var pill = document.createElement("span");
-          pill.className = "lc-form-pill";
-          var label;
-          if (item === null || item === undefined) label = "—";
-          else if (typeof item === "object") label = stringifyObject(item);
-          else label = String(item);
-          pill.textContent = label;
-          pc.appendChild(pill);
-        });
-        return pc;
+        aBox.appendChild(pc);
+        return aBox;
       }
 
       if (t === "object") {
-        var sb = document.createElement("div");
+        var oBox = document.createElement("div");
+        oBox.className = "lc-form-cellbox";
+        var sb = document.createElement("span");
         sb.className = "lc-form-selectbox";
         var txt = document.createElement("span");
         txt.className = "lc-form-selectbox-label";
@@ -1101,8 +1107,9 @@
         arrow.textContent = "▾";
         sb.appendChild(txt);
         sb.appendChild(arrow);
-        sb.title = (function(){ try { return JSON.stringify(v); } catch (e) { return String(v); }})();
-        return sb;
+        sb.title = (function(){ try { return JSON.stringify(v, null, 2); } catch (e) { return String(v); }})();
+        oBox.appendChild(sb);
+        return oBox;
       }
 
       if (t === "number") {
