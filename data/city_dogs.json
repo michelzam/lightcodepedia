@@ -1,0 +1,15 @@
+[
+  {"name": "Hachi", "breed": "Akita", "age": 4, "city": "Tokyo"},
+  {"name": "Sakura", "breed": "Shiba Inu", "age": 2, "city": "Tokyo"},
+  {"name": "Yuki", "breed": "Hokkaido", "age": 6, "city": "Tokyo"},
+  {"name": "Raj", "breed": "Pariah", "age": 3, "city": "Delhi"},
+  {"name": "Priya", "breed": "Mudhol Hound", "age": 5, "city": "Delhi"},
+  {"name": "Bo", "breed": "Chow Chow", "age": 6, "city": "Shanghai"},
+  {"name": "Mei", "breed": "Pekingese", "age": 1, "city": "Shanghai"},
+  {"name": "Lin", "breed": "Shar Pei", "age": 3, "city": "Shanghai"},
+  {"name": "Tito", "breed": "Mutt", "age": 4, "city": "São Paulo"},
+  {"name": "Bella", "breed": "Pinscher", "age": 2, "city": "São Paulo"},
+  {"name": "Coco", "breed": "Xolo", "age": 3, "city": "Mexico City"},
+  {"name": "Diego", "breed": "Chihuahua", "age": 5, "city": "Mexico City"},
+  {"name": "Frida", "breed": "Mutt", "age": 7, "city": "Mexico City"}
+]

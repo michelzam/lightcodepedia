@@ -38,4 +38,5 @@ Mode decided at runtime (mirrors datagrid_file.md):
      data-cdn="{{ _cdn }}"
      data-canonical="{{ _canonical }}"
      data-format="{{ _format }}"
+     data-editable="{{ include.editable | default: 'false' }}"
      data-title="{{ _label }}"></div>

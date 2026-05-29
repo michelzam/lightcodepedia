@@ -53,7 +53,7 @@ notes: null
 ```
 {: .form }
 
-Type-aware formatting: booleans as **✓ true** / **✗ false**, numbers in green, `null` as italic em-dash, nested objects and lists pretty-printed as JSON.
+Type-aware formatting: booleans as **✓ True** / **✗ False** (Python-style), numbers in green, `null` as italic em-dash, nested objects and lists pretty-printed as JSON. Attribute labels are auto-prettified — `weight_kg` becomes **Weight Kg**, `favorite_toys` becomes **Favorite Toys**.
 
 The title bar auto-picks `name` (then `title`, then `label`, then `id`) from the object — override with `title="..."`.
 
@@ -65,6 +65,48 @@ The title bar auto-picks `name` (then `title`, then `label`, then `id`) from the
 | `title="..."` | Title bar (overrides the auto-inferred `name`/`title`/`label`/`id`) |
 | `format="yaml"` | `yaml` (default) or `json` |
 | `bound="<grid-id>"` | Master/detail — see below |
+| `editable="true"` | Each primitive field becomes an input — see below |
+
+## Editable form — `editable="true"`
+
+Each string, number, or boolean becomes an input (text / numeric / checkbox). Edits update the underlying object **in memory** — refresh discards them.
+
+```yaml
+name: Lucky
+age: 3
+breed: Beagle
+weight_kg: 11.2
+adopted: true
+```
+{: .form editable="true" id="edit-form-demo" }
+
+The boolean shows a checkbox + text label ("True" / "False"). The number stays numeric (so the back-end value is `3`, not `"3"`). Nested objects and arrays stay read-only — those need richer editors, deferred.
+
+### Combined with `bound=` — edit a row via the form
+
+When `editable="true"` AND `bound="<grid-id>"`, edits flow back to the grid: the row repaints with the new value.
+
+```yaml
+- name: Lucky
+  age: 3
+  breed: Beagle
+  adopted: true
+- name: Wanda
+  age: 5
+  breed: Poodle
+  adopted: true
+- name: Max
+  age: 2
+  breed: Husky
+  adopted: false
+```
+{: .datagrid id="edit-md-dogs" height="180" }
+
+```yaml
+```
+{: .form bound="edit-md-dogs" editable="true" }
+
+Click a dog, edit any field in the form — the grid updates in place. Conversely, if the grid is also editable (`editable="true"` on the datagrid), double-click a cell and watch the form repaint with the new value.
 
 ## Master/detail — `bound="<grid-id>"`
 
@@ -191,8 +233,9 @@ show.form(obj, title=None)
 
 ## Limitations of v1
 
-- **Read-only.** Editing is on the wishlist — would land as `editable="true"`, with type-inferred inputs and two-way binding back to the underlying object.
 - **Single record only.** For lists, use `.datagrid`. The widgets pair naturally — datagrid as overview, form as detail.
-- **Nested objects / arrays** are pretty-printed as JSON. Recursive subform rendering is doable later if you want it.
+- **Nested objects / arrays** are pretty-printed as JSON and stay read-only in editable mode. Recursive subform rendering is doable later.
+- **Edits are in-memory only.** Refresh discards them. No persistence layer yet.
+- **No validation hooks yet.** A number input accepts any number; a text input accepts any string. Ask if you want `pattern=` / `min=` / `required=`.
 
 {% include backtotop.md %}

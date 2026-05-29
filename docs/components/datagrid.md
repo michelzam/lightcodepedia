@@ -44,10 +44,15 @@ Click a column header to sort. Hover the **☰** icon to filter. Drag the right 
 
 | Attribute | Description |
 |---|---|
-| `id="..."` | Required if you have multiple grids on the same page |
+| `id="..."` | Required if you have multiple grids on the same page (also required to bind a form or a detail grid) |
 | `title="..."` | Optional title bar above the grid |
 | `height="400"` | Grid height in pixels (default 400) |
 | `format="yaml"` | `yaml` (default), `json`, or `csv` |
+| `editable="true"` | Cells editable on double-click — see below |
+| `detail-of="<id>"` | Filter this grid by selection in another grid — see below |
+| `filter="<local>=<master>"` | Required with `detail-of`. Filter rule: row in this grid matches the master row's field. |
+
+Headers are auto-prettified — `weight_kg` becomes **Weight Kg**. Booleans render as **True** / **False** (Python style).
 
 ## JSON format
 
@@ -117,6 +122,88 @@ A CSV example from the repo:
 
 {% include datagrid_file.md path="data/dogs.csv" title="Shelter dogs" height="300" %}
 
+## Editable cells — `editable="true"`
+
+Double-click a cell to edit. Enter commits, Esc cancels. Edits update the underlying row in memory; any [📝 Form](/components/form) bound to this grid via `bound=` repaints with the new value.
+
+```yaml
+- name: Lucky
+  age: 3
+  breed: Beagle
+  adopted: true
+- name: Wanda
+  age: 5
+  breed: Poodle
+  adopted: true
+- name: Max
+  age: 2
+  breed: Husky
+  adopted: false
+```
+{: .datagrid id="editable-dogs" editable="true" height="200" }
+
+Numbers stay numeric (sorting is correct), booleans stay boolean. Changes are local to the browser session — refresh discards them.
+
+## Grid-to-grid master/detail — `detail-of=` + `filter=`
+
+A detail grid filters its rows by the row currently selected in a master grid. The relationship is **cities ➜ dogs**: click a city, see only the dogs in that city.
+
+{% raw %}
+````markdown
+```json
+[
+  {"city": "Tokyo", "country": "Japan", "population": 37400068},
+  {"city": "Delhi", "country": "India", "population": 28514000},
+  {"city": "Shanghai", "country": "China", "population": 25582000}
+]
+```
+{: .datagrid id="md-cities" format="json" height="180" }
+
+```json
+[
+  {"name": "Hachi", "breed": "Akita", "city": "Tokyo"},
+  {"name": "Sakura", "breed": "Shiba Inu", "city": "Tokyo"},
+  {"name": "Raj", "breed": "Pariah", "city": "Delhi"}
+]
+```
+{: .datagrid id="md-dogs" format="json" detail-of="md-cities" filter="city=city" height="200" }
+````
+{% endraw %}
+
+Renders to:
+
+```json
+[
+  {"city": "Tokyo", "country": "Japan", "population": 37400068},
+  {"city": "Delhi", "country": "India", "population": 28514000},
+  {"city": "Shanghai", "country": "China", "population": 25582000},
+  {"city": "São Paulo", "country": "Brazil", "population": 21650000},
+  {"city": "Mexico City", "country": "Mexico", "population": 21581000}
+]
+```
+{: .datagrid id="md-cities" format="json" height="180" }
+
+```json
+[
+  {"name": "Hachi", "breed": "Akita", "age": 4, "city": "Tokyo"},
+  {"name": "Sakura", "breed": "Shiba Inu", "age": 2, "city": "Tokyo"},
+  {"name": "Raj", "breed": "Pariah", "age": 3, "city": "Delhi"},
+  {"name": "Priya", "breed": "Mudhol Hound", "age": 5, "city": "Delhi"},
+  {"name": "Bo", "breed": "Chow Chow", "age": 6, "city": "Shanghai"},
+  {"name": "Mei", "breed": "Pekingese", "age": 1, "city": "Shanghai"},
+  {"name": "Tito", "breed": "Mutt", "age": 4, "city": "São Paulo"},
+  {"name": "Coco", "breed": "Xolo", "age": 3, "city": "Mexico City"},
+  {"name": "Diego", "breed": "Chihuahua", "age": 5, "city": "Mexico City"}
+]
+```
+{: .datagrid id="md-dogs" format="json" detail-of="md-cities" filter="city=city" height="240" }
+
+Click a city above. The dogs grid below filters to that city's dogs. Deselect (click again) and the full list returns.
+
+**The filter syntax:** `filter="<local-field>=<master-field>"`. So `filter="city=city"` means "show rows where this grid's `city` column equals the selected master row's `city` column." If you have a `city_id` foreign key linking to a master with an `id` column, you'd write `filter="city_id=id"`.
+
+You can chain forms onto this too — bind a form to `md-dogs` and you get a three-level master/detail/detail view.
+
 ## From inside a Python runner — `show.grid(rows)`
 
 Every runner exposes a `show.grid(rows)` helper alongside `show()`. Pass a list of dicts (or objects with `__dict__`) and a full-width datagrid appears in the cards area below the output.
@@ -183,6 +270,7 @@ show.grid(rows, title=None, height=300)
 - Data must be an **array of objects** (keys become columns).
 - All data loads at once; no server-side pagination. Works smoothly up to ~10k rows in-browser.
 - Column types inferred by AG Grid from the values; no explicit per-column overrides yet.
-- Read-only — no in-cell editing, no export buttons. Ask if you want one.
+- Editable mode is in-memory only — refresh discards changes. No persistence layer yet.
+- No CSV/Excel export buttons yet. Ask if you want them.
 
 {% include backtotop.md %}

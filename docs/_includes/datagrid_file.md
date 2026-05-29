@@ -35,10 +35,15 @@ Mode decided at runtime (mirrors code_file.md):
 {% assign _format = include.format | default: _format_default %}
 {% assign _height = include.height | default: 400 %}
 
+{% assign _detail_of = include.detail_of | default: "" %}
+
 <div class="lc-datagrid-src"
      data-raw="{{ _raw }}"
      data-cdn="{{ _cdn }}"
      data-canonical="{{ _canonical }}"
      data-format="{{ _format }}"
      data-height="{{ _height }}"
+     data-editable="{{ include.editable | default: 'false' }}"
+     data-detail-of="{{ _detail_of }}"
+     data-filter="{{ include.filter | default: '' }}"
      data-title="{{ _label }}"></div>
