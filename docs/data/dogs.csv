@@ -1,0 +1,9 @@
+name,age,breed,weight_kg,adopted
+Lucky,3,Beagle,11.2,true
+Wanda,5,Poodle,7.8,true
+Max,2,Husky,24.5,false
+Bella,4,Labrador,28.0,true
+Charlie,1,Pug,8.3,false
+Daisy,6,Border Collie,19.7,true
+Rocky,3,Boxer,30.1,false
+Luna,2,Dachshund,9.5,true
