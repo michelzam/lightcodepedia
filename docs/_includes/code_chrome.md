@@ -91,6 +91,10 @@
 .lc-form-row .lc-form-val.lc-form-bool-false { color: #b00; font-weight: 600; }
 .lc-form-row .lc-form-val.lc-form-null { color: #aaa; font-style: italic; }
 .lc-form-row .lc-form-val pre { margin: 0; background: #f6f8fa; padding: 0.4em 0.7em; border-radius: 4px; font-size: 0.82em; overflow-x: auto; }
+.lc-form-row .lc-form-val input.lc-form-input { width: 100%; box-sizing: border-box; border: 1px solid #d0d0d0; border-radius: 4px; padding: 0.25em 0.55em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; background: white; color: #222; }
+.lc-form-row .lc-form-val input.lc-form-input:focus { border-color: #0066cc; outline: 2px solid rgba(0,102,204,0.15); outline-offset: 0; }
+.lc-form-row .lc-form-val label.lc-form-bool-input { display: inline-flex; align-items: center; gap: 0.5em; cursor: pointer; }
+.lc-form-row .lc-form-val label.lc-form-bool-input input[type="checkbox"] { accent-color: #0066cc; cursor: pointer; }
 .lc-form-empty { padding: 0.9em 1em; color: #888; font-style: italic; font-size: 0.9em; }
 .lc-form-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 </style>
@@ -103,6 +107,7 @@
   window.lcMasterDetail = window.lcMasterDetail || {
     _subs: {},
     _last: {},
+    _apis: {},
     subscribe: function(gridId, cb) {
       if (!gridId) return;
       (this._subs[gridId] = this._subs[gridId] || []).push(cb);
@@ -114,6 +119,14 @@
       if (!gridId) return;
       this._last[gridId] = row;
       (this._subs[gridId] || []).forEach(function(cb){ try { cb(row); } catch (e) {} });
+    },
+    registerGrid: function(gridId, api) {
+      if (!gridId) return;
+      this._apis[gridId] = api;
+    },
+    refreshGrid: function(gridId) {
+      var api = this._apis[gridId];
+      if (api) api.refreshCells({ force: true });
     }
   };
 
@@ -772,6 +785,14 @@
     return rows;
   }
 
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function prettifyKey(k) {
+    return String(k).replace(/_/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+  }
+
   function inferColumns(rows) {
     var seen = {}, cols = [];
     for (var r = 0; r < rows.length; r++) {
@@ -780,15 +801,11 @@
       for (var k in row) {
         if (Object.prototype.hasOwnProperty.call(row, k) && !seen[k]) {
           seen[k] = true;
-          cols.push({ field: k });
+          cols.push({ field: k, headerName: prettifyKey(k) });
         }
       }
     }
     return cols;
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
   function buildDatagridWrapper(opts) {
@@ -817,7 +834,8 @@
     });
   }
 
-  function renderGridInto(wrapper, dataPromise, gridId) {
+  function renderGridInto(wrapper, dataPromise, gridId, opts) {
+    opts = opts || {};
     var gridEl = wrapper.querySelector(".lc-datagrid-grid");
     var statusEl = wrapper.querySelector(".lc-datagrid-status");
     function showError(msg) {
@@ -843,20 +861,66 @@
       }
       if (statusEl && statusEl.parentNode) statusEl.remove();
       gridEl.style.display = "";
-      window.agGrid.createGrid(gridEl, {
+      var gridOptions = {
         columnDefs: cols,
         rowData: data,
-        defaultColDef: { sortable: true, filter: true, resizable: true, flex: 1, minWidth: 80 },
+        defaultColDef: {
+          sortable: true, filter: true, resizable: true, flex: 1, minWidth: 80,
+          editable: !!opts.editable,
+          valueFormatter: function(params){
+            if (typeof params.value === "boolean") return params.value ? "True" : "False";
+            return params.value;
+          }
+        },
         animateRows: true,
         rowSelection: "single",
         onSelectionChanged: function(event) {
           var rows = event.api.getSelectedRows();
           window.lcMasterDetail.publish(gridId, rows[0] || null);
         }
-      });
+      };
+      if (opts.editable) {
+        gridOptions.onCellValueChanged = function(event) {
+          // only republish to bound forms if the edited row is the selected row
+          var selected = event.api.getSelectedRows();
+          if (selected.length && selected[0] === event.data) {
+            window.lcMasterDetail.publish(gridId, event.data);
+          }
+        };
+      }
+      var api = window.agGrid.createGrid(gridEl, gridOptions);
+      window.lcMasterDetail.registerGrid(gridId, api);
+
+      // grid-to-grid master/detail: detail-of="<master-id>" filter="<local>=<master>"
+      if (opts.detailOf && opts.filterExpr) {
+        var m = opts.filterExpr.match(/^\s*([\w-]+)\s*=\s*([\w-]+)\s*$/);
+        if (m) {
+          var localKey = m[1];
+          var masterKey = m[2];
+          var fullData = data.slice();
+          window.lcMasterDetail.subscribe(opts.detailOf, function(masterRow){
+            if (!masterRow) {
+              api.setGridOption("rowData", fullData);
+            } else {
+              var filtered = fullData.filter(function(r){
+                return r[localKey] === masterRow[masterKey];
+              });
+              api.setGridOption("rowData", filtered);
+            }
+          });
+        }
+      }
     }).catch(function(e){
       showError("Datagrid error: " + (e.message || String(e)));
     });
+  }
+
+  function readDatagridOpts(el, prefix) {
+    return {
+      editable: el.getAttribute(prefix + "editable") === "true",
+      detailOf: el.getAttribute(prefix + "detail-of") || "",
+      filterExpr: el.getAttribute(prefix + "filter") || ""
+    };
   }
 
   var DG_ID = 0;
@@ -869,12 +933,13 @@
     var format = (el.getAttribute("format") || "yaml").toLowerCase();
     var title = el.getAttribute("title") || "";
     var id = el.id || ("dg" + (++DG_ID));
+    var opts = readDatagridOpts(el, "");
     var wrapper = buildDatagridWrapper({ id: id, title: title, format: format, height: height });
     el.parentNode.replaceChild(wrapper, el);
     var dataPromise;
     try { dataPromise = parseDatagridText(raw, format); }
     catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
-    renderGridInto(wrapper, dataPromise, id);
+    renderGridInto(wrapper, dataPromise, id, opts);
   }
 
   function upgradeDatagridFile(el) {
@@ -889,12 +954,13 @@
     var useCdn = (canonical && location.hostname === canonical) || location.search.indexOf("cdn=1") >= 0;
     var url = useCdn ? cdn : raw;
     var id = el.id || ("dg" + (++DG_ID));
+    var opts = readDatagridOpts(el, "data-");
     var wrapper = buildDatagridWrapper({ id: id, title: title, format: format, height: height, mode: useCdn ? "cdn" : "live" });
     el.parentNode.replaceChild(wrapper, el);
     var dataPromise = fetch(url)
       .then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + url); return r.text(); })
       .then(function(text){ return parseDatagridText(text, format); });
-    renderGridInto(wrapper, dataPromise, id);
+    renderGridInto(wrapper, dataPromise, id, opts);
   }
 
   // Called from Python runners: show.grid(rows)
@@ -944,7 +1010,48 @@
     return obj.name || obj.title || obj.label || obj.id || "";
   }
 
-  function renderFormBody(bodyEl, obj) {
+  function makeFormInput(v, onChange) {
+    if (typeof v === "boolean") {
+      var label = document.createElement("label");
+      label.className = "lc-form-bool-input";
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = v;
+      var text = document.createElement("span");
+      text.textContent = v ? "True" : "False";
+      text.className = v ? "lc-form-bool-true" : "lc-form-bool-false";
+      cb.addEventListener("change", function(){
+        var nv = cb.checked;
+        text.textContent = nv ? "True" : "False";
+        text.className = nv ? "lc-form-bool-true" : "lc-form-bool-false";
+        onChange(nv);
+      });
+      label.appendChild(cb);
+      label.appendChild(text);
+      return label;
+    }
+    var input = document.createElement("input");
+    input.className = "lc-form-input";
+    if (typeof v === "number") {
+      input.type = "number";
+      input.step = "any";
+      input.value = v;
+      input.addEventListener("input", function(){
+        if (input.value === "") return;
+        var n = Number(input.value);
+        if (!isNaN(n)) onChange(n);
+      });
+    } else {
+      input.type = "text";
+      input.value = v === null || v === undefined ? "" : String(v);
+      if (v === null) input.placeholder = "(null)";
+      input.addEventListener("input", function(){ onChange(input.value); });
+    }
+    return input;
+  }
+
+  function renderFormBody(bodyEl, obj, opts) {
+    opts = opts || {};
     bodyEl.innerHTML = "";
     if (obj === null || obj === undefined) {
       bodyEl.innerHTML = '<div class="lc-form-empty">(no data)</div>';
@@ -965,15 +1072,25 @@
       row.className = "lc-form-row";
       var keyEl = document.createElement("div");
       keyEl.className = "lc-form-key";
-      keyEl.textContent = k;
+      keyEl.textContent = prettifyKey(k);
       var valEl = document.createElement("div");
       valEl.className = "lc-form-val";
-      if (v === null || v === undefined) {
+
+      var isPrimitive = v === null || v === undefined ||
+        typeof v === "string" || typeof v === "number" || typeof v === "boolean";
+
+      if (opts.editable && isPrimitive) {
+        var input = makeFormInput(v, function(newVal){
+          obj[k] = newVal;
+          if (opts.onChange) opts.onChange(obj, k, newVal);
+        });
+        valEl.appendChild(input);
+      } else if (v === null || v === undefined) {
         valEl.classList.add("lc-form-null");
         valEl.textContent = "—";
       } else if (typeof v === "boolean") {
         valEl.classList.add(v ? "lc-form-bool-true" : "lc-form-bool-false");
-        valEl.textContent = v ? "✓ true" : "✗ false";
+        valEl.textContent = v ? "✓ True" : "✗ False";
       } else if (typeof v === "number") {
         valEl.classList.add("lc-form-num");
         valEl.textContent = String(v);
@@ -1000,6 +1117,7 @@
     var format = (el.getAttribute("format") || "yaml").toLowerCase();
     var title = el.getAttribute("title") || "";
     var bound = el.getAttribute("bound") || "";
+    var editable = el.getAttribute("editable") === "true";
     var id = el.id || ("frm" + (++FORM_ID));
 
     var wrapper = buildFormWrapper({ id: id, title: title || "Form", format: bound ? "" : format });
@@ -1014,7 +1132,10 @@
           setFormTitle(wrapper, title || "Form");
           return;
         }
-        renderFormBody(body, row);
+        renderFormBody(body, row, {
+          editable: editable,
+          onChange: function(){ window.lcMasterDetail.refreshGrid(bound); }
+        });
         setFormTitle(wrapper, title || inferFormTitle(row) || "Form");
       });
       return;
@@ -1028,7 +1149,7 @@
     try { dataPromise = parseDatagridText(raw, format); }
     catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
     dataPromise.then(function(obj){
-      renderFormBody(body, obj);
+      renderFormBody(body, obj, { editable: editable });
       if (!title) setFormTitle(wrapper, inferFormTitle(obj) || "Form");
     }).catch(function(e){
       body.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>';
@@ -1043,6 +1164,7 @@
     var canonical = el.getAttribute("data-canonical") || "";
     var format = (el.getAttribute("data-format") || "yaml").toLowerCase();
     var title = el.getAttribute("data-title") || "";
+    var editable = el.getAttribute("data-editable") === "true";
     var useCdn = (canonical && location.hostname === canonical) || location.search.indexOf("cdn=1") >= 0;
     var url = useCdn ? cdn : raw;
     var id = el.id || ("frm" + (++FORM_ID));
@@ -1054,7 +1176,7 @@
       .then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + url); return r.text(); })
       .then(function(text){ return parseDatagridText(text, format); })
       .then(function(obj){
-        renderFormBody(body, obj);
+        renderFormBody(body, obj, { editable: editable });
         if (!title) setFormTitle(wrapper, inferFormTitle(obj) || "Form");
       })
       .catch(function(e){
