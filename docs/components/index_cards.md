@@ -62,3 +62,8 @@ Show YAML, Python, JSON, … with a title bar, or live-fetch from a real file in
 Live Python editor + runner via `{: .run }` — MicroPython compiled to WebAssembly, fully in-browser.
 
 [Open →](run)
+
+### 📊 Datagrid
+Sortable, filterable, resizable tables via `{: .datagrid }` — AG Grid Community, YAML/JSON/CSV.
+
+[Open →](datagrid)

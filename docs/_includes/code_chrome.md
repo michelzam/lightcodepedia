@@ -69,6 +69,13 @@
 .lc-pyrepl-marker { color: #6aa84f; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; font-weight: bold; user-select: none; }
 .lc-pyrepl-input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; padding: 0; }
 .lc-pyrepl-input:disabled { color: #666; }
+
+.lc-datagrid { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: white; }
+.lc-datagrid-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
+.lc-datagrid-title .lc-datagrid-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.05em; }
+.lc-datagrid-grid { width: 100%; }
+.lc-datagrid-status { padding: 0.7em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #666; font-style: italic; }
+.lc-datagrid-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 </style>
 <script>
 (function(){
@@ -641,6 +648,162 @@
     wrap.appendChild(el);
   }
 
+  var _agGridLoading = null;
+  function loadAgGrid() {
+    if (window.agGrid && window.agGrid.createGrid) return Promise.resolve();
+    if (_agGridLoading) return _agGridLoading;
+    var addCss = function(href) {
+      var l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.href = href;
+      document.head.appendChild(l);
+    };
+    addCss("https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-grid.css");
+    addCss("https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-theme-alpine.css");
+    _agGridLoading = new Promise(function(resolve, reject){
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/ag-grid-community@31/dist/ag-grid-community.min.js";
+      s.onload = function(){
+        if (window.agGrid && window.agGrid.createGrid) resolve();
+        else reject(new Error("AG Grid loaded but global missing"));
+      };
+      s.onerror = function(){ reject(new Error("Failed to load AG Grid from CDN")); };
+      document.head.appendChild(s);
+    });
+    return _agGridLoading;
+  }
+
+  function parseCsv(text) {
+    var lines = [], cur = [], field = "", inQuote = false, i = 0;
+    while (i < text.length) {
+      var c = text.charAt(i);
+      if (inQuote) {
+        if (c === '"') {
+          if (text.charAt(i + 1) === '"') { field += '"'; i += 2; continue; }
+          inQuote = false; i++; continue;
+        }
+        field += c; i++; continue;
+      }
+      if (c === '"') { inQuote = true; i++; continue; }
+      if (c === ",") { cur.push(field); field = ""; i++; continue; }
+      if (c === "\n" || c === "\r") {
+        cur.push(field); field = "";
+        if (!(cur.length === 1 && cur[0] === "")) lines.push(cur);
+        cur = [];
+        if (c === "\r" && text.charAt(i + 1) === "\n") i++;
+        i++; continue;
+      }
+      field += c; i++;
+    }
+    if (field !== "" || cur.length > 0) { cur.push(field); lines.push(cur); }
+    if (lines.length < 1) return [];
+    var headers = lines[0];
+    var rows = [];
+    for (var r = 1; r < lines.length; r++) {
+      var row = {};
+      for (var h = 0; h < headers.length; h++) {
+        var v = lines[r][h];
+        if (v === undefined) v = "";
+        if (v !== "" && !isNaN(Number(v)) && /^-?\d+(\.\d+)?$/.test(v)) v = Number(v);
+        row[headers[h]] = v;
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function inferColumns(rows) {
+    var seen = {}, cols = [];
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      if (typeof row !== "object" || row === null) continue;
+      for (var k in row) {
+        if (Object.prototype.hasOwnProperty.call(row, k) && !seen[k]) {
+          seen[k] = true;
+          cols.push({ field: k });
+        }
+      }
+    }
+    return cols;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  var DG_ID = 0;
+  function upgradeDatagrid(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var codeNode = el.querySelector("code");
+    var raw = codeNode ? codeNode.textContent : "";
+    var height = parseInt(el.getAttribute("height"), 10) || 400;
+    var format = (el.getAttribute("format") || "yaml").toLowerCase();
+    var title = el.getAttribute("title") || "";
+    var id = el.id || ("dg" + (++DG_ID));
+
+    var div = document.createElement("div");
+    div.className = "lc-datagrid";
+    div.id = "lc-datagrid-" + id;
+    var html = "";
+    if (title) {
+      html += '<div class="lc-datagrid-title">📊 <span>' + escapeHtml(title) + '</span><span class="lc-datagrid-lang">' + escapeHtml(format) + '</span></div>';
+    }
+    html += '<div class="lc-datagrid-status">loading grid…</div>';
+    html += '<div class="lc-datagrid-grid ag-theme-alpine" style="height:' + height + 'px; display:none;"></div>';
+    div.innerHTML = html;
+    el.parentNode.replaceChild(div, el);
+
+    var gridEl = div.querySelector(".lc-datagrid-grid");
+    var statusEl = div.querySelector(".lc-datagrid-status");
+
+    function showError(msg) {
+      statusEl.outerHTML = '<div class="lc-datagrid-err">' + escapeHtml(msg) + '</div>';
+      gridEl.style.display = "none";
+    }
+
+    var parsePromise;
+    if (format === "json") {
+      try { parsePromise = Promise.resolve(JSON.parse(raw)); }
+      catch (e) { showError("JSON parse error: " + e.message); return; }
+    } else if (format === "csv") {
+      try { parsePromise = Promise.resolve(parseCsv(raw)); }
+      catch (e) { showError("CSV parse error: " + e.message); return; }
+    } else {
+      parsePromise = loadJsYaml().then(function(){
+        if (!window.jsyaml) throw new Error("js-yaml failed to load");
+        return window.jsyaml.load(raw);
+      });
+    }
+
+    Promise.all([parsePromise, loadAgGrid()]).then(function(results){
+      var data = results[0];
+      if (!Array.isArray(data)) {
+        showError("Expected an array of objects; got: " + (data === null ? "null" : typeof data));
+        return;
+      }
+      if (data.length === 0) {
+        showError("Empty dataset — nothing to show.");
+        return;
+      }
+      var cols = inferColumns(data);
+      if (cols.length === 0) {
+        showError("No columns inferred — rows must be objects with keys.");
+        return;
+      }
+      statusEl.remove();
+      gridEl.style.display = "";
+      window.agGrid.createGrid(gridEl, {
+        columnDefs: cols,
+        rowData: data,
+        defaultColDef: { sortable: true, filter: true, resizable: true, flex: 1, minWidth: 80 },
+        animateRows: true
+      });
+    }).catch(function(e){
+      showError("Datagrid error: " + (e.message || String(e)));
+    });
+  }
+
   var RUN_ID = 0;
   function upgradeRun(el) {
     if (el.dataset.lcUpgraded) return;
@@ -688,6 +851,7 @@
     document.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(upgradeRun);
     document.querySelectorAll(".highlighter-rouge.repl, pre.repl").forEach(upgradeRepl);
     document.querySelectorAll(".highlighter-rouge.code, pre.code").forEach(upgradeCode);
+    document.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(upgradeDatagrid);
   }
 
   window.lcPyrun = { attach: attach };
