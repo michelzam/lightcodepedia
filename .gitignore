@@ -3,3 +3,4 @@
 .venv310/*
 lib/*
 .devcontainer/*
+HANDOFF.md
