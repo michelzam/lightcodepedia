@@ -1101,7 +1101,7 @@
         arrow.textContent = "▾";
         sb.appendChild(txt);
         sb.appendChild(arrow);
-        sb.title = (function(){ try { return JSON.stringify(v, null, 2); } catch (e) { return String(v); }})();
+        sb.title = (function(){ try { return JSON.stringify(v); } catch (e) { return String(v); }})();
         return sb;
       }
 
