@@ -1,6 +1,6 @@
 # 📝 Form
 
-Display a single object's attributes as a labeled card. Read-only in v1. Bind it to a [📊 Datagrid](/components/datagrid) by id and it auto-populates with the selected row (master/detail).
+Display (and optionally edit) a single object's attributes. Rendered as a 2-column AG Grid under the hood — same look and feel as [📊 Datagrid](/components/datagrid), with a pinned label column on the left and a value column on the right. Bind it to a datagrid by id and it auto-populates with the selected row (master/detail).
 
 ## The data contract
 
@@ -69,7 +69,7 @@ The title bar auto-picks `name` (then `title`, then `label`, then `id`) from the
 
 ## Editable form — `editable="true"`
 
-Each string, number, or boolean becomes an input (text / numeric / checkbox). Edits update the underlying object **in memory** — refresh discards them.
+Single-click any value cell to edit. AG Grid picks the right editor based on the value's type — `agTextCellEditor` for strings, `agNumberCellEditor` for numbers, `agCheckboxCellEditor` for booleans. Edits update the underlying object **in memory** — refresh discards them.
 
 ```yaml
 name: Lucky
@@ -80,7 +80,7 @@ adopted: true
 ```
 {: .form editable="true" id="edit-form-demo" }
 
-The boolean shows a checkbox + text label ("True" / "False"). The number stays numeric (so the back-end value is `3`, not `"3"`). Nested objects and arrays stay read-only — those need richer editors, deferred.
+Numbers stay numeric (so the back-end value is `3`, not `"3"`). Booleans use AG Grid's checkbox editor — single-click the cell, click the checkbox to toggle, click away to commit. Nested objects and arrays stay read-only — those need richer editors, deferred.
 
 ### Combined with `bound=` — edit a row via the form
 

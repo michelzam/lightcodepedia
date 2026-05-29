@@ -81,20 +81,10 @@
 .lc-form-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
 .lc-form-title .lc-form-name { color: #222; font-weight: 600; }
 .lc-form-title .lc-form-meta { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.05em; }
-.lc-form-body { padding: 0.5em 1em 0.7em; }
-.lc-form-row { display: grid; grid-template-columns: minmax(110px, max-content) 1fr; gap: 0.6em 1em; padding: 0.4em 0; border-bottom: 1px solid #f0f0f0; align-items: baseline; }
-.lc-form-row:last-child { border-bottom: none; }
-.lc-form-row .lc-form-key { color: #0066cc; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; }
-.lc-form-row .lc-form-val { color: #222; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; word-break: break-word; }
-.lc-form-row .lc-form-val.lc-form-num { color: #0a5; }
-.lc-form-row .lc-form-val.lc-form-bool-true { color: #2a7a2a; font-weight: 600; }
-.lc-form-row .lc-form-val.lc-form-bool-false { color: #b00; font-weight: 600; }
-.lc-form-row .lc-form-val.lc-form-null { color: #aaa; font-style: italic; }
-.lc-form-row .lc-form-val pre { margin: 0; background: #f6f8fa; padding: 0.4em 0.7em; border-radius: 4px; font-size: 0.82em; overflow-x: auto; }
-.lc-form-row .lc-form-val input.lc-form-input { width: 100%; box-sizing: border-box; border: 1px solid #d0d0d0; border-radius: 4px; padding: 0.25em 0.55em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; background: white; color: #222; }
-.lc-form-row .lc-form-val input.lc-form-input:focus { border-color: #0066cc; outline: 2px solid rgba(0,102,204,0.15); outline-offset: 0; }
-.lc-form-row .lc-form-val label.lc-form-bool-input { display: inline-flex; align-items: center; gap: 0.5em; cursor: pointer; }
-.lc-form-row .lc-form-val label.lc-form-bool-input input[type="checkbox"] { accent-color: #0066cc; cursor: pointer; }
+.lc-form-grid { width: 100%; }
+.lc-form-grid .ag-cell.lc-form-label-cell { color: #0066cc; font-weight: 600; background: #fafbfc; }
+.lc-form-grid .ag-cell.lc-form-label-cell:hover { background: #fafbfc !important; }
+.lc-form-grid .ag-row-hover .lc-form-label-cell { background: #fafbfc !important; }
 .lc-form-empty { padding: 0.9em 1em; color: #888; font-style: italic; font-size: 0.9em; }
 .lc-form-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 </style>
@@ -1010,48 +1000,60 @@
     return obj.name || obj.title || obj.label || obj.id || "";
   }
 
-  function makeFormInput(v, onChange) {
-    if (typeof v === "boolean") {
-      var label = document.createElement("label");
-      label.className = "lc-form-bool-input";
-      var cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = v;
-      var text = document.createElement("span");
-      text.textContent = v ? "True" : "False";
-      text.className = v ? "lc-form-bool-true" : "lc-form-bool-false";
-      cb.addEventListener("change", function(){
-        var nv = cb.checked;
-        text.textContent = nv ? "True" : "False";
-        text.className = nv ? "lc-form-bool-true" : "lc-form-bool-false";
-        onChange(nv);
-      });
-      label.appendChild(cb);
-      label.appendChild(text);
-      return label;
+  function typeOfValue(v) {
+    if (v === null || v === undefined) return "null";
+    if (typeof v === "boolean") return "boolean";
+    if (typeof v === "number") return "number";
+    if (typeof v === "string") return "string";
+    return "object";
+  }
+
+  function formCellRenderer(params) {
+    var t = params.data._type;
+    var v = params.value;
+    if (t === "boolean") {
+      var bs = document.createElement("span");
+      bs.textContent = v ? "✓ True" : "✗ False";
+      bs.style.color = v ? "#2a7a2a" : "#b00";
+      bs.style.fontWeight = "600";
+      return bs;
     }
-    var input = document.createElement("input");
-    input.className = "lc-form-input";
-    if (typeof v === "number") {
-      input.type = "number";
-      input.step = "any";
-      input.value = v;
-      input.addEventListener("input", function(){
-        if (input.value === "") return;
-        var n = Number(input.value);
-        if (!isNaN(n)) onChange(n);
-      });
-    } else {
-      input.type = "text";
-      input.value = v === null || v === undefined ? "" : String(v);
-      if (v === null) input.placeholder = "(null)";
-      input.addEventListener("input", function(){ onChange(input.value); });
+    if (t === "null" || v === null || v === undefined) {
+      var ns = document.createElement("span");
+      ns.textContent = "—";
+      ns.style.color = "#aaa";
+      ns.style.fontStyle = "italic";
+      return ns;
     }
-    return input;
+    if (t === "object") {
+      var pre = document.createElement("pre");
+      pre.style.margin = "0";
+      pre.style.padding = "0";
+      pre.style.background = "transparent";
+      pre.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, monospace";
+      pre.style.fontSize = "0.85em";
+      pre.style.lineHeight = "1.35";
+      pre.style.whiteSpace = "pre";
+      try { pre.textContent = JSON.stringify(v, null, 2); }
+      catch (e) { pre.textContent = String(v); }
+      return pre;
+    }
+    if (t === "number") {
+      var nSpan = document.createElement("span");
+      nSpan.textContent = String(v);
+      nSpan.style.color = "#0a5";
+      return nSpan;
+    }
+    return String(v);
   }
 
   function renderFormBody(bodyEl, obj, opts) {
     opts = opts || {};
+    // Tear down any previous AG Grid instance attached here
+    if (bodyEl._lcGridApi) {
+      try { bodyEl._lcGridApi.destroy(); } catch (e) {}
+      bodyEl._lcGridApi = null;
+    }
     bodyEl.innerHTML = "";
     if (obj === null || obj === undefined) {
       bodyEl.innerHTML = '<div class="lc-form-empty">(no data)</div>';
@@ -1066,45 +1068,89 @@
       bodyEl.innerHTML = '<div class="lc-form-empty">(empty object)</div>';
       return;
     }
-    keys.forEach(function(k){
-      var v = obj[k];
-      var row = document.createElement("div");
-      row.className = "lc-form-row";
-      var keyEl = document.createElement("div");
-      keyEl.className = "lc-form-key";
-      keyEl.textContent = prettifyKey(k);
-      var valEl = document.createElement("div");
-      valEl.className = "lc-form-val";
 
-      var isPrimitive = v === null || v === undefined ||
-        typeof v === "string" || typeof v === "number" || typeof v === "boolean";
+    var rows = keys.map(function(k){
+      return { _key: k, label: prettifyKey(k), value: obj[k], _type: typeOfValue(obj[k]) };
+    });
 
-      if (opts.editable && isPrimitive) {
-        var input = makeFormInput(v, function(newVal){
-          obj[k] = newVal;
-          if (opts.onChange) opts.onChange(obj, k, newVal);
-        });
-        valEl.appendChild(input);
-      } else if (v === null || v === undefined) {
-        valEl.classList.add("lc-form-null");
-        valEl.textContent = "—";
-      } else if (typeof v === "boolean") {
-        valEl.classList.add(v ? "lc-form-bool-true" : "lc-form-bool-false");
-        valEl.textContent = v ? "✓ True" : "✗ False";
-      } else if (typeof v === "number") {
-        valEl.classList.add("lc-form-num");
-        valEl.textContent = String(v);
-      } else if (typeof v === "object") {
-        var pre = document.createElement("pre");
-        try { pre.textContent = JSON.stringify(v, null, 2); }
-        catch (e) { pre.textContent = String(v); }
-        valEl.appendChild(pre);
-      } else {
-        valEl.textContent = String(v);
-      }
-      row.appendChild(keyEl);
-      row.appendChild(valEl);
-      bodyEl.appendChild(row);
+    var gridDiv = document.createElement("div");
+    gridDiv.className = "lc-form-grid ag-theme-alpine";
+    bodyEl.appendChild(gridDiv);
+
+    loadAgGrid().then(function(){
+      var columnDefs = [
+        {
+          field: "label",
+          headerName: "",
+          pinned: "left",
+          editable: false,
+          cellClass: "lc-form-label-cell",
+          width: 160,
+          suppressMovable: true,
+          sortable: false,
+          filter: false
+        },
+        {
+          field: "value",
+          headerName: "",
+          flex: 1,
+          sortable: false,
+          filter: false,
+          suppressMovable: true,
+          editable: function(params){
+            return !!opts.editable && params.data._type !== "object";
+          },
+          cellEditorSelector: function(params){
+            var t = params.data._type;
+            if (t === "number") return { component: "agNumberCellEditor" };
+            if (t === "boolean") return { component: "agCheckboxCellEditor" };
+            return { component: "agTextCellEditor" };
+          },
+          cellRenderer: formCellRenderer
+        }
+      ];
+
+      var gridOptions = {
+        columnDefs: columnDefs,
+        rowData: rows,
+        domLayout: "autoHeight",
+        headerHeight: 0,
+        singleClickEdit: !!opts.editable,
+        stopEditingWhenCellsLoseFocus: true,
+        suppressMovableColumns: true,
+        suppressCellFocus: !opts.editable,
+        animateRows: false,
+        defaultColDef: { sortable: false, filter: false, suppressHeaderMenuButton: true, resizable: true },
+        getRowHeight: function(params) {
+          if (params.data._type === "object") {
+            try {
+              var s = JSON.stringify(params.data.value, null, 2);
+              var lines = (s.match(/\n/g) || []).length + 1;
+              return Math.max(28, lines * 18 + 12);
+            } catch (e) { return 28; }
+          }
+          return null;
+        },
+        onCellValueChanged: function(event) {
+          var k = event.data._key;
+          var nv = event.newValue;
+          if (event.data._type === "number" && typeof nv === "string" && nv !== "") {
+            var n = Number(nv);
+            if (!isNaN(n)) nv = n;
+          }
+          obj[k] = nv;
+          if (typeof nv === "boolean") event.data._type = "boolean";
+          else if (typeof nv === "number") event.data._type = "number";
+          else if (nv === null || nv === undefined) event.data._type = "null";
+          else event.data._type = "string";
+          event.api.refreshCells({ rowNodes: [event.node], columns: ["value"], force: true });
+          if (opts.onChange) opts.onChange(obj, k, nv);
+        }
+      };
+
+      bodyEl._lcGridApi = window.agGrid.createGrid(gridDiv, gridOptions);
+    }).catch(function(e){
+      bodyEl.innerHTML = '<div class="lc-form-err">' + escapeHtml("Could not load AG Grid: " + (e.message || String(e))) + '</div>';
     });
   }
 
