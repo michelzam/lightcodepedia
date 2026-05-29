@@ -1,0 +1,13 @@
+{
+  "name": "Lucky",
+  "age": 3,
+  "breed": "Beagle",
+  "weight_kg": 11.2,
+  "adopted": true,
+  "favorite_toys": ["squeaky bone", "tennis ball"],
+  "vet": {
+    "name": "Dr. Patel",
+    "phone": "555-0142"
+  },
+  "notes": null
+}
