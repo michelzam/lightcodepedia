@@ -165,6 +165,19 @@
     "            self._card(title or type(obj).__name__, '<div class=\"lc-rt-val\">' + self._esc(obj) + '</div>')",
     "    def clear(self):",
     "        self._view.innerHTML = ''",
+    "    def grid(self, rows, title=None, height=300):",
+    "        import json as _json",
+    "        from js import lcRenderDatagridFromJson",
+    "        normalized = []",
+    "        for r in rows:",
+    "            if isinstance(r, dict):",
+    "                normalized.append(r)",
+    "            else:",
+    "                try:",
+    "                    normalized.append(r.__dict__)",
+    "                except (AttributeError, TypeError):",
+    "                    normalized.append({'value': str(r)})",
+    "        lcRenderDatagridFromJson(self._view, _json.dumps(normalized), title or '', int(height))",
     "show = _Showable('lc-pyrun-__ID__-view')",
     "class Object:",
     "    def __init__(self, **kw):",
@@ -731,52 +744,42 @@
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  var DG_ID = 0;
-  function upgradeDatagrid(el) {
-    if (el.dataset.lcUpgraded) return;
-    el.dataset.lcUpgraded = "1";
-    var codeNode = el.querySelector("code");
-    var raw = codeNode ? codeNode.textContent : "";
-    var height = parseInt(el.getAttribute("height"), 10) || 400;
-    var format = (el.getAttribute("format") || "yaml").toLowerCase();
-    var title = el.getAttribute("title") || "";
-    var id = el.id || ("dg" + (++DG_ID));
-
+  function buildDatagridWrapper(opts) {
     var div = document.createElement("div");
     div.className = "lc-datagrid";
-    div.id = "lc-datagrid-" + id;
+    if (opts.id) div.id = "lc-datagrid-" + opts.id;
     var html = "";
-    if (title) {
-      html += '<div class="lc-datagrid-title">📊 <span>' + escapeHtml(title) + '</span><span class="lc-datagrid-lang">' + escapeHtml(format) + '</span></div>';
+    if (opts.title) {
+      html += '<div class="lc-datagrid-title">📊 <span>' + escapeHtml(opts.title) + '</span>';
+      if (opts.mode) html += '<span class="lc-datagrid-lang" style="font-style:italic; text-transform:none;">' + escapeHtml(opts.mode) + '</span>';
+      if (opts.format) html += '<span class="lc-datagrid-lang">' + escapeHtml(opts.format) + '</span>';
+      html += '</div>';
     }
     html += '<div class="lc-datagrid-status">loading grid…</div>';
-    html += '<div class="lc-datagrid-grid ag-theme-alpine" style="height:' + height + 'px; display:none;"></div>';
+    html += '<div class="lc-datagrid-grid ag-theme-alpine" style="height:' + (opts.height || 400) + 'px; display:none;"></div>';
     div.innerHTML = html;
-    el.parentNode.replaceChild(div, el);
+    return div;
+  }
 
-    var gridEl = div.querySelector(".lc-datagrid-grid");
-    var statusEl = div.querySelector(".lc-datagrid-status");
+  function parseDatagridText(raw, format) {
+    if (format === "json") return Promise.resolve(JSON.parse(raw));
+    if (format === "csv") return Promise.resolve(parseCsv(raw));
+    return loadJsYaml().then(function(){
+      if (!window.jsyaml) throw new Error("js-yaml failed to load");
+      return window.jsyaml.load(raw);
+    });
+  }
 
+  function renderGridInto(wrapper, dataPromise) {
+    var gridEl = wrapper.querySelector(".lc-datagrid-grid");
+    var statusEl = wrapper.querySelector(".lc-datagrid-status");
     function showError(msg) {
-      statusEl.outerHTML = '<div class="lc-datagrid-err">' + escapeHtml(msg) + '</div>';
+      if (statusEl && statusEl.parentNode) {
+        statusEl.outerHTML = '<div class="lc-datagrid-err">' + escapeHtml(msg) + '</div>';
+      }
       gridEl.style.display = "none";
     }
-
-    var parsePromise;
-    if (format === "json") {
-      try { parsePromise = Promise.resolve(JSON.parse(raw)); }
-      catch (e) { showError("JSON parse error: " + e.message); return; }
-    } else if (format === "csv") {
-      try { parsePromise = Promise.resolve(parseCsv(raw)); }
-      catch (e) { showError("CSV parse error: " + e.message); return; }
-    } else {
-      parsePromise = loadJsYaml().then(function(){
-        if (!window.jsyaml) throw new Error("js-yaml failed to load");
-        return window.jsyaml.load(raw);
-      });
-    }
-
-    Promise.all([parsePromise, loadAgGrid()]).then(function(results){
+    Promise.all([dataPromise, loadAgGrid()]).then(function(results){
       var data = results[0];
       if (!Array.isArray(data)) {
         showError("Expected an array of objects; got: " + (data === null ? "null" : typeof data));
@@ -791,7 +794,7 @@
         showError("No columns inferred — rows must be objects with keys.");
         return;
       }
-      statusEl.remove();
+      if (statusEl && statusEl.parentNode) statusEl.remove();
       gridEl.style.display = "";
       window.agGrid.createGrid(gridEl, {
         columnDefs: cols,
@@ -803,6 +806,67 @@
       showError("Datagrid error: " + (e.message || String(e)));
     });
   }
+
+  var DG_ID = 0;
+  function upgradeDatagrid(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var codeNode = el.querySelector("code");
+    var raw = codeNode ? codeNode.textContent : "";
+    var height = parseInt(el.getAttribute("height"), 10) || 400;
+    var format = (el.getAttribute("format") || "yaml").toLowerCase();
+    var title = el.getAttribute("title") || "";
+    var id = el.id || ("dg" + (++DG_ID));
+    var wrapper = buildDatagridWrapper({ id: id, title: title, format: format, height: height });
+    el.parentNode.replaceChild(wrapper, el);
+    var dataPromise;
+    try { dataPromise = parseDatagridText(raw, format); }
+    catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
+    renderGridInto(wrapper, dataPromise);
+  }
+
+  function upgradeDatagridFile(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var raw = el.getAttribute("data-raw") || "";
+    var cdn = el.getAttribute("data-cdn") || raw;
+    var canonical = el.getAttribute("data-canonical") || "";
+    var format = (el.getAttribute("data-format") || "yaml").toLowerCase();
+    var height = parseInt(el.getAttribute("data-height"), 10) || 400;
+    var title = el.getAttribute("data-title") || "";
+    var useCdn = (canonical && location.hostname === canonical) || location.search.indexOf("cdn=1") >= 0;
+    var url = useCdn ? cdn : raw;
+    var id = el.id || ("dg" + (++DG_ID));
+    var wrapper = buildDatagridWrapper({ id: id, title: title, format: format, height: height, mode: useCdn ? "cdn" : "live" });
+    el.parentNode.replaceChild(wrapper, el);
+    var dataPromise = fetch(url)
+      .then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + url); return r.text(); })
+      .then(function(text){ return parseDatagridText(text, format); });
+    renderGridInto(wrapper, dataPromise);
+  }
+
+  // Called from Python runners: show.grid(rows)
+  window.lcRenderDatagridFromJson = function(viewEl, rowsJson, title, height) {
+    var rows;
+    try { rows = JSON.parse(rowsJson); }
+    catch (e) {
+      var err = document.createElement("div");
+      err.className = "lc-datagrid-err";
+      err.textContent = "show.grid: invalid JSON — " + e.message;
+      err.style.gridColumn = "1 / -1";
+      viewEl.appendChild(err);
+      return;
+    }
+    var wrapper = buildDatagridWrapper({
+      id: "rt" + (++DG_ID),
+      title: title || null,
+      format: "",
+      height: height || 300
+    });
+    wrapper.style.gridColumn = "1 / -1";
+    viewEl.appendChild(wrapper);
+    renderGridInto(wrapper, Promise.resolve(rows));
+  };
 
   var RUN_ID = 0;
   function upgradeRun(el) {
@@ -852,6 +916,7 @@
     document.querySelectorAll(".highlighter-rouge.repl, pre.repl").forEach(upgradeRepl);
     document.querySelectorAll(".highlighter-rouge.code, pre.code").forEach(upgradeCode);
     document.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(upgradeDatagrid);
+    document.querySelectorAll("div.lc-datagrid-src").forEach(upgradeDatagridFile);
   }
 
   window.lcPyrun = { attach: attach };

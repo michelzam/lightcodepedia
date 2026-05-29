@@ -1,0 +1,12 @@
+[
+  {"city": "Tokyo", "country": "Japan", "population": 37400068, "area_km2": 2194},
+  {"city": "Delhi", "country": "India", "population": 28514000, "area_km2": 1484},
+  {"city": "Shanghai", "country": "China", "population": 25582000, "area_km2": 6341},
+  {"city": "São Paulo", "country": "Brazil", "population": 21650000, "area_km2": 1521},
+  {"city": "Mexico City", "country": "Mexico", "population": 21581000, "area_km2": 1485},
+  {"city": "Cairo", "country": "Egypt", "population": 20076000, "area_km2": 606},
+  {"city": "Mumbai", "country": "India", "population": 19980000, "area_km2": 603},
+  {"city": "Beijing", "country": "China", "population": 19618000, "area_km2": 16411},
+  {"city": "Dhaka", "country": "Bangladesh", "population": 19578000, "area_km2": 306},
+  {"city": "Osaka", "country": "Japan", "population": 19281000, "area_km2": 225}
+]
