@@ -76,10 +76,46 @@
 .lc-datagrid-grid { width: 100%; }
 .lc-datagrid-status { padding: 0.7em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #666; font-style: italic; }
 .lc-datagrid-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
+
+.lc-form { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: white; }
+.lc-form-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
+.lc-form-title .lc-form-name { color: #222; font-weight: 600; }
+.lc-form-title .lc-form-meta { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.05em; }
+.lc-form-body { padding: 0.5em 1em 0.7em; }
+.lc-form-row { display: grid; grid-template-columns: minmax(110px, max-content) 1fr; gap: 0.6em 1em; padding: 0.4em 0; border-bottom: 1px solid #f0f0f0; align-items: baseline; }
+.lc-form-row:last-child { border-bottom: none; }
+.lc-form-row .lc-form-key { color: #0066cc; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; }
+.lc-form-row .lc-form-val { color: #222; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; word-break: break-word; }
+.lc-form-row .lc-form-val.lc-form-num { color: #0a5; }
+.lc-form-row .lc-form-val.lc-form-bool-true { color: #2a7a2a; font-weight: 600; }
+.lc-form-row .lc-form-val.lc-form-bool-false { color: #b00; font-weight: 600; }
+.lc-form-row .lc-form-val.lc-form-null { color: #aaa; font-style: italic; }
+.lc-form-row .lc-form-val pre { margin: 0; background: #f6f8fa; padding: 0.4em 0.7em; border-radius: 4px; font-size: 0.82em; overflow-x: auto; }
+.lc-form-empty { padding: 0.9em 1em; color: #888; font-style: italic; font-size: 0.9em; }
+.lc-form-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 </style>
 <script>
 (function(){
   if (window.lcPyrun) return;
+
+  // Master/detail pub-sub keyed by datagrid id.
+  // Order-independent: grids publish on selection; forms subscribe on upgrade.
+  window.lcMasterDetail = window.lcMasterDetail || {
+    _subs: {},
+    _last: {},
+    subscribe: function(gridId, cb) {
+      if (!gridId) return;
+      (this._subs[gridId] = this._subs[gridId] || []).push(cb);
+      if (gridId in this._last) {
+        try { cb(this._last[gridId]); } catch (e) {}
+      }
+    },
+    publish: function(gridId, row) {
+      if (!gridId) return;
+      this._last[gridId] = row;
+      (this._subs[gridId] || []).forEach(function(cb){ try { cb(row); } catch (e) {} });
+    }
+  };
 
   // Parse a Python source string and extract simple doctests:
   //   >>> expr
@@ -178,6 +214,17 @@
     "                except (AttributeError, TypeError):",
     "                    normalized.append({'value': str(r)})",
     "        lcRenderDatagridFromJson(self._view, _json.dumps(normalized), title or '', int(height))",
+    "    def form(self, obj, title=None):",
+    "        import json as _json",
+    "        from js import lcRenderFormFromJson",
+    "        if isinstance(obj, dict):",
+    "            d = obj",
+    "        else:",
+    "            try:",
+    "                d = obj.__dict__",
+    "            except (AttributeError, TypeError):",
+    "                d = {'value': str(obj)}",
+    "        lcRenderFormFromJson(self._view, _json.dumps(d), title or '')",
     "show = _Showable('lc-pyrun-__ID__-view')",
     "class Object:",
     "    def __init__(self, **kw):",
@@ -770,7 +817,7 @@
     });
   }
 
-  function renderGridInto(wrapper, dataPromise) {
+  function renderGridInto(wrapper, dataPromise, gridId) {
     var gridEl = wrapper.querySelector(".lc-datagrid-grid");
     var statusEl = wrapper.querySelector(".lc-datagrid-status");
     function showError(msg) {
@@ -800,7 +847,12 @@
         columnDefs: cols,
         rowData: data,
         defaultColDef: { sortable: true, filter: true, resizable: true, flex: 1, minWidth: 80 },
-        animateRows: true
+        animateRows: true,
+        rowSelection: "single",
+        onSelectionChanged: function(event) {
+          var rows = event.api.getSelectedRows();
+          window.lcMasterDetail.publish(gridId, rows[0] || null);
+        }
       });
     }).catch(function(e){
       showError("Datagrid error: " + (e.message || String(e)));
@@ -822,7 +874,7 @@
     var dataPromise;
     try { dataPromise = parseDatagridText(raw, format); }
     catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
-    renderGridInto(wrapper, dataPromise);
+    renderGridInto(wrapper, dataPromise, id);
   }
 
   function upgradeDatagridFile(el) {
@@ -842,7 +894,7 @@
     var dataPromise = fetch(url)
       .then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + url); return r.text(); })
       .then(function(text){ return parseDatagridText(text, format); });
-    renderGridInto(wrapper, dataPromise);
+    renderGridInto(wrapper, dataPromise, id);
   }
 
   // Called from Python runners: show.grid(rows)
@@ -857,15 +909,178 @@
       viewEl.appendChild(err);
       return;
     }
+    var rtId = "rt" + (++DG_ID);
     var wrapper = buildDatagridWrapper({
-      id: "rt" + (++DG_ID),
+      id: rtId,
       title: title || null,
       format: "",
       height: height || 300
     });
     wrapper.style.gridColumn = "1 / -1";
     viewEl.appendChild(wrapper);
-    renderGridInto(wrapper, Promise.resolve(rows));
+    renderGridInto(wrapper, Promise.resolve(rows), rtId);
+  };
+
+  function buildFormWrapper(opts) {
+    var div = document.createElement("div");
+    div.className = "lc-form";
+    if (opts.id) div.id = "lc-form-" + opts.id;
+    var meta = "";
+    if (opts.mode) meta = '<span class="lc-form-meta" style="font-style:italic; text-transform:none;">' + escapeHtml(opts.mode) + '</span>';
+    else if (opts.format) meta = '<span class="lc-form-meta">' + escapeHtml(opts.format) + '</span>';
+    var html = '<div class="lc-form-title">📝 <span class="lc-form-name">' + escapeHtml(opts.title || "Form") + '</span>' + meta + '</div>';
+    html += '<div class="lc-form-body"></div>';
+    div.innerHTML = html;
+    return div;
+  }
+
+  function setFormTitle(wrapper, title) {
+    var nameEl = wrapper.querySelector(".lc-form-name");
+    if (nameEl) nameEl.textContent = title;
+  }
+
+  function inferFormTitle(obj) {
+    if (!obj || typeof obj !== "object" || Array.isArray(obj)) return "";
+    return obj.name || obj.title || obj.label || obj.id || "";
+  }
+
+  function renderFormBody(bodyEl, obj) {
+    bodyEl.innerHTML = "";
+    if (obj === null || obj === undefined) {
+      bodyEl.innerHTML = '<div class="lc-form-empty">(no data)</div>';
+      return;
+    }
+    if (typeof obj !== "object" || Array.isArray(obj)) {
+      bodyEl.innerHTML = '<div class="lc-form-err">Expected a single object; got ' + escapeHtml(Array.isArray(obj) ? "array" : typeof obj) + '</div>';
+      return;
+    }
+    var keys = Object.keys(obj);
+    if (keys.length === 0) {
+      bodyEl.innerHTML = '<div class="lc-form-empty">(empty object)</div>';
+      return;
+    }
+    keys.forEach(function(k){
+      var v = obj[k];
+      var row = document.createElement("div");
+      row.className = "lc-form-row";
+      var keyEl = document.createElement("div");
+      keyEl.className = "lc-form-key";
+      keyEl.textContent = k;
+      var valEl = document.createElement("div");
+      valEl.className = "lc-form-val";
+      if (v === null || v === undefined) {
+        valEl.classList.add("lc-form-null");
+        valEl.textContent = "—";
+      } else if (typeof v === "boolean") {
+        valEl.classList.add(v ? "lc-form-bool-true" : "lc-form-bool-false");
+        valEl.textContent = v ? "✓ true" : "✗ false";
+      } else if (typeof v === "number") {
+        valEl.classList.add("lc-form-num");
+        valEl.textContent = String(v);
+      } else if (typeof v === "object") {
+        var pre = document.createElement("pre");
+        try { pre.textContent = JSON.stringify(v, null, 2); }
+        catch (e) { pre.textContent = String(v); }
+        valEl.appendChild(pre);
+      } else {
+        valEl.textContent = String(v);
+      }
+      row.appendChild(keyEl);
+      row.appendChild(valEl);
+      bodyEl.appendChild(row);
+    });
+  }
+
+  var FORM_ID = 0;
+  function upgradeForm(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var codeNode = el.querySelector("code");
+    var raw = codeNode ? codeNode.textContent : "";
+    var format = (el.getAttribute("format") || "yaml").toLowerCase();
+    var title = el.getAttribute("title") || "";
+    var bound = el.getAttribute("bound") || "";
+    var id = el.id || ("frm" + (++FORM_ID));
+
+    var wrapper = buildFormWrapper({ id: id, title: title || "Form", format: bound ? "" : format });
+    el.parentNode.replaceChild(wrapper, el);
+    var body = wrapper.querySelector(".lc-form-body");
+
+    if (bound) {
+      body.innerHTML = '<div class="lc-form-empty">click a row in <code>#' + escapeHtml(bound) + '</code> to see details</div>';
+      window.lcMasterDetail.subscribe(bound, function(row){
+        if (!row) {
+          renderFormBody(body, null);
+          setFormTitle(wrapper, title || "Form");
+          return;
+        }
+        renderFormBody(body, row);
+        setFormTitle(wrapper, title || inferFormTitle(row) || "Form");
+      });
+      return;
+    }
+
+    if (!raw || !raw.trim()) {
+      body.innerHTML = '<div class="lc-form-empty">(no data)</div>';
+      return;
+    }
+    var dataPromise;
+    try { dataPromise = parseDatagridText(raw, format); }
+    catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
+    dataPromise.then(function(obj){
+      renderFormBody(body, obj);
+      if (!title) setFormTitle(wrapper, inferFormTitle(obj) || "Form");
+    }).catch(function(e){
+      body.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>';
+    });
+  }
+
+  function upgradeFormFile(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var raw = el.getAttribute("data-raw") || "";
+    var cdn = el.getAttribute("data-cdn") || raw;
+    var canonical = el.getAttribute("data-canonical") || "";
+    var format = (el.getAttribute("data-format") || "yaml").toLowerCase();
+    var title = el.getAttribute("data-title") || "";
+    var useCdn = (canonical && location.hostname === canonical) || location.search.indexOf("cdn=1") >= 0;
+    var url = useCdn ? cdn : raw;
+    var id = el.id || ("frm" + (++FORM_ID));
+    var wrapper = buildFormWrapper({ id: id, title: title || "Form", mode: useCdn ? "cdn" : "live" });
+    el.parentNode.replaceChild(wrapper, el);
+    var body = wrapper.querySelector(".lc-form-body");
+    body.innerHTML = '<div class="lc-form-empty">loading…</div>';
+    fetch(url)
+      .then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + url); return r.text(); })
+      .then(function(text){ return parseDatagridText(text, format); })
+      .then(function(obj){
+        renderFormBody(body, obj);
+        if (!title) setFormTitle(wrapper, inferFormTitle(obj) || "Form");
+      })
+      .catch(function(e){
+        body.innerHTML = '<div class="lc-form-err">' + escapeHtml("Form error: " + (e.message || String(e))) + '</div>';
+      });
+  }
+
+  // Called from Python runners: show.form(obj)
+  window.lcRenderFormFromJson = function(viewEl, objJson, title) {
+    var obj;
+    try { obj = JSON.parse(objJson); }
+    catch (e) {
+      var err = document.createElement("div");
+      err.className = "lc-form-err";
+      err.textContent = "show.form: invalid JSON — " + e.message;
+      err.style.gridColumn = "1 / -1";
+      viewEl.appendChild(err);
+      return;
+    }
+    var wrapper = buildFormWrapper({
+      id: "rt" + (++FORM_ID),
+      title: title || inferFormTitle(obj) || "Form"
+    });
+    wrapper.style.gridColumn = "1 / -1";
+    viewEl.appendChild(wrapper);
+    renderFormBody(wrapper.querySelector(".lc-form-body"), obj);
   };
 
   var RUN_ID = 0;
@@ -917,6 +1132,8 @@
     document.querySelectorAll(".highlighter-rouge.code, pre.code").forEach(upgradeCode);
     document.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(upgradeDatagrid);
     document.querySelectorAll("div.lc-datagrid-src").forEach(upgradeDatagridFile);
+    document.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(upgradeForm);
+    document.querySelectorAll("div.lc-form-src").forEach(upgradeFormFile);
   }
 
   window.lcPyrun = { attach: attach };

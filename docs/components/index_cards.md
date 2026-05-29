@@ -67,3 +67,8 @@ Live Python editor + runner via `{: .run }` — MicroPython compiled to WebAssem
 Sortable, filterable, resizable tables via `{: .datagrid }` — AG Grid Community, YAML/JSON/CSV.
 
 [Open →](datagrid)
+
+### 📝 Form
+Single-object attribute view via `{: .form }`. Pair with a datagrid via `bound=` for master/detail.
+
+[Open →](form)
