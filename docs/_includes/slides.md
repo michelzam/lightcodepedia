@@ -83,6 +83,36 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
   .lc-slides-share-panel { padding: 1em; gap: 0.7em; }
   .lc-slides-share-qr { width: min(70vw, 280px); height: min(70vw, 280px); }
 }
+
+/* Speaker notes: hidden everywhere by default; visible when body has .lc-notes-on
+   (added when ?notes=1 is in the URL or 'N' is pressed in slide mode). */
+.speaker-note { display: none; }
+body.lc-notes-on .speaker-note {
+  display: block;
+  background: #fffae0;
+  border-left: 4px solid #d4a200;
+  padding: 0.6em 1em;
+  margin: 1em 0;
+  color: #5a4500;
+  font-size: 0.95em;
+  font-style: italic;
+  border-radius: 0 4px 4px 0;
+}
+body.lc-notes-on .speaker-note::before {
+  content: "📝 Speaker note";
+  display: block;
+  font-style: normal;
+  font-weight: 600;
+  color: #b45309;
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 0.35em;
+}
+body.lc-notes-on .speaker-note p:first-of-type { margin-top: 0; }
+body.lc-notes-on .speaker-note p:last-of-type { margin-bottom: 0; }
+.lc-slides-notes-badge { position: fixed; top: 1em; left: 50%; transform: translateX(-50%); background: #fffae0; color: #b45309; padding: 0.3em 0.9em; border-radius: 14px; font-size: 0.78em; font-weight: 600; border: 1px solid #f0c97a; z-index: 1001; display: none; pointer-events: none; }
+body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block; }
 </style>
 <a class="lc-slides-fab" href="#" title="Present as slides" aria-label="Present as slides">
   <span class="lc-slides-fab-icon" aria-hidden="true">📽️</span><span class="lc-slides-fab-label">Present</span>
@@ -93,6 +123,7 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
   <button class="lc-slides-nav-next" type="button" title="Next (→ or Space)" aria-label="Next slide / fragment">▶</button>
   <button class="lc-slides-nav-share" type="button" title="Share with QR code (Q)" aria-label="Share with QR code">📷</button>
 </nav>
+<div class="lc-slides-notes-badge" aria-hidden="true">📝 NOTES ON</div>
 <div class="lc-slides-share-overlay" role="dialog" aria-modal="true" aria-label="Share slide">
   <div class="lc-slides-share-panel">
     <button class="lc-slides-share-close" type="button" aria-label="Close">✕</button>
@@ -436,6 +467,8 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
         e.preventDefault();
       } else if (e.key === 'q' || e.key === 'Q') {
         openShare(); e.preventDefault();
+      } else if (e.key === 'n' || e.key === 'N') {
+        toggleNotes(); e.preventDefault();
       } else if (e.key >= '1' && e.key <= '9') {
         jump(parseInt(e.key, 10) - 1);
         e.preventDefault();
@@ -452,12 +485,26 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
 
     try {
       var params = new URL(location.href).searchParams;
+      if (params.has('notes') && params.get('notes') !== '0' && params.get('notes') !== 'false') {
+        body.classList.add('lc-notes-on');
+      }
       if (params.has('slides')) {
         var startN = parseInt(params.get('slides'), 10);
         if (!isNaN(startN) && startN >= 0 && startN < slides.length) current = startN;
         setTimeout(enter, 0);
       }
     } catch (e) {}
+
+    function toggleNotes() {
+      var on = body.classList.toggle('lc-notes-on');
+      try {
+        var url = new URL(location.href);
+        if (on) url.searchParams.set('notes', '1');
+        else url.searchParams.delete('notes');
+        history.replaceState(null, '', url.toString().replace(/\?$/, ''));
+        refreshShareIfOpen();
+      } catch (e) {}
+    }
   }
 
   if (document.readyState === 'loading') {
