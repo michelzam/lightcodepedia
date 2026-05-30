@@ -20,8 +20,12 @@ on load.
 .lc-slides-fab { position: fixed; bottom: 1.2em; left: 1.2em; height: 44px; min-width: 44px; padding: 0 14px; border-radius: 22px; background: white; color: #0066cc; border: 1px solid #d0e3f5; display: inline-flex; align-items: center; gap: 0; text-decoration: none; font-size: 0.88em; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: gap 0.18s ease, padding 0.18s ease, background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s; z-index: 999; overflow: hidden; white-space: nowrap; cursor: pointer; }
 .lc-slides-fab .lc-slides-fab-icon { font-size: 1.2em; line-height: 1; }
 .lc-slides-fab .lc-slides-fab-label { max-width: 0; opacity: 0; transition: max-width 0.22s ease, opacity 0.18s ease 0.04s; overflow: hidden; }
-.lc-slides-fab:hover { background: #f5f9ff; border-color: #0066cc; box-shadow: 0 4px 14px rgba(0,102,204,0.18); transform: translateY(-1px); gap: 0.45em; padding-right: 16px; }
-.lc-slides-fab:hover .lc-slides-fab-label { max-width: 140px; opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .lc-slides-fab:hover { background: #f5f9ff; border-color: #0066cc; box-shadow: 0 4px 14px rgba(0,102,204,0.18); transform: translateY(-1px); gap: 0.45em; padding-right: 16px; }
+  .lc-slides-fab:hover .lc-slides-fab-label { max-width: 140px; opacity: 1; }
+}
+.lc-slides-fab.lc-fab-expanded { background: #f5f9ff; border-color: #0066cc; box-shadow: 0 4px 14px rgba(0,102,204,0.18); transform: translateY(-1px); gap: 0.45em; padding-right: 16px; }
+.lc-slides-fab.lc-fab-expanded .lc-slides-fab-label { max-width: 140px; opacity: 1; }
 .lc-slides-fab:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
 .lc-slides-fab[data-no-slides="true"] { display: none; }
 .lc-embed-mode .lc-slides-fab { display: none !important; }
@@ -49,18 +53,35 @@ body.lc-slides-active .lc-slide-fragment[data-revealed="true"] { opacity: 1; }
   body.lc-slides-active .lc-slide h2 { font-size: 1.5em; }
 }
 
-.lc-slides-counter { position: fixed; bottom: 1em; right: 1em; background: rgba(30,30,30,0.7); color: white; padding: 0.3em 0.85em; border-radius: 14px; font-size: 0.82em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; z-index: 1001; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
-body.lc-slides-active .lc-slides-counter { opacity: 1; }
+.lc-slides-nav { position: fixed; bottom: 0.9em; left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 0.3em; background: rgba(255,255,255,0.96); border: 1px solid #d0e3f5; border-radius: 26px; padding: 4px 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1001; max-width: calc(100vw - 130px); backdrop-filter: blur(4px); }
+body.lc-slides-active .lc-slides-nav { display: inline-flex; }
+.lc-slides-nav button { width: 40px; height: 40px; border: none; background: transparent; color: #0066cc; font-size: 1.05em; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.12s; padding: 0; }
+.lc-slides-nav button:hover:not(:disabled) { background: #f5f9ff; }
+.lc-slides-nav button:disabled { color: #c8d2dc; cursor: not-allowed; }
+.lc-slides-nav-jump { border: none; background: transparent; font-size: 0.85em; color: #333; padding: 0.45em 1.6em 0.45em 0.6em; cursor: pointer; max-width: 180px; min-width: 64px; text-overflow: ellipsis; outline: none; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, #0066cc 50%), linear-gradient(135deg, #0066cc 50%, transparent 50%); background-position: calc(100% - 12px) calc(50% - 2px), calc(100% - 7px) calc(50% - 2px); background-size: 5px 5px; background-repeat: no-repeat; }
+.lc-slides-nav-jump:hover { background-color: #f5f9ff; border-radius: 4px; }
+@media (max-width: 480px) {
+  .lc-slides-nav { padding: 3px 4px; gap: 0.15em; max-width: calc(100vw - 100px); }
+  .lc-slides-nav button { width: 36px; height: 36px; }
+  .lc-slides-nav-jump { font-size: 0.78em; max-width: 130px; min-width: 50px; padding: 0.4em 1.4em 0.4em 0.5em; }
+}
 </style>
 <a class="lc-slides-fab" href="#" title="Present as slides" aria-label="Present as slides">
   <span class="lc-slides-fab-icon" aria-hidden="true">📽️</span><span class="lc-slides-fab-label">Present</span>
 </a>
-<div class="lc-slides-counter" role="status" aria-live="polite"></div>
+<nav class="lc-slides-nav" role="toolbar" aria-label="Slide navigation">
+  <button class="lc-slides-nav-prev" type="button" title="Previous (←)" aria-label="Previous slide">◀</button>
+  <select class="lc-slides-nav-jump" title="Jump to slide" aria-label="Jump to slide"></select>
+  <button class="lc-slides-nav-next" type="button" title="Next (→ or Space)" aria-label="Next slide / fragment">▶</button>
+</nav>
 <script>
 (function(){
   function init() {
     var fab = document.querySelector('.lc-slides-fab');
-    var counter = document.querySelector('.lc-slides-counter');
+    var nav = document.querySelector('.lc-slides-nav');
+    var navPrev = nav ? nav.querySelector('.lc-slides-nav-prev') : null;
+    var navNext = nav ? nav.querySelector('.lc-slides-nav-next') : null;
+    var navJump = nav ? nav.querySelector('.lc-slides-nav-jump') : null;
     var body = document.body;
     var main = document.querySelector('main.markdown-body');
     if (!fab || !main) return;
@@ -107,6 +128,24 @@ body.lc-slides-active .lc-slides-counter { opacity: 1; }
 
     function hasDeck() { return slides.length > 1; }
 
+    function slideTitle(s, i) {
+      var h = s.querySelector('h1, h2');
+      var t = h ? (h.textContent || '').trim().replace(/\s+/g, ' ') : '';
+      if (t.length > 36) t = t.substring(0, 34) + '…';
+      return (i + 1) + '/' + slides.length + (t ? ' · ' + t : '');
+    }
+
+    function buildJumpOptions() {
+      if (!navJump) return;
+      navJump.innerHTML = '';
+      slides.forEach(function(s, i){
+        var opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = slideTitle(s, i);
+        navJump.appendChild(opt);
+      });
+    }
+
     function showSlide() {
       slides.forEach(function(s, i){
         s.setAttribute('data-active', i === current ? 'true' : 'false');
@@ -115,7 +154,12 @@ body.lc-slides-active .lc-slides-counter { opacity: 1; }
           f.setAttribute('data-revealed', j < revealed[i] ? 'true' : 'false');
         });
       });
-      counter.textContent = (current + 1) + ' / ' + slides.length;
+      if (navJump) navJump.value = String(current);
+      var totalFrags = slides[current].querySelectorAll('.lc-slide-fragment').length;
+      var atFirst = current === 0 && revealed[0] === 0;
+      var atLast = current === slides.length - 1 && revealed[current] === totalFrags;
+      if (navPrev) navPrev.disabled = atFirst;
+      if (navNext) navNext.disabled = atLast;
     }
 
     function next() {
@@ -187,8 +231,30 @@ body.lc-slides-active .lc-slides-counter { opacity: 1; }
       fab.setAttribute('data-no-slides', 'true');
       return;
     }
+    buildJumpOptions();
 
-    fab.addEventListener('click', function(e){ e.preventDefault(); toggle(); });
+    var touchOnly = window.matchMedia('(hover: none)').matches;
+    var fabCollapseTimer = null;
+    function collapseFab(){ fab.classList.remove('lc-fab-expanded'); }
+    fab.addEventListener('click', function(e){
+      e.preventDefault();
+      if (touchOnly && !body.classList.contains('lc-slides-active') && !fab.classList.contains('lc-fab-expanded')) {
+        fab.classList.add('lc-fab-expanded');
+        clearTimeout(fabCollapseTimer);
+        fabCollapseTimer = setTimeout(collapseFab, 3000);
+        return;
+      }
+      clearTimeout(fabCollapseTimer);
+      collapseFab();
+      toggle();
+    });
+    document.addEventListener('click', function(e){
+      if (!fab.contains(e.target)) collapseFab();
+    });
+
+    if (navPrev) navPrev.addEventListener('click', function(e){ e.preventDefault(); prev(); });
+    if (navNext) navNext.addEventListener('click', function(e){ e.preventDefault(); next(); });
+    if (navJump) navJump.addEventListener('change', function(){ jump(parseInt(navJump.value, 10)); });
 
     document.addEventListener('keydown', function(e){
       if (!body.classList.contains('lc-slides-active')) return;
