@@ -92,3 +92,9 @@ Turn a bullet list into an interactive question. Single-choice (immediate feedba
 Chat-style LLM panel that calls GitHub Models from the browser. Each learner uses their own PAT — no backend, no shared key.
 
 [Open →](agent)
+
+### 🗒️ Pages
+Your custom pages here.
+ 
+[Open →](new2)
+
