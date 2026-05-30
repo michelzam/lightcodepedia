@@ -15,7 +15,7 @@ Go,22,22,77,20
 Swift,18,28,73,10
 Kotlin,16,22,72,18
 ```
-{: .datagrid #lang-grid title="Programming languages" height="240" }
+{: .datagrid #lang-grid format="csv" title="Programming languages" height="240" }
 
 ```csv
 language,popularity,demand,pay_index,growth
@@ -36,7 +36,7 @@ language,popularity,demand,pay_index,growth
 Python,58,80,72,15
 ...
 ```
-{: .datagrid #lang-grid title="Languages" height="240" }
+{: .datagrid #lang-grid format="csv" title="Languages" height="240" }
 
 ```csv
 language,popularity,demand,pay_index,growth
