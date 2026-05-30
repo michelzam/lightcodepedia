@@ -410,6 +410,14 @@ Auto-included by docs/_layouts/default.html.
     var rows = parseInt(el.getAttribute('rows'), 10) || 3;
     var boundId = el.getAttribute('bound') || null;
     var panel = buildPanel(id, cfg, rows, boundId);
+    // Slides partition runs before agent upgrade (it has to wait for js-yaml).
+    // Carry the fragment marking from the original code-block to the new panel
+    // so it stays in the slide reveal sequence.
+    if (el.classList.contains('lc-slide-fragment')) {
+      panel.classList.add('lc-slide-fragment');
+      var rev = el.getAttribute('data-revealed');
+      if (rev != null) panel.setAttribute('data-revealed', rev);
+    }
     el.parentNode.replaceChild(panel, el);
     wirePanel(panel, cfg, boundId);
   }

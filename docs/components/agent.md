@@ -98,7 +98,7 @@ system: |
 
 **What's in the augmented prompt** (you never type this, the agent does):
 
-```
+````
 The student is editing this Python code in editor #play:
 
 ```python
@@ -114,7 +114,7 @@ The last run produced this output:
 The student asks:
 
 <your typed question>
-```
+````
 
 Empty editor and no-run-yet cases drop the corresponding sections silently. Code longer than ~4000 chars is truncated.
 
