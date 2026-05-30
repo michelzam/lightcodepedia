@@ -174,6 +174,10 @@
 .lc-cards .lc-card a:hover { text-decoration: underline; }
 @media (max-width: 700px) { .lc-cards { grid-template-columns: repeat(2, 1fr) !important; } }
 @media (max-width: 480px) { .lc-cards { grid-template-columns: 1fr !important; } }
+/* chart */
+.lc-chart { margin: 1em 0; position: relative; }
+/* map */
+.lc-map { margin: 1em 0; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
 </style>
 <script>
 (function(){
@@ -1574,6 +1578,8 @@
     document.querySelectorAll("p.embed-page").forEach(upgradeEmbedPage);
     document.querySelectorAll("p.embed").forEach(upgradeEmbedExternal);
     document.querySelectorAll("p.video").forEach(upgradeVideo);
+    document.querySelectorAll(".highlighter-rouge.chart").forEach(upgradeChart);
+    document.querySelectorAll(".highlighter-rouge.map").forEach(upgradeMap);
   }
 
   // --- shared helpers for section-based widgets ---
@@ -1599,6 +1605,115 @@
   }
   function markdownBody(s) {
     return window.marked ? marked.parse(s) : "<pre>" + s + "</pre>";
+  }
+
+  var _chartJsQ = null;
+  function loadChartJs(cb) {
+    if (window.Chart) { cb(); return; }
+    if (_chartJsQ) { _chartJsQ.push(cb); return; }
+    _chartJsQ = [cb];
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js";
+    s.onload = function() { var q = _chartJsQ; _chartJsQ = null; q.forEach(function(f){ f(); }); };
+    document.head.appendChild(s);
+  }
+
+  var _leafletQ = null;
+  function loadLeaflet(cb) {
+    if (window.L) { cb(); return; }
+    if (_leafletQ) { _leafletQ.push(cb); return; }
+    _leafletQ = [cb];
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.min.css";
+    document.head.appendChild(link);
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet-src.min.js";
+    s.onload = function() { var q = _leafletQ; _leafletQ = null; q.forEach(function(f){ f(); }); };
+    document.head.appendChild(s);
+  }
+
+  function upgradeChart(el) {
+    var code = el.querySelector("code");
+    var raw = (code ? code.textContent : el.textContent).trim();
+    var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+    if (lines.length < 2) return;
+    var type = el.getAttribute("type") || "bar";
+    var h = parseInt(el.getAttribute("height") || "300", 10);
+    var headers = lines[0].split(",").map(function(v){ return v.trim(); });
+    var xAttr = el.getAttribute("x") || headers[0];
+    var yAttr = el.getAttribute("y") || headers[1];
+    var xIdx = headers.indexOf(xAttr); if (xIdx < 0) xIdx = 0;
+    var yIdx = headers.indexOf(yAttr); if (yIdx < 0) yIdx = 1;
+    var rows = lines.slice(1).map(function(l){ return l.split(",").map(function(v){ return v.trim(); }); });
+    var labels = rows.map(function(r){ return r[xIdx] || ""; });
+    var data = rows.map(function(r){ return parseFloat(r[yIdx]) || 0; });
+    var mn = Math.min.apply(null, data), mx = Math.max.apply(null, data), rng = mx - mn || 1;
+    var colors = data.map(function(v) {
+      var t = (v - mn) / rng;
+      var r = Math.round(173 + t * (0 - 173));
+      var g = Math.round(216 + t * (56 - 216));
+      var b = Math.round(230 + t * (139 - 230));
+      return "rgb(" + r + "," + g + "," + b + ")";
+    });
+    var gid = "lc-chart-" + Math.random().toString(36).slice(2, 7);
+    var wrap = document.createElement("div");
+    wrap.className = "lc-chart";
+    wrap.innerHTML = "<canvas id=\"" + gid + "\"></canvas>";
+    el.parentNode.replaceChild(wrap, el);
+    loadChartJs(function() {
+      new Chart(document.getElementById(gid), {
+        type: type,
+        data: {
+          labels: labels,
+          datasets: [{ label: yAttr, data: data, backgroundColor: colors, borderColor: colors, borderWidth: 1 }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: type === "pie" || type === "doughnut" ? {} : {
+            x: { title: { display: true, text: xAttr } },
+            y: { beginAtZero: true, title: { display: true, text: yAttr } }
+          }
+        }
+      });
+    });
+  }
+
+  function upgradeMap(el) {
+    var code = el.querySelector("code");
+    var raw = (code ? code.textContent : el.textContent).trim();
+    var lat = parseFloat(el.getAttribute("lat") || "48.86");
+    var lng = parseFloat(el.getAttribute("lng") || "2.35");
+    var zoom = parseInt(el.getAttribute("zoom") || "12", 10);
+    var h = el.getAttribute("height") || "350";
+    var gid = "lc-map-" + Math.random().toString(36).slice(2, 7);
+    var wrap = document.createElement("div");
+    wrap.className = "lc-map";
+    wrap.id = gid;
+    wrap.style.height = h + "px";
+    el.parentNode.replaceChild(wrap, el);
+    var markers = [];
+    var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+    if (lines.length >= 2) {
+      var hdrs = lines[0].split(",").map(function(v){ return v.trim(); });
+      var nI = hdrs.indexOf("name") >= 0 ? hdrs.indexOf("name") : 0;
+      var laI = hdrs.indexOf("lat") >= 0 ? hdrs.indexOf("lat") : 1;
+      var lnI = hdrs.indexOf("lng") >= 0 ? hdrs.indexOf("lng") : 2;
+      lines.slice(1).forEach(function(l) {
+        var c = l.split(",").map(function(v){ return v.trim(); });
+        var mLat = parseFloat(c[laI]), mLng = parseFloat(c[lnI]);
+        if (!isNaN(mLat) && !isNaN(mLng)) markers.push({ name: c[nI] || "", lat: mLat, lng: mLng });
+      });
+    }
+    loadLeaflet(function() {
+      var map = L.map(gid).setView([lat, lng], zoom);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
+        maxZoom: 19
+      }).addTo(map);
+      markers.forEach(function(m) { L.marker([m.lat, m.lng]).addTo(map).bindPopup("<b>" + m.name + "</b>"); });
+    });
   }
 
   function upgradeAccordion(el) {
