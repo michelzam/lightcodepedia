@@ -102,7 +102,7 @@ Not in this version — easy to add later if you want them:
 
 - `[^name]` / `[^name]: …`
 - `<abbr title="…">`
-- `{% include def.md term="…" %}`
+- {% raw %}`{% include def.md term="…" %}`{% endraw %}
 - `### Definitions`
 {: .quiz correct="1" }
 
