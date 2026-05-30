@@ -84,6 +84,6 @@ Present any markdown page as a deck — `## h2` becomes a slide, bullets auto-fr
 [Open →](slides)
 
 ### 🧪 Quiz
-Turn a bullet list into an interactive question via `{: .quiz correct="2" }`. Single-choice or multi-select.
+Turn a bullet list into an interactive question. Single-choice (immediate feedback) or multi-select (with Check button).
 
 [Open →](quiz)
