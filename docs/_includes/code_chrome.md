@@ -895,6 +895,7 @@
     });
     return _agGridLoading;
   }
+  window.lcLoadAgGrid = function(cb) { loadAgGrid().then(cb).catch(function(){}); };
 
   function parseCsv(text) {
     var lines = [], cur = [], field = "", inQuote = false, i = 0;
