@@ -47,6 +47,9 @@ body.lc-slides-active .lc-slide p, body.lc-slides-active .lc-slide li { font-siz
 body.lc-slides-active .lc-slide ul, body.lc-slides-active .lc-slide ol { padding-left: 1.4em; }
 body.lc-slides-active .lc-slide-fragment { opacity: 0.18; transition: opacity 0.28s ease; pointer-events: none; }
 body.lc-slides-active .lc-slide-fragment[data-revealed="true"] { opacity: 1; pointer-events: auto; }
+/* The multi-quiz Check bar is a sibling of the quiz UL — keep it in sync */
+.lc-quiz-bar { transition: opacity 0.28s ease; }
+body.lc-slides-active .lc-slide-fragment:not([data-revealed="true"]) + .lc-quiz-bar { opacity: 0.18; pointer-events: none; }
 @media (max-width: 700px) {
   body.lc-slides-active .lc-slide[data-active="true"] { padding: 1.6em 1.2em 5em; }
   body.lc-slides-active .lc-slide h1 { font-size: 1.9em; }
