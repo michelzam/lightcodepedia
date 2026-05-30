@@ -122,6 +122,19 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
         Array.prototype.forEach.call(section.querySelectorAll('.fragment'), function(el){
           el.classList.add('lc-slide-fragment');
         });
+        // Each top-level code block / runner / grid / form becomes its own fragment too
+        Array.prototype.forEach.call(section.children, function(el){
+          if (el.classList.contains('nofragments')) return;
+          if (el.tagName === 'PRE' ||
+              el.classList.contains('highlighter-rouge') ||
+              el.classList.contains('highlight') ||
+              el.classList.contains('lc-pyrun') ||
+              el.classList.contains('lc-pyrepl') ||
+              el.classList.contains('lc-datagrid') ||
+              el.classList.contains('lc-form')) {
+            el.classList.add('lc-slide-fragment');
+          }
+        });
       });
       revealed = slides.map(function(){ return 0; });
     }
