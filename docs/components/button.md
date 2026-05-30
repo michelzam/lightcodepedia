@@ -1,46 +1,53 @@
 # 🔘 Button
-A styled link that looks like a clickable button.
 
-## How to use
+A styled call-to-action link. Write a normal markdown link, add `{: .lc-btn }` inline after the closing bracket, and it renders as a button. Four color variants; works anywhere a link works.
 
-{% raw %}
-```liquid
-{% include button.md label="🎬 Watch Demo" href="../demo" %}
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
+
+## 👀 See it in action
+
+[🚀 Get started](/components/run){: .lc-btn }
+[Learn more](/components/text){: .lc-btn .lc-btn-secondary }
+[✓ Done](/components/quiz){: .lc-btn .lc-btn-success }
+[✗ Delete](#){: .lc-btn .lc-btn-danger }
+[Outline](#){: .lc-btn .lc-btn-outline }
+
+## 🛠️ How to make one
+
+Add `{: .lc-btn }` **immediately** after the closing `]` of any markdown link — no space, no newline:
+
+```markdown
+[🚀 Get started](/components/run){: .lc-btn }
 ```
-{% endraw %}
 
-## Live example
+This is kramdown's **inline IAL** — it attaches the class directly to the `<a>` element.
 
-{% include button.md label="🎬 Watch Demo" href="../demo" %}
+**Q:** You write `[Go](#) {: .lc-btn }` with a space before `{:`. Does the button render?
 
-## Styles
+- [ ] Yes — kramdown is flexible about spaces before inline IAL.
+- [x] No — the inline IAL must immediately follow the `]` with no space at all.
+- [ ] It attaches to the paragraph instead.
+- [ ] It becomes an outline button — the space triggers a fallback style.
+{: .quiz }
 
-Pass an optional `style=` parameter for different colors:
+## 🎨 Variants
 
-{% include button.md label="Primary (default)" href="#" %}
-{% include button.md label="Secondary" href="#" style="secondary" %}
-{% include button.md label="Success" href="#" style="success" %}
-{% include button.md label="Danger" href="#" style="danger" %}
-{% include button.md label="Outline" href="#" style="outline" %}
+| You write | Result |
+|---|---|
+| `{: .lc-btn }` | Blue (primary) |
+| `{: .lc-btn .lc-btn-secondary }` | Grey |
+| `{: .lc-btn .lc-btn-success }` | Green |
+| `{: .lc-btn .lc-btn-danger }` | Red |
+| `{: .lc-btn .lc-btn-outline }` | Transparent with blue border |
 
-The code for the row above:
+## 🏁 Final exam
 
-{% raw %}
-```liquid
-{% include button.md label="Primary (default)" href="#" %}
-{% include button.md label="Secondary" href="#" style="secondary" %}
-{% include button.md label="Success" href="#" style="success" %}
-{% include button.md label="Danger" href="#" style="danger" %}
-{% include button.md label="Outline" href="#" style="outline" %}
-```
-{% endraw %}
+**Q:** Which markdown produces a green button linking to `/submit`?
 
-## Options
-
-| Parameter | Default | Description |
-|---|---|---|
-| `label` | required | Button text |
-| `href` | required | Where the button links to |
-| `style` | (primary) | `secondary`, `success`, `danger`, or `outline` |
+- [ ] `[Submit](/submit){: .lc-btn-success }` — variant class only.
+- [x] `[Submit](/submit){: .lc-btn .lc-btn-success }` — base class + variant.
+- [ ] `[Submit](/submit){: .btn .btn-success }` — Bootstrap-style classes.
+- [ ] Only the old `{% raw %}{% include button.md %}{% endraw %}` form produces colored buttons.
+{: .quiz }
 
 {% include backtotop.md %}
