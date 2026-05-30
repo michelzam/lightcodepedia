@@ -38,7 +38,7 @@ body.lc-slides-active { overflow: hidden; background: #fafbfc; padding-top: 0 !i
 body.lc-slides-active #lc-topbar, body.lc-slides-active .lc-edit-fab { display: none !important; }
 body.lc-slides-active .markdown-body { max-width: none; margin: 0; padding: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 body.lc-slides-active .lc-slide { display: none; }
-body.lc-slides-active .lc-slide[data-active="true"] { display: block; flex: 1; padding: 3.5em 5em; overflow-y: auto; max-width: 1200px; width: 100%; margin: 0 auto; box-sizing: border-box; animation: lcSlideIn 0.22s ease-out; }
+body.lc-slides-active .lc-slide[data-active="true"] { display: block; flex: 1; padding: 3em 5em 6em; overflow-y: auto; max-width: 1200px; width: 100%; margin: 0 auto; box-sizing: border-box; animation: lcSlideIn 0.22s ease-out; -webkit-overflow-scrolling: touch; }
 @keyframes lcSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 body.lc-slides-active .lc-slide h1 { font-size: 2.6em; border-bottom: 2px solid #0066cc; padding-bottom: 0.3em; margin: 0 0 0.6em; }
 body.lc-slides-active .lc-slide h2 { font-size: 2em; border-bottom: 2px solid #0066cc; padding-bottom: 0.3em; margin: 0 0 0.6em; color: #222; }
@@ -48,7 +48,7 @@ body.lc-slides-active .lc-slide ul, body.lc-slides-active .lc-slide ol { padding
 body.lc-slides-active .lc-slide-fragment { opacity: 0.18; transition: opacity 0.28s ease; }
 body.lc-slides-active .lc-slide-fragment[data-revealed="true"] { opacity: 1; }
 @media (max-width: 700px) {
-  body.lc-slides-active .lc-slide[data-active="true"] { padding: 2em 1.2em; }
+  body.lc-slides-active .lc-slide[data-active="true"] { padding: 1.6em 1.2em 5em; }
   body.lc-slides-active .lc-slide h1 { font-size: 1.9em; }
   body.lc-slides-active .lc-slide h2 { font-size: 1.5em; }
 }
@@ -177,22 +177,21 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
     function slideScoreMarker(s) {
       var quizEls = slideQuizElements(s);
       if (quizEls.length === 0) return '';
-      if (!window.lcQuizScore || !window.lcQuizScore.get) return ' · 0/' + quizEls.length;
-      var correct = 0;
-      quizEls.forEach(function(q){
+      if (!window.lcQuizScore || !window.lcQuizScore.get) return ' ⚠️';
+      var allCorrect = quizEls.every(function(q){
         var id = q.dataset.lcQuizId;
         var entry = id && window.lcQuizScore.get(id);
-        if (entry && entry.correct) correct++;
+        return entry && entry.correct;
       });
-      if (correct === quizEls.length) return ' · ✓';
-      return ' · ' + correct + '/' + quizEls.length;
+      return allCorrect ? ' ✅' : ' ⚠️';
     }
 
     function slideTitle(s, i) {
       var h = s.querySelector('h1, h2');
       var t = h ? (h.textContent || '').trim().replace(/\s+/g, ' ') : '';
-      if (t.length > 28) t = t.substring(0, 26) + '…';
-      return (i + 1) + '/' + slides.length + (t ? ' · ' + t : '') + slideScoreMarker(s);
+      if (!t) t = 'Slide ' + (i + 1);
+      if (t.length > 38) t = t.substring(0, 36) + '…';
+      return t + slideScoreMarker(s);
     }
 
     function buildJumpOptions() {
@@ -229,6 +228,10 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
       if (revealed[current] < frags.length) {
         revealed[current]++;
         showSlide();
+        var newFrag = slide.querySelectorAll('.lc-slide-fragment')[revealed[current] - 1];
+        if (newFrag && newFrag.scrollIntoView) {
+          try { newFrag.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
+        }
       } else if (current < slides.length - 1) {
         current++;
         showSlide();
