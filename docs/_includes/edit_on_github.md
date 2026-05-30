@@ -352,6 +352,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         if (!data.content) { toast("Save failed (" + esc(_curFile) + "): " + esc(data.message || JSON.stringify(data)), false); return; }
         _curSha = data.content.sha;
         toast("Saved · " + data.commit.sha.slice(0, 7) + " ✓", true);
+        var fnEl = document.getElementById("ed-filename");
+        if (fnEl) fnEl.textContent = _curFile;
         loadFiles();
         loadHistory();
         watchBuild(data.commit.sha);
