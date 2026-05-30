@@ -57,7 +57,7 @@ Browse the library of interactive widgets you can use in your pages.
 ### 🗒️ Pages
 Customize your pages here.
 
-[Pages →](/new2)
+[Pages →](/pages)
 
 ### ⚙️ Setup
 Fork, configure and deploy your own LightNode.
