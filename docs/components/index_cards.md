@@ -87,3 +87,8 @@ Present any markdown page as a deck — `## h2` becomes a slide, bullets auto-fr
 Turn a bullet list into an interactive question. Single-choice (immediate feedback) or multi-select (with Check button).
 
 [Open →](quiz)
+
+### 🤖 Agent
+Chat-style LLM panel that calls GitHub Models from the browser. Each learner uses their own PAT — no backend, no shared key.
+
+[Open →](agent)
