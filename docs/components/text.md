@@ -133,13 +133,13 @@ Without any extra work, lightcodepedia turns the little number link into a **hov
 
 The pattern you'll see most after plain markdown is the IAL[^ial]: a `{: ... }` line right after a block to attach attributes (an id, classes, key-value pairs) to it. This is what activates every component on the site:
 
-```markdown
+````markdown
 ```yaml
 - name: Lucky
 - name: Wanda
 ```
 {: .datagrid id="dogs" }
-```
+````
 
 Then `{: .form bound="dogs" }` on another block binds a form to that grid. See [Datagrid](/components/datagrid) and [Form](/components/form) for the full menu of attributes.
 

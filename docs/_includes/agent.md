@@ -116,16 +116,26 @@ Auto-included by docs/_layouts/default.html.
   }
 
   function renderMarkdown(text) {
-    var html = escapeHtml(text);
-    html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, lang, code){
-      var lc = lang ? ' class="language-' + lang.toLowerCase() + '"' : '';
-      return '<pre class="lc-agent-code"><code' + lc + '>' + code.replace(/\n+$/, '') + '</code></pre>';
+    // Step 1: extract code blocks to placeholders so their newlines survive
+    var blocks = [];
+    var staged = String(text).replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, lang, code){
+      var idx = blocks.length;
+      blocks.push({ lang: (lang || '').toLowerCase(), code: code.replace(/\n+$/, '') });
+      return '@@LCAGENTCB' + idx + '@@';
     });
+    // Step 2: escape + inline + paragraph + linebreak on the rest
+    var html = escapeHtml(staged);
     html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
     html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
     html = html.replace(/\n\n+/g, '</p><p>');
     html = html.replace(/\n/g, '<br>');
+    // Step 3: restore code blocks with properly-escaped content
+    html = html.replace(/@@LCAGENTCB(\d+)@@/g, function(_, idx){
+      var b = blocks[parseInt(idx, 10)];
+      var lc = b.lang ? ' class="language-' + b.lang + '"' : '';
+      return '<pre class="lc-agent-code"><code' + lc + '>' + escapeHtml(b.code) + '</code></pre>';
+    });
     return '<p>' + html + '</p>';
   }
 
@@ -342,23 +352,31 @@ Auto-included by docs/_layouts/default.html.
           if (first) {
             var applyBar = document.createElement('div');
             applyBar.className = 'lc-agent-apply-bar';
-            applyBar.innerHTML = '<button class="lc-agent-apply" type="button">⬇ Apply to #' + escapeHtml(boundId) + '</button>';
             first.parentNode.insertBefore(applyBar, first.nextSibling);
-            applyBar.querySelector('.lc-agent-apply').addEventListener('click', function(){
+
+            function renderApply() {
+              applyBar.style.opacity = '1';
+              applyBar.innerHTML = '<button class="lc-agent-apply" type="button">⬇ Apply to #' + escapeHtml(boundId) + '</button>';
+              applyBar.querySelector('.lc-agent-apply').addEventListener('click', doApply);
+            }
+            function doApply() {
               var newCode = first.querySelector('code').textContent;
               var prevCode = getBoundCode(boundId);
-              if (setBoundCode(boundId, newCode)) {
-                applyBar.innerHTML = '<span style="color:#2e7d32">✓ Applied</span> ' +
-                  '<button class="lc-agent-revert" type="button">↺ Revert</button>';
-                applyBar.querySelector('.lc-agent-revert').addEventListener('click', function(){
-                  setBoundCode(boundId, prevCode != null ? prevCode : '');
-                  applyBar.innerHTML = '<span style="color:#888">↺ Reverted</span>';
-                });
-                setTimeout(function(){
-                  if (applyBar.parentNode) applyBar.style.opacity = '0.55';
-                }, 10000);
-              }
-            });
+              if (!setBoundCode(boundId, newCode)) return;
+              applyBar.style.opacity = '1';
+              applyBar.innerHTML = '<span style="color:#2e7d32; font-weight:600">✓ Applied</span> ' +
+                '<button class="lc-agent-revert" type="button">↺ Revert</button>';
+              applyBar.querySelector('.lc-agent-revert').addEventListener('click', function(){
+                setBoundCode(boundId, prevCode != null ? prevCode : '');
+                renderApply();
+              });
+              setTimeout(function(){
+                if (applyBar.parentNode && applyBar.querySelector('.lc-agent-revert')) {
+                  applyBar.style.opacity = '0.55';
+                }
+              }, 10000);
+            }
+            renderApply();
           }
         }
 
