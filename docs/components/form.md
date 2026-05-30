@@ -1,86 +1,79 @@
 # 📝 Form
 
-Display (and optionally edit) a single object's attributes. Rendered as a 2-column AG Grid under the hood — same look and feel as [📊 Datagrid](/components/datagrid), with a pinned label column on the left and a value column on the right. Bind it to a datagrid by id and it auto-populates with the selected row (master/detail).
+Display a single object's attributes as a labeled two-column view. Pair it with a [📊 Datagrid](/components/datagrid) to drill into a selected row — click a row, the form fills. Works standalone too.
 
-## The data contract
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
-Across `.form`, `.datagrid`, `show.form()`, and `show.grid()`, the universal data shape is:
+## 👀 Try it now
 
-- **`.form`** consumes **one object** — a dict, a YAML mapping, a JSON object, a Python class instance (via `__dict__`).
-- **`.datagrid`** consumes **a list of those objects**.
+Here's a form showing one dog's full profile.
 
-YAML / JSON / Python dicts / Python class instances all flatten to the same thing — a dict with string keys. The widgets don't care which source you used.
+```yaml
+name: Lucky
+age: 3
+breed: Beagle
+weight_kg: 11.2
+adopted: true
+favorite_toys:
+  - squeaky bone
+  - tennis ball
+vet:
+  name: Dr. Patel
+  phone: "555-0142"
+notes: null
+```
+{: .form }
 
-## Tiniest form — `{: .form }` on a YAML fence
+Notice how different types render differently: numbers in green, booleans as checkboxes, lists as pills, nested dicts as a labeled button (hover it for the full JSON), and `null` as an italic dash.
 
-Drop `{: .form }` on the line right after a YAML/JSON block describing **one** object.
+> Ask: "What happens when you hover the Vet button?"
+> Walk through each type rendering. The type-awareness is the point.
+{: .speaker-note }
 
-{% raw %}
+**Q:** Which value type renders as interactive pills?
+
+- [ ] Strings — they're the most common.
+- [x] Lists (arrays) — shown as compact pill tags.
+- [ ] Booleans — click to toggle, so pills make sense.
+- [ ] Nulls — empty pills for empty values.
+{: .quiz }
+
+## 🛠️ How to make one
+
+Write a YAML block describing **one object** (not a list), then put `{: .form }` on the very next line:
+
 ````markdown
 ```yaml
 name: Lucky
 age: 3
 breed: Beagle
-weight_kg: 11.2
-adopted: true
-favorite_toys:
-  - squeaky bone
-  - tennis ball
-vet:
-  name: Dr. Patel
-  phone: 555-0142
-notes: null
 ```
 {: .form }
 ````
-{% endraw %}
 
-Renders to:
+Keys become the left-column labels (auto-prettified: `weight_kg` → **Weight Kg**). The title bar auto-picks the object's `name`, `title`, `label`, or `id` field — override with `title="…"`.
 
-```yaml
-name: Lucky
-age: 3
-breed: Beagle
-weight_kg: 11.2
-adopted: true
-favorite_toys:
-  - squeaky bone
-  - tennis ball
-vet:
-  name: Dr. Patel
-  phone: 555-0142
-notes: null
-```
-{: .form }
+## 🔧 Knobs
 
-Type-aware rendering, one per type:
-
-| Type | Look | Editable in v1? |
-|---|---|---|
-| `string` | plain text | ✅ single-click to edit |
-| `number` | green number | ✅ single-click to edit (rejects non-numeric) |
-| `boolean` | checkbox + colored **True** / **False** label | ✅ click the checkbox to toggle |
-| `null` | italic em-dash `—` | ✅ click to enter a string |
-| `list` (array) | streamlit-style **pills** | ❌ read-only |
-| `dict` (object) | streamlit-style **selectbox** button with the dict's `__str__`-equivalent label (`name`/`title`/`label`/`id` fields are tried; otherwise truncated JSON) — hover for the full JSON | ❌ read-only |
-
-Attribute labels are auto-prettified — `weight_kg` becomes **Weight Kg**, `favorite_toys` becomes **Favorite Toys**.
-
-The title bar auto-picks `name` (then `title`, then `label`, then `id`) from the object — override with `title="..."`.
-
-## Knobs
-
-| Attribute | Description |
+| Attribute | What it does |
 |---|---|
-| `id="..."` | Required if you have multiple forms on the same page |
-| `title="..."` | Title bar (overrides the auto-inferred `name`/`title`/`label`/`id`) |
+| `id="…"` | Required when more than one form lives on the same page |
+| `title="…"` | Title bar — overrides the auto-inferred name/title/label/id |
 | `format="yaml"` | `yaml` (default) or `json` |
-| `bound="<grid-id>"` | Master/detail — see below |
-| `editable="true"` | Each primitive field becomes an input — see below |
+| `bound="<grid-id>"` | Link to a datagrid — form fills when a row is selected |
+| `editable="true"` | Make primitive fields editable — see below |
 
-## Editable form — `editable="true"`
+**Q:** You put two forms on a page and only one shows up. What did you forget?
 
-Single-click any primitive (string/number/null) value cell to edit. Booleans toggle directly via their checkbox — no edit-mode dance. Edits update the underlying object **in memory** — refresh discards them.
+- [ ] A `format="yaml"` on the second one.
+- [x] An `id="…"` on each form — required when more than one lives on a page.
+- [ ] A blank line between the two blocks.
+- [ ] To feed the page. It gets cranky when hungry.
+{: .quiz }
+
+## ✏️ Editable form — `editable="true"`
+
+Add `editable="true"` and primitive fields become inputs. Click a string or number cell to edit. Booleans toggle via their checkbox with no extra step. Changes are **in-memory only** — refresh discards them.
 
 ```yaml
 name: Lucky
@@ -91,11 +84,52 @@ adopted: true
 ```
 {: .form editable="true" id="edit-form-demo" }
 
-Numbers stay numeric — the editor is `agTextCellEditor` with a `valueParser` that converts to `Number()` on commit, rejecting non-numeric input by reverting to the old value. Booleans use a real interactive checkbox embedded in the renderer (not AG Grid's edit mode), so a single click toggles. Lists and dicts (rendered as pills and selectbox respectively) stay read-only — editing them needs richer UI, deferred.
+Numbers stay numeric — the editor rejects non-numeric input by reverting to the previous value. Lists and nested dicts stay read-only for now.
 
-### Combined with `bound=` — edit a row via the form
+## 🔗 Linked to a datagrid — master/detail
 
-When `editable="true"` AND `bound="<grid-id>"`, edits flow back to the grid: the row repaints with the new value.
+An empty `{: .form bound="<id>" }` waits for a row to be clicked in the named datagrid, then fills itself with that row's data. The grid is the list view; the form is the detail view.
+
+```yaml
+- name: Lucky
+  age: 3
+  breed: Beagle
+  weight_kg: 11.2
+  adopted: true
+- name: Wanda
+  age: 5
+  breed: Poodle
+  weight_kg: 7.8
+  adopted: true
+- name: Max
+  age: 2
+  breed: Husky
+  weight_kg: 24.5
+  adopted: false
+```
+{: .datagrid id="dogs" height="200" }
+
+```yaml
+```
+{: .form bound="dogs" }
+
+Click a dog in the grid above — the form fills. Click another dog — the form updates. Click the same row again to deselect.
+
+> Key selling point: order doesn't matter. The form can sit above the grid in the source
+> and it still works — subscription is by id.
+{: .speaker-note }
+
+**Q:** You put the form above the datagrid in the markdown source. Does the binding still work?
+
+- [ ] No — the form subscribes at render time, so it must come after the grid.
+- [x] Yes — the form subscribes by id. Source order doesn't matter.
+- [ ] Only if you add `order="after"` to the form's IAL.
+- [ ] Depends on the browser. Safari is always the exception.
+{: .quiz }
+
+## ✏️🔗 Edit a grid row through the form
+
+Combine `editable="true"` AND `bound="<id>"`: edits in the form flow back to the grid row immediately.
 
 ```yaml
 - name: Lucky
@@ -115,79 +149,13 @@ When `editable="true"` AND `bound="<grid-id>"`, edits flow back to the grid: the
 
 ```yaml
 ```
-{: .form bound="edit-md-dogs" editable="true" }
+{: .form bound="edit-md-dogs" editable="true" id="edit-form-bound" }
 
-Click a dog, edit any field in the form — the grid updates in place. Conversely, if the grid is also editable (`editable="true"` on the datagrid), double-click a cell and watch the form repaint with the new value.
+Click a dog, change a field in the form — the grid cell updates in place. If the grid is also `editable="true"`, double-clicking a grid cell repaints the form too.
 
-## Master/detail — `bound="<grid-id>"`
+## 📂 Loading from a repo file
 
-The killer feature: an empty `.form` on the same page as a `.datagrid` auto-fills with the selected row.
-
-{% raw %}
-````markdown
-```yaml
-- name: Lucky
-  age: 3
-  breed: Beagle
-  weight_kg: 11.2
-  adopted: true
-- name: Wanda
-  age: 5
-  breed: Poodle
-  weight_kg: 7.8
-  adopted: true
-- name: Max
-  age: 2
-  breed: Husky
-  weight_kg: 24.5
-  adopted: false
-```
-{: .datagrid id="dogs" height="220" }
-
-```yaml
-```
-{: .form bound="dogs" }
-````
-{% endraw %}
-
-Renders to:
-
-```yaml
-- name: Lucky
-  age: 3
-  breed: Beagle
-  weight_kg: 11.2
-  adopted: true
-- name: Wanda
-  age: 5
-  breed: Poodle
-  weight_kg: 7.8
-  adopted: true
-- name: Max
-  age: 2
-  breed: Husky
-  weight_kg: 24.5
-  adopted: false
-```
-{: .datagrid id="dogs" height="220" }
-
-```yaml
-```
-{: .form bound="dogs" }
-
-Click a row in the grid — the form below repaints. The title bar updates to the row's `name`.
-
-**Mechanics:** the grid publishes its selected row on a tiny pub/sub keyed by id (`window.lcMasterDetail`). Forms subscribe by id at upgrade time. Order on the page doesn't matter (you can put the form first), and multiple forms can bind to the same grid.
-
-A second form bound to the same grid, just to demonstrate independence:
-
-```yaml
-```
-{: .form bound="dogs" title="(same selection, different form)" }
-
-## Loading from a repo file — `{% raw %}{% include form_file.md path="..." %}{% endraw %}`
-
-Same raw / jsDelivr pattern as the datagrid file loader.
+`{% raw %}{% include form_file.md path="…" %}{% endraw %}` fetches a JSON or YAML file from the repo and renders it as a form — always showing the current file content.
 
 {% raw %}
 ```liquid
@@ -199,19 +167,19 @@ Renders to:
 
 {% include form_file.md path="data/lucky.json" %}
 
-### Knobs (file form)
+### File-loader knobs
 
-| Attribute | Description |
+| Attribute | What it does |
 |---|---|
-| `path="..."` | Repo-relative path. Format auto-inferred from `.json`/`.yaml`/`.yml` |
-| `format="..."` | Override the inferred format |
-| `title="..."` | Title bar — defaults to the path |
-| `src="https://..."` | Escape hatch for an external URL |
-| `repo="org/repo"` `branch="..."` | Override repo + branch (default: current site, `main`) |
+| `path="…"` | Repo-relative path — format auto-inferred from `.json`/`.yaml`/`.yml` |
+| `format="…"` | Override the inferred format |
+| `title="…"` | Title bar — defaults to the path |
+| `src="https://…"` | External URL escape hatch |
+| `repo="org/repo"` `branch="…"` | Override repo + branch (defaults: current site, `main`) |
 
-## From inside a Python runner — `show.form(obj)`
+## 🐍 From a Python runner — `show.form()`
 
-Like `show.grid()`, but for a single record.
+Every runner exposes a `show.form(obj)` helper alongside `show()` and `show.grid()`.
 
 ```python
 class Dog:
@@ -224,7 +192,6 @@ class Dog:
 lucky = Dog("Lucky", 3, "Beagle", True)
 show.form(lucky)
 
-# from a dict
 show.form({
     "city": "Tokyo",
     "country": "Japan",
@@ -233,20 +200,39 @@ show.form({
 ```
 {: .run id="show-form-demo" rows="14" }
 
-### `show.form` signature
-
 ```python
 show.form(obj, title=None)
 ```
 
 - `obj` — a dict, or any object with `__dict__`. Other types are wrapped as `{'value': str(obj)}`.
-- `title` — optional title bar. Defaults to `obj.name` / `obj.title` / `obj.label` / `obj.id` if present, otherwise "Form".
+- `title` — optional; defaults to `obj.name` / `obj.title` / `obj.label` / `obj.id` if present.
 
-## Limitations of v1
+## ⚠️ Limits worth knowing
 
-- **Single record only.** For lists of records, use `.datagrid`. The widgets pair naturally — datagrid as overview, form as detail.
-- **Lists (pills) and dicts (selectbox) are read-only.** Editing them needs richer UI — a real multiselect with an options universe for lists, and either a nested subform or a selectbox with a known options list for dicts. Both deferred to v2.
-- **Edits are in-memory only.** Refresh discards them. No persistence layer yet.
-- **No validation hooks yet.** A number input only rejects non-numeric input (via `valueParser`); strings accept anything. Ask if you want `pattern=` / `min=` / `required=`.
+- **Single record only.** For lists, use `.datagrid`. They pair naturally: grid as overview, form as detail.
+- **Lists and dicts are read-only** in v1. Editing a pill list or a nested dict needs richer UI — deferred.
+- **Edits are in-memory.** Refresh discards them. No persistence layer yet.
+- **No validation hooks.** Numbers reject non-numeric input; strings accept anything. Ask if you want `pattern=` / `min=` / `required=`.
+
+## 🏁 Final exam — boss level
+
+**Q:** Which of these are TRUE about the form widget? (Pick all that apply.)
+
+- [x] `bound="grid-id"` links the form to a datagrid by id.
+- [x] Source order doesn't matter — a form above the grid still binds.
+- [ ] `null` values render as empty strings.
+- [x] `editable="true"` + `bound=` makes edits flow back to the grid row.
+- [ ] Multiple forms can't bind to the same datagrid.
+{: .quiz multi="true" }
+
+**Q:** A student double-clicks a number cell in an editable form, types `"banana"`, and presses Enter. What happens?
+
+- [ ] The cell turns red and shows a validation error.
+- [x] The editor rejects the input and reverts to the previous number.
+- [ ] `"banana"` is saved as a string — form doesn't care about types.
+- [ ] The whole grid refreshes. Banana clears the cache.
+{: .quiz }
+
+[^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to that block. See [✍️ Text](/components/text).
 
 {% include backtotop.md %}

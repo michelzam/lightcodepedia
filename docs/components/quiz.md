@@ -1,167 +1,207 @@
 # 🧪 Quiz
 
-Turn any bullet list into an interactive question with one IAL[^ial]. Click an option to see if you got it right. Works inline on a normal page and as a slide of its own in 📽️ slides mode.
+Turn any bullet list into an interactive question with one line of markup. Students click to answer; wrong picks show ✗ immediately but the correct answer stays hidden until they find it — a treasure hunt, not an answer key.
 
-## Single-choice — `[x]` syntax (recommended)
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
-The natural way: use GitHub-style task-list markers. `[x]` is the correct answer, `[ ]` is wrong.
+## 🎯 Try one now
 
-```markdown
 **Q:** What does `## h2` do on this site?
 
-- [ ] Bolds the text
-- [x] Starts a new slide
-- [ ] Makes the text smaller
-- [ ] Centers the heading
+- [ ] Makes the text a bit bigger than `### h3`.
+- [x] Starts a new slide in 📽️ slide mode.
+- [ ] Centers the heading.
+- [ ] Nothing special — it's just a regular heading.
+{: .quiz }
+
+Click any option. Wrong answer? You see a red ✗ on that pick. The correct answer stays hidden. Find it yourself — that's the point.
+
+> Before students click, ask them to predict aloud. "What do you think happens when you click a wrong answer?"
+> The treasure-hunt behavior surprises everyone — most expect the answer to be revealed immediately.
+{: .speaker-note }
+
+## 🛠️ How to make a quiz
+
+Write a bullet list with `[x]` on the correct answer and `[ ]` on the wrong ones. Add `{: .quiz }` on the very next line.
+
+```markdown
+**Q:** Which IAL[^ial] activates the Python runner?
+
+- [ ] `{: .run-python }`
+- [x] `{: .run }`
+- [ ] `{: .python }`
+- [ ] `{: .exec }`
 {: .quiz }
 ```
 
 Renders to:
 
-**Q:** What does `## h2` do on this site?
+**Q:** Which IAL activates the Python runner?
 
-- [ ] Bolds the text
-- [x] Starts a new slide
-- [ ] Makes the text smaller
-- [ ] Centers the heading
+- [ ] `{: .run-python }`
+- [x] `{: .run }`
+- [ ] `{: .python }`
+- [ ] `{: .exec }`
 {: .quiz }
 
-Click any option. Wrong pick → red ✗ on that option only — the correct answer stays hidden. Keep clicking until you find it. (Think of it as a treasure hunt, not a quiz with an answer key.)
+The `[x]` / `[ ]` syntax is identical to GitHub's task-list checkboxes — no new syntax to learn.
 
-## Single-choice — `correct="N"` syntax (equivalent)
+> The IAL must be directly after the last list item (or its nested blockquote).
+> A blank line before `{: .quiz }` breaks attachment silently.
+> You'd see a plain bullet list with no click behavior — the most common gotcha.
+{: .speaker-note }
 
-Same quiz written with the explicit attribute form. 1-indexed, plain bullets:
+**Q:** You added `{: .quiz }` but clicking the options does nothing. What's the most likely cause?
+
+- [ ] The quiz widget needs `multi="true"` to work.
+- [x] There's a blank line between the last list item and `{: .quiz }` — the IAL didn't attach.
+- [ ] You used `[x]` but the correct syntax is `[X]` (capital X).
+- [ ] Quizzes only work in slide mode. You're in scroll mode.
+{: .quiz }
+
+## ✏️ Per-option explanations
+
+Nest a `>` blockquote under any list item to add an explanation that appears after that option is graded.
 
 ```markdown
-- Bolds the text
-- Starts a new slide
-- Makes the text smaller
-- Centers the heading
-{: .quiz correct="2" }
-```
-
-Pick whichever feels natural per quiz. They produce identical behavior.
-
-## Per-option explanations
-
-Nest a `>` blockquote under any option (with blank lines around it — kramdown's nesting rule) for a one-line explanation that appears after the option is graded:
-
-```markdown
-- [ ] Bolds the text
+- [ ] Bolds the text.
 
   > That would be `**bold**`.
 
-- [x] Starts a new slide
+- [x] Starts a new slide.
 
-  > Right — `## h2` is the slide break.
+  > Right — `## h2` is the slide break in 📽️ mode.
 
-- [ ] Makes the text smaller
+- [ ] Makes the text smaller.
 
-  > That would be smaller `<h3>` and friends.
+  > That's `### h3` — smaller, but not a slide break.
 {: .quiz }
 ```
 
 Renders to:
 
-- [ ] Bolds the text
+- [ ] Bolds the text.
 
   > That would be `**bold**`.
 
-- [x] Starts a new slide
+- [x] Starts a new slide.
 
-  > Right — `## h2` is the slide break.
+  > Right — `## h2` is the slide break in 📽️ mode.
 
-- [ ] Makes the text smaller
+- [ ] Makes the text smaller.
 
-  > That would be smaller `<h3>` and friends.
+  > That's `### h3` — smaller, but not a slide break.
 {: .quiz }
 
-The explanation styles green for the correct option, red for a wrong-clicked one. You can write full markdown inside the blockquote (code spans, **bold**, links).
+The explanation styles green for the correct pick, red for a wrong one. Full markdown works inside the blockquote: `code`, **bold**, links.
 
-## Multi-select — square checkboxes
+## ☑️ Multi-select — "pick all that apply"
 
-Add `multi="true"` and `[x]` on every correct option. The visual marker shifts to **☐ / ☑** to signal "pick all that apply", and a **Check** button appears below:
+Add `multi="true"` and mark every correct option with `[x]`. The visual shifts to square **☐ / ☑** checkboxes and a **Check** button appears. Wrong-selected picks get ✗ after Check, but **missed correct answers stay hidden** — same treasure-hunt rule.
 
 ```markdown
-**Q:** Which of these are vegetables?
+**Q:** Which of these are valid Python loop types? (Pick all that apply.)
 
-- [ ] Apple
-- [x] Carrot
-- [ ] Steak
-- [x] Spinach
+- [x] `for`
+- [ ] `repeat`
+- [x] `while`
+- [ ] `loop`
 {: .quiz multi="true" }
 ```
 
 Renders to:
 
-**Q:** Which of these are vegetables?
+**Q:** Which of these are valid Python loop types? (Pick all that apply.)
 
-- [ ] Apple
-- [x] Carrot
-- [ ] Steak
-- [x] Spinach
+- [x] `for`
+- [ ] `repeat`
+- [x] `while`
+- [ ] `loop`
 {: .quiz multi="true" }
 
-Toggle each ☐ to ☑, hit **Check**. Wrong-selected picks get ✗ — but **missed correct answers stay hidden** (same treasure-hunt rule). The status line tells you whether you've got them all yet. Re-toggle and re-check until you do.
+Toggle each ☐ to ☑, hit **Check**. Re-toggle and re-check until you've found every correct answer.
 
-## Page-level score
+**Q:** A student clicks **Check** and only `for` is marked ✓. They haven't found `while` yet. What does the quiz show?
 
-Once you've answered at least one quiz on the page, a small **🏆 N/M** badge appears at the bottom-right (above the ✏️ pencil). Tap it for a per-quiz breakdown. The score is **session-only** — refresh clears it. No grades are reported anywhere.
+- [x] ✗ on their wrong picks; the missed correct answer (`while`) stays hidden.
+- [ ] All correct answers are revealed so the student can learn.
+- [ ] The quiz resets and they start over.
+- [ ] A confetti explosion. They found one — celebrate the partial win.
+{: .quiz }
 
-`.run` blocks with `expected="…"` count toward the score too (see below).
+## 📊 Page-level score 🏆
 
-## Code-as-answer — `.run expected="…"`
+Once you've answered at least one quiz on the page, a small **🏆 N/M** badge appears at the top-right. Tap it for a per-quiz breakdown. The score is **session-only** — refresh clears it. No grades are reported anywhere.
 
-Add `expected="…"` to a `.run` block and the runner compares the printed output to the expected string after every ▶ Run. Match → ✓ in the status. Mismatch → ✗ with the expected value.
+`.run` blocks with `expected="…"` count toward the score too: match the expected output → ✓.
 
 ```python
 print("hello")
 ```
 {: .run rows="2" expected="hello" }
 
-The runner above is graded: get the print right, score it. Edit and retry until the expected matches.
+The runner above is graded. Edit it to print something else — the score badge updates.
 
-## Knobs
+> For a live demo: walk through the score badge after answering a few quizzes on this page.
+> "Notice how it updated? That's your personal tally — nobody else sees it, and it resets on refresh."
+{: .speaker-note }
 
-| Attribute | Description |
+## 🔧 Knobs
+
+| Attribute | What it does |
 |---|---|
-| `correct="N"` | Single-choice answer (1-indexed) |
-| `correct="N,M,…"` | Multi-select answers (1-indexed, comma-separated) |
-| `multi="true"` | Enables multi-select mode + Check button + checkbox visuals |
-| `[x]` / `[ ]` | GitHub task-list sugar — replaces `correct=` when used |
+| `[x]` / `[ ]` | Marks correct / wrong answers inline — recommended |
+| `correct="N"` | Equivalent to `[x]` — 1-indexed position of the correct answer |
+| `correct="N,M,…"` | Multi-select correct answers (1-indexed, comma-separated) |
+| `multi="true"` | Enables multi-select mode: checkboxes + Check button |
 | nested `>` blockquote | Per-option explanation, shown after grading |
-| `id="…"` on the list | Used for the score-popover label; auto-generated if missing |
+| `id="…"` | Label in the 🏆 score popover; auto-generated if omitted |
 
-## Inside slides mode
+**Q:** You have a 3-option quiz where option 2 is correct. Which IAL is equivalent to using `[x]` on option 2?
 
-Quizzes work as slides of their own with no extra syntax. The slide engine skips click-to-advance over quiz options, so students can pick without skipping ahead.
-
-## Two more for the road
-
-**Q:** Which kramdown syntax adds a footnote popover?
-
-- [x] `[^name]` / `[^name]: …`
-- [ ] `<abbr title="…">`
-- [ ] {% raw %}`{% include def.md term="…" %}`{% endraw %}
-- [ ] `### Definitions`
+- [ ] `{: .quiz correct="option-2" }`
+- [x] `{: .quiz correct="2" }` — 1-indexed position
+- [ ] `{: .quiz answer="2" }`
+- [ ] `{: .quiz position="2" }`
 {: .quiz }
 
-**Q:** Which of these become slide breaks in 📽️ mode?
+## 🎭 Inside slides mode
 
-- [ ] `# h1`
-- [x] `## h2`
-- [ ] `### h3`
-- [ ] `#### h4`
+Quizzes work inside slides with no extra syntax. The slide engine **does not advance the deck** when you click a quiz option — so students answer without skipping to the next slide. The slide picker shows a colored dot for each slide with a quiz: 🔵 untried, 🟠 attempted, 🟢 all correct.
+
+## 🏁 Final exam — boss level
+
+**Q:** Which of these are TRUE about quizzes? (Pick all that apply.)
+
+- [x] `[x]` marks the correct answer; `[ ]` marks wrong ones.
+- [x] Blank line before `{: .quiz }` silently breaks the widget.
+- [ ] `multi="true"` reveals all correct answers when Check is clicked.
+- [x] `.run expected="…"` blocks count toward the 🏆 score.
+- [ ] The score is saved to localStorage and persists across reloads.
 {: .quiz multi="true" }
 
-## Limits of v1 — still
+**Q:** A student clicks three wrong answers in a row. What has the quiz revealed so far?
 
-Future asks if you hit them:
+- [ ] All wrong answers are revealed — they'd see three red ✗ items.
+- [x] Only the three items they actually clicked get ✗. Unclicked wrong answers stay neutral.
+- [ ] The quiz gives up and reveals the correct answer after three wrong tries.
+- [ ] The page refreshes. Three strikes, you're out.
+{: .quiz }
 
-- **No per-attempt log**, just a snapshot of current correctness per quiz. Re-answering correctly after a wrong pick counts as correct.
-- **No persistence** across reloads. Easy to add via localStorage if you want; ask.
-- **No fill-in-the-blank widget.** `.run expected="…"` is the working substitute — students write code to produce specific output.
+**Q:** It's a treasure-hunt quiz. There are 4 options. You've clicked 3 wrong ones (all ✗). How many clicks to finish?
 
-[^ial]: **Inline Attribute List** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block (here: a bullet list), attaches attributes to that block. See [Text](/components/text).
+- [x] Exactly one — the only remaining option must be the correct one.
+- [ ] Four — you need to re-click everything to confirm.
+- [ ] Zero — three ✗ means the quiz gives up and grades itself.
+- [ ] Unknowable. The quiz keeps the secret forever.
+{: .quiz }
+
+## ⚠️ Limits of v1
+
+- **No per-attempt log.** Re-answering correctly after a wrong pick counts as correct in the score. It's a learning tool, not an exam platform.
+- **No persistence.** Score clears on refresh. Ask if you want localStorage persistence.
+- **No fill-in-the-blank.** Use `.run expected="…"` as the substitute — students write code to produce the expected output.
+
+[^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to it. See [✍️ Text](/components/text).
 
 {% include backtotop.md %}

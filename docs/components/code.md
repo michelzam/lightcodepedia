@@ -1,48 +1,12 @@
 # 💻 Code
-Show source code (YAML, Python, JSON, …) elegantly. Three options, from least to most powerful. To **run** Python in the browser, see [🐍 Run](/components/run).
 
-## Option 1 — Plain fenced code (built into markdown)
+Display source code with syntax highlighting and an optional file-viewer chrome. Three options, from simplest to most powerful — pick the one that fits. To **run** Python in the browser, see [🐍 Run](/components/run).
 
-Just write a fenced code block with the language tag. Jekyll's Rouge highlights it server-side.
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
-````markdown
-```yaml
-module:
-  - name: dog_ui
-    doc: "Just a Text"
-    icon: "🐕"
-```
-````
+## 👀 Try it now
 
-Renders to:
-
-```yaml
-module:
-  - name: dog_ui
-    doc: "Just a Text"
-    icon: "🐕"
-```
-
-✅ Zero setup, syntax-highlighted, native markdown.  
-⚠️ No title bar, no file label, plain visual chrome.
-
-## Option 2 — Fenced block + `{: .code }` (chrome via kramdown attribute list)
-
-Write a normal fenced code block and add `{: .code }` on the line right after the closing fence. A global scanner wraps the block in the styled "file viewer" card. Add `title="…"` for a file label, omit it for chrome-only.
-
-{% raw %}
-````markdown
-```python
-def greet(name):
-    print(f"Hello, {name}!")
-
-greet("Lightcoder")
-```
-{: .code title="hello.py" }
-````
-{% endraw %}
-
-Renders to:
+Here's a code block with full file-viewer chrome — language badge, title bar, copy button:
 
 ```python
 def greet(name):
@@ -52,46 +16,82 @@ greet("Lightcoder")
 ```
 {: .code title="hello.py" }
 
-YAML, same recipe:
+That's Option 2 — one IAL[^ial] line added to a plain fenced block. Let's build up from the simplest form.
+
+> When demoing: point at the language badge (top-right) and the title bar.
+> Ask: "how many lines of extra markup did that take?" Answer: one.
+{: .speaker-note }
+
+## ✏️ Option 1 — plain fenced block (built-in)
+
+Zero setup. Write a fenced code block with a language tag and Jekyll[^jekyll] highlights it server-side via Rouge[^rouge].
+
+````markdown
+```yaml
+name: Lucky
+age: 3
+breed: Beagle
+```
+````
+
+Renders to:
 
 ```yaml
-module:
-  - name: dog_ui
-    doc: "Just a Text"
-    icon: "🐕"
-
-imports:
-  - !Module
-    name: blocks
-
-instances:
-
-  - !Text
-    title: "Dog"
-    icon: "🐕"
-    as_name: dog
-    border: False
-    text: "Man's best friend :dog:"
-    help: Dogs are cute and fast
-    media: https://picsum.photos/id/237/500/400
+name: Lucky
+age: 3
+breed: Beagle
 ```
-{: .code title="dog_ui.yaml" }
 
-Or without a file label — just border + language badge:
+✅ Native markdown — works in any markdown viewer, no extras needed.
+⚠️ No title bar, no file label, no copy button.
+
+**Use this for:** short snippets inside prose where you just want highlighting, nothing more.
+
+**Q:** You want to show a quick 3-line YAML example inline in a tutorial paragraph. Which option is right?
+
+- [x] Plain fenced block — zero setup, inline highlighting, no chrome overhead.
+- [ ] `{: .code }` — you should always add chrome for professionalism.
+- [ ] `code_file.md` — even for inline snippets, the file-loader is more future-proof.
+- [ ] Put it in a `<pre>` tag. Classic HTML never lets you down.
+{: .quiz }
+
+## 🎨 Option 2 — `{: .code }` (add chrome)
+
+Add `{: .code }` on the line right after the closing fence to wrap the block in a styled file-viewer card. Add `title="…"` for a filename label.
+
+````markdown
+```python
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet("Lightcoder")
+```
+{: .code title="hello.py" }
+````
+
+Same block without a title — just the border and language badge:
 
 ```json
 {"name": "Lucky", "age": 3}
 ```
 {: .code }
 
-✅ Pure markdown — no Liquid `{% raw %}{% capture %}{% endraw %}` dance. Server-side Rouge highlighting is preserved. Works for any language Rouge knows.  
-⚠️ The `{: …}` must sit on its own line immediately after the closing fence (kramdown rule). A blank line before it is tolerated.
+Works for any language Rouge[^rouge] knows: `python`, `yaml`, `json`, `markdown`, `bash`, `liquid`, `csv`, and many more.
 
-## Option 3 — `code_file.md` include (live fetch from a real file)
+✅ Pure markdown — no Liquid `{% raw %}{% capture %}{% endraw %}` needed. Server-side highlighting preserved.
+⚠️ The `{: .code }` must be on the line directly after the closing fence. A blank line before it is tolerated; no line at all means the IAL attaches to the wrong block.
 
-Always shows the current content of a file. Fetched at runtime via JavaScript.
+**Q:** You add `{: .code title="config.yaml" }` but the title bar never shows up. What's the most likely cause?
 
-The short form points at a file **inside this repo** — and works automatically in forks (each fork's page fetches from its own repo):
+- [ ] YAML blocks don't support titles — use `{: .code-yaml }`.
+- [ ] The title string has a dot in it, which breaks the IAL parser.
+- [x] There's a blank line between the closing fence and the IAL — it attached to nothing.
+- [ ] You need `format="yaml"` alongside `title=`.
+{: .quiz }
+
+## 📂 Option 3 — live from a repo file
+
+`{% raw %}{% include code_file.md path="…" %}{% endraw %}` fetches the current content of a file from the repo at page load. The page becomes a live mirror — no copy-paste, always in sync.
 
 {% raw %}
 ```liquid
@@ -103,42 +103,71 @@ Renders to:
 
 {% include code_file.md path="modules/dog_ui.yaml" lang="yaml" %}
 
-### Live by default, cached on demand
+By default the page fetches from `raw.githubusercontent.com` (fresh after every push, ~1 s latency). When viewed on the canonical host[^cdn] or with `?cdn=1`, it switches to jsDelivr (edge-cached, faster for end users).
 
-By default the page fetches from `raw.githubusercontent.com` of the current repo — fast feedback after a push (~1 s freshness). To switch to the edge-cached jsDelivr version (faster for end users, pinned to the build commit so it's always fresh), add `?cdn=1` to the URL:
+The mode — *(live)* or *(cdn)* — is shown in italics in the title bar.
 
-- `…/components/code` → live mode (raw) — designer-friendly
-- `…/components/code?cdn=1` → cdn mode (jsDelivr) — viewer-friendly
+### File-loader knobs
 
-The mode is shown in italics in the file viewer's title bar. You can also set `lc_canonical_host:` in `_config.yml` to a hostname (e.g. your custom domain) and any visitor on that host will get cdn mode automatically.
+| Knob | What it does |
+|---|---|
+| `path="…"` | Repo-relative path — auto-builds raw + jsDelivr URLs from the repo metadata |
+| `src="https://…"` | External URL escape hatch — use for files outside the repo |
+| `repo="org/repo"` `branch="…"` | Override repo + branch (defaults: current site, `main`) |
+| `lang="…"` | Language badge: `yaml`, `python`, `json`, etc. Defaults to `text` |
+| `title="…"` | File label in the title bar; defaults to `path` (or `src`) |
 
-### External files via `src="…"`
+An example loading a CSV from the repo:
 
-Use `src="…"` when the file lives outside the repo. The hostname/`?cdn=1` switch is bypassed (we don't know an alternate URL):
+{% include code_file.md path="data/dogs.csv" lang="csv" title="data/dogs.csv" %}
 
-{% raw %}
-```liquid
-{% include code_file.md src="https://raw.githubusercontent.com/torvalds/linux/master/README" lang="text" title="Linux README" %}
-```
-{% endraw %}
+## 🤔 Which option to pick
 
-### Parameters
+| Situation | Best choice |
+|---|---|
+| Short snippet inside a tutorial paragraph | Plain fenced block |
+| Snippet that deserves a title / file-viewer look | `{: .code title="…" }` |
+| Full source file you want to keep in sync | `code_file.md path="…"` |
+| External file from another repo | `code_file.md src="…"` |
+| Python code the student should **run** | `{: .run }` — see [🐍 Run](/components/run) |
 
-| Where | Knob | Description |
-|---|---|---|
-| `{: .code … }` | `title="…"` | File label shown in the title bar; omit for chrome-only |
-| `code_file.md` | `path="…"` | Repo-relative path (recommended). Auto-builds raw + jsDelivr URLs from `site.github.repository_nwo` |
-| `code_file.md` | `src="…"` | Full URL escape hatch — use for files outside the repo |
-| `code_file.md` | `repo="…"` / `branch="…"` | Override the inferred repo / branch (defaults: current repo / `main`) |
-| `code_file.md` | `lang="…"` | Language badge (`yaml`, `python`, `json`, …). Defaults to `text` |
-| `code_file.md` | `title="…"` | File label; defaults to `path` (or `src`) |
+> Rule of thumb: start with Option 1 (plain fenced). Upgrade to Option 2 when you want chrome.
+> Upgrade to Option 3 when the source file already exists and you'd have to maintain two copies otherwise.
+{: .speaker-note }
 
-## When to use which
+**Q:** You have a 200-line Python module in `src/parser.py`. You want it displayed on a tutorial page, always showing the latest committed version. Which option do you pick?
 
-- **Plain fenced** for ad-hoc snippets inside prose.
-- **`{: .code }`** when you want a file-viewer look and the content lives in the page.
-- **`code_file.md`** for long source files you want to keep in sync — the page becomes a live mirror, and forks mirror their own copies.
+- [ ] Copy-paste into a plain fenced block. 200 lines is fine, you'll remember to update it.
+- [ ] `{: .code title="parser.py" }` — the chrome makes it look like a real file.
+- [x] `code_file.md path="src/parser.py"` — the page fetches the live file; no copy-paste ever.
+- [ ] A hyperlink to the GitHub file view. Let GitHub's UI do the heavy lifting.
+{: .quiz }
 
-See [🐍 Run](/components/run) for executable Python blocks via `{: .run }`.
+## 🏁 Final exam — boss level
+
+**Q:** Which of these are TRUE about the code widget? (Pick all that apply.)
+
+- [x] Plain fenced blocks use server-side highlighting via Rouge — no JS needed.
+- [x] `{: .code }` without a `title=` still adds the border and language badge.
+- [ ] `code_file.md` only works for files smaller than 100 KB.
+- [x] `?cdn=1` in the URL switches `code_file.md` to the jsDelivr edge-cached version.
+- [ ] All three options require JavaScript to render.
+{: .quiz multi="true" }
+
+**Q:** You add `{: .run }` to a Python block instead of `{: .code }`. What's different?
+
+- [ ] Nothing — `.run` and `.code` do the same thing.
+- [ ] The block gets a title bar but the code is still read-only.
+- [x] The block becomes a live editor: the student can edit and run the code.
+- [ ] The page crashes because `.run` is only valid on YAML blocks.
+{: .quiz }
+
+[^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to that block. See [✍️ Text](/components/text).
+
+[^jekyll]: **Jekyll** — the static site generator that builds this site. It processes Markdown files into HTML pages, applying Liquid templates and the kramdown parser. Deployed automatically on GitHub Pages.
+
+[^rouge]: **Rouge** — a Ruby syntax highlighter used by Jekyll. Runs at build time (server-side), so no JavaScript is needed for static code blocks. Supports 200+ languages.
+
+[^cdn]: **CDN (Content-Delivery Network)** — a globally distributed network of servers that caches and serves files from an edge node geographically close to the visitor. This site uses jsDelivr to serve library files and cached repo content.
 
 {% include backtotop.md %}

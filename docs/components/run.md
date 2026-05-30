@@ -1,48 +1,105 @@
 # 🐍 Run
-Edit Python in the browser and run it on the spot. Powered by **MicroPython compiled to WebAssembly** (~300 KB, loaded on first ▶ Run, cached after). To just **display** code without running it, see [💻 Code](/components/code).
 
-## Tiniest runner — `{: .run }` on a fenced block
+Write Python in the browser and run it on the spot — no install, no server, nothing to configure.
 
-Add `{: .run }` on the line right after a Python fenced block's closing fence. The page upgrades the block into a live editor + runner.
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode. Every example below is live; try them as you read.
 
-{% raw %}
-````markdown
+## 🏃 Try it now
+
+Here's a Python runner. Hit ▶ Run, read the output, change something, run again.
+
 ```python
 def greet(name):
-    print(f"Hello, {name}!")
+    print(f"Hello, {name}! 🎉")
 
 greet("Lightcoder")
+greet("World")
+```
+{: .run id="first-run" }
+
+That's it. The runner loads Python[^wasm] on first click (~300 KB, cached after). Next run is instant.
+
+> Ask students: "What do you expect to see before you click ▶ Run?"
+> Pause. Let them predict. Then run it. The prediction habit is the whole lesson.
+{: .speaker-note }
+
+**Q:** You changed `"World"` to `"Python"` and hit ▶ Run. What do you see?
+
+- [ ] Nothing — you need to save the file first.
+- [x] `Hello, Python! 🎉` in the output.
+- [ ] A syntax error because you touched the code.
+- [ ] A terminal opens and asks for your password.
+{: .quiz }
+
+## 🛠️ How to make a runner
+
+Write a Python fenced block, then put `{: .run }` on the very next line:
+
+````markdown
+```python
+print("hello")
 ```
 {: .run }
 ````
-{% endraw %}
 
-Renders to:
+That's the whole syntax. The page upgrades the static code block into a live editor + output pane.
+
+> The IAL[^ial] `{: .run }` must be on the line directly after the closing fence — no blank line between.
+> That's the only gotcha.
+{: .speaker-note }
+
+**Q:** Which line makes a fenced code block into a live runner?
+
+- [ ] `# run this`
+- [ ] `<!-- run -->`
+- [x] `{: .run }` on the line right after the closing fence
+- [ ] Double-clicking the code block. It just knows.
+{: .quiz }
+
+## 🔧 Knobs to tune
+
+| Attribute | What it does |
+|---|---|
+| `id="myrunner"` | Required when you have more than one runner per page |
+| `rows="3"` | Editor height in lines (default 6) |
+| `folded="true"` | Editor starts hidden behind a click-to-expand toggle — great for "here's the setup code" |
+| `bound="o"` | Mirror a variable `o` as a live card above the editor — see the card section below |
+| `init="…"` | One-liner Python that runs silently before the editor body |
+| `# ---` in the code | Split marker: code above runs as init (hidden); code below is the editable body |
+| `silent="true"` | No UI at all — runs once on page load, stdout swallowed, errors go to the console |
+| `expected="…"` | After ▶ Run, compare printed output to this string. ✓ if it matches; counts toward the 🏆 score |
+
+**Q:** You want the editor to start collapsed so it doesn't intimidate beginners. Which attribute do you add?
+
+- [x] `folded="true"`
+- [ ] `hidden="true"`
+- [ ] `collapsed="true"`
+- [ ] Put the code in a `<details>` tag and hope for the best.
+{: .quiz }
+
+## ✂️ Init code — the `# ---` split
+
+Sometimes you need setup code that shouldn't clutter the learner's editor. Put it above a `# ---` line:
 
 ```python
-def greet(name):
-    print(f"Hello, {name}!")
-
-greet("Lightcoder")
+# this runs silently on load — learners never edit it
+dogs = ["Lucky", "Wanda", "Max"]
+# ---
+# learner edits this part
+for d in dogs:
+    print(d)
 ```
-{: .run }
+{: .run id="init-split" rows="4" }
 
-## Knobs on `{: .run … }`
+Everything above `# ---` is init — runs once, invisible to the learner. Everything below is the editable body.
 
-| Attribute | Description |
-|---|---|
-| `id="myrunner"` | Required if you have multiple runners on the same page |
-| `rows="3"` | Editor height in lines (default 6) |
-| `folded="true"` | Editor starts collapsed behind a click-to-expand toggle |
-| `bound="o"` | Mirror the variable `o` as a card above the editor; repaints after every Run |
-| `init="…"` | Single-line Python that runs once on page load |
-| `# ---` (inside the block) | Magic separator: above = init, below = editor body |
-| `silent="true"` | Run the block at page load with no UI — useful for setup side-effects (rendering into a `<div>`, computing globals, registering pieces). Errors go to the browser console |
-| `expected="…"` | After ▶ Run, compare the printed output to this string. Match → ✓ in the status; mismatch → ✗ + the expected value. Result reports to the page-level 🏆 score (see [Quiz](/components/quiz)). |
+> Useful for anything the lesson *depends on* but shouldn't distract from:
+> pre-loaded data, helper functions, imports.
+{: .speaker-note }
 
-## Silent auto-exec — `silent="true"`
+## 🤫 Silent mode — background setup
 
-A `.run` block with `silent="true"` doesn't render an editor or output area. It just loads MicroPython in the background and executes the code once, with `stdout` swallowed and `stderr` sent to the browser console. Useful for page-level setup that doesn't deserve UI.
+`silent="true"` runs the block at page load with no visible UI. Use it to pre-compute something or render into a `<div>` elsewhere on the page.
 
 ```python
 from js import document
@@ -52,25 +109,13 @@ if el is not None:
 ```
 {: .run silent="true" }
 
-<div id="hello-target" style="padding: 0.6em; background: #f3f4f6; border-radius: 6px;">(loading…)</div>
+<div id="hello-target" style="padding:0.6em;background:#f3f4f6;border-radius:6px;">(loading…)</div>
 
-## Bound card — a live in-memory object
+The div above was written by the invisible runner above. No button, no output pane — just the effect.
 
-A pre-defined `Object` (a `SimpleNamespace`-style holder, baked into the runner) gets created on load and rendered as a card. The editor below is folded — click to open, hit ▶ Run, watch the card update.
+## 🃏 Cards — visualizing objects
 
-```python
-o = Object(name='🐕 Lucky', age=3)
-# ---
-o.age += 1
-print(o)
-```
-{: .run bound="o" folded="true" rows="3" }
-
-The Python only mutates an in-memory object (`o.age += 1`). The page redraws because `bound="o"` registered the card. No view code, no Streamlit, no DOM calls inside Python.
-
-## Cards from YAML
-
-Every runner exposes a built-in `show(obj)` helper that renders a card in a grid below the output. Combined with `yaml.load()`, you can describe data in YAML and visualize it:
+Every runner has a `show(obj)` helper that renders an object as a card below the output. Chain multiple `show()` calls to build a grid of cards.
 
 ```python
 dogs = yaml.load("""
@@ -93,7 +138,7 @@ for d in dogs:
 
 print(f"Showed {len(dogs)} dogs.")
 ```
-{: .run id="yaml-cards" rows="16" }
+{: .run id="yaml-cards" rows="18" }
 
 Custom classes work too — `show()` reads `__dict__`:
 
@@ -107,24 +152,48 @@ class Pet:
 pets = [Pet("Lucky", 3, "Beagle"), Pet("Wanda", 5, "Poodle")]
 for p in pets:
     show(p)
-
-pets[0].age += 1
-show(pets[0], title="Lucky (one year later)")
 ```
-{: .run id="custom-class" rows="11" }
+{: .run id="custom-class" rows="10" }
 
-## Doctests — click 🧪 Test
-
-Every runner has a **🧪 Test** button next to ▶ Run. It scans the editor for `>>> expr` lines inside triple-quoted docstrings, runs each one, and compares `repr(value)` to the expected output on the next line. Pass/fail rendered inline.
+For a sortable, filterable table instead of cards, use `show.grid(rows)`:
 
 ```python
-def fact(n: int) -> int:
-    """
-    Recursive factorial.
+dogs = [
+    {"name": "Lucky", "age": 3, "breed": "Beagle"},
+    {"name": "Wanda", "age": 5, "breed": "Poodle"},
+    {"name": "Max",   "age": 2, "breed": "Husky"},
+]
+show.grid(dogs, title="Shelter dogs", height=200)
+print("Grid rendered.")
+```
+{: .run id="show-grid" rows="8" }
 
+## 🧲 Bound card — a live mirrored object
+
+`bound="o"` keeps a card permanently in sync with a Python object. Every ▶ Run repaints the card. The object lives in memory; no DOM calls inside Python.
+
+```python
+o = Object(name='Lucky', age=3, breed='Beagle')
+# ---
+o.age += 1
+print(o)
+```
+{: .run bound="o" folded="true" rows="3" id="bound-demo" }
+
+`Object(**kw)` is a built-in `SimpleNamespace`-style holder. Pair it with `bound="o"` and the card above the editor reflects every mutation.
+
+> The card demo is often more memorable than the output.
+> "Your data has a face now" — it clicks for visual learners.
+{: .speaker-note }
+
+## 🧪 Doctests — click 🧪 Test
+
+Every runner has a **🧪 Test** button next to ▶ Run. It finds `>>> expr` lines inside docstrings, runs each expression, and compares `repr(value)` to the expected line below it.
+
+```python
+def fact(n):
+    """
     >>> fact(0)
-    1
-    >>> fact(1)
     1
     >>> fact(5)
     120
@@ -133,113 +202,113 @@ def fact(n: int) -> int:
     """
     return 1 if n <= 1 else n * fact(n - 1)
 
-
-def greet(name: str) -> str:
+def greet(name):
     """
     >>> greet("Lucky")
     'Hello, Lucky!'
-    >>> greet("")
-    'Hello, !'
     """
     return "Hello, " + name + "!"
 ```
-{: .run id="doctests-demo" rows="22" }
+{: .run id="doctests-demo" rows="18" }
 
-▶ Run executes the module (no output unless you call something). 🧪 Test runs every `>>>` line and shows a pass/fail summary. Try editing one of the expected values to see a red row.
+Hit **▶ Run** first (so the functions exist), then **🧪 Test**. Try breaking a return value to see a red failure row.
 
-### Doctest rules
+**Doctest rules in brief:**
 
-- Tests live inside `"""…"""` or `'''…'''` docstrings.
-- Each test is `>>> <expression>` followed by **one line** of expected output.
-- The expression is `eval()`-d. Its **`repr()`** is compared against the expected line (so strings need their quotes: `'Hello, Lucky!'` not `Hello, Lucky!`).
-- Expressions that return `None` should have a blank line after — or just nothing.
-- `print(...)`-based doctests aren't captured (the runner uses `eval`, not stdout). Test return values instead.
-- Function definitions and module-level code run first, so doctests see your full namespace.
+- Tests live inside `"""…"""` docstrings.
+- Each test is `>>> expression` followed by one line of expected output.
+- Expected output is compared against `repr(value)` — strings need their quotes: `'Lucky!'` not `Lucky!`.
+- `None`-returning calls need no expected line (or a blank line).
 
-## Built-in helpers (available inside every runner)
+## ⌨️ REPL — line-by-line exploration
 
-| Symbol | What it does |
-|---|---|
-| `print(...)` | Writes to the dark output pane |
-| `Object(**kw)` | `SimpleNamespace`-style holder. Pair with `bound="…"` to mirror as a card. |
-| `show(obj, title=None)` | Renders `obj` as a card in the grid below the output |
-| `show.clear()` | Removes all cards from the grid |
-| `yaml.load(s)` | Parses YAML into Python objects (powered by `js-yaml`) |
-| 🧪 Test button | Scans the editor for `>>>` doctests, runs each, compares `repr(value)` against expected |
-
-## When `{: .run }` isn't enough — explicit `{% raw %}{% include python_run.md %}{% endraw %}`
-
-Fall back to the include form when you need a multi-line `init`, or when the editor code itself contains a `# ---` line you don't want interpreted as the separator.
-
-{% raw %}
-```liquid
-{% capture _py %}
-def fact(n):
-    return 1 if n <= 1 else n * fact(n - 1)
-
-for i in range(1, 8):
-    print(f"{i}! = {fact(i)}")
-{% endcapture %}
-{% include python_run.md id="explicit" code=_py rows="8" %}
-```
-{% endraw %}
-
-{% capture _py %}
-def fact(n):
-    return 1 if n <= 1 else n * fact(n - 1)
-
-for i in range(1, 8):
-    print(f"{i}! = {fact(i)}")
-{% endcapture %}
-{% include python_run.md id="explicit" code=_py rows="8" %}
-
-✅ Native Python syntax, runs entirely in the browser, no server.  
-⚠️ MicroPython's stdlib is slim — no `numpy`, no `pandas`, no `requests`. For the full Python ecosystem you'd switch to Pyodide (~10 MB).
-
-## What is `>>>` ? — a live REPL
-
-In doctests (and Python tutorials everywhere), every interactive line starts with `>>>`. That's the **Python REPL prompt** — REPL stands for **R**ead → **E**val → **P**rint → **L**oop. It's the interactive "type a Python expression, see the result, type the next one" cursor that ships with Python itself.
-
-The widget below is a real REPL running entirely in your browser. State persists across lines — assign a variable on one line, query it on the next.
+The REPL[^repl] is the interactive prompt — type a Python expression, press Enter, see the result immediately. Great for exploration; not for multi-line `def`/`class`/`for` (use a `.run` block for those).
 
 ```python
 ```
-{: .repl }
+{: .repl id="main-repl" }
 
-Try typing these one at a time, hitting Enter after each:
+Try typing these one at a time:
 
 | You type | What happens |
 |---|---|
-| `2 + 2` | prints `4` — an expression evaluates and shows its repr |
-| `name = "Lucky"` | no output — assignments are statements, they return nothing |
-| `name` | prints `'Lucky'` — the variable's value (note the quotes — that's `repr`) |
-| `len(name)` | prints `5` |
-| `[1, 2, 3] * 3` | prints `[1, 2, 3, 1, 2, 3, 1, 2, 3]` |
-| `import math` | no output — imports are statements |
-| `math.sqrt(2)` | prints `1.4142135623730951` |
-| `1 / 0` | prints `ZeroDivisionError: divide by zero` — errors are caught |
+| `2 + 2` | `4` — expression evaluated, repr printed |
+| `name = "Lucky"` | nothing — assignment is a statement |
+| `name` | `'Lucky'` — with quotes, that's `repr` |
+| `len(name)` | `5` |
+| `[1,2,3]*3` | `[1, 2, 3, 1, 2, 3, 1, 2, 3]` |
+| `1 / 0` | `ZeroDivisionError` — caught and shown |
 
-Use ↑ / ↓ to walk through history.
-
-### `{: .repl }` knobs
-
-| Attribute | Description |
-|---|---|
-| (fence content) | Optional — runs once silently on load to preload state (e.g. `import math`) |
-| `init="…"` | Single-line equivalent of the fence content |
-| `id="myrepl"` | Required if you have multiple REPLs on the same page |
+Use ↑ / ↓ to walk history.
 
 A pre-warmed REPL with `math` already imported:
 
 ```python
 import math
-greeting = "Hello from a pre-warmed REPL!"
-print(greeting)
+print("math loaded!")
 ```
 {: .repl id="prewarmed" }
 
-Type `math.pi`, `greeting`, or `greeting.upper()` to see the preloaded state in action.
+**Q:** You type `x = 5` in the REPL and press Enter. What do you see?
 
-**Limitations:** single-line input only. For multi-line `def` / `class` / `for`, use a `{: .run }` block instead.
+- [ ] `5`
+- [ ] `x = 5`
+- [x] Nothing — assignment is a statement, not an expression.
+- [ ] A pop-up asking if you want to save the variable.
+{: .quiz }
+
+## 🧰 Built-in helpers (always available)
+
+| Symbol | What it does |
+|---|---|
+| `print(…)` | Writes to the dark output pane |
+| `Object(**kw)` | Simple attribute holder. Pair with `bound=` to show a live card |
+| `show(obj, title=None)` | Renders `obj` as a card below the output |
+| `show.clear()` | Removes all cards |
+| `show.grid(rows, title=None, height=300)` | Renders a sortable/filterable [📊 Datagrid](/components/datagrid) |
+| `show.form(obj, title=None)` | Renders a [📝 Form](/components/form) |
+| `yaml.load(s)` | Parses a YAML string into Python objects |
+
+## ⚠️ Limits worth knowing
+
+- **Slim stdlib.** The browser Python[^wasm] has `json`, `math`, `re`, `collections`, `itertools` and more — but no `numpy`, `pandas`, `requests`, or any C extension. For the full Python ecosystem you'd switch to Pyodide (~10 MB).
+- **No filesystem.** `open()` doesn't work. Use `yaml.load()`, inline strings, or `show()` for data.
+- **Single thread.** No `threading`, no `asyncio`. Code blocks the tab while running (fast scripts only).
+- **No persistence.** Variables reset between page loads. Use `bound=` to keep state visible between runs within the same session.
+
+## 🏁 Final exam — boss level
+
+**Q:** Which of these are TRUE about the Python runner? (Pick all that apply.)
+
+- [x] `{: .run }` goes on the line right after the closing fence.
+- [x] `show.grid(rows)` renders a sortable datagrid.
+- [ ] The runner has full access to `numpy` and `pandas`.
+- [x] `# ---` in the code splits init from the editable body.
+- [ ] `silent="true"` shows a minimal output pane but suppresses errors.
+{: .quiz multi="true" }
+
+**Q:** A student hits ▶ Run and nothing happens for 3 seconds, then the output appears. What's going on?
+
+- [ ] The server is slow — try at midnight.
+- [x] Python is loading into the browser for the first time (~300 KB). Subsequent runs are instant.
+- [ ] The student's code has an infinite loop. Always.
+- [ ] Chrome blocked it. Always Chrome.
+{: .quiz }
+
+**Q:** You want `for i in range(5): print(i)` to verify against expected output `0\n1\n2\n3\n4`. Which attribute do you add to `{: .run }`?
+
+- [ ] `verify="0\n1\n2\n3\n4"`
+- [x] `expected="0\n1\n2\n3\n4"`
+- [ ] `assert="0\n1\n2\n3\n4"`
+- [ ] `correct="0\n1\n2\n3\n4"` — quiz rules apply everywhere
+
+  > `expected=` compares trimmed stdout to the string you provide, then reports to the 🏆 score tracker.
+{: .quiz }
+
+[^wasm]: **WebAssembly (WASM)** — a binary format that runs near-native speed in every modern browser. The Python engine here is MicroPython compiled to WASM: a lean, standards-compliant Python 3 interpreter (~300 KB gzipped) that needs no install and no server.
+
+[^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax. Put it on its own line right after a fenced block (or any block) to attach HTML attributes — id, classes, custom data. All components on this site are activated this way.
+
+[^repl]: **REPL** — Read → Eval → Print → Loop. The interactive Python prompt (`>>>`) where you type one expression, see the result, and type the next. Same thing you get if you run `python3` in a terminal.
 
 {% include backtotop.md %}
