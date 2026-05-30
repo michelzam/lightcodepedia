@@ -1571,6 +1571,7 @@
     document.querySelectorAll("ul.carousel").forEach(upgradeCarousel);
     document.querySelectorAll(".highlighter-rouge.accordion").forEach(upgradeAccordion);
     document.querySelectorAll(".highlighter-rouge.tabs").forEach(upgradeTabsInline);
+    document.querySelectorAll("p.tabs").forEach(upgradeTabsFile);
     document.querySelectorAll(".highlighter-rouge.radio").forEach(upgradeRadio);
     document.querySelectorAll(".highlighter-rouge.grid").forEach(upgradeGrid);
     document.querySelectorAll(".highlighter-rouge.scrollable").forEach(upgradeScrollable);
@@ -1807,6 +1808,66 @@
       });
       el.parentNode.replaceChild(wrap, el);
     });
+  }
+
+  function upgradeTabsFile(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var a = el.querySelector("a");
+    if (!a) return;
+    var filePath = a.getAttribute("href").replace(/^\/+|\/+$/g, "");
+    var gid = el.getAttribute("id") || ("lc-tf-" + Math.random().toString(36).slice(2, 7));
+    var placeholder = document.createElement("div");
+    placeholder.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading tabs…</div>";
+    el.parentNode.replaceChild(placeholder, el);
+    if (!_lcSiteRepo) {
+      placeholder.innerHTML = "<div class='lc-tabs' style='padding:1em;color:#c00'>⚠️ site.github.repository_nwo not set.</div>";
+      return;
+    }
+    var rawUrl = "https://raw.githubusercontent.com/" + _lcSiteRepo + "/main/docs/" + filePath + ".md";
+    fetch(rawUrl)
+      .then(function(r) { if (!r.ok) throw new Error("File not found: " + filePath + ".md"); return r.text(); })
+      .then(function(text) {
+        var lines = text.split("\n");
+        var i = 0;
+        if (lines[0] && lines[0].trim() === "---") {
+          i = 1;
+          while (i < lines.length && lines[i].trim() !== "---") i++;
+          i++;
+        }
+        var body = lines.slice(i).join("\n");
+        var sections = body.split(/\n(?=### )/).map(function(s) {
+          var sl = s.split("\n");
+          return { label: sl[0].replace(/^###\s*/, "").trim(), body: sl.slice(1).join("\n").trim() };
+        }).filter(function(s) { return s.label; });
+        if (!sections.length) {
+          placeholder.innerHTML = "<div class='lc-tabs' style='padding:1em;color:#c00'>⚠️ No ### sections found in " + escapeHtml(filePath) + ".md</div>";
+          return;
+        }
+        loadMarked(function() {
+          var bar = sections.map(function(s, i) {
+            return "<button class=\"lc-tab-btn" + (i===0?" active":"") + "\" data-tab=\"" + gid + "-" + i + "\">" + escapeHtml(s.label) + "</button>";
+          }).join("");
+          var panels = sections.map(function(s, i) {
+            return "<div id=\"" + gid + "-" + i + "\" class=\"lc-tab-panel" + (i===0?" active":"") + "\">" + marked.parse(s.body) + "</div>";
+          }).join("");
+          var wrap = document.createElement("div");
+          wrap.className = "lc-tabs";
+          wrap.innerHTML = "<div class=\"lc-tab-bar\">" + bar + "</div>" + panels;
+          wrap.querySelectorAll(".lc-tab-btn").forEach(function(b) {
+            b.addEventListener("click", function() {
+              wrap.querySelectorAll(".lc-tab-btn").forEach(function(x) { x.classList.remove("active"); });
+              wrap.querySelectorAll(".lc-tab-panel").forEach(function(x) { x.classList.remove("active"); });
+              b.classList.add("active");
+              document.getElementById(b.dataset.tab).classList.add("active");
+            });
+          });
+          placeholder.parentNode.replaceChild(wrap, placeholder);
+        });
+      })
+      .catch(function(e) {
+        placeholder.innerHTML = "<div class='lc-tabs' style='padding:1em;color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
+      });
   }
 
   function upgradeRadio(el) {

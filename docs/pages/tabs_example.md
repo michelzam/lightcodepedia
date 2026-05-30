@@ -1,8 +1,3 @@
----
-sitemap: false
-layout: null
----
-
 ### 🐍 Python
 Python is a great first language for learners.
 - Easy to read
@@ -12,7 +7,7 @@ Python is a great first language for learners.
 ### 🎬 Demo
 Click below to try the LightCode demo app.
 
-[🎬 Open Demo](../demo)
+[🎬 Open Demo](../archive/demo)
 
 ### 📚 Resources
 - [Official Python docs](https://docs.python.org)

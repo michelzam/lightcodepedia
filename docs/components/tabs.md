@@ -6,7 +6,8 @@ Show alternative content panels — only one tab visible at a time. Each `### He
 
 ## 👀 See it in action
 
-{% include tabs.md file="_tabs_example" %}
+[→](pages/tabs_example)
+{: .tabs }
 
 Click any tab. The active tab is highlighted in blue; the others hide. That's the whole widget.
 
@@ -25,17 +26,16 @@ Click any tab. The active tab is highlighted in blue; the others hide. That's th
 
 ## 🛠️ How to make one
 
-Two files. That's all.
+Two steps. That's all.
 
 **Step 1** — add one line to your page:
 
-{% raw %}
-```liquid
-{% include tabs.md file="components/my_tabs" %}
+```markdown
+[→](pages/my_tabs)
+{: .tabs }
 ```
-{% endraw %}
 
-**Step 2** — create `docs/components/my_tabs.md`. Each `### Heading` becomes a tab; the content below it becomes the panel body:
+**Step 2** — create `docs/pages/my_tabs.md`. Each `### Heading` becomes a tab; the content below it becomes the panel body:
 
 ```markdown
 ### 🐍 Python
@@ -52,12 +52,15 @@ Click here to try the demo.
 
 Add another `### Section` → a new tab appears. Remove one → it's gone.
 
+> Put tab content files in `docs/pages/` — they show up in the Pages editor and stay out of the Components listing.
+{: .speaker-note }
+
 **Q:** You want to add a fourth tab called "🧪 Exercises". What do you do?
 
-- [ ] Add `tab4="🧪 Exercises"` to the `{% raw %}{% include %}{% endraw %}` line.
+- [ ] Add `tab4="🧪 Exercises"` to the link line.
 - [ ] Edit `_includes/tabs.md` directly.
 - [x] Add `### 🧪 Exercises` (and its body) to your content file.
-- [ ] Create a new `tabs4.md` include. One include per tab.
+- [ ] Create a new `tabs4.md` file. One file per tab.
 {: .quiz }
 
 ## ✏️ Try it live — edit and see
@@ -74,7 +77,7 @@ Python is a great **first language** for learners.
 ### 🎬 Demo
 Click below to try the demo app.
 
-[🎬 Open Demo](../demo)
+[🎬 Open Demo](../archive/demo)
 
 ### 📚 Resources
 - [Official Python docs](https://docs.python.org)
@@ -135,40 +138,43 @@ Try adding a `### ⚡ New Tab` section. Try putting a `**bold**` word or a `- bu
 
 > Live demo: ask learners to add a tab called "❓ Questions" with a bullet list of their questions.
 > The instant preview makes the two-file structure click — they see the rendered result
-> before ever touching the include line.
+> before ever touching a file.
 {: .speaker-note }
 
 ## 🔧 Options
 
-The `{% raw %}{% include %}{% endraw %}` line accepts a few optional parameters:
-
-| Parameter | Default | What it does |
+| Attribute | Default | What it does |
 |---|---|---|
-| `file="…"` | required | Path to the content file, without `.md` |
-| `id="…"` | `"default"` | Required when more than one tabs widget lives on a page |
+| `id="…"` | auto | Required when more than one tabs widget lives on a page |
+
+```markdown
+[→](pages/my_tabs)
+{: .tabs id="tab1" }
+```
 
 ## ⚠️ Limits worth knowing
 
-- **Panels are static.** Content is rendered at build time by Jekyll — no live components (runners, datagrids) inside tab panels yet.
 - **One active tab at a time.** No multi-open accordion mode.
-- **Two-file requirement.** The content must live in a separate `.md` file — you can't write tab content inline in the same page. This is the main ergonomic cost of the current include approach.
+- **Two-file requirement.** The content must live in a separate `.md` file in `docs/pages/`. You can't write tab content inline in the same page.
+- **No live components inside panels.** Python runners, datagrids etc. won't upgrade inside a tab panel fetched this way.
+- **Requires public repo.** Tab content is fetched from `raw.githubusercontent.com` — works on public repos without authentication.
 
 ## 🏁 Final exam — boss level
 
-**Q:** You add `### ⚡ Speed` to the content file but the new tab doesn't appear on the page after you save. What's missing?
+**Q:** You add `### ⚡ Speed` to the content file but the new tab doesn't appear after you save. What's missing?
 
-- [ ] You need to add `tab5="⚡ Speed"` to the include line.
+- [ ] You need to add `tab5="⚡ Speed"` to the link line.
 - [ ] The content file requires a front-matter `tabs: true` flag.
-- [x] A Jekyll rebuild — the include processes the file at build time, not in the browser.
+- [x] A GitHub Pages build (~35 s) — the raw file is fetched from the pushed commit.
 - [ ] The `### ` must be at column 1 with exactly one space after the hashes.
 
-  > Jekyll processes everything at build time. Save → wait for build → reload. No hot-reload yet.
+  > Push → wait ~35 s → reload. The raw file is fetched from the latest committed version.
 {: .quiz }
 
-**Q:** You want two separate tabs widgets on the same page. What do you add to each include?
+**Q:** You want two separate tabs widgets on the same page. What do you add to each link line?
 
 - [ ] Nothing — tabs widgets are automatically namespaced by file path.
-- [x] A distinct `id="…"` on each include line.
+- [x] A distinct `id="…"` attribute on each `{: .tabs }` IAL.
 - [ ] A `namespace="…"` parameter.
 - [ ] You can't — one tabs widget per page is the hard limit.
 {: .quiz }
