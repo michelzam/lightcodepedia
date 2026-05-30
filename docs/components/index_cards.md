@@ -72,3 +72,8 @@ Sortable, filterable, resizable tables via `{: .datagrid }` — AG Grid Communit
 Single-object attribute view via `{: .form }`. Pair with a datagrid via `bound=` for master/detail.
 
 [Open →](form)
+
+### 📽️ Slides
+Present any markdown page as a deck — `## h2` becomes a slide, bullets auto-fragment. No source markup; click 📽️ at the bottom-left to enter.
+
+[Open →](slides)
