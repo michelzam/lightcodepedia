@@ -19,6 +19,14 @@ Kotlin,16,22,72,18
 
 ```csv
 language,popularity,demand,pay_index,growth
+Python,58,80,72,15
+JavaScript,62,95,68,8
+Java,35,70,75,-5
+TypeScript,44,55,78,25
+Rust,20,15,82,40
+Go,22,22,77,20
+Swift,18,28,73,10
+Kotlin,16,22,72,18
 ```
 {: .chart type="bar" bound-to="lang-grid" x="language" height="280" }
 
@@ -40,11 +48,13 @@ Python,58,80,72,15
 
 ```csv
 language,popularity,demand,pay_index,growth
+Python,58,80,72,15
+...
 ```
 {: .chart type="bar" bound-to="lang-grid" x="language" }
 ````
 
-The fenced block on the chart just declares the header row so the `x=` column is documented — the actual data comes from the datagrid selection.
+Keep the same data in both blocks — `bound-to` overrides the chart's static rendering and updates the bars on every row click. The data rows are needed so Jekyll produces a proper code block (without them, it may render as plain text).
 
 ## Options
 
@@ -61,6 +71,14 @@ Same data, different chart type — just change `type`:
 
 ```csv
 language,popularity,demand,pay_index,growth
+Python,58,80,72,15
+JavaScript,62,95,68,8
+Java,35,70,75,-5
+TypeScript,44,55,78,25
+Rust,20,15,82,40
+Go,22,22,77,20
+Swift,18,28,73,10
+Kotlin,16,22,72,18
 ```
 {: .chart type="doughnut" bound-to="lang-grid" x="language" height="260" }
 

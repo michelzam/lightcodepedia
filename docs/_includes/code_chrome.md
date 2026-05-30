@@ -1580,7 +1580,7 @@
     document.querySelectorAll("p.embed-page").forEach(upgradeEmbedPage);
     document.querySelectorAll("p.embed").forEach(upgradeEmbedExternal);
     document.querySelectorAll("p.video").forEach(upgradeVideo);
-    document.querySelectorAll(".highlighter-rouge.chart").forEach(upgradeChart);
+    document.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(upgradeChart);
     document.querySelectorAll(".highlighter-rouge.map").forEach(upgradeMap);
     document.querySelectorAll("p.folder").forEach(upgradeFolder);
   }
