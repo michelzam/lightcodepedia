@@ -50,6 +50,9 @@ body.lc-slides-active .lc-slide-fragment[data-revealed="true"] { opacity: 1; poi
 /* The multi-quiz Check bar is a sibling of the quiz UL — keep it in sync */
 .lc-quiz-bar { transition: opacity 0.28s ease; }
 body.lc-slides-active .lc-slide-fragment:not([data-revealed="true"]) + .lc-quiz-bar { opacity: 0.18; pointer-events: none; }
+/* Quiz-prompt paragraphs reveal together with the quiz that follows them */
+body.lc-slides-active .lc-quiz-prompt { transition: opacity 0.28s ease; opacity: 0.18; pointer-events: none; }
+body.lc-slides-active .lc-quiz-prompt[data-revealed="true"] { opacity: 1; pointer-events: auto; }
 @media (max-width: 700px) {
   body.lc-slides-active .lc-slide[data-active="true"] { padding: 1.6em 1.2em 5em; }
   body.lc-slides-active .lc-slide h1 { font-size: 1.9em; }
@@ -220,6 +223,20 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
             c.classList.add('lc-slide-fragment');
           }
         });
+        // Bundle a paragraph with its immediately-following quiz fragment so
+        // the question text and options reveal on the same click. The prompt
+        // gets .lc-quiz-prompt and inherits visibility from the quiz UL via
+        // showSlide() below — it is no longer a standalone fragment.
+        Array.prototype.forEach.call(
+          section.querySelectorAll('ul.quiz.lc-slide-fragment, ol.quiz.lc-slide-fragment'),
+          function(quiz){
+            var prev = quiz.previousElementSibling;
+            if (prev && prev.tagName === 'P') {
+              prev.classList.add('lc-quiz-prompt');
+              prev.classList.remove('lc-slide-fragment');
+            }
+          }
+        );
       });
       revealed = slides.map(function(){ return 0; });
     }
@@ -268,6 +285,12 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
         var frags = s.querySelectorAll('.lc-slide-fragment');
         Array.prototype.forEach.call(frags, function(f, j){
           f.setAttribute('data-revealed', j < revealed[i] ? 'true' : 'false');
+        });
+        // Sync quiz-prompt paragraphs to their following quiz fragment
+        Array.prototype.forEach.call(s.querySelectorAll('.lc-quiz-prompt'), function(prompt){
+          var quiz = prompt.nextElementSibling;
+          var rev = quiz && quiz.classList.contains('lc-slide-fragment') ? quiz.getAttribute('data-revealed') : 'true';
+          prompt.setAttribute('data-revealed', rev || 'false');
         });
       });
       if (navJump) navJump.value = String(current);

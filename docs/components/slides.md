@@ -235,7 +235,6 @@ Pull it all together.
 - [ ] "You can't. Slides demand clicks."
 
   > Paragraphs aren't fragments by default, so they appear immediately. Lists auto-fragment; opting out is a one-line IAL.
-
 {: .quiz }
 
 **Q:** Which of these are TRUE about slide mode? (Pick all true ones.)
@@ -255,7 +254,6 @@ Pull it all together.
 - [ ] Cancel class. Blame the network.
 
   > The whole point of this widget: any markdown page IS already a deck. Zero conversion.
-
 {: .quiz }
 
 {% include backtotop.md %}
