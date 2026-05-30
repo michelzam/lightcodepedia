@@ -305,9 +305,10 @@ Know these before you build a 300-slide AI curriculum on top of it.
 - [ ] Switch to Firefox. Edge is the problem.
 - [x] Generate a new classic PAT — the old one is wrong, expired, or has the wrong scope.
 - [ ] The GitHub Models API is down. Accept your fate and pivot to flashcards.
-
-  > 401 = authentication failure. A fresh classic PAT (zero scopes) fixes 95 % of these.
 {: .quiz }
+
+> 401 = authentication failure. A fresh classic PAT (zero scopes) fixes 95 % of these.
+{: .speaker-note }
 
 **Q:** You want the agent to always see what the student is currently coding. Which IAL attribute do you add to `{: .agent }`?
 
@@ -315,9 +316,10 @@ Know these before you build a 300-slide AI curriculum on top of it.
 - [x] `bound="run-id"`
 - [ ] `attach="run-id"`
 - [ ] `soul="run-id"` — the mystical approach
-
-  > `bound=` is the magic word. Point it at the runner's `id` and every Ask carries the editor state.
 {: .quiz }
+
+> `bound=` is the magic word. Point it at the runner's `id` and every Ask carries the editor state.
+{: .speaker-note }
 
 [^gh-models]: **GitHub Models** is GitHub's hosted inference gateway at `models.github.ai`, offering OpenAI-compatible chat completions for several model families on a free tier.
 
