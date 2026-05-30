@@ -39,7 +39,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
 /* ── Drawer ────────────────────────────────────────────── */
 #ed-drawer {
-  position: fixed; inset: 0; background: #fff; z-index: 998;
+  position: fixed; top: 48px; right: 0; bottom: 0; left: 0; background: #fff; z-index: 999;
   display: none; flex-direction: column; overflow: hidden;
 }
 #ed-drawer.open { display: flex; }
@@ -74,6 +74,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   font-size: 0.75em; color: #999; font-weight: 600; letter-spacing: 0.06em;
   text-transform: uppercase; margin: 0.9em 0 0.4em; display: block;
 }
+.ed-folder { font-size: 0.78em; color: #888; font-weight: 600; margin: 0.7em 0 0.15em; padding-left: 0.1em; }
 .ed-chip {
   display: block; padding: 0.28em 0.6em; margin: 0.18em 0;
   border: 1px solid #e0e0e0; border-radius: 5px; cursor: pointer;
@@ -243,24 +244,45 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     document.body.style.overflow = "";
   }
 
-  /* ── File list ───────────────────────────────────────── */
+  /* ── File list (recursive via Git Trees API) ────────── */
   function loadFiles() {
     var el = document.getElementById("ed-files");
     if (!el) return;
     el.innerHTML = "<span style='color:#bbb'>Loading…</span>";
-    gh("GET", "/contents/docs", null, function (data) {
-      if (!Array.isArray(data)) {
-        el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>" + esc(data.message || "Error") + "</span>";
+    fetch("https://api.github.com/repos/" + _repo + "/git/trees/HEAD?recursive=1", {
+      headers: { Authorization: "Bearer " + _pat, Accept: "application/vnd.github+json" }
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      if (!data.tree) {
+        el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>" + esc(data.message || "Error loading tree") + "</span>";
         return;
       }
-      var mds = data
-        .filter(function (f) { return f.type === "file" && f.name.endsWith(".md") && !f.name.startsWith("_"); })
-        .sort(function (a, b) { return a.name.localeCompare(b.name); });
-      if (!mds.length) { el.innerHTML = "<span style='color:#bbb'>No .md pages in docs/</span>"; return; }
-      el.innerHTML = mds.map(function (f) {
-        var active = _curFile === f.path;
-        return "<a href='#' class='ed-chip" + (active ? " active" : "") + "' data-path='" + f.path + "'>📄 " + esc(f.name) + "</a>";
-      }).join("");
+      var mds = data.tree.filter(function (f) {
+        var name = f.path.split("/").pop();
+        return f.type === "blob" && f.path.startsWith("docs/") && name.endsWith(".md") && !name.startsWith("_");
+      }).sort(function (a, b) { return a.path.localeCompare(b.path); });
+      if (!mds.length) { el.innerHTML = "<span style='color:#bbb'>No .md pages found.</span>"; return; }
+      /* group by subfolder relative to docs/ */
+      var groups = {}, order = [];
+      mds.forEach(function (f) {
+        var rel = f.path.replace(/^docs\//, "");
+        var parts = rel.split("/");
+        var dir = parts.length > 1 ? parts.slice(0, -1).join("/") : "";
+        var name = parts[parts.length - 1];
+        if (!groups[dir]) { groups[dir] = []; order.push(dir); }
+        groups[dir].push({ path: f.path, name: name });
+      });
+      var html = "";
+      order.forEach(function (dir) {
+        if (dir) html += "<div class='ed-folder'>📁 " + esc(dir) + "</div>";
+        html += groups[dir].map(function (f) {
+          var active = _curFile === f.path;
+          var indent = dir ? "margin-left:0.8em;" : "";
+          return "<a href='#' class='ed-chip" + (active ? " active" : "") + "' data-path='" + f.path + "' style='" + indent + "'>📄 " + esc(f.name) + "</a>";
+        }).join("");
+      });
+      el.innerHTML = html;
+    }).catch(function (e) {
+      el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>Network error</span>";
     });
   }
 
