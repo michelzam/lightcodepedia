@@ -1,4 +1,5 @@
-# New2
+# 🆕 New Page
 
-**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
+**This page is ready for customization.** 
 
+Click 📽️ at the bottom-left to enter slide mode.
