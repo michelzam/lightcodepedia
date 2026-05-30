@@ -1641,42 +1641,90 @@
     var code = el.querySelector("code");
     var raw = (code ? code.textContent : el.textContent).trim();
     var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
-    if (lines.length < 2) return;
     var type = el.getAttribute("type") || "bar";
     var h = parseInt(el.getAttribute("height") || "300", 10);
+    var bound = el.getAttribute("bound-to");
+    var gid = "lc-chart-" + Math.random().toString(36).slice(2, 7);
+    var wrap = document.createElement("div");
+    wrap.className = "lc-chart";
+    el.parentNode.replaceChild(wrap, el);
+
+    function chartColors(data) {
+      var mn = Math.min.apply(null, data), mx = Math.max.apply(null, data), rng = mx - mn || 1;
+      return data.map(function(v) {
+        var t = (v - mn) / rng;
+        return "rgb(" + Math.round(173 - 173*t) + "," + Math.round(216 - 160*t) + "," + Math.round(230 - 91*t) + ")";
+      });
+    }
+
+    if (bound) {
+      var xAttr = el.getAttribute("x") || (lines.length > 0 ? lines[0].split(",")[0].trim() : "");
+      var placeholder = document.createElement("div");
+      placeholder.style.cssText = "min-height:" + h + "px;display:flex;align-items:center;justify-content:center;color:#aaa;border:2px dashed #e0e0e0;border-radius:8px;font-style:italic;padding:1em;text-align:center";
+      placeholder.textContent = "Select a row to visualize";
+      wrap.appendChild(placeholder);
+      loadChartJs(function() {
+        var instance = null;
+        window.lcMasterDetail.subscribe(bound, function(row) {
+          if (!row) return;
+          var title = String(row[xAttr] || "");
+          var newLabels = [], newData = [];
+          Object.keys(row).forEach(function(k) {
+            if (k === xAttr) return;
+            var v = parseFloat(row[k]);
+            if (!isNaN(v)) { newLabels.push(k); newData.push(v); }
+          });
+          if (!newLabels.length) return;
+          var colors = chartColors(newData);
+          if (!instance) {
+            placeholder.style.display = "none";
+            var canvas = document.createElement("canvas");
+            canvas.id = gid;
+            wrap.appendChild(canvas);
+            instance = new Chart(canvas, {
+              type: type,
+              data: { labels: newLabels, datasets: [{ label: title, data: newData, backgroundColor: colors, borderColor: colors, borderWidth: 1 }] },
+              options: {
+                responsive: true,
+                plugins: { legend: { display: false }, title: { display: !!title, text: title } },
+                scales: type === "pie" || type === "doughnut" ? {} : { y: { beginAtZero: true } }
+              }
+            });
+          } else {
+            instance.data.labels = newLabels;
+            instance.data.datasets[0].data = newData;
+            instance.data.datasets[0].label = title;
+            instance.data.datasets[0].backgroundColor = colors;
+            instance.data.datasets[0].borderColor = colors;
+            if (instance.options.plugins.title) { instance.options.plugins.title.text = title; instance.options.plugins.title.display = !!title; }
+            instance.update();
+          }
+        });
+      });
+      return;
+    }
+
+    // Static CSV mode
+    if (lines.length < 2) return;
     var headers = lines[0].split(",").map(function(v){ return v.trim(); });
-    var xAttr = el.getAttribute("x") || headers[0];
+    var xAttrS = el.getAttribute("x") || headers[0];
     var yAttr = el.getAttribute("y") || headers[1];
-    var xIdx = headers.indexOf(xAttr); if (xIdx < 0) xIdx = 0;
+    var xIdx = headers.indexOf(xAttrS); if (xIdx < 0) xIdx = 0;
     var yIdx = headers.indexOf(yAttr); if (yIdx < 0) yIdx = 1;
     var rows = lines.slice(1).map(function(l){ return l.split(",").map(function(v){ return v.trim(); }); });
     var labels = rows.map(function(r){ return r[xIdx] || ""; });
     var data = rows.map(function(r){ return parseFloat(r[yIdx]) || 0; });
-    var mn = Math.min.apply(null, data), mx = Math.max.apply(null, data), rng = mx - mn || 1;
-    var colors = data.map(function(v) {
-      var t = (v - mn) / rng;
-      var r = Math.round(173 + t * (0 - 173));
-      var g = Math.round(216 + t * (56 - 216));
-      var b = Math.round(230 + t * (139 - 230));
-      return "rgb(" + r + "," + g + "," + b + ")";
-    });
-    var gid = "lc-chart-" + Math.random().toString(36).slice(2, 7);
-    var wrap = document.createElement("div");
-    wrap.className = "lc-chart";
+    var colors = chartColors(data);
     wrap.innerHTML = "<canvas id=\"" + gid + "\"></canvas>";
-    el.parentNode.replaceChild(wrap, el);
     loadChartJs(function() {
       new Chart(document.getElementById(gid), {
         type: type,
-        data: {
-          labels: labels,
-          datasets: [{ label: yAttr, data: data, backgroundColor: colors, borderColor: colors, borderWidth: 1 }]
-        },
+        data: { labels: labels, datasets: [{ label: yAttr, data: data, backgroundColor: colors, borderColor: colors, borderWidth: 1 }] },
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
           scales: type === "pie" || type === "doughnut" ? {} : {
-            x: { title: { display: true, text: xAttr } },
+            x: { title: { display: true, text: xAttrS } },
             y: { beginAtZero: true, title: { display: true, text: yAttr } }
           }
         }
@@ -1875,6 +1923,27 @@
     el.parentNode.replaceChild(_iframeEl(src, el.getAttribute("height") || "400"), el);
   }
 
+  function extractPageMeta(text) {
+    var lines = text.split("\n");
+    var i = 0;
+    if (lines[0] && lines[0].trim() === "---") {
+      i = 1;
+      while (i < lines.length && lines[i].trim() !== "---") i++;
+      i++;
+    }
+    var title = null, snippet = "";
+    for (; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!title && /^#{1,2}\s/.test(line)) { title = line.replace(/^#+\s+/, ""); continue; }
+      if (title && line && !/^[#{`\->|]/.test(line) && !/^\{:/.test(line) && line !== "---" && !/^[\-*+] /.test(line)) {
+        snippet = line.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*_`!]/g, "").trim().substring(0, 140);
+        if (snippet.length >= 140) snippet += "…";
+        break;
+      }
+    }
+    return { title: title, snippet: snippet };
+  }
+
   function upgradeFolder(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
@@ -1882,6 +1951,7 @@
     if (!a) return;
     var path = a.getAttribute("href").replace(/^\/+|\/+$/g, "");
     var cols = el.getAttribute("cols") || "auto";
+    var showPrivate = el.getAttribute("show-private") === "true";
     var colStyle = cols === "auto"
       ? "repeat(auto-fit, minmax(200px, 1fr))"
       : "repeat(" + cols + ", 1fr)";
@@ -1898,20 +1968,35 @@
       .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function(files) {
         if (!Array.isArray(files)) throw new Error("Not a directory: " + escapeHtml(path));
-        var pages = files
-          .filter(function(f) { return f.type === "file" && /\.md$/i.test(f.name) && f.name !== "index.md"; })
-          .sort(function(a, b) { return a.name.localeCompare(b.name); });
+        var pages = files.filter(function(f) {
+          if (f.type !== "file" || !/\.md$/i.test(f.name) || f.name === "index.md") return false;
+          if (!showPrivate && f.name.startsWith("_")) return false;
+          return true;
+        }).sort(function(a, b) { return a.name.localeCompare(b.name); });
         if (!pages.length) {
           wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
           return;
         }
-        wrap.innerHTML = pages.map(function(f) {
-          var title = f.name
-            .replace(/\.md$/i, "")
-            .replace(/[-_]/g, " ")
-            .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
-          var url = "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, "");
-          return '<div class="lc-card"><h3><a href="' + url + '">' + escapeHtml(title) + '</a></h3></div>';
+        return Promise.all(pages.map(function(f) {
+          return fetch(f.download_url)
+            .then(function(r) { return r.text(); })
+            .then(function(text) {
+              var meta = extractPageMeta(text);
+              var title = meta.title || f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, "") };
+            })
+            .catch(function() {
+              var title = f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+              return { title: title, snippet: "", url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, "") };
+            });
+        }));
+      })
+      .then(function(items) {
+        if (!items) return;
+        wrap.innerHTML = items.map(function(item) {
+          var card = '<div class="lc-card"><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+          if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
+          return card + '</div>';
         }).join("");
       })
       .catch(function(e) {

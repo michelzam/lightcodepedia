@@ -23,13 +23,15 @@ Auto-generate a card grid from all `.md` files in a given folder — no manual l
 | Attribute | Default | Description |
 |-----------|---------|-------------|
 | `cols` | `auto` | Fixed number of columns. `auto` = responsive grid. |
+| `show-private` | `false` | Include files whose names start with `_`. |
 
 ## Notes
 
 - `index.md` is excluded automatically (it's the listing page itself).
-- Titles are derived from the filename: `getting-started.md` → **Getting Started**.
+- Titles come from the first `# Heading` in the file (emoji included). Falls back to prettified filename.
+- Cards show a short text snippet from the first paragraph after the title.
 - Links use the Jekyll URL convention: `docs/components/cards.md` → `/components/cards`.
-- Uses the GitHub Contents API — works on public repos without authentication.
+- Uses the GitHub Contents API + raw file fetches — works on public repos without authentication.
 
 ## Example — play folder
 
