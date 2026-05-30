@@ -126,7 +126,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   <!-- Top bar -->
   <div id="ed-top">
     <span id="ed-filename">No file selected</span>
-    <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em">+ New</a>
+    <span id="ed-build" style="font-size:0.78em;color:#888;margin-left:0.5em;flex-shrink:0"></span>
+    <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">+ New</a>
     <a href="#" class="lc-btn" id="ed-save-btn" style="font-size:0.82em;padding:0.35em 0.9em">💾 Save</a>
     <a href="#" id="ed-close-btn" title="Close (Esc)"
        style="font-size:1.3em;color:#888;text-decoration:none;padding:0 0.2em;line-height:1;margin-left:0.2em">✕</a>
@@ -162,9 +163,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       <span class="ed-section-label">History</span>
       <div id="ed-history" style="color:#bbb">Select a file.</div>
 
-      <!-- Build status -->
-      <span class="ed-section-label">Build</span>
-      <div id="ed-build" style="color:#bbb;font-size:0.82em">Save to trigger a build.</div>
+      <!-- Build status moved to topbar -->
 
     </div><!-- /sidebar -->
 
@@ -465,11 +464,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         el.innerHTML = "<span style='color:#888'>⚠️ Timed out — <a href='https://github.com/" + _repo + "/actions' target='_blank' style='color:#0066cc'>check Actions</a></span>";
         return;
       }
-      fetch("https://api.github.com/repos/" + _repo + "/actions/runs?per_page=10", {
+      fetch("https://api.github.com/repos/" + _repo + "/actions/runs?per_page=20", {
         headers: { Authorization: "Bearer " + _pat }
       }).then(function (r) { return r.json(); }).then(function (data) {
         if (!data.workflow_runs) return;
-        var run = data.workflow_runs.find(function (r) { return r.head_sha === headSha; });
+        var run = data.workflow_runs.find(function (r) {
+          return r.head_sha === headSha && r.name === "pages build and deployment";
+        });
         if (!run) return; /* not registered yet */
         if (run.status === "completed") {
           clearInterval(timer);
@@ -524,6 +525,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var el;
     el = document.getElementById("ed-files"); if (el) el.innerHTML = "<span style='color:#bbb'>Connect to browse.</span>";
     el = document.getElementById("ed-history"); if (el) el.innerHTML = "<span style='color:#bbb'>Select a file.</span>";
+    el = document.getElementById("ed-build"); if (el) el.textContent = "";
     el = document.getElementById("ed-filename"); if (el) el.textContent = "No file selected";
     el = document.getElementById("ed-input"); if (el) el.value = "";
     el = document.getElementById("ed-preview"); if (el) el.innerHTML = "";
