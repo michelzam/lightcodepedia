@@ -488,8 +488,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       headers: { Authorization: "Bearer " + _pat }
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (d.full_name) {
+        if (d.permissions && !d.permissions.push) {
+          setStatus("❌ Read-only: your PAT has no write access to " + esc(d.full_name) + ". Connect to your fork instead.", false);
+          return;
+        }
         localStorage.setItem(LS_PAT, _pat); localStorage.setItem(LS_REPO, _repo);
-        setStatus("✓ " + d.full_name, true);
+        setStatus("✓ " + d.full_name + (d.fork ? " (fork)" : ""), true);
         var setup = document.getElementById("ed-setup");
         if (setup) setup.open = false;
         toggleConnected(true);
