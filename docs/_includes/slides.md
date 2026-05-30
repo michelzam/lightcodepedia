@@ -276,8 +276,9 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
     main.addEventListener('click', function(e){
       if (!body.classList.contains('lc-slides-active')) return;
       var t = e.target;
-      if (t.closest('a, button, input, textarea, ' + WIDGET_SEL)) return;
-      next();
+      if (t.closest('a, button, input, textarea, select, ' + WIDGET_SEL)) return;
+      if (e.clientX < window.innerWidth / 2) prev();
+      else next();
     });
 
     try {
