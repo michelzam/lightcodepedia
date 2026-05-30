@@ -236,10 +236,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (!d) return;
     d.classList.add("open");
     document.body.style.overflow = "hidden";
-    /* auto-load current page if already connected */
-    if (_pat && _repo && !_curFile) {
-      var pagePath = (document.getElementById("ed-fab") || {}).dataset.pagePath;
-      if (pagePath) loadFile("docs/" + pagePath);
+    if (_pat && _repo) {
+      /* load file list every open so it stays fresh */
+      loadFiles();
+      /* auto-load current page on first open */
+      if (!_curFile) {
+        var pagePath = (document.getElementById("ed-fab") || {}).dataset.pagePath;
+        if (pagePath) loadFile("docs/" + pagePath);
+      }
     }
   }
   function closeDrawer() {
@@ -337,7 +341,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var body = { message: msg, content: b64e(inp.value) };
     if (_curSha) body.sha = _curSha;
     gh("PUT", "/contents/" + _curFile, body, function (data) {
-      if (!data.content) { toast("Save failed: " + esc(data.message || ""), false); return; }
+      if (!data.content) { toast("Save failed (" + esc(_curFile) + "): " + esc(data.message || JSON.stringify(data)), false); return; }
       _curSha = data.content.sha;
       toast("Saved · " + data.commit.sha.slice(0, 7) + " ✓", true);
       loadFiles();
