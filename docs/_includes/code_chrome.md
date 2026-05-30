@@ -163,6 +163,17 @@
 .lc-btn-outline:hover { background: #0066cc; color: white !important; }
 /* scrollable */
 .lc-scrollable { overflow-y: auto; padding: 1em 1.4em; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; margin: 1em 0; }
+/* cards */
+.lc-cards { display: grid; gap: 18px; margin: 1em 0; }
+.lc-cards .lc-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.2em 1.4em; background: white; transition: transform 0.15s, box-shadow 0.15s; }
+.lc-cards .lc-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); border-color: #0066cc; }
+.lc-cards .lc-card h3 { margin-top: 0; margin-bottom: 0.5em; font-size: 1.1em; color: #222; }
+.lc-cards .lc-card p { margin: 0 0 0.6em; color: #555; line-height: 1.45; }
+.lc-cards .lc-card p:last-child { margin-bottom: 0; }
+.lc-cards .lc-card a { color: #0066cc; text-decoration: none; font-weight: 500; }
+.lc-cards .lc-card a:hover { text-decoration: underline; }
+@media (max-width: 700px) { .lc-cards { grid-template-columns: repeat(2, 1fr) !important; } }
+@media (max-width: 480px) { .lc-cards { grid-template-columns: 1fr !important; } }
 </style>
 <script>
 (function(){
@@ -1557,6 +1568,7 @@
     document.querySelectorAll(".highlighter-rouge.radio").forEach(upgradeRadio);
     document.querySelectorAll(".highlighter-rouge.grid").forEach(upgradeGrid);
     document.querySelectorAll(".highlighter-rouge.scrollable").forEach(upgradeScrollable);
+    document.querySelectorAll(".highlighter-rouge.cards").forEach(upgradeCards);
     document.querySelectorAll("ul.dropdown").forEach(upgradeDropdown);
     document.querySelectorAll("p.button").forEach(upgradeButton);
     document.querySelectorAll("p.embed-page").forEach(upgradeEmbedPage);
@@ -1695,7 +1707,7 @@
     var wrap = document.createElement("div");
     wrap.className = "lc-dropdown";
     wrap.id = "lc-dd-" + gid;
-    wrap.innerHTML = "<button class=\"lc-dd-toggle\">" + label + " ▾</button><div class=\"lc-dd-menu\">" + links + "</div>";
+    wrap.innerHTML = "<button class=\"lc-dd-toggle\">" + label + "</button><div class=\"lc-dd-menu\">" + links + "</div>";
     var btn = wrap.querySelector(".lc-dd-toggle");
     var menu = wrap.querySelector(".lc-dd-menu");
     btn.addEventListener("click", function(e){ e.stopPropagation(); menu.classList.toggle("open"); });
@@ -1742,6 +1754,28 @@
     var yt = href.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
     if (yt) src = "https://www.youtube.com/embed/" + yt[1];
     el.parentNode.replaceChild(_iframeEl(src, el.getAttribute("height") || "400"), el);
+  }
+
+  function upgradeCards(el) {
+    var sections = parseSections(el);
+    if (!sections.length) return;
+    var cols = el.getAttribute("cols") || "auto";
+    var gap = el.getAttribute("gap") || "18";
+    var colStyle = cols === "auto"
+      ? "repeat(auto-fit, minmax(240px, 1fr))"
+      : "repeat(" + cols + ", 1fr)";
+    var wrap = document.createElement("div");
+    wrap.className = "lc-cards";
+    wrap.style.gridTemplateColumns = colStyle;
+    wrap.style.gap = gap + "px";
+    function renderCards() {
+      wrap.innerHTML = sections.map(function(s) {
+        return "<div class=\"lc-card\"><h3>" + s.label + "</h3>" + markdownBody(s.body) + "</div>";
+      }).join("");
+    }
+    loadMarked(renderCards);
+    renderCards();
+    el.parentNode.replaceChild(wrap, el);
   }
 
   function upgradeCarousel(el) {
