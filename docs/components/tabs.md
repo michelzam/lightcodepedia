@@ -6,7 +6,7 @@ Show alternative content panels — only one tab visible at a time. Each `### He
 
 ## 👀 See it in action
 
-{% include tabs.md file="components/tabs_example" %}
+{% include tabs.md file="components/_tabs_example" %}
 
 Click any tab. The active tab is highlighted in blue; the others hide. That's the whole widget.
 
