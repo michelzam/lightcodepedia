@@ -37,7 +37,9 @@ _You can copy-paste this code in the [Python playground](#python-playground) bel
 
 
 ## Python playground
-{% include embed.md src="https://www.onlineide.pro/playground/python?utm_source=online-python&utm_medium=navbar&utm_campaign=onlineidepro" height="1600" %}
+
+[🐍 Online Python IDE](https://www.onlineide.pro/playground/python?utm_source=online-python&utm_medium=navbar&utm_campaign=onlineidepro)
+{: .embed height="1600" }
 
 
 ## More resources
