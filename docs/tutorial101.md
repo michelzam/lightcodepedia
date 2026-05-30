@@ -1,215 +1,223 @@
 # 👋 Welcome!
 
-👩‍🎓 This tutorial introduces the **building blocks** of a Lightcodepedia page — by showing each one in action.
+👩‍🎓 This tutorial introduces the **building blocks** of a Lightcodepedia page — by telling a story.
 
-- [x] **Text** — formatted content, lists, images, video
-- [x] **Map** — interactive, zoomable
-- [x] **Data table** — sortable rows, linked to a chart
-- [x] **Chart** — updates live when you select a row
-- [x] **AI assistant** — chat with a guide trained on this site
-- [x] **Code runner** — real Python, right in your browser
-- [x] **Quiz** — to check what stuck
+The story is about a dog called **Lucky** 🐶
+
+Along the way you'll see:
+
+- [x] A **text block** with an image — meet Lucky
+- [x] A **video** — his favourite song
+- [x] A **map** — where to walk him in Paris
+- [x] A **data table** — how fast dogs can run
+- [x] A **chart** — linked live to the table
+- [x] A **form** — Lucky's full profile
+- [x] A **code runner** — say hello to Lucky
+- [x] A **quiz** — about the story, not the technology
 
 Go ahead — explore, play, learn and have fun! 🎉
 
-> Tell learners: "Don't just read — every block on this page is live. Click, type, select. That's the whole point."
+> Tell learners: "Don't just read — everything on this page is live. Click, select, run. That's the whole point."
 {: .speaker-note }
 
 ---
 
-## 📖 This block is a text block
+## 🐕 Meet Lucky
 
-You are reading a **text block** right now.
+This block is a **text block**. It can hold text, lists, images — and a dog.
 
-A text block can contain:
+![Lucky — a cheerful Beagle](https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Beagle_puppy_Cadet.jpg/600px-Beagle_puppy_Cadet.jpg)
 
-- [x] **Bold**, _italic_, `code` and [links](/)
-- [x] Bullet lists — and checked lists like this one
-- [x] Images and videos (see the next two blocks)
-- [x] Quotes, tables, and anything else standard markdown supports
+This is **Lucky** 🐶 — a three-year-old Beagle who loves parks, tennis balls, and long naps.
 
-Text blocks are the foundation. Every other block sits between them.
+He's about to appear on every block of this page.
 
-_Footer: Text uses standard markdown. [Markdown cheat sheet →](https://www.markdownguide.org/cheat-sheet/)_
+_Text blocks use standard markdown: **bold**, _italic_, lists, links, images. Everything you already know._
 
 ---
 
-## 🐕 This block has an image
+## 🎵 Lucky's favourite song
 
-A text block can carry an image right inside it.
+This block is a **video block**. Press play.
 
-![PyQuiz — a Lightcode example app](images/PyQuiz.png)
-
-This is a screenshot of **PyQuiz**, a quiz app built entirely with Lightcodepedia components. No server. No framework. Just blocks.
-
-_Footer: Images sit in the `docs/images/` folder of your repo. Reference them with a standard markdown image tag._
-
----
-
-## 🎥 This block has a video
-
-A text block can embed a video too — paste a YouTube link and add `{: .video }`.
-
-[▶️ Watch: GitHub in 20 minutes](https://www.youtube.com/embed/a9u2yZvsqHA)
+[🎵 Black Dog — Led Zeppelin](https://www.youtube.com/embed/l482T0yNkeo)
 {: .video height="320" }
 
-This is how Lightcodepedia handles video — no special player, just an embedded frame.
+Led Zeppelin named this song after a stray black Labrador who wandered into their recording studio during sessions for *Led Zeppelin IV* in 1971.
 
-_Footer: Any YouTube, Vimeo or other embeddable URL works. [Video documentation →](/components/embed_page)_
+The dog left without leaving a name.
+
+_A video block embeds any YouTube link. One line of markdown, one tag._
 
 ---
 
-## 🗺️ This block is a map
+## 🗺️ Where to walk Lucky in Paris
 
-Click and drag to pan. Scroll to zoom. Click a marker to see its label.
+This block is a **map**. Click and drag to explore. Scroll to zoom in.
 
 ```json
 [
-  { "lat": 48.85, "lon": 2.35, "label": "Paris 🇫🇷" },
-  { "lat": 50.85, "lon": 4.35, "label": "Brussels 🇧🇪" },
-  { "lat": 52.37, "lon": 4.90, "label": "Amsterdam 🇳🇱" },
-  { "lat": 52.52, "lon": 13.40, "label": "Berlin 🇩🇪" },
-  { "lat": 41.90, "lon": 12.50, "label": "Rome 🇮🇹" },
-  { "lat": 40.41, "lon": -3.70, "label": "Madrid 🇪🇸" }
+  { "lat": 48.8620, "lon": 2.2474, "label": "🌳 Bois de Boulogne" },
+  { "lat": 48.8797, "lon": 2.3832, "label": "🌳 Buttes-Chaumont" },
+  { "lat": 48.8795, "lon": 2.3090, "label": "🌳 Parc Monceau" },
+  { "lat": 48.8462, "lon": 2.3372, "label": "🌳 Jardin du Luxembourg" },
+  { "lat": 48.8360, "lon": 2.4414, "label": "🌳 Bois de Vincennes" },
+  { "lat": 48.8937, "lon": 2.3938, "label": "🌳 Parc de la Villette" }
 ]
 ```
-{: .map height="300" zoom="4" }
+{: .map height="320" zoom="12" }
 
-This is a **map block**. The data is a simple list of coordinates — you write them as a table, the block draws the map.
+All six parks allow dogs on a leash. The Bois de Boulogne is the largest — over 800 hectares. Lucky could run for days.
 
-_Footer: Maps use OpenStreetMap and run entirely in the browser. [Map documentation →](/components/map)_
-
----
-
-## 📊 This block is a data table
-
-Click any row. Watch what happens to the chart below.
-
-```csv
-language,popularity,demand,pay_index,growth
-Python,58,80,72,15
-JavaScript,62,95,68,8
-Java,35,70,75,-5
-TypeScript,44,55,78,25
-Rust,20,15,82,40
-Go,22,22,77,20
-Kotlin,16,22,72,18
-```
-{: .datagrid #tut-grid format="csv" title="Programming languages" height="220" }
-
-This is a **data table** (or datagrid). You paste a CSV table, it becomes a sortable, selectable grid.
-
-_Footer: Data can be inline CSV, a Google Sheet, or a Supabase table. [Datagrid documentation →](/components/datagrid)_
+_A map block shows any list of coordinates as clickable pins._
 
 ---
 
-## 📈 This block is a chart
+## 🏃 How fast can Lucky run?
 
-It is **linked** to the table above — select a row and this chart redraws.
+This block is a **data table**. Click any row — the chart below updates.
 
 ```csv
-language,popularity,demand,pay_index,growth
-Python,58,80,72,15
-JavaScript,62,95,68,8
-Java,35,70,75,-5
-TypeScript,44,55,78,25
-Rust,20,15,82,40
-Go,22,22,77,20
-Kotlin,16,22,72,18
+breed,top_speed_kmh,size,temperament
+Greyhound,72,Large,Calm
+Saluki,68,Large,Independent
+Vizsla,64,Medium,Energetic
+Jack Russell,56,Small,Fearless
+Border Collie,48,Medium,Focused
+German Shepherd,48,Large,Loyal
+Labrador,40,Large,Friendly
+Beagle,40,Medium,Curious
+Corgi,35,Small,Cheerful
+Pug,15,Small,Relaxed
+Bulldog,14,Medium,Stubborn
 ```
-{: .chart type="bar" bound-to="tut-grid" x="language" height="260" }
+{: .datagrid #dog-grid format="csv" title="Dog top speeds" height="260" }
 
-> Ask: "Which language has the best pay index? Which is growing fastest?" — let them click to find out.
+Lucky is a Beagle — 40 km/h. He could outrun most humans (top speed: ~37 km/h). He will not outrun a Greyhound.
+
+---
+
+## 📈 The same data — as a chart
+
+This block is a **chart**, linked to the table above. Select a row — the chart redraws.
+
+```csv
+breed,top_speed_kmh,size,temperament
+Greyhound,72,Large,Calm
+Saluki,68,Large,Independent
+Vizsla,64,Medium,Energetic
+Jack Russell,56,Small,Fearless
+Border Collie,48,Medium,Focused
+German Shepherd,48,Large,Loyal
+Labrador,40,Large,Friendly
+Beagle,40,Medium,Curious
+Corgi,35,Small,Cheerful
+Pug,15,Small,Relaxed
+Bulldog,14,Medium,Stubborn
+```
+{: .chart type="bar" bound-to="dog-grid" x="breed" height="260" }
+
+> Ask: "Is Lucky the fastest dog? What about the most relaxed?" — let them click to compare breeds.
 {: .speaker-note }
 
-_Footer: Charts can be bar, line, pie or doughnut. Link them to a grid with `bound-to`. [Chart documentation →](/components/chart)_
+_Select a row in the table above to update this chart. Table and chart are linked — no page reload._
 
 ---
 
-## 🤖 This block is an AI assistant
+## 📋 Lucky's profile
 
-Type a question. Click **Ask**.
+This block is a **form**. It shows a full profile of one object — here, Lucky.
 
 ```yaml
-system: |
-  You are a friendly guide for Lightcodepedia.
-  Keep answers short (2–3 sentences) and jargon-free.
-  When asked about a component, mention that it has a documentation page at /components/.
-intro: "Ask me anything about this page, or about Lightcodepedia!"
-placeholder: "What is a datagrid?"
+name: Lucky
+age: 3
+breed: Beagle
+weight_kg: 11.2
+top_speed_kmh: 40
+adopted: true
+favorite_toys:
+  - squeaky bone
+  - tennis ball
+  - old sock
+vet:
+  name: Dr. Patel
+  phone: "555-0142"
+notes: Afraid of vacuum cleaners. Excellent at looking innocent.
 ```
-{: .agent id="tut-agent" }
+{: .form }
 
-The first time you use this, a small form will ask for a free access key — a short code from GitHub that takes about a minute to get. The key goes directly to GitHub's AI service. This site never sees it.
+Notice how each type of value looks different: numbers in green, the checkbox for the boolean, pills for the list, a hover button for the nested vet object.
 
-_Footer: Each assistant has its own personality, set by a `system:` prompt you write. [Agent documentation →](/components/agent)_
+_A form turns a structured object into a readable profile card. Try hovering the Vet button._
 
 ---
 
-## ▶️ This block is a code runner
+## ▶️ Say hello to Lucky
 
-Click ▶ **Run**. Then edit the code and run it again.
+This block is a **code runner**. Click ▶ **Run**.
 
 ```python
-message = "Hello from Lightcodepedia! 👋"
-print(message)
-
-for i in range(1, 6):
-    print(f"  Step {i} ✅")
+print("Hello, Lucky! 🐶")
 ```
 {: .run }
 
-Real Python, running inside your browser. No install. No server. The code never leaves your machine.
+That's it. Real code, running in your browser. No install. No account.
 
-> Ask learners to change the range or the message and run again. They're writing code without knowing it.
+Change `Lucky` to your own name and run it again.
+
+> This is the first time many learners realise they just wrote code. Let it land.
 {: .speaker-note }
-
-_Footer: The runner uses Pyodide — Python compiled to run in the browser. [Code runner documentation →](/components/run)_
 
 ---
 
-## 🧩 Quick check
+## 🧩 Quick check — about Lucky
 
-Now that you've seen everything — let's see what stuck.
+**Q:** What is Lucky's breed?
 
-**Q:** You clicked a row in the data table and the chart changed. Why?
-
-- [ ] The page sent a request to a server, which recalculated the chart.
-- [ ] The page reloaded silently in the background.
-- [x] The chart is linked to the table — it listens for row selections and redraws instantly.
-- [ ] The chart always shows the same thing — you imagined the change.
+- [ ] Labrador
+- [ ] Greyhound
+- [x] Beagle
+- [ ] Pug
 {: .quiz }
 
-**Q:** The AI assistant asked you for an access key. What is that key for?
+**Q:** According to the table, which dog runs the fastest?
 
-- [ ] To log in to Lightcodepedia — it's your account password.
-- [ ] To pay for the AI service — it's billed per question.
-- [x] To call GitHub's AI service directly from your browser — the site itself never receives it.
-- [ ] Nothing — it's just a formality. Any text works.
+- [x] Greyhound — 72 km/h
+- [ ] Border Collie — 48 km/h
+- [ ] Saluki — 68 km/h
+- [ ] Labrador — 40 km/h
 {: .quiz }
 
-**Q:** The Python code in the runner — where did it actually execute?
+**Q:** Which park is the largest in the map?
 
-- [x] In your own browser, with no server involved.
-- [ ] On Lightcodepedia's servers.
-- [ ] On GitHub's computers.
-- [ ] It was pre-computed — the output was stored in the page.
+- [ ] Parc Monceau
+- [ ] Buttes-Chaumont
+- [x] Bois de Boulogne — over 800 hectares
+- [ ] Jardin du Luxembourg
+{: .quiz }
+
+**Q:** The Led Zeppelin song is named after a dog who…
+
+- [ ] Belonged to Robert Plant since childhood.
+- [ ] Was the drummer's pet.
+- [x] Wandered into the recording studio and left without a name.
+- [ ] Was painted on the album cover.
 {: .quiz }
 
 ---
 
 ## 🚀 What's next?
 
-You've seen every building block. Ready to add them to your own page?
+You've seen every building block — through Lucky's eyes. Ready to add them to your own page?
 
 ```
 ### ⚙️ Step 2 — Build your own page
-Make a copy of this site and start adding blocks in minutes. No coding experience needed.
+Make a copy of this site and start adding blocks in minutes.
 
 [Start building →](/tutorial102)
 
 ### 🧩 Component library
-Browse every block type with live examples and full documentation.
+Every block, with live examples and full documentation.
 
 [Browse →](/components/)
 
