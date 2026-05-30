@@ -33,6 +33,10 @@ The split is purely structural — no special marker required.
 
 So a normal lesson with five `## h2` sections becomes a six-slide deck (intro + five sections), automatically.
 
+> If a student asks about `###`, point at the design-tips section.
+> Common confusion — they assume more `#` = more breaks.
+{: .speaker-note }
+
 **Q:** Which heading level starts a new slide?
 
 - [ ] `# h1` — the title is your first break
@@ -94,6 +98,10 @@ print(f"Hello, {name}!")
 
 Edit the code, hit ▶ Run, see output — all inside slide view. Then click outside the runner to advance.
 
+> Live demo on this slide: ask a student to suggest a value for `name`,
+> type it, hit Run. Better than any static screenshot.
+{: .speaker-note }
+
 ## ⌨️ Navigation cheat sheet
 
 On desktop:
@@ -102,6 +110,7 @@ On desktop:
 - `←` / click left half → back
 - `1`–`9` → jump to slide N
 - `Q` → 📷 share QR (see below)
+- `N` → 📝 toggle speaker notes
 - `F` → toggle fullscreen
 - `Esc` → exit slide mode
 
@@ -125,6 +134,37 @@ On phone:
 Tap **📷** (or press `Q`) and a big QR code fills the screen. Students point their phones at the code; their phones land on the **same slide you're showing**. The QR re-encodes itself on every slide change, so latecomers don't get teleported to slide 1 — they join wherever you actually are.
 
 The URL the QR encodes is just the current page with `?slides=N` (N = current slide, 0-indexed). Anyone with that URL gets the deck starting at slide N — no backend, no real-time sync needed for a classroom projector setup. Each student then navigates at their own pace from there.
+
+## 📝 Speaker notes
+
+Notes the presenter sees but the audience doesn't. Author them with a `{: .speaker-note }` IAL on any block — a blockquote works nicely:
+
+```markdown
+## Step 3 — pets list
+
+Define `pets` and `print()` each one's name.
+
+> Spend 2 min here. Mention `for` loops + the colon gotcha.
+> If asked about lists vs tuples, jump to slide 7.
+{: .speaker-note }
+```
+
+By default, notes are hidden in **every** view. They show up only when:
+
+- The URL has `?notes=1`, OR
+- You press **N** in slide mode (toggles + updates the URL)
+
+The classroom flow:
+
+- **Projector tab**: `…/components/slides?slides` (no notes). What the audience sees.
+- **Phone tab**: `…/components/slides?slides&notes=1`. Your teleprompter.
+
+When notes mode is on in slide mode, a small **📝 NOTES ON** badge appears at the top to remind you what's projected. If you accidentally project the notes URL, press **N** once to hide them without leaving slide mode.
+
+> Try it: press **N** right now (in slide mode) and the demo speaker notes scattered through this page will appear. Press **N** again to hide them.
+{: .speaker-note }
+
+Try it: load this page with `?notes=1` appended to the URL, or enter slide mode and press **N** — the demo notes sprinkled through the rest of this page will appear.
 
 **Q:** A student walks in late and scans your projected QR at slide 7. Where do they land?
 
@@ -172,6 +212,10 @@ Open any lesson you've written. In your head, answer:
 - Is there a runner that deserves its own slide?
 
 If your existing page already answers those four questions, you have a deck — no changes needed. Click 📽️ and present it. If not, the cleanup is the lesson plan you'd have written anyway.
+
+> Hand out a real lesson page and have learners pair-up: one rewrites
+> to deck-shape, the other tests with 📽️. ~7 min total.
+{: .speaker-note }
 
 ## 🚧 Limits worth knowing
 
