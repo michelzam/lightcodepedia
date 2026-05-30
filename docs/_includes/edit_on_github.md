@@ -520,17 +520,23 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   /* ── Event delegation ────────────────────────────────── */
   document.addEventListener("click", function (e) {
-    var t = e.target.closest ? e.target.closest("[id],[class]") : e.target;
-    var id = e.target.id;
-    if (id === "ed-fab")           { e.preventDefault(); openDrawer(); return; }
-    if (id === "ed-close-btn")     { e.preventDefault(); closeDrawer(); return; }
-    if (id === "ed-connect-btn")   { e.preventDefault(); connect(); return; }
-    if (id === "ed-disconnect-btn"){ e.preventDefault(); disconnect(); return; }
-    if (id === "ed-save-btn")      { e.preventDefault(); saveFile(); return; }
-    if (id === "ed-new-btn")       { e.preventDefault(); newPage(); return; }
-    var cl = e.target.classList;
-    if (cl && cl.contains("ed-chip")) { e.preventDefault(); loadFile(e.target.dataset.path); return; }
-    if (cl && cl.contains("ed-view")) { e.preventDefault(); viewDiff(e.target.dataset.sha); return; }
+    var ct = e.target.closest || function(sel){ return null; };
+    var fab    = e.target.closest("#ed-fab");
+    var close  = e.target.closest("#ed-close-btn");
+    var conn   = e.target.closest("#ed-connect-btn");
+    var disc   = e.target.closest("#ed-disconnect-btn");
+    var save   = e.target.closest("#ed-save-btn");
+    var newp   = e.target.closest("#ed-new-btn");
+    var chip   = e.target.closest(".ed-chip");
+    var view   = e.target.closest(".ed-view");
+    if (fab)   { e.preventDefault(); openDrawer(); return; }
+    if (close) { e.preventDefault(); closeDrawer(); return; }
+    if (conn)  { e.preventDefault(); connect(); return; }
+    if (disc)  { e.preventDefault(); disconnect(); return; }
+    if (save)  { e.preventDefault(); saveFile(); return; }
+    if (newp)  { e.preventDefault(); newPage(); return; }
+    if (chip)  { e.preventDefault(); loadFile(chip.dataset.path); return; }
+    if (view)  { e.preventDefault(); viewDiff(view.dataset.sha); return; }
   });
   document.addEventListener("input", function (e) {
     if (e.target.id === "ed-input") updatePreview();
