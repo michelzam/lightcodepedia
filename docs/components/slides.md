@@ -110,7 +110,7 @@ On desktop:
 - `←` / click left half → back
 - `1`–`9` → jump to slide N
 - `Q` → 📷 share QR (see below)
-- `N` → 📝 toggle speaker notes
+- `N` → 💭 toggle speaker notes
 - `F` → toggle fullscreen
 - `Esc` → exit slide mode
 
@@ -135,7 +135,7 @@ Tap **📷** (or press `Q`) and a big QR code fills the screen. Students point t
 
 The URL the QR encodes is just the current page with `?slides=N` (N = current slide, 0-indexed). Anyone with that URL gets the deck starting at slide N — no backend, no real-time sync needed for a classroom projector setup. Each student then navigates at their own pace from there.
 
-## 📝 Speaker notes
+## 💭 Speaker notes
 
 Notes the presenter sees but the audience doesn't. Author them with a `{: .speaker-note }` IAL on any block — a blockquote works nicely:
 
@@ -159,7 +159,7 @@ The classroom flow:
 - **Projector tab**: `…/components/slides?slides` (no notes). What the audience sees.
 - **Phone tab**: `…/components/slides?slides&notes=1`. Your teleprompter.
 
-When notes mode is on in slide mode, a small **📝 NOTES ON** badge appears at the top to remind you what's projected. If you accidentally project the notes URL, press **N** once to hide them without leaving slide mode.
+When notes mode is on in slide mode, a small **💭 NOTES ON** badge appears at the top to remind you what's projected. If you accidentally project the notes URL, press **N** once to hide them without leaving slide mode.
 
 > Try it: press **N** right now (in slide mode) and the demo speaker notes scattered through this page will appear. Press **N** again to hide them.
 {: .speaker-note }
