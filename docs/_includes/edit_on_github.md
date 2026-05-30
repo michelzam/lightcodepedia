@@ -40,8 +40,12 @@ to construct the repo-relative file URL.
 }
 .lc-edit-fab .lc-edit-fab-icon { font-size: 1.2em; line-height: 1; }
 .lc-edit-fab .lc-edit-fab-label { max-width: 0; opacity: 0; transition: max-width 0.22s ease, opacity 0.18s ease 0.04s; overflow: hidden; }
-.lc-edit-fab:hover { background: #f5f9ff; border-color: #0066cc; box-shadow: 0 4px 14px rgba(0, 102, 204, 0.18); transform: translateY(-1px); gap: 0.45em; padding-right: 16px; }
-.lc-edit-fab:hover .lc-edit-fab-label { max-width: 200px; opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .lc-edit-fab:hover { background: #f5f9ff; border-color: #0066cc; box-shadow: 0 4px 14px rgba(0, 102, 204, 0.18); transform: translateY(-1px); gap: 0.45em; padding-right: 16px; }
+  .lc-edit-fab:hover .lc-edit-fab-label { max-width: 200px; opacity: 1; }
+}
+.lc-edit-fab.lc-fab-expanded { background: #f5f9ff; border-color: #0066cc; box-shadow: 0 4px 14px rgba(0, 102, 204, 0.18); transform: translateY(-1px); gap: 0.45em; padding-right: 16px; }
+.lc-edit-fab.lc-fab-expanded .lc-edit-fab-label { max-width: 200px; opacity: 1; }
 .lc-edit-fab:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
 .lc-embed-mode .lc-edit-fab { display: none !important; }
 @media (max-width: 700px) {
@@ -56,4 +60,27 @@ to construct the repo-relative file URL.
    aria-label="Edit this page on GitHub">
   <span class="lc-edit-fab-icon" aria-hidden="true">✏️</span><span class="lc-edit-fab-label">Edit on GitHub</span>
 </a>
+<script>
+(function(){
+  var fab = document.querySelector('.lc-edit-fab');
+  if (!fab) return;
+  if (!window.matchMedia('(hover: none)').matches) return;
+  var collapseTimer = null;
+  function collapse(){ fab.classList.remove('lc-fab-expanded'); }
+  fab.addEventListener('click', function(e){
+    if (!fab.classList.contains('lc-fab-expanded')) {
+      e.preventDefault();
+      fab.classList.add('lc-fab-expanded');
+      clearTimeout(collapseTimer);
+      collapseTimer = setTimeout(collapse, 3000);
+    } else {
+      clearTimeout(collapseTimer);
+      setTimeout(collapse, 0);
+    }
+  });
+  document.addEventListener('click', function(e){
+    if (!fab.contains(e.target)) collapse();
+  });
+})();
+</script>
 {% endif %}
