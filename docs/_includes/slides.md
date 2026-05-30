@@ -141,11 +141,30 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
 
     function hasDeck() { return slides.length > 1; }
 
+    function slideQuizElements(s) {
+      // Anything graded on this slide: quizzes + runners with expected=
+      return Array.prototype.slice.call(s.querySelectorAll('[data-lc-quiz-id]'));
+    }
+
+    function slideScoreMarker(s) {
+      var quizEls = slideQuizElements(s);
+      if (quizEls.length === 0) return '';
+      if (!window.lcQuizScore || !window.lcQuizScore.get) return ' · 0/' + quizEls.length;
+      var correct = 0;
+      quizEls.forEach(function(q){
+        var id = q.dataset.lcQuizId;
+        var entry = id && window.lcQuizScore.get(id);
+        if (entry && entry.correct) correct++;
+      });
+      if (correct === quizEls.length) return ' · ✓';
+      return ' · ' + correct + '/' + quizEls.length;
+    }
+
     function slideTitle(s, i) {
       var h = s.querySelector('h1, h2');
       var t = h ? (h.textContent || '').trim().replace(/\s+/g, ' ') : '';
-      if (t.length > 36) t = t.substring(0, 34) + '…';
-      return (i + 1) + '/' + slides.length + (t ? ' · ' + t : '');
+      if (t.length > 28) t = t.substring(0, 26) + '…';
+      return (i + 1) + '/' + slides.length + (t ? ' · ' + t : '') + slideScoreMarker(s);
     }
 
     function buildJumpOptions() {
@@ -268,6 +287,11 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
     if (navPrev) navPrev.addEventListener('click', function(e){ e.preventDefault(); prev(); });
     if (navNext) navNext.addEventListener('click', function(e){ e.preventDefault(); next(); });
     if (navJump) navJump.addEventListener('change', function(){ jump(parseInt(navJump.value, 10)); });
+
+    // Rebuild picker option labels when any quiz/runner score changes
+    if (window.lcQuizScore && window.lcQuizScore.subscribe) {
+      window.lcQuizScore.subscribe(buildJumpOptions);
+    }
 
     document.addEventListener('keydown', function(e){
       if (!body.classList.contains('lc-slides-active')) return;

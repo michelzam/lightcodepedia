@@ -466,6 +466,7 @@
     }
 
     var EXPECTED = (opts.expected || "").replace(/\r\n/g, "\n");
+    if (EXPECTED) root.dataset.lcQuizId = "run-" + ID;
 
     function checkExpected(ok) {
       if (!EXPECTED) return;

@@ -36,9 +36,13 @@ Auto-included by docs/_layouts/default.html.
   window.lcQuizScore = window.lcQuizScore || (function(){
     var quizzes = {};  // {id: {correct: bool, attempts: N}}
     var order = [];
+    var subscribers = [];
 
     function fab(){ return document.querySelector('.lc-score-fab'); }
     function pop(){ return document.querySelector('.lc-score-popover'); }
+    function notify(){
+      subscribers.forEach(function(cb){ try { cb(quizzes); } catch (e) {} });
+    }
 
     function render() {
       var f = fab(); if (!f) return;
@@ -74,6 +78,7 @@ Auto-included by docs/_layouts/default.html.
         quizzes[quizId].attempts++;
         render();
         renderPopover();
+        notify();
       },
       reset: function() {
         quizzes = {};
@@ -81,7 +86,11 @@ Auto-included by docs/_layouts/default.html.
         render();
         renderPopover();
         var p = pop(); if (p) p.classList.remove('lc-score-popover-visible');
-      }
+        notify();
+      },
+      get: function(quizId) { return quizzes[quizId]; },
+      all: function() { return quizzes; },
+      subscribe: function(cb) { subscribers.push(cb); }
     };
   })();
 

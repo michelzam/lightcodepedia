@@ -94,6 +94,7 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
     el.classList.add('lc-quiz');
 
     var quizId = el.id || ('quiz-' + (++QUIZ_SEQ));
+    el.dataset.lcQuizId = quizId;
     var multi = el.getAttribute('multi') === 'true';
     var correctSet = {};
 
