@@ -1,95 +1,128 @@
-# ⚙️ Tutorial 102 — Compose (Low-code)
+# ⚙️ Build your own page
 
-Fork the repo. Open the editor. Add a component with one line. Done.
+In Tutorial 101 you explored what Lightcodepedia can do. Now let's make it yours.
 
-**This page is the tutorial.** Click 📽️ to enter slide mode.
+By the end of this page you'll have your own copy of the site, you'll have edited a page in the browser, and you'll have added a live component — all without touching a terminal.
 
-## 🍴 Fork the repo
+> Tell learners: "By the end of this page, each of you will have a live website with your name on it."
+{: .speaker-note }
+
+---
+
+## 🍴 Make your own copy
+
+Lightcodepedia is a free template. Making your own copy takes about two minutes.
 
 1. Go to [github.com/michelzam/lightcodepedia](https://github.com/michelzam/lightcodepedia)
-2. Click **Fork → Create a new fork**
-3. Keep the default name and click **Create fork**
+2. Click **Fork** → **Create a new fork**
+3. Keep the default name (or pick your own) and click **Create fork**
+4. In your new copy, go to **Settings → Pages**
+5. Under *Build and deployment*, choose **GitHub Actions**
+6. Go back to the main page of your repo and make any small edit (e.g. click the pencil on `README.md`, add a space, save)
 
-Your personal copy of Lightcodepedia is now live at `https://<you>.github.io/lightcodepedia`.
+Your site goes live at `https://your-name.github.io/lightcodepedia` within about a minute.
 
-> Demo: fork live, show the forked repo URL. Ask: "what just happened?" — a full website was copied in 10 seconds.
+> Walk through the fork live on the projector. The moment the site URL appears in Settings → Pages is always a crowd moment — "it's really live?"
 {: .speaker-note }
 
-**Q:** After forking, your new site is hosted…
+**Q:** After you fork the repo, where is your new site hosted?
 
-- [ ] On your laptop — you need to run a local server
-- [ ] On Lightcodepedia's servers
-- [x] On GitHub Pages under your own GitHub account
-- [ ] Nowhere yet — you need to click Deploy first
+- [ ] On Lightcodepedia's servers — they host all forks automatically.
+- [x] On GitHub's free hosting, under your own GitHub account.
+- [ ] Nowhere — you still need to buy a hosting plan.
+- [ ] On your laptop — you have to run a local server to see it.
 {: .quiz }
 
-## ✏️ Open the editor
+---
 
-1. Go to your forked site
-2. Click the **✏️** button (bottom-right)
-3. Generate a GitHub PAT with **`repo` scope**: [github.com/settings/tokens](https://github.com/settings/tokens)
-4. Paste the PAT and your repo name (`you/lightcodepedia`)
+## ✏️ Edit a page in the browser
+
+No need to open a code editor. Every page has a built-in editor — the **✏️** button at the bottom right.
+
+To connect it to your copy of the site you'll need a short access key from GitHub (different from the AI key — this one needs permission to save files).
+
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens) → **Generate new token (classic)**
+2. Give it a name, check the **`repo`** box, click **Generate**
+3. Copy the key
+4. On your forked site, click ✏️ — paste the key and your repo name (`your-name/lightcodepedia`)
 5. Click **Connect**
 
-The file tree loads. Click any `.md` file to edit it.
+The file tree on the left shows every page. Click one to open it.
 
-> Live demo: connect the editor, open `index.md`, change one word, save. Reload — change is live.
+> Give learners 5 minutes to connect the editor. The most common stumble: they paste the repo name with a capital letter or extra space. Check for that first if someone can't connect.
 {: .speaker-note }
+
+→ [Editor documentation](/components/code)
+
+---
 
 ## 🧩 Add your first component
 
-Every component is a fenced code block followed by a `{: .class }` IAL tag.
+Every component is just a block of content followed by a short tag in curly braces. That tag is what turns a plain text block into something interactive.
 
-Open any page in the editor and add:
+Here's the simplest example — a code runner:
 
 ````markdown
 ```python
-print("My first component! 🎉")
+print("Hello from my page! 🎉")
 ```
 {: .run }
 ````
 
-Save. Wait ~35 s for the build. Reload — your Python runner is live.
+The `{: .run }` tag after the code block is the whole secret. Without it: plain code. With it: a live runner.
 
-**Q:** What does the `{: .run }` tag do?
+Open your home page in the editor, find a good spot, and paste that block. Click **Save** — your page rebuilds in about 35 seconds.
 
-- [ ] It runs the code on the server when the page loads
-- [x] It tells the LightCode JavaScript to upgrade the code block into an interactive runner
-- [ ] It's a CSS class that changes the font color
-- [ ] Nothing — it's ignored by Jekyll
+> Demo live: paste the block, save, reload the page, click ▶ Run. Then ask a learner to change the message and save again. Two edits in under two minutes — that's the aha moment.
+{: .speaker-note }
+
+**Q:** What turns a plain code block into a live interactive component?
+
+- [ ] A special file you need to upload.
+- [ ] A setting in the GitHub repo configuration.
+- [x] The `{: .tag }` line immediately after the block.
+- [ ] Nothing — all code blocks are interactive by default.
 {: .quiz }
 
-## 🎛️ Knobs to turn
+---
 
-Most components accept extra attributes in the IAL:
+## 🎛️ Every component has options
 
-```markdown
-{: .run rows="10" id="my-editor" }
-{: .agent bound="my-editor" }
-{: .datagrid format="csv" height="300" }
-{: .chart type="bar" x="name" }
+The tag can carry extra settings. Here are a few:
+
+| What you want | Tag to use |
+|---|---|
+| A Python runner | `{: .run }` |
+| A Python runner with more lines | `{: .run rows="12" }` |
+| An AI assistant | `{: .agent }` |
+| A data table from a CSV | `{: .datagrid format="csv" }` |
+| A bar chart | `{: .chart type="bar" }` |
+| A map | `{: .map }` |
+| Sliding presentation | `{: .slides }` |
+
+Browse the full library for the complete list:
+
+[Browse all components →](docs/components)
+{: .folder cols="3" }
+
+---
+
+## 🚀 Ready to go further?
+
+You have a live site and you can edit it. The next step is making it truly yours — custom address, your own data, your own style.
+
 ```
+### 🚀 Step 3 — Go further
+Custom domain, your own data, and what to do next.
 
-[Browse all components →](/components/)
+[Go further →](/tutorial103)
 
-## 📚 What's next?
-
-You can edit pages. Ready to deploy your own?
-
-```
-### 🚀 Step 3 — Deploy (Dev)
-Configure your LightNode, set a custom domain, and ship it.
-
-[Deploy →](/tutorial103)
-
-### 🧩 Components
-Browse the full component library.
+### 🧩 Component library
+See every component with live examples and documentation.
 
 [Browse →](/components/)
 
-### 🏠 Back to start
-Return to the home page.
-
+### 🏠 Back to home
 [Home →](/)
 ```
 {: .cards cols="3" }
