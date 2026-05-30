@@ -244,8 +244,17 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
     function hasDeck() { return slides.length > 1; }
 
     function slideQuizElements(s) {
-      // Anything graded on this slide: quizzes + runners with expected=
-      return Array.prototype.slice.call(s.querySelectorAll('[data-lc-quiz-id]'));
+      // Anything graded on this slide: quizzes (kramdown sets class="quiz")
+      // and runners with expected= (their wrapper gets data-lc-quiz-id).
+      // We accept the kramdown class so dots appear before quiz.md upgrades.
+      var found = Array.prototype.slice.call(
+        s.querySelectorAll('ul.quiz, ol.quiz, [data-lc-quiz-id]')
+      );
+      var out = [];
+      for (var i = 0; i < found.length; i++) {
+        if (out.indexOf(found[i]) === -1) out.push(found[i]);
+      }
+      return out;
     }
 
     function slideScoreMarker(s) {
@@ -283,6 +292,7 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
         opt.textContent = slideTitle(s, i);
         navJump.appendChild(opt);
       });
+      navJump.value = String(current);
     }
 
     function showSlide() {
