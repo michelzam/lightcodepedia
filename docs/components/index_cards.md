@@ -3,6 +3,11 @@ sitemap: false
 layout: null
 ---
 
+### ✍️ Text
+Markdown basics — headings, lists, links, code, tables. Plus footnote popovers `[^x]` for inline definitions.
+
+[Open →](text)
+
 ### 📑 Tabs
 Alternative content panels — only one visible at a time. File-based, split by `###`.
 
