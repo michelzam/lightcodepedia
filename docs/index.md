@@ -7,20 +7,33 @@ meant to build digital skills.
 
 This 🪢_lightnode_ is the **nexus** of the **Lightcode Universe** made of LightNodes.
 
-It is hosted on _GitHub_ and _StreamlitCloud_ for free.
-
 💡️ _You can **fork** this repo and customize it._
 
 ![Forks](https://img.shields.io/github/forks/michelzam/lightcodepedia?style=flat)
 
-📖 _Learn how to build apps with little or no code._
+## 🎓 Tutorial — No-code → Low-code → Dev
 
 ```
-### 🎬 Demo
-Try the live LightCode demo right in your browser. Start here.
+### 🌱 Step 1 — Explore
+Discover interactive components, run Python in your browser, chat with Ari. No setup required.
 
-[Open demo →](/demo)
+[Start →](/tutorial101)
 
+### ⚙️ Step 2 — Compose
+Fork the repo and edit pages live in your browser with the built-in editor and one-tag components.
+
+[Compose →](/tutorial102)
+
+### 🚀 Step 3 — Deploy
+Configure your LightNode, set a custom domain, and ship it on GitHub Pages in minutes.
+
+[Deploy →](/tutorial103)
+```
+{: .cards cols="3" }
+
+## 🛠️ Tools
+
+```
 ### 🤖 Learn with Ari
 Chat with your AI pair lightcoder, trained on LightCode concepts. 🆕
 
@@ -35,43 +48,33 @@ Conferences, certificates, publications and quotes from educators.
 Browse the library of interactive widgets you can use in your pages.
 
 [Browse →](/components/)
+```
+{: .cards cols="3" }
 
-### 🎈 Play
-Mini-games and interactive examples to learn while having fun.
+## 🗒️ Admin
 
-[Play now →](/play)
-
-### 🎡 Examples
-Real apps and use cases built with LightCode.
-
-[See examples →](/examples)
-
-### 📚 Readings
-Course materials covering low-code fundamentals, chapter by chapter.
-
-[Start reading →](/chapters)
-
-### 🛟 Help
-Stuck? Find answers and ways to get support.
-
-[Get help →](/help)
-
-### ⚙️ Setup
-Config, useful links and a step-by-step guide to 🚚 deploy your own LightNode on the cloud.
-
-[Setup →](/links) · [Deploy →](/deploy)
-
-### ℹ️ About
-Author, network of contributors, status and EU funding.
-
-[About →](/about)
-
+```
 ### 🗒️ Pages
 Customize your pages here.
 
 [Pages →](/new2)
+
+### ⚙️ Setup
+Fork, configure and deploy your own LightNode.
+
+[Setup →](/setup)
+
+### ℹ️ About
+Authors, contributors, status and EU funding.
+
+[About →](/about)
+
+### 📦 Archive
+Older demos, examples, readings and guides — preserved for reference.
+
+[Archive →](/archive/)
 ```
-{: .cards cols="3" }
+{: .cards cols="4" }
 
 ## 🗣️ What people say
 
