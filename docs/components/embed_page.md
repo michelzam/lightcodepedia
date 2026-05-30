@@ -62,7 +62,12 @@ YouTube watch URLs → `/embed/VIDEO_ID` automatically.
 | `{: .embed }` | `600` | Raw iframe — any external src |
 | `{: .video }` | `400` | YouTube + `gdrive:ID` shorthand |
 
-**Q:** You write `[Lecture](gdrive:ABC123){: .video }` as its own paragraph. What URL does the iframe use?
+**Q:** You write the following two lines. What URL does the iframe use?
+
+```markdown
+[Lecture](gdrive:ABC123)
+{: .video }
+```
 
 - [ ] `gdrive:ABC123` — passed through literally.
 - [x] `https://drive.google.com/file/d/ABC123/preview` — the shorthand is expanded.
