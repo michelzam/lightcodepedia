@@ -1,35 +1,74 @@
 # 📽️ Slides
 
-Any page on this site can be presented as slides — no source markup, no front matter, no `<div>`. Just click the 📽️ button at the bottom-left of any page (including this one) and watch the same markdown repaint as a deck.
+Any page on this site can be presented as a slide deck — no source markup, no front matter, no `<div>`. The same markdown reads scrolly by default and presents as slides on demand.
 
-Press 📽️ now to try it on this page.
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode, then press → (or click) to advance. The page walks you through how slides work, one slide at a time.
 
-## How it works
+## Why a slide mode?
 
-The viewer reads your already-rendered markdown and partitions it on `## h2` boundaries. Everything between two `## h2` headings becomes one slide. The first slide is everything before the first `## h2` (typically the `# h1` title plus any intro prose).
+Two readers, one source.
 
-- The markdown source stays unchanged.
-- The same page reads fine top-to-bottom in scrolly mode.
-- The same page presents as a deck in slide mode.
+- Students at home read the page scrolly, at their own pace.
+- The same page projects cleanly as a deck for an in-class walkthrough.
+- You write the markdown once. The viewer decides scroll vs. deck.
+- No duplicate "presentation" file to keep in sync.
 
-## Fragments
+## How to start presenting
 
-Bullets auto-reveal one click at a time. You're reading bullets right now — in slide mode they'd start dim and brighten as you click.
+Three ways in.
 
-- This is the first bullet of this slide.
-- This is the second; it appears on the next click.
-- Bullets are the natural unit of "click to reveal more."
+- Tap **📽️ Present** at the bottom-left of any page.
+- Append `?slides` to the URL — auto-starts in deck mode (shareable).
+- Set a "Present" link from a syllabus that points to `your-page?slides`.
 
-If you want a paragraph to fragment instead of a bullet, tag it with kramdown's `{: .fragment }` — that's the only new syntax, and it's still pure markdown:
+Press **Esc** to exit back to scrolly view. The URL drops `?slides` automatically.
 
-> A sentence that should appear on its own click.
+## What becomes a slide?
+
+The split is purely structural — no special marker required.
+
+- Each `## h2` heading starts a new slide.
+- Everything before the first `## h2` (your `# h1` plus any intro prose) is **slide 1**.
+- Slides include every block until the next `## h2` — paragraphs, lists, code, widgets, tables.
+
+So a normal lesson with five `## h2` sections becomes a six-slide deck (intro + five sections), automatically.
+
+## Bullets become fragments
+
+Bullets are the natural unit of "click to reveal more."
+
+- This bullet appears first.
+- This one comes on your next click.
+- And this one after that.
+- A bullet that ends a thought is the perfect fragment.
+
+You don't write anything special — every `<li>` in a list auto-fragments when presented.
+
+## Fragmenting prose
+
+When you want a paragraph to fragment on its own, use the kramdown IAL `{: .fragment }`. It's pure markdown, still no HTML:
+
+A normal paragraph above this one shows immediately.
+
+> A reveal-on-click paragraph below.
 {: .fragment }
 
-If you want a list to **not** auto-fragment, tag the list with `{: .nofragments }`. Useful for reference lists where all items should be visible at once.
+That's the only new syntax you ever need to learn. And it's still optional — bullets cover 90 % of cases.
 
-## Live widgets work inside slides
+## Opting a list out
 
-The unfair advantage over a real PowerPoint: your interactive widgets stay live inside the deck. You can present code, edit it on stage, and run it without ever leaving slide view.
+Sometimes a list is reference material — a glossary, a table of contents, a cheat sheet — and you want every item visible at once.
+
+Tag the list with `{: .nofragments }`:
+
+- All three items
+- show together
+- with no fragmenting
+{: .nofragments }
+
+## Live widgets stay live
+
+The unfair advantage over PowerPoint: your `.run`, `.datagrid`, and `.form` widgets keep working inside slides. Click into them without advancing the deck.
 
 ```python
 name = "world"
@@ -37,31 +76,67 @@ print(f"Hello, {name}!")
 ```
 {: .run rows="3" }
 
-Hit ▶ Run from inside the slide.
+Edit the code, hit ▶ Run, see output — all inside slide view. Then click outside the runner to advance.
 
-## Navigation
+## Navigation cheat sheet
 
-- `→` / `Space` / click anywhere → next fragment (or next slide)
-- `←` → previous
-- `1`-`9` → jump to slide N
+On desktop:
+
+- `→` / `Space` / click → next fragment or slide
+- `←` → back
+- `1`–`9` → jump to slide N
 - `F` → toggle fullscreen
-- `Esc` → exit slide mode (back to scrolly)
+- `Esc` → exit slide mode
 
-The URL gets `?slides` appended on entry, so a slide-mode link is shareable. Open any page with `?slides` in the URL and it auto-starts in deck mode.
+On phone:
 
-## When the button is hidden
+- The bottom-center toolbar has **◀ / picker / ▶**.
+- The picker is iOS's native wheel — tap a slide name to jump.
+- Tap anywhere on the slide content to advance.
+
+## Design tips — what works in both modes
+
+A bullet list pulls double duty: a study note for the reader AND a fragment beat for the presenter. To get both, follow three rules.
+
+- **One idea per bullet.** Short enough to read at a glance, complete enough to stand alone.
+- **Five bullets max per slide.** If you need more, split into two `## h2` sections.
+- **No deep nesting.** Nested lists fragment too, which gets confusing fast. Flatten when you can.
+- **Code blocks live alone.** Put a runner on its own slide; don't bury it under five bullets.
+- **Don't write "slide 3 of 5" in the prose.** The slide numbers come from structure; if you reorder sections, you don't want to renumber sentences.
+
+## Common pitfalls
+
+These bite first-time deck authors.
+
+- Forgetting that `# h1` is your **title card**, not slide 2. Lead with the lesson title and a one-sentence hook.
+- Stuffing a whole lecture into one `## h2`. If you're scrolling inside a slide in deck mode, that's a sign to split.
+- Using `### h3` to break thoughts within a slide — `### h3` isn't a slide break (only `## h2` is). Use a paragraph or a bullet.
+- Auto-fragmenting a 20-item list. Tag it `{: .nofragments }` or break it across slides.
+
+## When the button hides
 
 The 📽️ button hides itself on:
 
-- Pages with no `## h2` heading (nothing to slide-break)
-- The 404 page
-- Pages set with `no_slides: true` in front matter
-- Embed mode (`?embed=true`)
+- Pages with no `## h2` heading (nothing to slide-break).
+- The 404 page.
+- Pages set with `no_slides: true` in front matter (per-page opt-out).
+- Embed mode (`?embed=true`).
+
+## Your turn — design a 3-slide tutorial
+
+Open any lesson you've written. In your head, answer:
+
+- What's the `# h1` title and one-sentence hook?
+- What are the 2–3 `## h2` sections you'd want as slide breaks?
+- Which bullets reveal one at a time vs. all-at-once?
+- Is there a runner that deserves its own slide?
+
+If your existing page already answers those four questions, you have a deck — no changes needed. Click 📽️ and present it. If not, the cleanup is the lesson plan you'd have written anyway.
 
 ## Limits worth knowing
 
-- One presenter machine at a time. There's no shared-cursor / lockstep across viewers — clicking advances *your* view of the page.
-- Slide order follows source order. No reordering, no hiding slides per audience.
-- Speaker notes aren't a thing yet. If you want them, ask.
+- No shared cursor across viewers — clicking advances *your* view.
+- Slide order follows source order. No per-audience reorder.
+- No speaker notes yet. Ask if you want them.
 
 {% include backtotop.md %}
