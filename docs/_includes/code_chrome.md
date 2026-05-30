@@ -1606,6 +1606,7 @@
   function markdownBody(s) {
     return window.marked ? marked.parse(s) : "<pre>" + s + "</pre>";
   }
+  window.lcLoadMarked = loadMarked;
 
   var _chartJsQ = null;
   function loadChartJs(cb) {
