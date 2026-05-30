@@ -333,20 +333,30 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   /* ── Save ────────────────────────────────────────────── */
   function saveFile() {
     if (!_curFile) { toast("No file selected.", false); return; }
+    if (!_pat || !_repo) { toast("Not connected.", false); return; }
     var inp = document.getElementById("ed-input");
     if (!inp) return;
-    var msg = prompt("Commit message:", "Update " + _curFile.split("/").pop());
-    if (msg === null) return;
-    if (!msg.trim()) msg = "Update " + _curFile.split("/").pop();
-    var body = { message: msg, content: b64e(inp.value) };
-    if (_curSha) body.sha = _curSha;
-    gh("PUT", "/contents/" + _curFile, body, function (data) {
-      if (!data.content) { toast("Save failed (" + esc(_curFile) + "): " + esc(data.message || JSON.stringify(data)), false); return; }
-      _curSha = data.content.sha;
-      toast("Saved · " + data.commit.sha.slice(0, 7) + " ✓", true);
-      loadFiles();
-      loadHistory();
-      watchBuild(data.commit.sha);
+    /* verify write access before bothering the user with a prompt */
+    fetch("https://api.github.com/repos/" + _repo, {
+      headers: { Authorization: "Bearer " + _pat }
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.full_name) { toast("Repo not found: " + esc(_repo), false); return; }
+      if (d.permissions && !d.permissions.push) {
+        toast("No write access to " + esc(d.full_name) + " — use your fork.", false); return;
+      }
+      var msg = prompt("Commit message:", (_curSha ? "Update " : "Add ") + _curFile.split("/").pop());
+      if (msg === null) return;
+      if (!msg.trim()) msg = (_curSha ? "Update " : "Add ") + _curFile.split("/").pop();
+      var body = { message: msg, content: b64e(inp.value), branch: "main" };
+      if (_curSha) body.sha = _curSha;
+      gh("PUT", "/contents/" + _curFile, body, function (data) {
+        if (!data.content) { toast("Save failed (" + esc(_curFile) + "): " + esc(data.message || JSON.stringify(data)), false); return; }
+        _curSha = data.content.sha;
+        toast("Saved · " + data.commit.sha.slice(0, 7) + " ✓", true);
+        loadFiles();
+        loadHistory();
+        watchBuild(data.commit.sha);
+      });
     });
   }
 
