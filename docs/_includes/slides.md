@@ -65,6 +65,24 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
   .lc-slides-nav button { width: 36px; height: 36px; }
   .lc-slides-nav-jump { font-size: 0.78em; max-width: 130px; min-width: 50px; padding: 0.4em 1.4em 0.4em 0.5em; }
 }
+
+.lc-slides-share-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); display: none; align-items: center; justify-content: center; z-index: 10002; padding: 1em; }
+.lc-slides-share-overlay.lc-share-open { display: flex; }
+.lc-slides-share-panel { background: white; padding: 1.5em 2em 1.4em; border-radius: 12px; max-width: 90vw; max-height: 90vh; text-align: center; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.4); display: flex; flex-direction: column; align-items: center; gap: 1em; }
+.lc-slides-share-panel h4 { margin: 0; font-size: 1.4em; color: #222; font-weight: 600; }
+.lc-slides-share-close { position: absolute; top: 0.5em; right: 0.7em; background: none; border: none; font-size: 1.4em; cursor: pointer; color: #888; line-height: 1; padding: 0.2em 0.4em; border-radius: 4px; }
+.lc-slides-share-close:hover { color: #222; background: #f0f0f0; }
+.lc-slides-share-qr { width: min(60vh, 360px); height: min(60vh, 360px); display: flex; align-items: center; justify-content: center; padding: 0.5em; background: white; }
+.lc-slides-share-qr svg, .lc-slides-share-qr img { width: 100%; height: 100%; }
+.lc-slides-share-qr-fallback { font-size: 0.9em; color: #888; padding: 2em; }
+.lc-slides-share-url { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78em; color: #666; word-break: break-all; max-width: 90%; padding: 0.5em 0.8em; background: #f5f5f5; border-radius: 4px; line-height: 1.4; }
+.lc-slides-share-copy { padding: 0.55em 1.6em; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95em; font-weight: 500; }
+.lc-slides-share-copy:hover { background: #0052a3; }
+.lc-slides-share-copy.lc-copied { background: #2e7d32; }
+@media (max-width: 480px) {
+  .lc-slides-share-panel { padding: 1em; gap: 0.7em; }
+  .lc-slides-share-qr { width: min(70vw, 280px); height: min(70vw, 280px); }
+}
 </style>
 <a class="lc-slides-fab" href="#" title="Present as slides" aria-label="Present as slides">
   <span class="lc-slides-fab-icon" aria-hidden="true">📽️</span><span class="lc-slides-fab-label">Present</span>
@@ -73,7 +91,17 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
   <button class="lc-slides-nav-prev" type="button" title="Previous (←)" aria-label="Previous slide">◀</button>
   <select class="lc-slides-nav-jump" title="Jump to slide" aria-label="Jump to slide"></select>
   <button class="lc-slides-nav-next" type="button" title="Next (→ or Space)" aria-label="Next slide / fragment">▶</button>
+  <button class="lc-slides-nav-share" type="button" title="Share with QR code (Q)" aria-label="Share with QR code">📷</button>
 </nav>
+<div class="lc-slides-share-overlay" role="dialog" aria-modal="true" aria-label="Share slide">
+  <div class="lc-slides-share-panel">
+    <button class="lc-slides-share-close" type="button" aria-label="Close">✕</button>
+    <h4>Scan to follow along</h4>
+    <div class="lc-slides-share-qr"></div>
+    <div class="lc-slides-share-url"></div>
+    <button class="lc-slides-share-copy" type="button">Copy link</button>
+  </div>
+</div>
 <script>
 (function(){
   function init() {
@@ -192,6 +220,7 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
       var atLast = current === slides.length - 1 && revealed[current] === totalFrags;
       if (navPrev) navPrev.disabled = atFirst;
       if (navNext) navNext.disabled = atLast;
+      if (document.body.classList.contains('lc-slides-active')) syncUrl(true);
     }
 
     function next() {
@@ -236,10 +265,65 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
     function syncUrl(active) {
       try {
         var url = new URL(location.href);
-        if (active) url.searchParams.set('slides', '');
+        if (active) url.searchParams.set('slides', String(current));
         else url.searchParams.delete('slides');
         history.replaceState(null, '', url.toString().replace(/\?$/, ''));
+        refreshShareIfOpen();
       } catch (e) {}
+    }
+
+    var _qrLoading = null;
+    function loadQrcode() {
+      if (window.qrcode) return Promise.resolve();
+      if (_qrLoading) return _qrLoading;
+      _qrLoading = new Promise(function(resolve){
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
+        s.onload = function(){ resolve(); };
+        s.onerror = function(){ resolve(); };
+        document.head.appendChild(s);
+      });
+      return _qrLoading;
+    }
+
+    function refreshShareIfOpen() {
+      var overlay = document.querySelector('.lc-slides-share-overlay');
+      if (!overlay || !overlay.classList.contains('lc-share-open')) return;
+      renderShare();
+    }
+
+    function renderShare() {
+      var overlay = document.querySelector('.lc-slides-share-overlay');
+      if (!overlay) return;
+      var qrBox = overlay.querySelector('.lc-slides-share-qr');
+      var urlBox = overlay.querySelector('.lc-slides-share-url');
+      var href = location.href;
+      urlBox.textContent = href;
+      if (!window.qrcode) {
+        qrBox.innerHTML = '<div class="lc-slides-share-qr-fallback">loading QR…</div>';
+        return;
+      }
+      try {
+        var qr = window.qrcode(0, 'M');
+        qr.addData(href);
+        qr.make();
+        qrBox.innerHTML = qr.createSvgTag({ scalable: true, margin: 1 });
+      } catch (e) {
+        qrBox.innerHTML = '<div class="lc-slides-share-qr-fallback">QR error</div>';
+      }
+    }
+
+    function openShare() {
+      var overlay = document.querySelector('.lc-slides-share-overlay');
+      if (!overlay) return;
+      overlay.classList.add('lc-share-open');
+      renderShare();
+      loadQrcode().then(renderShare);
+    }
+
+    function closeShare() {
+      var overlay = document.querySelector('.lc-slides-share-overlay');
+      if (overlay) overlay.classList.remove('lc-share-open');
     }
 
     function enter() {
@@ -288,6 +372,44 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
     if (navNext) navNext.addEventListener('click', function(e){ e.preventDefault(); next(); });
     if (navJump) navJump.addEventListener('change', function(){ jump(parseInt(navJump.value, 10)); });
 
+    var navShare = nav ? nav.querySelector('.lc-slides-nav-share') : null;
+    var shareOverlay = document.querySelector('.lc-slides-share-overlay');
+    if (navShare) navShare.addEventListener('click', function(e){ e.preventDefault(); openShare(); });
+    if (shareOverlay) {
+      shareOverlay.addEventListener('click', function(e){
+        if (e.target === shareOverlay) closeShare();
+      });
+      var closeBtn = shareOverlay.querySelector('.lc-slides-share-close');
+      if (closeBtn) closeBtn.addEventListener('click', closeShare);
+      var copyBtn = shareOverlay.querySelector('.lc-slides-share-copy');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function(){
+          var href = location.href;
+          var done = function(){
+            copyBtn.textContent = '✓ Copied';
+            copyBtn.classList.add('lc-copied');
+            setTimeout(function(){
+              copyBtn.textContent = 'Copy link';
+              copyBtn.classList.remove('lc-copied');
+            }, 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(href).then(done, function(){});
+          } else {
+            try {
+              var ta = document.createElement('textarea');
+              ta.value = href;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand('copy');
+              document.body.removeChild(ta);
+              done();
+            } catch (e) {}
+          }
+        });
+      }
+    }
+
     // Rebuild picker option labels when any quiz/runner score changes
     if (window.lcQuizScore && window.lcQuizScore.subscribe) {
       window.lcQuizScore.subscribe(buildJumpOptions);
@@ -297,6 +419,11 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
       if (!body.classList.contains('lc-slides-active')) return;
       var t = e.target;
       if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)) return;
+      var overlay = document.querySelector('.lc-slides-share-overlay');
+      if (overlay && overlay.classList.contains('lc-share-open')) {
+        if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') { closeShare(); e.preventDefault(); }
+        return;
+      }
       if (e.key === 'Escape') { exit(); e.preventDefault(); }
       else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { next(); e.preventDefault(); }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { prev(); e.preventDefault(); }
@@ -304,6 +431,8 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
         if (document.fullscreenElement) document.exitFullscreen();
         else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
         e.preventDefault();
+      } else if (e.key === 'q' || e.key === 'Q') {
+        openShare(); e.preventDefault();
       } else if (e.key >= '1' && e.key <= '9') {
         jump(parseInt(e.key, 10) - 1);
         e.preventDefault();
@@ -320,7 +449,11 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
 
     try {
       var params = new URL(location.href).searchParams;
-      if (params.has('slides')) setTimeout(enter, 0);
+      if (params.has('slides')) {
+        var startN = parseInt(params.get('slides'), 10);
+        if (!isNaN(startN) && startN >= 0 && startN < slides.length) current = startN;
+        setTimeout(enter, 0);
+      }
     } catch (e) {}
   }
 
