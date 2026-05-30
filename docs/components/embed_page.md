@@ -30,12 +30,27 @@ Embed another page from this site, an external URL, or a video — using a markd
 
 ## 🌐 Embed an external URL
 
-`{: .embed }` for any external iframe-able URL:
+`{: .embed }` for any external iframe-able URL. OpenStreetMap exports embeddable tiles directly — no API key:
 
 ```markdown
-[OpenStreetMap](https://www.openstreetmap.org/export/embed.html?bbox=-0.09,51.50,-0.08,51.51)
+[Paris — dog-walking parks](https://www.openstreetmap.org/export/embed.html?bbox=2.29,48.83,2.42,48.90&layer=mapnik)
 {: .embed height="350" }
 ```
+
+[Paris — dog-walking parks](https://www.openstreetmap.org/export/embed.html?bbox=2.29,48.83,2.42,48.90&layer=mapnik)
+{: .embed height="350" }
+
+> For a fully interactive map with CSV markers, see the [Map component](/components/map).
+> `.embed` is better when you already have an embeddable URL (OSM export, Datawrapper, Flourish, etc.).
+{: .speaker-note }
+
+**Q:** An external site returns `X-Frame-Options: DENY`. You try to `.embed` it. What happens?
+
+- [ ] The iframe renders fine — that header only affects other browsers.
+- [ ] LightCode rewrites the URL to bypass the restriction.
+- [x] The iframe shows blank or an error — the browser respects the header and refuses to load it.
+- [ ] The site is embedded but without CSS.
+{: .quiz }
 
 ## 🎬 Embed a video
 
@@ -45,6 +60,9 @@ Embed another page from this site, an external URL, or a video — using a markd
 [Python in 100 seconds](https://www.youtube.com/watch?v=x7X9w_GIm1s)
 {: .video height="360" }
 ```
+
+[Python in 100 seconds](https://www.youtube.com/watch?v=x7X9w_GIm1s)
+{: .video height="360" }
 
 ```markdown
 [Lecture recording](gdrive:1AbCdEfGhIjKlMnOpQrStUvWxYz)
