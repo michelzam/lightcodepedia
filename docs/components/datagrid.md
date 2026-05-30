@@ -1,12 +1,51 @@
 # 📊 Datagrid
 
-Interactive tables powered by **AG Grid Community** (~300 KB JS + ~30 KB CSS, loaded from jsDelivr on first sighting, cached after). Sort, filter, resize — all in the browser, no Python needed.
+Sort, filter, and scroll through data — no Python, no server, no setup. Drop a YAML, JSON, or CSV block on the page and get a fully interactive table.
 
-## Tiniest grid — `{: .datagrid }` on a YAML fence
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
-Drop `{: .datagrid }` on the line right after a YAML fenced block. The page upgrades it into a live grid.
+## 👀 Try it now
 
-{% raw %}
+Click a column header to sort. Hover the **☰** icon to filter. Drag a column border to resize.
+
+```yaml
+- name: Lucky
+  age: 3
+  breed: Beagle
+  adopted: true
+- name: Wanda
+  age: 5
+  breed: Poodle
+  adopted: true
+- name: Max
+  age: 2
+  breed: Husky
+  adopted: false
+- name: Bella
+  age: 4
+  breed: Labrador
+  adopted: true
+```
+{: .datagrid title="Shelter dogs" }
+
+That's a live grid. Sort by age, filter to `adopted = true`, resize the breed column.
+
+> Ask students to predict the sort order before clicking. Then: "what's the youngest dog?"
+> The filter question — "show me only the adopted dogs" — always lands well.
+{: .speaker-note }
+
+**Q:** You want to see only the Poodles in the grid. Which control do you use?
+
+- [ ] Click the column header twice to filter.
+- [ ] Add `filter="true"` to the IAL[^ial].
+- [x] Hover the **☰** icon on the Breed column header and type "Poodle".
+- [ ] You can't filter — this is just a static HTML table with CSS tricks.
+{: .quiz }
+
+## 🛠️ How to make one
+
+Write a YAML list of objects, then put `{: .datagrid }` on the very next line:
+
 ````markdown
 ```yaml
 - name: Lucky
@@ -15,61 +54,50 @@ Drop `{: .datagrid }` on the line right after a YAML fenced block. The page upgr
 - name: Wanda
   age: 5
   breed: Poodle
-- name: Max
-  age: 2
-  breed: Husky
 ```
 {: .datagrid }
 ````
-{% endraw %}
 
-Renders to:
+Each object becomes a row; its keys become the column headers. Header labels are auto-prettified — `weight_kg` becomes **Weight Kg**.
 
-```yaml
-- name: Lucky
-  age: 3
-  breed: Beagle
-- name: Wanda
-  age: 5
-  breed: Poodle
-- name: Max
-  age: 2
-  breed: Husky
-```
-{: .datagrid }
+## 🔧 Knobs
 
-Click a column header to sort. Hover the **☰** icon to filter. Drag the right edge of a header to resize.
-
-## Knobs
-
-| Attribute | Description |
+| Attribute | What it does |
 |---|---|
-| `id="..."` | Required if you have multiple grids on the same page (also required to bind a form or a detail grid) |
-| `title="..."` | Optional title bar above the grid |
+| `id="…"` | Required when you have more than one grid on the same page |
+| `title="…"` | Title bar shown above the grid |
 | `height="400"` | Grid height in pixels (default 400) |
 | `format="yaml"` | `yaml` (default), `json`, or `csv` |
-| `editable="true"` | Cells editable on double-click — see below |
-| `detail-of="<id>"` | Filter this grid by selection in another grid — see below |
-| `filter="<local>=<master>"` | Required with `detail-of`. Filter rule: row in this grid matches the master row's field. |
+| `editable="true"` | Double-click a cell to edit in place — see below |
+| `detail-of="<id>"` | Filter this grid by the selected row in another grid — see below |
+| `filter="<local>=<master>"` | Required with `detail-of`: which field to match |
 
-Headers are auto-prettified — `weight_kg` becomes **Weight Kg**. Booleans render as **True** / **False** (Python style).
+**Q:** You have two grids on the same page and they're interfering with each other. What's missing?
 
-## JSON format
+- [ ] `format="yaml"` on both.
+- [ ] A blank line between the two YAML blocks.
+- [x] `id="…"` on each grid — required when more than one lives on a page.
+- [ ] They can't coexist. One grid per page — site policy.
+{: .quiz }
+
+## 📋 Other data formats
+
+The grid accepts JSON and CSV too — just tell it which with `format=`.
+
+**JSON:**
 
 ```json
 [
-  {"city": "Tokyo", "country": "Japan", "population": 37400068},
-  {"city": "Delhi", "country": "India", "population": 28514000},
-  {"city": "Shanghai", "country": "China", "population": 25582000},
-  {"city": "São Paulo", "country": "Brazil", "population": 21650000},
-  {"city": "Mexico City", "country": "Mexico", "population": 21581000}
+  {"city": "Tokyo",      "country": "Japan",  "population": 37400068},
+  {"city": "Delhi",      "country": "India",  "population": 28514000},
+  {"city": "Shanghai",   "country": "China",  "population": 25582000},
+  {"city": "São Paulo",  "country": "Brazil", "population": 21650000},
+  {"city": "Mexico City","country": "Mexico", "population": 21581000}
 ]
 ```
-{: .datagrid format="json" title="World's largest cities" height="250" }
+{: .datagrid format="json" title="World's largest cities" height="230" }
 
-## CSV format
-
-Numbers are auto-coerced. Empty cells stay empty.
+**CSV:** numbers are auto-coerced to numeric; empty cells stay empty.
 
 ```csv
 name,age,breed,adopted
@@ -79,52 +107,11 @@ Max,2,Husky,false
 Bella,4,Labrador,true
 Charlie,1,Pug,false
 ```
-{: .datagrid format="csv" title="Shelter dogs" height="250" }
+{: .datagrid format="csv" title="Shelter dogs (CSV)" height="230" }
 
-## When to use this vs a markdown table
+## ✏️ Editable cells
 
-| Markdown table | `{: .datagrid }` |
-|---|---|
-| Static, small, no interaction | Sortable, filterable, virtualized |
-| Renders in any markdown viewer | Needs JS |
-| 5 lines of code | 300+ KB on first sighting (cached after) |
-
-Use markdown tables for ≤10 rows you just want to display. Use a datagrid when students need to **explore** the data — sort by a column, filter to a subset, scroll through hundreds of rows.
-
-## Loading from a repo file — `{% raw %}{% include datagrid_file.md path="..." %}{% endraw %}`
-
-Same pattern as `code_file.md`: live raw URL by default for fast feedback, jsDelivr CDN when published on the canonical host or with `?cdn=1`. Format auto-inferred from the extension.
-
-{% raw %}
-```liquid
-{% include datagrid_file.md path="data/cities.json" title="World's largest cities" height="350" %}
-```
-{% endraw %}
-
-Renders to:
-
-{% include datagrid_file.md path="data/cities.json" title="World's largest cities" height="350" %}
-
-The mode (`live` / `cdn`) is shown in italics in the title bar — so you can see which copy you're looking at.
-
-### Knobs (file form)
-
-| Attribute | Description |
-|---|---|
-| `path="..."` | Repo-relative path. Format auto-inferred from `.csv`/`.json`/`.yaml` extension |
-| `format="..."` | Override the inferred format (rare) |
-| `title="..."` | Title bar — defaults to the path |
-| `height="..."` | Pixel height — default 400 |
-| `src="https://..."` | Escape hatch for an external URL (skips repo/branch logic) |
-| `repo="org/repo"` `branch="..."` | Override repo + branch (default: current site, `main`) |
-
-A CSV example from the repo:
-
-{% include datagrid_file.md path="data/dogs.csv" title="Shelter dogs" height="300" %}
-
-## Editable cells — `editable="true"`
-
-Double-click a cell to edit. Enter commits, Esc cancels. Edits update the underlying row in memory; any [📝 Form](/components/form) bound to this grid via `bound=` repaints with the new value.
+Add `editable="true"` and double-click any primitive cell to edit. Numbers stay numeric; booleans stay boolean. Changes are **in-memory only** — refresh discards them.
 
 ```yaml
 - name: Lucky
@@ -142,71 +129,83 @@ Double-click a cell to edit. Enter commits, Esc cancels. Edits update the underl
 ```
 {: .datagrid id="editable-dogs" editable="true" height="200" }
 
-Numbers stay numeric (sorting is correct), booleans stay boolean. Changes are local to the browser session — refresh discards them.
+When a [📝 Form](/components/form) is bound to this grid (`bound="editable-dogs"`), edits here repaint the form automatically.
 
-## Grid-to-grid master/detail — `detail-of=` + `filter=`
+## 🔗 Master/detail — two grids linked
 
-A detail grid filters its rows by the row currently selected in a master grid. The relationship is **cities ➜ dogs**: click a city, see only the dogs in that city.
+`detail-of="<master-id>"` + `filter="<local-field>=<master-field>"` makes a detail grid that filters its rows by the row selected in the master. Click a city below — the dogs grid follows.
 
-{% raw %}
-````markdown
 ```json
 [
-  {"city": "Tokyo", "country": "Japan", "population": 37400068},
-  {"city": "Delhi", "country": "India", "population": 28514000},
-  {"city": "Shanghai", "country": "China", "population": 25582000}
+  {"city": "Tokyo",   "country": "Japan",  "population": 37400068},
+  {"city": "Delhi",   "country": "India",  "population": 28514000},
+  {"city": "Shanghai","country": "China",  "population": 25582000},
+  {"city": "São Paulo","country":"Brazil", "population": 21650000},
+  {"city": "Mexico City","country":"Mexico","population": 21581000}
 ]
 ```
-{: .datagrid id="md-cities" format="json" height="180" }
+{: .datagrid id="md-cities" format="json" height="200" }
 
 ```json
 [
-  {"name": "Hachi", "breed": "Akita", "city": "Tokyo"},
-  {"name": "Sakura", "breed": "Shiba Inu", "city": "Tokyo"},
-  {"name": "Raj", "breed": "Pariah", "city": "Delhi"}
-]
-```
-{: .datagrid id="md-dogs" format="json" detail-of="md-cities" filter="city=city" height="200" }
-````
-{% endraw %}
-
-Renders to:
-
-```json
-[
-  {"city": "Tokyo", "country": "Japan", "population": 37400068},
-  {"city": "Delhi", "country": "India", "population": 28514000},
-  {"city": "Shanghai", "country": "China", "population": 25582000},
-  {"city": "São Paulo", "country": "Brazil", "population": 21650000},
-  {"city": "Mexico City", "country": "Mexico", "population": 21581000}
-]
-```
-{: .datagrid id="md-cities" format="json" height="180" }
-
-```json
-[
-  {"name": "Hachi", "breed": "Akita", "age": 4, "city": "Tokyo"},
-  {"name": "Sakura", "breed": "Shiba Inu", "age": 2, "city": "Tokyo"},
-  {"name": "Raj", "breed": "Pariah", "age": 3, "city": "Delhi"},
-  {"name": "Priya", "breed": "Mudhol Hound", "age": 5, "city": "Delhi"},
-  {"name": "Bo", "breed": "Chow Chow", "age": 6, "city": "Shanghai"},
-  {"name": "Mei", "breed": "Pekingese", "age": 1, "city": "Shanghai"},
-  {"name": "Tito", "breed": "Mutt", "age": 4, "city": "São Paulo"},
-  {"name": "Coco", "breed": "Xolo", "age": 3, "city": "Mexico City"},
-  {"name": "Diego", "breed": "Chihuahua", "age": 5, "city": "Mexico City"}
+  {"name":"Hachi",  "breed":"Akita",         "age":4,"city":"Tokyo"},
+  {"name":"Sakura", "breed":"Shiba Inu",      "age":2,"city":"Tokyo"},
+  {"name":"Raj",    "breed":"Pariah",         "age":3,"city":"Delhi"},
+  {"name":"Priya",  "breed":"Mudhol Hound",   "age":5,"city":"Delhi"},
+  {"name":"Bo",     "breed":"Chow Chow",      "age":6,"city":"Shanghai"},
+  {"name":"Mei",    "breed":"Pekingese",      "age":1,"city":"Shanghai"},
+  {"name":"Tito",   "breed":"Mutt",           "age":4,"city":"São Paulo"},
+  {"name":"Coco",   "breed":"Xolo",           "age":3,"city":"Mexico City"},
+  {"name":"Diego",  "breed":"Chihuahua",      "age":5,"city":"Mexico City"}
 ]
 ```
 {: .datagrid id="md-dogs" format="json" detail-of="md-cities" filter="city=city" height="240" }
 
-Click a city above. The dogs grid below filters to that city's dogs. Deselect (click again) and the full list returns.
+Deselect a city row (click again) and the full dog list returns.
 
-**The filter syntax:** `filter="<local-field>=<master-field>"`. So `filter="city=city"` means "show rows where this grid's `city` column equals the selected master row's `city` column." If you have a `city_id` foreign key linking to a master with an `id` column, you'd write `filter="city_id=id"`.
+**Filter syntax:** `filter="<local>=<master>"` — `filter="city=city"` means "show rows where *this* grid's `city` equals the *selected* row's `city`." Foreign key pattern: `filter="city_id=id"`.
 
-You can chain forms onto this too — bind a form to `md-dogs` and you get a three-level master/detail/detail view.
+> Walk through the filter rule carefully — the left side is always the detail grid's column, the right side is the master's column.
+{: .speaker-note }
 
-## From inside a Python runner — `show.grid(rows)`
+**Q:** You want a dogs grid to filter by the selected row of a cities grid with `id="cities"`. What attribute do you add to the dogs grid's IAL?
 
-Every runner exposes a `show.grid(rows)` helper alongside `show()`. Pass a list of dicts (or objects with `__dict__`) and a full-width datagrid appears in the cards area below the output.
+- [ ] `parent="cities"`
+- [ ] `linked="cities"`
+- [x] `detail-of="cities"` plus `filter="city=city"`
+- [ ] `filter="cities"` — one attribute covers everything
+{: .quiz }
+
+## 📂 Loading from a repo file
+
+Use `{% raw %}{% include datagrid_file.md path="…" %}{% endraw %}` to load a file that lives in the repo. The grid always shows the current content — no copy-paste needed when the file changes.
+
+{% raw %}
+```liquid
+{% include datagrid_file.md path="data/cities.json" title="World cities" height="300" %}
+```
+{% endraw %}
+
+Renders to:
+
+{% include datagrid_file.md path="data/cities.json" title="World cities" height="300" %}
+
+The *(live)* or *(cdn)* tag in the title bar shows which source the data came from.
+
+### File-loader knobs
+
+| Attribute | What it does |
+|---|---|
+| `path="…"` | Repo-relative path — format auto-inferred from `.csv`/`.json`/`.yaml` extension |
+| `format="…"` | Override the inferred format |
+| `title="…"` | Title bar — defaults to the path |
+| `height="…"` | Pixel height — default 400 |
+| `src="https://…"` | External URL escape hatch (bypasses repo/branch logic) |
+| `repo="org/repo"` `branch="…"` | Override repo + branch (defaults: current site, `main`) |
+
+## 🐍 From a Python runner — `show.grid()`
+
+Every runner exposes a `show.grid(rows)` helper. Pass a list of dicts or objects and get a full datagrid below the output.
 
 ```python
 dogs = yaml.load("""
@@ -222,55 +221,42 @@ dogs = yaml.load("""
   age: 2
   breed: Husky
   weight_kg: 24.5
-- name: Bella
-  age: 4
-  breed: Labrador
-  weight_kg: 28.0
-- name: Charlie
-  age: 1
-  breed: Pug
-  weight_kg: 8.3
 """)
-
-show.grid(dogs, title="My dogs", height=260)
-print(f"Showed {len(dogs)} dogs in the grid.")
+show.grid(dogs, title="Dogs from Python", height=220)
+print(f"{len(dogs)} rows rendered.")
 ```
-{: .run id="show-grid-demo" rows="18" }
+{: .run id="show-grid-demo" rows="16" }
 
-Works with custom classes too — `show.grid` reads `__dict__`:
+## ⚠️ Limits worth knowing
 
-```python
-class Pet:
-    def __init__(self, name, age, breed):
-        self.name = name
-        self.age = age
-        self.breed = breed
+- **Array of objects only.** Each item must be a dict (or have `__dict__`). A flat list of scalars won't work as columns.
+- **All data loads at once.** Smooth up to ~10k rows in-browser; beyond that you'd want server-side pagination.
+- **Edits are in-memory.** Refresh discards them. No persistence layer yet.
+- **No column-type overrides.** Types are inferred from values by AG Grid[^ag-grid] — useful 95% of the time, but you can't yet force a column to be "date" or "currency".
 
-pets = [
-    Pet("Lucky", 3, "Beagle"),
-    Pet("Wanda", 5, "Poodle"),
-    Pet("Max", 2, "Husky"),
-]
-show.grid(pets, title="Pets (from objects)")
-```
-{: .run id="show-grid-objects" rows="13" }
+## 🏁 Final exam — boss level
 
-### `show.grid` signature
+**Q:** Which of these are TRUE about the datagrid? (Pick all that apply.)
 
-```python
-show.grid(rows, title=None, height=300)
-```
+- [x] YAML, JSON, and CSV are all supported with `format=`.
+- [x] Editable changes are in-memory — refresh discards them.
+- [ ] `detail-of=` works without a `filter=` attribute.
+- [x] `show.grid(rows)` inside a Python runner renders a datagrid below the output.
+- [ ] The grid supports server-side pagination by default.
+{: .quiz multi="true" }
 
-- `rows` — iterable of dicts. Non-dict items are auto-converted via `__dict__`; failing that, wrapped as `{'value': str(r)}`.
-- `title` — optional title bar above the grid.
-- `height` — pixel height of the grid (default 300).
+**Q:** It's demo day. Your grid has 5000 rows and your boss is watching. Will the datagrid handle it?
 
-## Limitations of v1
+- [x] Yes — AG Grid virtualizes rows, so only visible ones hit the DOM. 5k is nothing.
+- [ ] No — the 500-row hard limit kicks in and truncates silently.
+- [ ] Maybe — depends on the browser's karma.
+- [ ] Define "handle". It'll load. It'll also melt the laptop.
+{: .quiz }
 
-- Data must be an **array of objects** (keys become columns).
-- All data loads at once; no server-side pagination. Works smoothly up to ~10k rows in-browser.
-- Column types inferred by AG Grid from the values; no explicit per-column overrides yet.
-- Editable mode is in-memory only — refresh discards changes. No persistence layer yet.
-- No CSV/Excel export buttons yet. Ask if you want them.
+[^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to that block. Every component on this site is activated this way.
+
+[^ag-grid]: **AG Grid** — a high-performance open-source grid library (~300 KB JS + CSS) that powers the datagrid and form widgets. Loaded once from jsDelivr[^jsdelivr] and cached.
+
+[^jsdelivr]: **jsDelivr** — a free, fast CDN (content-delivery network) that serves open-source npm packages from edge nodes worldwide. Used here for AG Grid and other JS libraries.
 
 {% include backtotop.md %}

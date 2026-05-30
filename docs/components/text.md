@@ -1,44 +1,63 @@
 # ✍️ Text — Markdown basics
 
-Every page on this site is just markdown[^md]. This page is your reference: the handful of symbols you'll use 95 % of the time, plus the lightcodepedia twist on footnotes that turns definitions into hover-popovers (try hovering or tapping any little blue number you see — like the one right after "markdown" up there).
+Every page on this site is a plain text file written in Markdown[^md] — the lightweight format that turns `**bold**` into **bold** and `## Heading` into a big header. This page is your cheat sheet.
 
-## Headings
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
-Three levels you'll actually use, with a side effect specific to this site:
+There's one lightcodepedia twist: any `[^footnote]` reference becomes a hover/tap popover[^pop]. Try hovering or tapping the blue numbers above — like right now.
 
-- `# Title` — the page's `h1`, shown big with a blue underline.
-- `## Section` — `h2`, also a slide break in 📽️ slides mode[^slides].
+## 📐 Headings — structure your page
+
+Three levels you'll actually use:
+
+- `# Title` — the page's big `h1` heading (one per page).
+- `## Section` — `h2`, also a **slide break** in 📽️ slides mode.
 - `### Sub-section` — `h3`, just smaller. Not a slide break.
 
-Source:
-
 ```markdown
-# Page title
+# My Page Title
 
-## A section
+## First Section
 
-### A sub-section
+### A sub-point inside that section
 ```
 
-## Emphasis & inline marks
+> Common confusion: students use `###` expecting it to create a new slide.
+> Only `## h2` breaks slides. Worth repeating before the first presentation.
+{: .speaker-note }
 
-- `*italic*` → *italic*
+**Q:** You're building a 5-slide deck. Which heading level creates each new slide?
+
+- [ ] `# h1` — the page title is slide 1, next `# h1` is slide 2.
+- [x] `## h2` — the only heading level that starts a new slide.
+- [ ] `### h3` — finer granularity is better.
+- [ ] All of them. More `#` = more structure = more slides.
+{: .quiz }
+
+## ✨ Emphasis & inline marks
+
+The six marks you'll use every day:
+
+- `*italic*` or `_italic_` → *italic*
 - `**bold**` → **bold**
 - `` `inline code` `` → `inline code`
 - `~~strikethrough~~` → ~~strikethrough~~
-- `> quote` → blockquote (see below)
+- `> quote` → a blockquote (see below)
+- `[link text](url)` → a [link](https://example.com)
 
-## Lists
+None of these need a blank line before or after — they work inline within a paragraph.
 
-Bullets — any of `-`, `*`, `+` start one:
+## 📋 Lists — bullets and numbers
+
+**Bullets** — any of `-`, `*`, or `+` starts a list item:
 
 ```markdown
-- first
-- second
-- third
+- first item
+- second item
+- third item
 ```
 
-Numbered — actual numbers don't matter, kramdown renumbers:
+**Numbered** — the actual numbers don't matter; kramdown[^md] renumbers automatically:
 
 ```markdown
 1. step one
@@ -46,19 +65,36 @@ Numbered — actual numbers don't matter, kramdown renumbers:
 1. step three
 ```
 
-Two-level nesting is OK; deeper gets cramped in slides mode.
+Both render as you'd expect. Two-level nesting is fine; deeper nesting gets cramped in slides mode.
 
-## Links
+> In slide mode, every top-level `<li>` auto-fragments — one click per bullet.
+> Tag the list `{: .nofragments }` if you want all items visible at once.
+> See [📽️ Slides](/components/slides) for the full story.
+{: .speaker-note }
+
+**Q:** You type `1. step one` then `1. step two`. What numbers does the rendered page show?
+
+- [ ] `1.` and `1.` — it renders exactly what you wrote.
+- [x] `1.` and `2.` — kramdown renumbers automatically.
+- [ ] It shows bullet points instead — kramdown ignores the numbers.
+- [ ] Nothing renders — you need sequential numbers.
+{: .quiz }
+
+## 🔗 Links
+
+Three patterns:
 
 ```markdown
-[label](https://example.com)        external
-[label](datagrid)                    another page on this site
-[label](#section-id)                 anchor within this page
+[label](https://example.com)   external link
+[label](/components/run)        another page on this site
+[label](#section-heading-id)    anchor within this page
 ```
 
-## Code blocks
+Internal links use a leading `/` — no domain needed. Anchor ids are the heading text lowercased with spaces replaced by hyphens: `## My Section` → `#my-section`.
 
-Three backticks, a language, the code, three backticks:
+## 💻 Code blocks
+
+Three backticks, a language tag, the code, three backticks:
 
 ````markdown
 ```python
@@ -66,18 +102,26 @@ print("hello")
 ```
 ````
 
-Highlighting is automatic; languages we use a lot: `python`, `yaml`, `json`, `markdown`, `liquid`.
+Common language tags: `python`, `yaml`, `json`, `markdown`, `liquid`, `csv`, `bash`.
 
-To make the block **live** (Python you can run), add the `.run` IAL[^ial] on the next line:
+To make a block **live** (editable and runnable), add `{: .run }` on the next line:
 
 ```python
 print("hello, lightcodepedia")
 ```
 {: .run rows="2" }
 
-That's all it takes. See [Run](/components/run) for the full story.
+That `{: .run }` is an IAL[^ial] — see the IAL section below. It's how every component on this site gets activated.
 
-## Tables
+**Q:** Which tag makes a fenced code block into a live Python editor?
+
+- [ ] `{: .python }` — tells the page the language.
+- [ ] `{: .live }` — obvious, descriptive.
+- [x] `{: .run }` on the line right after the closing fence.
+- [ ] A triple-star comment `***run***` inside the block.
+{: .quiz }
+
+## 📊 Tables
 
 ```markdown
 | Column   | Notes                |
@@ -93,45 +137,59 @@ Renders to:
 | short    | first column         |
 | longer   | second column        |
 
-Alignment with `:---`, `:---:`, `---:` in the separator row.
+Align columns with `:---` (left), `:---:` (center), `---:` (right) in the separator row.
 
-## Blockquotes
+Use a plain markdown table for ≤10 static rows. Use `{: .datagrid }` when students need to sort, filter, or scroll through many rows — see [📊 Datagrid](/components/datagrid).
 
-```markdown
-> A blockquote is just one or more lines starting with `> `.
-> Useful for asides and pulled phrases.
-```
-
-> A blockquote is just one or more lines starting with `> `.
-> Useful for asides and pulled phrases.
-
-## Footnotes — and the popover trick
-
-This is the killer feature for tutorials. Kramdown gives you footnotes for free:
+## 💬 Blockquotes
 
 ```markdown
-The slides engine reads each kramdown IAL[^ial] on the page.
-
-[^ial]: **Inline Attribute List** — kramdown syntax that attaches
-        attributes to the *preceding* block, e.g. `{: .datagrid }`.
+> This is a blockquote.
+> It can span multiple lines.
+> Each line starts with `> `.
 ```
 
-Without any extra work, lightcodepedia turns the little number link into a **hover/tap popover** containing the full footnote — so readers see the definition right where the term appears, without losing their spot. The actual "Definitions" section still appears at the bottom of the page for printing and for the "list of all terms" use case.
+> This is a blockquote.
+> It can span multiple lines.
+> Each line starts with `> `.
 
-**How to write a footnote:**
-1. Put `[^anyname]` right after the term in your prose. No spaces.
-2. Put `[^anyname]: the definition` somewhere later (convention: at the bottom of the page).
-3. The definition can include **bold**, *italic*, `code`, lists, links — full markdown.
-4. The same `[^anyname]` can appear multiple times in the page; one definition serves all of them.
+On this site, blockquotes tagged with `{: .speaker-note }` become presenter notes — hidden by default, visible when you press **N** in slide mode or add `?notes=1` to the URL.
 
-**Best practice for definitions:**
+## 📌 Footnotes — the hover-popover trick
+
+This is the killer feature for tutorials. Write a term reference anywhere in your prose:
+
+```markdown
+The runner uses WebAssembly[^wasm] to run Python in the browser.
+```
+
+Then define it once (convention: at the bottom of the page):
+
+```markdown
+[^wasm]: **WebAssembly** — a binary format that runs near-native speed in
+         every modern browser. No install, no server.
+```
+
+Without any extra work, lightcodepedia turns the little `[1]` link into a **hover/tap popover** containing the full definition. The reader never loses their place.
+
+**Rules:**
+1. Put `[^anyname]` right after the term in your prose — no space before the bracket.
+2. Put `[^anyname]: definition` anywhere later in the file (convention: end of page).
+3. The definition can include **bold**, *italic*, `code`, and links.
+4. The same `[^anyname]` can appear multiple times — one definition serves all.
+
+**What makes a good footnote definition:**
 - Lead with `**Term**` then an em-dash, then the explanation.
 - Keep it to 1–3 sentences. The popover is small.
-- If you need a paragraph, write a paragraph; kramdown handles multi-line footnotes by indenting continuation lines.
+- Definitions also print at the bottom of the page — useful for PDFs.
 
-## kramdown IAL — applying attributes
+> Footnote popovers are one of the most-noticed features by new visitors.
+> "Wait, did it just show me a definition? Without a page jump?" — yes, always.
+{: .speaker-note }
 
-The pattern you'll see most after plain markdown is the IAL[^ial]: a `{: ... }` line right after a block to attach attributes (an id, classes, key-value pairs) to it. This is what activates every component on the site:
+## ⚙️ IAL — the power move
+
+The pattern you'll see after plain markdown is the **IAL[^ial]**: a `{: ... }` line right after any block, attaching attributes (classes, ids, key-value pairs) to it. This is how every component on this site gets activated.
 
 ````markdown
 ```yaml
@@ -141,36 +199,57 @@ The pattern you'll see most after plain markdown is the IAL[^ial]: a `{: ... }` 
 {: .datagrid id="dogs" }
 ````
 
-Then `{: .form bound="dogs" }` on another block binds a form to that grid. See [Datagrid](/components/datagrid) and [Form](/components/form) for the full menu of attributes.
+Then `{: .form bound="dogs" }` on another block binds a form to that grid. The `.datagrid`, `.form`, `.run`, `.quiz`, `.agent` — all IAL.
 
-## Comments — for student-builder eyes only
+**Rules:**
+- Must be on its own line, immediately after the block (no blank line between).
+- Multiple classes: `{: .class1 .class2 }`.
+- Mix classes and key-value pairs: `{: .run id="demo" rows="4" }`.
 
-`<!-- like this -->` HTML comments work and aren't rendered. Kramdown also has its own `{::comment} ... {:/}` syntax. Use either to leave notes for your future self without cluttering the page.
+**Q:** You write `{: .datagrid }` but there's a blank line between it and the YAML block. What happens?
 
-## Cheat sheet
+- [x] The IAL doesn't attach — kramdown sees a new block. The grid never renders.
+- [ ] It still works — kramdown is forgiving about blank lines.
+- [ ] It renders as a form instead.
+- [ ] The page compiles correctly but explodes at runtime.
+{: .quiz }
 
-| You write       | You get                                |
-|-----------------|----------------------------------------|
-| `# T`           | big `h1` with blue underline           |
-| `## S`          | `h2`, also a slide break               |
-| `### s`        | `h3`                                   |
-| `*x*` / `_x_`   | *italic*                               |
-| `**x**`         | **bold**                               |
-| `` `x` ``       | inline `code`                          |
-| `[t](url)`      | link                                   |
-| `![alt](url)`   | image                                  |
-| `> q`           | blockquote                             |
-| `- / 1.`        | list                                   |
-| ```` ```py ```` | fenced code (python)                   |
-| `{: .class }`   | IAL — attach attributes to block above |
-| `[^x] / [^x]:`  | footnote ref + definition (popover)    |
+## 💬 HTML comments
+
+`<!-- hidden from readers -->` works and renders nothing. Good for draft notes, section markers, or reminders to your future self.
+
+## 🏁 Cheat sheet
+
+| You write | You get |
+|---|---|
+| `# T` | big `h1` with blue underline |
+| `## S` | `h2`, also a slide break |
+| `### s` | `h3` |
+| `*x*` / `_x_` | *italic* |
+| `**x**` | **bold** |
+| `` `x` `` | inline `code` |
+| `[t](url)` | link |
+| `> q` | blockquote |
+| `- / 1.` | list item |
+| `\`\`\`py` | fenced code (Python) |
+| `{: .class }` | IAL — attach attributes to block above |
+| `[^x]` / `[^x]:` | footnote ref + definition (popover) |
 
 ---
 
-[^md]: **Markdown** is a lightweight text format that converts to HTML — designed so the source itself stays human-readable. Lightcodepedia uses [kramdown](https://kramdown.gettalong.org/), a variant with extras like footnotes and the IAL.
+**Q:** Which of these are TRUE about markdown on this site? (Pick all that apply.)
 
-[^slides]: **Slides** — every page on this site can be presented as a deck by clicking the 📽️ button at the bottom-left. `## h2` headings become slide breaks; bullets fragment. See [Slides](/components/slides).
+- [x] `## h2` is both a section heading and a slide break.
+- [x] `[^name]` creates a hover/tap definition popover.
+- [ ] `{: .datagrid }` must come before the YAML block.
+- [x] The IAL must be on its own line immediately after the block — no blank line.
+- [ ] Numbered lists must use sequential numbers or they won't render.
+{: .quiz multi="true" }
 
-[^ial]: **Inline Attribute List** — kramdown's `{: .class id="x" key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to that preceding block. The site's components (run, datagrid, form, slides) are all activated this way.
+[^md]: **Markdown** is a lightweight text format that converts to HTML — designed so the plain-text source is readable on its own. This site uses [kramdown](https://kramdown.gettalong.org/), a Ruby variant with extras: footnotes, IAL attribute lists, and task-list checkboxes.
+
+[^pop]: **Footnote popover** — lightcodepedia's extension of kramdown's standard `[^name]` footnote syntax. Instead of jumping to the bottom of the page, the definition appears as a small popup/tooltip right where the `[1]` reference appears. Works on hover (desktop) and tap (mobile).
+
+[^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class id="x" key="value" }` syntax. Placed on its own line right after a block, it attaches HTML attributes — ids, classes, data attributes — to that block. Every interactive component on this site (run, datagrid, form, quiz, agent, slides) is activated this way.
 
 {% include backtotop.md %}
