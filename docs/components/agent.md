@@ -1,75 +1,155 @@
 # 🤖 Agent
 
-A chat panel that calls the GitHub Models[^gh-models] LLM API directly from the browser, with each learner using their own PAT[^pat]. No backend, no server-side code, no shared key.
+An AI chat panel that lives right on the page — no server, no shared API key, no back-end code. Each learner uses their own GitHub PAT[^pat] to call GitHub Models[^gh-models] directly from the browser.
 
-## Tiniest agent
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode, then press → to advance. Live agent panels throughout the page let you chat with the examples as you read.
 
-Drop `{: .agent }` after a YAML config block:
+## 🧠 What actually happens
+
+No magic — just a direct HTTPS call you could paste into `curl`.
+
+- You type a question.
+- The widget sends it (plus a system prompt) straight to `models.github.ai`.
+- The response comes back as JSON. The widget renders it.
+- Your PAT travels from your browser to GitHub's servers — never to ours.
+
+This site has no server-side code, no shared API key, and no request log. Zero.
+
+> Ask: "where does your API key go when you click Ask?" before the demo.
+> Five hands always go up. Walk through the answer: browser → GitHub. That's it.
+{: .speaker-note }
+
+**Q:** Who holds your PAT while the agent runs?
+
+- [ ] The lightcodepedia server stores it in a session cookie.
+- [ ] It's baked into the page's JavaScript bundle at build time.
+- [x] Only your browser — it goes directly to `models.github.ai`.
+- [ ] The NSA has it. (And all those emojis you've been sending.)
+{: .quiz }
+
+## 🔑 Getting your PAT
+
+Two routes. Both free. Both under a minute.
+
+**Route A — Classic PAT (zero config):**
+
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens).
+2. Click *Generate new token (classic)*.
+3. Give it a name. Leave every scope unchecked.
+4. Click Generate. Copy the token. Done.
+
+**Route B — Fine-grained PAT (explicit permission):**
+
+1. Go to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens).
+2. Create a new token. Under *Repository permissions*, enable **Models → Read-only**.
+
+Either works. Route A is faster; Route B makes the permission visible.
+
+> Most common stumble: students take Route B but forget the Models → Read-only checkbox.
+> They paste the token, get a 401, and assume the site is broken.
+> Start the class on Route A — one less thing to go wrong.
+{: .speaker-note }
+
+**Q:** You need a PAT and class starts in 90 seconds. What's the fastest path?
+
+- [x] Classic PAT — generate it, leave every scope unchecked, paste it in.
+- [ ] Fine-grained PAT — worth the extra steps for the explicit permission.
+- [ ] Borrow a classmate's. Finders keepers.
+- [ ] Ask an LLM to generate a PAT for you. Completely valid approach.
+{: .quiz }
+
+## 🛠️ Tiniest agent
+
+Drop `{: .agent }` after a fenced YAML block. That's the whole syntax.
 
 ````markdown
 ```yaml
-system: You are a Python tutor. Keep examples short.
+system: You are a Python tutor. Keep answers short.
 ```
 {: .agent }
 ````
 
-Renders to:
+Live demo — paste your PAT and ask it something:
 
 ```yaml
-system: You are a Python tutor. Keep examples short.
+system: You are a cheerful Python tutor. Keep answers short and practical.
+intro: "Paste your PAT above, then ask me anything about Python."
 ```
-{: .agent id="py-tutor" }
+{: .agent id="demo-tutor" }
 
-On first use, the panel asks for a PAT. Paste it, click **Save & start**, and your browser offers to remember it (encrypted in the OS keychain). Next visit the field auto-fills.
+On first use the panel asks for a PAT. Paste it, click **Save & start**, and your browser offers to remember it in the OS keychain. Next visit the field auto-fills.
 
-## With knobs
+> Walk through the PAT entry live — expand the key field, paste,
+> click Save & start. Show the browser's "save password?" prompt
+> and explain that this is the OS keychain, not localStorage.
+{: .speaker-note }
+
+## 🎛️ Knobs to turn
+
+All configuration goes in the YAML block.
+
+| Key | Default | What it does |
+|---|---|---|
+| `system` | "You are a helpful assistant." | The system prompt — defines the persona |
+| `model` | `openai/gpt-4o-mini` | Any model GitHub Models free tier supports |
+| `temperature` | `0.7` | 0 = deterministic oracle, 1 = jazz improvisation |
+| `max_tokens` | `500` | Caps response length (and API cost) |
+| `intro` | (none) | A hint rendered above the input |
+| `placeholder` | "Ask anything..." | Placeholder text in the prompt field |
+
+A fully-dressed example:
 
 ````markdown
 ```yaml
 system: |
-  You are a friendly French translator. Translate the user's English
-  text into natural conversational French. Reply with the translation
-  ONLY — no explanations, no preamble.
+  You are a concise English→French translator.
+  Reply with the translation ONLY — no preamble, no explanation.
 model: openai/gpt-4o-mini
-intro: "Type any English sentence — get the French back."
+intro: "Type any English sentence — get French back."
 placeholder: "Hello, how are you?"
 temperature: 0.3
 ```
-{: .agent id="fr-translator" }
+{: .agent id="fr" }
 ````
 
 Renders to:
 
 ```yaml
 system: |
-  You are a friendly French translator. Translate the user's English
-  text into natural conversational French. Reply with the translation
-  ONLY — no explanations, no preamble.
+  You are a concise English→French translator.
+  Reply with the translation ONLY — no preamble, no explanation.
 model: openai/gpt-4o-mini
-intro: "Type any English sentence — get the French back."
+intro: "Type any English sentence — get French back."
 placeholder: "Hello, how are you?"
 temperature: 0.3
 ```
-{: .agent id="fr-translator" }
+{: .agent id="fr" }
 
-## Bound to a runner — `bound="run-id"`
+**Q:** You want the model's output to be as creative and unpredictable as possible. Which `temperature` do you set?
 
-Tie an agent to a specific [🐍 Python runner](/components/run) so every question carries the editor's current code and last output, and the agent can write code straight back into the editor.
+- [ ] `0` — maximum creativity.
+- [ ] `0.3` — the bold choice.
+- [x] `1.0` — full jazz.
+- [ ] `42` — works great, trust the universe.
+{: .quiz }
+
+## 🐍 Bound to a runner
+
+Add `bound="run-id"` to tie an agent to a Python editor. Every question automatically carries the editor's **current code** and **last output**. The agent can write code straight back into the editor.
 
 ````markdown
 ```python
 # fix me — this errors
 print('hello'
 ```
-{: .run id="play" rows="4" }
+{: .run id="buggy" rows="4" }
 
 ```yaml
 system: |
-  You are a Python tutor. When asked to fix or improve code, reply with
-  the COMPLETE updated code in a single python fenced block — no diffs,
-  no partials. Keep prose short.
+  You are a Python tutor. When asked to fix code, reply with the
+  COMPLETE fixed code in a single python fenced block. Keep prose short.
 ```
-{: .agent bound="play" }
+{: .agent bound="buggy" id="tutor" }
 ````
 
 Renders to:
@@ -78,121 +158,117 @@ Renders to:
 # fix me — this errors
 print('hello'
 ```
-{: .run id="play" rows="4" }
+{: .run id="buggy" rows="4" }
 
 ```yaml
 system: |
-  You are a Python tutor. When asked to fix or improve code, reply with
-  the COMPLETE updated code in a single python fenced block — no diffs,
-  no partials. Keep prose short.
+  You are a Python tutor. When asked to fix code, reply with the
+  COMPLETE fixed code in a single python fenced block. Keep prose short.
 ```
-{: .agent bound="play" id="play-agent" }
+{: .agent bound="buggy" id="tutor" }
 
-**Flow:**
-1. Run the buggy code above — it errors.
-2. Type "fix it" in the agent and click ▶ Ask.
-3. The agent receives your question plus the current code + the last output, returns a corrected version.
-4. Click **⬇ Apply to #play** to drop the fix into the editor. The button is added automatically next to the first Python code block in the response.
-5. Run again. The 🐍 runner has the fixed code.
-6. **↺ Revert** appears for ~10 seconds after Apply if you change your mind.
+**Try it:**
 
-**What's in the augmented prompt** (you never type this, the agent does):
+- Hit ▶ Run — it errors.
+- Type "fix it" and click ▶ Ask.
+- Click **⬇ Apply to #buggy** next to the code block in the response.
+- Hit ▶ Run again. Fixed.
+- **↺ Revert** appears for ~10 s if you change your mind.
+
+> Killer live demo: after fixing the syntax error, ask "add a loop that prints 1 to 5".
+> Apply. Then ask "make it count down instead". Apply again.
+> The agent sees the latest editor contents every time — that's the persistent state.
+{: .speaker-note }
+
+**What the agent actually receives** (built automatically, you never type this):
 
 ````
-The student is editing this Python code in editor #play:
-
+The student is editing this Python code in editor #buggy:
 ```python
 <current editor contents>
 ```
-
 The last run produced this output:
-
 ```
-<last stdout/stderr>
+<last stdout / stderr>
 ```
-
 The student asks:
-
 <your typed question>
 ````
 
-Empty editor and no-run-yet cases drop the corresponding sections silently. Code longer than ~4000 chars is truncated.
+Code > 4000 chars is truncated. Empty editor and no-run-yet silently drop those sections.
 
-## One token for the whole page
+**Q:** You apply the agent's fix to the editor and immediately regret it. What do you do?
 
-Whenever any agent on the page asks for a PAT, **all agents on the page** transition together. The token lives in a JS closure shared across panels (in-memory), backed by the browser's password manager for next-visit autofill. The 🔑 button on any panel clears the token for every panel at once.
+- [ ] Close the browser tab. Works every time.
+- [x] Click **↺ Revert** — it appears for ~10 seconds after Apply.
+- [ ] `git blame` the agent.
+- [ ] File a strongly-worded bug report against your own PAT.
+{: .quiz }
 
-## YAML knobs
+## 🔐 How your token stays safe
 
-| Key | Default | Notes |
-|---|---|---|
-| `system` | "You are a helpful assistant." | The system prompt |
-| `model` | `openai/gpt-4o-mini` | Any model the free tier supports |
-| `temperature` | `0.7` | 0 = deterministic, 1 = creative |
-| `max_tokens` | `500` | Cap response length |
-| `intro` | (none) | Friendly hint shown above the input |
-| `placeholder` | "Ask anything..." | Prompt input placeholder |
+Three layers, nothing exotic.
 
-## IAL attributes on `{: .agent ... }`
+- **In-memory by default.** The PAT lives in a JS closure. Page reload clears it — nothing persists on disk without your browser asking first.
+- **Browser password manager.** The input is a real `type="password"` field inside a real `<form>` with a hidden `<input name="username">`. Browsers recognize this pattern and offer to save the credential to the OS keychain (Apple Keychain / Windows Credential Manager). Next visit: autofill. No JS reads or writes any storage we control.
+- **One token for the whole page.** Multiple agent panels share a single PAT. Enter it once; all panels unlock together. The 🔑 button on any panel clears it everywhere at once.
 
-| Attribute | Notes |
-|---|---|
-| `id="..."` | Required when more than one agent shares a page |
-| `rows="3"` | Prompt input height |
+**Never** localStorage. **Never** cookies. **Never** a repo file. **Never** a generated bundle.
 
-## How the token is kept
+> Pause here and ask: "between page loads, where do you think the PAT is stored?"
+> The answer — OS keychain, managed entirely by the browser — surprises everyone.
+> Follow up: "so who wrote the code that stores it?" The browser vendor, not us.
+{: .speaker-note }
 
-- **In memory by default.** Lives in a closure variable. Page reload asks again.
-- **Browser password manager.** The input is a `type="password"` field inside a real `<form>` with a hidden `<input name="username">`. Browsers recognize this pattern and offer to save the credential to the OS keychain (Apple Keychain, Windows Credential Manager, etc.). On the next visit, autofill repopulates the field — no JS reads or writes any storage we control.
+**Q:** Which of these are TRUE about how the PAT is stored? (Pick all that apply.)
 
-**Never** localStorage. **Never** cookies. **Never** a repo file. **Never** a generated JavaScript bundle.
+- [x] In memory only — page reload clears it.
+- [x] The browser password manager handles on-disk encryption in the OS keychain.
+- [ ] The widget writes it to `localStorage` for convenience.
+- [x] All agent panels on the page share the same token.
+- [ ] It's base64-encoded and stored in a session cookie.
+{: .quiz multi="true" }
 
-The 🔑 button at the top right of the panel lets you swap tokens at any time.
+## ⚠️ Limits of v1
 
-## What gets sent to GitHub
+Know these before you build a 300-slide AI curriculum on top of it.
 
-Single OpenAI-compatible chat completion, no history:
+- **Stateless single-shot.** Each ▶ Ask is one independent request. No memory across questions — unless `bound=` is set, in which case the editor content IS the persistent state.
+- **No streaming.** The full response arrives at once. Long answers feel slow.
+- **No tool use yet.** The agent can write code back into an editor but can't run it itself. v2 plan: after Apply, auto-run the result and feed stdout into the next turn.
+- **Free-tier rate limits.** GitHub Models caps requests per minute and per day. The panel surfaces the API error if you hit the ceiling.
+- **First python block only gets Apply.** Multiple code blocks in one response → only the first gets the ⬇ button. Copy/paste the rest.
 
-```
-POST https://models.github.ai/inference/chat/completions
-Authorization: Bearer <your PAT>
-Content-Type: application/json
+## 🏁 Final exam — boss level
 
-{
-  "model": "openai/gpt-4o-mini",
-  "messages": [
-    { "role": "system", "content": "<your system>" },
-    { "role": "user",   "content": "<the typed question>" }
-  ],
-  "temperature": 0.7,
-  "max_tokens": 500
-}
-```
+**Q:** Which of these are TRUE about the agent widget? (Pick all that apply.)
 
-The response is parsed for `choices[0].message.content` and `usage.{prompt,completion,total}_tokens`. The usage counter at the bottom of the panel sums per-session tokens — it does **not** know your global GitHub quota.
+- [x] Each learner uses their own PAT — no key is shared server-side.
+- [x] Bound mode attaches the editor's current code to every Ask automatically.
+- [ ] Conversation history accumulates across asks in the same session.
+- [x] The 🔑 button clears the token for all panels on the page at once.
+- [ ] The PAT is encrypted server-side and returned to you as a JWT.
+{: .quiz multi="true" }
 
-## Which PAT to use
+**Q:** Class starts in 2 minutes and a student says "I get a 401 error". What's the most likely fix?
 
-Two paths, both work:
+- [ ] Refresh the page fourteen times. Persistence pays.
+- [ ] Switch to Firefox. Edge is the problem.
+- [x] Generate a new classic PAT — the old one is wrong, expired, or has the wrong scope.
+- [ ] The GitHub Models API is down. Accept your fate and pivot to flashcards.
 
-- **Classic PAT** — at [github.com/settings/tokens](https://github.com/settings/tokens), click *Generate new token (classic)*. You can leave every scope unchecked. Click Generate, paste into the panel.
-- **Fine-grained PAT** — at [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens), pick *Public Repositories (read-only)* as the resource owner, then under *Repository permissions* enable **Models → Read-only**.
+  > 401 = authentication failure. A fresh classic PAT (zero scopes) fixes 95 % of these.
+{: .quiz }
 
-The classic path has zero clicks beyond Generate. The fine-grained path is more explicit about which permission you're granting. Both reach the same endpoint.
+**Q:** You want the agent to always see what the student is currently coding. Which IAL attribute do you add to `{: .agent }`?
 
-## Security caveats — please read
+- [ ] `linked="run-id"`
+- [x] `bound="run-id"`
+- [ ] `attach="run-id"`
+- [ ] `soul="run-id"` — the mystical approach
 
-- Any other JavaScript on the page (CDN scripts we load, browser extensions) can read the PAT from the password field while the panel is mounted. For a teaching site this is acceptable, but **don't paste a PAT with broad write scopes** here. A scope-less classic PAT or a `models:read`-only fine-grained PAT is plenty.
-- The PAT is sent over HTTPS only, directly to `models.github.ai`. It is **never** logged, sent to any other host, or stored anywhere on disk by this widget.
-- If you suspect a token may have leaked (you screenshotted the network panel, pasted it in chat, etc.), revoke it at [github.com/settings/tokens](https://github.com/settings/tokens) and create a new one.
-
-## Limits of v1
-
-- **Stateless single-shot.** Each ▶ Ask is one prompt + one response. No conversation memory across asks — but when `bound=` is set, the editor's current code IS the persistent state (each ask sees the latest version).
-- **No streaming.** The full response arrives at once. Long responses feel slow.
-- **No tool use yet.** The agent can apply code to an editor, but it can't yet *run* the code itself. v2 plan: after Apply, optionally auto-run the result and feed stdout back into the agent so it can iterate.
-- **Free-tier rate limits.** GitHub Models caps requests per minute / day. The panel shows the API's error if you hit a limit.
-- **First python block only gets Apply.** If the agent returns multiple `python` fenced blocks, only the first is wired to **Apply**. Copy/paste the rest manually.
+  > `bound=` is the magic word. Point it at the runner's `id` and every Ask carries the editor state.
+{: .quiz }
 
 [^gh-models]: **GitHub Models** is GitHub's hosted inference gateway at `models.github.ai`, offering OpenAI-compatible chat completions for several model families on a free tier.
 
