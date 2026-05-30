@@ -82,17 +82,24 @@ Edit the code, hit ▶ Run, see output — all inside slide view. Then click out
 
 On desktop:
 
-- `→` / `Space` / click → next fragment or slide
-- `←` → back
+- `→` / `Space` / click right half → next fragment or slide
+- `←` / click left half → back
 - `1`–`9` → jump to slide N
+- `Q` → 📷 share QR (see below)
 - `F` → toggle fullscreen
 - `Esc` → exit slide mode
 
 On phone:
 
-- The bottom-center toolbar has **◀ / picker / ▶**.
+- The bottom-center toolbar has **◀ / picker / ▶ / 📷**.
 - The picker is iOS's native wheel — tap a slide name to jump.
-- Tap anywhere on the slide content to advance.
+- Tap the left half of the slide for prev, right half for next.
+
+## Share with QR — classroom-friendly join
+
+Tap **📷** (or press `Q`) and a big QR code fills the screen. Students point their phones at the code; their phones land on the **same slide you're showing**. The QR re-encodes itself on every slide change, so latecomers don't get teleported to slide 1 — they join wherever you actually are.
+
+The URL the QR encodes is just the current page with `?slides=N` (N = current slide, 0-indexed). Anyone with that URL gets the deck starting at slide N — no backend, no real-time sync needed for a classroom projector setup. Each student then navigates at their own pace from there.
 
 ## Design tips — what works in both modes
 
