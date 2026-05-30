@@ -1,0 +1,7 @@
+---
+# Shadow the github-pages default theme's style.scss to bypass a Sass
+# converter encoding bug. The site styles all live in _includes/topbar.md
+# and per-widget includes — no theme styles are needed.
+---
+
+/* intentionally empty */
