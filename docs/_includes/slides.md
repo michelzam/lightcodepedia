@@ -154,7 +154,7 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
     var slides = [];
     var current = 0;
     var revealed = [];
-    var WIDGET_SEL = '.lc-pyrun, .lc-pyrepl, .lc-datagrid, .lc-form, .ag-root-wrapper, .lc-tabs, .lc-quiz, .lc-quiz-bar';
+    var WIDGET_SEL = '.lc-pyrun, .lc-pyrepl, .lc-datagrid, .lc-form, .ag-root-wrapper, .lc-tabs, .lc-quiz, .lc-quiz-bar, .lc-agent';
 
     function partition() {
       var children = Array.prototype.slice.call(main.children);
@@ -194,7 +194,7 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
         Array.prototype.forEach.call(section.querySelectorAll('.fragment'), function(el){
           el.classList.add('lc-slide-fragment');
         });
-        // Each top-level code block / runner / grid / form becomes its own fragment too
+        // Each top-level code block / runner / grid / form / agent becomes its own fragment too
         Array.prototype.forEach.call(section.children, function(el){
           if (el.classList.contains('nofragments')) return;
           if (el.tagName === 'PRE' ||
@@ -203,7 +203,8 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
               el.classList.contains('lc-pyrun') ||
               el.classList.contains('lc-pyrepl') ||
               el.classList.contains('lc-datagrid') ||
-              el.classList.contains('lc-form')) {
+              el.classList.contains('lc-form') ||
+              el.classList.contains('lc-agent')) {
             el.classList.add('lc-slide-fragment');
           }
         });

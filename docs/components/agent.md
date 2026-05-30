@@ -52,6 +52,76 @@ temperature: 0.3
 ```
 {: .agent id="fr-translator" }
 
+## Bound to a runner — `bound="run-id"`
+
+Tie an agent to a specific [🐍 Python runner](/components/run) so every question carries the editor's current code and last output, and the agent can write code straight back into the editor.
+
+````markdown
+```python
+# fix me — this errors
+print('hello'
+```
+{: .run id="play" rows="4" }
+
+```yaml
+system: |
+  You are a Python tutor. When asked to fix or improve code, reply with
+  the COMPLETE updated code in a single python fenced block — no diffs,
+  no partials. Keep prose short.
+```
+{: .agent bound="play" }
+````
+
+Renders to:
+
+```python
+# fix me — this errors
+print('hello'
+```
+{: .run id="play" rows="4" }
+
+```yaml
+system: |
+  You are a Python tutor. When asked to fix or improve code, reply with
+  the COMPLETE updated code in a single python fenced block — no diffs,
+  no partials. Keep prose short.
+```
+{: .agent bound="play" id="play-agent" }
+
+**Flow:**
+1. Run the buggy code above — it errors.
+2. Type "fix it" in the agent and click ▶ Ask.
+3. The agent receives your question plus the current code + the last output, returns a corrected version.
+4. Click **⬇ Apply to #play** to drop the fix into the editor. The button is added automatically next to the first Python code block in the response.
+5. Run again. The 🐍 runner has the fixed code.
+6. **↺ Revert** appears for ~10 seconds after Apply if you change your mind.
+
+**What's in the augmented prompt** (you never type this, the agent does):
+
+```
+The student is editing this Python code in editor #play:
+
+```python
+<current editor contents>
+```
+
+The last run produced this output:
+
+```
+<last stdout/stderr>
+```
+
+The student asks:
+
+<your typed question>
+```
+
+Empty editor and no-run-yet cases drop the corresponding sections silently. Code longer than ~4000 chars is truncated.
+
+## One token for the whole page
+
+Whenever any agent on the page asks for a PAT, **all agents on the page** transition together. The token lives in a JS closure shared across panels (in-memory), backed by the browser's password manager for next-visit autofill. The 🔑 button on any panel clears the token for every panel at once.
+
 ## YAML knobs
 
 | Key | Default | Notes |
@@ -118,10 +188,11 @@ The classic path has zero clicks beyond Generate. The fine-grained path is more 
 
 ## Limits of v1
 
-- **Stateless single-shot.** Each ▶ Ask is one prompt + one response. No conversation memory — asking a follow-up means re-stating context.
+- **Stateless single-shot.** Each ▶ Ask is one prompt + one response. No conversation memory across asks — but when `bound=` is set, the editor's current code IS the persistent state (each ask sees the latest version).
 - **No streaming.** The full response arrives at once. Long responses feel slow.
-- **No tool use.** The model can't yet call functions or run Python through your runner. v2 plan: when the model returns a tool-call payload, route it to the [🐍 MicroPython runner](/components/run) and feed the result back.
+- **No tool use yet.** The agent can apply code to an editor, but it can't yet *run* the code itself. v2 plan: after Apply, optionally auto-run the result and feed stdout back into the agent so it can iterate.
 - **Free-tier rate limits.** GitHub Models caps requests per minute / day. The panel shows the API's error if you hit a limit.
+- **First python block only gets Apply.** If the agent returns multiple `python` fenced blocks, only the first is wired to **Apply**. Copy/paste the rest manually.
 
 [^gh-models]: **GitHub Models** is GitHub's hosted inference gateway at `models.github.ai`, offering OpenAI-compatible chat completions for several model families on a free tier.
 

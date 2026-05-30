@@ -1,23 +1,38 @@
 {%- comment -%}
-AI agent widget — turns a YAML config block into a single-shot chat panel
-that calls the GitHub Models API directly from the browser.
+AI agent widget — single-shot chat panel that calls GitHub Models.
 
-Author syntax:
+Author syntax (minimum):
   ```yaml
   system: You are a Python tutor.
   ```
   {: .agent }
 
-Knobs (all optional):
-  system, model, temperature, max_tokens, intro, placeholder
-plus on the IAL:
-  id="..."   required if multiple agents on the same page
-  rows="3"   prompt input height
+Bound to a runner (writes code back to a .run editor):
+  ```python
+  print('fix me'
+  ```
+  {: .run id="play" }
 
-The learner's PAT is asked once and held in a JS closure. The token
-input uses the hidden-username + visible-password form pattern so
-browser password managers (encrypted by the OS keychain) can offer
-to save it. Nothing is written to localStorage or cookies.
+  ```yaml
+  system: You are a Python tutor. Reply with full updated code.
+  ```
+  {: .agent bound="play" }
+
+YAML knobs (optional):
+  system, model, temperature, max_tokens, intro, placeholder
+IAL knobs:
+  id="..."    required when there are multiple agents on a page
+  rows="3"    prompt input height
+  bound="X"   ties this agent to the .run widget with id="X" —
+              the editor's current code + last output are
+              auto-appended to every prompt, and the first python
+              code block in the response gets an "⬇ Apply to #X"
+              button.
+
+The learner's PAT is asked once per page. All agents share it.
+The token is held in a JS closure (in-memory) + the browser's
+password manager via the hidden-username form trick. Nothing is
+written to localStorage or cookies.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -27,6 +42,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-head { background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%); padding: 0.55em 1em; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 0.5em; font-weight: 600; color: #444; font-size: 0.92em; }
 .lc-agent-icon { font-size: 1.2em; }
 .lc-agent-title { flex: 1; }
+.lc-agent-bound { font-size: 0.78em; color: #888; font-weight: 400; }
+.lc-agent-bound code { background: #eef; padding: 0.05em 0.4em; border-radius: 3px; font-size: 0.95em; }
 .lc-agent-key { background: white; border: 1px solid #ddd; color: #777; padding: 0.2em 0.5em; cursor: pointer; border-radius: 4px; font-size: 0.95em; line-height: 1; }
 .lc-agent-key:hover { background: #f0f0f0; color: #444; }
 .lc-agent-auth, .lc-agent-body { padding: 0.9em 1em; }
@@ -58,6 +75,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-msg-bot pre.lc-agent-code { background: #1e1e1e; color: #d4d4d4; padding: 0.7em 0.9em; border-radius: 4px; overflow-x: auto; font-size: 0.84em; margin: 0.5em 0; }
 .lc-agent-msg-bot pre.lc-agent-code code { background: transparent; padding: 0; font-size: inherit; color: inherit; }
 .lc-agent-msg-bot code { background: #eef; padding: 0.1em 0.35em; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
+.lc-agent-apply-bar { display: flex; gap: 0.5em; align-items: center; margin: -0.2em 0 0.5em; font-size: 0.85em; color: #555; }
+.lc-agent-apply { background: #2e7d32; color: white; border: none; padding: 0.35em 0.85em; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.85em; }
+.lc-agent-apply:hover { background: #1b5e20; }
+.lc-agent-revert { background: white; color: #2e7d32; border: 1px solid #2e7d32; padding: 0.3em 0.7em; border-radius: 4px; cursor: pointer; font-size: 0.82em; }
+.lc-agent-revert:hover { background: #f1f8e9; }
 .lc-agent-usage { font-size: 0.78em; color: #888; text-align: right; padding-top: 0.5em; border-top: 1px solid #eee; }
 .lc-agent-warn { font-size: 0.78em; color: #888; padding: 0 1em 0.7em; }
 </style>
@@ -65,6 +87,15 @@ Auto-included by docs/_layouts/default.html.
 (function(){
   var AGENT_SEQ = 0;
 
+  // ===== shared token state — one token per page, all agents observe =====
+  var SHARED = { token: null, listeners: [] };
+  function setSharedToken(v) {
+    SHARED.token = v;
+    SHARED.listeners.forEach(function(cb){ try { cb(v); } catch (e) {} });
+  }
+  function onSharedTokenChange(cb) { SHARED.listeners.push(cb); }
+
+  // ===== utils =====
   function loadJsYaml() {
     if (window.jsyaml) return Promise.resolve();
     return new Promise(function(resolve){
@@ -87,7 +118,8 @@ Auto-included by docs/_layouts/default.html.
   function renderMarkdown(text) {
     var html = escapeHtml(text);
     html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, lang, code){
-      return '<pre class="lc-agent-code"><code>' + code.replace(/\n+$/, '') + '</code></pre>';
+      var lc = lang ? ' class="language-' + lang.toLowerCase() + '"' : '';
+      return '<pre class="lc-agent-code"><code' + lc + '>' + code.replace(/\n+$/, '') + '</code></pre>';
     });
     html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
     html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
@@ -97,6 +129,57 @@ Auto-included by docs/_layouts/default.html.
     return '<p>' + html + '</p>';
   }
 
+  // ===== bound runner helpers =====
+  function findRunner(boundId) {
+    if (!boundId) return null;
+    return document.getElementById('lc-pyrun-' + boundId);
+  }
+  function getBoundCode(boundId) {
+    var r = findRunner(boundId);
+    if (!r) return null;
+    var ta = r.querySelector('.lc-pyrun-code');
+    return ta ? ta.value : null;
+  }
+  function getBoundOutput(boundId) {
+    var r = findRunner(boundId);
+    if (!r) return null;
+    var out = r.querySelector('.lc-pyrun-out');
+    if (!out) return null;
+    if (out.classList.contains('lc-empty')) return null;
+    var t = (out.textContent || '').trim();
+    return t || null;
+  }
+  function setBoundCode(boundId, code) {
+    var r = findRunner(boundId);
+    if (!r) return false;
+    var ta = r.querySelector('.lc-pyrun-code');
+    if (!ta) return false;
+    ta.value = code;
+    try { ta.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+    return true;
+  }
+
+  function buildAugmentedPrompt(boundId, userQuestion) {
+    if (!boundId) return userQuestion;
+    var code = getBoundCode(boundId);
+    if (code == null) return userQuestion;
+    var output = getBoundOutput(boundId);
+    var trimmedCode = code.length > 4000 ? code.substring(0, 4000) + '\n# ...[truncated]' : code;
+    var parts = [
+      'The student is editing this Python code in editor #' + boundId + ':',
+      '',
+      '```python',
+      trimmedCode,
+      '```'
+    ];
+    if (output) {
+      parts.push('', 'The last run produced this output:', '', '```', output, '```');
+    }
+    parts.push('', 'The student asks:', '', userQuestion);
+    return parts.join('\n');
+  }
+
+  // ===== config defaults =====
   var DEFAULTS = {
     system: 'You are a helpful assistant.',
     model: 'openai/gpt-4o-mini',
@@ -106,20 +189,23 @@ Auto-included by docs/_layouts/default.html.
     max_tokens: 500
   };
 
-  function buildPanel(id, cfg, rows) {
+  // ===== panel structure =====
+  function buildPanel(id, cfg, rows, boundId) {
     var div = document.createElement('div');
     div.className = 'lc-agent';
     div.id = 'lc-agent-' + id;
     var introHtml = cfg.intro ? '<p class="lc-agent-intro">' + escapeHtml(cfg.intro) + '</p>' : '';
+    var boundLabel = boundId ? '<span class="lc-agent-bound">linked to <code>#' + escapeHtml(boundId) + '</code></span>' : '';
     div.innerHTML =
       '<div class="lc-agent-head">' +
         '<span class="lc-agent-icon" aria-hidden="true">🤖</span>' +
         '<span class="lc-agent-title">Agent</span>' +
+        boundLabel +
         '<button type="button" class="lc-agent-key" title="Change token" aria-label="Change token">🔑</button>' +
       '</div>' +
       '<form class="lc-agent-auth" autocomplete="on">' +
-        '<p>Paste your GitHub PAT to start. Your browser may offer to save it (encrypted in the OS keychain).</p>' +
-        '<input type="text" name="username" value="github-models-' + id + '" autocomplete="username" tabindex="-1" readonly>' +
+        '<p>Paste your GitHub PAT. Your browser may offer to save it (encrypted in the OS keychain). One token covers every agent on this page.</p>' +
+        '<input type="text" name="username" value="github-models" autocomplete="username" tabindex="-1" readonly>' +
         '<div class="lc-agent-pw-row">' +
           '<input type="password" name="password" class="lc-agent-token" autocomplete="current-password" placeholder="ghp_..." required>' +
           '<button type="submit">Save &amp; start</button>' +
@@ -136,17 +222,18 @@ Auto-included by docs/_layouts/default.html.
         '<div class="lc-agent-response"></div>' +
         '<div class="lc-agent-usage">Used 0 tokens this session.</div>' +
       '</div>' +
-      '<div class="lc-agent-warn">⚠ Calls api.github.com directly with your PAT. Don\'t use a PAT with broad scopes here.</div>';
+      '<div class="lc-agent-warn">⚠ Calls models.github.ai directly with your PAT. Don\'t use a PAT with broad scopes here.</div>';
     return div;
   }
 
-  function ask(token, cfg, question) {
+  // ===== API call =====
+  function ask(token, cfg, userText) {
     var url = 'https://models.github.ai/inference/chat/completions';
     var body = {
       model: cfg.model,
       messages: [
         { role: 'system', content: String(cfg.system) },
-        { role: 'user', content: question }
+        { role: 'user', content: userText }
       ]
     };
     if (cfg.temperature != null) body.temperature = Number(cfg.temperature);
@@ -183,8 +270,8 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
-  function wirePanel(panel, cfg) {
-    var token = null;
+  // ===== wire one panel =====
+  function wirePanel(panel, cfg, boundId) {
     var totalTokens = 0;
     var authForm = panel.querySelector('.lc-agent-auth');
     var body = panel.querySelector('.lc-agent-body');
@@ -197,45 +284,84 @@ Auto-included by docs/_layouts/default.html.
     var keyBtn = panel.querySelector('.lc-agent-key');
     var tokenInput = panel.querySelector('.lc-agent-token');
 
-    function showChat() { authForm.hidden = true; body.hidden = false; setTimeout(function(){ prompt.focus(); }, 0); }
-    function showAuth() { authForm.hidden = false; body.hidden = true; setTimeout(function(){ tokenInput.focus(); }, 0); }
+    function showChat() { authForm.hidden = true; body.hidden = false; }
+    function showAuth() { authForm.hidden = false; body.hidden = true; }
+
+    // Initial state from shared token
+    if (SHARED.token) showChat(); else showAuth();
+
+    // React to other panels changing the token
+    onSharedTokenChange(function(v){
+      if (v) showChat(); else { response.innerHTML = ''; status.innerHTML = ''; showAuth(); }
+    });
 
     authForm.addEventListener('submit', function(e){
       e.preventDefault();
       var v = (tokenInput.value || '').trim();
       if (!v) return;
-      token = v;
-      showChat();
+      setSharedToken(v);  // all other panels switch to chat
     });
 
     keyBtn.addEventListener('click', function(){
-      token = null;
-      tokenInput.value = '';
-      response.innerHTML = '';
-      status.innerHTML = '';
-      showAuth();
+      setSharedToken(null);  // all panels switch to auth
     });
 
     askForm.addEventListener('submit', function(e){
       e.preventDefault();
       var question = (prompt.value || '').trim();
-      if (!token || !question) return;
+      if (!SHARED.token || !question) return;
       sendBtn.disabled = true;
       sendBtn.textContent = '… thinking';
       status.innerHTML = '';
       response.innerHTML = '';
 
-      ask(token, cfg, question).then(function(result){
+      var fullPrompt = buildAugmentedPrompt(boundId, question);
+
+      ask(SHARED.token, cfg, fullPrompt).then(function(result){
         sendBtn.disabled = false;
         sendBtn.textContent = '▶ Ask';
         if (result.error) {
           status.innerHTML = '<span class="lc-agent-err">⚠ ' + escapeHtml(result.error) + '</span>';
-          if (result.unauthorized) { token = null; showAuth(); }
+          if (result.unauthorized) setSharedToken(null);
           return;
         }
         response.innerHTML =
           '<div class="lc-agent-msg-user">' + escapeHtml(question) + '</div>' +
           '<div class="lc-agent-msg-bot">' + renderMarkdown(result.text) + '</div>';
+
+        // If bound: add an Apply button to the first python code block in the response.
+        if (boundId) {
+          var bot = response.querySelector('.lc-agent-msg-bot');
+          var codeBlocks = bot.querySelectorAll('pre.lc-agent-code');
+          var first = null;
+          for (var i = 0; i < codeBlocks.length; i++) {
+            var c = codeBlocks[i].querySelector('code');
+            var lang = (c && c.className.match(/language-(\w+)/)) || [];
+            if (!lang[1] || lang[1] === 'python' || lang[1] === 'py') { first = codeBlocks[i]; break; }
+          }
+          if (first) {
+            var applyBar = document.createElement('div');
+            applyBar.className = 'lc-agent-apply-bar';
+            applyBar.innerHTML = '<button class="lc-agent-apply" type="button">⬇ Apply to #' + escapeHtml(boundId) + '</button>';
+            first.parentNode.insertBefore(applyBar, first.nextSibling);
+            applyBar.querySelector('.lc-agent-apply').addEventListener('click', function(){
+              var newCode = first.querySelector('code').textContent;
+              var prevCode = getBoundCode(boundId);
+              if (setBoundCode(boundId, newCode)) {
+                applyBar.innerHTML = '<span style="color:#2e7d32">✓ Applied</span> ' +
+                  '<button class="lc-agent-revert" type="button">↺ Revert</button>';
+                applyBar.querySelector('.lc-agent-revert').addEventListener('click', function(){
+                  setBoundCode(boundId, prevCode != null ? prevCode : '');
+                  applyBar.innerHTML = '<span style="color:#888">↺ Reverted</span>';
+                });
+                setTimeout(function(){
+                  if (applyBar.parentNode) applyBar.style.opacity = '0.55';
+                }, 10000);
+              }
+            });
+          }
+        }
+
         if (result.usage) {
           var t = result.usage.total_tokens || 0;
           totalTokens += t;
@@ -248,6 +374,7 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
+  // ===== upgrade one .agent block =====
   function upgradeAgent(el) {
     if (el.dataset.lcAgentUpgraded) return;
     el.dataset.lcAgentUpgraded = '1';
@@ -263,9 +390,10 @@ Auto-included by docs/_layouts/default.html.
     });
     var id = el.getAttribute('id') || ('agent-' + (++AGENT_SEQ));
     var rows = parseInt(el.getAttribute('rows'), 10) || 3;
-    var panel = buildPanel(id, cfg, rows);
+    var boundId = el.getAttribute('bound') || null;
+    var panel = buildPanel(id, cfg, rows, boundId);
     el.parentNode.replaceChild(panel, el);
-    wirePanel(panel, cfg);
+    wirePanel(panel, cfg, boundId);
   }
 
   function init() {
@@ -273,9 +401,7 @@ Auto-included by docs/_layouts/default.html.
     Array.prototype.forEach.call(els, upgradeAgent);
   }
 
-  function start() {
-    loadJsYaml().then(init);
-  }
+  function start() { loadJsYaml().then(init); }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 0); });
