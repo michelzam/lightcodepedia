@@ -45,8 +45,8 @@ body.lc-slides-active .lc-slide h2 { font-size: 2em; border-bottom: 2px solid #0
 body.lc-slides-active .lc-slide h3 { font-size: 1.4em; }
 body.lc-slides-active .lc-slide p, body.lc-slides-active .lc-slide li { font-size: 1.15em; line-height: 1.7; }
 body.lc-slides-active .lc-slide ul, body.lc-slides-active .lc-slide ol { padding-left: 1.4em; }
-body.lc-slides-active .lc-slide-fragment { opacity: 0.18; transition: opacity 0.28s ease; }
-body.lc-slides-active .lc-slide-fragment[data-revealed="true"] { opacity: 1; }
+body.lc-slides-active .lc-slide-fragment { opacity: 0.18; transition: opacity 0.28s ease; pointer-events: none; }
+body.lc-slides-active .lc-slide-fragment[data-revealed="true"] { opacity: 1; pointer-events: auto; }
 @media (max-width: 700px) {
   body.lc-slides-active .lc-slide[data-active="true"] { padding: 1.6em 1.2em 5em; }
   body.lc-slides-active .lc-slide h1 { font-size: 1.9em; }
@@ -172,10 +172,17 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
         group.forEach(function(el){ section.appendChild(el); });
         main.appendChild(section);
         slides.push(section);
+        // Quiz lists reveal as a single fragment — all options visible together
+        Array.prototype.forEach.call(section.querySelectorAll('ul.quiz, ol.quiz'), function(quiz){
+          if (quiz.classList.contains('nofragments')) return;
+          quiz.classList.add('lc-slide-fragment');
+        });
+        // Individual list items fragment (skip quiz options and explicit opt-outs)
         var bullets = section.querySelectorAll('li');
         Array.prototype.forEach.call(bullets, function(li){
           if (li.closest(WIDGET_SEL)) return;
-          if (li.parentElement && li.parentElement.classList.contains('nofragments')) return;
+          var p = li.parentElement;
+          if (p && (p.classList.contains('nofragments') || p.classList.contains('quiz'))) return;
           li.classList.add('lc-slide-fragment');
         });
         Array.prototype.forEach.call(section.querySelectorAll('.fragment'), function(el){
@@ -192,6 +199,22 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
               el.classList.contains('lc-datagrid') ||
               el.classList.contains('lc-form')) {
             el.classList.add('lc-slide-fragment');
+          }
+        });
+        // Sequential reveal: once a slide has any fragment, everything after
+        // it in source order (paragraphs, tables, blockquotes) also fragments
+        // so the deck reveals strictly top-to-bottom. Headings + speaker notes
+        // + .nofragments are excluded.
+        var foundFrag = false;
+        Array.prototype.forEach.call(section.children, function(c){
+          if (c.tagName === 'H1' || c.tagName === 'H2' || c.tagName === 'H3') return;
+          if (c.classList.contains('nofragments') || c.classList.contains('speaker-note')) return;
+          var hasFrag = c.classList.contains('lc-slide-fragment') ||
+                        c.querySelector('.lc-slide-fragment') !== null;
+          if (hasFrag) {
+            foundFrag = true;
+          } else if (foundFrag) {
+            c.classList.add('lc-slide-fragment');
           }
         });
       });
