@@ -89,7 +89,7 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
     var slides = [];
     var current = 0;
     var revealed = [];
-    var WIDGET_SEL = '.lc-pyrun, .lc-pyrepl, .lc-datagrid, .lc-form, .ag-root-wrapper, .lc-tabs';
+    var WIDGET_SEL = '.lc-pyrun, .lc-pyrepl, .lc-datagrid, .lc-form, .ag-root-wrapper, .lc-tabs, .lc-quiz, .lc-quiz-bar';
 
     function partition() {
       var children = Array.prototype.slice.call(main.children);
