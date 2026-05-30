@@ -26,7 +26,7 @@ Renders to:
 - [ ] Centers the heading
 {: .quiz }
 
-Click any option. Wrong pick → red ✗ + the right answer flashes green. Click again to retry.
+Click any option. Wrong pick → red ✗ on that option only — the correct answer stays hidden. Keep clicking until you find it. (Think of it as a treasure hunt, not a quiz with an answer key.)
 
 ## Single-choice — `correct="N"` syntax (equivalent)
 
@@ -102,7 +102,7 @@ Renders to:
 - [x] Spinach
 {: .quiz multi="true" }
 
-Toggle each ☐ to ☑, hit **Check**. Missed-correct and wrong-selected both get ✗; only fully matching picks pass.
+Toggle each ☐ to ☑, hit **Check**. Wrong-selected picks get ✗ — but **missed correct answers stay hidden** (same treasure-hunt rule). The status line tells you whether you've got them all yet. Re-toggle and re-check until you do.
 
 ## Page-level score
 
