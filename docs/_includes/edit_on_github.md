@@ -162,6 +162,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       <span class="ed-section-label">History</span>
       <div id="ed-history" style="color:#bbb">Select a file.</div>
 
+      <!-- Build status -->
+      <span class="ed-section-label">Build</span>
+      <div id="ed-build" style="color:#bbb;font-size:0.82em">Save to trigger a build.</div>
+
     </div><!-- /sidebar -->
 
     <!-- Editor + Preview -->
@@ -244,45 +248,62 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     document.body.style.overflow = "";
   }
 
-  /* ── File list (recursive via Git Trees API) ────────── */
+  /* ── File list — AG Grid (recursive via Git Trees API) ─ */
+  var _edAgApi = null;
   function loadFiles() {
     var el = document.getElementById("ed-files");
     if (!el) return;
-    el.innerHTML = "<span style='color:#bbb'>Loading…</span>";
+    if (!_edAgApi) el.innerHTML = "<span style='color:#bbb'>Loading…</span>";
     fetch("https://api.github.com/repos/" + _repo + "/git/trees/HEAD?recursive=1", {
       headers: { Authorization: "Bearer " + _pat, Accept: "application/vnd.github+json" }
     }).then(function (r) { return r.json(); }).then(function (data) {
       if (!data.tree) {
-        el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>" + esc(data.message || "Error loading tree") + "</span>";
-        return;
+        el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>" + esc(data.message || "Error") + "</span>"; return;
       }
-      var mds = data.tree.filter(function (f) {
+      var rows = data.tree.filter(function (f) {
         var name = f.path.split("/").pop();
         return f.type === "blob" && f.path.startsWith("docs/") && name.endsWith(".md") && !name.startsWith("_");
-      }).sort(function (a, b) { return a.path.localeCompare(b.path); });
-      if (!mds.length) { el.innerHTML = "<span style='color:#bbb'>No .md pages found.</span>"; return; }
-      /* group by subfolder relative to docs/ */
-      var groups = {}, order = [];
-      mds.forEach(function (f) {
+      }).sort(function (a, b) { return a.path.localeCompare(b.path); })
+      .map(function (f) {
         var rel = f.path.replace(/^docs\//, "");
-        var parts = rel.split("/");
-        var dir = parts.length > 1 ? parts.slice(0, -1).join("/") : "";
-        var name = parts[parts.length - 1];
-        if (!groups[dir]) { groups[dir] = []; order.push(dir); }
-        groups[dir].push({ path: f.path, name: name });
+        return { path: f.path, file: rel };
       });
-      var html = "";
-      order.forEach(function (dir) {
-        if (dir) html += "<div class='ed-folder'>📁 " + esc(dir) + "</div>";
-        html += groups[dir].map(function (f) {
-          var active = _curFile === f.path;
-          var indent = dir ? "margin-left:0.8em;" : "";
-          return "<a href='#' class='ed-chip" + (active ? " active" : "") + "' data-path='" + f.path + "' style='" + indent + "'>📄 " + esc(f.name) + "</a>";
-        }).join("");
-      });
-      el.innerHTML = html;
-    }).catch(function (e) {
-      el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>Network error</span>";
+      function buildGrid() {
+        if (_edAgApi) {
+          _edAgApi.setGridOption("rowData", rows);
+          _edAgApi.redrawRows();
+          return;
+        }
+        el.innerHTML = "";
+        var wrap = document.createElement("div");
+        wrap.className = "ag-theme-alpine";
+        wrap.style.cssText = "height:320px;width:100%;font-size:0.82em";
+        el.appendChild(wrap);
+        _edAgApi = agGrid.createGrid(wrap, {
+          columnDefs: [{ field: "file", headerName: "📄 File", flex: 1 }],
+          rowData: rows,
+          rowHeight: 26,
+          headerHeight: 28,
+          defaultColDef: { sortable: true, filter: true, resizable: false },
+          getRowStyle: function (p) {
+            return p.data.path === _curFile
+              ? { background: "#e8f2ff", color: "#004fa0", fontWeight: "600" } : {};
+          },
+          onRowClicked: function (e) { loadFile(e.data.path); }
+        });
+      }
+      if (window.agGrid && window.agGrid.createGrid) { buildGrid(); return; }
+      if (window.lcLoadAgGrid) { window.lcLoadAgGrid(buildGrid); return; }
+      /* standalone fallback */
+      function addCss(h) { var l=document.createElement("link"); l.rel="stylesheet"; l.href=h; document.head.appendChild(l); }
+      addCss("https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-grid.css");
+      addCss("https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-theme-alpine.css");
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/ag-grid-community@31/dist/ag-grid-community.min.js";
+      s.onload = buildGrid;
+      document.head.appendChild(s);
+    }).catch(function () {
+      if (el) el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>Network error</span>";
     });
   }
 
@@ -321,6 +342,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       toast("Saved · " + data.commit.sha.slice(0, 7) + " ✓", true);
       loadFiles();
       loadHistory();
+      watchBuild(data.commit.sha);
     });
   }
 
@@ -414,6 +436,40 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         "<pre style='font-size:0.75em;overflow-x:auto;white-space:pre-wrap;margin:0 0 0.5em;padding:0.5em;background:#fafafa;border-radius:4px'>"
         + lines.join("") + "</pre><hr style='border:none;border-top:1px solid #eee;margin:0.4em 0'>");
     });
+  }
+
+  /* ── GitHub Actions build watcher ───────────────────── */
+  function watchBuild(headSha) {
+    var el = document.getElementById("ed-build");
+    if (!el) return;
+    el.innerHTML = "<span style='color:#888'>⏳ Queuing…</span>";
+    var attempts = 0, timer = null;
+    function check() {
+      attempts++;
+      if (attempts > 36) {
+        clearInterval(timer);
+        el.innerHTML = "<span style='color:#888'>⚠️ Timed out — <a href='https://github.com/" + _repo + "/actions' target='_blank' style='color:#0066cc'>check Actions</a></span>";
+        return;
+      }
+      fetch("https://api.github.com/repos/" + _repo + "/actions/runs?per_page=10", {
+        headers: { Authorization: "Bearer " + _pat }
+      }).then(function (r) { return r.json(); }).then(function (data) {
+        if (!data.workflow_runs) return;
+        var run = data.workflow_runs.find(function (r) { return r.head_sha === headSha; });
+        if (!run) return; /* not registered yet */
+        if (run.status === "completed") {
+          clearInterval(timer);
+          var ok = run.conclusion === "success";
+          el.innerHTML = (ok ? "✅ Built · " : "❌ " + esc(run.conclusion) + " · ")
+            + "<a href='" + run.html_url + "' target='_blank' style='color:#0066cc'>view run</a>";
+        } else {
+          var icon = run.status === "in_progress" ? "🔄" : "⏳";
+          el.innerHTML = "<span style='color:#888'>" + icon + " " + esc(run.status) + "…</span>";
+        }
+      });
+    }
+    check();
+    timer = setInterval(check, 5000);
   }
 
   /* ── Connect / Disconnect ────────────────────────────── */
