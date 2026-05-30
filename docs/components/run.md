@@ -38,6 +38,7 @@ greet("Lightcoder")
 | `init="…"` | Single-line Python that runs once on page load |
 | `# ---` (inside the block) | Magic separator: above = init, below = editor body |
 | `silent="true"` | Run the block at page load with no UI — useful for setup side-effects (rendering into a `<div>`, computing globals, registering pieces). Errors go to the browser console |
+| `expected="…"` | After ▶ Run, compare the printed output to this string. Match → ✓ in the status; mismatch → ✗ + the expected value. Result reports to the page-level 🏆 score (see [Quiz](/components/quiz)). |
 
 ## Silent auto-exec — `silent="true"`
 

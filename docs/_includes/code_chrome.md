@@ -465,13 +465,30 @@
       }
     }
 
+    var EXPECTED = (opts.expected || "").replace(/\r\n/g, "\n");
+
+    function checkExpected(ok) {
+      if (!EXPECTED) return;
+      var actual = (buf || "").replace(/\r\n/g, "\n").replace(/\n+$/, "");
+      var want = EXPECTED.replace(/\n+$/, "");
+      var match = ok && actual === want;
+      status.textContent = match ? "✓ output matches" : "✗ expected: " + want;
+      status.style.color = match ? "#2e7d32" : "#c62828";
+      if (window.lcQuizScore && window.lcQuizScore.update) {
+        window.lcQuizScore.update("run-" + ID, match);
+      }
+    }
+
     runBtn.addEventListener("click", function(){
       loadMp().then(function(m){
         clearTests();
         status.textContent = "running…";
+        status.style.color = "";
         var ok = runUserCode(m);
         status.textContent = ok ? "done" : "error";
+        status.style.color = "";
         repaintBound();
+        checkExpected(ok);
       }).catch(function(e){
         setOut("Failed to load MicroPython: " + (e.message || String(e)), true);
       });
@@ -1422,7 +1439,8 @@
       bound: el.getAttribute("bound") || "",
       init: el.getAttribute("init") || initFromCode || "",
       rows: parseInt(el.getAttribute("rows"), 10) || 6,
-      folded: el.hasAttribute("folded") && el.getAttribute("folded") !== "false"
+      folded: el.hasAttribute("folded") && el.getAttribute("folded") !== "false",
+      expected: el.getAttribute("expected") || ""
     };
     var runner = buildRunner(opts);
     el.parentNode.replaceChild(runner, el);
