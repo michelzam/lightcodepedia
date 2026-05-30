@@ -65,6 +65,11 @@ Config, useful links and a step-by-step guide to 🚚 deploy your own LightNode 
 Author, network of contributors, status and EU funding.
 
 [About →](/about)
+
+### 🗒️ Pages
+Customize your pages here.
+
+[Pages →](/new2)
 ```
 {: .cards cols="3" }
 
