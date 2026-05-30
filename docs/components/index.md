@@ -67,6 +67,11 @@ CSV fenced block → Chart.js bar, line, pie or doughnut. `{: .chart type="bar" 
 
 [Open →](chart)
 
+### 📊 Chart + Datagrid
+Live chart bound to a datagrid row — master/detail for data visualization.
+
+[Open →](chart_datagrid)
+
 ### 🗺️ Map
 Interactive Leaflet map with CSV markers. `{: .map lat= lng= zoom= }`.
 
