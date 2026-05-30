@@ -105,7 +105,7 @@ body.lc-notes-on .speaker-note {
   border-radius: 0 4px 4px 0;
 }
 body.lc-notes-on .speaker-note::before {
-  content: "📝 Speaker note";
+  content: "💭 Speaker note";
   display: block;
   font-style: normal;
   font-weight: 600;
@@ -129,7 +129,7 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
   <button class="lc-slides-nav-next" type="button" title="Next (→ or Space)" aria-label="Next slide / fragment">▶</button>
   <button class="lc-slides-nav-share" type="button" title="Share with QR code (Q)" aria-label="Share with QR code">📷</button>
 </nav>
-<div class="lc-slides-notes-badge" aria-hidden="true">📝 NOTES ON</div>
+<div class="lc-slides-notes-badge" aria-hidden="true">💭 NOTES ON</div>
 <div class="lc-slides-share-overlay" role="dialog" aria-modal="true" aria-label="Share slide">
   <div class="lc-slides-share-panel">
     <button class="lc-slides-share-close" type="button" aria-label="Close">✕</button>
@@ -251,13 +251,19 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
     function slideScoreMarker(s) {
       var quizEls = slideQuizElements(s);
       if (quizEls.length === 0) return '';
-      if (!window.lcQuizScore || !window.lcQuizScore.get) return ' ⚠️';
-      var allCorrect = quizEls.every(function(q){
+      if (!window.lcQuizScore || !window.lcQuizScore.get) return ' 🔵';
+      var attempted = 0, correct = 0;
+      quizEls.forEach(function(q){
         var id = q.dataset.lcQuizId;
         var entry = id && window.lcQuizScore.get(id);
-        return entry && entry.correct;
+        if (entry && entry.attempts > 0) {
+          attempted++;
+          if (entry.correct) correct++;
+        }
       });
-      return allCorrect ? ' ✅' : ' ⚠️';
+      if (attempted === 0) return ' 🔵';
+      if (correct === quizEls.length) return ' 🟢';
+      return ' 🟠';
     }
 
     function slideTitle(s, i) {
