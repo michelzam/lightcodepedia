@@ -182,6 +182,7 @@
 <script>
 (function(){
   if (window.lcPyrun) return;
+  var _lcSiteRepo = {{ site.github.repository_nwo | default: "" | jsonify }};
 
   // Master/detail pub-sub keyed by datagrid id.
   // Order-independent: grids publish on selection; forms subscribe on upgrade.
@@ -1581,6 +1582,7 @@
     document.querySelectorAll("p.video").forEach(upgradeVideo);
     document.querySelectorAll(".highlighter-rouge.chart").forEach(upgradeChart);
     document.querySelectorAll(".highlighter-rouge.map").forEach(upgradeMap);
+    document.querySelectorAll("p.folder").forEach(upgradeFolder);
   }
 
   // --- shared helpers for section-based widgets ---
@@ -1871,6 +1873,50 @@
     var yt = href.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
     if (yt) src = "https://www.youtube.com/embed/" + yt[1];
     el.parentNode.replaceChild(_iframeEl(src, el.getAttribute("height") || "400"), el);
+  }
+
+  function upgradeFolder(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var a = el.querySelector("a");
+    if (!a) return;
+    var path = a.getAttribute("href").replace(/^\/+|\/+$/g, "");
+    var cols = el.getAttribute("cols") || "auto";
+    var colStyle = cols === "auto"
+      ? "repeat(auto-fit, minmax(200px, 1fr))"
+      : "repeat(" + cols + ", 1fr)";
+    var wrap = document.createElement("div");
+    wrap.className = "lc-cards";
+    wrap.style.gridTemplateColumns = colStyle;
+    wrap.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading…</div>";
+    el.parentNode.replaceChild(wrap, el);
+    if (!_lcSiteRepo) {
+      wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ site.github.repository_nwo not set.</div>";
+      return;
+    }
+    fetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + path)
+      .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function(files) {
+        if (!Array.isArray(files)) throw new Error("Not a directory: " + escapeHtml(path));
+        var pages = files
+          .filter(function(f) { return f.type === "file" && /\.md$/i.test(f.name) && f.name !== "index.md"; })
+          .sort(function(a, b) { return a.name.localeCompare(b.name); });
+        if (!pages.length) {
+          wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
+          return;
+        }
+        wrap.innerHTML = pages.map(function(f) {
+          var title = f.name
+            .replace(/\.md$/i, "")
+            .replace(/[-_]/g, " ")
+            .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+          var url = "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, "");
+          return '<div class="lc-card"><h3><a href="' + url + '">' + escapeHtml(title) + '</a></h3></div>';
+        }).join("");
+      })
+      .catch(function(e) {
+        wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
+      });
   }
 
   function upgradeCards(el) {
