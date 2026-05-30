@@ -29,33 +29,82 @@ This site has no server-side code, no shared API key, and no request log. Zero.
 
 ## 🔑 Getting your PAT
 
+Two use cases, two different permission sets. Pick the one you need:
+
+| Use case | What needs the PAT | Required scope |
+|---|---|---|
+| 🤖 **Agent chat** | Calls GitHub Models API | None (classic) _or_ Models → Read-only (fine-grained) |
+| ✏️ **Page editor** (✏️ FAB) | Reads and writes repo files via Contents API | `repo` (classic) _or_ Contents → Read + Write (fine-grained) |
+
+```
+### 🤖 Agent only
 Two routes. Both free. Both under a minute.
 
-**Route A — Classic PAT (zero config):**
+**Route A — Classic PAT (fastest):**
 
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens).
-2. Click *Generate new token (classic)*.
-3. Give it a name. Leave every scope unchecked.
-4. Click Generate. Copy the token. Done.
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click *Generate new token (classic)*
+3. Give it a name. **Leave every scope unchecked.**
+4. Click Generate → copy the token.
 
-**Route B — Fine-grained PAT (explicit permission):**
+**Route B — Fine-grained PAT:**
 
-1. Go to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens).
-2. Create a new token. Under *Repository permissions*, enable **Models → Read-only**.
+1. Go to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens)
+2. Create a new token.
+3. Under *Permissions → Account permissions*, enable **GitHub Models → Read-only**.
+4. Click Generate → copy.
 
-Either works. Route A is faster; Route B makes the permission visible.
+Either works for the agent. Route A is faster; Route B makes the permission explicit.
 
 > Most common stumble: students take Route B but forget the Models → Read-only checkbox.
 > They paste the token, get a 401, and assume the site is broken.
 > Start the class on Route A — one less thing to go wrong.
+
+### ✏️ Editor only (fork + edit pages)
+You need write access to your own forked repo.
+
+**Route A — Classic PAT with `repo` scope:**
+
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click *Generate new token (classic)*
+3. Give it a name. Check the **`repo`** scope (top-level — covers all sub-scopes).
+4. Click Generate → copy.
+5. Open the ✏️ editor (bottom-right), paste the token and your repo name (`owner/repo`).
+
+**Route B — Fine-grained PAT:**
+
+1. Go to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens)
+2. Create a new token scoped to **your fork only**.
+3. Under *Permissions → Repository permissions*, enable **Contents → Read and write**.
+4. Click Generate → copy.
+
+> Use your **fork**, not the original repo. The PAT must have push access — the editor
+> verifies this on connect and before every save. A read-only PAT will be rejected
+> with a clear error message.
+
+### 🤖 + ✏️ Both (one token for everything)
+A single classic PAT with `repo` scope covers both the editor AND the agent.
+The `repo` scope implicitly grants API access to GitHub Models as well.
+
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click *Generate new token (classic)*
+3. Check **`repo`** (and optionally **`workflow`** if you want to trigger Actions).
+4. Click Generate → copy the token.
+
+Use this token in both the Agent panel and the Editor connection form.
+```
+{: .radio }
+
+> Walk students through the table first — "which row is yours?" —
+> then send them to the matching tab. Mixing up the scopes is the #1 support question.
 {: .speaker-note }
 
-**Q:** You need a PAT and class starts in 90 seconds. What's the fastest path?
+**Q:** You want to chat with the Agent AND edit pages in your fork. What's the most efficient PAT to create?
 
-- [x] Classic PAT — generate it, leave every scope unchecked, paste it in.
-- [ ] Fine-grained PAT — worth the extra steps for the explicit permission.
-- [ ] Borrow a classmate's. Finders keepers.
-- [ ] Ask an LLM to generate a PAT for you. Completely valid approach.
+- [ ] Two separate PATs — one per use case, least privilege.
+- [x] One classic PAT with `repo` scope — covers both agent and editor.
+- [ ] A fine-grained PAT with Models → Read-only. (Editor won't work.)
+- [ ] No PAT needed — the site uses a shared server-side key.
 {: .quiz }
 
 ## 🛠️ Tiniest agent
