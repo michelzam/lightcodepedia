@@ -1,58 +1,99 @@
-# 📐 Grid
-A free-form layout grid. Each cell can hold any content — text, images, even other components. Use it for dashboards or side-by-side comparisons.
+# 🔲 Grid
 
-## How to use
+Lay content out in columns — auto-responsive by default, or fixed with `cols="N"`. Each `### Heading` in a fenced block becomes a column cell.
 
-{% raw %}
-```liquid
-{% include grid.md file="components/grid_example" cols="2" %}
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
+
+## 👀 See it in action
+
 ```
-{% endraw %}
+### ⚡ Fast
+WebAssembly runs Python at near-native speed in your browser. No server round-trip.
 
-Each `### Heading` in the content file becomes a grid cell.
+### 🔒 Private
+Your code never leaves your browser. No data sent to any server.
 
-## Live example (2 columns)
-
-{% include grid.md file="components/grid_example" cols="2" %}
-
-## The content file
-
-`docs/components/grid_example.md`:
-
-```markdown
-### Quick links
-{% raw %}{% include button.md label="🎬 Demo" href="/demo" %}
-{% include button.md label="📚 Read" href="/chapters" style="secondary" %}{% endraw %}
-
-### Live status
-A small text block, or any markdown.
-
-### Carousel of tips
-{% raw %}{% include carousel.md id="g1" items="Tip A|Tip B|Tip C" %}{% endraw %}
-
-### Stats badges
-![Forks](https://img.shields.io/github/forks/michelzam/lightcodepedia)
+### 🆓 Free
+No login, no API key, no quota. Open source, forever.
 ```
+{: .grid }
 
-## Options
+Resize your browser window — the columns reflow automatically.
 
-| Parameter | Default | Description |
+> Grid + icons is the classic "feature highlight" layout.
+> Ask: "Where have you seen this pattern before?" They'll name a dozen SaaS landing pages.
+{: .speaker-note }
+
+**Q:** You shrink the browser to phone width. What happens to the three columns?
+
+- [ ] The columns overflow horizontally — scroll right to see the rest.
+- [ ] The text shrinks until it fits.
+- [x] The columns reflow — `auto-fit` wraps them into fewer columns or a single column.
+- [ ] The grid disappears below 768 px.
+{: .quiz }
+
+## 🛠️ How to make one
+
+Plain fenced block, `### ` sections, `{: .grid }` IAL:
+
+````markdown
+```
+### 🎯 Goal
+What you want learners to achieve.
+
+### 🛠️ Method
+How you'll help them get there.
+```
+{: .grid cols="2" }
+````
+
+## 🔧 Knobs
+
+| Attribute | Default | What it does |
 |---|---|---|
-| `file` | required | Path to content file (no `.md`) |
-| `cols` | `auto` | Columns count, or `auto` for responsive |
-| `gap` | `18` | Spacing between cells in pixels |
-| `headings` | (shown) | Pass `hide` to suppress cell titles |
+| `cols="N"` | `auto` | Fixed column count. `auto` = responsive `minmax(280px, 1fr)` |
+| `gap="N"` | `18` | Gap between cells in pixels |
+| `headings="hide"` | (show) | Hide the `### ` label — show only the cell body |
 
-## Same content without cell headings
+**Two-column fixed:**
 
-{% include grid.md file="components/grid_example" cols="2" headings="hide" %}
+```
+### 🐕 Dogs
+Loyal, energetic, need walks. Best for active lifestyles.
 
-## Cards vs Grid — which one?
+### 🐈 Cats
+Independent, low-maintenance. Best for busy schedules.
+```
+{: .grid cols="2" }
 
-| | `cards.md` | `grid.md` |
-|---|---|---|
-| Visual chrome | Bordered card with hover effect | Plain cell, no decoration |
-| Best for | Link lists, feature showcases | Dashboards, mixed-content layouts |
-| Cell content | Text + optional link | Anything (other includes welcome) |
+**Hidden headings — pure content cells:**
+
+```
+🚀 Deploy in seconds.
+
+🔒 Zero-config security.
+
+📊 Real-time analytics.
+```
+{: .grid cols="3" headings="hide" }
+
+**Q:** You want a two-column layout with no heading labels. Which IAL?
+
+- [ ] `{: .grid cols="2" labels="none" }`
+- [x] `{: .grid cols="2" headings="hide" }`
+- [ ] `{: .grid-2 }`
+- [ ] `{: .grid cols="2" hide="true" }`
+{: .quiz }
+
+## 🏁 Final exam
+
+**Q:** Which of these are TRUE about the grid widget? (Pick all that apply.)
+
+- [x] `auto` columns reflow responsively based on available width.
+- [x] `headings="hide"` suppresses the `### ` label — only the body renders.
+- [ ] You must specify `cols=` — there is no default.
+- [x] Gap defaults to 18 px and can be changed with `gap=`.
+- [x] Swapping `{: .grid }` to `{: .accordion }` gives the same content as an accordion.
+{: .quiz multi="true" }
 
 {% include backtotop.md %}

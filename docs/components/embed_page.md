@@ -1,51 +1,78 @@
-# 🪟 Embed page
-Embed another page from this same site inside an iframe. Perfect for **safely nesting components** — each iframe is its own document, so there are no ID collisions, no shared CSS, no double JavaScript.
+# 🖼️ Embed
 
-When called this way, the embedded page automatically hides its topbar and back-to-top button (clean look).
+Embed another page from this site, an external URL, or a video — using a markdown link and an IAL. Three flavors: `embed-page`, `embed`, and `video`.
 
-## How to use
+**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
-{% raw %}
-```liquid
-{% include embed_page.md page="/components/tabs" height="500" %}
+## 👀 Embed another page
+
+`{: .embed-page }` on a paragraph containing a single link embeds that page in an iframe, with `?embed=true` appended automatically (hides the topbar):
+
+```markdown
+[🐍 Run component](/components/run)
+{: .embed-page height="400" }
 ```
-{% endraw %}
 
-## Live example — tabs page embedded
+[🐍 Run component](/components/run)
+{: .embed-page height="400" }
 
-{% include embed_page.md page="/components/tabs" height="600" %}
+> Ask: "What does the embedded page look like vs the normal page?"
+> Point out the missing topbar — `?embed=true` strips the chrome.
+{: .speaker-note }
 
-## Why use this instead of nesting?
+**Q:** You embed `/components/quiz`. What does `?embed=true` do?
 
-When you put tabs inside radio inside accordion using the direct `{% raw %}{% include %}{% endraw %}` approach, several things can break:
+- [ ] Makes quiz answers visible.
+- [x] Hides the topbar so the embedded page looks clean inside the frame.
+- [ ] Forces the page into slide mode.
+- [ ] Nothing — the site ignores `?embed=true`.
+{: .quiz }
 
-- Same JavaScript runs twice → click events fire twice
-- IDs collide → wrong panel shows on click
-- CSS bleeds between components
+## 🌐 Embed an external URL
 
-With `embed_page.md`, each nested page is **fully isolated**:
+`{: .embed }` for any external iframe-able URL:
 
-| Issue | Direct nesting | `embed_page` |
+```markdown
+[OpenStreetMap](https://www.openstreetmap.org/export/embed.html?bbox=-0.09,51.50,-0.08,51.51)
+{: .embed height="350" }
+```
+
+## 🎬 Embed a video
+
+`{: .video }` for YouTube links or Google Drive file IDs:
+
+```markdown
+[Python in 100 seconds](https://www.youtube.com/watch?v=x7X9w_GIm1s)
+{: .video height="360" }
+```
+
+```markdown
+[Lecture recording](gdrive:1AbCdEfGhIjKlMnOpQrStUvWxYz)
+{: .video height="400" }
+```
+
+`gdrive:ID` → `https://drive.google.com/file/d/ID/preview` automatically.
+YouTube watch URLs → `/embed/VIDEO_ID` automatically.
+
+## 🔧 Knobs
+
+| IAL | `height=` default | Notes |
 |---|---|---|
-| ID collisions | ❌ Possible | ✅ Impossible (different docs) |
-| Double-firing JS | ❌ Possible | ✅ Impossible |
-| Style bleed | ❌ Possible | ✅ Impossible |
-| Footprint | Lighter | Heavier (extra iframe) |
-| Scrolling | Page-level | Inside iframe |
+| `{: .embed-page }` | `400` | Appends `?embed=true` to the href |
+| `{: .embed }` | `600` | Raw iframe — any external src |
+| `{: .video }` | `400` | YouTube + `gdrive:ID` shorthand |
 
-## Options
+**Q:** You write `[Lecture](gdrive:ABC123){: .video }` as its own paragraph. What URL does the iframe use?
 
-| Parameter | Default | Description |
-|---|---|---|
-| `page` | required | Internal URL path (start with `/`) |
-| `height` | `400` | iframe height in pixels |
+- [ ] `gdrive:ABC123` — passed through literally.
+- [x] `https://drive.google.com/file/d/ABC123/preview` — the shorthand is expanded.
+- [ ] `https://drive.google.com/open?id=ABC123` — the download link.
+- [ ] Nothing renders — `gdrive:` is not a recognised URL scheme.
+{: .quiz }
 
-## Live example — radio page embedded
+## ⚠️ Limits worth knowing
 
-{% include embed_page.md page="/components/radio" height="500" %}
-
-## How it works
-
-The include adds `?embed=true` to the URL. The `topbar.md` and `backtotop.md` includes detect this query parameter and hide themselves. The iframe shows only the page's main content.
+- **CORS / `X-Frame-Options`.** Many sites block iframe embedding via security headers. If the embed shows blank or an error, the target site is blocking it — not something we can change.
+- **One link per paragraph.** The upgrade looks for a single `<a>` inside the `<p>`. Extra text in the same paragraph breaks the upgrade.
 
 {% include backtotop.md %}

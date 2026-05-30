@@ -118,6 +118,51 @@
 .lc-carousel-dots { text-align: center; margin-top: 0.8em; }
 .lc-carousel-dots span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin: 0 3px; cursor: pointer; transition: background 0.2s; }
 .lc-carousel-dots span.active { background: #0066cc; }
+/* tabs (global — also emitted inline by tabs.md include) */
+.lc-tabs { border: 1px solid #ddd; border-radius: 6px; margin: 1em 0; overflow: hidden; }
+.lc-tabs .lc-tab-bar { display: flex; background: #f5f5f5; border-bottom: 1px solid #ddd; flex-wrap: wrap; }
+.lc-tabs .lc-tab-btn { background: none; border: none; padding: 0.6em 1.2em; cursor: pointer; font-size: 0.95em; color: #555; border-right: 1px solid #ddd; }
+.lc-tabs .lc-tab-btn:hover { background: #eaeaea; }
+.lc-tabs .lc-tab-btn.active { background: white; color: #0066cc; font-weight: 600; box-shadow: inset 0 -3px 0 #0066cc; }
+.lc-tabs .lc-tab-panel { display: none; padding: 1em 1.4em; }
+.lc-tabs .lc-tab-panel.active { display: block; }
+/* accordion */
+.lc-accordion { margin: 1em 0; }
+.lc-accordion details { border: 1px solid #ddd; border-radius: 6px; margin: 0.4em 0; overflow: hidden; }
+.lc-accordion details summary { padding: 0.7em 1em; background: #f5f5f5; cursor: pointer; font-weight: 600; list-style: none; user-select: none; }
+.lc-accordion details summary::-webkit-details-marker { display: none; }
+.lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #e8f0fe; color: #0066cc; }
+.lc-accordion details .lc-ac-body { padding: 0.8em 1.2em; }
+/* radio */
+.lc-radio-group { margin: 1em 0; }
+.lc-radio-options { margin-bottom: 1em; padding: 0.6em 1em; background: #f5f5f5; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 0.2em 0; }
+.lc-radio-options label { margin-right: 1.4em; cursor: pointer; font-weight: 500; }
+.lc-radio-options input { margin-right: 0.4em; }
+.lc-radio-body { padding: 1em 1.4em; background: white; border: 1px solid #eee; border-left: 3px solid #0066cc; border-radius: 0 6px 6px 0; }
+.lc-radio-content { display: none; }
+.lc-radio-content.active { display: block; }
+/* grid */
+.lc-grid { display: grid; gap: 18px; margin: 1em 0; }
+.lc-grid .lc-grid-cell { min-width: 0; }
+.lc-grid .lc-grid-cell > h3 { margin-top: 0; margin-bottom: 0.6em; font-size: 1em; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+/* dropdown */
+.lc-dropdown { position: relative; display: inline-block; margin: 0.3em 0; }
+.lc-dd-toggle { background: #0066cc; color: white; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer; font-size: 0.95em; }
+.lc-dd-toggle:hover { background: #0052a3; }
+.lc-dd-menu { display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ddd; border-radius: 4px; min-width: 180px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); z-index: 500; margin-top: 4px; }
+.lc-dd-menu.open { display: block; }
+.lc-dd-menu a { display: block; padding: 0.6em 1em; color: #333; text-decoration: none; }
+.lc-dd-menu a:hover { background: #f5f5f5; color: #0066cc; }
+/* button */
+.lc-btn { display: inline-block; padding: 0.5em 1.2em; background: #0066cc; color: white !important; text-decoration: none !important; border-radius: 4px; font-weight: 600; transition: background 0.15s; margin: 0.2em 0.3em 0.2em 0; }
+.lc-btn:hover { background: #0052a3; }
+.lc-btn-secondary { background: #6c757d; } .lc-btn-secondary:hover { background: #5a6268; }
+.lc-btn-success { background: #28a745; } .lc-btn-success:hover { background: #1e7e34; }
+.lc-btn-danger { background: #dc3545; } .lc-btn-danger:hover { background: #bd2130; }
+.lc-btn-outline { background: transparent; color: #0066cc !important; border: 2px solid #0066cc; padding: calc(0.5em - 2px) calc(1.2em - 2px); }
+.lc-btn-outline:hover { background: #0066cc; color: white !important; }
+/* scrollable */
+.lc-scrollable { overflow-y: auto; padding: 1em 1.4em; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; margin: 1em 0; }
 </style>
 <script>
 (function(){
@@ -1507,6 +1552,196 @@
     document.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(upgradeForm);
     document.querySelectorAll("div.lc-form-src").forEach(upgradeFormFile);
     document.querySelectorAll("ul.carousel").forEach(upgradeCarousel);
+    document.querySelectorAll(".highlighter-rouge.accordion").forEach(upgradeAccordion);
+    document.querySelectorAll(".highlighter-rouge.tabs").forEach(upgradeTabsInline);
+    document.querySelectorAll(".highlighter-rouge.radio").forEach(upgradeRadio);
+    document.querySelectorAll(".highlighter-rouge.grid").forEach(upgradeGrid);
+    document.querySelectorAll(".highlighter-rouge.scrollable").forEach(upgradeScrollable);
+    document.querySelectorAll("ul.dropdown").forEach(upgradeDropdown);
+    document.querySelectorAll("p.button").forEach(upgradeButton);
+    document.querySelectorAll("p.embed-page").forEach(upgradeEmbedPage);
+    document.querySelectorAll("p.embed").forEach(upgradeEmbedExternal);
+    document.querySelectorAll("p.video").forEach(upgradeVideo);
+  }
+
+  // --- shared helpers for section-based widgets ---
+  var _markedQ = null;
+  function loadMarked(cb) {
+    if (window.marked) { cb(); return; }
+    if (_markedQ) { _markedQ.push(cb); return; }
+    _markedQ = [cb];
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/marked@9/marked.min.js";
+    s.onload = function() { var q = _markedQ; _markedQ = null; q.forEach(function(f){ f(); }); };
+    document.head.appendChild(s);
+  }
+  function parseSections(el) {
+    var code = el.querySelector("code");
+    var raw = code ? code.textContent : el.textContent;
+    return raw.split(/\n(?=### )/).map(function(s) {
+      var lines = s.split("\n");
+      var label = lines[0].replace(/^###\s*/, "").trim();
+      var body = lines.slice(1).join("\n").trim();
+      return { label: label, body: body };
+    }).filter(function(s){ return s.label; });
+  }
+  function markdownBody(s) {
+    return window.marked ? marked.parse(s) : "<pre>" + s + "</pre>";
+  }
+
+  function upgradeAccordion(el) {
+    var sections = parseSections(el);
+    if (!sections.length) return;
+    loadMarked(function() {
+      var wrap = document.createElement("div");
+      wrap.className = "lc-accordion";
+      sections.forEach(function(s) {
+        var d = document.createElement("details");
+        d.innerHTML = "<summary>" + s.label + "</summary><div class=\"lc-ac-body\">" + markdownBody(s.body) + "</div>";
+        wrap.appendChild(d);
+      });
+      el.parentNode.replaceChild(wrap, el);
+    });
+  }
+
+  function upgradeTabsInline(el) {
+    var sections = parseSections(el);
+    if (!sections.length) return;
+    var gid = el.id || ("lc-ti-" + Math.random().toString(36).slice(2, 7));
+    loadMarked(function() {
+      var bar = sections.map(function(s, i){
+        return "<button class=\"lc-tab-btn" + (i===0?" active":"") + "\" data-tab=\"" + gid + "-" + i + "\">" + s.label + "</button>";
+      }).join("");
+      var panels = sections.map(function(s, i){
+        return "<div id=\"" + gid + "-" + i + "\" class=\"lc-tab-panel" + (i===0?" active":"") + "\">" + markdownBody(s.body) + "</div>";
+      }).join("");
+      var wrap = document.createElement("div");
+      wrap.className = "lc-tabs";
+      wrap.innerHTML = "<div class=\"lc-tab-bar\">" + bar + "</div>" + panels;
+      wrap.querySelectorAll(".lc-tab-btn").forEach(function(b){
+        b.addEventListener("click", function(){
+          wrap.querySelectorAll(".lc-tab-btn").forEach(function(x){x.classList.remove("active");});
+          wrap.querySelectorAll(".lc-tab-panel").forEach(function(x){x.classList.remove("active");});
+          b.classList.add("active");
+          document.getElementById(b.dataset.tab).classList.add("active");
+        });
+      });
+      el.parentNode.replaceChild(wrap, el);
+    });
+  }
+
+  function upgradeRadio(el) {
+    var sections = parseSections(el);
+    if (!sections.length) return;
+    var gid = el.id || ("lc-rg-" + Math.random().toString(36).slice(2, 7));
+    loadMarked(function() {
+      var radios = sections.map(function(s, i){
+        return "<label><input type=\"radio\" name=\"" + gid + "\" data-target=\"" + gid + "-" + i + "\"" + (i===0?" checked":"") + "> " + s.label + "</label>";
+      }).join("");
+      var panels = sections.map(function(s, i){
+        return "<div id=\"" + gid + "-" + i + "\" class=\"lc-radio-content" + (i===0?" active":"") + "\">" + markdownBody(s.body) + "</div>";
+      }).join("");
+      var wrap = document.createElement("div");
+      wrap.className = "lc-radio-group";
+      wrap.innerHTML = "<div class=\"lc-radio-options\">" + radios + "</div><div class=\"lc-radio-body\">" + panels + "</div>";
+      wrap.querySelectorAll("input[type=radio]").forEach(function(r){
+        r.addEventListener("change", function(){
+          wrap.querySelectorAll(".lc-radio-content").forEach(function(x){x.classList.remove("active");});
+          document.getElementById(r.dataset.target).classList.add("active");
+        });
+      });
+      el.parentNode.replaceChild(wrap, el);
+    });
+  }
+
+  function upgradeGrid(el) {
+    var sections = parseSections(el);
+    if (!sections.length) return;
+    var cols = el.getAttribute("cols") || "auto";
+    var gap = el.getAttribute("gap") || "18";
+    var hideHeadings = el.getAttribute("headings") === "hide";
+    var tpl = cols === "auto" ? "repeat(auto-fit,minmax(280px,1fr))" : "repeat(" + cols + ",1fr)";
+    loadMarked(function() {
+      var cells = sections.map(function(s){
+        var h = hideHeadings ? "" : "<h3>" + s.label + "</h3>";
+        return "<div class=\"lc-grid-cell\">" + h + markdownBody(s.body) + "</div>";
+      }).join("");
+      var wrap = document.createElement("div");
+      wrap.className = "lc-grid";
+      wrap.style.gridTemplateColumns = tpl;
+      wrap.style.gap = gap + "px";
+      wrap.innerHTML = cells;
+      el.parentNode.replaceChild(wrap, el);
+    });
+  }
+
+  function upgradeScrollable(el) {
+    var h = el.getAttribute("height") || "300";
+    var code = el.querySelector("code");
+    var content = code ? code.innerHTML : el.innerHTML;
+    var wrap = document.createElement("div");
+    wrap.className = "lc-scrollable";
+    wrap.style.maxHeight = h + "px";
+    wrap.innerHTML = "<pre style=\"margin:0;white-space:pre-wrap;\">" + content + "</pre>";
+    el.parentNode.replaceChild(wrap, el);
+  }
+
+  function upgradeDropdown(el) {
+    var label = el.getAttribute("label") || "Menu";
+    var gid = el.id || ("lc-dd-" + Math.random().toString(36).slice(2, 7));
+    var links = Array.from(el.querySelectorAll("li a")).map(function(a){
+      return "<a href=\"" + a.href + "\">" + a.textContent + "</a>";
+    }).join("");
+    var wrap = document.createElement("div");
+    wrap.className = "lc-dropdown";
+    wrap.id = "lc-dd-" + gid;
+    wrap.innerHTML = "<button class=\"lc-dd-toggle\">" + label + " ▾</button><div class=\"lc-dd-menu\">" + links + "</div>";
+    var btn = wrap.querySelector(".lc-dd-toggle");
+    var menu = wrap.querySelector(".lc-dd-menu");
+    btn.addEventListener("click", function(e){ e.stopPropagation(); menu.classList.toggle("open"); });
+    document.addEventListener("click", function(){ menu.classList.remove("open"); }, { passive: true });
+    el.parentNode.replaceChild(wrap, el);
+  }
+
+  function upgradeButton(el) {
+    var a = el.querySelector("a");
+    if (!a) return;
+    var style = el.getAttribute("style-variant") || "";
+    a.classList.add("lc-btn");
+    if (style) a.classList.add("lc-btn-" + style);
+    el.classList.remove("button");
+  }
+
+  function _iframeEl(src, h) {
+    var f = document.createElement("iframe");
+    f.src = src; f.width = "100%"; f.height = h || "400";
+    f.setAttribute("loading", "lazy"); f.setAttribute("allowfullscreen", "");
+    f.style.border = "none";
+    return f;
+  }
+  function upgradeEmbedPage(el) {
+    var a = el.querySelector("a");
+    if (!a) return;
+    var h = el.getAttribute("height") || "400";
+    var src = a.getAttribute("href");
+    if (src && src.indexOf("?") === -1) src += "?embed=true"; else src += "&embed=true";
+    el.parentNode.replaceChild(_iframeEl(src, h), el);
+  }
+  function upgradeEmbedExternal(el) {
+    var a = el.querySelector("a");
+    if (!a) return;
+    el.parentNode.replaceChild(_iframeEl(a.getAttribute("href"), el.getAttribute("height") || "600"), el);
+  }
+  function upgradeVideo(el) {
+    var a = el.querySelector("a");
+    if (!a) return;
+    var href = a.getAttribute("href");
+    var src = href;
+    var gdrive = href.match(/^gdrive:(.+)/);
+    if (gdrive) src = "https://drive.google.com/file/d/" + gdrive[1] + "/preview";
+    var yt = href.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
+    if (yt) src = "https://www.youtube.com/embed/" + yt[1];
+    el.parentNode.replaceChild(_iframeEl(src, el.getAttribute("height") || "400"), el);
   }
 
   function upgradeCarousel(el) {
