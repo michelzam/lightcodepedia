@@ -189,7 +189,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 <script>
 (function () {
   var LS_PAT = "lc_ed_pat", LS_REPO = "lc_ed_repo";
-  var _pat, _repo, _curFile, _curSha;
+  var _pat, _repo, _curFile, _curSha, _dirty = false;
+
+  function setDirty(on) {
+    _dirty = on;
+    var fnEl = document.getElementById("ed-filename");
+    if (!fnEl) return;
+    fnEl.textContent = on ? (_curFile || "New file") + " (unsaved)" : (_curFile || "No file selected");
+  }
 
   /* ── GitHub API ──────────────────────────────────────── */
   function gh(method, path, body, cb) {
@@ -246,6 +253,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
   }
   function closeDrawer() {
+    if (_dirty && !confirm("Discard unsaved changes to " + (_curFile || "this file") + "?")) return;
+    setDirty(false);
     var d = document.getElementById("ed-drawer");
     if (d) d.classList.remove("open");
     document.body.style.overflow = "";
@@ -312,9 +321,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   /* ── Open a file ─────────────────────────────────────── */
   function loadFile(path) {
+    if (_dirty && !confirm("Discard unsaved changes to " + (_curFile || "this file") + "?")) return;
     _curFile = path; _curSha = null;
-    var fnEl = document.getElementById("ed-filename");
-    if (fnEl) fnEl.textContent = path;
+    setDirty(false);
     var inp = document.getElementById("ed-input");
     if (inp) inp.value = "Loading…";
     document.querySelectorAll(".ed-chip").forEach(function (c) {
@@ -325,6 +334,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       _curSha = data.sha;
       var content = b64d(data.content.replace(/\n/g, ""));
       if (inp) { inp.value = content; updatePreview(content); }
+      setDirty(false);
       loadHistory();
     });
   }
@@ -352,8 +362,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         if (!data.content) { toast("Save failed (" + esc(_curFile) + "): " + esc(data.message || JSON.stringify(data)), false); return; }
         _curSha = data.content.sha;
         toast("Saved · " + data.commit.sha.slice(0, 7) + " ✓", true);
-        var fnEl = document.getElementById("ed-filename");
-        if (fnEl) fnEl.textContent = _curFile;
+        setDirty(false);
         loadFiles();
         loadHistory();
         watchBuild(data.commit.sha);
@@ -371,9 +380,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       .replace(/\b\w/g, function (c) { return c.toUpperCase(); });
     var content = "# " + title + "\n\n**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.\n\n";
     var inp = document.getElementById("ed-input");
-    var fnEl = document.getElementById("ed-filename");
     if (inp) { inp.value = content; updatePreview(content); }
-    if (fnEl) fnEl.textContent = _curFile + "  (unsaved)";
+    setDirty(true);
     var eh = document.getElementById("ed-history");
     if (eh) eh.innerHTML = "<span style='color:#bbb'>Save to start tracking history.</span>";
   }
@@ -528,7 +536,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     el = document.getElementById("ed-files"); if (el) el.innerHTML = "<span style='color:#bbb'>Connect to browse.</span>";
     el = document.getElementById("ed-history"); if (el) el.innerHTML = "<span style='color:#bbb'>Select a file.</span>";
     el = document.getElementById("ed-build"); if (el) el.textContent = "";
-    el = document.getElementById("ed-filename"); if (el) el.textContent = "No file selected";
+    setDirty(false);
     el = document.getElementById("ed-input"); if (el) el.value = "";
     el = document.getElementById("ed-preview"); if (el) el.innerHTML = "";
   }
@@ -561,7 +569,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (view)  { e.preventDefault(); viewDiff(view.dataset.sha); return; }
   });
   document.addEventListener("input", function (e) {
-    if (e.target.id === "ed-input") updatePreview();
+    if (e.target.id === "ed-input") { setDirty(true); updatePreview(); }
+  });
+  window.addEventListener("beforeunload", function (e) {
+    var d = document.getElementById("ed-drawer");
+    if (_dirty && d && d.classList.contains("open")) { e.preventDefault(); e.returnValue = ""; }
   });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") closeDrawer();
