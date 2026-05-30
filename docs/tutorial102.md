@@ -1,66 +1,81 @@
-# ⚙️ Build your own page
+# ⚙️ Now let's build one
 
-In Tutorial 101 you explored what Lightcodepedia can do. Now let's make it yours.
+In the previous tutorial you explored every building block. Now let's see how each one is made — and add them to your own page.
 
-By the end of this page you'll have your own copy of the site, you'll have edited a page in the browser, and you'll have added a live component — all without touching a terminal.
+- [x] Make your own copy of this site (two minutes, free)
+- [x] Open any page in the browser editor
+- [x] Add a text block, a runner, a map, a chart
+- [x] Save — your page is live within 35 seconds
 
-> Tell learners: "By the end of this page, each of you will have a live website with your name on it."
+> Tell learners: "By the end of this page, each of you will have a live website with your name on it — and at least one block you added yourself."
 {: .speaker-note }
 
 ---
 
-## 🍴 Make your own copy
+## 🍴 Step 1 — Make your own copy
 
-Lightcodepedia is a free template. Making your own copy takes about two minutes.
+Every Lightcodepedia site is a free, forkable template on GitHub.
 
 1. Go to [github.com/michelzam/lightcodepedia](https://github.com/michelzam/lightcodepedia)
-2. Click **Fork** → **Create a new fork**
-3. Keep the default name (or pick your own) and click **Create fork**
-4. In your new copy, go to **Settings → Pages**
-5. Under *Build and deployment*, choose **GitHub Actions**
-6. Go back to the main page of your repo and make any small edit (e.g. click the pencil on `README.md`, add a space, save)
+2. Click **Fork → Create a new fork**
+3. Keep the default name and click **Create fork**
+4. In your new repo → **Settings → Pages → Build and deployment → GitHub Actions**
+5. Make any tiny change to trigger the first build (edit a file, add a space, save)
 
-Your site goes live at `https://your-name.github.io/lightcodepedia` within about a minute.
+Your site goes live at `https://your-name.github.io/lightcodepedia` in about a minute.
 
-> Walk through the fork live on the projector. The moment the site URL appears in Settings → Pages is always a crowd moment — "it's really live?"
+> Show this live on the projector. The moment the Pages URL appears — "it's really live?" — is always a crowd moment.
 {: .speaker-note }
 
-**Q:** After you fork the repo, where is your new site hosted?
+**Q:** After you fork the repo, your new site is hosted…
 
-- [ ] On Lightcodepedia's servers — they host all forks automatically.
+- [ ] On Lightcodepedia's servers — they host all forks for free.
 - [x] On GitHub's free hosting, under your own GitHub account.
-- [ ] Nowhere — you still need to buy a hosting plan.
-- [ ] On your laptop — you have to run a local server to see it.
+- [ ] Nowhere — you still need to configure a hosting service.
+- [ ] On your laptop — you need to run a local server.
 {: .quiz }
 
 ---
 
-## ✏️ Edit a page in the browser
+## ✏️ Step 2 — Open the editor
 
-No need to open a code editor. Every page has a built-in editor — the **✏️** button at the bottom right.
+Every page on your site has a built-in editor — the **✏️** button at the bottom right.
 
-To connect it to your copy of the site you'll need a short access key from GitHub (different from the AI key — this one needs permission to save files).
+To connect it you need a short access key with permission to save files:
 
 1. Go to [github.com/settings/tokens](https://github.com/settings/tokens) → **Generate new token (classic)**
-2. Give it a name, check the **`repo`** box, click **Generate**
-3. Copy the key
-4. On your forked site, click ✏️ — paste the key and your repo name (`your-name/lightcodepedia`)
-5. Click **Connect**
+2. Give it a name. Check the **`repo`** box. Click **Generate** and copy the key.
+3. On your forked site, click **✏️** — paste the key and your repo name (`your-name/lightcodepedia`), click **Connect**
 
-The file tree on the left shows every page. Click one to open it.
+The file tree on the left loads. Click any file to open it. Edit. Save. Done.
 
-> Give learners 5 minutes to connect the editor. The most common stumble: they paste the repo name with a capital letter or extra space. Check for that first if someone can't connect.
+> Common stumble: extra space or capital letter in the repo name. Check that first if someone can't connect.
 {: .speaker-note }
-
-→ [Editor documentation](/components/code)
 
 ---
 
-## 🧩 Add your first component
+## 📖 How to add a text block
 
-Every component is just a block of content followed by a short tag in curly braces. That tag is what turns a plain text block into something interactive.
+A text block is just markdown. Open any page and type.
 
-Here's the simplest example — a code runner:
+```markdown
+## My heading
+
+A paragraph with **bold**, _italic_ and a [link](https://example.com).
+
+- Item one
+- Item two
+```
+
+No tag needed — plain text is already a text block. Every section of every tutorial page you've read so far is a text block.
+
+_Every block type has a documentation page. [Text / markdown reference →](https://www.markdownguide.org/cheat-sheet/)_
+
+---
+
+## ▶️ How to add a code runner
+
+Take a code block and add `{: .run }` on the next line. That's the whole trick.
 
 ````markdown
 ```python
@@ -69,56 +84,153 @@ print("Hello from my page! 🎉")
 {: .run }
 ````
 
-The `{: .run }` tag after the code block is the whole secret. Without it: plain code. With it: a live runner.
+The `{: .run }` tag is what turns a plain code block into a live runner. Without it: displayed code. With it: a button that runs.
 
-Open your home page in the editor, find a good spot, and paste that block. Click **Save** — your page rebuilds in about 35 seconds.
+Try it: open your home page in the editor, paste that block, click **Save**, wait 35 seconds, reload.
 
-> Demo live: paste the block, save, reload the page, click ▶ Run. Then ask a learner to change the message and save again. Two edits in under two minutes — that's the aha moment.
+> Demo live. Paste it, save, reload, click ▶. Then ask a learner to change the message and save again. Two edits in under two minutes — that's the aha moment.
 {: .speaker-note }
 
-**Q:** What turns a plain code block into a live interactive component?
+_[Code runner documentation →](/components/run)_
 
-- [ ] A special file you need to upload.
+---
+
+## 🗺️ How to add a map
+
+Write your locations as a JSON list, then add `{: .map }`.
+
+````markdown
+```json
+[
+  { "lat": 48.85, "lon": 2.35, "label": "Paris 🇫🇷" },
+  { "lat": 52.52, "lon": 13.40, "label": "Berlin 🇩🇪" }
+]
+```
+{: .map height="280" zoom="4" }
+````
+
+Each entry is a pin. Add as many as you like. The map zooms to fit all pins automatically.
+
+_[Map documentation →](/components/map)_
+
+---
+
+## 📊 How to add a data table and chart
+
+Paste a CSV block, add `{: .datagrid format="csv" #my-grid }`. Then paste the same CSV again for the chart, add `{: .chart bound-to="my-grid" }`.
+
+````markdown
+```csv
+city,population,area
+Paris,2161000,105
+Berlin,3600000,892
+Madrid,3300000,604
+```
+{: .datagrid #city-grid format="csv" }
+
+```csv
+city,population,area
+Paris,2161000,105
+Berlin,3600000,892
+Madrid,3300000,604
+```
+{: .chart type="bar" bound-to="city-grid" x="city" }
+````
+
+The `#city-grid` gives the table a name. `bound-to="city-grid"` tells the chart to listen to it.
+
+**Q:** What turns a plain code block into an interactive component?
+
 - [ ] A setting in the GitHub repo configuration.
-- [x] The `{: .tag }` line immediately after the block.
+- [ ] A special file you upload separately.
+- [x] The `{: .tag }` line written immediately after the block.
 - [ ] Nothing — all code blocks are interactive by default.
 {: .quiz }
 
+_[Datagrid documentation →](/components/datagrid) · [Chart documentation →](/components/chart)_
+
 ---
 
-## 🎛️ Every component has options
+## 🤖 How to add an AI assistant
 
-The tag can carry extra settings. Here are a few:
+Write a YAML block with a `system:` prompt, add `{: .agent }`.
 
-| What you want | Tag to use |
+````markdown
+```yaml
+system: |
+  You are a teaching assistant for my Python class.
+  Keep answers short. Only answer questions about Python.
+intro: "Ask me anything about Python!"
+```
+{: .agent }
+````
+
+The `system:` field is the assistant's instructions — its personality, knowledge and limits. You write it; the AI follows it.
+
+_[Agent documentation →](/components/agent)_
+
+---
+
+## 📑 How to add tabs
+
+Create a file in `docs/pages/` with `### Heading` sections. Then link to it with `{: .tabs }`.
+
+**`docs/pages/my_tabs.md`:**
+
+```markdown
+### 🐍 Python
+Python is great for beginners...
+
+### ☕ Java
+Java is widely used in enterprise...
+
+### 🦀 Rust
+Rust is fast and memory-safe...
+```
+
+**On your page:**
+
+```markdown
+[→](pages/my_tabs)
+{: .tabs }
+```
+
+Each `### Heading` becomes a tab. The content below it becomes the panel.
+
+_[Tabs documentation →](/components/tabs)_
+
+---
+
+## 🎛️ Quick reference — every tag
+
+| What you want | Tag to write after the block |
 |---|---|
-| A Python runner | `{: .run }` |
-| A Python runner with more lines | `{: .run rows="12" }` |
-| An AI assistant | `{: .agent }` |
-| A data table from a CSV | `{: .datagrid format="csv" }` |
-| A bar chart | `{: .chart type="bar" }` |
-| A map | `{: .map }` |
-| Sliding presentation | `{: .slides }` |
-
-Browse the full library for the complete list:
-
-[Browse all components →](docs/components)
-{: .folder cols="3" }
+| Code runner | `{: .run }` |
+| Map | `{: .map height="300" }` |
+| Data table | `{: .datagrid format="csv" #my-id }` |
+| Bar chart | `{: .chart type="bar" bound-to="my-id" x="col" }` |
+| AI assistant | `{: .agent }` |
+| Tabs | `{: .tabs }` (on a link to a pages/ file) |
+| Accordion | `{: .accordion }` |
+| Card grid | `{: .cards cols="3" }` |
+| Folder of cards | `{: .folder cols="3" }` (on a link to a folder) |
+| Embed a page | `{: .embed-page }` |
+| Video | `{: .video }` |
 
 ---
 
-## 🚀 Ready to go further?
+## 🚀 What's next?
 
-You have a live site and you can edit it. The next step is making it truly yours — custom address, your own data, your own style.
+Your page is live and you've added your own blocks. The next step: give it its own address, bring in your own data, and connect with the community.
 
 ```
 ### 🚀 Step 3 — Go further
-Custom domain, your own data, and what to do next.
+Custom address, your own data, and what to do next.
 
 [Go further →](/tutorial103)
 
 ### 🧩 Component library
-See every component with live examples and documentation.
+Every block, with live examples and documentation.
 
 [Browse →](/components/)
 

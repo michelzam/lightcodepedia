@@ -1,60 +1,78 @@
 # 🚀 Go further
 
-You have a live site. You've edited pages in the browser. Now let's make it truly yours.
+You have a live site with your own blocks. Now let's make it truly yours.
 
-This page covers three things: giving your site its own address, bringing in your own data, and connecting with the wider Lightcodepedia community.
-
----
-
-## 🌐 Give your site a real address
-
-Right now your site lives at `your-name.github.io/lightcodepedia`. You can give it any address you own — like `myclass.example.com`.
-
-**What you need:** a domain name (costs about €10/year from any registrar — Namecheap, OVH, Infomaniak, etc.)
-
-**Three steps once you have one:**
-
-1. In your GitHub repo → **Settings → Pages → Custom domain** → type your domain → **Save**
-2. At your domain registrar, add a `CNAME` record pointing to `your-name.github.io`
-3. Wait a few minutes, tick **Enforce HTTPS**, done.
-
-Your site is now at your own address, with a free security certificate that renews automatically.
-
-> Show a live example: lightcodepedia.org is exactly this setup — a GitHub repo, a custom domain, free hosting.
-{: .speaker-note }
+- [x] Give it its own address
+- [x] Organise your pages
+- [x] Bring in your own data — three levels
+- [x] Add an AI assistant with its own personality
+- [x] Turn any page into a slide presentation
+- [x] Connect with the Lightcodepedia community
 
 ---
 
-## 📁 Organise your pages
+## 🌐 This is a custom address block
 
-Your site is just a folder of text files. Every file becomes a page. The home page is `index.md`. Every other file (`about.md`, `python.md`, `myclass.md`) becomes a page at `/about`, `/python`, `/myclass`.
+Right now your site is at `your-name.github.io/lightcodepedia`. You can give it any address you own.
 
-The **✏️ editor** shows all your files on the left. You can:
-- **Create** a new page with the **+ New** button
-- **Edit** any page by clicking it in the file tree
-- **Delete** a file by removing its content and saving (or directly in GitHub)
+**What you need:** a domain name — about €10/year from any registrar (OVH, Namecheap, Infomaniak…).
 
-Page titles come from the first `# Heading` in the file. That's also what the [folder component](/components/folder) uses when it auto-generates card grids from a folder.
+**Three steps:**
+
+1. In your GitHub repo → **Settings → Pages → Custom domain** → enter your domain → **Save**
+2. At your registrar, add a `CNAME` record pointing to `your-name.github.io`
+3. Tick **Enforce HTTPS** once the certificate appears (a few minutes)
+
+Done. Your site now has its own address, with a free security certificate that renews itself automatically.
+
+_The site you're on right now — `lightcodepedia.org` — is exactly this setup: a GitHub repo, a free custom domain, zero servers._
 
 ---
 
-## 📊 Bring in your own data
+## 📁 This is a pages block
 
-There are three levels. Pick the one that fits your situation.
+Your site is a folder of text files. Each file is a page.
 
 ```
-### 📄 Simple lists
-Keep data in the page itself — as a table, a YAML block, or a CSV fenced block. Good for things that rarely change.
+docs/
+├── index.md         ← home
+├── about.md         ← /about
+├── myclass.md       ← /myclass
+└── pages/
+    ├── week01.md    ← tab content, quiz banks, reusable blocks
+    └── week02.md
+```
+
+The **✏️ editor** shows all your files. Use **+ New** to create a page. The file name becomes the URL (`myclass.md` → `/myclass`). The first `# Heading` in the file becomes the page title everywhere it appears — in navigation, in card grids, in search.
+
+Use the folder block to auto-generate a card grid from any folder — no manual list to maintain:
+
+```markdown
+[Browse →](docs/components)
+{: .folder cols="3" }
+```
+
+_[Folder documentation →](/components/folder)_
+
+---
+
+## 📊 This is a data block — three levels
+
+Pick the level that fits your situation.
+
+```
+### 📄 Level 1 — Data in the page
+Write your data directly in the page as a CSV or table. Good for things that rarely change.
 
 [Datagrid →](/components/datagrid)
 
-### 📊 Shared spreadsheet
-Publish a Google Sheet as a CSV and embed it. Your collaborators edit the sheet; the page reflects it automatically.
+### 📊 Level 2 — Shared spreadsheet
+Publish a Google Sheet as a CSV. Your colleagues edit the sheet; the page reflects it instantly — no rebuild needed.
 
 [Chart →](/components/chart)
 
-### 🗄️ Live database
-Connect to a Supabase (free tier) table via its REST API. Good for real-time dashboards and collaborative tools.
+### 🗄️ Level 3 — Live database
+Connect to a Supabase table (free tier). Good for real-time dashboards and multi-user tools.
 
 [Agent →](/components/agent)
 ```
@@ -62,70 +80,83 @@ Connect to a Supabase (free tier) table via its REST API. Good for real-time das
 
 ---
 
-## 🤖 Add an AI assistant trained on your content
+## 🤖 This is an AI block — with its own personality
 
-Every page can have an AI assistant that knows exactly what you want it to know — because you write its instructions.
+Every page can have its own AI assistant, trained on whatever you want it to know — because you write its instructions.
 
 ````markdown
 ```yaml
 system: |
-  You are a teaching assistant for my Python course.
-  Only answer questions about the topics covered in this course.
-  If a student asks something off-topic, gently redirect them.
+  You are a teaching assistant for a Python course for beginners.
+  You only answer questions about the topics in this course.
+  Keep answers short. When someone seems stuck, ask what they tried first.
+  If a question is off-topic, gently redirect: "That's outside this course — try asking on Stack Overflow."
 model: openai/gpt-4o-mini
+intro: "Ask me anything about Python — I'm here to help!"
 ```
 {: .agent }
 ````
 
-The `system:` field is where you define the assistant's personality, knowledge and limits. Short and specific works better than long and vague.
+Short and specific instructions work better than long ones. The `system:` field is a creative writing exercise: write the assistant you wish you had.
 
-→ [Agent documentation](/components/agent)
+_[Agent documentation →](/components/agent)_
 
 ---
 
-## 🎓 Teach a whole course
+## 📽️ This page is already a slide presentation
 
-A course is just a collection of pages. Here's a simple structure that works well:
+Click the **📽️** button at the bottom left of any page. Every `## Section` becomes a slide. Click → to advance.
 
-```
-docs/
-├── index.md          ← overview and navigation
-├── week01.md         ← week 1 content + exercises
-├── week02.md
-├── ...
-└── pages/
-    ├── quiz01.md     ← reusable tab content, quiz banks, etc.
-    └── data01.md
-```
+Each page on this site doubles as a slide deck — nothing to configure, no extra files, no export. The same page works as a reading document and as a presentation.
 
-Use the [folder component](/components/folder) on your index page to auto-generate a card grid from the folder — no manual list to maintain.
+Speaker notes appear only in presenter view:
 
-Use [slide mode](/components/slides) (`📽️` button) on any page to turn it into a presentation.
-
-Use the [AI agent](/components/agent) on each topic page, with a system prompt focused on that week's content.
-
-> This is how lightcodepedia.org itself is built. The components docs are just pages in a `components/` folder with a folder card on the index.
+```markdown
+> This is a speaker note — only you see it during a presentation.
 {: .speaker-note }
+```
+
+_[Slides documentation →](/components/slides)_
 
 ---
 
-## 🌍 Join the network
+## 🌍 This is a community block
 
-Lightcodepedia is a community. Each site is a **LightNode** — an independent, forkable piece of a larger network.
+Lightcodepedia is not a product — it's a network. Each site is a **LightNode**: independent, forkable, owned by its educator.
 
-- **Share your LightNode** — add it to the network map on [lightcodepedia.org](/nodes)
-- **Contribute a component** — open an issue or a pull request on [github.com/michelzam/lightcodepedia](https://github.com/michelzam/lightcodepedia)
-- **Learn with Ari** — the AI assistant on [/ari](/ari) knows the whole platform
+- **Add your LightNode to the map** — [lightcodepedia.org/nodes](/nodes)
+- **Suggest a new component** — open an issue on [github.com/michelzam/lightcodepedia](https://github.com/michelzam/lightcodepedia)
+- **Ask Ari anything** — the AI guide at [/ari](/ari) knows the whole platform
+
+---
+
+## 🧩 Quick check
+
+**Q:** You have a data table that three colleagues update every week. What's the best approach?
+
+- [ ] Edit the page by hand each time and save.
+- [x] Connect the table to a shared Google Sheet — colleagues update the sheet, the page reflects it.
+- [ ] Email the data to Lightcodepedia support and ask them to update the page.
+- [ ] Use Level 3 — a live database — it's always better.
+{: .quiz }
+
+**Q:** You want the same AI assistant on every page of your course, but with the same personality each time. What do you do?
+
+- [ ] Copy-paste the agent block on every page.
+- [x] Copy-paste it — but write the `system:` prompt once and reuse it verbatim. (Reusable pages are a planned feature.)
+- [ ] Buy a higher-tier plan to unlock global assistant configuration.
+- [ ] It's not possible — each assistant is completely independent.
+{: .quiz }
 
 ---
 
 ## ✅ You've completed the tutorial
 
-You can explore, build, and ship. Everything else is in the component docs.
+You can explore, build, customise and ship. Everything else is in the component docs.
 
 ```
 ### 🧩 Component library
-See every component with live examples and documentation.
+Every block, with live examples and full documentation.
 
 [Browse →](/components/)
 
@@ -135,7 +166,7 @@ Ask your AI guide anything about Lightcodepedia.
 [Chat →](/ari)
 
 ### ⚙️ Setup reference
-Quick-reference for GitHub Pages, domains and the editor.
+Quick-reference for forking, domains and the editor.
 
 [Setup →](/setup)
 
