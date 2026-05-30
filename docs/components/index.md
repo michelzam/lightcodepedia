@@ -106,6 +106,11 @@ Interactive question from a bullet list. Single-choice or multi-select.
 Chat-style LLM panel via GitHub Models. Each user brings their own PAT.
 
 [Open →](agent)
+
+### 📁 Folder
+Auto-generate cards from all pages in a folder. One link, zero maintenance.
+
+[Open →](folder)
 ```
 {: .cards cols="3" }
 
