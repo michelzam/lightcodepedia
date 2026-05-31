@@ -24,15 +24,42 @@ Go ahead — explore, play, learn and have fun! 🎉
 
 ## 🐕 Meet Lucky
 
-This block is a **text block**. It can hold text, lists, images — and a dog.
+This is a **block** — a bordered content card. It wraps any markdown: text, images, lists.
 
+```
+### 🐕 Lucky
 ![Lucky — a cheerful Beagle](https://lightcodepedia.jollybush-84a428fe.francecentral.azurecontainerapps.io/media/8fd1c9c5fa0e06f96b21dd9440b20d673e30499dda6a6ade356edb3c.jpg)
 
 This is **Lucky** 🐶 — a three-year-old Beagle who loves parks, tennis balls, and long naps.
 
 He's about to appear on every block of this page.
+```
+{: .block }
 
-_Text blocks use standard markdown: **bold**, _italic_, lists, links, images. Everything you already know._
+_Add `{: .block }` after a fenced section to give it a border. Use `cols="2"` to put two side by side._
+
+---
+
+## 🐕 Lucky at a glance
+
+Two **blocks side by side** — same fenced block, split by `### headings`.
+
+```
+### 🐾 Quick facts
+- **Breed:** Beagle
+- **Age:** 3 years
+- **Top speed:** 40 km/h
+- **Favourite toy:** tennis ball
+- **Fear:** vacuum cleaners
+
+### 🗺️ On this page you will
+- Click markers on a **map**
+- Select rows in a **data table**
+- Watch a **chart** update live
+- Run **Python** in your browser
+- Answer a **quiz**
+```
+{: .blocks cols="2" }
 
 ---
 

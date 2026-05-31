@@ -174,6 +174,13 @@
 .lc-cards .lc-card a:hover { text-decoration: underline; }
 @media (max-width: 700px) { .lc-cards { grid-template-columns: repeat(2, 1fr) !important; } }
 @media (max-width: 480px) { .lc-cards { grid-template-columns: 1fr !important; } }
+/* blocks */
+.lc-blocks { display: grid; gap: 18px; margin: 1em 0; }
+.lc-block { border: 1px solid #ddd; border-radius: 8px; padding: 1.5em 2em; background: #fff; overflow: hidden; }
+.lc-block > h3:first-child { margin-top: 0; margin-bottom: 0.6em; font-size: 1.1em; color: #222; }
+.lc-block img { max-width: 100%; border-radius: 4px; display: block; margin: 0.6em auto; }
+.lc-block p:last-child, .lc-block ul:last-child { margin-bottom: 0; }
+@media (max-width: 600px) { .lc-blocks { grid-template-columns: 1fr !important; } }
 /* chart */
 .lc-chart { margin: 1em 0; position: relative; }
 /* map */
@@ -1576,6 +1583,7 @@
     document.querySelectorAll(".highlighter-rouge.grid").forEach(upgradeGrid);
     document.querySelectorAll(".highlighter-rouge.scrollable").forEach(upgradeScrollable);
     document.querySelectorAll(".highlighter-rouge.cards").forEach(upgradeCards);
+    document.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks").forEach(upgradeBlock);
     document.querySelectorAll("ul.dropdown").forEach(upgradeDropdown);
     document.querySelectorAll("p.button").forEach(upgradeButton);
     document.querySelectorAll("p.embed-page").forEach(upgradeEmbedPage);
@@ -2121,6 +2129,37 @@
     }
     loadMarked(renderCards);
     renderCards();
+    el.parentNode.replaceChild(wrap, el);
+  }
+
+  function upgradeBlock(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var cols = el.getAttribute("cols") || "1";
+    var colStyle = cols === "1" ? "1fr" : "repeat(" + cols + ", 1fr)";
+    var sections = parseSections(el);
+    if (!sections.length) {
+      var code = el.querySelector("code");
+      var raw = (code ? code.textContent : el.textContent).trim();
+      sections = [{ label: "", body: raw }];
+    }
+    var wrap = document.createElement("div");
+    wrap.className = "lc-blocks";
+    wrap.style.gridTemplateColumns = colStyle;
+    function renderBlocks() {
+      wrap.innerHTML = sections.map(function(s) {
+        var html = '<div class="lc-block">';
+        if (s.label) html += '<h3>' + s.label + '</h3>';
+        html += markdownBody(s.body);
+        return html + '</div>';
+      }).join("");
+      wrap.querySelectorAll("p.video").forEach(upgradeVideo);
+      wrap.querySelectorAll("p.button").forEach(upgradeButton);
+      wrap.querySelectorAll("ul.quiz").forEach(upgradeQuiz);
+      wrap.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(upgradeRun);
+    }
+    loadMarked(renderBlocks);
+    renderBlocks();
     el.parentNode.replaceChild(wrap, el);
   }
 
