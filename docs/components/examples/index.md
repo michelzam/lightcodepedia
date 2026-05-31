@@ -1,6 +1,6 @@
-# Components/Examples/Index
+# Components/Examples/
 
-**This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
+**Various examples using components.** Click 📽️ at the bottom-left to enter slide mode.
 
 Examples
 {: .folder }
