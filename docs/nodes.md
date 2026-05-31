@@ -53,9 +53,15 @@ Every circle is a LightNode — a fork of Lightcodepedia hosted by a community m
   var popup     = document.getElementById('lc-nodes-popup');
   var wrap      = document.getElementById('lc-nodes-wrap');
 
+  var GRAPH_TTL = 3600000; // 1 hour
+  var GRAPH_KEY = 'lc_nodes_graph';
+  var GRAPH_TS_KEY = 'lc_nodes_ts';
+
   function apiFetch(url) {
     return fetch(url, { headers: hdrs }).then(function (r) {
-      if (!r.ok) throw new Error('GitHub API ' + r.status);
+      var rem = parseInt(r.headers.get('X-RateLimit-Remaining') || '-1', 10);
+      if (rem >= 0) localStorage.setItem('lc_rate_remaining', String(rem));
+      if (!r.ok) throw new Error('GitHub API ' + r.status + (rem >= 0 ? ' (' + rem + ' calls left)' : ''));
       return r.json();
     });
   }
@@ -127,14 +133,33 @@ Every circle is a LightNode — a fork of Lightcodepedia hosted by a community m
     .then(function () { return { nodes: Object.values(nodes), links: links }; });
   }
 
-  buildGraph()
-    .then(function (graph) {
-      clearStatus();
-      render(graph.nodes, graph.links);
-    })
-    .catch(function (e) {
-      setStatus('⚠️ ' + e.message + (pat ? '' : ' — log in for higher rate limits.'));
-    });
+  // serve from localStorage cache if < 1 hour old
+  var _cachedGraph = null, _cachedTs = parseInt(localStorage.getItem(GRAPH_TS_KEY) || '0', 10);
+  try { _cachedGraph = JSON.parse(localStorage.getItem(GRAPH_KEY) || 'null'); } catch(e) {}
+
+  if (_cachedGraph && _cachedGraph.nodes && (Date.now() - _cachedTs) < GRAPH_TTL) {
+    var _ageMin = Math.round((Date.now() - _cachedTs) / 60000);
+    setStatus('');
+    render(_cachedGraph.nodes, _cachedGraph.links);
+    if (statusEl) { statusEl.textContent = '📦 cached · ' + _ageMin + 'm ago — refresh page after 1h for live data'; statusEl.style.display = 'block'; }
+  } else {
+    buildGraph()
+      .then(function (graph) {
+        clearStatus();
+        try { localStorage.setItem(GRAPH_KEY, JSON.stringify(graph)); } catch(e) {}
+        localStorage.setItem(GRAPH_TS_KEY, String(Date.now()));
+        render(graph.nodes, graph.links);
+      })
+      .catch(function (e) {
+        // fall back to stale cache rather than showing nothing
+        if (_cachedGraph && _cachedGraph.nodes) {
+          render(_cachedGraph.nodes, _cachedGraph.links);
+          setStatus('⚠️ Using cached graph — ' + e.message);
+        } else {
+          setStatus('⚠️ ' + e.message + (pat ? '' : ' — log in for higher rate limits.'));
+        }
+      });
+  }
 
   // ── colour by depth ───────────────────────────────────────────────────────
   var COLORS = ['#f5a623', '#0066cc', '#2a9d2a', '#9b59b6', '#e74c3c'];
