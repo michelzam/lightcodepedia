@@ -2216,10 +2216,29 @@
         html += markdownBody(s.body);
         return html + '</div>';
       }).join("");
+      wrap.querySelectorAll("p").forEach(function(p) {
+        var t = (p.textContent || "").trim();
+        var m = t.match(/^\{:\s*(.+?)\s*\}$/);
+        if (!m) return;
+        var prev = p.previousElementSibling;
+        if (!prev) return;
+        var body = m[1];
+        var c, classRe = /\.([\w-]+)/g;
+        while ((c = classRe.exec(body)) !== null) prev.classList.add(c[1]);
+        var idM = body.match(/#([\w-]+)/);
+        if (idM) prev.id = idM[1];
+        var kv, kvRe = /([\w-]+)="([^"]*)"/g;
+        while ((kv = kvRe.exec(body)) !== null) prev.setAttribute(kv[1], kv[2]);
+        p.parentNode.removeChild(p);
+      });
       wrap.querySelectorAll("p.video").forEach(safe(upgradeVideo));
       wrap.querySelectorAll("p.button").forEach(safe(upgradeButton));
       wrap.querySelectorAll("ul.quiz").forEach(safe(upgradeQuiz));
       wrap.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
+      wrap.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));
+      wrap.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
+      wrap.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
+      wrap.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
     });
   }
 

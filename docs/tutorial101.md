@@ -1,84 +1,59 @@
-# 👋 Welcome!
+---
+title: Tutorial 101
+---
+# 💡 Tutorial 101
+
+Meet **Lucky** 🐶 — a black Labrador Retriever. He'll walk you through every building block on this page.
+
+```
+### 👋 Welcome!
 
 👩‍🎓 This tutorial introduces the **building blocks** of a Lightcodepedia page — by telling a story.
 
-The story is about a dog called **Lucky** 🐶
+The story is about **Lucky** 🐶, a friendly black Labrador Retriever who loves parks, tennis balls, and long naps.
 
-Along the way you'll see:
-
-- [x] A **text block** with an image — meet Lucky
-- [x] A **video** — his favourite song
-- [x] A **map** — where to walk him in Paris
-- [x] A **data table** — how fast dogs can run
-- [x] A **chart** — linked live to the table
-- [x] A **form** — Lucky's full profile
-- [x] A **code runner** — say hello to Lucky
-- [x] A **quiz** — about the story, not the technology
+Along the way you'll see a **block**, a **video**, an interactive **map**, a **data table** linked live to a **chart**, two **forms** side by side, and a **quiz**.
 
 Go ahead — explore, play, learn and have fun! 🎉
 
-> Tell learners: "Don't just read — everything on this page is live. Click, select, run. That's the whole point."
-{: .speaker-note }
+### 🐾 Lucky at a glance
 
----
-
-## 🐕 Meet Lucky
-
-This is a **block** — a bordered content card. It wraps any markdown: text, images, lists.
-
-```
-### 🐕 Lucky
-![Lucky — a cheerful Beagle](https://lightcodepedia.jollybush-84a428fe.francecentral.azurecontainerapps.io/media/8fd1c9c5fa0e06f96b21dd9440b20d673e30499dda6a6ade356edb3c.jpg)
-
-This is **Lucky** 🐶 — a three-year-old Beagle who loves parks, tennis balls, and long naps.
-
-He's about to appear on every block of this page.
-```
-{: .block }
-
-_Add `{: .block }` after a fenced section to give it a border. Use `cols="2"` to put two side by side._
-
----
-
-## 🐕 Lucky at a glance
-
-Two **blocks side by side** — same fenced block, split by `### headings`.
-
-```
-### 🐾 Quick facts
-- **Breed:** Beagle
+- **Breed:** Labrador Retriever
 - **Age:** 3 years
+- **Colour:** Black
 - **Top speed:** 40 km/h
 - **Favourite toy:** tennis ball
 - **Fear:** vacuum cleaners
-
-### 🗺️ On this page you will
-- Click markers on a **map**
-- Select rows in a **data table**
-- Watch a **chart** update live
-- Run **Python** in your browser
-- Answer a **quiz**
+- **Character:** friendly, playful, easily distracted by smells
 ```
 {: .blocks cols="2" }
 
----
+```
+### 🐕 Lucky
+![Lucky — a black Labrador](https://picsum.photos/id/237/500/400)
 
-## 🎵 Lucky's favourite song
+This is **Lucky** 🐶 — a three-year-old Labrador Retriever who loves parks, tennis balls, and long naps.
 
-This block is a **video block**. Press play.
+### 🐕 Lucky
+![Lucky — a black Labrador](https://picsum.photos/id/237/500/400)
 
-[▶️ Lucky's favourite song](https://youtu.be/6tlSx0jkuLM?si=OHbXv8Vp9NKidh9e)
-{: .video height="320" }
+This is **Lucky** 🐶 — a three-year-old Labrador Retriever who loves parks, tennis balls, and long naps.
+```
+{: .blocks cols="2" }
 
-This is Lucky's all-time favourite song — he wags his tail every time it comes on.
+```
+### 🎵 Lucky's favourite song
+🎵 Man's best song. Go ahead. Play it!
 
-_A video block embeds any YouTube link. One line of markdown, one tag._
+[▶️ Led Zeppelin — Black Dog](https://youtu.be/6tlSx0jkuLM?si=OHbXv8Vp9NKidh9e)
+{: .video height="380" }
+```
+{: .block }
 
----
+````
+### 🗺️ Where to walk Lucky in Paris
 
-## 🗺️ Where to walk Lucky in Paris
-
-This block is a **map**. Click and drag to explore. Scroll to zoom in.
+Click a marker to see the park name. Scroll to zoom. Drag to pan.
 
 ```json
 [
@@ -91,40 +66,15 @@ This block is a **map**. Click and drag to explore. Scroll to zoom in.
 ]
 ```
 {: .map height="320" zoom="12" }
+````
+{: .block }
 
-All six parks allow dogs on a leash. The Bois de Boulogne is the largest — over 800 hectares. Lucky could run for days.
+## 🏃 How fast can dogs run?
 
-_A map block shows any list of coordinates as clickable pins._
+````
+### 🐕 Dog speeds — table
 
----
-
-## 🏃 How fast can Lucky run?
-
-This block is a **data table**. Click any row — the chart below updates.
-
-```csv
-breed,top_speed_kmh,size,temperament
-Greyhound,72,Large,Calm
-Saluki,68,Large,Independent
-Vizsla,64,Medium,Energetic
-Jack Russell,56,Small,Fearless
-Border Collie,48,Medium,Focused
-German Shepherd,48,Large,Loyal
-Labrador,40,Large,Friendly
-Beagle,40,Medium,Curious
-Corgi,35,Small,Cheerful
-Pug,15,Small,Relaxed
-Bulldog,14,Medium,Stubborn
-```
-{: .datagrid #dog-grid format="csv" title="Dog top speeds" height="260" }
-
-Lucky is a Beagle — 40 km/h. He could outrun most humans (top speed: ~37 km/h). He will not outrun a Greyhound.
-
----
-
-## 📈 The same data — as a chart
-
-This block is a **chart**, linked to the table above. Select a row — the chart redraws.
+Select a row to update the chart.
 
 ```csv
 breed,top_speed_kmh,size,temperament
@@ -140,29 +90,47 @@ Corgi,35,Small,Cheerful
 Pug,15,Small,Relaxed
 Bulldog,14,Medium,Stubborn
 ```
-{: .chart type="bar" bound-to="dog-grid" x="breed" height="260" }
+{: .datagrid #dog-grid-tuto format="csv" title="Dog top speeds" height="260" }
 
-> Ask: "Is Lucky the fastest dog? What about the most relaxed?" — let them click to compare breeds.
-{: .speaker-note }
+### 📊 Dog speeds — chart
 
-_Select a row in the table above to update this chart. Table and chart are linked — no page reload._
+Click a row in the table to update this chart.
 
----
+```csv
+breed,top_speed_kmh,size,temperament
+Greyhound,72,Large,Calm
+Saluki,68,Large,Independent
+Vizsla,64,Medium,Energetic
+Jack Russell,56,Small,Fearless
+Border Collie,48,Medium,Focused
+German Shepherd,48,Large,Loyal
+Labrador,40,Large,Friendly
+Beagle,40,Medium,Curious
+Corgi,35,Small,Cheerful
+Pug,15,Small,Relaxed
+Bulldog,14,Medium,Stubborn
+```
+{: .chart type="bar" bound-to="dog-grid-tuto" x="breed" height="260" }
+````
+{: .blocks cols="2" }
 
-## 📋 Lucky's profile
+Lucky is a Labrador — 40 km/h. He could outrun most humans (top speed: ~37 km/h). He will not outrun a Greyhound.
 
-This block is a **form**. It shows a full profile of one object — here, Lucky.
+## 🐾 Meet Lucky & Wanda
 
+````
+### 🐕 Lucky
 ```yaml
 name: Lucky
 age: 3
-breed: Beagle
-weight_kg: 11.2
+breed: Labrador Retriever
+colour: Black
+weight_kg: 28
 top_speed_kmh: 40
 adopted: true
 favorite_toys:
-  - squeaky bone
   - tennis ball
+  - squeaky bone
   - old sock
 vet:
   name: Dr. Patel
@@ -171,49 +139,47 @@ notes: Afraid of vacuum cleaners. Excellent at looking innocent.
 ```
 {: .form }
 
-Notice how each type of value looks different: numbers in green, the checkbox for the boolean, pills for the list, a hover button for the nested vet object.
-
-_A form turns a structured object into a readable profile card. Try hovering the Vet button._
-
----
-
-## ▶️ Say hello to Lucky
-
-This block is a **code runner**. Click ▶ **Run**.
-
-```python
-print("Hello, Lucky! 🐶")
+### 🦋 Wanda
+```yaml
+name: Wanda
+age: 2
+breed: Golden Retriever
+colour: Golden
+weight_kg: 25
+top_speed_kmh: 40
+adopted: false
+favorite_toys:
+  - frisbee
+  - rope toy
+  - plush bear
+vet:
+  name: Dr. Patel
+  phone: "555-0142"
+notes: Best friends with Lucky. Wakes him up every morning.
 ```
-{: .run }
-
-That's it. Real code, running in your browser. No install. No account.
-
-Change `Lucky` to your own name and run it again.
-
-> This is the first time many learners realise they just wrote code. Let it land.
-{: .speaker-note }
-
----
+{: .form }
+````
+{: .blocks cols="2" }
 
 ## 🧩 Quick check — about Lucky
 
 **Q:** What is Lucky's breed?
 
-- [ ] Labrador
-- [ ] Greyhound
-- [x] Beagle
-- [ ] Pug
+- [ ] Beagle
+- [ ] German Shepherd
+- [x] Labrador Retriever
+- [ ] Golden Retriever
 {: .quiz }
 
 **Q:** According to the table, which dog runs the fastest?
 
 - [x] Greyhound — 72 km/h
-- [ ] Border Collie — 48 km/h
 - [ ] Saluki — 68 km/h
+- [ ] Border Collie — 48 km/h
 - [ ] Labrador — 40 km/h
 {: .quiz }
 
-**Q:** Which park is the largest in the map?
+**Q:** Which Paris park is the largest?
 
 - [ ] Parc Monceau
 - [ ] Buttes-Chaumont
@@ -221,23 +187,19 @@ Change `Lucky` to your own name and run it again.
 - [ ] Jardin du Luxembourg
 {: .quiz }
 
-**Q:** The Led Zeppelin song is named after a dog who…
+**Q:** What is Wanda's breed?
 
-- [ ] Belonged to Robert Plant since childhood.
-- [ ] Was the drummer's pet.
-- [x] Wandered into the recording studio and left without a name.
-- [ ] Was painted on the album cover.
+- [ ] Labrador Retriever
+- [ ] Poodle
+- [ ] Husky
+- [x] Golden Retriever
 {: .quiz }
-
----
 
 ## 🚀 What's next?
 
-You've seen every building block — through Lucky's eyes. Ready to add them to your own page?
-
 ```
-### ⚙️ Step 2 — Build your own page
-Make a copy of this site and start adding blocks in minutes.
+### ⚙️ Build your own page
+Fork the repo and start adding blocks in minutes.
 
 [Start building →](/tutorial102)
 
