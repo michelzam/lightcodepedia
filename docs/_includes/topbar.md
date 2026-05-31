@@ -24,6 +24,49 @@ if (location.search.indexOf('embed=true') >= 0) {
   color: #333;
   margin-right: auto;
 }
+/* ── user pill ── */
+#lc-user-pill { position: relative; flex-shrink: 0; }
+#lc-user-btn {
+  background: none; border: 1px solid #ddd; border-radius: 20px;
+  padding: 3px 10px 3px 4px; cursor: pointer; display: flex; align-items: center;
+  gap: 6px; font-size: 0.85em; color: #333; line-height: 1;
+}
+#lc-user-btn:hover { background: #f5f5f5; border-color: #bbb; }
+#lc-user-btn img { width: 22px; height: 22px; border-radius: 50%; display: block; }
+#lc-user-caret { font-size: 0.7em; color: #888; }
+#lc-user-drop {
+  display: none; position: absolute; right: 0; top: calc(100% + 6px);
+  background: #fff; border: 1px solid #ddd; border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.12); min-width: 220px; z-index: 2000;
+  overflow: hidden;
+}
+#lc-user-drop.open { display: block; }
+.lc-ud-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; border-bottom: 1px solid #eee; background: #fafafa;
+}
+.lc-ud-head img { width: 40px; height: 40px; border-radius: 50%; }
+.lc-ud-name { font-weight: 600; font-size: 0.9em; line-height: 1.3; }
+.lc-ud-login { font-size: 0.8em; color: #888; }
+.lc-ud-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px; font-size: 0.85em; color: #333; text-decoration: none;
+  border-bottom: 1px solid #f0f0f0; cursor: pointer;
+}
+.lc-ud-row:hover { background: #f5f5f5; }
+.lc-ud-row:last-child { border-bottom: none; }
+.lc-ud-row.danger { color: #c00; }
+.lc-ud-repo { font-family: monospace; font-size: 0.8em; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lc-start-pill {
+  flex-shrink: 0; font-size: 0.82em; color: #0066cc;
+  text-decoration: none; border: 1px solid #0066cc; border-radius: 20px;
+  padding: 3px 10px; display: none;
+}
+#lc-start-pill:hover { background: #e8f0fe; }
+@media (max-width: 700px) {
+  #lc-user-btn .lc-user-login-label { display: none; }
+  #lc-user-caret { display: none; }
+}
 #lc-topbar .lc-links { display: flex; gap: 1.2rem; }
 #lc-topbar .lc-links p { margin: 0; }
 #lc-topbar .lc-links a {
@@ -76,6 +119,29 @@ body {
   <div class="lc-links">
     {{ _menu.content | markdownify }}
   </div>
+  <a id="lc-start-pill" href="/start">🔑 Get started</a>
+  <div id="lc-user-pill" style="display:none">
+    <button id="lc-user-btn" aria-label="User menu">
+      <img id="lc-user-avatar" src="" alt="">
+      <span class="lc-user-login-label" id="lc-user-login-label"></span>
+      <span id="lc-user-caret">▾</span>
+    </button>
+    <div id="lc-user-drop">
+      <div class="lc-ud-head">
+        <img id="lc-ud-avatar" src="" alt="">
+        <div>
+          <div class="lc-ud-name" id="lc-ud-name"></div>
+          <div class="lc-ud-login" id="lc-ud-login"></div>
+        </div>
+      </div>
+      <a class="lc-ud-row" id="lc-ud-repo-link" href="#" target="_blank">
+        <span>📁</span><span class="lc-ud-repo" id="lc-ud-repo-label"></span>
+      </a>
+      <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
+      <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
+      <div class="lc-ud-row danger" id="lc-ud-disconnect"><span>🔓</span><span>Disconnect</span></div>
+    </div>
+  </div>
 </div>
 {% include code_chrome.md %}
 <script>
@@ -88,5 +154,57 @@ body {
       a.innerHTML = '<span class="lc-link-icon">' + t.substring(0, i) + '</span><span class="lc-link-label">' + t.substring(i + 1) + '</span>';
     }
   });
+
+  // ── User pill ──────────────────────────────────────────────────────────────
+  (function() {
+    var pat  = localStorage.getItem('lc_ed_pat');
+    var repo = localStorage.getItem('lc_ed_repo');
+    if (!pat) { document.getElementById('lc-start-pill').style.display = 'block'; return; }
+
+    function showUser(u) {
+      var pill = document.getElementById('lc-user-pill');
+      pill.style.display = 'block';
+      document.getElementById('lc-user-avatar').src = u.avatar_url;
+      document.getElementById('lc-user-login-label').textContent = '@' + u.login;
+      document.getElementById('lc-ud-avatar').src = u.avatar_url;
+      document.getElementById('lc-ud-name').textContent = u.name || u.login;
+      document.getElementById('lc-ud-login').textContent = '@' + u.login;
+      var repoLabel = repo || (u.login + '/lightcodepedia');
+      document.getElementById('lc-ud-repo-label').textContent = repoLabel;
+      document.getElementById('lc-ud-repo-link').href = 'https://github.com/' + repoLabel;
+      var siteHost = u.login + '.github.io';
+      var repoSlug = repoLabel.split('/')[1] || 'lightcodepedia';
+      document.getElementById('lc-ud-pages-link').href = 'https://' + siteHost + '/' + repoSlug;
+      document.getElementById('lc-ud-pages-label').textContent = siteHost + '/' + repoSlug;
+    }
+
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('lc_gh_user') || 'null'); } catch(e){}
+    var cachedFor = localStorage.getItem('lc_gh_user_for');
+    if (cached && cachedFor === pat) { showUser(cached); }
+    else {
+      fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + pat } })
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function(u){
+          localStorage.setItem('lc_gh_user', JSON.stringify(u));
+          localStorage.setItem('lc_gh_user_for', pat);
+          showUser(u);
+        })
+        .catch(function(){ document.getElementById('lc-start-pill').style.display = 'block'; });
+    }
+
+    // dropdown toggle
+    var btn = document.getElementById('lc-user-btn');
+    var drop = document.getElementById('lc-user-drop');
+    btn.addEventListener('click', function(e){ e.stopPropagation(); drop.classList.toggle('open'); });
+    document.addEventListener('click', function(){ drop.classList.remove('open'); });
+    drop.addEventListener('click', function(e){ e.stopPropagation(); });
+
+    // disconnect
+    document.getElementById('lc-ud-disconnect').addEventListener('click', function(){
+      ['lc_ed_pat','lc_ed_repo','lc_gh_user','lc_gh_user_for'].forEach(function(k){ localStorage.removeItem(k); });
+      location.reload();
+    });
+  })();
 })();
 </script>
