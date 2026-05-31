@@ -13,8 +13,6 @@ meant to build digital skills.
 💡️ _You can **fork** this repo and customize it._
 
 ![Forks](https://img.shields.io/github/forks/michelzam/lightcodepedia?style=flat)
-````
-{: .block }
 
 ### 👁️ Vision
 
