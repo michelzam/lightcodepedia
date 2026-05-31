@@ -140,9 +140,12 @@ body {
       <a class="lc-ud-row" id="lc-ud-repo-link" href="#" target="_blank">
         <span>📁</span><span class="lc-ud-repo" id="lc-ud-repo-label"></span>
       </a>
-      <a class="lc-ud-row lc-ud-karma-row" id="lc-ud-karma-row" href="/nodes" style="display:none">
-        <span>🌟 <span id="lc-ud-karma-pts">0</span> karma pts</span>
-        <span style="font-size:0.75em;color:#bbb">network →</span>
+      <a class="lc-ud-row lc-ud-karma-row" id="lc-ud-karma-row" href="/nodes" style="display:none;flex-direction:column;align-items:flex-start;gap:2px">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+          <span>🌟 <span id="lc-ud-karma-pts">…</span> karma pts</span>
+          <span style="font-size:0.75em;color:#bbb">network →</span>
+        </div>
+        <div id="lc-ud-karma-detail" style="font-size:0.75em;color:#c47900;opacity:0.75"></div>
       </a>
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
@@ -183,27 +186,45 @@ body {
       var _kCached = 0;
       if (localStorage.getItem('lc_karma_launch')) _kCached += 15;
       if (localStorage.getItem('lc_karma_bio'))    _kCached += 10;
-      if (kPts) kPts.textContent = _kCached;
+      var _kForksCached = parseInt(localStorage.getItem('lc_karma_forks') || '0', 10);
+      _kCached += _kForksCached * 50;
+      if (kPts) kPts.textContent = _kCached || '…';
       if (kRow && _kCached > 0) kRow.style.display = 'flex';
 
-      // verify against GitHub (2 sequential checks: fork → bio file)
+      // verify karma from GitHub API: repo info (fork + downstream forks) then bio file
       var _ghHdrs = { Authorization: 'Bearer ' + pat, 'X-GitHub-Api-Version': '2022-11-28' };
       var _repoSlug = (repo || (u.login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
-      var _karma = 0;
+      var _karma = 0; var _detail = [];
       fetch('https://api.github.com/repos/' + u.login + '/' + _repoSlug, { headers: _ghHdrs })
         .then(function(r) {
-          if (r.ok) { _karma += 15; localStorage.setItem('lc_karma_launch', '1'); }
-          else        { localStorage.removeItem('lc_karma_launch'); }
-          if (!r.ok) return null;
+          if (!r.ok) { localStorage.removeItem('lc_karma_launch'); return Promise.reject('no-repo'); }
+          return r.json();
+        })
+        .then(function(repoData) {
+          _karma += 15; _detail.push('+15 site');
+          localStorage.setItem('lc_karma_launch', '1');
+          var downstream = repoData.forks_count || 0;
+          if (downstream > 0) {
+            _karma += downstream * 50;
+            _detail.push('+' + downstream + '×50 forks');
+            localStorage.setItem('lc_karma_forks', String(downstream));
+          } else {
+            localStorage.removeItem('lc_karma_forks');
+          }
           return fetch('https://api.github.com/repos/' + u.login + '/' + _repoSlug + '/contents/docs/_profile.md', { headers: _ghHdrs });
         })
         .then(function(r) {
-          if (r && r.ok) { _karma += 10; localStorage.setItem('lc_karma_bio', '1'); }
+          if (r && r.ok) { _karma += 10; _detail.push('+10 bio'); localStorage.setItem('lc_karma_bio', '1'); }
           else             { localStorage.removeItem('lc_karma_bio'); }
           if (kPts) kPts.textContent = _karma;
-          if (kRow) kRow.style.display = _karma > 0 ? 'flex' : 'none';
+          var detEl = document.getElementById('lc-ud-karma-detail');
+          if (detEl) detEl.textContent = _detail.join('  ·  ');
+          if (kRow) kRow.style.display = 'flex';
         })
-        .catch(function() { /* keep cached value on network error */ });
+        .catch(function(e) {
+          if (e === 'no-repo') { if (kRow) kRow.style.display = 'none'; return; }
+          /* network error — keep cached display */
+        });
 
       var repoLabel = repo || (u.login + '/lightcodepedia');
       document.getElementById('lc-ud-repo-label').textContent = repoLabel;
