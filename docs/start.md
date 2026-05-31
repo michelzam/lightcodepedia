@@ -247,15 +247,30 @@ _Karma measures your contribution to the network: your site, your bio, the frien
     if (!_user || !_pat) { restoreProgress(); return; }
     var ghHdrs = { Authorization: 'Bearer ' + _pat, 'X-GitHub-Api-Version': '2022-11-28' };
     var repoSlug = (localStorage.getItem('lc_ed_repo') || (_user.login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
-    fetch('https://api.github.com/repos/' + _user.login + '/' + repoSlug, { headers: ghHdrs })
+    var _repoBase = 'https://api.github.com/repos/' + _user.login + '/' + repoSlug;
+    fetch(_repoBase, { headers: ghHdrs })
       .then(function(r) {
-        if (r.ok) localStorage.setItem('lc_karma_launch', '1');
-        else      { localStorage.removeItem('lc_karma_launch'); restoreProgress(); return Promise.reject('no-repo'); }
-        return fetch('https://api.github.com/repos/' + _user.login + '/' + repoSlug + '/contents/docs/_profile.md', { headers: ghHdrs });
+        if (!r.ok) { localStorage.removeItem('lc_karma_launch'); restoreProgress(); return Promise.reject('no-repo'); }
+        return r.json();
+      })
+      .then(function(repoData) {
+        localStorage.setItem('lc_karma_launch', '1');
+        var forks = repoData.forks_count || 0;
+        var stars = repoData.stargazers_count || 0;
+        if (forks > 0) localStorage.setItem('lc_karma_forks', String(forks)); else localStorage.removeItem('lc_karma_forks');
+        if (stars > 0) localStorage.setItem('lc_karma_stars', String(stars)); else localStorage.removeItem('lc_karma_stars');
+        return fetch(_repoBase + '/contents/docs/_profile.md', { headers: ghHdrs });
       })
       .then(function(r) {
         if (r && r.ok) localStorage.setItem('lc_karma_bio', '1');
         else            localStorage.removeItem('lc_karma_bio');
+        return fetch(_repoBase + '/traffic/views', { headers: ghHdrs });
+      })
+      .then(function(r) { return r && r.ok ? r.json() : null; })
+      .then(function(traffic) {
+        var uniques = (traffic && traffic.uniques) || 0;
+        if (uniques > 0) localStorage.setItem('lc_karma_traffic', String(uniques));
+        else              localStorage.removeItem('lc_karma_traffic');
         restoreProgress();
       })
       .catch(function(e) { if (e !== 'no-repo') restoreProgress(); });
@@ -310,8 +325,9 @@ _Karma measures your contribution to the network: your site, your bio, the frien
     var k = 0;
     if (localStorage.getItem('lc_karma_launch')) k += KARMA.launch;
     if (localStorage.getItem('lc_karma_bio'))    k += KARMA.bio;
-    var forks = parseInt(localStorage.getItem('lc_karma_forks') || '0', 10);
-    k += forks * KARMA.invite;
+    k += parseInt(localStorage.getItem('lc_karma_forks')   || '0', 10) * KARMA.invite;
+    k += parseInt(localStorage.getItem('lc_karma_stars')   || '0', 10) * 10;
+    k += parseInt(localStorage.getItem('lc_karma_traffic') || '0', 10);
     return k;
   }
 
