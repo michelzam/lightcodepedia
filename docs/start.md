@@ -220,21 +220,53 @@ See every interactive block with live examples and documentation.
 
   // restore if already connected
   var stored = localStorage.getItem('lc_ed_pat');
+  var _restored = false;
+
+  function restoreProgress() {
+    var _hasLaunch = !!localStorage.getItem('lc_karma_launch');
+    var _hasBio    = !!localStorage.getItem('lc_karma_bio');
+    lcwDone(1); lcwDone(2);
+    if (_hasBio)         { lcwDone(3); lcwDone(4); lcwActivate(5); }
+    else if (_hasLaunch) { lcwDone(3); lcwActivate(4); }
+    else                 { lcwActivate(3); }
+  }
+
   if (stored) {
     _pat = stored;
     var cached = null;
     try { cached = JSON.parse(localStorage.getItem('lc_gh_user') || 'null'); } catch(e){}
+
     if (cached && localStorage.getItem('lc_gh_user_for') === stored) {
+      // valid cache — skip straight to current progress step
       _user = cached;
+      _restored = true;
       document.getElementById('lcw-pat').value = '••••••••••••';
       populateUserCard();
-      // restore progress: skip completed steps
-      var _hasLaunch = !!localStorage.getItem('lc_karma_launch');
-      var _hasBio    = !!localStorage.getItem('lc_karma_bio');
-      lcwDone(1); lcwDone(2);
-      if (_hasBio)    { lcwDone(3); lcwDone(4); lcwActivate(5); }
-      else if (_hasLaunch) { lcwDone(3); lcwActivate(4); }
-      else            { lcwActivate(3); }
+      restoreProgress();
+    } else {
+      // PAT exists but cache is stale — skip step 1, re-validate async on step 2
+      _restored = true;
+      lcwDone(1);
+      document.getElementById('lcw-pat').value = '••••••••••••';
+      lcwActivate(2);
+      fetch('https://api.github.com/user', {
+        headers: { Authorization: 'Bearer ' + stored, 'X-GitHub-Api-Version': '2022-11-28' }
+      })
+      .then(function(r) {
+        var scopes = r.headers.get('X-OAuth-Scopes') || '';
+        return r.json().then(function(u) { return { user: u, ok: r.ok, scopes: scopes }; });
+      })
+      .then(function(d) {
+        if (!d.ok) return; // bad PAT — let user re-enter on step 2
+        var hasRepo = d.scopes.split(',').map(function(s){ return s.trim(); }).indexOf('repo') >= 0;
+        if (!hasRepo) return;
+        _user = d.user;
+        localStorage.setItem('lc_gh_user', JSON.stringify(d.user));
+        localStorage.setItem('lc_gh_user_for', stored);
+        populateUserCard();
+        restoreProgress();
+      })
+      .catch(function() { /* network error — stay on step 2 so user can retry */ });
     }
   }
 
@@ -533,8 +565,8 @@ See every interactive block with live examples and documentation.
     }
   };
 
-  // activate step 1 on load
-  lcwActivate(1);
+  // activate step 1 only if nothing was restored
+  if (!_restored) lcwActivate(1);
 })();
 </script>
 
