@@ -46,12 +46,22 @@ Cute, huh — this local dog?
 Docs about dogs can use **bold** and *italic* text
 and also be quite long and boring …
 
-> *Hey, mama, said the way you move*
-> *Gonna make you sweat, gonna make you groove*
->
-> — Led Zeppelin, Black Dog
+> In the haze of a London fog,
+> A riff emerges, cutting like a saw.
+> Strumming strings and pounding drums,
+> Led Zeppelin, their magic comes.
+> 
+> Amid the mist, a black dog roams,
+> Guiding the band to rock and roll thrones.
+> Not just a pet, but a symbol, a sign,
+> Of music that transcends all time.
 
-Read more about … the [streamlit markdown component](https://docs.streamlit.io/library/api-reference/text/st.markdown).
+> Amid the crowd, the thunder roars,
+> With every note, the spirit soars.
+> From stairways high to oceans deep,
+> Their legacy forever to keep.
+
+Read more about [Markdown Cheat Sheet](https://www.markdownguide.org/cheat-sheet/).
 ````
 {: .blocks cols="2" }
 
