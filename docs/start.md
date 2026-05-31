@@ -1,11 +1,13 @@
 # 🚀 Get started
 
-Set up your own Lightcodepedia site in 4 steps. Steps 1 and 2 take about 2 minutes on GitHub. Steps 3 and 4 are fully automatic.
+Set up your own Lightcodepedia site in 6 steps. Steps 1 and 2 take about 2 minutes on GitHub. The rest is automatic — and each step earns you **karma** 🌟
+
+_Karma measures your contribution to the network: your site, your bio, the friends you bring in. It shows up on the [community map](/nodes) and grows as your impact does._
 
 <div id="lc-wizard">
 
 <div class="lcw-step" id="lcw-s1">
-<div class="lcw-head"><span class="lcw-num">1</span><span class="lcw-title">Create a GitHub account</span><span class="lcw-check" id="lcw-c1"></span></div>
+<div class="lcw-head"><span class="lcw-num">1</span><span class="lcw-title">Create a GitHub account</span><span class="lcw-karma-badge">prerequisite</span><span class="lcw-check" id="lcw-c1"></span></div>
 <div class="lcw-body">
 <p>GitHub is the free service that hosts your site. If you already have an account, skip straight to step 2.</p>
 <ol>
@@ -22,7 +24,7 @@ Set up your own Lightcodepedia site in 4 steps. Steps 1 and 2 take about 2 minut
 </div>
 
 <div class="lcw-step lcw-locked" id="lcw-s2">
-<div class="lcw-head"><span class="lcw-num">2</span><span class="lcw-title">Create your access key</span><span class="lcw-check" id="lcw-c2"></span></div>
+<div class="lcw-head"><span class="lcw-num">2</span><span class="lcw-title">Create your access key</span><span class="lcw-karma-badge">prerequisite</span><span class="lcw-check" id="lcw-c2"></span></div>
 <div class="lcw-body">
 <p>An <strong>access key</strong> (called a PAT) lets this page talk to GitHub on your behalf — to fork your site and save your edits. It never leaves your browser.</p>
 <ol>
@@ -45,7 +47,7 @@ Set up your own Lightcodepedia site in 4 steps. Steps 1 and 2 take about 2 minut
 </div>
 
 <div class="lcw-step lcw-locked" id="lcw-s3">
-<div class="lcw-head"><span class="lcw-num">3</span><span class="lcw-title">Fork &amp; launch your site</span><span class="lcw-check" id="lcw-c3"></span></div>
+<div class="lcw-head"><span class="lcw-num">3</span><span class="lcw-title">Fork &amp; launch your site</span><span class="lcw-karma-badge">🌟 +15 pts</span><span class="lcw-check" id="lcw-c3"></span></div>
 <div class="lcw-body">
 <p>One click forks the Lightcodepedia template into your GitHub account and turns on your free website.</p>
 <div id="lcw-user-card" style="display:none" class="lcw-user-card">
@@ -66,13 +68,43 @@ Set up your own Lightcodepedia site in 4 steps. Steps 1 and 2 take about 2 minut
 </div>
 
 <div class="lcw-step lcw-locked" id="lcw-s4">
-<div class="lcw-head"><span class="lcw-num">4</span><span class="lcw-title">You're ready! 🎉</span></div>
+<div class="lcw-head"><span class="lcw-num">4</span><span class="lcw-title">Introduce yourself</span><span class="lcw-karma-badge">🌟 +10 pts</span><span class="lcw-check" id="lcw-c4"></span></div>
+<div class="lcw-body">
+<p>Add a sentence or two about yourself and why you joined. It will appear on the <a href="/nodes">community map</a> next to your LightNode.</p>
+<div class="lcw-bio-wrap">
+<textarea id="lcw-bio" rows="3" maxlength="280" placeholder="e.g. I teach Python to high-school students in Lyon. I joined Lightcodepedia to give my learners interactive pages they can actually run and explore." spellcheck="true"></textarea>
+<div class="lcw-bio-footer"><span id="lcw-bio-count">0 / 280</span><button class="lcw-btn" id="lcw-bio-btn" onclick="lcwSaveBio()">Save bio ✓</button></div>
+</div>
+<div id="lcw-bio-result" class="lcw-result"></div>
+</div>
+</div>
+
+<div class="lcw-step lcw-locked" id="lcw-s5">
+<div class="lcw-head"><span class="lcw-num">5</span><span class="lcw-title">Invite a friend</span><span class="lcw-karma-badge">🌟 +50 pts / friend</span><span class="lcw-check" id="lcw-c5"></span></div>
+<div class="lcw-body">
+<p>Every friend who joins through your link and launches their LightNode earns you <strong>50 karma points</strong>. The network grows — and so does everyone in it.</p>
+<div class="lcw-invite-box">
+<input id="lcw-invite-url" type="text" readonly>
+<button class="lcw-btn" onclick="lcwCopyInvite()" id="lcw-copy-btn">📋 Copy</button>
+</div>
+<div class="lcw-share-row" id="lcw-share-row"></div>
+<p style="font-size:0.85em;color:#888;margin-top:0.8em">Share this link with anyone. When they finish the onboarding, your karma goes up automatically.</p>
+<div class="lcw-actions" style="margin-top:1em">
+<button class="lcw-btn lcw-btn-outline" onclick="lcwNext(5)">Skip for now →</button>
+<button class="lcw-btn" onclick="lcwNext(5)">Done, continue ✓</button>
+</div>
+</div>
+</div>
+
+<div class="lcw-step lcw-locked" id="lcw-s6">
+<div class="lcw-head"><span class="lcw-num">6</span><span class="lcw-title">You're ready! 🎉</span></div>
 <div class="lcw-body">
 <div id="lcw-done-card" class="lcw-user-card">
 <img id="lcw-done-avatar" src="" alt="" style="width:56px;height:56px;border-radius:50%;margin-right:14px">
 <div>
 <div id="lcw-done-welcome" style="font-weight:600;font-size:1.1em"></div>
 <div><a id="lcw-done-url" href="#" target="_blank" style="font-size:0.9em"></a></div>
+<div id="lcw-done-karma" style="font-size:0.85em;color:#c47900;margin-top:4px"></div>
 </div>
 </div>
 <div style="margin-top:1.4em">
@@ -153,6 +185,33 @@ See every interactive block with live examples and documentation.
   border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 16px;
   margin: 0.8em 0;
 }
+.lcw-karma-badge {
+  margin-left: auto; font-size: 0.75em; font-weight: 600;
+  color: #c47900; background: #fff8e1; border: 1px solid #ffe082;
+  border-radius: 10px; padding: 2px 9px; white-space: nowrap; flex-shrink: 0;
+}
+.lcw-karma-badge:not([data-pts]) { color: #888; background: #f3f4f6; border-color: #e0e0e0; }
+.lcw-bio-wrap { margin-top: 0.8em; }
+.lcw-bio-wrap textarea {
+  width: 100%; box-sizing: border-box; padding: 0.6em 0.8em;
+  border: 1px solid #ccc; border-radius: 6px; font-family: inherit;
+  font-size: 0.9em; line-height: 1.5; resize: vertical; min-height: 80px;
+}
+.lcw-bio-wrap textarea:focus { outline: none; border-color: #0066cc; box-shadow: 0 0 0 2px #e8f0fe; }
+.lcw-bio-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+.lcw-bio-footer span { font-size: 0.8em; color: #aaa; }
+.lcw-invite-box { display: flex; gap: 8px; margin-top: 0.8em; flex-wrap: wrap; }
+.lcw-invite-box input {
+  flex: 1; min-width: 200px; padding: 0.45em 0.8em; border: 1px solid #ccc;
+  border-radius: 6px; font-family: monospace; font-size: 0.85em; background: #f8f8f8; color: #333;
+}
+.lcw-share-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.lcw-share-btn {
+  font-size: 0.82em; padding: 5px 12px; border-radius: 6px; cursor: pointer;
+  text-decoration: none; border: 1px solid #ddd; background: #fff; color: #333;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.lcw-share-btn:hover { background: #f5f5f5; }
 </style>
 
 <script>
@@ -169,9 +228,27 @@ See every interactive block with live examples and documentation.
       _user = cached;
       document.getElementById('lcw-pat').value = '••••••••••••';
       populateUserCard();
-      // skip to step 3 if already validated
-      lcwDone(1); lcwDone(2); lcwActivate(3);
+      // restore progress: skip completed steps
+      var _hasLaunch = !!localStorage.getItem('lc_karma_launch');
+      var _hasBio    = !!localStorage.getItem('lc_karma_bio');
+      lcwDone(1); lcwDone(2);
+      if (_hasBio)    { lcwDone(3); lcwDone(4); lcwActivate(5); }
+      else if (_hasLaunch) { lcwDone(3); lcwActivate(4); }
+      else            { lcwActivate(3); }
     }
+  }
+
+  // store referrer from ?from= param
+  var urlFrom = new URLSearchParams(location.search).get('from');
+  if (urlFrom) localStorage.setItem('lc_referrer', urlFrom);
+
+  var KARMA = { launch: 15, bio: 10, invite: 50 };
+
+  function karmaTotal() {
+    var k = 0;
+    if (localStorage.getItem('lc_karma_launch')) k += KARMA.launch;
+    if (localStorage.getItem('lc_karma_bio'))    k += KARMA.bio;
+    return k;
   }
 
   function populateUserCard() {
@@ -181,14 +258,78 @@ See every interactive block with live examples and documentation.
     document.getElementById('lcw-uc-avatar').src = _user.avatar_url;
     document.getElementById('lcw-uc-name').textContent = _user.name || _user.login;
     document.getElementById('lcw-uc-login').textContent = '@' + _user.login;
-    // also populate done card
+    // done card
     document.getElementById('lcw-done-avatar').src = _user.avatar_url;
     document.getElementById('lcw-done-welcome').textContent = 'Welcome, ' + (_user.name || _user.login) + '! 🎉';
-    var repo = _user.login + '/lightcodepedia';
     var url = 'https://' + _user.login + '.github.io/lightcodepedia';
     document.getElementById('lcw-done-url').textContent = url;
     document.getElementById('lcw-done-url').href = url;
+    // invite URL
+    var inviteUrl = 'https://lightcodepedia.org/start?from=' + _user.login;
+    var invEl = document.getElementById('lcw-invite-url');
+    if (invEl) invEl.value = inviteUrl;
+    // share buttons
+    var shareRow = document.getElementById('lcw-share-row');
+    if (shareRow && !shareRow.dataset.built) {
+      shareRow.dataset.built = '1';
+      var msg = encodeURIComponent('I just set up my own interactive learning site on Lightcodepedia — join me! ' + inviteUrl);
+      var shares = [
+        ['✉️ Email',    'mailto:?subject=Join+me+on+Lightcodepedia&body=' + msg],
+        ['𝕏 X/Twitter', 'https://twitter.com/intent/tweet?text=' + msg],
+        ['💼 LinkedIn',  'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(inviteUrl)],
+        ['💬 WhatsApp',  'https://wa.me/?text=' + msg],
+      ];
+      shares.forEach(function(s){
+        var a = document.createElement('a');
+        a.className = 'lcw-share-btn'; a.href = s[1]; a.target = '_blank'; a.textContent = s[0];
+        shareRow.appendChild(a);
+      });
+    }
+    // bio field
+    var storedBio = localStorage.getItem('lc_bio');
+    if (storedBio) { var bioEl = document.getElementById('lcw-bio'); if (bioEl) { bioEl.value = storedBio; updateBioCount(); } }
+    // karma on done card
+    updateKarmaDisplay();
   }
+
+  function updateKarmaDisplay() {
+    var el = document.getElementById('lcw-done-karma');
+    if (!el) return;
+    var k = karmaTotal();
+    el.textContent = k > 0 ? '🌟 ' + k + ' karma pts earned so far' : '';
+  }
+
+  // bio char counter
+  var bioEl = document.getElementById('lcw-bio');
+  if (bioEl) {
+    bioEl.addEventListener('input', updateBioCount);
+  }
+  function updateBioCount() {
+    var el = document.getElementById('lcw-bio');
+    var cnt = document.getElementById('lcw-bio-count');
+    if (el && cnt) cnt.textContent = el.value.length + ' / 280';
+  }
+
+  window.lcwSaveBio = function() {
+    var bio = (document.getElementById('lcw-bio').value || '').trim();
+    var res = document.getElementById('lcw-bio-result');
+    if (!bio) { res.className = 'lcw-result err'; res.textContent = '⚠️ Please write a sentence or two about yourself first.'; return; }
+    localStorage.setItem('lc_bio', bio);
+    localStorage.setItem('lc_karma_bio', '1');
+    res.className = 'lcw-result ok';
+    res.textContent = '✅ Saved! +' + KARMA.bio + ' karma pts earned 🌟';
+    updateKarmaDisplay();
+    setTimeout(function(){ lcwNext(4); }, 900);
+  };
+
+  window.lcwCopyInvite = function() {
+    var val = document.getElementById('lcw-invite-url').value;
+    navigator.clipboard.writeText(val).then(function(){
+      var btn = document.getElementById('lcw-copy-btn');
+      btn.textContent = '✅ Copied!';
+      setTimeout(function(){ btn.textContent = '📋 Copy'; }, 2000);
+    });
+  };
 
   function lcwActivate(n) {
     var el = document.getElementById('lcw-s' + n);
@@ -327,6 +468,7 @@ See every interactive block with live examples and documentation.
       })
       .then(function(){ return triggerBuild(login); })
       .then(function(){
+        localStorage.setItem('lc_karma_launch', '1');
         setStatus('✅ All set!', 'ok');
         document.getElementById('lcw-fork-actions').style.display = 'none';
         document.getElementById('lcw-site-url').textContent = siteUrl;
