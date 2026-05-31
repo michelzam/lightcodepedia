@@ -26,7 +26,7 @@ Go ahead — explore, play, learn and have fun! 🎉
 
 This block is a **text block**. It can hold text, lists, images — and a dog.
 
-![Lucky — a cheerful Beagle](/images/lucky.svg)
+![Lucky — a cheerful Beagle](https://lightcodepedia.jollybush-84a428fe.francecentral.azurecontainerapps.io/media/8fd1c9c5fa0e06f96b21dd9440b20d673e30499dda6a6ade356edb3c.jpg)
 
 This is **Lucky** 🐶 — a three-year-old Beagle who loves parks, tennis balls, and long naps.
 
@@ -40,12 +40,10 @@ _Text blocks use standard markdown: **bold**, _italic_, lists, links, images. Ev
 
 This block is a **video block**. Press play.
 
-[🎵 Black Dog — Led Zeppelin](https://www.youtube.com/embed/l482T0yNkeo)
+[▶️ Lucky's favourite song](https://youtu.be/6tlSx0jkuLM?si=OHbXv8Vp9NKidh9e)
 {: .video height="320" }
 
-Led Zeppelin named this song after a stray black Labrador who wandered into their recording studio during sessions for *Led Zeppelin IV* in 1971.
-
-The dog left without leaving a name.
+This is Lucky's all-time favourite song — he wags his tail every time it comes on.
 
 _A video block embeds any YouTube link. One line of markdown, one tag._
 
