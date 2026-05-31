@@ -100,5 +100,3 @@ Two carousels need distinct ids:
 - [ ] `- <b>Learning is not a spectator sport.</b>` — HTML tags required for bold.
 - [ ] Bold isn't possible. Write it in all-caps for emphasis.
 {: .quiz }
-
-{% include backtotop.md %}

@@ -85,5 +85,3 @@ The file is named `recording-YYYY-MM-DD-HH-MM-SS.webm` (or `.mp4` on Safari).
 - **Camera is optional** — untick 📷 Camera before recording if you don't want the face overlay.
 - **Long recordings** — the whole video is held in memory until you stop. For recordings over ~30 minutes, use a dedicated tool like OBS.
 - **No upload, no server** — the file is written directly to your downloads folder.
-
-{% include backtotop.md %}

@@ -258,5 +258,3 @@ Every block, with live examples and full documentation.
 [Home →](/)
 ```
 {: .cards cols="3" }
-
-{% include backtotop.md %}

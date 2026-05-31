@@ -169,5 +169,3 @@ An example loading a CSV from the repo:
 [^rouge]: **Rouge** — a Ruby syntax highlighter used by Jekyll. Runs at build time (server-side), so no JavaScript is needed for static code blocks. Supports 200+ languages.
 
 [^cdn]: **CDN (Content-Delivery Network)** — a globally distributed network of servers that caches and serves files from an edge node geographically close to the visitor. This site uses jsDelivr to serve library files and cached repo content.
-
-{% include backtotop.md %}

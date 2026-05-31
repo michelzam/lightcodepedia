@@ -100,5 +100,3 @@ Add another `### Section` → a new tab appears. Remove one → it's gone.
 - [ ] A `namespace="…"` parameter.
 - [ ] You can't — one tabs widget per page is the hard limit.
 {: .quiz }
-
-{% include backtotop.md %}

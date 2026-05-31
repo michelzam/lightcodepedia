@@ -6,5 +6,3 @@ _Miro board:_
 
 [🗺️ Open Miro board](https://miro.com/app/board/uXjVJFPwN_U=/?share_link_id=623867549831)
 {: .embed height="800" }
-
-{% include backtotop.md %}

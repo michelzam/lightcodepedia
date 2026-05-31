@@ -324,5 +324,3 @@ Know these before you build a 300-slide AI curriculum on top of it.
 [^gh-models]: **GitHub Models** is GitHub's hosted inference gateway at `models.github.ai`, offering OpenAI-compatible chat completions for several model families on a free tier.
 
 [^pat]: **PAT** = Personal Access Token, the credential GitHub uses for API authentication. Classic PATs work out of the box; fine-grained PATs need the explicit `models:read` permission checkbox.
-
-{% include backtotop.md %}

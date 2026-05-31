@@ -39,7 +39,7 @@ Every circle is a LightNode — a fork of Lightcodepedia hosted by a community m
 .lc-link { transition: opacity 0.2s; }
 </style>
 
-<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script>
 (function () {
   var pat  = localStorage.getItem('lc_ed_pat') || '';
@@ -331,5 +331,3 @@ Every circle is a LightNode — a fork of Lightcodepedia hosted by a community m
 
 })();
 </script>
-
-{% include backtotop.md %}

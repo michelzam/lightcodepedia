@@ -95,5 +95,3 @@ Independent, low-maintenance. Best for busy schedules.
 - [x] Gap defaults to 18 px and can be changed with `gap=`.
 - [x] Swapping `{: .grid }` to `{: .accordion }` gives the same content as an accordion.
 {: .quiz multi="true" }
-
-{% include backtotop.md %}

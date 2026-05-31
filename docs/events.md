@@ -61,7 +61,3 @@ Anonymous Peer Feedback from Educators and Evaluation Committees — ACM SIGCSE 
 💬 _Very relevant and timely submission._
 
 💬 _Fascinating work, would love to see it._
-
-
-
-{% include backtotop.md %}

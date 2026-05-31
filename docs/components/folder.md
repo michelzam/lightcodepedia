@@ -43,5 +43,3 @@ The `docs/components` folder contains many `.md` files **and** a subfolder `exam
 
 [Browse →](docs/play)
 {: .folder cols="4" }
-
-{% include backtotop.md %}

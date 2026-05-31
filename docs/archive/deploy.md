@@ -75,5 +75,3 @@ If the build fails with a Python version error:
 
 Lightcode.
 (c) KarmicSoft 2026
-
-{% include backtotop.md %}

@@ -6,4 +6,3 @@ Ari is your AI pair lightcoder, trained to help you learn about lightcoding.
 [🏆 Dauphine Executive Education LightCode Certificate](https://executive-education.dauphine.psl.eu/formations/certificat/low-code)
 
 [Certificat](pdfs/Dauphine-Certificat.pdf)
-{% include backtotop.md %}

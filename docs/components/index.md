@@ -8,5 +8,3 @@ Welcome, lowcoder! Every interactive component you can use in your `.md` pages.
 
 [Browse →](docs/components)
 {: .folder cols="3" }
-
-{% include backtotop.md %}

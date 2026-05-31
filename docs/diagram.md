@@ -11,4 +11,3 @@ graph TD
 ```python
 print("Hello world!")
 ```
-{% include backtotop.md %}

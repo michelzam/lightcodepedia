@@ -81,5 +81,3 @@ Email us
 - [ ] `{: .qr height="240" }`
 - [ ] `{: .qr px="240" }`
 {: .quiz }
-
-{% include backtotop.md %}

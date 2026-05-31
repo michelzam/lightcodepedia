@@ -65,5 +65,3 @@ Chapters of Course Materials.
 
 [📄 Open Chapter 13](https://drive.google.com/file/d/1iYgRZ4VPQlpQ5RYA6bnwfcyuLAYeUvSI/preview)
 {: .embed height="600" }
-
-{% include backtotop.md %}

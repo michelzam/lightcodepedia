@@ -49,5 +49,3 @@ This is kramdown's **inline IAL** — it attaches the class directly to the `<a>
 - [ ] `[Submit](/submit){: .btn .btn-success }` — Bootstrap-style classes.
 - [ ] Only the old `{% raw %}{% include button.md %}{% endraw %}` form produces colored buttons.
 {: .quiz }
-
-{% include backtotop.md %}

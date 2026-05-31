@@ -255,5 +255,3 @@ Pull it all together.
 
   > The whole point of this widget: any markdown page IS already a deck. Zero conversion.
 {: .quiz }
-
-{% include backtotop.md %}

@@ -68,5 +68,3 @@ The LightCode Erasmus+ Project (Nr.2022-1-FR01-KA220-HED-00086863) is co-funded 
 ![🇪🇺 Co-funded by the EU](images/EN_cofundedbytheEU_RGB_POS.png)
 ```
 {: .accordion }
-
-{% include backtotop.md %}

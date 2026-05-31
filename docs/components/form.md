@@ -234,5 +234,3 @@ show.form(obj, title=None)
 {: .quiz }
 
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to that block. See [✍️ Text](/components/text).
-
-{% include backtotop.md %}

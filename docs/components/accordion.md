@@ -74,5 +74,3 @@ Accordion has no extra IAL attributes — the structure comes entirely from `###
 - [x] Full markdown works inside each panel body.
 - [x] Swapping `{: .accordion }` to `{: .tabs }` gives the same content as tabs.
 {: .quiz multi="true" }
-
-{% include backtotop.md %}
