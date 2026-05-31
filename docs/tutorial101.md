@@ -183,16 +183,15 @@ notes: Afraid of vacuum cleaners. Excellent at looking innocent.
 
 ```yaml
 name: Wanda
-species: Fish
 age: 2
 breed: Goldfish
 colour: Orange
-weight_g: 30
-tank_litres: 40
+weight_kg: 0.03
+top_speed_kmh: 6
 adopted: false
-favorite_things:
-  - bubbles
+favorite_toys:
   - plastic castle
+  - bubble ring
   - flake food
 vet:
   name: Dr. Patel

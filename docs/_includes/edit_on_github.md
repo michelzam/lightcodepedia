@@ -274,7 +274,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       }
       var rows = data.tree.filter(function (f) {
         var name = f.path.split("/").pop();
-        return f.type === "blob" && f.path.startsWith("docs/") && name.endsWith(".md") && !name.startsWith("_");
+        // include underscore modules (e.g. _dog.md) — they're editable content too,
+        // but skip Jekyll/system files that aren't meant to be hand-edited here
+        if (name === "_config.yml" || name === "_build_trigger.md") return false;
+        return f.type === "blob" && f.path.startsWith("docs/") && name.endsWith(".md");
       }).sort(function (a, b) { return a.path.localeCompare(b.path); })
       .map(function (f) {
         var rel = f.path.replace(/^docs\//, "");
