@@ -233,6 +233,8 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
     );
   }
 
+  window.lcUpgradeQuiz = upgradeQuiz;
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 0); });
   } else {
