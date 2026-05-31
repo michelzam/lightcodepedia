@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <rect width="400" height="300" fill="#f5f0e8" rx="12"/>
+  <!-- body -->
+  <ellipse cx="200" cy="195" rx="80" ry="55" fill="#c8873a"/>
+  <!-- head -->
+  <circle cx="200" cy="125" r="52" fill="#c8873a"/>
+  <!-- white chest/muzzle patch -->
+  <ellipse cx="200" cy="195" rx="40" ry="30" fill="#f0d9b0"/>
+  <!-- muzzle -->
+  <ellipse cx="200" cy="145" rx="28" ry="20" fill="#f0d9b0"/>
+  <!-- left ear -->
+  <ellipse cx="158" cy="130" rx="20" ry="38" fill="#7a4a1a" transform="rotate(-12 158 130)"/>
+  <!-- right ear -->
+  <ellipse cx="242" cy="130" rx="20" ry="38" fill="#7a4a1a" transform="rotate(12 242 130)"/>
+  <!-- left eye -->
+  <circle cx="183" cy="118" r="9" fill="#fff"/>
+  <circle cx="183" cy="118" r="5.5" fill="#3a2a1a"/>
+  <circle cx="185" cy="116" r="2" fill="#fff"/>
+  <!-- right eye -->
+  <circle cx="217" cy="118" r="9" fill="#fff"/>
+  <circle cx="217" cy="118" r="5.5" fill="#3a2a1a"/>
+  <circle cx="219" cy="116" r="2" fill="#fff"/>
+  <!-- nose -->
+  <ellipse cx="200" cy="140" rx="10" ry="7" fill="#3a2a1a"/>
+  <ellipse cx="197" cy="138" rx="3" ry="2" fill="#6a5a4a"/>
+  <!-- mouth -->
+  <path d="M192 150 Q200 157 208 150" stroke="#7a4a1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- tongue -->
+  <ellipse cx="200" cy="156" rx="8" ry="6" fill="#e05060"/>
+  <!-- front legs -->
+  <rect x="160" y="235" width="22" height="45" rx="11" fill="#c8873a"/>
+  <rect x="218" y="235" width="22" height="45" rx="11" fill="#c8873a"/>
+  <!-- back legs -->
+  <rect x="148" y="225" width="20" height="38" rx="10" fill="#b87830"/>
+  <rect x="232" y="225" width="20" height="38" rx="10" fill="#b87830"/>
+  <!-- tail -->
+  <path d="M275 190 Q310 155 305 125" stroke="#c8873a" stroke-width="14" fill="none" stroke-linecap="round"/>
+  <!-- white tail tip -->
+  <circle cx="305" cy="124" r="9" fill="#f0d9b0"/>
+  <!-- collar -->
+  <rect x="165" y="165" width="70" height="12" rx="6" fill="#e63030"/>
+  <rect x="196" y="165" width="8" height="16" rx="4" fill="#d4a020"/>
+  <!-- ground shadow -->
+  <ellipse cx="200" cy="278" rx="90" ry="12" fill="rgba(0,0,0,0.08)"/>
+  <!-- name label -->
+  <text x="200" y="296" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#7a5020" font-weight="600">Lucky 🐕</text>
+</svg>
