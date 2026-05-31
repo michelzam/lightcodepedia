@@ -116,6 +116,11 @@ Chat-style LLM panel via GitHub Models. Each user brings their own PAT.
 Auto-generate cards from all pages in a folder. One link, zero maintenance.
 
 [Open →](folder)
+
+### 🎬 Recorder
+Record your screen with face overlay — downloads as a video file, no install.
+
+[Open →](recorder)
 ```
 {: .cards cols="3" }
 
