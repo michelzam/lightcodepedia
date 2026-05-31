@@ -186,16 +186,20 @@ body {
       var _kCached = 0;
       if (localStorage.getItem('lc_karma_launch')) _kCached += 15;
       if (localStorage.getItem('lc_karma_bio'))    _kCached += 10;
-      var _kForksCached = parseInt(localStorage.getItem('lc_karma_forks') || '0', 10);
-      _kCached += _kForksCached * 50;
+      var _kForksCached = parseInt(localStorage.getItem('lc_karma_forks')   || '0', 10);
+      var _kStarsCached = parseInt(localStorage.getItem('lc_karma_stars')   || '0', 10);
+      var _kViewsCached = parseInt(localStorage.getItem('lc_karma_traffic') || '0', 10);
+      _kCached += _kForksCached * 50 + _kStarsCached * 10 + _kViewsCached;
       if (kPts) kPts.textContent = _kCached || '…';
       if (kRow && _kCached > 0) kRow.style.display = 'flex';
 
-      // verify karma from GitHub API: repo info (fork + downstream forks) then bio file
+      // verify karma from GitHub API (sequential chain: repo → bio file → traffic)
       var _ghHdrs = { Authorization: 'Bearer ' + pat, 'X-GitHub-Api-Version': '2022-11-28' };
       var _repoSlug = (repo || (u.login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
+      var _repoBase = 'https://api.github.com/repos/' + u.login + '/' + _repoSlug;
       var _karma = 0; var _detail = [];
-      fetch('https://api.github.com/repos/' + u.login + '/' + _repoSlug, { headers: _ghHdrs })
+
+      fetch(_repoBase, { headers: _ghHdrs })
         .then(function(r) {
           if (!r.ok) { localStorage.removeItem('lc_karma_launch'); return Promise.reject('no-repo'); }
           return r.json();
@@ -203,19 +207,26 @@ body {
         .then(function(repoData) {
           _karma += 15; _detail.push('+15 site');
           localStorage.setItem('lc_karma_launch', '1');
-          var downstream = repoData.forks_count || 0;
-          if (downstream > 0) {
-            _karma += downstream * 50;
-            _detail.push('+' + downstream + '×50 forks');
-            localStorage.setItem('lc_karma_forks', String(downstream));
-          } else {
-            localStorage.removeItem('lc_karma_forks');
-          }
-          return fetch('https://api.github.com/repos/' + u.login + '/' + _repoSlug + '/contents/docs/_profile.md', { headers: _ghHdrs });
+          var forks = repoData.forks_count || 0;
+          var stars = repoData.stargazers_count || 0;
+          if (forks > 0) { _karma += forks * 50; _detail.push('+' + forks + '×50 🍴'); localStorage.setItem('lc_karma_forks', String(forks)); }
+          else localStorage.removeItem('lc_karma_forks');
+          if (stars > 0) { _karma += stars * 10; _detail.push('+' + stars + '×10 ⭐'); localStorage.setItem('lc_karma_stars', String(stars)); }
+          else localStorage.removeItem('lc_karma_stars');
+          return fetch(_repoBase + '/contents/docs/_profile.md', { headers: _ghHdrs });
         })
         .then(function(r) {
           if (r && r.ok) { _karma += 10; _detail.push('+10 bio'); localStorage.setItem('lc_karma_bio', '1'); }
-          else             { localStorage.removeItem('lc_karma_bio'); }
+          else localStorage.removeItem('lc_karma_bio');
+          return fetch(_repoBase + '/traffic/views', { headers: _ghHdrs });
+        })
+        .then(function(r) {
+          if (r && r.ok) return r.json(); return null;
+        })
+        .then(function(traffic) {
+          var uniques = (traffic && traffic.uniques) || 0;
+          if (uniques > 0) { _karma += uniques; _detail.push('+' + uniques + ' visitors'); localStorage.setItem('lc_karma_traffic', String(uniques)); }
+          else localStorage.removeItem('lc_karma_traffic');
           if (kPts) kPts.textContent = _karma;
           var detEl = document.getElementById('lc-ud-karma-detail');
           if (detEl) detEl.textContent = _detail.join('  ·  ');
@@ -223,7 +234,11 @@ body {
         })
         .catch(function(e) {
           if (e === 'no-repo') { if (kRow) kRow.style.display = 'none'; return; }
-          /* network error — keep cached display */
+          // traffic endpoint may 403 without push access — still show what we have
+          if (kPts) kPts.textContent = _karma;
+          var detEl = document.getElementById('lc-ud-karma-detail');
+          if (detEl) detEl.textContent = _detail.join('  ·  ');
+          if (kRow && _karma > 0) kRow.style.display = 'flex';
         });
 
       var repoLabel = repo || (u.login + '/lightcodepedia');
