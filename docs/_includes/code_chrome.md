@@ -1616,7 +1616,7 @@
     _markedQ = [cb];
     var s = document.createElement("script");
     s.src = "https://cdn.jsdelivr.net/npm/marked@9/marked.min.js";
-    s.onload = function() { var q = _markedQ; _markedQ = null; q.forEach(function(f){ f(); }); };
+    s.onload = function() { var q = _markedQ; _markedQ = null; q.forEach(function(f){ try { f(); } catch(e) { if (window.console) console.warn("[lc]", e); } }); };
     document.head.appendChild(s);
   }
   function parseSections(el) {
@@ -2261,7 +2261,7 @@
       wrap.querySelectorAll("p.button").forEach(safe(upgradeButton));
       wrap.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
       wrap.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
-      wrap.querySelectorAll("ul.quiz").forEach(safe(upgradeQuiz));
+      if (window.lcUpgradeQuiz) wrap.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
       wrap.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
       wrap.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));
       wrap.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));

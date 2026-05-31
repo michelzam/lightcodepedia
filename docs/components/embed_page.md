@@ -28,20 +28,48 @@ Embed another page from this site, an external URL, or a video — using a markd
 - [ ] Nothing — the site ignores `?embed=true`.
 {: .quiz }
 
-## 🌐 Embed an external URL
+## 🗺️ Embed a local module
 
-`{: .embed }` for any external iframe-able URL. OpenStreetMap exports embeddable tiles directly — no API key:
+`{: .embed }` on a local path fetches the HTML fragment and inlines it — no iframe.
+This embeds `_dog.md` (a small reusable module defined once, used anywhere):
 
 ```markdown
-[Paris — dog-walking parks](https://www.openstreetmap.org/export/embed.html?bbox=2.29,48.83,2.42,48.90&layer=mapnik)
-{: .embed height="350" }
+[Lucky](/_dog)
+{: .embed }
 ```
 
-[Paris — dog-walking parks](https://www.openstreetmap.org/export/embed.html?bbox=2.29,48.83,2.42,48.90&layer=mapnik)
-{: .embed height="350" }
+[Lucky](/_dog)
+{: .embed }
 
-> For a fully interactive map with CSV markers, see the [Map component](/components/map).
-> `.embed` is better when you already have an embeddable URL (OSM export, Datawrapper, Flourish, etc.).
+The map below comes from the same `{: .map }` component used in Tutorial 101 — Paris parks for walking your dog:
+
+````
+```json
+[
+  { "lat": 48.8620, "lon": 2.2474, "label": "🌳 Bois de Boulogne" },
+  { "lat": 48.8797, "lon": 2.3832, "label": "🌳 Buttes-Chaumont" },
+  { "lat": 48.8795, "lon": 2.3090, "label": "🌳 Parc Monceau" },
+  { "lat": 48.8462, "lon": 2.3372, "label": "🌳 Jardin du Luxembourg" },
+  { "lat": 48.8360, "lon": 2.4414, "label": "🌳 Bois de Vincennes" },
+  { "lat": 48.8937, "lon": 2.3938, "label": "🌳 Parc de la Villette" }
+]
+```
+{: .map height="350" zoom="12" }
+````
+
+```json
+[
+  { "lat": 48.8620, "lon": 2.2474, "label": "🌳 Bois de Boulogne" },
+  { "lat": 48.8797, "lon": 2.3832, "label": "🌳 Buttes-Chaumont" },
+  { "lat": 48.8795, "lon": 2.3090, "label": "🌳 Parc Monceau" },
+  { "lat": 48.8462, "lon": 2.3372, "label": "🌳 Jardin du Luxembourg" },
+  { "lat": 48.8360, "lon": 2.4414, "label": "🌳 Bois de Vincennes" },
+  { "lat": 48.8937, "lon": 2.3938, "label": "🌳 Parc de la Villette" }
+]
+```
+{: .map height="350" zoom="12" }
+
+> For external iframe-able URLs (Datawrapper, Flourish, OSM export), `{: .embed }` still works as an iframe when the href starts with `https://`.
 {: .speaker-note }
 
 **Q:** An external site returns `X-Frame-Options: DENY`. You try to `.embed` it. What happens?
@@ -76,8 +104,9 @@ YouTube watch URLs → `/embed/VIDEO_ID` automatically.
 
 | IAL | `height=` default | Notes |
 |---|---|---|
-| `{: .embed-page }` | `400` | Appends `?embed=true` to the href |
-| `{: .embed }` | `600` | Raw iframe — any external src |
+| `{: .embed-page }` | `400` | Appends `?embed=true` to the href — internal page iframe |
+| `{: .embed }` (local path) | — | Fetches and inlines HTML fragment — no iframe |
+| `{: .embed }` (https://) | `600` | External iframe — any iframe-able URL |
 | `{: .video }` | `400` | YouTube + `gdrive:ID` shorthand |
 
 **Q:** You write the following two lines. What URL does the iframe use?
