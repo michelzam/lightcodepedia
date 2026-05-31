@@ -2035,11 +2035,26 @@
           if (!showPrivate && f.name.startsWith("_")) return false;
           return true;
         }).sort(function(a, b) { return a.name.localeCompare(b.name); });
-        if (!pages.length) {
-          wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
-          return;
-        }
-        return Promise.all(pages.map(function(f) {
+        var subdirs = files.filter(function(f) { return f.type === "dir"; })
+          .sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+        // fetch index.md for each subdir (ignore 404s)
+        var subdirFetches = subdirs.map(function(d) {
+          var indexUrl = "https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + d.path + "/index.md";
+          return fetch(indexUrl)
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+              if (!data || !data.download_url) return null;
+              return fetch(data.download_url).then(function(r) { return r.text(); }).then(function(text) {
+                var meta = extractPageMeta(text);
+                var title = meta.title || d.name.replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+                return { title: title, snippet: meta.snippet, url: "/" + d.path.replace(/^docs\//, "") };
+              });
+            })
+            .catch(function() { return null; });
+        });
+
+        var pageFetches = pages.map(function(f) {
           return fetch(f.download_url)
             .then(function(r) { return r.text(); })
             .then(function(text) {
@@ -2051,10 +2066,20 @@
               var title = f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
               return { title: title, snippet: "", url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, "") };
             });
-        }));
+        });
+
+        return Promise.all(subdirFetches.concat(pageFetches)).then(function(results) {
+          // subdirs first (non-null only), then pages
+          var subdirItems = results.slice(0, subdirs.length).filter(Boolean);
+          var pageItems   = results.slice(subdirs.length);
+          return subdirItems.concat(pageItems);
+        });
       })
       .then(function(items) {
-        if (!items) return;
+        if (!items || !items.length) {
+          wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
+          return;
+        }
         wrap.innerHTML = items.map(function(item) {
           var card = '<div class="lc-card"><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
           if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
