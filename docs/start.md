@@ -313,13 +313,45 @@ See every interactive block with live examples and documentation.
   window.lcwSaveBio = function() {
     var bio = (document.getElementById('lcw-bio').value || '').trim();
     var res = document.getElementById('lcw-bio-result');
+    var btn = document.getElementById('lcw-bio-btn');
     if (!bio) { res.className = 'lcw-result err'; res.textContent = '⚠️ Please write a sentence or two about yourself first.'; return; }
-    localStorage.setItem('lc_bio', bio);
-    localStorage.setItem('lc_karma_bio', '1');
-    res.className = 'lcw-result ok';
-    res.textContent = '✅ Saved! +' + KARMA.bio + ' karma pts earned 🌟';
-    updateKarmaDisplay();
-    setTimeout(function(){ lcwNext(4); }, 900);
+    btn.disabled = true; btn.textContent = 'Saving…';
+    var login = _user ? _user.login : '';
+    var repoName = (localStorage.getItem('lc_ed_repo') || (login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
+    // encode bio as base64 (handles non-ASCII)
+    var raw = '---\nbio: true\n---\n' + bio + '\n';
+    var encoded = btoa(unescape(encodeURIComponent(raw)));
+    var hdrs = { Authorization: 'Bearer ' + _pat, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' };
+    // get existing sha if file already exists
+    fetch('https://api.github.com/repos/' + login + '/' + repoName + '/contents/docs/_profile.md', { headers: hdrs })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(existing) {
+        var body = { message: 'profile: save bio', content: encoded };
+        if (existing && existing.sha) body.sha = existing.sha;
+        return fetch('https://api.github.com/repos/' + login + '/' + repoName + '/contents/docs/_profile.md', {
+          method: 'PUT', headers: hdrs, body: JSON.stringify(body)
+        });
+      })
+      .then(function(r) {
+        btn.disabled = false; btn.textContent = 'Save bio ✓';
+        if (!r || !r.ok) throw new Error('save failed');
+        localStorage.setItem('lc_bio', bio);
+        localStorage.setItem('lc_karma_bio', '1');
+        res.className = 'lcw-result ok';
+        res.textContent = '✅ Saved to your site repo! +' + KARMA.bio + ' karma pts earned 🌟';
+        updateKarmaDisplay();
+        setTimeout(function(){ lcwNext(4); }, 900);
+      })
+      .catch(function() {
+        // fallback: store locally
+        btn.disabled = false; btn.textContent = 'Save bio ✓';
+        localStorage.setItem('lc_bio', bio);
+        localStorage.setItem('lc_karma_bio', '1');
+        res.className = 'lcw-result ok';
+        res.textContent = '✅ Saved locally. +' + KARMA.bio + ' karma pts earned 🌟';
+        updateKarmaDisplay();
+        setTimeout(function(){ lcwNext(4); }, 900);
+      });
   };
 
   window.lcwCopyInvite = function() {

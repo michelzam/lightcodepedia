@@ -176,13 +176,34 @@ body {
       document.getElementById('lc-ud-avatar').src = u.avatar_url;
       document.getElementById('lc-ud-name').textContent = u.name || u.login;
       document.getElementById('lc-ud-login').textContent = '@' + u.login;
-      // karma display
-      var _k = 0;
-      if (localStorage.getItem('lc_karma_launch')) _k += 15;
-      if (localStorage.getItem('lc_karma_bio'))    _k += 10;
+
+      // karma: show cached value instantly, then verify from GitHub API
       var kRow = document.getElementById('lc-ud-karma-row');
       var kPts = document.getElementById('lc-ud-karma-pts');
-      if (kRow && kPts) { kPts.textContent = _k; kRow.style.display = 'flex'; }
+      var _kCached = 0;
+      if (localStorage.getItem('lc_karma_launch')) _kCached += 15;
+      if (localStorage.getItem('lc_karma_bio'))    _kCached += 10;
+      if (kPts) kPts.textContent = _kCached;
+      if (kRow && _kCached > 0) kRow.style.display = 'flex';
+
+      // verify against GitHub (2 sequential checks: fork → bio file)
+      var _ghHdrs = { Authorization: 'Bearer ' + pat, 'X-GitHub-Api-Version': '2022-11-28' };
+      var _repoSlug = (repo || (u.login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
+      var _karma = 0;
+      fetch('https://api.github.com/repos/' + u.login + '/' + _repoSlug, { headers: _ghHdrs })
+        .then(function(r) {
+          if (r.ok) { _karma += 15; localStorage.setItem('lc_karma_launch', '1'); }
+          else        { localStorage.removeItem('lc_karma_launch'); }
+          if (!r.ok) return null;
+          return fetch('https://api.github.com/repos/' + u.login + '/' + _repoSlug + '/contents/docs/_profile.md', { headers: _ghHdrs });
+        })
+        .then(function(r) {
+          if (r && r.ok) { _karma += 10; localStorage.setItem('lc_karma_bio', '1'); }
+          else             { localStorage.removeItem('lc_karma_bio'); }
+          if (kPts) kPts.textContent = _karma;
+          if (kRow) kRow.style.display = _karma > 0 ? 'flex' : 'none';
+        })
+        .catch(function() { /* keep cached value on network error */ });
 
       var repoLabel = repo || (u.login + '/lightcodepedia');
       document.getElementById('lc-ud-repo-label').textContent = repoLabel;
