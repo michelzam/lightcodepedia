@@ -248,6 +248,8 @@ See every interactive block with live examples and documentation.
     var k = 0;
     if (localStorage.getItem('lc_karma_launch')) k += KARMA.launch;
     if (localStorage.getItem('lc_karma_bio'))    k += KARMA.bio;
+    var forks = parseInt(localStorage.getItem('lc_karma_forks') || '0', 10);
+    k += forks * KARMA.invite;
     return k;
   }
 
