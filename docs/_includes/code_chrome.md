@@ -1796,8 +1796,37 @@
         container: gid,
         style: "https://tiles.openfreemap.org/styles/positron",
         center: [centerLon, centerLat],
-        zoom: zoom
+        zoom: zoom,
+        pitch: parseFloat(el.getAttribute("pitch") || "0"),
+        bearing: parseFloat(el.getAttribute("bearing") || "0"),
+        maxPitch: 85
       });
+      map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+
+      // Shift+drag to pivot in 3D (bearing + pitch), like deck.gl / Streamlit.
+      // Horizontal → rotate (bearing); vertical → tilt (pitch).
+      var canvas = map.getCanvas();
+      var pivot = null;
+      canvas.addEventListener("mousedown", function(e) {
+        if (!e.shiftKey || e.button !== 0) return;
+        pivot = { x: e.clientX, y: e.clientY, bearing: map.getBearing(), pitch: map.getPitch() };
+        map.dragPan.disable();
+        canvas.style.cursor = "move";
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      window.addEventListener("mousemove", function(e) {
+        if (!pivot) return;
+        map.setBearing(pivot.bearing - (e.clientX - pivot.x) * 0.5);
+        map.setPitch(Math.max(0, Math.min(85, pivot.pitch + (e.clientY - pivot.y) * 0.5)));
+      });
+      window.addEventListener("mouseup", function() {
+        if (!pivot) return;
+        pivot = null;
+        map.dragPan.enable();
+        canvas.style.cursor = "";
+      });
+
       markers.forEach(function(m) {
         var dot = document.createElement("div");
         dot.style.cssText = "width:13px;height:13px;background:#e05454;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer";
@@ -1806,6 +1835,13 @@
           .setPopup(new maplibregl.Popup({ offset: 12 }).setText(m.label))
           .addTo(map);
       });
+
+      // Hint overlay
+      var hint = document.createElement("div");
+      hint.textContent = "⇧ Shift + drag to tilt / rotate";
+      hint.style.cssText = "position:absolute;bottom:8px;left:8px;background:rgba(255,255,255,0.85);color:#555;font-size:0.72em;padding:3px 8px;border-radius:4px;pointer-events:none;z-index:2";
+      wrap.style.position = "relative";
+      wrap.appendChild(hint);
     });
   }
 

@@ -115,50 +115,50 @@ This `map` is interactive. You can zoom in and out to spot parcs in Paris if you
 {: .block }
 
 ````
-### 🐕 Grid [Select a row to update the chart]
+### 🐕 Grid [Editable — click a cell to change a value, then watch the chart]
 
-Select a row to update the chart →
-
-```csv
-breed,top_speed_kmh
-Greyhound,72
-Saluki,68
-Vizsla,64
-Jack Russell,56
-Border Collie,48
-German Shepherd,48
-Labrador,40
-Beagle,40
-Corgi,35
-Pug,15
-Bulldog,14
-```
-{: .datagrid #dog-grid-tuto format="csv" title="Dog top speeds" height="280" }
-
-### 📊 Chart [Updates when you select a row in the grid]
-
-Updates when you select a row in the grid ←
+Select a row to update the chart → edit a number to refresh it.
 
 ```csv
-breed,top_speed_kmh
-Greyhound,72
-Saluki,68
-Vizsla,64
-Jack Russell,56
-Border Collie,48
-German Shepherd,48
-Labrador,40
-Beagle,40
-Corgi,35
-Pug,15
-Bulldog,14
+breed,top_speed_kmh,cute
+Greyhound,72,70
+Saluki,68,72
+Vizsla,64,78
+Jack Russell,56,85
+Border Collie,48,82
+German Shepherd,48,80
+Labrador,40,92
+Beagle,40,88
+Corgi,35,95
+Pug,15,98
+Bulldog,14,90
 ```
-{: .chart type="bar" bound-to="dog-grid-tuto" x="breed" y="top_speed_kmh" height="280" }
+{: .datagrid #dog-grid-tuto format="csv" title="Dog top speeds & cuteness" height="280" editable="true" }
+
+### 📊 Chart [Updates live when you select or edit a row]
+
+Updates when you select a row in the grid ← edit a value and it refreshes.
+
+```csv
+breed,top_speed_kmh,cute
+Greyhound,72,70
+Saluki,68,72
+Vizsla,64,78
+Jack Russell,56,85
+Border Collie,48,82
+German Shepherd,48,80
+Labrador,40,92
+Beagle,40,88
+Corgi,35,95
+Pug,15,98
+Bulldog,14,90
+```
+{: .chart type="bar" bound-to="dog-grid-tuto" x="breed" height="280" }
 ````
 {: .blocks cols="2" }
 
 ````
-### 🐕 Lucky [Lucky's profile]
+### 🐕 Lucky [Editable — change any field, it's a live object]
 
 ```yaml
 name: Lucky
@@ -177,28 +177,29 @@ vet:
   phone: "555-0142"
 notes: Afraid of vacuum cleaners. Excellent at looking innocent.
 ```
-{: .form }
+{: .form editable="true" }
 
-### 🦋 Wanda [Wanda's profile]
+### 🐠 Wanda [Editable — Wanda is a fish, not a dog!]
 
 ```yaml
 name: Wanda
+species: Fish
 age: 2
-breed: Golden Retriever
-colour: Golden
-weight_kg: 25
-top_speed_kmh: 40
+breed: Goldfish
+colour: Orange
+weight_g: 30
+tank_litres: 40
 adopted: false
-favorite_toys:
-  - frisbee
-  - rope toy
-  - plush bear
+favorite_things:
+  - bubbles
+  - plastic castle
+  - flake food
 vet:
   name: Dr. Patel
   phone: "555-0142"
-notes: Best friends with Lucky. Wakes him up every morning.
+notes: A fish, not a dog! Best friends with Lucky through the bowl glass.
 ```
-{: .form }
+{: .form editable="true" }
 ````
 {: .blocks cols="2" }
 
@@ -232,12 +233,12 @@ notes: Best friends with Lucky. Wakes him up every morning.
 
 {: .quiz }
 
-**Q:** What is Wanda's breed?
+**Q:** Wanda is not a dog. What kind of animal is she?
 
-- [ ] Labrador Retriever
-- [ ] Poodle
-- [ ] Husky
-- [x] Golden Retriever
+- [ ] A dog, just like Lucky
+- [ ] A cat
+- [x] A fish 🐠
+- [ ] A bird
 
 {: .quiz }
 ````
