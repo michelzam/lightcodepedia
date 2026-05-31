@@ -2080,18 +2080,20 @@
         });
 
         return Promise.all(subdirFetches.concat(pageFetches)).then(function(results) {
-          // subdirs first (non-null only), then pages
           var subdirItems = results.slice(0, subdirs.length).filter(Boolean);
           var pageItems   = results.slice(subdirs.length);
-          return subdirItems.concat(pageItems);
+          // DEBUG BADGE — remove once subfolder cards confirmed working
+          var badge = '<div style="grid-column:1/-1;font-size:0.72em;color:#888;padding:2px 6px;background:#fffbf0;border-radius:4px;border:1px solid #e0d090">🔍 folder debug: ' + subdirs.length + ' subdir(s) · ' + pages.length + ' file(s) · ' + subdirItems.length + ' subdir card(s) built</div>';
+          return { items: subdirItems.concat(pageItems), badge: badge };
         });
       })
-      .then(function(items) {
+      .then(function(result) {
+        var items = result && result.items;
         if (!items || !items.length) {
           wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
           return;
         }
-        wrap.innerHTML = items.map(function(item) {
+        wrap.innerHTML = (result.badge || '') + items.map(function(item) {
           var card = '<div class="lc-card"><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
           if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
           return card + '</div>';
