@@ -2082,8 +2082,9 @@
         return Promise.all(subdirFetches.concat(pageFetches)).then(function(results) {
           var subdirItems = results.slice(0, subdirs.length).filter(Boolean);
           var pageItems   = results.slice(subdirs.length);
+          console.log('[folder v2] subdirs=' + subdirs.length + ' files=' + pages.length + ' subdirCards=' + subdirItems.length);
           // DEBUG BADGE — remove once subfolder cards confirmed working
-          var badge = '<div style="grid-column:1/-1;font-size:0.72em;color:#888;padding:2px 6px;background:#fffbf0;border-radius:4px;border:1px solid #e0d090">🔍 folder debug: ' + subdirs.length + ' subdir(s) · ' + pages.length + ' file(s) · ' + subdirItems.length + ' subdir card(s) built</div>';
+          var badge = '<div style="grid-column:1/-1;font-size:1em;color:#fff;padding:6px 12px;background:#c00;border-radius:4px;font-weight:bold">🚨 folder v2: ' + subdirs.length + ' subdir(s) · ' + pages.length + ' file(s) · ' + subdirItems.length + ' subdir card(s)</div>';
           return { items: subdirItems.concat(pageItems), badge: badge };
         });
       })
