@@ -1595,7 +1595,7 @@
     document.querySelectorAll(".highlighter-rouge.grid").forEach(safe(upgradeGrid));
     document.querySelectorAll(".highlighter-rouge.scrollable").forEach(safe(upgradeScrollable));
     document.querySelectorAll(".highlighter-rouge.cards").forEach(safe(upgradeCards));
-    document.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks").forEach(safe(upgradeBlock));
+    document.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks, pre.block, pre.blocks").forEach(safe(upgradeBlock));
     document.querySelectorAll("ul.dropdown").forEach(safe(upgradeDropdown));
     document.querySelectorAll("p.button").forEach(safe(upgradeButton));
     document.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
