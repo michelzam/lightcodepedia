@@ -1,5 +1,4 @@
 ---
-title: QR Code
 ---
 # 📱 QR Code
 
