@@ -74,10 +74,10 @@ Authors, contributors, status and EU funding.
 
 [About →](/about)
 
-### 📦 Archive
+### 📦 More
 Older demos, examples, readings and guides — preserved for reference.
 
-[Archive →](/archive/)
+[More →](/archive/)
 ```
 {: .cards cols="3" }
 
