@@ -2042,25 +2042,27 @@
         var subdirs = files.filter(function(f) { return f.type === "dir"; })
           .sort(function(a, b) { return a.name.localeCompare(b.name); });
 
-        // fetch index.md for each subdir: use d.url (GitHub Contents API URL for the subdir)
-        // then find index.md in its listing and use its download_url — zero manual URL construction
+        // fetch index.md for each subdir; always emit a card (fallback to dir name on any error)
         var subdirFetches = subdirs.map(function(d) {
+          var slug   = d.path.replace(/^docs\//, "");
+          var pretty = d.name.replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+          var fallback = { title: "📁 " + pretty, snippet: "", url: "/" + slug };
           return apiFetch(d.url)
             .then(function(entries) {
               var idx = Array.isArray(entries) && entries.find(function(e) {
                 return e.type === "file" && e.name.toLowerCase() === "index.md";
               });
-              if (!idx || !idx.download_url) return null;
+              if (!idx || !idx.download_url) return fallback;
               return fetch(idx.download_url)
                 .then(function(r) { return r.ok ? r.text() : null; })
                 .then(function(text) {
-                  if (!text) return null;
+                  if (!text) return fallback;
                   var meta = extractPageMeta(text);
-                  var title = meta.title || d.name.replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-                  return { title: "📁 " + title, snippet: meta.snippet, url: "/" + d.path.replace(/^docs\//, "") };
-                });
+                  return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug };
+                })
+                .catch(function() { return fallback; });
             })
-            .catch(function() { return null; });
+            .catch(function() { return fallback; });
         });
 
         var pageFetches = pages.map(function(f) {
