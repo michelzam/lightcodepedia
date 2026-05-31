@@ -1,5 +1,4 @@
 ---
-title: Tutorial 101
 ---
 # 💡 Tutorial 101
 
