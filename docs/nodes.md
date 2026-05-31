@@ -73,24 +73,37 @@ Every circle is a LightNode — a fork of Lightcodepedia hosted by a community m
     if (popup && !popup.contains(e.target)) popup.style.display = 'none';
   });
 
+  // central node always exists — GitHub serves avatars at github.com/<login>.png
+  // with no API call and no auth, so the network is never empty.
+  function rootNode() {
+    return {
+      id: OWNER + '/' + REPO, login: OWNER,
+      avatar: 'https://github.com/' + OWNER + '.png',
+      level: 0, forkCount: 0, stars: 0, pinned: true
+    };
+  }
+
   // ── BFS fork traversal ────────────────────────────────────────────────────
   function buildGraph() {
     var nodes  = {};
     var links  = [];
     var rootId = OWNER + '/' + REPO;
 
+    // seed the root immediately so any later API failure still yields a graph
+    nodes[rootId] = rootNode();
+
     return Promise.all([
-      apiFetch('https://api.github.com/users/' + OWNER),
-      apiFetch('https://api.github.com/repos/' + OWNER + '/' + REPO)
+      apiFetch('https://api.github.com/users/' + OWNER).catch(function () { return null; }),
+      apiFetch('https://api.github.com/repos/' + OWNER + '/' + REPO).catch(function () { return null; })
     ])
     .then(function (results) {
       var ownerUser = results[0];
       var rootRepo  = results[1];
-      nodes[rootId] = {
-        id: rootId, login: OWNER, avatar: ownerUser.avatar_url,
-        level: 0, forkCount: rootRepo.forks_count || 0,
-        stars: rootRepo.stargazers_count || 0, pinned: true
-      };
+      if (ownerUser && ownerUser.avatar_url) nodes[rootId].avatar = ownerUser.avatar_url;
+      if (rootRepo) {
+        nodes[rootId].forkCount = rootRepo.forks_count || 0;
+        nodes[rootId].stars     = rootRepo.stargazers_count || 0;
+      }
 
       var wave = [{ id: rootId, depth: 0 }];
 
@@ -133,30 +146,41 @@ Every circle is a LightNode — a fork of Lightcodepedia hosted by a community m
     .then(function () { return { nodes: Object.values(nodes), links: links }; });
   }
 
-  // serve from localStorage cache if < 1 hour old
+  // serve from localStorage cache only if it actually has nodes and is < 1h old
   var _cachedGraph = null, _cachedTs = parseInt(localStorage.getItem(GRAPH_TS_KEY) || '0', 10);
   try { _cachedGraph = JSON.parse(localStorage.getItem(GRAPH_KEY) || 'null'); } catch(e) {}
+  var _cacheUsable = _cachedGraph && _cachedGraph.nodes && _cachedGraph.nodes.length > 0;
 
-  if (_cachedGraph && _cachedGraph.nodes && (Date.now() - _cachedTs) < GRAPH_TTL) {
+  if (_cacheUsable && (Date.now() - _cachedTs) < GRAPH_TTL) {
     var _ageMin = Math.round((Date.now() - _cachedTs) / 60000);
-    setStatus('');
     render(_cachedGraph.nodes, _cachedGraph.links);
-    if (statusEl) { statusEl.textContent = '📦 cached · ' + _ageMin + 'm ago — refresh page after 1h for live data'; statusEl.style.display = 'block'; }
+    if (statusEl) { statusEl.textContent = '📦 cached · ' + _ageMin + 'm ago — refresh after 1h for live data'; statusEl.style.display = 'block'; }
   } else {
     buildGraph()
       .then(function (graph) {
-        clearStatus();
+        // never cache or render an empty graph
+        if (!graph.nodes || !graph.nodes.length) graph = { nodes: [rootNode()], links: [] };
         try { localStorage.setItem(GRAPH_KEY, JSON.stringify(graph)); } catch(e) {}
         localStorage.setItem(GRAPH_TS_KEY, String(Date.now()));
         render(graph.nodes, graph.links);
+        // root-only means forks couldn't be enumerated (usually rate limit)
+        if (graph.nodes.length <= 1 && statusEl) {
+          statusEl.style.display = 'block';
+          statusEl.textContent = pat
+            ? 'No forks yet — be the first to fork and grow the network!'
+            : '🔑 Log in (top-right) to load the full network — GitHub limits anonymous requests.';
+        } else {
+          clearStatus();
+        }
       })
       .catch(function (e) {
-        // fall back to stale cache rather than showing nothing
-        if (_cachedGraph && _cachedGraph.nodes) {
+        // even on hard failure, show at least the central node
+        if (_cacheUsable) {
           render(_cachedGraph.nodes, _cachedGraph.links);
           setStatus('⚠️ Using cached graph — ' + e.message);
         } else {
-          setStatus('⚠️ ' + e.message + (pat ? '' : ' — log in for higher rate limits.'));
+          render([rootNode()], []);
+          if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = '⚠️ ' + e.message + (pat ? '' : ' — log in (top-right) for the full network.'); }
         }
       });
   }
