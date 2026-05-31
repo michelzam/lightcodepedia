@@ -81,5 +81,3 @@ Swift,18,28,73,10
 Kotlin,16,22,72,18
 ```
 {: .chart type="doughnut" bound-to="lang-grid" x="language" height="260" }
-
-{% include backtotop.md %}

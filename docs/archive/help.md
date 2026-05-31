@@ -26,5 +26,3 @@ _You can copy-paste this code in the Python playground below._
 {% include embed.md src="https://pythontutor.com/python-compiler.html#mode=edit" height="1600" %}
 
 💬 _“Python Tutor visualization changed everything for me.”_
-
-{% include backtotop.md %}

@@ -7,5 +7,3 @@ A sandbox folder — feel free to create pages here and experiment with componen
 
 [Browse →](docs/play)
 {: .folder }
-
-{% include backtotop.md %}

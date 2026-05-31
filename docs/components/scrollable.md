@@ -66,5 +66,3 @@ Many more lines...
 - [ ] `{: .code }` — it scrolls automatically.
 - [ ] Paginate it. Never put more than 10 lines on a page.
 {: .quiz }
-
-{% include backtotop.md %}

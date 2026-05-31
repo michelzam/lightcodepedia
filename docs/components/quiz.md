@@ -203,5 +203,3 @@ Quizzes work inside slides with no extra syntax. The slide engine **does not adv
 - **No fill-in-the-blank.** Use `.run expected="…"` as the substitute — students write code to produce the expected output.
 
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to it. See [✍️ Text](/components/text).
-
-{% include backtotop.md %}

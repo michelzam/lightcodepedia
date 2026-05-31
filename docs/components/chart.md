@@ -104,5 +104,3 @@ Other,15
 - [x] `{: .chart type="doughnut" x="Breed" y="Count" }`
 - [ ] Doughnut is not supported — use `pie` and add a `hole=` attribute.
 {: .quiz }
-
-{% include backtotop.md %}

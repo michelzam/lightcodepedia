@@ -13,5 +13,3 @@ _⚠️ If the chat doesn't load above (ChatGPT may refuse to embed), open it in
 
 Or use your favorite light-QR-code scanner:
 ![📱Use the light-QR-code](images/AriGpt.jpg)
-
-{% include backtotop.md %}

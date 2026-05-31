@@ -54,5 +54,3 @@ Each `- [label](url)` becomes one menu item.
 - [ ] Items must be plain text — markdown links don't work inside bullets.
 - [x] `id=` is required when more than one dropdown lives on the page.
 {: .quiz multi="true" }
-
-{% include backtotop.md %}

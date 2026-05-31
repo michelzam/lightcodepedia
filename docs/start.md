@@ -623,5 +623,3 @@ _Karma measures your contribution to the network: your site, your bio, the frien
   if (!_restored) lcwActivate(1);
 })();
 </script>
-
-{% include backtotop.md %}

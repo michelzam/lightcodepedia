@@ -126,5 +126,3 @@ YouTube watch URLs → `/embed/VIDEO_ID` automatically.
 
 - **CORS / `X-Frame-Options`.** Many sites block iframe embedding via security headers. If the embed shows blank or an error, the target site is blocking it — not something we can change.
 - **One link per paragraph.** The upgrade looks for a single `<a>` inside the `<p>`. Extra text in the same paragraph breaks the upgrade.
-
-{% include backtotop.md %}

@@ -50,5 +50,3 @@ For the older Streamlit-based LightNode, see the [full deploy guide →](/archiv
 - [GitHub Pages docs](https://docs.github.com/en/pages)
 - [Jekyll docs](https://jekyllrb.com/docs/)
 - [Lightcodepedia repo](https://github.com/michelzam/lightcodepedia)
-
-{% include backtotop.md %}

@@ -116,5 +116,3 @@ Cards and grid share the same `### ` source format — swap the IAL class to cha
 - [x] `{: .cards }` and `{: .grid }` use the same `### ` source format.
 - [x] Cards lift and get a blue border on hover.
 {: .quiz multi="true" }
-
-{% include backtotop.md %}

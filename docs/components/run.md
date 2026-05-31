@@ -310,5 +310,3 @@ print("math loaded!")
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax. Put it on its own line right after a fenced block (or any block) to attach HTML attributes — id, classes, custom data. All components on this site are activated this way.
 
 [^repl]: **REPL** — Read → Eval → Print → Loop. The interactive Python prompt (`>>>`) where you type one expression, see the result, and type the next. Same thing you get if you run `python3` in a terminal.
-
-{% include backtotop.md %}

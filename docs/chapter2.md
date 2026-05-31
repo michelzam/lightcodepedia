@@ -127,5 +127,3 @@ Low-code is:
 ## Quiz Time!
 
 {% include example.md module="quiz_chapter2" %}
-
-{% include backtotop.md %}

@@ -71,5 +71,3 @@ This is **Lucky** — a three-year-old Beagle who loves parks, tennis balls, and
 - Nested `.video`, `.quiz`, `.run`
 ```
 {: .blocks cols="2" }
-
-{% include backtotop.md %}

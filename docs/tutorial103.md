@@ -174,5 +174,3 @@ Quick-reference for forking, domains and the editor.
 [Home →](/)
 ```
 {: .cards cols="4" }
-
-{% include backtotop.md %}

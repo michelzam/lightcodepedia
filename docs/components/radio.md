@@ -75,5 +75,3 @@ The first section is selected and visible by default.
 - [ ] Accordion — all three visible means less deciding.
 - [ ] Dropdown — maximum suspense.
 {: .quiz }
-
-{% include backtotop.md %}

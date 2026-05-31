@@ -258,5 +258,3 @@ print(f"{len(dogs)} rows rendered.")
 [^ag-grid]: **AG Grid** — a high-performance open-source grid library (~300 KB JS + CSS) that powers the datagrid and form widgets. Loaded once from jsDelivr[^jsdelivr] and cached.
 
 [^jsdelivr]: **jsDelivr** — a free, fast CDN (content-delivery network) that serves open-source npm packages from edge nodes worldwide. Used here for AG Grid and other JS libraries.
-
-{% include backtotop.md %}
