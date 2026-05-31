@@ -2026,8 +2026,12 @@
       wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ site.github.repository_nwo not set.</div>";
       return;
     }
-    fetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + path)
-      .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    var _folderPat = localStorage.getItem('lc_ed_pat') || '';
+    var _folderHdrs = _folderPat ? { Authorization: 'Bearer ' + _folderPat, 'X-GitHub-Api-Version': '2022-11-28' } : {};
+    function apiFetch(url) {
+      return fetch(url, { headers: _folderHdrs }).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+    }
+    apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + path)
       .then(function(files) {
         if (!Array.isArray(files)) throw new Error("Not a directory: " + escapeHtml(path));
         var pages = files.filter(function(f) {
@@ -2038,17 +2042,15 @@
         var subdirs = files.filter(function(f) { return f.type === "dir"; })
           .sort(function(a, b) { return a.name.localeCompare(b.name); });
 
-        // fetch index.md for each subdir (ignore 404s)
+        // fetch index.md for each subdir (ignore 404s) — shown as folder cards
         var subdirFetches = subdirs.map(function(d) {
-          var indexUrl = "https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + d.path + "/index.md";
-          return fetch(indexUrl)
-            .then(function(r) { return r.ok ? r.json() : null; })
+          return apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + d.path + "/index.md")
             .then(function(data) {
               if (!data || !data.download_url) return null;
               return fetch(data.download_url).then(function(r) { return r.text(); }).then(function(text) {
                 var meta = extractPageMeta(text);
                 var title = meta.title || d.name.replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-                return { title: title, snippet: meta.snippet, url: "/" + d.path.replace(/^docs\//, "") };
+                return { title: "📁 " + title, snippet: meta.snippet, url: "/" + d.path.replace(/^docs\//, "") };
               });
             })
             .catch(function() { return null; });
