@@ -11,6 +11,13 @@ This 🪢_lightnode_ is the **nexus** of the **Lightcode Universe** made of Ligh
 
 ![Forks](https://img.shields.io/github/forks/michelzam/lightcodepedia?style=flat)
 
+---
+
+> **🌍 This is bigger than a website.**
+> Every LightNode you build is a classroom without walls — yours to run, yours to share, yours to keep forever, even if Lightcode disappears tomorrow. The internet's greatest threat isn't misinformation: it's the gap between people who *build* the digital world and those who only *consume* it. When you learn here, you narrow that gap. When you invite a friend, you double the effect. When you publish a lesson, you pay it forward to someone you'll never meet. That's the deal — and it compounds. **Join the movement. Build your node. Teach what you learn.**
+
+---
+
 ## 🎓 Tutorial — No-code → Low-code → Dev
 
 ```
