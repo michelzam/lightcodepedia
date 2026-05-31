@@ -27,13 +27,12 @@ if (location.search.indexOf('embed=true') >= 0) {
 /* ── user pill ── */
 #lc-user-pill { position: relative; flex-shrink: 0; }
 #lc-user-btn {
-  background: none; border: 1px solid #ddd; border-radius: 20px;
-  padding: 3px 10px 3px 4px; cursor: pointer; display: flex; align-items: center;
-  gap: 6px; font-size: 0.85em; color: #333; line-height: 1;
+  background: none; border: 1px solid #ddd; border-radius: 50%;
+  padding: 2px; cursor: pointer; display: flex; align-items: center; line-height: 1;
 }
-#lc-user-btn:hover { background: #f5f5f5; border-color: #bbb; }
-#lc-user-btn img { width: 22px; height: 22px; border-radius: 50%; display: block; }
-#lc-user-caret { font-size: 0.7em; color: #888; }
+#lc-user-btn:hover { border-color: #0066cc; box-shadow: 0 0 0 2px #e8f0fe; }
+#lc-user-btn img { width: 28px; height: 28px; border-radius: 50%; display: block; }
+#lc-user-caret { display: none; }
 #lc-user-drop {
   display: none; position: absolute; right: 0; top: calc(100% + 6px);
   background: #fff; border: 1px solid #ddd; border-radius: 10px;
@@ -121,10 +120,8 @@ body {
   </div>
   <a id="lc-start-pill" href="/start">🔑 Get started</a>
   <div id="lc-user-pill" style="display:none">
-    <button id="lc-user-btn" aria-label="User menu">
+    <button id="lc-user-btn" aria-label="User menu" title="">
       <img id="lc-user-avatar" src="" alt="">
-      <span class="lc-user-login-label" id="lc-user-login-label"></span>
-      <span id="lc-user-caret">▾</span>
     </button>
     <div id="lc-user-drop">
       <div class="lc-ud-head">
@@ -165,7 +162,7 @@ body {
       var pill = document.getElementById('lc-user-pill');
       pill.style.display = 'block';
       document.getElementById('lc-user-avatar').src = u.avatar_url;
-      document.getElementById('lc-user-login-label').textContent = '@' + u.login;
+      document.getElementById('lc-user-btn').title = '@' + u.login;
       document.getElementById('lc-ud-avatar').src = u.avatar_url;
       document.getElementById('lc-ud-name').textContent = u.name || u.login;
       document.getElementById('lc-ud-login').textContent = '@' + u.login;
