@@ -2042,16 +2042,16 @@
         var subdirs = files.filter(function(f) { return f.type === "dir"; })
           .sort(function(a, b) { return a.name.localeCompare(b.name); });
 
-        // fetch index.md for each subdir (ignore 404s) — shown as folder cards
+        // fetch index.md for each subdir directly via raw URL (no extra API hop)
+        var _rawBase = "https://raw.githubusercontent.com/" + _lcSiteRepo + "/main/";
         var subdirFetches = subdirs.map(function(d) {
-          return apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + d.path + "/index.md")
-            .then(function(data) {
-              if (!data || !data.download_url) return null;
-              return fetch(data.download_url).then(function(r) { return r.text(); }).then(function(text) {
-                var meta = extractPageMeta(text);
-                var title = meta.title || d.name.replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-                return { title: "📁 " + title, snippet: meta.snippet, url: "/" + d.path.replace(/^docs\//, "") };
-              });
+          return fetch(_rawBase + d.path + "/index.md")
+            .then(function(r) { return r.ok ? r.text() : null; })
+            .then(function(text) {
+              if (!text) return null;
+              var meta = extractPageMeta(text);
+              var title = meta.title || d.name.replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+              return { title: "📁 " + title, snippet: meta.snippet, url: "/" + d.path.replace(/^docs\//, "") };
             })
             .catch(function() { return null; });
         });
