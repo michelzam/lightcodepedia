@@ -149,6 +149,7 @@ body {
       </a>
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
+      <div id="lc-ud-rate" style="display:none;padding:6px 16px;font-size:0.75em;border-bottom:1px solid #f0f0f0"></div>
       <div class="lc-ud-row danger" id="lc-ud-disconnect"><span>🔓</span><span>Disconnect</span></div>
     </div>
   </div>
@@ -207,14 +208,53 @@ body {
         if (_detCached) _detCached.textContent = _cachedParts.join('  ·  ');
       }
 
-      // verify karma from GitHub API (sequential chain: repo → bio file → traffic)
+      // verify karma from GitHub API — skip if verified less than 1 hour ago
       var _ghHdrs = { Authorization: 'Bearer ' + pat, 'X-GitHub-Api-Version': '2022-11-28' };
       var _repoSlug = (repo || (u.login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
       var _repoBase = 'https://api.github.com/repos/' + u.login + '/' + _repoSlug;
       var _karma = 0;
       var _rc = { forks: 0, stars: 0, visitors: 0, pages: 0, quizzes: 0, bio: false, site: false };
 
-      fetch(_repoBase, { headers: _ghHdrs })
+      var _karmaTs = parseInt(localStorage.getItem('lc_karma_ts') || '0', 10);
+      var _karmaAge = Date.now() - _karmaTs;  // ms since last full API verification
+      if (_karmaAge < 3600000) {
+        // cached values are fresh — skip the 5 API calls, just re-render
+        _rc.site     = !!localStorage.getItem('lc_karma_launch');
+        _rc.bio      = !!localStorage.getItem('lc_karma_bio');
+        _rc.forks    = _kForksCached; _rc.stars = _kStarsCached;
+        _rc.visitors = _kViewsCached; _rc.pages = _kPagesCached; _rc.quizzes = _kQuizCached;
+        _karma = _kCached;
+        if (kPts) kPts.textContent = _karma;
+        // age label so user can see how stale
+        var _ageMin = Math.round(_karmaAge / 60000);
+        var _detEl2 = document.getElementById('lc-ud-karma-detail');
+        if (_detEl2 && _detEl2.textContent) _detEl2.textContent += '  ·  ⏱ ' + _ageMin + 'm ago';
+        if (kRow) kRow.style.display = 'flex';
+        // still show rate limit from last known value
+        showRateLimit(parseInt(localStorage.getItem('lc_rate_remaining') || '-1', 10));
+        return;  // ← skip all API calls
+      }
+
+      // helper: reads X-RateLimit-Remaining from a Response and persists it
+      function trackRate(r) {
+        var rem = parseInt(r.headers.get('X-RateLimit-Remaining') || '-1', 10);
+        var lim = parseInt(r.headers.get('X-RateLimit-Limit')     || '-1', 10);
+        if (rem >= 0) {
+          localStorage.setItem('lc_rate_remaining', String(rem));
+          localStorage.setItem('lc_rate_limit',     String(lim));
+          showRateLimit(rem);
+        }
+        return r;
+      }
+      function showRateLimit(rem) {
+        var el = document.getElementById('lc-ud-rate');
+        if (!el || rem < 0) return;
+        el.style.display = 'flex';
+        el.textContent = '⚡ ' + rem + ' API calls left this hour';
+        el.style.color = rem < 200 ? '#c00' : rem < 500 ? '#c47900' : '#888';
+      }
+
+      fetch(_repoBase, { headers: _ghHdrs }).then(trackRate)
         .then(function(r) {
           if (!r.ok) { localStorage.removeItem('lc_karma_launch'); return Promise.reject('no-repo'); }
           return r.json();
@@ -249,8 +289,8 @@ body {
           else localStorage.removeItem('lc_karma_pages');
           _rc.quizzes = parseInt(localStorage.getItem('lc_karma_quizzes') || '0', 10);
           if (_rc.quizzes > 0) { _karma += _rc.quizzes * 5; }
+          localStorage.setItem('lc_karma_ts', String(Date.now()));  // mark fresh
           if (kPts) kPts.textContent = _karma;
-          // detail: raw counts so they match what the network map shows
           var parts = [];
           if (_rc.forks    > 0) parts.push('🍴 ' + _rc.forks + ' forks');
           if (_rc.stars    > 0) parts.push('⭐ ' + _rc.stars + ' stars');
@@ -260,15 +300,14 @@ body {
           if (_rc.bio)          parts.push('📝 bio');
           if (_rc.site)         parts.push('🚀 site');
           var detEl = document.getElementById('lc-ud-karma-detail');
-          if (detEl) detEl.textContent = parts.join('  ·  ');
+          if (detEl) detEl.textContent = parts.join('  ·  ') + '  ·  ⏱ just now';
           if (kRow) kRow.style.display = 'flex';
         })
         .catch(function(e) {
           if (e === 'no-repo') { if (kRow) kRow.style.display = 'none'; return; }
-          // traffic endpoint may 403 without push access — still show what we have
           if (kPts) kPts.textContent = _karma;
           var detEl = document.getElementById('lc-ud-karma-detail');
-          if (detEl) detEl.textContent = _detail.join('  ·  ');
+          if (detEl && detEl.textContent) detEl.textContent += '  ·  ⚠️ partial';
           if (kRow && _karma > 0) kRow.style.display = 'flex';
         });
 
@@ -287,7 +326,7 @@ body {
     if (cached && cachedFor === pat) { showUser(cached); }
     else {
       fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + pat } })
-        .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function(r){ var rem=parseInt(r.headers.get('X-RateLimit-Remaining')||'-1',10); if(rem>=0)localStorage.setItem('lc_rate_remaining',String(rem)); return r.ok ? r.json() : Promise.reject(r.status); })
         .then(function(u){
           localStorage.setItem('lc_gh_user', JSON.stringify(u));
           localStorage.setItem('lc_gh_user_for', pat);
