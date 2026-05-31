@@ -1584,6 +1584,7 @@
     document.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(upgradeChart);
     document.querySelectorAll(".highlighter-rouge.map").forEach(upgradeMap);
     document.querySelectorAll("p.folder").forEach(upgradeFolder);
+    document.querySelectorAll("p.recorder").forEach(upgradeRecorder);
   }
 
   // --- shared helpers for section-based widgets ---
@@ -2115,6 +2116,228 @@
     }
     dots.forEach(function(d){ d.addEventListener("click", function(){ show(parseInt(d.dataset.idx, 10)); }); });
     setInterval(function(){ show((idx + 1) % elItems.length); }, delay);
+  }
+
+  // ── Screen + face recorder ────────────────────────────────────────────────
+  function upgradeRecorder(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var pip     = el.getAttribute("pip")  || "bottom-right";
+    var pipSize = parseInt(el.getAttribute("size") || "180", 10);
+    var fps     = parseInt(el.getAttribute("fps")  || "25",  10);
+
+    var mimeType = ["video/webm;codecs=vp9","video/webm","video/mp4"]
+      .find(function(t){ return MediaRecorder.isTypeSupported(t); }) || "";
+    var ext = mimeType.includes("mp4") ? "mp4" : "webm";
+
+    /* ── UI ── */
+    var wrap = document.createElement("div");
+    wrap.className = "lc-recorder";
+    wrap.innerHTML = [
+      '<style>',
+      '.lc-recorder{border:1px solid #ddd;border-radius:10px;overflow:hidden;max-width:480px;font-family:inherit}',
+      '.lc-rec-head{background:#1e1e2e;color:#cdd6f4;display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:.9em;font-weight:600}',
+      '.lc-rec-dot{width:10px;height:10px;border-radius:50%;background:#555;flex-shrink:0}',
+      '.lc-rec-dot.live{background:#f33;animation:lcBlink 1s infinite}',
+      '@keyframes lcBlink{0%,100%{opacity:1}50%{opacity:.2}}',
+      '.lc-rec-body{padding:14px 16px;background:#fafafa}',
+      '.lc-cam-wrap{display:flex;justify-content:center;margin-bottom:14px}',
+      '.lc-cam-circle{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #ddd;background:#111;position:relative}',
+      '.lc-cam-circle video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}',
+      '.lc-cam-circle .lc-cam-off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em;background:#1e1e2e}',
+      '.lc-rec-opts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}',
+      '.lc-rec-opt{font-size:.82em;padding:4px 10px;border:1px solid #ccc;border-radius:20px;cursor:pointer;background:#fff;color:#333;user-select:none}',
+      '.lc-rec-opt.on{background:#0066cc;color:#fff;border-color:#0066cc}',
+      '.lc-rec-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}',
+      '.lc-rec-btn{padding:.45em 1.2em;border:none;border-radius:6px;cursor:pointer;font-size:.9em;font-weight:600}',
+      '.lc-rec-btn.start{background:#0066cc;color:#fff}.lc-rec-btn.start:hover{background:#0052a3}',
+      '.lc-rec-btn.stop{background:#c00;color:#fff}.lc-rec-btn.stop:hover{background:#a00}',
+      '.lc-rec-btn.again{background:#eee;color:#333}.lc-rec-btn.again:hover{background:#ddd}',
+      '.lc-rec-timer{font-variant-numeric:tabular-nums;font-size:.9em;color:#555;min-width:60px}',
+      '.lc-rec-status{font-size:.82em;color:#888;margin-top:8px;min-height:1.2em}',
+      '.lc-rec-status.ok{color:#1a7a1a}.lc-rec-status.err{color:#c00}',
+      '</style>',
+      '<div class="lc-rec-head"><span class="lc-rec-dot" id="lc-rd"></span><span>🎬 Screen Recorder</span></div>',
+      '<div class="lc-rec-body">',
+      '  <div class="lc-cam-wrap"><div class="lc-cam-circle"><video id="lc-rcam" autoplay muted playsinline></video><div class="lc-cam-off" id="lc-roff">📷</div></div></div>',
+      '  <div class="lc-rec-opts">',
+      '    <span class="lc-rec-opt on"  id="lc-ropt-cam">📷 Camera</span>',
+      '    <span class="lc-rec-opt on"  id="lc-ropt-mic">🎤 Mic</span>',
+      '    <span class="lc-rec-opt off" id="lc-ropt-snd">🔊 Screen audio</span>',
+      '  </div>',
+      '  <div class="lc-rec-actions">',
+      '    <button class="lc-rec-btn start" id="lc-rbtn">▶ Start recording</button>',
+      '    <span class="lc-rec-timer" id="lc-rtimer"></span>',
+      '  </div>',
+      '  <div class="lc-rec-status" id="lc-rstat"></div>',
+      '</div>'
+    ].join("");
+    el.parentNode.replaceChild(wrap, el);
+
+    var btnEl    = wrap.querySelector("#lc-rbtn");
+    var timerEl  = wrap.querySelector("#lc-rtimer");
+    var statEl   = wrap.querySelector("#lc-rstat");
+    var dotEl    = wrap.querySelector("#lc-rd");
+    var camVid   = wrap.querySelector("#lc-rcam");
+    var camOff   = wrap.querySelector("#lc-roff");
+    var optCam   = wrap.querySelector("#lc-ropt-cam");
+    var optMic   = wrap.querySelector("#lc-ropt-mic");
+    var optSnd   = wrap.querySelector("#lc-ropt-snd");
+
+    var useCam = true, useMic = true, useSnd = false;
+    function toggleOpt(el, flag, setter) {
+      el.addEventListener("click", function() {
+        setter(!flag);
+        el.classList.toggle("on", !flag);
+        flag = !flag;
+        if (el === optCam) { useCam = flag; initCam(); }
+        if (el === optMic) useMic = flag;
+        if (el === optSnd) useSnd = flag;
+      });
+    }
+    optCam.addEventListener("click", function(){
+      useCam = !useCam;
+      optCam.classList.toggle("on", useCam);
+      initCam();
+    });
+    optMic.addEventListener("click", function(){ useMic = !useMic; optMic.classList.toggle("on", useMic); });
+    optSnd.addEventListener("click", function(){ useSnd = !useSnd; optSnd.classList.toggle("on", useSnd); });
+
+    var camStream = null;
+    function initCam() {
+      if (!useCam) {
+        if (camStream) { camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
+        camVid.srcObject = null;
+        camOff.style.display = "flex";
+        return;
+      }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+        .then(function(s) {
+          camStream = s;
+          camVid.srcObject = s;
+          camOff.style.display = "none";
+        })
+        .catch(function() { camOff.style.display = "flex"; useCam = false; optCam.classList.remove("on"); });
+    }
+    initCam(); // start camera preview immediately
+
+    var recorder = null, chunks = [], timerInterval = null, startTs = 0;
+
+    function setStatus(msg, cls) { statEl.className = "lc-rec-status " + (cls||""); statEl.textContent = msg; }
+    function fmtTime(ms) {
+      var s = Math.floor(ms/1000), m = Math.floor(s/60);
+      return String(m).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
+    }
+
+    btnEl.addEventListener("click", function() {
+      if (recorder && recorder.state === "recording") { recorder.stop(); return; }
+      startRecording();
+    });
+
+    function startRecording() {
+      btnEl.disabled = true;
+      setStatus("Requesting screen share…");
+      navigator.mediaDevices.getDisplayMedia({ video: { frameRate: fps }, audio: useSnd })
+        .then(function(screenStream) {
+          setStatus("Setting up…");
+          var screenVid = document.createElement("video");
+          screenVid.srcObject = screenStream;
+          screenVid.muted = true;
+          screenVid.play();
+
+          screenVid.onloadedmetadata = function() {
+            var W = Math.min(screenVid.videoWidth,  1920);
+            var H = Math.min(screenVid.videoHeight, 1080);
+            var canvas = document.createElement("canvas");
+            canvas.width = W; canvas.height = H;
+            var ctx = canvas.getContext("2d");
+
+            // PiP geometry (circular face)
+            var r = pipSize / 2;
+            var margin = 16;
+            var px, py;
+            if      (pip === "bottom-right") { px = W - pipSize - margin; py = H - pipSize - margin; }
+            else if (pip === "bottom-left")  { px = margin;               py = H - pipSize - margin; }
+            else if (pip === "top-right")    { px = W - pipSize - margin; py = margin; }
+            else                             { px = margin;               py = margin; } // top-left
+
+            var active = true;
+            function draw() {
+              if (!active) return;
+              ctx.drawImage(screenVid, 0, 0, W, H);
+              if (useCam && camStream && camVid.readyState >= 2) {
+                // circular clip
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(px + r, py + r, r, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(camVid, px, py, pipSize, pipSize);
+                ctx.restore();
+                // white border ring
+                ctx.save();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "rgba(0,0,0,.4)";
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.arc(px + r, py + r, r + 1, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+              }
+              requestAnimationFrame(draw);
+            }
+            draw();
+
+            // audio tracks
+            var canvasStream = canvas.captureStream(fps);
+            if (useSnd) screenStream.getAudioTracks().forEach(function(t){ canvasStream.addTrack(t); });
+            if (useMic) {
+              navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                .then(function(micS) {
+                  micS.getAudioTracks().forEach(function(t){ canvasStream.addTrack(t); });
+                  launchRecorder(canvasStream, screenStream, active);
+                })
+                .catch(function() { launchRecorder(canvasStream, screenStream, active); });
+            } else {
+              launchRecorder(canvasStream, screenStream, active);
+            }
+
+            function launchRecorder(stream, screenSrc) {
+              chunks = [];
+              recorder = new MediaRecorder(stream, mimeType ? { mimeType: mimeType } : {});
+              recorder.ondataavailable = function(e){ if (e.data.size) chunks.push(e.data); };
+              recorder.onstop = function() {
+                active = false;
+                clearInterval(timerInterval);
+                screenSrc.getTracks().forEach(function(t){ t.stop(); });
+                stream.getTracks().forEach(function(t){ t.stop(); });
+                dotEl.classList.remove("live"); timerEl.textContent = "";
+                btnEl.disabled = false; btnEl.className = "lc-rec-btn again"; btnEl.textContent = "▶ Record again";
+                var blob = new Blob(chunks, { type: mimeType || "video/webm" });
+                var ts   = new Date().toISOString().slice(0,19).replace(/:/g,"-");
+                var a    = document.createElement("a");
+                a.href   = URL.createObjectURL(blob);
+                a.download = "recording-" + ts + "." + ext;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setStatus("✅ Saved as recording-" + ts + "." + ext, "ok");
+              };
+              recorder.start(1000);
+              startTs = Date.now();
+              dotEl.classList.add("live");
+              btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop & download";
+              timerInterval = setInterval(function(){ timerEl.textContent = fmtTime(Date.now()-startTs); }, 500);
+              setStatus("● Recording — click ⏹ when done.");
+              // disable options while recording
+              [optCam, optMic, optSnd].forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
+            }
+          };
+        })
+        .catch(function(e) {
+          btnEl.disabled = false;
+          setStatus("❌ " + (e.name === "NotAllowedError" ? "Screen share was cancelled." : e.message), "err");
+        });
+    }
   }
 
   window.lcPyrun = { attach: attach };
