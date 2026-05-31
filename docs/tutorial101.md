@@ -70,14 +70,14 @@ Read more about … the [streamlit markdown component](https://docs.streamlit.io
 
 This is a `proxy`, including content from another module.
 
-[Lucky](/modules/dog)
+[Lucky](/_dog)
 {: .embed }
 
 ### 🐕 Proxy too [Just another proxy to the same module]
 
 Just another `proxy` to the same module.
 
-[Lucky](/modules/dog)
+[Lucky](/_dog)
 {: .embed }
 ````
 {: .blocks cols="2" }

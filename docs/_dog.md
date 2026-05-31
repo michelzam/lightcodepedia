@@ -1,5 +1,5 @@
 ---
-permalink: /modules/dog
+permalink: /_dog
 layout: null
 ---
 <h2>🐕 Man's best friend 🐶</h2>
