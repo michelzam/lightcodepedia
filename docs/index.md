@@ -41,12 +41,12 @@ Configure your LightNode, set a custom domain, and ship it on GitHub Pages in mi
 ## 🛠️ Tools
 
 ```
-### 🤖 Learn with Ari
-Chat with your AI pair lightcoder, trained on LightCode concepts. 🆕
+### 🎭 Examples
+Live demos of components in action — pick one to see how it works.
 
-[Chat with Ari →](/ari)
+[Browse →](/components/examples)
 
-### 🎭 Events
+### 🎪 Events
 Conferences, certificates, publications and quotes from educators.
 
 [See events →](/events)
@@ -66,11 +66,6 @@ Customize your pages here.
 
 [Pages →](/pages)
 
-### ⚙️ Setup
-Fork, configure and deploy your own LightNode.
-
-[Setup →](/setup)
-
 ### ℹ️ About
 Authors, contributors, status and EU funding.
 
@@ -81,7 +76,7 @@ Older demos, examples, readings and guides — preserved for reference.
 
 [Archive →](/archive/)
 ```
-{: .cards cols="4" }
+{: .cards cols="3" }
 
 ## 🗣️ What people say
 
