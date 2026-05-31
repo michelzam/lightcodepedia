@@ -133,6 +133,12 @@
 .lc-accordion details summary::-webkit-details-marker { display: none; }
 .lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #e8f0fe; color: #0066cc; }
 .lc-accordion details .lc-ac-body { padding: 0.8em 1.2em; }
+/* lazy blocks */
+.lc-lazy-block { border: 1px solid #ddd; border-radius: 6px; margin: 0.5em 0; overflow: hidden; }
+.lc-lazy-block > summary { padding: 0.65em 1em; background: #f5f5f5; cursor: pointer; font-weight: 600; list-style: none; user-select: none; }
+.lc-lazy-block > summary::-webkit-details-marker { display: none; }
+.lc-lazy-block[open] > summary { background: #e8f0fe; color: #0066cc; border-bottom: 1px solid #ddd; }
+.lc-lazy-block .lc-lazy-content { padding: 0.3em 0 0; }
 /* radio */
 .lc-radio-group { margin: 1em 0; }
 .lc-radio-options { margin-bottom: 1em; padding: 0.6em 1em; background: #f5f5f5; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 0.2em 0; }
@@ -1885,16 +1891,30 @@
   function upgradeAccordion(el) {
     var sections = parseSections(el);
     if (!sections.length) return;
-    loadMarked(function() {
-      var wrap = document.createElement("div");
-      wrap.className = "lc-accordion";
-      sections.forEach(function(s) {
-        var d = document.createElement("details");
-        d.innerHTML = "<summary>" + s.label + "</summary><div class=\"lc-ac-body\">" + markdownBody(s.body) + "</div>";
-        wrap.appendChild(d);
+    var wrap = document.createElement("div");
+    wrap.className = "lc-accordion";
+    sections.forEach(function(s) {
+      var d = document.createElement("details");
+      var sum = document.createElement("summary");
+      sum.textContent = s.label;
+      var body = document.createElement("div");
+      body.className = "lc-ac-body";
+      d.appendChild(sum);
+      d.appendChild(body);
+      d.addEventListener("toggle", function() {
+        if (!d.open || body.dataset.lcReady) return;
+        body.dataset.lcReady = "1";
+        loadMarked(function() {
+          body.innerHTML = markdownBody(s.body);
+          body.querySelectorAll("p.video").forEach(safe(upgradeVideo));
+          body.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
+          body.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
+          if (window.lcUpgradeQuiz) body.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
+        });
       });
-      el.parentNode.replaceChild(wrap, el);
+      wrap.appendChild(d);
     });
+    el.parentNode.replaceChild(wrap, el);
   }
 
   function upgradeTabsInline(el) {
@@ -2263,9 +2283,51 @@
     });
   }
 
+  function _renderAndScanBlock(wrap, sections) {
+    wrap.innerHTML = sections.map(function(s) {
+      var html = '<div class="lc-block">';
+      if (s.label) {
+        var helpMatch = s.label.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+        var title = helpMatch ? helpMatch[1].trim() : s.label;
+        var help = helpMatch ? helpMatch[2] : null;
+        html += '<h3>' + title;
+        if (help) html += ' <span class="lc-help" title="' + escapeHtml(help) + '">ℹ️</span>';
+        html += '</h3>';
+      }
+      html += markdownBody(s.body);
+      return html + '</div>';
+    }).join("");
+    wrap.querySelectorAll("p").forEach(function(p) {
+      var t = (p.textContent || "").trim();
+      var m = t.match(/^\{:\s*(.+?)\s*\}$/);
+      if (!m) return;
+      var prev = p.previousElementSibling;
+      if (!prev) return;
+      var body = m[1];
+      var c, classRe = /\.([\w-]+)/g;
+      while ((c = classRe.exec(body)) !== null) prev.classList.add(c[1]);
+      var idM = body.match(/#([\w-]+)/);
+      if (idM) prev.id = idM[1];
+      var kv, kvRe = /([\w-]+)="([^"]*)"/g;
+      while ((kv = kvRe.exec(body)) !== null) prev.setAttribute(kv[1], kv[2]);
+      p.parentNode.removeChild(p);
+    });
+    wrap.querySelectorAll("p.video").forEach(safe(upgradeVideo));
+    wrap.querySelectorAll("p.button").forEach(safe(upgradeButton));
+    wrap.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
+    wrap.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
+    if (window.lcUpgradeQuiz) wrap.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
+    wrap.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
+    wrap.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));
+    wrap.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
+    wrap.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
+    wrap.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
+  }
+
   function upgradeBlock(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
+    var lazy = el.classList.contains("lazy");
     var cols = el.getAttribute("cols") || "1";
     var colStyle = cols === "1" ? "1fr" : "repeat(" + cols + ", 1fr)";
     var sections = parseSections(el);
@@ -2274,50 +2336,39 @@
       var raw = (code ? code.textContent : el.textContent).trim();
       sections = [{ label: "", body: raw }];
     }
+
+    if (lazy) {
+      var titles = sections.filter(function(s){ return s.label; }).map(function(s){
+        var m = s.label.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+        return m ? m[1].trim() : s.label;
+      });
+      var summaryText = titles.length ? titles.join(" · ") : "Section";
+      var details = document.createElement("details");
+      details.className = "lc-lazy-block";
+      var sumEl = document.createElement("summary");
+      sumEl.textContent = summaryText;
+      var content = document.createElement("div");
+      content.className = "lc-lazy-content";
+      details.appendChild(sumEl);
+      details.appendChild(content);
+      el.parentNode.replaceChild(details, el);
+      details.addEventListener("toggle", function() {
+        if (!details.open || details.dataset.lcReady) return;
+        details.dataset.lcReady = "1";
+        var wrap = document.createElement("div");
+        wrap.className = "lc-blocks";
+        wrap.style.gridTemplateColumns = colStyle;
+        content.appendChild(wrap);
+        loadMarked(function() { _renderAndScanBlock(wrap, sections); });
+      });
+      return;
+    }
+
     var wrap = document.createElement("div");
     wrap.className = "lc-blocks";
     wrap.style.gridTemplateColumns = colStyle;
     el.parentNode.replaceChild(wrap, el);
-    loadMarked(function() {
-      wrap.innerHTML = sections.map(function(s) {
-        var html = '<div class="lc-block">';
-        if (s.label) {
-          var helpMatch = s.label.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
-          var title = helpMatch ? helpMatch[1].trim() : s.label;
-          var help = helpMatch ? helpMatch[2] : null;
-          html += '<h3>' + title;
-          if (help) html += ' <span class="lc-help" title="' + escapeHtml(help) + '">ℹ️</span>';
-          html += '</h3>';
-        }
-        html += markdownBody(s.body);
-        return html + '</div>';
-      }).join("");
-      wrap.querySelectorAll("p").forEach(function(p) {
-        var t = (p.textContent || "").trim();
-        var m = t.match(/^\{:\s*(.+?)\s*\}$/);
-        if (!m) return;
-        var prev = p.previousElementSibling;
-        if (!prev) return;
-        var body = m[1];
-        var c, classRe = /\.([\w-]+)/g;
-        while ((c = classRe.exec(body)) !== null) prev.classList.add(c[1]);
-        var idM = body.match(/#([\w-]+)/);
-        if (idM) prev.id = idM[1];
-        var kv, kvRe = /([\w-]+)="([^"]*)"/g;
-        while ((kv = kvRe.exec(body)) !== null) prev.setAttribute(kv[1], kv[2]);
-        p.parentNode.removeChild(p);
-      });
-      wrap.querySelectorAll("p.video").forEach(safe(upgradeVideo));
-      wrap.querySelectorAll("p.button").forEach(safe(upgradeButton));
-      wrap.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
-      wrap.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
-      if (window.lcUpgradeQuiz) wrap.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
-      wrap.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
-      wrap.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));
-      wrap.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
-      wrap.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
-      wrap.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
-    });
+    loadMarked(function() { _renderAndScanBlock(wrap, sections); });
   }
 
   function upgradeCarousel(el) {

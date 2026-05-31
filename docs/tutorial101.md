@@ -73,7 +73,7 @@ Read more about [Markdown Cheat Sheet](https://www.markdownguide.org/cheat-sheet
 
 {: .video height="380" }
 ````
-{: .block }
+{: .block .lazy }
 
 ````
 ### 🐕 Proxy [This is a proxy, including content from another module]
@@ -92,7 +92,7 @@ Just another `proxy`, including content from the same other module.
 
 {: .embed }
 ````
-{: .blocks cols="2" }
+{: .blocks cols="2" .lazy }
 
 ````
 ### 🗺️ Map [This map is interactive — zoom in to spot parks in Paris]
@@ -111,7 +111,7 @@ This `map` is interactive. You can zoom in and out to spot parcs in Paris if you
 ```
 {: .map height="340" zoom="12" }
 ````
-{: .block }
+{: .block .lazy }
 
 ````
 ### 🐕 Grid [Editable — click a cell to change a value, then watch the chart]
@@ -154,7 +154,7 @@ Bulldog,14,90
 ```
 {: .chart type="bar" bound-to="dog-grid-tuto" x="breed" height="280" }
 ````
-{: .blocks cols="2" }
+{: .blocks cols="2" .lazy }
 
 ````
 ### 🐕 Lucky [Editable — change any field, it's a live object]
@@ -199,7 +199,7 @@ notes: A fish, not a dog! Best friends with Lucky through the bowl glass.
 ```
 {: .form editable="true" }
 ````
-{: .blocks cols="2" }
+{: .blocks cols="2" .lazy }
 
 ````
 ### 🎲 Your first riddle: Lucky & Wanda
@@ -240,7 +240,7 @@ notes: A fish, not a dog! Best friends with Lucky through the bowl glass.
 
 {: .quiz }
 ````
-{: .block }
+{: .block .lazy }
 
 ```
 ### ⚙️ Build your own page
