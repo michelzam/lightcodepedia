@@ -61,6 +61,7 @@ Read more about … the [streamlit markdown component](https://docs.streamlit.io
 🎵 Man's best song. Go ahead. Play it!
 
 [▶️ Led Zeppelin — Black Dog](https://youtu.be/6tlSx0jkuLM?si=OHbXv8Vp9NKidh9e)
+
 {: .video height="380" }
 ````
 {: .block }
@@ -71,6 +72,7 @@ Read more about … the [streamlit markdown component](https://docs.streamlit.io
 This is a `proxy`, including content from another module.
 
 [Lucky](/_dog)
+
 {: .embed }
 
 ### 🐕 Proxy too [Just another proxy to the same module]
@@ -78,6 +80,7 @@ This is a `proxy`, including content from another module.
 Just another `proxy` to the same module.
 
 [Lucky](/_dog)
+
 {: .embed }
 ````
 {: .blocks cols="2" }
@@ -198,6 +201,7 @@ notes: Best friends with Lucky. Wakes him up every morning.
 - [ ] German Shepherd
 - [x] Labrador Retriever
 - [ ] Golden Retriever
+
 {: .quiz }
 
 **Q:** According to the grid, which dog runs the fastest?
@@ -206,6 +210,7 @@ notes: Best friends with Lucky. Wakes him up every morning.
 - [ ] Saluki — 68 km/h
 - [ ] Border Collie — 48 km/h
 - [ ] Labrador — 40 km/h
+
 {: .quiz }
 
 **Q:** Which Paris park is the largest?
@@ -214,6 +219,7 @@ notes: Best friends with Lucky. Wakes him up every morning.
 - [ ] Buttes-Chaumont
 - [x] Bois de Boulogne — over 800 hectares
 - [ ] Jardin du Luxembourg
+
 {: .quiz }
 
 **Q:** What is Wanda's breed?
@@ -222,6 +228,7 @@ notes: Best friends with Lucky. Wakes him up every morning.
 - [ ] Poodle
 - [ ] Husky
 - [x] Golden Retriever
+
 {: .quiz }
 ````
 {: .block }
