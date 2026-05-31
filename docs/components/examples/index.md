@@ -1,6 +1,3 @@
----
-title: Examples
----
 # 🎭 Examples
 
 Various examples using components. 
