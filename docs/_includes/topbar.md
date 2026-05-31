@@ -193,13 +193,26 @@ body {
       var _kQuizCached   = parseInt(localStorage.getItem('lc_karma_quizzes') || '0', 10);
       _kCached += _kForksCached * 50 + _kStarsCached * 10 + _kViewsCached + _kPagesCached * 10 + _kQuizCached * 5;
       if (kPts) kPts.textContent = _kCached || '…';
-      if (kRow && _kCached > 0) kRow.style.display = 'flex';
+      if (kRow && _kCached > 0) {
+        kRow.style.display = 'flex';
+        var _cachedParts = [];
+        if (_kForksCached > 0) _cachedParts.push('🍴 ' + _kForksCached + ' forks');
+        if (_kStarsCached > 0) _cachedParts.push('⭐ ' + _kStarsCached + ' stars');
+        if (_kViewsCached > 0) _cachedParts.push('👥 ' + _kViewsCached + ' visitors');
+        if (_kPagesCached > 0) _cachedParts.push('📄 ' + _kPagesCached + ' pages');
+        if (_kQuizCached  > 0) _cachedParts.push('🧩 ' + _kQuizCached  + ' quizzes');
+        if (localStorage.getItem('lc_karma_bio'))    _cachedParts.push('📝 bio');
+        if (localStorage.getItem('lc_karma_launch')) _cachedParts.push('🚀 site');
+        var _detCached = document.getElementById('lc-ud-karma-detail');
+        if (_detCached) _detCached.textContent = _cachedParts.join('  ·  ');
+      }
 
       // verify karma from GitHub API (sequential chain: repo → bio file → traffic)
       var _ghHdrs = { Authorization: 'Bearer ' + pat, 'X-GitHub-Api-Version': '2022-11-28' };
       var _repoSlug = (repo || (u.login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
       var _repoBase = 'https://api.github.com/repos/' + u.login + '/' + _repoSlug;
-      var _karma = 0; var _detail = [];
+      var _karma = 0;
+      var _rc = { forks: 0, stars: 0, visitors: 0, pages: 0, quizzes: 0, bio: false, site: false };
 
       fetch(_repoBase, { headers: _ghHdrs })
         .then(function(r) {
@@ -207,18 +220,18 @@ body {
           return r.json();
         })
         .then(function(repoData) {
-          _karma += 15; _detail.push('+15 site');
+          _rc.site = true; _karma += 15;
           localStorage.setItem('lc_karma_launch', '1');
-          var forks = repoData.forks_count || 0;
-          var stars = repoData.stargazers_count || 0;
-          if (forks > 0) { _karma += forks * 50; _detail.push('+' + forks + '×50 🍴'); localStorage.setItem('lc_karma_forks', String(forks)); }
+          _rc.forks = repoData.forks_count || 0;
+          _rc.stars = repoData.stargazers_count || 0;
+          if (_rc.forks > 0) { _karma += _rc.forks * 50; localStorage.setItem('lc_karma_forks', String(_rc.forks)); }
           else localStorage.removeItem('lc_karma_forks');
-          if (stars > 0) { _karma += stars * 10; _detail.push('+' + stars + '×10 ⭐'); localStorage.setItem('lc_karma_stars', String(stars)); }
+          if (_rc.stars > 0) { _karma += _rc.stars * 10; localStorage.setItem('lc_karma_stars', String(_rc.stars)); }
           else localStorage.removeItem('lc_karma_stars');
           return fetch(_repoBase + '/contents/docs/_profile.md', { headers: _ghHdrs });
         })
         .then(function(r) {
-          if (r && r.ok) { _karma += 10; _detail.push('+10 bio'); localStorage.setItem('lc_karma_bio', '1'); }
+          if (r && r.ok) { _rc.bio = true; _karma += 10; localStorage.setItem('lc_karma_bio', '1'); }
           else localStorage.removeItem('lc_karma_bio');
           return Promise.all([
             fetch(_repoBase + '/traffic/views', { headers: _ghHdrs }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
@@ -228,17 +241,26 @@ body {
         .then(function(results) {
           var traffic = results[0];
           var pages   = results[1];
-          var uniques = (traffic && traffic.uniques) || 0;
-          if (uniques > 0) { _karma += uniques; _detail.push('+' + uniques + ' visitors'); localStorage.setItem('lc_karma_traffic', String(uniques)); }
+          _rc.visitors = (traffic && traffic.uniques) || 0;
+          if (_rc.visitors > 0) { _karma += _rc.visitors; localStorage.setItem('lc_karma_traffic', String(_rc.visitors)); }
           else localStorage.removeItem('lc_karma_traffic');
-          var pageCount = Array.isArray(pages) ? pages.filter(function(f){ return f.type === 'file' && /\.md$/i.test(f.name) && !f.name.startsWith('_') && f.name !== 'index.md'; }).length : 0;
-          if (pageCount > 0) { _karma += pageCount * 10; _detail.push('+' + pageCount + '×10 📄'); localStorage.setItem('lc_karma_pages', String(pageCount)); }
+          _rc.pages = Array.isArray(pages) ? pages.filter(function(f){ return f.type === 'file' && /\.md$/i.test(f.name) && !f.name.startsWith('_') && f.name !== 'index.md'; }).length : 0;
+          if (_rc.pages > 0) { _karma += _rc.pages * 10; localStorage.setItem('lc_karma_pages', String(_rc.pages)); }
           else localStorage.removeItem('lc_karma_pages');
-          var quizCount = parseInt(localStorage.getItem('lc_karma_quizzes') || '0', 10);
-          if (quizCount > 0) { _karma += quizCount * 5; _detail.push('+' + quizCount + '×5 🧩'); }
+          _rc.quizzes = parseInt(localStorage.getItem('lc_karma_quizzes') || '0', 10);
+          if (_rc.quizzes > 0) { _karma += _rc.quizzes * 5; }
           if (kPts) kPts.textContent = _karma;
+          // detail: raw counts so they match what the network map shows
+          var parts = [];
+          if (_rc.forks    > 0) parts.push('🍴 ' + _rc.forks + ' forks');
+          if (_rc.stars    > 0) parts.push('⭐ ' + _rc.stars + ' stars');
+          if (_rc.visitors > 0) parts.push('👥 ' + _rc.visitors + ' visitors');
+          if (_rc.pages    > 0) parts.push('📄 ' + _rc.pages + ' pages');
+          if (_rc.quizzes  > 0) parts.push('🧩 ' + _rc.quizzes + ' quizzes');
+          if (_rc.bio)          parts.push('📝 bio');
+          if (_rc.site)         parts.push('🚀 site');
           var detEl = document.getElementById('lc-ud-karma-detail');
-          if (detEl) detEl.textContent = _detail.join('  ·  ');
+          if (detEl) detEl.textContent = parts.join('  ·  ');
           if (kRow) kRow.style.display = 'flex';
         })
         .catch(function(e) {
