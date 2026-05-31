@@ -107,26 +107,25 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 <div id="lcw-done-karma" style="font-size:0.85em;color:#c47900;margin-top:4px"></div>
 </div>
 </div>
-<div style="margin-top:1.4em">
-
-```
-### 🌱 Start the tutorial
-Learn every building block — through the story of a dog called Lucky.
-
-[Start →](/tutorial101)
-
-### ✏️ Edit your pages
-Open the built-in editor and start customising your site right now.
-
-[Edit →](/pages)
-
-### 🧩 Browse components
-See every interactive block with live examples and documentation.
-
-[Browse →](/components/)
-```
-{: .cards cols="3" }
-
+<div class="lcw-next-cards">
+  <a class="lcw-next-card" href="/tutorial101">
+    <div class="lcw-next-icon">🌱</div>
+    <strong>Start the tutorial</strong>
+    <div class="lcw-next-desc">Learn every building block — through the story of a dog called Lucky.</div>
+    <div class="lcw-next-cta">Start →</div>
+  </a>
+  <a class="lcw-next-card" href="/pages">
+    <div class="lcw-next-icon">✏️</div>
+    <strong>Edit your pages</strong>
+    <div class="lcw-next-desc">Open the built-in editor and start customising your site right now.</div>
+    <div class="lcw-next-cta">Edit →</div>
+  </a>
+  <a class="lcw-next-card" href="/components/">
+    <div class="lcw-next-icon">🧩</div>
+    <strong>Browse components</strong>
+    <div class="lcw-next-desc">See every interactive block with live examples and documentation.</div>
+    <div class="lcw-next-cta">Browse →</div>
+  </a>
 </div>
 </div>
 </div>
@@ -212,6 +211,16 @@ See every interactive block with live examples and documentation.
   display: inline-flex; align-items: center; gap: 5px;
 }
 .lcw-share-btn:hover { background: #f5f5f5; }
+.lcw-next-cards { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 1.2em; }
+.lcw-next-card {
+  flex: 1; min-width: 150px; padding: 16px 18px; border: 1px solid #ddd; border-radius: 10px;
+  text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 5px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.lcw-next-card:hover { border-color: #0066cc; box-shadow: 0 2px 12px rgba(0,102,204,.1); }
+.lcw-next-icon { font-size: 1.4em; }
+.lcw-next-desc { font-size: 0.85em; color: #555; flex: 1; }
+.lcw-next-cta { font-size: 0.85em; color: #0066cc; font-weight: 600; margin-top: 4px; }
 </style>
 
 <script>
@@ -223,12 +232,33 @@ See every interactive block with live examples and documentation.
   var _restored = false;
 
   function restoreProgress() {
-    var _hasLaunch = !!localStorage.getItem('lc_karma_launch');
-    var _hasBio    = !!localStorage.getItem('lc_karma_bio');
+    var _hasLaunch  = !!localStorage.getItem('lc_karma_launch');
+    var _hasBio     = !!localStorage.getItem('lc_karma_bio');
+    var _hasStarted = !!localStorage.getItem('lc_started');
     lcwDone(1); lcwDone(2);
-    if (_hasBio)         { lcwDone(3); lcwDone(4); lcwActivate(5); }
+    if (_hasStarted)     { lcwDone(3); lcwDone(4); lcwDone(5); populateUserCard(); lcwActivate(6); }
+    else if (_hasBio)    { lcwDone(3); lcwDone(4); lcwActivate(5); }
     else if (_hasLaunch) { lcwDone(3); lcwActivate(4); }
     else                 { lcwActivate(3); }
+  }
+
+  // verify karma from GitHub API then call restoreProgress
+  function syncKarmaAndRestore() {
+    if (!_user || !_pat) { restoreProgress(); return; }
+    var ghHdrs = { Authorization: 'Bearer ' + _pat, 'X-GitHub-Api-Version': '2022-11-28' };
+    var repoSlug = (localStorage.getItem('lc_ed_repo') || (_user.login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
+    fetch('https://api.github.com/repos/' + _user.login + '/' + repoSlug, { headers: ghHdrs })
+      .then(function(r) {
+        if (r.ok) localStorage.setItem('lc_karma_launch', '1');
+        else      { localStorage.removeItem('lc_karma_launch'); restoreProgress(); return Promise.reject('no-repo'); }
+        return fetch('https://api.github.com/repos/' + _user.login + '/' + repoSlug + '/contents/docs/_profile.md', { headers: ghHdrs });
+      })
+      .then(function(r) {
+        if (r && r.ok) localStorage.setItem('lc_karma_bio', '1');
+        else            localStorage.removeItem('lc_karma_bio');
+        restoreProgress();
+      })
+      .catch(function(e) { if (e !== 'no-repo') restoreProgress(); });
   }
 
   if (stored) {
@@ -237,12 +267,12 @@ See every interactive block with live examples and documentation.
     try { cached = JSON.parse(localStorage.getItem('lc_gh_user') || 'null'); } catch(e){}
 
     if (cached && localStorage.getItem('lc_gh_user_for') === stored) {
-      // valid cache — skip straight to current progress step
+      // valid cache — verify real progress from GitHub then jump to right step
       _user = cached;
       _restored = true;
       document.getElementById('lcw-pat').value = '••••••••••••';
       populateUserCard();
-      restoreProgress();
+      syncKarmaAndRestore();
     } else {
       // PAT exists but cache is stale — skip step 1, re-validate async on step 2
       _restored = true;
@@ -264,7 +294,7 @@ See every interactive block with live examples and documentation.
         localStorage.setItem('lc_gh_user', JSON.stringify(d.user));
         localStorage.setItem('lc_gh_user_for', stored);
         populateUserCard();
-        restoreProgress();
+        syncKarmaAndRestore();
       })
       .catch(function() { /* network error — stay on step 2 so user can retry */ });
     }
@@ -418,6 +448,7 @@ See every interactive block with live examples and documentation.
   }
 
   window.lcwNext = function(n) {
+    if (n === 5) { localStorage.setItem('lc_started', '1'); populateUserCard(); }
     lcwDone(n);
     lcwActivate(n + 1);
   };
