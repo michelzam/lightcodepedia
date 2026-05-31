@@ -6,7 +6,7 @@ meant to build digital skills.
 
 ✨ **Lightcode**pedia is a network 🕸 of LightNodes💡🪢 managed by community members, LightCoders 👩‍🎓
 
-This 🪢_lightnode_ is the **nexus** of the **Lightcode Universe** made of LightNodes.
+🪢 This _lightnode_ is the **nexus** of the **Lightcode Universe** made of LightNodes.
 
 💡️ _You can **fork** this repo and customize it._
 
