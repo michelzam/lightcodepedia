@@ -177,9 +177,13 @@
 /* blocks */
 .lc-blocks { display: grid; gap: 18px; margin: 1em 0; }
 .lc-block { border: 1px solid #ddd; border-radius: 8px; padding: 1.5em 2em; background: #fff; overflow: hidden; }
-.lc-block > h3:first-child { margin-top: 0; margin-bottom: 0.6em; font-size: 1.1em; color: #222; }
+.lc-block > h3:first-child { margin-top: 0; margin-bottom: 0.6em; font-size: 1.1em; color: #222; display: flex; align-items: center; gap: 0.4em; }
 .lc-block img { max-width: 100%; border-radius: 4px; display: block; margin: 0.6em auto; }
 .lc-block p:last-child, .lc-block ul:last-child { margin-bottom: 0; }
+.lc-help { cursor: help; font-style: normal; font-size: 0.9em; opacity: 0.6; transition: opacity 0.15s; }
+.lc-help:hover { opacity: 1; }
+/* embed */
+.lc-embed { margin: 0.5em 0; }
 @media (max-width: 600px) { .lc-blocks { grid-template-columns: 1fr !important; } }
 /* chart */
 .lc-chart { margin: 1em 0; position: relative; }
@@ -2043,7 +2047,22 @@
   function upgradeEmbedExternal(el) {
     var a = el.querySelector("a");
     if (!a) return;
-    el.parentNode.replaceChild(_iframeEl(a.getAttribute("href"), el.getAttribute("height") || "600"), el);
+    var href = a.getAttribute("href");
+    // External URLs → iframe; local paths → inline HTML embed
+    if (/^https?:\/\//i.test(href)) {
+      el.parentNode.replaceChild(_iframeEl(href, el.getAttribute("height") || "600"), el);
+    } else {
+      var container = document.createElement("div");
+      container.className = "lc-embed";
+      container.innerHTML = "<div style='color:#aaa;font-style:italic;padding:0.5em 0'>⏳ Loading…</div>";
+      el.parentNode.replaceChild(container, el);
+      fetch(href)
+        .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+        .then(function(text) { container.innerHTML = text; })
+        .catch(function(err) {
+          container.innerHTML = "<div style='color:#c00'>⚠️ Could not load " + escapeHtml(href) + ": " + escapeHtml(err.message) + "</div>";
+        });
+    }
   }
   function upgradeVideo(el) {
     var a = el.querySelector("a");
@@ -2212,7 +2231,14 @@
     loadMarked(function() {
       wrap.innerHTML = sections.map(function(s) {
         var html = '<div class="lc-block">';
-        if (s.label) html += '<h3>' + s.label + '</h3>';
+        if (s.label) {
+          var helpMatch = s.label.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+          var title = helpMatch ? helpMatch[1].trim() : s.label;
+          var help = helpMatch ? helpMatch[2] : null;
+          html += '<h3>' + title;
+          if (help) html += ' <span class="lc-help" title="' + escapeHtml(help) + '">ℹ️</span>';
+          html += '</h3>';
+        }
         html += markdownBody(s.body);
         return html + '</div>';
       }).join("");
@@ -2233,6 +2259,8 @@
       });
       wrap.querySelectorAll("p.video").forEach(safe(upgradeVideo));
       wrap.querySelectorAll("p.button").forEach(safe(upgradeButton));
+      wrap.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
+      wrap.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
       wrap.querySelectorAll("ul.quiz").forEach(safe(upgradeQuiz));
       wrap.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
       wrap.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));

@@ -3,57 +3,89 @@ title: Tutorial 101
 ---
 # 💡 Tutorial 101
 
-Meet **Lucky** 🐶 — a black Labrador Retriever. He'll walk you through every building block on this page.
+````
+### 👋 Welcome! [This is a tutorial block]
 
-```
-### 👋 Welcome!
+🎓 This tutorial is a *light-code* `module` that demonstrates basic **building blocks**, or just `blocks` :
 
-👩‍🎓 This tutorial introduces the **building blocks** of a Lightcodepedia page — by telling a story.
+- ✅ Formatted text
+- ✅ Basic blocks (image / text / videos)
+- ✅ Interactive maps / proxies
+- ✅ Data components (forms / grids / charts)
+- ✅ Objects encapsulating data / state / behavior / functions
+- ✅ Quizzes
 
-The story is about **Lucky** 🐶, a friendly black Labrador Retriever who loves parks, tennis balls, and long naps.
+Go ahead, explore, play, learn and have fun! 🎉
 
-Along the way you'll see a **block**, a **video**, an interactive **map**, a **data table** linked live to a **chart**, two **forms** side by side, and a **quiz**.
+### 📖 This block is a text [Blocks can display formatted text, hints and help]
 
-Go ahead — explore, play, learn and have fun! 🎉
+A `text` block is a simple block that displays formatted text.
 
-### 🐾 Lucky at a glance
+- ✅ Formatted text **bold** / *italic* / colors
+- ✅ Item lists
+- ✅ Bouquet 🌹🌸💐🌺🌼🌻
+- ✅ Text blocks use hints/helps
+- ✅ Actually all blocks use hints/helps
 
-- **Breed:** Labrador Retriever
-- **Age:** 3 years
-- **Colour:** Black
-- **Top speed:** 40 km/h
-- **Favourite toy:** tennis ball
-- **Fear:** vacuum cleaners
-- **Character:** friendly, playful, easily distracted by smells
-```
+Lightcode relies on [streamlit](https://streamlit.io). Here, we used **markdown**.
+Please feel free to explore the streamlit documentation.
+````
 {: .blocks cols="2" }
 
-```
-### 🐕 Lucky
+````
+### 🐕 This text block has an image [Blocks can also show images]
+
+**Man's best friend** 🐶
+
 ![Lucky — a black Labrador](https://picsum.photos/id/237/500/400)
 
-This is **Lucky** 🐶 — a three-year-old Labrador Retriever who loves parks, tennis balls, and long naps.
+Cute, huh — this local dog?
 
-### 🐕 Lucky
-![Lucky — a black Labrador](https://picsum.photos/id/237/500/400)
+### 📖 Doc [This is documentation about dogs]
 
-This is **Lucky** 🐶 — a three-year-old Labrador Retriever who loves parks, tennis balls, and long naps.
-```
+Docs about dogs can use **bold** and *italic* text
+and also be quite long and boring …
+
+> *Hey, mama, said the way you move*
+> *Gonna make you sweat, gonna make you groove*
+>
+> — Led Zeppelin, Black Dog
+
+Read more about … the [streamlit markdown component](https://docs.streamlit.io/library/api-reference/text/st.markdown).
+````
 {: .blocks cols="2" }
 
-```
-### 🎵 Lucky's favourite song
+````
+### 🎥 Video [Play Lucky's favourite song]
+
 🎵 Man's best song. Go ahead. Play it!
 
 [▶️ Led Zeppelin — Black Dog](https://youtu.be/6tlSx0jkuLM?si=OHbXv8Vp9NKidh9e)
 {: .video height="380" }
-```
+````
 {: .block }
 
 ````
-### 🗺️ Where to walk Lucky in Paris
+### 🐕 Proxy [This is a proxy, including content from another module]
 
-Click a marker to see the park name. Scroll to zoom. Drag to pan.
+This is a `proxy`, including content from another module.
+
+[Lucky](/modules/dog)
+{: .embed }
+
+### 🐕 Proxy too [Just another proxy to the same module]
+
+Just another `proxy` to the same module.
+
+[Lucky](/modules/dog)
+{: .embed }
+````
+{: .blocks cols="2" }
+
+````
+### 🗺️ Map [This map is interactive — zoom in to spot parks in Paris]
+
+This `map` is interactive. You can zoom in and out to spot parcs in Paris if you want to walk your dog.
 
 ```json
 [
@@ -65,61 +97,56 @@ Click a marker to see the park name. Scroll to zoom. Drag to pan.
   { "lat": 48.8937, "lon": 2.3938, "label": "🌳 Parc de la Villette" }
 ]
 ```
-{: .map height="320" zoom="12" }
+{: .map height="340" zoom="12" }
 ````
 {: .block }
 
-## 🏃 How fast can dogs run?
-
 ````
-### 🐕 Dog speeds — table
+### 🐕 Grid [Select a row to update the chart]
 
-Select a row to update the chart.
-
-```csv
-breed,top_speed_kmh,size,temperament
-Greyhound,72,Large,Calm
-Saluki,68,Large,Independent
-Vizsla,64,Medium,Energetic
-Jack Russell,56,Small,Fearless
-Border Collie,48,Medium,Focused
-German Shepherd,48,Large,Loyal
-Labrador,40,Large,Friendly
-Beagle,40,Medium,Curious
-Corgi,35,Small,Cheerful
-Pug,15,Small,Relaxed
-Bulldog,14,Medium,Stubborn
-```
-{: .datagrid #dog-grid-tuto format="csv" title="Dog top speeds" height="260" }
-
-### 📊 Dog speeds — chart
-
-Click a row in the table to update this chart.
+Select a row to update the chart →
 
 ```csv
-breed,top_speed_kmh,size,temperament
-Greyhound,72,Large,Calm
-Saluki,68,Large,Independent
-Vizsla,64,Medium,Energetic
-Jack Russell,56,Small,Fearless
-Border Collie,48,Medium,Focused
-German Shepherd,48,Large,Loyal
-Labrador,40,Large,Friendly
-Beagle,40,Medium,Curious
-Corgi,35,Small,Cheerful
-Pug,15,Small,Relaxed
-Bulldog,14,Medium,Stubborn
+breed,top_speed_kmh
+Greyhound,72
+Saluki,68
+Vizsla,64
+Jack Russell,56
+Border Collie,48
+German Shepherd,48
+Labrador,40
+Beagle,40
+Corgi,35
+Pug,15
+Bulldog,14
 ```
-{: .chart type="bar" bound-to="dog-grid-tuto" x="breed" height="260" }
+{: .datagrid #dog-grid-tuto format="csv" title="Dog top speeds" height="280" }
+
+### 📊 Chart [Updates when you select a row in the grid]
+
+Updates when you select a row in the grid ←
+
+```csv
+breed,top_speed_kmh
+Greyhound,72
+Saluki,68
+Vizsla,64
+Jack Russell,56
+Border Collie,48
+German Shepherd,48
+Labrador,40
+Beagle,40
+Corgi,35
+Pug,15
+Bulldog,14
+```
+{: .chart type="bar" bound-to="dog-grid-tuto" x="breed" y="top_speed_kmh" height="280" }
 ````
 {: .blocks cols="2" }
 
-Lucky is a Labrador — 40 km/h. He could outrun most humans (top speed: ~37 km/h). He will not outrun a Greyhound.
-
-## 🐾 Meet Lucky & Wanda
-
 ````
-### 🐕 Lucky
+### 🐕 Lucky [Lucky's profile]
+
 ```yaml
 name: Lucky
 age: 3
@@ -139,7 +166,8 @@ notes: Afraid of vacuum cleaners. Excellent at looking innocent.
 ```
 {: .form }
 
-### 🦋 Wanda
+### 🦋 Wanda [Wanda's profile]
+
 ```yaml
 name: Wanda
 age: 2
@@ -161,7 +189,8 @@ notes: Best friends with Lucky. Wakes him up every morning.
 ````
 {: .blocks cols="2" }
 
-## 🧩 Quick check — about Lucky
+````
+### 🎲 Your first riddle: Lucky & Wanda
 
 **Q:** What is Lucky's breed?
 
@@ -171,7 +200,7 @@ notes: Best friends with Lucky. Wakes him up every morning.
 - [ ] Golden Retriever
 {: .quiz }
 
-**Q:** According to the table, which dog runs the fastest?
+**Q:** According to the grid, which dog runs the fastest?
 
 - [x] Greyhound — 72 km/h
 - [ ] Saluki — 68 km/h
@@ -194,8 +223,8 @@ notes: Best friends with Lucky. Wakes him up every morning.
 - [ ] Husky
 - [x] Golden Retriever
 {: .quiz }
-
-## 🚀 What's next?
+````
+{: .block }
 
 ```
 ### ⚙️ Build your own page
