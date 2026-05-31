@@ -21,8 +21,8 @@ This 🪢_lightnode_ is the **nexus** of the **Lightcode Universe** made of Ligh
 ## 🎓 Tutorial — No-code → Low-code → Dev
 
 ```
-### 🌱 Step 1 — Explore
-Discover interactive components, run Python in your browser, chat with Ari. No setup required.
+### 🎓 Tutorial
+Explore blocks, video, maps, charts, forms and quizzes — no setup required.
 
 [Start →](/tutorial101)
 
