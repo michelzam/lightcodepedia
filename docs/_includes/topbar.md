@@ -210,6 +210,21 @@ body {
 
       // verify karma from GitHub API — skip if verified less than 1 hour ago
       var _ghHdrs = { Authorization: 'Bearer ' + pat, 'X-GitHub-Api-Version': '2022-11-28' };
+
+      // Authoritative, non-consuming rate check — /rate_limit does NOT count
+      // against your quota, so it's the reliable source of truth. Runs even when
+      // the karma cache is fresh (before the early return below).
+      fetch('https://api.github.com/rate_limit', { headers: _ghHdrs })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){
+          var core = d && d.resources && d.resources.core;
+          if (core) {
+            localStorage.setItem('lc_rate_remaining', String(core.remaining));
+            localStorage.setItem('lc_rate_limit',     String(core.limit));
+            showRateLimit(core.remaining, core.limit);
+          }
+        })
+        .catch(function(){});
       var _repoSlug = (repo || (u.login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
       var _repoBase = 'https://api.github.com/repos/' + u.login + '/' + _repoSlug;
       var _karma = 0;
@@ -235,23 +250,27 @@ body {
         return;  // ← skip all API calls
       }
 
-      // helper: reads X-RateLimit-Remaining from a Response and persists it
+      // helper: reads X-RateLimit-* from a Response and persists it
       function trackRate(r) {
         var rem = parseInt(r.headers.get('X-RateLimit-Remaining') || '-1', 10);
         var lim = parseInt(r.headers.get('X-RateLimit-Limit')     || '-1', 10);
         if (rem >= 0) {
           localStorage.setItem('lc_rate_remaining', String(rem));
-          localStorage.setItem('lc_rate_limit',     String(lim));
-          showRateLimit(rem);
+          if (lim > 0) localStorage.setItem('lc_rate_limit', String(lim));
+          showRateLimit(rem, lim);
         }
         return r;
       }
-      function showRateLimit(rem) {
+      function showRateLimit(rem, lim) {
         var el = document.getElementById('lc-ud-rate');
         if (!el || rem < 0) return;
+        if (!lim || lim < 0) lim = parseInt(localStorage.getItem('lc_rate_limit') || '5000', 10) || 5000;
+        var ratio = rem / lim;
+        // battery emoji: full when plenty left, almost-empty when running low
+        var batt = ratio < 0.2 ? '🪫' : '🔋';
         el.style.display = 'flex';
-        el.textContent = '⚡ ' + rem + ' API calls left this hour';
-        el.style.color = rem < 200 ? '#c00' : rem < 500 ? '#c47900' : '#888';
+        el.textContent = batt + ' ' + rem + ' / ' + lim + ' API calls left this hour';
+        el.style.color = ratio < 0.1 ? '#c00' : ratio < 0.25 ? '#c47900' : '#888';
       }
 
       fetch(_repoBase, { headers: _ghHdrs }).then(trackRate)

@@ -20,7 +20,6 @@ defaults:
 include:
   - modules
   - modules/*.yaml
-  - _dog.md
 
 mermaid:
   # pick any version listed on jsDelivr
