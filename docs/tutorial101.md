@@ -26,7 +26,7 @@ Go ahead — explore, play, learn and have fun! 🎉
 
 This block is a **text block**. It can hold text, lists, images — and a dog.
 
-![Lucky — a cheerful Beagle](https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Beagle_puppy_Cadet.jpg/600px-Beagle_puppy_Cadet.jpg)
+![Lucky — a cheerful Beagle](/images/lucky.svg)
 
 This is **Lucky** 🐶 — a three-year-old Beagle who loves parks, tennis balls, and long naps.
 
