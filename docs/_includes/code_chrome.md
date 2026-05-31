@@ -2046,7 +2046,7 @@
         var subdirFetches = subdirs.map(function(d) {
           var slug   = d.path.replace(/^docs\//, "");
           var pretty = d.name.replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-          var fallback = { title: "📁 " + pretty, snippet: "", url: "/" + slug };
+          var fallback = { title: "📁 " + pretty, snippet: "", url: "/" + slug, isSubdir: true };
           return apiFetch(d.url)
             .then(function(entries) {
               var idx = Array.isArray(entries) && entries.find(function(e) {
@@ -2058,7 +2058,7 @@
                 .then(function(text) {
                   if (!text) return fallback;
                   var meta = extractPageMeta(text);
-                  return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug };
+                  return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug, isSubdir: true };
                 })
                 .catch(function() { return fallback; });
             })
@@ -2082,20 +2082,17 @@
         return Promise.all(subdirFetches.concat(pageFetches)).then(function(results) {
           var subdirItems = results.slice(0, subdirs.length).filter(Boolean);
           var pageItems   = results.slice(subdirs.length);
-          console.log('[folder v2] subdirs=' + subdirs.length + ' files=' + pages.length + ' subdirCards=' + subdirItems.length);
-          // DEBUG BADGE — remove once subfolder cards confirmed working
-          var badge = '<div style="grid-column:1/-1;font-size:1em;color:#fff;padding:6px 12px;background:#c00;border-radius:4px;font-weight:bold">🚨 folder v2: ' + subdirs.length + ' subdir(s) · ' + pages.length + ' file(s) · ' + subdirItems.length + ' subdir card(s)</div>';
-          return { items: subdirItems.concat(pageItems), badge: badge };
+          return pageItems.concat(subdirItems);
         });
       })
-      .then(function(result) {
-        var items = result && result.items;
+      .then(function(items) {
         if (!items || !items.length) {
           wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
           return;
         }
-        wrap.innerHTML = (result.badge || '') + items.map(function(item) {
-          var card = '<div class="lc-card"><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+        wrap.innerHTML = items.map(function(item) {
+          var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
+          var card = '<div class="lc-card"' + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
           if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
           return card + '</div>';
         }).join("");
