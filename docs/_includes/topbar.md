@@ -47,6 +47,12 @@ if (location.search.indexOf('embed=true') >= 0) {
 .lc-ud-head img { width: 40px; height: 40px; border-radius: 50%; }
 .lc-ud-name { font-weight: 600; font-size: 0.9em; line-height: 1.3; }
 .lc-ud-login { font-size: 0.8em; color: #888; }
+.lc-ud-karma-row {
+  color: #b36a00; background: #fffbf0; justify-content: space-between;
+  border-bottom: 1px solid #f0e8d0;
+}
+.lc-ud-karma-row:hover { background: #fff3d0; }
+.lc-ud-karma-pts { font-weight: 700; }
 .lc-ud-row {
   display: flex; align-items: center; gap: 8px;
   padding: 9px 16px; font-size: 0.85em; color: #333; text-decoration: none;
@@ -134,6 +140,10 @@ body {
       <a class="lc-ud-row" id="lc-ud-repo-link" href="#" target="_blank">
         <span>📁</span><span class="lc-ud-repo" id="lc-ud-repo-label"></span>
       </a>
+      <a class="lc-ud-row lc-ud-karma-row" id="lc-ud-karma-row" href="/nodes" style="display:none">
+        <span>🌟 <span id="lc-ud-karma-pts">0</span> karma pts</span>
+        <span style="font-size:0.75em;color:#bbb">network →</span>
+      </a>
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
       <div class="lc-ud-row danger" id="lc-ud-disconnect"><span>🔓</span><span>Disconnect</span></div>
@@ -166,6 +176,14 @@ body {
       document.getElementById('lc-ud-avatar').src = u.avatar_url;
       document.getElementById('lc-ud-name').textContent = u.name || u.login;
       document.getElementById('lc-ud-login').textContent = '@' + u.login;
+      // karma display
+      var _k = 0;
+      if (localStorage.getItem('lc_karma_launch')) _k += 15;
+      if (localStorage.getItem('lc_karma_bio'))    _k += 10;
+      var kRow = document.getElementById('lc-ud-karma-row');
+      var kPts = document.getElementById('lc-ud-karma-pts');
+      if (kRow && kPts) { kPts.textContent = _k; kRow.style.display = 'flex'; }
+
       var repoLabel = repo || (u.login + '/lightcodepedia');
       document.getElementById('lc-ud-repo-label').textContent = repoLabel;
       document.getElementById('lc-ud-repo-link').href = 'https://github.com/' + repoLabel;
