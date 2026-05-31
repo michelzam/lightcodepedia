@@ -1556,6 +1556,10 @@
       .catch(function(e){ if (window.console) console.warn("[lc silent load]", e.message || e); });
   }
 
+  function safe(fn) {
+    return function(el) { try { fn(el); } catch(e) { if (window.console) console.warn("[lc]", e.message || e); } };
+  }
+
   function scan() {
     document.querySelectorAll("p").forEach(function(p){
       var t = (p.textContent || "").trim();
@@ -1572,32 +1576,32 @@
       while ((kv = kvRe.exec(body)) !== null) prev.setAttribute(kv[1], kv[2]);
       p.parentNode.removeChild(p);
     });
-    document.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(upgradeRun);
-    document.querySelectorAll(".highlighter-rouge.repl, pre.repl").forEach(upgradeRepl);
-    document.querySelectorAll(".highlighter-rouge.code, pre.code").forEach(upgradeCode);
-    document.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(upgradeDatagrid);
-    document.querySelectorAll("div.lc-datagrid-src").forEach(upgradeDatagridFile);
-    document.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(upgradeForm);
-    document.querySelectorAll("div.lc-form-src").forEach(upgradeFormFile);
-    document.querySelectorAll("ul.carousel").forEach(upgradeCarousel);
-    document.querySelectorAll(".highlighter-rouge.accordion").forEach(upgradeAccordion);
-    document.querySelectorAll(".highlighter-rouge.tabs").forEach(upgradeTabsInline);
-    document.querySelectorAll("p.tabs").forEach(upgradeTabsFile);
-    document.querySelectorAll(".highlighter-rouge.radio").forEach(upgradeRadio);
-    document.querySelectorAll(".highlighter-rouge.grid").forEach(upgradeGrid);
-    document.querySelectorAll(".highlighter-rouge.scrollable").forEach(upgradeScrollable);
-    document.querySelectorAll(".highlighter-rouge.cards").forEach(upgradeCards);
-    document.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks").forEach(upgradeBlock);
-    document.querySelectorAll("ul.dropdown").forEach(upgradeDropdown);
-    document.querySelectorAll("p.button").forEach(upgradeButton);
-    document.querySelectorAll("p.embed-page").forEach(upgradeEmbedPage);
-    document.querySelectorAll("p.embed").forEach(upgradeEmbedExternal);
-    document.querySelectorAll("p.video").forEach(upgradeVideo);
-    document.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(upgradeChart);
-    document.querySelectorAll(".highlighter-rouge.map").forEach(upgradeMap);
-    document.querySelectorAll(".highlighter-rouge.qr").forEach(upgradeQr);
-    document.querySelectorAll("p.folder").forEach(upgradeFolder);
-    document.querySelectorAll("p.recorder").forEach(upgradeRecorder);
+    document.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
+    document.querySelectorAll(".highlighter-rouge.repl, pre.repl").forEach(safe(upgradeRepl));
+    document.querySelectorAll(".highlighter-rouge.code, pre.code").forEach(safe(upgradeCode));
+    document.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));
+    document.querySelectorAll("div.lc-datagrid-src").forEach(safe(upgradeDatagridFile));
+    document.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
+    document.querySelectorAll("div.lc-form-src").forEach(safe(upgradeFormFile));
+    document.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
+    document.querySelectorAll(".highlighter-rouge.accordion").forEach(safe(upgradeAccordion));
+    document.querySelectorAll(".highlighter-rouge.tabs").forEach(safe(upgradeTabsInline));
+    document.querySelectorAll("p.tabs").forEach(safe(upgradeTabsFile));
+    document.querySelectorAll(".highlighter-rouge.radio").forEach(safe(upgradeRadio));
+    document.querySelectorAll(".highlighter-rouge.grid").forEach(safe(upgradeGrid));
+    document.querySelectorAll(".highlighter-rouge.scrollable").forEach(safe(upgradeScrollable));
+    document.querySelectorAll(".highlighter-rouge.cards").forEach(safe(upgradeCards));
+    document.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks").forEach(safe(upgradeBlock));
+    document.querySelectorAll("ul.dropdown").forEach(safe(upgradeDropdown));
+    document.querySelectorAll("p.button").forEach(safe(upgradeButton));
+    document.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
+    document.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
+    document.querySelectorAll("p.video").forEach(safe(upgradeVideo));
+    document.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
+    document.querySelectorAll(".highlighter-rouge.map").forEach(safe(upgradeMap));
+    document.querySelectorAll(".highlighter-rouge.qr").forEach(safe(upgradeQr));
+    document.querySelectorAll("p.folder").forEach(safe(upgradeFolder));
+    document.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
   }
 
   // --- shared helpers for section-based widgets ---
@@ -2182,14 +2186,12 @@
     wrap.className = "lc-cards";
     wrap.style.gridTemplateColumns = colStyle;
     wrap.style.gap = gap + "px";
-    function renderCards() {
+    el.parentNode.replaceChild(wrap, el);
+    loadMarked(function() {
       wrap.innerHTML = sections.map(function(s) {
         return "<div class=\"lc-card\"><h3>" + s.label + "</h3>" + markdownBody(s.body) + "</div>";
       }).join("");
-    }
-    loadMarked(renderCards);
-    renderCards();
-    el.parentNode.replaceChild(wrap, el);
+    });
   }
 
   function upgradeBlock(el) {
@@ -2206,21 +2208,19 @@
     var wrap = document.createElement("div");
     wrap.className = "lc-blocks";
     wrap.style.gridTemplateColumns = colStyle;
-    function renderBlocks() {
+    el.parentNode.replaceChild(wrap, el);
+    loadMarked(function() {
       wrap.innerHTML = sections.map(function(s) {
         var html = '<div class="lc-block">';
         if (s.label) html += '<h3>' + s.label + '</h3>';
         html += markdownBody(s.body);
         return html + '</div>';
       }).join("");
-      wrap.querySelectorAll("p.video").forEach(upgradeVideo);
-      wrap.querySelectorAll("p.button").forEach(upgradeButton);
-      wrap.querySelectorAll("ul.quiz").forEach(upgradeQuiz);
-      wrap.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(upgradeRun);
-    }
-    loadMarked(renderBlocks);
-    renderBlocks();
-    el.parentNode.replaceChild(wrap, el);
+      wrap.querySelectorAll("p.video").forEach(safe(upgradeVideo));
+      wrap.querySelectorAll("p.button").forEach(safe(upgradeButton));
+      wrap.querySelectorAll("ul.quiz").forEach(safe(upgradeQuiz));
+      wrap.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
+    });
   }
 
   function upgradeCarousel(el) {
