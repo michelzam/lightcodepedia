@@ -1632,18 +1632,18 @@
     document.head.appendChild(s);
   }
 
-  var _leafletQ = null;
-  function loadLeaflet(cb) {
-    if (window.L) { cb(); return; }
-    if (_leafletQ) { _leafletQ.push(cb); return; }
-    _leafletQ = [cb];
+  var _maplibreQ = null;
+  function loadMapLibre(cb) {
+    if (window.maplibregl) { cb(); return; }
+    if (_maplibreQ) { _maplibreQ.push(cb); return; }
+    _maplibreQ = [cb];
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.min.css";
+    link.href = "https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.css";
     document.head.appendChild(link);
     var s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet-src.min.js";
-    s.onload = function() { var q = _leafletQ; _leafletQ = null; q.forEach(function(f){ f(); }); };
+    s.src = "https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.js";
+    s.onload = function() { var q = _maplibreQ; _maplibreQ = null; q.forEach(function(f){ f(); }); };
     document.head.appendChild(s);
   }
 
@@ -1745,8 +1745,6 @@
   function upgradeMap(el) {
     var code = el.querySelector("code");
     var raw = (code ? code.textContent : el.textContent).trim();
-    var lat = parseFloat(el.getAttribute("lat") || "48.86");
-    var lng = parseFloat(el.getAttribute("lng") || "2.35");
     var zoom = parseInt(el.getAttribute("zoom") || "12", 10);
     var h = el.getAttribute("height") || "350";
     var gid = "lc-map-" + Math.random().toString(36).slice(2, 7);
@@ -1756,25 +1754,45 @@
     wrap.style.height = h + "px";
     el.parentNode.replaceChild(wrap, el);
     var markers = [];
-    var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
-    if (lines.length >= 2) {
-      var hdrs = lines[0].split(",").map(function(v){ return v.trim(); });
-      var nI = hdrs.indexOf("name") >= 0 ? hdrs.indexOf("name") : 0;
-      var laI = hdrs.indexOf("lat") >= 0 ? hdrs.indexOf("lat") : 1;
-      var lnI = hdrs.indexOf("lng") >= 0 ? hdrs.indexOf("lng") : 2;
-      lines.slice(1).forEach(function(l) {
-        var c = l.split(",").map(function(v){ return v.trim(); });
-        var mLat = parseFloat(c[laI]), mLng = parseFloat(c[lnI]);
-        if (!isNaN(mLat) && !isNaN(mLng)) markers.push({ name: c[nI] || "", lat: mLat, lng: mLng });
-      });
+    try {
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(function(item) {
+          var mlat = parseFloat(item.lat), mlon = parseFloat(item.lon != null ? item.lon : item.lng);
+          if (!isNaN(mlat) && !isNaN(mlon)) markers.push({ lat: mlat, lon: mlon, label: item.label || item.name || "" });
+        });
+      }
+    } catch(e) {
+      var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+      if (lines.length >= 2) {
+        var hdrs = lines[0].split(",").map(function(v){ return v.trim(); });
+        var nI = ["label","name"].reduce(function(a, k){ return hdrs.indexOf(k) >= 0 ? hdrs.indexOf(k) : a; }, 0);
+        var laI = hdrs.indexOf("lat") >= 0 ? hdrs.indexOf("lat") : 1;
+        var lnI = ["lon","lng"].reduce(function(a, k){ return hdrs.indexOf(k) >= 0 ? hdrs.indexOf(k) : a; }, 2);
+        lines.slice(1).forEach(function(l) {
+          var c = l.split(",").map(function(v){ return v.trim(); });
+          var mlat = parseFloat(c[laI]), mlon = parseFloat(c[lnI]);
+          if (!isNaN(mlat) && !isNaN(mlon)) markers.push({ lat: mlat, lon: mlon, label: c[nI] || "" });
+        });
+      }
     }
-    loadLeaflet(function() {
-      var map = L.map(gid).setView([lat, lng], zoom);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
-        maxZoom: 19
-      }).addTo(map);
-      markers.forEach(function(m) { L.marker([m.lat, m.lng]).addTo(map).bindPopup("<b>" + m.name + "</b>"); });
+    var centerLat = markers.length ? markers.reduce(function(s,m){ return s+m.lat; }, 0)/markers.length : parseFloat(el.getAttribute("lat") || "48.86");
+    var centerLon = markers.length ? markers.reduce(function(s,m){ return s+m.lon; }, 0)/markers.length : parseFloat(el.getAttribute("lon") || "2.35");
+    loadMapLibre(function() {
+      var map = new maplibregl.Map({
+        container: gid,
+        style: "https://tiles.openfreemap.org/styles/positron",
+        center: [centerLon, centerLat],
+        zoom: zoom
+      });
+      markers.forEach(function(m) {
+        var dot = document.createElement("div");
+        dot.style.cssText = "width:13px;height:13px;background:#e05454;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer";
+        new maplibregl.Marker({ element: dot })
+          .setLngLat([m.lon, m.lat])
+          .setPopup(new maplibregl.Popup({ offset: 12 }).setText(m.label))
+          .addTo(map);
+      });
     });
   }
 
