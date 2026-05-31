@@ -84,6 +84,15 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
     if (window.lcQuizScore && window.lcQuizScore.update) {
       window.lcQuizScore.update(quizId, correct);
     }
+    // karma: count each unique quiz solved correctly (+5 pts, tracked in localStorage)
+    if (correct) {
+      var flag = 'lc_quiz_' + quizId;
+      if (!localStorage.getItem(flag)) {
+        localStorage.setItem(flag, '1');
+        var n = parseInt(localStorage.getItem('lc_karma_quizzes') || '0', 10);
+        localStorage.setItem('lc_karma_quizzes', String(n + 1));
+      }
+    }
   }
 
   var QUIZ_SEQ = 0;

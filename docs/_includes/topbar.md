@@ -186,10 +186,12 @@ body {
       var _kCached = 0;
       if (localStorage.getItem('lc_karma_launch')) _kCached += 15;
       if (localStorage.getItem('lc_karma_bio'))    _kCached += 10;
-      var _kForksCached = parseInt(localStorage.getItem('lc_karma_forks')   || '0', 10);
-      var _kStarsCached = parseInt(localStorage.getItem('lc_karma_stars')   || '0', 10);
-      var _kViewsCached = parseInt(localStorage.getItem('lc_karma_traffic') || '0', 10);
-      _kCached += _kForksCached * 50 + _kStarsCached * 10 + _kViewsCached;
+      var _kForksCached  = parseInt(localStorage.getItem('lc_karma_forks')   || '0', 10);
+      var _kStarsCached  = parseInt(localStorage.getItem('lc_karma_stars')   || '0', 10);
+      var _kViewsCached  = parseInt(localStorage.getItem('lc_karma_traffic') || '0', 10);
+      var _kPagesCached  = parseInt(localStorage.getItem('lc_karma_pages')   || '0', 10);
+      var _kQuizCached   = parseInt(localStorage.getItem('lc_karma_quizzes') || '0', 10);
+      _kCached += _kForksCached * 50 + _kStarsCached * 10 + _kViewsCached + _kPagesCached * 10 + _kQuizCached * 5;
       if (kPts) kPts.textContent = _kCached || '…';
       if (kRow && _kCached > 0) kRow.style.display = 'flex';
 
@@ -218,15 +220,22 @@ body {
         .then(function(r) {
           if (r && r.ok) { _karma += 10; _detail.push('+10 bio'); localStorage.setItem('lc_karma_bio', '1'); }
           else localStorage.removeItem('lc_karma_bio');
-          return fetch(_repoBase + '/traffic/views', { headers: _ghHdrs });
+          return Promise.all([
+            fetch(_repoBase + '/traffic/views', { headers: _ghHdrs }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+            fetch(_repoBase + '/contents/docs/pages', { headers: _ghHdrs }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; })
+          ]);
         })
-        .then(function(r) {
-          if (r && r.ok) return r.json(); return null;
-        })
-        .then(function(traffic) {
+        .then(function(results) {
+          var traffic = results[0];
+          var pages   = results[1];
           var uniques = (traffic && traffic.uniques) || 0;
           if (uniques > 0) { _karma += uniques; _detail.push('+' + uniques + ' visitors'); localStorage.setItem('lc_karma_traffic', String(uniques)); }
           else localStorage.removeItem('lc_karma_traffic');
+          var pageCount = Array.isArray(pages) ? pages.filter(function(f){ return f.type === 'file' && /\.md$/i.test(f.name) && !f.name.startsWith('_') && f.name !== 'index.md'; }).length : 0;
+          if (pageCount > 0) { _karma += pageCount * 10; _detail.push('+' + pageCount + '×10 📄'); localStorage.setItem('lc_karma_pages', String(pageCount)); }
+          else localStorage.removeItem('lc_karma_pages');
+          var quizCount = parseInt(localStorage.getItem('lc_karma_quizzes') || '0', 10);
+          if (quizCount > 0) { _karma += quizCount * 5; _detail.push('+' + quizCount + '×5 🧩'); }
           if (kPts) kPts.textContent = _karma;
           var detEl = document.getElementById('lc-ud-karma-detail');
           if (detEl) detEl.textContent = _detail.join('  ·  ');

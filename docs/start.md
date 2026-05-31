@@ -259,18 +259,24 @@ _Karma measures your contribution to the network: your site, your bio, the frien
         var stars = repoData.stargazers_count || 0;
         if (forks > 0) localStorage.setItem('lc_karma_forks', String(forks)); else localStorage.removeItem('lc_karma_forks');
         if (stars > 0) localStorage.setItem('lc_karma_stars', String(stars)); else localStorage.removeItem('lc_karma_stars');
-        return fetch(_repoBase + '/contents/docs/_profile.md', { headers: ghHdrs });
+        // fetch bio file, traffic, and pages directory in parallel
+        return Promise.all([
+          fetch(_repoBase + '/contents/docs/_profile.md', { headers: ghHdrs }),
+          fetch(_repoBase + '/traffic/views', { headers: ghHdrs })
+            .then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
+          fetch(_repoBase + '/contents/docs/pages', { headers: ghHdrs })
+            .then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
+        ]);
       })
-      .then(function(r) {
-        if (r && r.ok) localStorage.setItem('lc_karma_bio', '1');
-        else            localStorage.removeItem('lc_karma_bio');
-        return fetch(_repoBase + '/traffic/views', { headers: ghHdrs });
-      })
-      .then(function(r) { return r && r.ok ? r.json() : null; })
-      .then(function(traffic) {
+      .then(function(results) {
+        var bioResp = results[0], traffic = results[1], pages = results[2];
+        if (bioResp && bioResp.ok) localStorage.setItem('lc_karma_bio', '1'); else localStorage.removeItem('lc_karma_bio');
         var uniques = (traffic && traffic.uniques) || 0;
-        if (uniques > 0) localStorage.setItem('lc_karma_traffic', String(uniques));
-        else              localStorage.removeItem('lc_karma_traffic');
+        if (uniques > 0) localStorage.setItem('lc_karma_traffic', String(uniques)); else localStorage.removeItem('lc_karma_traffic');
+        var pageCount = Array.isArray(pages) ? pages.filter(function(f) {
+          return f.type === 'file' && f.name.endsWith('.md') && !f.name.startsWith('_');
+        }).length : 0;
+        if (pageCount > 0) localStorage.setItem('lc_karma_pages', String(pageCount)); else localStorage.removeItem('lc_karma_pages');
         restoreProgress();
       })
       .catch(function(e) { if (e !== 'no-repo') restoreProgress(); });
@@ -282,12 +288,13 @@ _Karma measures your contribution to the network: your site, your bio, the frien
     try { cached = JSON.parse(localStorage.getItem('lc_gh_user') || 'null'); } catch(e){}
 
     if (cached && localStorage.getItem('lc_gh_user_for') === stored) {
-      // valid cache — verify real progress from GitHub then jump to right step
+      // valid cache — show progress immediately from localStorage, then refine from GitHub
       _user = cached;
       _restored = true;
       document.getElementById('lcw-pat').value = '••••••••••••';
       populateUserCard();
-      syncKarmaAndRestore();
+      restoreProgress();       // immediate: no gray steps while API loads
+      syncKarmaAndRestore();   // async: validates + refines
     } else {
       // PAT exists but cache is stale — skip step 1, re-validate async on step 2
       _restored = true;
