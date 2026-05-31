@@ -57,6 +57,11 @@ Every circle is a LightNode — a fork of Lightcodepedia hosted by a community m
   var GRAPH_KEY = 'lc_nodes_graph';
   var GRAPH_TS_KEY = 'lc_nodes_ts';
 
+  // ── colour by depth ── (defined up here so render() — which may run
+  // synchronously from the cache path — always sees it)
+  var COLORS = ['#f5a623', '#0066cc', '#2a9d2a', '#9b59b6', '#e74c3c'];
+  function nodeColor(d) { return COLORS[Math.min(d.level, COLORS.length - 1)]; }
+
   function apiFetch(url) {
     return fetch(url, { headers: hdrs }).then(function (r) {
       var rem = parseInt(r.headers.get('X-RateLimit-Remaining') || '-1', 10);
@@ -184,10 +189,6 @@ Every circle is a LightNode — a fork of Lightcodepedia hosted by a community m
         }
       });
   }
-
-  // ── colour by depth ───────────────────────────────────────────────────────
-  var COLORS = ['#f5a623', '#0066cc', '#2a9d2a', '#9b59b6', '#e74c3c'];
-  function nodeColor(d) { return COLORS[Math.min(d.level, COLORS.length - 1)]; }
 
   // ── show click popup ──────────────────────────────────────────────────────
   function showPopup(event, d) {
