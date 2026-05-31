@@ -1,5 +1,4 @@
 ---
-title: LightNode Network
 ---
 # 🌐 LightNode Network
 
