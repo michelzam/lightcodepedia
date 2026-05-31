@@ -1,5 +1,5 @@
 # 🎭 Events
-[🏛 LightCode Certificate](pdfs/Dauphine-Certificat.pdf) - Fall 2025, Paris, France 🇫🇷
+[🏛 LightCode Certificate](https://cdn.jsdelivr.net/gh/michelzam/lightcodepedia@main/pdfs/Dauphine-Certificat.pdf) - Fall 2025, Paris, France 🇫🇷
 
 [🏛 LightCode at Dauphine-MIAGE](https://dauphine.psl.eu/formations/masters/miage/m2/vie-du-master) - Fall 2025, Paris, France 🇫🇷
 
@@ -16,7 +16,7 @@
 [ACM MODELS 26 — Lightning talk, Demo & Poster](#upcoming) - 2026 St. Louis, Missouri 🇺🇸
 
 [ACM SIGCSE 25 — Tutorial and Workshop presentation]() - 2025, Portand, Oregon 🇺🇸 [🧰](https://sigcse2025.sigcse.org/details/sigcse-ts-2025-tutorials/17/Tutorial-402-Customize-Your-Class-for-Anyone-An-AI-Aristotelian-Gamified-Approach-t) 
-[📜](pdfs/zam-talk-workshop-short.pdf)
+[📜](https://cdn.jsdelivr.net/gh/michelzam/lightcodepedia@main/pdfs/zam-talk-workshop-short.pdf)
 
 [GND & ICDSST 24 — Conference paper](https://www.euro-online.org/websites/dss/news/gdn-icdsst-2024-porto-portugal/) - June 2024, Porto, Portugal 🇵🇹 [📜](https://zenodo.org/records/17642455)
 
@@ -24,7 +24,7 @@
 
 [ACM MODELS 23 — Poster](https://conf.researchr.org/home/models-2023) - October 2023, Vasterås, Sweden 🇸🇪 [📜](https://dl.acm.org/doi/pdf/10.1109/MODELS-C59198.2023.00029)
 
-[ACM SIGCSE 23 — Exhibitor](https://sigcse2023.sigcse.org/info/supporters) - March 2023, Toronto, Canada 🇨🇦 [📷](pdfs/Sigcse23-Exibitors.pdf)
+[ACM SIGCSE 23 — Exhibitor](https://sigcse2023.sigcse.org/info/supporters) - March 2023, Toronto, Canada 🇨🇦 [📷](https://cdn.jsdelivr.net/gh/michelzam/lightcodepedia@main/pdfs/Sigcse23-Exibitors.pdf)
 
 [ACM MODELS 22 — Conference paper & Poster](https://conf.researchr.org/profile/models-2022/michelzam1) - October 2022, Montreal, Canada  🇨🇦 [🎬](https://www.youtube.com/watch?v=fLoV7TiLIew) [📜](https://www.researchgate.net/publication/362733911_Teaching_Modeling_to_Anyone_the_Aristotelian_Way_Anyone_can_cook_a_sound_model)
 
