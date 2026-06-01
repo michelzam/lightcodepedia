@@ -2690,18 +2690,39 @@
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
     var code = el.querySelector("code");
-    var src = (code ? code.textContent : el.textContent).trim();
-    if (!src) return;
+    var initialCode = (code ? code.textContent : el.textContent).trim();
+    if (!initialCode) return;
     var py = el.getAttribute("py") || "3";
     var h  = el.getAttribute("height") || "400";
-    var url = "https://pythontutor.com/iframe-embed.html#code="
-      + encodeURIComponent(src)
-      + "&py=" + encodeURIComponent(py)
-      + "&origin=opt-frontend.js&cumulative=false&heapPrimitives=newin&textReferences=false";
+    var boundTo = el.getAttribute("bound-to");
+
+    function buildUrl(codeStr) {
+      return "https://pythontutor.com/iframe-embed.html#code="
+        + encodeURIComponent(codeStr)
+        + "&py=" + encodeURIComponent(py)
+        + "&origin=opt-frontend.js&cumulative=false&heapPrimitives=newin&textReferences=false";
+    }
+
     var f = document.createElement("iframe");
-    f.src = url; f.width = "100%"; f.height = h + "px";
+    f.src = buildUrl(initialCode);
+    f.width = "100%"; f.height = h + "px";
     f.style.border = "none"; f.setAttribute("loading", "lazy");
+    f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
     el.parentNode.replaceChild(f, el);
+
+    if (boundTo) {
+      var runEl = document.getElementById("lc-pyrun-" + boundTo);
+      if (runEl) {
+        var ta = runEl.querySelector(".lc-pyrun-code");
+        if (ta) {
+          var _pytTimer = null;
+          ta.addEventListener("input", function() {
+            clearTimeout(_pytTimer);
+            _pytTimer = setTimeout(function() { f.src = buildUrl(ta.value); }, 600);
+          });
+        }
+      }
+    }
   }
 
   if (document.readyState === "loading") {
