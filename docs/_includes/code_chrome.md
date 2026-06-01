@@ -1906,6 +1906,7 @@
         body.dataset.lcReady = "1";
         loadMarked(function() {
           body.innerHTML = markdownBody(s.body);
+          _applyIAL(body);
           body.querySelectorAll("p.video").forEach(safe(upgradeVideo));
           body.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
           body.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
@@ -2283,21 +2284,8 @@
     });
   }
 
-  function _renderAndScanBlock(wrap, sections) {
-    wrap.innerHTML = sections.map(function(s) {
-      var html = '<div class="lc-block">';
-      if (s.label) {
-        var helpMatch = s.label.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
-        var title = helpMatch ? helpMatch[1].trim() : s.label;
-        var help = helpMatch ? helpMatch[2] : null;
-        html += '<h3>' + title;
-        if (help) html += ' <span class="lc-help" title="' + escapeHtml(help) + '">ℹ️</span>';
-        html += '</h3>';
-      }
-      html += markdownBody(s.body);
-      return html + '</div>';
-    }).join("");
-    wrap.querySelectorAll("p").forEach(function(p) {
+  function _applyIAL(root) {
+    root.querySelectorAll("p").forEach(function(p) {
       var t = (p.textContent || "").trim();
       var m = t.match(/^\{:\s*(.+?)\s*\}$/);
       if (!m) return;
@@ -2312,6 +2300,23 @@
       while ((kv = kvRe.exec(body)) !== null) prev.setAttribute(kv[1], kv[2]);
       p.parentNode.removeChild(p);
     });
+  }
+
+  function _renderAndScanBlock(wrap, sections) {
+    wrap.innerHTML = sections.map(function(s) {
+      var html = '<div class="lc-block">';
+      if (s.label) {
+        var helpMatch = s.label.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+        var title = helpMatch ? helpMatch[1].trim() : s.label;
+        var help = helpMatch ? helpMatch[2] : null;
+        html += '<h3>' + title;
+        if (help) html += ' <span class="lc-help" title="' + escapeHtml(help) + '">ℹ️</span>';
+        html += '</h3>';
+      }
+      html += markdownBody(s.body);
+      return html + '</div>';
+    }).join("");
+    _applyIAL(wrap);
     wrap.querySelectorAll("p.video").forEach(safe(upgradeVideo));
     wrap.querySelectorAll("p.button").forEach(safe(upgradeButton));
     wrap.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));

@@ -2,6 +2,8 @@
 ---
 # 💡 Tutorial 101
 
+## 👋 Welcome
+
 ````
 ### 👋 Welcome! [This is a tutorial block]
 
@@ -64,6 +66,8 @@ Read more about [Markdown Cheat Sheet](https://www.markdownguide.org/cheat-sheet
 ````
 {: .blocks cols="2" }
 
+## 🎬 Video
+
 ````
 ### 🎥 Video [Play Lucky's favourite song]
 
@@ -73,7 +77,9 @@ Read more about [Markdown Cheat Sheet](https://www.markdownguide.org/cheat-sheet
 
 {: .video height="380" }
 ````
-{: .block .lazy }
+{: .block }
+
+## 🔗 Proxies
 
 ````
 ### 🐕 Proxy [This is a proxy, including content from another module]
@@ -92,7 +98,9 @@ Just another `proxy`, including content from the same other module.
 
 {: .embed }
 ````
-{: .blocks cols="2" .lazy }
+{: .blocks cols="2" }
+
+## 🗺️ Map
 
 ````
 ### 🗺️ Map [This map is interactive — zoom in to spot parks in Paris]
@@ -111,7 +119,9 @@ This `map` is interactive. You can zoom in and out to spot parcs in Paris if you
 ```
 {: .map height="340" zoom="12" }
 ````
-{: .block .lazy }
+{: .block }
+
+## 📊 Grid & Chart
 
 ````
 ### 🐕 Grid [Editable — click a cell to change a value, then watch the chart]
@@ -154,7 +164,9 @@ Bulldog,14,90
 ```
 {: .chart type="bar" bound-to="dog-grid-tuto" x="breed" height="280" }
 ````
-{: .blocks cols="2" .lazy }
+{: .blocks cols="2" }
+
+## 📋 Forms
 
 ````
 ### 🐕 Lucky [Editable — change any field, it's a live object]
@@ -199,7 +211,9 @@ notes: A fish, not a dog! Best friends with Lucky through the bowl glass.
 ```
 {: .form editable="true" }
 ````
-{: .blocks cols="2" .lazy }
+{: .blocks cols="2" }
+
+## 🎲 Quiz
 
 ````
 ### 🎲 Your first riddle: Lucky & Wanda
@@ -240,7 +254,7 @@ notes: A fish, not a dog! Best friends with Lucky through the bowl glass.
 
 {: .quiz }
 ````
-{: .block .lazy }
+{: .block }
 
 ```
 ### ⚙️ Build your own page
