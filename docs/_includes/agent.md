@@ -427,6 +427,8 @@ Auto-included by docs/_layouts/default.html.
     Array.prototype.forEach.call(els, upgradeAgent);
   }
 
+  window.lcUpgradeAgent = function(el) { loadJsYaml().then(function() { upgradeAgent(el); }); };
+
   function start() { loadJsYaml().then(init); }
 
   if (document.readyState === 'loading') {

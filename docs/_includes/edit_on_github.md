@@ -405,6 +405,29 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   }
 
   /* ── Live preview ────────────────────────────────────── */
+  // Ensure a blank line before every {: ... } IAL line so that marked.parse()
+  // renders it as its own <p> (kramdown handles this natively; marked does not).
+  // Code fence interiors are left untouched.
+  function normIAL(src) {
+    var lines = src.split('\n'), out = [], inFence = false, fenceChar = '', fenceLen = 0;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i], t = line.trim();
+      if (!inFence && (t.slice(0, 3) === '```' || t.slice(0, 3) === '~~~')) {
+        inFence = true; fenceChar = t[0]; fenceLen = 0;
+        while (fenceLen < t.length && t[fenceLen] === fenceChar) fenceLen++;
+      } else if (inFence) {
+        var cnt = 0;
+        while (cnt < t.length && t[cnt] === fenceChar) cnt++;
+        if (cnt >= fenceLen && t.slice(cnt).trim() === '') inFence = false;
+      }
+      if (!inFence && t.slice(0, 2) === '{:' && i > 0 && out.length && out[out.length - 1].trim() !== '') {
+        out.push('');
+      }
+      out.push(line);
+    }
+    return out.join('\n');
+  }
+
   function previewBar(out, state) {
     var bar = out.querySelector(".ed-pbar");
     if (!bar) {
@@ -433,7 +456,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         out.appendChild(bar);
         // Render markdown into a child container
         var body = document.createElement("div");
-        body.innerHTML = marked.parse(src);
+        body.innerHTML = marked.parse(normIAL(src));
         out.appendChild(body);
         // Apply IAL markers then run the full component upgrade pipeline
         if (window.lcApplyIAL)    window.lcApplyIAL(body);
