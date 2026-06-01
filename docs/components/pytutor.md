@@ -49,6 +49,29 @@ print(c)
 ````
 {: .blocks cols="2" }
 
+## Live-bound to a `.run` editor
+
+Use `bound-to` to link a `.pytutor` block to a `.run` editor. Every time you edit the code, the visualizer refreshes after a short pause.
+
+````
+### 📝 Edit the code
+
+```python
+for i in range(3):
+    print(i * 2)
+```
+{: .run #live-demo }
+
+### 🔬 Visualizer (updates as you type)
+
+```python
+for i in range(3):
+    print(i * 2)
+```
+{: .pytutor bound-to="live-demo" height="450" }
+````
+{: .blocks cols="2" }
+
 ## Syntax
 
 ~~~markdown
@@ -60,5 +83,8 @@ your code here
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `py` | `3` | Python version: `2` or `3` |
+| `py` | `3` | Python version (`2` or `3`). Python Tutor supports up to Python 3.11. |
 | `height` | `400` | iframe height in px |
+| `bound-to` | — | ID of a `.run` block (without `#`). Reloads the visualizer on every keystroke (debounced 600 ms). |
+
+> **Note on Python versions:** Python Tutor's backend currently supports Python 2 and Python 3 (up to 3.11). Use `py="3"` for the latest available version.
