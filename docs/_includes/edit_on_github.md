@@ -63,7 +63,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   font-family: monospace; font-size: 0.88em; padding: 1em; line-height: 1.6;
   outline: none; background: #fdfcfb;
 }
-#ed-preview { flex: 1; overflow-y: auto; padding: 1em 1.5em; }
+#ed-preview { flex: 1; overflow-y: auto; padding: 1em 1.5em; position: relative; }
+/* Live-preview progress bar */
+.ed-pbar {
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: #0066cc; transform-origin: left;
+  transform: scaleX(0); opacity: 0;
+  transition: transform 0.35s ease, opacity 0.15s;
+  pointer-events: none;
+}
+.ed-pbar.wait { opacity: 1; transform: scaleX(0.3); transition: transform 2s ease, opacity 0.1s; }
+.ed-pbar.go   { opacity: 1; transform: scaleX(0.8); transition: transform 0.25s ease; }
+.ed-pbar.done { opacity: 0; transform: scaleX(1);   transition: transform 0.1s ease, opacity 0.3s 0.05s; }
 @media (max-width: 700px) {
   #ed-sidebar { display: none; }
   #ed-preview { display: none; }
@@ -189,7 +200,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 <script>
 (function () {
   var LS_PAT = "lc_ed_pat", LS_REPO = "lc_ed_repo";
-  var _pat, _repo, _curFile, _curSha, _dirty = false;
+  var _pat, _repo, _curFile, _curSha, _dirty = false, _previewTimer = null;
 
   function setDirty(on) {
     _dirty = on;
@@ -390,21 +401,52 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   }
 
   /* ── Live preview ────────────────────────────────────── */
+  function previewBar(out, state) {
+    var bar = out.querySelector(".ed-pbar");
+    if (!bar) {
+      bar = document.createElement("div");
+      out.insertBefore(bar, out.firstChild);
+    }
+    bar.className = "ed-pbar" + (state ? " " + state : "");
+  }
+
   function updatePreview(text) {
     var out = document.getElementById("ed-preview");
     if (!out) return;
-    var inp = document.getElementById("ed-input");
-    var src = text !== undefined ? text : (inp ? inp.value : "");
-    function render() { out.innerHTML = marked.parse(src); }
-    if (window.marked) { render(); return; }
-    if (window.lcLoadMarked) { window.lcLoadMarked(render); return; }
-    /* standalone fallback (page without code_chrome) */
-    if (window._edMQ) { window._edMQ.push(render); return; }
-    window._edMQ = [render];
-    var s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/marked@9/marked.min.js";
-    s.onload = function () { var q = window._edMQ; window._edMQ = null; q.forEach(function (f) { f(); }); };
-    document.head.appendChild(s);
+    var src = text !== undefined ? text
+      : ((document.getElementById("ed-input") || {}).value || "");
+
+    clearTimeout(_previewTimer);
+    previewBar(out, "wait"); // immediate signal: heard the keystroke
+
+    _previewTimer = setTimeout(function() {
+      function doRender() {
+        if (window.lcDestroyInstancesIn) window.lcDestroyInstancesIn(out);
+        out.innerHTML = "";
+        // Progress bar at "go" (will advance to "done" after render)
+        var bar = document.createElement("div");
+        bar.className = "ed-pbar go";
+        out.appendChild(bar);
+        // Render markdown into a child container
+        var body = document.createElement("div");
+        body.innerHTML = marked.parse(src);
+        out.appendChild(body);
+        // Apply IAL markers then run the full component upgrade pipeline
+        if (window.lcApplyIAL)    window.lcApplyIAL(body);
+        if (window.lcScanElement) window.lcScanElement(body);
+        // Advance bar to "done" on the next paint
+        requestAnimationFrame(function() { bar.className = "ed-pbar done"; });
+      }
+      if (window.marked) { doRender(); return; }
+      if (window.lcLoadMarked) { window.lcLoadMarked(doRender); return; }
+      /* standalone fallback */
+      if (window._edMQ) { window._edMQ.push(doRender); return; }
+      window._edMQ = [doRender];
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/marked@9/marked.min.js";
+      s.onload = function() { var q = window._edMQ; window._edMQ = null; q.forEach(function(f) { f(); }); };
+      document.head.appendChild(s);
+    }, text !== undefined ? 0 : 400);
   }
 
   /* ── Commit history ──────────────────────────────────── */

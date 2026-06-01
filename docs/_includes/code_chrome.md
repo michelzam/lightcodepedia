@@ -205,6 +205,16 @@
   if (window.lcPyrun) return;
   var _lcSiteRepo = {{ site.github.repository_nwo | default: "" | jsonify }};
 
+  // Instance registry — destroy heavy components before live-preview re-render.
+  var _lcReg = [];
+  function _lcRegister(el, fn) { _lcReg.push({ el: el, fn: fn }); }
+  window.lcDestroyInstancesIn = function(root) {
+    _lcReg = _lcReg.filter(function(r) {
+      if (r.el === root || root.contains(r.el)) { try { r.fn(); } catch(e) {} return false; }
+      return true;
+    });
+  };
+
   // Master/detail pub-sub keyed by datagrid id.
   // Order-independent: grids publish on selection; forms subscribe on upgrade.
   window.lcMasterDetail = window.lcMasterDetail || {
@@ -1614,6 +1624,38 @@
     document.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
   }
 
+  // Scoped version of scan() — runs the full upgrade pipeline on a subtree.
+  // Used by the live editor preview so the page-level scan() is not needed.
+  function scanElement(root) {
+    _applyIAL(root);
+    root.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
+    root.querySelectorAll(".highlighter-rouge.repl, pre.repl").forEach(safe(upgradeRepl));
+    root.querySelectorAll(".highlighter-rouge.code, pre.code").forEach(safe(upgradeCode));
+    root.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));
+    root.querySelectorAll("div.lc-datagrid-src").forEach(safe(upgradeDatagridFile));
+    root.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
+    root.querySelectorAll("div.lc-form-src").forEach(safe(upgradeFormFile));
+    root.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
+    root.querySelectorAll(".highlighter-rouge.accordion").forEach(safe(upgradeAccordion));
+    root.querySelectorAll(".highlighter-rouge.tabs").forEach(safe(upgradeTabsInline));
+    root.querySelectorAll("p.tabs").forEach(safe(upgradeTabsFile));
+    root.querySelectorAll(".highlighter-rouge.radio").forEach(safe(upgradeRadio));
+    root.querySelectorAll(".highlighter-rouge.grid").forEach(safe(upgradeGrid));
+    root.querySelectorAll(".highlighter-rouge.scrollable").forEach(safe(upgradeScrollable));
+    root.querySelectorAll(".highlighter-rouge.cards").forEach(safe(upgradeCards));
+    root.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks, pre.block, pre.blocks").forEach(safe(upgradeBlock));
+    root.querySelectorAll("ul.dropdown").forEach(safe(upgradeDropdown));
+    root.querySelectorAll("p.button").forEach(safe(upgradeButton));
+    root.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
+    root.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
+    root.querySelectorAll("p.video").forEach(safe(upgradeVideo));
+    root.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
+    root.querySelectorAll(".highlighter-rouge.map").forEach(safe(upgradeMap));
+    root.querySelectorAll(".highlighter-rouge.qr").forEach(safe(upgradeQr));
+    root.querySelectorAll("p.folder").forEach(safe(upgradeFolder));
+    root.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
+  }
+
   // --- shared helpers for section-based widgets ---
   var _markedQ = null;
   function loadMarked(cb) {
@@ -1639,6 +1681,8 @@
     return window.marked ? marked.parse(s) : "<pre>" + s + "</pre>";
   }
   window.lcLoadMarked = loadMarked;
+  window.lcScanElement = scanElement;
+  window.lcApplyIAL   = _applyIAL;
 
   var _chartJsQ = null;
   function loadChartJs(cb) {
@@ -1694,6 +1738,7 @@
       wrap.appendChild(placeholder);
       loadChartJs(function() {
         var instance = null;
+        _lcRegister(wrap, function() { if (instance) { try { instance.destroy(); } catch(e) {} instance = null; } });
         window.lcMasterDetail.subscribe(bound, function(row) {
           if (!row) return;
           var title = String(row[xAttr] || "");
@@ -1746,7 +1791,7 @@
     var colors = chartColors(data);
     wrap.innerHTML = "<canvas id=\"" + gid + "\"></canvas>";
     loadChartJs(function() {
-      new Chart(document.getElementById(gid), {
+      var ch = new Chart(document.getElementById(gid), {
         type: type,
         data: { labels: labels, datasets: [{ label: yAttr, data: data, backgroundColor: colors, borderColor: colors, borderWidth: 1 }] },
         options: {
@@ -1758,6 +1803,7 @@
           }
         }
       });
+      _lcRegister(wrap, function() { try { ch.destroy(); } catch(e) {} });
     });
   }
 
@@ -1808,6 +1854,7 @@
         maxPitch: 85
       });
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+      _lcRegister(wrap, function() { try { map.remove(); } catch(e) {} });
 
       // Shift+drag to pivot in 3D (bearing + pitch), like deck.gl / Streamlit.
       // Horizontal → rotate (bearing); vertical → tilt (pitch).
