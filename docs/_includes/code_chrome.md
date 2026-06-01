@@ -1636,6 +1636,8 @@
     root.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
     root.querySelectorAll("div.lc-form-src").forEach(safe(upgradeFormFile));
     root.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
+    if (window.lcUpgradeQuiz)  root.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
+    if (window.lcUpgradeAgent) root.querySelectorAll(".highlighter-rouge.agent, pre.agent").forEach(window.lcUpgradeAgent);
     root.querySelectorAll(".highlighter-rouge.accordion, pre.accordion").forEach(safe(upgradeAccordion));
     root.querySelectorAll(".highlighter-rouge.tabs, pre.tabs").forEach(safe(upgradeTabsInline));
     root.querySelectorAll("p.tabs").forEach(safe(upgradeTabsFile));
