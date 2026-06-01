@@ -2692,22 +2692,24 @@
     var code = el.querySelector("code");
     var initialCode = (code ? code.textContent : el.textContent).trim();
     if (!initialCode) return;
-    var py = el.getAttribute("py") || "3";
-    var h  = el.getAttribute("height") || "400";
+    var h       = el.getAttribute("height") || "400";
     var boundTo = el.getAttribute("bound-to");
 
     function buildUrl(codeStr) {
       return "https://pythontutor.com/iframe-embed.html#code="
         + encodeURIComponent(codeStr)
-        + "&py=" + encodeURIComponent(py)
-        + "&origin=opt-frontend.js&cumulative=false&heapPrimitives=newin&textReferences=false";
+        + "&py=3.11&origin=opt-frontend.js&cumulative=false&heapPrimitives=newin&textReferences=false";
     }
 
-    var f = document.createElement("iframe");
-    f.src = buildUrl(initialCode);
-    f.width = "100%"; f.height = h + "px";
-    f.style.border = "none"; f.setAttribute("loading", "lazy");
-    f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+    function makeFrame(src) {
+      var f = document.createElement("iframe");
+      f.src = src; f.width = "100%"; f.height = h + "px";
+      f.style.border = "none"; f.setAttribute("loading", "lazy");
+      f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+      return f;
+    }
+
+    var f = makeFrame(buildUrl(initialCode));
     el.parentNode.replaceChild(f, el);
 
     if (boundTo) {
@@ -2718,7 +2720,13 @@
           var _pytTimer = null;
           ta.addEventListener("input", function() {
             clearTimeout(_pytTimer);
-            _pytTimer = setTimeout(function() { f.src = buildUrl(ta.value); }, 600);
+            _pytTimer = setTimeout(function() {
+              // Replace the element entirely — setting src on a hash-based URL
+              // doesn't trigger an iframe reload in any browser.
+              var newF = makeFrame(buildUrl(ta.value));
+              f.parentNode.replaceChild(newF, f);
+              f = newF;
+            }, 600);
           });
         }
       }

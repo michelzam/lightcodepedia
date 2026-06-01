@@ -83,8 +83,7 @@ your code here
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `py` | `3` | Python version (`2` or `3`). Python Tutor supports up to Python 3.11. |
 | `height` | `400` | iframe height in px |
 | `bound-to` | — | ID of a `.run` block (without `#`). Reloads the visualizer on every keystroke (debounced 600 ms). |
 
-> **Note on Python versions:** Python Tutor's backend currently supports Python 2 and Python 3 (up to 3.11). Use `py="3"` for the latest available version.
+Always runs on **Python 3.11** (the latest version Python Tutor supports).
