@@ -1620,6 +1620,7 @@
     document.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
     document.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
     document.querySelectorAll(".highlighter-rouge.qr, pre.qr").forEach(safe(upgradeQr));
+    document.querySelectorAll(".highlighter-rouge.pytutor, pre.pytutor").forEach(safe(upgradePyTutor));
     document.querySelectorAll("p.folder").forEach(safe(upgradeFolder));
     document.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
   }
@@ -1654,6 +1655,7 @@
     root.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
     root.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
     root.querySelectorAll(".highlighter-rouge.qr, pre.qr").forEach(safe(upgradeQr));
+    root.querySelectorAll(".highlighter-rouge.pytutor, pre.pytutor").forEach(safe(upgradePyTutor));
     root.querySelectorAll("p.folder").forEach(safe(upgradeFolder));
     root.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
   }
@@ -2376,6 +2378,7 @@
     wrap.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
     wrap.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
     wrap.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
+    wrap.querySelectorAll(".highlighter-rouge.pytutor, pre.pytutor").forEach(safe(upgradePyTutor));
   }
 
   function upgradeBlock(el) {
@@ -2681,6 +2684,24 @@
   if (window.lcPyrunQueue) {
     window.lcPyrunQueue.forEach(function(fn){ try { fn(); } catch (e) {} });
     window.lcPyrunQueue = null;
+  }
+
+  function upgradePyTutor(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var code = el.querySelector("code");
+    var src = (code ? code.textContent : el.textContent).trim();
+    if (!src) return;
+    var py = el.getAttribute("py") || "3";
+    var h  = el.getAttribute("height") || "400";
+    var url = "https://pythontutor.com/iframe-embed.html#code="
+      + encodeURIComponent(src)
+      + "&py=" + encodeURIComponent(py)
+      + "&origin=opt-frontend.js&cumulative=false&heapPrimitives=newin&textReferences=false";
+    var f = document.createElement("iframe");
+    f.src = url; f.width = "100%"; f.height = h + "px";
+    f.style.border = "none"; f.setAttribute("loading", "lazy");
+    el.parentNode.replaceChild(f, el);
   }
 
   if (document.readyState === "loading") {
