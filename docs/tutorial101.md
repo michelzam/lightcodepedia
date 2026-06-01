@@ -1,5 +1,3 @@
----
----
 # 💡 Tutorial 101
 
 ## 👋 Welcome
@@ -62,7 +60,7 @@ and also be quite long and boring …
 > From stairways high to oceans deep,
 > Their legacy forever to keep.
 
-Read more about [Markdown Cheat Sheet](https://www.markdownguide.org/cheat-sheet/).
+Read more about [markdown](https://www.markdownguide.org/cheat-sheet/).
 ````
 {: .blocks cols="2" }
 
