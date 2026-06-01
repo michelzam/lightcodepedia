@@ -86,4 +86,4 @@ your code here
 | `height` | `400` | iframe height in px |
 | `bound-to` | — | ID of a `.run` block (without `#`). Reloads the visualizer on every keystroke (debounced 600 ms). |
 
-Always runs on **Python 3.11** (the latest version Python Tutor supports).
+Always runs on the latest Python 3 available in the Python Tutor embed.
