@@ -56,7 +56,7 @@ and also be quite long and boring …
 > Guiding the band to rock and roll thrones.
 > Not just a pet, but a symbol, a sign,
 > Of music that transcends all time.
-
+>
 > Amid the crowd, the thunder roars,
 > With every note, the spirit soars.
 > From stairways high to oceans deep,
