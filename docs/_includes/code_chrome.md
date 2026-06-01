@@ -1604,13 +1604,13 @@
     document.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
     document.querySelectorAll("div.lc-form-src").forEach(safe(upgradeFormFile));
     document.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
-    document.querySelectorAll(".highlighter-rouge.accordion").forEach(safe(upgradeAccordion));
-    document.querySelectorAll(".highlighter-rouge.tabs").forEach(safe(upgradeTabsInline));
+    document.querySelectorAll(".highlighter-rouge.accordion, pre.accordion").forEach(safe(upgradeAccordion));
+    document.querySelectorAll(".highlighter-rouge.tabs, pre.tabs").forEach(safe(upgradeTabsInline));
     document.querySelectorAll("p.tabs").forEach(safe(upgradeTabsFile));
-    document.querySelectorAll(".highlighter-rouge.radio").forEach(safe(upgradeRadio));
-    document.querySelectorAll(".highlighter-rouge.grid").forEach(safe(upgradeGrid));
-    document.querySelectorAll(".highlighter-rouge.scrollable").forEach(safe(upgradeScrollable));
-    document.querySelectorAll(".highlighter-rouge.cards").forEach(safe(upgradeCards));
+    document.querySelectorAll(".highlighter-rouge.radio, pre.radio").forEach(safe(upgradeRadio));
+    document.querySelectorAll(".highlighter-rouge.grid, pre.grid").forEach(safe(upgradeGrid));
+    document.querySelectorAll(".highlighter-rouge.scrollable, pre.scrollable").forEach(safe(upgradeScrollable));
+    document.querySelectorAll(".highlighter-rouge.cards, pre.cards").forEach(safe(upgradeCards));
     document.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks, pre.block, pre.blocks").forEach(safe(upgradeBlock));
     document.querySelectorAll("ul.dropdown").forEach(safe(upgradeDropdown));
     document.querySelectorAll("p.button").forEach(safe(upgradeButton));
@@ -1618,8 +1618,8 @@
     document.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
     document.querySelectorAll("p.video").forEach(safe(upgradeVideo));
     document.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
-    document.querySelectorAll(".highlighter-rouge.map").forEach(safe(upgradeMap));
-    document.querySelectorAll(".highlighter-rouge.qr").forEach(safe(upgradeQr));
+    document.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
+    document.querySelectorAll(".highlighter-rouge.qr, pre.qr").forEach(safe(upgradeQr));
     document.querySelectorAll("p.folder").forEach(safe(upgradeFolder));
     document.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
   }
@@ -1636,13 +1636,13 @@
     root.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
     root.querySelectorAll("div.lc-form-src").forEach(safe(upgradeFormFile));
     root.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
-    root.querySelectorAll(".highlighter-rouge.accordion").forEach(safe(upgradeAccordion));
-    root.querySelectorAll(".highlighter-rouge.tabs").forEach(safe(upgradeTabsInline));
+    root.querySelectorAll(".highlighter-rouge.accordion, pre.accordion").forEach(safe(upgradeAccordion));
+    root.querySelectorAll(".highlighter-rouge.tabs, pre.tabs").forEach(safe(upgradeTabsInline));
     root.querySelectorAll("p.tabs").forEach(safe(upgradeTabsFile));
-    root.querySelectorAll(".highlighter-rouge.radio").forEach(safe(upgradeRadio));
-    root.querySelectorAll(".highlighter-rouge.grid").forEach(safe(upgradeGrid));
-    root.querySelectorAll(".highlighter-rouge.scrollable").forEach(safe(upgradeScrollable));
-    root.querySelectorAll(".highlighter-rouge.cards").forEach(safe(upgradeCards));
+    root.querySelectorAll(".highlighter-rouge.radio, pre.radio").forEach(safe(upgradeRadio));
+    root.querySelectorAll(".highlighter-rouge.grid, pre.grid").forEach(safe(upgradeGrid));
+    root.querySelectorAll(".highlighter-rouge.scrollable, pre.scrollable").forEach(safe(upgradeScrollable));
+    root.querySelectorAll(".highlighter-rouge.cards, pre.cards").forEach(safe(upgradeCards));
     root.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks, pre.block, pre.blocks").forEach(safe(upgradeBlock));
     root.querySelectorAll("ul.dropdown").forEach(safe(upgradeDropdown));
     root.querySelectorAll("p.button").forEach(safe(upgradeButton));
@@ -1650,8 +1650,8 @@
     root.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
     root.querySelectorAll("p.video").forEach(safe(upgradeVideo));
     root.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
-    root.querySelectorAll(".highlighter-rouge.map").forEach(safe(upgradeMap));
-    root.querySelectorAll(".highlighter-rouge.qr").forEach(safe(upgradeQr));
+    root.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
+    root.querySelectorAll(".highlighter-rouge.qr, pre.qr").forEach(safe(upgradeQr));
     root.querySelectorAll("p.folder").forEach(safe(upgradeFolder));
     root.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
   }
