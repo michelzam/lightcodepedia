@@ -2698,14 +2698,13 @@
     function buildUrl(codeStr) {
       return "https://pythontutor.com/iframe-embed.html#code="
         + encodeURIComponent(codeStr)
-        + "&py=3.11&origin=opt-frontend.js&cumulative=false&heapPrimitives=newin&textReferences=false";
+        + "&py=3&origin=opt-frontend.js&cumulative=false&heapPrimitives=newin&textReferences=false";
     }
 
     function makeFrame(src) {
       var f = document.createElement("iframe");
       f.src = src; f.width = "100%"; f.height = h + "px";
       f.style.border = "none"; f.setAttribute("loading", "lazy");
-      f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
       return f;
     }
 
