@@ -64,6 +64,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   outline: none; background: #fdfcfb;
 }
 #ed-preview { flex: 1; overflow-y: auto; padding: 1em 1.5em; position: relative; }
+/* 50% zoom mode: render content at 200% width then scale to fit */
+#ed-preview.lc-zoom { overflow-x: hidden; }
+#ed-preview.lc-zoom > div:not(.ed-pbar) { width: 200%; zoom: 0.5; transform-origin: top left; }
 /* Live-preview progress bar */
 .ed-pbar {
   position: absolute; top: 0; left: 0; right: 0; height: 2px;
@@ -138,7 +141,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   <div id="ed-top">
     <span id="ed-filename">No file selected</span>
     <span id="ed-build" style="font-size:0.78em;color:#888;margin-left:0.5em;flex-shrink:0"></span>
-    <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">+ New</a>
+    <a href="#" class="lc-btn lc-btn-secondary" id="ed-zoom-btn" title="Toggle 50% preview scale" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">50%</a>
+    <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em">+ New</a>
     <a href="#" class="lc-btn" id="ed-save-btn" style="font-size:0.82em;padding:0.35em 0.9em">💾 Save</a>
     <a href="#" id="ed-close-btn" title="Close (Esc)"
        style="font-size:1.3em;color:#888;text-decoration:none;padding:0 0.2em;line-height:1;margin-left:0.2em">✕</a>
@@ -602,6 +606,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var disc   = e.target.closest("#ed-disconnect-btn");
     var save   = e.target.closest("#ed-save-btn");
     var newp   = e.target.closest("#ed-new-btn");
+    var zoom   = e.target.closest("#ed-zoom-btn");
     var chip   = e.target.closest(".ed-chip");
     var view   = e.target.closest(".ed-view");
     if (fab)   { e.preventDefault(); openDrawer(); return; }
@@ -610,6 +615,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (disc)  { e.preventDefault(); disconnect(); return; }
     if (save)  { e.preventDefault(); saveFile(); return; }
     if (newp)  { e.preventDefault(); newPage(); return; }
+    if (zoom)  {
+      e.preventDefault();
+      var prev = document.getElementById("ed-preview");
+      if (prev) { var on = prev.classList.toggle("lc-zoom"); zoom.textContent = on ? "100%" : "50%"; }
+      return;
+    }
     if (chip)  { e.preventDefault(); loadFile(chip.dataset.path); return; }
     if (view)  { e.preventDefault(); viewDiff(view.dataset.sha); return; }
   });
