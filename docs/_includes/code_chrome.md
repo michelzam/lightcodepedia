@@ -2466,8 +2466,15 @@
     var pipSize = parseInt(el.getAttribute("size") || "180", 10);
     var fps     = parseInt(el.getAttribute("fps")  || "25",  10);
 
-    var mimeType = ["video/webm;codecs=vp9","video/webm","video/mp4"]
-      .find(function(t){ return MediaRecorder.isTypeSupported(t); }) || "";
+    var mimeType = [
+      "video/webm;codecs=vp9","video/webm",
+      "video/mp4;codecs=avc1","video/mp4;codecs=h264","video/mp4"
+    ].find(function(t){ return MediaRecorder.isTypeSupported(t); }) || "";
+    // Safari reports isTypeSupported=false for all mp4 variants in some versions
+    // but still records in mp4 — detect via UA as last resort
+    if (!mimeType && /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent)) {
+      mimeType = "video/mp4";
+    }
     var ext = mimeType.includes("mp4") ? "mp4" : "webm";
 
     /* ── UI ── */
