@@ -2821,6 +2821,7 @@
         clearInterval(timerInterval);
         try { if (activeStream) activeStream.getTracks().forEach(function(t){ t.stop(); }); } catch (e) {}
         if (camStream) { camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
+        releaseAudioMix();
         destroyHUD();
         dotEl.classList.remove("live");
         isPaused = false; pausedAccum = 0;
@@ -3033,14 +3034,21 @@
 
     /* ── Desktop recording ── */
     var recorder = null, chunks = [], timerInterval = null;
+    var audioCtx = null, extraAudioTracks = [];
 
     // Releasing devices on navigation matters: desktop recording is single-page, and
     // Safari does NOT reliably free getDisplayMedia/getUserMedia when the page unloads.
     // A leaked camera/screen leaves the NEXT page's recording broken (no overlay,
     // dead controls). So we stop every track on pagehide, and warn before leaving.
+    function releaseAudioMix() {
+      extraAudioTracks.forEach(function(t){ try { t.stop(); } catch (e) {} });
+      extraAudioTracks = [];
+      if (audioCtx) { try { audioCtx.close(); } catch (e) {} audioCtx = null; }
+    }
     function releaseAllTracks() {
       try { if (activeStream) activeStream.getTracks().forEach(function(t){ t.stop(); }); } catch (e) {}
       try { if (camStream)    camStream.getTracks().forEach(function(t){ t.stop(); }); } catch (e) {}
+      releaseAudioMix();
       activeStream = null; camStream = null;
     }
     function isActive() {
@@ -3057,9 +3065,12 @@
       // getDisplayMedia MUST be called synchronously from the user gesture —
       // any preceding async call (e.g. getUserMedia) breaks the gesture chain in Safari.
       navigator.mediaDevices.getDisplayMedia({
-            // Cap at ~1080p: Safari's MediaRecorder is unstable encoding 4K and tends
-            // to die after a few seconds. Share a single window for crisp code text.
-            video: { frameRate: fps, width: { max: 1920 }, height: { max: 1080 } },
+            // Safari's MediaRecorder is unstable above ~1080p (crashes after a few
+            // seconds), so cap it there. Chrome/Edge/Firefox are stable, so let them
+            // capture at the display's native resolution for crisp text.
+            video: isSafari
+              ? { frameRate: fps, width: { max: 1920 }, height: { max: 1080 } }
+              : { frameRate: fps, width: { ideal: 3840 }, height: { ideal: 2160 } },
             audio: useSnd
           })
           .then(function(screenStream) {
@@ -3085,8 +3096,29 @@
 
             avPromise.then(function(av) {
               var vidTracks = av && av.getVideoTracks ? av.getVideoTracks() : [];
-              var audTracks = av && av.getAudioTracks ? av.getAudioTracks() : [];
-              audTracks.forEach(function(t){ screenStream.addTrack(t); });
+              var micTracks = av && av.getAudioTracks ? av.getAudioTracks() : [];
+              var sysTracks = screenStream.getAudioTracks ? screenStream.getAudioTracks() : [];
+
+              // Get BOTH the page/system sound and the narration into the recording.
+              // MediaRecorder only records ONE audio track, so if we have both we mix
+              // them through a Web Audio graph into a single track.
+              if (sysTracks.length && micTracks.length) {
+                try {
+                  var AC = window.AudioContext || window.webkitAudioContext;
+                  audioCtx = new AC();
+                  var dest = audioCtx.createMediaStreamDestination();
+                  audioCtx.createMediaStreamSource(new MediaStream(sysTracks)).connect(dest);
+                  audioCtx.createMediaStreamSource(new MediaStream(micTracks)).connect(dest);
+                  sysTracks.forEach(function(t){ screenStream.removeTrack(t); extraAudioTracks.push(t); });
+                  micTracks.forEach(function(t){ extraAudioTracks.push(t); });
+                  dest.stream.getAudioTracks().forEach(function(t){ screenStream.addTrack(t); });
+                } catch (e) {
+                  micTracks.forEach(function(t){ screenStream.addTrack(t); }); // fall back: narration only
+                }
+              } else if (micTracks.length) {
+                micTracks.forEach(function(t){ screenStream.addTrack(t); });
+              } // (system audio only → already on screenStream)
+
               if (vidTracks.length) {
                 camStream = new MediaStream(vidTracks);
                 if (!isMacSafari) refreshHUDCam();
@@ -3114,6 +3146,7 @@
                 clearInterval(timerInterval);
                 stream.getTracks().forEach(function(t){ t.stop(); });
                 if (camStream) { camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
+                releaseAudioMix();
                 destroyHUD();
                 dotEl.classList.remove("live");
                 isPaused = false; pausedAccum = 0; armed = false;

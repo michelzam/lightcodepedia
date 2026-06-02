@@ -45,9 +45,9 @@ That's it. The paragraph text is replaced by the recorder widget.
 | Face overlay | Your webcam, in a floating circle you can drag anywhere — like a video call. It stays visible while you record so you stay connected to your audience. |
 | Background | Optional virtual background for your face — tap **🖼 BG** to cycle Off → Blur → Dark → Blue → Green → White, just like Zoom or Teams. |
 | Audio | Your microphone (toggle on/off before recording) |
-| Screen audio | Optional — toggle on before recording (works best in Chrome) |
+| Screen audio | The sound playing in the page/tab (a demo video, etc.). Toggle **🔊 Screen audio** on, and tick **"Share tab audio"** in Chrome's share dialog. If your mic is also on, the two are **mixed** into the recording. |
 
-The screen is captured at up to **1080p** (a deliberate cap — Safari's recorder is unstable at 4K and would crash mid-recording). For crisp code, **share a single window** rather than the whole screen. Nothing is sent anywhere; everything stays in your browser.
+In **Chrome/Edge/Firefox** the screen is captured at your display's **native resolution** (crisp). In **Safari** it's capped at **1080p**, because Safari's recorder is unstable at higher resolutions and crashes mid-recording. Nothing is sent anywhere; everything stays in your browser.
 
 ## Start when you're ready, pause, then review
 
