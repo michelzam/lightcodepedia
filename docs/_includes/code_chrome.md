@@ -2987,25 +2987,27 @@
           .then(function(screenStream) {
             createHUD();
             setStatus("Setting up…");
-            // We record the screen stream DIRECTLY (no canvas) at the capped
-            // resolution. On macOS we still OPEN the camera (so macOS offers
-            // Presenter Overlay and uses it as the source — the overlay is then
-            // composited into this screen stream) but we don't draw our own circle.
+            // The camera is ONLY used for the HUD pip / as the Presenter Overlay
+            // source — it never joins the recording stream. So acquire it in the
+            // BACKGROUND: a camera prompt or denial must never block Start, or the
+            // Stop/Pause buttons would never appear. (On macOS we hold it so macOS
+            // offers Presenter Overlay, but we don't draw our own circle.)
             var wantCam = useCam || isMac;
-            var camPromise = wantCam
-              ? navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
-                  .then(function(s) { camStream = s; if (!isMac) refreshHUDCam(); })
-                  .catch(function() { if (!isMac) { useCam = false; if (optCam) optCam.classList.remove("on"); } })
-              : Promise.resolve();
+            if (wantCam) {
+              navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
+                .then(function(s) { camStream = s; if (!isMac) refreshHUDCam(); })
+                .catch(function() { if (!isMac) { useCam = false; if (optCam) optCam.classList.remove("on"); refreshHUDCam(); } });
+            }
 
+            // Only the mic must be ready before we start — its audio track joins the
+            // recording. (MediaRecorder ignores tracks added after .start().)
             var micPromise = useMic
               ? navigator.mediaDevices.getUserMedia({ audio: true, video: false })
                   .then(function(m) { return m; })
                   .catch(function() { return null; })
               : Promise.resolve(null);
 
-            Promise.all([camPromise, micPromise]).then(function(res) {
-              var micStream = res[1];
+            micPromise.then(function(micStream) {
               if (micStream) micStream.getAudioTracks().forEach(function(t){ screenStream.addTrack(t); });
               launch(screenStream);
             });
