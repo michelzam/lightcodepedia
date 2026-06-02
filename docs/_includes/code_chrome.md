@@ -2558,8 +2558,8 @@
       '  </div>',
       isMac ? [
         '<div class="lc-rec-ios" style="background:#eef4ff;border-color:#cdddff;color:#234">',
-        '<strong>💡 Add your face (optional)</strong>',
-        '<div>While recording, open <strong>Control Centre ▸ Screen Sharing</strong> (the green 🟢 icon in the menu bar) and turn on <strong>Presenter Overlay → Small</strong>. macOS composites your camera into the recording in higher quality than any in-page overlay — and it survives much longer.</div>',
+        '<strong>💡 Add your face with Presenter Overlay</strong>',
+        '<div>Once you press Start, a green 🟢 <strong>camera/screen icon</strong> appears in the macOS menu bar (top-right). Click it → <strong>Presenter Overlay → Small</strong>. macOS composites your camera into the recording in higher quality than any in-page overlay. <em>(The menu only shows while we hold the camera — i.e. during recording.)</em></div>',
         '</div>'
       ].join("") : '',
       isIOS ? [
@@ -2987,13 +2987,15 @@
           .then(function(screenStream) {
             createHUD();
             setStatus("Setting up…");
-            // Show the face as an on-screen HUD circle. We record the screen stream
-            // DIRECTLY (no canvas) so the recording is native resolution and the face —
-            // whether our HUD pip or the macOS Presenter Overlay — is captured as-is.
-            var camPromise = useCam
+            // We record the screen stream DIRECTLY (no canvas) at the capped
+            // resolution. On macOS we still OPEN the camera (so macOS offers
+            // Presenter Overlay and uses it as the source — the overlay is then
+            // composited into this screen stream) but we don't draw our own circle.
+            var wantCam = useCam || isMac;
+            var camPromise = wantCam
               ? navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
-                  .then(function(s) { camStream = s; refreshHUDCam(); })
-                  .catch(function() { useCam = false; optCam.classList.remove("on"); })
+                  .then(function(s) { camStream = s; if (!isMac) refreshHUDCam(); })
+                  .catch(function() { if (!isMac) { useCam = false; if (optCam) optCam.classList.remove("on"); } })
               : Promise.resolve();
 
             var micPromise = useMic
