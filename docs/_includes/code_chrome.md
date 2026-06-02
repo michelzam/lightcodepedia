@@ -2464,6 +2464,7 @@
     el.dataset.lcUpgraded = "1";
     var pipAttr = el.getAttribute("pip") || "bottom-right";
     var pipSize = parseInt(el.getAttribute("size") || "240", 10);
+    var camZoom = parseFloat(el.getAttribute("zoom") || "1.35");
     var fps     = parseInt(el.getAttribute("fps")  || "25",  10);
 
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -2604,6 +2605,8 @@
       pipWrap.style.height = pipSize + "px";
       hudCamVid = document.createElement("video");
       hudCamVid.autoplay = true; hudCamVid.muted = true; hudCamVid.playsInline = true;
+      // Zoom into the face (mirrored) so it fills the circle rather than showing the whole torso.
+      hudCamVid.style.transform = "scaleX(-1) scale(" + camZoom + ")";
       var camOffEl = document.createElement("div");
       camOffEl.className = "lc-cam-off"; camOffEl.textContent = "📷";
       pipWrap.appendChild(hudCamVid);
@@ -2750,26 +2753,30 @@
       bgCtx.clearRect(0, 0, w, h);
       var iw = bgHidVid.videoWidth  || w;
       var ih = bgHidVid.videoHeight || h;
-      var scale = Math.max(w / iw, h / ih);
-      var dx = (w - iw * scale) / 2, dy = (h - ih * scale) / 2;
+      // "cover" scale × user zoom so the face fills the circle, then re-centre.
+      var scale = Math.max(w / iw, h / ih) * camZoom;
       var sw = iw * scale, sh = ih * scale;
+      var dx = (w - sw) / 2, dy = (h - sh) / 2;
+      // Feather amount scales with the (hi-res) canvas so the contour stays soft
+      // regardless of circle size — this hides the jagged segmentation edge.
+      var feather = Math.max(2, Math.round(w * 0.018));
 
-      // Draw person pixels, masked by segmentation
+      // Person pixels, then keep only what the (blurred → soft-edged) mask covers.
       bgCtx.save();
       bgCtx.drawImage(results.image, dx, dy, sw, sh);
       bgCtx.globalCompositeOperation = "destination-in";
+      bgCtx.filter = "blur(" + feather + "px)";
       bgCtx.drawImage(results.segmentationMask, dx, dy, sw, sh);
+      bgCtx.filter = "none";
       bgCtx.restore();
 
-      // Draw background behind the person
+      // Background painted behind the person.
       bgCtx.save();
       bgCtx.globalCompositeOperation = "destination-over";
       if (bgMode === "blur") {
         bgCtx.filter = "blur(18px)";
         bgCtx.drawImage(results.image, dx, dy, sw, sh);
         bgCtx.filter = "none";
-        // Fill any uncovered edges in case blurred image leaves gaps
-        bgCtx.globalCompositeOperation = "destination-over";
         bgCtx.fillStyle = "#111";
         bgCtx.fillRect(0, 0, w, h);
       } else {
