@@ -47,7 +47,7 @@ That's it. The paragraph text is replaced by the recorder widget.
 | Audio | Your microphone (toggle on/off before recording) |
 | Screen audio | Optional — toggle on before recording (works best in Chrome) |
 
-The screen is recorded **directly at native resolution** — your face circle is captured on-screen exactly as you see it, so nothing is re-encoded or softened. Nothing is sent anywhere; everything stays in your browser.
+The screen is captured at up to **1080p** (a deliberate cap — Safari's recorder is unstable at 4K and would crash mid-recording). For crisp code, **share a single window** rather than the whole screen. Nothing is sent anywhere; everything stays in your browser.
 
 ## Pause &amp; review before saving
 
@@ -59,7 +59,7 @@ The screen is recorded **directly at native resolution** — your face circle is
 
 Nothing is written to disk until you press **Save**.
 
-> **macOS tip:** if you turn on **Presenter Overlay** (Control Centre → Video Effects), macOS draws its own large face circle into the recording. Our floating circle simply sits behind it, so you can use either one — whatever feels best.
+> **On a Mac, your face comes from macOS itself.** While recording, open the green 🟢 screen-sharing icon in the menu bar and turn on **Presenter Overlay → Small**. macOS composites your camera into the recording in higher quality than any in-page overlay — so on Mac we deliberately *don't* open our own camera (running two camera feeds at once destabilises Safari and was crashing recordings). On Windows/Linux, our own draggable face circle (with optional virtual backgrounds) is used instead.
 
 ---
 

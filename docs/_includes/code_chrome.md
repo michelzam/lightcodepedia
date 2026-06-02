@@ -2473,6 +2473,10 @@
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     var canScreen = !isIOS && !!navigator.mediaDevices && !!navigator.mediaDevices.getDisplayMedia;
+    // macOS desktop: rely on the native Presenter Overlay for the face (it composites
+    // the camera into the screen capture in higher quality and avoids a second camera
+    // consumer that destabilises Safari). So we don't open our own camera there.
+    var isMac = !isIOS && /Mac/.test(navigator.platform || navigator.userAgent || "");
 
     // Safari 16+ reports video/webm as supported (VP9 playback) but produces
     // poor/inconsistent recordings — prefer mp4 there. Chrome/Firefox use webm.
@@ -2542,16 +2546,22 @@
       '<div class="lc-rec-head"><span class="lc-rec-dot" id="lc-rd"></span><span>🎬 Screen Recorder</span></div>',
       '<div class="lc-rec-body">',
       '  <div class="lc-rec-opts" id="lc-ropts">',
-      '    <span class="lc-rec-opt on"  id="lc-ropt-cam">📷 Camera</span>',
+      isMac ? '' : '    <span class="lc-rec-opt on"  id="lc-ropt-cam">📷 Camera</span>',
       '    <span class="lc-rec-opt on"  id="lc-ropt-mic">🎤 Mic</span>',
       canScreen ? '<span class="lc-rec-opt off" id="lc-ropt-snd">🔊 Screen audio</span>' : '',
-      '<span class="lc-rec-opt" id="lc-ropt-bg">🖼 BG: Off</span>',
+      isMac ? '' : '<span class="lc-rec-opt" id="lc-ropt-bg">🖼 BG: Off</span>',
       '  </div>',
       '  <div class="lc-rec-actions">',
       canScreen
         ? '<button class="lc-rec-btn start" id="lc-rbtn">▶ Start recording</button>'
         : '<button class="lc-rec-btn start" id="lc-rbtn">📱 Show camera</button>',
       '  </div>',
+      isMac ? [
+        '<div class="lc-rec-ios" style="background:#eef4ff;border-color:#cdddff;color:#234">',
+        '<strong>💡 Add your face (optional)</strong>',
+        '<div>While recording, open <strong>Control Centre ▸ Screen Sharing</strong> (the green 🟢 icon in the menu bar) and turn on <strong>Presenter Overlay → Small</strong>. macOS composites your camera into the recording in higher quality than any in-page overlay — and it survives much longer.</div>',
+        '</div>'
+      ].join("") : '',
       isIOS ? [
         '<div class="lc-rec-ios">',
         '<strong>📱 iPhone screen recording</strong>',
@@ -2577,15 +2587,16 @@
     var optMic  = wrap.querySelector("#lc-ropt-mic");
     var optSnd  = wrap.querySelector("#lc-ropt-snd");
 
-    var useCam = true, useMic = true, useSnd = false;
+    // On macOS we don't run our own camera — the native Presenter Overlay owns it.
+    var useCam = !isMac, useMic = true, useSnd = false;
     var bgMode = "none";
     var optBg  = wrap.querySelector("#lc-ropt-bg");
     var bgCycle  = ["none","blur","dark","blue","green","white"];
     var bgLabels = { none: "🖼 BG: Off", blur: "🌫 BG: Blur", dark: "⬛ BG: Dark", blue: "🔵 BG: Blue", green: "🟢 BG: Green", white: "⬜ BG: White" };
-    optCam.addEventListener("click", function(){ useCam = !useCam; optCam.classList.toggle("on", useCam); refreshHUD(); });
+    if (optCam) optCam.addEventListener("click", function(){ useCam = !useCam; optCam.classList.toggle("on", useCam); refreshHUD(); });
     optMic.addEventListener("click", function(){ useMic = !useMic; optMic.classList.toggle("on", useMic); });
     if (optSnd) optSnd.addEventListener("click", function(){ useSnd = !useSnd; optSnd.classList.toggle("on", useSnd); });
-    optBg.addEventListener("click", function() {
+    if (optBg) optBg.addEventListener("click", function() {
       bgMode = bgCycle[(bgCycle.indexOf(bgMode) + 1) % bgCycle.length];
       optBg.textContent = bgLabels[bgMode];
       optBg.classList.toggle("on", bgMode !== "none");
@@ -2620,31 +2631,42 @@
       var pos = hudInitialPos();
       Object.keys(pos).forEach(function(k){ hud.style[k] = pos[k]; });
 
-      var pipWrap = document.createElement("div");
-      pipWrap.className = "lc-rec-hud-pip";
-      pipWrap.style.width = pipSize + "px";
-      pipWrap.style.height = pipSize + "px";
-      hudCamVid = document.createElement("video");
-      hudCamVid.autoplay = true; hudCamVid.muted = true; hudCamVid.playsInline = true;
-      // Zoom into the face (mirrored) so it fills the circle rather than showing the whole torso.
-      hudCamVid.style.transform = "scaleX(-1) scale(" + camZoom + ")";
-      var camOffEl = document.createElement("div");
-      camOffEl.className = "lc-cam-off"; camOffEl.textContent = "📷";
-      pipWrap.appendChild(hudCamVid);
-      pipWrap.appendChild(camOffEl);
-      bgCanvas = document.createElement("canvas");
-      // Backing store rendered well above the CSS circle size so the composited
-      // face stays as crisp as the rest of the (often retina/4K) screen capture.
-      var bgScale = Math.min(3, Math.max(2, window.devicePixelRatio || 1));
-      bgCanvas.width = Math.round(pipSize * bgScale);
-      bgCanvas.height = Math.round(pipSize * bgScale);
-      bgCtx = bgCanvas.getContext("2d");
-      pipWrap.appendChild(bgCanvas);
-      bgHidVid = document.createElement("video");
-      bgHidVid.autoplay = true; bgHidVid.muted = true; bgHidVid.playsInline = true;
-      bgHidVid.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
-      document.body.appendChild(bgHidVid);
-      hud.appendChild(pipWrap);
+      // On macOS the face comes from the native Presenter Overlay, so we show only
+      // the floating controls (timer + pause + stop) — no camera pip, no segmentation.
+      if (!isMac) {
+        var pipWrap = document.createElement("div");
+        pipWrap.className = "lc-rec-hud-pip";
+        pipWrap.style.width = pipSize + "px";
+        pipWrap.style.height = pipSize + "px";
+        hudCamVid = document.createElement("video");
+        hudCamVid.autoplay = true; hudCamVid.muted = true; hudCamVid.playsInline = true;
+        // Zoom into the face (mirrored) so it fills the circle rather than showing the whole torso.
+        hudCamVid.style.transform = "scaleX(-1) scale(" + camZoom + ")";
+        var camOffEl = document.createElement("div");
+        camOffEl.className = "lc-cam-off"; camOffEl.textContent = "📷";
+        pipWrap.appendChild(hudCamVid);
+        pipWrap.appendChild(camOffEl);
+        bgCanvas = document.createElement("canvas");
+        // Backing store rendered well above the CSS circle size so the composited
+        // face stays as crisp as the rest of the (often retina/4K) screen capture.
+        var bgScale = Math.min(3, Math.max(2, window.devicePixelRatio || 1));
+        bgCanvas.width = Math.round(pipSize * bgScale);
+        bgCanvas.height = Math.round(pipSize * bgScale);
+        bgCtx = bgCanvas.getContext("2d");
+        pipWrap.appendChild(bgCanvas);
+        bgHidVid = document.createElement("video");
+        bgHidVid.autoplay = true; bgHidVid.muted = true; bgHidVid.playsInline = true;
+        bgHidVid.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
+        document.body.appendChild(bgHidVid);
+        hud.appendChild(pipWrap);
+      } else {
+        // small label so the floating control reads as "recording" without a face
+        var macTag = document.createElement("div");
+        macTag.className = "lc-rec-hud-timer";
+        macTag.style.cssText = "background:rgba(15,15,25,.78);color:#fff";
+        macTag.textContent = "🎬 Recording";
+        hud.appendChild(macTag);
+      }
 
       hudTimer = document.createElement("div");
       hudTimer.className = "lc-rec-hud-timer";
@@ -2709,7 +2731,7 @@
     }
 
     function refreshHUDCam() {
-      if (!hud) return;
+      if (!hud || isMac || !hudCamVid) return;
       var pipWrap = hud.querySelector(".lc-rec-hud-pip");
       var offEl   = hud.querySelector(".lc-cam-off");
       var showBg  = bgMode !== "none" && useCam && !!camStream;
@@ -2957,7 +2979,9 @@
       // getDisplayMedia MUST be called synchronously from the user gesture —
       // any preceding async call (e.g. getUserMedia) breaks the gesture chain in Safari.
       navigator.mediaDevices.getDisplayMedia({
-            video: { frameRate: fps, width: { ideal: 3840 }, height: { ideal: 2160 } },
+            // Cap at ~1080p: Safari's MediaRecorder is unstable encoding 4K and tends
+            // to die after a few seconds. Share a single window for crisp code text.
+            video: { frameRate: fps, width: { max: 1920 }, height: { max: 1080 } },
             audio: useSnd
           })
           .then(function(screenStream) {
