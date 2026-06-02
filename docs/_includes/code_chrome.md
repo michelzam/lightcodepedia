@@ -2516,6 +2516,7 @@
       '.lc-rec-hud-ios{font-size:.72em;color:#fff;text-align:center;max-width:140px;line-height:1.4;background:rgba(15,15,25,.78);padding:6px 10px;border-radius:10px}',
       '.lc-rec-hud-timer-btn{font-size:.75em;color:#fff;background:rgba(15,15,25,.78);border:1px solid #777;border-radius:12px;padding:3px 10px;cursor:pointer}',
       '.lc-rec-hud-timer-btn.running{color:#f88;border-color:#f88}',
+      '.lc-rec-hud-pip canvas{position:absolute;inset:0;width:100%;height:100%;display:none;transform:scaleX(-1)}',
       '</style>',
       '<div class="lc-rec-head"><span class="lc-rec-dot" id="lc-rd"></span><span>🎬 Screen Recorder</span></div>',
       '<div class="lc-rec-body">',
@@ -2523,6 +2524,7 @@
       '    <span class="lc-rec-opt on"  id="lc-ropt-cam">📷 Camera</span>',
       '    <span class="lc-rec-opt on"  id="lc-ropt-mic">🎤 Mic</span>',
       canScreen ? '<span class="lc-rec-opt off" id="lc-ropt-snd">🔊 Screen audio</span>' : '',
+      '<span class="lc-rec-opt" id="lc-ropt-bg">🖼 BG: Off</span>',
       '  </div>',
       '  <div class="lc-rec-actions">',
       canScreen
@@ -2555,9 +2557,19 @@
     var optSnd  = wrap.querySelector("#lc-ropt-snd");
 
     var useCam = true, useMic = true, useSnd = false;
+    var bgMode = "none";
+    var optBg  = wrap.querySelector("#lc-ropt-bg");
+    var bgCycle  = ["none","blur","dark","blue","green"];
+    var bgLabels = { none: "🖼 BG: Off", blur: "🌫 BG: Blur", dark: "⬛ BG: Dark", blue: "🔵 BG: Blue", green: "🟢 BG: Green" };
     optCam.addEventListener("click", function(){ useCam = !useCam; optCam.classList.toggle("on", useCam); refreshHUD(); });
     optMic.addEventListener("click", function(){ useMic = !useMic; optMic.classList.toggle("on", useMic); });
     if (optSnd) optSnd.addEventListener("click", function(){ useSnd = !useSnd; optSnd.classList.toggle("on", useSnd); });
+    optBg.addEventListener("click", function() {
+      bgMode = bgCycle[(bgCycle.indexOf(bgMode) + 1) % bgCycle.length];
+      optBg.textContent = bgLabels[bgMode];
+      optBg.classList.toggle("on", bgMode !== "none");
+      if (hud) refreshHUDCam();
+    });
 
     function setStatus(msg, cls) { statEl.className = "lc-rec-status " + (cls||""); statEl.textContent = msg; }
     function fmtTime(ms) {
@@ -2568,6 +2580,7 @@
     /* ── Floating HUD ── */
     var hud = null, hudCamVid = null, hudTimer = null, hudStop = null;
     var hudIosTimer = null, hudIosBtn = null;
+    var bgCanvas = null, bgCtx = null, bgHidVid = null, bgSegmenter = null, bgAnimId = null, bgActive = false;
 
     function hudInitialPos() {
       var margin = 20;
@@ -2595,6 +2608,14 @@
       camOffEl.className = "lc-cam-off"; camOffEl.textContent = "📷";
       pipWrap.appendChild(hudCamVid);
       pipWrap.appendChild(camOffEl);
+      bgCanvas = document.createElement("canvas");
+      bgCanvas.width = pipSize; bgCanvas.height = pipSize;
+      bgCtx = bgCanvas.getContext("2d");
+      pipWrap.appendChild(bgCanvas);
+      bgHidVid = document.createElement("video");
+      bgHidVid.autoplay = true; bgHidVid.muted = true; bgHidVid.playsInline = true;
+      bgHidVid.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
+      document.body.appendChild(bgHidVid);
       hud.appendChild(pipWrap);
 
       hudTimer = document.createElement("div");
@@ -2643,26 +2664,116 @@
     }
 
     function destroyHUD() {
+      stopBg();
       if (hud) { hud.parentNode && hud.parentNode.removeChild(hud); hud = null; hudCamVid = null; hudTimer = null; hudStop = null; }
+      if (bgHidVid) { bgHidVid.parentNode && bgHidVid.parentNode.removeChild(bgHidVid); bgHidVid = null; }
+      bgCanvas = null; bgCtx = null;
     }
 
     function refreshHUDCam() {
       if (!hud) return;
       var pipWrap = hud.querySelector(".lc-rec-hud-pip");
       var offEl   = hud.querySelector(".lc-cam-off");
+      var showBg  = bgMode !== "none" && useCam && !!camStream;
+      if (bgCanvas) bgCanvas.style.display = showBg ? "block" : "none";
       if (useCam && camStream) {
-        hudCamVid.srcObject = camStream;
+        hudCamVid.srcObject = showBg ? null : camStream;
+        hudCamVid.style.display = showBg ? "none" : "block";
         offEl.style.display = "none";
         pipWrap.style.border = "3px solid rgba(255,255,255,.85)";
+        if (showBg) startBg(); else stopBg();
       } else {
         hudCamVid.srcObject = null;
+        hudCamVid.style.display = "block";
         offEl.style.display = "flex";
         pipWrap.style.border = "3px solid rgba(255,255,255,.3)";
+        stopBg();
       }
     }
 
     function refreshHUD() {
       if (hud) refreshHUDCam();
+    }
+
+    /* ── Virtual background (MediaPipe Selfie Segmentation) ── */
+    function loadMediaPipe(cb) {
+      if (window.SelfieSegmentation) { cb(); return; }
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1/selfie_segmentation.js";
+      s.crossOrigin = "anonymous";
+      s.onload  = function() { window.SelfieSegmentation ? cb() : setStatus("⚠️ BG model unavailable","err"); };
+      s.onerror = function() { setStatus("⚠️ BG model failed to load","err"); };
+      document.head.appendChild(s);
+    }
+
+    function startBg() {
+      if (!bgCanvas || !bgHidVid || !camStream) return;
+      bgActive = true;
+      bgHidVid.srcObject = camStream;
+      if (bgSegmenter) { bgLoop(); return; }
+      setStatus("Loading background model…");
+      loadMediaPipe(function() {
+        bgSegmenter = new SelfieSegmentation({ locateFile: function(f) {
+          return "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1/" + f;
+        }});
+        bgSegmenter.setOptions({ modelSelection: 1 });
+        bgSegmenter.onResults(onSegResults);
+        bgSegmenter.initialize().then(function() { setStatus(""); bgLoop(); });
+      });
+    }
+
+    function stopBg() {
+      bgActive = false;
+      if (bgAnimId) { cancelAnimationFrame(bgAnimId); bgAnimId = null; }
+      if (bgHidVid) bgHidVid.srcObject = null;
+    }
+
+    function bgLoop() {
+      if (!bgActive) return;
+      bgAnimId = requestAnimationFrame(function() {
+        if (!bgActive || bgMode === "none" || !bgSegmenter) return;
+        if (bgHidVid && bgHidVid.readyState >= 2) {
+          bgSegmenter.send({ image: bgHidVid }).then(bgLoop).catch(bgLoop);
+        } else {
+          bgLoop();
+        }
+      });
+    }
+
+    function onSegResults(results) {
+      if (!bgCtx || !bgCanvas || bgMode === "none") return;
+      var w = bgCanvas.width, h = bgCanvas.height;
+      bgCtx.clearRect(0, 0, w, h);
+      var iw = bgHidVid.videoWidth  || w;
+      var ih = bgHidVid.videoHeight || h;
+      var scale = Math.max(w / iw, h / ih);
+      var dx = (w - iw * scale) / 2, dy = (h - ih * scale) / 2;
+      var sw = iw * scale, sh = ih * scale;
+
+      // Draw person pixels, masked by segmentation
+      bgCtx.save();
+      bgCtx.drawImage(results.image, dx, dy, sw, sh);
+      bgCtx.globalCompositeOperation = "destination-in";
+      bgCtx.drawImage(results.segmentationMask, dx, dy, sw, sh);
+      bgCtx.restore();
+
+      // Draw background behind the person
+      bgCtx.save();
+      bgCtx.globalCompositeOperation = "destination-over";
+      if (bgMode === "blur") {
+        bgCtx.filter = "blur(18px)";
+        bgCtx.drawImage(results.image, dx, dy, sw, sh);
+        bgCtx.filter = "none";
+        // Fill any uncovered edges in case blurred image leaves gaps
+        bgCtx.globalCompositeOperation = "destination-over";
+        bgCtx.fillStyle = "#111";
+        bgCtx.fillRect(0, 0, w, h);
+      } else {
+        var bgColors = { dark: "#1a1a2e", blue: "#0d3b66", green: "#1a472a" };
+        bgCtx.fillStyle = bgColors[bgMode] || "#111";
+        bgCtx.fillRect(0, 0, w, h);
+      }
+      bgCtx.restore();
     }
 
     /* ── Drag ── */
@@ -2774,12 +2885,14 @@
 
             function launch(stream) {
               chunks = [];
-              // Bitrate scaled to actual capture resolution (~0.15 bpp) so screen text
-              // stays sharp; clamp to a sane range. No canvas re-encode = native quality.
               var vs = stream.getVideoTracks()[0].getSettings() || {};
               var W = vs.width || 1920, H = vs.height || 1080;
-              var bitrate = Math.min(40000000, Math.max(6000000, Math.round(W * H * fps * 0.15)));
-              var recOpts = { videoBitsPerSecond: bitrate };
+              var recOpts = {};
+              // Safari ignores videoBitsPerSecond — omit it and let the native encoder decide.
+              // Other browsers get a generous target scaled to screen resolution.
+              if (!isSafari) {
+                recOpts.videoBitsPerSecond = Math.min(40000000, Math.max(8000000, Math.round(W * H * fps * 0.25)));
+              }
               if (mimeType) recOpts.mimeType = mimeType;
               recorder = new MediaRecorder(stream, recOpts);
               chunks = [];
