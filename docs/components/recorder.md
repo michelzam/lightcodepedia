@@ -30,6 +30,7 @@ That's it. The paragraph text is replaced by the recorder widget.
 |---|---|
 | Background | Your entire screen (or a window — you choose when the browser asks) |
 | Face overlay | Your webcam, in a floating circle you can drag anywhere — like a video call. It stays visible while you record so you stay connected to your audience. |
+| Background | Optional virtual background for your face — tap **🖼 BG** to cycle Off → Blur → Dark → Blue → Green → White, just like Zoom or Teams. |
 | Audio | Your microphone (toggle on/off before recording) |
 | Screen audio | Optional — toggle on before recording (works best in Chrome) |
 
@@ -44,7 +45,7 @@ The screen is recorded **directly at native resolution** — your face circle is
 | Attribute | Default | What it does |
 |---|---|---|
 | `pip="bottom-right"` | `bottom-right` | Face position: `bottom-right`, `bottom-left`, `top-right`, `top-left` |
-| `size="180"` | `180` | Diameter of the face circle in pixels |
+| `size="240"` | `240` | Diameter of the face circle in pixels |
 | `fps="25"` | `25` | Frames per second |
 
 Example with options:
