@@ -186,8 +186,33 @@
 .lc-block > h3:first-child { margin-top: 0; margin-bottom: 0.6em; font-size: 1.1em; color: #222; display: flex; align-items: center; gap: 0.4em; }
 .lc-block img { max-width: 100%; border-radius: 4px; display: block; margin: 0.6em auto; }
 .lc-block p:last-child, .lc-block ul:last-child { margin-bottom: 0; }
-.lc-help { cursor: help; font-style: normal; font-size: 0.9em; opacity: 0.6; transition: opacity 0.15s; }
-.lc-help:hover { opacity: 1; }
+.lc-help {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 1.4px solid #0a84ff; color: #0a84ff;
+  font: italic 700 10px/1 Georgia, "Times New Roman", serif;
+  cursor: help; opacity: 0.75; vertical-align: super; user-select: none;
+  position: relative; margin-left: 0.2em; flex-shrink: 0;
+}
+.lc-help:hover, .lc-help:focus { opacity: 1; outline: none; }
+.lc-help::after {
+  content: attr(data-help);
+  position: absolute; bottom: 145%; right: -3px;
+  width: max-content; min-width: 140px; max-width: min(280px, 70vw);
+  background: #1e1e2e; color: #eee;
+  font: 400 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-style: normal; text-align: left; letter-spacing: 0;
+  padding: 8px 11px; border-radius: 8px; box-shadow: 0 6px 22px rgba(0,0,0,.28);
+  opacity: 0; visibility: hidden; transform: translateY(3px);
+  transition: opacity .12s, transform .12s; pointer-events: none; z-index: 50;
+  white-space: normal;
+}
+.lc-help:hover::after, .lc-help:focus::after { opacity: 1; visibility: visible; transform: translateY(0); }
+/* menu (horizontal nav from markdown links) */
+.lc-menu { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3em 1.5em; padding: 0.5em 0; margin: 0.5em 0 1.2em; border-bottom: 1px solid #eee; }
+.lc-menu a { display: inline-flex; align-items: center; gap: 0.4em; text-decoration: none; color: #333; font-weight: 500; font-size: 0.96em; padding: 0.2em 0; }
+.lc-menu a:hover { color: #0066cc; }
+.lc-menu .lc-menu-ic { font-size: 1.1em; line-height: 1; }
 /* embed */
 .lc-embed { margin: 0.5em 0; }
 @media (max-width: 600px) { .lc-blocks { grid-template-columns: 1fr !important; } }
@@ -1625,6 +1650,7 @@
     document.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
     document.querySelectorAll("p.lightnodes").forEach(safe(upgradeNodes));
     document.querySelectorAll("p.deploys").forEach(safe(upgradeDeploys));
+    document.querySelectorAll("p.menu, ul.menu").forEach(safe(upgradeMenu));
   }
 
   // Scoped version of scan() — runs the full upgrade pipeline on a subtree.
@@ -1662,6 +1688,7 @@
     root.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
     root.querySelectorAll("p.lightnodes").forEach(safe(upgradeNodes));
     root.querySelectorAll("p.deploys").forEach(safe(upgradeDeploys));
+    root.querySelectorAll("p.menu, ul.menu").forEach(safe(upgradeMenu));
   }
 
   // --- shared helpers for section-based widgets ---
@@ -2365,7 +2392,7 @@
         var title = helpMatch ? helpMatch[1].trim() : s.label;
         var help = helpMatch ? helpMatch[2] : null;
         html += '<h3>' + title;
-        if (help) html += ' <span class="lc-help" title="' + escapeHtml(help) + '">ℹ️</span>';
+        if (help) html += ' <span class="lc-help" tabindex="0" role="note" aria-label="' + escapeHtml(help) + '" data-help="' + escapeHtml(help) + '">i</span>';
         html += '</h3>';
       }
       html += markdownBody(s.body);
@@ -3570,6 +3597,32 @@
           });
       }
     }
+  }
+
+  // ── Menu: turn markdown links into a horizontal nav bar ────────────────────
+  // The same link format that powers the site's own top bar (see menu.md):
+  //   [🎓 Tutorial](/t) [🧩 Components](/c)
+  //   {: .menu }
+  function upgradeMenu(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var links = el.querySelectorAll("a");
+    if (!links.length) return;
+    var nav = document.createElement("nav");
+    nav.className = "lc-menu";
+    Array.prototype.forEach.call(links, function(a) {
+      var t = (a.textContent || "").trim();
+      var sp = t.indexOf(" ");
+      var icon = "", label = t;
+      if (sp > 0) { icon = t.slice(0, sp); label = t.slice(sp + 1); }
+      var na = document.createElement("a");
+      na.href = a.getAttribute("href") || "#";
+      if (a.getAttribute("target")) na.target = a.getAttribute("target");
+      na.innerHTML = (icon ? '<span class="lc-menu-ic">' + escapeHtml(icon) + '</span>' : '')
+        + '<span class="lc-menu-lb">' + escapeHtml(label) + '</span>';
+      nav.appendChild(na);
+    });
+    el.parentNode.replaceChild(nav, el);
   }
 
   // ── GitHub deploy/activity list (Actions runs) ─────────────────────────────
