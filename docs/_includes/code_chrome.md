@@ -2463,7 +2463,7 @@
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
     var pipAttr = el.getAttribute("pip") || "bottom-right";
-    var pipSize = parseInt(el.getAttribute("size") || "180", 10);
+    var pipSize = parseInt(el.getAttribute("size") || "240", 10);
     var fps     = parseInt(el.getAttribute("fps")  || "25",  10);
 
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -2559,8 +2559,8 @@
     var useCam = true, useMic = true, useSnd = false;
     var bgMode = "none";
     var optBg  = wrap.querySelector("#lc-ropt-bg");
-    var bgCycle  = ["none","blur","dark","blue","green"];
-    var bgLabels = { none: "🖼 BG: Off", blur: "🌫 BG: Blur", dark: "⬛ BG: Dark", blue: "🔵 BG: Blue", green: "🟢 BG: Green" };
+    var bgCycle  = ["none","blur","dark","blue","green","white"];
+    var bgLabels = { none: "🖼 BG: Off", blur: "🌫 BG: Blur", dark: "⬛ BG: Dark", blue: "🔵 BG: Blue", green: "🟢 BG: Green", white: "⬜ BG: White" };
     optCam.addEventListener("click", function(){ useCam = !useCam; optCam.classList.toggle("on", useCam); refreshHUD(); });
     optMic.addEventListener("click", function(){ useMic = !useMic; optMic.classList.toggle("on", useMic); });
     if (optSnd) optSnd.addEventListener("click", function(){ useSnd = !useSnd; optSnd.classList.toggle("on", useSnd); });
@@ -2609,7 +2609,11 @@
       pipWrap.appendChild(hudCamVid);
       pipWrap.appendChild(camOffEl);
       bgCanvas = document.createElement("canvas");
-      bgCanvas.width = pipSize; bgCanvas.height = pipSize;
+      // Backing store rendered well above the CSS circle size so the composited
+      // face stays as crisp as the rest of the (often retina/4K) screen capture.
+      var bgScale = Math.min(3, Math.max(2, window.devicePixelRatio || 1));
+      bgCanvas.width = Math.round(pipSize * bgScale);
+      bgCanvas.height = Math.round(pipSize * bgScale);
       bgCtx = bgCanvas.getContext("2d");
       pipWrap.appendChild(bgCanvas);
       bgHidVid = document.createElement("video");
@@ -2769,7 +2773,7 @@
         bgCtx.fillStyle = "#111";
         bgCtx.fillRect(0, 0, w, h);
       } else {
-        var bgColors = { dark: "#1a1a2e", blue: "#0d3b66", green: "#1a472a" };
+        var bgColors = { dark: "#1a1a2e", blue: "#0d3b66", green: "#1a472a", white: "#f5f5f5" };
         bgCtx.fillStyle = bgColors[bgMode] || "#111";
         bgCtx.fillRect(0, 0, w, h);
       }
@@ -2819,7 +2823,7 @@
     var camStream = null;
     function initCam(cb) {
       if (!useCam) { if (cb) cb(); return; }
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
         .then(function(s) {
           camStream = s;
           refreshHUDCam();
@@ -2866,7 +2870,7 @@
             // DIRECTLY (no canvas) so the recording is native resolution and the face —
             // whether our HUD pip or the macOS Presenter Overlay — is captured as-is.
             var camPromise = useCam
-              ? navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+              ? navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
                   .then(function(s) { camStream = s; refreshHUDCam(); })
                   .catch(function() { useCam = false; optCam.classList.remove("on"); })
               : Promise.resolve();
