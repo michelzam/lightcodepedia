@@ -49,13 +49,11 @@ That's it. The paragraph text is replaced by the recorder widget.
 
 The screen is captured at up to **1080p** (a deliberate cap — Safari's recorder is unstable at 4K and would crash mid-recording). For crisp code, **share a single window** rather than the whole screen. Nothing is sent anywhere; everything stays in your browser.
 
-## Pause &amp; review before saving
+## Start when you're ready, pause, then review
 
-- **⏸ Pause / ▶ Resume** — the floating panel lets you pause and resume; the timer freezes while paused.
-- **⏹ Stop** opens a **review panel** that plays your recording back. From there you choose:
-  - **⬇ Save** — download the file
-  - **↻ Re-record** — discard and start over
-  - **🗑 Discard** — throw it away
+- **It starts armed, not rolling.** After you share your screen, the floating panel shows **▶ Start** with the timer at `Ready`. Your screen is already being captured (so macOS already offers Presenter Overlay) — but nothing is encoded yet. Set up your overlay/notes, then press **▶ Start** to actually begin. (**⏹ Cancel** throws it away before you start.)
+- **⏸ Pause / ▶ Resume** — pause and resume any time; the timer freezes while paused.
+- **⏹ Stop** opens a **review panel** that plays your recording back. From there: **⬇ Save**, **↻ Re-record**, or **🗑 Discard**.
 
 Nothing is written to disk until you press **Save**.
 

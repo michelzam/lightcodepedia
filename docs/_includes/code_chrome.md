@@ -2621,9 +2621,10 @@
     }
 
     /* ── Floating HUD ── */
-    var hud = null, hudCamVid = null, hudTimer = null, hudStop = null, hudPause = null;
+    var hud = null, hudCamVid = null, hudTimer = null, hudStop = null, hudPause = null, hudLabel = null;
     var hudIosTimer = null, hudIosBtn = null;
     var isPaused = false, pausedAccum = 0, pauseStart = 0;
+    var armed = false, startTs = 0, activeStream = null;
     var bgCanvas = null, bgCtx = null, bgHidVid = null, bgSegmenter = null, bgAnimId = null, bgActive = false;
 
     function hudInitialPos() {
@@ -2672,11 +2673,11 @@
         hud.appendChild(pipWrap);
       } else {
         // small label so the floating control reads as "recording" without a face
-        var macTag = document.createElement("div");
-        macTag.className = "lc-rec-hud-timer";
-        macTag.style.cssText = "background:rgba(15,15,25,.78);color:#fff";
-        macTag.textContent = "🎬 Recording";
-        hud.appendChild(macTag);
+        hudLabel = document.createElement("div");
+        hudLabel.className = "lc-rec-hud-timer";
+        hudLabel.style.cssText = "background:rgba(15,15,25,.78);color:#fff";
+        hudLabel.textContent = "🎬 Ready";
+        hud.appendChild(hudLabel);
       }
 
       hudTimer = document.createElement("div");
@@ -2719,10 +2720,7 @@
         hudStop = document.createElement("button");
         hudStop.className = "lc-rec-hud-stop";
         hudStop.textContent = "⏹ Stop";
-        hudStop.addEventListener("click", function(e) {
-          e.stopPropagation();
-          if (recorder && (recorder.state === "recording" || recorder.state === "paused")) recorder.stop();
-        });
+        hudStop.addEventListener("click", function(e) { e.stopPropagation(); stopOrCancel(); });
         hudStop.style.display = "none";
         ctrls.appendChild(hudPause);
         ctrls.appendChild(hudStop);
@@ -2736,7 +2734,7 @@
 
     function destroyHUD() {
       stopBg();
-      if (hud) { hud.parentNode && hud.parentNode.removeChild(hud); hud = null; hudCamVid = null; hudTimer = null; hudStop = null; }
+      if (hud) { hud.parentNode && hud.parentNode.removeChild(hud); hud = null; hudCamVid = null; hudTimer = null; hudStop = null; hudPause = null; hudLabel = null; }
       if (bgHidVid) { bgHidVid.parentNode && bgHidVid.parentNode.removeChild(bgHidVid); bgHidVid = null; }
       bgCanvas = null; bgCtx = null;
     }
@@ -2768,6 +2766,8 @@
 
     function togglePause() {
       if (!recorder) return;
+      // Armed but not yet started → the ▶ button begins the actual recording.
+      if (recorder.state === "inactive" && armed) { beginRecording(); return; }
       if (recorder.state === "recording") {
         recorder.pause();
         isPaused = true; pauseStart = Date.now();
@@ -2780,6 +2780,47 @@
         if (hudPause) { hudPause.className = "lc-rec-hud-pause"; hudPause.textContent = "⏸"; hudPause.title = "Pause"; }
         dotEl.classList.add("live");
         setStatus("● Recording — stop via the floating panel.");
+      }
+    }
+
+    // Actually begin encoding (called from the ▶ Start button once the user has set
+    // up Presenter Overlay / is ready). Until then we only hold the streams.
+    function beginRecording() {
+      if (!recorder || recorder.state !== "inactive" || !armed) return;
+      armed = false;
+      try { recorder.start(1000); } catch (e) { setStatus("❌ " + e.message, "err"); return; }
+      startTs = Date.now();
+      isPaused = false; pausedAccum = 0;
+      dotEl.classList.add("live");
+      if (hudLabel) hudLabel.textContent = "🎬 Recording";
+      if (hudPause) { hudPause.className = "lc-rec-hud-pause"; hudPause.textContent = "⏸"; hudPause.title = "Pause"; }
+      if (hudStop)  hudStop.textContent = "⏹ Stop";
+      btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop";
+      clearInterval(timerInterval);
+      timerInterval = setInterval(function(){
+        if (!hudTimer) return;
+        var elapsed = Date.now() - startTs - pausedAccum - (isPaused ? Date.now() - pauseStart : 0);
+        hudTimer.textContent = fmtTime(elapsed);
+      }, 500);
+      setStatus("● Recording — stop via the floating panel.");
+    }
+
+    // Stop (after start) → review; cancel (while still armed) → discard, no review.
+    function stopOrCancel() {
+      if (!recorder) return;
+      if (recorder.state === "recording" || recorder.state === "paused") { recorder.stop(); return; }
+      if (recorder.state === "inactive" && armed) {
+        armed = false;
+        clearInterval(timerInterval);
+        try { if (activeStream) activeStream.getTracks().forEach(function(t){ t.stop(); }); } catch (e) {}
+        if (camStream) { camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
+        destroyHUD();
+        dotEl.classList.remove("live");
+        isPaused = false; pausedAccum = 0;
+        btnEl.disabled = false; btnEl.className = "lc-rec-btn again"; btnEl.textContent = "▶ Record again";
+        [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = ""; o.style.opacity = ""; });
+        if (hooks.onStop) hooks.onStop();
+        setStatus("Cancelled — nothing was saved.");
       }
     }
 
@@ -2966,7 +3007,8 @@
 
     /* ── Button ── */
     btnEl.addEventListener("click", function() {
-      if (recorder && recorder.state === "recording") { recorder.stop(); return; }
+      if (recorder && (recorder.state === "recording" || recorder.state === "paused")) { recorder.stop(); return; }
+      if (armed) { stopOrCancel(); return; }
       if (isIOS) {
         // iOS: show HUD with camera pip, user does native screen recording
         initCam(function() {
@@ -2998,28 +3040,29 @@
           .then(function(screenStream) {
             createHUD();
             setStatus("Setting up…");
-            // The camera is ONLY used for the HUD pip / as the Presenter Overlay
-            // source — it never joins the recording stream. So acquire it in the
-            // BACKGROUND: a camera prompt or denial must never block Start, or the
-            // Stop/Pause buttons would never appear. (On macOS we hold it so macOS
-            // offers Presenter Overlay, but we don't draw our own circle.)
+            // Request camera + mic in ONE getUserMedia call so the browser shows a
+            // single permission prompt instead of two. The mic track joins the
+            // recording; the camera is only for the HUD pip / Presenter Overlay
+            // source (held on macOS so the overlay menu appears) and never recorded.
             var wantCam = useCam || isMac;
-            if (wantCam) {
-              navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
-                .then(function(s) { camStream = s; if (!isMac) refreshHUDCam(); })
-                .catch(function() { if (!isMac) { useCam = false; if (optCam) optCam.classList.remove("on"); refreshHUDCam(); } });
-            }
+            var constraints = {};
+            if (wantCam)  constraints.video = { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } };
+            if (useMic)   constraints.audio = true;
 
-            // Only the mic must be ready before we start — its audio track joins the
-            // recording. (MediaRecorder ignores tracks added after .start().)
-            var micPromise = useMic
-              ? navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-                  .then(function(m) { return m; })
-                  .catch(function() { return null; })
+            var avPromise = (wantCam || useMic)
+              ? navigator.mediaDevices.getUserMedia(constraints).then(function(s){ return s; }).catch(function(){ return null; })
               : Promise.resolve(null);
 
-            micPromise.then(function(micStream) {
-              if (micStream) micStream.getAudioTracks().forEach(function(t){ screenStream.addTrack(t); });
+            avPromise.then(function(av) {
+              var vidTracks = av && av.getVideoTracks ? av.getVideoTracks() : [];
+              var audTracks = av && av.getAudioTracks ? av.getAudioTracks() : [];
+              audTracks.forEach(function(t){ screenStream.addTrack(t); });
+              if (vidTracks.length) {
+                camStream = new MediaStream(vidTracks);
+                if (!isMac) refreshHUDCam();
+              } else if (!isMac) {
+                useCam = false; if (optCam) optCam.classList.remove("on"); refreshHUDCam();
+              }
               launch(screenStream);
             });
 
@@ -3043,7 +3086,7 @@
                 if (camStream) { camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
                 destroyHUD();
                 dotEl.classList.remove("live");
-                isPaused = false; pausedAccum = 0;
+                isPaused = false; pausedAccum = 0; armed = false;
                 btnEl.disabled = false; btnEl.className = "lc-rec-btn again"; btnEl.textContent = "▶ Record again";
                 [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = ""; o.style.opacity = ""; });
                 if (hooks.onStop) hooks.onStop();
@@ -3054,21 +3097,24 @@
               };
               // If the user stops sharing via the browser's own "Stop sharing" bar
               stream.getVideoTracks()[0].addEventListener("ended", function() {
-                if (recorder && recorder.state === "recording") recorder.stop();
+                if (recorder && (recorder.state === "recording" || recorder.state === "paused")) recorder.stop();
+                else if (armed) stopOrCancel();
               });
-              recorder.start(1000);
-              var startTs = Date.now();
+
+              // ARM, don't start: the screen is already being captured (so macOS
+              // offers Presenter Overlay now), but we don't encode until the user
+              // presses ▶ Start — giving them time to enable the overlay first.
+              activeStream = stream;
+              armed = true;
               isPaused = false; pausedAccum = 0;
-              dotEl.classList.add("live");
-              if (hudStop)  hudStop.style.display  = "";
-              if (hudPause) hudPause.style.display = "";
-              btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop";
-              timerInterval = setInterval(function(){
-                if (!hudTimer) return;
-                var elapsed = Date.now() - startTs - pausedAccum - (isPaused ? Date.now() - pauseStart : 0);
-                hudTimer.textContent = fmtTime(elapsed);
-              }, 500);
-              setStatus("● Recording — stop via the floating panel.");
+              if (hudStop)  { hudStop.style.display  = ""; hudStop.textContent = "⏹ Cancel"; }
+              if (hudPause) { hudPause.style.display = ""; hudPause.className = "lc-rec-hud-pause paused"; hudPause.textContent = "▶ Start"; hudPause.title = "Start recording"; }
+              if (hudTimer) hudTimer.textContent = "Ready";
+              if (hudLabel) hudLabel.textContent = "🎬 Ready";
+              btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Cancel";
+              setStatus(isMac
+                ? "Ready — turn on Presenter Overlay (green icon in the menu bar), then press ▶ Start."
+                : "Ready — press ▶ Start on the floating panel when you are.");
               [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
               if (hooks.onStart) hooks.onStart();
             }
