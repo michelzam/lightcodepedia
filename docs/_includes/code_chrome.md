@@ -2743,7 +2743,10 @@
       // getDisplayMedia MUST be called synchronously from the user gesture —
       // any preceding async call (e.g. getUserMedia) breaks the gesture chain in Safari.
       // Camera is acquired separately after screen permission is granted.
-      navigator.mediaDevices.getDisplayMedia({ video: { frameRate: fps }, audio: useSnd })
+      navigator.mediaDevices.getDisplayMedia({
+            video: { frameRate: fps, width: { ideal: 3840 }, height: { ideal: 2160 } },
+            audio: useSnd
+          })
           .then(function(screenStream) {
           createHUD();
           setStatus("Setting up…");
@@ -2757,9 +2760,10 @@
             var screenVid = document.createElement("video");
             screenVid.srcObject = screenStream; screenVid.muted = true; screenVid.play();
             screenVid.onloadedmetadata = function() {
-              // Scale proportionally to fit within 1920x1080 — never distort the aspect ratio
+              // Scale proportionally to fit within 2560x1440 — never distort the aspect ratio.
+              // Higher ceiling than 1080p keeps screen text crisp on large/retina displays.
               var sw = screenVid.videoWidth, sh = screenVid.videoHeight;
-              var scale = Math.min(1920 / sw, 1080 / sh, 1);
+              var scale = Math.min(2560 / sw, 1440 / sh, 1);
               var W = Math.round(sw * scale);
               var H = Math.round(sh * scale);
               var canvas = document.createElement("canvas");
@@ -2807,7 +2811,12 @@
 
               function launch(stream, screenSrc) {
                 chunks = [];
-                recorder = new MediaRecorder(stream, mimeType ? { mimeType: mimeType } : {});
+                // Default MediaRecorder bitrate (~2.5 Mbps) blurs screen text. Scale bitrate
+                // to the pixel count: roughly 0.12 bits/pixel/frame, clamped to a sane range.
+                var bitrate = Math.min(16000000, Math.max(4000000, Math.round(W * H * fps * 0.12)));
+                var recOpts = { videoBitsPerSecond: bitrate };
+                if (mimeType) recOpts.mimeType = mimeType;
+                recorder = new MediaRecorder(stream, recOpts);
                 recorder.ondataavailable = function(e){ if (e.data.size) chunks.push(e.data); };
                 recorder.onstop = function() {
                   active = false;
@@ -2827,6 +2836,9 @@
                 recorder.start(1000);
                 var startTs = Date.now();
                 dotEl.classList.add("live");
+                // Hide the HUD camera preview while recording — the face is already
+                // composited into the canvas, so showing it again would capture a 2nd face.
+                if (hud) { var hp = hud.querySelector(".lc-rec-hud-pip"); if (hp) hp.style.display = "none"; }
                 if (hudStop) hudStop.style.display = "";
                 btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop";
                 timerInterval = setInterval(function(){
