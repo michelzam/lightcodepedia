@@ -62,12 +62,33 @@ if (location.search.indexOf('embed=true') >= 0) {
 .lc-ud-row:last-child { border-bottom: none; }
 .lc-ud-row.danger { color: #c00; }
 .lc-ud-repo { font-family: monospace; font-size: 0.8em; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#lc-start-pill {
-  flex-shrink: 0; font-size: 0.82em; color: #0066cc;
-  text-decoration: none; border: 1px solid #0066cc; border-radius: 20px;
-  padding: 3px 10px; display: none;
+/* ── topbar record button (always visible) ── */
+#lc-rec-topbtn {
+  flex-shrink: 0; background: none; border: 1px solid #ddd; border-radius: 50%;
+  width: 32px; height: 32px; padding: 0; cursor: pointer; line-height: 1;
+  display: flex; align-items: center; justify-content: center; font-size: 1em;
 }
-#lc-start-pill:hover { background: #e8f0fe; }
+#lc-rec-topbtn:hover { border-color: #c00; box-shadow: 0 0 0 2px #fde8e8; }
+/* ── get-started dropdown (logged-out) ── */
+#lc-start-pill { position: relative; flex-shrink: 0; display: none; }
+#lc-start-btn {
+  font-size: 0.82em; color: #0066cc; background: #fff; cursor: pointer;
+  border: 1px solid #0066cc; border-radius: 20px; padding: 4px 12px;
+}
+#lc-start-btn:hover { background: #e8f0fe; }
+#lc-start-drop {
+  display: none; position: absolute; right: 0; top: calc(100% + 6px);
+  background: #fff; border: 1px solid #ddd; border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.12); min-width: 180px; z-index: 2000; overflow: hidden;
+}
+#lc-start-drop.open { display: block; }
+.lc-sd-row {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  font-size: 0.85em; color: #333; text-decoration: none; cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+.lc-sd-row:hover { background: #f5f5f5; }
+.lc-sd-row:last-child { border-bottom: none; }
 @media (max-width: 700px) {
   #lc-user-btn .lc-user-login-label { display: none; }
   #lc-user-caret { display: none; }
@@ -124,7 +145,14 @@ body {
   <div class="lc-links">
     {{ _menu.content | markdownify }}
   </div>
-  <a id="lc-start-pill" href="/start">🔑 Get started</a>
+  <button id="lc-rec-topbtn" title="Record screen" aria-label="Record screen">🎬</button>
+  <div id="lc-start-pill">
+    <button id="lc-start-btn">🔑 Get started ▾</button>
+    <div id="lc-start-drop">
+      <a class="lc-sd-row" href="/start"><span>🚀</span><span>Start here</span></a>
+      <div class="lc-sd-row" id="lc-sd-record"><span>🎬</span><span>Record</span></div>
+    </div>
+  </div>
   <div id="lc-user-pill" style="display:none">
     <button id="lc-user-btn" aria-label="User menu" title="">
       <img id="lc-user-avatar" src="" alt="">
@@ -150,6 +178,7 @@ body {
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
       <div id="lc-ud-rate" style="display:none;padding:6px 16px;font-size:0.75em;border-bottom:1px solid #f0f0f0"></div>
+      <div class="lc-ud-row" id="lc-ud-record"><span>🎬</span><span>Record screen</span></div>
       <div class="lc-ud-row danger" id="lc-ud-disconnect"><span>🔓</span><span>Disconnect</span></div>
     </div>
   </div>
@@ -367,5 +396,27 @@ body {
       location.reload();
     });
   })();
+
+  // ── Recorder launchers (work in every auth state) ──────────────────────────
+  function openRec(e) {
+    if (e) e.stopPropagation();
+    var d = document.getElementById('lc-start-drop'); if (d) d.classList.remove('open');
+    var u = document.getElementById('lc-user-drop');  if (u) u.classList.remove('open');
+    if (window.lcOpenRecorder) window.lcOpenRecorder();
+    else alert('Recorder is still loading — please try again in a moment.');
+  }
+  ['lc-rec-topbtn','lc-sd-record','lc-ud-record'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', openRec);
+  });
+
+  // get-started dropdown toggle (logged-out)
+  var sBtn = document.getElementById('lc-start-btn');
+  var sDrop = document.getElementById('lc-start-drop');
+  if (sBtn && sDrop) {
+    sBtn.addEventListener('click', function(e){ e.stopPropagation(); sDrop.classList.toggle('open'); });
+    document.addEventListener('click', function(){ sDrop.classList.remove('open'); });
+    sDrop.addEventListener('click', function(e){ e.stopPropagation(); });
+  }
 })();
 </script>

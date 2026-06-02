@@ -2459,9 +2459,10 @@
   }
 
   // ── Screen + face recorder ────────────────────────────────────────────────
-  function upgradeRecorder(el) {
+  function upgradeRecorder(el, hooks) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
+    hooks = hooks || {};
     var pipAttr = el.getAttribute("pip") || "bottom-right";
     var pipSize = parseInt(el.getAttribute("size") || "240", 10);
     var camZoom = parseFloat(el.getAttribute("zoom") || "1.35");
@@ -2518,6 +2519,23 @@
       '.lc-rec-hud-timer-btn{font-size:.75em;color:#fff;background:rgba(15,15,25,.78);border:1px solid #777;border-radius:12px;padding:3px 10px;cursor:pointer}',
       '.lc-rec-hud-timer-btn.running{color:#f88;border-color:#f88}',
       '.lc-rec-hud-pip canvas{position:absolute;inset:0;width:100%;height:100%;display:none;transform:scaleX(-1)}',
+      '.lc-rec-hud-ctrls{display:flex;gap:6px;align-items:center}',
+      '.lc-rec-hud-pause{background:#333;color:#fff;border:none;border-radius:14px;padding:5px 12px;cursor:pointer;font-size:.85em;font-weight:600;box-shadow:0 3px 12px rgba(0,0,0,.4)}',
+      '.lc-rec-hud-pause:hover{background:#222}',
+      '.lc-rec-hud-pause.paused{background:#1a7a1a}.lc-rec-hud-pause.paused:hover{background:#156315}',
+      /* Review + launcher modals */
+      '.lc-rec-ov{position:fixed;inset:0;z-index:2147483646;background:rgba(10,10,20,.62);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}',
+      '.lc-rec-panel{background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);max-width:560px;width:100%;max-height:90vh;overflow:auto;position:relative}',
+      '.lc-rec-panel-close{position:absolute;top:8px;right:10px;background:none;border:none;font-size:1.3em;color:#888;cursor:pointer;line-height:1;z-index:2}',
+      '.lc-rec-panel-close:hover{color:#333}',
+      '.lc-rec-review-vid{width:100%;display:block;background:#000;border-radius:14px 14px 0 0;max-height:60vh}',
+      '.lc-rec-review-body{padding:14px 18px 18px}',
+      '.lc-rec-review-meta{font-size:.82em;color:#888;margin-bottom:12px}',
+      '.lc-rec-review-acts{display:flex;gap:8px;flex-wrap:wrap}',
+      '.lc-rec-review-acts button{padding:.5em 1.1em;border:none;border-radius:7px;cursor:pointer;font-size:.9em;font-weight:600}',
+      '.lc-rb-save{background:#0066cc;color:#fff}.lc-rb-save:hover{background:#0052a3}',
+      '.lc-rb-again{background:#eee;color:#333}.lc-rb-again:hover{background:#ddd}',
+      '.lc-rb-discard{background:#fff;color:#c00;border:1px solid #f0caca!important}.lc-rb-discard:hover{background:#fff5f5}',
       '</style>',
       '<div class="lc-rec-head"><span class="lc-rec-dot" id="lc-rd"></span><span>🎬 Screen Recorder</span></div>',
       '<div class="lc-rec-body">',
@@ -2579,8 +2597,9 @@
     }
 
     /* ── Floating HUD ── */
-    var hud = null, hudCamVid = null, hudTimer = null, hudStop = null;
+    var hud = null, hudCamVid = null, hudTimer = null, hudStop = null, hudPause = null;
     var hudIosTimer = null, hudIosBtn = null;
+    var isPaused = false, pausedAccum = 0, pauseStart = 0;
     var bgCanvas = null, bgCtx = null, bgHidVid = null, bgSegmenter = null, bgAnimId = null, bgActive = false;
 
     function hudInitialPos() {
@@ -2654,15 +2673,25 @@
           }
         });
       } else {
+        var ctrls = document.createElement("div");
+        ctrls.className = "lc-rec-hud-ctrls";
+        hudPause = document.createElement("button");
+        hudPause.className = "lc-rec-hud-pause";
+        hudPause.textContent = "⏸";
+        hudPause.title = "Pause";
+        hudPause.addEventListener("click", function(e) { e.stopPropagation(); togglePause(); });
+        hudPause.style.display = "none";
         hudStop = document.createElement("button");
         hudStop.className = "lc-rec-hud-stop";
-        hudStop.textContent = "⏹ Stop & save";
+        hudStop.textContent = "⏹ Stop";
         hudStop.addEventListener("click", function(e) {
           e.stopPropagation();
-          if (recorder && recorder.state === "recording") recorder.stop();
+          if (recorder && (recorder.state === "recording" || recorder.state === "paused")) recorder.stop();
         });
         hudStop.style.display = "none";
-        hud.appendChild(hudStop);
+        ctrls.appendChild(hudPause);
+        ctrls.appendChild(hudStop);
+        hud.appendChild(ctrls);
       }
 
       makeDraggable(hud);
@@ -2700,6 +2729,64 @@
 
     function refreshHUD() {
       if (hud) refreshHUDCam();
+    }
+
+    function togglePause() {
+      if (!recorder) return;
+      if (recorder.state === "recording") {
+        recorder.pause();
+        isPaused = true; pauseStart = Date.now();
+        if (hudPause) { hudPause.className = "lc-rec-hud-pause paused"; hudPause.textContent = "▶"; hudPause.title = "Resume"; }
+        dotEl.classList.remove("live");
+        setStatus("⏸ Paused — resume from the floating panel.");
+      } else if (recorder.state === "paused") {
+        recorder.resume();
+        isPaused = false; pausedAccum += Date.now() - pauseStart;
+        if (hudPause) { hudPause.className = "lc-rec-hud-pause"; hudPause.textContent = "⏸"; hudPause.title = "Pause"; }
+        dotEl.classList.add("live");
+        setStatus("● Recording — stop via the floating panel.");
+      }
+    }
+
+    /* ── Review before save ── */
+    function showReview(blob) {
+      var url = URL.createObjectURL(blob);
+      var ts  = new Date().toISOString().slice(0,19).replace(/:/g,"-");
+      var fname = "recording-" + ts + "." + ext;
+      var mb = (blob.size / 1048576).toFixed(1);
+      var ov = document.createElement("div");
+      ov.className = "lc-rec-ov";
+      ov.innerHTML = [
+        '<div class="lc-rec-panel">',
+        '  <button class="lc-rec-panel-close" title="Discard">✕</button>',
+        '  <video class="lc-rec-review-vid" controls autoplay playsinline></video>',
+        '  <div class="lc-rec-review-body">',
+        '    <div class="lc-rec-review-meta">' + fname + ' · ' + mb + ' MB</div>',
+        '    <div class="lc-rec-review-acts">',
+        '      <button class="lc-rb-save">⬇ Save</button>',
+        '      <button class="lc-rb-again">↻ Re-record</button>',
+        '      <button class="lc-rb-discard">🗑 Discard</button>',
+        '    </div>',
+        '  </div>',
+        '</div>'
+      ].join("");
+      document.body.appendChild(ov);
+      ov.querySelector("video").src = url;
+      function close() { URL.revokeObjectURL(url); ov.parentNode && ov.parentNode.removeChild(ov); }
+      ov.querySelector(".lc-rb-save").addEventListener("click", function() {
+        var a = document.createElement("a");
+        a.href = url; a.download = fname; a.click();
+        setStatus("✅ Saved as " + fname, "ok");
+        close();
+      });
+      ov.querySelector(".lc-rb-again").addEventListener("click", function() {
+        close();
+        startRecording();
+      });
+      var discard = function() { setStatus("Recording discarded.", ""); close(); };
+      ov.querySelector(".lc-rb-discard").addEventListener("click", discard);
+      ov.querySelector(".lc-rec-panel-close").addEventListener("click", discard);
+      ov.addEventListener("click", function(e) { if (e.target === ov) discard(); });
     }
 
     /* ── Virtual background (MediaPipe Selfie Segmentation) ── */
@@ -2852,6 +2939,7 @@
           btnEl.textContent = "✅ Camera active";
           btnEl.disabled = true;
           setStatus("Your camera is floating. Follow the steps above.", "ok");
+          if (hooks.onStart) hooks.onStart();
         });
         return;
       }
@@ -2914,14 +3002,14 @@
                 if (camStream) { camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
                 destroyHUD();
                 dotEl.classList.remove("live");
+                isPaused = false; pausedAccum = 0;
                 btnEl.disabled = false; btnEl.className = "lc-rec-btn again"; btnEl.textContent = "▶ Record again";
-                var blob = new Blob(chunks, { type: mimeType || "video/webm" });
-                var ts = new Date().toISOString().slice(0,19).replace(/:/g,"-");
-                var a = document.createElement("a");
-                a.href = URL.createObjectURL(blob); a.download = "recording-" + ts + "." + ext;
-                a.click(); URL.revokeObjectURL(a.href);
-                setStatus("✅ Saved as recording-" + ts + "." + ext, "ok");
                 [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = ""; o.style.opacity = ""; });
+                if (hooks.onStop) hooks.onStop();
+                var blob = new Blob(chunks, { type: mimeType || "video/webm" });
+                if (!blob.size) { setStatus("Nothing was recorded.", "err"); return; }
+                setStatus("Review your recording…");
+                showReview(blob);
               };
               // If the user stops sharing via the browser's own "Stop sharing" bar
               stream.getVideoTracks()[0].addEventListener("ended", function() {
@@ -2929,14 +3017,19 @@
               });
               recorder.start(1000);
               var startTs = Date.now();
+              isPaused = false; pausedAccum = 0;
               dotEl.classList.add("live");
-              if (hudStop) hudStop.style.display = "";
+              if (hudStop)  hudStop.style.display  = "";
+              if (hudPause) hudPause.style.display = "";
               btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop";
               timerInterval = setInterval(function(){
-                if (hudTimer) hudTimer.textContent = fmtTime(Date.now()-startTs);
+                if (!hudTimer) return;
+                var elapsed = Date.now() - startTs - pausedAccum - (isPaused ? Date.now() - pauseStart : 0);
+                hudTimer.textContent = fmtTime(elapsed);
               }, 500);
               setStatus("● Recording — stop via the floating panel.");
               [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
+              if (hooks.onStart) hooks.onStart();
             }
           })
           .catch(function(e) {
@@ -2946,6 +3039,36 @@
           });
     }
   }
+
+  // Global launcher — open the recorder from anywhere (e.g. the topbar) without
+  // needing a .recorder tag on the page. Builds a placeholder, upgrades it inside
+  // a modal, and closes the modal chrome once recording starts so it isn't captured.
+  window.lcOpenRecorder = function(opts) {
+    opts = opts || {};
+    if (document.getElementById("lc-rec-launcher")) return;
+    var ov = document.createElement("div");
+    ov.id = "lc-rec-launcher";
+    ov.className = "lc-rec-ov";
+    var panel = document.createElement("div");
+    panel.className = "lc-rec-panel";
+    panel.style.maxWidth = "480px";
+    panel.style.background = "transparent";
+    panel.style.boxShadow = "none";
+    var close = document.createElement("button");
+    close.className = "lc-rec-panel-close";
+    close.title = "Close"; close.textContent = "✕"; close.style.color = "#fff";
+    var p = document.createElement("p");
+    p.className = "recorder";
+    ["pip","size","zoom","fps"].forEach(function(k){ if (opts[k] != null) p.setAttribute(k, opts[k]); });
+    panel.appendChild(close);
+    panel.appendChild(p);
+    ov.appendChild(panel);
+    document.body.appendChild(ov);
+    function closeLauncher() { ov.parentNode && ov.parentNode.removeChild(ov); }
+    close.addEventListener("click", closeLauncher);
+    ov.addEventListener("click", function(e){ if (e.target === ov) closeLauncher(); });
+    upgradeRecorder(p, { onStart: closeLauncher });
+  };
 
   window.lcPyrun = { attach: attach };
   if (window.lcPyrunQueue) {
