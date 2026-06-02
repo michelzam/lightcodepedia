@@ -2513,6 +2513,7 @@
       '.lc-rec-review-vid{width:100%;display:block;background:#000;border-radius:14px 14px 0 0;max-height:60vh}',
       '.lc-rec-review-body{padding:14px 18px 18px}',
       '.lc-rec-review-meta{font-size:.82em;color:#888;margin-bottom:12px}',
+      '.lc-rec-review-warn{font-size:.84em;line-height:1.5;color:#7a4a00;background:#fff7e6;border:1px solid #ffd98a;border-radius:8px;padding:8px 10px;margin-bottom:10px}',
       '.lc-rec-review-acts{display:flex;gap:8px;flex-wrap:wrap}',
       '.lc-rec-review-acts button{padding:.5em 1.1em;border:none;border-radius:7px;cursor:pointer;font-size:.9em;font-weight:600}',
       '.lc-rb-save{background:#0066cc;color:#fff}.lc-rb-save:hover{background:#0052a3}',
@@ -2624,7 +2625,7 @@
     var hud = null, hudCamVid = null, hudTimer = null, hudStop = null, hudPause = null, hudLabel = null;
     var hudIosTimer = null, hudIosBtn = null;
     var isPaused = false, pausedAccum = 0, pauseStart = 0;
-    var armed = false, startTs = 0, activeStream = null;
+    var armed = false, startTs = 0, activeStream = null, endNote = "";
     var bgCanvas = null, bgCtx = null, bgHidVid = null, bgSegmenter = null, bgAnimId = null, bgActive = false;
 
     function hudInitialPos() {
@@ -2787,7 +2788,7 @@
     // up Presenter Overlay / is ready). Until then we only hold the streams.
     function beginRecording() {
       if (!recorder || recorder.state !== "inactive" || !armed) return;
-      armed = false;
+      armed = false; endNote = "";
       try { recorder.start(1000); } catch (e) { setStatus("❌ " + e.message, "err"); return; }
       startTs = Date.now();
       isPaused = false; pausedAccum = 0;
@@ -2837,6 +2838,7 @@
         '  <button class="lc-rec-panel-close" title="Discard">✕</button>',
         '  <video class="lc-rec-review-vid" controls autoplay playsinline></video>',
         '  <div class="lc-rec-review-body">',
+        endNote ? '    <div class="lc-rec-review-warn">⚠️ ' + endNote + '</div>' : '',
         '    <div class="lc-rec-review-meta">' + fname + ' · ' + mb + ' MB</div>',
         '    <div class="lc-rec-review-acts">',
         '      <button class="lc-rb-save">⬇ Save</button>',
@@ -3026,6 +3028,23 @@
     /* ── Desktop recording ── */
     var recorder = null, chunks = [], timerInterval = null;
 
+    // Releasing devices on navigation matters: desktop recording is single-page, and
+    // Safari does NOT reliably free getDisplayMedia/getUserMedia when the page unloads.
+    // A leaked camera/screen leaves the NEXT page's recording broken (no overlay,
+    // dead controls). So we stop every track on pagehide, and warn before leaving.
+    function releaseAllTracks() {
+      try { if (activeStream) activeStream.getTracks().forEach(function(t){ t.stop(); }); } catch (e) {}
+      try { if (camStream)    camStream.getTracks().forEach(function(t){ t.stop(); }); } catch (e) {}
+      activeStream = null; camStream = null;
+    }
+    function isActive() {
+      return armed || (recorder && (recorder.state === "recording" || recorder.state === "paused"));
+    }
+    window.addEventListener("pagehide", function(){ if (isActive()) releaseAllTracks(); });
+    window.addEventListener("beforeunload", function(e){
+      if (isActive()) { e.preventDefault(); e.returnValue = "You're recording — leaving this page will discard it."; return e.returnValue; }
+    });
+
     function startRecording() {
       btnEl.disabled = true;
       setStatus("Requesting screen share…");
@@ -3046,7 +3065,12 @@
             // source (held on macOS so the overlay menu appears) and never recorded.
             var wantCam = useCam || isMac;
             var constraints = {};
-            if (wantCam)  constraints.video = { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } };
+            // On macOS we only HOLD the camera so the Presenter Overlay menu appears
+            // (macOS does its own high-quality capture for the overlay) — so request
+            // it tiny/low-fps to minimise the load that may be crashing Safari.
+            if (wantCam)  constraints.video = isMac
+              ? { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15 } }
+              : { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } };
             if (useMic)   constraints.audio = true;
 
             var avPromise = (wantCam || useMic)
@@ -3095,10 +3119,20 @@
                 setStatus("Review your recording…");
                 showReview(blob);
               };
-              // If the user stops sharing via the browser's own "Stop sharing" bar
+              // Diagnostics: capture WHY a recording ends, so unexpected Safari/overlay
+              // crashes are reported instead of vanishing silently.
+              recorder.onerror = function(ev) {
+                endNote = "MediaRecorder error: " + ((ev && ev.error && (ev.error.name || ev.error.message)) || "unknown");
+                if (recorder && (recorder.state === "recording" || recorder.state === "paused")) { try { recorder.stop(); } catch (e) {} }
+              };
+              // Fires if the OS/Safari drops the capture (the ~20s overlay crash) OR the
+              // user clicks the browser's own "Stop sharing" bar.
               stream.getVideoTracks()[0].addEventListener("ended", function() {
-                if (recorder && (recorder.state === "recording" || recorder.state === "paused")) recorder.stop();
-                else if (armed) stopOrCancel();
+                if (recorder && (recorder.state === "recording" || recorder.state === "paused")) {
+                  var secs = Math.round((Date.now() - startTs - pausedAccum) / 1000);
+                  endNote = endNote || ("Screen capture ended on its own after " + secs + "s (Safari/Presenter-Overlay limit). Your clip up to that point is below.");
+                  recorder.stop();
+                } else if (armed) stopOrCancel();
               });
 
               // ARM, don't start: the screen is already being captured (so macOS
