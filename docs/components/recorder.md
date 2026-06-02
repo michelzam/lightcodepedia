@@ -29,11 +29,13 @@ That's it. The paragraph text is replaced by the recorder widget.
 | Layer | What you see |
 |---|---|
 | Background | Your entire screen (or a window — you choose when the browser asks) |
-| Face overlay | Your webcam, circular, in the corner — like a video call |
+| Face overlay | Your webcam, in a floating circle you can drag anywhere — like a video call. It stays visible while you record so you stay connected to your audience. |
 | Audio | Your microphone (toggle on/off before recording) |
 | Screen audio | Optional — toggle on before recording (works best in Chrome) |
 
-All compositing happens in the browser. Nothing is sent anywhere. The file downloads when you click ⏹.
+The screen is recorded **directly at native resolution** — your face circle is captured on-screen exactly as you see it, so nothing is re-encoded or softened. Nothing is sent anywhere; the file downloads when you click ⏹.
+
+> **macOS tip:** if you turn on **Presenter Overlay** (Control Centre → Video Effects), macOS draws its own large face circle into the recording. Our floating circle simply sits behind it, so you can use either one — whatever feels best.
 
 ---
 

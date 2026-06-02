@@ -2505,16 +2505,16 @@
       '.lc-rec-ios ol{margin:6px 0 0 16px;padding:0}',
       '.lc-rec-ios li{margin-bottom:2px}',
       /* HUD styles */
-      '.lc-rec-hud{position:fixed;z-index:2147483647;background:rgba(15,15,25,.82);border-radius:18px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);user-select:none;touch-action:none;cursor:grab}',
+      '.lc-rec-hud{position:fixed;z-index:2147483647;background:transparent;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;user-select:none;touch-action:none;cursor:grab}',
       '.lc-rec-hud:active{cursor:grabbing}',
-      '.lc-rec-hud-pip{width:96px;height:96px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,.85);flex-shrink:0;background:#111;position:relative}',
+      '.lc-rec-hud-pip{width:96px;height:96px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,.9);flex-shrink:0;background:#111;position:relative;box-shadow:0 6px 24px rgba(0,0,0,.45)}',
       '.lc-rec-hud-pip video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}',
       '.lc-rec-hud-pip .lc-cam-off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em}',
-      '.lc-rec-hud-timer{color:#fff;font-size:1em;font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.04em;min-height:1.2em}',
-      '.lc-rec-hud-stop{background:#c00;color:#fff;border:none;border-radius:6px;padding:5px 14px;cursor:pointer;font-size:.85em;font-weight:600;width:100%}',
+      '.lc-rec-hud-timer{color:#fff;font-size:.85em;font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.04em;min-height:1.2em;background:rgba(15,15,25,.78);padding:2px 10px;border-radius:12px}',
+      '.lc-rec-hud-stop{background:#c00;color:#fff;border:none;border-radius:14px;padding:5px 14px;cursor:pointer;font-size:.85em;font-weight:600;box-shadow:0 3px 12px rgba(0,0,0,.4)}',
       '.lc-rec-hud-stop:hover{background:#a00}',
-      '.lc-rec-hud-ios{font-size:.72em;color:#cdd6f4;text-align:center;max-width:96px;line-height:1.4}',
-      '.lc-rec-hud-timer-btn{font-size:.75em;color:#aaa;background:none;border:1px solid #555;border-radius:4px;padding:2px 8px;cursor:pointer;margin-top:-2px}',
+      '.lc-rec-hud-ios{font-size:.72em;color:#fff;text-align:center;max-width:140px;line-height:1.4;background:rgba(15,15,25,.78);padding:6px 10px;border-radius:10px}',
+      '.lc-rec-hud-timer-btn{font-size:.75em;color:#fff;background:rgba(15,15,25,.78);border:1px solid #777;border-radius:12px;padding:3px 10px;cursor:pointer}',
       '.lc-rec-hud-timer-btn.running{color:#f88;border-color:#f88}',
       '</style>',
       '<div class="lc-rec-head"><span class="lc-rec-dot" id="lc-rd"></span><span>🎬 Screen Recorder</span></div>',
@@ -2587,6 +2587,8 @@
 
       var pipWrap = document.createElement("div");
       pipWrap.className = "lc-rec-hud-pip";
+      pipWrap.style.width = pipSize + "px";
+      pipWrap.style.height = pipSize + "px";
       hudCamVid = document.createElement("video");
       hudCamVid.autoplay = true; hudCamVid.muted = true; hudCamVid.playsInline = true;
       var camOffEl = document.createElement("div");
@@ -2742,114 +2744,76 @@
       setStatus("Requesting screen share…");
       // getDisplayMedia MUST be called synchronously from the user gesture —
       // any preceding async call (e.g. getUserMedia) breaks the gesture chain in Safari.
-      // Camera is acquired separately after screen permission is granted.
       navigator.mediaDevices.getDisplayMedia({
             video: { frameRate: fps, width: { ideal: 3840 }, height: { ideal: 2160 } },
             audio: useSnd
           })
           .then(function(screenStream) {
-          createHUD();
-          setStatus("Setting up…");
-          // Acquire camera AFTER screen permission is granted (no gesture-chain issue here)
-          var camPromise = useCam
-            ? navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
-                .then(function(s) { camStream = s; refreshHUDCam(); })
-                .catch(function() { useCam = false; optCam.classList.remove("on"); })
-            : Promise.resolve();
-          camPromise.then(function() {
-            var screenVid = document.createElement("video");
-            screenVid.srcObject = screenStream; screenVid.muted = true; screenVid.play();
-            screenVid.onloadedmetadata = function() {
-              // Scale proportionally to fit within 2560x1440 — never distort the aspect ratio.
-              // Higher ceiling than 1080p keeps screen text crisp on large/retina displays.
-              var sw = screenVid.videoWidth, sh = screenVid.videoHeight;
-              var scale = Math.min(2560 / sw, 1440 / sh, 1);
-              var W = Math.round(sw * scale);
-              var H = Math.round(sh * scale);
-              var canvas = document.createElement("canvas");
-              canvas.width = W; canvas.height = H;
-              var ctx = canvas.getContext("2d");
+            createHUD();
+            setStatus("Setting up…");
+            // Show the face as an on-screen HUD circle. We record the screen stream
+            // DIRECTLY (no canvas) so the recording is native resolution and the face —
+            // whether our HUD pip or the macOS Presenter Overlay — is captured as-is.
+            var camPromise = useCam
+              ? navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+                  .then(function(s) { camStream = s; refreshHUDCam(); })
+                  .catch(function() { useCam = false; optCam.classList.remove("on"); })
+              : Promise.resolve();
 
-              var r = pipSize / 2, margin = 16, px, py;
-              if      (pipAttr === "bottom-right") { px = W - pipSize - margin; py = H - pipSize - margin; }
-              else if (pipAttr === "bottom-left")  { px = margin;               py = H - pipSize - margin; }
-              else if (pipAttr === "top-right")    { px = W - pipSize - margin; py = margin; }
-              else                                 { px = margin;               py = margin; }
+            var micPromise = useMic
+              ? navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                  .then(function(m) { return m; })
+                  .catch(function() { return null; })
+              : Promise.resolve(null);
 
-              var active = true;
-              function draw() {
-                if (!active) return;
-                ctx.drawImage(screenVid, 0, 0, W, H);
-                if (useCam && camStream && hudCamVid && hudCamVid.readyState >= 2) {
-                  ctx.save();
-                  ctx.beginPath(); ctx.arc(px + r, py + r, r, 0, Math.PI * 2); ctx.clip();
-                  // Center-crop the camera frame to a square (object-fit: cover) so the face isn't squished
-                  var cw = hudCamVid.videoWidth, ch = hudCamVid.videoHeight;
-                  var side = Math.min(cw, ch);
-                  var sx = (cw - side) / 2, sy = (ch - side) / 2;
-                  ctx.drawImage(hudCamVid, sx, sy, side, side, px, py, pipSize, pipSize);
-                  ctx.restore();
-                  ctx.save();
-                  ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
-                  ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 6;
-                  ctx.beginPath(); ctx.arc(px + r, py + r, r + 1, 0, Math.PI * 2); ctx.stroke();
-                  ctx.restore();
-                }
-                requestAnimationFrame(draw);
-              }
-              draw();
+            Promise.all([camPromise, micPromise]).then(function(res) {
+              var micStream = res[1];
+              if (micStream) micStream.getAudioTracks().forEach(function(t){ screenStream.addTrack(t); });
+              launch(screenStream);
+            });
 
-              var canvasStream = canvas.captureStream(fps);
-              if (useSnd) screenStream.getAudioTracks().forEach(function(t){ canvasStream.addTrack(t); });
-              if (useMic) {
-                navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-                  .then(function(micS) { micS.getAudioTracks().forEach(function(t){ canvasStream.addTrack(t); }); launch(canvasStream, screenStream, active); })
-                  .catch(function() { launch(canvasStream, screenStream, active); });
-              } else {
-                launch(canvasStream, screenStream, active);
-              }
-
-              function launch(stream, screenSrc) {
-                chunks = [];
-                // Default MediaRecorder bitrate (~2.5 Mbps) blurs screen text. Scale bitrate
-                // to the pixel count: roughly 0.12 bits/pixel/frame, clamped to a sane range.
-                var bitrate = Math.min(16000000, Math.max(4000000, Math.round(W * H * fps * 0.12)));
-                var recOpts = { videoBitsPerSecond: bitrate };
-                if (mimeType) recOpts.mimeType = mimeType;
-                recorder = new MediaRecorder(stream, recOpts);
-                recorder.ondataavailable = function(e){ if (e.data.size) chunks.push(e.data); };
-                recorder.onstop = function() {
-                  active = false;
-                  clearInterval(timerInterval);
-                  screenSrc.getTracks().forEach(function(t){ t.stop(); });
-                  stream.getTracks().forEach(function(t){ t.stop(); });
-                  destroyHUD();
-                  dotEl.classList.remove("live");
-                  btnEl.disabled = false; btnEl.className = "lc-rec-btn again"; btnEl.textContent = "▶ Record again";
-                  var blob = new Blob(chunks, { type: mimeType || "video/webm" });
-                  var ts = new Date().toISOString().slice(0,19).replace(/:/g,"-");
-                  var a = document.createElement("a");
-                  a.href = URL.createObjectURL(blob); a.download = "recording-" + ts + "." + ext;
-                  a.click(); URL.revokeObjectURL(a.href);
-                  setStatus("✅ Saved as recording-" + ts + "." + ext, "ok");
-                };
-                recorder.start(1000);
-                var startTs = Date.now();
-                dotEl.classList.add("live");
-                // Hide the HUD camera preview while recording — the face is already
-                // composited into the canvas, so showing it again would capture a 2nd face.
-                if (hud) { var hp = hud.querySelector(".lc-rec-hud-pip"); if (hp) hp.style.display = "none"; }
-                if (hudStop) hudStop.style.display = "";
-                btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop";
-                timerInterval = setInterval(function(){
-                  var t = fmtTime(Date.now()-startTs);
-                  if (hudTimer) hudTimer.textContent = t;
-                }, 500);
-                setStatus("● Recording — stop via the floating panel.");
-                [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
-              }
-            };
-          }); // camPromise.then
+            function launch(stream) {
+              chunks = [];
+              // Bitrate scaled to actual capture resolution (~0.15 bpp) so screen text
+              // stays sharp; clamp to a sane range. No canvas re-encode = native quality.
+              var vs = stream.getVideoTracks()[0].getSettings() || {};
+              var W = vs.width || 1920, H = vs.height || 1080;
+              var bitrate = Math.min(40000000, Math.max(6000000, Math.round(W * H * fps * 0.15)));
+              var recOpts = { videoBitsPerSecond: bitrate };
+              if (mimeType) recOpts.mimeType = mimeType;
+              recorder = new MediaRecorder(stream, recOpts);
+              chunks = [];
+              recorder.ondataavailable = function(e){ if (e.data.size) chunks.push(e.data); };
+              recorder.onstop = function() {
+                clearInterval(timerInterval);
+                stream.getTracks().forEach(function(t){ t.stop(); });
+                if (camStream) { camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
+                destroyHUD();
+                dotEl.classList.remove("live");
+                btnEl.disabled = false; btnEl.className = "lc-rec-btn again"; btnEl.textContent = "▶ Record again";
+                var blob = new Blob(chunks, { type: mimeType || "video/webm" });
+                var ts = new Date().toISOString().slice(0,19).replace(/:/g,"-");
+                var a = document.createElement("a");
+                a.href = URL.createObjectURL(blob); a.download = "recording-" + ts + "." + ext;
+                a.click(); URL.revokeObjectURL(a.href);
+                setStatus("✅ Saved as recording-" + ts + "." + ext, "ok");
+                [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = ""; o.style.opacity = ""; });
+              };
+              // If the user stops sharing via the browser's own "Stop sharing" bar
+              stream.getVideoTracks()[0].addEventListener("ended", function() {
+                if (recorder && recorder.state === "recording") recorder.stop();
+              });
+              recorder.start(1000);
+              var startTs = Date.now();
+              dotEl.classList.add("live");
+              if (hudStop) hudStop.style.display = "";
+              btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop";
+              timerInterval = setInterval(function(){
+                if (hudTimer) hudTimer.textContent = fmtTime(Date.now()-startTs);
+              }, 500);
+              setStatus("● Recording — stop via the floating panel.");
+              [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
+            }
           })
           .catch(function(e) {
             destroyHUD();
