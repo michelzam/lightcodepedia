@@ -46,6 +46,7 @@ The screen is recorded **directly at native resolution** — your face circle is
 |---|---|---|
 | `pip="bottom-right"` | `bottom-right` | Face position: `bottom-right`, `bottom-left`, `top-right`, `top-left` |
 | `size="240"` | `240` | Diameter of the face circle in pixels |
+| `zoom="1.35"` | `1.35` | How far to zoom into your face inside the circle (1 = no zoom) |
 | `fps="25"` | `25` | Frames per second |
 
 Example with options:
