@@ -195,19 +195,16 @@
   position: relative; margin-left: 0.2em; flex-shrink: 0;
 }
 .lc-help:hover, .lc-help:focus { opacity: 1; outline: none; }
-.lc-help::after {
-  content: attr(data-help);
-  position: absolute; bottom: 145%; right: -3px;
-  width: max-content; min-width: 140px; max-width: min(280px, 70vw);
-  background: #1e1e2e; color: #eee;
+/* Tooltip lives on <body> (position:fixed) so the block's overflow:hidden can't clip it. */
+.lc-help-tip {
+  position: fixed; display: none; z-index: 2147483600;
+  max-width: 280px; background: #1e1e2e; color: #eee;
   font: 400 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-style: normal; text-align: left; letter-spacing: 0;
-  padding: 8px 11px; border-radius: 8px; box-shadow: 0 6px 22px rgba(0,0,0,.28);
-  opacity: 0; visibility: hidden; transform: translateY(3px);
-  transition: opacity .12s, transform .12s; pointer-events: none; z-index: 50;
-  white-space: normal;
+  text-align: left; padding: 8px 11px; border-radius: 8px;
+  box-shadow: 0 6px 22px rgba(0,0,0,.28); pointer-events: none;
+  opacity: 0; transition: opacity .12s;
 }
-.lc-help:hover::after, .lc-help:focus::after { opacity: 1; visibility: visible; transform: translateY(0); }
+.lc-help-tip.show { opacity: 1; }
 /* menu (horizontal nav from markdown links) */
 .lc-menu { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3em 1.5em; padding: 0.5em 0; margin: 0.5em 0 1.2em; border-bottom: 1px solid #eee; }
 .lc-menu a { display: inline-flex; align-items: center; gap: 0.4em; text-decoration: none; color: #333; font-weight: 500; font-size: 0.96em; padding: 0.2em 0; }
@@ -3745,6 +3742,42 @@
     window.addEventListener("pagehide", function(){ clearTimeout(pollTimer); });
     fetchRuns();
   }
+
+  // ── Help tooltips (body-anchored, escapes any block's overflow:hidden) ──────
+  (function setupHelpTips() {
+    var tip = null;
+    function ensure() {
+      if (tip) return tip;
+      tip = document.createElement("div");
+      tip.className = "lc-help-tip";
+      document.body.appendChild(tip);
+      return tip;
+    }
+    function show(badge) {
+      var text = badge.getAttribute("data-help");
+      if (!text) return;
+      var t = ensure();
+      t.textContent = text;
+      t.style.display = "block";
+      var r = badge.getBoundingClientRect();
+      var tw = t.offsetWidth, th = t.offsetHeight, pad = 8;
+      var left = r.left + r.width / 2 - tw / 2;
+      left = Math.max(pad, Math.min(window.innerWidth - tw - pad, left));
+      var top = r.top - th - 8;                 // prefer above the badge…
+      if (top < pad) top = r.bottom + 8;        // …flip below if no room
+      t.style.left = Math.round(left) + "px";
+      t.style.top  = Math.round(top) + "px";
+      t.classList.add("show");
+    }
+    function hide() { if (tip) { tip.classList.remove("show"); tip.style.display = "none"; } }
+    function badgeOf(e) { return e.target && e.target.closest ? e.target.closest(".lc-help") : null; }
+    document.addEventListener("mouseover", function(e){ var b = badgeOf(e); if (b) show(b); });
+    document.addEventListener("mouseout",  function(e){ if (badgeOf(e)) hide(); });
+    document.addEventListener("focusin",   function(e){ var b = badgeOf(e); if (b) show(b); });
+    document.addEventListener("focusout",  function(e){ if (badgeOf(e)) hide(); });
+    document.addEventListener("click",     function(e){ var b = badgeOf(e); if (b) { (tip && tip.classList.contains("show")) ? hide() : show(b); } else hide(); });
+    window.addEventListener("scroll", hide, true);
+  })();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", scan);
