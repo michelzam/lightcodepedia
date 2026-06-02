@@ -2461,38 +2461,14 @@
   }
 
   // ── Screen + face recorder ────────────────────────────────────────────────
-  function upgradeRecorder(el, hooks) {
-    if (el.dataset.lcUpgraded) return;
-    el.dataset.lcUpgraded = "1";
-    hooks = hooks || {};
-    var pipAttr = el.getAttribute("pip") || "bottom-right";
-    var pipSize = parseInt(el.getAttribute("size") || "240", 10);
-    var camZoom = parseFloat(el.getAttribute("zoom") || "1.35");
-    var fps     = parseInt(el.getAttribute("fps")  || "25",  10);
-
-    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    var canScreen = !isIOS && !!navigator.mediaDevices && !!navigator.mediaDevices.getDisplayMedia;
-    // macOS desktop: rely on the native Presenter Overlay for the face (it composites
-    // the camera into the screen capture in higher quality and avoids a second camera
-    // consumer that destabilises Safari). So we don't open our own camera there.
-    var isMac = !isIOS && /Mac/.test(navigator.platform || navigator.userAgent || "");
-
-    // Safari 16+ reports video/webm as supported (VP9 playback) but produces
-    // poor/inconsistent recordings — prefer mp4 there. Chrome/Firefox use webm.
-    var isSafari = /safari/i.test(navigator.userAgent) && !/chrome|chromium|crios|android/i.test(navigator.userAgent);
-    var candidates = isSafari
-      ? ["video/mp4;codecs=avc1","video/mp4;codecs=h264","video/mp4","video/webm"]
-      : ["video/webm;codecs=vp9","video/webm","video/mp4"];
-    var mimeType = candidates.find(function(t){ return MediaRecorder.isTypeSupported(t); }) || "";
-    if (!mimeType && isSafari) mimeType = "video/mp4";
-    var ext = mimeType.includes("mp4") ? "mp4" : "webm";
-
-    /* ── Widget (in-page launcher) ── */
-    var wrap = document.createElement("div");
-    wrap.className = "lc-recorder";
-    wrap.innerHTML = [
-      '<style>',
+  // Inject the recorder CSS once into <head> so it is NOT tied to any widget's
+  // lifecycle. (The floating HUD outlives the launcher modal; if its styles lived
+  // inside the modal, closing the modal would un-style the HUD and make it vanish.)
+  function ensureRecorderStyles() {
+    if (document.getElementById("lc-rec-styles")) return;
+    var st = document.createElement("style");
+    st.id = "lc-rec-styles";
+    st.textContent = [
       '.lc-recorder{border:1px solid #ddd;border-radius:10px;overflow:hidden;max-width:480px;font-family:inherit}',
       '.lc-rec-head{background:#1e1e2e;color:#cdd6f4;display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:.9em;font-weight:600}',
       '.lc-rec-dot{width:10px;height:10px;border-radius:50%;background:#555;flex-shrink:0}',
@@ -2541,8 +2517,43 @@
       '.lc-rec-review-acts button{padding:.5em 1.1em;border:none;border-radius:7px;cursor:pointer;font-size:.9em;font-weight:600}',
       '.lc-rb-save{background:#0066cc;color:#fff}.lc-rb-save:hover{background:#0052a3}',
       '.lc-rb-again{background:#eee;color:#333}.lc-rb-again:hover{background:#ddd}',
-      '.lc-rb-discard{background:#fff;color:#c00;border:1px solid #f0caca!important}.lc-rb-discard:hover{background:#fff5f5}',
-      '</style>',
+      '.lc-rb-discard{background:#fff;color:#c00;border:1px solid #f0caca!important}.lc-rb-discard:hover{background:#fff5f5}'
+    ].join("");
+    document.head.appendChild(st);
+  }
+
+  function upgradeRecorder(el, hooks) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    ensureRecorderStyles();
+    hooks = hooks || {};
+    var pipAttr = el.getAttribute("pip") || "bottom-right";
+    var pipSize = parseInt(el.getAttribute("size") || "240", 10);
+    var camZoom = parseFloat(el.getAttribute("zoom") || "1.35");
+    var fps     = parseInt(el.getAttribute("fps")  || "25",  10);
+
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var canScreen = !isIOS && !!navigator.mediaDevices && !!navigator.mediaDevices.getDisplayMedia;
+    // macOS desktop: rely on the native Presenter Overlay for the face (it composites
+    // the camera into the screen capture in higher quality and avoids a second camera
+    // consumer that destabilises Safari). So we don't open our own camera there.
+    var isMac = !isIOS && /Mac/.test(navigator.platform || navigator.userAgent || "");
+
+    // Safari 16+ reports video/webm as supported (VP9 playback) but produces
+    // poor/inconsistent recordings — prefer mp4 there. Chrome/Firefox use webm.
+    var isSafari = /safari/i.test(navigator.userAgent) && !/chrome|chromium|crios|android/i.test(navigator.userAgent);
+    var candidates = isSafari
+      ? ["video/mp4;codecs=avc1","video/mp4;codecs=h264","video/mp4","video/webm"]
+      : ["video/webm;codecs=vp9","video/webm","video/mp4"];
+    var mimeType = candidates.find(function(t){ return MediaRecorder.isTypeSupported(t); }) || "";
+    if (!mimeType && isSafari) mimeType = "video/mp4";
+    var ext = mimeType.includes("mp4") ? "mp4" : "webm";
+
+    /* ── Widget (in-page launcher) ── */
+    var wrap = document.createElement("div");
+    wrap.className = "lc-recorder";
+    wrap.innerHTML = [
       '<div class="lc-rec-head"><span class="lc-rec-dot" id="lc-rd"></span><span>🎬 Screen Recorder</span></div>',
       '<div class="lc-rec-body">',
       '  <div class="lc-rec-opts" id="lc-ropts">',
