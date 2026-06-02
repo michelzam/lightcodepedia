@@ -1,13 +1,26 @@
 # 🎬 Recorder
 
-Record your screen with your face in the corner — one tag, no install, no server. The video downloads straight to your computer when you stop.
+Record your screen with your face in the corner — no install, no server. Launch it from the **🎬 top-bar button** on any page, or drop a tag inline. When you stop, you review the clip and save it straight to your computer.
 
 **Try it now:**
 
 Record this page.
 {: .recorder }
 
-Click **▶ Start recording**, share your screen when the browser asks, then click **⏹ Stop & download**.
+Click **▶ Start recording**, share your screen when the browser asks, **⏸ pause** any time, then **⏹ Stop** to review and save.
+
+---
+
+## Launch from anywhere
+
+You don't need a tag on the page to record. The **🎬 button in the top bar** opens the recorder on any page, in any sign-in state:
+
+- **Signed out** — the **Get started ▾** menu also has a **🎬 Record** entry.
+- **Signed in** — your avatar menu has a **🎬 Record screen** row.
+
+The in-page `{: .recorder }` tag below is just a second way to drop a launcher exactly where you want it in your content.
+
+> On **desktop**, recording covers a single page — navigating away reloads the page and ends the recording. On **iPhone** the recording is owned by iOS and spans pages.
 
 ---
 
@@ -34,7 +47,17 @@ That's it. The paragraph text is replaced by the recorder widget.
 | Audio | Your microphone (toggle on/off before recording) |
 | Screen audio | Optional — toggle on before recording (works best in Chrome) |
 
-The screen is recorded **directly at native resolution** — your face circle is captured on-screen exactly as you see it, so nothing is re-encoded or softened. Nothing is sent anywhere; the file downloads when you click ⏹.
+The screen is recorded **directly at native resolution** — your face circle is captured on-screen exactly as you see it, so nothing is re-encoded or softened. Nothing is sent anywhere; everything stays in your browser.
+
+## Pause &amp; review before saving
+
+- **⏸ Pause / ▶ Resume** — the floating panel lets you pause and resume; the timer freezes while paused.
+- **⏹ Stop** opens a **review panel** that plays your recording back. From there you choose:
+  - **⬇ Save** — download the file
+  - **↻ Re-record** — discard and start over
+  - **🗑 Discard** — throw it away
+
+Nothing is written to disk until you press **Save**.
 
 > **macOS tip:** if you turn on **Presenter Overlay** (Control Centre → Video Effects), macOS draws its own large face circle into the recording. Our floating circle simply sits behind it, so you can use either one — whatever feels best.
 
