@@ -61,6 +61,20 @@ Nothing is written to disk until you press **Save**.
 
 ---
 
+## Your face: which browser?
+
+How your face is shown depends on the browser, because of how each one talks to macOS:
+
+| Browser | Your face | Recording length |
+|---|---|---|
+| **Safari (Mac)** | macOS **Presenter Overlay** (the polished native bubble) — turn it on from the green 🟢 menu-bar icon | ⚠️ Safari can drop the capture after ~20–40s |
+| **Chrome / Edge (Mac)** | **Our own** draggable face circle + virtual backgrounds | Stable / long |
+| **Windows / Linux** | **Our own** draggable face circle + virtual backgrounds | Stable / long |
+
+**Rule of thumb:** want the fancy native overlay → **Safari**, but keep clips short. Want a long, reliable recording with your face → **Chrome** (uses our own circle). Native Presenter Overlay is **not** available in Chrome — that's a macOS restriction, not a bug.
+
+---
+
 ## Options
 
 | Attribute | Default | What it does |

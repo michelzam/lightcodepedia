@@ -2551,6 +2551,12 @@
     if (!mimeType && isSafari) mimeType = "video/mp4";
     var ext = mimeType.includes("mp4") ? "mp4" : "webm";
 
+    // Presenter Overlay (the native face bubble) is ONLY offered to Safari on macOS.
+    // Chrome/Edge/Firefox on Mac don't expose it — there we must use our own face
+    // circle, exactly like Windows/Linux. So the "rely on native overlay, hide our
+    // own camera" path is gated on Safari-on-Mac, not all Macs.
+    var isMacSafari = isMac && isSafari;
+
     /* ── Widget (in-page launcher) ── */
     var wrap = document.createElement("div");
     wrap.className = "lc-recorder";
@@ -2558,17 +2564,17 @@
       '<div class="lc-rec-head"><span class="lc-rec-dot" id="lc-rd"></span><span>🎬 Screen Recorder</span></div>',
       '<div class="lc-rec-body">',
       '  <div class="lc-rec-opts" id="lc-ropts">',
-      isMac ? '' : '    <span class="lc-rec-opt on"  id="lc-ropt-cam">📷 Camera</span>',
+      isMacSafari ? '' : '    <span class="lc-rec-opt on"  id="lc-ropt-cam">📷 Camera</span>',
       '    <span class="lc-rec-opt on"  id="lc-ropt-mic">🎤 Mic</span>',
       canScreen ? '<span class="lc-rec-opt off" id="lc-ropt-snd">🔊 Screen audio</span>' : '',
-      isMac ? '' : '<span class="lc-rec-opt" id="lc-ropt-bg">🖼 BG: Off</span>',
+      isMacSafari ? '' : '<span class="lc-rec-opt" id="lc-ropt-bg">🖼 BG: Off</span>',
       '  </div>',
       '  <div class="lc-rec-actions">',
       canScreen
         ? '<button class="lc-rec-btn start" id="lc-rbtn">🎬 Set up recording</button>'
         : '<button class="lc-rec-btn start" id="lc-rbtn">📱 Show camera</button>',
       '  </div>',
-      isMac ? [
+      isMacSafari ? [
         '<div class="lc-rec-ios" style="background:#eef4ff;border-color:#cdddff;color:#234">',
         '<strong>💡 Add your face with Presenter Overlay</strong>',
         '<div>After you share your screen, a green 🟢 <strong>camera/screen icon</strong> appears in the macOS menu bar (top-right). Click it → <strong>Presenter Overlay → Small</strong>, then press <strong>▶ Start</strong> on the floating panel. macOS composites your camera in higher quality than any in-page overlay. <em>(The menu only shows while we hold the camera.)</em></div>',
@@ -2600,7 +2606,7 @@
     var optSnd  = wrap.querySelector("#lc-ropt-snd");
 
     // On macOS we don't run our own camera — the native Presenter Overlay owns it.
-    var useCam = !isMac, useMic = true, useSnd = false;
+    var useCam = !isMacSafari, useMic = true, useSnd = false;
     var bgMode = "none";
     var optBg  = wrap.querySelector("#lc-ropt-bg");
     var bgCycle  = ["none","blur","dark","blue","green","white"];
@@ -2646,7 +2652,7 @@
 
       // On macOS the face comes from the native Presenter Overlay, so we show only
       // the floating controls (timer + pause + stop) — no camera pip, no segmentation.
-      if (!isMac) {
+      if (!isMacSafari) {
         var pipWrap = document.createElement("div");
         pipWrap.className = "lc-rec-hud-pip";
         pipWrap.style.width = pipSize + "px";
@@ -2741,7 +2747,7 @@
     }
 
     function refreshHUDCam() {
-      if (!hud || isMac || !hudCamVid) return;
+      if (!hud || isMacSafari || !hudCamVid) return;
       var pipWrap = hud.querySelector(".lc-rec-hud-pip");
       var offEl   = hud.querySelector(".lc-cam-off");
       var showBg  = bgMode !== "none" && useCam && !!camStream;
@@ -3063,12 +3069,12 @@
             // single permission prompt instead of two. The mic track joins the
             // recording; the camera is only for the HUD pip / Presenter Overlay
             // source (held on macOS so the overlay menu appears) and never recorded.
-            var wantCam = useCam || isMac;
+            var wantCam = useCam || isMacSafari;
             var constraints = {};
             // On macOS we only HOLD the camera so the Presenter Overlay menu appears
             // (macOS does its own high-quality capture for the overlay) — so request
             // it tiny/low-fps to minimise the load that may be crashing Safari.
-            if (wantCam)  constraints.video = isMac
+            if (wantCam)  constraints.video = isMacSafari
               ? { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15 } }
               : { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } };
             if (useMic)   constraints.audio = true;
@@ -3083,8 +3089,8 @@
               audTracks.forEach(function(t){ screenStream.addTrack(t); });
               if (vidTracks.length) {
                 camStream = new MediaStream(vidTracks);
-                if (!isMac) refreshHUDCam();
-              } else if (!isMac) {
+                if (!isMacSafari) refreshHUDCam();
+              } else if (!isMacSafari) {
                 useCam = false; if (optCam) optCam.classList.remove("on"); refreshHUDCam();
               }
               launch(screenStream);
@@ -3146,7 +3152,7 @@
               if (hudTimer) hudTimer.textContent = "Ready";
               if (hudLabel) hudLabel.textContent = "🎬 Ready";
               btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Cancel";
-              setStatus(isMac
+              setStatus(isMacSafari
                 ? "Ready — turn on Presenter Overlay (green icon in the menu bar), then press ▶ Start."
                 : "Ready — press ▶ Start on the floating panel when you are.");
               [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
