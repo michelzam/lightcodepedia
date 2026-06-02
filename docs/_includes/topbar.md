@@ -62,13 +62,6 @@ if (location.search.indexOf('embed=true') >= 0) {
 .lc-ud-row:last-child { border-bottom: none; }
 .lc-ud-row.danger { color: #c00; }
 .lc-ud-repo { font-family: monospace; font-size: 0.8em; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* ── topbar record button (always visible) ── */
-#lc-rec-topbtn {
-  flex-shrink: 0; background: none; border: 1px solid #ddd; border-radius: 50%;
-  width: 32px; height: 32px; padding: 0; cursor: pointer; line-height: 1;
-  display: flex; align-items: center; justify-content: center; font-size: 1em;
-}
-#lc-rec-topbtn:hover { border-color: #c00; box-shadow: 0 0 0 2px #fde8e8; }
 /* ── get-started dropdown (logged-out) ── */
 #lc-start-pill { position: relative; flex-shrink: 0; display: none; }
 #lc-start-btn {
@@ -145,7 +138,6 @@ body {
   <div class="lc-links">
     {{ _menu.content | markdownify }}
   </div>
-  <button id="lc-rec-topbtn" title="Record screen" aria-label="Record screen">🎬</button>
   <div id="lc-start-pill">
     <button id="lc-start-btn">🔑 Get started ▾</button>
     <div id="lc-start-drop">
@@ -405,7 +397,7 @@ body {
     if (window.lcOpenRecorder) window.lcOpenRecorder();
     else alert('Recorder is still loading — please try again in a moment.');
   }
-  ['lc-rec-topbtn','lc-sd-record','lc-ud-record'].forEach(function(id){
+  ['lc-sd-record','lc-ud-record'].forEach(function(id){
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', openRec);
   });
