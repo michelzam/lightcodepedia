@@ -2470,13 +2470,14 @@
                 (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     var canScreen = !isIOS && !!navigator.mediaDevices && !!navigator.mediaDevices.getDisplayMedia;
 
-    var mimeType = [
-      "video/webm;codecs=vp9","video/webm",
-      "video/mp4;codecs=avc1","video/mp4;codecs=h264","video/mp4"
-    ].find(function(t){ return MediaRecorder.isTypeSupported(t); }) || "";
-    if (!mimeType && /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent)) {
-      mimeType = "video/mp4";
-    }
+    // Safari 16+ reports video/webm as supported (VP9 playback) but produces
+    // poor/inconsistent recordings — prefer mp4 there. Chrome/Firefox use webm.
+    var isSafari = /safari/i.test(navigator.userAgent) && !/chrome|chromium|crios|android/i.test(navigator.userAgent);
+    var candidates = isSafari
+      ? ["video/mp4;codecs=avc1","video/mp4;codecs=h264","video/mp4","video/webm"]
+      : ["video/webm;codecs=vp9","video/webm","video/mp4"];
+    var mimeType = candidates.find(function(t){ return MediaRecorder.isTypeSupported(t); }) || "";
+    if (!mimeType && isSafari) mimeType = "video/mp4";
     var ext = mimeType.includes("mp4") ? "mp4" : "webm";
 
     /* ── Widget (in-page launcher) ── */
@@ -2756,8 +2757,11 @@
             var screenVid = document.createElement("video");
             screenVid.srcObject = screenStream; screenVid.muted = true; screenVid.play();
             screenVid.onloadedmetadata = function() {
-              var W = Math.min(screenVid.videoWidth,  1920);
-              var H = Math.min(screenVid.videoHeight, 1080);
+              // Scale proportionally to fit within 1920x1080 — never distort the aspect ratio
+              var sw = screenVid.videoWidth, sh = screenVid.videoHeight;
+              var scale = Math.min(1920 / sw, 1080 / sh, 1);
+              var W = Math.round(sw * scale);
+              var H = Math.round(sh * scale);
               var canvas = document.createElement("canvas");
               canvas.width = W; canvas.height = H;
               var ctx = canvas.getContext("2d");
@@ -2775,7 +2779,11 @@
                 if (useCam && camStream && hudCamVid && hudCamVid.readyState >= 2) {
                   ctx.save();
                   ctx.beginPath(); ctx.arc(px + r, py + r, r, 0, Math.PI * 2); ctx.clip();
-                  ctx.drawImage(hudCamVid, px, py, pipSize, pipSize);
+                  // Center-crop the camera frame to a square (object-fit: cover) so the face isn't squished
+                  var cw = hudCamVid.videoWidth, ch = hudCamVid.videoHeight;
+                  var side = Math.min(cw, ch);
+                  var sx = (cw - side) / 2, sy = (ch - side) / 2;
+                  ctx.drawImage(hudCamVid, sx, sy, side, side, px, py, pipSize, pipSize);
                   ctx.restore();
                   ctx.save();
                   ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
