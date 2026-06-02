@@ -2739,11 +2739,20 @@
     function startRecording() {
       btnEl.disabled = true;
       setStatus("Requesting screen share…");
-      initCam(function() {
-        createHUD();
-        navigator.mediaDevices.getDisplayMedia({ video: { frameRate: fps }, audio: useSnd })
+      // getDisplayMedia MUST be called synchronously from the user gesture —
+      // any preceding async call (e.g. getUserMedia) breaks the gesture chain in Safari.
+      // Camera is acquired separately after screen permission is granted.
+      navigator.mediaDevices.getDisplayMedia({ video: { frameRate: fps }, audio: useSnd })
           .then(function(screenStream) {
-            setStatus("Setting up…");
+          createHUD();
+          setStatus("Setting up…");
+          // Acquire camera AFTER screen permission is granted (no gesture-chain issue here)
+          var camPromise = useCam
+            ? navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+                .then(function(s) { camStream = s; refreshHUDCam(); })
+                .catch(function() { useCam = false; optCam.classList.remove("on"); })
+            : Promise.resolve();
+          camPromise.then(function() {
             var screenVid = document.createElement("video");
             screenVid.srcObject = screenStream; screenVid.muted = true; screenVid.play();
             screenVid.onloadedmetadata = function() {
@@ -2820,13 +2829,13 @@
                 [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
               }
             };
+          }); // camPromise.then
           })
           .catch(function(e) {
             destroyHUD();
             btnEl.disabled = false;
             setStatus("❌ " + (e.name === "NotAllowedError" ? "Screen share was cancelled." : e.message), "err");
           });
-      });
     }
   }
 
