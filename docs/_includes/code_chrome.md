@@ -2564,13 +2564,13 @@
       '  </div>',
       '  <div class="lc-rec-actions">',
       canScreen
-        ? '<button class="lc-rec-btn start" id="lc-rbtn">▶ Start recording</button>'
+        ? '<button class="lc-rec-btn start" id="lc-rbtn">🎬 Set up recording</button>'
         : '<button class="lc-rec-btn start" id="lc-rbtn">📱 Show camera</button>',
       '  </div>',
       isMac ? [
         '<div class="lc-rec-ios" style="background:#eef4ff;border-color:#cdddff;color:#234">',
         '<strong>💡 Add your face with Presenter Overlay</strong>',
-        '<div>Once you press Start, a green 🟢 <strong>camera/screen icon</strong> appears in the macOS menu bar (top-right). Click it → <strong>Presenter Overlay → Small</strong>. macOS composites your camera into the recording in higher quality than any in-page overlay. <em>(The menu only shows while we hold the camera — i.e. during recording.)</em></div>',
+        '<div>After you share your screen, a green 🟢 <strong>camera/screen icon</strong> appears in the macOS menu bar (top-right). Click it → <strong>Presenter Overlay → Small</strong>, then press <strong>▶ Start</strong> on the floating panel. macOS composites your camera in higher quality than any in-page overlay. <em>(The menu only shows while we hold the camera.)</em></div>',
         '</div>'
       ].join("") : '',
       isIOS ? [

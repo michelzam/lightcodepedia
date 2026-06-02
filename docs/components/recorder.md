@@ -7,7 +7,7 @@ Record your screen with your face in the corner — no install, no server. Launc
 Record this page.
 {: .recorder }
 
-Click **▶ Start recording**, share your screen when the browser asks, **⏸ pause** any time, then **⏹ Stop** to review and save.
+Click **🎬 Set up recording**, share your screen when the browser asks, then press **▶ Start** on the floating panel when you're ready. **⏸ Pause** any time, then **⏹ Stop** to review and save.
 
 ---
 
