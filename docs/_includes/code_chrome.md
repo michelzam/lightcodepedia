@@ -2462,22 +2462,24 @@
   function upgradeRecorder(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
-    var pip     = el.getAttribute("pip")  || "bottom-right";
+    var pipAttr = el.getAttribute("pip") || "bottom-right";
     var pipSize = parseInt(el.getAttribute("size") || "180", 10);
     var fps     = parseInt(el.getAttribute("fps")  || "25",  10);
+
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var canScreen = !isIOS && !!navigator.mediaDevices && !!navigator.mediaDevices.getDisplayMedia;
 
     var mimeType = [
       "video/webm;codecs=vp9","video/webm",
       "video/mp4;codecs=avc1","video/mp4;codecs=h264","video/mp4"
     ].find(function(t){ return MediaRecorder.isTypeSupported(t); }) || "";
-    // Safari reports isTypeSupported=false for all mp4 variants in some versions
-    // but still records in mp4 — detect via UA as last resort
     if (!mimeType && /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent)) {
       mimeType = "video/mp4";
     }
     var ext = mimeType.includes("mp4") ? "mp4" : "webm";
 
-    /* ── UI ── */
+    /* ── Widget (in-page launcher) ── */
     var wrap = document.createElement("div");
     wrap.className = "lc-recorder";
     wrap.innerHTML = [
@@ -2488,10 +2490,6 @@
       '.lc-rec-dot.live{background:#f33;animation:lcBlink 1s infinite}',
       '@keyframes lcBlink{0%,100%{opacity:1}50%{opacity:.2}}',
       '.lc-rec-body{padding:14px 16px;background:#fafafa}',
-      '.lc-cam-wrap{display:flex;justify-content:center;margin-bottom:14px}',
-      '.lc-cam-circle{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #ddd;background:#111;position:relative}',
-      '.lc-cam-circle video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}',
-      '.lc-cam-circle .lc-cam-off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em;background:#1e1e2e}',
       '.lc-rec-opts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}',
       '.lc-rec-opt{font-size:.82em;padding:4px 10px;border:1px solid #ccc;border-radius:20px;cursor:pointer;background:#fff;color:#333;user-select:none}',
       '.lc-rec-opt.on{background:#0066cc;color:#fff;border-color:#0066cc}',
@@ -2500,75 +2498,65 @@
       '.lc-rec-btn.start{background:#0066cc;color:#fff}.lc-rec-btn.start:hover{background:#0052a3}',
       '.lc-rec-btn.stop{background:#c00;color:#fff}.lc-rec-btn.stop:hover{background:#a00}',
       '.lc-rec-btn.again{background:#eee;color:#333}.lc-rec-btn.again:hover{background:#ddd}',
-      '.lc-rec-timer{font-variant-numeric:tabular-nums;font-size:.9em;color:#555;min-width:60px}',
       '.lc-rec-status{font-size:.82em;color:#888;margin-top:8px;min-height:1.2em}',
       '.lc-rec-status.ok{color:#1a7a1a}.lc-rec-status.err{color:#c00}',
+      '.lc-rec-ios{font-size:.84em;line-height:1.6;color:#444;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;margin-top:4px}',
+      '.lc-rec-ios ol{margin:6px 0 0 16px;padding:0}',
+      '.lc-rec-ios li{margin-bottom:2px}',
+      /* HUD styles */
+      '.lc-rec-hud{position:fixed;z-index:2147483647;background:rgba(15,15,25,.82);border-radius:18px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);user-select:none;touch-action:none;cursor:grab}',
+      '.lc-rec-hud:active{cursor:grabbing}',
+      '.lc-rec-hud-pip{width:96px;height:96px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,.85);flex-shrink:0;background:#111;position:relative}',
+      '.lc-rec-hud-pip video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}',
+      '.lc-rec-hud-pip .lc-cam-off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em}',
+      '.lc-rec-hud-timer{color:#fff;font-size:1em;font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.04em;min-height:1.2em}',
+      '.lc-rec-hud-stop{background:#c00;color:#fff;border:none;border-radius:6px;padding:5px 14px;cursor:pointer;font-size:.85em;font-weight:600;width:100%}',
+      '.lc-rec-hud-stop:hover{background:#a00}',
+      '.lc-rec-hud-ios{font-size:.72em;color:#cdd6f4;text-align:center;max-width:96px;line-height:1.4}',
+      '.lc-rec-hud-timer-btn{font-size:.75em;color:#aaa;background:none;border:1px solid #555;border-radius:4px;padding:2px 8px;cursor:pointer;margin-top:-2px}',
+      '.lc-rec-hud-timer-btn.running{color:#f88;border-color:#f88}',
       '</style>',
       '<div class="lc-rec-head"><span class="lc-rec-dot" id="lc-rd"></span><span>🎬 Screen Recorder</span></div>',
       '<div class="lc-rec-body">',
-      '  <div class="lc-cam-wrap"><div class="lc-cam-circle"><video id="lc-rcam" autoplay muted playsinline></video><div class="lc-cam-off" id="lc-roff">📷</div></div></div>',
-      '  <div class="lc-rec-opts">',
+      '  <div class="lc-rec-opts" id="lc-ropts">',
       '    <span class="lc-rec-opt on"  id="lc-ropt-cam">📷 Camera</span>',
       '    <span class="lc-rec-opt on"  id="lc-ropt-mic">🎤 Mic</span>',
-      '    <span class="lc-rec-opt off" id="lc-ropt-snd">🔊 Screen audio</span>',
+      canScreen ? '<span class="lc-rec-opt off" id="lc-ropt-snd">🔊 Screen audio</span>' : '',
       '  </div>',
       '  <div class="lc-rec-actions">',
-      '    <button class="lc-rec-btn start" id="lc-rbtn">▶ Start recording</button>',
-      '    <span class="lc-rec-timer" id="lc-rtimer"></span>',
+      canScreen
+        ? '<button class="lc-rec-btn start" id="lc-rbtn">▶ Start recording</button>'
+        : '<button class="lc-rec-btn start" id="lc-rbtn">📱 Show camera</button>',
       '  </div>',
+      isIOS ? [
+        '<div class="lc-rec-ios">',
+        '<strong>📱 iPhone screen recording</strong>',
+        '<ol>',
+        '<li>Tap <strong>Show camera</strong> above — your face appears floating</li>',
+        '<li>Open Control Center (swipe from top-right)</li>',
+        '<li>Long-press <strong>⏺ Screen Recording</strong> → enable Microphone</li>',
+        '<li>Tap ⏺ to start — record your demo</li>',
+        '<li>Tap the red status bar to stop</li>',
+        '</ol>',
+        '<em>Video saves to your Photos app.</em>',
+        '</div>'
+      ].join("") : '',
       '  <div class="lc-rec-status" id="lc-rstat"></div>',
       '</div>'
     ].join("");
     el.parentNode.replaceChild(wrap, el);
 
-    var btnEl    = wrap.querySelector("#lc-rbtn");
-    var timerEl  = wrap.querySelector("#lc-rtimer");
-    var statEl   = wrap.querySelector("#lc-rstat");
-    var dotEl    = wrap.querySelector("#lc-rd");
-    var camVid   = wrap.querySelector("#lc-rcam");
-    var camOff   = wrap.querySelector("#lc-roff");
-    var optCam   = wrap.querySelector("#lc-ropt-cam");
-    var optMic   = wrap.querySelector("#lc-ropt-mic");
-    var optSnd   = wrap.querySelector("#lc-ropt-snd");
+    var btnEl   = wrap.querySelector("#lc-rbtn");
+    var statEl  = wrap.querySelector("#lc-rstat");
+    var dotEl   = wrap.querySelector("#lc-rd");
+    var optCam  = wrap.querySelector("#lc-ropt-cam");
+    var optMic  = wrap.querySelector("#lc-ropt-mic");
+    var optSnd  = wrap.querySelector("#lc-ropt-snd");
 
     var useCam = true, useMic = true, useSnd = false;
-    function toggleOpt(el, flag, setter) {
-      el.addEventListener("click", function() {
-        setter(!flag);
-        el.classList.toggle("on", !flag);
-        flag = !flag;
-        if (el === optCam) { useCam = flag; initCam(); }
-        if (el === optMic) useMic = flag;
-        if (el === optSnd) useSnd = flag;
-      });
-    }
-    optCam.addEventListener("click", function(){
-      useCam = !useCam;
-      optCam.classList.toggle("on", useCam);
-      initCam();
-    });
+    optCam.addEventListener("click", function(){ useCam = !useCam; optCam.classList.toggle("on", useCam); refreshHUD(); });
     optMic.addEventListener("click", function(){ useMic = !useMic; optMic.classList.toggle("on", useMic); });
-    optSnd.addEventListener("click", function(){ useSnd = !useSnd; optSnd.classList.toggle("on", useSnd); });
-
-    var camStream = null;
-    function initCam() {
-      if (!useCam) {
-        if (camStream) { camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
-        camVid.srcObject = null;
-        camOff.style.display = "flex";
-        return;
-      }
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
-        .then(function(s) {
-          camStream = s;
-          camVid.srcObject = s;
-          camOff.style.display = "none";
-        })
-        .catch(function() { camOff.style.display = "flex"; useCam = false; optCam.classList.remove("on"); });
-    }
-    initCam(); // start camera preview immediately
-
-    var recorder = null, chunks = [], timerInterval = null, startTs = 0;
+    if (optSnd) optSnd.addEventListener("click", function(){ useSnd = !useSnd; optSnd.classList.toggle("on", useSnd); });
 
     function setStatus(msg, cls) { statEl.className = "lc-rec-status " + (cls||""); statEl.textContent = msg; }
     function fmtTime(ms) {
@@ -2576,114 +2564,269 @@
       return String(m).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
     }
 
+    /* ── Floating HUD ── */
+    var hud = null, hudCamVid = null, hudTimer = null, hudStop = null;
+    var hudIosTimer = null, hudIosBtn = null;
+
+    function hudInitialPos() {
+      var margin = 20;
+      var w = 116; // approx hud width
+      if (pipAttr === "bottom-right") return { right: margin + "px", bottom: margin + "px" };
+      if (pipAttr === "bottom-left")  return { left:  margin + "px", bottom: margin + "px" };
+      if (pipAttr === "top-right")    return { right: margin + "px", top:    margin + "px" };
+      return { left: margin + "px", top: margin + "px" };
+    }
+
+    function createHUD() {
+      if (hud) return;
+      hud = document.createElement("div");
+      hud.className = "lc-rec-hud";
+      var pos = hudInitialPos();
+      Object.keys(pos).forEach(function(k){ hud.style[k] = pos[k]; });
+
+      var pipWrap = document.createElement("div");
+      pipWrap.className = "lc-rec-hud-pip";
+      hudCamVid = document.createElement("video");
+      hudCamVid.autoplay = true; hudCamVid.muted = true; hudCamVid.playsInline = true;
+      var camOffEl = document.createElement("div");
+      camOffEl.className = "lc-cam-off"; camOffEl.textContent = "📷";
+      pipWrap.appendChild(hudCamVid);
+      pipWrap.appendChild(camOffEl);
+      hud.appendChild(pipWrap);
+
+      hudTimer = document.createElement("div");
+      hudTimer.className = "lc-rec-hud-timer";
+      hud.appendChild(hudTimer);
+
+      if (isIOS) {
+        var iosNote = document.createElement("div");
+        iosNote.className = "lc-rec-hud-ios";
+        iosNote.textContent = "Start Screen Recording from Control Center";
+        hud.appendChild(iosNote);
+        hudIosBtn = document.createElement("button");
+        hudIosBtn.className = "lc-rec-hud-timer-btn";
+        hudIosBtn.textContent = "⏱ Start timer";
+        hud.appendChild(hudIosBtn);
+        var iosRunning = false, iosStart = 0, iosInterval = null;
+        hudIosBtn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          if (!iosRunning) {
+            iosRunning = true; iosStart = Date.now();
+            hudIosBtn.className = "lc-rec-hud-timer-btn running";
+            hudIosBtn.textContent = "⏹ Stop timer";
+            iosInterval = setInterval(function(){ hudTimer.textContent = fmtTime(Date.now()-iosStart); }, 500);
+          } else {
+            iosRunning = false;
+            clearInterval(iosInterval);
+            hudIosBtn.className = "lc-rec-hud-timer-btn";
+            hudIosBtn.textContent = "⏱ Start timer";
+          }
+        });
+      } else {
+        hudStop = document.createElement("button");
+        hudStop.className = "lc-rec-hud-stop";
+        hudStop.textContent = "⏹ Stop & save";
+        hudStop.addEventListener("click", function(e) {
+          e.stopPropagation();
+          if (recorder && recorder.state === "recording") recorder.stop();
+        });
+        hudStop.style.display = "none";
+        hud.appendChild(hudStop);
+      }
+
+      makeDraggable(hud);
+      document.body.appendChild(hud);
+      refreshHUDCam();
+    }
+
+    function destroyHUD() {
+      if (hud) { hud.parentNode && hud.parentNode.removeChild(hud); hud = null; hudCamVid = null; hudTimer = null; hudStop = null; }
+    }
+
+    function refreshHUDCam() {
+      if (!hud) return;
+      var pipWrap = hud.querySelector(".lc-rec-hud-pip");
+      var offEl   = hud.querySelector(".lc-cam-off");
+      if (useCam && camStream) {
+        hudCamVid.srcObject = camStream;
+        offEl.style.display = "none";
+        pipWrap.style.border = "3px solid rgba(255,255,255,.85)";
+      } else {
+        hudCamVid.srcObject = null;
+        offEl.style.display = "flex";
+        pipWrap.style.border = "3px solid rgba(255,255,255,.3)";
+      }
+    }
+
+    function refreshHUD() {
+      if (hud) refreshHUDCam();
+    }
+
+    /* ── Drag ── */
+    function makeDraggable(el) {
+      var startX, startY, startL, startT, startR, startB;
+      function getPos(e) {
+        return e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
+                         : { x: e.clientX,            y: e.clientY };
+      }
+      function onStart(e) {
+        if (e.target.tagName === "BUTTON") return;
+        var p = getPos(e);
+        startX = p.x; startY = p.y;
+        var r = el.getBoundingClientRect();
+        startL = r.left; startT = r.top;
+        el.style.right = el.style.bottom = "auto";
+        el.style.left = startL + "px"; el.style.top = startT + "px";
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("touchmove", onMove, { passive: false });
+        document.addEventListener("mouseup",   onEnd);
+        document.addEventListener("touchend",  onEnd);
+      }
+      function onMove(e) {
+        if (e.cancelable) e.preventDefault();
+        var p = getPos(e);
+        var nx = startL + p.x - startX;
+        var ny = startT + p.y - startY;
+        nx = Math.max(0, Math.min(window.innerWidth  - el.offsetWidth,  nx));
+        ny = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, ny));
+        el.style.left = nx + "px"; el.style.top = ny + "px";
+      }
+      function onEnd() {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("touchmove", onMove);
+        document.removeEventListener("mouseup",   onEnd);
+        document.removeEventListener("touchend",  onEnd);
+      }
+      el.addEventListener("mousedown",  onStart);
+      el.addEventListener("touchstart", onStart, { passive: true });
+    }
+
+    /* ── Camera stream ── */
+    var camStream = null;
+    function initCam(cb) {
+      if (!useCam) { if (cb) cb(); return; }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+        .then(function(s) {
+          camStream = s;
+          refreshHUDCam();
+          if (cb) cb();
+        })
+        .catch(function() {
+          useCam = false; optCam.classList.remove("on");
+          if (cb) cb();
+        });
+    }
+
+    /* ── Button ── */
     btnEl.addEventListener("click", function() {
       if (recorder && recorder.state === "recording") { recorder.stop(); return; }
+      if (isIOS) {
+        // iOS: show HUD with camera pip, user does native screen recording
+        initCam(function() {
+          createHUD();
+          btnEl.textContent = "✅ Camera active";
+          btnEl.disabled = true;
+          setStatus("Your camera is floating. Follow the steps above.", "ok");
+        });
+        return;
+      }
       startRecording();
     });
+
+    /* ── Desktop recording ── */
+    var recorder = null, chunks = [], timerInterval = null;
 
     function startRecording() {
       btnEl.disabled = true;
       setStatus("Requesting screen share…");
-      navigator.mediaDevices.getDisplayMedia({ video: { frameRate: fps }, audio: useSnd })
-        .then(function(screenStream) {
-          setStatus("Setting up…");
-          var screenVid = document.createElement("video");
-          screenVid.srcObject = screenStream;
-          screenVid.muted = true;
-          screenVid.play();
+      initCam(function() {
+        createHUD();
+        navigator.mediaDevices.getDisplayMedia({ video: { frameRate: fps }, audio: useSnd })
+          .then(function(screenStream) {
+            setStatus("Setting up…");
+            var screenVid = document.createElement("video");
+            screenVid.srcObject = screenStream; screenVid.muted = true; screenVid.play();
+            screenVid.onloadedmetadata = function() {
+              var W = Math.min(screenVid.videoWidth,  1920);
+              var H = Math.min(screenVid.videoHeight, 1080);
+              var canvas = document.createElement("canvas");
+              canvas.width = W; canvas.height = H;
+              var ctx = canvas.getContext("2d");
 
-          screenVid.onloadedmetadata = function() {
-            var W = Math.min(screenVid.videoWidth,  1920);
-            var H = Math.min(screenVid.videoHeight, 1080);
-            var canvas = document.createElement("canvas");
-            canvas.width = W; canvas.height = H;
-            var ctx = canvas.getContext("2d");
+              var r = pipSize / 2, margin = 16, px, py;
+              if      (pipAttr === "bottom-right") { px = W - pipSize - margin; py = H - pipSize - margin; }
+              else if (pipAttr === "bottom-left")  { px = margin;               py = H - pipSize - margin; }
+              else if (pipAttr === "top-right")    { px = W - pipSize - margin; py = margin; }
+              else                                 { px = margin;               py = margin; }
 
-            // PiP geometry (circular face)
-            var r = pipSize / 2;
-            var margin = 16;
-            var px, py;
-            if      (pip === "bottom-right") { px = W - pipSize - margin; py = H - pipSize - margin; }
-            else if (pip === "bottom-left")  { px = margin;               py = H - pipSize - margin; }
-            else if (pip === "top-right")    { px = W - pipSize - margin; py = margin; }
-            else                             { px = margin;               py = margin; } // top-left
-
-            var active = true;
-            function draw() {
-              if (!active) return;
-              ctx.drawImage(screenVid, 0, 0, W, H);
-              if (useCam && camStream && camVid.readyState >= 2) {
-                // circular clip
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(px + r, py + r, r, 0, Math.PI * 2);
-                ctx.clip();
-                ctx.drawImage(camVid, px, py, pipSize, pipSize);
-                ctx.restore();
-                // white border ring
-                ctx.save();
-                ctx.strokeStyle = "#fff";
-                ctx.lineWidth = 3;
-                ctx.shadowColor = "rgba(0,0,0,.4)";
-                ctx.shadowBlur = 6;
-                ctx.beginPath();
-                ctx.arc(px + r, py + r, r + 1, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.restore();
+              var active = true;
+              function draw() {
+                if (!active) return;
+                ctx.drawImage(screenVid, 0, 0, W, H);
+                if (useCam && camStream && hudCamVid && hudCamVid.readyState >= 2) {
+                  ctx.save();
+                  ctx.beginPath(); ctx.arc(px + r, py + r, r, 0, Math.PI * 2); ctx.clip();
+                  ctx.drawImage(hudCamVid, px, py, pipSize, pipSize);
+                  ctx.restore();
+                  ctx.save();
+                  ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
+                  ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 6;
+                  ctx.beginPath(); ctx.arc(px + r, py + r, r + 1, 0, Math.PI * 2); ctx.stroke();
+                  ctx.restore();
+                }
+                requestAnimationFrame(draw);
               }
-              requestAnimationFrame(draw);
-            }
-            draw();
+              draw();
 
-            // audio tracks
-            var canvasStream = canvas.captureStream(fps);
-            if (useSnd) screenStream.getAudioTracks().forEach(function(t){ canvasStream.addTrack(t); });
-            if (useMic) {
-              navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-                .then(function(micS) {
-                  micS.getAudioTracks().forEach(function(t){ canvasStream.addTrack(t); });
-                  launchRecorder(canvasStream, screenStream, active);
-                })
-                .catch(function() { launchRecorder(canvasStream, screenStream, active); });
-            } else {
-              launchRecorder(canvasStream, screenStream, active);
-            }
+              var canvasStream = canvas.captureStream(fps);
+              if (useSnd) screenStream.getAudioTracks().forEach(function(t){ canvasStream.addTrack(t); });
+              if (useMic) {
+                navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                  .then(function(micS) { micS.getAudioTracks().forEach(function(t){ canvasStream.addTrack(t); }); launch(canvasStream, screenStream, active); })
+                  .catch(function() { launch(canvasStream, screenStream, active); });
+              } else {
+                launch(canvasStream, screenStream, active);
+              }
 
-            function launchRecorder(stream, screenSrc) {
-              chunks = [];
-              recorder = new MediaRecorder(stream, mimeType ? { mimeType: mimeType } : {});
-              recorder.ondataavailable = function(e){ if (e.data.size) chunks.push(e.data); };
-              recorder.onstop = function() {
-                active = false;
-                clearInterval(timerInterval);
-                screenSrc.getTracks().forEach(function(t){ t.stop(); });
-                stream.getTracks().forEach(function(t){ t.stop(); });
-                dotEl.classList.remove("live"); timerEl.textContent = "";
-                btnEl.disabled = false; btnEl.className = "lc-rec-btn again"; btnEl.textContent = "▶ Record again";
-                var blob = new Blob(chunks, { type: mimeType || "video/webm" });
-                var ts   = new Date().toISOString().slice(0,19).replace(/:/g,"-");
-                var a    = document.createElement("a");
-                a.href   = URL.createObjectURL(blob);
-                a.download = "recording-" + ts + "." + ext;
-                a.click();
-                URL.revokeObjectURL(a.href);
-                setStatus("✅ Saved as recording-" + ts + "." + ext, "ok");
-              };
-              recorder.start(1000);
-              startTs = Date.now();
-              dotEl.classList.add("live");
-              btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop & download";
-              timerInterval = setInterval(function(){ timerEl.textContent = fmtTime(Date.now()-startTs); }, 500);
-              setStatus("● Recording — click ⏹ when done.");
-              // disable options while recording
-              [optCam, optMic, optSnd].forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
-            }
-          };
-        })
-        .catch(function(e) {
-          btnEl.disabled = false;
-          setStatus("❌ " + (e.name === "NotAllowedError" ? "Screen share was cancelled." : e.message), "err");
-        });
+              function launch(stream, screenSrc) {
+                chunks = [];
+                recorder = new MediaRecorder(stream, mimeType ? { mimeType: mimeType } : {});
+                recorder.ondataavailable = function(e){ if (e.data.size) chunks.push(e.data); };
+                recorder.onstop = function() {
+                  active = false;
+                  clearInterval(timerInterval);
+                  screenSrc.getTracks().forEach(function(t){ t.stop(); });
+                  stream.getTracks().forEach(function(t){ t.stop(); });
+                  destroyHUD();
+                  dotEl.classList.remove("live");
+                  btnEl.disabled = false; btnEl.className = "lc-rec-btn again"; btnEl.textContent = "▶ Record again";
+                  var blob = new Blob(chunks, { type: mimeType || "video/webm" });
+                  var ts = new Date().toISOString().slice(0,19).replace(/:/g,"-");
+                  var a = document.createElement("a");
+                  a.href = URL.createObjectURL(blob); a.download = "recording-" + ts + "." + ext;
+                  a.click(); URL.revokeObjectURL(a.href);
+                  setStatus("✅ Saved as recording-" + ts + "." + ext, "ok");
+                };
+                recorder.start(1000);
+                var startTs = Date.now();
+                dotEl.classList.add("live");
+                if (hudStop) hudStop.style.display = "";
+                btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop";
+                timerInterval = setInterval(function(){
+                  var t = fmtTime(Date.now()-startTs);
+                  if (hudTimer) hudTimer.textContent = t;
+                }, 500);
+                setStatus("● Recording — stop via the floating panel.");
+                [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
+              }
+            };
+          })
+          .catch(function(e) {
+            destroyHUD();
+            btnEl.disabled = false;
+            setStatus("❌ " + (e.name === "NotAllowedError" ? "Screen share was cancelled." : e.message), "err");
+          });
+      });
     }
   }
 
