@@ -3794,77 +3794,42 @@
 
     function ytGetToken() {
       return Promise.resolve().then(function() {
-        var access  = localStorage.getItem("lc_yt_access");
-        var expiry  = parseInt(localStorage.getItem("lc_yt_expiry") || "0", 10);
-        var refresh = localStorage.getItem("lc_yt_refresh");
+        var access = localStorage.getItem("lc_yt_access");
+        var expiry = parseInt(localStorage.getItem("lc_yt_expiry") || "0", 10);
         if (access && Date.now() < expiry - 60000) return access;
-        if (!refresh) return null;
-        return fetch("https://oauth2.googleapis.com/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ refresh_token: refresh, client_id: YT_CLIENT, grant_type: "refresh_token" })
-        }).then(function(r){ return r.json(); }).then(function(d) {
-          if (d.access_token) {
-            localStorage.setItem("lc_yt_access", d.access_token);
-            localStorage.setItem("lc_yt_expiry", String(Date.now() + (d.expires_in || 3600) * 1000));
-            return d.access_token;
-          }
-          return null;
-        });
+        return null;
       });
     }
 
     function ytStartOAuth() {
-      var arr = new Uint8Array(96);
-      crypto.getRandomValues(arr);
-      var verifier = btoa(String.fromCharCode.apply(null, Array.from(arr)))
-        .replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
-      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))
-        .then(function(buf) {
-          var challenge = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(buf))))
-            .replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
-          localStorage.setItem("lc_yt_verifier", verifier);
-          localStorage.setItem("lc_yt_return", window.location.href);
-          window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
-            client_id: YT_CLIENT, redirect_uri: ytRedirect(),
-            response_type: "code", scope: YT_SCOPE,
-            code_challenge: challenge, code_challenge_method: "S256",
-            state: "lc_yt_oauth", access_type: "offline", prompt: "consent"
-          });
-        });
+      localStorage.setItem("lc_yt_return", window.location.href);
+      window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
+        client_id: YT_CLIENT, redirect_uri: ytRedirect(),
+        response_type: "token", scope: YT_SCOPE, state: "lc_yt_oauth"
+      });
     }
 
     function handleYtCallback() {
-      var params = new URLSearchParams(window.location.search);
-      var code = params.get("code"), state = params.get("state");
-      if (!code) {
-        if (localStorage.getItem("lc_yt_open_upload") === "1") {
-          localStorage.removeItem("lc_yt_open_upload");
-          openYtModal();
+      // Implicit flow: token arrives in URL hash
+      var hash = window.location.hash;
+      if (hash && hash.indexOf("access_token") !== -1) {
+        var hp = new URLSearchParams(hash.replace(/^#/, ""));
+        var token = hp.get("access_token"), state = hp.get("state");
+        var expiresIn = parseInt(hp.get("expires_in") || "3600", 10);
+        if (token && state === "lc_yt_oauth") {
+          localStorage.setItem("lc_yt_access", token);
+          localStorage.setItem("lc_yt_expiry", String(Date.now() + expiresIn * 1000));
+          window.history.replaceState({}, "", window.location.pathname);
+          var returnUrl = localStorage.getItem("lc_yt_return") || "/";
+          localStorage.setItem("lc_yt_open_upload", "1");
+          window.location.href = returnUrl;
         }
         return;
       }
-      if (state !== "lc_yt_oauth") return;
-      var verifier   = localStorage.getItem("lc_yt_verifier");
-      var returnUrl  = localStorage.getItem("lc_yt_return") || "/";
-      window.history.replaceState({}, "", window.location.pathname);
-      fetch("https://oauth2.googleapis.com/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ code: code, client_id: YT_CLIENT,
-          redirect_uri: ytRedirect(), grant_type: "authorization_code", code_verifier: verifier })
-      }).then(function(r){ return r.json(); }).then(function(d) {
-        localStorage.removeItem("lc_yt_verifier");
-        if (d.access_token) {
-          localStorage.setItem("lc_yt_access", d.access_token);
-          localStorage.setItem("lc_yt_expiry", String(Date.now() + (d.expires_in || 3600) * 1000));
-          if (d.refresh_token) localStorage.setItem("lc_yt_refresh", d.refresh_token);
-          localStorage.setItem("lc_yt_open_upload", "1");
-          window.location.href = returnUrl;
-        } else {
-          alert("YouTube auth failed: " + (d.error_description || d.error || "unknown"));
-        }
-      }).catch(function(e){ alert("YouTube auth error: " + e.message); });
+      if (localStorage.getItem("lc_yt_open_upload") === "1") {
+        localStorage.removeItem("lc_yt_open_upload");
+        openYtModal();
+      }
     }
 
     function openYtModal() {
