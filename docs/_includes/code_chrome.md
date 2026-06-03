@@ -3784,5 +3784,201 @@
   } else {
     scan();
   }
+
+  // ── YouTube Upload ────────────────────────────────────────────────────────
+  (function() {
+    var YT_CLIENT = "208252332658-4fmonl09j9qi2mr40ruq5oe5cnhqmeen.apps.googleusercontent.com";
+    var YT_SCOPE  = "https://www.googleapis.com/auth/youtube.upload";
+
+    function ytRedirect() { return window.location.origin + "/"; }
+
+    function ytGetToken() {
+      return Promise.resolve().then(function() {
+        var access  = localStorage.getItem("lc_yt_access");
+        var expiry  = parseInt(localStorage.getItem("lc_yt_expiry") || "0", 10);
+        var refresh = localStorage.getItem("lc_yt_refresh");
+        if (access && Date.now() < expiry - 60000) return access;
+        if (!refresh) return null;
+        return fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ refresh_token: refresh, client_id: YT_CLIENT, grant_type: "refresh_token" })
+        }).then(function(r){ return r.json(); }).then(function(d) {
+          if (d.access_token) {
+            localStorage.setItem("lc_yt_access", d.access_token);
+            localStorage.setItem("lc_yt_expiry", String(Date.now() + (d.expires_in || 3600) * 1000));
+            return d.access_token;
+          }
+          return null;
+        });
+      });
+    }
+
+    function ytStartOAuth() {
+      var arr = new Uint8Array(96);
+      crypto.getRandomValues(arr);
+      var verifier = btoa(String.fromCharCode.apply(null, Array.from(arr)))
+        .replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))
+        .then(function(buf) {
+          var challenge = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(buf))))
+            .replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
+          localStorage.setItem("lc_yt_verifier", verifier);
+          localStorage.setItem("lc_yt_return", window.location.href);
+          window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
+            client_id: YT_CLIENT, redirect_uri: ytRedirect(),
+            response_type: "code", scope: YT_SCOPE,
+            code_challenge: challenge, code_challenge_method: "S256",
+            state: "lc_yt_oauth", access_type: "offline", prompt: "consent"
+          });
+        });
+    }
+
+    function handleYtCallback() {
+      var params = new URLSearchParams(window.location.search);
+      var code = params.get("code"), state = params.get("state");
+      if (!code) {
+        if (localStorage.getItem("lc_yt_open_upload") === "1") {
+          localStorage.removeItem("lc_yt_open_upload");
+          openYtModal();
+        }
+        return;
+      }
+      if (state !== "lc_yt_oauth") return;
+      var verifier   = localStorage.getItem("lc_yt_verifier");
+      var returnUrl  = localStorage.getItem("lc_yt_return") || "/";
+      window.history.replaceState({}, "", window.location.pathname);
+      fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ code: code, client_id: YT_CLIENT,
+          redirect_uri: ytRedirect(), grant_type: "authorization_code", code_verifier: verifier })
+      }).then(function(r){ return r.json(); }).then(function(d) {
+        localStorage.removeItem("lc_yt_verifier");
+        if (d.access_token) {
+          localStorage.setItem("lc_yt_access", d.access_token);
+          localStorage.setItem("lc_yt_expiry", String(Date.now() + (d.expires_in || 3600) * 1000));
+          if (d.refresh_token) localStorage.setItem("lc_yt_refresh", d.refresh_token);
+          localStorage.setItem("lc_yt_open_upload", "1");
+          window.location.href = returnUrl;
+        } else {
+          alert("YouTube auth failed: " + (d.error_description || d.error || "unknown"));
+        }
+      }).catch(function(e){ alert("YouTube auth error: " + e.message); });
+    }
+
+    function openYtModal() {
+      if (document.getElementById("lc-yt-modal")) return;
+      var ov = document.createElement("div");
+      ov.id = "lc-yt-modal";
+      ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2147483646;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;";
+      ov.innerHTML = [
+        '<div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:400px;width:100%;font-family:-apple-system,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.3);">',
+          '<div style="font-size:1.1em;font-weight:700;margin-bottom:8px;">📹 Upload to YouTube</div>',
+          '<div style="font-size:0.85em;color:#555;margin-bottom:20px;">Pick your recording. It will be uploaded as <strong>unlisted</strong> to your YouTube channel.</div>',
+          '<input type="file" id="lc-yt-file" accept="video/*" style="width:100%;margin-bottom:16px;font-size:0.9em;box-sizing:border-box;">',
+          '<div id="lc-yt-progress" style="display:none;margin-bottom:16px;">',
+            '<div style="background:#eee;border-radius:99px;height:6px;overflow:hidden;">',
+              '<div id="lc-yt-bar" style="background:#ff0000;height:6px;width:0;transition:width .3s;border-radius:99px;"></div>',
+            '</div>',
+            '<div id="lc-yt-pct" style="font-size:0.8em;color:#555;margin-top:6px;text-align:center;"></div>',
+          '</div>',
+          '<div id="lc-yt-result" style="display:none;margin-bottom:16px;">',
+            '<div style="font-size:0.85em;color:#2e7d32;font-weight:600;margin-bottom:8px;">✅ Upload complete!</div>',
+            '<input id="lc-yt-url" readonly style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:0.82em;box-sizing:border-box;background:#f9f9f9;">',
+            '<button id="lc-yt-copy" style="margin-top:8px;width:100%;padding:9px;background:#065fd4;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.9em;font-weight:600;">📋 Copy URL</button>',
+          '</div>',
+          '<div style="display:flex;gap:8px;">',
+            '<button id="lc-yt-upload-btn" style="flex:1;padding:10px;background:#ff0000;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95em;">⬆ Upload</button>',
+            '<button id="lc-yt-close" style="padding:10px 16px;background:#f0f0f0;border:none;border-radius:8px;cursor:pointer;font-size:0.9em;">Cancel</button>',
+          '</div>',
+          '<div id="lc-yt-disconnect" style="margin-top:14px;text-align:center;font-size:0.75em;color:#bbb;cursor:pointer;text-decoration:underline;">Disconnect YouTube account</div>',
+        '</div>'
+      ].join("");
+      document.body.appendChild(ov);
+
+      document.getElementById("lc-yt-close").onclick = function(){ ov.remove(); };
+      document.getElementById("lc-yt-disconnect").onclick = function(){
+        localStorage.removeItem("lc_yt_access");
+        localStorage.removeItem("lc_yt_refresh");
+        localStorage.removeItem("lc_yt_expiry");
+        ov.remove();
+      };
+      document.getElementById("lc-yt-copy").onclick = function(){
+        var url = document.getElementById("lc-yt-url").value;
+        if (navigator.clipboard) { navigator.clipboard.writeText(url); }
+        else { var i = document.getElementById("lc-yt-url"); i.select(); i.setSelectionRange(0,99999); document.execCommand("copy"); }
+        document.getElementById("lc-yt-copy").textContent = "✅ Copied!";
+      };
+      document.getElementById("lc-yt-upload-btn").onclick = function(){
+        var file = document.getElementById("lc-yt-file").files[0];
+        if (!file) { alert("Please select a video file first."); return; }
+        var btn = document.getElementById("lc-yt-upload-btn");
+        btn.disabled = true;
+        document.getElementById("lc-yt-progress").style.display = "block";
+        document.getElementById("lc-yt-pct").textContent = "Checking authentication…";
+        ytGetToken().then(function(token){
+          if (!token) { ov.remove(); ytStartOAuth(); return; }
+          document.getElementById("lc-yt-pct").textContent = "Starting upload…";
+          var title = (document.title || "Lightcodepedia recording").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia recording";
+          fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer " + token,
+              "Content-Type": "application/json",
+              "X-Upload-Content-Type": file.type || "video/mp4",
+              "X-Upload-Content-Length": String(file.size)
+            },
+            body: JSON.stringify({
+              snippet: { title: title, description: "Recorded on Lightcodepedia · " + new Date().toLocaleDateString() },
+              status: { privacyStatus: "unlisted" }
+            })
+          }).then(function(r){
+            if (!r.ok) return r.text().then(function(t){ throw new Error(r.status + ": " + t); });
+            var uploadUrl = r.headers.get("Location");
+            if (!uploadUrl) throw new Error("No upload URL returned");
+            var xhr = new XMLHttpRequest();
+            xhr.open("PUT", uploadUrl);
+            xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
+            xhr.upload.onprogress = function(e){
+              if (e.lengthComputable) {
+                var pct = Math.round(e.loaded / e.total * 100);
+                document.getElementById("lc-yt-bar").style.width = pct + "%";
+                document.getElementById("lc-yt-pct").textContent = "Uploading… " + pct + "% (" + Math.round(e.loaded/1048576) + " / " + Math.round(e.total/1048576) + " MB)";
+              }
+            };
+            xhr.onload = function(){
+              if (xhr.status === 200 || xhr.status === 201) {
+                var data; try { data = JSON.parse(xhr.responseText); } catch(e){ data = {}; }
+                if (data.id) {
+                  document.getElementById("lc-yt-bar").style.width = "100%";
+                  document.getElementById("lc-yt-pct").textContent = "Done!";
+                  document.getElementById("lc-yt-result").style.display = "block";
+                  document.getElementById("lc-yt-url").value = "https://youtu.be/" + data.id;
+                  btn.style.display = "none";
+                } else {
+                  document.getElementById("lc-yt-pct").textContent = "❌ No video ID in response";
+                  btn.disabled = false;
+                }
+              } else {
+                document.getElementById("lc-yt-pct").textContent = "❌ Upload failed (" + xhr.status + ")";
+                btn.disabled = false;
+              }
+            };
+            xhr.onerror = function(){ document.getElementById("lc-yt-pct").textContent = "❌ Network error"; btn.disabled = false; };
+            xhr.send(file);
+          }).catch(function(e){ document.getElementById("lc-yt-pct").textContent = "❌ " + e.message; btn.disabled = false; });
+        });
+      };
+    }
+
+    handleYtCallback();
+
+    window.lcOpenYtUpload = function() {
+      ytGetToken().then(function(token){
+        if (token) openYtModal(); else ytStartOAuth();
+      });
+    };
+  })();
 })();
 </script>
