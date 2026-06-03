@@ -2771,6 +2771,7 @@
       if (hud) { hud.parentNode && hud.parentNode.removeChild(hud); hud = null; hudCamVid = null; hudTimer = null; hudStop = null; hudPause = null; hudLabel = null; }
       if (bgHidVid) { bgHidVid.parentNode && bgHidVid.parentNode.removeChild(bgHidVid); bgHidVid = null; }
       bgCanvas = null; bgCtx = null;
+      if (el && el._lcHidden) { el.style.display = ""; el._lcHidden = false; }
     }
 
     function refreshHUDCam() {
@@ -3231,6 +3232,8 @@
                 : "Ready — press ▶ Start on the floating panel when you are.");
               [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
               if (hooks.onStart) hooks.onStart();
+              // Hide the in-page widget so it doesn't appear in the recording.
+              if (el && !hooks.onStart) { el.style.display = "none"; el._lcHidden = true; }
             }
           })
           .catch(function(e) {
