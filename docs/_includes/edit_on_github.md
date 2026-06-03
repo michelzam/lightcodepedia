@@ -57,7 +57,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   width: 210px; flex-shrink: 0; overflow-y: auto;
   border-right: 1px solid #e0e0e0; padding: 0.8em 0.7em; font-size: 0.85em;
 }
-#ed-main { flex: 1; display: flex; overflow: hidden; }
+#ed-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 #ed-input {
   flex: 1; border: none; border-right: 1px solid #e0e0e0; resize: none;
   font-family: monospace; font-size: 0.88em; padding: 1em; line-height: 1.6;
@@ -82,6 +82,84 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   #ed-sidebar { display: none; }
   #ed-preview { display: none; }
 }
+
+/* ── Sidebar toggle ─────────────────────────────────── */
+#ed-sidebar-toggle {
+  flex-shrink: 0; background: none; border: 1px solid #e0e0e0;
+  border-radius: 4px; cursor: pointer; color: #888; font-size: 0.85em;
+  padding: 0.2em 0.5em; line-height: 1; transition: background 0.1s;
+}
+#ed-sidebar-toggle:hover { background: #f0f0f0; color: #333; }
+#ed-sidebar {
+  transition: width 0.2s ease, padding 0.2s ease, opacity 0.15s ease, border 0.2s ease;
+}
+#ed-sidebar.ed-collapsed {
+  width: 0 !important; padding: 0 !important; opacity: 0;
+  overflow: hidden; border-right: none;
+}
+
+/* ── Splitter ───────────────────────────────────────── */
+#ed-splitter {
+  width: 5px; flex-shrink: 0; cursor: col-resize;
+  background: #e8e8e8; position: relative; z-index: 1;
+  transition: background 0.15s;
+}
+#ed-splitter:hover, #ed-splitter.ed-dragging { background: #0066cc; }
+
+/* ── Editor tabs ────────────────────────────────────── */
+#ed-tabs {
+  display: flex; border-bottom: 1px solid #e0e0e0;
+  background: #f5f5f5; flex-shrink: 0; padding: 0 0.5em;
+}
+.ed-tab {
+  padding: 0.45em 1em; cursor: pointer; font-size: 0.83em;
+  border-bottom: 2px solid transparent; color: #777; user-select: none;
+  transition: color 0.1s, border-color 0.1s;
+}
+.ed-tab.active { color: #0066cc; border-bottom-color: #0066cc; font-weight: 600; }
+.ed-tab:hover:not(.active) { color: #333; }
+#ed-raw-pane { display: flex; flex: 1; overflow: hidden; }
+#ed-raw-pane.ed-hidden { display: none; }
+#ed-blocks-pane { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+#ed-blocks-pane.ed-active { display: flex; }
+
+/* ── Blocks grid ────────────────────────────────────── */
+#ed-grid {
+  flex: 1; overflow-y: auto; min-height: 0; font-size: 0.84em;
+}
+#ed-grid table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+#ed-grid th {
+  position: sticky; top: 0; background: #f8f8f8; z-index: 1;
+  font-size: 0.78em; font-weight: 600; color: #999; text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 0.4em 0.7em;
+  border-bottom: 1px solid #e0e0e0; text-align: left; white-space: nowrap;
+}
+#ed-grid td { padding: 0.32em 0.7em; border-bottom: 1px solid #f0f0f0; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ed-grid tr.ed-sel td { background: #e8f2ff; }
+#ed-grid tr[data-idx]:hover:not(.ed-sel) td { background: #f8f8f8; cursor: pointer; }
+#ed-grid tr.ed-drag-over td { border-top: 2px solid #0066cc; }
+.ed-drag-handle { cursor: grab; color: #ccc; font-size: 1.1em; }
+.ed-drag-handle:active { cursor: grabbing; }
+.ed-block-type {
+  display: inline-block; padding: 0.1em 0.45em; border-radius: 3px;
+  background: #eef3ff; color: #0052cc; font-size: 0.88em; font-family: monospace;
+}
+
+/* ── Block edit form ────────────────────────────────── */
+#ed-block-form {
+  flex-shrink: 0; padding: 0.8em 1em; background: #fafafa;
+  border-top: 2px solid #0066cc; font-size: 0.84em;
+  display: none; overflow-y: auto; max-height: 42%;
+}
+#ed-block-form.ed-visible { display: block; }
+#ed-block-form label { display: block; color: #666; font-size: 0.82em; margin: 0 0 0.18em; }
+#ed-block-form input, #ed-block-form select, #ed-block-form textarea {
+  width: 100%; box-sizing: border-box; padding: 0.3em 0.5em;
+  border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em;
+  font-family: inherit; margin-bottom: 0.55em; background: #fff;
+}
+#ed-block-form textarea { font-family: monospace; resize: vertical; min-height: 72px; }
+#ed-block-form select { cursor: pointer; }
 
 /* ── Sidebar pieces ────────────────────────────────────── */
 .ed-section-label {
@@ -139,6 +217,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   <!-- Top bar -->
   <div id="ed-top">
+    <button id="ed-sidebar-toggle" title="Toggle sidebar">◀</button>
     <span id="ed-filename">No file selected</span>
     <span id="ed-build" style="font-size:0.78em;color:#888;margin-left:0.5em;flex-shrink:0"></span>
     <a href="#" class="lc-btn lc-btn-secondary" id="ed-zoom-btn" title="Toggle 50% preview scale" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">50%</a>
@@ -184,8 +263,19 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
     <!-- Editor + Preview -->
     <div id="ed-main">
-      <textarea id="ed-input" placeholder="Select a file from the sidebar, or create a new page…" spellcheck="false"></textarea>
-      <div id="ed-preview"></div>
+      <div id="ed-tabs">
+        <span class="ed-tab active" data-tab="raw">✏️ Raw</span>
+        <span class="ed-tab" data-tab="blocks">⊞ Blocks</span>
+      </div>
+      <div id="ed-raw-pane">
+        <textarea id="ed-input" placeholder="Select a file from the sidebar, or create a new page…" spellcheck="false"></textarea>
+        <div id="ed-splitter"></div>
+        <div id="ed-preview"></div>
+      </div>
+      <div id="ed-blocks-pane">
+        <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
+        <div id="ed-block-form"></div>
+      </div>
     </div>
 
   </div><!-- /body -->
@@ -659,6 +749,240 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if ((e.metaKey || e.ctrlKey) && e.key === "s") {
       var d = document.getElementById("ed-drawer");
       if (d && d.classList.contains("open")) { e.preventDefault(); saveFile(); }
+    }
+  });
+
+  /* ── Sidebar toggle ─────────────────────────────────── */
+  document.addEventListener("click", function(e) {
+    var btn = e.target.closest("#ed-sidebar-toggle");
+    if (!btn) return;
+    var sb = document.getElementById("ed-sidebar");
+    var open = sb.classList.toggle("ed-collapsed");
+    btn.textContent = open ? "▶" : "◀";
+  });
+
+  /* ── Splitter drag ───────────────────────────────────── */
+  (function() {
+    var sp = document.getElementById("ed-splitter");
+    if (!sp) return;
+    var dragging = false, startX = 0, startLW = 0, startRW = 0;
+    sp.addEventListener("mousedown", function(e) {
+      var inp  = document.getElementById("ed-input");
+      var prev = document.getElementById("ed-preview");
+      if (!inp || !prev) return;
+      dragging = true; startX = e.clientX;
+      startLW = inp.offsetWidth; startRW = prev.offsetWidth;
+      sp.classList.add("ed-dragging");
+      document.body.style.cursor = "col-resize";
+      e.preventDefault();
+    });
+    document.addEventListener("mousemove", function(e) {
+      if (!dragging) return;
+      var inp  = document.getElementById("ed-input");
+      var prev = document.getElementById("ed-preview");
+      if (!inp || !prev) return;
+      var dx = e.clientX - startX;
+      var lw = Math.max(80, startLW + dx);
+      var rw = Math.max(80, startRW - dx);
+      inp.style.flex  = "none"; inp.style.width  = lw + "px";
+      prev.style.flex = "none"; prev.style.width = rw + "px";
+    });
+    document.addEventListener("mouseup", function() {
+      if (!dragging) return;
+      dragging = false;
+      sp.classList.remove("ed-dragging");
+      document.body.style.cursor = "";
+    });
+  })();
+
+  /* ── Blocks tab ──────────────────────────────────────── */
+  var BLOCK_TYPES = ["block","blocks","carousel","menu","video","deploys","recorder",
+    "lightnodes","quiz","pytutor","pyrun","slide","slides","folder","cards","transcript"];
+
+  function escH(s) { return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function escA(s) { return (s||"").replace(/"/g,"&quot;"); }
+
+  function parseBlocks(text) {
+    var lines = text.split("\n"), blocks = [], pre = [], cur = null, inFence = false;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i], t = line.trim();
+      if (/^(`{3,}|~{3,})/.test(t)) inFence = !inFence;
+      if (!inFence) {
+        var hm = t.match(/^(#{1,6})\s+(.*)/);
+        if (hm) {
+          if (cur) blocks.push(cur);
+          else if (pre.length) blocks.push({ preamble: true, lines: pre.slice(), level: 0, heading: "(preamble)", type: null, knobs: {} });
+          cur = { level: hm[1].length, heading: hm[2], lines: [line], type: null, knobs: {} };
+          continue;
+        }
+      }
+      if (cur) {
+        cur.lines.push(line);
+        if (!inFence) {
+          var im = t.match(/^\{:\s*\.(\S+)\s*(.*?)\s*\}/);
+          if (im) {
+            cur.type = im[1]; cur.knobs = {};
+            var kr = /(\w+)="([^"]*)"/g, km;
+            while ((km = kr.exec(im[2]))) cur.knobs[km[1]] = km[2];
+          }
+        }
+      } else { pre.push(line); }
+    }
+    if (cur) blocks.push(cur);
+    else if (pre.length) blocks.push({ preamble: true, lines: pre, level: 0, heading: "(preamble)", type: null, knobs: {} });
+    return blocks;
+  }
+
+  function blocksToText(blocks) {
+    return blocks.map(function(b) { return b.lines.join("\n"); }).join("\n");
+  }
+
+  function blockContent(b) {
+    if (b.preamble) return b.lines.join("\n");
+    var ls = b.lines.slice(1);
+    if (ls.length && /^\{:.*\}$/.test(ls[ls.length-1].trim())) ls = ls.slice(0, -1);
+    return ls.join("\n").trim();
+  }
+
+  var _blocks = [], _selIdx = -1;
+
+  function buildGrid() {
+    var inp = document.getElementById("ed-input");
+    if (!inp) return;
+    _blocks = parseBlocks(inp.value);
+    var minLv = 9;
+    _blocks.forEach(function(b){ if (!b.preamble && b.level < minLv) minLv = b.level; });
+    if (minLv === 9) minLv = 1;
+
+    var html = "<table><thead><tr>"
+      + "<th style='width:18px'></th>"
+      + "<th>Title</th>"
+      + "<th style='width:110px'>Type</th>"
+      + "<th>Knobs</th>"
+      + "</tr></thead><tbody>";
+
+    _blocks.forEach(function(b, i) {
+      var indent = b.preamble ? 0 : (b.level - minLv) * 14;
+      var titleHtml = b.preamble
+        ? "<em style='color:#bbb'>preamble</em>"
+        : escH(b.heading);
+      var typeHtml = b.type ? "<span class='ed-block-type'>." + escH(b.type) + "</span>" : "";
+      var knobHtml = Object.keys(b.knobs||{}).map(function(k){
+        return "<span style='font-size:0.82em;color:#999'>" + escH(k) + "=<em>" + escH(b.knobs[k]) + "</em></span>";
+      }).join(" ");
+      var sel = i === _selIdx ? " ed-sel" : "";
+      html += "<tr data-idx='" + i + "' draggable='true' class='" + sel + "'>"
+        + "<td class='ed-drag-handle'>⠿</td>"
+        + "<td style='padding-left:" + (8 + indent) + "px'>" + titleHtml + "</td>"
+        + "<td>" + typeHtml + "</td>"
+        + "<td>" + knobHtml + "</td>"
+        + "</tr>";
+    });
+    html += "</tbody></table>";
+    document.getElementById("ed-grid").innerHTML = html;
+
+    if (_selIdx >= 0 && _selIdx < _blocks.length) showBlockForm(_selIdx);
+    wireGrid();
+  }
+
+  function wireGrid() {
+    var grid = document.getElementById("ed-grid");
+    var dragFrom = null;
+
+    grid.addEventListener("click", function(e) {
+      var tr = e.target.closest("tr[data-idx]");
+      if (!tr) return;
+      _selIdx = parseInt(tr.dataset.idx);
+      buildGrid();
+    });
+
+    grid.addEventListener("dragstart", function(e) {
+      var tr = e.target.closest("tr[data-idx]");
+      if (!tr) return;
+      dragFrom = parseInt(tr.dataset.idx);
+      tr.style.opacity = "0.45";
+      e.dataTransfer.effectAllowed = "move";
+    });
+    grid.addEventListener("dragend", function(e) {
+      var tr = e.target.closest("tr[data-idx]");
+      if (tr) tr.style.opacity = "";
+      grid.querySelectorAll(".ed-drag-over").forEach(function(r){ r.classList.remove("ed-drag-over"); });
+      dragFrom = null;
+    });
+    grid.addEventListener("dragover", function(e) {
+      e.preventDefault();
+      grid.querySelectorAll(".ed-drag-over").forEach(function(r){ r.classList.remove("ed-drag-over"); });
+      var tr = e.target.closest("tr[data-idx]");
+      if (tr) tr.classList.add("ed-drag-over");
+    });
+    grid.addEventListener("drop", function(e) {
+      e.preventDefault();
+      var tr = e.target.closest("tr[data-idx]");
+      if (!tr || dragFrom === null) return;
+      var to = parseInt(tr.dataset.idx);
+      if (dragFrom === to) return;
+      var moved = _blocks.splice(dragFrom, 1)[0];
+      _blocks.splice(to > dragFrom ? to - 1 : to, 0, moved);
+      _selIdx = to > dragFrom ? to - 1 : to;
+      var inp = document.getElementById("ed-input");
+      var newText = blocksToText(_blocks);
+      inp.value = newText; setDirty(true); updatePreview(newText);
+      buildGrid();
+    });
+  }
+
+  function showBlockForm(idx) {
+    var b = _blocks[idx];
+    var form = document.getElementById("ed-block-form");
+    form.classList.add("ed-visible");
+    var knobStr = Object.keys(b.knobs||{}).map(function(k){ return k + '="' + b.knobs[k] + '"'; }).join(" ");
+    var content = blockContent(b);
+    form.innerHTML = "<div style='display:flex;gap:0.6em;flex-wrap:wrap;margin-bottom:0.4em'>"
+      + "<div style='flex:3;min-width:100px'><label>Heading</label><input id='ebf-title' value='" + escA(b.heading||"") + "'></div>"
+      + "<div style='flex:1;min-width:90px'><label>Type</label><select id='ebf-type'>"
+      + "<option value=''>(none)</option>"
+      + BLOCK_TYPES.map(function(t){ return "<option value='" + t + "'" + (b.type===t?" selected":"") + ">." + t + "</option>"; }).join("")
+      + "</select></div>"
+      + "<div style='flex:2;min-width:120px'><label>Knobs</label><input id='ebf-knobs' value='" + escA(knobStr) + "' placeholder='count=\"5\"'></div>"
+      + "</div>"
+      + "<label>Content</label>"
+      + "<textarea id='ebf-content'>" + escH(content) + "</textarea>"
+      + "<a href='#' class='lc-btn' id='ebf-apply' style='font-size:0.82em;padding:0.32em 0.9em'>Apply</a>";
+
+    document.getElementById("ebf-apply").addEventListener("click", function(e) {
+      e.preventDefault();
+      var title   = document.getElementById("ebf-title").value;
+      var type    = document.getElementById("ebf-type").value;
+      var knobsIn = document.getElementById("ebf-knobs").value.trim();
+      var cnt     = document.getElementById("ebf-content").value;
+      var prefix  = "#".repeat(b.level || 1);
+      var newLines = [prefix + " " + title];
+      if (cnt.trim()) newLines.push("", cnt.trim());
+      if (type) newLines.push("{: ." + type + (knobsIn ? " " + knobsIn : "") + " }");
+      b.heading = title; b.type = type || null;
+      b.knobs = {}; var kr2 = /(\w+)="([^"]*)"/g, km2;
+      while ((km2 = kr2.exec(knobsIn))) b.knobs[km2[1]] = km2[2];
+      b.lines = newLines;
+      var inp = document.getElementById("ed-input");
+      var newText = blocksToText(_blocks);
+      inp.value = newText; setDirty(true); updatePreview(newText);
+      buildGrid();
+    });
+  }
+
+  /* Tab switching */
+  document.addEventListener("click", function(e) {
+    var tab = e.target.closest(".ed-tab");
+    if (!tab) return;
+    var name = tab.dataset.tab;
+    document.querySelectorAll(".ed-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab === name); });
+    var raw    = document.getElementById("ed-raw-pane");
+    var blocks = document.getElementById("ed-blocks-pane");
+    if (name === "blocks") {
+      raw.classList.add("ed-hidden"); blocks.classList.add("ed-active");
+      buildGrid();
+    } else {
+      raw.classList.remove("ed-hidden"); blocks.classList.remove("ed-active");
     }
   });
 
