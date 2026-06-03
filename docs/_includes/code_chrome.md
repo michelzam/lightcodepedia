@@ -3790,7 +3790,7 @@
     var YT_CLIENT = "208252332658-4fmonl09j9qi2mr40ruq5oe5cnhqmeen.apps.googleusercontent.com";
     var YT_SCOPE  = "https://www.googleapis.com/auth/youtube.upload";
 
-    function ytRedirect() { return window.location.origin + "/"; }
+    function ytRedirect() { return window.location.origin; }
 
     function ytGetToken() {
       return Promise.resolve().then(function() {
