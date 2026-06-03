@@ -3104,6 +3104,10 @@
     function startRecording() {
       btnEl.disabled = true;
       setStatus("Requesting screen share…");
+      // Hide the launcher overlay (or in-page widget) immediately — before
+      // getDisplayMedia runs — so it's absent from every captured frame.
+      if (hooks.onStart) hooks.onStart();
+      else if (el) { el.style.display = "none"; el._lcHidden = true; }
       // getDisplayMedia MUST be called synchronously from the user gesture —
       // any preceding async call (e.g. getUserMedia) breaks the gesture chain in Safari.
       navigator.mediaDevices.getDisplayMedia({
@@ -3231,9 +3235,6 @@
                 ? "Ready — turn on Presenter Overlay (green icon in the menu bar), then press ▶ Start."
                 : "Ready — press ▶ Start on the floating panel when you are.");
               [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = "none"; o.style.opacity = ".5"; });
-              if (hooks.onStart) hooks.onStart();
-              // Hide the in-page widget so it doesn't appear in the recording.
-              if (el && !hooks.onStart) { el.style.display = "none"; el._lcHidden = true; }
             }
           })
           .catch(function(e) {
