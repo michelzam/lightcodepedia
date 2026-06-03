@@ -2543,6 +2543,7 @@
       '.lc-rec-review-acts{display:flex;gap:8px;flex-wrap:wrap}',
       '.lc-rec-review-acts button{padding:.5em 1.1em;border:none;border-radius:7px;cursor:pointer;font-size:.9em;font-weight:600}',
       '.lc-rb-save{background:#0066cc;color:#fff}.lc-rb-save:hover{background:#0052a3}',
+      '.lc-rb-yt{background:#ff0000;color:#fff}.lc-rb-yt:hover{background:#cc0000}.lc-rb-yt:disabled{opacity:.5;cursor:default}',
       '.lc-rb-again{background:#eee;color:#333}.lc-rb-again:hover{background:#ddd}',
       '.lc-rb-discard{background:#fff;color:#c00;border:1px solid #f0caca!important}.lc-rb-discard:hover{background:#fff5f5}'
     ].join("");
@@ -2875,9 +2876,11 @@
         '    <div class="lc-rec-review-meta">' + fname + ' · ' + mb + ' MB</div>',
         '    <div class="lc-rec-review-acts">',
         '      <button class="lc-rb-save">⬇ Save</button>',
+        '      <button class="lc-rb-yt">📹 YouTube</button>',
         '      <button class="lc-rb-again">↻ Re-record</button>',
         '      <button class="lc-rb-discard">🗑 Discard</button>',
         '    </div>',
+        '    <div class="lc-rb-yt-area" style="margin-top:10px;"></div>',
         '  </div>',
         '</div>'
       ].join("");
@@ -2889,6 +2892,18 @@
         a.href = url; a.download = fname; a.click();
         setStatus("✅ Saved as " + fname, "ok");
         close();
+      });
+      ov.querySelector(".lc-rb-yt").addEventListener("click", function() {
+        var ytBtn = ov.querySelector(".lc-rb-yt");
+        ytBtn.disabled = true;
+        var area = ov.querySelector(".lc-rb-yt-area");
+        var title = (document.title || "Lightcodepedia recording").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia recording";
+        if (window.lcYtUploadBlob) {
+          window.lcYtUploadBlob(blob, blob.type || "video/webm", title, area);
+        } else {
+          area.textContent = "⚠️ Upload module not ready, try again.";
+          ytBtn.disabled = false;
+        }
       });
       ov.querySelector(".lc-rb-again").addEventListener("click", function() {
         close();
@@ -3793,12 +3808,9 @@
     function ytRedirect() { return window.location.origin + "/"; }
 
     function ytGetToken() {
-      return Promise.resolve().then(function() {
-        var access = localStorage.getItem("lc_yt_access");
-        var expiry = parseInt(localStorage.getItem("lc_yt_expiry") || "0", 10);
-        if (access && Date.now() < expiry - 60000) return access;
-        return null;
-      });
+      var access = localStorage.getItem("lc_yt_access");
+      var expiry = parseInt(localStorage.getItem("lc_yt_expiry") || "0", 10);
+      return (access && Date.now() < expiry - 60000) ? access : null;
     }
 
     function ytStartOAuth() {
@@ -3809,20 +3821,42 @@
       });
     }
 
+    // Opens OAuth in a popup so the current page (and any blob) is preserved.
+    function ytStartOAuthPopup(onToken) {
+      var popup = window.open(
+        "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
+          client_id: YT_CLIENT, redirect_uri: ytRedirect(),
+          response_type: "token", scope: YT_SCOPE, state: "lc_yt_oauth_popup"
+        }), "yt_oauth", "width=520,height=640,left=200,top=100"
+      );
+      function onStorage(e) {
+        if (e.key !== "lc_yt_access" || !e.newValue) return;
+        window.removeEventListener("storage", onStorage);
+        clearInterval(poll);
+        if (popup && !popup.closed) try { popup.close(); } catch(x){}
+        onToken(e.newValue);
+      }
+      window.addEventListener("storage", onStorage);
+      var poll = setInterval(function() {
+        var t = ytGetToken();
+        if (t) { clearInterval(poll); window.removeEventListener("storage", onStorage); if (popup && !popup.closed) try { popup.close(); } catch(x){} onToken(t); return; }
+        if (popup && popup.closed) { clearInterval(poll); window.removeEventListener("storage", onStorage); }
+      }, 600);
+    }
+
     function handleYtCallback() {
-      // Implicit flow: token arrives in URL hash
       var hash = window.location.hash;
       if (hash && hash.indexOf("access_token") !== -1) {
         var hp = new URLSearchParams(hash.replace(/^#/, ""));
         var token = hp.get("access_token"), state = hp.get("state");
         var expiresIn = parseInt(hp.get("expires_in") || "3600", 10);
-        if (token && state === "lc_yt_oauth") {
+        if (token && (state === "lc_yt_oauth" || state === "lc_yt_oauth_popup")) {
           localStorage.setItem("lc_yt_access", token);
           localStorage.setItem("lc_yt_expiry", String(Date.now() + expiresIn * 1000));
           window.history.replaceState({}, "", window.location.pathname);
-          var returnUrl = localStorage.getItem("lc_yt_return") || "/";
+          if (state === "lc_yt_oauth_popup") { window.close(); return; }
           localStorage.setItem("lc_yt_open_upload", "1");
-          window.location.href = returnUrl;
+          window.location.href = localStorage.getItem("lc_yt_return") || "/";
         }
         return;
       }
@@ -3830,6 +3864,124 @@
         localStorage.removeItem("lc_yt_open_upload");
         openYtModal();
       }
+    }
+
+    // Insert a .video embed into the current page file via GitHub API.
+    function ytInsertIntoPage(videoUrl, statusEl) {
+      var pat = localStorage.getItem("lc_ed_pat");
+      if (!pat || !_lcSiteRepo) {
+        if (statusEl) statusEl.textContent = "⚠️ Sign in to GitHub to insert into page.";
+        return;
+      }
+      var pathname = window.location.pathname.replace(/\/$/, "") || "/index";
+      var filePath = "docs" + (pathname === "/" ? "/index" : pathname) + ".md";
+      var hdrs = { "Authorization": "token " + pat, "Content-Type": "application/json" };
+      var base = "https://api.github.com/repos/" + _lcSiteRepo + "/contents/";
+      if (statusEl) statusEl.textContent = "Saving to page…";
+      fetch(base + filePath, { headers: hdrs })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          var existing = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ""))));
+          var snippet = "\n\n[Recording](" + videoUrl + ")\n{: .video }\n";
+          var updated = btoa(unescape(encodeURIComponent(existing + snippet)));
+          return fetch(base + filePath, {
+            method: "PUT", headers: hdrs,
+            body: JSON.stringify({ message: "Add YouTube recording", content: updated, sha: data.sha })
+          });
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (statusEl) statusEl.textContent = d.content ? "✅ Added to page!" : "❌ " + (d.message || "Save failed");
+        })
+        .catch(function(e){ if (statusEl) statusEl.textContent = "❌ " + e.message; });
+    }
+
+    // Core upload: takes a File or Blob, returns videoUrl via onDone(url) or onDone(null, err).
+    function ytDoUpload(token, fileOrBlob, title, mimeType, onProgress, onDone) {
+      fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json",
+          "X-Upload-Content-Type": mimeType,
+          "X-Upload-Content-Length": String(fileOrBlob.size)
+        },
+        body: JSON.stringify({
+          snippet: { title: title, description: "Recorded on Lightcodepedia · " + new Date().toLocaleDateString() },
+          status: { privacyStatus: "unlisted" }
+        })
+      }).then(function(r){
+        if (!r.ok) return r.text().then(function(t){ throw new Error(r.status + ": " + t); });
+        var uploadUrl = r.headers.get("Location");
+        if (!uploadUrl) throw new Error("No upload URL returned");
+        var xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", mimeType);
+        xhr.upload.onprogress = function(e){
+          if (e.lengthComputable && onProgress) onProgress(Math.round(e.loaded/e.total*100), e.loaded, e.total);
+        };
+        xhr.onload = function(){
+          if (xhr.status === 200 || xhr.status === 201) {
+            var d; try { d = JSON.parse(xhr.responseText); } catch(x){ d = {}; }
+            if (d.id) onDone("https://youtu.be/" + d.id);
+            else onDone(null, "No video ID in response");
+          } else { onDone(null, "Upload failed (" + xhr.status + ")"); }
+        };
+        xhr.onerror = function(){ onDone(null, "Network error"); };
+        xhr.send(fileOrBlob);
+      }).catch(function(e){ onDone(null, e.message); });
+    }
+
+    // Render upload progress + result UI into a container div.
+    function ytShowUploadUI(container, fileOrBlob, mimeType, title) {
+      container.innerHTML = [
+        '<div style="background:#eee;border-radius:99px;height:6px;overflow:hidden;margin-bottom:6px;">',
+          '<div class="lc-yt-bar" style="background:#ff0000;height:6px;width:0;transition:width .3s;border-radius:99px;"></div>',
+        '</div>',
+        '<div class="lc-yt-pct" style="font-size:0.8em;color:#555;text-align:center;margin-bottom:8px;">Starting upload…</div>',
+        '<div class="lc-yt-result" style="display:none;">',
+          '<input class="lc-yt-url" readonly style="width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:7px;font-size:0.82em;box-sizing:border-box;background:#f9f9f9;margin-bottom:6px;">',
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;">',
+            '<button class="lc-yt-copy" style="flex:1;padding:7px;background:#065fd4;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;font-weight:600;">📋 Copy URL</button>',
+            '<button class="lc-yt-insert" style="flex:1;padding:7px;background:#2e7d32;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;font-weight:600;">📄 Insert into page</button>',
+          '</div>',
+          '<div class="lc-yt-insert-status" style="font-size:0.78em;color:#555;margin-top:5px;text-align:center;min-height:1em;"></div>',
+        '</div>'
+      ].join("");
+      var barEl    = container.querySelector(".lc-yt-bar");
+      var pctEl    = container.querySelector(".lc-yt-pct");
+      var resultEl = container.querySelector(".lc-yt-result");
+      var urlEl    = container.querySelector(".lc-yt-url");
+      var copyEl   = container.querySelector(".lc-yt-copy");
+      var insEl    = container.querySelector(".lc-yt-insert");
+      var insStEl  = container.querySelector(".lc-yt-insert-status");
+
+      function run(token) {
+        ytDoUpload(token, fileOrBlob, title, mimeType,
+          function(pct, loaded, total){
+            barEl.style.width = pct + "%";
+            pctEl.textContent = "Uploading… " + pct + "% (" + Math.round(loaded/1048576) + " / " + Math.round(total/1048576) + " MB)";
+          },
+          function(videoUrl, err){
+            if (err) { pctEl.textContent = "❌ " + err; return; }
+            barEl.style.width = "100%";
+            pctEl.textContent = "✅ Upload complete!";
+            resultEl.style.display = "block";
+            urlEl.value = videoUrl;
+            copyEl.onclick = function(){
+              if (navigator.clipboard) navigator.clipboard.writeText(videoUrl);
+              else { urlEl.select(); urlEl.setSelectionRange(0,99999); document.execCommand("copy"); }
+              copyEl.textContent = "✅ Copied!";
+            };
+            insEl.onclick = function(){ insEl.disabled = true; ytInsertIntoPage(videoUrl, insStEl); };
+          }
+        );
+      }
+
+      var token = ytGetToken();
+      if (token) { run(token); return; }
+      pctEl.textContent = "Connecting YouTube…";
+      ytStartOAuthPopup(function(t){ run(t); });
     }
 
     function openYtModal() {
@@ -3842,17 +3994,7 @@
           '<div style="font-size:1.1em;font-weight:700;margin-bottom:8px;">📹 Upload to YouTube</div>',
           '<div style="font-size:0.85em;color:#555;margin-bottom:20px;">Pick your recording. It will be uploaded as <strong>unlisted</strong> to your YouTube channel.</div>',
           '<input type="file" id="lc-yt-file" accept="video/*" style="width:100%;margin-bottom:16px;font-size:0.9em;box-sizing:border-box;">',
-          '<div id="lc-yt-progress" style="display:none;margin-bottom:16px;">',
-            '<div style="background:#eee;border-radius:99px;height:6px;overflow:hidden;">',
-              '<div id="lc-yt-bar" style="background:#ff0000;height:6px;width:0;transition:width .3s;border-radius:99px;"></div>',
-            '</div>',
-            '<div id="lc-yt-pct" style="font-size:0.8em;color:#555;margin-top:6px;text-align:center;"></div>',
-          '</div>',
-          '<div id="lc-yt-result" style="display:none;margin-bottom:16px;">',
-            '<div style="font-size:0.85em;color:#2e7d32;font-weight:600;margin-bottom:8px;">✅ Upload complete!</div>',
-            '<input id="lc-yt-url" readonly style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:0.82em;box-sizing:border-box;background:#f9f9f9;">',
-            '<button id="lc-yt-copy" style="margin-top:8px;width:100%;padding:9px;background:#065fd4;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.9em;font-weight:600;">📋 Copy URL</button>',
-          '</div>',
+          '<div id="lc-yt-upload-area" style="margin-bottom:12px;"></div>',
           '<div style="display:flex;gap:8px;">',
             '<button id="lc-yt-upload-btn" style="flex:1;padding:10px;background:#ff0000;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95em;">⬆ Upload</button>',
             '<button id="lc-yt-close" style="padding:10px 16px;background:#f0f0f0;border:none;border-radius:8px;cursor:pointer;font-size:0.9em;">Cancel</button>',
@@ -3861,88 +4003,29 @@
         '</div>'
       ].join("");
       document.body.appendChild(ov);
-
       document.getElementById("lc-yt-close").onclick = function(){ ov.remove(); };
       document.getElementById("lc-yt-disconnect").onclick = function(){
-        localStorage.removeItem("lc_yt_access");
-        localStorage.removeItem("lc_yt_refresh");
-        localStorage.removeItem("lc_yt_expiry");
-        ov.remove();
-      };
-      document.getElementById("lc-yt-copy").onclick = function(){
-        var url = document.getElementById("lc-yt-url").value;
-        if (navigator.clipboard) { navigator.clipboard.writeText(url); }
-        else { var i = document.getElementById("lc-yt-url"); i.select(); i.setSelectionRange(0,99999); document.execCommand("copy"); }
-        document.getElementById("lc-yt-copy").textContent = "✅ Copied!";
+        localStorage.removeItem("lc_yt_access"); localStorage.removeItem("lc_yt_expiry"); ov.remove();
       };
       document.getElementById("lc-yt-upload-btn").onclick = function(){
         var file = document.getElementById("lc-yt-file").files[0];
         if (!file) { alert("Please select a video file first."); return; }
-        var btn = document.getElementById("lc-yt-upload-btn");
-        btn.disabled = true;
-        document.getElementById("lc-yt-progress").style.display = "block";
-        document.getElementById("lc-yt-pct").textContent = "Checking authentication…";
-        ytGetToken().then(function(token){
-          if (!token) { ov.remove(); ytStartOAuth(); return; }
-          document.getElementById("lc-yt-pct").textContent = "Starting upload…";
-          var title = (document.title || "Lightcodepedia recording").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia recording";
-          fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
-            method: "POST",
-            headers: {
-              "Authorization": "Bearer " + token,
-              "Content-Type": "application/json",
-              "X-Upload-Content-Type": file.type || "video/mp4",
-              "X-Upload-Content-Length": String(file.size)
-            },
-            body: JSON.stringify({
-              snippet: { title: title, description: "Recorded on Lightcodepedia · " + new Date().toLocaleDateString() },
-              status: { privacyStatus: "unlisted" }
-            })
-          }).then(function(r){
-            if (!r.ok) return r.text().then(function(t){ throw new Error(r.status + ": " + t); });
-            var uploadUrl = r.headers.get("Location");
-            if (!uploadUrl) throw new Error("No upload URL returned");
-            var xhr = new XMLHttpRequest();
-            xhr.open("PUT", uploadUrl);
-            xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
-            xhr.upload.onprogress = function(e){
-              if (e.lengthComputable) {
-                var pct = Math.round(e.loaded / e.total * 100);
-                document.getElementById("lc-yt-bar").style.width = pct + "%";
-                document.getElementById("lc-yt-pct").textContent = "Uploading… " + pct + "% (" + Math.round(e.loaded/1048576) + " / " + Math.round(e.total/1048576) + " MB)";
-              }
-            };
-            xhr.onload = function(){
-              if (xhr.status === 200 || xhr.status === 201) {
-                var data; try { data = JSON.parse(xhr.responseText); } catch(e){ data = {}; }
-                if (data.id) {
-                  document.getElementById("lc-yt-bar").style.width = "100%";
-                  document.getElementById("lc-yt-pct").textContent = "Done!";
-                  document.getElementById("lc-yt-result").style.display = "block";
-                  document.getElementById("lc-yt-url").value = "https://youtu.be/" + data.id;
-                  btn.style.display = "none";
-                } else {
-                  document.getElementById("lc-yt-pct").textContent = "❌ No video ID in response";
-                  btn.disabled = false;
-                }
-              } else {
-                document.getElementById("lc-yt-pct").textContent = "❌ Upload failed (" + xhr.status + ")";
-                btn.disabled = false;
-              }
-            };
-            xhr.onerror = function(){ document.getElementById("lc-yt-pct").textContent = "❌ Network error"; btn.disabled = false; };
-            xhr.send(file);
-          }).catch(function(e){ document.getElementById("lc-yt-pct").textContent = "❌ " + e.message; btn.disabled = false; });
-        });
+        document.getElementById("lc-yt-upload-btn").style.display = "none";
+        var title = (document.title || "Lightcodepedia recording").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia recording";
+        ytShowUploadUI(document.getElementById("lc-yt-upload-area"), file, file.type || "video/mp4", title);
       };
     }
 
     handleYtCallback();
 
     window.lcOpenYtUpload = function() {
-      ytGetToken().then(function(token){
-        if (token) openYtModal(); else ytStartOAuth();
-      });
+      var token = ytGetToken();
+      if (token) openYtModal(); else ytStartOAuth();
+    };
+
+    // Called from the recorder review panel with the recorded blob.
+    window.lcYtUploadBlob = function(blob, mimeType, title, container) {
+      ytShowUploadUI(container, blob, mimeType, title);
     };
   })();
 })();
