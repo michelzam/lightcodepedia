@@ -171,6 +171,7 @@ body {
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
       <div id="lc-ud-rate" style="display:none;padding:6px 16px;font-size:0.75em;border-bottom:1px solid #f0f0f0"></div>
       <div class="lc-ud-row" id="lc-ud-record"><span>🎬</span><span>Record screen</span></div>
+      <div class="lc-ud-row" id="lc-ud-yt-upload"><span>📹</span><span>Upload to YouTube</span></div>
       <div class="lc-ud-row danger" id="lc-ud-disconnect"><span>🔓</span><span>Disconnect</span></div>
     </div>
   </div>
@@ -400,6 +401,14 @@ body {
   ['lc-sd-record','lc-ud-record'].forEach(function(id){
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', openRec);
+  });
+
+  var ytBtn = document.getElementById('lc-ud-yt-upload');
+  if (ytBtn) ytBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    var u = document.getElementById('lc-user-drop'); if (u) u.classList.remove('open');
+    if (window.lcOpenYtUpload) window.lcOpenYtUpload();
+    else alert('Upload module still loading — try again in a moment.');
   });
 
   // get-started dropdown toggle (logged-out)
