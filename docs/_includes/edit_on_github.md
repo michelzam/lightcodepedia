@@ -1242,9 +1242,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
     var knobStr = Object.keys(b.knobs||{}).map(function(k){ return k + '="' + b.knobs[k] + '"'; }).join(" ");
     var content = blockContent(b);
-    var featureHint = b.type === "feature"
+    var featureHint = (b.type === "feature" || b.type === "steps")
       ? "<div id='ebf-feature-hint' style='font-size:0.78em;color:#888;margin:-0.2em 0 0.5em;padding:0.3em 0.6em;background:#f6f8fa;border-radius:4px;border:1px solid #e8e8e8'>"
-        + "Knobs: <code>status=\"passing|failing|pending\"</code> &nbsp; <code>tags=\"smoke,auth\"</code> &nbsp;&mdash;&nbsp; embed Python per step with <code>:::python</code>&nbsp;/&nbsp;<code>:::</code>"
+        + (b.type === "feature"
+            ? "Knobs: <code>status=\"passing|failing|pending\"</code> &nbsp; <code>tags=\"smoke,auth\"</code>"
+            : "Pair with the preceding <code>.feature</code> block — use <code># Given/When/Then</code> comments to split Python into step chunks")
         + "</div>"
       : "";
     form.innerHTML = "<div class='ebf-scroll'>"
