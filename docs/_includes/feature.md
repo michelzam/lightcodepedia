@@ -1,43 +1,42 @@
 {%- comment -%}
-Feature (Gherkin BDD) widget + Python step runner.
+Feature (Gherkin BDD) widget + Python step runner + suite dashboard.
 
-Two blocks, one visual card on the page. The .steps block is completely
-removed from the DOM — its Python is distributed into the feature card's
-expandable step rows.
+Two blocks, one visual card. The .steps block is removed from the DOM;
+its Python chunks are distributed to the feature card's expandable step rows.
 
+BASIC CARD
   ```gherkin
-  Feature: Temperature converter
-    Scenario: Celsius to Fahrenheit
-      Given a temperature of 100°C
-      When converted to Fahrenheit
-      Then the result is 212
+  Feature: My feature
+    Scenario: A scenario
+      Given some precondition
+      When an action happens
+      Then the result is correct
   ```
-  {: .feature status="pending" tags="math" }
+  {: .feature status="passing" tags="smoke" }
 
+WITH RUNNABLE STEPS (immediately after the feature block)
   ```python
-  # Given a temperature of 100°C
-  celsius = 100
+  # Given some precondition
+  x = 42
 
-  # When converted to Fahrenheit
-  fahrenheit = (celsius * 9 / 5) + 32
+  # When an action happens
+  y = x * 2
 
-  # Then the result is 212
-  assert fahrenheit == 212.0
+  # Then the result is correct
+  assert y == 84
   ```
   {: .steps }
 
-Rules:
-- The .steps block must immediately follow the .feature block.
-- Each # Given/When/Then/And/But comment starts a new step chunk.
-- Chunks are matched to Gherkin step rows by index (1st chunk → 1st step).
-- State flows between steps — variables from earlier steps are available later.
-- Clicking a step row expands/collapses its Python implementation.
+SUITE DASHBOARD  — auto-injected before the first feature card when
+  there are 2+ runnable features on the page. Shows each feature's
+  name, tags, and live status; has a ▶ Run All button.
 
 Knobs for .feature:
-  status="…"    passing | failing | pending
-  tags="…"      comma-separated chips
+  status="…"   passing | failing | pending
+  tags="…"     comma-separated chips
 
-Auto-included by docs/_layouts/default.html on every page.
+Auto-included by docs/_layouts/default.html.
+Registers with window.lcScanElement so the editor preview also renders cards.
 {%- endcomment -%}
 
 <style>
@@ -74,7 +73,6 @@ Auto-included by docs/_layouts/default.html on every page.
 .lc-feature-step-row { display: flex; align-items: baseline; gap: 0.55em; padding: 0.28em 1em; font-size: 0.88em; line-height: 1.5; }
 .lc-feature-step.has-impl > .lc-feature-step-row { cursor: pointer; }
 .lc-feature-step.has-impl > .lc-feature-step-row:hover { background: #f3f4f6; }
-
 .lc-feature-step-icon { flex-shrink: 0; width: 1.1em; text-align: center; color: #9ca3af; }
 .lc-feature-step-icon.pass { color: #16a34a; }
 .lc-feature-step-icon.fail { color: #dc2626; }
@@ -83,7 +81,7 @@ Auto-included by docs/_layouts/default.html on every page.
 .lc-feature-step-text { color: #111827; }
 .lc-feature-step-time { margin-left: auto; font-size: 0.75em; color: #9ca3af; }
 
-/* ── expandable Python impl per step ─────────────────── */
+/* ── expandable Python impl ──────────────────────────── */
 .lc-feature-step-impl { display: none; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
 .lc-feature-step-impl.open { display: block; }
 .lc-feature-step-impl pre { margin: 0 !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; max-height: 220px; overflow-y: auto; }
@@ -92,9 +90,32 @@ Auto-included by docs/_layouts/default.html on every page.
 /* ── error ───────────────────────────────────────────── */
 .lc-feature-step-err { padding: 0.2em 1em 0.4em 2.65em; font-size: 0.8em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #dc2626; white-space: pre-wrap; }
 
-/* ── fallback plain body (no steps) ─────────────────── */
+/* ── fallback plain body (display-only) ─────────────── */
 .lc-feature-body pre { margin: 0; border-radius: 0; border: none; box-shadow: none; }
 .lc-feature-body pre code { font-size: 0.83em; line-height: 1.6; }
+
+/* ── suite dashboard ─────────────────────────────────── */
+.lc-feature-suite { border: 1px solid #e5e7eb; border-radius: 8px; margin: 0 0 0.5em; background: #fff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.lc-suite-header { display: flex; align-items: center; gap: 0.7em; padding: 0.55em 1em; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 0.88em; }
+.lc-suite-title { font-weight: 600; color: #111827; }
+.lc-suite-summary { flex: 1; font-size: 0.82em; color: #6b7280; }
+.lc-suite-summary .ok  { color: #16a34a; font-weight: 500; }
+.lc-suite-summary .err { color: #dc2626; font-weight: 500; }
+.lc-suite-run { background: #0066cc; color: #fff; border: none; border-radius: 4px; padding: 0.25em 0.85em; font-size: 0.8em; font-weight: 500; cursor: pointer; flex-shrink: 0; }
+.lc-suite-run:hover:not(:disabled) { background: #0052a3; }
+.lc-suite-run:disabled { background: #9ca3af; cursor: progress; }
+
+.lc-suite-row { display: flex; align-items: center; gap: 0.6em; padding: 0.4em 1em; border-bottom: 1px solid #f3f4f6; font-size: 0.88em; cursor: pointer; transition: background 0.1s; }
+.lc-suite-row:last-child { border-bottom: none; }
+.lc-suite-row:hover { background: #f9fafb; }
+.lc-suite-row-icon { flex-shrink: 0; width: 1.1em; text-align: center; color: #9ca3af; font-size: 1em; transition: color 0.2s; }
+.lc-suite-row-icon.pass { color: #16a34a; }
+.lc-suite-row-icon.fail { color: #dc2626; }
+.lc-suite-row-icon.pending { color: #f59e0b; }
+.lc-suite-row-name { font-weight: 500; color: #111827; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lc-suite-row-tags { display: flex; gap: 0.3em; flex-shrink: 0; }
+.lc-suite-row-tag { background: #e0f2fe; color: #075985; padding: 0.08em 0.45em; border-radius: 99px; font-size: 0.75em; font-weight: 500; }
+.lc-suite-row-arrow { flex-shrink: 0; color: #9ca3af; font-size: 0.85em; padding-left: 0.3em; }
 </style>
 
 <script>
@@ -124,7 +145,6 @@ Auto-included by docs/_layouts/default.html on every page.
   }
 
   /* ── Parse Python into per-step chunks ──────────────── */
-  /* Split on lines that start with: # Given / # When / etc.  */
   var PY_STEP_RE = /^\s*#\s*(Given|When|Then|And|But)\b/i;
   function parsePyChunks(pyText) {
     var chunks = [], cur = null;
@@ -140,18 +160,48 @@ Auto-included by docs/_layouts/default.html on every page.
     return chunks.filter(function(c) { return c.length > 0; });
   }
 
-  /* ── Update badge ─────────────────────────────────────── */
+  /* ── Update badge + notify suite row ─────────────────── */
   function setCardStatus(card, status) {
     card.classList.remove("lc-feature-passing", "lc-feature-failing", "lc-feature-pending");
     if (status) card.classList.add("lc-feature-" + status);
     var badge = card.querySelector("[data-lc-badge]");
-    if (!badge) return;
-    badge.className = "lc-feature-badge" + (status ? " lc-feature-badge-" + status : "");
-    badge.style.display = status ? "" : "none";
-    badge.textContent = status || "";
+    if (badge) {
+      badge.className = "lc-feature-badge" + (status ? " lc-feature-badge-" + status : "");
+      badge.style.display = status ? "" : "none";
+      badge.textContent = status || "";
+    }
+    /* update linked suite row if present */
+    if (card._lcSuiteRow) {
+      var icon = card._lcSuiteRow.querySelector(".lc-suite-row-icon");
+      if (icon) {
+        icon.className = "lc-suite-row-icon" + (status === "passing" ? " pass" : status === "failing" ? " fail" : status === "pending" ? " pending" : "");
+        icon.textContent = status === "passing" ? "✓" : status === "failing" ? "✗" : "●";
+      }
+    }
+    if (card._lcSuiteEl) updateSuiteSummary(card._lcSuiteEl);
   }
 
-  /* ── Run all step chunks ─────────────────────────────── */
+  /* ── Update suite summary line ────────────────────────── */
+  function updateSuiteSummary(suiteEl) {
+    var rows = suiteEl.querySelectorAll(".lc-suite-row");
+    var pass = 0, fail = 0, pend = 0;
+    rows.forEach(function(r) {
+      var ic = r.querySelector(".lc-suite-row-icon");
+      if (!ic) return;
+      if (ic.classList.contains("pass"))    pass++;
+      else if (ic.classList.contains("fail")) fail++;
+      else                                   pend++;
+    });
+    var summary = suiteEl.querySelector(".lc-suite-summary");
+    if (!summary) return;
+    var parts = [];
+    if (pass) parts.push("<span class='ok'>✓ " + pass + " passing</span>");
+    if (fail) parts.push("<span class='err'>✗ " + fail + " failing</span>");
+    if (pend && (pass || fail)) parts.push(pend + " pending");
+    summary.innerHTML = parts.join(" &nbsp; ");
+  }
+
+  /* ── Run all step chunks for one card (returns Promise) ─ */
   function runFeature(card, runBtn) {
     var stepEls = card.querySelectorAll(".lc-feature-step.has-impl");
     stepEls.forEach(function(s) {
@@ -162,10 +212,9 @@ Auto-included by docs/_layouts/default.html on every page.
       if (err) err.parentNode.removeChild(err);
     });
     setCardStatus(card, "pending");
-    runBtn.disabled = true;
-    runBtn.textContent = "…";
+    if (runBtn) { runBtn.disabled = true; runBtn.textContent = "…"; }
 
-    getMpModule()
+    return getMpModule()
       .then(function(mjs) {
         return mjs.loadMicroPython({ stdout: function(){}, stderr: function(){} });
       })
@@ -192,23 +241,23 @@ Auto-included by docs/_layouts/default.html on every page.
           }
         });
         setCardStatus(card, allPass ? "passing" : "failing");
-        runBtn.disabled = false; runBtn.textContent = "▶ Run";
+        if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
+        return allPass;
       })
       .catch(function() {
         setCardStatus(card, "failing");
-        runBtn.disabled = false; runBtn.textContent = "▶ Run";
+        if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
+        return false;
       });
   }
 
-  /* ── Build a <pre><code> with Prism syntax highlighting ─ */
+  /* ── Build a <pre><code> with Prism highlighting ──────── */
   function buildPyPre(code) {
     var pre = document.createElement("pre");
     var codeEl = document.createElement("code");
     codeEl.className = "language-python";
     codeEl.textContent = code;
     pre.appendChild(codeEl);
-    /* Prism is lazy-loaded by code_chrome.md; highlight if already ready,
-       otherwise wait for it then highlight this element. */
     function tryHighlight() {
       if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
         try { window.Prism.highlightElement(codeEl); } catch (e) {}
@@ -217,15 +266,11 @@ Auto-included by docs/_layouts/default.html on every page.
     if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
       tryHighlight();
     } else {
-      /* poll until Prism loads — it arrives when the first pyrun widget initialises */
       var attempts = 0;
       var iv = setInterval(function() {
         if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
-          clearInterval(iv);
-          tryHighlight();
-        } else if (++attempts > 40) {
-          clearInterval(iv); /* give up after ~4s */
-        }
+          clearInterval(iv); tryHighlight();
+        } else if (++attempts > 40) { clearInterval(iv); }
       }, 100);
     }
     return pre;
@@ -257,12 +302,14 @@ Auto-included by docs/_layouts/default.html on every page.
       tagsHtml = "<span class='lc-feature-tags'>"
         + tagsRaw.split(",").map(function(t) {
             return "<span class='lc-feature-tag'>" + t.trim() + "</span>";
-          }).join("")
-        + "</span>";
+          }).join("") + "</span>";
     }
 
     var card = document.createElement("div");
     card.className = "lc-feature" + (status ? " lc-feature-" + status : "");
+    card._lcFeatureName = featureName;
+    card._lcFeatureTags = tagsRaw ? tagsRaw.split(",").map(function(t){ return t.trim(); }) : [];
+
     card.innerHTML =
       "<div class='lc-feature-header'>"
         + "<span class='lc-feature-name'>" + featureName + "</span>"
@@ -279,18 +326,13 @@ Auto-included by docs/_layouts/default.html on every page.
       rows.forEach(function(r) {
         if (r.kind === "feature") return;
         if (r.kind === "scenario") {
-          var sh = document.createElement("div");
-          sh.className = "lc-feature-scenario";
-          sh.textContent = r.keyword + ": " + r.text;
-          stepsDiv.appendChild(sh);
+          var sh = document.createElement("div"); sh.className = "lc-feature-scenario";
+          sh.textContent = r.keyword + ": " + r.text; stepsDiv.appendChild(sh);
         } else if (r.kind === "narrative") {
-          var nh = document.createElement("div");
-          nh.className = "lc-feature-narrative";
-          nh.textContent = r.text;
-          stepsDiv.appendChild(nh);
+          var nh = document.createElement("div"); nh.className = "lc-feature-narrative";
+          nh.textContent = r.text; stepsDiv.appendChild(nh);
         } else if (r.kind === "step") {
-          var stepEl = document.createElement("div");
-          stepEl.className = "lc-feature-step";
+          var stepEl = document.createElement("div"); stepEl.className = "lc-feature-step";
           stepEl.innerHTML =
             "<div class='lc-feature-step-row'>"
               + "<span class='lc-feature-step-icon'>●</span>"
@@ -304,8 +346,7 @@ Auto-included by docs/_layouts/default.html on every page.
       body.appendChild(stepsDiv);
     } else {
       var cloned = el.cloneNode(true);
-      cloned.removeAttribute("status"); cloned.removeAttribute("tags");
-      cloned.classList.remove("feature");
+      cloned.removeAttribute("status"); cloned.removeAttribute("tags"); cloned.classList.remove("feature");
       body.appendChild(cloned);
     }
 
@@ -318,11 +359,9 @@ Auto-included by docs/_layouts/default.html on every page.
     var pyText = code ? code.textContent : el.textContent;
     var chunks = parsePyChunks(pyText);
 
-    /* find nearest preceding .lc-feature card */
     var card = null, sib = el.previousElementSibling;
     while (sib) {
       if (sib.classList.contains("lc-feature")) { card = sib; break; }
-      /* skip empty paragraphs between the two blocks */
       if (!sib.textContent.trim()) { sib = sib.previousElementSibling; continue; }
       break;
     }
@@ -333,19 +372,16 @@ Auto-included by docs/_layouts/default.html on every page.
         if (idx >= stepEls.length) return;
         var stepEl = stepEls[idx];
         stepEl.classList.add("has-impl");
-        stepEl._lcPyCode = chunk;   /* store on DOM node — no attribute encoding issues */
-
+        stepEl._lcPyCode = chunk;
         var implDiv = document.createElement("div");
         implDiv.className = "lc-feature-step-impl";
         implDiv.appendChild(buildPyPre(chunk));
         stepEl.appendChild(implDiv);
-
         stepEl.querySelector(".lc-feature-step-row").addEventListener("click", function() {
           implDiv.classList.toggle("open");
         });
       });
 
-      /* inject Run button */
       var runBtn = document.createElement("button");
       runBtn.className = "lc-feature-run";
       runBtn.textContent = "▶ Run";
@@ -353,22 +389,109 @@ Auto-included by docs/_layouts/default.html on every page.
       runBtn.addEventListener("click", function() { runFeature(card, runBtn); });
     }
 
-    /* always remove the .steps block from the page */
     el.parentNode.removeChild(el);
   }
 
-  /* ── Boot ────────────────────────────────────────────── */
-  function init() {
-    /* feature first so cards exist before steps tries to find them */
-    document.querySelectorAll(".feature").forEach(upgradeFeature);
-    document.querySelectorAll(".steps").forEach(upgradeSteps);
+  /* ── Build the suite dashboard ───────────────────────── */
+  function buildSuite(root) {
+    /* collect all runnable cards in DOM order within this root */
+    var allCards = (root || document).querySelectorAll(".lc-feature");
+    var runnable = [];
+    allCards.forEach(function(c) { if (c.querySelector(".lc-feature-run")) runnable.push(c); });
+    if (runnable.length < 2) return;
+
+    var suite = document.createElement("div");
+    suite.className = "lc-feature-suite";
+
+    /* header */
+    var hdr = document.createElement("div");
+    hdr.className = "lc-suite-header";
+    hdr.innerHTML =
+      "<span class='lc-suite-title'>Test Suite</span>"
+      + "<span class='lc-suite-summary'></span>"
+      + "<button class='lc-suite-run'>▶ Run All</button>";
+    suite.appendChild(hdr);
+
+    /* one row per runnable card */
+    runnable.forEach(function(card) {
+      var tags = (card._lcFeatureTags || []);
+      var tagsHtml = tags.map(function(t) {
+        return "<span class='lc-suite-row-tag'>" + t + "</span>";
+      }).join("");
+
+      var row = document.createElement("div");
+      row.className = "lc-suite-row";
+      row.innerHTML =
+        "<span class='lc-suite-row-icon'>●</span>"
+        + "<span class='lc-suite-row-name'>" + (card._lcFeatureName || "Feature") + "</span>"
+        + (tagsHtml ? "<span class='lc-suite-row-tags'>" + tagsHtml + "</span>" : "")
+        + "<span class='lc-suite-row-arrow'>↓</span>";
+      suite.appendChild(row);
+
+      /* scroll to card on click */
+      row.addEventListener("click", function() {
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+
+      /* cross-link card ↔ row for live status updates */
+      card._lcSuiteRow = row;
+      card._lcSuiteEl  = suite;
+
+      /* reflect initial status in row icon */
+      var initStatus = card.classList.contains("lc-feature-passing") ? "passing"
+                     : card.classList.contains("lc-feature-failing")  ? "failing"
+                     : card.classList.contains("lc-feature-pending")  ? "pending" : "";
+      if (initStatus) setCardStatus(card, initStatus);
+    });
+
+    /* Run All */
+    hdr.querySelector(".lc-suite-run").addEventListener("click", function() {
+      var runAllBtn = this;
+      runAllBtn.disabled = true; runAllBtn.textContent = "…";
+      var chain = Promise.resolve();
+      runnable.forEach(function(card) {
+        chain = chain.then(function() {
+          return runFeature(card, card.querySelector(".lc-feature-run"));
+        });
+      });
+      chain.then(function() {
+        runAllBtn.disabled = false; runAllBtn.textContent = "▶ Run All";
+        updateSuiteSummary(suite);
+      }).catch(function() {
+        runAllBtn.disabled = false; runAllBtn.textContent = "▶ Run All";
+      });
+    });
+
+    /* insert before the first runnable card */
+    runnable[0].parentNode.insertBefore(suite, runnable[0]);
+    updateSuiteSummary(suite);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
+  /* ── Main init (accepts an optional root for preview) ─── */
+  function init(root) {
+    root = root || document;
+    root.querySelectorAll(".feature").forEach(upgradeFeature);
+    root.querySelectorAll(".steps").forEach(upgradeSteps);
+    buildSuite(root);
   }
+
+  /* ── Boot on the real page ────────────────────────────── */
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function() { init(document); });
+  } else {
+    init(document);
+  }
+
+  /* ── Register with editor preview pipeline ───────────── */
+  /* code_chrome.md exposes window.lcScanElement(root); we wrap it so
+     feature cards are also upgraded when the editor preview re-renders. */
+  var _origScan = window.lcScanElement;
+  window.lcScanElement = function(root) {
+    if (_origScan) _origScan(root);
+    root.querySelectorAll(".feature").forEach(upgradeFeature);
+    root.querySelectorAll(".steps").forEach(upgradeSteps);
+    buildSuite(root);
+  };
 
 })();
 </script>
