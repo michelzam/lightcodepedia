@@ -4,85 +4,104 @@ title: Feature (Gherkin BDD)
 
 # Feature (Gherkin BDD)
 
-Render Gherkin BDD scenarios as styled cards — complete with a status badge and tag chips. Write your acceptance criteria directly in the page; the card header extracts the Feature name automatically.
+Render Gherkin BDD scenarios as styled cards. Optionally embed a Python implementation for each step using `:::python` / `:::` markers — a **▶ Run** button appears automatically, executes each step in MicroPython, and updates the status badge live.
 
-## See it in action
+## Display-only (no runner)
 
 ```gherkin
-Feature: User Login
-  As a registered user
-  I want to log in with my credentials
-  So that I can access my account
-
+Feature: User login
   Scenario: Successful login
     Given I am on the login page
-    When I enter a valid username and password
-    Then I should be redirected to the dashboard
-    And I should see a welcome message
+    When I enter valid credentials
+    Then I should see the dashboard
 ```
 {: .feature status="passing" tags="smoke,auth" }
 
-```gherkin
-Feature: Password Reset
-  Scenario: Request reset email
-    Given my account exists
-    When I click "Forgot password"
-    And I enter my email address
-    Then I should receive a reset link within 5 minutes
-```
-{: .feature status="pending" tags="auth" }
+## With runnable steps
+
+Click a step row to see its implementation. Click **▶ Run** to execute them all.
 
 ```gherkin
-Feature: Two-Factor Authentication
-  Scenario: Login blocked without OTP
-    Given 2FA is enabled on my account
-    When I enter correct credentials
-    Then I should be prompted for a one-time code
-    And login should fail without it
+Feature: Temperature converter
+  As a developer using the utils module
+  I want to convert between temperature scales
+
+  Scenario: Celsius to Fahrenheit
+    Given a temperature of 100 degrees Celsius
+    :::python
+    celsius = 100
+    :::
+    When converted to Fahrenheit using (C × 9/5) + 32
+    :::python
+    fahrenheit = (celsius * 9 / 5) + 32
+    :::
+    Then the result should be 212
+    :::python
+    assert fahrenheit == 212.0, "Got " + str(fahrenheit)
+    :::
+    And zero Celsius equals 32 Fahrenheit
+    :::python
+    assert (0 * 9 / 5) + 32 == 32.0
+    :::
 ```
-{: .feature status="failing" tags="auth,2fa" }
+{: .feature status="pending" tags="math,utils" }
 
-## How to make one
+## Failing step example
 
-Write a `gherkin` fenced block, then add `{: .feature }` on the very next line:
+```gherkin
+Feature: List validator
+  Scenario: Reject empty lists
+    Given an empty list
+    :::python
+    items = []
+    :::
+    When I check if it is valid
+    :::python
+    def is_valid(lst):
+        return len(lst) > 0
+    result = is_valid(items)
+    :::
+    Then validation should fail
+    :::python
+    assert result == True   # intentional bug: should be False
+    :::
+```
+{: .feature status="pending" tags="validation" }
+
+## How to write one
+
+Write a `gherkin` fenced block and add `{: .feature }` on the next line. To attach Python to a step, place a `:::python` block immediately after it — still inside the same fence:
 
 ````markdown
 ```gherkin
 Feature: My feature
   Scenario: A scenario
     Given some precondition
-    When an action is taken
-    Then a result is expected
+    :::python
+    x = 42
+    :::
+    When an action happens
+    :::python
+    y = x * 2
+    :::
+    Then the result is correct
+    :::python
+    assert y == 84
+    :::
 ```
-{: .feature }
+{: .feature status="pending" tags="example" }
 ````
 
-The Feature name on the first line becomes the card heading. Everything else is syntax-highlighted Gherkin.
+- Steps **share context** — variables from earlier steps are available in later ones.
+- Each run starts a **fresh MicroPython interpreter** so runs are isolated from each other.
+- Clicking a step row **toggles its Python implementation** inline.
+- Steps after a failure are **skipped** (shown with ○).
 
 ## Knobs
 
 | Attribute | Values | What it does |
 |---|---|---|
-| `status="…"` | `passing` · `failing` · `pending` | Colours the left border and shows a badge (green · red · amber) |
-| `tags="…"` | comma-separated list | Displays tag chips in the card header |
+| `status="…"` | `passing` · `failing` · `pending` | Left border colour and badge; updated live after a run |
+| `tags="…"` | comma-separated | Tag chips in the card header |
 
-A card with no knobs renders with a neutral grey border and no badge — useful for drafting scenarios:
-
-```gherkin
-Feature: Draft scenario
-  Scenario: Not yet implemented
-    Given a placeholder step
-    When nothing happens yet
-    Then this is a work in progress
-```
-{: .feature }
-
-## In the editor
-
-Open the page in the editor (✏️), select the block in the Blocks tab, and set **Type → .feature**. A knob hint appears below the type selector reminding you of the available attributes. Type the knobs directly into the **Knobs** field — for example:
-
-```
-status="passing" tags="smoke,auth"
-```
-
-Hit **Apply** to write the IAL back into the raw markdown.
+A card without any knobs renders with a neutral grey border and no badge.
