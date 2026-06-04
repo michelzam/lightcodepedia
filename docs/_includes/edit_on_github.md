@@ -160,7 +160,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-block-form {
   flex-shrink: 0; padding: 0.8em 1em; background: #fafafa;
   border-top: 2px solid #0066cc; font-size: 0.84em;
-  display: none; overflow: hidden;
+  display: none; overflow: hidden; height: 180px; /* fallback until initGridSplit runs */
 }
 #ed-block-form.ed-visible { display: flex; flex-direction: column; }
 #ed-block-form label { display: block; color: #666; font-size: 0.82em; margin: 0 0 0.18em; flex-shrink: 0; }
@@ -170,6 +170,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   font-family: inherit; margin-bottom: 0.55em; background: #fff;
 }
 #ed-block-form textarea { font-family: monospace; resize: none; flex: 1; min-height: 0; margin-bottom: 0; }
+#ed-block-form textarea[readonly] { background: #f6f8fa; color: #444; }
 #ed-block-form select { cursor: pointer; }
 .ebf-meta { flex-shrink: 0; }
 .ebf-content-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
@@ -1009,16 +1010,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   /* Scroll preview to and pulse-highlight the heading corresponding to block. */
   function highlightInPreview(block) {
     var prev = document.getElementById("ed-preview");
-    if (!prev || !block || block.preamble || block.fenceChild) return;
+    if (!prev || !block || block.preamble) return;
     prev.querySelectorAll(".ed-hl-pulse").forEach(function(el){ el.classList.remove("ed-hl-pulse"); });
     var want = (block.heading || '').replace(/\s+/g, ' ').trim().slice(0, 40).toLowerCase();
     if (!want) return;
     var target = null;
-    prev.querySelectorAll("h1,h2,h3,h4,h5,h6").forEach(function(h) {
+    // Search headings + accordion/dt labels
+    prev.querySelectorAll("h1,h2,h3,h4,h5,h6,summary,dt").forEach(function(h) {
       if (target) return;
       var t = h.textContent.replace(/\s+/g, ' ').trim().slice(0, 40).toLowerCase();
-      if (t === want || t.indexOf(want.slice(0, 18)) !== -1) target = h;
+      if (t === want || (want.length > 4 && t.indexOf(want.slice(0, 20)) !== -1)) target = h;
     });
+    // For sub-blocks with type: also try the component container itself
     if (!target && block.subBlock && block.type) {
       target = prev.querySelector('.' + block.type);
     }
@@ -1134,7 +1137,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var pane = document.getElementById("ed-blocks-pane");
     var grid = document.getElementById("ed-grid");
     var form = document.getElementById("ed-block-form");
-    if (!pane || !grid || !form || pane.offsetHeight < 10) return;
+    if (!pane || !grid || !form) return;
+    if (pane.offsetHeight < 10) {
+      requestAnimationFrame(function() { initGridSplit(); });
+      return;
+    }
     _gridSplitSet = true;
     var half = Math.floor((pane.offsetHeight - 5) / 2);
     grid.style.flex = "none"; grid.style.height = half + "px";
@@ -1150,13 +1157,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     initGridSplit();
 
     if (b.fenceChild) {
-      var fcContent = (b.lines || []).join("\n").trim();
+      var hPrefix = "#".repeat(Math.min(b.level || 3, 6));
+      var fcContent = hPrefix + " " + b.heading
+        + ((b.lines && b.lines.length) ? "\n" + b.lines.join("\n").trim() : "");
       form.innerHTML = "<p class='ebf-meta' style='color:#888;margin:0 0 0.35em'>"
-        + "<strong>" + escH(b.heading) + "</strong>"
-        + " <span style='color:#bbb;font-size:0.85em'>(fence item — edit via Raw tab)</span></p>"
-        + (fcContent
-            ? "<div class='ebf-content-wrap'><textarea readonly>" + escH(fcContent) + "</textarea></div>"
-            : "<p style='color:#bbb;margin:0;font-size:0.88em'><em>No body content.</em></p>");
+        + "<span style='color:#bbb;font-size:0.85em'>(fence item — edit via Raw tab)</span></p>"
+        + "<div class='ebf-content-wrap'><textarea readonly>" + escH(fcContent) + "</textarea></div>";
       return;
     }
     if (b.subBlock) {
@@ -1240,6 +1246,62 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
     document.addEventListener("click",  function(e){ if (e.target.id === "ed-input") onRawCursor(); });
     document.addEventListener("keyup",  function(e){ if (e.target.id === "ed-input") onRawCursor(); });
+  })();
+
+  /* ── Preview hover → editor highlight ──────────────── */
+  (function() {
+    var _prevHoverTimer = null;
+    document.addEventListener("mousemove", function(e) {
+      var prev = document.getElementById("ed-preview");
+      if (!prev || !prev.contains(e.target)) return;
+      clearTimeout(_prevHoverTimer);
+      _prevHoverTimer = setTimeout(function() {
+        if (!_blocks.length) return;
+        var node = e.target, matchIdx = -1, done = false;
+        while (node && node !== prev && !done) {
+          var tag = (node.tagName || "").toLowerCase();
+          if (/^h[1-6]$/.test(tag) || tag === "summary" || tag === "dt") {
+            var want = node.textContent.replace(/\s+/g, ' ').trim().slice(0, 40).toLowerCase();
+            for (var i = 0; i < _blocks.length && !done; i++) {
+              var bh = (_blocks[i].heading || '').replace(/\s+/g, ' ').trim().slice(0, 40).toLowerCase();
+              if (bh && want && (bh === want || (bh.length > 4 && want.indexOf(bh.slice(0, 20)) !== -1))) {
+                matchIdx = i; done = true;
+              }
+            }
+          }
+          if (!done && node.classList) {
+            for (var ci = 0; ci < BLOCK_TYPES.length && !done; ci++) {
+              if (node.classList.contains(BLOCK_TYPES[ci])) {
+                for (var i = 0; i < _blocks.length && !done; i++) {
+                  if (_blocks[i].type === BLOCK_TYPES[ci]) { matchIdx = i; done = true; }
+                }
+              }
+            }
+          }
+          node = node.parentElement;
+        }
+        if (matchIdx < 0) return;
+        // Sync Blocks grid if that tab is active
+        var blocksPane = document.getElementById("ed-blocks-pane");
+        if (blocksPane && blocksPane.classList.contains("ed-active")) {
+          if (_selIdx !== matchIdx) {
+            _selIdx = matchIdx; buildGrid();
+            var tr = document.querySelector("#ed-grid tr.ed-sel");
+            if (tr) tr.scrollIntoView({ block: "nearest" });
+          }
+          return;
+        }
+        // Sync Raw tab: scroll to approximate position without stealing focus
+        var inp = document.getElementById("ed-input");
+        if (!inp || document.activeElement === inp) return;
+        var cumul = 0;
+        for (var i = 0; i < matchIdx; i++) {
+          if (!_blocks[i].subBlock) cumul += _blocks[i].lines.length;
+        }
+        var totalLines = Math.max(1, inp.value.split("\n").length);
+        inp.scrollTop = (cumul / totalLines) * inp.scrollHeight;
+      }, 300);
+    });
   })();
 
   /* ── Restore session from localStorage ───────────────── */
