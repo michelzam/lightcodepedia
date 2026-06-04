@@ -681,9 +681,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var attempts = 0, timer = null;
     function check() {
       attempts++;
-      if (attempts > 36) {
+      if (attempts > 60) {
         clearInterval(timer);
-        el.innerHTML = "<span style='color:#888'>⚠️ Timed out — <a href='https://github.com/" + _repo + "/actions' target='_blank' style='color:#0066cc'>check Actions</a></span>";
+        el.innerHTML = "✅ Saved · <span style='color:#888'>build watch timed out — <a href='https://github.com/" + _repo + "/actions' target='_blank' style='color:#0066cc'>check Actions</a></span>";
         return;
       }
       fetch("https://api.github.com/repos/" + _repo + "/actions/runs?per_page=20", {
