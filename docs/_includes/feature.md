@@ -200,13 +200,34 @@ Auto-included by docs/_layouts/default.html on every page.
       });
   }
 
-  /* ── Build a <pre><code> for inline Python display ───── */
+  /* ── Build a <pre><code> with Prism syntax highlighting ─ */
   function buildPyPre(code) {
     var pre = document.createElement("pre");
     var codeEl = document.createElement("code");
     codeEl.className = "language-python";
     codeEl.textContent = code;
     pre.appendChild(codeEl);
+    /* Prism is lazy-loaded by code_chrome.md; highlight if already ready,
+       otherwise wait for it then highlight this element. */
+    function tryHighlight() {
+      if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
+        try { window.Prism.highlightElement(codeEl); } catch (e) {}
+      }
+    }
+    if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
+      tryHighlight();
+    } else {
+      /* poll until Prism loads — it arrives when the first pyrun widget initialises */
+      var attempts = 0;
+      var iv = setInterval(function() {
+        if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
+          clearInterval(iv);
+          tryHighlight();
+        } else if (++attempts > 40) {
+          clearInterval(iv); /* give up after ~4s */
+        }
+      }, 100);
+    }
     return pre;
   }
 
