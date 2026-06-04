@@ -937,6 +937,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         chunk.push(line);
       }
     }
+    if (subs.length > 0) {
+      // IAL(s) belong to sub-components, not the section heading.
+      // Mark parent so the grid hides the misleading type badge,
+      // but keep block.type/block.lines intact so Apply can reconstruct correctly.
+      block.hasSubComponents = true;
+    }
     return subs.length > 0 ? [block].concat(subs) : [block];
   }
 
@@ -960,24 +966,40 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   /* Expand component sub-blocks: parse headings inside their first code fence
      and insert them as fenceChild display rows (display-only, no text reconstruction).
-     Only runs for subBlock entries so parent heading rows don't duplicate the children. */
+     Only runs for subBlock entries — parent heading rows are already excluded via
+     hasSubComponents — so there is no duplication. Each fenceChild stores its
+     own section lines so the form can show its content read-only. */
   function expandFenceHeadings(blocks) {
     var result = [];
     blocks.forEach(function(b) {
       result.push(b);
-      if (!b.type || !b.subBlock) return; // only expand sub-block component rows
-      var inF = false, fC = '', fL = 0, fc = [];
+      if (!b.type || !b.subBlock) return; // only for component sub-block rows
+      var inF = false, fC = '', fL = 0, fLines = [];
       for (var i = 0; i < b.lines.length; i++) {
         var t = b.lines[i].trim();
         var fm = t.match(/^(`{3,}|~{3,})/);
         if (fm) {
-          if (!inF) { inF = true; fC = fm[1][0]; fL = fm[1].length; fc = []; }
+          if (!inF) { inF = true; fC = fm[1][0]; fL = fm[1].length; fLines = []; }
           else { var c=0; while(c<t.length&&t[c]===fC)c++; if(c>=fL&&t.slice(c).trim()==='') { inF=false; break; } }
-        } else if (inF) { fc.push(t); }
+        } else if (inF) { fLines.push(b.lines[i]); } // preserve original spacing
       }
-      fc.forEach(function(fl) {
-        var hm = fl.match(/^(#{1,6})\s+(.*)/);
-        if (hm) result.push({ level: b.level + 1, heading: hm[2], lines: [],
+      // Split fence content into per-heading sections
+      var sections = [], cur = null;
+      fLines.forEach(function(line) {
+        var hm = line.trim().match(/^(#{1,6})\s+(.*)/);
+        if (hm) {
+          if (cur) sections.push(cur);
+          cur = { heading: hm[2], lines: [line] };
+        } else if (cur) {
+          cur.lines.push(line);
+        }
+      });
+      if (cur) sections.push(cur);
+      sections.forEach(function(sec) {
+        // Trim trailing blank lines from section content
+        var ls = sec.lines.slice(1); // skip the heading line itself
+        while (ls.length && ls[ls.length-1].trim() === '') ls.pop();
+        result.push({ level: b.level + 1, heading: sec.heading, lines: ls,
           type: null, knobs: {}, subBlock: true, fenceChild: true });
       });
     });
@@ -1032,7 +1054,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         : (b.fenceChild ? "<span style='color:#aaa'>– " + escH(b.heading) + "</span>"
           : b.subBlock ? "<em style='color:#777'>" + escH(b.heading) + "</em>"
           : escH(b.heading));
-      var typeHtml = b.type ? "<span class='ed-block-type'>." + escH(b.type) + "</span>" : "";
+      var typeHtml = (b.type && !b.hasSubComponents) ? "<span class='ed-block-type'>." + escH(b.type) + "</span>" : "";
       var knobHtml = Object.keys(b.knobs||{}).map(function(k){
         return "<span style='font-size:0.82em;color:#999'>" + escH(k) + "=<em>" + escH(b.knobs[k]) + "</em></span>";
       }).join(" ");
@@ -1128,7 +1150,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     initGridSplit();
 
     if (b.fenceChild) {
-      form.innerHTML = "<p class='ebf-meta' style='color:#aaa;margin:0'><em>– " + escH(b.heading) + "</em> (fence item, edit via Raw)</p>";
+      var fcContent = (b.lines || []).join("\n").trim();
+      form.innerHTML = "<p class='ebf-meta' style='color:#888;margin:0 0 0.35em'>"
+        + "<strong>" + escH(b.heading) + "</strong>"
+        + " <span style='color:#bbb;font-size:0.85em'>(fence item — edit via Raw tab)</span></p>"
+        + (fcContent
+            ? "<div class='ebf-content-wrap'><textarea readonly>" + escH(fcContent) + "</textarea></div>"
+            : "<p style='color:#bbb;margin:0;font-size:0.88em'><em>No body content.</em></p>");
       return;
     }
     if (b.subBlock) {
