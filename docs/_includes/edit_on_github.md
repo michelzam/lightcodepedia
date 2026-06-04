@@ -57,13 +57,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   width: 210px; flex-shrink: 0; overflow-y: auto;
   border-right: 1px solid #e0e0e0; padding: 0.8em 0.7em; font-size: 0.85em;
 }
-#ed-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#ed-main { flex: 1; display: flex; flex-direction: row; overflow: hidden; }
+#ed-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
 #ed-input {
-  flex: 1; border: none; border-right: 1px solid #e0e0e0; resize: none;
+  flex: 1; border: none; resize: none;
   font-family: monospace; font-size: 0.88em; padding: 1em; line-height: 1.6;
   outline: none; background: #fdfcfb;
 }
-#ed-preview { flex: 1; overflow-y: auto; padding: 1em 1.5em; position: relative; }
+#ed-preview { flex: 1; overflow-y: auto; padding: 1em 1.5em; position: relative; border-left: 1px solid #e0e0e0; }
 /* 50% zoom mode: render content at 200% width then scale to fit */
 #ed-preview.lc-zoom { overflow-x: hidden; }
 #ed-preview.lc-zoom > div:not(.ed-pbar) { width: 200%; zoom: 0.5; transform-origin: top left; }
@@ -80,6 +81,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 .ed-pbar.done { opacity: 0; transform: scaleX(1);   transition: transform 0.1s ease, opacity 0.3s 0.05s; }
 @media (max-width: 700px) {
   #ed-sidebar { display: none; }
+  #ed-splitter { display: none; }
   #ed-preview { display: none; }
 }
 
@@ -123,6 +125,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-blocks-pane { display: none; flex: 1; flex-direction: column; overflow: hidden; }
 #ed-blocks-pane.ed-active { display: flex; }
 
+/* ── Grid/form splitter ─────────────────────────────── */
+#ed-grid-splitter {
+  height: 5px; flex-shrink: 0; cursor: row-resize;
+  background: #e8e8e8; display: none;
+  transition: background 0.15s;
+}
+#ed-grid-splitter:hover, #ed-grid-splitter.ed-dragging { background: #0066cc; }
+#ed-grid-splitter.ed-vis { display: block; }
+
 /* ── Blocks grid ────────────────────────────────────── */
 #ed-grid {
   flex: 1; overflow-y: auto; min-height: 0; font-size: 0.84em;
@@ -149,7 +160,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-block-form {
   flex-shrink: 0; padding: 0.8em 1em; background: #fafafa;
   border-top: 2px solid #0066cc; font-size: 0.84em;
-  display: none; overflow-y: auto; max-height: 42%;
+  display: none; overflow-y: auto; height: 200px;
 }
 #ed-block-form.ed-visible { display: block; }
 #ed-block-form label { display: block; color: #666; font-size: 0.82em; margin: 0 0 0.18em; }
@@ -263,19 +274,24 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
     <!-- Editor + Preview -->
     <div id="ed-main">
-      <div id="ed-tabs">
-        <span class="ed-tab active" data-tab="raw">✏️ Raw</span>
-        <span class="ed-tab" data-tab="blocks">⊞ Blocks</span>
+      <!-- Left: tabs + raw OR blocks pane -->
+      <div id="ed-left">
+        <div id="ed-tabs">
+          <span class="ed-tab active" data-tab="raw">✏️ Raw</span>
+          <span class="ed-tab" data-tab="blocks">⊞ Blocks</span>
+        </div>
+        <div id="ed-raw-pane">
+          <textarea id="ed-input" placeholder="Select a file from the sidebar, or create a new page…" spellcheck="false"></textarea>
+        </div>
+        <div id="ed-blocks-pane">
+          <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
+          <div id="ed-grid-splitter"></div>
+          <div id="ed-block-form"></div>
+        </div>
       </div>
-      <div id="ed-raw-pane">
-        <textarea id="ed-input" placeholder="Select a file from the sidebar, or create a new page…" spellcheck="false"></textarea>
-        <div id="ed-splitter"></div>
-        <div id="ed-preview"></div>
-      </div>
-      <div id="ed-blocks-pane">
-        <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
-        <div id="ed-block-form"></div>
-      </div>
+      <!-- Splitter + Preview always visible on right -->
+      <div id="ed-splitter"></div>
+      <div id="ed-preview"></div>
     </div>
 
   </div><!-- /body -->
@@ -761,31 +777,65 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     btn.textContent = open ? "▶" : "◀";
   });
 
-  /* ── Splitter drag ───────────────────────────────────── */
+  /* ── Splitter drag (left ↔ preview) ─────────────────── */
   (function() {
     var sp = document.getElementById("ed-splitter");
     if (!sp) return;
     var dragging = false, startX = 0, startLW = 0, startRW = 0;
     sp.addEventListener("mousedown", function(e) {
-      var inp  = document.getElementById("ed-input");
+      var left = document.getElementById("ed-left");
       var prev = document.getElementById("ed-preview");
-      if (!inp || !prev) return;
+      if (!left || !prev) return;
       dragging = true; startX = e.clientX;
-      startLW = inp.offsetWidth; startRW = prev.offsetWidth;
+      startLW = left.offsetWidth; startRW = prev.offsetWidth;
       sp.classList.add("ed-dragging");
       document.body.style.cursor = "col-resize";
       e.preventDefault();
     });
     document.addEventListener("mousemove", function(e) {
       if (!dragging) return;
-      var inp  = document.getElementById("ed-input");
+      var left = document.getElementById("ed-left");
       var prev = document.getElementById("ed-preview");
-      if (!inp || !prev) return;
+      if (!left || !prev) return;
       var dx = e.clientX - startX;
-      var lw = Math.max(80, startLW + dx);
-      var rw = Math.max(80, startRW - dx);
-      inp.style.flex  = "none"; inp.style.width  = lw + "px";
+      var lw = Math.max(150, startLW + dx);
+      var rw = Math.max(150, startRW - dx);
+      left.style.flex = "none"; left.style.width = lw + "px";
       prev.style.flex = "none"; prev.style.width = rw + "px";
+    });
+    document.addEventListener("mouseup", function() {
+      if (!dragging) return;
+      dragging = false;
+      sp.classList.remove("ed-dragging");
+      document.body.style.cursor = "";
+    });
+  })();
+
+  /* ── Grid/form splitter drag (grid ↕ form) ──────────── */
+  (function() {
+    var sp = document.getElementById("ed-grid-splitter");
+    if (!sp) return;
+    var dragging = false, startY = 0, startGH = 0, startFH = 0;
+    sp.addEventListener("mousedown", function(e) {
+      var grid = document.getElementById("ed-grid");
+      var form = document.getElementById("ed-block-form");
+      if (!grid || !form) return;
+      dragging = true; startY = e.clientY;
+      startGH = grid.offsetHeight; startFH = form.offsetHeight;
+      sp.classList.add("ed-dragging");
+      document.body.style.cursor = "row-resize";
+      e.preventDefault();
+    });
+    document.addEventListener("mousemove", function(e) {
+      if (!dragging) return;
+      var grid = document.getElementById("ed-grid");
+      var form = document.getElementById("ed-block-form");
+      if (!grid || !form) return;
+      var dy = e.clientY - startY;
+      var gh = Math.max(60, startGH + dy);
+      var fh = Math.max(60, startFH - dy);
+      grid.style.flex = "none"; grid.style.height = gh + "px";
+      form.style.height = fh + "px";
     });
     document.addEventListener("mouseup", function() {
       if (!dragging) return;
@@ -803,15 +853,26 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   function escA(s) { return (s||"").replace(/"/g,"&quot;"); }
 
   function parseBlocks(text) {
-    var lines = text.split("\n"), blocks = [], pre = [], cur = null, inFence = false;
+    var lines = text.split("\n"), blocks = [], pre = [], cur = null;
+    var inFence = false, fenceChar = '', fenceLen = 0;
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i], t = line.trim();
-      if (/^(`{3,}|~{3,})/.test(t)) inFence = !inFence;
+      var fm = t.match(/^(`{3,}|~{3,})/);
+      if (fm) {
+        if (!inFence) {
+          inFence = true; fenceChar = fm[1][0]; fenceLen = fm[1].length;
+        } else {
+          var cntF = 0;
+          while (cntF < t.length && t[cntF] === fenceChar) cntF++;
+          if (cntF >= fenceLen && t.slice(cntF).trim() === '') inFence = false;
+        }
+      }
       if (!inFence) {
         var hm = t.match(/^(#{1,6})\s+(.*)/);
         if (hm) {
           if (cur) blocks.push(cur);
           else if (pre.length) blocks.push({ preamble: true, lines: pre.slice(), level: 0, heading: "(preamble)", type: null, knobs: {} });
+          pre = [];
           cur = { level: hm[1].length, heading: hm[2], lines: [line], type: null, knobs: {} };
           continue;
         }
@@ -833,8 +894,43 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     return blocks;
   }
 
+  /* Split heading blocks that contain component paragraphs (paragraph + {: .type })
+     into sub-block entries for display. Sub-blocks have subBlock:true and are
+     skipped in blocksToText (their content is already in the parent's lines). */
+  function extractSubBlocks(block) {
+    if (block.preamble) return [block];
+    var rest = block.lines.slice(1);
+    var inF = false, fC = '', fL = 0;
+    var chunk = [], subs = [];
+    for (var i = 0; i < rest.length; i++) {
+      var line = rest[i], t = line.trim();
+      var fm = t.match(/^(`{3,}|~{3,})/);
+      if (fm) {
+        if (!inF) { inF = true; fC = fm[1][0]; fL = fm[1].length; }
+        else { var c=0; while(c<t.length&&t[c]===fC)c++; if(c>=fL&&t.slice(c).trim()==='') inF=false; }
+      }
+      var im = !inF && t.match(/^\{:\s*\.(\S+)\s*(.*?)\s*\}/);
+      if (im) {
+        var content = chunk.filter(function(l){ return l.trim() && !/^\{:/.test(l.trim()); });
+        if (content.length > 0) {
+          var title = content[0].replace(/^\[([^\]]+)\].*/, '$1')
+            .replace(/^[#*_`>[\]()]+/, '').trim().slice(0, 60) || '(component)';
+          var kn = {}, kr2 = /(\w+)="([^"]*)"/g, km2;
+          while ((km2 = kr2.exec(im[2]))) kn[km2[1]] = km2[2];
+          subs.push({ level: block.level + 1, heading: title,
+            lines: chunk.slice().concat([line]), type: im[1], knobs: kn, subBlock: true });
+        }
+        chunk = [];
+      } else {
+        chunk.push(line);
+      }
+    }
+    return subs.length > 0 ? [block].concat(subs) : [block];
+  }
+
   function blocksToText(blocks) {
-    return blocks.map(function(b) { return b.lines.join("\n"); }).join("\n");
+    return blocks.filter(function(b){ return !b.subBlock; })
+      .map(function(b) { return b.lines.join("\n"); }).join("\n");
   }
 
   function blockContent(b) {
@@ -849,7 +945,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   function buildGrid() {
     var inp = document.getElementById("ed-input");
     if (!inp) return;
-    _blocks = parseBlocks(inp.value);
+    var raw = parseBlocks(inp.value);
+    _blocks = [];
+    raw.forEach(function(b){ _blocks = _blocks.concat(extractSubBlocks(b)); });
     var minLv = 9;
     _blocks.forEach(function(b){ if (!b.preamble && b.level < minLv) minLv = b.level; });
     if (minLv === 9) minLv = 1;
@@ -865,14 +963,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var indent = b.preamble ? 0 : (b.level - minLv) * 14;
       var titleHtml = b.preamble
         ? "<em style='color:#bbb'>preamble</em>"
-        : escH(b.heading);
+        : (b.subBlock ? "<em style='color:#777'>" + escH(b.heading) + "</em>" : escH(b.heading));
       var typeHtml = b.type ? "<span class='ed-block-type'>." + escH(b.type) + "</span>" : "";
       var knobHtml = Object.keys(b.knobs||{}).map(function(k){
         return "<span style='font-size:0.82em;color:#999'>" + escH(k) + "=<em>" + escH(b.knobs[k]) + "</em></span>";
       }).join(" ");
       var sel = i === _selIdx ? " ed-sel" : "";
-      html += "<tr data-idx='" + i + "' draggable='true' class='" + sel + "'>"
-        + "<td class='ed-drag-handle'>⠿</td>"
+      var draggable = b.subBlock ? "false" : "true";
+      var handle = b.subBlock ? "<td style='color:#eee'>⠿</td>" : "<td class='ed-drag-handle'>⠿</td>";
+      html += "<tr data-idx='" + i + "' draggable='" + draggable + "' class='" + sel + "'>"
+        + handle
         + "<td style='padding-left:" + (8 + indent) + "px'>" + titleHtml + "</td>"
         + "<td>" + typeHtml + "</td>"
         + "<td>" + knobHtml + "</td>"
@@ -899,7 +999,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     grid.addEventListener("dragstart", function(e) {
       var tr = e.target.closest("tr[data-idx]");
       if (!tr) return;
-      dragFrom = parseInt(tr.dataset.idx);
+      var idx = parseInt(tr.dataset.idx);
+      if (_blocks[idx] && _blocks[idx].subBlock) { e.preventDefault(); return; }
+      dragFrom = idx;
       tr.style.opacity = "0.45";
       e.dataTransfer.effectAllowed = "move";
     });
@@ -921,6 +1023,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (!tr || dragFrom === null) return;
       var to = parseInt(tr.dataset.idx);
       if (dragFrom === to) return;
+      if (_blocks[to] && _blocks[to].subBlock) return;
       var moved = _blocks.splice(dragFrom, 1)[0];
       _blocks.splice(to > dragFrom ? to - 1 : to, 0, moved);
       _selIdx = to > dragFrom ? to - 1 : to;
@@ -933,8 +1036,20 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   function showBlockForm(idx) {
     var b = _blocks[idx];
+    if (b.subBlock) {
+      var form = document.getElementById("ed-block-form");
+      var sp = document.getElementById("ed-grid-splitter");
+      form.classList.add("ed-visible");
+      if (sp) sp.classList.add("ed-vis");
+      form.innerHTML = "<p style='color:#888;font-size:0.9em;margin:0 0 0.4em'><em>Component block (edit via Raw tab)</em></p>"
+        + "<label>Type</label><input readonly value='." + escH(b.type||'') + "'>"
+        + "<label>Content</label><textarea readonly style='min-height:80px'>" + escH(b.lines.filter(function(l){ return l.trim() && !/^\{:/.test(l.trim()); }).join("\n").trim()) + "</textarea>";
+      return;
+    }
     var form = document.getElementById("ed-block-form");
+    var sp = document.getElementById("ed-grid-splitter");
     form.classList.add("ed-visible");
+    if (sp) sp.classList.add("ed-vis");
     var knobStr = Object.keys(b.knobs||{}).map(function(k){ return k + '="' + b.knobs[k] + '"'; }).join(" ");
     var content = blockContent(b);
     form.innerHTML = "<div style='display:flex;gap:0.6em;flex-wrap:wrap;margin-bottom:0.4em'>"
