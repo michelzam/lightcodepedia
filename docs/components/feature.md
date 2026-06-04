@@ -2,10 +2,9 @@
 title: Feature (Gherkin BDD)
 ---
 
-# Feature (Gherkin BDD)
+# 🦄 Feature
 
 Render Gherkin BDD scenarios as styled cards. Pair a `.feature` block with a `.steps` Python block to get a **▶ Run** button — the steps block disappears from the page and its implementations slot into the card's expandable step rows.
-
 ## Display-only (no runner)
 
 ```gherkin
