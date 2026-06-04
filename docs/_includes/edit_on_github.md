@@ -179,7 +179,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-block-form textarea[readonly] { background: #f6f8fa; color: #444; }
 #ed-block-form select { cursor: pointer; }
 /* .ebf-scroll wraps all scrollable form content; .ebf-actions sits outside it, always visible */
-.ebf-scroll { flex: 1; overflow-y: auto; min-height: 0; padding: 0.8em 1em 0.2em; }
+.ebf-scroll { flex: 1; overflow-y: auto; min-height: 0; padding: 0.8em 1em 0.2em; display: flex; flex-direction: column; }
 .ebf-meta { flex-shrink: 0; }
 .ebf-content-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .ebf-actions { flex-shrink: 0; padding: 0.4em 1em 0.5em; border-top: 1px solid #e8e8e8; background: #fafafa; }
@@ -250,7 +250,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   <div id="ed-top">
     <span id="ed-filename">No file selected</span>
     <span id="ed-build" style="font-size:0.78em;color:#888;margin-left:0.5em;flex-shrink:0"></span>
-    <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">+ New</a>
+    <a href="#" class="lc-btn lc-btn-secondary" id="ed-zoom-btn" title="Toggle 50% preview scale" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">50%</a>
+    <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em">+ New</a>
     <a href="#" class="lc-btn" id="ed-save-btn" style="font-size:0.82em;padding:0.35em 0.9em">💾 Save</a>
     <a href="#" id="ed-close-btn" title="Close (Esc)"
        style="font-size:1.3em;color:#888;text-decoration:none;padding:0 0.2em;line-height:1;margin-left:0.2em">✕</a>
@@ -269,13 +270,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       <!-- Editor: tabs + raw OR blocks pane -->
       <div id="ed-left">
         <div id="ed-tabs">
-          <span class="ed-tab active" data-tab="raw">✏️ Raw</span>
-          <span class="ed-tab" data-tab="blocks">⊞ Blocks</span>
+          <span class="ed-tab active" data-tab="blocks">⊞ Blocks</span>
+          <span class="ed-tab" data-tab="raw">✏️ Raw</span>
         </div>
-        <div id="ed-raw-pane">
+        <div id="ed-raw-pane" class="ed-hidden">
           <textarea id="ed-input" placeholder="Select a file from the sidebar, or create a new page…" spellcheck="false"></textarea>
         </div>
-        <div id="ed-blocks-pane">
+        <div id="ed-blocks-pane" class="ed-active">
           <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
           <div id="ed-grid-splitter"></div>
           <div id="ed-block-form"></div>
@@ -377,26 +378,6 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     el.style.color = ok === true ? "#28a745" : ok === false ? "#dc3545" : "#888";
   }
 
-  /* ── Preview zoom: render content at page width then scale to fit pane ── */
-  function updatePreviewZoom() {
-    var prev = document.getElementById("ed-preview");
-    if (!prev) return;
-    var body = prev.querySelector("div:not(.ed-pbar)");
-    if (!body) return;
-    var previewW = prev.offsetWidth;
-    var main = document.getElementById("ed-main");
-    var mainW = main ? main.offsetWidth : previewW;
-    if (mainW < 1 || previewW < 1) return;
-    var ratio = Math.max(0.15, Math.min(1.0, previewW / mainW));
-    if (ratio > 0.9) {
-      body.style.width = "";
-      body.style.zoom = "";
-    } else {
-      body.style.width = (100 / ratio).toFixed(1) + "%";
-      body.style.zoom = ratio.toFixed(3);
-    }
-  }
-
   /* ── Drawer open / close ─────────────────────────────── */
   function openDrawer() {
     var d = document.getElementById("ed-drawer");
@@ -415,10 +396,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     document.querySelectorAll(".ed-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab === "blocks"); });
     if (rawPane) rawPane.classList.add("ed-hidden");
     if (blkPane) blkPane.classList.add("ed-active");
-    if (_curFile) buildGrid();
-
-    // Update zoom once layout has settled
-    requestAnimationFrame(function() { updatePreviewZoom(); });
+    buildGrid(); // always build — shows placeholder if no file yet
 
     if (_pat && _repo) {
       loadFiles();
@@ -515,6 +493,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (inp) { inp.value = content; updatePreview(content); }
       setDirty(false);
       loadHistory();
+      // refresh blocks grid whenever new content loads
+      var blkPane = document.getElementById("ed-blocks-pane");
+      if (blkPane && blkPane.classList.contains("ed-active")) buildGrid();
     });
   }
 
@@ -622,8 +603,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         // Apply IAL markers then run the full component upgrade pipeline
         if (window.lcApplyIAL)    window.lcApplyIAL(body);
         if (window.lcScanElement) window.lcScanElement(body);
-        // Advance bar to "done" on the next paint; also recalculate zoom
-        requestAnimationFrame(function() { bar.className = "ed-pbar done"; updatePreviewZoom(); });
+        requestAnimationFrame(function() { bar.className = "ed-pbar done"; });
       }
       if (window.marked) { doRender(); return; }
       if (window.lcLoadMarked) { window.lcLoadMarked(doRender); return; }
@@ -858,7 +838,6 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var lw = Math.max(150, startLW - dx);
       left.style.flex = "none"; left.style.width = lw + "px";
       prev.style.flex = "none"; prev.style.width = rw + "px";
-      updatePreviewZoom();
     });
     document.addEventListener("mouseup", function() {
       if (!dragging) return;
@@ -894,6 +873,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var fh = Math.max(60, startFH - dy);
       grid.style.flex = "none"; grid.style.height = gh + "px";
       form.style.height = fh + "px";
+      _gridRatio = gh / (gh + fh); // track ratio to survive resize
     });
     document.addEventListener("mouseup", function() {
       if (!dragging) return;
@@ -1008,7 +988,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     return ls.join("\n").trim();
   }
 
-  var _blocks = [], _selIdx = -1, _dragFrom = null, _gridSplitSet = false, _formDirty = false;
+  var _blocks = [], _selIdx = -1, _dragFrom = null, _gridSplitSet = false, _formDirty = false, _gridRatio = 0.5;
 
   /* Expand component sub-blocks: parse headings inside their first code fence
      and insert them as fenceChild display rows (display-only, no text reconstruction).
@@ -1188,7 +1168,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       requestAnimationFrame(function() { initGridSplit(); });
       return;
     }
-    _gridSplitSet = true;
+    _gridSplitSet = true; _gridRatio = 0.5;
     var half = Math.floor((pane.offsetHeight - 5) / 2);
     grid.style.flex = "none"; grid.style.height = half + "px";
     form.style.height = half + "px";
@@ -1361,9 +1341,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     });
   })();
 
-  /* ── Window resize: keep grid/form ratio + update zoom ── */
+  /* ── Window resize: maintain stored grid/form ratio ─── */
   window.addEventListener("resize", function() {
-    updatePreviewZoom();
     if (!_gridSplitSet) return;
     var pane = document.getElementById("ed-blocks-pane");
     var grid = document.getElementById("ed-grid");
@@ -1371,13 +1350,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (!pane || !grid || !form || !form.classList.contains("ed-visible")) return;
     var paneH = pane.offsetHeight;
     if (paneH < 20) return;
-    var gridH = grid.offsetHeight, formH = form.offsetHeight;
-    var total = gridH + formH;
-    if (total < 1) return;
-    var ratio = gridH / total;
     var available = paneH - 5;
-    grid.style.height = Math.max(60, Math.round(available * ratio)) + "px";
-    form.style.height = Math.max(80, available - Math.max(60, Math.round(available * ratio))) + "px";
+    var newGrid = Math.max(60, Math.round(available * _gridRatio));
+    var newForm = Math.max(80, available - newGrid);
+    grid.style.height = newGrid + "px";
+    form.style.height = newForm + "px";
   });
 
   /* ── Restore session from localStorage ───────────────── */
