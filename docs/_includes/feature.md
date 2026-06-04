@@ -1,31 +1,40 @@
 {%- comment -%}
-Feature (Gherkin BDD) widget with inline Python step runner.
+Feature (Gherkin BDD) widget + Python step runner.
 
-Embed Python implementations directly inside the gherkin fence using
-:::python / ::: markers. No separate block needed.
+Two blocks, one visual card on the page. The .steps block is completely
+removed from the DOM — its Python is distributed into the feature card's
+expandable step rows.
 
   ```gherkin
   Feature: Temperature converter
     Scenario: Celsius to Fahrenheit
       Given a temperature of 100°C
-      :::python
-      celsius = 100
-      :::
       When converted to Fahrenheit
-      :::python
-      fahrenheit = (celsius * 9 / 5) + 32
-      :::
       Then the result is 212
-      :::python
-      assert fahrenheit == 212.0
-      :::
   ```
   {: .feature status="pending" tags="math" }
 
-Without Python blocks the card is display-only (no Run button).
+  ```python
+  # Given a temperature of 100°C
+  celsius = 100
 
-Knobs:
-  status="…"    passing | failing | pending  (border/badge colour)
+  # When converted to Fahrenheit
+  fahrenheit = (celsius * 9 / 5) + 32
+
+  # Then the result is 212
+  assert fahrenheit == 212.0
+  ```
+  {: .steps }
+
+Rules:
+- The .steps block must immediately follow the .feature block.
+- Each # Given/When/Then/And/But comment starts a new step chunk.
+- Chunks are matched to Gherkin step rows by index (1st chunk → 1st step).
+- State flows between steps — variables from earlier steps are available later.
+- Clicking a step row expands/collapses its Python implementation.
+
+Knobs for .feature:
+  status="…"    passing | failing | pending
   tags="…"      comma-separated chips
 
 Auto-included by docs/_layouts/default.html on every page.
@@ -42,7 +51,7 @@ Auto-included by docs/_layouts/default.html on every page.
 .lc-feature-header { display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap; padding: 0.55em 1em 0.5em; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 0.88em; }
 .lc-feature-name { font-weight: 600; color: #111827; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.lc-feature-badge { display: inline-flex; align-items: center; gap: 0.3em; padding: 0.15em 0.6em; border-radius: 99px; font-size: 0.8em; font-weight: 500; line-height: 1.6; cursor: default; }
+.lc-feature-badge { display: inline-flex; align-items: center; gap: 0.3em; padding: 0.15em 0.6em; border-radius: 99px; font-size: 0.8em; font-weight: 500; line-height: 1.6; }
 .lc-feature-badge::before { content: "●"; font-size: 0.75em; }
 .lc-feature-badge-passing { background: #dcfce7; color: #15803d; }
 .lc-feature-badge-failing  { background: #fee2e2; color: #b91c1c; }
@@ -61,11 +70,10 @@ Auto-included by docs/_layouts/default.html on every page.
 
 /* ── step rows ───────────────────────────────────────── */
 .lc-feature-steps { padding: 0.35em 0; }
-
 .lc-feature-step { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .lc-feature-step-row { display: flex; align-items: baseline; gap: 0.55em; padding: 0.28em 1em; font-size: 0.88em; line-height: 1.5; }
-.lc-feature-step[data-has-impl] > .lc-feature-step-row { cursor: pointer; }
-.lc-feature-step[data-has-impl] > .lc-feature-step-row:hover { background: #f3f4f6; }
+.lc-feature-step.has-impl > .lc-feature-step-row { cursor: pointer; }
+.lc-feature-step.has-impl > .lc-feature-step-row:hover { background: #f3f4f6; }
 
 .lc-feature-step-icon { flex-shrink: 0; width: 1.1em; text-align: center; color: #9ca3af; }
 .lc-feature-step-icon.pass { color: #16a34a; }
@@ -75,16 +83,16 @@ Auto-included by docs/_layouts/default.html on every page.
 .lc-feature-step-text { color: #111827; }
 .lc-feature-step-time { margin-left: auto; font-size: 0.75em; color: #9ca3af; }
 
-/* ── inline Python implementation (expand on click) ──── */
+/* ── expandable Python impl per step ─────────────────── */
 .lc-feature-step-impl { display: none; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
 .lc-feature-step-impl.open { display: block; }
 .lc-feature-step-impl pre { margin: 0 !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; max-height: 220px; overflow-y: auto; }
 .lc-feature-step-impl pre code { font-size: 0.82em !important; line-height: 1.55 !important; }
 
-/* ── error line ──────────────────────────────────────── */
+/* ── error ───────────────────────────────────────────── */
 .lc-feature-step-err { padding: 0.2em 1em 0.4em 2.65em; font-size: 0.8em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #dc2626; white-space: pre-wrap; }
 
-/* ── plain (no-impl) body fallback ──────────────────── */
+/* ── fallback plain body (no steps) ─────────────────── */
 .lc-feature-body pre { margin: 0; border-radius: 0; border: none; box-shadow: none; }
 .lc-feature-body pre code { font-size: 0.83em; line-height: 1.6; }
 </style>
@@ -101,75 +109,35 @@ Auto-included by docs/_layouts/default.html on every page.
     return _mpModuleP;
   }
 
-  /* ── Strip common leading whitespace from a code block ── */
-  function dedent(code) {
-    var lines = code.split("\n");
-    var min = Infinity;
-    lines.forEach(function(l) {
-      if (!l.trim()) return;
-      var m = l.match(/^(\s*)/);
-      if (m && m[1].length < min) min = m[1].length;
-    });
-    if (min === Infinity || min === 0) return code;
-    return lines.map(function(l) { return l.slice(min); }).join("\n");
-  }
-
-  /* ── Parse gherkin+python text ───────────────────────── */
-  /*
-    Returns an array of rows:
-      { kind: "feature"|"scenario"|"narrative"|"step",
-        keyword, text,
-        pyCode }   <- pyCode present only on step rows with :::python blocks
-  */
-  function parseFeatureText(raw) {
+  /* ── Parse Gherkin rows ──────────────────────────────── */
+  function parseGherkinRows(text) {
     var rows = [];
-    var lines = raw.split("\n");
-    var i = 0;
-    while (i < lines.length) {
-      var l = lines[i];
+    text.split("\n").forEach(function(l) {
       var t = l.trim();
-
-      /* :::python ... ::: block — associate with previous step */
-      if (t === ":::python") {
-        var pyLines = [];
-        i++;
-        while (i < lines.length && lines[i].trim() !== ":::") {
-          pyLines.push(lines[i]);
-          i++;
-        }
-        /* attach to last step row */
-        for (var ri = rows.length - 1; ri >= 0; ri--) {
-          if (rows[ri].kind === "step") {
-            rows[ri].pyCode = dedent(pyLines.join("\n"));
-            break;
-          }
-        }
-        i++; continue;
-      }
-
-      /* Feature: / Scenario: headings */
       var hm = t.match(/^(Feature|Scenario(?:\s+Outline)?|Background|Examples)\s*:\s*(.*)/i);
-      if (hm) { rows.push({ kind: hm[1].toLowerCase() === "feature" ? "feature" : "scenario", keyword: hm[1], text: hm[2].trim() }); i++; continue; }
-
-      /* Given / When / Then / And / But steps */
+      if (hm) { rows.push({ kind: /^feature$/i.test(hm[1]) ? "feature" : "scenario", keyword: hm[1], text: hm[2].trim() }); return; }
       var sm = t.match(/^(Given|When|Then|And|But)\s+(.*)/i);
-      if (sm) { rows.push({ kind: "step", keyword: sm[1], text: sm[2].trim(), pyCode: null }); i++; continue; }
-
-      /* non-blank narrative */
-      if (t && !/^\s*#/.test(l)) rows.push({ kind: "narrative", text: t });
-      i++;
-    }
+      if (sm) { rows.push({ kind: "step", keyword: sm[1], text: sm[2].trim() }); return; }
+      if (t && !/^#/.test(t)) rows.push({ kind: "narrative", text: t });
+    });
     return rows;
   }
 
-  /* ── Build a syntax-highlighted <pre> from python text ── */
-  function buildPyPre(code) {
-    var pre = document.createElement("pre");
-    var codeEl = document.createElement("code");
-    codeEl.className = "language-python";
-    codeEl.textContent = code;
-    pre.appendChild(codeEl);
-    return pre;
+  /* ── Parse Python into per-step chunks ──────────────── */
+  /* Split on lines that start with: # Given / # When / etc.  */
+  var PY_STEP_RE = /^\s*#\s*(Given|When|Then|And|But)\b/i;
+  function parsePyChunks(pyText) {
+    var chunks = [], cur = null;
+    pyText.split("\n").forEach(function(l) {
+      if (PY_STEP_RE.test(l)) {
+        if (cur !== null) chunks.push(cur.join("\n").trim());
+        cur = [];
+      } else if (cur !== null) {
+        cur.push(l);
+      }
+    });
+    if (cur !== null) chunks.push(cur.join("\n").trim());
+    return chunks.filter(function(c) { return c.length > 0; });
   }
 
   /* ── Update badge ─────────────────────────────────────── */
@@ -183,10 +151,9 @@ Auto-included by docs/_layouts/default.html on every page.
     badge.textContent = status || "";
   }
 
-  /* ── Run all step chunks for a card ──────────────────── */
+  /* ── Run all step chunks ─────────────────────────────── */
   function runFeature(card, runBtn) {
-    var stepEls = card.querySelectorAll(".lc-feature-step[data-has-impl]");
-    /* reset */
+    var stepEls = card.querySelectorAll(".lc-feature-step.has-impl");
     stepEls.forEach(function(s) {
       s.querySelector(".lc-feature-step-icon").className = "lc-feature-step-icon";
       s.querySelector(".lc-feature-step-icon").textContent = "●";
@@ -208,7 +175,7 @@ Auto-included by docs/_layouts/default.html on every page.
           var icon = s.querySelector(".lc-feature-step-icon");
           var timeEl = s.querySelector(".lc-feature-step-time");
           if (stopped) { icon.className = "lc-feature-step-icon skip"; icon.textContent = "○"; return; }
-          var code = s.dataset.pyCode || "";
+          var code = s._lcPyCode || "";
           var t0 = Date.now();
           try {
             mp.runPython(code);
@@ -233,9 +200,17 @@ Auto-included by docs/_layouts/default.html on every page.
       });
   }
 
-  /* ── Upgrade a .feature element ────────────────────── */
-  /* Rouge wraps fenced blocks in <div class="highlighter-rouge feature">;
-     plain markdown gives <pre class="feature">. Handle both. */
+  /* ── Build a <pre><code> for inline Python display ───── */
+  function buildPyPre(code) {
+    var pre = document.createElement("pre");
+    var codeEl = document.createElement("code");
+    codeEl.className = "language-python";
+    codeEl.textContent = code;
+    pre.appendChild(codeEl);
+    return pre;
+  }
+
+  /* ── Upgrade a .feature element into a card ──────────── */
   function upgradeFeature(el) {
     if (el.dataset.lcFeatureUpgraded) return;
     el.dataset.lcFeatureUpgraded = "1";
@@ -244,15 +219,13 @@ Auto-included by docs/_layouts/default.html on every page.
     var tagsRaw = el.getAttribute("tags") || "";
     var code    = el.querySelector("code");
     var text    = code ? code.textContent : el.textContent;
+    var rows    = parseGherkinRows(text);
 
-    var rows = parseFeatureText(text);
     var featureName = "";
     for (var ri = 0; ri < rows.length; ri++) {
       if (rows[ri].kind === "feature") { featureName = rows[ri].text; break; }
     }
     if (!featureName) featureName = text.trim().split("\n")[0].replace(/^Feature:\s*/i, "").trim() || "Feature";
-
-    var hasImpl = rows.some(function(r) { return r.kind === "step" && r.pyCode; });
 
     var badgeHtml = status
       ? "<span class='lc-feature-badge lc-feature-badge-" + status + "' data-lc-badge>" + status + "</span>"
@@ -269,15 +242,10 @@ Auto-included by docs/_layouts/default.html on every page.
 
     var card = document.createElement("div");
     card.className = "lc-feature" + (status ? " lc-feature-" + status : "");
-
-    var runBtnHtml = hasImpl ? "<button class='lc-feature-run'>▶ Run</button>" : "";
-
     card.innerHTML =
       "<div class='lc-feature-header'>"
         + "<span class='lc-feature-name'>" + featureName + "</span>"
-        + badgeHtml
-        + tagsHtml
-        + runBtnHtml
+        + badgeHtml + tagsHtml
       + "</div>"
       + "<div class='lc-feature-body' data-lc-body></div>";
 
@@ -302,10 +270,6 @@ Auto-included by docs/_layouts/default.html on every page.
         } else if (r.kind === "step") {
           var stepEl = document.createElement("div");
           stepEl.className = "lc-feature-step";
-          if (r.pyCode) {
-            stepEl.dataset.hasImpl = "1";
-            stepEl.dataset.pyCode = r.pyCode;
-          }
           stepEl.innerHTML =
             "<div class='lc-feature-step-row'>"
               + "<span class='lc-feature-step-icon'>●</span>"
@@ -313,41 +277,70 @@ Auto-included by docs/_layouts/default.html on every page.
               + "<span class='lc-feature-step-text'>" + r.text + "</span>"
               + "<span class='lc-feature-step-time'></span>"
             + "</div>";
-          if (r.pyCode) {
-            var implDiv = document.createElement("div");
-            implDiv.className = "lc-feature-step-impl";
-            implDiv.appendChild(buildPyPre(r.pyCode));
-            stepEl.appendChild(implDiv);
-            /* toggle impl on row click */
-            stepEl.querySelector(".lc-feature-step-row").addEventListener("click", function() {
-              implDiv.classList.toggle("open");
-            });
-          }
           stepsDiv.appendChild(stepEl);
         }
       });
       body.appendChild(stepsDiv);
     } else {
-      /* no steps — plain highlighted code fallback */
-      var clonedPre = pre.cloneNode(true);
-      clonedPre.removeAttribute("status");
-      clonedPre.removeAttribute("tags");
-      clonedPre.classList.remove("feature");
-      body.appendChild(clonedPre);
-    }
-
-    if (hasImpl) {
-      card.querySelector(".lc-feature-run").addEventListener("click", function() {
-        runFeature(card, this);
-      });
+      var cloned = el.cloneNode(true);
+      cloned.removeAttribute("status"); cloned.removeAttribute("tags");
+      cloned.classList.remove("feature");
+      body.appendChild(cloned);
     }
 
     el.parentNode.replaceChild(card, el);
   }
 
+  /* ── Upgrade a .steps element — attach to preceding card ─ */
+  function upgradeSteps(el) {
+    var code   = el.querySelector("code");
+    var pyText = code ? code.textContent : el.textContent;
+    var chunks = parsePyChunks(pyText);
+
+    /* find nearest preceding .lc-feature card */
+    var card = null, sib = el.previousElementSibling;
+    while (sib) {
+      if (sib.classList.contains("lc-feature")) { card = sib; break; }
+      /* skip empty paragraphs between the two blocks */
+      if (!sib.textContent.trim()) { sib = sib.previousElementSibling; continue; }
+      break;
+    }
+
+    if (card && chunks.length) {
+      var stepEls = card.querySelectorAll(".lc-feature-step");
+      chunks.forEach(function(chunk, idx) {
+        if (idx >= stepEls.length) return;
+        var stepEl = stepEls[idx];
+        stepEl.classList.add("has-impl");
+        stepEl._lcPyCode = chunk;   /* store on DOM node — no attribute encoding issues */
+
+        var implDiv = document.createElement("div");
+        implDiv.className = "lc-feature-step-impl";
+        implDiv.appendChild(buildPyPre(chunk));
+        stepEl.appendChild(implDiv);
+
+        stepEl.querySelector(".lc-feature-step-row").addEventListener("click", function() {
+          implDiv.classList.toggle("open");
+        });
+      });
+
+      /* inject Run button */
+      var runBtn = document.createElement("button");
+      runBtn.className = "lc-feature-run";
+      runBtn.textContent = "▶ Run";
+      card.querySelector(".lc-feature-header").appendChild(runBtn);
+      runBtn.addEventListener("click", function() { runFeature(card, runBtn); });
+    }
+
+    /* always remove the .steps block from the page */
+    el.parentNode.removeChild(el);
+  }
+
   /* ── Boot ────────────────────────────────────────────── */
   function init() {
+    /* feature first so cards exist before steps tries to find them */
     document.querySelectorAll(".feature").forEach(upgradeFeature);
+    document.querySelectorAll(".steps").forEach(upgradeSteps);
   }
 
   if (document.readyState === "loading") {
