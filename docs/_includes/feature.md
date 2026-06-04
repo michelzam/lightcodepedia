@@ -192,6 +192,31 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       }
     }
     if (card._lcSuiteEl) updateSuiteSummary(card._lcSuiteEl);
+
+    /* write status back to editor source so the user can save the result */
+    var preview = document.getElementById("ed-preview");
+    var inp = document.getElementById("ed-input");
+    if (preview && inp && preview.contains(card) && status) {
+      var allCards = preview.querySelectorAll(".lc-feature");
+      var idx = Array.prototype.indexOf.call(allCards, card);
+      if (idx >= 0) {
+        var count = -1;
+        var newSrc = inp.value.replace(/(\{:\s*\.feature\b)([^}]*)(\})/g, function(m, open, attrs, close) {
+          count++;
+          if (count !== idx) return m;
+          attrs = /\bstatus="[^"]*"/.test(attrs)
+            ? attrs.replace(/\bstatus="[^"]*"/, 'status="' + status + '"')
+            : attrs.trimRight() + ' status="' + status + '"';
+          return open + attrs + close;
+        });
+        if (newSrc !== inp.value) {
+          inp.value = newSrc;
+          var ev = document.createEvent("Event");
+          ev.initEvent("input", true, true);
+          inp.dispatchEvent(ev);
+        }
+      }
+    }
   }
 
   /* ── Update suite summary line ────────────────────────── */
