@@ -43,7 +43,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   display: flex; flex-direction: column; overflow: hidden;
   opacity: 0; visibility: hidden; pointer-events: none;
   transform: scale(0.98) translateY(6px);
-  transition: opacity 0.2s ease, visibility 0.2s, transform 0.25s cubic-bezier(0.22,1,0.36,1);
+  transition: opacity 0.35s ease, visibility 0.35s, transform 0.45s cubic-bezier(0.22,1,0.36,1);
 }
 #ed-drawer.open {
   opacity: 1; visibility: visible; pointer-events: auto;
@@ -70,7 +70,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   font-family: monospace; font-size: 0.88em; padding: 1em; line-height: 1.6;
   outline: none; background: #fdfcfb;
 }
-#ed-preview { flex: 1; overflow-y: auto; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; }
+#ed-preview { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; }
 /* 50% zoom mode: render content at 200% width then scale to fit */
 #ed-preview.lc-zoom { overflow-x: hidden; }
 #ed-preview.lc-zoom > div:not(.ed-pbar) { width: 200%; zoom: 0.5; transform-origin: top left; }
@@ -164,9 +164,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
 /* ── Block edit form ────────────────────────────────── */
 #ed-block-form {
-  flex-shrink: 0; padding: 0.8em 1em 0 1em; background: #fafafa;
+  flex-shrink: 0; padding: 0; background: #fafafa;
   border-top: 2px solid #0066cc; font-size: 0.84em;
-  display: none; overflow-y: auto; height: 180px; /* fallback until initGridSplit runs */
+  display: none; overflow: hidden; height: 180px; /* fallback until initGridSplit runs */
 }
 #ed-block-form.ed-visible { display: flex; flex-direction: column; }
 #ed-block-form label { display: block; color: #666; font-size: 0.82em; margin: 0 0 0.18em; flex-shrink: 0; }
@@ -178,9 +178,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-block-form textarea { font-family: monospace; resize: none; flex: 1; min-height: 0; margin-bottom: 0; }
 #ed-block-form textarea[readonly] { background: #f6f8fa; color: #444; }
 #ed-block-form select { cursor: pointer; }
+/* .ebf-scroll wraps all scrollable form content; .ebf-actions sits outside it, always visible */
+.ebf-scroll { flex: 1; overflow-y: auto; min-height: 0; padding: 0.8em 1em 0.2em; }
 .ebf-meta { flex-shrink: 0; }
 .ebf-content-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.ebf-actions { flex-shrink: 0; padding: 0.5em 0 0.6em; position: sticky; bottom: 0; background: #fafafa; }
+.ebf-actions { flex-shrink: 0; padding: 0.4em 1em 0.5em; border-top: 1px solid #e8e8e8; background: #fafafa; }
 
 /* ── Preview highlight pulse ─────────────────────────── */
 @keyframes ed-hl-pulse {
@@ -246,14 +248,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   <!-- Top bar -->
   <div id="ed-top">
-    <button id="ed-sidebar-toggle" title="Toggle sidebar">◀</button>
     <span id="ed-filename">No file selected</span>
     <span id="ed-build" style="font-size:0.78em;color:#888;margin-left:0.5em;flex-shrink:0"></span>
-    <a href="#" class="lc-btn lc-btn-secondary" id="ed-zoom-btn" title="Toggle 50% preview scale" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">50%</a>
-    <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em">+ New</a>
+    <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">+ New</a>
     <a href="#" class="lc-btn" id="ed-save-btn" style="font-size:0.82em;padding:0.35em 0.9em">💾 Save</a>
     <a href="#" id="ed-close-btn" title="Close (Esc)"
        style="font-size:1.3em;color:#888;text-decoration:none;padding:0 0.2em;line-height:1;margin-left:0.2em">✕</a>
+    <button id="ed-sidebar-toggle" title="Toggle file list">◀</button>
   </div>
 
   <!-- Body -->
@@ -376,16 +377,72 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     el.style.color = ok === true ? "#28a745" : ok === false ? "#dc3545" : "#888";
   }
 
+  /* ── Preview zoom: render content at page width then scale to fit pane ── */
+  function updatePreviewZoom() {
+    var prev = document.getElementById("ed-preview");
+    if (!prev) return;
+    var body = prev.querySelector("div:not(.ed-pbar)");
+    if (!body) return;
+    var previewW = prev.offsetWidth;
+    var main = document.getElementById("ed-main");
+    var mainW = main ? main.offsetWidth : previewW;
+    if (mainW < 1 || previewW < 1) return;
+    var ratio = Math.max(0.15, Math.min(1.0, previewW / mainW));
+    if (ratio > 0.9) {
+      body.style.width = "";
+      body.style.zoom = "";
+    } else {
+      body.style.width = (100 / ratio).toFixed(1) + "%";
+      body.style.zoom = ratio.toFixed(3);
+    }
+  }
+
   /* ── Drawer open / close ─────────────────────────────── */
   function openDrawer() {
     var d = document.getElementById("ed-drawer");
     if (!d) return;
+
+    // Start with editor hidden at right edge — preview fills full width
+    var left = document.getElementById("ed-left");
+    var prev = document.getElementById("ed-preview");
+    if (left) {
+      left.style.transition = "none";
+      left.style.flex = "none"; left.style.width = "0px"; left.style.overflow = "hidden";
+    }
+    if (prev) { prev.style.flex = "1"; prev.style.width = ""; }
+
     d.classList.add("open");
     document.body.style.overflow = "hidden";
+
+    // Switch to Blocks tab when file is loaded so user sees structure first
+    if (_curFile) {
+      var rawPane = document.getElementById("ed-raw-pane");
+      var blkPane = document.getElementById("ed-blocks-pane");
+      document.querySelectorAll(".ed-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab === "blocks"); });
+      if (rawPane) rawPane.classList.add("ed-hidden");
+      if (blkPane) blkPane.classList.add("ed-active");
+      buildGrid();
+    }
+
+    // After two frames (ensure width:0 was painted), slide editor in
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        if (!left) return;
+        var mainEl = document.getElementById("ed-main");
+        var targetW = mainEl ? Math.max(200, Math.floor(mainEl.offsetWidth * 0.5)) : 400;
+        left.style.transition = "width 0.55s cubic-bezier(0.22,1,0.36,1)";
+        left.style.width = targetW + "px";
+        left.style.overflow = "";
+        left.addEventListener("transitionend", function handler() {
+          left.removeEventListener("transitionend", handler);
+          left.style.transition = "";
+          updatePreviewZoom();
+        });
+      });
+    });
+
     if (_pat && _repo) {
-      /* load file list every open so it stays fresh */
       loadFiles();
-      /* auto-load current page on first open */
       if (!_curFile) {
         var pagePath = (document.getElementById("ed-fab") || {}).dataset.pagePath;
         if (pagePath) loadFile("docs/" + pagePath);
@@ -586,8 +643,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         // Apply IAL markers then run the full component upgrade pipeline
         if (window.lcApplyIAL)    window.lcApplyIAL(body);
         if (window.lcScanElement) window.lcScanElement(body);
-        // Advance bar to "done" on the next paint
-        requestAnimationFrame(function() { bar.className = "ed-pbar done"; });
+        // Advance bar to "done" on the next paint; also recalculate zoom
+        requestAnimationFrame(function() { bar.className = "ed-pbar done"; updatePreviewZoom(); });
       }
       if (window.marked) { doRender(); return; }
       if (window.lcLoadMarked) { window.lcLoadMarked(doRender); return; }
@@ -822,6 +879,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var lw = Math.max(150, startLW - dx);
       left.style.flex = "none"; left.style.width = lw + "px";
       prev.style.flex = "none"; prev.style.width = rw + "px";
+      updatePreviewZoom();
     });
     document.addEventListener("mouseup", function() {
       if (!dragging) return;
@@ -1169,21 +1227,26 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var hPrefix = "#".repeat(Math.min(b.level || 3, 6));
       var fcContent = hPrefix + " " + b.heading
         + ((b.lines && b.lines.length) ? "\n" + b.lines.join("\n").trim() : "");
-      form.innerHTML = "<p class='ebf-meta' style='color:#888;margin:0 0 0.35em'>"
+      form.innerHTML = "<div class='ebf-scroll'>"
+        + "<p class='ebf-meta' style='color:#888;margin:0 0 0.35em'>"
         + "<span style='color:#bbb;font-size:0.85em'>(fence item — edit via Raw tab)</span></p>"
-        + "<div class='ebf-content-wrap'><textarea readonly>" + escH(fcContent) + "</textarea></div>";
+        + "<div class='ebf-content-wrap'><textarea readonly>" + escH(fcContent) + "</textarea></div>"
+        + "</div>";
       return;
     }
     if (b.subBlock) {
-      form.innerHTML = "<p class='ebf-meta' style='color:#888;margin:0 0 0.4em'><em>Component block (edit via Raw tab)</em></p>"
+      form.innerHTML = "<div class='ebf-scroll'>"
+        + "<p class='ebf-meta' style='color:#888;margin:0 0 0.4em'><em>Component block (edit via Raw tab)</em></p>"
         + "<div class='ebf-meta'><label>Type</label><input readonly value='." + escH(b.type||'') + "'></div>"
         + "<div class='ebf-content-wrap'><label>Content</label>"
-        + "<textarea readonly>" + escH(b.lines.filter(function(l){ return l.trim() && !/^\{:/.test(l.trim()); }).join("\n").trim()) + "</textarea></div>";
+        + "<textarea readonly>" + escH(b.lines.filter(function(l){ return l.trim() && !/^\{:/.test(l.trim()); }).join("\n").trim()) + "</textarea></div>"
+        + "</div>";
       return;
     }
     var knobStr = Object.keys(b.knobs||{}).map(function(k){ return k + '="' + b.knobs[k] + '"'; }).join(" ");
     var content = blockContent(b);
-    form.innerHTML = "<div class='ebf-meta' style='display:flex;gap:0.6em;flex-wrap:wrap;margin-bottom:0.4em'>"
+    form.innerHTML = "<div class='ebf-scroll'>"
+      + "<div class='ebf-meta' style='display:flex;gap:0.6em;flex-wrap:wrap;margin-bottom:0.4em'>"
       + "<div style='flex:3;min-width:100px'><label>Heading</label><input id='ebf-title' value='" + escA(b.heading||"") + "'></div>"
       + "<div style='flex:1;min-width:90px'><label>Type</label><select id='ebf-type'>"
       + "<option value=''>(none)</option>"
@@ -1193,6 +1256,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       + "</div>"
       + "<div class='ebf-content-wrap'><label>Content</label>"
       + "<textarea id='ebf-content'>" + escH(content) + "</textarea></div>"
+      + "</div>"
       + "<div class='ebf-actions'><a href='#' class='lc-btn' id='ebf-apply' style='font-size:0.82em;padding:0.32em 0.9em'>Apply</a></div>";
 
     /* mark form dirty on any change so hover sync won't clobber edits */
@@ -1317,6 +1381,25 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       }, 300);
     });
   })();
+
+  /* ── Window resize: keep grid/form ratio + update zoom ── */
+  window.addEventListener("resize", function() {
+    updatePreviewZoom();
+    if (!_gridSplitSet) return;
+    var pane = document.getElementById("ed-blocks-pane");
+    var grid = document.getElementById("ed-grid");
+    var form = document.getElementById("ed-block-form");
+    if (!pane || !grid || !form || !form.classList.contains("ed-visible")) return;
+    var paneH = pane.offsetHeight;
+    if (paneH < 20) return;
+    var gridH = grid.offsetHeight, formH = form.offsetHeight;
+    var total = gridH + formH;
+    if (total < 1) return;
+    var ratio = gridH / total;
+    var available = paneH - 5;
+    grid.style.height = Math.max(60, Math.round(available * ratio)) + "px";
+    form.style.height = Math.max(80, available - Math.max(60, Math.round(available * ratio))) + "px";
+  });
 
   /* ── Restore session from localStorage ───────────────── */
   document.addEventListener("DOMContentLoaded", function () {
