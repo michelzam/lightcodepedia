@@ -90,6 +90,19 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 /* ── error ───────────────────────────────────────────── */
 .lc-feature-step-err { padding: 0.2em 1em 0.4em 2.65em; font-size: 0.8em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #dc2626; white-space: pre-wrap; }
 
+/* ── Prism token colours (One Dark–ish, scoped to feature impl panels) ── */
+.lc-feature-step-impl .token.comment    { color: #6b7280; font-style: italic; }
+.lc-feature-step-impl .token.string     { color: #86efac; }
+.lc-feature-step-impl .token.number     { color: #fda4af; }
+.lc-feature-step-impl .token.keyword    { color: #c084fc; font-weight: 600; }
+.lc-feature-step-impl .token.builtin    { color: #67e8f9; }
+.lc-feature-step-impl .token.operator   { color: #94a3b8; }
+.lc-feature-step-impl .token.punctuation{ color: #94a3b8; }
+.lc-feature-step-impl .token.function   { color: #93c5fd; }
+.lc-feature-step-impl .token.boolean    { color: #fda4af; }
+.lc-feature-step-impl pre               { background: #1e1e2e !important; }
+.lc-feature-step-impl pre code          { color: #cdd6f4; }
+
 /* ── fallback plain body (display-only) ─────────────── */
 .lc-feature-body pre { margin: 0; border-radius: 0; border: none; box-shadow: none; }
 .lc-feature-body pre code { font-size: 0.83em; line-height: 1.6; }
@@ -258,21 +271,12 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     codeEl.className = "language-python";
     codeEl.textContent = code;
     pre.appendChild(codeEl);
-    function tryHighlight() {
+    var loader = window.lcLoadPrism || function() { return Promise.resolve(); };
+    loader().then(function() {
       if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
         try { window.Prism.highlightElement(codeEl); } catch (e) {}
       }
-    }
-    if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
-      tryHighlight();
-    } else {
-      var attempts = 0;
-      var iv = setInterval(function() {
-        if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
-          clearInterval(iv); tryHighlight();
-        } else if (++attempts > 40) { clearInterval(iv); }
-      }, 100);
-    }
+    });
     return pre;
   }
 
