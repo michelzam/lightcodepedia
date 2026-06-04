@@ -375,7 +375,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
     // Clear any stale inline styles from previous opens
     var left = document.getElementById("ed-left");
+    var prev = document.getElementById("ed-preview");
     if (left) { left.style.transition = ""; left.style.flex = ""; left.style.width = ""; left.style.overflow = ""; }
+    if (prev) { prev.style.flex = ""; prev.style.width = ""; }
 
     d.classList.add("open");
     document.body.style.overflow = "hidden";
@@ -828,9 +830,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var prev = document.getElementById("ed-preview");
       if (!left || !prev) return;
       dragging = true; startX = e.clientX;
+      // Freeze both panes to current pixel widths so flex doesn't interfere
       startLW = left.offsetWidth; startRW = prev.offsetWidth;
+      left.style.flex = "none"; left.style.width = startLW + "px";
+      prev.style.flex = "none"; prev.style.width = startRW + "px";
       sp.classList.add("ed-dragging");
       document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
       e.preventDefault();
     });
     document.addEventListener("mousemove", function(e) {
@@ -839,17 +845,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var prev = document.getElementById("ed-preview");
       if (!left || !prev) return;
       var dx = e.clientX - startX;
-      // preview is now on the left: dragging right grows preview, shrinks editor
+      // preview is on the left: dragging right grows preview, shrinks editor
       var rw = Math.max(150, startRW + dx);
       var lw = Math.max(150, startLW - dx);
-      left.style.flex = "none"; left.style.width = lw + "px";
-      prev.style.flex = "none"; prev.style.width = rw + "px";
+      left.style.width = lw + "px";
+      prev.style.width = rw + "px";
     });
     document.addEventListener("mouseup", function() {
       if (!dragging) return;
       dragging = false;
       sp.classList.remove("ed-dragging");
       document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     });
   })();
 
