@@ -160,17 +160,28 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-block-form {
   flex-shrink: 0; padding: 0.8em 1em; background: #fafafa;
   border-top: 2px solid #0066cc; font-size: 0.84em;
-  display: none; overflow-y: auto; height: 200px;
+  display: none; overflow: hidden;
 }
-#ed-block-form.ed-visible { display: block; }
-#ed-block-form label { display: block; color: #666; font-size: 0.82em; margin: 0 0 0.18em; }
+#ed-block-form.ed-visible { display: flex; flex-direction: column; }
+#ed-block-form label { display: block; color: #666; font-size: 0.82em; margin: 0 0 0.18em; flex-shrink: 0; }
 #ed-block-form input, #ed-block-form select, #ed-block-form textarea {
   width: 100%; box-sizing: border-box; padding: 0.3em 0.5em;
   border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em;
   font-family: inherit; margin-bottom: 0.55em; background: #fff;
 }
-#ed-block-form textarea { font-family: monospace; resize: vertical; min-height: 72px; }
+#ed-block-form textarea { font-family: monospace; resize: none; flex: 1; min-height: 0; margin-bottom: 0; }
 #ed-block-form select { cursor: pointer; }
+.ebf-meta { flex-shrink: 0; }
+.ebf-content-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.ebf-actions { flex-shrink: 0; padding-top: 0.5em; }
+
+/* ── Preview highlight pulse ─────────────────────────── */
+@keyframes ed-hl-pulse {
+  0%   { outline: 3px solid rgba(0,102,204,0.7); outline-offset: 3px; }
+  60%  { outline: 3px solid rgba(0,102,204,0.4); outline-offset: 3px; }
+  100% { outline: none; outline-offset: 0; }
+}
+.ed-hl-pulse { animation: ed-hl-pulse 1.6s ease-out forwards; }
 
 /* ── Sidebar pieces ────────────────────────────────────── */
 .ed-section-label {
@@ -820,6 +831,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var grid = document.getElementById("ed-grid");
       var form = document.getElementById("ed-block-form");
       if (!grid || !form) return;
+      _gridSplitSet = true; // user has manually positioned, don't auto-init anymore
       dragging = true; startY = e.clientY;
       startGH = grid.offsetHeight; startFH = form.offsetHeight;
       sp.classList.add("ed-dragging");
@@ -940,7 +952,55 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     return ls.join("\n").trim();
   }
 
-  var _blocks = [], _selIdx = -1;
+  var _blocks = [], _selIdx = -1, _dragFrom = null, _gridSplitSet = false;
+
+  /* Expand typed component blocks: parse headings inside their first code fence
+     and insert them as fenceChild display rows (display-only, no text reconstruction). */
+  function expandFenceHeadings(blocks) {
+    var result = [];
+    blocks.forEach(function(b) {
+      result.push(b);
+      if (!b.type) return;
+      var inF = false, fC = '', fL = 0, fc = [];
+      for (var i = 0; i < b.lines.length; i++) {
+        var t = b.lines[i].trim();
+        var fm = t.match(/^(`{3,}|~{3,})/);
+        if (fm) {
+          if (!inF) { inF = true; fC = fm[1][0]; fL = fm[1].length; fc = []; }
+          else { var c=0; while(c<t.length&&t[c]===fC)c++; if(c>=fL&&t.slice(c).trim()==='') { inF=false; break; } }
+        } else if (inF) { fc.push(t); }
+      }
+      fc.forEach(function(fl) {
+        var hm = fl.match(/^(#{1,6})\s+(.*)/);
+        if (hm) result.push({ level: b.level + 1, heading: hm[2], lines: [],
+          type: null, knobs: {}, subBlock: true, fenceChild: true });
+      });
+    });
+    return result;
+  }
+
+  /* Scroll preview to and pulse-highlight the heading corresponding to block. */
+  function highlightInPreview(block) {
+    var prev = document.getElementById("ed-preview");
+    if (!prev || !block || block.preamble || block.fenceChild) return;
+    prev.querySelectorAll(".ed-hl-pulse").forEach(function(el){ el.classList.remove("ed-hl-pulse"); });
+    var want = (block.heading || '').replace(/\s+/g, ' ').trim().slice(0, 40).toLowerCase();
+    if (!want) return;
+    var target = null;
+    prev.querySelectorAll("h1,h2,h3,h4,h5,h6").forEach(function(h) {
+      if (target) return;
+      var t = h.textContent.replace(/\s+/g, ' ').trim().slice(0, 40).toLowerCase();
+      if (t === want || t.indexOf(want.slice(0, 18)) !== -1) target = h;
+    });
+    if (!target && block.subBlock && block.type) {
+      target = prev.querySelector('.' + block.type);
+    }
+    if (target) {
+      void target.offsetWidth;
+      target.classList.add("ed-hl-pulse");
+      target.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
 
   function buildGrid() {
     var inp = document.getElementById("ed-input");
@@ -948,6 +1008,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var raw = parseBlocks(inp.value);
     _blocks = [];
     raw.forEach(function(b){ _blocks = _blocks.concat(extractSubBlocks(b)); });
+    _blocks = expandFenceHeadings(_blocks);
     var minLv = 9;
     _blocks.forEach(function(b){ if (!b.preamble && b.level < minLv) minLv = b.level; });
     if (minLv === 9) minLv = 1;
@@ -963,7 +1024,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var indent = b.preamble ? 0 : (b.level - minLv) * 14;
       var titleHtml = b.preamble
         ? "<em style='color:#bbb'>preamble</em>"
-        : (b.subBlock ? "<em style='color:#777'>" + escH(b.heading) + "</em>" : escH(b.heading));
+        : (b.fenceChild ? "<span style='color:#aaa'>– " + escH(b.heading) + "</span>"
+          : b.subBlock ? "<em style='color:#777'>" + escH(b.heading) + "</em>"
+          : escH(b.heading));
       var typeHtml = b.type ? "<span class='ed-block-type'>." + escH(b.type) + "</span>" : "";
       var knobHtml = Object.keys(b.knobs||{}).map(function(k){
         return "<span style='font-size:0.82em;color:#999'>" + escH(k) + "=<em>" + escH(b.knobs[k]) + "</em></span>";
@@ -981,13 +1044,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     html += "</tbody></table>";
     document.getElementById("ed-grid").innerHTML = html;
 
-    if (_selIdx >= 0 && _selIdx < _blocks.length) showBlockForm(_selIdx);
-    wireGrid();
+    if (_selIdx >= 0 && _selIdx < _blocks.length) {
+      showBlockForm(_selIdx);
+      highlightInPreview(_blocks[_selIdx]);
+    }
   }
 
+  /* wireGrid is called ONCE at init — uses event delegation on the persistent
+     #ed-grid container. Calling it on every buildGrid() would accumulate
+     duplicate listeners on each click (memory leak + slowdown). */
   function wireGrid() {
     var grid = document.getElementById("ed-grid");
-    var dragFrom = null;
+    if (!grid) return;
 
     grid.addEventListener("click", function(e) {
       var tr = e.target.closest("tr[data-idx]");
@@ -1001,7 +1069,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (!tr) return;
       var idx = parseInt(tr.dataset.idx);
       if (_blocks[idx] && _blocks[idx].subBlock) { e.preventDefault(); return; }
-      dragFrom = idx;
+      _dragFrom = idx;
       tr.style.opacity = "0.45";
       e.dataTransfer.effectAllowed = "move";
     });
@@ -1009,7 +1077,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var tr = e.target.closest("tr[data-idx]");
       if (tr) tr.style.opacity = "";
       grid.querySelectorAll(".ed-drag-over").forEach(function(r){ r.classList.remove("ed-drag-over"); });
-      dragFrom = null;
+      _dragFrom = null;
     });
     grid.addEventListener("dragover", function(e) {
       e.preventDefault();
@@ -1020,13 +1088,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     grid.addEventListener("drop", function(e) {
       e.preventDefault();
       var tr = e.target.closest("tr[data-idx]");
-      if (!tr || dragFrom === null) return;
+      if (!tr || _dragFrom === null) return;
       var to = parseInt(tr.dataset.idx);
-      if (dragFrom === to) return;
+      if (_dragFrom === to) return;
       if (_blocks[to] && _blocks[to].subBlock) return;
-      var moved = _blocks.splice(dragFrom, 1)[0];
-      _blocks.splice(to > dragFrom ? to - 1 : to, 0, moved);
-      _selIdx = to > dragFrom ? to - 1 : to;
+      var moved = _blocks.splice(_dragFrom, 1)[0];
+      _blocks.splice(to > _dragFrom ? to - 1 : to, 0, moved);
+      _selIdx = to > _dragFrom ? to - 1 : to;
       var inp = document.getElementById("ed-input");
       var newText = blocksToText(_blocks);
       inp.value = newText; setDirty(true); updatePreview(newText);
@@ -1034,25 +1102,40 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     });
   }
 
+  function initGridSplit() {
+    if (_gridSplitSet) return;
+    var pane = document.getElementById("ed-blocks-pane");
+    var grid = document.getElementById("ed-grid");
+    var form = document.getElementById("ed-block-form");
+    if (!pane || !grid || !form || pane.offsetHeight < 10) return;
+    _gridSplitSet = true;
+    var half = Math.floor((pane.offsetHeight - 5) / 2);
+    grid.style.flex = "none"; grid.style.height = half + "px";
+    form.style.height = half + "px";
+  }
+
   function showBlockForm(idx) {
     var b = _blocks[idx];
-    if (b.subBlock) {
-      var form = document.getElementById("ed-block-form");
-      var sp = document.getElementById("ed-grid-splitter");
-      form.classList.add("ed-visible");
-      if (sp) sp.classList.add("ed-vis");
-      form.innerHTML = "<p style='color:#888;font-size:0.9em;margin:0 0 0.4em'><em>Component block (edit via Raw tab)</em></p>"
-        + "<label>Type</label><input readonly value='." + escH(b.type||'') + "'>"
-        + "<label>Content</label><textarea readonly style='min-height:80px'>" + escH(b.lines.filter(function(l){ return l.trim() && !/^\{:/.test(l.trim()); }).join("\n").trim()) + "</textarea>";
-      return;
-    }
     var form = document.getElementById("ed-block-form");
-    var sp = document.getElementById("ed-grid-splitter");
+    var sp   = document.getElementById("ed-grid-splitter");
     form.classList.add("ed-visible");
     if (sp) sp.classList.add("ed-vis");
+    initGridSplit();
+
+    if (b.fenceChild) {
+      form.innerHTML = "<p class='ebf-meta' style='color:#aaa;margin:0'><em>– " + escH(b.heading) + "</em> (fence item, edit via Raw)</p>";
+      return;
+    }
+    if (b.subBlock) {
+      form.innerHTML = "<p class='ebf-meta' style='color:#888;margin:0 0 0.4em'><em>Component block (edit via Raw tab)</em></p>"
+        + "<div class='ebf-meta'><label>Type</label><input readonly value='." + escH(b.type||'') + "'></div>"
+        + "<div class='ebf-content-wrap'><label>Content</label>"
+        + "<textarea readonly>" + escH(b.lines.filter(function(l){ return l.trim() && !/^\{:/.test(l.trim()); }).join("\n").trim()) + "</textarea></div>";
+      return;
+    }
     var knobStr = Object.keys(b.knobs||{}).map(function(k){ return k + '="' + b.knobs[k] + '"'; }).join(" ");
     var content = blockContent(b);
-    form.innerHTML = "<div style='display:flex;gap:0.6em;flex-wrap:wrap;margin-bottom:0.4em'>"
+    form.innerHTML = "<div class='ebf-meta' style='display:flex;gap:0.6em;flex-wrap:wrap;margin-bottom:0.4em'>"
       + "<div style='flex:3;min-width:100px'><label>Heading</label><input id='ebf-title' value='" + escA(b.heading||"") + "'></div>"
       + "<div style='flex:1;min-width:90px'><label>Type</label><select id='ebf-type'>"
       + "<option value=''>(none)</option>"
@@ -1060,9 +1143,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       + "</select></div>"
       + "<div style='flex:2;min-width:120px'><label>Knobs</label><input id='ebf-knobs' value='" + escA(knobStr) + "' placeholder='count=\"5\"'></div>"
       + "</div>"
-      + "<label>Content</label>"
-      + "<textarea id='ebf-content'>" + escH(content) + "</textarea>"
-      + "<a href='#' class='lc-btn' id='ebf-apply' style='font-size:0.82em;padding:0.32em 0.9em'>Apply</a>";
+      + "<div class='ebf-content-wrap'><label>Content</label>"
+      + "<textarea id='ebf-content'>" + escH(content) + "</textarea></div>"
+      + "<div class='ebf-actions'><a href='#' class='lc-btn' id='ebf-apply' style='font-size:0.82em;padding:0.32em 0.9em'>Apply</a></div>";
 
     document.getElementById("ebf-apply").addEventListener("click", function(e) {
       e.preventDefault();
@@ -1101,6 +1184,31 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
   });
 
+  /* ── Raw editor cursor → preview highlight ──────────── */
+  (function() {
+    var _cursorTimer = null;
+    function onRawCursor() {
+      clearTimeout(_cursorTimer);
+      _cursorTimer = setTimeout(function() {
+        var inp = document.getElementById("ed-input");
+        if (!inp || !_blocks.length) return;
+        var pos = inp.selectionStart;
+        var before = inp.value.substring(0, pos).split("\n").length - 1;
+        var cumul = 0;
+        for (var i = 0; i < _blocks.length; i++) {
+          if (_blocks[i].subBlock) continue;
+          var blen = _blocks[i].lines.length;
+          if (before >= cumul && before < cumul + blen) {
+            highlightInPreview(_blocks[i]); break;
+          }
+          cumul += blen;
+        }
+      }, 250);
+    }
+    document.addEventListener("click",  function(e){ if (e.target.id === "ed-input") onRawCursor(); });
+    document.addEventListener("keyup",  function(e){ if (e.target.id === "ed-input") onRawCursor(); });
+  })();
+
   /* ── Restore session from localStorage ───────────────── */
   document.addEventListener("DOMContentLoaded", function () {
     _pat  = localStorage.getItem(LS_PAT);
@@ -1113,6 +1221,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       setStatus("✓ " + _repo, true);
       toggleConnected(true);
     }
+    wireGrid(); // wire grid event delegation once, not on every buildGrid()
   });
 })();
 </script>
