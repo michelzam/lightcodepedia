@@ -20,8 +20,7 @@ A growing network of educators, researchers and developers across Europe and bey
 
 ## 📊 Status
 
-{% include status.html %}
-
+{% include status.html %}.
 ## 🇪🇺 EU Funding
 
 This project has received funding from the Erasmus+ programme of the European Union (Project Nr. 2022-1-FR01-KA220-HED-00086863).
