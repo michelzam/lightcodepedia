@@ -178,6 +178,13 @@
 .lc-cards .lc-card p:last-child { margin-bottom: 0; }
 .lc-cards .lc-card a { color: #0066cc; text-decoration: none; font-weight: 500; }
 .lc-cards .lc-card a:hover { text-decoration: underline; }
+/* feature status dots on folder cards */
+.lc-card-features { display: flex; gap: 0.35em; align-items: center; margin-top: 0.65em; flex-wrap: wrap; }
+.lc-feat-dot { display: inline-flex; align-items: center; gap: 0.2em; font-size: 0.72em; font-weight: 600; padding: 0.1em 0.45em; border-radius: 99px; line-height: 1.6; }
+.lc-feat-passing { background: #dcfce7; color: #15803d; }
+.lc-feat-failing  { background: #fee2e2; color: #b91c1c; }
+.lc-feat-pending  { background: #fef3c7; color: #92400e; }
+.lc-feat-none     { background: #f3f4f6; color: #6b7280; }
 @media (max-width: 700px) { .lc-cards { grid-template-columns: repeat(2, 1fr) !important; } }
 @media (max-width: 480px) { .lc-cards { grid-template-columns: 1fr !important; } }
 /* blocks */
@@ -2312,7 +2319,14 @@
             .then(function(text) {
               var meta = extractPageMeta(text);
               var title = meta.title || f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, "") };
+              /* collect .feature status values from IAL markers */
+              var features = [];
+              var fRe = /\{:\s*\.feature\b([^}]*)\}/g, fm;
+              while ((fm = fRe.exec(text)) !== null) {
+                var sm = fm[1].match(/\bstatus="(\w+)"/);
+                features.push(sm ? sm[1] : "");
+              }
+              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features };
             })
             .catch(function() {
               var title = f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
@@ -2335,6 +2349,18 @@
           var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
           var card = '<div class="lc-card"' + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
           if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
+          /* feature status dots */
+          if (item.features && item.features.length) {
+            var counts = {};
+            item.features.forEach(function(s) { counts[s || "none"] = (counts[s || "none"] || 0) + 1; });
+            var dots = "";
+            if (counts.passing) dots += "<span class='lc-feat-dot lc-feat-passing'>● " + counts.passing + "</span>";
+            if (counts.failing)  dots += "<span class='lc-feat-dot lc-feat-failing'>✗ "  + counts.failing  + "</span>";
+            if (counts.pending)  dots += "<span class='lc-feat-dot lc-feat-pending'>◑ "  + counts.pending  + "</span>";
+            if (counts.none && !counts.passing && !counts.failing && !counts.pending)
+              dots += "<span class='lc-feat-dot lc-feat-none'>● " + counts.none + "</span>";
+            if (dots) card += "<div class='lc-card-features'>" + dots + "</div>";
+          }
           return card + '</div>';
         }).join("");
       })
