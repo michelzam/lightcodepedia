@@ -2,10 +2,9 @@
 title: Feature (Gherkin BDD)
 ---
 
-# Feature (Gherkin BDD)
+# 🦄 Feature
 
 Render Gherkin BDD scenarios as styled cards. Optionally embed a Python implementation for each step using `:::python` / `:::` markers — a **▶ Run** button appears automatically, executes each step in MicroPython, and updates the status badge live.
-
 ## Display-only (no runner)
 
 ```gherkin
