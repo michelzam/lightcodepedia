@@ -5,7 +5,7 @@ title: Feature (Gherkin BDD)
 # 🦄 Feature
 
 Render Gherkin BDD scenarios as styled cards. Pair a `.feature` block with a `.steps` Python block to get a **▶ Run** button — the steps block disappears from the page and its implementations slot into the card's expandable step rows.
-## Display-only (no runner)
+## 📺 Display-only (no runner)
 
 ```gherkin
 Feature: User login
@@ -16,7 +16,7 @@ Feature: User login
 ```
 {: .feature status="passing" tags="smoke,auth" }
 
-## With runnable steps
+## 🏃🏻‍♀️ With runnable steps
 
 Click any step row to see its Python implementation. Click **▶ Run** to execute all steps.
 
@@ -45,7 +45,7 @@ assert (0 * 9 / 5) + 32 == 32.0
 ```
 {: .steps }
 
-## Failing step example
+## 😰 Failing step example
 
 ```gherkin
 Feature: List validator
@@ -70,7 +70,7 @@ assert result == True   # intentional bug — should be False
 ```
 {: .steps }
 
-## How to write one
+## 🥸 How to write one
 
 Add `{: .feature }` after a gherkin fence. For runnable steps, add a python fence immediately after with `{: .steps }` — the Python block disappears from the page and its implementations are slotted into the card.
 
@@ -103,7 +103,7 @@ assert y == 84
 - Click a step row to **expand its implementation** inline.
 - Steps after a failure are **skipped** (shown with ○).
 
-## Knobs
+## 🎛️ Knobs
 
 | Block | Attribute | Values | What it does |
 |---|---|---|---|
