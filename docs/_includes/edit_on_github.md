@@ -331,7 +331,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 <script>
 (function () {
   var LS_PAT = "lc_ed_pat", LS_REPO = "lc_ed_repo";
-  var _pat, _repo, _curFile, _curSha, _dirty = false, _previewTimer = null;
+  var _pat, _repo, _curFile, _curSha, _dirty = false, _previewTimer = null, _savedContent = null;
 
   function setDirty(on) {
     _dirty = on;
@@ -408,6 +408,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   }
   function closeDrawer() {
     if (_dirty && !confirm("Discard unsaved changes to " + (_curFile || "this file") + "?")) return;
+    if (_dirty && _savedContent !== null) {
+      var inp = document.getElementById("ed-input");
+      if (inp) { inp.value = _savedContent; updatePreview(_savedContent); }
+      _blocks = []; _selIdx = -1; buildGrid();
+    }
     setDirty(false);
     var d = document.getElementById("ed-drawer");
     if (d) d.classList.remove("open");
@@ -490,6 +495,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (!data.content) { toast("Load failed: " + esc(data.message || ""), false); return; }
       _curSha = data.sha;
       var content = b64d(data.content.replace(/\n/g, ""));
+      _savedContent = content;
       if (inp) { inp.value = content; updatePreview(content); }
       setDirty(false);
       loadHistory();
@@ -521,6 +527,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       gh("PUT", "/contents/" + _curFile, body, function (data) {
         if (!data.content) { toast("Save failed (" + esc(_curFile) + "): " + esc(data.message || JSON.stringify(data)), false); return; }
         _curSha = data.content.sha;
+        _savedContent = inp.value;
         toast("Saved · " + data.commit.sha.slice(0, 7) + " ✓", true);
         setDirty(false);
         loadFiles();
