@@ -690,10 +690,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         headers: { Authorization: "Bearer " + _pat }
       }).then(function (r) { return r.json(); }).then(function (data) {
         if (!data.workflow_runs) return;
+        // Match by commit SHA only — workflow name varies per repo
         var run = data.workflow_runs.find(function (r) {
-          return r.head_sha === headSha && r.name === "pages build and deployment";
+          return r.head_sha === headSha;
         });
-        if (!run) return; /* not registered yet */
+        if (!run) return; /* run not registered yet, keep polling */
         if (run.status === "completed") {
           clearInterval(timer);
           var ok = run.conclusion === "success";
@@ -706,7 +707,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       });
     }
     check();
-    timer = setInterval(check, 5000);
+    timer = setInterval(check, 3000);
   }
 
   /* ── Connect / Disconnect ────────────────────────────── */
@@ -808,11 +809,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var sb  = document.getElementById("ed-sidebar");
     var fbtn = document.getElementById("ed-files-btn");
     if (btn && sb) {
-      // toggle open/closed when clicking the trigger
+      // Ignore clicks that landed inside the dropdown panel itself
+      if (e.target.closest("#ed-sidebar")) return;
       var nowOpen = sb.classList.toggle("ed-open");
       if (fbtn) fbtn.classList.toggle("ed-open", nowOpen);
     } else if (sb && sb.classList.contains("ed-open")) {
-      // close when clicking anywhere else in the drawer
       if (!e.target.closest("#ed-sidebar")) {
         sb.classList.remove("ed-open");
         if (fbtn) fbtn.classList.remove("ed-open");
@@ -857,6 +858,27 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       sp.classList.remove("ed-dragging");
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
+      // Store ratio so window resize can recompute pixel widths
+      var left = document.getElementById("ed-left");
+      var prev = document.getElementById("ed-preview");
+      if (left && prev) {
+        var total = left.offsetWidth + prev.offsetWidth;
+        if (total > 0) _splitRatio = prev.offsetWidth / total;
+      }
+    });
+
+    window.addEventListener("resize", function() {
+      var left = document.getElementById("ed-left");
+      var prev = document.getElementById("ed-preview");
+      if (!left || !prev || !left.style.width) return; // not yet dragged
+      var main = document.getElementById("ed-main");
+      if (!main) return;
+      var sp2 = document.getElementById("ed-splitter");
+      var available = main.offsetWidth - (sp2 ? sp2.offsetWidth : 5);
+      var newPrev = Math.max(150, Math.round(available * _splitRatio));
+      var newLeft = Math.max(150, available - newPrev);
+      prev.style.width = newPrev + "px";
+      left.style.width = newLeft + "px";
     });
   })();
 
@@ -1001,7 +1023,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     return ls.join("\n").trim();
   }
 
-  var _blocks = [], _selIdx = -1, _dragFrom = null, _gridSplitSet = false, _formDirty = false, _gridRatio = 0.5;
+  var _blocks = [], _selIdx = -1, _dragFrom = null, _gridSplitSet = false, _formDirty = false, _gridRatio = 0.5, _splitRatio = 0.5;
 
   /* Expand component sub-blocks: parse headings inside their first code fence
      and insert them as fenceChild display rows (display-only, no text reconstruction).
