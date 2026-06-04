@@ -55,14 +55,31 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   min-height: 52px;
 }
 #ed-filename {
-  flex: 1; font-family: monospace; font-size: 0.85em; color: #666;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: monospace; font-size: 0.85em; color: #555;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;
 }
+/* ── Files dropdown trigger ──────────────────────── */
+#ed-files-btn {
+  position: relative; display: flex; align-items: center; gap: 0.35em;
+  cursor: pointer; padding: 0.25em 0.55em; border-radius: 5px;
+  border: 1px solid transparent; flex-shrink: 0;
+  transition: border-color 0.12s, background 0.12s;
+}
+#ed-files-btn:hover { border-color: #d0d0d0; background: #f5f5f5; }
+#ed-files-btn.ed-open { border-color: #0066cc; background: #f0f6ff; }
+#ed-files-arrow { font-size: 0.65em; color: #aaa; transition: transform 0.15s; flex-shrink: 0; }
+#ed-files-btn.ed-open #ed-files-arrow { transform: rotate(180deg); }
 #ed-body { display: flex; flex: 1; overflow: hidden; }
+/* ── Sidebar as dropdown panel ───────────────────── */
 #ed-sidebar {
-  width: 210px; flex-shrink: 0; overflow-y: auto;
-  border-left: 1px solid #e0e0e0; padding: 0.8em 0.7em; font-size: 0.85em;
+  position: absolute; top: calc(100% + 2px); left: 0; z-index: 300;
+  width: 280px; max-height: 72vh; overflow-y: auto;
+  background: #fff; border: 1px solid #d8d8d8; border-radius: 0 6px 6px 6px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.13); padding: 0.8em 0.7em; font-size: 0.85em;
+  opacity: 0; visibility: hidden; transform: translateY(-6px);
+  transition: opacity 0.15s ease, visibility 0.15s, transform 0.18s ease;
 }
+#ed-sidebar.ed-open { opacity: 1; visibility: visible; transform: none; }
 #ed-main { flex: 1; display: flex; flex-direction: row; overflow: hidden; }
 #ed-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
 #ed-input {
@@ -86,24 +103,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 .ed-pbar.go   { opacity: 1; transform: scaleX(0.8); transition: transform 0.25s ease; }
 .ed-pbar.done { opacity: 0; transform: scaleX(1);   transition: transform 0.1s ease, opacity 0.3s 0.05s; }
 @media (max-width: 700px) {
-  #ed-sidebar { display: none; }
   #ed-splitter { display: none; }
   #ed-preview { display: none; }
-}
-
-/* ── Sidebar toggle ─────────────────────────────────── */
-#ed-sidebar-toggle {
-  flex-shrink: 0; background: none; border: 1px solid #e0e0e0;
-  border-radius: 4px; cursor: pointer; color: #888; font-size: 0.85em;
-  padding: 0.2em 0.5em; line-height: 1; transition: background 0.1s;
-}
-#ed-sidebar-toggle:hover { background: #f0f0f0; color: #333; }
-#ed-sidebar {
-  transition: width 0.2s ease, padding 0.2s ease, opacity 0.15s ease, border 0.2s ease;
-}
-#ed-sidebar.ed-collapsed {
-  width: 0 !important; padding: 0 !important; opacity: 0;
-  overflow: hidden; border-right: none;
 }
 
 /* ── Splitter ───────────────────────────────────────── */
@@ -248,33 +249,54 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   <!-- Top bar -->
   <div id="ed-top">
-    <span id="ed-filename">No file selected</span>
+    <!-- Filename acts as dropdown trigger for file browser -->
+    <div id="ed-files-btn" title="Browse files">
+      <span id="ed-filename">No file selected</span>
+      <span id="ed-files-arrow">▼</span>
+
+      <!-- Dropdown panel: connect + file list + history -->
+      <div id="ed-sidebar">
+        <details id="ed-setup">
+          <summary>⚙️ Connect</summary>
+          <label>Personal access token
+            <input id="ed-pat" type="password" placeholder="ghp_…" autocomplete="current-password">
+          </label>
+          <label>Repository
+            <input id="ed-repo" type="text" placeholder="owner/repo-name" autocomplete="off">
+          </label>
+          <div style="margin-top:0.6em;display:flex;gap:0.4em;flex-wrap:wrap">
+            <a href="#" class="lc-btn" id="ed-connect-btn" style="font-size:0.82em;padding:0.35em 0.9em">Connect</a>
+            <a href="#" class="lc-btn lc-btn-danger" id="ed-disconnect-btn" style="font-size:0.82em;padding:0.35em 0.9em;display:none">Disconnect</a>
+          </div>
+          <div id="ed-status"></div>
+        </details>
+        <span class="ed-section-label">Pages</span>
+        <div id="ed-files" style="color:#bbb">Connect to browse.</div>
+        <span class="ed-section-label">History</span>
+        <div id="ed-history" style="color:#bbb">Select a file.</div>
+      </div><!-- /sidebar dropdown -->
+    </div><!-- /files-btn -->
+
     <span id="ed-build" style="font-size:0.78em;color:#888;margin-left:0.5em;flex-shrink:0"></span>
     <a href="#" class="lc-btn lc-btn-secondary" id="ed-zoom-btn" title="Toggle 50% preview scale" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">50%</a>
     <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em">+ New</a>
     <a href="#" class="lc-btn" id="ed-save-btn" style="font-size:0.82em;padding:0.35em 0.9em">💾 Save</a>
     <a href="#" id="ed-close-btn" title="Close (Esc)"
        style="font-size:1.3em;color:#888;text-decoration:none;padding:0 0.2em;line-height:1;margin-left:0.2em">✕</a>
-    <button id="ed-sidebar-toggle" title="Toggle file list">◀</button>
   </div>
 
-  <!-- Body -->
+  <!-- Body: preview + editor only -->
   <div id="ed-body">
-
-    <!-- Preview + Editor -->
     <div id="ed-main">
-      <!-- Preview always visible on left -->
       <div id="ed-preview"></div>
-      <!-- Splitter between preview and editor -->
       <div id="ed-splitter"></div>
-      <!-- Editor: tabs + raw OR blocks pane -->
       <div id="ed-left">
         <div id="ed-tabs">
           <span class="ed-tab active" data-tab="blocks">⊞ Blocks</span>
           <span class="ed-tab" data-tab="raw">✏️ Raw</span>
         </div>
         <div id="ed-raw-pane" class="ed-hidden">
-          <textarea id="ed-input" placeholder="Select a file from the sidebar, or create a new page…" spellcheck="false"></textarea>
+          <textarea id="ed-input" placeholder="Select a file to start editing…" spellcheck="false"></textarea>
         </div>
         <div id="ed-blocks-pane" class="ed-active">
           <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
@@ -283,38 +305,6 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         </div>
       </div>
     </div>
-
-    <!-- Sidebar — file list, collapsed by default -->
-    <div id="ed-sidebar" class="ed-collapsed">
-
-      <!-- Connection -->
-      <details id="ed-setup">
-        <summary>⚙️ Connect</summary>
-        <label>Personal access token
-          <input id="ed-pat" type="password" placeholder="ghp_…" autocomplete="current-password">
-        </label>
-        <label>Repository
-          <input id="ed-repo" type="text" placeholder="owner/repo-name" autocomplete="off">
-        </label>
-        <div style="margin-top:0.6em;display:flex;gap:0.4em;flex-wrap:wrap">
-          <a href="#" class="lc-btn" id="ed-connect-btn" style="font-size:0.82em;padding:0.35em 0.9em">Connect</a>
-          <a href="#" class="lc-btn lc-btn-danger" id="ed-disconnect-btn" style="font-size:0.82em;padding:0.35em 0.9em;display:none">Disconnect</a>
-        </div>
-        <div id="ed-status"></div>
-      </details>
-
-      <!-- File list -->
-      <span class="ed-section-label">Pages</span>
-      <div id="ed-files" style="color:#bbb">Connect to browse.</div>
-
-      <!-- History -->
-      <span class="ed-section-label">History</span>
-      <div id="ed-history" style="color:#bbb">Select a file.</div>
-
-      <!-- Build status moved to topbar -->
-
-    </div><!-- /sidebar -->
-
   </div><!-- /body -->
 </div><!-- /drawer -->
 
@@ -810,13 +800,22 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
   });
 
-  /* ── Sidebar toggle ─────────────────────────────────── */
+  /* ── Files dropdown toggle ──────────────────────────── */
   document.addEventListener("click", function(e) {
-    var btn = e.target.closest("#ed-sidebar-toggle");
-    if (!btn) return;
-    var sb = document.getElementById("ed-sidebar");
-    var collapsed = sb.classList.toggle("ed-collapsed");
-    btn.textContent = collapsed ? "◀" : "▶";
+    var btn = e.target.closest("#ed-files-btn");
+    var sb  = document.getElementById("ed-sidebar");
+    var fbtn = document.getElementById("ed-files-btn");
+    if (btn && sb) {
+      // toggle open/closed when clicking the trigger
+      var nowOpen = sb.classList.toggle("ed-open");
+      if (fbtn) fbtn.classList.toggle("ed-open", nowOpen);
+    } else if (sb && sb.classList.contains("ed-open")) {
+      // close when clicking anywhere else in the drawer
+      if (!e.target.closest("#ed-sidebar")) {
+        sb.classList.remove("ed-open");
+        if (fbtn) fbtn.classList.remove("ed-open");
+      }
+    }
   });
 
   /* ── Splitter drag (left ↔ preview) ─────────────────── */
