@@ -40,9 +40,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 /* ── Drawer ────────────────────────────────────────────── */
 #ed-drawer {
   position: fixed; top: 48px; right: 0; bottom: 0; left: 0; background: #fff; z-index: 999;
-  display: none; flex-direction: column; overflow: hidden;
+  display: flex; flex-direction: column; overflow: hidden;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transform: scale(0.98) translateY(6px);
+  transition: opacity 0.2s ease, visibility 0.2s, transform 0.25s cubic-bezier(0.22,1,0.36,1);
 }
-#ed-drawer.open { display: flex; }
+#ed-drawer.open {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  transform: none;
+}
 #ed-top {
   display: flex; align-items: center; gap: 0.6em; padding: 0.7em 1em;
   border-bottom: 1px solid #e0e0e0; background: #fafafa; flex-shrink: 0;
@@ -55,7 +61,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-body { display: flex; flex: 1; overflow: hidden; }
 #ed-sidebar {
   width: 210px; flex-shrink: 0; overflow-y: auto;
-  border-right: 1px solid #e0e0e0; padding: 0.8em 0.7em; font-size: 0.85em;
+  border-left: 1px solid #e0e0e0; padding: 0.8em 0.7em; font-size: 0.85em;
 }
 #ed-main { flex: 1; display: flex; flex-direction: row; overflow: hidden; }
 #ed-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
@@ -64,7 +70,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   font-family: monospace; font-size: 0.88em; padding: 1em; line-height: 1.6;
   outline: none; background: #fdfcfb;
 }
-#ed-preview { flex: 1; overflow-y: auto; padding: 1em 1.5em; position: relative; border-left: 1px solid #e0e0e0; }
+#ed-preview { flex: 1; overflow-y: auto; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; }
 /* 50% zoom mode: render content at 200% width then scale to fit */
 #ed-preview.lc-zoom { overflow-x: hidden; }
 #ed-preview.lc-zoom > div:not(.ed-pbar) { width: 200%; zoom: 0.5; transform-origin: top left; }
@@ -158,9 +164,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
 /* ── Block edit form ────────────────────────────────── */
 #ed-block-form {
-  flex-shrink: 0; padding: 0.8em 1em; background: #fafafa;
+  flex-shrink: 0; padding: 0.8em 1em 0 1em; background: #fafafa;
   border-top: 2px solid #0066cc; font-size: 0.84em;
-  display: none; overflow: hidden; height: 180px; /* fallback until initGridSplit runs */
+  display: none; overflow-y: auto; height: 180px; /* fallback until initGridSplit runs */
 }
 #ed-block-form.ed-visible { display: flex; flex-direction: column; }
 #ed-block-form label { display: block; color: #666; font-size: 0.82em; margin: 0 0 0.18em; flex-shrink: 0; }
@@ -174,7 +180,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-block-form select { cursor: pointer; }
 .ebf-meta { flex-shrink: 0; }
 .ebf-content-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.ebf-actions { flex-shrink: 0; padding-top: 0.5em; }
+.ebf-actions { flex-shrink: 0; padding: 0.5em 0 0.6em; position: sticky; bottom: 0; background: #fafafa; }
 
 /* ── Preview highlight pulse ─────────────────────────── */
 @keyframes ed-hl-pulse {
@@ -253,8 +259,31 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   <!-- Body -->
   <div id="ed-body">
 
-    <!-- Sidebar -->
-    <div id="ed-sidebar">
+    <!-- Preview + Editor -->
+    <div id="ed-main">
+      <!-- Preview always visible on left -->
+      <div id="ed-preview"></div>
+      <!-- Splitter between preview and editor -->
+      <div id="ed-splitter"></div>
+      <!-- Editor: tabs + raw OR blocks pane -->
+      <div id="ed-left">
+        <div id="ed-tabs">
+          <span class="ed-tab active" data-tab="raw">✏️ Raw</span>
+          <span class="ed-tab" data-tab="blocks">⊞ Blocks</span>
+        </div>
+        <div id="ed-raw-pane">
+          <textarea id="ed-input" placeholder="Select a file from the sidebar, or create a new page…" spellcheck="false"></textarea>
+        </div>
+        <div id="ed-blocks-pane">
+          <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
+          <div id="ed-grid-splitter"></div>
+          <div id="ed-block-form"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar — file list, collapsed by default -->
+    <div id="ed-sidebar" class="ed-collapsed">
 
       <!-- Connection -->
       <details id="ed-setup">
@@ -283,28 +312,6 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       <!-- Build status moved to topbar -->
 
     </div><!-- /sidebar -->
-
-    <!-- Editor + Preview -->
-    <div id="ed-main">
-      <!-- Left: tabs + raw OR blocks pane -->
-      <div id="ed-left">
-        <div id="ed-tabs">
-          <span class="ed-tab active" data-tab="raw">✏️ Raw</span>
-          <span class="ed-tab" data-tab="blocks">⊞ Blocks</span>
-        </div>
-        <div id="ed-raw-pane">
-          <textarea id="ed-input" placeholder="Select a file from the sidebar, or create a new page…" spellcheck="false"></textarea>
-        </div>
-        <div id="ed-blocks-pane">
-          <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
-          <div id="ed-grid-splitter"></div>
-          <div id="ed-block-form"></div>
-        </div>
-      </div>
-      <!-- Splitter + Preview always visible on right -->
-      <div id="ed-splitter"></div>
-      <div id="ed-preview"></div>
-    </div>
 
   </div><!-- /body -->
 </div><!-- /drawer -->
@@ -390,7 +397,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     setDirty(false);
     var d = document.getElementById("ed-drawer");
     if (d) d.classList.remove("open");
-    document.body.style.overflow = "";
+    setTimeout(function() { document.body.style.overflow = ""; }, 260);
   }
 
   /* ── File list — AG Grid (recursive via Git Trees API) ─ */
@@ -785,8 +792,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var btn = e.target.closest("#ed-sidebar-toggle");
     if (!btn) return;
     var sb = document.getElementById("ed-sidebar");
-    var open = sb.classList.toggle("ed-collapsed");
-    btn.textContent = open ? "▶" : "◀";
+    var collapsed = sb.classList.toggle("ed-collapsed");
+    btn.textContent = collapsed ? "◀" : "▶";
   });
 
   /* ── Splitter drag (left ↔ preview) ─────────────────── */
@@ -810,8 +817,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var prev = document.getElementById("ed-preview");
       if (!left || !prev) return;
       var dx = e.clientX - startX;
-      var lw = Math.max(150, startLW + dx);
-      var rw = Math.max(150, startRW - dx);
+      // preview is now on the left: dragging right grows preview, shrinks editor
+      var rw = Math.max(150, startRW + dx);
+      var lw = Math.max(150, startLW - dx);
       left.style.flex = "none"; left.style.width = lw + "px";
       prev.style.flex = "none"; prev.style.width = rw + "px";
     });
@@ -963,7 +971,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     return ls.join("\n").trim();
   }
 
-  var _blocks = [], _selIdx = -1, _dragFrom = null, _gridSplitSet = false;
+  var _blocks = [], _selIdx = -1, _dragFrom = null, _gridSplitSet = false, _formDirty = false;
 
   /* Expand component sub-blocks: parse headings inside their first code fence
      and insert them as fenceChild display rows (display-only, no text reconstruction).
@@ -1090,6 +1098,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     grid.addEventListener("click", function(e) {
       var tr = e.target.closest("tr[data-idx]");
       if (!tr) return;
+      _formDirty = false; // explicit click clears any pending form edit
       _selIdx = parseInt(tr.dataset.idx);
       buildGrid();
     });
@@ -1186,8 +1195,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       + "<textarea id='ebf-content'>" + escH(content) + "</textarea></div>"
       + "<div class='ebf-actions'><a href='#' class='lc-btn' id='ebf-apply' style='font-size:0.82em;padding:0.32em 0.9em'>Apply</a></div>";
 
+    /* mark form dirty on any change so hover sync won't clobber edits */
+    form.addEventListener("input", function() { _formDirty = true; });
+
     document.getElementById("ebf-apply").addEventListener("click", function(e) {
       e.preventDefault();
+      _formDirty = false;
       var title   = document.getElementById("ebf-title").value;
       var type    = document.getElementById("ebf-type").value;
       var knobsIn = document.getElementById("ebf-knobs").value.trim();
@@ -1281,6 +1294,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           node = node.parentElement;
         }
         if (matchIdx < 0) return;
+        if (_formDirty) return; // don't clobber unsaved form edits
         // Sync Blocks grid if that tab is active
         var blocksPane = document.getElementById("ed-blocks-pane");
         if (blocksPane && blocksPane.classList.contains("ed-active")) {
