@@ -923,7 +923,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   /* ── Blocks tab ──────────────────────────────────────── */
   var BLOCK_TYPES = ["block","blocks","carousel","menu","video","deploys","recorder",
-    "lightnodes","quiz","pytutor","pyrun","slide","slides","folder","cards","transcript"];
+    "lightnodes","quiz","pytutor","pyrun","slide","slides","folder","cards","transcript","feature"];
 
   function escH(s) { return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   function escA(s) { return (s||"").replace(/"/g,"&quot;"); }
@@ -1242,6 +1242,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
     var knobStr = Object.keys(b.knobs||{}).map(function(k){ return k + '="' + b.knobs[k] + '"'; }).join(" ");
     var content = blockContent(b);
+    var featureHint = b.type === "feature"
+      ? "<div id='ebf-feature-hint' style='font-size:0.78em;color:#888;margin:-0.2em 0 0.5em;padding:0.3em 0.6em;background:#f6f8fa;border-radius:4px;border:1px solid #e8e8e8'>"
+        + "Knobs: <code>status=\"passing|failing|pending\"</code> &nbsp; <code>tags=\"smoke,auth\"</code>"
+        + "</div>"
+      : "";
     form.innerHTML = "<div class='ebf-scroll'>"
       + "<div class='ebf-meta' style='display:flex;gap:0.6em;flex-wrap:wrap;margin-bottom:0.4em'>"
       + "<div style='flex:3;min-width:100px'><label>Heading</label><input id='ebf-title' value='" + escA(b.heading||"") + "'></div>"
@@ -1251,6 +1256,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       + "</select></div>"
       + "<div style='flex:2;min-width:120px'><label>Knobs</label><input id='ebf-knobs' value='" + escA(knobStr) + "' placeholder='count=\"5\"'></div>"
       + "</div>"
+      + featureHint
       + "<div class='ebf-content-wrap'><label>Content</label>"
       + "<textarea id='ebf-content'>" + escH(content) + "</textarea></div>"
       + "</div>"
@@ -1258,6 +1264,24 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
     /* mark form dirty on any change so hover sync won't clobber edits */
     form.addEventListener("input", function() { _formDirty = true; });
+
+    /* show/hide feature knob hint when type dropdown changes */
+    document.getElementById("ebf-type").addEventListener("change", function() {
+      var hint = document.getElementById("ebf-feature-hint");
+      if (this.value === "feature") {
+        if (!hint) {
+          var h = document.createElement("div");
+          h.id = "ebf-feature-hint";
+          h.style.cssText = "font-size:0.78em;color:#888;margin:-0.2em 0 0.5em;padding:0.3em 0.6em;background:#f6f8fa;border-radius:4px;border:1px solid #e8e8e8";
+          h.innerHTML = "Knobs: <code>status=\"passing|failing|pending\"</code> &nbsp; <code>tags=\"smoke,auth\"</code>";
+          var scroll = form.querySelector(".ebf-scroll");
+          var contentWrap = scroll.querySelector(".ebf-content-wrap");
+          scroll.insertBefore(h, contentWrap);
+        }
+      } else {
+        if (hint) hint.parentNode.removeChild(hint);
+      }
+    });
 
     document.getElementById("ebf-apply").addEventListener("click", function(e) {
       e.preventDefault();
