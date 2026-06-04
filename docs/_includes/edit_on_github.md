@@ -402,44 +402,23 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var d = document.getElementById("ed-drawer");
     if (!d) return;
 
-    // Start with editor hidden at right edge — preview fills full width
+    // Clear any stale inline styles from previous opens
     var left = document.getElementById("ed-left");
-    var prev = document.getElementById("ed-preview");
-    if (left) {
-      left.style.transition = "none";
-      left.style.flex = "none"; left.style.width = "0px"; left.style.overflow = "hidden";
-    }
-    if (prev) { prev.style.flex = "1"; prev.style.width = ""; }
+    if (left) { left.style.transition = ""; left.style.flex = ""; left.style.width = ""; left.style.overflow = ""; }
 
     d.classList.add("open");
     document.body.style.overflow = "hidden";
 
-    // Switch to Blocks tab when file is loaded so user sees structure first
-    if (_curFile) {
-      var rawPane = document.getElementById("ed-raw-pane");
-      var blkPane = document.getElementById("ed-blocks-pane");
-      document.querySelectorAll(".ed-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab === "blocks"); });
-      if (rawPane) rawPane.classList.add("ed-hidden");
-      if (blkPane) blkPane.classList.add("ed-active");
-      buildGrid();
-    }
+    // Blocks tab is always the default view on open
+    var rawPane = document.getElementById("ed-raw-pane");
+    var blkPane = document.getElementById("ed-blocks-pane");
+    document.querySelectorAll(".ed-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab === "blocks"); });
+    if (rawPane) rawPane.classList.add("ed-hidden");
+    if (blkPane) blkPane.classList.add("ed-active");
+    if (_curFile) buildGrid();
 
-    // After two frames (ensure width:0 was painted), slide editor in
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        if (!left) return;
-        var mainEl = document.getElementById("ed-main");
-        var targetW = mainEl ? Math.max(200, Math.floor(mainEl.offsetWidth * 0.5)) : 400;
-        left.style.transition = "width 0.55s cubic-bezier(0.22,1,0.36,1)";
-        left.style.width = targetW + "px";
-        left.style.overflow = "";
-        left.addEventListener("transitionend", function handler() {
-          left.removeEventListener("transitionend", handler);
-          left.style.transition = "";
-          updatePreviewZoom();
-        });
-      });
-    });
+    // Update zoom once layout has settled
+    requestAnimationFrame(function() { updatePreviewZoom(); });
 
     if (_pat && _repo) {
       loadFiles();
