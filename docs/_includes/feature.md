@@ -220,15 +220,17 @@ Auto-included by docs/_layouts/default.html on every page.
       });
   }
 
-  /* ── Upgrade a pre.feature element ──────────────────── */
-  function upgradeFeature(pre) {
-    if (pre.dataset.lcFeatureUpgraded) return;
-    pre.dataset.lcFeatureUpgraded = "1";
+  /* ── Upgrade a .feature element ────────────────────── */
+  /* Rouge wraps fenced blocks in <div class="highlighter-rouge feature">;
+     plain markdown gives <pre class="feature">. Handle both. */
+  function upgradeFeature(el) {
+    if (el.dataset.lcFeatureUpgraded) return;
+    el.dataset.lcFeatureUpgraded = "1";
 
-    var status  = pre.getAttribute("status") || "";
-    var tagsRaw = pre.getAttribute("tags") || "";
-    var code    = pre.querySelector("code");
-    var text    = code ? code.textContent : pre.textContent;
+    var status  = el.getAttribute("status") || "";
+    var tagsRaw = el.getAttribute("tags") || "";
+    var code    = el.querySelector("code");
+    var text    = code ? code.textContent : el.textContent;
 
     var rows = parseFeatureText(text);
     var featureName = "";
@@ -327,12 +329,12 @@ Auto-included by docs/_layouts/default.html on every page.
       });
     }
 
-    pre.parentNode.replaceChild(card, pre);
+    el.parentNode.replaceChild(card, el);
   }
 
   /* ── Boot ────────────────────────────────────────────── */
   function init() {
-    document.querySelectorAll("pre.feature").forEach(upgradeFeature);
+    document.querySelectorAll(".feature").forEach(upgradeFeature);
   }
 
   if (document.readyState === "loading") {
