@@ -948,19 +948,24 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   function blockContent(b) {
     if (b.preamble) return b.lines.join("\n");
     var ls = b.lines.slice(1);
-    if (ls.length && /^\{:.*\}$/.test(ls[ls.length-1].trim())) ls = ls.slice(0, -1);
+    // Strip trailing blank lines, then trailing IAL, then trailing blank lines again
+    // so that {: .foo }\n\n (blank before next heading) doesn't prevent IAL removal
+    while (ls.length && ls[ls.length - 1].trim() === '') ls.pop();
+    if (ls.length && /^\{:.*\}/.test(ls[ls.length - 1].trim())) ls.pop();
+    while (ls.length && ls[ls.length - 1].trim() === '') ls.pop();
     return ls.join("\n").trim();
   }
 
   var _blocks = [], _selIdx = -1, _dragFrom = null, _gridSplitSet = false;
 
-  /* Expand typed component blocks: parse headings inside their first code fence
-     and insert them as fenceChild display rows (display-only, no text reconstruction). */
+  /* Expand component sub-blocks: parse headings inside their first code fence
+     and insert them as fenceChild display rows (display-only, no text reconstruction).
+     Only runs for subBlock entries so parent heading rows don't duplicate the children. */
   function expandFenceHeadings(blocks) {
     var result = [];
     blocks.forEach(function(b) {
       result.push(b);
-      if (!b.type) return;
+      if (!b.type || !b.subBlock) return; // only expand sub-block component rows
       var inF = false, fC = '', fL = 0, fc = [];
       for (var i = 0; i < b.lines.length; i++) {
         var t = b.lines[i].trim();
