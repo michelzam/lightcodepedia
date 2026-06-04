@@ -10,7 +10,7 @@ Feature: User login
     When I enter valid credentials
     Then I should see the dashboard
 ```
-{: .feature status="passing" tags="smoke,auth" }
+{: .feature tags="smoke,auth" }
 
 ## 🏃🏻‍♀️ With runnable steps
 
