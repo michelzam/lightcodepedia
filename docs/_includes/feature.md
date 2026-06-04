@@ -101,6 +101,19 @@ Auto-included by docs/_layouts/default.html on every page.
     return _mpModuleP;
   }
 
+  /* ── Strip common leading whitespace from a code block ── */
+  function dedent(code) {
+    var lines = code.split("\n");
+    var min = Infinity;
+    lines.forEach(function(l) {
+      if (!l.trim()) return;
+      var m = l.match(/^(\s*)/);
+      if (m && m[1].length < min) min = m[1].length;
+    });
+    if (min === Infinity || min === 0) return code;
+    return lines.map(function(l) { return l.slice(min); }).join("\n");
+  }
+
   /* ── Parse gherkin+python text ───────────────────────── */
   /*
     Returns an array of rows:
@@ -127,7 +140,7 @@ Auto-included by docs/_layouts/default.html on every page.
         /* attach to last step row */
         for (var ri = rows.length - 1; ri >= 0; ri--) {
           if (rows[ri].kind === "step") {
-            rows[ri].pyCode = pyLines.join("\n");
+            rows[ri].pyCode = dedent(pyLines.join("\n"));
             break;
           }
         }
