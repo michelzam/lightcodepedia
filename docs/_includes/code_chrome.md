@@ -446,6 +446,7 @@
       .then(function(){ return injectScript("https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"); });
     return _prismLoading;
   }
+  window.lcLoadPrism = loadPrism;
 
   function attach(rootId, opts) {
     opts = opts || {};
