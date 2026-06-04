@@ -87,7 +87,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   font-family: monospace; font-size: 0.88em; padding: 1em; line-height: 1.6;
   outline: none; background: #fdfcfb;
 }
-#ed-preview { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; }
+#ed-preview { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; box-sizing: border-box; }
 /* 50% zoom mode: render content at 200% width then scale to fit */
 #ed-preview.lc-zoom { overflow-x: hidden; }
 #ed-preview.lc-zoom > div:not(.ed-pbar) { width: 200%; zoom: 0.5; transform-origin: top left; }
@@ -844,13 +844,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (!dragging) return;
       var left = document.getElementById("ed-left");
       var prev = document.getElementById("ed-preview");
-      if (!left || !prev) return;
+      var main = document.getElementById("ed-main");
+      if (!left || !prev || !main) return;
+      var spEl = document.getElementById("ed-splitter");
+      var available = main.getBoundingClientRect().width - (spEl ? spEl.offsetWidth : 5);
       var dx = e.clientX - startX;
-      // preview is on the left: dragging right grows preview, shrinks editor
-      var rw = Math.max(150, startRW + dx);
-      var lw = Math.max(150, startLW - dx);
-      left.style.width = lw + "px";
+      // clamp preview, derive editor from remainder so they always sum to available
+      var rw = Math.min(available - 150, Math.max(150, startRW + dx));
+      var lw = available - rw;
       prev.style.width = rw + "px";
+      left.style.width = lw + "px";
     });
     document.addEventListener("mouseup", function() {
       if (!dragging) return;
