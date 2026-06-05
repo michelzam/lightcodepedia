@@ -6,7 +6,7 @@ Welcome, lowcoder! Every interactive component you can use in your `.md` pages.
 
 
 ````
-🗺️ Component Map ⌄
+### 🗺️ Component Map
 [Browse](/docs/components)
 {: .sitemap path="docs/components" height="460" }
 ````
