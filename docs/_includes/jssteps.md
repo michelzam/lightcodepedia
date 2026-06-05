@@ -234,8 +234,8 @@ def _run_all():
 
   function loadMP() {
     if (_mpPromise) return _mpPromise;
-    _mpPromise = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript/micropython.mjs")
-      .then(function (mod) { return (mod.default || mod)(); });
+    _mpPromise = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
+      .then(function (mjs) { return mjs.loadMicroPython({ stdout: function () {}, stderr: function () {} }); });
     return _mpPromise;
   }
 
