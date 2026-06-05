@@ -27,7 +27,7 @@ Feature: Temperature converter
     Then the result should be 212
     And zero Celsius equals 32 Fahrenheit
 ```
-{: .feature status="pending" tags="math,utils" }
+{: .feature status="passing" tags="math,utils" }
 
 ```python
 # Given a temperature of 100 degrees Celsius
@@ -53,7 +53,7 @@ Feature: List validator
     When I check if it is valid
     Then validation should fail
 ```
-{: .feature status="pending" tags="validation" }
+{: .feature status="failing" tags="validation" }
 
 ```python
 # Given an empty list
