@@ -66,6 +66,9 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 /* ── scenario / narrative ────────────────────────────── */
 .lc-feature-scenario { padding: 0.5em 1em 0.2em; font-size: 0.82em; font-weight: 600; color: #6b7280; letter-spacing: 0.03em; text-transform: uppercase; }
 .lc-feature-narrative { padding: 0.1em 1em; font-size: 0.83em; color: #9ca3af; font-style: italic; }
+.lc-feature-story { padding: 0.1em 1em; font-size: 0.83em; display: flex; gap: 0.4em; align-items: baseline; flex-wrap: wrap; }
+.lc-feature-story-keyword { color: #7c3aed; font-weight: 600; font-style: normal; flex-shrink: 0; }
+.lc-feature-story-text { color: #374151; font-style: italic; }
 
 /* ── step rows ───────────────────────────────────────── */
 .lc-feature-steps { padding: 0.35em 0; }
@@ -152,6 +155,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       if (hm) { rows.push({ kind: /^feature$/i.test(hm[1]) ? "feature" : "scenario", keyword: hm[1], text: hm[2].trim() }); return; }
       var sm = t.match(/^(Given|When|Then|And|But)\s+(.*)/i);
       if (sm) { rows.push({ kind: "step", keyword: sm[1], text: sm[2].trim() }); return; }
+      var um = t.match(/^(As an?\s+|I want\s+|So that\s+|In order to\s+)(.*)/i);
+      if (um) { rows.push({ kind: "story", keyword: um[1].trimRight(), text: um[2].trim() }); return; }
       if (t && !/^#/.test(t)) rows.push({ kind: "narrative", text: t });
     });
     return rows;
@@ -357,6 +362,10 @@ Registers with window.lcScanElement so the editor preview also renders cards.
         if (r.kind === "scenario") {
           var sh = document.createElement("div"); sh.className = "lc-feature-scenario";
           sh.textContent = r.keyword + ": " + r.text; stepsDiv.appendChild(sh);
+        } else if (r.kind === "story") {
+          var sh2 = document.createElement("div"); sh2.className = "lc-feature-story";
+          sh2.innerHTML = "<span class='lc-feature-story-keyword'>" + r.keyword + "</span><span class='lc-feature-story-text'>" + r.text + "</span>";
+          stepsDiv.appendChild(sh2);
         } else if (r.kind === "narrative") {
           var nh = document.createElement("div"); nh.className = "lc-feature-narrative";
           nh.textContent = r.text; stepsDiv.appendChild(nh);
