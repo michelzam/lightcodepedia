@@ -102,6 +102,39 @@ assert y == 84
 - Click a step row to **expand its implementation** inline.
 - Steps after a failure are **skipped** (shown with ○).
 
+## 🔬 DOM bridge probe
+
+Can MicroPython steps reach the browser DOM via `import js`? Click **▶ Run** to find out.
+
+```gherkin
+Feature: MicroPython JS bridge
+  Scenario: DOM access from Python steps
+    Given the js module is importable
+    When I read document.title
+    Then I can query a DOM element
+    And I can read an element attribute
+```
+{: .feature status="pending" tags="probe,js-bridge" }
+
+```python
+# Given the js module is importable
+import js
+assert js is not None, "import js failed"
+
+# When I read document.title
+title = js.document.title
+assert isinstance(title, str), "document.title is not a string: " + repr(title)
+
+# Then I can query a DOM element
+el = js.document.querySelector('body')
+assert el is not None, "querySelector('body') returned None"
+
+# And I can read an element attribute
+tag = el.tagName
+assert tag is not None, "tagName returned None — got: " + repr(tag)
+```
+{: .steps }
+
 ## 🎛️ Knobs
 
 | Block | Attribute | Values | What it does |
