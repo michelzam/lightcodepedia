@@ -273,7 +273,3 @@ Every block, with live examples and full documentation.
 
 [Recording](https://youtu.be/mX4OPdzcIaI)
 {: .video }
-
-
-[Recording](https://youtu.be/2BRYeOmx5oc)
-{: .video }
