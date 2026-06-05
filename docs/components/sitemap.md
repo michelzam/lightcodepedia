@@ -1,6 +1,6 @@
 # 🗺️ Sitemap
 
-Force-directed graph of pages in a directory. Nodes are pages; edges are internal Markdown links between them. Node size reflects link degree; colour reflects feature status.
+Force-directed graph of pages in a directory. Nodes are pages; edges are directed internal Markdown links. Node size reflects total degree; colour reflects feature status; emoji from the page title appears inside each circle. Pages that are heavily linked-to float upward; pages that link to many others sink — giving a natural hierarchy.
 
 ## Components graph
 
@@ -16,11 +16,13 @@ Put a link to the directory you want to map, then apply `{: .sitemap }`:
 {: .sitemap path="docs/components" height="460" }
 ```
 
-- **Drag** any node to rearrange; the simulation continues from there.
+- **Drag** any node to rearrange; the simulation resumes from there.
 - **Hover** a node for its title, snippet, and feature status pills.
 - **Click** a node to navigate to that page.
 - Nodes tinted **green / red / amber** have passing / failing / pending features.
-- Edge lines appear between pages that link to each other in their Markdown source.
+- The first **emoji** in a page's H1 title appears inside its circle.
+- **Directed arrows** show which page links to which.
+- **Gravity**: pages referenced by others float up; pages that reference many others sink.
 
 ## 🎛️ Knobs
 
