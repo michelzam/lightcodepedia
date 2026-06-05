@@ -124,8 +124,11 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcDgDone = "1";
     var perPage = parseInt(el.getAttribute("rows") || "0", 10) || 0;
 
+    var lcId = el.getAttribute("id") || "";
     var wrap = document.createElement("div");
     wrap.className = "lc-datagrid";
+    wrap.setAttribute("data-bind", bindId);
+    if (lcId) wrap.setAttribute("data-lc-id", lcId);
     el.parentNode.replaceChild(wrap, el);
     el = wrap;
 
@@ -215,8 +218,11 @@ Auto-included by docs/_layouts/default.html.
     var yCol  = el.getAttribute("y");
     var title = el.getAttribute("title") || "";
 
+    var lcId2 = el.getAttribute("id") || "";
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
+    wrap.setAttribute("data-bind", bindId);
+    if (lcId2) wrap.setAttribute("data-lc-id", lcId2);
     el.parentNode.replaceChild(wrap, el);
 
     function render(data) {
