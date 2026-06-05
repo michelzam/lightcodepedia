@@ -267,11 +267,21 @@ def _run_all():
 
       loadMP().then(function (mp) {
         btn.textContent = "⏳ Running…";
+
+        // Detect the correct run method — API differs across MicroPython WASM versions
+        var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
+        if (!runFn) {
+          var fns = [];
+          try { fns = Object.getOwnPropertyNames(mp).filter(function(k){ return typeof mp[k] === "function"; }); } catch(_) {}
+          body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ mp has no runPython. Available: " + (fns.join(", ") || "(none)") + "</div>";
+          btn.disabled = false; btn.textContent = "▶ Run"; return;
+        }
+
         var preamble = document.getElementById("lc-jss-preamble").textContent;
         var fullCode = preamble + "\n" + userCode + "\n_run_all()";
         var jsonStr;
         try {
-          jsonStr = mp.runPython(fullCode);
+          jsonStr = runFn.call(mp, fullCode);
         } catch (e) {
           body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ " + String(e.message || e) + "</div>";
           btn.disabled = false; btn.textContent = "▶ Run"; return;
