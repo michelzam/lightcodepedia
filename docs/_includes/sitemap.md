@@ -74,6 +74,12 @@ Attributes:
     return c;
   }
 
+  /* ── emoji helper ─────────────────────────────────────── */
+  function smFirstEmoji(str) {
+    var m = (str || "").match(/[\u{1F300}-\u{1FFFF}]|\u{2600}|[\u{2601}-\u{27BF}]/u);
+    return m ? m[0] : null;
+  }
+
   /* ── force simulation ─────────────────────────────────── */
   function simulate(nodes, edges, W, H) {
     var REPEL = 4000, ATT = 0.045, REST = 130, DAMP = 0.80, CEN = 0.016;
@@ -98,7 +104,9 @@ Attributes:
       });
       nodes.forEach(function (n) {
         if (n.pin) return;
-        n.vx += (cx - n.x) * CEN * alpha; n.vy += (cy - n.y) * CEN * alpha;
+        /* gy: nodes used by many others float up (negative offset); heavy users sink */
+        var yTarget = cy + (n.gy || 0);
+        n.vx += (cx - n.x) * CEN * alpha; n.vy += (yTarget - n.y) * CEN * alpha;
         n.vx *= DAMP; n.vy *= DAMP;
         n.x = Math.max(n.r + 4, Math.min(W - n.r - 4, n.x + n.vx));
         n.y = Math.max(n.r + 4, Math.min(H - n.r - 18, n.y + n.vy));
@@ -130,8 +138,9 @@ Attributes:
     var nodeMap = {};
     var nodes = pages.map(function (p) {
       var n = { id: p.id, title: p.title, url: p.url, snippet: p.snippet, fc: p.fc,
+        emoji: smFirstEmoji(p.title),
         x: W / 2 + (Math.random() - 0.5) * 180, y: H / 2 + (Math.random() - 0.5) * 180,
-        vx: 0, vy: 0, pin: false, r: 12 };
+        vx: 0, vy: 0, pin: false, r: 12, gy: 0 };
       nodeMap[p.id] = n; return n;
     });
 
@@ -145,10 +154,19 @@ Attributes:
     /* mark bidirectional pairs */
     edges.forEach(function (e) { if (edgeKeys[e.t.id + ">" + e.s.id]) e.bi = true; });
 
-    /* size by degree */
+    /* compute in/out degree per node; size by total degree; set gravity */
+    var outDeg = {}, inDeg = {};
+    nodes.forEach(function (n) { outDeg[n.id] = 0; inDeg[n.id] = 0; });
+    edges.forEach(function (e) {
+      outDeg[e.s.id] = (outDeg[e.s.id] || 0) + 1;
+      inDeg[e.t.id]  = (inDeg[e.t.id]  || 0) + 1;
+    });
     nodes.forEach(function (n) {
-      var deg = edges.filter(function (e) { return e.s === n || e.t === n; }).length;
-      n.r = 10 + Math.min(deg * 3, 14);
+      var out = outDeg[n.id] || 0, inc = inDeg[n.id] || 0;
+      n.r  = 10 + Math.min((out + inc) * 3, 14);
+      /* heavy users of others sink (positive gy = below centre);
+         nodes used by many others float up (negative gy = above centre) */
+      n.gy = (out - inc) * 22;
     });
 
     /* arrowhead marker */
@@ -177,10 +195,16 @@ Attributes:
       if (n.fc.passing && !n.fc.failing) c.setAttribute("fill", "#f0fdf4");
       else if (n.fc.failing)              c.setAttribute("fill", "#fef2f2");
       else if (n.fc.pending)              c.setAttribute("fill", "#fffbeb");
+      /* inner label: emoji if available, else two-letter initial */
+      var inner = document.createElementNS(NS, "text");
+      inner.setAttribute("text-anchor", "middle"); inner.setAttribute("dominant-baseline", "central");
+      inner.setAttribute("font-size", n.emoji ? Math.round(n.r * 1.0) + "px" : "9px");
+      inner.setAttribute("fill", "#374151"); inner.style.pointerEvents = "none";
+      inner.textContent = n.emoji || n.title.replace(/[^\p{L}]/gu, "").substring(0, 2).toUpperCase();
       var lbl = document.createElementNS(NS, "text"); lbl.setAttribute("class", "lc-sm-label");
       lbl.setAttribute("dy", n.r + 13);
       lbl.textContent = n.title.length > 17 ? n.title.substring(0, 15) + "…" : n.title;
-      g.appendChild(c); g.appendChild(lbl); nLayer.appendChild(g);
+      g.appendChild(c); g.appendChild(inner); g.appendChild(lbl); nLayer.appendChild(g);
 
       /* drag */
       var ox, oy;
