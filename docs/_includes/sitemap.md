@@ -15,7 +15,7 @@ Attributes:
 <style>
 .lc-sitemap { position: relative; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #fafafa; }
 .lc-sitemap svg { display: block; width: 100%; }
-.lc-sm-edge { stroke: #d1d5db; stroke-width: 1.5; }
+.lc-sm-edge { stroke: #d1d5db; stroke-width: 1.5; fill: none; }
 .lc-sm-node circle { fill: #fff; stroke: #9ca3af; stroke-width: 1.5; cursor: pointer; }
 .lc-sm-node circle:hover { stroke: #0066cc; stroke-width: 2.5; }
 .lc-sm-label { font: 11px/1.3 ui-sans-serif,system-ui,sans-serif; fill: #374151; text-anchor: middle; pointer-events: none; }
@@ -135,13 +135,15 @@ Attributes:
       nodeMap[p.id] = n; return n;
     });
 
-    var edgeSet = {}, edges = [];
+    var edgeKeys = {}, edges = [];
     pages.forEach(function (p) {
       p.links.forEach(function (tid) {
-        var key = [p.id, tid].sort().join("|");
-        if (!edgeSet[key] && nodeMap[tid]) { edgeSet[key] = true; edges.push({ s: nodeMap[p.id], t: nodeMap[tid] }); }
+        var key = p.id + ">" + tid;
+        if (!edgeKeys[key] && nodeMap[tid]) { edgeKeys[key] = true; edges.push({ s: nodeMap[p.id], t: nodeMap[tid], bi: false }); }
       });
     });
+    /* mark bidirectional pairs */
+    edges.forEach(function (e) { if (edgeKeys[e.t.id + ">" + e.s.id]) e.bi = true; });
 
     /* size by degree */
     nodes.forEach(function (n) {
@@ -149,11 +151,21 @@ Attributes:
       n.r = 10 + Math.min(deg * 3, 14);
     });
 
+    /* arrowhead marker */
+    var defs = document.createElementNS(NS, "defs");
+    var marker = document.createElementNS(NS, "marker");
+    marker.setAttribute("id", "lc-sm-arr"); marker.setAttribute("markerWidth", "7"); marker.setAttribute("markerHeight", "7");
+    marker.setAttribute("refX", "6"); marker.setAttribute("refY", "3"); marker.setAttribute("orient", "auto");
+    var mpath = document.createElementNS(NS, "path"); mpath.setAttribute("d", "M0,0 L0,6 L7,3 z"); mpath.setAttribute("fill", "#9ca3af");
+    marker.appendChild(mpath); defs.appendChild(marker); svg.appendChild(defs);
+
     var eLayer = document.createElementNS(NS, "g"), nLayer = document.createElementNS(NS, "g");
     svg.appendChild(eLayer); svg.appendChild(nLayer);
 
     var edgeEls = edges.map(function (e) {
-      var l = document.createElementNS(NS, "line"); l.setAttribute("class", "lc-sm-edge"); eLayer.appendChild(l); return l;
+      var p = document.createElementNS(NS, "path");
+      p.setAttribute("class", "lc-sm-edge"); p.setAttribute("marker-end", "url(#lc-sm-arr)");
+      eLayer.appendChild(p); return p;
     });
 
     var sim = simulate(nodes, edges, W, H);
@@ -208,8 +220,21 @@ Attributes:
     function draw() {
       edgeEls.forEach(function (el, i) {
         var e = edges[i];
-        el.setAttribute("x1", e.s.x); el.setAttribute("y1", e.s.y);
-        el.setAttribute("x2", e.t.x); el.setAttribute("y2", e.t.y);
+        var dx = e.t.x - e.s.x, dy = e.t.y - e.s.y;
+        var d = Math.sqrt(dx * dx + dy * dy) || 1;
+        var nx = dx / d, ny = dy / d;
+        var sx = e.s.x + nx * (e.s.r + 2), sy = e.s.y + ny * (e.s.r + 2);
+        var ex = e.t.x - nx * (e.t.r + 9), ey = e.t.y - ny * (e.t.r + 9);
+        var path;
+        if (e.bi) {
+          /* curve bidirectional pair so both arrows are visible */
+          var ox = -ny * 18, oy = nx * 18;
+          var mx = (sx + ex) / 2 + ox, my = (sy + ey) / 2 + oy;
+          path = "M" + sx + "," + sy + " Q" + mx + "," + my + " " + ex + "," + ey;
+        } else {
+          path = "M" + sx + "," + sy + " L" + ex + "," + ey;
+        }
+        el.setAttribute("d", path);
       });
       nodeEls.forEach(function (g, i) {
         g.setAttribute("transform", "translate(" + nodes[i].x + "," + nodes[i].y + ")");

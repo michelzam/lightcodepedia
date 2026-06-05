@@ -1,0 +1,274 @@
+{%- comment -%}
+Dataset / Datagrid / Chart — data binding primitives.
+
+.dataset  — hidden block that parses + registers data
+.datagrid — sortable paginated table bound to a dataset
+.chart    — SVG bar or line chart bound to a dataset
+
+Usage:
+  ```json
+  [{"month":"Jan","sales":100},{"month":"Feb","sales":150}]
+  ```
+  {: .dataset id="sales" }
+
+  [Sales Table](#)
+  {: .datagrid bind="sales" rows="5" }
+
+  [Sales Chart](#)
+  {: .chart bind="sales" type="bar" x="month" y="sales" }
+
+Auto-included by docs/_layouts/default.html.
+{%- endcomment -%}
+
+<style>
+/* ── dataset (invisible) ───────────────────────────── */
+.highlighter-rouge.dataset, .dataset { display: none !important; }
+
+/* ── datagrid ──────────────────────────────────────── */
+.lc-datagrid { margin: 1em 0; font-size: 0.88em; overflow-x: auto; }
+.lc-dg-table { width: 100%; border-collapse: collapse; }
+.lc-dg-table th, .lc-dg-table td { padding: 0.4em 0.75em; border: 1px solid #e5e7eb; text-align: left; white-space: nowrap; }
+.lc-dg-table th { background: #f9fafb; font-weight: 600; color: #374151; cursor: pointer; user-select: none; }
+.lc-dg-table th:hover { background: #f3f4f6; }
+.lc-dg-table tr:nth-child(even) td { background: #fafafa; }
+.lc-dg-table td { color: #111827; }
+.lc-dg-pages { display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em; font-size: 0.82em; color: #6b7280; }
+.lc-dg-pages button { background: none; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.15em 0.55em; cursor: pointer; color: #374151; }
+.lc-dg-pages button:hover { background: #f3f4f6; }
+
+/* ── chart ─────────────────────────────────────────── */
+.lc-chart { margin: 1em 0; }
+.lc-chart svg { display: block; width: 100%; height: auto; }
+.lc-chart-title { font-size: 0.82em; font-weight: 600; color: #374151; margin-bottom: 0.3em; }
+</style>
+
+<script>
+(function () {
+
+  window.lcDatasets = window.lcDatasets || {};
+
+  /* ── CSV parser ─────────────────────────────────── */
+  function parseCSV(text) {
+    var lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    var headers = splitCSVRow(lines[0]);
+    return lines.slice(1).filter(function (l) { return l.trim(); }).map(function (l) {
+      var vals = splitCSVRow(l);
+      var row = {};
+      headers.forEach(function (h, i) {
+        var v = vals[i] !== undefined ? vals[i] : "";
+        row[h] = v !== "" && !isNaN(v) ? +v : v;
+      });
+      return row;
+    });
+  }
+  function splitCSVRow(line) {
+    var out = [], cur = "", inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { out.push(cur.trim()); cur = ""; }
+      else cur += ch;
+    }
+    out.push(cur.trim());
+    return out;
+  }
+
+  /* ── .dataset upgrade ───────────────────────────── */
+  function upgradeDataset(el) {
+    if (el.dataset.lcDsDone) return; el.dataset.lcDsDone = "1";
+    var id = el.id || el.getAttribute("id");
+    if (!id) return;
+    var code = el.querySelector("code") || el;
+    var text = code.textContent.trim();
+    var data;
+    try { data = JSON.parse(text); } catch (e) { data = parseCSV(text); }
+    if (!Array.isArray(data)) data = [data];
+    window.lcDatasets[id] = data;
+  }
+
+  /* ── .datagrid upgrade ──────────────────────────── */
+  function upgradeDatagrid(el) {
+    if (el.dataset.lcDgDone) return; el.dataset.lcDgDone = "1";
+    var bindId = el.getAttribute("bind");
+    var perPage = parseInt(el.getAttribute("rows") || "0", 10) || 0;
+    var data = window.lcDatasets[bindId];
+    if (!data || !data.length) {
+      el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ No dataset: <code>" + (bindId || "?") + "</code></p>"; return;
+    }
+    el.className = "lc-datagrid";
+    var cols = Object.keys(data[0]);
+    var sortCol = null, sortAsc = true, page = 0;
+
+    function render() {
+      var sorted = data.slice();
+      if (sortCol !== null) {
+        sorted.sort(function (a, b) {
+          var va = a[sortCol], vb = b[sortCol];
+          var diff = va > vb ? 1 : va < vb ? -1 : 0;
+          return sortAsc ? diff : -diff;
+        });
+      }
+      var total = sorted.length;
+      var pp = perPage || total;
+      var pages = Math.ceil(total / pp);
+      page = Math.min(page, pages - 1);
+      var slice = sorted.slice(page * pp, (page + 1) * pp);
+
+      var html = "<table class='lc-dg-table'><thead><tr>"
+        + cols.map(function (c) {
+            var arrow = sortCol === c ? (sortAsc ? " ↑" : " ↓") : "";
+            return "<th data-col='" + c + "'>" + c + arrow + "</th>";
+          }).join("") + "</tr></thead><tbody>"
+        + slice.map(function (row) {
+            return "<tr>" + cols.map(function (c) {
+              var v = row[c] !== undefined ? row[c] : "";
+              return "<td>" + v + "</td>";
+            }).join("") + "</tr>";
+          }).join("") + "</tbody></table>";
+
+      if (pages > 1) {
+        html += "<div class='lc-dg-pages'>";
+        if (page > 0)       html += "<button data-pg='" + (page - 1) + "'>←</button>";
+        html += "<span>Page " + (page + 1) + " / " + pages + "</span>";
+        if (page < pages - 1) html += "<button data-pg='" + (page + 1) + "'>→</button>";
+        html += "</div>";
+      }
+
+      el.innerHTML = html;
+      el.querySelectorAll("th[data-col]").forEach(function (th) {
+        th.style.cursor = "pointer";
+        th.addEventListener("click", function () {
+          var col = th.getAttribute("data-col");
+          sortAsc = sortCol === col ? !sortAsc : true;
+          sortCol = col; page = 0; render();
+        });
+      });
+      el.querySelectorAll("[data-pg]").forEach(function (btn) {
+        btn.addEventListener("click", function () { page = +btn.getAttribute("data-pg"); render(); });
+      });
+    }
+    render();
+  }
+
+  /* ── .chart upgrade ─────────────────────────────── */
+  function upgradeChart(el) {
+    if (el.dataset.lcChDone) return; el.dataset.lcChDone = "1";
+    var bindId = el.getAttribute("bind");
+    var type   = el.getAttribute("type") || "bar";
+    var xCol   = el.getAttribute("x");
+    var yCol   = el.getAttribute("y");
+    var title  = el.getAttribute("title") || "";
+    var data   = window.lcDatasets[bindId];
+    if (!data || !data.length || !xCol || !yCol) {
+      el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ Chart needs bind, x, y</p>"; return;
+    }
+    el.className = "lc-chart";
+    if (title) { var h = document.createElement("div"); h.className = "lc-chart-title"; h.textContent = title; el.appendChild(h); }
+    if (type === "line") renderLine(el, data, xCol, yCol);
+    else                 renderBar(el, data, xCol, yCol);
+  }
+
+  function chartSVG(el, W, H) {
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    el.appendChild(svg);
+    return { svg: svg, NS: NS };
+  }
+  function svgEl(c, NS, tag, attrs) {
+    var el = document.createElementNS(NS, tag);
+    Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+    c.appendChild(el); return el;
+  }
+
+  function renderBar(el, data, xCol, yCol) {
+    var W = Math.max(el.offsetWidth || 0, 300), H = 220;
+    var pL = 44, pB = 36, pT = 14, pR = 10;
+    var cW = W - pL - pR, cH = H - pT - pB;
+    var vals = data.map(function (d) { return +d[yCol] || 0; });
+    var maxV = Math.max.apply(null, vals) || 1;
+    var barW = Math.max(4, cW / data.length * 0.6);
+    var gap  = cW / data.length;
+    var s = chartSVG(el, W, H), svg = s.svg, NS = s.NS;
+
+    /* y-axis ticks */
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+      var v = maxV * f, y = pT + cH - f * cH;
+      svgEl(svg, NS, "line", { x1: pL - 4, y1: y, x2: pL + cW, y2: y, stroke: f === 0 ? "#9ca3af" : "#f3f4f6", "stroke-width": 1 });
+      svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" }).textContent = Math.round(v);
+    });
+
+    /* bars */
+    data.forEach(function (d, i) {
+      var val = +d[yCol] || 0;
+      var bH  = (val / maxV) * cH, bX = pL + i * gap + (gap - barW) / 2, bY = pT + cH - bH;
+      svgEl(svg, NS, "rect", { x: bX, y: bY, width: barW, height: Math.max(bH, 1), fill: "#0066cc", rx: 2, opacity: 0.82 });
+      /* x label */
+      svgEl(svg, NS, "text", { x: bX + barW / 2, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
+        .textContent = String(d[xCol]).substring(0, 7);
+    });
+
+    /* y-axis label */
+    svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af",
+      transform: "rotate(-90,8," + (pT + cH / 2) + ")" }).textContent = yCol;
+  }
+
+  function renderLine(el, data, xCol, yCol) {
+    var W = Math.max(el.offsetWidth || 0, 300), H = 220;
+    var pL = 44, pB = 36, pT = 14, pR = 10;
+    var cW = W - pL - pR, cH = H - pT - pB;
+    var vals = data.map(function (d) { return +d[yCol] || 0; });
+    var maxV = Math.max.apply(null, vals) || 1, minV = Math.min.apply(null, vals);
+    if (maxV === minV) { maxV += 1; minV -= 1; }
+    var range = maxV - minV, step = cW / Math.max(data.length - 1, 1);
+    var s = chartSVG(el, W, H), svg = s.svg, NS = s.NS;
+
+    /* grid lines */
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+      var v = minV + range * f, y = pT + cH - f * cH;
+      svgEl(svg, NS, "line", { x1: pL, y1: y, x2: pL + cW, y2: y, stroke: f === 0 ? "#9ca3af" : "#f3f4f6", "stroke-width": 1 });
+      svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" }).textContent = Math.round(v);
+    });
+
+    var pts = data.map(function (d, i) {
+      var val = +d[yCol] || 0;
+      return (pL + i * step) + "," + (pT + cH - ((val - minV) / range) * cH);
+    });
+    svgEl(svg, NS, "polyline", { points: pts.join(" "), stroke: "#0066cc", fill: "none", "stroke-width": 2, "stroke-linejoin": "round" });
+
+    /* dots + x labels */
+    data.forEach(function (d, i) {
+      var val = +d[yCol] || 0;
+      var x = pL + i * step, y = pT + cH - ((val - minV) / range) * cH;
+      svgEl(svg, NS, "circle", { cx: x, cy: y, r: 3, fill: "#0066cc" });
+      svgEl(svg, NS, "text", { x: x, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
+        .textContent = String(d[xCol]).substring(0, 7);
+    });
+
+    svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af",
+      transform: "rotate(-90,8," + (pT + cH / 2) + ")" }).textContent = yCol;
+  }
+
+  /* ── boot ───────────────────────────────────────── */
+  function init(root) {
+    /* datasets must register before grids/charts read them */
+    (root || document).querySelectorAll(".dataset").forEach(upgradeDataset);
+    (root || document).querySelectorAll(".datagrid").forEach(upgradeDatagrid);
+    (root || document).querySelectorAll(".chart").forEach(upgradeChart);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { init(); });
+  else init();
+
+  var _os = window.lcScanElement;
+  window.lcScanElement = function (root) {
+    if (_os) _os(root);
+    (root || document).querySelectorAll(".dataset").forEach(upgradeDataset);
+    (root || document).querySelectorAll(".datagrid").forEach(upgradeDatagrid);
+    (root || document).querySelectorAll(".chart").forEach(upgradeChart);
+  };
+
+})();
+</script>
