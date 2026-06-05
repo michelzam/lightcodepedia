@@ -1718,7 +1718,9 @@
     }).filter(function(s){ return s.label; });
   }
   function markdownBody(s) {
-    return window.marked ? marked.parse(s) : "<pre>" + s + "</pre>";
+    /* ensure IAL tags land on their own paragraph so _applyIAL can process them */
+    var norm = s.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+    return window.marked ? marked.parse(norm) : "<pre>" + s + "</pre>";
   }
   window.lcLoadMarked = loadMarked;
   window.lcScanElement = scanElement;

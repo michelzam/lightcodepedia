@@ -1,52 +1,57 @@
 ---
 ---
-# 🚀 Deployment activity
+# 🚀 Deploys
 
-Show your repository's latest **GitHub Actions runs** — the same list you'd see on GitHub's *Actions* tab — right inside a page, in pure markdown. Each row shows the commit, the workflow, and its delivery status: ✅ done, 🟡 running, ❌ failed.
+Invisible data source that fetches your **GitHub Actions runs** and registers them as a live `.dataset`. Pair it with a `.datagrid` to get a sortable, auto-refreshing deployment table where every row is a clickable link to that run on GitHub.
 
-It only appears when you're **signed in** (it uses your saved GitHub token). Signed-out visitors see a polite "sign in" note instead — nothing is exposed.
+Requires a GitHub Personal Access Token saved via the **Sign in** button (top-right).
 
-## Try it
+## Live example
 
-Your latest deployments.
-{: .deploys }
+[deploys-data](#)
+{: .deploys count="8" }
 
-## How to add one
+[Latest runs](#)
+{: .datagrid bind="deploys" rows="8" }
 
-Write any paragraph and add `{: .deploys }` on the next line:
-
-```markdown
-Your latest deployments.
-{: .deploys }
-```
-
-The paragraph is replaced by the activity list. While a run is still in progress, the list **auto-refreshes** until it finishes.
-
-## Options
-
-| Attribute | Default | What it does |
-|-----------|---------|--------------|
-| `count` | `8` | How many recent runs to show |
-| `repo` | *your repo* | `owner/name` to read from. Defaults to your connected repo (`lc_ed_repo`), or `your-login/lightcodepedia`. |
+## 🥸 How to write one
 
 ```markdown
-Latest 5 runs for a specific repo.
-{: .deploys count="5" repo="octocat/Hello-World" }
+[deploys-data](#)
+{: .deploys count="8" }
+
+[Latest runs](#)
+{: .datagrid bind="deploys" rows="8" }
 ```
+
+- The `.deploys` element is **hidden** — it only fetches data and registers it under the dataset key `deploys`.
+- A compact `🚀 Deploys · [status] · ↻` bar appears just above the table.
+- While a run is still in progress the bar shows **● live** and the data **auto-refreshes every 12 s**.
+- Each table row opens the GitHub Actions run in a new tab.
 
 ## Status icons
 
 | Icon | Meaning |
 |------|---------|
-| ✅ | Completed — success |
-| ❌ | Completed — failed / timed out |
+| ✅ | Success |
+| ❌ | Failed / timed out |
 | 🚫 | Cancelled |
 | ⏭️ | Skipped |
-| 🟡 | In progress (spinning) |
+| 🔄 | In progress |
 | ⏳ | Queued / waiting |
+
+## 🎛️ Knobs
+
+| Block | Attribute | Default | What it does |
+|---|---|---|---|
+| `.deploys` | `count="…"` | `8` | Runs to fetch |
+| `.deploys` | `repo="…"` | _(auto)_ | `owner/repo` override; defaults to signed-in user's fork |
+| `.deploys` | `id="…"` | `deploys` | Dataset key — change when placing multiple deploys blocks on one page |
+| `.datagrid` | `bind="…"` | _(required)_ | Must match the `.deploys` id |
+| `.datagrid` | `rows="…"` | `0` (all) | Rows per page |
 
 ## Notes
 
-- Uses the GitHub Actions API (`/repos/{owner}/{repo}/actions/runs`). Requires **Actions enabled** on the repo (GitHub Pages deployments count).
-- Each refresh costs one API call against your hourly GitHub rate limit; the remaining count is tracked in your avatar menu.
-- For a GitHub Pages site, the relevant workflow is **pages-build-deployment** — that's your "is my site live yet?" status.
+- Uses the GitHub Actions API (`/repos/{owner}/{repo}/actions/runs`). Requires **Actions enabled** on the repo.
+- Each refresh counts against your hourly GitHub rate limit; remaining calls appear in your avatar menu.
+- For a GitHub Pages site the relevant workflow is **pages-build-deployment**.
