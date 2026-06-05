@@ -2397,24 +2397,36 @@
         wrap.style.position = "relative";
         wrap.appendChild(ribbonSvg);
 
+        /* arrowhead marker for ribbons */
+        var NS = "http://www.w3.org/2000/svg";
+        var defs = document.createElementNS(NS, "defs");
+        var mk = document.createElementNS(NS, "marker");
+        mk.setAttribute("id", "lc-rib-arr"); mk.setAttribute("markerWidth", "7"); mk.setAttribute("markerHeight", "7");
+        mk.setAttribute("refX", "6"); mk.setAttribute("refY", "3"); mk.setAttribute("orient", "auto");
+        var mp = document.createElementNS(NS, "path"); mp.setAttribute("d", "M0,0 L0,6 L7,3 z");
+        mp.setAttribute("fill", "#0066cc"); mp.setAttribute("opacity", "0.55");
+        mk.appendChild(mp); defs.appendChild(mk); ribbonSvg.appendChild(defs);
+
         function cardCenter(cardEl) {
           var wr = wrap.getBoundingClientRect(), cr = cardEl.getBoundingClientRect();
           return { x: cr.left - wr.left + cr.width / 2, y: cr.top - wr.top + cr.height / 2 };
         }
         function drawRibbons(srcCard, linkedUrls) {
-          ribbonSvg.innerHTML = "";
+          /* keep defs, clear only paths */
+          Array.from(ribbonSvg.childNodes).forEach(function(n) { if (n !== defs) ribbonSvg.removeChild(n); });
           linkedUrls.forEach(function(url) {
             var tgt = wrap.querySelector('[data-url="' + url + '"]');
             if (!tgt) return;
             var s = cardCenter(srcCard), t = cardCenter(tgt);
             var mx = (s.x + t.x) / 2, my = (s.y + t.y) / 2 - Math.abs(t.x - s.x) * 0.25;
-            var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            var path = document.createElementNS(NS, "path");
             path.setAttribute("d", "M" + s.x + "," + s.y + " Q" + mx + "," + my + " " + t.x + "," + t.y);
             path.setAttribute("fill", "none");
             path.setAttribute("stroke", "#0066cc");
             path.setAttribute("stroke-width", "1.5");
             path.setAttribute("stroke-dasharray", "4 3");
             path.setAttribute("opacity", "0.45");
+            path.setAttribute("marker-end", "url(#lc-rib-arr)");
             ribbonSvg.appendChild(path);
           });
         }
