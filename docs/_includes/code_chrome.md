@@ -2320,10 +2320,13 @@
             .then(function(text) {
               var meta = extractPageMeta(text);
               var title = meta.title || f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-              /* collect .feature status values from IAL markers */
+              /* collect .feature status values — skip code fences and inline code */
+              var scanText = text
+                .replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "")
+                .replace(/`[^`\n]+`/g, "``");
               var features = [];
               var fRe = /\{:\s*\.feature\b([^}]*)\}/g, fm;
-              while ((fm = fRe.exec(text)) !== null) {
+              while ((fm = fRe.exec(scanText)) !== null) {
                 var sm = fm[1].match(/\bstatus="(\w+)"/);
                 features.push(sm ? sm[1] : "");
               }
