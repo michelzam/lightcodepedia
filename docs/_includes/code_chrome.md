@@ -2330,7 +2330,14 @@
                 var sm = fm[1].match(/\bstatus="(\w+)"/);
                 features.push(sm ? sm[1] : "");
               }
-              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features };
+              /* collect internal links for hover ribbons */
+              var cleanLinks = text.replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "").replace(/`[^`\n]+`/g, "");
+              var pageSlug = f.path.replace(/^docs\//, "").replace(/\.md$/i, "");
+              var rawHrefs = [], lRe = /\]\(([^)#\s]+)/g, lm;
+              while ((lm = lRe.exec(cleanLinks)) !== null) {
+                var h = lm[1]; if (/^https?:|^mailto:/.test(h)) continue; rawHrefs.push({ h: h, base: pageSlug });
+              }
+              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features, rawHrefs: rawHrefs };
             })
             .catch(function() {
               var title = f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
@@ -2349,9 +2356,27 @@
           wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
           return;
         }
+        /* resolve internal links between items */
+        var urlSet = {};
+        items.forEach(function(it) { urlSet[it.url] = it; });
+        items.forEach(function(it) {
+          it.links = [];
+          (it.rawHrefs || []).forEach(function(ref) {
+            var resolved;
+            if (/^\//.test(ref.h)) {
+              resolved = ref.h.replace(/\.md$/i, "");
+            } else {
+              var parts = ref.base.split("/"); parts.pop();
+              ref.h.split("/").forEach(function(p) { if (p === "..") parts.pop(); else if (p && p !== ".") parts.push(p); });
+              resolved = "/" + parts.join("/").replace(/\.md$/i, "");
+            }
+            if (urlSet[resolved] && resolved !== it.url) it.links.push(resolved);
+          });
+        });
+
         wrap.innerHTML = items.map(function(item) {
           var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
-          var card = '<div class="lc-card"' + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+          var card = '<div class="lc-card" data-url="' + item.url + '"' + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
           if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
           /* feature status dots */
           if (item.features && item.features.length) {
@@ -2367,6 +2392,42 @@
           }
           return card + '</div>';
         }).join("");
+
+        /* hover ribbons — overlay SVG draws bezier arcs between linked cards */
+        var ribbonSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        ribbonSvg.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;";
+        wrap.style.position = "relative";
+        wrap.appendChild(ribbonSvg);
+
+        function cardCenter(cardEl) {
+          var wr = wrap.getBoundingClientRect(), cr = cardEl.getBoundingClientRect();
+          return { x: cr.left - wr.left + cr.width / 2, y: cr.top - wr.top + cr.height / 2 };
+        }
+        function drawRibbons(srcCard, linkedUrls) {
+          ribbonSvg.innerHTML = "";
+          linkedUrls.forEach(function(url) {
+            var tgt = wrap.querySelector('[data-url="' + url + '"]');
+            if (!tgt) return;
+            var s = cardCenter(srcCard), t = cardCenter(tgt);
+            var mx = (s.x + t.x) / 2, my = (s.y + t.y) / 2 - Math.abs(t.x - s.x) * 0.25;
+            var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", "M" + s.x + "," + s.y + " Q" + mx + "," + my + " " + t.x + "," + t.y);
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke", "#0066cc");
+            path.setAttribute("stroke-width", "1.5");
+            path.setAttribute("stroke-dasharray", "4 3");
+            path.setAttribute("opacity", "0.45");
+            ribbonSvg.appendChild(path);
+          });
+        }
+
+        wrap.querySelectorAll(".lc-card[data-url]").forEach(function(cardEl) {
+          var url = cardEl.getAttribute("data-url");
+          var item = urlSet[url];
+          if (!item || !item.links || !item.links.length) return;
+          cardEl.addEventListener("mouseenter", function() { drawRibbons(cardEl, item.links); });
+          cardEl.addEventListener("mouseleave", function() { ribbonSvg.innerHTML = ""; });
+        });
       })
       .catch(function(e) {
         wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";

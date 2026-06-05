@@ -923,7 +923,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   /* ── Blocks tab ──────────────────────────────────────── */
   var BLOCK_TYPES = ["block","blocks","carousel","menu","video","deploys","recorder",
-    "lightnodes","quiz","pytutor","pyrun","slide","slides","folder","cards","transcript","feature","steps"];
+    "lightnodes","quiz","pytutor","pyrun","slide","slides","folder","cards","transcript","feature","steps","sitemap"];
 
   function escH(s) { return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   function escA(s) { return (s||"").replace(/"/g,"&quot;"); }
