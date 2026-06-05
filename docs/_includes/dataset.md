@@ -31,7 +31,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-table th { background: #f9fafb; font-weight: 600; color: #374151; cursor: pointer; user-select: none; }
 .lc-dg-table th:hover { background: #f3f4f6; }
 .lc-dg-table tr:nth-child(even) td { background: #fafafa; }
-.lc-dg-table td { color: #111827; }
+.lc-dg-table td { color: #111827; user-select: text; }
 .lc-dg-pages { display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em; font-size: 0.82em; color: #6b7280; }
 .lc-dg-pages button { background: none; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.15em 0.55em; cursor: pointer; color: #374151; }
 .lc-dg-pages button:hover { background: #f3f4f6; }
@@ -88,6 +88,26 @@ Auto-included by docs/_layouts/default.html.
     if (el.dataset.lcDsDone) return; el.dataset.lcDsDone = "1";
     var id = el.id || el.getAttribute("id");
     if (!id) return;
+
+    /* remote variant: apply {: .dataset id="x" } to a link → fetch its href */
+    var link = el.querySelector("a[href]");
+    if (link) {
+      var href = link.getAttribute("href");
+      if (/^https?:\/\//.test(href)) {
+        fetch(href)
+          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+          .then(function (text) {
+            var data;
+            try { data = JSON.parse(text); } catch (e) { data = parseCSV(text); }
+            if (!Array.isArray(data)) data = [data];
+            window.lcSetDataset(id, data);
+          })
+          .catch(function (e) { window.lcSetDataset(id, [{ "⚠️": e.message }]); });
+        return;
+      }
+    }
+
+    /* inline code block variant */
     var code = el.querySelector("code") || el;
     var text = code.textContent.trim();
     var data;
@@ -190,22 +210,30 @@ Auto-included by docs/_layouts/default.html.
     var bindId = el.getAttribute("bind");
     if (!bindId) return; /* skip old-style code-block charts */
     el.dataset.lcChDone = "1";
-    var type   = el.getAttribute("type") || "bar";
-    var xCol   = el.getAttribute("x");
-    var yCol   = el.getAttribute("y");
-    var title  = el.getAttribute("title") || "";
-    var data   = window.lcDatasets[bindId];
-    /* replace <p> with a proper block container */
+    var type  = el.getAttribute("type") || "bar";
+    var xCol  = el.getAttribute("x");
+    var yCol  = el.getAttribute("y");
+    var title = el.getAttribute("title") || "";
+
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
     el.parentNode.replaceChild(wrap, el);
-    el = wrap;
-    if (!data || !data.length || !xCol || !yCol) {
-      el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ Chart needs bind, x, y</p>"; return;
+
+    function render(data) {
+      wrap.innerHTML = "";
+      if (!data || !data.length || !xCol || !yCol) {
+        wrap.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ Chart needs bind, x, y</p>"; return;
+      }
+      if (title) { var h = document.createElement("div"); h.className = "lc-chart-title"; h.textContent = title; wrap.appendChild(h); }
+      if (type === "line") renderLine(wrap, data, xCol, yCol);
+      else                 renderBar(wrap, data, xCol, yCol);
     }
-    if (title) { var h = document.createElement("div"); h.className = "lc-chart-title"; h.textContent = title; el.appendChild(h); }
-    if (type === "line") renderLine(el, data, xCol, yCol);
-    else                 renderBar(el, data, xCol, yCol);
+
+    window.lcDatasetListeners[bindId] = window.lcDatasetListeners[bindId] || [];
+    window.lcDatasetListeners[bindId].push(render);
+
+    if (window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);
+    else wrap.innerHTML = "<p style='color:#888;font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
   }
 
   function chartSVG(el, W, H) {
