@@ -41,6 +41,40 @@ Frank,71,4
 [Scores](#)
 {: .datagrid bind="scores" rows="3" }
 
+## Remote / URL source
+
+Apply `{: .dataset }` to a **link** — the href is fetched and parsed as JSON or CSV. The datagrid shows `⏳ Loading…` until data arrives (charts too).
+
+[https://jsonplaceholder.typicode.com/todos?_limit=8](#)
+{: .dataset id="todos" }
+
+[Todo list](#)
+{: .datagrid bind="todos" rows="5" }
+
+````markdown
+[https://jsonplaceholder.typicode.com/todos?_limit=8](#)
+{: .dataset id="todos" }
+
+[Todo list](#)
+{: .datagrid bind="todos" rows="5" }
+````
+
+## Clickable rows
+
+Add a `url` field to any row — the column is **hidden** and the whole row becomes a clickable link (opens in a new tab).
+
+```json
+[
+  {"name":"Google","type":"Search","url":"https://google.com"},
+  {"name":"GitHub","type":"Code","url":"https://github.com"},
+  {"name":"MDN","type":"Docs","url":"https://developer.mozilla.org"}
+]
+```
+{: .dataset id="links" }
+
+[Sites](#)
+{: .datagrid bind="links" }
+
 ## 🥸 How to write one
 
 ````markdown
@@ -56,18 +90,21 @@ Frank,71,4
 {: .datagrid bind="mydata" rows="10" }
 ````
 
-- The `.dataset` block is **hidden** on the page — it only registers the data.
-- `bind="id"` links a view to the dataset by its `id`.
-- Multiple `.datagrid` and `.chart` blocks can share the same dataset.
-- Click any column header to sort the datagrid.
+- The `.dataset` block is **hidden** — it only registers the data.
+- Apply to a **link** (`[Label](https://…)`) to fetch from a URL instead.
+- `bind="id"` wires a view to the dataset; multiple views can share one dataset.
+- Click any **column header** to sort. Sorting persists through pagination.
+- Add a **`url` column** to make rows clickable links.
 
 ## 🎛️ Knobs
 
 | Block | Attribute | Values | What it does |
 |---|---|---|---|
 | `.dataset` | `id="…"` | any string | Registers data under this key |
+| `.dataset` | _(applied to a link)_ | `https://…` href | Fetches JSON or CSV from the URL |
 | `.datagrid` | `bind="…"` | dataset id | Which dataset to display |
 | `.datagrid` | `rows="…"` | number | Rows per page (0 = all) |
+| `.datagrid` | `url` column | URL string | Hidden column; makes rows clickable links |
 | `.chart` | `bind="…"` | dataset id | Which dataset to plot |
 | `.chart` | `type="…"` | `bar` · `line` | Chart type |
 | `.chart` | `x="…"` | column name | Horizontal axis column |
