@@ -1994,8 +1994,9 @@
         body.dataset.lcReady = "1";
         loadMarked(function() {
           body.innerHTML = markdownBody(s.body);
+          _applyIAL(body);
           if (window.lcScanElement) window.lcScanElement(body);
-          else { _applyIAL(body); scanElement(body); }
+          else scanElement(body);
         });
       });
       wrap.appendChild(d);
