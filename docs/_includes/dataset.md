@@ -89,14 +89,19 @@ Auto-included by docs/_layouts/default.html.
 
   /* ── .datagrid upgrade ──────────────────────────── */
   function upgradeDatagrid(el) {
-    if (el.dataset.lcDgDone) return; el.dataset.lcDgDone = "1";
+    if (el.dataset.lcDgDone || el.dataset.lcUpgraded) return;
     var bindId = el.getAttribute("bind");
+    if (!bindId) return; /* skip old-style code-block datagrids */
+    el.dataset.lcDgDone = "1";
     var perPage = parseInt(el.getAttribute("rows") || "0", 10) || 0;
     var data = window.lcDatasets[bindId];
+    var wrap = document.createElement("div");
+    wrap.className = "lc-datagrid";
+    el.parentNode.replaceChild(wrap, el);
+    el = wrap;
     if (!data || !data.length) {
       el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ No dataset: <code>" + (bindId || "?") + "</code></p>"; return;
     }
-    el.className = "lc-datagrid";
     var cols = Object.keys(data[0]);
     var sortCol = null, sortAsc = true, page = 0;
 
@@ -153,17 +158,23 @@ Auto-included by docs/_layouts/default.html.
 
   /* ── .chart upgrade ─────────────────────────────── */
   function upgradeChart(el) {
-    if (el.dataset.lcChDone) return; el.dataset.lcChDone = "1";
+    if (el.dataset.lcChDone) return;
     var bindId = el.getAttribute("bind");
+    if (!bindId) return; /* skip old-style code-block charts */
+    el.dataset.lcChDone = "1";
     var type   = el.getAttribute("type") || "bar";
     var xCol   = el.getAttribute("x");
     var yCol   = el.getAttribute("y");
     var title  = el.getAttribute("title") || "";
     var data   = window.lcDatasets[bindId];
+    /* replace <p> with a proper block container */
+    var wrap = document.createElement("div");
+    wrap.className = "lc-chart";
+    el.parentNode.replaceChild(wrap, el);
+    el = wrap;
     if (!data || !data.length || !xCol || !yCol) {
       el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ Chart needs bind, x, y</p>"; return;
     }
-    el.className = "lc-chart";
     if (title) { var h = document.createElement("div"); h.className = "lc-chart-title"; h.textContent = title; el.appendChild(h); }
     if (type === "line") renderLine(el, data, xCol, yCol);
     else                 renderBar(el, data, xCol, yCol);

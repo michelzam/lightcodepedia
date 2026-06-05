@@ -1751,6 +1751,7 @@
   }
 
   function upgradeChart(el) {
+    if (el.getAttribute("bind")) return; /* dataset-bound — handled by dataset.md */
     var code = el.querySelector("code");
     var raw = (code ? code.textContent : el.textContent).trim();
     var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
@@ -1993,11 +1994,8 @@
         body.dataset.lcReady = "1";
         loadMarked(function() {
           body.innerHTML = markdownBody(s.body);
-          _applyIAL(body);
-          body.querySelectorAll("p.video").forEach(safe(upgradeVideo));
-          body.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
-          body.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
-          if (window.lcUpgradeQuiz) body.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
+          if (window.lcScanElement) window.lcScanElement(body);
+          else { _applyIAL(body); scanElement(body); }
         });
       });
       wrap.appendChild(d);
