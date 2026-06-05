@@ -46,6 +46,15 @@ Auto-included by docs/_layouts/default.html.
 (function () {
 
   window.lcDatasets = window.lcDatasets || {};
+  window.lcDatasetListeners = window.lcDatasetListeners || {};
+
+  /* ── async dataset registration ─────────────────── */
+  if (!window.lcSetDataset) {
+    window.lcSetDataset = function (id, data) {
+      window.lcDatasets[id] = data;
+      (window.lcDatasetListeners[id] || []).forEach(function (fn) { try { fn(data); } catch (e) {} });
+    };
+  }
 
   /* ── CSV parser ─────────────────────────────────── */
   function parseCSV(text) {
@@ -84,7 +93,7 @@ Auto-included by docs/_layouts/default.html.
     var data;
     try { data = JSON.parse(text); } catch (e) { data = parseCSV(text); }
     if (!Array.isArray(data)) data = [data];
-    window.lcDatasets[id] = data;
+    window.lcSetDataset(id, data);
   }
 
   /* ── .datagrid upgrade ──────────────────────────── */
@@ -94,18 +103,22 @@ Auto-included by docs/_layouts/default.html.
     if (!bindId) return; /* skip old-style code-block datagrids */
     el.dataset.lcDgDone = "1";
     var perPage = parseInt(el.getAttribute("rows") || "0", 10) || 0;
-    var data = window.lcDatasets[bindId];
+
     var wrap = document.createElement("div");
     wrap.className = "lc-datagrid";
     el.parentNode.replaceChild(wrap, el);
     el = wrap;
-    if (!data || !data.length) {
-      el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ No dataset: <code>" + (bindId || "?") + "</code></p>"; return;
-    }
-    var cols = Object.keys(data[0]);
+
     var sortCol = null, sortAsc = true, page = 0;
 
-    function render() {
+    function render(data) {
+      if (!data || !data.length) {
+        el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ No data: <code>" + bindId + "</code></p>"; return;
+      }
+      var allCols = Object.keys(data[0]);
+      var urlCol  = allCols.indexOf("url") >= 0 ? "url" : null;
+      var cols    = allCols.filter(function (c) { return c !== "url"; });
+
       var sorted = data.slice();
       if (sortCol !== null) {
         sorted.sort(function (a, b) {
@@ -114,10 +127,9 @@ Auto-included by docs/_layouts/default.html.
           return sortAsc ? diff : -diff;
         });
       }
-      var total = sorted.length;
-      var pp = perPage || total;
+      var total = sorted.length, pp = perPage || total;
       var pages = Math.ceil(total / pp);
-      page = Math.min(page, pages - 1);
+      page = Math.min(page, Math.max(0, pages - 1));
       var slice = sorted.slice(page * pp, (page + 1) * pp);
 
       var html = "<table class='lc-dg-table'><thead><tr>"
@@ -126,15 +138,18 @@ Auto-included by docs/_layouts/default.html.
             return "<th data-col='" + c + "'>" + c + arrow + "</th>";
           }).join("") + "</tr></thead><tbody>"
         + slice.map(function (row) {
-            return "<tr>" + cols.map(function (c) {
-              var v = row[c] !== undefined ? row[c] : "";
-              return "<td>" + v + "</td>";
-            }).join("") + "</tr>";
+            var urlVal = urlCol ? (row[urlCol] || "") : "";
+            var trAttrs = urlVal ? " data-url='" + urlVal.replace(/'/g, "&#39;") + "' style='cursor:pointer'" : "";
+            return "<tr" + trAttrs + ">"
+              + cols.map(function (c) {
+                  var v = row[c] !== undefined ? row[c] : "";
+                  return "<td>" + v + "</td>";
+                }).join("") + "</tr>";
           }).join("") + "</tbody></table>";
 
       if (pages > 1) {
         html += "<div class='lc-dg-pages'>";
-        if (page > 0)       html += "<button data-pg='" + (page - 1) + "'>←</button>";
+        if (page > 0)         html += "<button data-pg='" + (page - 1) + "'>←</button>";
         html += "<span>Page " + (page + 1) + " / " + pages + "</span>";
         if (page < pages - 1) html += "<button data-pg='" + (page + 1) + "'>→</button>";
         html += "</div>";
@@ -142,18 +157,31 @@ Auto-included by docs/_layouts/default.html.
 
       el.innerHTML = html;
       el.querySelectorAll("th[data-col]").forEach(function (th) {
-        th.style.cursor = "pointer";
         th.addEventListener("click", function () {
           var col = th.getAttribute("data-col");
           sortAsc = sortCol === col ? !sortAsc : true;
-          sortCol = col; page = 0; render();
+          sortCol = col; page = 0; render(window.lcDatasets[bindId] || data);
         });
       });
       el.querySelectorAll("[data-pg]").forEach(function (btn) {
-        btn.addEventListener("click", function () { page = +btn.getAttribute("data-pg"); render(); });
+        btn.addEventListener("click", function () {
+          page = +btn.getAttribute("data-pg"); render(window.lcDatasets[bindId] || data);
+        });
       });
+      if (urlCol) {
+        el.querySelectorAll("tr[data-url]").forEach(function (tr) {
+          var u = tr.getAttribute("data-url");
+          if (u) tr.addEventListener("click", function () { window.open(u, "_blank", "noopener"); });
+        });
+      }
     }
-    render();
+
+    /* register as persistent listener so auto-refresh re-renders */
+    window.lcDatasetListeners[bindId] = window.lcDatasetListeners[bindId] || [];
+    window.lcDatasetListeners[bindId].push(render);
+
+    if (window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);
+    else el.innerHTML = "<p style='color:#888;font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
   }
 
   /* ── .chart upgrade ─────────────────────────────── */

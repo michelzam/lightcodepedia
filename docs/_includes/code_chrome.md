@@ -3736,53 +3736,43 @@
     el.dataset.lcUpgraded = "1";
     var count    = parseInt(el.getAttribute("count") || "8", 10);
     var repoAttr = el.getAttribute("repo") || "";
+    var dsId     = el.getAttribute("id") || "deploys";
 
-    var box = document.createElement("div");
-    box.className = "lc-deploys";
-    box.innerHTML = [
+    /* hide source element like a .dataset block */
+    el.style.display = "none";
+
+    /* inject a small control bar right after the hidden element */
+    var bar = document.createElement("div");
+    bar.className = "lc-deploys-bar";
+    bar.innerHTML = [
       '<style>',
-      '.lc-deploys{border:1px solid #e2e2e2;border-radius:10px;overflow:hidden;font-family:inherit;margin:1em 0;max-width:640px}',
-      '.lc-deploys-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f6f8fa;border-bottom:1px solid #e2e2e2;font-size:.9em;font-weight:600}',
-      '.lc-deploys-head .lc-deploys-sp{margin-left:auto;font-size:.8em;font-weight:400;color:#888}',
-      '.lc-deploys-refresh{border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;font-size:.8em;padding:3px 8px}',
-      '.lc-deploys-refresh:hover{background:#f0f0f0}',
-      '.lc-deploys-list{display:flex;flex-direction:column}',
-      '.lc-deploys-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #f0f0f0;text-decoration:none;color:#222}',
-      '.lc-deploys-row:last-child{border-bottom:none}',
-      '.lc-deploys-row:hover{background:#f8fafc}',
-      '.lc-deploys-ic{font-size:1.05em;flex-shrink:0;width:1.4em;text-align:center}',
-      '.lc-deploys-main{min-width:0;flex:1}',
-      '.lc-deploys-title{font-size:.88em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '.lc-deploys-meta{font-size:.74em;color:#888;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '.lc-deploys-arrow{color:#bbb;font-size:.8em;flex-shrink:0}',
-      '.lc-deploys-msg{padding:14px;font-size:.85em;color:#666}',
-      '.lc-deploys-spin{display:inline-block;animation:lcSpin 1s linear infinite}',
-      '@keyframes lcSpin{to{transform:rotate(360deg)}}',
+      '.lc-deploys-bar{display:flex;align-items:center;gap:8px;font-size:.82em;color:#6b7280;margin:.25em 0}',
+      '.lc-deploys-bar strong{color:#374151}',
+      '.lc-deploys-bar-sp{margin-left:auto}',
+      '.lc-deploys-bar-btn{border:1px solid #d1d5db;background:#fff;border-radius:4px;cursor:pointer;font-size:1em;padding:0 .4em;line-height:1.7;color:#374151}',
+      '.lc-deploys-bar-btn:hover{background:#f3f4f6}',
       '</style>',
-      '<div class="lc-deploys-head"><span>🚀 Deployment activity</span>',
-      '  <span class="lc-deploys-sp" id="lc-dep-status"></span>',
-      '  <button class="lc-deploys-refresh" id="lc-dep-refresh" title="Refresh">↻</button>',
-      '</div>',
-      '<div class="lc-deploys-list" id="lc-dep-list"><div class="lc-deploys-msg">Loading…</div></div>'
+      '<strong>🚀 Deploys</strong>',
+      '<span class="lc-deploys-bar-sp" id="lc-dep-sp-' + dsId + '"></span>',
+      '<button class="lc-deploys-bar-btn" id="lc-dep-btn-' + dsId + '" title="Refresh">↻</button>'
     ].join("");
-    el.parentNode.replaceChild(box, el);
+    el.parentNode.insertBefore(bar, el.nextSibling);
 
-    var listEl    = box.querySelector("#lc-dep-list");
-    var statusEl  = box.querySelector("#lc-dep-status");
-    var refreshEl = box.querySelector("#lc-dep-refresh");
-
-    function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]; }); }
-    function msg(html){ listEl.innerHTML = '<div class="lc-deploys-msg">' + html + '</div>'; }
+    var spEl  = bar.querySelector("#lc-dep-sp-"  + dsId);
+    var btnEl = bar.querySelector("#lc-dep-btn-" + dsId);
 
     var pat = localStorage.getItem("lc_ed_pat") || "";
-    if (!pat) { statusEl.textContent = ""; refreshEl.style.display = "none"; msg('🔒 Sign in (top-right) to see your latest submissions and their delivery status.'); return; }
+    if (!pat) {
+      spEl.innerHTML = '🔒 <a href="#" style="color:inherit">Sign in</a> to see deployment activity';
+      btnEl.style.display = "none"; return;
+    }
 
     var repo = repoAttr || localStorage.getItem("lc_ed_repo") || "";
     if (!repo) {
       var u = null; try { u = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
       if (u && u.login) repo = u.login + "/lightcodepedia";
     }
-    if (!repo || repo.indexOf("/") < 0) { msg("⚠️ Couldn't determine your repository. Add <code>repo=\"owner/name\"</code> to the tag."); return; }
+    if (!repo || repo.indexOf("/") < 0) { spEl.textContent = "⚠️ No repo configured"; return; }
 
     function timeAgo(iso) {
       var s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -3791,63 +3781,62 @@
       var h = Math.floor(m / 60); if (h < 24) return h + "h ago";
       return Math.floor(h / 24) + "d ago";
     }
-    function icon(r) {
+    function statusIcon(r) {
       if (r.status !== "completed") {
-        return r.status === "queued" || r.status === "waiting" || r.status === "pending"
-          ? '<span class="lc-deploys-ic">⏳</span>'
-          : '<span class="lc-deploys-ic lc-deploys-spin">🟡</span>';
+        return r.status === "queued" || r.status === "waiting" || r.status === "pending" ? "⏳" : "🔄";
       }
       switch (r.conclusion) {
-        case "success":   return '<span class="lc-deploys-ic">✅</span>';
+        case "success":   return "✅";
         case "failure":
-        case "timed_out": return '<span class="lc-deploys-ic">❌</span>';
-        case "cancelled": return '<span class="lc-deploys-ic">🚫</span>';
-        case "skipped":   return '<span class="lc-deploys-ic">⏭️</span>';
-        default:          return '<span class="lc-deploys-ic">⚪</span>';
+        case "timed_out": return "❌";
+        case "cancelled": return "🚫";
+        case "skipped":   return "⏭️";
+        default:          return "⚪";
       }
     }
-    function row(r) {
-      var title = ((r.display_title || (r.head_commit && r.head_commit.message) || r.name || "Run") + "").split("\n")[0];
-      var actor = (r.actor && r.actor.login) ? "@" + r.actor.login : "";
-      var state = r.status === "completed" ? (r.conclusion || "done") : r.status.replace("_", " ");
-      var meta  = [esc(r.name || "workflow"), esc(state), timeAgo(r.created_at), esc(actor)].filter(Boolean).join(" · ");
-      return '<a class="lc-deploys-row" href="' + esc(r.html_url) + '" target="_blank" rel="noopener">'
-        + icon(r)
-        + '<span class="lc-deploys-main"><span class="lc-deploys-title">' + esc(title) + '</span>'
-        + '<span class="lc-deploys-meta">' + meta + '</span></span>'
-        + '<span class="lc-deploys-arrow">↗</span></a>';
+    function normalize(runs) {
+      return runs.map(function (r) {
+        var commit = ((r.display_title || (r.head_commit && r.head_commit.message) || r.name || "Run") + "").split("\n")[0];
+        var state  = r.status === "completed" ? (r.conclusion || "done") : r.status.replace(/_/g, " ");
+        var author = r.actor && r.actor.login ? "@" + r.actor.login : "";
+        return { status: statusIcon(r), commit: commit, workflow: r.name || "", state: state,
+                 when: timeAgo(r.created_at), author: author, url: r.html_url || "" };
+      });
     }
 
     var pollTimer = null, polls = 0;
     function fetchRuns() {
-      statusEl.textContent = "Loading…";
+      spEl.textContent = "Loading…";
       fetch("https://api.github.com/repos/" + repo + "/actions/runs?per_page=" + count, {
         headers: { Authorization: "Bearer " + pat, "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json" }
       })
-      .then(function(r){
+      .then(function (r) {
         var rem = parseInt(r.headers.get("X-RateLimit-Remaining") || "-1", 10);
         if (rem >= 0) localStorage.setItem("lc_rate_remaining", String(rem));
         if (!r.ok) throw new Error("GitHub API " + r.status);
         return r.json();
       })
-      .then(function(data){
+      .then(function (data) {
         var runs = (data.workflow_runs || []).slice(0, count);
-        if (!runs.length) { msg("No workflow runs yet — push a change and your delivery status will appear here."); statusEl.textContent = ""; return; }
-        listEl.innerHTML = runs.map(row).join("");
-        var ongoing = runs.some(function(r){ return r.status !== "completed"; });
-        statusEl.textContent = ongoing ? "● live" : "updated " + new Date().toLocaleTimeString();
+        if (!runs.length) {
+          if (window.lcSetDataset) window.lcSetDataset(dsId, []);
+          spEl.textContent = "No runs yet"; return;
+        }
+        var rows = normalize(runs);
+        if (window.lcSetDataset) window.lcSetDataset(dsId, rows);
+        var ongoing = runs.some(function (r) { return r.status !== "completed"; });
+        spEl.textContent = ongoing ? "● live" : "updated " + new Date().toLocaleTimeString();
         clearTimeout(pollTimer);
-        // Auto-refresh while something is still running (cap ~5 min of polling).
         if (ongoing && polls < 25) { polls++; pollTimer = setTimeout(fetchRuns, 12000); }
         else polls = 0;
       })
-      .catch(function(e){
-        statusEl.textContent = "";
-        msg("⚠️ " + esc(e.message) + (/40[13]/.test(e.message) ? " — is Actions enabled on this repo?" : ""));
+      .catch(function (e) {
+        spEl.textContent = "⚠️ " + e.message;
+        if (window.lcSetDataset) window.lcSetDataset(dsId, []);
       });
     }
-    refreshEl.addEventListener("click", function(){ polls = 0; fetchRuns(); });
-    window.addEventListener("pagehide", function(){ clearTimeout(pollTimer); });
+    btnEl.addEventListener("click", function () { polls = 0; fetchRuns(); });
+    window.addEventListener("pagehide", function () { clearTimeout(pollTimer); });
     fetchRuns();
   }
 

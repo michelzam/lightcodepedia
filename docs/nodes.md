@@ -6,3 +6,11 @@ Every circle is a LightNode — a fork of Lightcodepedia hosted by a community m
 
 The live network map.
 {: .lightnodes }
+
+## 🚀 Deployment activity
+
+[deploys-data](#)
+{: .deploys count="10" }
+
+[Latest runs](#)
+{: .datagrid bind="deploys" rows="10" }
