@@ -5,6 +5,9 @@ Render Gherkin BDD scenarios as styled cards. Pair a `.feature` block with a `.s
 
 ```gherkin
 Feature: User login
+    As a curious lowcoder to be
+    I want to see the dashboard 
+    So that I can decide quickly
   Scenario: Successful login
     Given I am on the login page
     When I enter valid credentials
