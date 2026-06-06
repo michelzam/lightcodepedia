@@ -1,6 +1,9 @@
+---
+---
 # 🦄 Feature
 
-Render Gherkin BDD scenarios as styled cards. Pair a `.feature` block with a `.steps` Python block to get a **▶ Run** button — the steps block disappears from the page and its implementations slot into the card's expandable step rows.
+Render Gherkin BDD scenarios as styled cards. Embed `:::python ... :::` blocks directly after each step to attach a runnable implementation — the card gets a **▶ Run** button and the code appears as expandable step panels. `self.page`, `Dataset`, and all jssteps classes are available in every step.
+
 ## 📺 Display-only (no runner)
 
 ```gherkin
@@ -17,32 +20,31 @@ Feature: User login
 
 ## 🏃🏻‍♀️ With runnable steps
 
-Click any step row to see its Python implementation. Click **▶ Run** to execute all steps.
+Click a step row to see its implementation. Click **▶ Run** to execute all steps.
 
 ```gherkin
 Feature: Temperature converter
   Scenario: Celsius to Fahrenheit
     Given a temperature of 100 degrees Celsius
+    :::python
+    self.celsius = 100
+    :::
     When converted to Fahrenheit using (C × 9/5) + 32
+    :::python
+    self.fahrenheit = (self.celsius * 9 / 5) + 32
+    :::
     Then the result should be 212
+    :::python
+    assert self.fahrenheit == 212.0, f"Got {self.fahrenheit}"
+    :::
     And zero Celsius equals 32 Fahrenheit
+    :::python
+    assert (0 * 9 / 5) + 32 == 32.0
+    :::
 ```
-{: .feature status="passing" tags="math,utils" }
+{: .feature id="temp-feature" status="pending" tags="math,utils" }
 
-```python
-# Given a temperature of 100 degrees Celsius
-celsius = 100
-
-# When converted to Fahrenheit using (C × 9/5) + 32
-fahrenheit = (celsius * 9 / 5) + 32
-
-# Then the result should be 212
-assert fahrenheit == 212.0, "Got " + str(fahrenheit)
-
-# And zero Celsius equals 32 Fahrenheit
-assert (0 * 9 / 5) + 32 == 32.0
-```
-{: .steps }
+`self` is shared across all steps in a run — state set in one step (`self.celsius`) is available in later ones.
 
 ## 😰 Failing step example
 
@@ -50,57 +52,78 @@ assert (0 * 9 / 5) + 32 == 32.0
 Feature: List validator
   Scenario: Reject empty lists
     Given an empty list
+    :::python
+    self.items = []
+    :::
     When I check if it is valid
+    :::python
+    self.result = len(self.items) > 0
+    :::
     Then validation should fail
+    :::python
+    assert self.result == False, "Expected validation to fail for empty list"
+    :::
 ```
-{: .feature status="failing" tags="validation" }
+{: .feature id="list-feature" status="pending" tags="validation" }
 
-```python
-# Given an empty list
-items = []
+## 🔬 DOM bridge probe
 
-# When I check if it is valid
-def is_valid(lst):
-    return len(lst) > 0
-result = is_valid(items)
+Can MicroPython steps reach page components via `self.page`?
 
-# Then validation should fail
-assert result == True   # intentional bug — should be False
+```gherkin
+Feature: MicroPython JS bridge
+  Scenario: DOM access via self.page
+    Given temp-feature card is reachable via self.page
+    :::python
+    self.card = self.page.temp_feature
+    assert self.card.exists, "temp-feature not found — is id set?"
+    :::
+    When I read its data-lc-id attribute
+    :::python
+    id_val = self.card.attr("data-lc-id")
+    assert id_val == "temp-feature", f"expected 'temp-feature', got {repr(id_val)}"
+    :::
+    Then the card is visible
+    :::python
+    assert self.card.visible, "temp-feature card is not visible"
+    :::
+    And I can reach a child element inside it
+    :::python
+    header = self.card.q(".lc-feature-header")
+    assert header.exists, ".lc-feature-header not found in card"
+    :::
 ```
-{: .steps }
+{: .feature id="js-bridge-feature" status="pending" tags="probe,js-bridge" }
 
 ## 🥸 How to write one
 
-Add `{: .feature }` after a gherkin fence. For runnable steps, add a python fence immediately after with `{: .steps }` — the Python block disappears from the page and its implementations are slotted into the card.
+After each Gherkin step, add a `:::python ... :::` block with the implementation:
 
 ````markdown
 ```gherkin
 Feature: My feature
   Scenario: A scenario
     Given some precondition
+    :::python
+    self.x = 42
+    :::
     When an action happens
+    :::python
+    self.y = self.x * 2
+    :::
     Then the result is correct
+    :::python
+    assert self.y == 84
+    :::
 ```
-{: .feature status="pending" tags="example" }
-
-```python
-# Given some precondition
-x = 42
-
-# When an action happens
-y = x * 2
-
-# Then the result is correct
-assert y == 84
-```
-{: .steps }
+{: .feature id="my-feature" status="pending" tags="example" }
 ````
 
-- Start each step's Python with a `# Keyword ...` comment matching the Gherkin keyword.
-- Steps **share context** — variables from earlier steps are available in later ones.
-- Each **▶ Run** starts a fresh MicroPython interpreter; runs are isolated from each other.
+- `:::python ... :::` is parsed from the Gherkin block — not rendered as a separate code block.
+- **Shared context**: `self` is the same object across all steps in a run.
+- All jssteps classes are available without import: `self.page`, `Dataset`, `Datagrid`, `Chart`, `FeatureCard`.
+- Give the `.feature` card an `id` to make it reachable as `self.page.my_feature` from other `.jssteps` blocks.
 - Click a step row to **expand its implementation** inline.
-- Steps after a failure are **skipped** (shown with ○).
 
 ## 🎛️ Knobs
 
@@ -108,3 +131,4 @@ assert y == 84
 |---|---|---|---|
 | `.feature` | `status="…"` | `passing` · `failing` · `pending` | Border colour and badge; updated live after a run |
 | `.feature` | `tags="…"` | comma-separated | Chips in the card header |
+| `.feature` | `id="…"` | Python-compatible id | Makes the card reachable as `self.page.<id>` in jssteps |
