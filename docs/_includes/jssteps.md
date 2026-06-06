@@ -165,7 +165,7 @@ class Page:
     def __getattr__(self, name):
         if name.startswith("_"):
             raise AttributeError(name)
-        el = js.document.querySelector("[data-lc-id='" + name + "']")
+        el = js.document.querySelector("[data-lc-id='" + name.replace("_", "-") + "']")
         if el:
             return _wrap(el)
         raise AttributeError("no component with id='" + name + "' on this page")
@@ -274,7 +274,7 @@ def _run_all():
         var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
         if (!runFn) {
           var fns = [];
-          try { fns = Object.getOwnPropertyNames(mp).filter(function(k){ return typeof mp[k] === "function"; }); } catch(_) {}
+          try { fns = Object.getOwnPropertyNames(mp).filter(function(k){ return typeof mp[k] === "function"; }); } catch(e2) {}
           body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ mp has no runPython. Available: " + (fns.join(", ") || "(none — mp is: " + String(mp) + ")") + "</div>";
           btn.disabled = false; btn.textContent = "▶ Run"; return;
         }
@@ -293,7 +293,7 @@ def _run_all():
         // _run_all() also stores the result in window._lcJssResult as a fallback.
         if (jsonStr == null) jsonStr = window._lcJssResult;
         var results;
-        try { results = JSON.parse(jsonStr); } catch(_) {}
+        try { results = JSON.parse(jsonStr); } catch(e3) {}
         if (!Array.isArray(results)) {
           body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ unexpected output: " + String(jsonStr).slice(0, 200) + "</div>";
           btn.disabled = false; btn.textContent = "▶ Run"; return;
