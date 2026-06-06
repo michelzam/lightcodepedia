@@ -14,7 +14,29 @@ BASIC CARD
   ```
   {: .feature status="passing" tags="smoke" }
 
-WITH RUNNABLE STEPS (immediately after the feature block)
+INLINE STEPS (:::python::: blocks inside the gherkin fence)
+  ```gherkin
+  Feature: My feature
+    Scenario: A scenario
+      Given some precondition
+      :::python
+      self.x = 42
+      :::
+      When an action happens
+      :::python
+      self.y = self.x * 2
+      :::
+      Then the result is correct
+      :::python
+      assert self.y == 84
+      :::
+  ```
+  {: .feature status="pending" tags="example" }
+
+  self is shared across all steps. self.page, Dataset, Datagrid, Chart, FeatureCard
+  are all available (injected from the jssteps preamble).
+
+LEGACY: WITH RUNNABLE STEPS (separate .steps block, still supported)
   ```python
   # Given some precondition
   x = 42
@@ -40,13 +62,13 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 {%- endcomment -%}
 
 <style>
-/* ── card shell ──────────────────────────────────────── */
+/* ── card shell ────────────────────────────────────────────────── */
 .lc-feature { border: 1px solid #e5e7eb; border-left: 4px solid #9ca3af; border-radius: 0 8px 8px 0; margin: 1.2em 0; background: #fff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .lc-feature-passing { border-left-color: #22c55e; }
 .lc-feature-failing  { border-left-color: #ef4444; }
 .lc-feature-pending  { border-left-color: #f59e0b; }
 
-/* ── header ──────────────────────────────────────────── */
+/* ── header ──────────────────────────────────────────────────── */
 .lc-feature-header { display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap; padding: 0.55em 1em 0.5em; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 0.88em; }
 .lc-feature-name { font-weight: 600; color: #111827; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -63,14 +85,14 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-run:hover:not(:disabled) { background: #0052a3; }
 .lc-feature-run:disabled { background: #9ca3af; cursor: progress; }
 
-/* ── scenario / narrative ────────────────────────────── */
+/* ── scenario / narrative ─────────────────────────────────────────────── */
 .lc-feature-scenario { padding: 0.5em 1em 0.2em; font-size: 0.82em; font-weight: 600; color: #6b7280; letter-spacing: 0.03em; text-transform: uppercase; }
 .lc-feature-narrative { padding: 0.1em 1em; font-size: 0.83em; color: #9ca3af; font-style: italic; }
 .lc-feature-story { padding: 0.1em 1em; font-size: 0.83em; display: flex; gap: 0.4em; align-items: baseline; flex-wrap: wrap; }
 .lc-feature-story-keyword { color: #7c3aed; font-weight: 600; font-style: normal; flex-shrink: 0; }
 .lc-feature-story-text { color: #374151; font-style: italic; }
 
-/* ── step rows ───────────────────────────────────────── */
+/* ── step rows ──────────────────────────────────────────────────────────── */
 .lc-feature-steps { padding: 0.35em 0; }
 .lc-feature-step { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .lc-feature-step-row { display: flex; align-items: baseline; gap: 0.55em; padding: 0.28em 1em; font-size: 0.88em; line-height: 1.5; }
@@ -84,13 +106,13 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-step-text { color: #111827; }
 .lc-feature-step-time { margin-left: auto; font-size: 0.75em; color: #9ca3af; }
 
-/* ── expandable Python impl ──────────────────────────── */
+/* ── expandable Python impl ────────────────────────────────────────────────── */
 .lc-feature-step-impl { display: none; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
 .lc-feature-step-impl.open { display: block; }
 .lc-feature-step-impl pre { margin: 0 !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; max-height: 220px; overflow-y: auto; }
 .lc-feature-step-impl pre code { font-size: 0.82em !important; line-height: 1.55 !important; }
 
-/* ── error ───────────────────────────────────────────── */
+/* ── error ──────────────────────────────────────────────────────────────── */
 .lc-feature-step-err { padding: 0.2em 1em 0.4em 2.65em; font-size: 0.8em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #dc2626; white-space: pre-wrap; }
 
 /* ── Prism token colours (One Dark–ish, scoped to feature impl panels) ── */
@@ -106,11 +128,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-step-impl pre               { background: #1e1e2e !important; }
 .lc-feature-step-impl pre code          { color: #cdd6f4; }
 
-/* ── fallback plain body (display-only) ─────────────── */
+/* ── fallback plain body (display-only) ──────────────────────────────────── */
 .lc-feature-body pre { margin: 0; border-radius: 0; border: none; box-shadow: none; }
 .lc-feature-body pre code { font-size: 0.83em; line-height: 1.6; }
 
-/* ── suite dashboard ─────────────────────────────────── */
+/* ── suite dashboard ──────────────────────────────────────────────────────── */
 .lc-feature-suite { border: 1px solid #e5e7eb; border-radius: 8px; margin: 0 0 0.5em; background: #fff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .lc-suite-header { display: flex; align-items: center; gap: 0.7em; padding: 0.55em 1em; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 0.88em; }
 .lc-suite-title { font-weight: 600; color: #111827; }
@@ -137,7 +159,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 <script>
 (function () {
 
-  /* ── Shared MicroPython module promise ───────────────── */
+  /* ── Shared MicroPython module promise ─────────────────────────────────── */
   var _mpModuleP = null;
   function getMpModule() {
     if (!_mpModuleP) {
@@ -146,11 +168,22 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     return _mpModuleP;
   }
 
-  /* ── Parse Gherkin rows ──────────────────────────────── */
+  /* ── Parse Gherkin rows ──────────────────────────────────────────────── */
   function parseGherkinRows(text) {
     var rows = [];
+    var inPy = false, pyLines = [];
     text.split("\n").forEach(function(l) {
       var t = l.trim();
+      if (inPy) {
+        if (t === ":::") {
+          rows.push({ kind: "python", code: pyLines.join("\n") });
+          inPy = false;
+        } else {
+          pyLines.push(l);
+        }
+        return;
+      }
+      if (t === ":::python") { inPy = true; pyLines = []; return; }
       var hm = t.match(/^(Feature|Scenario(?:\s+Outline)?|Background|Examples)\s*:\s*(.*)/i);
       if (hm) { rows.push({ kind: /^feature$/i.test(hm[1]) ? "feature" : "scenario", keyword: hm[1], text: hm[2].trim() }); return; }
       var sm = t.match(/^(Given|When|Then|And|But)\s+(.*)/i);
@@ -159,10 +192,17 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       if (um) { rows.push({ kind: "story", keyword: um[1].trimRight(), text: um[2].trim() }); return; }
       if (t && !/^#/.test(t)) rows.push({ kind: "narrative", text: t });
     });
+    // attach :::python::: blocks to their preceding step
+    for (var i = rows.length - 1; i > 0; i--) {
+      if (rows[i].kind === "python" && rows[i-1].kind === "step") {
+        rows[i-1].code = rows[i].code;
+        rows.splice(i, 1);
+      }
+    }
     return rows;
   }
 
-  /* ── Parse Python into per-step chunks ──────────────── */
+  /* ── Parse Python into per-step chunks ────────────────────────────────────────── */
   var PY_STEP_RE = /^\s*#\s*(Given|When|Then|And|But)\b/i;
   function parsePyChunks(pyText) {
     var chunks = [], cur = null;
@@ -178,7 +218,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     return chunks.filter(function(c) { return c.length > 0; });
   }
 
-  /* ── Update badge + notify suite row ─────────────────── */
+  /* ── Update badge + notify suite row ────────────────────────────────────────── */
   function setCardStatus(card, status) {
     card.classList.remove("lc-feature-passing", "lc-feature-failing", "lc-feature-pending");
     if (status) card.classList.add("lc-feature-" + status);
@@ -224,7 +264,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     }
   }
 
-  /* ── Update suite summary line ────────────────────────── */
+  /* ── Update suite summary line ────────────────────────────────────────────────────── */
   function updateSuiteSummary(suiteEl) {
     var rows = suiteEl.querySelectorAll(".lc-suite-row");
     var pass = 0, fail = 0, pend = 0;
@@ -244,7 +284,70 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     summary.innerHTML = parts.join(" &nbsp; ");
   }
 
-  /* ── Run all step chunks for one card (returns Promise) ─ */
+  /* ── Run inline :::python::: steps via jssteps preamble ─────────────────────── */
+  function runFeatureNew(card, runBtn) {
+    var stepEls = card.querySelectorAll(".lc-feature-step.has-impl");
+    stepEls.forEach(function(s) {
+      s.querySelector(".lc-feature-step-icon").className = "lc-feature-step-icon";
+      s.querySelector(".lc-feature-step-icon").textContent = "●";
+      s.querySelector(".lc-feature-step-time").textContent = "";
+      var err = s.querySelector(".lc-feature-step-err");
+      if (err) err.parentNode.removeChild(err);
+    });
+    setCardStatus(card, "pending");
+    if (runBtn) { runBtn.disabled = true; runBtn.textContent = "…"; }
+
+    var scenarioParts = [];
+    stepEls.forEach(function(s, i) {
+      var kw  = (s.querySelector(".lc-feature-step-keyword") || {}).textContent || "";
+      var txt = (s.querySelector(".lc-feature-step-text")    || {}).textContent || "";
+      var label = (kw + " " + txt).trim();
+      var body = (s._lcPyCode || "").replace(/^\n+|\n+$/g, "");
+      var indented = body.split("\n").map(function(l) { return "    " + l; }).join("\n");
+      scenarioParts.push("@scenario(" + JSON.stringify(label) + ")\ndef _s" + i + "(self):\n" + (indented || "    pass"));
+    });
+
+    var preamble = (document.getElementById("lc-jss-preamble") || {}).textContent || "";
+    var fullCode = preamble + "\n" + scenarioParts.join("\n\n") + "\n_run_all()";
+
+    var mpP = window._lcMpReady || getMpModule()
+      .then(function(mjs) { return mjs.loadMicroPython({ stdout: function(){}, stderr: function(){} }); });
+
+    window._lcJssResult = null;
+    mpP.then(function(mp) {
+      var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
+      var jsonStr;
+      try { if (runFn) jsonStr = runFn.call(mp, fullCode); } catch(e) {}
+      if (jsonStr == null) jsonStr = window._lcJssResult;
+      var results = [];
+      try { results = JSON.parse(jsonStr) || []; } catch(e) {}
+
+      var userResults = results.slice(2); // skip 2 built-in scenarios
+      var allPass = true;
+      stepEls.forEach(function(s, i) {
+        var r = userResults[i];
+        var icon = s.querySelector(".lc-feature-step-icon");
+        if (!r) { icon.className = "lc-feature-step-icon skip"; icon.textContent = "○"; return; }
+        if (r.status === "pass") {
+          icon.className = "lc-feature-step-icon pass"; icon.textContent = "✓";
+        } else {
+          allPass = false;
+          icon.className = "lc-feature-step-icon fail"; icon.textContent = "✗";
+          var errDiv = document.createElement("div");
+          errDiv.className = "lc-feature-step-err";
+          errDiv.textContent = (r.error || "failed").replace(/^.*Error:\s*/, "");
+          s.querySelector(".lc-feature-step-row").insertAdjacentElement("afterend", errDiv);
+        }
+      });
+      setCardStatus(card, allPass ? "passing" : "failing");
+      if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
+    }).catch(function() {
+      setCardStatus(card, "failing");
+      if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
+    });
+  }
+
+  /* ── Run all step chunks for one card (returns Promise) ─────────────────────── */
   function runFeature(card, runBtn) {
     var stepEls = card.querySelectorAll(".lc-feature-step.has-impl");
     stepEls.forEach(function(s) {
@@ -294,7 +397,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       });
   }
 
-  /* ── Build a <pre><code> with Prism highlighting ──────── */
+  /* ── Build a <pre><code> with Prism highlighting ────────────────────────────────── */
   function buildPyPre(code) {
     var pre = document.createElement("pre");
     var codeEl = document.createElement("code");
@@ -310,7 +413,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     return pre;
   }
 
-  /* ── Upgrade a .feature element into a card ──────────── */
+  /* ── Upgrade a .feature element into a card ──────────────────────────────────────────── */
   function upgradeFeature(el) {
     if (el.dataset.lcFeatureUpgraded) return;
     el.dataset.lcFeatureUpgraded = "1";
@@ -339,8 +442,10 @@ Registers with window.lcScanElement so the editor preview also renders cards.
           }).join("") + "</span>";
     }
 
+    var lcId = el.getAttribute("id") || "";
     var card = document.createElement("div");
     card.className = "lc-feature" + (status ? " lc-feature-" + status : "");
+    if (lcId) card.setAttribute("data-lc-id", lcId);
     card._lcFeatureName = featureName;
     card._lcFeatureTags = tagsRaw ? tagsRaw.split(",").map(function(t){ return t.trim(); }) : [];
 
@@ -353,6 +458,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 
     var body = card.querySelector("[data-lc-body]");
     var hasSteps = rows.some(function(r) { return r.kind === "step"; });
+    var hasInlineCode = rows.some(function(r) { return r.kind === "step" && r.code; });
 
     if (hasSteps) {
       var stepsDiv = document.createElement("div");
@@ -378,10 +484,33 @@ Registers with window.lcScanElement so the editor preview also renders cards.
               + "<span class='lc-feature-step-text'>" + r.text + "</span>"
               + "<span class='lc-feature-step-time'></span>"
             + "</div>";
+          if (r.code) {
+            var bodyCode = r.code.replace(/^\n+|\n+$/g, "");
+            var dedented = bodyCode.replace(/^(    |\t)/gm, "");
+            stepEl.classList.add("has-impl");
+            stepEl._lcPyCode = dedented;
+            var implDiv = document.createElement("div");
+            implDiv.className = "lc-feature-step-impl";
+            implDiv.appendChild(buildPyPre(dedented));
+            stepEl.appendChild(implDiv);
+            stepEl.querySelector(".lc-feature-step-row").addEventListener("click", function() {
+              implDiv.classList.toggle("open");
+            });
+          }
           stepsDiv.appendChild(stepEl);
         }
       });
       body.appendChild(stepsDiv);
+
+      if (hasInlineCode) {
+        var runBtn2 = document.createElement("button");
+        runBtn2.className = "lc-feature-run lc-feature-run-btn";
+        runBtn2.textContent = "▶ Run";
+        card.querySelector(".lc-feature-header").appendChild(runBtn2);
+        (function(btn) {
+          btn.addEventListener("click", function() { runFeatureNew(card, btn); });
+        })(runBtn2);
+      }
     } else {
       var cloned = el.cloneNode(true);
       cloned.removeAttribute("status"); cloned.removeAttribute("tags"); cloned.classList.remove("feature");
@@ -391,7 +520,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     el.parentNode.replaceChild(card, el);
   }
 
-  /* ── Upgrade a .steps element — attach to preceding card ─ */
+  /* ── Upgrade a .steps element — attach to preceding card ────────────────────────── */
   function upgradeSteps(el) {
     var code   = el.querySelector("code");
     var pyText = code ? code.textContent : el.textContent;
@@ -430,7 +559,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     el.parentNode.removeChild(el);
   }
 
-  /* ── Build the suite dashboard ───────────────────────── */
+  /* ── Build the suite dashboard ───────────────────────────────────────────────────────────── */
   function buildSuite(root) {
     /* collect all runnable cards in DOM order within this root */
     var allCards = (root || document).querySelectorAll(".lc-feature");
@@ -489,7 +618,9 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       var chain = Promise.resolve();
       runnable.forEach(function(card) {
         chain = chain.then(function() {
-          return runFeature(card, card.querySelector(".lc-feature-run"));
+          var btn = card.querySelector(".lc-feature-run");
+          var isNew = !!(card.querySelector(".lc-feature-step.has-impl[data-lc-py-new]"));
+          return isNew ? runFeatureNew(card, btn) : runFeature(card, btn);
         });
       });
       chain.then(function() {
@@ -505,7 +636,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     updateSuiteSummary(suite);
   }
 
-  /* ── Main init (accepts an optional root for preview) ─── */
+  /* ── Main init (accepts an optional root for preview) ────────────────────────────── */
   function init(root) {
     root = root || document;
     root.querySelectorAll(".feature").forEach(upgradeFeature);
@@ -513,16 +644,14 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     buildSuite(root);
   }
 
-  /* ── Boot on the real page ────────────────────────────── */
+  /* ── Boot on the real page ─────────────────────────────────────────────────────────────── */
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function() { init(document); });
   } else {
     init(document);
   }
 
-  /* ── Register with editor preview pipeline ───────────── */
-  /* code_chrome.md exposes window.lcScanElement(root); we wrap it so
-     feature cards are also upgraded when the editor preview re-renders. */
+  /* ── Register with editor preview pipeline ───────────────────────────────────────── */
   var _origScan = window.lcScanElement;
   window.lcScanElement = function(root) {
     if (_origScan) _origScan(root);
