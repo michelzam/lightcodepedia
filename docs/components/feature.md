@@ -90,18 +90,28 @@ Feature: Page component access
   I want to reach any named component via self.page
   So that I can assert on the UI without leaving Python
   Scenario: Access probe_chart from Python steps
-    Given probe_chart exists on this page
+    Given probe_chart is on this page
     :::python
-    self.chart = self.page.probe_chart
-    assert self.chart.exists, "probe_chart not found — is id set?"
+    assert self.probe_chart, "probe_chart not found — is id set?"
     :::
     And it is visible
     :::python
-    assert self.chart.visible, "probe_chart is not visible"
+    assert self.probe_chart.visible, "probe_chart not visible"
+    :::
+    And its type and axes match the knobs
+    :::python
+    assert self.probe_chart.type == "bar",   f"type: {self.probe_chart.type}"
+    assert self.probe_chart.x    == "label", f"x: {self.probe_chart.x}"
+    assert self.probe_chart.y    == "value", f"y: {self.probe_chart.y}"
+    :::
+    And its bind references probe_data
+    :::python
+    assert self.probe_chart.bind == self.page.probe_data, \
+        f"bind mismatch: {self.probe_chart.bind._id!r}"
     :::
     Then it has rendered bars
     :::python
-    assert self.chart.bar_count > 0, f"expected bars, got {self.chart.bar_count}"
+    assert self.probe_chart.bar_count > 0, f"got {self.probe_chart.bar_count} bars"
     :::
 ```
 {: .feature id="page_probe" status="pending" tags="probe" }

@@ -114,6 +114,9 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 
 /* ── error ──────────────────────────────────────────────────────────────── */
 .lc-feature-step-err { padding: 0.2em 1em 0.4em 2.65em; font-size: 0.8em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #dc2626; white-space: pre-wrap; }
+.lc-feature-builtin-footer { border-top: 1px solid #f3f4f6; padding: 0.25em 1em 0.3em; }
+.lc-feature-builtin-row { font-size: 0.75em; color: #9ca3af; line-height: 1.6; }
+.lc-feature-builtin-row.fail { color: #dc2626; font-weight: 500; }
 
 /* ── Prism token colours (One Dark–ish, scoped to feature impl panels) ── */
 .lc-feature-step-impl .token.comment    { color: #6b7280; font-style: italic; }
@@ -325,8 +328,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       var results = [];
       try { results = JSON.parse(jsonStr) || []; } catch(e) {}
 
-      var userResults = results.slice(2); // skip 2 built-in scenarios
+      var builtinResults = results.slice(0, 2);
+      var userResults    = results.slice(2);
       var allPass = true;
+
+      /* show user step results */
       stepEls.forEach(function(s, i) {
         var r = userResults[i];
         var icon = s.querySelector(".lc-feature-step-icon");
@@ -342,6 +348,22 @@ Registers with window.lcScanElement so the editor preview also renders cards.
           s.querySelector(".lc-feature-step-row").insertAdjacentElement("afterend", errDiv);
         }
       });
+
+      /* show built-in check results as a footer line */
+      var body = card.querySelector("[data-lc-body]");
+      var oldFooter = card.querySelector(".lc-feature-builtin-footer");
+      if (oldFooter) oldFooter.parentNode.removeChild(oldFooter);
+      var footer = document.createElement("div");
+      footer.className = "lc-feature-builtin-footer";
+      builtinResults.forEach(function(r) {
+        var row = document.createElement("div");
+        row.className = "lc-feature-builtin-row " + (r.status === "pass" ? "pass" : "fail");
+        row.textContent = (r.status === "pass" ? "✓ " : "✗ ") + r.label;
+        if (r.status !== "pass") { allPass = false; row.title = r.error; }
+        footer.appendChild(row);
+      });
+      if (body) body.appendChild(footer);
+
       setCardStatus(card, allPass ? "passing" : "failing");
       if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
     }).catch(function() {
