@@ -209,7 +209,9 @@ def _run_all():
             out.append({"status": "pass", "label": lbl, "error": ""})
         except Exception as e:
             out.append({"status": "fail", "label": lbl, "error": type(e).__name__ + ": " + str(e)})
-    return json.dumps(out)
+    result = json.dumps(out)
+    js.window._lcJssResult = result
+    return result
 </script>
 
 <style>
@@ -273,10 +275,11 @@ def _run_all():
         if (!runFn) {
           var fns = [];
           try { fns = Object.getOwnPropertyNames(mp).filter(function(k){ return typeof mp[k] === "function"; }); } catch(_) {}
-          body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ mp has no runPython. Available: " + (fns.join(", ") || "(none)") + "</div>";
+          body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ mp has no runPython. Available: " + (fns.join(", ") || "(none — mp is: " + String(mp) + ")") + "</div>";
           btn.disabled = false; btn.textContent = "▶ Run"; return;
         }
 
+        window._lcJssResult = null;
         var preamble = document.getElementById("lc-jss-preamble").textContent;
         var fullCode = preamble + "\n" + userCode + "\n_run_all()";
         var jsonStr;
@@ -286,7 +289,15 @@ def _run_all():
           body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ " + String(e.message || e) + "</div>";
           btn.disabled = false; btn.textContent = "▶ Run"; return;
         }
-        var results = JSON.parse(jsonStr);
+        // Some MicroPython WASM methods don't return the expression value;
+        // _run_all() also stores the result in window._lcJssResult as a fallback.
+        if (jsonStr == null) jsonStr = window._lcJssResult;
+        var results;
+        try { results = JSON.parse(jsonStr); } catch(_) {}
+        if (!Array.isArray(results)) {
+          body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ unexpected output: " + String(jsonStr).slice(0, 200) + "</div>";
+          btn.disabled = false; btn.textContent = "▶ Run"; return;
+        }
         var passed = 0;
         results.forEach(function (r) {
           if (r.status === "pass") passed++;
