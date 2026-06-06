@@ -68,31 +68,29 @@ Feature: List validator
 
 ## 🔬 DOM bridge probe
 
-Can MicroPython steps reach the browser DOM via `import js`?
+Can MicroPython steps reach page components via `self.page`?
 
 ```gherkin
 Feature: MicroPython JS bridge
-  Scenario: DOM access from Python steps
-    Given the js module is importable
+  Scenario: DOM access via self.page
+    Given temp-feature card is reachable via self.page
     :::python
-    import js
-    self.js = js
-    assert self.js is not None, "import js failed"
+    self.card = self.page.temp_feature
+    assert self.card.exists, "temp-feature not found — is id set?"
     :::
-    When I read document.title
+    When I read its data-lc-id attribute
     :::python
-    self.title = self.js.document.title
-    assert isinstance(self.title, str), f"document.title is not a string: {repr(self.title)}"
+    id_val = self.card.attr("data-lc-id")
+    assert id_val == "temp-feature", f"expected 'temp-feature', got {repr(id_val)}"
     :::
-    Then I can query a DOM element
+    Then the card is visible
     :::python
-    self.el = self.js.document.querySelector("body")
-    assert self.el is not None, "querySelector('body') returned None"
+    assert self.card.visible, "temp-feature card is not visible"
     :::
-    And I can read an element attribute
+    And I can reach a child element inside it
     :::python
-    tag = self.el.tagName
-    assert tag is not None, f"tagName returned None — got: {repr(tag)}"
+    header = self.card.q(".lc-feature-header")
+    assert header.exists, ".lc-feature-header not found in card"
     :::
 ```
 {: .feature id="js-bridge-feature" status="pending" tags="probe,js-bridge" }
