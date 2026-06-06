@@ -24,6 +24,9 @@ Click a step row to see its implementation. Click **▶ Run** to execute all ste
 
 ```gherkin
 Feature: Temperature converter
+  As a developer working with temperature data
+  I want to convert between Celsius and Fahrenheit
+  So that I can display temperatures in the right unit
   Scenario: Celsius to Fahrenheit
     Given a temperature of 100 degrees Celsius
     :::python
@@ -42,7 +45,7 @@ Feature: Temperature converter
     assert (0 * 9 / 5) + 32 == 32.0
     :::
 ```
-{: .feature id="temp-feature" status="pending" tags="math,utils" }
+{: .feature id="temp_feature" status="pending" tags="math,utils" }
 
 `self` is shared across all steps in a run — state set in one step (`self.celsius`) is available in later ones.
 
@@ -50,6 +53,9 @@ Feature: Temperature converter
 
 ```gherkin
 Feature: List validator
+  As a data validation engineer
+  I want to detect empty lists early
+  So that invalid data does not propagate downstream
   Scenario: Reject empty lists
     Given an empty list
     :::python
@@ -64,7 +70,7 @@ Feature: List validator
     assert self.result == False, "Expected validation to fail for empty list"
     :::
 ```
-{: .feature id="list-feature" status="pending" tags="validation" }
+{: .feature id="list_feature" status="pending" tags="validation" }
 
 ## 🔬 DOM bridge probe
 
@@ -72,6 +78,9 @@ Can MicroPython steps reach page components via `self.page`?
 
 ```gherkin
 Feature: MicroPython JS bridge
+  As a test author
+  I want to access page components via self.page
+  So that I can write UI assertions without raw JavaScript
   Scenario: DOM access via self.page
     Given temp-feature card is reachable via self.page
     :::python
@@ -81,7 +90,7 @@ Feature: MicroPython JS bridge
     When I read its data-lc-id attribute
     :::python
     id_val = self.card.attr("data-lc-id")
-    assert id_val == "temp-feature", f"expected 'temp-feature', got {repr(id_val)}"
+    assert id_val == "temp_feature", f"expected 'temp_feature', got {repr(id_val)}"
     :::
     Then the card is visible
     :::python
@@ -93,7 +102,7 @@ Feature: MicroPython JS bridge
     assert header.exists, ".lc-feature-header not found in card"
     :::
 ```
-{: .feature id="js-bridge-feature" status="pending" tags="probe,js-bridge" }
+{: .feature id="js_bridge_feature" status="pending" tags="probe,js-bridge" }
 
 ## 🥸 How to write one
 
@@ -116,7 +125,7 @@ Feature: My feature
     assert self.y == 84
     :::
 ```
-{: .feature id="my-feature" status="pending" tags="example" }
+{: .feature id="my_feature" status="pending" tags="example" }
 ````
 
 - `:::python ... :::` is parsed from the Gherkin block — not rendered as a separate code block.

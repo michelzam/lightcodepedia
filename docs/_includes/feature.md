@@ -619,7 +619,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       runnable.forEach(function(card) {
         chain = chain.then(function() {
           var btn = card.querySelector(".lc-feature-run");
-          var isNew = !!(card.querySelector(".lc-feature-step.has-impl[data-lc-py-new]"));
+          var isNew = !!(btn && btn.classList.contains("lc-feature-run-btn"));
           return isNew ? runFeatureNew(card, btn) : runFeature(card, btn);
         });
       });
