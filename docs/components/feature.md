@@ -2,7 +2,7 @@
 ---
 # 🦄 Feature
 
-Render Gherkin BDD scenarios as styled cards. Embed `:::python ... :::` blocks directly after each step to attach a runnable implementation — the card gets a **▶ Run** button and the code appears as expandable step panels. `self.page`, `Dataset`, and all jssteps classes are available in every step.
+Render Gherkin BDD scenarios as styled cards. Embed `:::python ... :::` blocks directly after each step to attach a runnable implementation — the card gets a **▶ Run** button and the code appears as expandable step panels. `self.page`, `Dataset`, `Block`, `Datagrid`, `Chart`, and `FeatureCard` are available in every step.
 
 ## 📺 Display-only (no runner)
 
@@ -74,27 +74,34 @@ Feature: List validator
 
 ## 🔬 Page access probe
 
-Steps can reach any component on the page via `self.page.<id>`. The card below verifies this by accessing the Temperature Converter card above it.
+Steps can reach any component on the page via `self.page.<id>`. The dataset and chart below have ids — the card probes them.
+
+```json
+[{"label":"A","value":3},{"label":"B","value":7},{"label":"C","value":5}]
+```
+{: .dataset id="probe_data" }
+
+[Probe chart](#)
+{: .chart bind="probe_data" type="bar" x="label" y="value" id="probe_chart" }
 
 ```gherkin
 Feature: Page component access
   As a test author
   I want to reach any named component via self.page
   So that I can assert on the UI without leaving Python
-  Scenario: Access temp_feature from another card
-    Given the temp_feature card exists on this page
+  Scenario: Access probe_chart from Python steps
+    Given probe_chart exists on this page
     :::python
-    self.card = self.page.temp_feature
-    assert self.card.exists, "temp_feature not found — is id set?"
+    self.chart = self.page.probe_chart
+    assert self.chart.exists, "probe_chart not found — is id set?"
     :::
-    Then the card is visible
+    And it is visible
     :::python
-    assert self.card.visible, "temp_feature card is not visible"
+    assert self.chart.visible, "probe_chart is not visible"
     :::
-    And its header element is reachable
+    Then it has rendered bars
     :::python
-    header = self.card.q(".lc-feature-header")
-    assert header.exists, ".lc-feature-header not found in card"
+    assert self.chart.bar_count > 0, f"expected bars, got {self.chart.bar_count}"
     :::
 ```
 {: .feature id="page_probe" status="pending" tags="probe" }
@@ -125,8 +132,8 @@ Feature: My feature
 
 - `:::python ... :::` is parsed from the Gherkin block — not rendered as a separate code block.
 - **Shared context**: `self` is the same object across all steps in a run.
-- All jssteps classes are available without import: `self.page`, `Dataset`, `Datagrid`, `Chart`, `FeatureCard`.
-- Give the `.feature` card an `id` to make it reachable as `self.page.my_feature` from other `.jssteps` blocks.
+- Available without import: `self.page`, `Dataset`, `Block`, `Datagrid`, `Chart`, `FeatureCard`. Inherit from `Block` for custom wrappers.
+- Give the `.feature` card an `id` to make it reachable as `self.page.my_feature` from any feature step.
 - Click a step row to **expand its implementation** inline.
 
 ## 🎛️ Knobs
@@ -135,4 +142,4 @@ Feature: My feature
 |---|---|---|---|
 | `.feature` | `status="…"` | `passing` · `failing` · `pending` | Border colour and badge; updated live after a run |
 | `.feature` | `tags="…"` | comma-separated | Chips in the card header |
-| `.feature` | `id="…"` | Python-compatible id | Makes the card reachable as `self.page.<id>` in jssteps |
+| `.feature` | `id="…"` | Python-compatible id | Makes the card reachable as `self.page.<id>` in any step |

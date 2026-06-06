@@ -23,7 +23,7 @@ Auto-included by docs/_layouts/default.html.
 import js
 import json
 
-# ── Object — base DOM bridge ─────────────────────────────────────────────────
+# ── Object — DOM bridge (raw element access, no visible-state assumptions) ────
 
 class Object:
     def __init__(self, el):
@@ -44,6 +44,21 @@ class Object:
         nl = self._el.querySelectorAll(css)
         return [Object(nl.item(i)) for i in range(int(nl.length))]
 
+    def attr(self, name):
+        if not self._el:
+            return None
+        v = self._el.getAttribute(name)
+        return str(v) if v is not None else None
+
+    def click(self):
+        if self._el:
+            self._el.click()
+        return self
+
+
+# ── Block — base class for all visible components ─────────────────────────────
+
+class Block(Object):
     @property
     def exists(self):
         return self._el is not None
@@ -59,31 +74,20 @@ class Object:
     def text(self):
         return str(self._el.textContent or "").strip() if self._el else ""
 
-    def attr(self, name):
-        if not self._el:
-            return None
-        v = self._el.getAttribute(name)
-        return str(v) if v is not None else None
-
     def has_class(self, name):
         return bool(self._el and self._el.classList.contains(name))
-
-    def click(self):
-        if self._el:
-            self._el.click()
-        return self
 
 
 # ── component wrappers ───────────────────────────────────────────────────────
 
 def _wrap(el):
     if not el:
-        return Object(None)
+        return Block(None)
     c = str(el.getAttribute("class") or "")
     if "lc-datagrid" in c: return Datagrid(el)
     if "lc-chart"    in c: return Chart(el)
     if "lc-feature"  in c: return FeatureCard(el)
-    return Object(el)
+    return Block(el)
 
 
 class Dataset:
@@ -105,7 +109,7 @@ class Dataset:
         return int(arr.length) if arr else 0
 
 
-class Datagrid(Object):
+class Datagrid(Block):
     @property
     def row_count(self):
         return len(self.qq("tbody tr"))
@@ -127,10 +131,10 @@ class Datagrid(Object):
         for th in self.qq("th"):
             if th.text.rstrip(" ↑↓") == name:
                 return th
-        return Object(None)
+        return Block(None)
 
 
-class Chart(Object):
+class Chart(Block):
     @property
     def bar_count(self):
         return len(self.qq("rect"))
@@ -140,7 +144,7 @@ class Chart(Object):
         return len(self.qq("circle"))
 
 
-class FeatureCard(Object):
+class FeatureCard(Block):
     @classmethod
     def nth(cls, n=0):
         nl = js.window.document.querySelectorAll(".lc-feature")
