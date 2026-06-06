@@ -31,7 +31,7 @@ class Object:
 
     @classmethod
     def all(cls, css):
-        nl = js.document.querySelectorAll(css)
+        nl = js.window.document.querySelectorAll(css)
         return [cls(nl.item(i)) for i in range(int(nl.length))]
 
     def q(self, css):
@@ -143,7 +143,7 @@ class Chart(Object):
 class FeatureCard(Object):
     @classmethod
     def nth(cls, n=0):
-        nl = js.document.querySelectorAll(".lc-feature")
+        nl = js.window.document.querySelectorAll(".lc-feature")
         return cls(nl.item(n) if n < int(nl.length) else None)
 
     @property
@@ -166,7 +166,7 @@ class Page:
     def __getattr__(self, name):
         if name.startswith("_"):
             raise AttributeError(name)
-        el = js.document.querySelector("[data-lc-id='" + name + "']")
+        el = js.window.document.querySelector("[data-lc-id='" + name + "']")
         if el:
             return _wrap(el)
         raise AttributeError("no component with id='" + name + "' on this page")

@@ -72,38 +72,6 @@ Feature: List validator
 ```
 {: .feature id="list_feature" status="pending" tags="validation" }
 
-## 🔬 DOM bridge probe
-
-Can MicroPython steps reach page components via `self.page`?
-
-```gherkin
-Feature: MicroPython JS bridge
-  As a test author
-  I want to access page components via self.page
-  So that I can write UI assertions without raw JavaScript
-  Scenario: DOM access via self.page
-    Given temp-feature card is reachable via self.page
-    :::python
-    self.card = self.page.temp_feature
-    assert self.card.exists, "temp-feature not found — is id set?"
-    :::
-    When I read its data-lc-id attribute
-    :::python
-    id_val = self.card.attr("data-lc-id")
-    assert id_val == "temp_feature", f"expected 'temp_feature', got {repr(id_val)}"
-    :::
-    Then the card is visible
-    :::python
-    assert self.card.visible, "temp-feature card is not visible"
-    :::
-    And I can reach a child element inside it
-    :::python
-    header = self.card.q(".lc-feature-header")
-    assert header.exists, ".lc-feature-header not found in card"
-    :::
-```
-{: .feature id="js_bridge_feature" status="pending" tags="probe,js-bridge" }
-
 ## 🥸 How to write one
 
 After each Gherkin step, add a `:::python ... :::` block with the implementation:
