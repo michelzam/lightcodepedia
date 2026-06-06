@@ -4,7 +4,9 @@
 
 In-browser BDD step runner powered by MicroPython WASM. Write `@scenario` functions in a fenced Python block — they run live in the page, with access to every component via `self.page`.
 
-The built-in **"component ids are unique"** scenario runs automatically on every suite, enforcing the contract that `self.page.<id>` is unambiguous.
+Two built-in scenarios run automatically on every suite:
+- **"component ids are unique"** — enforces that `self.page.<id>` is unambiguous
+- **"component ids are python compatible"** — enforces that every id, after hyphen→underscore substitution, is a valid Python identifier (so `self.page.<name>` can always reach it)
 
 ## Live example
 
@@ -69,7 +71,7 @@ def check_ds(self):
 ````
 
 - `self.page.<name>` resolves any component with `id="<name>"` on the page. Underscores in the Python attribute are mapped to hyphens in the id, so `self.page.jss_grid` finds `id="jss-grid"`.
-- No id → not accessible. The built-in scenario will pass (no duplicate ids), but accessing an unnamed component raises `AttributeError`.
+- No id → not accessible. The built-in scenarios will pass (no duplicate/invalid ids), but accessing an unnamed component raises `AttributeError`.
 - `Dataset("id")` reaches the data registry directly — no DOM id needed.
 - Scenarios run **synchronously** in MicroPython WASM. Async steps are not yet supported.
 

@@ -3,7 +3,8 @@
 
 Each fenced ```python block becomes a test suite.
 Decorate functions with @scenario("label") to register scenarios.
-The built-in "component ids are unique" scenario always runs first.
+Two built-in scenarios always run first: "component ids are unique" and
+"component ids are python compatible" (ids must be valid Python identifiers after _ substitution).
 Components are accessed through self.page.<data-lc-id>.
 
 Usage:
@@ -199,9 +200,18 @@ def _builtin_unique_ids(ctx):
         (dupes if i in seen else seen).add(i)
     assert not dupes, "duplicate component ids: " + str(dupes)
 
+def _builtin_python_ids(ctx):
+    els = Object.all("[data-lc-id]")
+    bad = [el.attr("data-lc-id") for el in els
+           if not el.attr("data-lc-id").replace("-", "_").isidentifier()]
+    assert not bad, "ids not Python-compatible (after _ substitution): " + str(bad)
+
 def _run_all():
     ctx = _Ctx()
-    all_s = [("component ids are unique", _builtin_unique_ids)] + _scenarios
+    all_s = [
+        ("component ids are unique", _builtin_unique_ids),
+        ("component ids are python compatible", _builtin_python_ids),
+    ] + _scenarios
     out = []
     for lbl, fn in all_s:
         try:
