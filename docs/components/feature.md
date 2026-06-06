@@ -72,6 +72,33 @@ Feature: List validator
 ```
 {: .feature id="list_feature" status="pending" tags="validation" }
 
+## 🔬 Page access probe
+
+Steps can reach any component on the page via `self.page.<id>`. The card below verifies this by accessing the Temperature Converter card above it.
+
+```gherkin
+Feature: Page component access
+  As a test author
+  I want to reach any named component via self.page
+  So that I can assert on the UI without leaving Python
+  Scenario: Access temp_feature from another card
+    Given the temp_feature card exists on this page
+    :::python
+    self.card = self.page.temp_feature
+    assert self.card.exists, "temp_feature not found — is id set?"
+    :::
+    Then the card is visible
+    :::python
+    assert self.card.visible, "temp_feature card is not visible"
+    :::
+    And its header element is reachable
+    :::python
+    header = self.card.q(".lc-feature-header")
+    assert header.exists, ".lc-feature-header not found in card"
+    :::
+```
+{: .feature id="page_probe" status="pending" tags="probe" }
+
 ## 🥸 How to write one
 
 After each Gherkin step, add a `:::python ... :::` block with the implementation:
