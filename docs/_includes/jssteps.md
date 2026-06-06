@@ -90,9 +90,6 @@ def _wrap(el):
     if "lc-datagrid" in c: return Datagrid(el)
     if "lc-chart"    in c: return Chart(el)
     if "lc-feature"  in c: return FeatureCard(el)
-    if "dataset"     in c:
-        lid = str(el.getAttribute("data-lc-id") or "")
-        return Dataset(lid)
     return Block(el)
 
 
@@ -202,6 +199,9 @@ class Page:
         el = js.window.document.querySelector("[data-lc-id='" + name + "']")
         if el:
             return _wrap(el)
+        ds = getattr(js.window, "lcDatasets", None)
+        if ds and getattr(ds, name, None) is not None:
+            return Dataset(name)
         raise AttributeError("no component with id='" + name + "' on this page")
 
     def feature(self, n=0):
