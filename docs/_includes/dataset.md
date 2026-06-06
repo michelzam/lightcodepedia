@@ -88,7 +88,6 @@ Auto-included by docs/_layouts/default.html.
     if (el.dataset.lcDsDone) return; el.dataset.lcDsDone = "1";
     var id = el.id || el.getAttribute("id");
     if (!id) return;
-    el.setAttribute("data-lc-id", id); /* make reachable via self.page.<id> */
 
     /* remote variant: apply {: .dataset id="x" } to a link → fetch its href */
     var link = el.querySelector("a[href]");
