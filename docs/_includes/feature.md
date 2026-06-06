@@ -310,8 +310,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     var preamble = (document.getElementById("lc-jss-preamble") || {}).textContent || "";
     var fullCode = preamble + "\n" + scenarioParts.join("\n\n") + "\n_run_all()";
 
-    var mpP = window._lcMpReady || getMpModule()
-      .then(function(mjs) { return mjs.loadMicroPython({ stdout: function(){}, stderr: function(){} }); });
+    if (!window._lcMpReady) {
+      window._lcMpReady = getMpModule()
+        .then(function(mjs) { return mjs.loadMicroPython({ stdout: function(){}, stderr: function(){} }); });
+    }
+    var mpP = window._lcMpReady;
 
     window._lcJssResult = null;
     mpP.then(function(mp) {
