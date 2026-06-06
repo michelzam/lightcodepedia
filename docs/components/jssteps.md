@@ -68,7 +68,7 @@ def check_ds(self):
 {: .jssteps }
 ````
 
-- `self.page.<name>` resolves any component with `id="<name>"` on the page.
+- `self.page.<name>` resolves any component with `id="<name>"` on the page. Underscores in the Python attribute are mapped to hyphens in the id, so `self.page.jss_grid` finds `id="jss-grid"`.
 - No id → not accessible. The built-in scenario will pass (no duplicate ids), but accessing an unnamed component raises `AttributeError`.
 - `Dataset("id")` reaches the data registry directly — no DOM id needed.
 - Scenarios run **synchronously** in MicroPython WASM. Async steps are not yet supported.
