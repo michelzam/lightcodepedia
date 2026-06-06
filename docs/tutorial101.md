@@ -26,8 +26,7 @@ A `text` block is a simple block that displays formatted text.
 - ✅ Text blocks use hints/helps
 - ✅ Actually all blocks use hints/helps
 
-Lightcode relies on [streamlit](https://streamlit.io). Here, we used **markdown**.
-Please feel free to explore the streamlit documentation.
+Lightcode relies on **nothing** on the server side. It runs **markdown** files with tiny custom kramdown decorations to bring blocks alive.
 ````
 {: .blocks cols="2" }
 
