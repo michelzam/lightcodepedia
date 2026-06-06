@@ -79,15 +79,16 @@ def check_ds(self):
 
 These classes are available in every `.jssteps` block without any import:
 
-| Class | Key members |
-|---|---|
-| `Object` | `exists`, `visible`, `text`, `attr(name)`, `has_class(name)`, `q(css)`, `qq(css)`, `click()` |
-| `Page` | `self.page.<id>` → component; `feature(n)`, `features()` |
-| `Dataset(id)` | `loaded`, `count` |
-| `Datagrid(Object)` | `row_count`, `headers`, `rows`, `header(name)` |
-| `Chart(Object)` | `bar_count`, `point_count` |
-| `FeatureCard(Object)` | `title`, `status`, `run_button` |
-| `scenario(label)` | decorator — registers a scenario function |
+| Class | Inherits | Key members |
+|---|---|---|
+| `Object` | — | `attr(name)`, `q(css)`, `qq(css)`, `click()`, `all(css)` |
+| `Block` | `Object` | `exists`, `visible`, `text`, `has_class(name)` |
+| `Datagrid` | `Block` | `row_count`, `headers`, `rows`, `header(name)` |
+| `Chart` | `Block` | `bar_count`, `point_count` |
+| `FeatureCard` | `Block` | `title`, `status`, `run_button` |
+| `Dataset(id)` | — | `loaded`, `count` |
+| `Page` | — | `self.page.<id>` → component; `feature(n)`, `features()` |
+| `scenario(label)` | — | decorator — registers a scenario function |
 
 ## Notes
 
