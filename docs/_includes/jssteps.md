@@ -59,6 +59,9 @@ class Object:
 # ── Block — base class for all visible components ─────────────────────────────
 
 class Block(Object):
+    def __bool__(self):
+        return self._el is not None
+
     @property
     def exists(self):
         return self._el is not None
@@ -87,13 +90,23 @@ def _wrap(el):
     if "lc-datagrid" in c: return Datagrid(el)
     if "lc-chart"    in c: return Chart(el)
     if "lc-feature"  in c: return FeatureCard(el)
+    if "dataset"     in c:
+        lid = str(el.getAttribute("data-lc-id") or "")
+        return Dataset(lid)
     return Block(el)
 
 
 class Dataset:
-    """Access a registered lcDatasets entry by id."""
     def __init__(self, id):
         self._id = id
+
+    def __bool__(self):
+        return self.loaded
+
+    def __eq__(self, other):
+        if isinstance(other, Dataset):
+            return self._id == other._id
+        return NotImplemented
 
     @property
     def loaded(self):
@@ -135,6 +148,22 @@ class Datagrid(Block):
 
 
 class Chart(Block):
+    @property
+    def bind(self):
+        return Dataset(self.attr("data-bind") or "")
+
+    @property
+    def type(self):
+        return self.attr("data-type") or "bar"
+
+    @property
+    def x(self):
+        return self.attr("data-x") or ""
+
+    @property
+    def y(self):
+        return self.attr("data-y") or ""
+
     @property
     def bar_count(self):
         return len(self.qq("rect"))
@@ -187,6 +216,11 @@ class Page:
 class _Ctx:
     def __init__(self):
         self.page = Page()
+
+    def __getattr__(self, name):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return getattr(self.page, name)
 
 _scenarios = []
 

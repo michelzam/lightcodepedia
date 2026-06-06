@@ -88,6 +88,7 @@ Auto-included by docs/_layouts/default.html.
     if (el.dataset.lcDsDone) return; el.dataset.lcDsDone = "1";
     var id = el.id || el.getAttribute("id");
     if (!id) return;
+    el.setAttribute("data-lc-id", id); /* make reachable via self.page.<id> */
 
     /* remote variant: apply {: .dataset id="x" } to a link → fetch its href */
     var link = el.querySelector("a[href]");
@@ -222,6 +223,10 @@ Auto-included by docs/_layouts/default.html.
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
     wrap.setAttribute("data-bind", bindId);
+    wrap.setAttribute("data-type", type);
+    if (xCol)  wrap.setAttribute("data-x", xCol);
+    if (yCol)  wrap.setAttribute("data-y", yCol);
+    if (title) wrap.setAttribute("data-title", title);
     if (lcId2) wrap.setAttribute("data-lc-id", lcId2);
     el.parentNode.replaceChild(wrap, el);
 
