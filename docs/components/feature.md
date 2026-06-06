@@ -2,7 +2,7 @@
 ---
 # 🦄 Feature
 
-Render Gherkin BDD scenarios as styled cards. Pair a `.feature` block with a `.jssteps` block — the card gives the scenario its visual shape; the step runner verifies assertions live in the page.
+Render Gherkin BDD scenarios as styled cards. Embed `:::python ... :::` blocks directly after each step to attach a runnable implementation — the card gets a **▶ Run** button and the code appears as expandable step panels. `self.page`, `Dataset`, and all jssteps classes are available in every step.
 
 ## 📺 Display-only (no runner)
 
@@ -20,38 +20,31 @@ Feature: User login
 
 ## 🏃🏻‍♀️ With runnable steps
 
-The `.feature` card renders the Gherkin. The `.jssteps` block below it owns execution — each `@scenario` maps to a Gherkin step.
+Click a step row to see its implementation. Click **▶ Run** to execute all steps.
 
 ```gherkin
 Feature: Temperature converter
   Scenario: Celsius to Fahrenheit
     Given a temperature of 100 degrees Celsius
+    :::python
+    self.celsius = 100
+    :::
     When converted to Fahrenheit using (C × 9/5) + 32
+    :::python
+    self.fahrenheit = (self.celsius * 9 / 5) + 32
+    :::
     Then the result should be 212
+    :::python
+    assert self.fahrenheit == 212.0, f"Got {self.fahrenheit}"
+    :::
     And zero Celsius equals 32 Fahrenheit
+    :::python
+    assert (0 * 9 / 5) + 32 == 32.0
+    :::
 ```
 {: .feature id="temp-feature" status="pending" tags="math,utils" }
 
-```python
-@scenario("Given a temperature of 100 degrees Celsius")
-def step_given(self):
-    self.celsius = 100
-
-@scenario("When converted to Fahrenheit using (C × 9/5) + 32")
-def step_when(self):
-    self.fahrenheit = (self.celsius * 9 / 5) + 32
-
-@scenario("Then the result should be 212")
-def step_then(self):
-    assert self.fahrenheit == 212.0, f"Got {self.fahrenheit}"
-
-@scenario("And zero Celsius equals 32 Fahrenheit")
-def step_and(self):
-    assert (0 * 9 / 5) + 32 == 32.0
-```
-{: .jssteps }
-
-Scenarios share the same context object (`self`), so state set in one step (`self.celsius`) is available in the next.
+`self` is shared across all steps in a run — state set in one step (`self.celsius`) is available in later ones.
 
 ## 😰 Failing step example
 
@@ -59,103 +52,85 @@ Scenarios share the same context object (`self`), so state set in one step (`sel
 Feature: List validator
   Scenario: Reject empty lists
     Given an empty list
+    :::python
+    self.items = []
+    :::
     When I check if it is valid
+    :::python
+    self.result = len(self.items) > 0
+    :::
     Then validation should fail
+    :::python
+    assert self.result == False, "Expected validation to fail for empty list"
+    :::
 ```
 {: .feature id="list-feature" status="pending" tags="validation" }
 
-```python
-@scenario("Given an empty list")
-def step_given(self):
-    self.items = []
-
-@scenario("When I check if it is valid")
-def step_when(self):
-    self.result = len(self.items) > 0
-
-@scenario("Then validation should fail")
-def step_then(self):
-    assert self.result == False, "Expected validation to fail for empty list"
-```
-{: .jssteps }
-
 ## 🔬 DOM bridge probe
 
-Can MicroPython reach the browser DOM via `import js`? This suite replaces the old `.steps`-based probe.
+Can MicroPython steps reach the browser DOM via `import js`?
 
 ```gherkin
 Feature: MicroPython JS bridge
   Scenario: DOM access from Python steps
     Given the js module is importable
-    When I read document.title
-    Then I can query a DOM element
-    And I can read an element attribute
-```
-{: .feature id="js-bridge-feature" status="pending" tags="probe,js-bridge" }
-
-```python
-@scenario("Given the js module is importable")
-def step_import(self):
+    :::python
     import js
     self.js = js
     assert self.js is not None, "import js failed"
-
-@scenario("When I read document.title")
-def step_title(self):
+    :::
+    When I read document.title
+    :::python
     self.title = self.js.document.title
     assert isinstance(self.title, str), f"document.title is not a string: {repr(self.title)}"
-
-@scenario("Then I can query a DOM element")
-def step_query(self):
+    :::
+    Then I can query a DOM element
+    :::python
     self.el = self.js.document.querySelector("body")
     assert self.el is not None, "querySelector('body') returned None"
-
-@scenario("And I can read an element attribute")
-def step_attr(self):
+    :::
+    And I can read an element attribute
+    :::python
     tag = self.el.tagName
     assert tag is not None, f"tagName returned None — got: {repr(tag)}"
+    :::
 ```
-{: .jssteps }
+{: .feature id="js-bridge-feature" status="pending" tags="probe,js-bridge" }
 
 ## 🥸 How to write one
 
-Write a `.feature` card for the Gherkin shape, then a `.jssteps` block for the step implementations:
+After each Gherkin step, add a `:::python ... :::` block with the implementation:
 
 ````markdown
 ```gherkin
 Feature: My feature
   Scenario: A scenario
     Given some precondition
+    :::python
+    self.x = 42
+    :::
     When an action happens
+    :::python
+    self.y = self.x * 2
+    :::
     Then the result is correct
+    :::python
+    assert self.y == 84
+    :::
 ```
 {: .feature id="my-feature" status="pending" tags="example" }
-
-```python
-@scenario("Given some precondition")
-def step_given(self):
-    self.x = 42
-
-@scenario("When an action happens")
-def step_when(self):
-    self.y = self.x * 2
-
-@scenario("Then the result is correct")
-def step_then(self):
-    assert self.y == 84
-```
-{: .jssteps }
 ````
 
-- Each `@scenario` label should match or paraphrase a Gherkin step for readability.
-- **Shared context**: `self` is the same object across all scenarios in a suite — store state with `self.<name>`.
-- Give the `.feature` card an `id` if you want to inspect it from jssteps via `self.page.my_feature`.
-- The two built-in scenarios ("component ids are unique" and "component ids are python compatible") run before your scenarios on every suite.
+- `:::python ... :::` is parsed from the Gherkin block — not rendered as a separate code block.
+- **Shared context**: `self` is the same object across all steps in a run.
+- All jssteps classes are available without import: `self.page`, `Dataset`, `Datagrid`, `Chart`, `FeatureCard`.
+- Give the `.feature` card an `id` to make it reachable as `self.page.my_feature` from other `.jssteps` blocks.
+- Click a step row to **expand its implementation** inline.
 
 ## 🎛️ Knobs
 
 | Block | Attribute | Values | What it does |
-|---|---|---|
-| `.feature` | `status="…"` | `passing` · `failing` · `pending` | Border colour and badge |
+|---|---|---|---|
+| `.feature` | `status="…"` | `passing` · `failing` · `pending` | Border colour and badge; updated live after a run |
 | `.feature` | `tags="…"` | comma-separated | Chips in the card header |
 | `.feature` | `id="…"` | Python-compatible id | Makes the card reachable as `self.page.<id>` in jssteps |
