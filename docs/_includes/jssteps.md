@@ -4,7 +4,7 @@
 Each fenced ```python block becomes a test suite.
 Decorate functions with @scenario("label") to register scenarios.
 Two built-in scenarios always run first: "component ids are unique" and
-"component ids are python compatible" (ids must be valid Python identifiers after _ substitution).
+"component ids are python compatible" (ids must be valid Python identifiers — no hyphens).
 Components are accessed through self.page.<data-lc-id>.
 
 Usage:
@@ -166,7 +166,7 @@ class Page:
     def __getattr__(self, name):
         if name.startswith("_"):
             raise AttributeError(name)
-        el = js.document.querySelector("[data-lc-id='" + name.replace("_", "-") + "']")
+        el = js.document.querySelector("[data-lc-id='" + name + "']")
         if el:
             return _wrap(el)
         raise AttributeError("no component with id='" + name + "' on this page")
@@ -203,8 +203,8 @@ def _builtin_unique_ids(ctx):
 def _builtin_python_ids(ctx):
     els = Object.all("[data-lc-id]")
     bad = [el.attr("data-lc-id") for el in els
-           if not el.attr("data-lc-id").replace("-", "_").isidentifier()]
-    assert not bad, "ids not Python-compatible (after _ substitution): " + str(bad)
+           if not el.attr("data-lc-id").isidentifier()]
+    assert not bad, "ids must be valid Python identifiers: " + str(bad)
 
 def _run_all():
     ctx = _Ctx()
