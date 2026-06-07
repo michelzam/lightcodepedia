@@ -87,8 +87,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 
 /* ── scenario / narrative ─────────────────────────────────────────────── */
 .lc-feature-scenario { padding: 0.5em 1em 0.2em; font-size: 0.82em; font-weight: 600; color: #6b7280; letter-spacing: 0.03em; text-transform: uppercase; }
-.lc-feature-narrative { padding: 0.1em 1em; font-size: 0.83em; color: #9ca3af; font-style: italic; }
-.lc-feature-story { padding: 0.1em 1em; font-size: 0.83em; display: flex; gap: 0.4em; align-items: baseline; flex-wrap: wrap; }
+.lc-feature-narrative { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.83em; color: #9ca3af; font-style: italic; }
+.lc-feature-story { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.83em; display: flex; gap: 0.4em; align-items: baseline; flex-wrap: wrap; }
 .lc-feature-story-keyword { color: #7c3aed; font-weight: 600; font-style: normal; flex-shrink: 0; }
 .lc-feature-story-text { color: #374151; font-style: italic; }
 
@@ -535,6 +535,21 @@ Registers with window.lcScanElement so the editor preview also renders cards.
         (function(btn) {
           btn.addEventListener("click", function() { runFeatureNew(card, btn); });
         })(runBtn2);
+      } else {
+        /* steps exist but none implemented — pending runner */
+        var pendingBtn = document.createElement("button");
+        pendingBtn.className = "lc-feature-run lc-feature-run-pending";
+        pendingBtn.textContent = "▶ Run";
+        card.querySelector(".lc-feature-header").appendChild(pendingBtn);
+        (function(btn) {
+          btn.addEventListener("click", function() {
+            card.querySelectorAll(".lc-feature-step").forEach(function(s) {
+              var icon = s.querySelector(".lc-feature-step-icon");
+              if (icon) { icon.className = "lc-feature-step-icon"; icon.textContent = "○"; }
+            });
+            setCardStatus(card, "pending");
+          });
+        })(pendingBtn);
       }
     } else {
       var cloned = el.cloneNode(true);
@@ -644,6 +659,10 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       runnable.forEach(function(card) {
         chain = chain.then(function() {
           var btn = card.querySelector(".lc-feature-run");
+          if (btn && btn.classList.contains("lc-feature-run-pending")) {
+            btn.click();
+            return Promise.resolve();
+          }
           var isNew = !!(btn && btn.classList.contains("lc-feature-run-btn"));
           return isNew ? runFeatureNew(card, btn) : runFeature(card, btn);
         });

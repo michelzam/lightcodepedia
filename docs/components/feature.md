@@ -47,7 +47,7 @@ Feature: Temperature converter
 
 `self` is shared across all steps in a run — state set in one step (`self.celsius`) is available in later ones.
 
-## 😰 Failing step example
+## 🔍 Negative assertion
 
 ```gherkin
 Feature: List validator
