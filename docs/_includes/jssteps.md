@@ -239,9 +239,12 @@ class Button(Block):
             if self._el:
                 self._el.click()
             return self
-        g = globals()
-        g["button"] = self
-        exec(code + "\non_click(button)\n", g)
+        button = self
+        try:
+            exec(code + "\non_click(button)\n")
+        except Exception as _e:
+            if self._el:
+                self._el.setAttribute("data-lc-err", str(_e))
         return self
 
     @property

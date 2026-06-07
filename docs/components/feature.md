@@ -154,9 +154,10 @@ Feature: Button handler
     :::
     Then bar B is painted orange
     :::python
+    err = self.page.highlight_btn.attr("data-lc-err") or ""
     bars = self.page.probe_chart.bars
     self.max_bar = max(bars, key=lambda b: b.value)
-    assert self.max_bar.color == "orange", f"expected orange, got {self.max_bar.color!r}"
+    assert self.max_bar.color == "orange", f"expected orange, got {self.max_bar.color!r} | click_err={err!r}"
     :::
     And the button label shows the max value
     :::python
