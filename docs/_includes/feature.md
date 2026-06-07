@@ -320,7 +320,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     var mpP = window._lcMpReady;
 
     window._lcJssResult = null;
-    mpP.then(function(mp) {
+    return mpP.then(function(mp) {
       var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
       var jsonStr;
       try { if (runFn) jsonStr = runFn.call(mp, fullCode); } catch(e) {}
@@ -349,7 +349,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
         }
       });
 
-      /* show built-in check results as a footer line */
+      /* show built-in check results as a footer — always, pass or fail */
       var body = card.querySelector("[data-lc-body]");
       var oldFooter = card.querySelector(".lc-feature-builtin-footer");
       if (oldFooter) oldFooter.parentNode.removeChild(oldFooter);

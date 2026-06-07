@@ -239,9 +239,11 @@ def _builtin_unique_ids(ctx):
     assert not dupes, "duplicate component ids: " + str(dupes)
 
 def _builtin_python_ids(ctx):
+    import re as _re
+    _id_re = _re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
     els = Object.all("[data-lc-id]")
     bad = [el.attr("data-lc-id") for el in els
-           if not el.attr("data-lc-id").isidentifier()]
+           if not _id_re.match(el.attr("data-lc-id") or "")]
     assert not bad, "ids must be valid Python identifiers: " + str(bad)
 
 def _run_all():
