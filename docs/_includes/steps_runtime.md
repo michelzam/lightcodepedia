@@ -29,10 +29,27 @@ ICON = {
     "str": "🔤", "long": "🔡", "int": "🔢", "float": "🔢", "bool": "🔘",
     "date": "📅", "datetime": "🕗", "password": "🔒",
     "ref": "📦", "event": "⚡", "method": "⏵", "list": "⦙",
+    "guard": "▹", "trans": "▹", "fsm": "🎛️", "init": "➡️",
 }
 
-_MODEL = {}     # class name → spec dict
-_CLASSES = {}   # class name → class object (for per-class to_dot dispatch)
+_MODEL = {}        # class name → spec dict
+_CLASSES = {}      # class name → class object (for per-class to_dot dispatch)
+_TRANSITIONS = {}  # function object → (precondition states, postcondition state)
+
+
+def transition(pre=(), post=None):
+    """Decorate a method as a state transition.
+
+    @transition(["pending", "placed"], "paid")
+    def pay(self): ...
+
+    `pre` lists the states the method may be called from (guard); `post` is the
+    single state it moves the object to. Read back by @component for the diagram.
+    """
+    def deco(fn):
+        _TRANSITIONS[fn] = (list(pre), post)
+        return fn
+    return deco
 
 
 def _prop(attr, typ, default, settable):
@@ -65,8 +82,13 @@ def _prop(attr, typ, default, settable):
     return property(fget)
 
 
-def component(icon="", attrs=(), assoc=(), events=(), methods=()):
-    """Class decorator: generate data-* knob properties and register the spec."""
+def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
+    """Class decorator: generate data-* knob properties and register the spec.
+
+    `states` is the ordered list of the class's state-machine states (first =
+    initial). Methods decorated with @transition contribute guards/transitions,
+    resolved here into each method's spec (pre / post).
+    """
     def deco(cls):
         for a in attrs:
             if a.get("data"):
@@ -74,13 +96,19 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=()):
                 aname = a.get("attr", "data-" + cname)
                 setattr(cls, cname,
                         _prop(aname, a.get("t", "str"), a.get("d"), a.get("set", False)))
+        meth_specs = []
+        for m in methods:
+            fn = getattr(cls, m, None)
+            pre, post = _TRANSITIONS.get(fn, ([], None))
+            meth_specs.append({"n": m, "pre": list(pre), "post": post})
         spec = {
             "icon": icon,
             "bases": [b.__name__ for b in cls.__bases__],
             "attrs": [dict(a) for a in attrs],
             "assoc": [dict(a) for a in assoc],
             "events": list(events),
-            "methods": list(methods),
+            "methods": meth_specs,
+            "states": list(states),
         }
         cls._spec = spec          # SSOT lives on the class itself
         _MODEL[cls.__name__] = spec
@@ -129,25 +157,77 @@ class Object:
     def id(self):
         return self._attr("data-lc-id") or ""
 
+    @property
+    def state(self):
+        """Current state-machine state (data-state); defaults to the initial."""
+        v = self._attr("data-state")
+        if v:
+            return v
+        sts = type(self)._spec.get("states", []) if hasattr(type(self), "_spec") else []
+        return sts[0] if sts else ""
+
+    @property
+    def states(self):
+        """The declared list of states for this class (first = initial)."""
+        return list(type(self)._spec.get("states", [])) if hasattr(type(self), "_spec") else []
+
     # ── per-class diagram contribution (SSOT = cls._spec, set by @component) ──
     @classmethod
     def _dot_node(cls):
         sp = cls._spec
         title = ((sp["icon"] + " ") if sp["icon"] else "") + cls.__name__
         rows = ""
+        if sp.get("states"):                       # stateful → show current state
+            rows += ICON["fsm"] + " state\\l"
         for a in sp["attrs"]:
             rows += _attr_icon(a) + " " + _dot_esc(a["n"]) + "\\l"
         meth = ""
         for e in sp["events"]:
             meth += ICON["event"] + " " + _dot_esc(e) + "\\l"
         for m in sp["methods"]:
-            meth += ICON["method"] + " " + _dot_esc(m) + "\\l"
+            lead = ICON["guard"] if m["pre"] else ICON["method"]   # ▹ guarded / ⏵ plain
+            line = lead + " " + _dot_esc(m["n"])
+            if m["post"]:
+                line += " " + ICON["trans"]                         # trailing ▹ = transition
+            meth += line + "\\l"
         return ("  " + cls.__name__ + ' [label="{'
                 + _dot_esc(title) + "|" + rows + "|" + meth + '}"]')
 
     @classmethod
+    def _dot_states(cls):
+        """Emit this class's state-machine cluster + transition edges (if any)."""
+        sp = cls._spec
+        states = sp.get("states", [])
+        if not states:
+            return []
+        cn = cls.__name__
+        def sid(s):
+            return "st_" + cn + "_" + s
+        L = ["  subgraph cluster_states_" + cn + " {",
+             '    label="' + ICON["fsm"] + " " + cn + ' states"; fontsize=10;',
+             '    style="rounded,filled"; fillcolor="white"; color="gray85";',
+             '    node [shape=box, style="rounded,filled", fillcolor="gray95",'
+             ' color="gray", fontsize=10, penwidth=0.3]']
+        for i, s in enumerate(states):
+            lbl = (ICON["init"] + " " + s) if i == 0 else s
+            L.append("    " + sid(s) + ' [label="' + _dot_esc(lbl) + '"]')
+        L.append("  }")
+        for m in sp["methods"]:
+            if m["post"] and m["post"] in states:
+                froms = [p for p in m["pre"] if p in states] or [states[0]]
+                for p in froms:
+                    L.append("  " + sid(p) + " -> " + sid(m["post"])
+                             + ' [xlabel="' + _dot_esc(m["n"]) + '", arrowhead=open,'
+                             + ' color="gray45", fontcolor="gray45", penwidth=0.3,'
+                             + ' constraint=false]')
+        # tie the initial state to the class node (dashed, no arrow)
+        L.append("  " + sid(states[0]) + " -> " + cn
+                 + ' [style=dashed, arrowhead=none, color="gray70", constraint=false]')
+        return L
+
+    @classmethod
     def to_dot(cls, sel=None):
-        """Dump THIS class's contribution: its node + its association edges."""
+        """Dump THIS class's contribution: node + associations + state machine."""
         lines = [cls._dot_node()]
         for a in cls._spec["assoc"]:
             if sel is None or a["target"] in sel:
@@ -155,6 +235,7 @@ class Object:
                 lines.append("  " + cls.__name__ + " -> " + a["target"]
                              + ' [constraint=false, arrowhead=open, color=steelblue,'
                              + ' fontcolor=steelblue, xlabel="' + _dot_esc(lbl) + '"]')
+        lines += cls._dot_states()
         return "\n".join(lines)
 
 
@@ -471,12 +552,14 @@ class Radio(Block):
 @component(icon="❓",
            attrs=[{"n": "multi", "t": "bool", "data": True, "d": False},
                   {"n": "graded", "t": "bool"}],
-           methods=["check"])
+           methods=["check"],
+           states=["pending", "graded"])
 class Quiz(Block):
     @property
     def graded(self):
         return self.has_class("graded")
 
+    @transition(["pending"], "graded")
     def check(self):
         return self._tap(".lc-quiz-check, [data-lc-check]")
 
@@ -578,11 +661,14 @@ class Agent(Block):
                   {"n": "size", "t": "int", "data": True, "d": 240},
                   {"n": "zoom", "t": "float", "data": True, "d": 1.35},
                   {"n": "fps", "t": "int", "data": True, "d": 25}],
-           methods=["start", "stop"])
+           methods=["start", "stop"],
+           states=["idle", "recording", "stopped"])
 class Recorder(Block):
+    @transition(["idle"], "recording")
     def start(self):
         return self._tap(".lc-rec-start, [data-lc-start]")
 
+    @transition(["recording"], "stopped")
     def stop(self):
         return self._tap(".lc-rec-stop, [data-lc-stop]")
 
@@ -773,8 +859,10 @@ def _dot_legend():
         "📦⦙ list of [type]", "📦 object ref", "⚡ event or code",
     ]
     body = "".join(r + "\\l" for r in rows)
-    foot = "⏵ method\\l|➭  inherits from\\l =  default value\\l"
-    return '"{Legend|' + body + "|" + foot + '}"'
+    meth = ("⏵ method\\l▹ guarded method (preconditions)\\l"
+            "method ▹ sets a state\\l🎛️ state\\l")
+    foot = "🎛️ state machine\\l➡️ initial state\\l|➭  inherits from\\l =  default value\\l"
+    return '"{Legend|' + body + "|" + meth + "|" + foot + '}"'
 
 
 def _scope_set(scope):
