@@ -347,12 +347,11 @@ Auto-included by docs/_layouts/default.html.
     /* remove href before it can scroll the page */
     if (linkEl) { linkEl.removeAttribute("href"); linkEl.style.cursor = "default"; }
 
-    /* consume the following handler code block (.onclick class, or any python block) */
+    /* consume the immediately following code block as the click handler */
     var handlerCode = "";
     var sib = el.nextElementSibling;
     while (sib && !sib.textContent.trim()) sib = sib.nextElementSibling;
-    if (sib && sib.classList.contains("highlighter-rouge") &&
-        (sib.classList.contains("onclick") || sib.classList.contains("language-python"))) {
+    if (sib && sib.classList.contains("highlighter-rouge")) {
       var codeEl = sib.querySelector("code");
       if (codeEl) handlerCode = codeEl.textContent;
       sib.parentNode.removeChild(sib);
