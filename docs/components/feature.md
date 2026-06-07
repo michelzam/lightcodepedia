@@ -142,25 +142,32 @@ Feature: Button handler
   As a page author
   I want to attach Python to a button
   So that clicking it modifies the chart without writing JavaScript
-  Scenario: Handler identifies the tallest bar correctly
+  Scenario: Clicking the button highlights the tallest bar
     Given the button and chart are present
     :::python
     assert self.page.highlight_btn, "highlight_btn not found"
     assert self.page.probe_chart,   "probe_chart not found"
     :::
-    When the handler logic runs
+    When the button is invoked
+    :::python
+    self.page.highlight_btn.invoke()
+    :::
+    Then bar B is painted orange
     :::python
     bars = self.page.probe_chart.bars
     self.max_bar = max(bars, key=lambda b: b.value)
+    assert self.max_bar.color == "orange", f"expected orange, got {self.max_bar.color!r}"
     :::
-    Then bar B has the highest value
+    And the button label shows the max value
     :::python
-    assert self.max_bar.value == 7.0, f"expected 7.0, got {self.max_bar.value}"
+    assert "Max is 7" in self.page.highlight_btn.text, \
+        f"unexpected label: {self.page.highlight_btn.text!r}"
     :::
-    And it is not bar A or bar C
+    And it is bar B not A or C
     :::python
-    assert self.max_bar.value > self.page.probe_chart.bars[0].value
-    assert self.max_bar.value > self.page.probe_chart.bars[2].value
+    bars = self.page.probe_chart.bars
+    assert self.max_bar.value > bars[0].value
+    assert self.max_bar.value > bars[2].value
     :::
 ```
 {: .feature id="btn_handler" status="pending" tags="button,probe" }

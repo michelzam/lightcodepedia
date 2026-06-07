@@ -87,15 +87,15 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 
 /* ── scenario / narrative ─────────────────────────────────────────────── */
 .lc-feature-scenario { padding: 0.5em 1em 0.2em; font-size: 0.82em; font-weight: 600; color: #6b7280; letter-spacing: 0.03em; text-transform: uppercase; }
-.lc-feature-narrative { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #9ca3af; font-style: italic; }
+.lc-feature-narrative { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #9ca3af; }
 .lc-feature-story { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; display: flex; gap: 0.4em; align-items: baseline; flex-wrap: wrap; }
-.lc-feature-story-keyword { color: #7c3aed; font-weight: 600; font-style: normal; flex-shrink: 0; }
-.lc-feature-story-text { color: #374151; font-style: italic; }
+.lc-feature-story-keyword { color: #7c3aed; font-weight: 600; flex-shrink: 0; }
+.lc-feature-story-text { color: #374151; }
 
 /* ── step rows ──────────────────────────────────────────────────────────── */
 .lc-feature-steps { padding: 0.35em 0; }
 .lc-feature-step { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.lc-feature-step.lc-step-and .lc-feature-step-row { padding-left: 2.5em; }
+.lc-feature-step.lc-step-and .lc-feature-step-keyword { padding-left: 1em; }
 .lc-feature-step-row { display: flex; align-items: baseline; gap: 0.55em; padding: 0.28em 1em; font-size: 0.88em; line-height: 1.5; }
 .lc-feature-step.has-impl > .lc-feature-step-row { cursor: pointer; }
 .lc-feature-step.has-impl > .lc-feature-step-row:hover { background: #f3f4f6; }
@@ -108,7 +108,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-step-time { margin-left: auto; font-size: 0.75em; color: #9ca3af; }
 
 /* ── expandable Python impl ────────────────────────────────────────────────── */
-.lc-feature-step-impl { display: none; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
+.lc-feature-step-impl { display: none; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; padding-left: 2.5em; }
 .lc-feature-step-impl.open { display: block; }
 .lc-feature-step-impl pre { margin: 0 !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; max-height: 220px; overflow-y: auto; }
 .lc-feature-step-impl pre code { font-size: 0.82em !important; line-height: 1.55 !important; }
