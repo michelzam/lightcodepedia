@@ -111,6 +111,12 @@ Feature: Page component access
     :::python
     assert self.probe_chart.bar_count > 0, f"got {self.probe_chart.bar_count} bars"
     :::
+    And bar heights reflect the data order (A < C < B)
+    :::python
+    bars = self.probe_chart.bars
+    assert bars[0].value < bars[2].value < bars[1].value, \
+        f"expected 3 < 5 < 7, got {[b.value for b in bars]}"
+    :::
 ```
 {: .feature id="page_probe" status="pending" tags="probe" }
 

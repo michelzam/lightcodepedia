@@ -144,7 +144,18 @@ class Datagrid(Block):
         return Block(None)
 
 
+class Bar(Object):
+    @property
+    def value(self):
+        v = self.attr("data-value")
+        return float(v) if v is not None else 0.0
+
+
 class Chart(Block):
+    @property
+    def bars(self):
+        return [Bar(r._el) for r in self.qq("rect")]
+
     @property
     def bind(self):
         return Dataset(self.attr("data-bind") or "")
