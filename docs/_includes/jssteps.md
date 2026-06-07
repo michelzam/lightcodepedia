@@ -241,9 +241,7 @@ class Button(Block):
             return self
         g = globals()
         g["button"] = self
-        exec(code, g)
-        if "on_click" in g:
-            g["on_click"](self)
+        exec(code + "\non_click(button)\n", g)
         return self
 
     @property
