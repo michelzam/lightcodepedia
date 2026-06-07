@@ -122,7 +122,7 @@ Feature: Page component access
 
 ## 🖱️ Button with Python handler
 
-Click the button to highlight the tallest bar. The `:::python:::` fence after the `.button` IAL defines the click handler; `button.page` gives full page access.
+Click the button to highlight the tallest bar; click again to reset. The `:::python:::` fence after the `.button` IAL defines the click handler; `button.page` gives full page access.
 
 [Highlight max bar ▶](#)
 {: .button data-lc-id="highlight_btn" }
@@ -131,9 +131,15 @@ Click the button to highlight the tallest bar. The `:::python:::` fence after th
 def on_click(button):
     bars = button.page.probe_chart.bars
     max_bar = max(bars, key=lambda b: b.value)
-    max_bar.color = "orange"
-    button.text = f"Max is {int(max_bar.value)} — click to reset"
-    button.color = "muted"
+    if max_bar.color == "orange":          # already highlighted → reset
+        for bar in bars:
+            bar.color = "#0066cc"
+        button.text = "Highlight max bar ▶"
+        button.color = ""
+    else:                                  # highlight the tallest bar
+        max_bar.color = "orange"
+        button.text = f"Max is {int(max_bar.value)} — click to reset"
+        button.color = "muted"
 ```
 {: .onclick }
 
@@ -148,8 +154,10 @@ Feature: Button handler
     assert self.page.highlight_btn, "highlight_btn not found"
     assert self.page.probe_chart,   "probe_chart not found"
     :::
-    When the button is clicked
+    When the button is clicked from a clean state
     :::python
+    for bar in self.page.probe_chart.bars:   # reset so one click highlights
+        bar.color = "#0066cc"
     self.page.highlight_btn.click()
     :::
     Then bar B is painted orange
