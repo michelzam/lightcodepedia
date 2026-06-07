@@ -103,5 +103,3 @@ _Published: {{ site.time | date: "%Y-%m-%d %H:%M" }}_
 [Made with ❤️ by KarmicSoft](https://github.com/user-attachments/assets/98bd94ab-f89c-4a05-9995-db10cff67c97)
 
 
-[Recording](https://youtu.be/krEDyBSaOwE)
-{: .video }
