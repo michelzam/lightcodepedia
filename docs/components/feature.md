@@ -125,7 +125,7 @@ Feature: Page component access
 Click the button to highlight the tallest bar. The `:::python:::` fence after the `.button` IAL defines the click handler; `button.page` gives full page access.
 
 [Highlight max bar ▶](#)
-{: .button id="highlight_btn" }
+{: .button data-lc-id="highlight_btn" }
 
 ```python
 def on_click(button):
@@ -145,8 +145,8 @@ Feature: Button handler
   Scenario: Handler identifies the tallest bar correctly
     Given the button and chart are present
     :::python
-    assert self.highlight_btn, "highlight_btn not found"
-    assert self.probe_chart,   "probe_chart not found"
+    assert self.page.highlight_btn, "highlight_btn not found"
+    assert self.page.probe_chart,   "probe_chart not found"
     :::
     When the handler logic runs
     :::python
