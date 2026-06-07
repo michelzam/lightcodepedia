@@ -120,6 +120,51 @@ Feature: Page component access
 ```
 {: .feature id="page_probe" status="pending" tags="probe" }
 
+## 🖱️ Button with Python handler
+
+Click the button to highlight the tallest bar. The `:::python:::` fence after the `.button` IAL defines the click handler; `button.page` gives full page access.
+
+[Highlight max bar ▶](#)
+{: .button id="highlight_btn" }
+
+```python
+def on_click(button):
+    bars = button.page.probe_chart.bars
+    max_bar = max(bars, key=lambda b: b.value)
+    max_bar.color = "orange"
+    button.text = f"Max is {int(max_bar.value)} — click to reset"
+    button.color = "muted"
+```
+{: .onclick }
+
+```gherkin
+Feature: Button handler
+  As a page author
+  I want to attach Python to a button
+  So that clicking it modifies the chart without writing JavaScript
+  Scenario: Handler identifies the tallest bar correctly
+    Given the button and chart are present
+    :::python
+    assert self.highlight_btn, "highlight_btn not found"
+    assert self.probe_chart,   "probe_chart not found"
+    :::
+    When the handler logic runs
+    :::python
+    bars = self.probe_chart.bars
+    self.max_bar = max(bars, key=lambda b: b.value)
+    :::
+    Then bar B has the highest value
+    :::python
+    assert self.max_bar.value == 7.0, f"expected 7.0, got {self.max_bar.value}"
+    :::
+    And it is not bar A or bar C
+    :::python
+    assert self.max_bar.value > self.probe_chart.bars[0].value
+    assert self.max_bar.value > self.probe_chart.bars[2].value
+    :::
+```
+{: .feature id="btn_handler" status="pending" tags="button,probe" }
+
 ## 🥸 How to write one
 
 After each Gherkin step, add a `:::python ... :::` block with the implementation:
