@@ -824,7 +824,7 @@ def to_dot(scope=None, gaps=None):
     # inheritance — UML hollow triangle; merge children that share a base.
     L.append('  edge [arrowhead=empty, arrowsize=0.9, color=black, penwidth=0.5];')
     bybase = {}
-    for n in sel:
+    for n in _dot_order(sel):          # deterministic order (sel is a set)
         for b in _MODEL[n]["bases"]:
             if b in sel:
                 bybase.setdefault(b, []).append(n)
