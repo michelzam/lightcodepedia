@@ -281,7 +281,7 @@ Auto-included by docs/_layouts/default.html.
     data.forEach(function (d, i) {
       var val = +d[yCol] || 0;
       var bH  = (val / maxV) * cH, bX = pL + i * gap + (gap - barW) / 2, bY = pT + cH - bH;
-      svgEl(svg, NS, "rect", { x: bX, y: bY, width: barW, height: Math.max(bH, 1), fill: "#0066cc", rx: 2, opacity: 0.82 });
+      svgEl(svg, NS, "rect", { x: bX, y: bY, width: barW, height: Math.max(bH, 1), fill: "#0066cc", rx: 2, opacity: 0.82, "data-value": val });
       /* x label */
       svgEl(svg, NS, "text", { x: bX + barW / 2, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
         .textContent = String(d[xCol]).substring(0, 7);
