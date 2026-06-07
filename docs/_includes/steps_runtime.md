@@ -1,70 +1,173 @@
 {%- comment -%}
-Step runtime — the in-browser Python engine for .feature cards and .button
-handlers (powered by MicroPython WASM). NOT a standalone widget.
+Step runtime — the in-browser Python engine for .feature cards, .button handlers
+and the live .diagram component (powered by MicroPython WASM). NOT a widget.
 
-Exposes, as a <script id="lc-steps-preamble"> text blob injected before every
-run, the typed component model and scenario runner:
+Injected as <script id="lc-steps-preamble"> before every run. It exposes:
 
-  Object · Block · Datagrid · Chart · Bar · Button · FeatureCard · Dataset
-  Page          — typed component resolver: self.page.<id>
-  scenario()    — decorator registering a check
-  _run_all()    — runs the two built-in checks (unique ids, python-compatible
-                  ids) plus every registered scenario; returns JSON and also
-                  stashes it on window._lcStepsResult.
-
-Components are reached in a typed way via self.page.<data-lc-id> — there is no
-need to construct wrappers from strings.
+  • a typed component model — Object (the js bridge, all helpers are _protected)
+    and one wrapper class per gallery component. Each class is declared with
+    @component(icon, attrs, assoc, events, methods): a SINGLE source of truth
+    used both for runtime access (self.page.<id>.<knob>) and for diagrams.
+  • Page         — typed resolver: self.page.<data-lc-id>
+  • scenario()   — decorator registering a check
+  • _run_all()   — runs built-in checks + scenarios, returns JSON
+  • to_dot(scope=None, gaps=None) — emits a Graphviz DOT class diagram of the
+    model. No scope → the whole model. Used by the .diagram component AND by
+    tools/gen_component_diagram.py.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
-<!-- Python preamble: injected before every feature/button run -->
+<!-- Python preamble: injected before every feature/button/diagram run -->
 <script id="lc-steps-preamble" type="text/plain">
 import js
 import json
 
-# ── Object — DOM bridge (raw element access, no visible-state assumptions) ────
+# ════════════════════════ model metadata (single source) ═════════════════════
+# Type → icon. Mirrors usecases/module_manager/backend/module_decorator.py.
+ICON = {
+    "str": "🔤", "long": "🔡", "int": "🔢", "float": "🔢", "bool": "🔘",
+    "date": "📅", "datetime": "🕗", "password": "🔒",
+    "ref": "📦", "event": "⚡", "method": "⏵", "list": "⦙",
+}
 
+_MODEL = {}     # class name → spec dict
+_CLASSES = {}   # class name → class object (for per-class to_dot dispatch)
+
+
+def _prop(attr, typ, default, settable):
+    """Build a property that reads (and optionally writes) a data-* attribute."""
+    def fget(self):
+        v = self._attr(attr)
+        if v is None:
+            return default
+        if typ == "int":
+            try:
+                return int(v)
+            except Exception:
+                return default
+        if typ == "float":
+            try:
+                return float(v)
+            except Exception:
+                return default
+        if typ == "bool":
+            return str(v).lower() in ("true", "1", "yes")
+        return v
+    if settable:
+        def fset(self, val):
+            if self._el is not None:
+                if val is None:
+                    self._el.removeAttribute(attr)
+                else:
+                    self._el.setAttribute(attr, str(val))
+        return property(fget, fset)
+    return property(fget)
+
+
+def component(icon="", attrs=(), assoc=(), events=(), methods=()):
+    """Class decorator: generate data-* knob properties and register the spec."""
+    def deco(cls):
+        for a in attrs:
+            if a.get("data"):
+                cname = a["n"]
+                aname = a.get("attr", "data-" + cname)
+                setattr(cls, cname,
+                        _prop(aname, a.get("t", "str"), a.get("d"), a.get("set", False)))
+        spec = {
+            "icon": icon,
+            "bases": [b.__name__ for b in cls.__bases__],
+            "attrs": [dict(a) for a in attrs],
+            "assoc": [dict(a) for a in assoc],
+            "events": list(events),
+            "methods": list(methods),
+        }
+        cls._spec = spec          # SSOT lives on the class itself
+        _MODEL[cls.__name__] = spec
+        _CLASSES[cls.__name__] = cls
+        return cls
+    return deco
+
+
+# ════════════════════════ Object — the js bridge ═════════════════════════════
+# Every DOM helper is _protected (leading underscore) → never shown in diagrams.
+
+@component(icon="🪵", attrs=[{"n": "id", "t": "str"}])
 class Object:
     def __init__(self, el=None):
         self._el = el
 
     @classmethod
-    def all(cls, css):
+    def _all(cls, css):
         nl = js.window.document.querySelectorAll(css)
         return [cls(nl.item(i)) for i in range(int(nl.length))]
 
-    @property
-    def id(self):
-        return self.attr("data-lc-id") or ""
-
-    def q(self, css):
+    def _q(self, css):
         el = self._el.querySelector(css) if self._el else None
         return Object(el)
 
-    def qq(self, css):
+    def _qq(self, css):
         if not self._el:
             return []
         nl = self._el.querySelectorAll(css)
         return [Object(nl.item(i)) for i in range(int(nl.length))]
 
-    def attr(self, name):
+    def _attr(self, name):
         if not self._el:
             return None
         v = self._el.getAttribute(name)
         return str(v) if v is not None else None
 
+    def _tap(self, css):
+        if self._el is not None:
+            sub = self._el.querySelector(css)
+            if sub is not None:
+                sub.click()
+        return self
 
-# ── Block — base class for all visible components ─────────────────────────────
+    @property
+    def id(self):
+        return self._attr("data-lc-id") or ""
 
+    # ── per-class diagram contribution (SSOT = cls._spec, set by @component) ──
+    @classmethod
+    def _dot_node(cls):
+        sp = cls._spec
+        title = ((sp["icon"] + " ") if sp["icon"] else "") + cls.__name__
+        rows = ""
+        for a in sp["attrs"]:
+            rows += _attr_icon(a) + " " + _dot_esc(a["n"]) + "\\l"
+        meth = ""
+        for e in sp["events"]:
+            meth += ICON["event"] + " " + _dot_esc(e) + "\\l"
+        for m in sp["methods"]:
+            meth += ICON["method"] + " " + _dot_esc(m) + "\\l"
+        return ("  " + cls.__name__ + ' [label="{'
+                + _dot_esc(title) + "|" + rows + "|" + meth + '}"]')
+
+    @classmethod
+    def to_dot(cls, sel=None):
+        """Dump THIS class's contribution: its node + its association edges."""
+        lines = [cls._dot_node()]
+        for a in cls._spec["assoc"]:
+            if sel is None or a["target"] in sel:
+                lbl = ("⦙ " if a.get("list") else "") + a["n"]
+                lines.append("  " + cls.__name__ + " -> " + a["target"]
+                             + ' [constraint=false, arrowhead=open, color=steelblue,'
+                             + ' fontcolor=steelblue, xlabel="' + _dot_esc(lbl) + '"]')
+        return "\n".join(lines)
+
+
+# ════════════════════════ Block — base of visible components ═════════════════
+
+@component(icon="🧩",
+           attrs=[{"n": "exists", "t": "bool"},
+                  {"n": "visible", "t": "bool"},
+                  {"n": "text", "t": "str"}],
+           methods=["click", "has_class"])
 class Block(Object):
     def __bool__(self):
         return self._el is not None
-
-    def click(self):
-        if self._el:
-            self._el.click()
-        return self
 
     @property
     def exists(self):
@@ -84,20 +187,15 @@ class Block(Object):
     def has_class(self, name):
         return bool(self._el and self._el.classList.contains(name))
 
-
-# ── component wrappers ───────────────────────────────────────────────────────
-
-def _wrap(el):
-    if not el:
-        return Block(None)
-    c = str(el.getAttribute("class") or "")
-    if "lc-datagrid" in c: return Datagrid(el)
-    if "lc-chart"    in c: return Chart(el)
-    if "lc-feature"  in c: return FeatureCard(el)
-    if "lc-button"   in c: return Button(el)
-    return Block(el)
+    def click(self):
+        if self._el:
+            self._el.click()
+        return self
 
 
+# ════════════════════════ data + leaf wrappers ══════════════════════════════
+
+@component(icon="🗃️", attrs=[{"n": "loaded", "t": "bool"}, {"n": "count", "t": "int"}])
 class Dataset(Object):
     def __init__(self, id):
         self._el = None
@@ -125,44 +223,16 @@ class Dataset(Object):
         return int(arr.length) if arr else 0
 
 
-class Datagrid(Block):
-    @property
-    def bind(self):
-        return Dataset(self.attr("data-bind") or "")
-
-    @property
-    def row_count(self):
-        return len(self.qq("tbody tr"))
-
-    @property
-    def headers(self):
-        return [th.text.rstrip(" ↑↓") for th in self.qq("th")]
-
-    @property
-    def rows(self):
-        cols = self.headers
-        out = []
-        for tr in self.qq("tbody tr"):
-            cells = tr.qq("td")
-            out.append({cols[i]: cells[i].text if i < len(cells) else "" for i in range(len(cols))})
-        return out
-
-    def header(self, name):
-        for th in self.qq("th"):
-            if th.text.rstrip(" ↑↓") == name:
-                return th
-        return Block(None)
-
-
+@component(icon="▮", attrs=[{"n": "value", "t": "float"}, {"n": "color", "t": "str"}])
 class Bar(Object):
     @property
     def value(self):
-        v = self.attr("data-value")
+        v = self._attr("data-value")
         return float(v) if v is not None else 0.0
 
     @property
     def color(self):
-        return self.attr("fill") or "#0066cc"
+        return self._attr("fill") or "#0066cc"
 
     @color.setter
     def color(self, v):
@@ -170,37 +240,72 @@ class Bar(Object):
             self._el.setAttribute("fill", v or "#0066cc")
 
 
+@component(icon="▦",
+           attrs=[{"n": "row_count", "t": "int"},
+                  {"n": "headers", "t": "str", "list": True},
+                  {"n": "rows", "t": "ref", "list": True}],
+           assoc=[{"n": "bind", "target": "Dataset"}],
+           methods=["header"])
+class Datagrid(Block):
+    @property
+    def bind(self):
+        return Dataset(self._attr("data-bind") or "")
+
+    @property
+    def row_count(self):
+        return len(self._qq("tbody tr"))
+
+    @property
+    def headers(self):
+        return [th.text.rstrip(" ↑↓") for th in self._qq("th")]
+
+    @property
+    def rows(self):
+        cols = self.headers
+        out = []
+        for tr in self._qq("tbody tr"):
+            cells = tr._qq("td")
+            out.append({cols[i]: cells[i].text if i < len(cells) else ""
+                        for i in range(len(cols))})
+        return out
+
+    def header(self, name):
+        for th in self._qq("th"):
+            if th.text.rstrip(" ↑↓") == name:
+                return th
+        return Block(None)
+
+
+@component(icon="📈",
+           attrs=[{"n": "type", "t": "str", "data": True, "d": "bar"},
+                  {"n": "x", "t": "str", "data": True, "d": ""},
+                  {"n": "y", "t": "str", "data": True, "d": ""},
+                  {"n": "bar_count", "t": "int"},
+                  {"n": "point_count", "t": "int"}],
+           assoc=[{"n": "bind", "target": "Dataset"},
+                  {"n": "bars", "target": "Bar", "list": True}])
 class Chart(Block):
     @property
     def bars(self):
-        return [Bar(r._el) for r in self.qq("rect")]
+        return [Bar(r._el) for r in self._qq("rect")]
 
     @property
     def bind(self):
-        return Dataset(self.attr("data-bind") or "")
-
-    @property
-    def type(self):
-        return self.attr("data-type") or "bar"
-
-    @property
-    def x(self):
-        return self.attr("data-x") or ""
-
-    @property
-    def y(self):
-        return self.attr("data-y") or ""
+        return Dataset(self._attr("data-bind") or "")
 
     @property
     def bar_count(self):
-        return len(self.qq("rect"))
+        return len(self._qq("rect"))
 
     @property
     def point_count(self):
-        return len(self.qq("circle"))
+        return len(self._qq("circle"))
 
 
-class FeatureCard(Block):
+@component(icon="🦄",
+           attrs=[{"n": "title", "t": "str"}, {"n": "status", "t": "str"}],
+           methods=["run"])
+class Feature(Block):
     @classmethod
     def nth(cls, n=0):
         nl = js.window.document.querySelectorAll(".lc-feature")
@@ -208,18 +313,22 @@ class FeatureCard(Block):
 
     @property
     def title(self):
-        return self.q(".lc-feature-title").text
+        return self._q(".lc-feature-title").text
 
     @property
     def status(self):
-        v = self.attr("data-status")
+        v = self._attr("data-status")
         return str(v) if v else "none"
 
-    @property
-    def run_button(self):
-        return self.q(".lc-feature-run-btn")
+    def run(self):
+        """Trigger the card's ▶ Run button."""
+        return self._tap(".lc-feature-run-btn")
 
 
+@component(icon="🖱️",
+           attrs=[{"n": "text", "t": "str"}, {"n": "color", "t": "str"}],
+           assoc=[{"n": "page", "target": "Page"}],
+           events=["on_click"])
 class Button(Block):
     @property
     def text(self):
@@ -232,7 +341,7 @@ class Button(Block):
 
     @property
     def color(self):
-        return self.attr("data-color") or ""
+        return self._attr("data-color") or ""
 
     @color.setter
     def color(self, v):
@@ -242,8 +351,12 @@ class Button(Block):
             else:
                 self._el.removeAttribute("data-color")
 
+    @property
+    def page(self):
+        return Page()
+
     def click(self):
-        code = self.attr("data-lc-py") or ""
+        code = self._attr("data-lc-py") or ""
         if not code:
             if self._el:
                 self._el.click()
@@ -257,14 +370,313 @@ class Button(Block):
                 self._el.setAttribute("data-lc-err", str(_e))
         return self
 
+
+# ════════════════════════ gallery component wrappers ═════════════════════════
+# Knobs are typed properties (data-* backed); behaviours are methods.
+
+@component(icon="🎠", attrs=[{"n": "delay", "t": "int", "data": True, "d": 4000}],
+           methods=["next", "prev", "goto"])
+class Carousel(Block):
+    def next(self):
+        return self._tap(".lc-next, [data-lc-next]")
+
+    def prev(self):
+        return self._tap(".lc-prev, [data-lc-prev]")
+
+    def goto(self, n):
+        if self._el is not None:
+            dots = self._el.querySelectorAll(".lc-dot, [data-go]")
+            if dots is not None and int(dots.length) > n:
+                dots.item(n).click()
+        return self
+
+
+@component(icon="🃏",
+           attrs=[{"n": "cols", "t": "str", "data": True, "d": "auto"},
+                  {"n": "gap", "t": "int", "data": True, "d": 18}])
+class Cards(Block):
+    pass
+
+
+@component(icon="🔽", attrs=[{"n": "label", "t": "str", "data": True, "d": "Menu"}],
+           methods=["open", "close"])
+class Dropdown(Block):
+    def open(self):
+        if self._el is not None:
+            self._el.classList.add("open")
+        return self
+
+    def close(self):
+        if self._el is not None:
+            self._el.classList.remove("open")
+        return self
+
+
+@component(icon="📁",
+           attrs=[{"n": "cols", "t": "str", "data": True, "d": "auto"},
+                  {"n": "show_private", "t": "bool", "data": True,
+                   "attr": "data-show-private"}])
+class Folder(Block):
+    pass
+
+
+@component(icon="▤",
+           attrs=[{"n": "cols", "t": "str", "data": True, "d": "auto"},
+                  {"n": "gap", "t": "int", "data": True, "d": 18},
+                  {"n": "headings", "t": "str", "data": True, "d": "show"}])
+class Grid(Block):
+    pass
+
+
+@component(icon="🗺️",
+           attrs=[{"n": "lat", "t": "float", "data": True, "d": 48.86},
+                  {"n": "lng", "t": "float", "data": True, "d": 2.35},
+                  {"n": "zoom", "t": "int", "data": True, "d": 12},
+                  {"n": "height", "t": "int", "data": True, "d": 350}],
+           methods=["pan_to", "set_zoom"])
+class Map(Block):
+    def pan_to(self, lat, lng):
+        if self._el is not None:
+            self._el.setAttribute("data-lat", str(lat))
+            self._el.setAttribute("data-lng", str(lng))
+        return self
+
+    def set_zoom(self, z):
+        if self._el is not None:
+            self._el.setAttribute("data-zoom", str(z))
+        return self
+
+
+@component(icon="🍔", methods=["items"])
+class Menu(Block):
+    def items(self):
+        return [o.text for o in self._qq("a, li")]
+
+
+@component(icon="📻", attrs=[{"n": "selected", "t": "str"}], methods=["select"])
+class Radio(Block):
     @property
-    def page(self):
-        return Page()
+    def selected(self):
+        c = self._q("input:checked")
+        return c.text if c else ""
+
+    def select(self, n):
+        if self._el is not None:
+            ins = self._el.querySelectorAll("input")
+            if ins is not None and int(ins.length) > n:
+                ins.item(n).click()
+        return self
 
 
-# ── Page — dynamic component resolver ────────────────────────────────────────
+@component(icon="❓",
+           attrs=[{"n": "multi", "t": "bool", "data": True, "d": False},
+                  {"n": "graded", "t": "bool"}],
+           methods=["check"])
+class Quiz(Block):
+    @property
+    def graded(self):
+        return self.has_class("graded")
 
+    def check(self):
+        return self._tap(".lc-quiz-check, [data-lc-check]")
+
+
+@component(icon="📑", attrs=[{"n": "active", "t": "int"}], methods=["select"])
+class Tabs(Block):
+    @property
+    def active(self):
+        if self._el is None:
+            return 0
+        tabs = self._el.querySelectorAll(".lc-tab")
+        for i in range(int(tabs.length)):
+            if tabs.item(i).classList.contains("active"):
+                return i
+        return 0
+
+    def select(self, n):
+        if self._el is not None:
+            tabs = self._el.querySelectorAll(".lc-tab")
+            if tabs is not None and int(tabs.length) > n:
+                tabs.item(n).click()
+        return self
+
+
+@component(icon="📝",
+           attrs=[{"n": "title", "t": "str", "data": True, "d": ""},
+                  {"n": "format", "t": "str", "data": True, "d": "yaml"},
+                  {"n": "editable", "t": "bool", "data": True, "d": False}],
+           assoc=[{"n": "bound", "target": "Datagrid"}],
+           methods=["submit"])
+class Form(Block):
+    @property
+    def bound(self):
+        gid = self._attr("data-bound") or ""
+        el = js.window.document.querySelector("[data-lc-id='" + gid + "']") if gid else None
+        return _wrap(el)
+
+    def submit(self):
+        return self._tap("button[type=submit], .lc-form-submit")
+
+
+@component(icon="🎞️", attrs=[{"n": "current", "t": "int"}],
+           methods=["next", "prev", "goto"])
+class Slides(Block):
+    @property
+    def current(self):
+        v = self._attr("data-current")
+        return int(v) if v is not None else 0
+
+    def next(self):
+        return self._tap(".lc-slide-next, [data-lc-next]")
+
+    def prev(self):
+        return self._tap(".lc-slide-prev, [data-lc-prev]")
+
+    def goto(self, n):
+        if self._el is not None:
+            self._el.setAttribute("data-current", str(n))
+        return self
+
+
+@component(icon="📜", attrs=[{"n": "height", "t": "int", "data": True, "d": 300}])
+class Scrollable(Block):
+    pass
+
+
+@component(icon="📄",
+           attrs=[{"n": "path", "t": "str", "data": True, "d": ""},
+                  {"n": "src", "t": "str", "data": True, "d": ""},
+                  {"n": "lang", "t": "str", "data": True, "d": "text"},
+                  {"n": "title", "t": "str", "data": True, "d": ""},
+                  {"n": "repo", "t": "str", "data": True, "d": ""},
+                  {"n": "branch", "t": "str", "data": True, "d": "main"}])
+class Code(Block):
+    pass
+
+
+@component(icon="🤖",
+           attrs=[{"n": "system", "t": "long", "data": True, "d": ""},
+                  {"n": "model", "t": "str", "data": True, "d": "openai/gpt-4o-mini"},
+                  {"n": "temperature", "t": "float", "data": True, "d": 0.7},
+                  {"n": "max_tokens", "t": "int", "data": True, "d": 500,
+                   "attr": "data-max-tokens"},
+                  {"n": "intro", "t": "str", "data": True, "d": ""},
+                  {"n": "placeholder", "t": "str", "data": True, "d": "Ask anything..."}],
+           methods=["ask"])
+class Agent(Block):
+    def ask(self, prompt):
+        if self._el is not None:
+            box = self._el.querySelector("textarea, input")
+            if box is not None:
+                box.value = str(prompt)
+            self._tap(".lc-agent-send, button")
+        return self
+
+
+@component(icon="🎥",
+           attrs=[{"n": "pip", "t": "str", "data": True, "d": "bottom-right"},
+                  {"n": "size", "t": "int", "data": True, "d": 240},
+                  {"n": "zoom", "t": "float", "data": True, "d": 1.35},
+                  {"n": "fps", "t": "int", "data": True, "d": 25}],
+           methods=["start", "stop"])
+class Recorder(Block):
+    def start(self):
+        return self._tap(".lc-rec-start, [data-lc-start]")
+
+    def stop(self):
+        return self._tap(".lc-rec-stop, [data-lc-stop]")
+
+
+@component(icon="🔳", attrs=[{"n": "size", "t": "int", "data": True, "d": 180}])
+class Qr(Block):
+    pass
+
+
+@component(icon="🔤")
+class Text(Block):
+    pass
+
+
+@component(icon="🐍",
+           attrs=[{"n": "rows", "t": "int", "data": True, "d": 6},
+                  {"n": "folded", "t": "bool", "data": True, "d": False},
+                  {"n": "silent", "t": "bool", "data": True, "d": False},
+                  {"n": "init", "t": "long", "data": True, "d": ""},
+                  {"n": "bound", "t": "str", "data": True, "d": ""},
+                  {"n": "expected", "t": "str", "data": True, "d": ""}],
+           methods=["run"])
+class Run(Block):
+    def run(self):
+        return self._tap(".lc-run-btn, [data-lc-run]")
+
+
+@component(icon="🔬",
+           attrs=[{"n": "height", "t": "int", "data": True, "d": 400},
+                  {"n": "bound_to", "t": "str", "data": True, "d": "",
+                   "attr": "data-bound-to"}])
+class Pytutor(Block):
+    pass
+
+
+@component(icon="🖼️", attrs=[{"n": "height", "t": "int", "data": True, "d": 400}])
+class EmbedPage(Block):
+    pass
+
+
+@component(icon="🪗", methods=["open", "close", "sections"])
+class Accordion(Block):
+    def sections(self):
+        return [s.text for s in self._qq("summary, .lc-acc-head")]
+
+    def open(self, n=0):
+        if self._el is not None:
+            ds = self._el.querySelectorAll("details")
+            if ds is not None and int(ds.length) > n:
+                ds.item(n).open = True
+        return self
+
+    def close(self, n=0):
+        if self._el is not None:
+            ds = self._el.querySelectorAll("details")
+            if ds is not None and int(ds.length) > n:
+                ds.item(n).open = False
+        return self
+
+
+# ════════════════════════ resolver ══════════════════════════════════════════
+
+_WRAP = [
+    ("lc-datagrid", Datagrid), ("lc-chart", Chart), ("lc-feature", Feature),
+    ("lc-button", Button), ("lc-carousel", Carousel), ("lc-cards", Cards),
+    ("lc-dropdown", Dropdown), ("lc-folder", Folder), ("lc-grid", Grid),
+    ("lc-map", Map), ("lc-menu", Menu), ("lc-radio", Radio), ("lc-quiz", Quiz),
+    ("lc-tabs", Tabs), ("lc-form", Form), ("lc-slides", Slides),
+    ("lc-scroll", Scrollable), ("lc-code", Code), ("lc-agent", Agent),
+    ("lc-recorder", Recorder), ("lc-qr", Qr), ("lc-pyrun", Run),
+    ("lc-pytutor", Pytutor), ("lc-embed", EmbedPage), ("lc-accordion", Accordion),
+]
+
+
+def _wrap(el):
+    if not el:
+        return Block(None)
+    c = str(el.getAttribute("class") or "")
+    for token, cls in _WRAP:
+        if token in c:
+            return cls(el)
+    return Block(el)
+
+
+@component(icon="📄", attrs=[{"n": "id", "t": "str"}], methods=["feature", "features"])
 class Page(Object):
+    @property
+    def id(self):
+        path = str(js.window.location.pathname or "")
+        name = path.rsplit("/", 1)[-1] or "index"
+        if name.endswith(".html"):
+            name = name[:-5]
+        return name or "index"
+
     def __getattr__(self, name):
         if name.startswith("_"):
             raise AttributeError(name)
@@ -277,13 +689,13 @@ class Page(Object):
         raise AttributeError("no component with id='" + name + "' on this page")
 
     def feature(self, n=0):
-        return FeatureCard.nth(n)
+        return Feature.nth(n)
 
     def features(self):
-        return FeatureCard.all(".lc-feature")
+        return Feature._all(".lc-feature")
 
 
-# ── runner infrastructure ────────────────────────────────────────────────────
+# ════════════════════════ runner infrastructure ═════════════════════════════
 
 class _Ctx:
     def __init__(self):
@@ -298,8 +710,8 @@ def scenario(label):
     return decorator
 
 def _builtin_unique_ids(ctx):
-    els = Object.all("[data-lc-id]")
-    ids = [el.attr("data-lc-id") for el in els]
+    els = Object._all("[data-lc-id]")
+    ids = [el._attr("data-lc-id") for el in els]
     seen, dupes = set(), set()
     for i in ids:
         (dupes if i in seen else seen).add(i)
@@ -308,9 +720,9 @@ def _builtin_unique_ids(ctx):
 def _builtin_python_ids(ctx):
     import re as _re
     _id_re = _re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
-    els = Object.all("[data-lc-id]")
-    bad = [el.attr("data-lc-id") for el in els
-           if not _id_re.match(el.attr("data-lc-id") or "")]
+    els = Object._all("[data-lc-id]")
+    bad = [el._attr("data-lc-id") for el in els
+           if not _id_re.match(el._attr("data-lc-id") or "")]
     assert not bad, "ids must be valid Python identifiers: " + str(bad)
 
 def _run_all():
@@ -325,8 +737,124 @@ def _run_all():
             fn(ctx)
             out.append({"status": "pass", "label": lbl, "error": ""})
         except Exception as e:
-            out.append({"status": "fail", "label": lbl, "error": type(e).__name__ + ": " + str(e)})
+            out.append({"status": "fail", "label": lbl,
+                        "error": type(e).__name__ + ": " + str(e)})
     result = json.dumps(out)
     js.window._lcStepsResult = result
     return result
+
+
+# ════════════════════════ to_dot — the diagram generator ═════════════════════
+# Single generator, shared by the live .diagram component and the build script.
+
+_DOT_ORDER = ["Object", "Block", "Page", "Dataset", "Bar",
+              "Datagrid", "Chart", "Feature", "Button"]
+
+
+def _dot_esc(s):
+    s = str(s)
+    for a, b in (("\\", "\\\\"), ('"', '\\"'), ("{", "\\{"), ("}", "\\}"),
+                 ("|", "\\|"), ("<", "\\<"), (">", "\\>")):
+        s = s.replace(a, b)
+    return s
+
+
+def _attr_icon(a):
+    ico = ICON.get(a.get("t", "ref"), "📦")
+    if a.get("list"):
+        ico = ico + ICON["list"]
+    return ico
+
+
+def _dot_legend():
+    rows = [
+        "🔤 str", "🔡 long str", "🔢 int / float", "🔘 bool",
+        "📅 date", "🕗 datetime", "🔒 password",
+        "📦⦙ list of [type]", "📦 object ref", "⚡ event or code",
+    ]
+    body = "".join(r + "\\l" for r in rows)
+    foot = "⏵ method\\l|➭  inherits from\\l =  default value\\l"
+    return '"{Legend|' + body + "|" + foot + '}"'
+
+
+def _scope_set(scope):
+    if scope not in _MODEL:
+        return set(_MODEL.keys())
+    sel, stack = set(), [scope]
+    while stack:
+        n = stack.pop()
+        if n in sel or n not in _MODEL:
+            continue
+        sel.add(n)
+        for b in _MODEL[n]["bases"]:
+            if b in _MODEL:
+                stack.append(b)
+        for a in _MODEL[n]["assoc"]:
+            if a["target"] in _MODEL:
+                stack.append(a["target"])
+    for m in _MODEL:
+        if scope in _MODEL[m]["bases"]:
+            sel.add(m)
+    return sel
+
+
+def _dot_order(sel):
+    out = [n for n in _DOT_ORDER if n in sel]
+    out += sorted(n for n in sel if n not in _DOT_ORDER)
+    return out
+
+
+def to_dot(scope=None, gaps=None):
+    # Assembler: wraps the graph, sums each in-scope class's own to_dot(),
+    # then adds the cross-class concerns (inheritance merging, legend, gaps).
+    sel = set(_MODEL.keys()) if not scope else _scope_set(scope)
+    L = ["digraph component_model {",
+         "  rankdir=BT; nodesep=0.35; ranksep=0.6;",
+         '  graph [splines=ortho, fontname="Monaco,monospace", fontsize=11];',
+         '  node [shape=record, style="filled,rounded", fillcolor="gray97",'
+         ' color="gray75", fontname="Monaco,monospace", fontsize=11, penwidth=0.5];',
+         '  edge [penwidth=0.4, arrowsize=0.8, fontsize=8];']
+
+    for n in _dot_order(sel):
+        L.append(_CLASSES[n].to_dot(sel))
+
+    L.append('  __legend [label=' + _dot_legend() +
+             ', fillcolor="gray98", color="gray80", fontcolor="#505050"]')
+
+    # inheritance — UML hollow triangle; merge children that share a base.
+    L.append('  edge [arrowhead=empty, arrowsize=0.9, color=black, penwidth=0.5];')
+    bybase = {}
+    for n in sel:
+        for b in _MODEL[n]["bases"]:
+            if b in sel:
+                bybase.setdefault(b, []).append(n)
+    for base in _dot_order(set(bybase.keys())):
+        kids = bybase[base]
+        if len(kids) >= 2:
+            j = "__j_" + base
+            L.append("  " + j +
+                     ' [shape=point, width=0.06, color="gray50",'
+                     ' style=filled, fillcolor="gray50"]')
+            for k in kids:
+                L.append("  " + k + " -> " + j + " [dir=none, arrowhead=none]")
+            L.append("  " + j + " -> " + base)
+        else:
+            L.append("  " + kids[0] + " -> " + base)
+
+    # (association edges are emitted by each class's own to_dot())
+
+    # gap report (build-time only — needs the docs listing)
+    if gaps and not scope:
+        ROW = 4
+        parts = [" · ".join(_dot_esc(g) for g in gaps[i:i + ROW])
+                 for i in range(0, len(gaps), ROW)]
+        body = "\\l".join(parts) + "\\l"
+        L.append('  __gap [label="{🏗️ builder — no typed wrapper yet|' + body +
+                 '}", style="filled,dashed,rounded", fillcolor="lightyellow",'
+                 ' color="gray60", fontsize=10]')
+        L.append('  __gap -> Block [style=dashed, arrowhead=open, color="gray60",'
+                 ' constraint=false]')
+
+    L.append("}")
+    return "\n".join(L)
 </script>

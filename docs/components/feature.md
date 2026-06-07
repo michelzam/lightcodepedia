@@ -1,6 +1,6 @@
 # 🦄 Feature
 
-Render Gherkin BDD scenarios as styled cards. Embed `:::python ... :::` blocks directly after each step to attach a runnable implementation — the card gets a **▶ Run** button and the code appears as expandable step panels. `self.page`, `Dataset`, `Block`, `Datagrid`, `Chart`, and `FeatureCard` are available in every step.
+Render Gherkin BDD scenarios as styled cards. Embed `:::python ... :::` blocks directly after each step to attach a runnable implementation — the card gets a **▶ Run** button and the code appears as expandable step panels. `self.page`, `Dataset`, `Block`, `Datagrid`, `Chart`, and `Feature` are available in every step.
 
 ## 📺 Display-only (no runner)
 
@@ -162,7 +162,7 @@ Feature: Button handler
     :::
     Then bar B is painted orange
     :::python
-    err = self.page.highlight_btn.attr("data-lc-err") or ""
+    err = self.page.highlight_btn._attr("data-lc-err") or ""
     bars = self.page.probe_chart.bars
     self.max_bar = max(bars, key=lambda b: b.value)
     assert self.max_bar.color == "orange", f"expected orange, got {self.max_bar.color!r} | click_err={err!r}"
@@ -207,7 +207,7 @@ Feature: My feature
 
 - `:::python ... :::` is parsed from the Gherkin block — not rendered as a separate code block.
 - **Shared context**: `self` is the same object across all steps in a run.
-- Available without import: `self.page`, `Dataset`, `Block`, `Datagrid`, `Chart`, `FeatureCard`. Inherit from `Block` for custom wrappers.
+- Available without import: `self.page`, `Dataset`, `Block`, `Datagrid`, `Chart`, `Feature`. Inherit from `Block` for custom wrappers.
 - Give the `.feature` card an `id` to make it reachable as `self.page.my_feature` from any feature step.
 - Click a step row to **expand its implementation** inline.
 
