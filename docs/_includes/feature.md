@@ -33,7 +33,7 @@ INLINE STEPS (:::python::: blocks inside the gherkin fence)
   ```
   {: .feature status="pending" tags="example" }
 
-  self is shared across all steps. self.page, Dataset, Datagrid, Chart, FeatureCard
+  self is shared across all steps. self.page, Dataset, Datagrid, Chart, Feature
   are all available (injected from the steps runtime).
 
 LEGACY: WITH RUNNABLE STEPS (separate .steps block, still supported)
