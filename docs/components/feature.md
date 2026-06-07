@@ -1,5 +1,3 @@
----
----
 # 🦄 Feature
 
 Render Gherkin BDD scenarios as styled cards. Embed `:::python ... :::` blocks directly after each step to attach a runnable implementation — the card gets a **▶ Run** button and the code appears as expandable step panels. `self.page`, `Dataset`, `Block`, `Datagrid`, `Chart`, and `FeatureCard` are available in every step.
