@@ -340,15 +340,16 @@ Auto-included by docs/_layouts/default.html.
     if (el.dataset.lcBtnDone) return;
     el.dataset.lcBtnDone = "1";
 
-    var lcId = el.getAttribute("id") || "";
+    var lcId = el.getAttribute("data-lc-id") || el.getAttribute("id") || "";
     var linkEl = el.querySelector("a");
     var label = (linkEl || el).textContent.trim();
 
-    /* consume the following .onclick code block */
+    /* consume the following handler code block (.onclick class, or any python block) */
     var handlerCode = "";
     var sib = el.nextElementSibling;
     while (sib && !sib.textContent.trim()) sib = sib.nextElementSibling;
-    if (sib && sib.classList.contains("onclick")) {
+    if (sib && sib.classList.contains("highlighter-rouge") &&
+        (sib.classList.contains("onclick") || sib.classList.contains("language-python"))) {
       var codeEl = sib.querySelector("code");
       if (codeEl) handlerCode = codeEl.textContent;
       sib.parentNode.removeChild(sib);
