@@ -2206,7 +2206,7 @@
     var pyCode = btn.getAttribute("data-lc-py") || "";
     if (!pyCode) return;
     var lcId = btn.getAttribute("data-lc-id") || "";
-    var preamble = (document.getElementById("lc-jss-preamble") || {}).textContent || "";
+    var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
     var fullCode = preamble + "\n" + pyCode + "\n"
       + "_btn = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n"
       + "on_click(_btn)\n";
