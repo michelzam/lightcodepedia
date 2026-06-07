@@ -24,6 +24,16 @@ ancestry (merged UML inheritance) and its `Dataset` / `Bar` associations.
 [Chart neighbourhood](#)
 {: .diagram scope="Chart" }
 
+## 🎛️ State machines
+
+Components can declare a `states` list and mark methods with `@transition(pre, post)`.
+The diagram then draws the state machine — initial state ➡️, transitions labelled
+by the method, and `▹ guarded ▹` markers on the methods. `Recorder` goes
+`idle → recording → stopped`:
+
+[Recorder state machine](#)
+{: .diagram scope="Recorder" }
+
 ## 📖 How to read it
 
 - **🪵 / 🧩 icons** label each class; the panels list typed **knobs** (attributes)
