@@ -351,10 +351,12 @@ Auto-included by docs/_layouts/default.html.
     var handlerCode = "";
     var sib = el.nextElementSibling;
     while (sib && !sib.textContent.trim()) sib = sib.nextElementSibling;
-    if (sib && sib.classList.contains("highlighter-rouge")) {
+    if (sib) {
       var codeEl = sib.querySelector("code");
-      if (codeEl) handlerCode = codeEl.textContent;
-      sib.parentNode.removeChild(sib);
+      if (codeEl && sib.textContent.trim()) {
+        handlerCode = codeEl.textContent;
+        sib.parentNode.removeChild(sib);
+      }
     }
 
     var btn = document.createElement("button");
