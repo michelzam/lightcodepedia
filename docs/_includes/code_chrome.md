@@ -2168,10 +2168,56 @@
   function upgradeButton(el) {
     var a = el.querySelector("a");
     if (!a) return;
+
+    // Optional Python click handler: a code block tagged {: .onclick }
+    // immediately following the button paragraph.
+    var handlerCode = "";
+    var sib = el.nextElementSibling;
+    while (sib && !sib.textContent.trim()) sib = sib.nextElementSibling;
+    if (sib && sib.classList.contains("onclick") && sib.querySelector("code")) {
+      handlerCode = sib.querySelector("code").textContent;
+      sib.parentNode.removeChild(sib);
+    }
+
+    if (handlerCode) {
+      // Interactive button: replace the link with a real <button> so the
+      // Python step layer (self.page.<id>.click()) and real clicks both run it.
+      var lcId = el.getAttribute("data-lc-id") || el.getAttribute("id") || "";
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "lc-button";
+      btn.textContent = (a.textContent || el.textContent || "").trim();
+      if (lcId) btn.setAttribute("data-lc-id", lcId);
+      btn.setAttribute("data-lc-py", handlerCode);
+      btn.addEventListener("click", function () { runButtonHandler(btn); });
+      el.parentNode.replaceChild(btn, el);
+      return;
+    }
+
+    // Plain styled-link button (existing behaviour).
     var style = el.getAttribute("style-variant") || "";
     a.classList.add("lc-btn");
     if (style) a.classList.add("lc-btn-" + style);
     el.classList.remove("button");
+  }
+
+  // Run a button's Python on_click(handler) via the shared MicroPython instance.
+  function runButtonHandler(btn) {
+    var pyCode = btn.getAttribute("data-lc-py") || "";
+    if (!pyCode) return;
+    var lcId = btn.getAttribute("data-lc-id") || "";
+    var preamble = (document.getElementById("lc-jss-preamble") || {}).textContent || "";
+    var fullCode = preamble + "\n" + pyCode + "\n"
+      + "_btn = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n"
+      + "on_click(_btn)\n";
+    if (!window._lcMpReady) {
+      window._lcMpReady = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
+        .then(function (mjs) { return mjs.loadMicroPython({ stdout: function () {}, stderr: function () {} }); });
+    }
+    window._lcMpReady.then(function (mp) {
+      var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
+      try { if (runFn) runFn.call(mp, fullCode); } catch (e) { console.error("[lc-button]", e); }
+    });
   }
 
   function _iframeEl(src, h) {

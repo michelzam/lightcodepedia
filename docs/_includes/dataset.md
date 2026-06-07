@@ -335,58 +335,9 @@ Auto-included by docs/_layouts/default.html.
       transform: "rotate(-90,8," + (pT + cH / 2) + ")" }).textContent = yCol;
   }
 
-  /* ── .button upgrade ────────────────────────────── */
-  function upgradeButton(el) {
-    if (el.dataset.lcBtnDone) return;
-    el.dataset.lcBtnDone = "1";
-
-    var lcId = el.getAttribute("data-lc-id") || el.getAttribute("id") || "";
-    var linkEl = el.querySelector("a");
-    var label = (linkEl || el).textContent.trim();
-
-    /* remove href before it can scroll the page */
-    if (linkEl) { linkEl.removeAttribute("href"); linkEl.style.cursor = "default"; }
-
-    /* consume the immediately following code block as the click handler */
-    var handlerCode = "";
-    var sib = el.nextElementSibling;
-    while (sib && !sib.textContent.trim()) sib = sib.nextElementSibling;
-    if (sib) {
-      var codeEl = sib.querySelector("code");
-      if (codeEl && sib.textContent.trim()) {
-        handlerCode = codeEl.textContent;
-        sib.parentNode.removeChild(sib);
-      }
-    }
-
-    var btn = document.createElement("button");
-    btn.className = "lc-button";
-    btn.setAttribute("type", "button");
-    btn.textContent = label;
-    if (lcId) btn.setAttribute("data-lc-id", lcId);
-    el.parentNode.replaceChild(btn, el);
-
-    if (!handlerCode) return;
-
-    var pyCode = handlerCode;
-    btn.setAttribute("data-lc-py", pyCode);
-
-    btn.addEventListener("click", function () {
-      var preamble = (document.getElementById("lc-jss-preamble") || {}).textContent || "";
-      var fullCode = preamble + "\n" + pyCode + "\n"
-        + "_btn = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n"
-        + "on_click(_btn)\n";
-
-      if (!window._lcMpReady) {
-        window._lcMpReady = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
-          .then(function (mjs) { return mjs.loadMicroPython({ stdout: function () {}, stderr: function () {} }); });
-      }
-      window._lcMpReady.then(function (mp) {
-        var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
-        try { if (runFn) runFn.call(mp, fullCode); } catch (e) { console.error("[lc-button]", e); }
-      });
-    });
-  }
+  /* NOTE: .button upgrade (incl. optional Python on_click handler) lives in
+     code_chrome.md's upgradeButton — it owns p.button and runs first (loaded
+     via topbar). Keeping the .lc-button CSS above; no upgrader here. */
 
   /* ── boot ───────────────────────────────────────── */
   function init(root) {
@@ -394,7 +345,6 @@ Auto-included by docs/_layouts/default.html.
     (root || document).querySelectorAll(".dataset").forEach(upgradeDataset);
     (root || document).querySelectorAll(".datagrid").forEach(upgradeDatagrid);
     (root || document).querySelectorAll(".chart").forEach(upgradeChart);
-    (root || document).querySelectorAll(".button").forEach(upgradeButton);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { init(); });
@@ -406,7 +356,6 @@ Auto-included by docs/_layouts/default.html.
     (root || document).querySelectorAll(".dataset").forEach(upgradeDataset);
     (root || document).querySelectorAll(".datagrid").forEach(upgradeDatagrid);
     (root || document).querySelectorAll(".chart").forEach(upgradeChart);
-    (root || document).querySelectorAll(".button").forEach(upgradeButton);
   };
 
 })();
