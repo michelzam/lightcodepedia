@@ -148,9 +148,9 @@ Feature: Button handler
     assert self.page.highlight_btn, "highlight_btn not found"
     assert self.page.probe_chart,   "probe_chart not found"
     :::
-    When the button is invoked
+    When the button is clicked
     :::python
-    self.page.highlight_btn.invoke()
+    self.page.highlight_btn.click()
     :::
     Then bar B is painted orange
     :::python

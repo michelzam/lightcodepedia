@@ -233,17 +233,18 @@ class Button(Block):
             else:
                 self._el.removeAttribute("data-color")
 
-    def invoke(self):
-        """Run the button's Python handler synchronously (for testing)."""
+    def click(self):
         code = self.attr("data-lc-py") or ""
         if not code:
-            return
-        _g = {
-            "button": self, "Page": Page, "Dataset": Dataset, "Block": Block,
-            "Datagrid": Datagrid, "Chart": Chart, "FeatureCard": FeatureCard,
-            "_wrap": _wrap, "js": js,
-        }
-        exec(compile(code, "<handler>", "exec"), _g)
+            if self._el:
+                self._el.click()
+            return self
+        g = globals()
+        g["button"] = self
+        exec(code, g)
+        if "on_click" in g:
+            g["on_click"](self)
+        return self
 
     @property
     def page(self):
