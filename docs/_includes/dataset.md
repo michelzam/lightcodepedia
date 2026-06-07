@@ -344,8 +344,8 @@ Auto-included by docs/_layouts/default.html.
     var linkEl = el.querySelector("a");
     var label = (linkEl || el).textContent.trim();
 
-    /* prevent href="#" scroll before replacing the element */
-    if (linkEl) linkEl.addEventListener("click", function(e) { e.preventDefault(); });
+    /* remove href before it can scroll the page */
+    if (linkEl) { linkEl.removeAttribute("href"); linkEl.style.cursor = "default"; }
 
     /* consume the following handler code block (.onclick class, or any python block) */
     var handlerCode = "";
@@ -360,6 +360,7 @@ Auto-included by docs/_layouts/default.html.
 
     var btn = document.createElement("button");
     btn.className = "lc-button";
+    btn.setAttribute("type", "button");
     btn.textContent = label;
     if (lcId) btn.setAttribute("data-lc-id", lcId);
     el.parentNode.replaceChild(btn, el);
@@ -367,6 +368,8 @@ Auto-included by docs/_layouts/default.html.
     if (!handlerCode) return;
 
     var pyCode = handlerCode;
+    btn.setAttribute("data-lc-py", pyCode);
+
     btn.addEventListener("click", function () {
       var preamble = (document.getElementById("lc-jss-preamble") || {}).textContent || "";
       var fullCode = preamble + "\n" + pyCode + "\n"
