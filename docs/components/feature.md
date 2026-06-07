@@ -90,30 +90,30 @@ Feature: Page component access
   Scenario: Access probe_chart from Python steps
     Given probe_chart is on this page
     :::python
-    assert self.probe_chart, "probe_chart not found — is id set?"
+    assert self.page.probe_chart, "probe_chart not found — is id set?"
     :::
     And it is visible
     :::python
-    assert self.probe_chart.visible, "probe_chart not visible"
+    assert self.page.probe_chart.visible, "probe_chart not visible"
     :::
     And its type and axes match the knobs
     :::python
-    assert self.probe_chart.type == "bar",   f"type: {self.probe_chart.type}"
-    assert self.probe_chart.x    == "label", f"x: {self.probe_chart.x}"
-    assert self.probe_chart.y    == "value", f"y: {self.probe_chart.y}"
+    assert self.page.probe_chart.type == "bar",   f"type: {self.page.probe_chart.type}"
+    assert self.page.probe_chart.x    == "label", f"x: {self.page.probe_chart.x}"
+    assert self.page.probe_chart.y    == "value", f"y: {self.page.probe_chart.y}"
     :::
     And its bind references probe_data
     :::python
-    assert self.probe_chart.bind == self.page.probe_data, \
-        f"bind mismatch: {self.probe_chart.bind._id!r}"
+    assert self.page.probe_chart.bind == self.page.probe_data, \
+        f"bind mismatch: {self.page.probe_chart.bind._id!r}"
     :::
     Then it has rendered bars
     :::python
-    assert self.probe_chart.bar_count > 0, f"got {self.probe_chart.bar_count} bars"
+    assert self.page.probe_chart.bar_count > 0, f"got {self.page.probe_chart.bar_count} bars"
     :::
     And bar heights reflect the data order (A < C < B)
     :::python
-    bars = self.probe_chart.bars
+    bars = self.page.probe_chart.bars
     assert bars[0].value < bars[2].value < bars[1].value, \
         f"expected 3 < 5 < 7, got {[b.value for b in bars]}"
     :::
@@ -150,7 +150,7 @@ Feature: Button handler
     :::
     When the handler logic runs
     :::python
-    bars = self.probe_chart.bars
+    bars = self.page.probe_chart.bars
     self.max_bar = max(bars, key=lambda b: b.value)
     :::
     Then bar B has the highest value
@@ -159,8 +159,8 @@ Feature: Button handler
     :::
     And it is not bar A or bar C
     :::python
-    assert self.max_bar.value > self.probe_chart.bars[0].value
-    assert self.max_bar.value > self.probe_chart.bars[2].value
+    assert self.max_bar.value > self.page.probe_chart.bars[0].value
+    assert self.max_bar.value > self.page.probe_chart.bars[2].value
     :::
 ```
 {: .feature id="btn_handler" status="pending" tags="button,probe" }

@@ -87,14 +87,15 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 
 /* ── scenario / narrative ─────────────────────────────────────────────── */
 .lc-feature-scenario { padding: 0.5em 1em 0.2em; font-size: 0.82em; font-weight: 600; color: #6b7280; letter-spacing: 0.03em; text-transform: uppercase; }
-.lc-feature-narrative { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.83em; color: #9ca3af; font-style: italic; }
-.lc-feature-story { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.83em; display: flex; gap: 0.4em; align-items: baseline; flex-wrap: wrap; }
+.lc-feature-narrative { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #9ca3af; font-style: italic; }
+.lc-feature-story { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; display: flex; gap: 0.4em; align-items: baseline; flex-wrap: wrap; }
 .lc-feature-story-keyword { color: #7c3aed; font-weight: 600; font-style: normal; flex-shrink: 0; }
 .lc-feature-story-text { color: #374151; font-style: italic; }
 
 /* ── step rows ──────────────────────────────────────────────────────────── */
 .lc-feature-steps { padding: 0.35em 0; }
 .lc-feature-step { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.lc-feature-step.lc-step-and .lc-feature-step-row { padding-left: 2.5em; }
 .lc-feature-step-row { display: flex; align-items: baseline; gap: 0.55em; padding: 0.28em 1em; font-size: 0.88em; line-height: 1.5; }
 .lc-feature-step.has-impl > .lc-feature-step-row { cursor: pointer; }
 .lc-feature-step.has-impl > .lc-feature-step-row:hover { background: #f3f4f6; }
@@ -501,7 +502,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
           var nh = document.createElement("div"); nh.className = "lc-feature-narrative";
           nh.textContent = r.text; stepsDiv.appendChild(nh);
         } else if (r.kind === "step") {
-          var stepEl = document.createElement("div"); stepEl.className = "lc-feature-step";
+          var isAnd = /^(And|But)$/i.test(r.keyword);
+          var stepEl = document.createElement("div"); stepEl.className = "lc-feature-step" + (isAnd ? " lc-step-and" : "");
           stepEl.innerHTML =
             "<div class='lc-feature-step-row'>"
               + "<span class='lc-feature-step-icon'>●</span>"

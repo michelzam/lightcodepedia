@@ -265,11 +265,6 @@ class _Ctx:
     def __init__(self):
         self.page = Page()
 
-    def __getattr__(self, name):
-        if name.startswith("_"):
-            raise AttributeError(name)
-        return getattr(self.page, name)
-
 _scenarios = []
 
 def scenario(label):

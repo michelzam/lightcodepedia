@@ -344,6 +344,9 @@ Auto-included by docs/_layouts/default.html.
     var linkEl = el.querySelector("a");
     var label = (linkEl || el).textContent.trim();
 
+    /* prevent href="#" scroll before replacing the element */
+    if (linkEl) linkEl.addEventListener("click", function(e) { e.preventDefault(); });
+
     /* consume the following handler code block (.onclick class, or any python block) */
     var handlerCode = "";
     var sib = el.nextElementSibling;
