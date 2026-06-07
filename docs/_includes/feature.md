@@ -34,7 +34,7 @@ INLINE STEPS (:::python::: blocks inside the gherkin fence)
   {: .feature status="pending" tags="example" }
 
   self is shared across all steps. self.page, Dataset, Datagrid, Chart, FeatureCard
-  are all available (injected from the jssteps preamble).
+  are all available (injected from the steps runtime).
 
 LEGACY: WITH RUNNABLE STEPS (separate .steps block, still supported)
   ```python
@@ -288,7 +288,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     summary.innerHTML = parts.join(" &nbsp; ");
   }
 
-  /* ── Run inline :::python::: steps via jssteps preamble ─────────────────────── */
+  /* ── Run inline :::python::: steps via steps runtime ─────────────────────── */
   function runFeatureNew(card, runBtn) {
     var stepEls = card.querySelectorAll(".lc-feature-step.has-impl");
     stepEls.forEach(function(s) {
@@ -311,7 +311,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       scenarioParts.push("@scenario(" + JSON.stringify(label) + ")\ndef _s" + i + "(self):\n" + (indented || "    pass"));
     });
 
-    var preamble = (document.getElementById("lc-jss-preamble") || {}).textContent || "";
+    var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
     var fullCode = preamble + "\n" + scenarioParts.join("\n\n") + "\n_run_all()";
 
     if (!window._lcMpReady) {
@@ -320,12 +320,12 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     }
     var mpP = window._lcMpReady;
 
-    window._lcJssResult = null;
+    window._lcStepsResult = null;
     return mpP.then(function(mp) {
       var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
       var jsonStr;
       try { if (runFn) jsonStr = runFn.call(mp, fullCode); } catch(e) {}
-      if (jsonStr == null) jsonStr = window._lcJssResult;
+      if (jsonStr == null) jsonStr = window._lcStepsResult;
       var results = [];
       try { results = JSON.parse(jsonStr) || []; } catch(e) {}
 

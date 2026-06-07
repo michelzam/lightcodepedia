@@ -1,25 +1,25 @@
 {%- comment -%}
-.jssteps — in-browser BDD step runner powered by MicroPython WASM.
+Step runtime — the in-browser Python engine for .feature cards and .button
+handlers (powered by MicroPython WASM). NOT a standalone widget.
 
-Each fenced ```python block becomes a test suite.
-Decorate functions with @scenario("label") to register scenarios.
-Two built-in scenarios always run first: "component ids are unique" and
-"component ids are python compatible" (ids must be valid Python identifiers — no hyphens).
-Components are accessed through self.page.<data-lc-id>.
+Exposes, as a <script id="lc-steps-preamble"> text blob injected before every
+run, the typed component model and scenario runner:
 
-Usage:
-  ```python
-  @scenario("grid has rows")
-  def check_grid(self):
-      assert self.page.my_grid.row_count > 0
-  ```
-  {: .jssteps }
+  Object · Block · Datagrid · Chart · Bar · Button · FeatureCard · Dataset
+  Page          — typed component resolver: self.page.<id>
+  scenario()    — decorator registering a check
+  _run_all()    — runs the two built-in checks (unique ids, python-compatible
+                  ids) plus every registered scenario; returns JSON and also
+                  stashes it on window._lcStepsResult.
+
+Components are reached in a typed way via self.page.<data-lc-id> — there is no
+need to construct wrappers from strings.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
-<!-- Python preamble: lc module injected before every .jssteps block -->
-<script id="lc-jss-preamble" type="text/plain">
+<!-- Python preamble: injected before every feature/button run -->
+<script id="lc-steps-preamble" type="text/plain">
 import js
 import json
 
@@ -318,134 +318,6 @@ def _run_all():
         except Exception as e:
             out.append({"status": "fail", "label": lbl, "error": type(e).__name__ + ": " + str(e)})
     result = json.dumps(out)
-    js.window._lcJssResult = result
+    js.window._lcStepsResult = result
     return result
-</script>
-
-<style>
-.lc-jssteps { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin: 1em 0; font-family: inherit; }
-.lc-jss-head { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #f6f8fa; border-bottom: 1px solid #e5e7eb; font-size: .88em; }
-.lc-jss-title { font-weight: 600; color: #374151; }
-.lc-jss-run { margin-left: auto; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; padding: 3px 12px; cursor: pointer; font-size: .82em; color: #374151; }
-.lc-jss-run:hover { background: #f3f4f6; }
-.lc-jss-run:disabled { opacity: .5; cursor: default; }
-.lc-jss-body { padding: 6px 0; min-height: 2em; }
-.lc-jss-row { display: flex; align-items: flex-start; gap: 8px; padding: 3px 14px; font-size: .85em; line-height: 1.5; }
-.lc-jss-pass { color: #166534; }
-.lc-jss-fail { color: #991b1b; }
-.lc-jss-detail { font-size: .82em; color: #6b7280; font-family: ui-monospace,monospace; white-space: pre-wrap; padding: 2px 0 2px 22px; }
-.lc-jss-summary { padding: 5px 14px 4px; font-size: .8em; color: #6b7280; border-top: 1px solid #f3f4f6; margin-top: 4px; }
-</style>
-
-<script>
-(function () {
-
-  var _mpPromise = null;
-
-  function loadMP() {
-    if (_mpPromise) return _mpPromise;
-    _mpPromise = (window._lcMpReady ||
-      import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
-        .then(function (mjs) { return mjs.loadMicroPython({ stdout: function () {}, stderr: function () {} }); }));
-    window._lcMpReady = _mpPromise;
-    return _mpPromise;
-  }
-
-  function upgradeJssteps(el) {
-    if (el.dataset.lcJsDone) return;
-    el.dataset.lcJsDone = "1";
-
-    var code = el.querySelector("code");
-    if (!code) return;
-    var userCode = code.textContent;
-
-    var wrap = document.createElement("div");
-    wrap.className = "lc-jssteps";
-
-    var body = document.createElement("div");
-    body.className = "lc-jss-body";
-
-    wrap.innerHTML = '<div class="lc-jss-head">'
-      + '<span class="lc-jss-title">🧪 Step tests</span>'
-      + '<button class="lc-jss-run">▶ Run</button>'
-      + '</div>';
-    wrap.appendChild(body);
-    el.parentNode.replaceChild(wrap, el);
-
-    wrap.querySelector(".lc-jss-run").addEventListener("click", function () {
-      var btn = this;
-      btn.disabled = true; btn.textContent = "⏳ Loading…";
-      body.innerHTML = "";
-
-      loadMP().then(function (mp) {
-        btn.textContent = "⏳ Running…";
-
-        // Detect the correct run method — API differs across MicroPython WASM versions
-        var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
-        if (!runFn) {
-          var fns = [];
-          try { fns = Object.getOwnPropertyNames(mp).filter(function(k){ return typeof mp[k] === "function"; }); } catch(e2) {}
-          body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ mp has no runPython. Available: " + (fns.join(", ") || "(none — mp is: " + String(mp) + ")") + "</div>";
-          btn.disabled = false; btn.textContent = "▶ Run"; return;
-        }
-
-        window._lcJssResult = null;
-        var preamble = document.getElementById("lc-jss-preamble").textContent;
-        var fullCode = preamble + "\n" + userCode + "\n_run_all()";
-        var jsonStr;
-        try {
-          jsonStr = runFn.call(mp, fullCode);
-        } catch (e) {
-          body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ " + String(e.message || e) + "</div>";
-          btn.disabled = false; btn.textContent = "▶ Run"; return;
-        }
-        // Some MicroPython WASM methods don't return the expression value;
-        // _run_all() also stores the result in window._lcJssResult as a fallback.
-        if (jsonStr == null) jsonStr = window._lcJssResult;
-        var results;
-        try { results = JSON.parse(jsonStr); } catch(e3) {}
-        if (!Array.isArray(results)) {
-          body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ unexpected output: " + String(jsonStr).slice(0, 200) + "</div>";
-          btn.disabled = false; btn.textContent = "▶ Run"; return;
-        }
-        var passed = 0;
-        results.forEach(function (r) {
-          if (r.status === "pass") passed++;
-          var row = document.createElement("div");
-          row.className = "lc-jss-row " + (r.status === "pass" ? "lc-jss-pass" : "lc-jss-fail");
-          row.textContent = (r.status === "pass" ? "✅ " : "❌ ") + r.label;
-          if (r.error) {
-            var det = document.createElement("div");
-            det.className = "lc-jss-detail";
-            det.textContent = r.error;
-            row.appendChild(det);
-          }
-          body.appendChild(row);
-        });
-        var summ = document.createElement("div");
-        summ.className = "lc-jss-summary";
-        summ.textContent = passed + " / " + results.length + " passed";
-        body.appendChild(summ);
-        btn.disabled = false; btn.textContent = "▶ Run";
-      }).catch(function (e) {
-        body.innerHTML = "<div class='lc-jss-row lc-jss-fail'>⚠️ MicroPython failed to load: " + String(e.message || e) + "</div>";
-        btn.disabled = false; btn.textContent = "▶ Run";
-      });
-    });
-  }
-
-  function init(root) {
-    (root || document).querySelectorAll(".highlighter-rouge.jssteps, p.jssteps").forEach(upgradeJssteps);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { init(); });
-  else init();
-
-  var _os = window.lcScanElement;
-  window.lcScanElement = function (root) {
-    if (_os) _os(root);
-    (root || document).querySelectorAll(".highlighter-rouge.jssteps, p.jssteps").forEach(upgradeJssteps);
-  };
-
-})();
 </script>
