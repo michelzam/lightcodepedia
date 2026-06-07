@@ -26,13 +26,17 @@ import json
 # ── Object — DOM bridge (raw element access, no visible-state assumptions) ────
 
 class Object:
-    def __init__(self, el):
+    def __init__(self, el=None):
         self._el = el
 
     @classmethod
     def all(cls, css):
         nl = js.window.document.querySelectorAll(css)
         return [cls(nl.item(i)) for i in range(int(nl.length))]
+
+    @property
+    def id(self):
+        return self.attr("data-lc-id") or ""
 
     def q(self, css):
         el = self._el.querySelector(css) if self._el else None
@@ -50,17 +54,17 @@ class Object:
         v = self._el.getAttribute(name)
         return str(v) if v is not None else None
 
-    def click(self):
-        if self._el:
-            self._el.click()
-        return self
-
 
 # ── Block — base class for all visible components ─────────────────────────────
 
 class Block(Object):
     def __bool__(self):
         return self._el is not None
+
+    def click(self):
+        if self._el:
+            self._el.click()
+        return self
 
     @property
     def exists(self):
@@ -94,8 +98,9 @@ def _wrap(el):
     return Block(el)
 
 
-class Dataset:
+class Dataset(Object):
     def __init__(self, id):
+        self._el = None
         self._id = id
 
     def __bool__(self):
@@ -121,6 +126,10 @@ class Dataset:
 
 
 class Datagrid(Block):
+    @property
+    def bind(self):
+        return Dataset(self.attr("data-bind") or "")
+
     @property
     def row_count(self):
         return len(self.qq("tbody tr"))
@@ -255,7 +264,7 @@ class Button(Block):
 
 # ── Page — dynamic component resolver ────────────────────────────────────────
 
-class Page:
+class Page(Object):
     def __getattr__(self, name):
         if name.startswith("_"):
             raise AttributeError(name)
