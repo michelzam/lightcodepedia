@@ -90,6 +90,7 @@ def _wrap(el):
     if "lc-datagrid" in c: return Datagrid(el)
     if "lc-chart"    in c: return Chart(el)
     if "lc-feature"  in c: return FeatureCard(el)
+    if "lc-button"   in c: return Button(el)
     return Block(el)
 
 
@@ -150,6 +151,15 @@ class Bar(Object):
         v = self.attr("data-value")
         return float(v) if v is not None else 0.0
 
+    @property
+    def color(self):
+        return self.attr("fill") or "#0066cc"
+
+    @color.setter
+    def color(self, v):
+        if self._el:
+            self._el.setAttribute("fill", v or "#0066cc")
+
 
 class Chart(Block):
     @property
@@ -199,6 +209,33 @@ class FeatureCard(Block):
     @property
     def run_button(self):
         return self.q(".lc-feature-run-btn")
+
+
+class Button(Block):
+    @property
+    def text(self):
+        return str(self._el.textContent or "").strip() if self._el else ""
+
+    @text.setter
+    def text(self, v):
+        if self._el:
+            self._el.textContent = str(v)
+
+    @property
+    def color(self):
+        return self.attr("data-color") or ""
+
+    @color.setter
+    def color(self, v):
+        if self._el:
+            if v:
+                self._el.setAttribute("data-color", v)
+            else:
+                self._el.removeAttribute("data-color")
+
+    @property
+    def page(self):
+        return Page()
 
 
 # ── Page — dynamic component resolver ────────────────────────────────────────

@@ -40,6 +40,13 @@ Auto-included by docs/_layouts/default.html.
 .lc-chart { margin: 1em 0; }
 .lc-chart svg { display: block; width: 100%; height: auto; }
 .lc-chart-title { font-size: 0.82em; font-weight: 600; color: #374151; margin-bottom: 0.3em; }
+
+/* ── button ─────────────────────────────────────────── */
+.lc-button { display: inline-block; background: #0066cc; color: #fff; border: none; border-radius: 6px; padding: 0.4em 1.1em; font-size: 0.88em; font-weight: 500; cursor: pointer; margin: 0.5em 0; }
+.lc-button:hover { background: #0052a3; }
+.lc-button[data-color="muted"]   { background: #9ca3af; }
+.lc-button[data-color="danger"]  { background: #ef4444; }
+.lc-button[data-color="success"] { background: #22c55e; }
 </style>
 
 <script>
@@ -328,12 +335,58 @@ Auto-included by docs/_layouts/default.html.
       transform: "rotate(-90,8," + (pT + cH / 2) + ")" }).textContent = yCol;
   }
 
+  /* ── .button upgrade ────────────────────────────── */
+  function upgradeButton(el) {
+    if (el.dataset.lcBtnDone) return;
+    el.dataset.lcBtnDone = "1";
+
+    var lcId = el.getAttribute("id") || "";
+    var linkEl = el.querySelector("a");
+    var label = (linkEl || el).textContent.trim();
+
+    /* consume the following .onclick code block */
+    var handlerCode = "";
+    var sib = el.nextElementSibling;
+    while (sib && !sib.textContent.trim()) sib = sib.nextElementSibling;
+    if (sib && sib.classList.contains("onclick")) {
+      var codeEl = sib.querySelector("code");
+      if (codeEl) handlerCode = codeEl.textContent;
+      sib.parentNode.removeChild(sib);
+    }
+
+    var btn = document.createElement("button");
+    btn.className = "lc-button";
+    btn.textContent = label;
+    if (lcId) btn.setAttribute("data-lc-id", lcId);
+    el.parentNode.replaceChild(btn, el);
+
+    if (!handlerCode) return;
+
+    var pyCode = handlerCode;
+    btn.addEventListener("click", function () {
+      var preamble = (document.getElementById("lc-jss-preamble") || {}).textContent || "";
+      var fullCode = preamble + "\n" + pyCode + "\n"
+        + "_btn = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n"
+        + "on_click(_btn)\n";
+
+      if (!window._lcMpReady) {
+        window._lcMpReady = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
+          .then(function (mjs) { return mjs.loadMicroPython({ stdout: function () {}, stderr: function () {} }); });
+      }
+      window._lcMpReady.then(function (mp) {
+        var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
+        try { if (runFn) runFn.call(mp, fullCode); } catch (e) { console.error("[lc-button]", e); }
+      });
+    });
+  }
+
   /* ── boot ───────────────────────────────────────── */
   function init(root) {
     /* datasets must register before grids/charts read them */
     (root || document).querySelectorAll(".dataset").forEach(upgradeDataset);
     (root || document).querySelectorAll(".datagrid").forEach(upgradeDatagrid);
     (root || document).querySelectorAll(".chart").forEach(upgradeChart);
+    (root || document).querySelectorAll(".button").forEach(upgradeButton);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { init(); });
@@ -345,6 +398,7 @@ Auto-included by docs/_layouts/default.html.
     (root || document).querySelectorAll(".dataset").forEach(upgradeDataset);
     (root || document).querySelectorAll(".datagrid").forEach(upgradeDatagrid);
     (root || document).querySelectorAll(".chart").forEach(upgradeChart);
+    (root || document).querySelectorAll(".button").forEach(upgradeButton);
   };
 
 })();
