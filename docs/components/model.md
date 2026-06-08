@@ -17,47 +17,47 @@ component.
 ```dot
 digraph component_model {
   rankdir=BT; nodesep=0.25;
-  graph [penwidth=0.1, splines=ortho, fontsize=12, fontname="Source Sans Pro, sans-serif"];
-  node [fontname="Source Sans Pro, sans-serif", penwidth=0.5, shape=record, style=filled, color=lightgray, fillcolor=white, fontsize=12, margin="0.11,0.08"];
+  graph [penwidth=0.1, splines=ortho, fontsize=10, fontname="Source Sans Pro, sans-serif"];
+  node [fontname="Source Sans Pro, sans-serif", penwidth=0.5, shape=record, style=filled, color=lightgray, fillcolor=white, fontsize=10];
   edge [fontname="Source Sans Pro, sans-serif", penwidth=0.2, arrowhead=vee, arrowsize=0.8];
   subgraph cluster_pkg_kore {
-    label="⚙️ kore"; labeljust=l; fontsize=12; fontcolor="gray40";
+    label="⚙️ kore"; labeljust=l; fontsize=10; fontcolor="gray40";
     style=filled; fillcolor="gray98"; color="gray85"; margin=16; penwidth=0.3;
-    Object [label="{◻️ Object|🔤 id\l}"]
-    Page [label="{📄 Page ➭ ◻️|🔤 id\l|⏵ feature\l⏵ features\l}"]
-    Dataset [label="{🗃️ Dataset ➭ ◻️|🔘 loaded\l🔢 count\l}"]
-    Bar [label="{▮ Bar ➭ ◻️|🔢 value\l🔤 color\l}"]
+    Object [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">◻️ Object</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">id</TD></TR></TABLE>>]
+    Page [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">📄 Page ➭ ◻️</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">id</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">feature</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">features</TD></TR></TABLE>>]
+    Dataset [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🗃️ Dataset ➭ ◻️</TD></TR><HR/><TR><TD ALIGN="CENTER">🔘</TD><TD ALIGN="LEFT">loaded</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">count</TD></TR></TABLE>>]
+    Bar [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">▮ Bar ➭ ◻️</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">value</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">color</TD></TR></TABLE>>]
   }
   subgraph cluster_pkg_ui {
-    label="🎨 ui"; labeljust=l; fontsize=12; fontcolor="gray40";
+    label="🎨 ui"; labeljust=l; fontsize=10; fontcolor="gray40";
     style=filled; fillcolor="gray98"; color="gray85"; margin=16; penwidth=0.3;
-    Block [label="{🧩 Block ➭ ◻️|🔘 exists\l🔘 visible\l🔤 text\l|⏵ click\l⏵ has class\l}"]
-    Datagrid [label="{▦ Datagrid ➭ 🧩|🔢 row count\l🔤⦙ headers\l📦⦙ rows\l|⏵ header\l}"]
-    Chart [label="{📈 Chart ➭ 🧩|🔤 type\l🔤 x\l🔤 y\l🔢 bar count\l🔢 point count\l}"]
-    Feature [label="{🦄 Feature ➭ 🧩|🔤 title\l🔤 status\l|⏵ run\l}"]
-    Button [label="{🖱️ Button ➭ 🧩|🔤 text\l🔤 color\l|⚡ on click\l}"]
-    Accordion [label="{🪗 Accordion ➭ 🧩|⏵ open\l⏵ close\l⏵ sections\l}"]
-    Agent [label="{🤖 Agent ➭ 🧩|🔡 system\l🔤 model\l🔢 temperature\l🔢 max tokens\l🔤 intro\l🔤 placeholder\l|⏵ ask\l}"]
-    Cards [label="{🃏 Cards ➭ 🧩|🔤 cols\l🔢 gap\l}"]
-    Carousel [label="{🎠 Carousel ➭ 🧩|🔢 delay\l|⏵ next\l⏵ prev\l⏵ goto\l}"]
-    Code [label="{📄 Code ➭ 🧩|🔤 path\l🔤 src\l🔤 lang\l🔤 title\l🔤 repo\l🔤 branch\l}"]
-    Dropdown [label="{🔽 Dropdown ➭ 🧩|🔤 label\l|⏵ open\l⏵ close\l}"]
-    EmbedPage [label="{🖼️ EmbedPage ➭ 🧩|🔢 height\l}"]
-    Folder [label="{📁 Folder ➭ 🧩|🔤 cols\l🔘 show private\l}"]
-    Form [label="{📝 Form ➭ 🧩|🔤 title\l🔤 format\l🔘 editable\l|⏵ submit\l}"]
-    Grid [label="{▤ Grid ➭ 🧩|🔤 cols\l🔢 gap\l🔤 headings\l}"]
-    Map [label="{🗺️ Map ➭ 🧩|🔢 lat\l🔢 lng\l🔢 zoom\l🔢 height\l|⏵ pan to\l⏵ set zoom\l}"]
-    Menu [label="{🍔 Menu ➭ 🧩|⏵ items\l}"]
-    Pytutor [label="{🔬 Pytutor ➭ 🧩|🔢 height\l🔤 bound to\l}"]
-    Qr [label="{🔳 Qr ➭ 🧩|🔢 size\l}"]
-    Quiz [label="{❓ Quiz ➭ 🧩|🎛️ state\l🔘 multi\l🔘 graded\l|▹ check ▹\l}"]
-    Radio [label="{📻 Radio ➭ 🧩|🔤 selected\l|⏵ select\l}"]
-    Recorder [label="{🎥 Recorder ➭ 🧩|🎛️ state\l🔤 pip\l🔢 size\l🔢 zoom\l🔢 fps\l|▹ start ▹\l▹ stop ▹\l}"]
-    Run [label="{🐍 Run ➭ 🧩|🔢 rows\l🔘 folded\l🔘 silent\l🔡 init\l🔤 bound\l🔤 expected\l|⏵ run\l}"]
-    Scrollable [label="{📜 Scrollable ➭ 🧩|🔢 height\l}"]
-    Slides [label="{🎞️ Slides ➭ 🧩|🔢 current\l|⏵ next\l⏵ prev\l⏵ goto\l}"]
-    Tabs [label="{📑 Tabs ➭ 🧩|🔢 active\l|⏵ select\l}"]
-    Text [label="{🔤 Text ➭ 🧩}"]
+    Block [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🧩 Block ➭ ◻️</TD></TR><HR/><TR><TD ALIGN="CENTER">🔘</TD><TD ALIGN="LEFT">exists</TD></TR><TR><TD ALIGN="CENTER">🔘</TD><TD ALIGN="LEFT">visible</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">text</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">click</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">has class</TD></TR></TABLE>>]
+    Datagrid [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">▦ Datagrid ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">row count</TD></TR><TR><TD ALIGN="CENTER">🔤⦙</TD><TD ALIGN="LEFT">headers</TD></TR><TR><TD ALIGN="CENTER">📦⦙</TD><TD ALIGN="LEFT">rows</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">header</TD></TR></TABLE>>]
+    Chart [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">📈 Chart ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">type</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">x</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">y</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">bar count</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">point count</TD></TR></TABLE>>]
+    Feature [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🦄 Feature ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">title</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">status</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">run</TD></TR></TABLE>>]
+    Button [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🖱️ Button ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">text</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">color</TD></TR><HR/><TR><TD ALIGN="CENTER">⚡</TD><TD ALIGN="LEFT">on click</TD></TR></TABLE>>]
+    Accordion [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🪗 Accordion ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">open</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">close</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">sections</TD></TR></TABLE>>]
+    Agent [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🤖 Agent ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔡</TD><TD ALIGN="LEFT">system</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">model</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">temperature</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">max tokens</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">intro</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">placeholder</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">ask</TD></TR></TABLE>>]
+    Cards [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🃏 Cards ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">cols</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">gap</TD></TR></TABLE>>]
+    Carousel [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🎠 Carousel ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">delay</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">next</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">prev</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">goto</TD></TR></TABLE>>]
+    Code [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">📄 Code ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">path</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">src</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">lang</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">title</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">repo</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">branch</TD></TR></TABLE>>]
+    Dropdown [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🔽 Dropdown ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">label</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">open</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">close</TD></TR></TABLE>>]
+    EmbedPage [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🖼️ EmbedPage ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">height</TD></TR></TABLE>>]
+    Folder [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">📁 Folder ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">cols</TD></TR><TR><TD ALIGN="CENTER">🔘</TD><TD ALIGN="LEFT">show private</TD></TR></TABLE>>]
+    Form [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">📝 Form ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">title</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">format</TD></TR><TR><TD ALIGN="CENTER">🔘</TD><TD ALIGN="LEFT">editable</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">submit</TD></TR></TABLE>>]
+    Grid [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">▤ Grid ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">cols</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">gap</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">headings</TD></TR></TABLE>>]
+    Map [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🗺️ Map ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">lat</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">lng</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">zoom</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">height</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">pan to</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">set zoom</TD></TR></TABLE>>]
+    Menu [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🍔 Menu ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">items</TD></TR></TABLE>>]
+    Pytutor [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🔬 Pytutor ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">height</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">bound to</TD></TR></TABLE>>]
+    Qr [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🔳 Qr ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">size</TD></TR></TABLE>>]
+    Quiz [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">❓ Quiz ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🎛️</TD><TD ALIGN="LEFT">state</TD></TR><TR><TD ALIGN="CENTER">🔘</TD><TD ALIGN="LEFT">multi</TD></TR><TR><TD ALIGN="CENTER">🔘</TD><TD ALIGN="LEFT">graded</TD></TR><HR/><TR><TD ALIGN="CENTER">▹</TD><TD ALIGN="LEFT">check ▹</TD></TR></TABLE>>]
+    Radio [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">📻 Radio ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">selected</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">select</TD></TR></TABLE>>]
+    Recorder [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🎥 Recorder ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🎛️</TD><TD ALIGN="LEFT">state</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">pip</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">size</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">zoom</TD></TR><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">fps</TD></TR><HR/><TR><TD ALIGN="CENTER">▹</TD><TD ALIGN="LEFT">start ▹</TD></TR><TR><TD ALIGN="CENTER">▹</TD><TD ALIGN="LEFT">stop ▹</TD></TR></TABLE>>]
+    Run [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🐍 Run ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">rows</TD></TR><TR><TD ALIGN="CENTER">🔘</TD><TD ALIGN="LEFT">folded</TD></TR><TR><TD ALIGN="CENTER">🔘</TD><TD ALIGN="LEFT">silent</TD></TR><TR><TD ALIGN="CENTER">🔡</TD><TD ALIGN="LEFT">init</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">bound</TD></TR><TR><TD ALIGN="CENTER">🔤</TD><TD ALIGN="LEFT">expected</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">run</TD></TR></TABLE>>]
+    Scrollable [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">📜 Scrollable ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">height</TD></TR></TABLE>>]
+    Slides [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🎞️ Slides ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">current</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">next</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">prev</TD></TR><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">goto</TD></TR></TABLE>>]
+    Tabs [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">📑 Tabs ➭ 🧩</TD></TR><HR/><TR><TD ALIGN="CENTER">🔢</TD><TD ALIGN="LEFT">active</TD></TR><HR/><TR><TD ALIGN="CENTER">▸</TD><TD ALIGN="LEFT">select</TD></TR></TABLE>>]
+    Text [shape=plaintext, label=<<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="4" CELLPADDING="1" BGCOLOR="white"><TR><TD COLSPAN="2" ALIGN="LEFT">🔤 Text ➭ 🧩</TD></TR></TABLE>>]
   }
   Datagrid -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bind", fontsize=8]
   Chart -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bind", fontsize=8]
@@ -68,7 +68,7 @@ digraph component_model {
     label="🎛️ Quiz states"; fontsize=10;
     style="filled,rounded"; fillcolor="gray94"; color="gray85"; margin=12; nodesep=0.9;
     node [fontname="Source Sans Pro, sans-serif", shape=record, style="filled,rounded", fillcolor="white", color="gray", fontsize=10, penwidth=0.3]
-    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=9]
+    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=10]
     st_Quiz_pending [label="➡️ pending"]
     st_Quiz_graded [label="graded"]
   }
@@ -78,7 +78,7 @@ digraph component_model {
     label="🎛️ Recorder states"; fontsize=10;
     style="filled,rounded"; fillcolor="gray94"; color="gray85"; margin=12; nodesep=0.9;
     node [fontname="Source Sans Pro, sans-serif", shape=record, style="filled,rounded", fillcolor="white", color="gray", fontsize=10, penwidth=0.3]
-    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=9]
+    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=10]
     st_Recorder_idle [label="➡️ idle"]
     st_Recorder_recording [label="recording"]
     st_Recorder_stopped [label="stopped"]

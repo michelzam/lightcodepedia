@@ -28,7 +28,7 @@ import json
 ICON = {
     "str": "🔤", "long": "🔡", "int": "🔢", "float": "🔢", "bool": "🔘",
     "date": "📅", "datetime": "🕗", "password": "🔒",
-    "ref": "📦", "event": "⚡", "method": "⏵", "list": "⦙",
+    "ref": "📦", "event": "⚡", "method": "▸", "list": "⦙",
     "guard": "▹", "trans": "▹", "fsm": "🎛️", "init": "➡️",
 }
 
@@ -180,32 +180,42 @@ class Object:
     # ── per-class diagram contribution (SSOT = cls._spec, set by @component) ──
     @classmethod
     def _dot_node(cls):
+        # HTML-like label: real <TR> rows (icon cell + name cell) so emoji icons
+        # never overlap, with CELLSPACING giving uniform breathing room. <HR/>
+        # separates the title / attributes / behaviours compartments.
         sp = cls._spec
         title = ((sp["icon"] + " ") if sp["icon"] else "") + cls.__name__
         for b in sp["bases"]:                          # ➭ <icon> for root bases
             if b in _DOT_ROOT_BASES:
                 title += " ➭ " + (_MODEL.get(b, {}).get("icon") or "◻️")
-        rows = ""
+
+        def trow(icon, name):
+            return ('<TR><TD ALIGN="CENTER">' + _html_esc(icon)
+                    + '</TD><TD ALIGN="LEFT">' + name + '</TD></TR>')
+
+        attrs = ""
         if sp.get("states"):                       # stateful → show current state
-            rows += ICON["fsm"] + " state\\l"
+            attrs += trow(ICON["fsm"], "state")
         for a in sp["attrs"]:
-            rows += _attr_icon(a) + " " + _disp(a["n"]) + "\\l"
+            attrs += trow(_attr_icon(a), _disp_html(a["n"]))
         meth = ""
         for e in sp["events"]:
-            meth += ICON["event"] + " " + _disp(e) + "\\l"
+            meth += trow(ICON["event"], _disp_html(e))
         for m in sp["methods"]:
-            lead = ICON["guard"] if m["pre"] else ICON["method"]   # ▹ guarded / ⏵ plain
-            line = lead + " " + _disp(m["n"])
-            if m["post"]:
-                line += " " + ICON["trans"]                         # trailing ▹ = transition
-            meth += line + "\\l"
-        # only emit non-empty compartments (no blank method box)
-        comps = [_dot_esc(title)]
-        if rows:
-            comps.append(rows)
-        if meth:
-            comps.append(meth)
-        return "  " + cls.__name__ + ' [label="{' + "|".join(comps) + '}"]'
+            lead = ICON["guard"] if m["pre"] else ICON["method"]  # ▹ guarded / ▸ plain
+            nm = _disp_html(m["n"]) + ((" " + ICON["trans"]) if m["post"] else "")
+            meth += trow(lead, nm)
+
+        head = ('<TR><TD COLSPAN="2" ALIGN="LEFT">' + _html_esc(title)
+                + '</TD></TR>')
+        body = head
+        for sec in (attrs, meth):                  # only non-empty compartments
+            if sec:
+                body += "<HR/>" + sec
+        tbl = ('<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0"'
+               ' CELLSPACING="4" CELLPADDING="1" BGCOLOR="white">'
+               + body + "</TABLE>")
+        return "  " + cls.__name__ + " [shape=plaintext, label=<" + tbl + ">]"
 
     @classmethod
     def _dot_states(cls):
@@ -225,7 +235,7 @@ class Object:
              ' style="filled,rounded", fillcolor="white", color="gray",'
              ' fontsize=10, penwidth=0.3]',
              '    edge [style=solid, arrowhead=vee, penwidth=0.2,'
-             ' arrowsize=0.7, fontsize=9]']
+             ' arrowsize=0.7, fontsize=10]']
         for i, s in enumerate(states):
             name = _disp(s)
             lbl = (ICON["init"] + " " + name) if i == 0 else name
@@ -878,6 +888,15 @@ def _disp(name):
     return _dot_esc(str(name).replace("_", " "))
 
 
+def _html_esc(s):
+    return (str(s).replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;"))
+
+
+def _disp_html(name):
+    return _html_esc(str(name).replace("_", " "))
+
+
 def _attr_icon(a):
     ico = ICON.get(a.get("t", "ref"), "📦")
     if a.get("list"):
@@ -978,11 +997,10 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
     # square filled records, sans-serif @12, hairline edges.
     L = ["digraph component_model {",
          "  rankdir=BT; nodesep=0.25;",
-         '  graph [penwidth=0.1, splines=ortho, fontsize=12,'
+         '  graph [penwidth=0.1, splines=ortho, fontsize=10,'
          ' fontname="Source Sans Pro, sans-serif"];',
          '  node [fontname="Source Sans Pro, sans-serif", penwidth=0.5, shape=record,'
-         ' style=filled, color=lightgray, fillcolor=white, fontsize=12,'
-         ' margin="0.11,0.08"];',
+         ' style=filled, color=lightgray, fillcolor=white, fontsize=10];',
          '  edge [fontname="Source Sans Pro, sans-serif", penwidth=0.2,'
          ' arrowhead=vee, arrowsize=0.8];']
 
@@ -995,7 +1013,7 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
         icon = _PKG_ICON.get(p, "📦")
         L.append("  subgraph cluster_pkg_" + p + " {")
         L.append('    label="' + _dot_esc(icon + " " + p) + '"; labeljust=l;'
-                 ' fontsize=12; fontcolor="gray40";')
+                 ' fontsize=10; fontcolor="gray40";')
         L.append('    style=filled; fillcolor="gray98"; color="gray85";'
                  ' margin=16; penwidth=0.3;')
         for n in groups[p]:
