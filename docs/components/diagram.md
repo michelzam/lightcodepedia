@@ -36,11 +36,13 @@ by the method, and `▹ guarded ▹` markers on the methods. `Recorder` goes
 
 ## 📖 How to read it
 
-- **🪵 / 🧩 icons** label each class; the panels list typed **knobs** (attributes)
+- **◻️ / 🧩 icons** label each class; the panels list typed **knobs** (attributes)
   and **behaviours** (methods).
-- **Hollow triangle ▷** = UML inheritance, always pointing up to the parent;
-  siblings sharing a base **merge** into one arrow.
-- **Blue arrows** = associations, labelled at the head (e.g. `bind`, `⦙ bars`).
+- **`➭ ◻️` / `➭ 🧩` markers** = inheritance from a root base (`Object` / `Block`),
+  shown in the title instead of an edge to avoid a heavy fan of obvious lines.
+- **Blue arrows** = associations, pointing up to the referenced class, labelled
+  at the head (e.g. `bind`, `⦙ bars`).
+- **Underscores read as spaces** (`has_class` → `has class`).
 - Icons follow the same legend as
   `usecases/module_manager/backend/module_decorator.py` (shown in the diagram).
 
@@ -48,4 +50,5 @@ by the method, and `▹ guarded ▹` markers on the methods. `Recorder` goes
 
 | Attribute | Default | What it does |
 |---|---|---|
-| `scope="…"` | (whole model) | A class name; renders it plus its ancestors, association targets, and direct subclasses |
+| `scope="…"` | (whole model) | A **class** name (class + neighbours), a **package** (`ui` / `kore`), or `*` for the whole model |
+| `states="…"` | `true` | Set `false`/`off` to hide the state-machine clusters |

@@ -199,8 +199,13 @@ class Object:
             if m["post"]:
                 line += " " + ICON["trans"]                         # trailing ▹ = transition
             meth += line + "\\l"
-        return ("  " + cls.__name__ + ' [label="{'
-                + _dot_esc(title) + "|" + rows + "|" + meth + '}"]')
+        # only emit non-empty compartments (no blank method box)
+        comps = [_dot_esc(title)]
+        if rows:
+            comps.append(rows)
+        if meth:
+            comps.append(meth)
+        return "  " + cls.__name__ + ' [label="{' + "|".join(comps) + '}"]'
 
     @classmethod
     def _dot_states(cls):
@@ -215,12 +220,12 @@ class Object:
         L = ["  subgraph cluster_states_" + cn + " {",
              '    label="' + ICON["fsm"] + " " + cn + ' states"; fontsize=10;',
              '    style="filled,rounded"; fillcolor="white"; color="gray85";'
-             ' margin=12;',
+             ' margin=12; nodesep=0.9;',
              '    node [fontname="Source Sans Pro, sans-serif", shape=record,'
              ' style="filled,rounded", fillcolor="gray95", color="gray",'
              ' fontsize=12, penwidth=0.3]',
-             '    edge [style=solid, arrowhead=open, penwidth=0.2,'
-             ' arrowsize=0.5, fontsize=10]']
+             '    edge [style=solid, arrowhead=vee, penwidth=0.2,'
+             ' arrowsize=0.7, fontsize=10]']
         for i, s in enumerate(states):
             name = _disp(s)
             lbl = (ICON["init"] + " " + name) if i == 0 else name
@@ -233,10 +238,11 @@ class Object:
                     L.append("  " + sid(p) + " -> " + sid(m["post"])
                              + ' [xlabel="' + _disp(m["n"]) + '",'
                              + ' color="gray45", fontcolor="gray45",'
-                             + ' constraint=false]')
-        # tie the initial state to the class node (dashed, no arrow)
+                             + ' minlen=2, constraint=false]')
+        # tie the cluster below its class (dashed, no arrow); constraint keeps it
+        # directly under the class node rather than floating off to the side.
         L.append("  " + sid(states[0]) + " -> " + cn
-                 + ' [style=dashed, arrowhead=none, color="gray70", constraint=false]')
+                 + ' [style=dashed, arrowhead=none, color="gray70"]')
         return L
 
     @classmethod
@@ -247,8 +253,9 @@ class Object:
         for a in cls._spec["assoc"]:
             if sel is None or a["target"] in sel:
                 lbl = ("⦙ " if a.get("list") else "") + _disp(a["n"])
+                # weight pulls the referenced class nearer; head inherits vee
                 lines.append("  " + cls.__name__ + " -> " + a["target"]
-                             + ' [arrowhead=open, color=blue, fontcolor=blue,'
+                             + ' [color=blue, fontcolor=blue, weight=8,'
                              + ' labeldistance=2, headlabel="' + lbl
                              + '", fontsize=8]')
         return lines
@@ -961,9 +968,10 @@ def _pkg_of(name):
     return "kore"
 
 
-def to_dot(scope=None, gaps=None, packages=None):
+def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
     # Assembler: wraps the graph, groups class nodes into package clusters, then
     # adds the cross-class concerns (associations, inheritance, legend, gaps).
+    # statemachines=False hides the state-machine clusters (a display knob).
     # `packages` optionally overrides the default _pkg_of mapping (e.g. from the
     # docs folder layout, supplied by the build step).
     sel = set(_MODEL.keys()) if not scope else _scope_set(scope)
@@ -974,9 +982,9 @@ def to_dot(scope=None, gaps=None, packages=None):
          '  graph [penwidth=0.1, splines=ortho, fontsize=12,'
          ' fontname="Source Sans Pro, sans-serif"];',
          '  node [fontname="Source Sans Pro, sans-serif", penwidth=0.5, shape=record,'
-         ' style=filled, color=lightgray, fillcolor=white, fontsize=12,'
-         ' margin="0.18,0.05"];',
-         '  edge [fontname="Source Sans Pro, sans-serif", penwidth=0.2];']
+         ' style=filled, color=lightgray, fillcolor=white, fontsize=12];',
+         '  edge [fontname="Source Sans Pro, sans-serif", penwidth=0.2,'
+         ' arrowhead=vee, arrowsize=0.8];']
 
     # class nodes, grouped into package (scope) clusters
     pkg_of = (lambda n: packages.get(n, "kore")) if packages else _pkg_of
@@ -997,7 +1005,8 @@ def to_dot(scope=None, gaps=None, packages=None):
     # associations + state machines (kept at top level, may cross clusters)
     for n in _dot_order(sel):
         L += _CLASSES[n]._dot_assoc(sel)
-        L += _CLASSES[n]._dot_states()
+        if statemachines:
+            L += _CLASSES[n]._dot_states()
 
     # inheritance — direct child→base edges (no junction merging); let dot route
     # them as orthogonal stairs. constraint=true keeps parents above children.
