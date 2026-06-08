@@ -42,10 +42,15 @@ Auto-included by docs/_layouts/default.html.
       run.call(mp, preamble);
 
       nodes.forEach(function (el) {
-        var scope = (el.getAttribute("scope") || "").replace(/[^A-Za-z0-9_]/g, "");
-        var arg = scope ? ('"' + scope + '"') : "None";
+        var scope = (el.getAttribute("scope") || "").replace(/[^A-Za-z0-9_*]/g, "");
+        var arg = (scope && scope !== "*") ? ('"' + scope + '"') : "None";
+        // states="false"/"off"/"no" hides the state-machine clusters (knob)
+        var st = (el.getAttribute("states") || "").toLowerCase();
+        var sm = (st === "false" || st === "off" || st === "no" || st === "0")
+                 ? "False" : "True";
         try {
-          run.call(mp, "import js\njs.window._lcDiagramDot = to_dot(" + arg + ")\n");
+          run.call(mp, "import js\njs.window._lcDiagramDot = to_dot(" + arg
+                       + ", statemachines=" + sm + ")\n");
           var svg = viz.renderString(window._lcDiagramDot || "digraph{}", { format: "svg" });
           var div = document.createElement("div");
           div.className = "lc-dot-diagram lc-diagram";
