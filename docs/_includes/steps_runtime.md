@@ -812,14 +812,9 @@ def _lcx_target_id(tgt):
         return ""
 
 
-def lcx_inspect():
-    """Inspect the element marked [data-lcx-target]: live values of every
-    attribute (own + inherited), current state, and resolved association links
-    (role → target id). Returns JSON for the x-ray lens."""
-    el = js.window.document.querySelector("[data-lcx-target]")
-    if not el:
-        return "{}"
-    obj = _wrap(el)
+def _lcx_dump(obj):
+    """Live values (own + inherited), current state, and resolved association
+    links (role → target id) for a wrapped object — shared by the lens calls."""
     cn = type(obj).__name__
     cur, seen, vals, roles, seen_role = cn, set(), {}, [], set()
     while cur and cur in _MODEL and cur not in seen:      # walk the base chain
@@ -834,8 +829,8 @@ def lcx_inspect():
             if a["n"] not in seen_role:
                 seen_role.add(a["n"])
                 roles.append((a["n"], a["target"], a.get("list", False)))
-        bases = _MODEL[cur]["bases"]
-        cur = bases[0] if bases else None
+        bs = _MODEL[cur]["bases"]
+        cur = bs[0] if bs else None
     links = []
     for role, target, is_list in roles:
         try:
@@ -845,8 +840,39 @@ def lcx_inspect():
         if tid:
             links.append({"role": role, "target": target, "id": tid, "list": is_list})
     sp = _MODEL.get(cn, {})
-    return json.dumps({"cls": cn, "vals": vals, "links": links,
-                       "state": (obj.state if sp.get("states") else "")})
+    return {"cls": cn, "vals": vals, "links": links,
+            "state": (obj.state if sp.get("states") else "")}
+
+
+def lcx_inspect():
+    """Inspect the element marked [data-lcx-target] (the hovered widget)."""
+    el = js.window.document.querySelector("[data-lcx-target]")
+    if not el:
+        return "{}"
+    return json.dumps(_lcx_dump(_wrap(el)))
+
+
+def lcx_target(cls_name, idv):
+    """Inspect a connected object by class + id — element-backed (a widget on
+    the page) or id-backed (a hidden Dataset). Lets the lens show the full
+    inspector of associated objects, even invisible ones."""
+    cls = _CLASSES.get(cls_name)
+    if cls is None:
+        return "{}"
+    el = js.window.document.querySelector("[data-lc-id='" + idv + "']")
+    obj = None
+    if el is not None:
+        w = _wrap(el)
+        if type(w).__name__ == cls_name:
+            obj = w
+    if obj is None:
+        try:
+            obj = cls(idv)            # id-backed (e.g. Dataset(id))
+        except Exception:
+            obj = _wrap(el) if el is not None else None
+    if obj is None:
+        return "{}"
+    return json.dumps(_lcx_dump(obj))
 
 
 @component(icon="📄", attrs=[{"n": "id", "t": "str"}], methods=["feature", "features"])
