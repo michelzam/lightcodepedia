@@ -5,51 +5,61 @@ The Jekyll/kramdown pipeline emits ```dot fenced blocks as:
   <div class="language-dot highlighter-rouge"><div class="highlight"><pre><code>…</code></pre></div></div>
 
 This include finds those blocks, runs them through the embedded graphviz engine,
-and replaces them with inline SVG (no CDN, no external server).
+and replaces them with inline SVG.  Plain <script> (no module, no top-level
+await) for maximum browser compatibility.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
-<script type="module">
-  // Normalise all DOT fenced blocks to {src, container} pairs.
-  const blocks = [];
+<script>
+(function () {
+  var VIZ_URL = "{{ "/assets/js/viz-global.js" | relative_url }}";
 
-  // Rouge: div.language-dot > div.highlight > pre > code
+  // Collect DOT blocks already in the DOM (script is at end of body).
+  var blocks = [];
   document.querySelectorAll("div.language-dot").forEach(function (wrap) {
     var code = wrap.querySelector("code");
     if (code) blocks.push({ src: code.textContent, el: wrap });
   });
-
-  // GFM / fallback: pre > code.language-dot
   document.querySelectorAll("pre > code.language-dot").forEach(function (code) {
     blocks.push({ src: code.textContent, el: code.closest("pre") });
   });
+  if (!blocks.length) return;
 
-  if (blocks.length) {
-    var _err = function (el, msg) {
-      var pre = document.createElement("pre");
-      pre.style.cssText = "color:red;font-size:0.8em";
-      pre.textContent = "[graphviz] " + msg;
-      el.parentNode.replaceChild(pre, el);
-    };
-    try {
-      window._lcVizReady = window._lcVizReady ||
-        import("{{ "/assets/js/viz.js" | relative_url }}")
-          .then(function (m) { return m.instance(); });
-      var viz = await window._lcVizReady;
-      blocks.forEach(function ({ src, el }) {
-        try {
-          var svg = viz.renderString(src);
-          var div = document.createElement("div");
-          div.className = "lc-dot-diagram";
-          div.style.cssText = "overflow:auto;line-height:1";
-          div.innerHTML = svg;
-          el.parentNode.replaceChild(div, el);
-        } catch (e) { _err(el, e); }
-      });
-    } catch (e) {
-      console.error("[graphviz] init", e);
-      blocks.forEach(function ({ src, el }) { _err(el, "renderer failed to load: " + e); });
-    }
+  function showErr(el, msg) {
+    var pre = document.createElement("pre");
+    pre.style.cssText = "color:red;font-size:0.8em";
+    pre.textContent = "[graphviz] " + msg;
+    el.parentNode.replaceChild(pre, el);
   }
+
+  function render(viz) {
+    blocks.forEach(function (b) {
+      try {
+        var div = document.createElement("div");
+        div.className = "lc-dot-diagram";
+        div.style.cssText = "overflow:auto;line-height:1";
+        div.innerHTML = viz.renderString(b.src);
+        b.el.parentNode.replaceChild(div, b.el);
+      } catch (e) { showErr(b.el, e); }
+    });
+  }
+
+  // Lazy-load viz-global.js only when this page actually has DOT blocks.
+  window._lcVizReady = window._lcVizReady || (function () {
+    return new Promise(function (resolve, reject) {
+      if (window.Viz) { window.Viz.instance().then(resolve).catch(reject); return; }
+      var s = document.createElement("script");
+      s.src = VIZ_URL;
+      s.onload = function () { window.Viz.instance().then(resolve).catch(reject); };
+      s.onerror = function () { reject(new Error("failed to load " + VIZ_URL)); };
+      document.head.appendChild(s);
+    });
+  })();
+
+  window._lcVizReady.then(render).catch(function (e) {
+    console.error("[graphviz] init:", e);
+    blocks.forEach(function (b) { showErr(b.el, "renderer failed: " + e); });
+  });
+})();
 </script>
