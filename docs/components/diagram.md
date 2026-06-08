@@ -46,6 +46,13 @@ by the method, and `▹ guarded ▹` markers on the methods. `Recorder` goes
 - Icons follow the same legend as
   `usecases/module_manager/backend/module_decorator.py` (shown in the diagram).
 
+## 🔬 X-ray lens
+
+Hold **⌥ Option / Alt** and hover **any rendered widget on any page** to see
+through it to its component class — icon, typed knobs, behaviours and state —
+read live from the same model. No clicks, no navigation; release the key to
+dismiss.
+
 ## 🔧 Knobs
 
 | Attribute | Default | What it does |

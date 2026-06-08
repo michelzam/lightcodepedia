@@ -19,6 +19,7 @@ Writes:  docs/components/model.md
 """
 
 import glob
+import json
 import os
 import re
 import sys
@@ -26,6 +27,7 @@ import types
 
 PREAMBLE = "docs/_includes/steps_runtime.md"
 OUT = "docs/components/model.md"
+JSON_OUT = "docs/assets/component-model.json"
 
 # component pages that are not addressable gallery widgets
 NON_WIDGET = {"index", "sitemap", "deploys", "model", "diagram"}
@@ -89,6 +91,22 @@ Regenerate with `python tools/gen_component_diagram.py`.
 """
 
 
+def write_model_json(ns):
+    """Dump the model + DOM→class map for the x-ray lens (assets/…json).
+
+    Same SSOT, no MicroPython needed at runtime: the lens just reads this.
+    """
+    payload = {
+        "model": ns["_MODEL"],
+        "wrap": [[token, cls.__name__] for token, cls in ns["_WRAP"]],
+        "icons": ns["ICON"],
+        "roots": sorted(ns["_DOT_ROOT_BASES"]),
+    }
+    with open(JSON_OUT, "w") as f:
+        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+    print(f"Wrote {JSON_OUT}  ({len(payload['wrap'])} widget tokens)")
+
+
 if __name__ == "__main__":
     ns = load_runtime()
     model = ns["_MODEL"]
@@ -98,5 +116,6 @@ if __name__ == "__main__":
     with open(OUT, "w") as f:
         f.write(page(diagram))
     print(f"Wrote {OUT}  ({len(model)} classes, {len(gaps)} gap components)")
+    write_model_json(ns)
     if gaps:
         print("  gap:", ", ".join(gaps))
