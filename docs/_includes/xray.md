@@ -33,9 +33,15 @@ Auto-included by docs/_layouts/default.html.
                   border-top: 1px solid rgba(120,200,255,.25); }
   .lcx-xray .st b { color: #fff; }
   .lcx-xray .code { white-space: pre; margin: 1px 0 4px 1.6em; padding: 4px 7px;
-                    color: #ffd479; background: rgba(0,0,0,.32);
+                    color: #d7e7f5; background: rgba(0,0,0,.32);
                     border-left: 2px solid rgba(255,212,121,.5); border-radius: 3px;
                     font: 10px/1.45 ui-monospace, "SF Mono", Menlo, monospace; }
+  /* Python syntax tokens (handler source) */
+  .lcx-xray .code .c-k { color: #ff8fbf; font-weight: 600; }  /* keyword   */
+  .lcx-xray .code .c-s { color: #9effa6; }                    /* string    */
+  .lcx-xray .code .c-c { color: #6f8da3; font-style: italic; }/* comment   */
+  .lcx-xray .code .c-n { color: #ffd479; }                    /* number    */
+  .lcx-xray .code .c-b { color: #7ec8ff; font-style: italic; }/* self/button */
   .lcx-ring { position: fixed; pointer-events: none; z-index: 100000;
               border-radius: 50%; border: 2px solid rgba(140,205,255,.9);
               box-shadow: 0 6px 22px rgba(0,0,0,.4),
@@ -76,6 +82,27 @@ Auto-included by docs/_layouts/default.html.
 
     const disp = s => String(s).replace(/_/g, " ");
     const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    // Tiny self-contained Python highlighter for the event-handler block. Tokenise
+    // the raw source first, then escape each piece, so HTML can't leak through.
+    const PY_KW = new Set(("False None True and as assert async await break class " +
+      "continue def del elif else except finally for from global if import in is " +
+      "lambda nonlocal not or pass raise return try while with yield").split(" "));
+    function pyHi(src) {
+      const re = /(#[^\n]*)|('''[\s\S]*?'''|"""[\s\S]*?"""|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*")|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)|(\s+)|([\s\S])/g;
+      let out = "", m;
+      while ((m = re.exec(src))) {
+        if (m[1]) out += '<span class="c-c">' + esc(m[1]) + "</span>";        // comment
+        else if (m[2]) out += '<span class="c-s">' + esc(m[2]) + "</span>";   // string
+        else if (m[3]) out += '<span class="c-n">' + esc(m[3]) + "</span>";   // number
+        else if (m[4]) {                                                      // word
+          const w = m[4];
+          if (PY_KW.has(w)) out += '<span class="c-k">' + esc(w) + "</span>";
+          else if (w === "self" || w === "button") out += '<span class="c-b">' + esc(w) + "</span>";
+          else out += esc(w);
+        } else out += esc(m[5] || m[6]);                                      // whitespace / other
+      }
+      return out;
+    }
     const attrIcon = a => (IC[a.t] || IC.ref || "📦") + (a.list ? (IC.list || "⦙") : "");
     const visible = el => {
       if (!el) return false;
@@ -121,7 +148,7 @@ Auto-included by docs/_layouts/default.html.
       L.events.forEach(e => {
         h += rrow(IC.event || "⚡", esc(disp(e)));
         const src = evts[e];                           // live handler body
-        if (src) h += '<div class="code">' + esc(src.trim()) + "</div>";
+        if (src) h += '<div class="code">' + pyHi(src.trim()) + "</div>";
       });
       L.methods.forEach(m => {
         const lead = (m.pre && m.pre.length) ? (IC.guard || "▹") : (IC.method || "▸");
