@@ -794,16 +794,34 @@ def _lcx_str(v):
     return s if len(s) <= 40 else s[:40] + "…"
 
 
+def _lcx_target_id(tgt):
+    """data-lc-id (or dataset id) of a resolved association target, else ""."""
+    if tgt is None:
+        return ""
+    sid = getattr(tgt, "_id", None)   # id-backed wrappers (Dataset)
+    if isinstance(sid, str) and sid:
+        return sid
+    el = getattr(tgt, "_el", None)
+    if el is None:
+        return ""
+    if isinstance(el, str):
+        return el
+    try:
+        return el.getAttribute("data-lc-id") or ""
+    except Exception:
+        return ""
+
+
 def lcx_inspect():
     """Inspect the element marked [data-lcx-target]: live values of every
-    attribute (own + inherited) plus the current state. Returns JSON for the
-    lens; structure (which attrs/methods to show) is computed JS-side."""
+    attribute (own + inherited), current state, and resolved association links
+    (role → target id). Returns JSON for the x-ray lens."""
     el = js.window.document.querySelector("[data-lcx-target]")
     if not el:
         return "{}"
     obj = _wrap(el)
     cn = type(obj).__name__
-    cur, seen, vals = cn, set(), {}
+    cur, seen, vals, roles, seen_role = cn, set(), {}, [], set()
     while cur and cur in _MODEL and cur not in seen:      # walk the base chain
         seen.add(cur)
         for a in _MODEL[cur]["attrs"]:
@@ -812,10 +830,22 @@ def lcx_inspect():
                     vals[a["n"]] = _lcx_str(getattr(obj, a["n"]))
                 except Exception:
                     vals[a["n"]] = ""
+        for a in _MODEL[cur]["assoc"]:
+            if a["n"] not in seen_role:
+                seen_role.add(a["n"])
+                roles.append((a["n"], a["target"], a.get("list", False)))
         bases = _MODEL[cur]["bases"]
         cur = bases[0] if bases else None
+    links = []
+    for role, target, is_list in roles:
+        try:
+            tid = _lcx_target_id(getattr(obj, role))
+        except Exception:
+            tid = ""
+        if tid:
+            links.append({"role": role, "target": target, "id": tid, "list": is_list})
     sp = _MODEL.get(cn, {})
-    return json.dumps({"cls": cn, "vals": vals,
+    return json.dumps({"cls": cn, "vals": vals, "links": links,
                        "state": (obj.state if sp.get("states") else "")})
 
 
