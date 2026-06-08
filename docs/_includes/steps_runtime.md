@@ -180,36 +180,32 @@ class Object:
     # ── per-class diagram contribution (SSOT = cls._spec, set by @component) ──
     @classmethod
     def _dot_node(cls):
-        # HTML-like label: real <TR> rows (icon cell + name cell) so emoji icons
-        # never overlap, with CELLSPACING giving uniform breathing room. <HR/>
-        # separates the title / attributes / behaviours compartments.
+        # Plain record label (like the original ModuleDecorator): {title|attrs|meths}
         sp = cls._spec
         title = ((sp["icon"] + " ") if sp["icon"] else "") + cls.__name__
         for b in sp["bases"]:                          # ➭ <icon> for root bases
             if b in _DOT_ROOT_BASES:
                 title += " ➭ " + (_MODEL.get(b, {}).get("icon") or "◻️")
-
-        def trow(icon, name):
-            return ('<TR><TD ALIGN="CENTER">' + _html_esc(icon)
-                    + '</TD><TD ALIGN="LEFT">' + name + '</TD></TR>')
-
-        attrs = ""
+        rows = ""
         if sp.get("states"):                       # stateful → show current state
-            attrs += trow(ICON["fsm"], "state")
+            rows += ICON["fsm"] + " state\\l"
         for a in sp["attrs"]:
-            attrs += trow(_attr_icon(a), _disp_html(a["n"]))
+            rows += _attr_icon(a) + " " + _disp(a["n"]) + "\\l"
         meth = ""
         for e in sp["events"]:
-            meth += trow(ICON["event"], _disp_html(e))
+            meth += ICON["event"] + " " + _disp(e) + "\\l"
         for m in sp["methods"]:
-            lead = ICON["guard"] if m["pre"] else ICON["method"]  # ▹ guarded / ▸ plain
-            nm = _disp_html(m["n"]) + ((" " + ICON["trans"]) if m["post"] else "")
-            meth += trow(lead, nm)
-
-        head = ('<TR><TD COLSPAN="2" ALIGN="LEFT">' + _html_esc(title)
-                + '</TD></TR>')
-        tbl = _html_table([head, attrs, meth])     # only non-empty compartments
-        return "  " + cls.__name__ + " [shape=plain, label=<" + tbl + ">]"
+            lead = ICON["guard"] if m["pre"] else ICON["method"]   # ▹ guarded / ▸ plain
+            line = lead + " " + _disp(m["n"])
+            if m["post"]:
+                line += " " + ICON["trans"]                         # trailing ▹ = transition
+            meth += line + "\\l"
+        comps = [_dot_esc(title)]                   # only non-empty compartments
+        if rows:
+            comps.append(rows)
+        if meth:
+            comps.append(meth)
+        return "  " + cls.__name__ + ' [label="{' + "|".join(comps) + '}"]'
 
     @classmethod
     def _dot_states(cls):
@@ -885,24 +881,6 @@ def _disp(name):
     return _dot_esc(str(name).replace("_", " "))
 
 
-def _html_table(sections, bg="white"):
-    # one shared table style for class nodes AND the legend → identical font and
-    # row interval everywhere. CELLSPACING=0 (no white strip inside the border),
-    # tight CELLPADDING for the line interval. <HR/> separates compartments.
-    body = "<HR/>".join(s for s in sections if s)
-    return ('<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="0"'
-            ' CELLPADDING="1" BGCOLOR="' + bg + '">' + body + "</TABLE>")
-
-
-def _html_esc(s):
-    return (str(s).replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;"))
-
-
-def _disp_html(name):
-    return _html_esc(str(name).replace("_", " "))
-
-
 def _attr_icon(a):
     ico = ICON.get(a.get("t", "ref"), "📦")
     if a.get("list"):
@@ -911,24 +889,19 @@ def _attr_icon(a):
 
 
 def _dot_legend():
-    # Reproduces the original ModuleDecorator legend verbatim, rendered with the
-    # SAME HTML table as the class nodes → identical font size and row interval.
-    def line(t):
-        return '<TR><TD ALIGN="LEFT">' + _html_esc(t) + "</TD></TR>"
-    title = '<TR><TD ALIGN="CENTER">Legend</TD></TR>'
-    types_ = "".join(line(t) for t in (
-        "🔤 str or 🔡 long str", "🔢 int or float", "🔘 bool", "🕗 datetime",
-        "🔒 password", "🔤 ⦙ list of 🔤", "◻️ Object from kore", "📦 any",
-        "🐟 custom type Fish", " /  derived", " _  private", " =  default value",
-        "⤴️ reflexive reference", "↩️ ⦙ reflexive collection",
-        " ♢ composite or owned"))
-    behav = "".join(line(t) for t in (
-        "⚡️ event or code", " ▸ method", " ▹ conditionnal method",
-        " ▹ with transition ▹"))
-    state = "".join(line(t) for t in ("🎛️ state machine", "➡️ initial state"))
-    inher = line(" ➭  inherits from")
-    imp = line("🛄 imported py")
-    return _html_table([title, types_, behav, state, inher, imp], bg="gray98")
+    # Reproduces the original ModuleDecorator legend verbatim (record label).
+    types_ = ("🔤 str or 🔡 long str\\l🔢 int or float\\l🔘 bool\\l🕗 datetime\\l"
+              "🔒 password\\l🔤 ⦙ list of 🔤\\l◻️ Object from kore\\l📦 any\\l"
+              "🐟 custom type Fish\\l /  derived\\l _  private\\l"
+              " =  default value\\l⤴️ reflexive reference\\l"
+              "↩️ ⦙ reflexive collection\\l ♢ composite or owned\\l")
+    behav = ("⚡️ event or code\\l ▸ method\\l ▹ conditionnal method\\l"
+             " ▹ with transition ▹\\l")
+    state = "🎛️ state machine\\l➡️ initial state\\l"
+    inher = " ➭  inherits from\\l"
+    imp = "🛄 imported py\\l"
+    return ('"{Legend|' + types_ + "|" + behav + "|" + state + "|"
+            + inher + "|" + imp + '}"')
 
 
 def _scope_set(scope):
@@ -1049,8 +1022,9 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
     # legend (invisible cluster, like the reference)
     L.append("  subgraph cluster_legend {")
     L.append("    style=invis;")
-    L.append('    __legend [shape=plain, fontcolor="#505050",'
-             ' label=<' + _dot_legend() + '>]')
+    L.append('    __legend [label=' + _dot_legend() +
+             ', style="filled", fillcolor="gray98", color="gray80",'
+             ' fontcolor="#505050", fontsize=10]')
     L.append("  }")
 
     # gap report (build-time only — needs the docs listing)
