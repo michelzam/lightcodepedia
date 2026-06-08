@@ -39,7 +39,7 @@ Auto-included by docs/_layouts/default.html.
         var div = document.createElement("div");
         div.className = "lc-dot-diagram";
         div.style.cssText = "overflow:auto;line-height:1";
-        div.innerHTML = viz.renderString(b.src);
+        div.innerHTML = viz.renderString(b.src, { format: "svg" });
         b.el.parentNode.replaceChild(div, b.el);
       } catch (e) { showErr(b.el, e); }
     });
