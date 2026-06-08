@@ -1,57 +1,81 @@
 {%- comment -%}
-X-ray lens — hold ⌥ Option/Alt and hover any rendered widget to see THROUGH it
-to its component-model class: icon, typed knobs, behaviours and state machine.
+X-ray lens — hold ⌥ Option/Alt and sweep the round lens over any rendered widget
+to strip its surface and reveal the INNER inspector: the component class with
+live attribute values and current state, shown only through the circular
+aperture (clip-path disc). Add SHIFT to also draw connectors to the widget's
+associated objects (a real arrow to a visible target, a ghost chip for hidden
+ones like a Dataset).
 
-Pure viewer over the SSOT: it reads the static assets/component-model.json
-emitted by tools/gen_component_diagram.py (no MicroPython, no graphviz), and
-maps the hovered DOM node to a class via the same lc-* token map (_WRAP).
+Pure viewer over the SSOT: hover-detection + structure come from the static
+assets/component-model.json (emitted by tools/gen_component_diagram.py); live
+values/links come from lcx_inspect() in MicroPython (lazy-loaded on first use).
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
 <style>
-  .lcx-box { position: fixed; pointer-events: none; z-index: 99998;
-             border: 2px solid #4a76d4; background: rgba(74,118,212,.08);
-             border-radius: 3px; transition: all .04s linear; display: none; }
-  .lcx-card { position: fixed; pointer-events: none; z-index: 99999; display: none;
-              max-width: 280px; background: #fff; color: #31333f;
-              border: 1px solid #cfd4dc; border-radius: 6px;
-              box-shadow: 0 6px 24px rgba(0,0,0,.18);
-              font: 12px/1.45 "Source Sans Pro", sans-serif; overflow: hidden; }
-  .lcx-card .h { font-weight: 600; padding: 6px 9px; background: #f6f7f9;
-                 border-bottom: 1px solid #e6e8ec; }
-  .lcx-card .h .root { color: #9aa0aa; font-weight: 400; }
-  .lcx-card .sec { padding: 5px 9px; }
-  .lcx-card .sec + .sec { border-top: 1px solid #eef0f3; }
-  .lcx-card .r { white-space: nowrap; }
-  .lcx-card .r .ic { display: inline-block; width: 1.5em; }
-  .lcx-card .v { color: #2f7d32; }
-  .lcx-card .assoc { color: #4a76d4; }
-  .lcx-card .hint { padding: 4px 9px; font-size: 10px; color: #9aa0aa;
-                    background: #fafbfc; border-top: 1px solid #eef0f3; }
+  .lcx-xray { position: fixed; pointer-events: none; z-index: 99996; display: none;
+              background: rgba(8,18,28,.93); color: #cdebff; border-radius: 5px;
+              padding: 7px 11px; box-shadow: 0 0 0 1px rgba(120,200,255,.35);
+              font: 11px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
+              white-space: nowrap; }
+  .lcx-xray .t { font-weight: 700; color: #eaf6ff;
+                 border-bottom: 1px solid rgba(120,200,255,.25);
+                 padding-bottom: 3px; margin-bottom: 3px; }
+  .lcx-xray .r .ic { display: inline-block; width: 1.6em; }
+  .lcx-xray .v { color: #8effa6; }
+  .lcx-xray .as { color: #ffd479; }
+  .lcx-xray .st { margin-top: 4px; padding-top: 3px; color: #9fd0ff;
+                  border-top: 1px solid rgba(120,200,255,.25); }
+  .lcx-xray .st b { color: #fff; }
+  .lcx-ring { position: fixed; pointer-events: none; z-index: 100000;
+              border-radius: 50%; border: 2px solid rgba(140,205,255,.9);
+              box-shadow: 0 6px 22px rgba(0,0,0,.4),
+                          inset 0 0 26px rgba(120,200,255,.28);
+              background: radial-gradient(circle at 35% 28%,
+                          rgba(255,255,255,.20), rgba(120,200,255,.05) 45%,
+                          transparent 62%);
+              display: none; }
+  .lcx-svg { position: fixed; inset: 0; width: 100%; height: 100%;
+             pointer-events: none; z-index: 99997; display: none; }
+  .lcx-ghost { position: fixed; pointer-events: none; z-index: 99998; display: none;
+               background: #102232; color: #cdebff; border: 1px solid #ffd479;
+               border-radius: 4px; padding: 2px 7px; font: 11px/1.4 ui-monospace, monospace; }
   body.lcx-on, body.lcx-on * { cursor: crosshair !important; }
 </style>
 
 <script type="module">
   const URL = "{{ "/assets/component-model.json" | relative_url }}";
   const MP_URL = "https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs";
+  const R = 95;                       // lens radius
   let DATA = null;
   try { DATA = await (await fetch(URL)).json(); }
   catch (e) { console.warn("[lc-xray] model json not found", e); }
 
   if (DATA) {
     const { model: MODEL, wrap: WRAP, icons: IC } = DATA;
-    const box = document.createElement("div"); box.className = "lcx-box";
-    const card = document.createElement("div"); card.className = "lcx-card";
-    document.body.appendChild(box); document.body.appendChild(card);
+    const NS = "http://www.w3.org/2000/svg";
+    const xray = document.createElement("div"); xray.className = "lcx-xray";
+    const ring = document.createElement("div"); ring.className = "lcx-ring";
+    ring.style.width = ring.style.height = (R * 2) + "px";
+    const svg = document.createElementNS(NS, "svg"); svg.setAttribute("class", "lcx-svg");
+    svg.innerHTML = '<defs><marker id="lcxArrow" markerWidth="9" markerHeight="9"' +
+      ' refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6"' +
+      ' fill="none" stroke="#4aa3ff" stroke-width="1.4"/></marker></defs>';
+    const ghosts = [];
+    document.body.append(xray, ring, svg);
 
     const disp = s => String(s).replace(/_/g, " ");
-    const attrIcon = a => (IC[a.t] || IC.ref || "📦") + (a.list ? (IC.list || "⦙") : "");
     const esc = s => String(s).replace(/[&<>]/g, c =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    const attrIcon = a => (IC[a.t] || IC.ref || "📦") + (a.list ? (IC.list || "⦙") : "");
+    const visible = el => {
+      if (!el) return false;
+      const r = el.getBoundingClientRect(), s = getComputedStyle(el);
+      return r.width > 0 && r.height > 0 && s.display !== "none" && s.visibility !== "hidden";
+    };
 
-    // base chain root→leaf, deduped (so inherited attrs like id come first)
-    function lineage(name) {
+    function lineage(name) {                 // base chain root→leaf, deduped
       const chain = []; let cur = name; const seen = new Set();
       while (cur && MODEL[cur] && !seen.has(cur)) {
         seen.add(cur); chain.push(cur); cur = (MODEL[cur].bases || [])[0];
@@ -60,58 +84,36 @@ Auto-included by docs/_layouts/default.html.
       const pick = key => {
         const out = [], names = new Set();
         for (const c of chain) for (const it of (MODEL[c][key] || [])) {
-          const n = it.n || it;
-          if (!names.has(n)) { names.add(n); out.push(it); }
+          const n = it.n || it; if (!names.has(n)) { names.add(n); out.push(it); }
         }
         return out;
       };
-      return { attrs: pick("attrs"), events: pick("events"),
-               methods: pick("methods"), assoc: pick("assoc") };
+      return { attrs: pick("attrs"), events: pick("events"), methods: pick("methods") };
     }
 
-    const row = (ic, html, cls) =>
+    const rrow = (ic, html, cls) =>
       '<div class="r ' + (cls || "") + '"><span class="ic">' + ic + "</span>" + html + "</div>";
 
-    // live values + current state for an element (via MicroPython); null if not ready
-    function inspect(el) {
-      if (!window._lcxRun) return null;
-      el.setAttribute("data-lcx-target", "");
-      try {
-        window._lcxRun("import js\njs.window._lcxData = lcx_inspect()\n");
-        return JSON.parse(window._lcxData || "{}");
-      } catch (e) { return null; } finally { el.removeAttribute("data-lcx-target"); }
-    }
-
-    function render(name, live) {
+    function schematic(name, live) {         // the x-ray content for a widget
       const sp = MODEL[name]; if (!sp) return "";
-      const L = lineage(name);
-      const vals = (live && live.vals) || {};
-      let html = '<div class="h">' + (sp.icon ? sp.icon + " " : "") + esc(name) + "</div>";
-      let knobs = "";
+      const L = lineage(name), vals = (live && live.vals) || {};
+      let h = '<div class="t">' + (sp.icon ? sp.icon + " " : "") + esc(name) + "</div>";
       L.attrs.forEach(a => {
         const has = Object.prototype.hasOwnProperty.call(vals, a.n);
-        const v = has ? '<span class="v"> = ' + esc(vals[a.n]) + "</span>" : "";
-        knobs += row(attrIcon(a), esc(disp(a.n)) + v);
+        h += rrow(attrIcon(a), esc(disp(a.n)) +
+          (has ? '<span class="v"> = ' + esc(vals[a.n]) + "</span>" : ""));
       });
-      if (knobs) html += '<div class="sec">' + knobs + "</div>";
-      let beh = "";
-      L.events.forEach(e => beh += row(IC.event || "⚡", esc(disp(e))));
+      L.events.forEach(e => h += rrow(IC.event || "⚡", esc(disp(e))));
       L.methods.forEach(m => {
         const lead = (m.pre && m.pre.length) ? (IC.guard || "▹") : (IC.method || "▸");
-        beh += row(lead, esc(disp(m.n)) + (m.post ? " " + (IC.trans || "▹") : ""));
+        h += rrow(lead, esc(disp(m.n)) + (m.post ? " " + (IC.trans || "▹") : ""));
       });
-      if (beh) html += '<div class="sec">' + beh + "</div>";
-      let asc = "";
-      L.assoc.forEach(a =>
-        asc += row("→", esc((a.list ? "⦙ " : "") + disp(a.n) + " : " + a.target), "assoc"));
-      if (asc) html += '<div class="sec">' + asc + "</div>";
       if (sp.states && sp.states.length) {
         const cur = live && live.state;
-        const seq = sp.states.map(s =>
-          (s === cur ? "<b>" + esc(disp(s)) + "</b>" : esc(disp(s)))).join(" → ");
-        html += '<div class="hint">' + (IC.fsm || "🎛️") + " " + seq + "</div>";
+        h += '<div class="st">' + (IC.fsm || "🎛️") + " " + sp.states.map(s =>
+          s === cur ? "<b>" + esc(disp(s)) + "</b>" : esc(disp(s))).join(" → ") + "</div>";
       }
-      return html;
+      return h;
     }
 
     function classAt(x, y) {
@@ -124,7 +126,15 @@ Auto-included by docs/_layouts/default.html.
       return null;
     }
 
-    // lazy MicroPython: load + run the preamble once, on first lens use
+    // live values + links via MicroPython (null until loaded)
+    function inspect(el) {
+      if (!window._lcxRun) return null;
+      el.setAttribute("data-lcx-target", "");
+      try {
+        window._lcxRun("import js\njs.window._lcxData = lcx_inspect()\n");
+        return JSON.parse(window._lcxData || "{}");
+      } catch (e) { return null; } finally { el.removeAttribute("data-lcx-target"); }
+    }
     function loadMP() {
       if (window._lcxMPp) return window._lcxMPp;
       window._lcxMPp = (async () => {
@@ -133,42 +143,91 @@ Auto-included by docs/_layouts/default.html.
         const run = m.runPython || m.exec || m.pyexec || m.run;
         run.call(m, (document.getElementById("lc-steps-preamble") || {}).textContent || "");
         window._lcxRun = (code) => run.call(m, code);
-        if (curHit) draw(curHit, lastXY);   // fill in values once ready
+        if (cur) update(cur, lastXY, lastShift);   // fill values/links once ready
       })().catch(e => console.warn("[lc-xray] micropython failed", e));
       return window._lcxMPp;
     }
 
-    let curHit = null, lastXY = { x: 0, y: 0 };
+    function connectors(srcRect, live, shift) {
+      // clear previous
+      [...svg.querySelectorAll(".lcx-edge")].forEach(n => n.remove());
+      ghosts.forEach(g => g.style.display = "none");
+      if (!shift || !live || !live.links || !live.links.length) { svg.style.display = "none"; return; }
+      svg.style.display = "block";
+      const ax = srcRect.left + srcRect.width / 2, ay = srcRect.top;   // top-centre, point up
+      live.links.forEach((lk, i) => {
+        const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
+        let bx, by;
+        if (visible(tEl)) {
+          const tr = tEl.getBoundingClientRect();
+          bx = tr.left + tr.width / 2; by = tr.top + tr.height / 2;
+          edge("rect", tr);                                  // highlight target box
+        } else {                                             // hidden target → ghost chip
+          const g = ghosts[i] || (ghosts[i] = mkGhost());
+          const tIcon = (MODEL[lk.target] || {}).icon || "📦";
+          g.innerHTML = tIcon + " " + esc(lk.id);
+          g.style.display = "block";
+          g.style.left = (srcRect.left + 30 + i * 12) + "px";
+          g.style.top = (srcRect.top - 40 - i * 30) + "px";
+          const gr = g.getBoundingClientRect();
+          bx = gr.left + gr.width / 2; by = gr.top + gr.height / 2;
+        }
+        line(ax, ay, bx, by);
+        label((ax + bx) / 2, (ay + by) / 2, (lk.list ? "⦙ " : "") + disp(lk.role));
+      });
+    }
+    function mkGhost() {
+      const g = document.createElement("div"); g.className = "lcx-ghost";
+      document.body.appendChild(g); return g;
+    }
+    function svgEl(tag, attrs) {
+      const e = document.createElementNS(NS, tag);
+      for (const k in attrs) e.setAttribute(k, attrs[k]);
+      e.classList.add("lcx-edge"); svg.appendChild(e); return e;
+    }
+    const line = (x1, y1, x2, y2) => svgEl("line",
+      { x1, y1, x2, y2, stroke: "#4aa3ff", "stroke-width": 1.4,
+        "marker-end": "url(#lcxArrow)" });
+    const edge = (_, r) => svgEl("rect",
+      { x: r.left, y: r.top, width: r.width, height: r.height, rx: 3, fill: "none",
+        stroke: "#4aa3ff", "stroke-width": 1.4, "stroke-dasharray": "4 3" });
+    function label(x, y, text) {
+      const t = svgEl("text", { x, y: y - 3, fill: "#2f6dd0", "font-size": 11,
+        "font-family": "Source Sans Pro, sans-serif", "text-anchor": "middle" });
+      t.textContent = text;
+    }
+
+    let cur = null, lastXY = { x: 0, y: 0 }, lastShift = false, liveCache = null;
     function hide() {
-      box.style.display = card.style.display = "none";
-      document.body.classList.remove("lcx-on"); curHit = null;
+      xray.style.display = ring.style.display = svg.style.display = "none";
+      ghosts.forEach(g => g.style.display = "none");
+      document.body.classList.remove("lcx-on"); cur = null; liveCache = null;
     }
-    function place() {                       // position highlight box + card
-      const r = curHit.el.getBoundingClientRect();
-      box.style.display = "block";
-      box.style.left = (r.left - 2) + "px"; box.style.top = (r.top - 2) + "px";
-      box.style.width = r.width + "px"; box.style.height = r.height + "px";
-      card.style.display = "block";
-      const cw = card.offsetWidth, ch = card.offsetHeight;
-      let cx = lastXY.x + 16, cy = lastXY.y + 16;
-      if (cx + cw > innerWidth) cx = lastXY.x - cw - 16;
-      if (cy + ch > innerHeight) cy = innerHeight - ch - 8;
-      card.style.left = Math.max(8, cx) + "px";
-      card.style.top = Math.max(8, cy) + "px";
-    }
-    function draw(hit, xy) {                  // re-inspect + render (element changed)
-      curHit = hit; lastXY = xy;
+    function update(hit, xy, shift) {
       document.body.classList.add("lcx-on");
-      card.innerHTML = render(hit.name, inspect(hit.el));
-      place();
+      const rect = hit.el.getBoundingClientRect();
+      if (hit !== cur || cur === null) {           // new widget → rebuild schematic + values
+        liveCache = inspect(hit.el);
+        xray.innerHTML = schematic(hit.name, liveCache);
+        xray.style.left = rect.left + "px";
+        xray.style.top = rect.top + "px";
+      }
+      cur = hit; lastXY = xy; lastShift = shift;
+      // disc aperture: reveal the x-ray only through the circle at the cursor
+      xray.style.display = "block";
+      const cx = xy.x - rect.left, cy = xy.y - rect.top;
+      xray.style.clipPath = "circle(" + R + "px at " + cx + "px " + cy + "px)";
+      ring.style.display = "block";
+      ring.style.left = (xy.x - R) + "px"; ring.style.top = (xy.y - R) + "px";
+      connectors(rect, liveCache, shift);
     }
     function show(e) {
       const hit = classAt(e.clientX, e.clientY);
       if (!hit) { hide(); return; }
       loadMP();
-      lastXY = { x: e.clientX, y: e.clientY };
-      if (curHit && curHit.el === hit.el) { place(); return; }  // same widget → reposition
-      draw(hit, lastXY);
+      // treat as the same widget if it's the same element (avoid re-inspect churn)
+      if (cur && cur.el === hit.el) hit = cur;
+      update(hit, { x: e.clientX, y: e.clientY }, e.shiftKey);
     }
 
     addEventListener("mousemove", e => { e.altKey ? show(e) : hide(); }, true);

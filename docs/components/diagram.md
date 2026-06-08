@@ -48,10 +48,13 @@ by the method, and `▹ guarded ▹` markers on the methods. `Recorder` goes
 
 ## 🔬 X-ray lens
 
-Hold **⌥ Option / Alt** and hover **any rendered widget on any page** to see
-through it to its component class — icon, typed knobs, behaviours and state —
-read live from the same model. No clicks, no navigation; release the key to
-dismiss.
+Hold **⌥ Option / Alt** and sweep the round lens over **any rendered widget on
+any page**: through the disc the widget is stripped to its **inner inspector** —
+the component class with the **live value** of every attribute (inherited ones
+too, like `id`) and the **current state** in bold. Add **⇧ Shift** to also draw
+connectors to the widget's associated objects — a real arrow to a visible target
+(e.g. `Form → Datagrid`), or a ghost chip for a hidden one (e.g. a `Dataset`).
+Release the key to dismiss.
 
 ## 🔧 Knobs
 
