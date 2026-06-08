@@ -36,6 +36,12 @@ _MODEL = {}        # class name → spec dict
 _CLASSES = {}      # class name → class object (for per-class to_dot dispatch)
 _TRANSITIONS = {}  # function object → (precondition states, postcondition state)
 
+# Bases shown as a "➭ <icon>" marker in the class title instead of a drawn edge.
+# Almost everything descends from Object, so an arrow to it is obvious noise —
+# the marker keeps that fact without the heavy fan of lines (as in the original
+# ModuleDecorator, which rendered Object inheritance as ➭ ◻️).
+_DOT_ROOT_BASES = {"Object"}
+
 
 def transition(pre=(), post=None):
     """Decorate a method as a state transition.
@@ -176,6 +182,9 @@ class Object:
     def _dot_node(cls):
         sp = cls._spec
         title = ((sp["icon"] + " ") if sp["icon"] else "") + cls.__name__
+        for b in sp["bases"]:                          # ➭ <icon> for root bases
+            if b in _DOT_ROOT_BASES:
+                title += " ➭ " + (_MODEL.get(b, {}).get("icon") or "◻️")
         rows = ""
         if sp.get("states"):                       # stateful → show current state
             rows += ICON["fsm"] + " state\\l"
@@ -872,11 +881,32 @@ def _dot_legend():
     body = "".join(r + "\\l" for r in rows)
     meth = ("⏵ method\\l▹ guarded method (preconditions)\\l"
             "method ▹ sets a state\\l🎛️ state\\l")
-    foot = "🎛️ state machine\\l➡️ initial state\\l|➭  inherits from\\l =  default value\\l"
+    root = _MODEL.get("Object", {}).get("icon") or "◻️"
+    foot = ("🎛️ state machine\\l➡️ initial state\\l|➭ inherits from\\l"
+            "➭ " + root + " inherits " + root + " (root, drawn as marker)\\l"
+            " =  default value\\l")
     return '"{Legend|' + body + "|" + meth + "|" + foot + '}"'
 
 
 def _scope_set(scope):
+    # "*"/"all"/empty → whole model.
+    if not scope or scope in ("*", "all"):
+        return set(_MODEL.keys())
+    # a package name (e.g. "ui"/"kore") → that package's classes + their
+    # ancestors (so inheritance arrows resolve to a visible base).
+    if scope not in _MODEL and scope in {_pkg_of(n) for n in _MODEL}:
+        sel = set()
+        for n in _MODEL:
+            if _pkg_of(n) == scope:
+                sel.add(n)
+                stack = list(_MODEL[n]["bases"])
+                while stack:
+                    b = stack.pop()
+                    if b in _MODEL and b not in sel:
+                        sel.add(b)
+                        stack += _MODEL[b]["bases"]
+        return sel
+    # a class name → the class + ancestors + association targets + subclasses.
     if scope not in _MODEL:
         return set(_MODEL.keys())
     sel, stack = set(), [scope]
@@ -966,7 +996,7 @@ def to_dot(scope=None, gaps=None, packages=None):
     # them as orthogonal stairs. constraint=true keeps parents above children.
     for n in _dot_order(sel):
         for b in _MODEL[n]["bases"]:
-            if b in sel:
+            if b in sel and b not in _DOT_ROOT_BASES:   # Object → ➭ marker, no edge
                 L.append("  " + n + " -> " + b
                          + " [arrowhead=empty, color=black, penwidth=0.3,"
                          + " constraint=true]")
