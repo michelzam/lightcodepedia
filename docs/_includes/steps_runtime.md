@@ -983,7 +983,7 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
          "  rankdir=BT; nodesep=0.25;",
          '  graph [penwidth=0.1, splines=ortho, fontsize=10,'
          ' fontname="Source Sans Pro, sans-serif"];',
-         '  node [fontname="Source Sans Pro, sans-serif", penwidth=0.5, shape=record,'
+         '  node [fontname="Source Sans Pro, sans-serif", penwidth=0.3, shape=record,'
          ' style=filled, color=lightgray, fillcolor=white, fontsize=10];',
          '  edge [fontname="Source Sans Pro, sans-serif", penwidth=0.2,'
          ' arrowhead=vee, arrowsize=0.8];']
