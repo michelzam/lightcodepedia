@@ -219,13 +219,13 @@ class Object:
             return "st_" + cn + "_" + s
         L = ["  subgraph cluster_states_" + cn + " {",
              '    label="' + ICON["fsm"] + " " + cn + ' states"; fontsize=10;',
-             '    style="filled,rounded"; fillcolor="white"; color="gray85";'
+             '    style="filled,rounded"; fillcolor="gray94"; color="gray85";'
              ' margin=12; nodesep=0.9;',
              '    node [fontname="Source Sans Pro, sans-serif", shape=record,'
-             ' style="filled,rounded", fillcolor="gray95", color="gray",'
-             ' fontsize=12, penwidth=0.3]',
+             ' style="filled,rounded", fillcolor="white", color="gray",'
+             ' fontsize=10, penwidth=0.3]',
              '    edge [style=solid, arrowhead=vee, penwidth=0.2,'
-             ' arrowsize=0.7, fontsize=10]']
+             ' arrowsize=0.7, fontsize=9]']
         for i, s in enumerate(states):
             name = _disp(s)
             lbl = (ICON["init"] + " " + name) if i == 0 else name
@@ -886,20 +886,19 @@ def _attr_icon(a):
 
 
 def _dot_legend():
-    rows = [
-        "🔤 str", "🔡 long str", "🔢 int / float", "🔘 bool",
-        "📅 date", "🕗 datetime", "🔒 password",
-        "📦⦙ list of [type]", "📦 object ref", "⚡ event or code",
-    ]
-    body = "".join(r + "\\l" for r in rows)
-    meth = ("⏵ method\\l▹ guarded method (preconditions)\\l"
-            "method ▹ sets a state\\l🎛️ state\\l")
-    roots = " ".join((_MODEL.get(b, {}).get("icon") or "") for b in
-                     sorted(_DOT_ROOT_BASES))
-    foot = ("🎛️ state machine\\l➡️ initial state\\l|➭ inherits from\\l"
-            "➭ " + roots + " root base — shown as marker, no edge\\l"
-            " =  default value\\l")
-    return '"{Legend|' + body + "|" + meth + "|" + foot + '}"'
+    # Reproduces the original ModuleDecorator legend verbatim.
+    types_ = ("🔤 str or 🔡 long str\\l🔢 int or float\\l🔘 bool\\l🕗 datetime\\l"
+              "🔒 password\\l🔤 ⦙ list of 🔤\\l◻️ Object from kore\\l📦 any\\l"
+              "🐟 custom type Fish\\l /  derived\\l _  private\\l"
+              " =  default value\\l⤴️ reflexive reference\\l"
+              "↩️ ⦙ reflexive collection\\l ♢ composite or owned\\l")
+    behav = ("⚡️ event or code\\l ▸ method\\l ▹ conditionnal method\\l"
+             " ▹ with transition ▹\\l")
+    state = "🎛️ state machine\\l➡️ initial state\\l"
+    inher = " ➭  inherits from\\l"
+    imp = "🛄 imported py\\l"
+    return ('"{Legend|' + types_ + "|" + behav + "|" + state + "|"
+            + inher + "|" + imp + '}"')
 
 
 def _scope_set(scope):
@@ -982,7 +981,8 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
          '  graph [penwidth=0.1, splines=ortho, fontsize=12,'
          ' fontname="Source Sans Pro, sans-serif"];',
          '  node [fontname="Source Sans Pro, sans-serif", penwidth=0.5, shape=record,'
-         ' style=filled, color=lightgray, fillcolor=white, fontsize=12];',
+         ' style=filled, color=lightgray, fillcolor=white, fontsize=12,'
+         ' margin="0.11,0.08"];',
          '  edge [fontname="Source Sans Pro, sans-serif", penwidth=0.2,'
          ' arrowhead=vee, arrowsize=0.8];']
 

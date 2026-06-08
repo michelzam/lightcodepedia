@@ -18,7 +18,7 @@ component.
 digraph component_model {
   rankdir=BT; nodesep=0.25;
   graph [penwidth=0.1, splines=ortho, fontsize=12, fontname="Source Sans Pro, sans-serif"];
-  node [fontname="Source Sans Pro, sans-serif", penwidth=0.5, shape=record, style=filled, color=lightgray, fillcolor=white, fontsize=12];
+  node [fontname="Source Sans Pro, sans-serif", penwidth=0.5, shape=record, style=filled, color=lightgray, fillcolor=white, fontsize=12, margin="0.11,0.08"];
   edge [fontname="Source Sans Pro, sans-serif", penwidth=0.2, arrowhead=vee, arrowsize=0.8];
   subgraph cluster_pkg_kore {
     label="⚙️ kore"; labeljust=l; fontsize=12; fontcolor="gray40";
@@ -66,9 +66,9 @@ digraph component_model {
   Form -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bound", fontsize=8]
   subgraph cluster_states_Quiz {
     label="🎛️ Quiz states"; fontsize=10;
-    style="filled,rounded"; fillcolor="white"; color="gray85"; margin=12; nodesep=0.9;
-    node [fontname="Source Sans Pro, sans-serif", shape=record, style="filled,rounded", fillcolor="gray95", color="gray", fontsize=12, penwidth=0.3]
-    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=10]
+    style="filled,rounded"; fillcolor="gray94"; color="gray85"; margin=12; nodesep=0.9;
+    node [fontname="Source Sans Pro, sans-serif", shape=record, style="filled,rounded", fillcolor="white", color="gray", fontsize=10, penwidth=0.3]
+    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=9]
     st_Quiz_pending [label="➡️ pending"]
     st_Quiz_graded [label="graded"]
   }
@@ -76,9 +76,9 @@ digraph component_model {
   st_Quiz_pending -> Quiz [style=dashed, arrowhead=none, color="gray70"]
   subgraph cluster_states_Recorder {
     label="🎛️ Recorder states"; fontsize=10;
-    style="filled,rounded"; fillcolor="white"; color="gray85"; margin=12; nodesep=0.9;
-    node [fontname="Source Sans Pro, sans-serif", shape=record, style="filled,rounded", fillcolor="gray95", color="gray", fontsize=12, penwidth=0.3]
-    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=10]
+    style="filled,rounded"; fillcolor="gray94"; color="gray85"; margin=12; nodesep=0.9;
+    node [fontname="Source Sans Pro, sans-serif", shape=record, style="filled,rounded", fillcolor="white", color="gray", fontsize=10, penwidth=0.3]
+    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=9]
     st_Recorder_idle [label="➡️ idle"]
     st_Recorder_recording [label="recording"]
     st_Recorder_stopped [label="stopped"]
@@ -88,7 +88,7 @@ digraph component_model {
   st_Recorder_idle -> Recorder [style=dashed, arrowhead=none, color="gray70"]
   subgraph cluster_legend {
     style=invis;
-    __legend [label="{Legend|🔤 str\l🔡 long str\l🔢 int / float\l🔘 bool\l📅 date\l🕗 datetime\l🔒 password\l📦⦙ list of [type]\l📦 object ref\l⚡ event or code\l|⏵ method\l▹ guarded method (preconditions)\lmethod ▹ sets a state\l🎛️ state\l|🎛️ state machine\l➡️ initial state\l|➭ inherits from\l➭ 🧩 ◻️ root base — shown as marker, no edge\l =  default value\l}", style="filled", fillcolor="gray98", color="gray80", fontcolor="#505050", fontsize=10]
+    __legend [label="{Legend|🔤 str or 🔡 long str\l🔢 int or float\l🔘 bool\l🕗 datetime\l🔒 password\l🔤 ⦙ list of 🔤\l◻️ Object from kore\l📦 any\l🐟 custom type Fish\l /  derived\l _  private\l =  default value\l⤴️ reflexive reference\l↩️ ⦙ reflexive collection\l ♢ composite or owned\l|⚡️ event or code\l ▸ method\l ▹ conditionnal method\l ▹ with transition ▹\l|🎛️ state machine\l➡️ initial state\l| ➭  inherits from\l|🛄 imported py\l}", style="filled", fillcolor="gray98", color="gray80", fontcolor="#505050", fontsize=10]
   }
 }
 ```
