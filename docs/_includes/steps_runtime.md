@@ -230,11 +230,10 @@ class Object:
         return L
 
     @classmethod
-    def to_dot(cls, sel=None):
-        """Dump THIS class's contribution: node + associations + state machine."""
-        lines = [cls._dot_node()]
-        # associations — with rankdir=BT a plain owner->target edge points UP to
-        # the referenced class; open blue head, role as a headlabel at that end.
+    def _dot_assoc(cls, sel=None):
+        """Association edges — with rankdir=BT a plain owner->target edge points
+        UP to the referenced class; open blue head, role as a headlabel there."""
+        lines = []
         for a in cls._spec["assoc"]:
             if sel is None or a["target"] in sel:
                 lbl = ("⦙ " if a.get("list") else "") + a["n"]
@@ -242,8 +241,13 @@ class Object:
                              + ' [arrowhead=open, color=blue, fontcolor=blue,'
                              + ' labeldistance=2, headlabel="' + _dot_esc(lbl)
                              + '", fontsize=8]')
-        lines += cls._dot_states()
-        return "\n".join(lines)
+        return lines
+
+    @classmethod
+    def to_dot(cls, sel=None):
+        """Dump THIS class's contribution: node + associations + state machine."""
+        return "\n".join([cls._dot_node()] + cls._dot_assoc(sel)
+                         + cls._dot_states())
 
 
 # ════════════════════════ Block — base of visible components ═════════════════
@@ -899,12 +903,35 @@ def _dot_order(sel):
     return out
 
 
-def to_dot(scope=None, gaps=None):
-    # Assembler: wraps the graph, sums each in-scope class's own to_dot(),
-    # then adds the cross-class concerns (inheritance merging, legend, gaps).
+# ── packages (scopes) ────────────────────────────────────────────────────────
+# Default package == intended docs folder: the Block subtree is the UI kit;
+# Object and its non-Block descendants (Dataset, Bar, Page) are the kore. Both
+# build (CPython) and live (MicroPython) run this same code, so clusters match.
+# A build step may later override this from the actual docs/<folder>/ layout.
+_PKG_ICON = {"ui": "🎨", "kore": "⚙️"}
+
+
+def _pkg_of(name):
+    stack, seen = [name], set()
+    while stack:
+        n = stack.pop()
+        if n in seen:
+            continue
+        seen.add(n)
+        if n == "Block":
+            return "ui"
+        stack += _MODEL.get(n, {}).get("bases", [])
+    return "kore"
+
+
+def to_dot(scope=None, gaps=None, packages=None):
+    # Assembler: wraps the graph, groups class nodes into package clusters, then
+    # adds the cross-class concerns (associations, inheritance, legend, gaps).
+    # `packages` optionally overrides the default _pkg_of mapping (e.g. from the
+    # docs folder layout, supplied by the build step).
     sel = set(_MODEL.keys()) if not scope else _scope_set(scope)
     # Graph/node/edge defaults mirror ModuleDecorator.get_diagram exactly:
-    # square filled records, Monaco sans-serif @12, hairline edges.
+    # square filled records, sans-serif @12, hairline edges.
     L = ["digraph component_model {",
          "  rankdir=BT; nodesep=0.25;",
          '  graph [penwidth=0.1, splines=ortho, fontsize=12,'
@@ -914,8 +941,26 @@ def to_dot(scope=None, gaps=None):
          ' margin="0.18,0.05"];',
          '  edge [fontname="Helvetica,Arial,sans-serif", penwidth=0.2];']
 
+    # class nodes, grouped into package (scope) clusters
+    pkg_of = (lambda n: packages.get(n, "kore")) if packages else _pkg_of
+    groups = {}
     for n in _dot_order(sel):
-        L.append(_CLASSES[n].to_dot(sel))
+        groups.setdefault(pkg_of(n), []).append(n)
+    for p in sorted(groups):
+        icon = _PKG_ICON.get(p, "📦")
+        L.append("  subgraph cluster_pkg_" + p + " {")
+        L.append('    label="' + _dot_esc(icon + " " + p) + '"; labeljust=l;'
+                 ' fontsize=12; fontcolor="gray40";')
+        L.append('    style=filled; fillcolor="gray98"; color="gray85";'
+                 ' margin=16; penwidth=0.3;')
+        for n in groups[p]:
+            L.append("  " + _CLASSES[n]._dot_node())
+        L.append("  }")
+
+    # associations + state machines (kept at top level, may cross clusters)
+    for n in _dot_order(sel):
+        L += _CLASSES[n]._dot_assoc(sel)
+        L += _CLASSES[n]._dot_states()
 
     # inheritance — direct child→base edges (no junction merging); let dot route
     # them as orthogonal stairs. constraint=true keeps parents above children.
