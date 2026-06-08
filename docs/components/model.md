@@ -24,14 +24,14 @@ digraph component_model {
     label="⚙️ kore"; labeljust=l; fontsize=12; fontcolor="gray40";
     style=filled; fillcolor="gray98"; color="gray85"; margin=16; penwidth=0.3;
     Object [label="{🪵 Object|🔤 id\l|}"]
-    Page [label="{📄 Page|🔤 id\l|⏵ feature\l⏵ features\l}"]
-    Dataset [label="{🗃️ Dataset|🔘 loaded\l🔢 count\l|}"]
-    Bar [label="{▮ Bar|🔢 value\l🔤 color\l|}"]
+    Page [label="{📄 Page ➭ 🪵|🔤 id\l|⏵ feature\l⏵ features\l}"]
+    Dataset [label="{🗃️ Dataset ➭ 🪵|🔘 loaded\l🔢 count\l|}"]
+    Bar [label="{▮ Bar ➭ 🪵|🔢 value\l🔤 color\l|}"]
   }
   subgraph cluster_pkg_ui {
     label="🎨 ui"; labeljust=l; fontsize=12; fontcolor="gray40";
     style=filled; fillcolor="gray98"; color="gray85"; margin=16; penwidth=0.3;
-    Block [label="{🧩 Block|🔘 exists\l🔘 visible\l🔤 text\l|⏵ click\l⏵ has_class\l}"]
+    Block [label="{🧩 Block ➭ 🪵|🔘 exists\l🔘 visible\l🔤 text\l|⏵ click\l⏵ has_class\l}"]
     Datagrid [label="{▦ Datagrid|🔢 row_count\l🔤⦙ headers\l📦⦙ rows\l|⏵ header\l}"]
     Chart [label="{📈 Chart|🔤 type\l🔤 x\l🔤 y\l🔢 bar_count\l🔢 point_count\l|}"]
     Feature [label="{🦄 Feature|🔤 title\l🔤 status\l|⏵ run\l}"]
@@ -86,10 +86,6 @@ digraph component_model {
   st_Recorder_idle -> st_Recorder_recording [xlabel="start", color="gray45", fontcolor="gray45", constraint=false]
   st_Recorder_recording -> st_Recorder_stopped [xlabel="stop", color="gray45", fontcolor="gray45", constraint=false]
   st_Recorder_idle -> Recorder [style=dashed, arrowhead=none, color="gray70", constraint=false]
-  Block -> Object [arrowhead=empty, color=black, penwidth=0.3, constraint=true]
-  Page -> Object [arrowhead=empty, color=black, penwidth=0.3, constraint=true]
-  Dataset -> Object [arrowhead=empty, color=black, penwidth=0.3, constraint=true]
-  Bar -> Object [arrowhead=empty, color=black, penwidth=0.3, constraint=true]
   Datagrid -> Block [arrowhead=empty, color=black, penwidth=0.3, constraint=true]
   Chart -> Block [arrowhead=empty, color=black, penwidth=0.3, constraint=true]
   Feature -> Block [arrowhead=empty, color=black, penwidth=0.3, constraint=true]
@@ -118,7 +114,7 @@ digraph component_model {
   Text -> Block [arrowhead=empty, color=black, penwidth=0.3, constraint=true]
   subgraph cluster_legend {
     style=invis;
-    __legend [label="{Legend|🔤 str\l🔡 long str\l🔢 int / float\l🔘 bool\l📅 date\l🕗 datetime\l🔒 password\l📦⦙ list of [type]\l📦 object ref\l⚡ event or code\l|⏵ method\l▹ guarded method (preconditions)\lmethod ▹ sets a state\l🎛️ state\l|🎛️ state machine\l➡️ initial state\l|➭  inherits from\l =  default value\l}", style="filled", fillcolor="gray98", color="gray80", fontcolor="#505050", fontsize=10]
+    __legend [label="{Legend|🔤 str\l🔡 long str\l🔢 int / float\l🔘 bool\l📅 date\l🕗 datetime\l🔒 password\l📦⦙ list of [type]\l📦 object ref\l⚡ event or code\l|⏵ method\l▹ guarded method (preconditions)\lmethod ▹ sets a state\l🎛️ state\l|🎛️ state machine\l➡️ initial state\l|➭ inherits from\l➭ 🪵 inherits 🪵 (root, drawn as marker)\l =  default value\l}", style="filled", fillcolor="gray98", color="gray80", fontcolor="#505050", fontsize=10]
   }
 }
 ```
