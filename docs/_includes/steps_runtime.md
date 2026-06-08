@@ -205,9 +205,13 @@ class Object:
             return "st_" + cn + "_" + s
         L = ["  subgraph cluster_states_" + cn + " {",
              '    label="' + ICON["fsm"] + " " + cn + ' states"; fontsize=10;',
-             '    style="rounded,filled"; fillcolor="white"; color="gray85";',
-             '    node [shape=box, style="rounded,filled", fillcolor="gray95",'
-             ' color="gray", fontsize=10, penwidth=0.3]']
+             '    style="filled,rounded"; fillcolor="white"; color="gray85";'
+             ' margin=12;',
+             '    node [fontname="Monaco,sans-serif", shape=record,'
+             ' style="filled,rounded", fillcolor="gray95", color="gray",'
+             ' fontsize=12, penwidth=0.3]',
+             '    edge [style=solid, arrowhead=open, penwidth=0.2,'
+             ' arrowsize=0.5, fontsize=10]']
         for i, s in enumerate(states):
             lbl = (ICON["init"] + " " + s) if i == 0 else s
             L.append("    " + sid(s) + ' [label="' + _dot_esc(lbl) + '"]')
@@ -217,8 +221,8 @@ class Object:
                 froms = [p for p in m["pre"] if p in states] or [states[0]]
                 for p in froms:
                     L.append("  " + sid(p) + " -> " + sid(m["post"])
-                             + ' [xlabel="' + _dot_esc(m["n"]) + '", arrowhead=open,'
-                             + ' color="gray45", fontcolor="gray45", penwidth=0.3,'
+                             + ' [xlabel="' + _dot_esc(m["n"]) + '",'
+                             + ' color="gray45", fontcolor="gray45",'
                              + ' constraint=false]')
         # tie the initial state to the class node (dashed, no arrow)
         L.append("  " + sid(states[0]) + " -> " + cn
@@ -229,12 +233,15 @@ class Object:
     def to_dot(cls, sel=None):
         """Dump THIS class's contribution: node + associations + state machine."""
         lines = [cls._dot_node()]
+        # associations — mirror ModuleDecorator: dir=back so the open head sits
+        # at the target (pointing up), role shown as a headlabel in blue.
         for a in cls._spec["assoc"]:
             if sel is None or a["target"] in sel:
                 lbl = ("⦙ " if a.get("list") else "") + a["n"]
                 lines.append("  " + cls.__name__ + " -> " + a["target"]
-                             + ' [constraint=false, arrowhead=open, color=steelblue,'
-                             + ' fontcolor=steelblue, xlabel="' + _dot_esc(lbl) + '"]')
+                             + ' [dir=back, arrowtail=open, color=blue,'
+                             + ' fontcolor=blue, labeldistance=2, label=" ",'
+                             + ' headlabel="' + _dot_esc(lbl) + '", fontsize=8]')
         lines += cls._dot_states()
         return "\n".join(lines)
 
@@ -896,40 +903,36 @@ def to_dot(scope=None, gaps=None):
     # Assembler: wraps the graph, sums each in-scope class's own to_dot(),
     # then adds the cross-class concerns (inheritance merging, legend, gaps).
     sel = set(_MODEL.keys()) if not scope else _scope_set(scope)
+    # Graph/node/edge defaults mirror ModuleDecorator.get_diagram exactly:
+    # square filled records, Monaco sans-serif @12, hairline edges.
     L = ["digraph component_model {",
-         "  rankdir=BT; nodesep=0.35; ranksep=0.6;",
-         '  graph [splines=ortho, fontname="Monaco,monospace", fontsize=11];',
-         '  node [shape=record, style="filled,rounded", fillcolor="gray97",'
-         ' color="gray75", fontname="Monaco,monospace", fontsize=11, penwidth=0.5];',
-         '  edge [penwidth=0.4, arrowsize=0.8, fontsize=8];']
+         "  rankdir=BT; nodesep=0.25;",
+         '  graph [penwidth=0.1, splines=ortho, fontsize=12,'
+         ' fontname="Monaco,sans-serif"];',
+         '  node [fontname="Monaco,sans-serif", penwidth=0.5, shape=record,'
+         ' style=filled, color=lightgray, fillcolor=white, fontsize=12,'
+         ' margin="0.18,0.05"];',
+         '  edge [fontname="Monaco,sans-serif", penwidth=0.2];']
 
     for n in _dot_order(sel):
         L.append(_CLASSES[n].to_dot(sel))
 
-    L.append('  __legend [label=' + _dot_legend() +
-             ', fillcolor="gray98", color="gray80", fontcolor="#505050"]')
-
-    # inheritance — UML hollow triangle; merge children that share a base.
-    L.append('  edge [arrowhead=empty, arrowsize=0.9, color=black, penwidth=0.5];')
-    bybase = {}
-    for n in _dot_order(sel):          # deterministic order (sel is a set)
+    # inheritance — direct child→base edges (no junction merging); let dot route
+    # them as orthogonal stairs. constraint=true keeps parents above children.
+    for n in _dot_order(sel):
         for b in _MODEL[n]["bases"]:
             if b in sel:
-                bybase.setdefault(b, []).append(n)
-    for base in _dot_order(set(bybase.keys())):
-        kids = bybase[base]
-        if len(kids) >= 2:
-            j = "__j_" + base
-            L.append("  " + j +
-                     ' [shape=point, width=0.06, color="gray50",'
-                     ' style=filled, fillcolor="gray50"]')
-            for k in kids:
-                L.append("  " + k + " -> " + j + " [dir=none, arrowhead=none]")
-            L.append("  " + j + " -> " + base)
-        else:
-            L.append("  " + kids[0] + " -> " + base)
+                L.append("  " + n + " -> " + b
+                         + " [arrowhead=empty, color=black, penwidth=0.3,"
+                         + " constraint=true]")
 
-    # (association edges are emitted by each class's own to_dot())
+    # legend (invisible cluster, like the reference)
+    L.append("  subgraph cluster_legend {")
+    L.append("    style=invis;")
+    L.append('    __legend [label=' + _dot_legend() +
+             ', style="filled", fillcolor="gray98", color="gray80",'
+             ' fontcolor="#505050", fontsize=10]')
+    L.append("  }")
 
     # gap report (build-time only — needs the docs listing)
     if gaps and not scope:
@@ -938,7 +941,7 @@ def to_dot(scope=None, gaps=None):
                  for i in range(0, len(gaps), ROW)]
         body = "\\l".join(parts) + "\\l"
         L.append('  __gap [label="{🏗️ builder — no typed wrapper yet|' + body +
-                 '}", style="filled,dashed,rounded", fillcolor="lightyellow",'
+                 '}", style="filled,dashed", fillcolor="lightyellow",'
                  ' color="gray60", fontsize=10]')
         L.append('  __gap -> Block [style=dashed, arrowhead=open, color="gray60",'
                  ' constraint=false]')
