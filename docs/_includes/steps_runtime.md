@@ -37,10 +37,10 @@ _CLASSES = {}      # class name → class object (for per-class to_dot dispatch)
 _TRANSITIONS = {}  # function object → (precondition states, postcondition state)
 
 # Bases shown as a "➭ <icon>" marker in the class title instead of a drawn edge.
-# Almost everything descends from Object, so an arrow to it is obvious noise —
-# the marker keeps that fact without the heavy fan of lines (as in the original
-# ModuleDecorator, which rendered Object inheritance as ➭ ◻️).
-_DOT_ROOT_BASES = {"Object"}
+# Object and Block are notorious roots — almost everything descends from them,
+# so arrows to them are obvious noise. The marker keeps the fact without the
+# heavy fan of lines (as in the original ModuleDecorator's ➭ ◻️ convention).
+_DOT_ROOT_BASES = {"Object", "Block"}
 
 
 def transition(pre=(), post=None):
@@ -189,13 +189,13 @@ class Object:
         if sp.get("states"):                       # stateful → show current state
             rows += ICON["fsm"] + " state\\l"
         for a in sp["attrs"]:
-            rows += _attr_icon(a) + " " + _dot_esc(a["n"]) + "\\l"
+            rows += _attr_icon(a) + " " + _disp(a["n"]) + "\\l"
         meth = ""
         for e in sp["events"]:
-            meth += ICON["event"] + " " + _dot_esc(e) + "\\l"
+            meth += ICON["event"] + " " + _disp(e) + "\\l"
         for m in sp["methods"]:
             lead = ICON["guard"] if m["pre"] else ICON["method"]   # ▹ guarded / ⏵ plain
-            line = lead + " " + _dot_esc(m["n"])
+            line = lead + " " + _disp(m["n"])
             if m["post"]:
                 line += " " + ICON["trans"]                         # trailing ▹ = transition
             meth += line + "\\l"
@@ -216,21 +216,22 @@ class Object:
              '    label="' + ICON["fsm"] + " " + cn + ' states"; fontsize=10;',
              '    style="filled,rounded"; fillcolor="white"; color="gray85";'
              ' margin=12;',
-             '    node [fontname="Helvetica,Arial,sans-serif", shape=record,'
+             '    node [fontname="Source Sans Pro, sans-serif", shape=record,'
              ' style="filled,rounded", fillcolor="gray95", color="gray",'
              ' fontsize=12, penwidth=0.3]',
              '    edge [style=solid, arrowhead=open, penwidth=0.2,'
              ' arrowsize=0.5, fontsize=10]']
         for i, s in enumerate(states):
-            lbl = (ICON["init"] + " " + s) if i == 0 else s
-            L.append("    " + sid(s) + ' [label="' + _dot_esc(lbl) + '"]')
+            name = _disp(s)
+            lbl = (ICON["init"] + " " + name) if i == 0 else name
+            L.append("    " + sid(s) + ' [label="' + lbl + '"]')
         L.append("  }")
         for m in sp["methods"]:
             if m["post"] and m["post"] in states:
                 froms = [p for p in m["pre"] if p in states] or [states[0]]
                 for p in froms:
                     L.append("  " + sid(p) + " -> " + sid(m["post"])
-                             + ' [xlabel="' + _dot_esc(m["n"]) + '",'
+                             + ' [xlabel="' + _disp(m["n"]) + '",'
                              + ' color="gray45", fontcolor="gray45",'
                              + ' constraint=false]')
         # tie the initial state to the class node (dashed, no arrow)
@@ -245,10 +246,10 @@ class Object:
         lines = []
         for a in cls._spec["assoc"]:
             if sel is None or a["target"] in sel:
-                lbl = ("⦙ " if a.get("list") else "") + a["n"]
+                lbl = ("⦙ " if a.get("list") else "") + _disp(a["n"])
                 lines.append("  " + cls.__name__ + " -> " + a["target"]
                              + ' [arrowhead=open, color=blue, fontcolor=blue,'
-                             + ' labeldistance=2, headlabel="' + _dot_esc(lbl)
+                             + ' labeldistance=2, headlabel="' + lbl
                              + '", fontsize=8]')
         return lines
 
@@ -865,6 +866,11 @@ def _dot_esc(s):
     return s
 
 
+def _disp(name):
+    # display convention: underscores read as spaces (has_class → has class)
+    return _dot_esc(str(name).replace("_", " "))
+
+
 def _attr_icon(a):
     ico = ICON.get(a.get("t", "ref"), "📦")
     if a.get("list"):
@@ -881,9 +887,10 @@ def _dot_legend():
     body = "".join(r + "\\l" for r in rows)
     meth = ("⏵ method\\l▹ guarded method (preconditions)\\l"
             "method ▹ sets a state\\l🎛️ state\\l")
-    root = _MODEL.get("Object", {}).get("icon") or "◻️"
+    roots = " ".join((_MODEL.get(b, {}).get("icon") or "") for b in
+                     sorted(_DOT_ROOT_BASES))
     foot = ("🎛️ state machine\\l➡️ initial state\\l|➭ inherits from\\l"
-            "➭ " + root + " inherits " + root + " (root, drawn as marker)\\l"
+            "➭ " + roots + " root base — shown as marker, no edge\\l"
             " =  default value\\l")
     return '"{Legend|' + body + "|" + meth + "|" + foot + '}"'
 
@@ -965,11 +972,11 @@ def to_dot(scope=None, gaps=None, packages=None):
     L = ["digraph component_model {",
          "  rankdir=BT; nodesep=0.25;",
          '  graph [penwidth=0.1, splines=ortho, fontsize=12,'
-         ' fontname="Helvetica,Arial,sans-serif"];',
-         '  node [fontname="Helvetica,Arial,sans-serif", penwidth=0.5, shape=record,'
+         ' fontname="Source Sans Pro, sans-serif"];',
+         '  node [fontname="Source Sans Pro, sans-serif", penwidth=0.5, shape=record,'
          ' style=filled, color=lightgray, fillcolor=white, fontsize=12,'
          ' margin="0.18,0.05"];',
-         '  edge [fontname="Helvetica,Arial,sans-serif", penwidth=0.2];']
+         '  edge [fontname="Source Sans Pro, sans-serif", penwidth=0.2];']
 
     # class nodes, grouped into package (scope) clusters
     pkg_of = (lambda n: packages.get(n, "kore")) if packages else _pkg_of
