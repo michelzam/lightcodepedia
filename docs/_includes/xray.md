@@ -32,6 +32,10 @@ Auto-included by docs/_layouts/default.html.
   .lcx-xray .st { margin-top: 4px; padding-top: 3px; color: #9fd0ff;
                   border-top: 1px solid rgba(120,200,255,.25); }
   .lcx-xray .st b { color: #fff; }
+  .lcx-xray .code { white-space: pre; margin: 1px 0 4px 1.6em; padding: 4px 7px;
+                    color: #ffd479; background: rgba(0,0,0,.32);
+                    border-left: 2px solid rgba(255,212,121,.5); border-radius: 3px;
+                    font: 10px/1.45 ui-monospace, "SF Mono", Menlo, monospace; }
   .lcx-ring { position: fixed; pointer-events: none; z-index: 100000;
               border-radius: 50%; border: 2px solid rgba(140,205,255,.9);
               box-shadow: 0 6px 22px rgba(0,0,0,.4),
@@ -106,14 +110,19 @@ Auto-included by docs/_layouts/default.html.
       '<div class="r ' + (cls || "") + '"><span class="ic">' + ic + "</span>" + html + "</div>";
     function schematic(name, live) {
       const sp = MODEL[name]; if (!sp) return esc(name);
-      const L = lineage(name), vals = (live && live.vals) || {};
+      const L = lineage(name), vals = (live && live.vals) || {},
+            evts = (live && live.events) || {};
       let h = '<div class="t">' + (sp.icon ? sp.icon + " " : "") + esc(name) + "</div>";
       L.attrs.forEach(a => {
         const has = Object.prototype.hasOwnProperty.call(vals, a.n);
         h += rrow(attrIcon(a), esc(disp(a.n)) +
           (has ? '<span class="v"> = ' + esc(vals[a.n]) + "</span>" : ""));
       });
-      L.events.forEach(e => h += rrow(IC.event || "⚡", esc(disp(e))));
+      L.events.forEach(e => {
+        h += rrow(IC.event || "⚡", esc(disp(e)));
+        const src = evts[e];                           // live handler body
+        if (src) h += '<div class="code">' + esc(src.trim()) + "</div>";
+      });
       L.methods.forEach(m => {
         const lead = (m.pre && m.pre.length) ? (IC.guard || "▹") : (IC.method || "▸");
         h += rrow(lead, esc(disp(m.n)) + (m.post ? " " + (IC.trans || "▹") : ""));

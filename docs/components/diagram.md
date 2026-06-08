@@ -51,7 +51,9 @@ by the method, and `▹ guarded ▹` markers on the methods. `Recorder` goes
 Hold **⌥ Option / Alt** and sweep the round lens over **any rendered widget on
 any page**: through the disc the widget is stripped to its **inner inspector** —
 the component class with the **live value** of every attribute (inherited ones
-too, like `id`) and the **current state** in bold. Add **⇧ Shift** to also draw
+too, like `id`), the **current state** in bold, and — for components that carry
+one — the **live source of an event handler** (e.g. a `Button`'s `on_click`
+Python body) shown inline under the ⚡ row. Add **⇧ Shift** to also draw
 connectors to the widget's associated objects — a real arrow to a visible target
 (e.g. `Form → Datagrid`), or a ghost chip for a hidden one (e.g. a `Dataset`).
 Release the key to dismiss.

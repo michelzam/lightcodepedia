@@ -163,6 +163,11 @@ class Object:
     def id(self):
         return self._attr("data-lc-id") or ""
 
+    def _event_src(self, name):
+        """Live source of a declared event handler (for the x-ray inspector).
+        Default: none. Wrappers that carry handler code override this."""
+        return ""
+
     @property
     def state(self):
         """Current state-machine state (data-state); defaults to the initial."""
@@ -477,6 +482,10 @@ class Button(Block):
     @property
     def page(self):
         return Page()
+
+    def _event_src(self, name):
+        # on_click carries its Python body in data-lc-py (see click()).
+        return self._attr("data-lc-py") or "" if name == "on_click" else ""
 
     def click(self):
         code = self._attr("data-lc-py") or ""
@@ -827,7 +836,7 @@ def _lcx_dump(obj):
     """Live values (own + inherited), current state, and resolved association
     links (role → target id) for a wrapped object — shared by the lens calls."""
     cn = type(obj).__name__
-    cur, seen, vals, roles, seen_role = cn, set(), {}, [], set()
+    cur, seen, vals, roles, seen_role, evts = cn, set(), {}, [], set(), {}
     while cur and cur in _MODEL and cur not in seen:      # walk the base chain
         seen.add(cur)
         for a in _MODEL[cur]["attrs"]:
@@ -836,6 +845,12 @@ def _lcx_dump(obj):
                     vals[a["n"]] = _lcx_str(getattr(obj, a["n"]))
                 except Exception:
                     vals[a["n"]] = ""
+        for e in _MODEL[cur]["events"]:                   # live handler source
+            if e not in evts:
+                try:
+                    evts[e] = obj._event_src(e)
+                except Exception:
+                    evts[e] = ""
         for a in _MODEL[cur]["assoc"]:
             if a["n"] not in seen_role:
                 seen_role.add(a["n"])
@@ -851,7 +866,7 @@ def _lcx_dump(obj):
         if tid:
             links.append({"role": role, "target": target, "id": tid, "list": is_list})
     sp = _MODEL.get(cn, {})
-    return {"cls": cn, "vals": vals, "links": links,
+    return {"cls": cn, "vals": vals, "events": evts, "links": links,
             "state": (obj.state if sp.get("states") else "")}
 
 
