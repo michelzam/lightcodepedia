@@ -270,6 +270,3 @@ Every block, with live examples and full documentation.
 {: .cards cols="3" }
 
 
-[Recording](https://youtu.be/mX4OPdzcIaI)
-{: .video }
-
