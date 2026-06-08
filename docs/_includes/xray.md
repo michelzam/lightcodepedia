@@ -15,20 +15,20 @@ Auto-included by docs/_layouts/default.html.
 
 <style>
   .lcx-xray { position: fixed; pointer-events: none; z-index: 99996; display: none;
-              align-items: flex-start; justify-content: flex-start; overflow: visible;
-              background: rgba(8,18,28,.90); border-radius: 3px; box-sizing: border-box; }
-  .lcx-body { color: #cdebff; padding: 6px 10px; white-space: nowrap;
-              margin: 12px 0 0 16px;
-              font: 11px/1.55 ui-monospace, "SF Mono", Menlo, monospace; }
-  .lcx-body .t { font-weight: 700; color: #eaf6ff;
+              background: rgba(8,18,28,.93); color: #cdebff; border-radius: 5px;
+              padding: 7px 11px; white-space: nowrap;
+              box-shadow: 0 0 0 1px rgba(120,200,255,.35), 0 8px 26px rgba(0,0,0,.35);
+              font: 11px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  .lcx-xray.see { background: rgba(8,18,28,.74); }   /* ⇧ full reveal — semi-transparent */
+  .lcx-xray .t { font-weight: 700; color: #eaf6ff;
                  border-bottom: 1px solid rgba(120,200,255,.25);
                  padding-bottom: 3px; margin-bottom: 3px; }
-  .lcx-body .r .ic { display: inline-block; width: 1.6em; }
-  .lcx-body .v { color: #8effa6; }
-  .lcx-body .as { color: #ffd479; }
-  .lcx-body .st { margin-top: 4px; padding-top: 3px; color: #9fd0ff;
+  .lcx-xray .r .ic { display: inline-block; width: 1.6em; }
+  .lcx-xray .v { color: #8effa6; }
+  .lcx-xray .as { color: #ffd479; }
+  .lcx-xray .st { margin-top: 4px; padding-top: 3px; color: #9fd0ff;
                   border-top: 1px solid rgba(120,200,255,.25); }
-  .lcx-body .st b { color: #fff; }
+  .lcx-xray .st b { color: #fff; }
   .lcx-ring { position: fixed; pointer-events: none; z-index: 100000;
               border-radius: 50%; border: 2px solid rgba(140,205,255,.9);
               box-shadow: 0 6px 22px rgba(0,0,0,.4),
@@ -42,6 +42,9 @@ Auto-included by docs/_layouts/default.html.
   .lcx-ghost { position: fixed; pointer-events: none; z-index: 99998; display: none;
                background: #102232; color: #cdebff; border: 1px solid #ffd479;
                border-radius: 4px; padding: 2px 7px; font: 11px/1.4 ui-monospace, monospace; }
+  /* fluid flow: round globules travel target → source (binded → binder) */
+  @keyframes lcxflow { to { stroke-dashoffset: 19; } }
+  .lcx-flow { animation: lcxflow .8s linear infinite; }
   body.lcx-on, body.lcx-on * { cursor: crosshair !important; }
 </style>
 
@@ -203,14 +206,16 @@ Auto-included by docs/_layouts/default.html.
       }
       return d + " L" + tx + "," + ty;
     }
-    function pipe(sx, sy, tx, ty) {               // steel casing + glowing core + ports
+    function pipe(sx, sy, tx, ty) {               // steel casing + core + flowing fluid
       const d = routePath(sx, sy, tx, ty, 12), cap = "round";
       svgEl("path", { d, fill: "none", stroke: "#14303f", "stroke-width": 10,
         "stroke-linecap": cap, "stroke-linejoin": cap, filter: "url(#lcxGlow)" });
       svgEl("path", { d, fill: "none", stroke: "#3f8fd6", "stroke-width": 6,
         "stroke-linecap": cap, "stroke-linejoin": cap });
-      svgEl("path", { d, fill: "none", stroke: "rgba(205,235,255,.75)", "stroke-width": 1.6,
-        "stroke-linecap": cap, "stroke-linejoin": cap });
+      // animated globules (round dash dots) flowing target → source
+      const flow = svgEl("path", { d, fill: "none", stroke: "#cdf3ff", "stroke-width": 5,
+        "stroke-linecap": "round", "stroke-dasharray": "0.01 19" });
+      flow.classList.add("lcx-flow");
       flange(sx, sy); flange(tx, ty);
     }
     function flange(x, y) {
@@ -236,27 +241,36 @@ Auto-included by docs/_layouts/default.html.
       ghosts.forEach(g => g.style.display = "none");
       document.body.classList.remove("lcx-on"); cur = null; liveCache = null;
     }
+    const OFF = 10;                                // panel offset from widget top-left
     function update(hit, xy, shift) {
       document.body.classList.add("lcx-on");
-      // 1) ALWAYS move the lens ring first — never blocked by inspect/render errors
-      ring.style.display = "block";
-      ring.style.left = (xy.x - R) + "px"; ring.style.top = (xy.y - R) + "px";
-      lastXY = xy; lastShift = shift;
-      // 2) (re)build the x-ray content only when the widget under the lens changes
       const rect = hit.el.getBoundingClientRect();
-      if (!cur || cur.el !== hit.el) {
+      const changed = !cur || cur.el !== hit.el;
+      // (re)build the inspector only when the widget under the lens changes
+      if (changed) {
         try { liveCache = inspect(hit.el); } catch (e) { liveCache = null; }
-        xray.innerHTML = '<div class="lcx-body">' + schematic(hit.name, liveCache) + "</div>";
+        xray.innerHTML = schematic(hit.name, liveCache);   // panel sizes to content
       }
-      cur = hit;
-      // 3) overlay fills the widget box; aperture clips it to the disc at the cursor
-      xray.style.left = rect.left + "px"; xray.style.top = rect.top + "px";
-      xray.style.width = rect.width + "px"; xray.style.height = rect.height + "px";
-      xray.style.display = "flex";
-      const clip = "circle(" + R + "px at " + (xy.x - rect.left) + "px " +
-        (xy.y - rect.top) + "px)";
-      xray.style.clipPath = clip; xray.style.webkitClipPath = clip;
-      try { connectors(rect, liveCache, shift); } catch (e) { /* keep tracking */ }
+      cur = hit; lastXY = xy;
+      const px = rect.left + OFF, py = rect.top + OFF;
+      xray.style.left = px + "px"; xray.style.top = py + "px";
+      xray.style.display = "block";
+      if (shift) {                                 // ⇧ — full reveal, semi-transparent
+        xray.classList.add("see");
+        xray.style.clipPath = xray.style.webkitClipPath = "none";
+        ring.style.display = "none";
+      } else {                                      // ⌥ — round x-ray aperture
+        xray.classList.remove("see");
+        ring.style.display = "block";
+        ring.style.left = (xy.x - R) + "px"; ring.style.top = (xy.y - R) + "px";
+        const clip = "circle(" + R + "px at " + (xy.x - px) + "px " + (xy.y - py) + "px)";
+        xray.style.clipPath = xray.style.webkitClipPath = clip;
+      }
+      // redraw pipes only on widget/shift change, so the flow keeps animating
+      if (changed || shift !== lastShift) {
+        try { connectors(rect, liveCache, shift); } catch (e) { /* keep tracking */ }
+      }
+      lastShift = shift;
     }
     function show(e) {
       const hit = classAt(e.clientX, e.clientY);
