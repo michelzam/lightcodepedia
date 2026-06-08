@@ -1,3 +1,4 @@
+<!-- © 2026 KarmicSoft — LightCode Platform. Proprietary, All Rights Reserved. License: /license -->
 {%- comment -%}
 Step runtime — the in-browser Python engine for .feature cards, .button handlers
 and the live .diagram component (powered by MicroPython WASM). NOT a widget.
