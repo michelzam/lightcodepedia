@@ -313,6 +313,10 @@ class Dataset(Object):
         self._el = None
         self._id = id
 
+    @property
+    def id(self):
+        return self._id or ""
+
     def __bool__(self):
         return self.loaded
 
@@ -395,6 +399,7 @@ class Datagrid(Block):
                   {"n": "bar_count", "t": "int"},
                   {"n": "point_count", "t": "int"}],
            assoc=[{"n": "bind", "target": "Dataset"},
+                  {"n": "bound_to", "target": "Datagrid"},
                   {"n": "bars", "target": "Bar", "list": True}])
 class Chart(Block):
     @property
@@ -404,6 +409,12 @@ class Chart(Block):
     @property
     def bind(self):
         return Dataset(self._attr("data-bind") or "")
+
+    @property
+    def bound_to(self):
+        gid = self._attr("data-bound-to") or ""
+        el = js.window.document.querySelector("[data-lc-id='" + gid + "']")
+        return Datagrid(el)
 
     @property
     def bar_count(self):
