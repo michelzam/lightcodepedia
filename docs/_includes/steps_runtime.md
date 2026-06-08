@@ -208,14 +208,8 @@ class Object:
 
         head = ('<TR><TD COLSPAN="2" ALIGN="LEFT">' + _html_esc(title)
                 + '</TD></TR>')
-        body = head
-        for sec in (attrs, meth):                  # only non-empty compartments
-            if sec:
-                body += "<HR/>" + sec
-        tbl = ('<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0"'
-               ' CELLSPACING="4" CELLPADDING="1" BGCOLOR="white">'
-               + body + "</TABLE>")
-        return "  " + cls.__name__ + " [shape=plaintext, label=<" + tbl + ">]"
+        tbl = _html_table([head, attrs, meth])     # only non-empty compartments
+        return "  " + cls.__name__ + " [shape=plain, label=<" + tbl + ">]"
 
     @classmethod
     def _dot_states(cls):
@@ -227,15 +221,18 @@ class Object:
         cn = cls.__name__
         def sid(s):
             return "st_" + cn + "_" + s
+        # label = class icon + "states" + 🎛️ (no class name — the icon and the
+        # dashed tie already identify the owning class)
+        ico = (sp["icon"] + " ") if sp["icon"] else ""
         L = ["  subgraph cluster_states_" + cn + " {",
-             '    label="' + ICON["fsm"] + " " + cn + ' states"; fontsize=10;',
+             '    label="' + ico + "states " + ICON["fsm"] + '"; fontsize=10;',
              '    style="filled,rounded"; fillcolor="gray94"; color="gray85";'
              ' margin=12; nodesep=0.9;',
              '    node [fontname="Source Sans Pro, sans-serif", shape=record,'
              ' style="filled,rounded", fillcolor="white", color="gray",'
              ' fontsize=10, penwidth=0.3]',
              '    edge [style=solid, arrowhead=vee, penwidth=0.2,'
-             ' arrowsize=0.7, fontsize=10]']
+             ' arrowsize=0.7, fontsize=8]']
         for i, s in enumerate(states):
             name = _disp(s)
             lbl = (ICON["init"] + " " + name) if i == 0 else name
@@ -246,7 +243,7 @@ class Object:
                 froms = [p for p in m["pre"] if p in states] or [states[0]]
                 for p in froms:
                     L.append("  " + sid(p) + " -> " + sid(m["post"])
-                             + ' [xlabel="' + _disp(m["n"]) + '",'
+                             + ' [xlabel="' + _disp(m["n"]) + '", fontsize=8,'
                              + ' color="gray45", fontcolor="gray45",'
                              + ' minlen=2, constraint=false]')
         # tie the cluster below its class (dashed, no arrow); constraint keeps it
@@ -888,6 +885,15 @@ def _disp(name):
     return _dot_esc(str(name).replace("_", " "))
 
 
+def _html_table(sections, bg="white"):
+    # one shared table style for class nodes AND the legend → identical font and
+    # row interval everywhere. CELLSPACING=0 (no white strip inside the border),
+    # tight CELLPADDING for the line interval. <HR/> separates compartments.
+    body = "<HR/>".join(s for s in sections if s)
+    return ('<TABLE BORDER="1" COLOR="lightgray" CELLBORDER="0" CELLSPACING="0"'
+            ' CELLPADDING="1" BGCOLOR="' + bg + '">' + body + "</TABLE>")
+
+
 def _html_esc(s):
     return (str(s).replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;"))
@@ -905,19 +911,24 @@ def _attr_icon(a):
 
 
 def _dot_legend():
-    # Reproduces the original ModuleDecorator legend verbatim.
-    types_ = ("🔤 str or 🔡 long str\\l🔢 int or float\\l🔘 bool\\l🕗 datetime\\l"
-              "🔒 password\\l🔤 ⦙ list of 🔤\\l◻️ Object from kore\\l📦 any\\l"
-              "🐟 custom type Fish\\l /  derived\\l _  private\\l"
-              " =  default value\\l⤴️ reflexive reference\\l"
-              "↩️ ⦙ reflexive collection\\l ♢ composite or owned\\l")
-    behav = ("⚡️ event or code\\l ▸ method\\l ▹ conditionnal method\\l"
-             " ▹ with transition ▹\\l")
-    state = "🎛️ state machine\\l➡️ initial state\\l"
-    inher = " ➭  inherits from\\l"
-    imp = "🛄 imported py\\l"
-    return ('"{Legend|' + types_ + "|" + behav + "|" + state + "|"
-            + inher + "|" + imp + '}"')
+    # Reproduces the original ModuleDecorator legend verbatim, rendered with the
+    # SAME HTML table as the class nodes → identical font size and row interval.
+    def line(t):
+        return '<TR><TD ALIGN="LEFT">' + _html_esc(t) + "</TD></TR>"
+    title = '<TR><TD ALIGN="CENTER">Legend</TD></TR>'
+    types_ = "".join(line(t) for t in (
+        "🔤 str or 🔡 long str", "🔢 int or float", "🔘 bool", "🕗 datetime",
+        "🔒 password", "🔤 ⦙ list of 🔤", "◻️ Object from kore", "📦 any",
+        "🐟 custom type Fish", " /  derived", " _  private", " =  default value",
+        "⤴️ reflexive reference", "↩️ ⦙ reflexive collection",
+        " ♢ composite or owned"))
+    behav = "".join(line(t) for t in (
+        "⚡️ event or code", " ▸ method", " ▹ conditionnal method",
+        " ▹ with transition ▹"))
+    state = "".join(line(t) for t in ("🎛️ state machine", "➡️ initial state"))
+    inher = line(" ➭  inherits from")
+    imp = line("🛄 imported py")
+    return _html_table([title, types_, behav, state, inher, imp], bg="gray98")
 
 
 def _scope_set(scope):
@@ -1038,9 +1049,8 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
     # legend (invisible cluster, like the reference)
     L.append("  subgraph cluster_legend {")
     L.append("    style=invis;")
-    L.append('    __legend [label=' + _dot_legend() +
-             ', style="filled", fillcolor="gray98", color="gray80",'
-             ' fontcolor="#505050", fontsize=10]')
+    L.append('    __legend [shape=plain, fontcolor="#505050",'
+             ' label=<' + _dot_legend() + '>]')
     L.append("  }")
 
     # gap report (build-time only — needs the docs listing)
