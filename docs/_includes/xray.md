@@ -1,14 +1,17 @@
 {%- comment -%}
-X-ray lens — hold ⌥ Option/Alt and sweep the round lens over any rendered widget
-to strip its surface and reveal the INNER inspector: the component class with
-live attribute values and current state, shown only through the circular
-aperture (clip-path disc). Add SHIFT to also draw connectors to the widget's
-associated objects (a real arrow to a visible target, a ghost chip for hidden
-ones like a Dataset).
+X-ray lens.
 
-Pure viewer over the SSOT: hover-detection + structure come from the static
-assets/component-model.json (emitted by tools/gen_component_diagram.py); live
-values/links come from lcx_inspect() in MicroPython (lazy-loaded on first use).
+⌥ Option/Alt + hover: a round aperture you sweep over a widget to strip its
+surface and reveal its inner inspector (class + live attribute values + state).
+
+⌥ + ⇧ Shift: full reveal — the hovered widget AND every object it is connected
+to are shown as semi-transparent inspector panels, wired by flowing pipes
+(fluid runs target → source, binded → binder). Connected objects that are
+invisible on the page (e.g. a hidden Dataset) get their own full inspector too.
+
+Pure viewer over the SSOT: hover-detection + structure from the static
+assets/component-model.json; live values/links from lcx_inspect()/lcx_target()
+in MicroPython (lazy-loaded on first use).
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -38,10 +41,7 @@ Auto-included by docs/_layouts/default.html.
                           transparent 62%);
               display: none; }
   .lcx-svg { position: fixed; inset: 0; width: 100%; height: 100%;
-             pointer-events: none; z-index: 99997; display: none; }
-  .lcx-ghost { position: fixed; pointer-events: none; z-index: 99998; display: none;
-               background: #102232; color: #cdebff; border: 1px solid #ffd479;
-               border-radius: 4px; padding: 2px 7px; font: 11px/1.4 ui-monospace, monospace; }
+             pointer-events: none; z-index: 99995; display: none; }  /* behind panels */
   /* fluid flow: round globules travel target → source (binded → binder) */
   @keyframes lcxflow { to { stroke-dashoffset: 19; } }
   .lcx-flow { animation: lcxflow .8s linear infinite; }
@@ -51,7 +51,7 @@ Auto-included by docs/_layouts/default.html.
 <script type="module">
   const URL = "{{ "/assets/component-model.json" | relative_url }}";
   const MP_URL = "https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs";
-  const R = 95;                       // lens radius
+  const R = 95, OFF = 10;
   let DATA = null;
   try { DATA = await (await fetch(URL)).json(); }
   catch (e) { console.warn("[lc-xray] model json not found", e); }
@@ -59,27 +59,35 @@ Auto-included by docs/_layouts/default.html.
   if (DATA) {
     const { model: MODEL, wrap: WRAP, icons: IC } = DATA;
     const NS = "http://www.w3.org/2000/svg";
-    const xray = document.createElement("div"); xray.className = "lcx-xray";
-    const ring = document.createElement("div"); ring.className = "lcx-ring";
-    ring.style.width = ring.style.height = (R * 2) + "px";
     const svg = document.createElementNS(NS, "svg"); svg.setAttribute("class", "lcx-svg");
     svg.innerHTML = '<defs><filter id="lcxGlow" x="-40%" y="-40%" width="180%"' +
       ' height="180%"><feDropShadow dx="0" dy="1" stdDeviation="1.4"' +
       ' flood-color="#0a1620" flood-opacity="0.5"/></filter></defs>';
-    const ghosts = [];
-    document.body.append(xray, ring, svg);
+    const ring = document.createElement("div"); ring.className = "lcx-ring";
+    ring.style.width = ring.style.height = (R * 2) + "px";
+    document.body.append(svg, ring);
+    const panels = [];
+    const panel = i => panels[i] || (panels[i] = document.body.appendChild(
+      Object.assign(document.createElement("div"), { className: "lcx-xray" })));
 
     const disp = s => String(s).replace(/_/g, " ");
-    const esc = s => String(s).replace(/[&<>]/g, c =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
     const attrIcon = a => (IC[a.t] || IC.ref || "📦") + (a.list ? (IC.list || "⦙") : "");
     const visible = el => {
       if (!el) return false;
       const r = el.getBoundingClientRect(), s = getComputedStyle(el);
       return r.width > 0 && r.height > 0 && s.display !== "none" && s.visibility !== "hidden";
     };
+    const center = r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    function edgePoint(r, tx, ty) {                 // border point toward (tx,ty)
+      const c = center(r), dx = tx - c.x, dy = ty - c.y;
+      if (!dx && !dy) return c;
+      const s = Math.min(dx ? (r.width / 2) / Math.abs(dx) : Infinity,
+                         dy ? (r.height / 2) / Math.abs(dy) : Infinity);
+      return { x: c.x + dx * s, y: c.y + dy * s };
+    }
 
-    function lineage(name) {                 // base chain root→leaf, deduped
+    function lineage(name) {
       const chain = []; let cur = name; const seen = new Set();
       while (cur && MODEL[cur] && !seen.has(cur)) {
         seen.add(cur); chain.push(cur); cur = (MODEL[cur].bases || [])[0];
@@ -94,12 +102,10 @@ Auto-included by docs/_layouts/default.html.
       };
       return { attrs: pick("attrs"), events: pick("events"), methods: pick("methods") };
     }
-
     const rrow = (ic, html, cls) =>
       '<div class="r ' + (cls || "") + '"><span class="ic">' + ic + "</span>" + html + "</div>";
-
-    function schematic(name, live) {         // the x-ray content for a widget
-      const sp = MODEL[name]; if (!sp) return "";
+    function schematic(name, live) {
+      const sp = MODEL[name]; if (!sp) return esc(name);
       const L = lineage(name), vals = (live && live.vals) || {};
       let h = '<div class="t">' + (sp.icon ? sp.icon + " " : "") + esc(name) + "</div>";
       L.attrs.forEach(a => {
@@ -130,14 +136,19 @@ Auto-included by docs/_layouts/default.html.
       return null;
     }
 
-    // live values + links via MicroPython (null until loaded)
+    // MicroPython bridges (null until loaded)
     function inspect(el) {
       if (!window._lcxRun) return null;
       el.setAttribute("data-lcx-target", "");
-      try {
-        window._lcxRun("import js\njs.window._lcxData = lcx_inspect()\n");
-        return JSON.parse(window._lcxData || "{}");
-      } catch (e) { return null; } finally { el.removeAttribute("data-lcx-target"); }
+      try { window._lcxRun("import js\njs.window._lcxData = lcx_inspect()\n");
+            return JSON.parse(window._lcxData || "{}"); }
+      catch (e) { return null; } finally { el.removeAttribute("data-lcx-target"); }
+    }
+    function inspectTarget(cls, id) {
+      if (!window._lcxRun) return null;
+      try { window._lcxRun("import js\njs.window._lcxData = lcx_target('" + cls + "','" + id + "')\n");
+            return JSON.parse(window._lcxData || "{}"); }
+      catch (e) { return null; }
     }
     function loadMP() {
       if (window._lcxMPp) return window._lcxMPp;
@@ -147,72 +158,36 @@ Auto-included by docs/_layouts/default.html.
         const run = m.runPython || m.exec || m.pyexec || m.run;
         run.call(m, (document.getElementById("lc-steps-preamble") || {}).textContent || "");
         window._lcxRun = (code) => run.call(m, code);
-        if (cur) update(cur, lastXY, lastShift);   // fill values/links once ready
+        if (lastHit) { liveCache = null; cur = null; update(lastHit, lastXY, lastShift); }
       })().catch(e => console.warn("[lc-xray] micropython failed", e));
       return window._lcxMPp;
     }
 
-    function connectors(srcRect, live, shift) {
-      // clear previous
-      [...svg.querySelectorAll(".lcx-edge")].forEach(n => n.remove());
-      ghosts.forEach(g => g.style.display = "none");
-      if (!shift || !live || !live.links || !live.links.length) { svg.style.display = "none"; return; }
-      svg.style.display = "block";
-      const sx = srcRect.left + srcRect.width / 2, sy = srcRect.top + srcRect.height / 2;
-      live.links.forEach((lk, i) => {
-        const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
-        let bx, by;
-        if (visible(tEl)) {
-          const tr = tEl.getBoundingClientRect();
-          bx = tr.left + tr.width / 2; by = tr.top + tr.height / 2;
-          port("rect", tr);                                  // highlight target box
-        } else {                                             // hidden target → ghost chip
-          const g = ghosts[i] || (ghosts[i] = mkGhost());
-          const tIcon = (MODEL[lk.target] || {}).icon || "📦";
-          g.innerHTML = tIcon + " " + esc(lk.id);
-          g.style.display = "block";
-          g.style.left = (srcRect.left + 36 + i * 14) + "px";
-          g.style.top = (srcRect.top - 48 - i * 34) + "px";
-          const gr = g.getBoundingClientRect();
-          bx = gr.left + gr.width / 2; by = gr.top + gr.height / 2;
-        }
-        pipe(sx, sy, bx, by);
-        const mx = (sx + bx) / 2;
-        plabel(mx, (sy + by) / 2, (lk.list ? "⦙ " : "") + disp(lk.role));
-      });
-    }
-    function mkGhost() {
-      const g = document.createElement("div"); g.className = "lcx-ghost";
-      document.body.appendChild(g); return g;
-    }
+    // ── pipes (steel casing + glowing core + flowing fluid) ──────────────────
+    const clearPipes = () => [...svg.querySelectorAll(".lcx-edge")].forEach(n => n.remove());
     function svgEl(tag, attrs) {
       const e = document.createElementNS(NS, tag);
       for (const k in attrs) e.setAttribute(k, attrs[k]);
       e.classList.add("lcx-edge"); svg.appendChild(e); return e;
     }
-    // orthogonal (plumbing) route with rounded elbows
     function routePath(sx, sy, tx, ty, r) {
       const mx = (sx + tx) / 2;
       const pts = [{ x: sx, y: sy }, { x: mx, y: sy }, { x: mx, y: ty }, { x: tx, y: ty }];
       let d = "M" + sx + "," + sy;
-      const near = (a, b, k) => {                 // point k px from corner a toward b
-        const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
-        const t = Math.min(k, L / 2) / L;
-        return { x: a.x + dx * t, y: a.y + dy * t };
-      };
+      const near = (a, b, k) => { const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
+        const t = Math.min(k, L / 2) / L; return { x: a.x + dx * t, y: a.y + dy * t }; };
       for (let i = 1; i < pts.length - 1; i++) {
         const a = near(pts[i], pts[i - 1], r), b = near(pts[i], pts[i + 1], r);
         d += " L" + a.x + "," + a.y + " Q" + pts[i].x + "," + pts[i].y + " " + b.x + "," + b.y;
       }
       return d + " L" + tx + "," + ty;
     }
-    function pipe(sx, sy, tx, ty) {               // steel casing + core + flowing fluid
+    function pipe(sx, sy, tx, ty) {
       const d = routePath(sx, sy, tx, ty, 12), cap = "round";
       svgEl("path", { d, fill: "none", stroke: "#14303f", "stroke-width": 10,
         "stroke-linecap": cap, "stroke-linejoin": cap, filter: "url(#lcxGlow)" });
       svgEl("path", { d, fill: "none", stroke: "#3f8fd6", "stroke-width": 6,
         "stroke-linecap": cap, "stroke-linejoin": cap });
-      // animated globules (round dash dots) flowing target → source
       const flow = svgEl("path", { d, fill: "none", stroke: "#cdf3ff", "stroke-width": 5,
         "stroke-linecap": "round", "stroke-dasharray": "0.01 19" });
       flow.classList.add("lcx-flow");
@@ -222,11 +197,7 @@ Auto-included by docs/_layouts/default.html.
       svgEl("circle", { cx: x, cy: y, r: 7, fill: "#14303f" });
       svgEl("circle", { cx: x, cy: y, r: 3.4, fill: "#8fd0ff" });
     }
-    function port(_, r) {                          // target component outline
-      svgEl("rect", { x: r.left - 1, y: r.top - 1, width: r.width + 2, height: r.height + 2,
-        rx: 4, fill: "none", stroke: "#3f8fd6", "stroke-width": 2, "stroke-dasharray": "5 4" });
-    }
-    function plabel(x, y, text) {                  // role tag clipped onto the pipe
+    function plabel(x, y, text) {
       const w = text.length * 6.5 + 12;
       svgEl("rect", { x: x - w / 2, y: y - 9, width: w, height: 17, rx: 8.5,
         fill: "#0c1f2b", stroke: "#3f8fd6", "stroke-width": 1, filter: "url(#lcxGlow)" });
@@ -235,52 +206,73 @@ Auto-included by docs/_layouts/default.html.
       t.textContent = text;
     }
 
-    let cur = null, lastXY = { x: 0, y: 0 }, lastShift = false, liveCache = null;
-    function hide() {
-      xray.style.display = ring.style.display = svg.style.display = "none";
-      ghosts.forEach(g => g.style.display = "none");
-      document.body.classList.remove("lcx-on"); cur = null; liveCache = null;
+    // ── scene assembly ───────────────────────────────────────────────────────
+    let cur = null, lastHit = null, lastXY = { x: 0, y: 0 }, lastShift = null, liveCache = null;
+    function hideAll() {
+      panels.forEach(p => p.style.display = "none");
+      ring.style.display = "none"; svg.style.display = "none"; clearPipes();
+      document.body.classList.remove("lcx-on"); cur = null;
     }
-    const OFF = 10;                                // panel offset from widget top-left
+    function place(p, x, y) {
+      p.style.left = x + "px"; p.style.top = y + "px"; p.style.display = "block";
+      p.style.clipPath = p.style.webkitClipPath = "none";
+    }
+    function buildScene(hit, data, shift) {
+      clearPipes(); panels.forEach(p => p.style.display = "none");
+      const rect = hit.el.getBoundingClientRect();
+      const p0 = panel(0);
+      p0.innerHTML = schematic(hit.name, data);
+      p0.classList.toggle("see", shift);
+      place(p0, rect.left + OFF, rect.top + OFF);
+      if (!shift) { svg.style.display = "none"; return; }   // lens mode: clip applied later
+      svg.style.display = "block";
+      const links = (data && data.links) || [];
+      let gi = 0;
+      links.forEach((lk, idx) => {
+        const p = panel(idx + 1);
+        p.innerHTML = schematic(lk.target, inspectTarget(lk.target, lk.id));
+        p.classList.add("see");
+        const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
+        if (visible(tEl)) {
+          const tr = tEl.getBoundingClientRect();
+          place(p, tr.left + OFF, tr.top + OFF);
+        } else {                                            // hidden object → its own panel
+          place(p, rect.right + 70, rect.top + gi * 104); gi++;
+        }
+        const r0 = p0.getBoundingClientRect(), r1 = p.getBoundingClientRect();
+        const e0 = edgePoint(r0, center(r1).x, center(r1).y);
+        const e1 = edgePoint(r1, center(r0).x, center(r0).y);
+        pipe(e0.x, e0.y, e1.x, e1.y);
+        plabel((e0.x + e1.x) / 2, (e0.y + e1.y) / 2, (lk.list ? "⦙ " : "") + disp(lk.role));
+      });
+    }
+    function lensClip(hit, xy) {
+      const rect = hit.el.getBoundingClientRect();
+      const px = rect.left + OFF, py = rect.top + OFF;
+      const clip = "circle(" + R + "px at " + (xy.x - px) + "px " + (xy.y - py) + "px)";
+      const p0 = panel(0); p0.style.clipPath = p0.style.webkitClipPath = clip;
+      ring.style.display = "block";
+      ring.style.left = (xy.x - R) + "px"; ring.style.top = (xy.y - R) + "px";
+    }
     function update(hit, xy, shift) {
       document.body.classList.add("lcx-on");
-      const rect = hit.el.getBoundingClientRect();
       const changed = !cur || cur.el !== hit.el;
-      // (re)build the inspector only when the widget under the lens changes
-      if (changed) {
-        try { liveCache = inspect(hit.el); } catch (e) { liveCache = null; }
-        xray.innerHTML = schematic(hit.name, liveCache);   // panel sizes to content
-      }
-      cur = hit; lastXY = xy;
-      const px = rect.left + OFF, py = rect.top + OFF;
-      xray.style.left = px + "px"; xray.style.top = py + "px";
-      xray.style.display = "block";
-      if (shift) {                                 // ⇧ — full reveal, semi-transparent
-        xray.classList.add("see");
-        xray.style.clipPath = xray.style.webkitClipPath = "none";
-        ring.style.display = "none";
-      } else {                                      // ⌥ — round x-ray aperture
-        xray.classList.remove("see");
-        ring.style.display = "block";
-        ring.style.left = (xy.x - R) + "px"; ring.style.top = (xy.y - R) + "px";
-        const clip = "circle(" + R + "px at " + (xy.x - px) + "px " + (xy.y - py) + "px)";
-        xray.style.clipPath = xray.style.webkitClipPath = clip;
-      }
-      // redraw pipes only on widget/shift change, so the flow keeps animating
-      if (changed || shift !== lastShift) {
-        try { connectors(rect, liveCache, shift); } catch (e) { /* keep tracking */ }
-      }
+      if (changed) { try { liveCache = inspect(hit.el); } catch (e) { liveCache = null; } }
+      cur = hit; lastHit = hit; lastXY = xy;
+      if (changed || shift !== lastShift) buildScene(hit, liveCache, shift);
+      if (shift) ring.style.display = "none";
+      else lensClip(hit, xy);
       lastShift = shift;
     }
     function show(e) {
       const hit = classAt(e.clientX, e.clientY);
-      if (!hit) { hide(); return; }
+      if (!hit) { hideAll(); return; }
       loadMP();
       update(hit, { x: e.clientX, y: e.clientY }, e.shiftKey);
     }
 
-    addEventListener("pointermove", e => { e.altKey ? show(e) : hide(); }, true);
-    addEventListener("keyup", e => { if (e.key === "Alt" || !e.altKey) hide(); });
-    addEventListener("blur", hide);
+    addEventListener("pointermove", e => { e.altKey ? show(e) : hideAll(); }, true);
+    addEventListener("keyup", e => { if (e.key === "Alt" || !e.altKey) hideAll(); });
+    addEventListener("blur", hideAll);
   }
 </script>
