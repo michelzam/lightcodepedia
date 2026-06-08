@@ -46,7 +46,7 @@ Auto-included by docs/_layouts/default.html.
         var arg = scope ? ('"' + scope + '"') : "None";
         try {
           run.call(mp, "import js\njs.window._lcDiagramDot = to_dot(" + arg + ")\n");
-          var svg = viz.renderString(window._lcDiagramDot || "digraph{}");
+          var svg = viz.renderString(window._lcDiagramDot || "digraph{}", { format: "svg" });
           var div = document.createElement("div");
           div.className = "lc-dot-diagram lc-diagram";
           div.style.cssText = "overflow:auto;line-height:1";
