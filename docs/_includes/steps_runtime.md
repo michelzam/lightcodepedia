@@ -784,6 +784,41 @@ def _wrap(el):
     return Block(el)
 
 
+def _lcx_str(v):
+    """Short display string for a live attribute value (used by the x-ray lens)."""
+    if v is None:
+        return ""
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    s = str(v)
+    return s if len(s) <= 40 else s[:40] + "…"
+
+
+def lcx_inspect():
+    """Inspect the element marked [data-lcx-target]: live values of every
+    attribute (own + inherited) plus the current state. Returns JSON for the
+    lens; structure (which attrs/methods to show) is computed JS-side."""
+    el = js.window.document.querySelector("[data-lcx-target]")
+    if not el:
+        return "{}"
+    obj = _wrap(el)
+    cn = type(obj).__name__
+    cur, seen, vals = cn, set(), {}
+    while cur and cur in _MODEL and cur not in seen:      # walk the base chain
+        seen.add(cur)
+        for a in _MODEL[cur]["attrs"]:
+            if a["n"] not in vals:
+                try:
+                    vals[a["n"]] = _lcx_str(getattr(obj, a["n"]))
+                except Exception:
+                    vals[a["n"]] = ""
+        bases = _MODEL[cur]["bases"]
+        cur = bases[0] if bases else None
+    sp = _MODEL.get(cn, {})
+    return json.dumps({"cls": cn, "vals": vals,
+                       "state": (obj.state if sp.get("states") else "")})
+
+
 @component(icon="📄", attrs=[{"n": "id", "t": "str"}], methods=["feature", "features"])
 class Page(Object):
     @property
