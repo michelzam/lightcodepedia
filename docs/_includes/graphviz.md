@@ -1,11 +1,11 @@
 {%- comment -%}
-Live Graphviz DOT rendering — powered by @hpcc-js/wasm-graphviz (WASM).
+Live Graphviz DOT rendering — powered by @viz-js/viz (vendored, WASM inlined).
 
 The Jekyll/kramdown pipeline emits ```dot fenced blocks as:
   <div class="language-dot highlighter-rouge"><div class="highlight"><pre><code>…</code></pre></div></div>
 
-This include finds those blocks, runs them through the WASM graphviz engine,
-and replaces them with inline SVG (no copy-paste, no external server).
+This include finds those blocks, runs them through the embedded graphviz engine,
+and replaces them with inline SVG (no CDN, no external server).
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -33,8 +33,10 @@ Auto-included by docs/_layouts/default.html.
       el.parentNode.replaceChild(pre, el);
     };
     try {
-      var mod = await import("https://cdn.jsdelivr.net/npm/@viz-js/viz@3/dist/viz.js");
-      var viz = await (mod.instance || mod.default.instance || mod.default)();
+      window._lcVizReady = window._lcVizReady ||
+        import("{{ "/assets/js/viz.js" | relative_url }}")
+          .then(function (m) { return m.instance(); });
+      var viz = await window._lcVizReady;
       blocks.forEach(function ({ src, el }) {
         try {
           var svg = viz.renderString(src);
