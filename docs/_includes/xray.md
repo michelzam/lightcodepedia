@@ -15,9 +15,10 @@ Auto-included by docs/_layouts/default.html.
 
 <style>
   .lcx-xray { position: fixed; pointer-events: none; z-index: 99996; display: none;
-              align-items: center; justify-content: center; overflow: visible;
-              background: rgba(8,18,28,.90); border-radius: 3px; }
+              align-items: flex-start; justify-content: flex-start; overflow: visible;
+              background: rgba(8,18,28,.90); border-radius: 3px; box-sizing: border-box; }
   .lcx-body { color: #cdebff; padding: 6px 10px; white-space: nowrap;
+              margin: 12px 0 0 16px;
               font: 11px/1.55 ui-monospace, "SF Mono", Menlo, monospace; }
   .lcx-body .t { font-weight: 700; color: #eaf6ff;
                  border-bottom: 1px solid rgba(120,200,255,.25);
@@ -205,34 +206,34 @@ Auto-included by docs/_layouts/default.html.
     }
     function update(hit, xy, shift) {
       document.body.classList.add("lcx-on");
-      const rect = hit.el.getBoundingClientRect();
-      if (hit !== cur || cur === null) {           // new widget → rebuild + re-inspect
-        liveCache = inspect(hit.el);
-        xray.innerHTML = '<div class="lcx-body">' + schematic(hit.name, liveCache) + "</div>";
-      }
-      // overlay fills the whole widget box; inspector text is centred inside it
-      xray.style.left = rect.left + "px"; xray.style.top = rect.top + "px";
-      xray.style.width = rect.width + "px"; xray.style.height = rect.height + "px";
-      cur = hit; lastXY = xy; lastShift = shift;
-      // disc aperture: reveal the x-ray only through the circle at the cursor
-      xray.style.display = "flex";
-      const cx = (xy.x - rect.left), cy = (xy.y - rect.top);
-      const clip = "circle(" + R + "px at " + cx + "px " + cy + "px)";
-      xray.style.clipPath = clip; xray.style.webkitClipPath = clip;
+      // 1) ALWAYS move the lens ring first — never blocked by inspect/render errors
       ring.style.display = "block";
       ring.style.left = (xy.x - R) + "px"; ring.style.top = (xy.y - R) + "px";
-      connectors(rect, liveCache, shift);
+      lastXY = xy; lastShift = shift;
+      // 2) (re)build the x-ray content only when the widget under the lens changes
+      const rect = hit.el.getBoundingClientRect();
+      if (!cur || cur.el !== hit.el) {
+        try { liveCache = inspect(hit.el); } catch (e) { liveCache = null; }
+        xray.innerHTML = '<div class="lcx-body">' + schematic(hit.name, liveCache) + "</div>";
+      }
+      cur = hit;
+      // 3) overlay fills the widget box; aperture clips it to the disc at the cursor
+      xray.style.left = rect.left + "px"; xray.style.top = rect.top + "px";
+      xray.style.width = rect.width + "px"; xray.style.height = rect.height + "px";
+      xray.style.display = "flex";
+      const clip = "circle(" + R + "px at " + (xy.x - rect.left) + "px " +
+        (xy.y - rect.top) + "px)";
+      xray.style.clipPath = clip; xray.style.webkitClipPath = clip;
+      try { connectors(rect, liveCache, shift); } catch (e) { /* keep tracking */ }
     }
     function show(e) {
       const hit = classAt(e.clientX, e.clientY);
       if (!hit) { hide(); return; }
       loadMP();
-      // treat as the same widget if it's the same element (avoid re-inspect churn)
-      if (cur && cur.el === hit.el) hit = cur;
       update(hit, { x: e.clientX, y: e.clientY }, e.shiftKey);
     }
 
-    addEventListener("mousemove", e => { e.altKey ? show(e) : hide(); }, true);
+    addEventListener("pointermove", e => { e.altKey ? show(e) : hide(); }, true);
     addEventListener("keyup", e => { if (e.key === "Alt" || !e.altKey) hide(); });
     addEventListener("blur", hide);
   }
