@@ -8,7 +8,7 @@ to_dot() methods (the single source of truth in steps_runtime.md). Optional
 and subclasses. No scope → the whole model.
 
 Pipeline: MicroPython runs the preamble + to_dot(scope) → DOT string →
-@hpcc-js/wasm-graphviz renders it to inline SVG.
+@viz-js/viz renders it to inline SVG.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -19,13 +19,13 @@ Auto-included by docs/_layouts/default.html.
     const preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
     if (preamble) {
       try {
-        const [{ Graphviz }, mp] = await Promise.all([
-          import("https://cdn.jsdelivr.net/npm/@hpcc-js/wasm-graphviz@1/dist/graphvizBundle.js"),
+        const [vizMod, mp] = await Promise.all([
+          import("https://cdn.jsdelivr.net/npm/@viz-js/viz@3/dist/viz.js"),
           (window._lcMpReady || (window._lcMpReady =
             import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
               .then(function (m) { return m.loadMicroPython({ stdout: function () {}, stderr: function () {} }); })))
         ]);
-        const gv = await Graphviz.load();
+        const viz = await (vizMod.instance || vizMod.default.instance || vizMod.default)();
         const run = mp.runPython || mp.exec || mp.pyexec || mp.run;
 
         // Define the model once; each diagram just calls to_dot(scope).
@@ -36,7 +36,7 @@ Auto-included by docs/_layouts/default.html.
           var arg = scope ? ('"' + scope + '"') : "None";
           try {
             run.call(mp, "import js\njs.window._lcDiagramDot = to_dot(" + arg + ")\n");
-            var svg = gv.dot(window._lcDiagramDot || "digraph{}");
+            var svg = viz.renderString(window._lcDiagramDot || "digraph{}");
             var div = document.createElement("div");
             div.className = "lc-dot-diagram lc-diagram";
             div.style.cssText = "overflow:auto;line-height:1";
