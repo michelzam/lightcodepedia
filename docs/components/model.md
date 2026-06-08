@@ -17,22 +17,22 @@ component.
 ```dot
 digraph component_model {
   rankdir=BT; nodesep=0.25;
-  graph [penwidth=0.1, splines=ortho, fontsize=12, fontname="Monaco,sans-serif"];
-  node [fontname="Monaco,sans-serif", penwidth=0.5, shape=record, style=filled, color=lightgray, fillcolor=white, fontsize=12, margin="0.18,0.05"];
-  edge [fontname="Monaco,sans-serif", penwidth=0.2];
+  graph [penwidth=0.1, splines=ortho, fontsize=12, fontname="Helvetica,Arial,sans-serif"];
+  node [fontname="Helvetica,Arial,sans-serif", penwidth=0.5, shape=record, style=filled, color=lightgray, fillcolor=white, fontsize=12, margin="0.18,0.05"];
+  edge [fontname="Helvetica,Arial,sans-serif", penwidth=0.2];
   Object [label="{🪵 Object|🔤 id\l|}"]
   Block [label="{🧩 Block|🔘 exists\l🔘 visible\l🔤 text\l|⏵ click\l⏵ has_class\l}"]
   Page [label="{📄 Page|🔤 id\l|⏵ feature\l⏵ features\l}"]
   Dataset [label="{🗃️ Dataset|🔘 loaded\l🔢 count\l|}"]
   Bar [label="{▮ Bar|🔢 value\l🔤 color\l|}"]
   Datagrid [label="{▦ Datagrid|🔢 row_count\l🔤⦙ headers\l📦⦙ rows\l|⏵ header\l}"]
-  Datagrid -> Dataset [dir=back, arrowtail=open, color=blue, fontcolor=blue, labeldistance=2, label=" ", headlabel="bind", fontsize=8]
+  Datagrid -> Dataset [arrowhead=open, color=blue, fontcolor=blue, labeldistance=2, headlabel="bind", fontsize=8]
   Chart [label="{📈 Chart|🔤 type\l🔤 x\l🔤 y\l🔢 bar_count\l🔢 point_count\l|}"]
-  Chart -> Dataset [dir=back, arrowtail=open, color=blue, fontcolor=blue, labeldistance=2, label=" ", headlabel="bind", fontsize=8]
-  Chart -> Bar [dir=back, arrowtail=open, color=blue, fontcolor=blue, labeldistance=2, label=" ", headlabel="⦙ bars", fontsize=8]
+  Chart -> Dataset [arrowhead=open, color=blue, fontcolor=blue, labeldistance=2, headlabel="bind", fontsize=8]
+  Chart -> Bar [arrowhead=open, color=blue, fontcolor=blue, labeldistance=2, headlabel="⦙ bars", fontsize=8]
   Feature [label="{🦄 Feature|🔤 title\l🔤 status\l|⏵ run\l}"]
   Button [label="{🖱️ Button|🔤 text\l🔤 color\l|⚡ on_click\l}"]
-  Button -> Page [dir=back, arrowtail=open, color=blue, fontcolor=blue, labeldistance=2, label=" ", headlabel="page", fontsize=8]
+  Button -> Page [arrowhead=open, color=blue, fontcolor=blue, labeldistance=2, headlabel="page", fontsize=8]
   Accordion [label="{🪗 Accordion||⏵ open\l⏵ close\l⏵ sections\l}"]
   Agent [label="{🤖 Agent|🔡 system\l🔤 model\l🔢 temperature\l🔢 max_tokens\l🔤 intro\l🔤 placeholder\l|⏵ ask\l}"]
   Cards [label="{🃏 Cards|🔤 cols\l🔢 gap\l|}"]
@@ -42,7 +42,7 @@ digraph component_model {
   EmbedPage [label="{🖼️ EmbedPage|🔢 height\l|}"]
   Folder [label="{📁 Folder|🔤 cols\l🔘 show_private\l|}"]
   Form [label="{📝 Form|🔤 title\l🔤 format\l🔘 editable\l|⏵ submit\l}"]
-  Form -> Datagrid [dir=back, arrowtail=open, color=blue, fontcolor=blue, labeldistance=2, label=" ", headlabel="bound", fontsize=8]
+  Form -> Datagrid [arrowhead=open, color=blue, fontcolor=blue, labeldistance=2, headlabel="bound", fontsize=8]
   Grid [label="{▤ Grid|🔤 cols\l🔢 gap\l🔤 headings\l|}"]
   Map [label="{🗺️ Map|🔢 lat\l🔢 lng\l🔢 zoom\l🔢 height\l|⏵ pan_to\l⏵ set_zoom\l}"]
   Menu [label="{🍔 Menu||⏵ items\l}"]
@@ -52,7 +52,7 @@ digraph component_model {
   subgraph cluster_states_Quiz {
     label="🎛️ Quiz states"; fontsize=10;
     style="filled,rounded"; fillcolor="white"; color="gray85"; margin=12;
-    node [fontname="Monaco,sans-serif", shape=record, style="filled,rounded", fillcolor="gray95", color="gray", fontsize=12, penwidth=0.3]
+    node [fontname="Helvetica,Arial,sans-serif", shape=record, style="filled,rounded", fillcolor="gray95", color="gray", fontsize=12, penwidth=0.3]
     edge [style=solid, arrowhead=open, penwidth=0.2, arrowsize=0.5, fontsize=10]
     st_Quiz_pending [label="➡️ pending"]
     st_Quiz_graded [label="graded"]
@@ -64,7 +64,7 @@ digraph component_model {
   subgraph cluster_states_Recorder {
     label="🎛️ Recorder states"; fontsize=10;
     style="filled,rounded"; fillcolor="white"; color="gray85"; margin=12;
-    node [fontname="Monaco,sans-serif", shape=record, style="filled,rounded", fillcolor="gray95", color="gray", fontsize=12, penwidth=0.3]
+    node [fontname="Helvetica,Arial,sans-serif", shape=record, style="filled,rounded", fillcolor="gray95", color="gray", fontsize=12, penwidth=0.3]
     edge [style=solid, arrowhead=open, penwidth=0.2, arrowsize=0.5, fontsize=10]
     st_Recorder_idle [label="➡️ idle"]
     st_Recorder_recording [label="recording"]
