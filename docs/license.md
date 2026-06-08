@@ -1,5 +1,12 @@
+---
+title: License
+sitemap: false
+---
+
+> This page mirrors the repository’s [`LICENSE.md`](https://github.com/michelzam/lightcodepedia/blob/main/LICENSE.md). The `LICENSE.md` at the repo root is the authoritative copy.
+
 # LightCode Platform License – Community, Educational, and Partnership Use  
-**Version 1.0 – June 2021**
+**Version 1.0 – June 2026**
 
 ---
 
@@ -51,7 +58,7 @@ Organizations interested in:
 - Dedicated technical support and SLA agreements.  
 - White-label solutions or OEM licensing.  
 
-Are invited to contact **KarmicSoft Sales** at [contact@karmicsoft.com](mailto:contact@karmicsoft.com) for a customized licensing package.
+Are invited to contact **KarmicSoft Sales** at [sales@karmicsoft.com](mailto:sales@karmicsoft.com) for a customized licensing package.
 
 ---
 

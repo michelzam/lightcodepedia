@@ -1,3 +1,4 @@
+<!-- © 2026 KarmicSoft — LightCode Platform. Proprietary, All Rights Reserved. License: /license -->
 {%- comment -%}
 X-ray lens.
 
