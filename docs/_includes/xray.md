@@ -15,19 +15,19 @@ Auto-included by docs/_layouts/default.html.
 
 <style>
   .lcx-xray { position: fixed; pointer-events: none; z-index: 99996; display: none;
-              background: rgba(8,18,28,.93); color: #cdebff; border-radius: 5px;
-              padding: 7px 11px; box-shadow: 0 0 0 1px rgba(120,200,255,.35);
-              font: 11px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
-              white-space: nowrap; }
-  .lcx-xray .t { font-weight: 700; color: #eaf6ff;
+              align-items: center; justify-content: center; overflow: visible;
+              background: rgba(8,18,28,.90); border-radius: 3px; }
+  .lcx-body { color: #cdebff; padding: 6px 10px; white-space: nowrap;
+              font: 11px/1.55 ui-monospace, "SF Mono", Menlo, monospace; }
+  .lcx-body .t { font-weight: 700; color: #eaf6ff;
                  border-bottom: 1px solid rgba(120,200,255,.25);
                  padding-bottom: 3px; margin-bottom: 3px; }
-  .lcx-xray .r .ic { display: inline-block; width: 1.6em; }
-  .lcx-xray .v { color: #8effa6; }
-  .lcx-xray .as { color: #ffd479; }
-  .lcx-xray .st { margin-top: 4px; padding-top: 3px; color: #9fd0ff;
+  .lcx-body .r .ic { display: inline-block; width: 1.6em; }
+  .lcx-body .v { color: #8effa6; }
+  .lcx-body .as { color: #ffd479; }
+  .lcx-body .st { margin-top: 4px; padding-top: 3px; color: #9fd0ff;
                   border-top: 1px solid rgba(120,200,255,.25); }
-  .lcx-xray .st b { color: #fff; }
+  .lcx-body .st b { color: #fff; }
   .lcx-ring { position: fixed; pointer-events: none; z-index: 100000;
               border-radius: 50%; border: 2px solid rgba(140,205,255,.9);
               box-shadow: 0 6px 22px rgba(0,0,0,.4),
@@ -206,17 +206,19 @@ Auto-included by docs/_layouts/default.html.
     function update(hit, xy, shift) {
       document.body.classList.add("lcx-on");
       const rect = hit.el.getBoundingClientRect();
-      if (hit !== cur || cur === null) {           // new widget → rebuild schematic + values
+      if (hit !== cur || cur === null) {           // new widget → rebuild + re-inspect
         liveCache = inspect(hit.el);
-        xray.innerHTML = schematic(hit.name, liveCache);
-        xray.style.left = rect.left + "px";
-        xray.style.top = rect.top + "px";
+        xray.innerHTML = '<div class="lcx-body">' + schematic(hit.name, liveCache) + "</div>";
       }
+      // overlay fills the whole widget box; inspector text is centred inside it
+      xray.style.left = rect.left + "px"; xray.style.top = rect.top + "px";
+      xray.style.width = rect.width + "px"; xray.style.height = rect.height + "px";
       cur = hit; lastXY = xy; lastShift = shift;
       // disc aperture: reveal the x-ray only through the circle at the cursor
-      xray.style.display = "block";
-      const cx = xy.x - rect.left, cy = xy.y - rect.top;
-      xray.style.clipPath = "circle(" + R + "px at " + cx + "px " + cy + "px)";
+      xray.style.display = "flex";
+      const cx = (xy.x - rect.left), cy = (xy.y - rect.top);
+      const clip = "circle(" + R + "px at " + cx + "px " + cy + "px)";
+      xray.style.clipPath = clip; xray.style.webkitClipPath = clip;
       ring.style.display = "block";
       ring.style.left = (xy.x - R) + "px"; ring.style.top = (xy.y - R) + "px";
       connectors(rect, liveCache, shift);
