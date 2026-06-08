@@ -207,7 +207,7 @@ class Object:
              '    label="' + ICON["fsm"] + " " + cn + ' states"; fontsize=10;',
              '    style="filled,rounded"; fillcolor="white"; color="gray85";'
              ' margin=12;',
-             '    node [fontname="Monaco,sans-serif", shape=record,'
+             '    node [fontname="Helvetica,Arial,sans-serif", shape=record,'
              ' style="filled,rounded", fillcolor="gray95", color="gray",'
              ' fontsize=12, penwidth=0.3]',
              '    edge [style=solid, arrowhead=open, penwidth=0.2,'
@@ -233,15 +233,15 @@ class Object:
     def to_dot(cls, sel=None):
         """Dump THIS class's contribution: node + associations + state machine."""
         lines = [cls._dot_node()]
-        # associations — mirror ModuleDecorator: dir=back so the open head sits
-        # at the target (pointing up), role shown as a headlabel in blue.
+        # associations — with rankdir=BT a plain owner->target edge points UP to
+        # the referenced class; open blue head, role as a headlabel at that end.
         for a in cls._spec["assoc"]:
             if sel is None or a["target"] in sel:
                 lbl = ("⦙ " if a.get("list") else "") + a["n"]
                 lines.append("  " + cls.__name__ + " -> " + a["target"]
-                             + ' [dir=back, arrowtail=open, color=blue,'
-                             + ' fontcolor=blue, labeldistance=2, label=" ",'
-                             + ' headlabel="' + _dot_esc(lbl) + '", fontsize=8]')
+                             + ' [arrowhead=open, color=blue, fontcolor=blue,'
+                             + ' labeldistance=2, headlabel="' + _dot_esc(lbl)
+                             + '", fontsize=8]')
         lines += cls._dot_states()
         return "\n".join(lines)
 
@@ -908,11 +908,11 @@ def to_dot(scope=None, gaps=None):
     L = ["digraph component_model {",
          "  rankdir=BT; nodesep=0.25;",
          '  graph [penwidth=0.1, splines=ortho, fontsize=12,'
-         ' fontname="Monaco,sans-serif"];',
-         '  node [fontname="Monaco,sans-serif", penwidth=0.5, shape=record,'
+         ' fontname="Helvetica,Arial,sans-serif"];',
+         '  node [fontname="Helvetica,Arial,sans-serif", penwidth=0.5, shape=record,'
          ' style=filled, color=lightgray, fillcolor=white, fontsize=12,'
          ' margin="0.18,0.05"];',
-         '  edge [fontname="Monaco,sans-serif", penwidth=0.2];']
+         '  edge [fontname="Helvetica,Arial,sans-serif", penwidth=0.2];']
 
     for n in _dot_order(sel):
         L.append(_CLASSES[n].to_dot(sel))
