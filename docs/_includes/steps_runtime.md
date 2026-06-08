@@ -126,7 +126,7 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
 # ════════════════════════ Object — the js bridge ═════════════════════════════
 # Every DOM helper is _protected (leading underscore) → never shown in diagrams.
 
-@component(icon="🪵", attrs=[{"n": "id", "t": "str"}])
+@component(icon="◻️", attrs=[{"n": "id", "t": "str"}])
 class Object:
     def __init__(self, el=None):
         self._el = el
