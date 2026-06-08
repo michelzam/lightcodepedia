@@ -60,9 +60,9 @@ Auto-included by docs/_layouts/default.html.
     const ring = document.createElement("div"); ring.className = "lcx-ring";
     ring.style.width = ring.style.height = (R * 2) + "px";
     const svg = document.createElementNS(NS, "svg"); svg.setAttribute("class", "lcx-svg");
-    svg.innerHTML = '<defs><marker id="lcxArrow" markerWidth="9" markerHeight="9"' +
-      ' refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6"' +
-      ' fill="none" stroke="#4aa3ff" stroke-width="1.4"/></marker></defs>';
+    svg.innerHTML = '<defs><filter id="lcxGlow" x="-40%" y="-40%" width="180%"' +
+      ' height="180%"><feDropShadow dx="0" dy="1" stdDeviation="1.4"' +
+      ' flood-color="#0a1620" flood-opacity="0.5"/></filter></defs>';
     const ghosts = [];
     document.body.append(xray, ring, svg);
 
@@ -155,26 +155,27 @@ Auto-included by docs/_layouts/default.html.
       ghosts.forEach(g => g.style.display = "none");
       if (!shift || !live || !live.links || !live.links.length) { svg.style.display = "none"; return; }
       svg.style.display = "block";
-      const ax = srcRect.left + srcRect.width / 2, ay = srcRect.top;   // top-centre, point up
+      const sx = srcRect.left + srcRect.width / 2, sy = srcRect.top + srcRect.height / 2;
       live.links.forEach((lk, i) => {
         const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
         let bx, by;
         if (visible(tEl)) {
           const tr = tEl.getBoundingClientRect();
           bx = tr.left + tr.width / 2; by = tr.top + tr.height / 2;
-          edge("rect", tr);                                  // highlight target box
+          port("rect", tr);                                  // highlight target box
         } else {                                             // hidden target → ghost chip
           const g = ghosts[i] || (ghosts[i] = mkGhost());
           const tIcon = (MODEL[lk.target] || {}).icon || "📦";
           g.innerHTML = tIcon + " " + esc(lk.id);
           g.style.display = "block";
-          g.style.left = (srcRect.left + 30 + i * 12) + "px";
-          g.style.top = (srcRect.top - 40 - i * 30) + "px";
+          g.style.left = (srcRect.left + 36 + i * 14) + "px";
+          g.style.top = (srcRect.top - 48 - i * 34) + "px";
           const gr = g.getBoundingClientRect();
           bx = gr.left + gr.width / 2; by = gr.top + gr.height / 2;
         }
-        line(ax, ay, bx, by);
-        label((ax + bx) / 2, (ay + by) / 2, (lk.list ? "⦙ " : "") + disp(lk.role));
+        pipe(sx, sy, bx, by);
+        const mx = (sx + bx) / 2;
+        plabel(mx, (sy + by) / 2, (lk.list ? "⦙ " : "") + disp(lk.role));
       });
     }
     function mkGhost() {
@@ -186,15 +187,46 @@ Auto-included by docs/_layouts/default.html.
       for (const k in attrs) e.setAttribute(k, attrs[k]);
       e.classList.add("lcx-edge"); svg.appendChild(e); return e;
     }
-    const line = (x1, y1, x2, y2) => svgEl("line",
-      { x1, y1, x2, y2, stroke: "#4aa3ff", "stroke-width": 1.4,
-        "marker-end": "url(#lcxArrow)" });
-    const edge = (_, r) => svgEl("rect",
-      { x: r.left, y: r.top, width: r.width, height: r.height, rx: 3, fill: "none",
-        stroke: "#4aa3ff", "stroke-width": 1.4, "stroke-dasharray": "4 3" });
-    function label(x, y, text) {
-      const t = svgEl("text", { x, y: y - 3, fill: "#2f6dd0", "font-size": 11,
-        "font-family": "Source Sans Pro, sans-serif", "text-anchor": "middle" });
+    // orthogonal (plumbing) route with rounded elbows
+    function routePath(sx, sy, tx, ty, r) {
+      const mx = (sx + tx) / 2;
+      const pts = [{ x: sx, y: sy }, { x: mx, y: sy }, { x: mx, y: ty }, { x: tx, y: ty }];
+      let d = "M" + sx + "," + sy;
+      const near = (a, b, k) => {                 // point k px from corner a toward b
+        const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
+        const t = Math.min(k, L / 2) / L;
+        return { x: a.x + dx * t, y: a.y + dy * t };
+      };
+      for (let i = 1; i < pts.length - 1; i++) {
+        const a = near(pts[i], pts[i - 1], r), b = near(pts[i], pts[i + 1], r);
+        d += " L" + a.x + "," + a.y + " Q" + pts[i].x + "," + pts[i].y + " " + b.x + "," + b.y;
+      }
+      return d + " L" + tx + "," + ty;
+    }
+    function pipe(sx, sy, tx, ty) {               // steel casing + glowing core + ports
+      const d = routePath(sx, sy, tx, ty, 12), cap = "round";
+      svgEl("path", { d, fill: "none", stroke: "#14303f", "stroke-width": 10,
+        "stroke-linecap": cap, "stroke-linejoin": cap, filter: "url(#lcxGlow)" });
+      svgEl("path", { d, fill: "none", stroke: "#3f8fd6", "stroke-width": 6,
+        "stroke-linecap": cap, "stroke-linejoin": cap });
+      svgEl("path", { d, fill: "none", stroke: "rgba(205,235,255,.75)", "stroke-width": 1.6,
+        "stroke-linecap": cap, "stroke-linejoin": cap });
+      flange(sx, sy); flange(tx, ty);
+    }
+    function flange(x, y) {
+      svgEl("circle", { cx: x, cy: y, r: 7, fill: "#14303f" });
+      svgEl("circle", { cx: x, cy: y, r: 3.4, fill: "#8fd0ff" });
+    }
+    function port(_, r) {                          // target component outline
+      svgEl("rect", { x: r.left - 1, y: r.top - 1, width: r.width + 2, height: r.height + 2,
+        rx: 4, fill: "none", stroke: "#3f8fd6", "stroke-width": 2, "stroke-dasharray": "5 4" });
+    }
+    function plabel(x, y, text) {                  // role tag clipped onto the pipe
+      const w = text.length * 6.5 + 12;
+      svgEl("rect", { x: x - w / 2, y: y - 9, width: w, height: 17, rx: 8.5,
+        fill: "#0c1f2b", stroke: "#3f8fd6", "stroke-width": 1, filter: "url(#lcxGlow)" });
+      const t = svgEl("text", { x, y: y + 3.5, fill: "#cdebff", "font-size": 11,
+        "font-family": "ui-monospace, monospace", "text-anchor": "middle" });
       t.textContent = text;
     }
 
