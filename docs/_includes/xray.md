@@ -18,7 +18,10 @@ Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
 <style>
-  .lcx-xray { position: fixed; pointer-events: none; z-index: 99996; display: none;
+  /* Scene container — panels + SVG live here so one transform scales everything */
+  #lcx-scene { position: fixed; inset: 0; pointer-events: none; z-index: 99994;
+               overflow: visible; }
+  .lcx-xray { position: absolute; pointer-events: none; display: none;
               background: rgba(8,18,28,.93); color: #cdebff; border-radius: 5px;
               padding: 7px 11px; white-space: nowrap;
               box-shadow: 0 0 0 1px rgba(120,200,255,.35), 0 8px 26px rgba(0,0,0,.35);
@@ -51,8 +54,8 @@ Auto-included by docs/_layouts/default.html.
                           rgba(255,255,255,.20), rgba(120,200,255,.05) 45%,
                           transparent 62%);
               display: none; }
-  .lcx-svg { position: fixed; inset: 0; width: 100%; height: 100%;
-             pointer-events: none; z-index: 99995; display: none; }  /* behind panels */
+  .lcx-svg { position: absolute; inset: 0; width: 100%; height: 100%;
+             pointer-events: none; display: none; }  /* behind panels, inside #lcx-scene */
   /* fluid flow: round globules travel target → source (binded → binder) */
   @keyframes lcxflow { to { stroke-dashoffset: 19; } }
   .lcx-flow { animation: lcxflow .8s linear infinite; }
@@ -76,9 +79,13 @@ Auto-included by docs/_layouts/default.html.
       ' flood-color="#0a1620" flood-opacity="0.5"/></filter></defs>';
     const ring = document.createElement("div"); ring.className = "lcx-ring";
     ring.style.width = ring.style.height = (R * 2) + "px";
-    document.body.append(svg, ring);
+    // Scene container: panels + SVG live here — one transform scales the whole scene
+    const scene = Object.assign(document.createElement("div"), { id: "lcx-scene" });
+    scene.style.display = "none";
+    scene.appendChild(svg);
+    document.body.append(scene, ring);
     const panels = [];
-    const panel = i => panels[i] || (panels[i] = document.body.appendChild(
+    const panel = i => panels[i] || (panels[i] = scene.appendChild(
       Object.assign(document.createElement("div"), { className: "lcx-xray" })));
 
     const disp = s => String(s).replace(/_/g, " ");
@@ -245,9 +252,27 @@ Auto-included by docs/_layouts/default.html.
 
     // ── scene assembly ───────────────────────────────────────────────────────
     let cur = null, lastHit = null, lastXY = { x: 0, y: 0 }, lastShift = null, liveCache = null;
+    function fitScene() {
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const vis = panels.filter(p => p.style.display !== "none");
+      if (!vis.length) return;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      vis.forEach(p => {
+        x0 = Math.min(x0, p.offsetLeft);
+        y0 = Math.min(y0, p.offsetTop);
+        x1 = Math.max(x1, p.offsetLeft + p.offsetWidth);
+        y1 = Math.max(y1, p.offsetTop + p.offsetHeight);
+      });
+      const pad = 12;
+      const s = Math.min((vw - pad * 2) / (x1 - x0), (vh - pad * 2) / (y1 - y0), 1);
+      if (s >= 0.99) { scene.style.transform = ""; return; }
+      scene.style.transformOrigin = x0 + "px " + y0 + "px";
+      scene.style.transform = "scale(" + s + ")";
+    }
     function hideAll() {
       panels.forEach(p => p.style.display = "none");
       ring.style.display = "none"; svg.style.display = "none"; clearPipes();
+      scene.style.display = "none"; scene.style.transform = "";
       document.body.classList.remove("lcx-on"); cur = null;
     }
     function place(p, x, y) {
@@ -256,6 +281,8 @@ Auto-included by docs/_layouts/default.html.
     }
     function buildScene(hit, data, shift) {
       clearPipes(); panels.forEach(p => p.style.display = "none");
+      scene.style.transform = "";                          // reset scale before re-measuring
+      scene.style.display = "block";
       const rect = hit.el.getBoundingClientRect();
       const p0 = panel(0);
       p0.innerHTML = schematic(hit.name, data);
@@ -282,6 +309,7 @@ Auto-included by docs/_layouts/default.html.
         pipe(e0.x, e0.y, e1.x, e1.y);
         plabel((e0.x + e1.x) / 2, (e0.y + e1.y) / 2, (lk.list ? "⦙ " : "") + disp(lk.role));
       });
+      requestAnimationFrame(fitScene);                     // fit after browser lays out panels
     }
     function lensClip(hit, xy) {
       const rect = hit.el.getBoundingClientRect();
