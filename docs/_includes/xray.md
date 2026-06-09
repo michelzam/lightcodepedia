@@ -318,17 +318,17 @@ Auto-included by docs/_layouts/default.html.
     window.lcxTouchOn   = () => { _touchOn = true;  loadMP(); };
     window.lcxTouchOff  = () => { _touchOn = false; hideAll(); };
 
+    const isFAB = e => e.target.closest && e.target.closest('.lc-slides-fab, #lc-bl-popup');
     function showTouch(e) {
-      if (!_touchOn) return;
+      if (!_touchOn || isFAB(e)) return;   // let FAB taps through so click fires
       e.preventDefault();
       const t = e.touches[0];
       const hit = classAt(t.clientX, t.clientY);
       if (!hit) { hideAll(); return; }
       update(hit, { x: t.clientX, y: t.clientY }, e.touches.length >= 2);
     }
-    // passive:false so we can preventDefault and block scroll while active
     addEventListener("touchstart", showTouch, { passive: false, capture: true });
     addEventListener("touchmove",  showTouch, { passive: false, capture: true });
-    addEventListener("touchend",   e => { if (_touchOn) e.preventDefault(); }, { passive: false });
+    addEventListener("touchend",   e => { if (_touchOn && !isFAB(e)) e.preventDefault(); }, { passive: false });
   }
 </script>
