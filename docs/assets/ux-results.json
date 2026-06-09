@@ -1,0 +1,178 @@
+[
+  {
+    "status": "⏳",
+    "scenario": "Slides FAB is present on tutorial101",
+    "feature": "Slides FAB and presentation mode",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Slides FAB popup opens on tap",
+    "feature": "Slides FAB and presentation mode",
+    "tags": "@mobile",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Tapping Present closes the popup",
+    "feature": "Slides FAB and presentation mode",
+    "tags": "@mobile",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Slides FAB is present on mobile",
+    "feature": "Slides FAB and presentation mode",
+    "tags": "@mobile",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "FAB popup appears on tap on mobile",
+    "feature": "Slides FAB and presentation mode",
+    "tags": "@mobile",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Home page loads",
+    "feature": "Core pages load without errors",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Tutorial 101 loads",
+    "feature": "Core pages load without errors",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Components page loads",
+    "feature": "Core pages load without errors",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Components examples page loads",
+    "feature": "Core pages load without errors",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "License page loads",
+    "feature": "Core pages load without errors",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Grid renders with data",
+    "feature": "Tutorial 101 interactive components",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Chart renders",
+    "feature": "Tutorial 101 interactive components",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Map renders",
+    "feature": "Tutorial 101 interactive components",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Video block renders",
+    "feature": "Tutorial 101 interactive components",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "Grid row selection updates the chart",
+    "feature": "Tutorial 101 interactive components",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "X-ray panel appears on hover over a component",
+    "feature": "X-ray inspector",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "X-ray panel identifies the bound chart component",
+    "feature": "X-ray inspector",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "X-ray panel identifies the map component",
+    "feature": "X-ray inspector",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "X-ray scene fits within viewport",
+    "feature": "X-ray inspector",
+    "tags": "",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "X-ray is activatable via FAB popup on mobile",
+    "feature": "X-ray inspector",
+    "tags": "@mobile",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "X-ray activates on tap after enabling via FAB popup",
+    "feature": "X-ray inspector",
+    "tags": "@mobile",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  },
+  {
+    "status": "⏳",
+    "scenario": "X-ray deactivates by tapping the FAB again",
+    "feature": "X-ray inspector",
+    "tags": "@mobile",
+    "seconds": 0.0,
+    "run": "2026-06-09T19:48Z"
+  }
+]
