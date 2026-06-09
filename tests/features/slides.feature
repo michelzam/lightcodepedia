@@ -8,18 +8,20 @@ Feature: Slides FAB and presentation mode
     And I wait for the page to be interactive
     Then the slides FAB button is visible
 
-  Scenario: Slides FAB popup opens on click
+  @mobile
+  Scenario: Slides FAB popup opens on tap
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive
-    And I click the slides FAB button
+    And I tap the slides FAB button
     Then the FAB popup is visible
     And the popup contains a "Present" option
     And the popup contains an X-ray option
 
-  Scenario: Clicking Present closes the popup
+  @mobile
+  Scenario: Tapping Present closes the popup
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive
-    And I click the slides FAB button
+    And I tap the slides FAB button
     And I click the Present option in the popup
     Then the FAB popup is not visible
 

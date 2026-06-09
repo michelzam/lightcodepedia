@@ -2,10 +2,11 @@ import re
 from behave import when, then, step
 from playwright.sync_api import expect
 
-# Selectors — adjust if DOM structure changes
-SEL_GRID = "[data-lc-type='datagrid'], .ag-root-wrapper, [class*='lc-datagrid']"
-SEL_CHART = "[data-lc-type='chart'], canvas[data-lc-id]"
-SEL_BUTTON = "[data-lc-type='button'], .lc-btn"
+# Selectors — CSS wrapper classes come from _WRAP in the Python SSOT
+SEL_GRID = ".lc-datagrid"
+SEL_CHART = ".lc-chart"
+SEL_BUTTON = ".lc-button"
+SEL_MAP = ".lc-map"
 SEL_XRAY_PANEL = ".lcx-xray"
 SEL_FAB = ".lc-slides-fab"
 SEL_POPUP = "#lc-bl-popup"
@@ -13,29 +14,33 @@ SEL_XRAY_BTN = "#lc-bl-xray-btn"
 SEL_PRESENT_BTN = "#lc-bl-present-btn"
 
 
+def _alt_hover(page, locator):
+    """Dispatch pointermove with altKey=true over an element to activate x-ray."""
+    locator.wait_for(state="visible", timeout=15_000)
+    box = locator.bounding_box()
+    cx = box["x"] + box["width"] / 2
+    cy = box["y"] + box["height"] / 2
+    page.evaluate(
+        "([x, y]) => window.dispatchEvent(new PointerEvent('pointermove',"
+        " {clientX: x, clientY: y, altKey: true, bubbles: true, cancelable: true}))",
+        [cx, cy]
+    )
+    page.wait_for_timeout(800)
+
+
 @when("I hover over the first grid component")
 def step_hover_grid(context):
-    el = context.page.locator(SEL_GRID).first
-    el.wait_for(state="visible", timeout=15_000)
-    el.hover()
-    # Give x-ray update() time to fire and paint the panel
-    context.page.wait_for_timeout(800)
+    _alt_hover(context.page, context.page.locator(SEL_GRID).first)
 
 
 @when("I hover over the chart component")
 def step_hover_chart(context):
-    el = context.page.locator(SEL_CHART).first
-    el.wait_for(state="visible", timeout=15_000)
-    el.hover()
-    context.page.wait_for_timeout(800)
+    _alt_hover(context.page, context.page.locator(SEL_CHART).first)
 
 
 @when("I hover over a button component")
 def step_hover_button(context):
-    el = context.page.locator(SEL_BUTTON).first
-    el.wait_for(state="visible", timeout=15_000)
-    el.hover()
-    context.page.wait_for_timeout(800)
+    _alt_hover(context.page, context.page.locator(SEL_BUTTON).first)
 
 
 @then("an x-ray panel is visible")
