@@ -32,10 +32,10 @@ def step_wait_interactive(context):
     context.page.wait_for_timeout(800)
 
 
-@then("the page title contains {text}")
-def step_title_contains(context, text):
-    text = text.strip('"')
-    expect(context.page).to_have_title(re.compile(re.escape(text), re.IGNORECASE))
+@then("the LC platform is loaded")
+def step_lc_loaded(context):
+    # FAB is injected by the LC runtime on every page — proves JS ran
+    expect(context.page.locator(".lc-slides-fab")).to_be_visible(timeout=10_000)
 
 
 @then("there are no JS console errors")

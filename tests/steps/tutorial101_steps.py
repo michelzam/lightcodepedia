@@ -1,11 +1,11 @@
 from behave import when, then
 from playwright.sync_api import expect
 
-SEL_GRID = "[data-lc-type='datagrid'], .ag-root-wrapper"
+SEL_GRID = ".lc-datagrid"
 SEL_GRID_ROW = ".ag-row"
-SEL_CHART = "[data-lc-type='chart'], canvas[data-lc-id]"
-SEL_MAP = "[data-lc-type='map'], .leaflet-container"
-SEL_VIDEO = "[data-lc-type='video'], .lc-video-wrap, iframe[src*='youtube']"
+SEL_CHART = ".lc-chart"
+SEL_MAP = ".lc-map"
+SEL_VIDEO = ".lc-video, iframe[src*='youtube'], iframe[src*='youtu.be']"
 
 
 @then("a datagrid component is visible")
