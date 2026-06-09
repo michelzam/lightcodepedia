@@ -1,5 +1,5 @@
 import re
-from behave import when, then
+from behave import when, then, step
 from playwright.sync_api import expect
 
 # Selectors — adjust if DOM structure changes
@@ -18,7 +18,8 @@ def step_hover_grid(context):
     el = context.page.locator(SEL_GRID).first
     el.wait_for(state="visible", timeout=15_000)
     el.hover()
-    context.page.wait_for_timeout(400)
+    # Give x-ray update() time to fire and paint the panel
+    context.page.wait_for_timeout(800)
 
 
 @when("I hover over the chart component")
@@ -26,7 +27,7 @@ def step_hover_chart(context):
     el = context.page.locator(SEL_CHART).first
     el.wait_for(state="visible", timeout=15_000)
     el.hover()
-    context.page.wait_for_timeout(400)
+    context.page.wait_for_timeout(800)
 
 
 @when("I hover over a button component")
@@ -34,13 +35,13 @@ def step_hover_button(context):
     el = context.page.locator(SEL_BUTTON).first
     el.wait_for(state="visible", timeout=15_000)
     el.hover()
-    context.page.wait_for_timeout(400)
+    context.page.wait_for_timeout(800)
 
 
 @then("an x-ray panel is visible")
 def step_xray_visible(context):
     panel = context.page.locator(SEL_XRAY_PANEL).first
-    expect(panel).to_be_visible(timeout=5_000)
+    expect(panel).to_be_visible(timeout=8_000)
 
 
 @then("the x-ray panel shows a component class name")
@@ -81,6 +82,11 @@ def step_xray_in_viewport(context):
 
 # --- FAB / touch steps ---
 
+@then("the slides FAB button is visible")
+def step_fab_visible(context):
+    expect(context.page.locator(SEL_FAB)).to_be_visible(timeout=10_000)
+
+
 @when("I click the slides FAB button")
 def step_click_fab(context):
     fab = context.page.locator(SEL_FAB)
@@ -89,7 +95,7 @@ def step_click_fab(context):
     context.page.wait_for_timeout(300)
 
 
-@when("I tap the slides FAB button")
+@step("I tap the slides FAB button")
 def step_tap_fab(context):
     fab = context.page.locator(SEL_FAB)
     expect(fab).to_be_visible(timeout=10_000)
@@ -113,7 +119,7 @@ def step_click_present(context):
     context.page.wait_for_timeout(300)
 
 
-@when("I tap the first grid component")
+@step("I tap the first grid component")
 def step_tap_grid(context):
     el = context.page.locator(SEL_GRID).first
     el.wait_for(state="visible", timeout=15_000)

@@ -1,3 +1,4 @@
+import re
 from behave import given, when, then
 from playwright.sync_api import expect
 
@@ -26,13 +27,15 @@ def step_navigate(context, path):
 
 @when("I wait for the page to be interactive")
 def step_wait_interactive(context):
-    context.page.wait_for_load_state("networkidle", timeout=20_000)
+    # Use "load" rather than "networkidle" — WASM downloads keep network busy indefinitely
+    context.page.wait_for_load_state("load", timeout=20_000)
+    context.page.wait_for_timeout(800)
 
 
 @then("the page title contains {text}")
 def step_title_contains(context, text):
     text = text.strip('"')
-    expect(context.page).to_have_title(lambda t: text.lower() in t.lower())
+    expect(context.page).to_have_title(re.compile(re.escape(text), re.IGNORECASE))
 
 
 @then("there are no JS console errors")
