@@ -483,15 +483,23 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
     function closePopup() { if (popup) popup.classList.remove('open'); }
     function openPopup()  { if (popup) popup.classList.add('open'); }
 
+    function xrayOff() {
+      if (window.lcxTouchOff) window.lcxTouchOff();
+      fab.classList.remove('lc-xray-active');
+      fab.querySelector('.lc-slides-fab-icon').textContent = '📽️';
+    }
+
+    // On iOS, click from a tap is suppressed when capture-phase touch handlers
+    // are active. Handle x-ray exit directly on touchend on the FAB itself.
+    fab.addEventListener('touchend', function(e) {
+      if (!(window.lcxIsActive && window.lcxIsActive())) return;
+      e.stopPropagation();
+      xrayOff();
+    }, { passive: true });
+
     fab.addEventListener('click', function(e) {
       e.preventDefault();
-      // If x-ray mode is on, FAB tap exits it directly
-      if (window.lcxIsActive && window.lcxIsActive()) {
-        window.lcxTouchOff();
-        fab.classList.remove('lc-xray-active');
-        fab.querySelector('.lc-slides-fab-icon').textContent = '📽️';
-        return;
-      }
+      if (window.lcxIsActive && window.lcxIsActive()) { xrayOff(); return; }
       if (touchOnly && !body.classList.contains('lc-slides-active')) {
         popup.classList.contains('open') ? closePopup() : openPopup();
         return;
