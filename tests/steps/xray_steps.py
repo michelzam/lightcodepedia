@@ -40,9 +40,9 @@ def step_hover_chart(context):
     _alt_hover(context.page, context.page.locator(SEL_CHART).first)
 
 
-@when("I hover over a button component")
-def step_hover_button(context):
-    _alt_hover(context.page, context.page.locator(SEL_BUTTON).first)
+@when("I hover over the map component")
+def step_hover_map(context):
+    _alt_hover(context.page, context.page.locator(SEL_MAP).first)
 
 
 @then("an x-ray panel is visible")
