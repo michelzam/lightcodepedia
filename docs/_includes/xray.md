@@ -311,5 +311,24 @@ Auto-included by docs/_layouts/default.html.
     addEventListener("pointermove", e => { e.altKey ? show(e) : hideAll(); }, true);
     addEventListener("keyup", e => { if (e.key === "Alt" || !e.altKey) hideAll(); });
     addEventListener("blur", hideAll);
+
+    // ── Touch x-ray mode (toggled from the slides FAB popup on touch devices) ──
+    let _touchOn = false;
+    window.lcxIsActive  = () => _touchOn;
+    window.lcxTouchOn   = () => { _touchOn = true;  loadMP(); };
+    window.lcxTouchOff  = () => { _touchOn = false; hideAll(); };
+
+    function showTouch(e) {
+      if (!_touchOn) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      const hit = classAt(t.clientX, t.clientY);
+      if (!hit) { hideAll(); return; }
+      update(hit, { x: t.clientX, y: t.clientY }, e.touches.length >= 2);
+    }
+    // passive:false so we can preventDefault and block scroll while active
+    addEventListener("touchstart", showTouch, { passive: false, capture: true });
+    addEventListener("touchmove",  showTouch, { passive: false, capture: true });
+    addEventListener("touchend",   e => { if (_touchOn) e.preventDefault(); }, { passive: false });
   }
 </script>
