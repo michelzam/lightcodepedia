@@ -17,6 +17,8 @@ SEL_PRESENT_BTN = "#lc-bl-present-btn"
 def _alt_hover(page, locator):
     """Dispatch pointermove with altKey=true over an element to activate x-ray."""
     locator.wait_for(state="visible", timeout=15_000)
+    locator.scroll_into_view_if_needed()
+    page.wait_for_timeout(300)
     box = locator.bounding_box()
     cx = box["x"] + box["width"] / 2
     cy = box["y"] + box["height"] / 2
