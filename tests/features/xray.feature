@@ -18,7 +18,7 @@ Feature: X-ray inspector
     And the x-ray panel mentions "bound_to"
 
   Scenario: X-ray panel shows on_click handler for a button
-    When I navigate to "/tutorial101"
+    When I navigate to "/components/button"
     And I wait for the page to be interactive
     And I hover over a button component
     Then an x-ray panel is visible

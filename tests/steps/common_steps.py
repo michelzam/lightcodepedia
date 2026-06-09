@@ -34,8 +34,9 @@ def step_wait_interactive(context):
 
 @then("the LC platform is loaded")
 def step_lc_loaded(context):
-    # FAB is injected by the LC runtime on every page — proves JS ran
-    expect(context.page.locator(".lc-slides-fab")).to_be_visible(timeout=10_000)
+    # FAB is always injected by the LC runtime — proves JS ran.
+    # On pages without slides it may be hidden (data-no-slides), so check attachment only.
+    expect(context.page.locator(".lc-slides-fab")).to_be_attached(timeout=10_000)
 
 
 @then("there are no JS console errors")
