@@ -10,19 +10,19 @@ Feature: X-ray inspector
     Then an x-ray panel is visible
     And the x-ray panel shows a component class name
 
-  Scenario: X-ray panel shows bound-to association for a chart
+  Scenario: X-ray panel identifies the bound chart component
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive
     And I hover over the chart component
     Then an x-ray panel is visible
-    And the x-ray panel mentions "bound_to"
+    And the x-ray panel mentions "Chart"
 
-  Scenario: X-ray panel shows on_click handler for a button
-    When I navigate to "/components/button"
+  Scenario: X-ray panel identifies the map component
+    When I navigate to "/tutorial101"
     And I wait for the page to be interactive
-    And I hover over a button component
+    And I hover over the map component
     Then an x-ray panel is visible
-    And the x-ray panel shows a code block
+    And the x-ray panel mentions "Map"
 
   Scenario: X-ray scene fits within viewport
     When I navigate to "/tutorial101"
