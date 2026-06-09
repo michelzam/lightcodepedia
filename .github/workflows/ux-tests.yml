@@ -1,0 +1,49 @@
+name: UX Tests
+
+on:
+  # Run automatically after Pages deployment completes
+  workflow_run:
+    workflows: ["pages"]
+    types: [completed]
+  # Run manually against any URL (default: live site)
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL to test against"
+        required: false
+        default: "https://lightcodepedia.org"
+
+jobs:
+  ux-tests:
+    runs-on: ubuntu-latest
+    # Only run if triggered manually, or if the pages deployment succeeded
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -r tests/requirements.txt
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
+
+      - name: Run BDD UX tests
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://lightcodepedia.org' }}
+        run: behave tests/features/ --no-capture --format progress2
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: behave-results
+          path: |
+            *.png
+            *.html
