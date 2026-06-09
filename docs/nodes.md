@@ -14,3 +14,13 @@ The live network map.
 
 [Latest runs](#)
 {: .datagrid bind="deploys" rows="10" }
+
+## 🧪 UX test results
+
+Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) written in Gherkin (behave + Playwright). Each row below is one `Scenario` from a `.feature` file, with its result from the latest run against the live site.
+
+[ux-results](https://raw.githubusercontent.com/michelzam/lightcodepedia/main/docs/assets/ux-results.json)
+{: .dataset id="uxtests" }
+
+[Latest scenarios](#)
+{: .datagrid bind="uxtests" rows="25" }
