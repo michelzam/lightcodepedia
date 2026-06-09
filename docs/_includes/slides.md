@@ -90,7 +90,29 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
   .lc-slides-share-qr { width: min(70vw, 280px); height: min(70vw, 280px); }
 }
 
-/* Speaker notes: hidden everywhere by default; visible when body has .lc-notes-on
+/* ── Bottom-left popup menu (touch devices) ───────────────────────────── */
+.lc-bl-popup {
+  position: fixed; bottom: calc(1.2em + 52px); left: 1.2em;
+  background: white; border: 1px solid #d0e3f5; border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.14); overflow: hidden;
+  display: none; flex-direction: column; min-width: 152px; z-index: 1000;
+  transform: translateY(6px); opacity: 0;
+  transition: opacity 0.15s ease, transform 0.18s ease;
+}
+.lc-bl-popup.open { display: flex; opacity: 1; transform: none; }
+.lc-bl-popup-item {
+  display: flex; align-items: center; gap: 9px; padding: 12px 16px;
+  font-size: 0.88em; cursor: pointer; border: none; background: none;
+  text-align: left; color: #333; border-bottom: 1px solid #f0f0f0; width: 100%;
+}
+.lc-bl-popup-item:last-child { border-bottom: none; }
+.lc-bl-popup-item:active { background: #f0f6ff; }
+.lc-bl-popup-item.lc-xray-on { color: #0088aa; font-weight: 600; }
+@media (max-width: 700px) { .lc-bl-popup { bottom: calc(0.8em + 52px); left: 0.8em; } }
+/* FAB active state while x-ray is on */
+.lc-slides-fab.lc-xray-active { color: #0088aa; border-color: #0088aa;
+  background: #f0fbff; box-shadow: 0 0 0 3px rgba(0,136,170,.18); }
+
    (added when ?notes=1 is in the URL or 'N' is pressed in slide mode). */
 .speaker-note { display: none; }
 body.lc-notes-on .speaker-note {
@@ -123,6 +145,10 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
 <a class="lc-slides-fab" href="#" title="Present as slides" aria-label="Present as slides">
   <span class="lc-slides-fab-icon" aria-hidden="true">📽️</span><span class="lc-slides-fab-label">Present</span>
 </a>
+<div class="lc-bl-popup" id="lc-bl-popup" role="menu" aria-label="Actions">
+  <button class="lc-bl-popup-item" id="lc-bl-present-btn" type="button">📽️ Present</button>
+  <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    type="button">🔬 X-ray</button>
+</div>
 <nav class="lc-slides-nav" role="toolbar" aria-label="Slide navigation">
   <button class="lc-slides-nav-prev" type="button" title="Previous (←)" aria-label="Previous slide">◀</button>
   <select class="lc-slides-nav-jump" title="Jump to slide" aria-label="Jump to slide"></select>
@@ -450,22 +476,43 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
     buildJumpOptions();
 
     var touchOnly = window.matchMedia('(hover: none)').matches;
-    var fabCollapseTimer = null;
-    function collapseFab(){ fab.classList.remove('lc-fab-expanded'); }
-    fab.addEventListener('click', function(e){
+    var popup = document.getElementById('lc-bl-popup');
+    var presentBtn = document.getElementById('lc-bl-present-btn');
+    var xrayBtn    = document.getElementById('lc-bl-xray-btn');
+
+    function closePopup() { if (popup) popup.classList.remove('open'); }
+    function openPopup()  { if (popup) popup.classList.add('open'); }
+
+    fab.addEventListener('click', function(e) {
       e.preventDefault();
-      if (touchOnly && !body.classList.contains('lc-slides-active') && !fab.classList.contains('lc-fab-expanded')) {
-        fab.classList.add('lc-fab-expanded');
-        clearTimeout(fabCollapseTimer);
-        fabCollapseTimer = setTimeout(collapseFab, 3000);
+      // If x-ray mode is on, FAB tap exits it directly
+      if (window.lcxIsActive && window.lcxIsActive()) {
+        window.lcxTouchOff();
+        fab.classList.remove('lc-xray-active');
+        fab.querySelector('.lc-slides-fab-icon').textContent = '📽️';
         return;
       }
-      clearTimeout(fabCollapseTimer);
-      collapseFab();
+      if (touchOnly && !body.classList.contains('lc-slides-active')) {
+        popup.classList.contains('open') ? closePopup() : openPopup();
+        return;
+      }
       toggle();
     });
-    document.addEventListener('click', function(e){
-      if (!fab.contains(e.target)) collapseFab();
+
+    if (presentBtn) presentBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); closePopup(); toggle();
+    });
+    if (xrayBtn) xrayBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); closePopup();
+      if (window.lcxTouchOn) {
+        window.lcxTouchOn();
+        fab.classList.add('lc-xray-active');
+        fab.querySelector('.lc-slides-fab-icon').textContent = '🔬';
+      }
+    });
+
+    document.addEventListener('click', function(e) {
+      if (popup && !fab.contains(e.target) && !popup.contains(e.target)) closePopup();
     });
 
     if (navPrev) navPrev.addEventListener('click', function(e){ e.preventDefault(); prev(); });
