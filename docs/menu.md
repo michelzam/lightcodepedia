@@ -3,4 +3,4 @@ sitemap: false
 layout: null
 ---
 
-[🎓 Tutorial](/tutorial101) [🎭 Examples](/components/examples) [🧩 Components](/components/) [⚖️ License](/license)
+[🎓 Tutorial](/tutorial101) [🎭 Examples](/components/examples) [🧩 Components](/components/)

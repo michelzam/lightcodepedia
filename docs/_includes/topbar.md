@@ -61,6 +61,9 @@ if (location.search.indexOf('embed=true') >= 0) {
 .lc-ud-row:hover { background: #f5f5f5; }
 .lc-ud-row:last-child { border-bottom: none; }
 .lc-ud-row.danger { color: #c00; }
+.lc-ud-legal, .lc-sd-legal { font-size: 0.78em !important; color: #aaa !important;
+  border-top: 1px solid #f0f0f0; padding: 7px 16px !important; }
+.lc-ud-legal:hover, .lc-sd-legal:hover { color: #888 !important; }
 .lc-ud-repo { font-family: monospace; font-size: 0.8em; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* ── get-started dropdown (logged-out) ── */
 #lc-start-pill { position: relative; flex-shrink: 0; display: none; }
@@ -143,6 +146,7 @@ body {
     <div id="lc-start-drop">
       <a class="lc-sd-row" href="/start"><span>🚀</span><span>Start here</span></a>
       <div class="lc-sd-row" id="lc-sd-record"><span>🎬</span><span>Record</span></div>
+      <a class="lc-sd-row lc-sd-legal" href="/license"><span>⚖️</span><span>License</span></a>
     </div>
   </div>
   <div id="lc-user-pill" style="display:none">
@@ -173,6 +177,7 @@ body {
       <div class="lc-ud-row" id="lc-ud-record"><span>🎬</span><span>Record screen</span></div>
       <div class="lc-ud-row" id="lc-ud-yt-upload"><span>📹</span><span>Upload to YouTube</span></div>
       <div class="lc-ud-row danger" id="lc-ud-disconnect"><span>🔓</span><span>Disconnect</span></div>
+      <a class="lc-ud-row lc-ud-legal" href="/license"><span>⚖️</span><span>License</span></a>
     </div>
   </div>
 </div>
