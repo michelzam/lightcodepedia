@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
+pretty.output
 /.venv310/*
 .idea/*
 .venv310/*
