@@ -6,7 +6,7 @@ sitemap: false
 > This page mirrors the repository’s [`LICENSE.md`](https://github.com/michelzam/lightcodepedia/blob/main/LICENSE.md). The `LICENSE.md` at the repo root is the authoritative copy.
 
 # LightCode Platform License – Community, Educational, and Partnership Use  
-**Version 1.0 – June 2026**
+**Version 1.0 – 2021**
 
 ---
 
@@ -80,4 +80,4 @@ This software is provided **“as is”** without warranties of any kind. Karmic
 
 ---
 
-**© 2026 KarmicSoft. All Rights Reserved.**
+**© 2021–2026 KarmicSoft. All Rights Reserved.**
