@@ -1,3 +1,5 @@
+__pycache__/
+*.pyc
 /.venv310/*
 .idea/*
 .venv310/*

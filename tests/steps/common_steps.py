@@ -1,0 +1,42 @@
+from behave import given, when, then
+from playwright.sync_api import expect
+
+JS_ERROR_IGNORE = {
+    "favicon",
+    "ResizeObserver loop",
+    "Non-Error promise rejection",
+}
+
+
+@given("I have a clean browser page")
+def step_clean_page(context):
+    context.js_errors = []
+    context.page.on("console", lambda msg: (
+        context.js_errors.append(msg.text)
+        if msg.type == "error" and not any(s in msg.text for s in JS_ERROR_IGNORE)
+        else None
+    ))
+    context.page.on("pageerror", lambda err: context.js_errors.append(str(err)))
+
+
+@when('I navigate to "{path}"')
+def step_navigate(context, path):
+    context.page.goto(context.base_url + path, wait_until="domcontentloaded")
+
+
+@when("I wait for the page to be interactive")
+def step_wait_interactive(context):
+    context.page.wait_for_load_state("networkidle", timeout=20_000)
+
+
+@then("the page title contains {text}")
+def step_title_contains(context, text):
+    text = text.strip('"')
+    expect(context.page).to_have_title(lambda t: text.lower() in t.lower())
+
+
+@then("there are no JS console errors")
+def step_no_js_errors(context):
+    assert not context.js_errors, (
+        f"JS errors found:\n" + "\n".join(context.js_errors)
+    )
