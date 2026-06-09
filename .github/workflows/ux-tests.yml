@@ -47,6 +47,7 @@ jobs:
         run: >
           behave tests/features/ --no-capture
           -f json -o ux-report.json
+          -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html
           -f progress2
 
       - name: Build per-scenario results JSON
@@ -58,7 +59,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/assets/ux-results.json
+          git add docs/assets/ux-results.json docs/assets/ux-report.html
           if git diff --cached --quiet; then
             echo "No change in results."
           else
@@ -75,8 +76,8 @@ jobs:
           name: behave-results
           path: |
             ux-report.json
+            docs/assets/ux-report.html
             *.png
-            *.html
 
       - name: Fail job if any scenario failed
         if: steps.behave.outcome == 'failure'

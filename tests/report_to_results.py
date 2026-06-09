@@ -4,14 +4,21 @@
 Reads behave's verbose `-f json` output and writes a flat array of scenario
 rows that the LC `.dataset` / `.datagrid` components can render directly:
 
-    [{"status": "✅", "scenario": "...", "feature": "...",
-      "tags": "@mobile", "seconds": 1.23, "run": "2026-06-09T19:35Z"}, ...]
+    [{"status": "✅", "scenario": "...", "feature": "...", "tags": "@mobile",
+      "seconds": 1.23, "run": "2026-06-09T19:35Z",
+      "url": "/assets/ux-report.html#scenario_0"}, ...]
+
+The `url` field drives row-click navigation in the LC datagrid to the full
+Gherkin HTML step trace for that scenario (including error details on failure).
+The anchor `scenario_N` matches the positional ID used by behave-html-formatter.
 
 Usage:
     python tests/report_to_results.py <behave.json> <out.json> [--status STATE]
+                                       [--html-base BASE_URL]
 
 --status overrides every row's status (used to seed a "pending" file from a
 behave --dry-run before the suite has run for real).
+--html-base sets the base path/URL for the HTML report (default: /assets/ux-report.html).
 """
 import json
 import sys
@@ -47,8 +54,14 @@ def scenario_seconds(el):
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     force = None
-    if "--status" in sys.argv:
-        force = sys.argv[sys.argv.index("--status") + 1]
+    html_base = "/assets/ux-report.html"
+    for flag in ("--status", "--html-base"):
+        if flag in sys.argv:
+            val = sys.argv[sys.argv.index(flag) + 1]
+            if flag == "--status":
+                force = val
+            else:
+                html_base = val
     src, out = args[0], args[1]
 
     with open(src) as fh:
@@ -56,6 +69,7 @@ def main():
 
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
     rows = []
+    idx = 0
     for feat in report:
         fname = (feat.get("name") or "").strip()
         for el in feat.get("elements", []):
@@ -69,7 +83,9 @@ def main():
                 "tags": " ".join("@" + t for t in (el.get("tags") or [])),
                 "seconds": scenario_seconds(el),
                 "run": stamp,
+                "url": f"{html_base}#scenario_{idx}",
             })
+            idx += 1
 
     with open(out, "w") as fh:
         json.dump(rows, fh, ensure_ascii=False, indent=2)
