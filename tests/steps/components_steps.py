@@ -57,3 +57,21 @@ def step_quiz_correct(context):
 def step_quiz_wrong(context):
     li = context.page.locator(".lc-quiz li", has_text=context._quiz_answer).first
     expect(li).to_have_class(re.compile(r"lc-quiz-wrong"), timeout=5_000)
+
+
+@when('I click the bound grid "{grid_id}" row containing "{text}"')
+def step_click_bound_grid_row(context, grid_id, text):
+    row = context.page.locator(
+        ".lc-datagrid[data-lc-id='" + grid_id + "'] tbody tr", has_text=text
+    ).first
+    row.wait_for(state="visible", timeout=15_000)
+    row.click()
+    context.page.wait_for_timeout(500)
+
+
+@then('the detail chart bound to "{grid_id}" renders a canvas')
+def step_detail_chart_canvas(context, grid_id):
+    canvas = context.page.locator(
+        ".lc-chart[data-bound-to='" + grid_id + "'] canvas"
+    ).first
+    expect(canvas).to_be_visible(timeout=10_000)
