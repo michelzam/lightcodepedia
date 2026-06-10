@@ -38,6 +38,7 @@ digraph component_model {
     Button [label="{🖱️ Button ➭ 🧩|🔤 text\l🔤 color\l|⚡ on click\l}"]
     Accordion [label="{🪗 Accordion ➭ 🧩|▸ open\l▸ close\l▸ sections\l}"]
     Agent [label="{🤖 Agent ➭ 🧩|🔡 system\l🔤 model\l🔢 temperature\l🔢 max tokens\l🔤 intro\l🔤 placeholder\l|▸ ask\l}"]
+    Avatar [label="{🗣️ Avatar ➭ 🧩|🎛️ state\l🔢 size\l🔘 playing\l🔤 speech\l|▹ play ▹\l▹ stop ▹\l}"]
     Cards [label="{🃏 Cards ➭ 🧩|🔤 cols\l🔢 gap\l}"]
     Carousel [label="{🎠 Carousel ➭ 🧩|🔢 delay\l|▸ next\l▸ prev\l▸ goto\l}"]
     Code [label="{📄 Code ➭ 🧩|🔤 path\l🔤 src\l🔤 lang\l🔤 title\l🔤 repo\l🔤 branch\l}"]
@@ -54,6 +55,7 @@ digraph component_model {
     Radio [label="{📻 Radio ➭ 🧩|🔤 selected\l|▸ select\l}"]
     Recorder [label="{🎥 Recorder ➭ 🧩|🎛️ state\l🔤 pip\l🔢 size\l🔢 zoom\l🔢 fps\l|▹ start ▹\l▹ stop ▹\l}"]
     Run [label="{🐍 Run ➭ 🧩|🔢 rows\l🔘 folded\l🔘 silent\l🔡 init\l🔤 bound\l🔤 expected\l|▸ run\l}"]
+    Scene3d [label="{🧊 Scene3d ➭ 🧩|🔢 height\l🔘 loaded\l🔤 last log\l|▸ bark\l▸ run\l▸ wag tail\l▸ swim\l▸ blow bubble\l}"]
     Scrollable [label="{📜 Scrollable ➭ 🧩|🔢 height\l}"]
     Slides [label="{🎞️ Slides ➭ 🧩|🔢 current\l|▸ next\l▸ prev\l▸ goto\l}"]
     Tabs [label="{📑 Tabs ➭ 🧩|🔢 active\l|▸ select\l}"]
@@ -64,6 +66,17 @@ digraph component_model {
   Chart -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bound to", fontsize=8]
   Chart -> Bar [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="⦙ bars", fontsize=8]
   Button -> Page [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="page", fontsize=8]
+  subgraph cluster_states_Avatar {
+    label="🗣️ states 🎛️"; fontsize=10;
+    style="filled,rounded"; fillcolor="gray94"; color="gray85"; margin=12; nodesep=0.9;
+    node [fontname="Source Sans Pro, sans-serif", shape=record, style="filled,rounded", fillcolor="white", color="gray", fontsize=10, penwidth=0.3]
+    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=8]
+    st_Avatar_idle [label="➡️ idle"]
+    st_Avatar_speaking [label="speaking"]
+  }
+  st_Avatar_idle -> st_Avatar_speaking [xlabel="play", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
+  st_Avatar_speaking -> st_Avatar_idle [xlabel="stop", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
+  st_Avatar_idle -> Avatar [style=dashed, arrowhead=none, color="gray70"]
   Form -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bound", fontsize=8]
   subgraph cluster_states_Quiz {
     label="❓ states 🎛️"; fontsize=10;

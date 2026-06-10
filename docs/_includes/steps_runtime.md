@@ -781,6 +781,96 @@ class Accordion(Block):
         return self
 
 
+@component(icon="🧊",
+           attrs=[{"n": "height", "t": "int", "data": True, "d": 440,
+                   "attr": "height"},
+                  {"n": "loaded", "t": "bool"},
+                  {"n": "last_log", "t": "str"}],
+           methods=["bark", "run", "wag_tail", "swim", "blow_bubble"])
+class Scene3d(Block):
+    @property
+    def loaded(self):
+        return bool(self._el is not None
+                    and self._el.querySelector("canvas") is not None)
+
+    @property
+    def last_log(self):
+        if self._el is None:
+            return ""
+        nl = self._el.querySelectorAll(".lc-s3d-console div")
+        n = int(nl.length)
+        return str(nl.item(n - 1).textContent or "").strip() if n else ""
+
+    def _method_btn(self, name):
+        if self._el is not None:
+            nl = self._el.querySelectorAll(".lc-s3d-methods button")
+            for i in range(int(nl.length)):
+                b = nl.item(i)
+                if str(b.textContent or "").strip() == name + "()":
+                    return Block(b)
+        return Block(None)
+
+    def bark(self):
+        return self._method_btn("bark").click()
+
+    def run(self):
+        return self._method_btn("run").click()
+
+    def wag_tail(self):
+        return self._method_btn("wag_tail").click()
+
+    def swim(self):
+        return self._method_btn("swim").click()
+
+    def blow_bubble(self):
+        return self._method_btn("blow_bubble").click()
+
+
+@component(icon="🗣️",
+           attrs=[{"n": "size", "t": "int"},
+                  {"n": "playing", "t": "bool"},
+                  {"n": "speech", "t": "str"}],
+           methods=["play", "stop"],
+           states=["idle", "speaking"])
+class Avatar(Block):
+    def _reg(self):
+        regs = getattr(js.window, "_lcAvatars", None)
+        aid = self.id
+        return getattr(regs, aid, None) if regs is not None and aid else None
+
+    @property
+    def playing(self):
+        av = self._reg()
+        return bool(av.playing) if av is not None else False
+
+    @property
+    def speech(self):
+        b = self._el.querySelector(".lc-avatar-speech") if self._el is not None else None
+        return str(b.textContent or "").strip() if b is not None else ""
+
+    @property
+    def size(self):
+        c = self._el.querySelector(".lc-avatar-char") if self._el is not None else None
+        if c is None:
+            return 0
+        try:
+            return int(str(c.style.width).replace("px", "") or 0)
+        except Exception:
+            return 0
+
+    @transition(["idle"], "speaking")
+    def play(self):
+        if not self.playing:
+            self._tap(".lc-avatar-char")
+        return self
+
+    @transition(["speaking"], "idle")
+    def stop(self):
+        if self.playing:
+            self._tap(".lc-avatar-char")
+        return self
+
+
 # ════════════════════════ resolver ══════════════════════════════════════════
 
 _WRAP = [
@@ -792,6 +882,7 @@ _WRAP = [
     ("lc-scroll", Scrollable), ("lc-code", Code), ("lc-agent", Agent),
     ("lc-recorder", Recorder), ("lc-qr", Qr), ("lc-pyrun", Run),
     ("lc-pytutor", Pytutor), ("lc-embed", EmbedPage), ("lc-accordion", Accordion),
+    ("lc-scene3d", Scene3d), ("lc-avatar-host", Avatar),
 ]
 
 
