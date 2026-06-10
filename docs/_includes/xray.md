@@ -345,6 +345,27 @@ Auto-included by docs/_layouts/default.html.
         }
         n.panel = p;
       });
+      // ── de-overlap: greedy pass pushing colliding panels below their
+      //    blocker (hovered panel placed first stays anchored); pipes are
+      //    drawn after, and fitScene rescales if the scene grew ──
+      const placedR = [];
+      nodes.forEach(n => {
+        const p = n.panel;
+        let x = p.offsetLeft, y = p.offsetTop;
+        const w = p.offsetWidth, h = p.offsetHeight;
+        let guard = 0, moved = true;
+        while (moved && guard++ < 24) {
+          moved = false;
+          for (const q of placedR) {
+            if (x < q.x + q.w + 8 && q.x < x + w + 8 && y < q.y + q.h + 8 && q.y < y + h + 8) {
+              y = q.y + q.h + 12;
+              p.style.top = y + "px";
+              moved = true;
+            }
+          }
+        }
+        placedR.push({ x, y, w, h });
+      });
       edges.forEach(eg => {
         const r0 = eg.a.panel.getBoundingClientRect(), r1 = eg.b.panel.getBoundingClientRect();
         const e0 = edgePoint(r0, center(r1).x, center(r1).y);
