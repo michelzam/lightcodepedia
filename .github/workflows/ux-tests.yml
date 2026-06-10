@@ -20,9 +20,11 @@ jobs:
     permissions:
       contents: write
     # Only run if triggered manually, or if the pages deployment succeeded
+    # AND was not triggered by the bot's own results commit (loop guard).
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_commit.author.email != '41898282+github-actions[bot]@users.noreply.github.com')
 
     steps:
       - uses: actions/checkout@v4
@@ -63,8 +65,8 @@ jobs:
           if git diff --cached --quiet; then
             echo "No change in results."
           else
-            git commit -m "chore: update UX test results [skip ci]"
-            # GITHUB_TOKEN pushes do not re-trigger workflows, so this cannot loop
+            git commit -m "chore: update UX test results"
+            # The loop guard above stops ux-tests re-running on this bot commit
             git pull --rebase origin main
             git push origin HEAD:main
           fi
