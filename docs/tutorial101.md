@@ -118,7 +118,11 @@ This `map` is interactive. You can zoom in and out to spot parcs in Paris if you
 ````
 {: .block }
 
-## 📊 Grid & Chart
+## 📊 Dataset, Grid & Chart
+
+One **dataset**, declared once — the grid is its editable list view, the chart
+shows whichever row you select. Data flows `dataset → grid → chart`
+(Shift + Alt-hover any of them to see the pipes).
 
 ````
 ### 🐕 Grid [Editable — click a cell to change a value, then watch the chart]
@@ -139,7 +143,11 @@ Corgi,35,95
 Pug,15,98
 Bulldog,14,90
 ```
-{: .datagrid #dog_grid_tuto format="csv" title="Dog top speeds & cuteness" height="280" editable="true" }
+{: .dataset id="dog_data" }
+
+```csv
+```
+{: .datagrid bind="dog_data" #dog_grid_tuto title="Dog top speeds & cuteness" height="280" editable="true" }
 
 ### 📊 Chart [Updates live when you select or edit a row]
 
