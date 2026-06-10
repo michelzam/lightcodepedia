@@ -237,6 +237,7 @@
   // Instance registry — destroy heavy components before live-preview re-render.
   var _lcReg = [];
   function _lcRegister(el, fn) { _lcReg.push({ el: el, fn: fn }); }
+  window.lcRegisterCleanup = _lcRegister;
   window.lcDestroyInstancesIn = function(root) {
     _lcReg = _lcReg.filter(function(r) {
       if (r.el === root || root.contains(r.el)) { try { r.fn(); } catch(e) {} return false; }
@@ -1651,7 +1652,6 @@
   lcRegisterUpgrader("p.embed-page", upgradeEmbedPage);
   lcRegisterUpgrader("p.embed", upgradeEmbedExternal);
   lcRegisterUpgrader("p.video", upgradeVideo);
-  lcRegisterUpgrader(".highlighter-rouge.chart, pre.chart, p.chart", upgradeChart);
   lcRegisterUpgrader(".highlighter-rouge.map, pre.map", upgradeMap);
   lcRegisterUpgrader(".highlighter-rouge.qr, pre.qr", upgradeQr);
   lcRegisterUpgrader(".highlighter-rouge.pytutor, pre.pytutor", upgradePyTutor);
@@ -1707,17 +1707,6 @@
   window.lcApplyIAL   = _applyIAL;
   window.lcRegisterUpgrader = lcRegisterUpgrader;
 
-  var _chartJsQ = null;
-  function loadChartJs(cb) {
-    if (window.Chart) { cb(); return; }
-    if (_chartJsQ) { _chartJsQ.push(cb); return; }
-    _chartJsQ = [cb];
-    var s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js";
-    s.onload = function() { var q = _chartJsQ; _chartJsQ = null; q.forEach(function(f){ f(); }); };
-    document.head.appendChild(s);
-  }
-
   var _maplibreQ = null;
   function loadMapLibre(cb) {
     if (window.maplibregl) { cb(); return; }
@@ -1731,104 +1720,6 @@
     s.src = "https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.js";
     s.onload = function() { var q = _maplibreQ; _maplibreQ = null; q.forEach(function(f){ f(); }); };
     document.head.appendChild(s);
-  }
-
-  function upgradeChart(el) {
-    if (el.getAttribute("bind")) return; /* dataset-bound — handled by dataset.md */
-    var code = el.querySelector("code");
-    var raw = (code ? code.textContent : el.textContent).trim();
-    var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
-    var type = el.getAttribute("type") || "bar";
-    var h = parseInt(el.getAttribute("height") || "300", 10);
-    var bound = el.getAttribute("bound-to");
-    var gid = "lc-chart-" + Math.random().toString(36).slice(2, 7);
-    var wrap = document.createElement("div");
-    wrap.className = "lc-chart";
-    el.parentNode.replaceChild(wrap, el);
-
-    function chartColors(data) {
-      var mn = Math.min.apply(null, data), mx = Math.max.apply(null, data), rng = mx - mn || 1;
-      return data.map(function(v) {
-        var t = (v - mn) / rng;
-        return "rgb(" + Math.round(173 - 173*t) + "," + Math.round(216 - 160*t) + "," + Math.round(230 - 91*t) + ")";
-      });
-    }
-
-    if (bound) {
-      var xAttr = el.getAttribute("x") || (lines.length > 0 ? lines[0].split(",")[0].trim() : "");
-      var placeholder = document.createElement("div");
-      placeholder.style.cssText = "min-height:" + h + "px;display:flex;align-items:center;justify-content:center;color:#aaa;border:2px dashed #e0e0e0;border-radius:8px;font-style:italic;padding:1em;text-align:center";
-      placeholder.textContent = "Select a row to visualize";
-      wrap.appendChild(placeholder);
-      loadChartJs(function() {
-        var instance = null;
-        _lcRegister(wrap, function() { if (instance) { try { instance.destroy(); } catch(e) {} instance = null; } });
-        window.lcMasterDetail.subscribe(bound, function(row) {
-          if (!row) return;
-          var title = String(row[xAttr] || "");
-          var newLabels = [], newData = [];
-          Object.keys(row).forEach(function(k) {
-            if (k === xAttr) return;
-            var v = parseFloat(row[k]);
-            if (!isNaN(v)) { newLabels.push(k); newData.push(v); }
-          });
-          if (!newLabels.length) return;
-          var colors = chartColors(newData);
-          if (!instance) {
-            placeholder.style.display = "none";
-            var canvas = document.createElement("canvas");
-            canvas.id = gid;
-            wrap.appendChild(canvas);
-            instance = new Chart(canvas, {
-              type: type,
-              data: { labels: newLabels, datasets: [{ label: title, data: newData, backgroundColor: colors, borderColor: colors, borderWidth: 1 }] },
-              options: {
-                responsive: true,
-                plugins: { legend: { display: false }, title: { display: !!title, text: title } },
-                scales: type === "pie" || type === "doughnut" ? {} : { y: { beginAtZero: true } }
-              }
-            });
-          } else {
-            instance.data.labels = newLabels;
-            instance.data.datasets[0].data = newData;
-            instance.data.datasets[0].label = title;
-            instance.data.datasets[0].backgroundColor = colors;
-            instance.data.datasets[0].borderColor = colors;
-            if (instance.options.plugins.title) { instance.options.plugins.title.text = title; instance.options.plugins.title.display = !!title; }
-            instance.update();
-          }
-        });
-      });
-      return;
-    }
-
-    // Static CSV mode
-    if (lines.length < 2) return;
-    var headers = lines[0].split(",").map(function(v){ return v.trim(); });
-    var xAttrS = el.getAttribute("x") || headers[0];
-    var yAttr = el.getAttribute("y") || headers[1];
-    var xIdx = headers.indexOf(xAttrS); if (xIdx < 0) xIdx = 0;
-    var yIdx = headers.indexOf(yAttr); if (yIdx < 0) yIdx = 1;
-    var rows = lines.slice(1).map(function(l){ return l.split(",").map(function(v){ return v.trim(); }); });
-    var labels = rows.map(function(r){ return r[xIdx] || ""; });
-    var data = rows.map(function(r){ return parseFloat(r[yIdx]) || 0; });
-    var colors = chartColors(data);
-    wrap.innerHTML = "<canvas id=\"" + gid + "\"></canvas>";
-    loadChartJs(function() {
-      var ch = new Chart(document.getElementById(gid), {
-        type: type,
-        data: { labels: labels, datasets: [{ label: yAttr, data: data, backgroundColor: colors, borderColor: colors, borderWidth: 1 }] },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: type === "pie" || type === "doughnut" ? {} : {
-            x: { title: { display: true, text: xAttrS } },
-            y: { beginAtZero: true, title: { display: true, text: yAttr } }
-          }
-        }
-      });
-      _lcRegister(wrap, function() { try { ch.destroy(); } catch(e) {} });
-    });
   }
 
   function upgradeMap(el) {
@@ -2526,18 +2417,10 @@
       html += markdownBody(s.body);
       return html + '</div>';
     }).join("");
-    _applyIAL(wrap);
-    wrap.querySelectorAll("p.video").forEach(safe(upgradeVideo));
-    wrap.querySelectorAll("p.button").forEach(safe(upgradeButton));
-    wrap.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
-    wrap.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
-    if (window.lcUpgradeQuiz) wrap.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
-    wrap.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
-    wrap.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));
-    wrap.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
-    wrap.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
-    wrap.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
-    wrap.querySelectorAll(".highlighter-rouge.pytutor, pre.pytutor").forEach(safe(upgradePyTutor));
+    /* Full subtree pipeline (IAL + every registered upgrader) instead of a
+       hand-picked subset — the registry covers components that live in other
+       includes (chart, dataset-bound widgets, scene3d…) too. */
+    scanElement(wrap);
   }
 
   function upgradeBlock(el) {
