@@ -138,8 +138,9 @@ Auto-included by docs/_layouts/default.html.
     el.parentNode.replaceChild(nav, el);
   }
 
-  function _iframeEl(src, h) {
+  function _iframeEl(src, h, cls) {
     var f = document.createElement("iframe");
+    if (cls) f.className = cls;
     f.src = src; f.width = "100%"; f.height = h || "400";
     f.setAttribute("loading", "lazy"); f.setAttribute("allowfullscreen", "");
     f.style.border = "none";
@@ -151,7 +152,7 @@ Auto-included by docs/_layouts/default.html.
     var h = el.getAttribute("height") || "400";
     var src = a.getAttribute("href");
     if (src && src.indexOf("?") === -1) src += "?embed=true"; else src += "&embed=true";
-    el.parentNode.replaceChild(_iframeEl(src, h), el);
+    el.parentNode.replaceChild(_iframeEl(src, h, "lc-embed-page"), el);
   }
   function upgradeEmbedExternal(el) {
     var a = el.querySelector("a");
@@ -159,7 +160,7 @@ Auto-included by docs/_layouts/default.html.
     var href = a.getAttribute("href");
     // External URLs → iframe
     if (/^https?:\/\//i.test(href)) {
-      el.parentNode.replaceChild(_iframeEl(href, el.getAttribute("height") || "600"), el);
+      el.parentNode.replaceChild(_iframeEl(href, el.getAttribute("height") || "600", "lc-embed-page"), el);
       return;
     }
     // Local module → fetch the raw markdown source and render it inline.
@@ -196,7 +197,7 @@ Auto-included by docs/_layouts/default.html.
     if (gdrive) src = "https://drive.google.com/file/d/" + gdrive[1] + "/preview";
     var yt = href.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
     if (yt) src = "https://www.youtube.com/embed/" + yt[1];
-    el.parentNode.replaceChild(_iframeEl(src, el.getAttribute("height") || "400"), el);
+    el.parentNode.replaceChild(_iframeEl(src, el.getAttribute("height") || "400", "lc-video"), el);
   }
 
   function upgradeCode(el) {
