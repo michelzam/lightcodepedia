@@ -127,6 +127,11 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
           if (selected.length && selected[0] === event.data) {
             window.lcMasterDetail.publish(gridId, event.data);
           }
+          // dataset-backed grid: AG mutates the dataset's row objects in
+          // place — notify listeners so every bound widget re-renders
+          if (opts.bindId && window.lcSetDataset) {
+            window.lcSetDataset(opts.bindId, window.lcDatasets[opts.bindId] || data);
+          }
         };
       }
       var api = window.agGrid.createGrid(gridEl, gridOptions);
@@ -175,11 +180,24 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     var title = el.getAttribute("title") || "";
     var id = el.id || ("dg" + (++DG_ID));
     var opts = readDatagridOpts(el, "");
-    var wrapper = buildDatagridWrapper({ id: id, title: title, format: format, height: height });
+    var bindId = el.getAttribute("bind") || "";
+    var wrapper = buildDatagridWrapper({ id: id, title: title, format: bindId ? "" : format, height: height });
+    if (bindId) wrapper.setAttribute("data-bind", bindId);
     el.parentNode.replaceChild(wrapper, el);
     var dataPromise;
-    try { dataPromise = parseDatagridText(raw, format); }
-    catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
+    if (bindId) {
+      /* dataset-backed: rows come from the registered dataset (waits if the
+         .dataset block hasn't parsed yet); edits notify it via lcSetDataset */
+      opts.bindId = bindId;
+      dataPromise = new Promise(function (resolve) {
+        if (window.lcDatasets && window.lcDatasets[bindId]) { resolve(window.lcDatasets[bindId]); return; }
+        window.lcDatasetListeners = window.lcDatasetListeners || {};
+        (window.lcDatasetListeners[bindId] = window.lcDatasetListeners[bindId] || []).push(resolve);
+      });
+    } else {
+      try { dataPromise = parseDatagridText(raw, format); }
+      catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
+    }
     renderGridInto(wrapper, dataPromise, id, opts);
   }
 

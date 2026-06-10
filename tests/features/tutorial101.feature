@@ -29,3 +29,9 @@ Feature: Tutorial 101 interactive components
     And I wait for the page to be interactive
     And I click the first row in the datagrid
     Then the chart reflects a data update
+
+  Scenario: Selecting a tutorial grid row drives the detail chart
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I click the grid row containing "Greyhound"
+    Then the detail chart bound to "dog_grid_tuto" renders a canvas
