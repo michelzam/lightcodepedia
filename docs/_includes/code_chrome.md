@@ -954,6 +954,14 @@
       .catch(function(e){ if (window.console) console.warn("[lc silent load]", e.message || e); });
   }
 
+  // Export the runner for Liquid-rendered python_run.md blocks, then flush
+  // any attach calls they queued while this file was still parsing.
+  window.lcPyrun = { attach: attach };
+  if (window.lcPyrunQueue) {
+    window.lcPyrunQueue.forEach(function(fn){ try { fn(); } catch (e) {} });
+    window.lcPyrunQueue = null;
+  }
+
   function safe(fn) {
     return function(el) { try { fn(el); } catch(e) { if (window.console) console.warn("[lc]", e.message || e); } };
   }
