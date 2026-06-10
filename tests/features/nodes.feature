@@ -16,4 +16,5 @@ Feature: LightNode network page
   Scenario: The UX results dataset renders the scenario grid
     When I navigate to "/nodes"
     And I wait for the page to be interactive
+    And I open the accordion section "UX test results"
     Then the "uxtests" bound grid shows at least 20 rows
