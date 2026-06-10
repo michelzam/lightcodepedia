@@ -871,17 +871,38 @@ class Avatar(Block):
         return self
 
 
+@component(icon="🧱")
+class Blocks(Block):
+    """Card-sections widget (.block / .blocks) — layout container."""
+    pass
+
+
+@component(icon="⌨️")
+class Repl(Block):
+    """Interactive Python REPL (.repl)."""
+    pass
+
+
+@component(icon="🎬", attrs=[{"n": "height", "t": "int", "data": True, "d": 400}])
+class Video(Block):
+    """Embedded video iframe (.video)."""
+    pass
+
+
 # ════════════════════════ resolver ══════════════════════════════════════════
 
 _WRAP = [
     ("lc-datagrid", Datagrid), ("lc-chart", Chart), ("lc-feature", Feature),
-    ("lc-button", Button), ("lc-carousel", Carousel), ("lc-cards", Cards),
-    ("lc-dropdown", Dropdown), ("lc-folder", Folder), ("lc-grid", Grid),
-    ("lc-map", Map), ("lc-menu", Menu), ("lc-radio", Radio), ("lc-quiz", Quiz),
-    ("lc-tabs", Tabs), ("lc-form", Form), ("lc-slides", Slides),
-    ("lc-scroll", Scrollable), ("lc-code", Code), ("lc-agent", Agent),
-    ("lc-recorder", Recorder), ("lc-qr", Qr), ("lc-pyrun", Run),
-    ("lc-pytutor", Pytutor), ("lc-embed", EmbedPage), ("lc-accordion", Accordion),
+    ("lc-button", Button), ("lc-btn", Button), ("lc-carousel", Carousel),
+    ("lc-cards", Cards), ("lc-dropdown", Dropdown), ("lc-folder", Folder),
+    ("lc-grid", Grid), ("lc-map", Map), ("lc-menu", Menu),
+    ("lc-radio-group", Radio), ("lc-quiz", Quiz), ("lc-tabs", Tabs),
+    ("lc-form", Form), ("lc-slides", Slides), ("lc-scrollable", Scrollable),
+    ("lc-code", Code), ("lc-agent", Agent), ("lc-recorder", Recorder),
+    ("lc-qr", Qr), ("lc-pyrun", Run), ("lc-pyrepl", Repl),
+    ("lc-pytutor", Pytutor), ("lc-embed-page", EmbedPage),
+    ("lc-embed", EmbedPage), ("lc-video", Video), ("lc-accordion", Accordion),
+    ("lc-blocks", Blocks),
     ("lc-scene3d", Scene3d), ("lc-avatar-host", Avatar),
 ]
 
