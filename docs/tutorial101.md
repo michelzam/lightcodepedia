@@ -145,20 +145,7 @@ Bulldog,14,90
 
 Updates when you select a row in the grid ← edit a value and it refreshes.
 
-```csv
-breed,top_speed_kmh,cute
-Greyhound,72,70
-Saluki,68,72
-Vizsla,64,78
-Jack Russell,56,85
-Border Collie,48,82
-German Shepherd,48,80
-Labrador,40,92
-Beagle,40,88
-Corgi,35,95
-Pug,15,98
-Bulldog,14,90
-```
+[Selected dog](#)
 {: .chart type="bar" bound-to="dog_grid_tuto" x="breed" height="280" }
 ````
 {: .blocks cols="2" }
