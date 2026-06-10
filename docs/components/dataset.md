@@ -111,6 +111,3 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 | `.chart` | `y="…"` | column name | Vertical axis column |
 | `.chart` | `title="…"` | string | Label above the chart |
 
-
-[Recording](https://youtu.be/PEOrQX5GFZc)
-{: .video }
