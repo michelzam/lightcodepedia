@@ -483,19 +483,11 @@ Auto-included by docs/_layouts/default.html.
   }
 
   /* ── boot ────────────────────────────────────────────── */
+  /* code_chrome.md (loaded first, via topbar) provides the scan registry:
+     one registration covers the initial page scan and all re-scans. */
 
-  function init(root) {
-    (root || document).querySelectorAll(".highlighter-rouge.scene3d, pre.scene3d").forEach(upgradeScene3d);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { init(); });
-  else init();
-
-  var _os = window.lcScanElement;
-  window.lcScanElement = function (root) {
-    if (_os) _os(root);
-    (root || document).querySelectorAll(".highlighter-rouge.scene3d, pre.scene3d").forEach(upgradeScene3d);
-  };
+  window.lcRegisterUpgrader &&
+    window.lcRegisterUpgrader(".highlighter-rouge.scene3d, pre.scene3d", upgradeScene3d);
 
 })();
 </script>
