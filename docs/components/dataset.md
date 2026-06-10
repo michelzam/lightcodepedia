@@ -25,6 +25,19 @@ Invisible data block that `.datagrid` and `.chart` bind to. Declare data once, r
 [Full table](#)
 {: .datagrid bind="monthly" rows="4" }
 
+## Master/detail — dataset → grid → chart
+
+Give the bound grid an **id** and it becomes a master/detail source: clicking
+a row publishes it, and a `bound-to` chart renders that row's numeric fields.
+One dataset, declared once — the grid is its list view, the chart the detail
+view of your selection.
+
+[Pick a month](#)
+{: .datagrid bind="monthly" rows="6" #monthly_grid }
+
+[Selected month](#)
+{: .chart bound-to="monthly_grid" x="month" height="240" }
+
 ## CSV example
 
 ```csv

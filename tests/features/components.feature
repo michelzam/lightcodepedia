@@ -20,3 +20,9 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then an embedded iframe from "onlineide" is present
     And an embedded iframe from "pythontutor" is present
+
+  Scenario: A bound grid drives a bound-to detail chart
+    When I navigate to "/components/dataset"
+    And I wait for the page to be interactive
+    And I click the bound grid "monthly_grid" row containing "Feb"
+    Then the detail chart bound to "monthly_grid" renders a canvas
