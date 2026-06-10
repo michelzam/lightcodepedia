@@ -317,20 +317,13 @@ Auto-included by docs/_layouts/default.html.
   }
 
   /* ── boot ────────────────────────────────────────────── */
-  function init(root) {
-    (root || document).querySelectorAll(".highlighter-rouge.avatar, pre.avatar").forEach(upgradeAvatar);
-    (root || document).querySelectorAll("p.avatar-trigger, a.avatar-trigger").forEach(upgradeTrigger);
+  /* code_chrome.md (loaded first, via topbar) provides the scan registry:
+     one registration covers the initial page scan and all re-scans. */
+
+  if (window.lcRegisterUpgrader) {
+    window.lcRegisterUpgrader(".highlighter-rouge.avatar, pre.avatar", upgradeAvatar);
+    window.lcRegisterUpgrader("p.avatar-trigger, a.avatar-trigger", upgradeTrigger);
   }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { init(); });
-  else init();
-
-  var _os = window.lcScanElement;
-  window.lcScanElement = function (root) {
-    if (_os) _os(root);
-    (root || document).querySelectorAll(".highlighter-rouge.avatar, pre.avatar").forEach(upgradeAvatar);
-    (root || document).querySelectorAll("p.avatar-trigger, a.avatar-trigger").forEach(upgradeTrigger);
-  };
 
 })();
 </script>
