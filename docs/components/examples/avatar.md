@@ -4,14 +4,21 @@ title: "Speaking Avatar — Overlay Instructor"
 
 # 🗣️ Speaking Avatar
 
-A speaking overlay character that narrates content while moving across the screen. Driven by **Web Speech API** (browser-native TTS) and optionally a **Lottie** animation for the character.
+A speaking overlay character that narrates content while moving across the screen. Driven by **Web Speech API** (browser-native TTS) and a **Lottie** animation for the character.
 
-Press **▶ Play** to start the demo, or click the character directly to toggle.
+Press **▶ Play** to start, or click the character directly to toggle.
+
+---
+
+## 🐱 Gatin — the cat instructor
+
+A bobbing cat character from the official [lottie-web demo repo](https://github.com/airbnb/lottie-web/tree/master/demo/gatin). Warm peach tones, swaying tail, blinking eyes.
 
 ```yaml
-name: "Prof. LC"
+name: "Prof. Gatin"
 path: wander
 voice: en-US
+lottie: "https://raw.githubusercontent.com/airbnb/lottie-web/master/demo/gatin/data.json"
 script:
   - "Hello! I'm your virtual instructor."
   - "An object is a bundle of state and behavior."
@@ -20,32 +27,33 @@ script:
   - "State you can read. Behavior you can invoke."
   - "That's all an object is."
 ```
-{: .avatar #demo-avatar }
+{: .avatar #gatin-avatar }
 
 [▶ Play](#)
-{: .avatar-trigger target="demo-avatar" label-stop="⏹ Stop" }
+{: .avatar-trigger target="gatin-avatar" label-stop="⏹ Stop" }
 
 ---
 
-## With a Lottie character
+## 🪢 Adrock — the rope-jumper
 
-Supply a `lottie` URL in the YAML to replace the default emoji face with a rich animation.
-Any public Lottie JSON from [LottieFiles](https://lottiefiles.com) works.
+An energetic character skipping rope — from the same official repo. Great for high-energy moments.
 
 ```yaml
-name: "Wanda"
+name: "Adrock"
 path: left
 voice: en-US
-lottie: "https://assets2.lottiefiles.com/packages/lf20_myejiggj.json"
+lottie: "https://raw.githubusercontent.com/airbnb/lottie-web/master/demo/adrock/data.json"
 script:
-  - "Hi! I'm Wanda."
-  - "I live in a glass bowl and I swim in lazy circles."
-  - "wanda.swim() — give it a try on the 3D playground."
+  - "Ready to jump in? Let's talk about methods."
+  - "A method is a function that belongs to an object."
+  - "lucky.run() — Lucky runs at his top speed."
+  - "wanda.swim() — Wanda circles her bowl."
+  - "Same idea. Different object. Different behavior."
 ```
-{: .avatar #wanda-avatar }
+{: .avatar #adrock-avatar size="150" }
 
 [▶ Play](#)
-{: .avatar-trigger target="wanda-avatar" label-stop="⏹ Stop" }
+{: .avatar-trigger target="adrock-avatar" label-stop="⏹ Stop" }
 
 ---
 
@@ -53,12 +61,19 @@ script:
 
 | Attribute | Role |
 |---|---|
-| `script` | List of lines the avatar speaks in order |
-| `path` | Movement pattern: `left`, `center`, `right`, or `wander` |
-| `voice` | BCP-47 language tag (e.g. `en-US`, `fr-FR`) — picks the first matching browser voice |
-| `lottie` | URL to a Lottie JSON animation (optional — defaults to 🗣️ emoji) |
-| `autoplay` | `true` to start speaking on page load |
+| `script` | Lines the avatar speaks in order |
+| `path` | Movement: `left`, `center`, `right`, or `wander` |
+| `voice` | BCP-47 tag — picks the first matching browser voice |
+| `lottie` | URL to a Lottie JSON animation |
+| `size` | Bubble diameter in px (default: 120) |
+| `autoplay` | `true` to start on page load |
 
-The `{: .avatar-trigger target="id" }` IAL on any link turns it into a play/stop button wired to the avatar with that `id`.
+The `{: .avatar-trigger target="id" }` IAL on any link wires it into a play/stop button.
 
-The component uses **only browser-native APIs** — no server required, no API key. Voice quality depends on the OS and browser.
+**Working Lottie sources (CORS-open via `raw.githubusercontent.com`):**
+
+- 🐱 Gatin cat — `https://raw.githubusercontent.com/airbnb/lottie-web/master/demo/gatin/data.json`
+- 🪢 Adrock rope-jumper — `https://raw.githubusercontent.com/airbnb/lottie-web/master/demo/adrock/data.json`
+- 🏃 Jumping character — `https://raw.githubusercontent.com/airbnb/lottie-web/master/demo/happy2016/data.json`
+
+Any public JSON on `raw.githubusercontent.com` works — it sends `Access-Control-Allow-Origin: *`.
