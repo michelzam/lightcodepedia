@@ -805,12 +805,6 @@ Auto-included by docs/_layouts/default.html.
     upgradeRecorder(p, { onStart: closeLauncher });
   };
 
-  window.lcPyrun = { attach: attach };
-  if (window.lcPyrunQueue) {
-    window.lcPyrunQueue.forEach(function(fn){ try { fn(); } catch (e) {} });
-    window.lcPyrunQueue = null;
-  }
-
   // ── YouTube Upload ────────────────────────────────────────────────────────
   (function() {
     var YT_CLIENT = "208252332658-4fmonl09j9qi2mr40ruq5oe5cnhqmeen.apps.googleusercontent.com";
