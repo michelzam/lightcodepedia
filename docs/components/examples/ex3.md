@@ -1,4 +1,4 @@
-# Components/Examples/Ex3
+# 🏀 Ex3
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
