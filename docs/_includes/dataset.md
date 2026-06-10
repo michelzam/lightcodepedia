@@ -207,8 +207,8 @@ Auto-included by docs/_layouts/default.html.
   }
 
   /* NOTE: .button upgrade (incl. optional Python on_click handler) lives in
-     code_chrome.md's upgradeButton — it owns p.button and runs first (loaded
-     via topbar). Keeping the .lc-button CSS above; no upgrader here. */
+     pyrun.md's upgradeButton — it owns p.button. Keeping the .lc-button CSS
+     above; no upgrader here. */
 
   /* ── boot ─────────────────────────────────────── */
   /* code_chrome.md (loaded first, via topbar) provides the scan registry.
