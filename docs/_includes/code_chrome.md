@@ -1610,90 +1610,70 @@
     return function(el) { try { fn(el); } catch(e) { if (window.console) console.warn("[lc]", e.message || e); } };
   }
 
-  function scan() {
-    document.querySelectorAll("p").forEach(function(p){
-      var t = (p.textContent || "").trim();
-      var m = t.match(/^\{:\s*(.+?)\s*\}$/);
-      if (!m) return;
-      var prev = p.previousElementSibling;
-      if (!prev) return;
-      var body = m[1];
-      var c, classRe = /\.([\w-]+)/g;
-      while ((c = classRe.exec(body)) !== null) prev.classList.add(c[1]);
-      var idM = body.match(/#([\w-]+)/);
-      if (idM) prev.id = idM[1];
-      var kv, kvRe = /([\w-]+)="([^"]*)"/g;
-      while ((kv = kvRe.exec(body)) !== null) prev.setAttribute(kv[1], kv[2]);
-      p.parentNode.removeChild(p);
+  // ── scan registry ──────────────────────────────────────────────────────
+  // One registry for every upgrader: a component (here or in its own
+  // include) registers selector + upgrade function once, and both the
+  // page-level scan and the subtree re-scans walk the same list. Includes
+  // that parse after the initial scan are upgraded at registration time.
+  var _upgraders = [];
+  var _scanned = false;
+
+  function lcRegisterUpgrader(selector, fn) {
+    var entry = [selector, safe(fn)];
+    _upgraders.push(entry);
+    if (_scanned) document.querySelectorAll(selector).forEach(entry[1]);
+  }
+
+  function _runUpgraders(root) {
+    _upgraders.forEach(function (u) {
+      root.querySelectorAll(u[0]).forEach(u[1]);
     });
-    document.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
-    document.querySelectorAll(".highlighter-rouge.repl, pre.repl").forEach(safe(upgradeRepl));
-    document.querySelectorAll(".highlighter-rouge.code, pre.code").forEach(safe(upgradeCode));
-    document.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));
-    document.querySelectorAll("div.lc-datagrid-src").forEach(safe(upgradeDatagridFile));
-    document.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
-    document.querySelectorAll("div.lc-form-src").forEach(safe(upgradeFormFile));
-    document.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
-    document.querySelectorAll(".highlighter-rouge.accordion, pre.accordion").forEach(safe(upgradeAccordion));
-    document.querySelectorAll(".highlighter-rouge.tabs, pre.tabs").forEach(safe(upgradeTabsInline));
-    document.querySelectorAll("p.tabs").forEach(safe(upgradeTabsFile));
-    document.querySelectorAll(".highlighter-rouge.radio, pre.radio").forEach(safe(upgradeRadio));
-    document.querySelectorAll(".highlighter-rouge.grid, pre.grid").forEach(safe(upgradeGrid));
-    document.querySelectorAll(".highlighter-rouge.scrollable, pre.scrollable").forEach(safe(upgradeScrollable));
-    document.querySelectorAll(".highlighter-rouge.cards, pre.cards").forEach(safe(upgradeCards));
-    document.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks, pre.block, pre.blocks").forEach(safe(upgradeBlock));
-    document.querySelectorAll("ul.dropdown").forEach(safe(upgradeDropdown));
-    document.querySelectorAll("p.button").forEach(safe(upgradeButton));
-    document.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
-    document.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
-    document.querySelectorAll("p.video").forEach(safe(upgradeVideo));
-    document.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
-    document.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
-    document.querySelectorAll(".highlighter-rouge.qr, pre.qr").forEach(safe(upgradeQr));
-    document.querySelectorAll(".highlighter-rouge.pytutor, pre.pytutor").forEach(safe(upgradePyTutor));
-    document.querySelectorAll("p.folder").forEach(safe(upgradeFolder));
-    document.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
-    document.querySelectorAll("p.lightnodes").forEach(safe(upgradeNodes));
-    document.querySelectorAll("p.deploys").forEach(safe(upgradeDeploys));
-    document.querySelectorAll("p.menu, ul.menu").forEach(safe(upgradeMenu));
+  }
+
+  lcRegisterUpgrader(".highlighter-rouge.run, pre.run", upgradeRun);
+  lcRegisterUpgrader(".highlighter-rouge.repl, pre.repl", upgradeRepl);
+  lcRegisterUpgrader(".highlighter-rouge.code, pre.code", upgradeCode);
+  lcRegisterUpgrader(".highlighter-rouge.datagrid, pre.datagrid", upgradeDatagrid);
+  lcRegisterUpgrader("div.lc-datagrid-src", upgradeDatagridFile);
+  lcRegisterUpgrader(".highlighter-rouge.form, pre.form", upgradeForm);
+  lcRegisterUpgrader("div.lc-form-src", upgradeFormFile);
+  lcRegisterUpgrader("ul.carousel", upgradeCarousel);
+  lcRegisterUpgrader(".highlighter-rouge.accordion, pre.accordion", upgradeAccordion);
+  lcRegisterUpgrader(".highlighter-rouge.tabs, pre.tabs", upgradeTabsInline);
+  lcRegisterUpgrader("p.tabs", upgradeTabsFile);
+  lcRegisterUpgrader(".highlighter-rouge.radio, pre.radio", upgradeRadio);
+  lcRegisterUpgrader(".highlighter-rouge.grid, pre.grid", upgradeGrid);
+  lcRegisterUpgrader(".highlighter-rouge.scrollable, pre.scrollable", upgradeScrollable);
+  lcRegisterUpgrader(".highlighter-rouge.cards, pre.cards", upgradeCards);
+  lcRegisterUpgrader(".highlighter-rouge.block, .highlighter-rouge.blocks, pre.block, pre.blocks", upgradeBlock);
+  lcRegisterUpgrader("ul.dropdown", upgradeDropdown);
+  lcRegisterUpgrader("p.button", upgradeButton);
+  lcRegisterUpgrader("p.embed-page", upgradeEmbedPage);
+  lcRegisterUpgrader("p.embed", upgradeEmbedExternal);
+  lcRegisterUpgrader("p.video", upgradeVideo);
+  lcRegisterUpgrader(".highlighter-rouge.chart, pre.chart, p.chart", upgradeChart);
+  lcRegisterUpgrader(".highlighter-rouge.map, pre.map", upgradeMap);
+  lcRegisterUpgrader(".highlighter-rouge.qr, pre.qr", upgradeQr);
+  lcRegisterUpgrader(".highlighter-rouge.pytutor, pre.pytutor", upgradePyTutor);
+  lcRegisterUpgrader("p.folder", upgradeFolder);
+  lcRegisterUpgrader("p.recorder", upgradeRecorder);
+  lcRegisterUpgrader("p.lightnodes", upgradeNodes);
+  lcRegisterUpgrader("p.deploys", upgradeDeploys);
+  lcRegisterUpgrader("p.menu, ul.menu", upgradeMenu);
+
+  function scan() {
+    _applyIAL(document);
+    _runUpgraders(document);
+    _scanned = true;
   }
 
   // Scoped version of scan() — runs the full upgrade pipeline on a subtree.
   // Used by the live editor preview so the page-level scan() is not needed.
   function scanElement(root) {
     _applyIAL(root);
-    root.querySelectorAll(".highlighter-rouge.run, pre.run").forEach(safe(upgradeRun));
-    root.querySelectorAll(".highlighter-rouge.repl, pre.repl").forEach(safe(upgradeRepl));
-    root.querySelectorAll(".highlighter-rouge.code, pre.code").forEach(safe(upgradeCode));
-    root.querySelectorAll(".highlighter-rouge.datagrid, pre.datagrid").forEach(safe(upgradeDatagrid));
-    root.querySelectorAll("div.lc-datagrid-src").forEach(safe(upgradeDatagridFile));
-    root.querySelectorAll(".highlighter-rouge.form, pre.form").forEach(safe(upgradeForm));
-    root.querySelectorAll("div.lc-form-src").forEach(safe(upgradeFormFile));
-    root.querySelectorAll("ul.carousel").forEach(safe(upgradeCarousel));
+    _runUpgraders(root);
     if (window.lcUpgradeQuiz)  root.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
     if (window.lcUpgradeAgent) root.querySelectorAll(".highlighter-rouge.agent, pre.agent").forEach(window.lcUpgradeAgent);
-    root.querySelectorAll(".highlighter-rouge.accordion, pre.accordion").forEach(safe(upgradeAccordion));
-    root.querySelectorAll(".highlighter-rouge.tabs, pre.tabs").forEach(safe(upgradeTabsInline));
-    root.querySelectorAll("p.tabs").forEach(safe(upgradeTabsFile));
-    root.querySelectorAll(".highlighter-rouge.radio, pre.radio").forEach(safe(upgradeRadio));
-    root.querySelectorAll(".highlighter-rouge.grid, pre.grid").forEach(safe(upgradeGrid));
-    root.querySelectorAll(".highlighter-rouge.scrollable, pre.scrollable").forEach(safe(upgradeScrollable));
-    root.querySelectorAll(".highlighter-rouge.cards, pre.cards").forEach(safe(upgradeCards));
-    root.querySelectorAll(".highlighter-rouge.block, .highlighter-rouge.blocks, pre.block, pre.blocks").forEach(safe(upgradeBlock));
-    root.querySelectorAll("ul.dropdown").forEach(safe(upgradeDropdown));
-    root.querySelectorAll("p.button").forEach(safe(upgradeButton));
-    root.querySelectorAll("p.embed-page").forEach(safe(upgradeEmbedPage));
-    root.querySelectorAll("p.embed").forEach(safe(upgradeEmbedExternal));
-    root.querySelectorAll("p.video").forEach(safe(upgradeVideo));
-    root.querySelectorAll(".highlighter-rouge.chart, pre.chart, p.chart").forEach(safe(upgradeChart));
-    root.querySelectorAll(".highlighter-rouge.map, pre.map").forEach(safe(upgradeMap));
-    root.querySelectorAll(".highlighter-rouge.qr, pre.qr").forEach(safe(upgradeQr));
-    root.querySelectorAll(".highlighter-rouge.pytutor, pre.pytutor").forEach(safe(upgradePyTutor));
-    root.querySelectorAll("p.folder").forEach(safe(upgradeFolder));
-    root.querySelectorAll("p.recorder").forEach(safe(upgradeRecorder));
-    root.querySelectorAll("p.lightnodes").forEach(safe(upgradeNodes));
-    root.querySelectorAll("p.deploys").forEach(safe(upgradeDeploys));
-    root.querySelectorAll("p.menu, ul.menu").forEach(safe(upgradeMenu));
   }
 
   // --- shared helpers for section-based widgets ---
@@ -1725,6 +1705,7 @@
   window.lcLoadMarked = loadMarked;
   window.lcScanElement = scanElement;
   window.lcApplyIAL   = _applyIAL;
+  window.lcRegisterUpgrader = lcRegisterUpgrader;
 
   var _chartJsQ = null;
   function loadChartJs(cb) {
