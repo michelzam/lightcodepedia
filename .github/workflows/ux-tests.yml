@@ -16,9 +16,11 @@ on:
 jobs:
   ux-tests:
     runs-on: ubuntu-latest
-    # Push the per-scenario results JSON back to main
+    # contents: push the results back to main
+    # actions: dispatch the Pages workflow so the report gets deployed
     permissions:
       contents: write
+      actions: write
     # Only run if triggered manually, or if the pages deployment succeeded
     # AND was not triggered by the bot's own results commit (loop guard).
     if: >
@@ -71,7 +73,13 @@ jobs:
             git fetch origin main
             git merge origin/main -X ours --no-edit
             git push origin HEAD:main
+            # GITHUB_TOKEN pushes don't trigger workflows implicitly, so
+            # dispatch the Pages build explicitly to deploy the new report.
+            # The bot-author loop guard stops ux-tests re-running after it.
+            gh workflow run pages.yml --ref main
           fi
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Upload artifacts on failure
         if: steps.behave.outcome == 'failure'
