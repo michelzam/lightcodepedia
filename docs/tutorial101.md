@@ -139,7 +139,7 @@ Corgi,35,95
 Pug,15,98
 Bulldog,14,90
 ```
-{: .datagrid #dog-grid-tuto format="csv" title="Dog top speeds & cuteness" height="280" editable="true" }
+{: .datagrid #dog_grid_tuto format="csv" title="Dog top speeds & cuteness" height="280" editable="true" }
 
 ### 📊 Chart [Updates live when you select or edit a row]
 
@@ -159,7 +159,7 @@ Corgi,35,95
 Pug,15,98
 Bulldog,14,90
 ```
-{: .chart type="bar" bound-to="dog-grid-tuto" x="breed" height="280" }
+{: .chart type="bar" bound-to="dog_grid_tuto" x="breed" height="280" }
 ````
 {: .blocks cols="2" }
 

@@ -60,6 +60,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     var div = document.createElement("div");
     div.className = "lc-datagrid";
     if (opts.id) div.id = "lc-datagrid-" + opts.id;
+    if (opts.id) div.setAttribute("data-lc-id", opts.id);
     var html = "";
     if (opts.title) {
       html += '<div class="lc-datagrid-title">📊 <span>' + escapeHtml(opts.title) + '</span>';
