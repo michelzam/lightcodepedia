@@ -191,13 +191,6 @@
 .lc-embed { margin: 0.5em 0; }
 @media (max-width: 600px) { .lc-blocks { grid-template-columns: 1fr !important; } }
 /* chart */
-.lc-chart { margin: 1em 0; position: relative; }
-/* map */
-.lc-map { margin: 1em 0; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
-/* qr */
-.lc-qr { display: inline-block; text-align: center; margin: 1em 0; padding: 1em 1.2em; background: #fff; border: 1px solid #ddd; border-radius: 8px; }
-.lc-qr canvas, .lc-qr img { display: block; }
-.lc-qr-label { font-size: 0.85em; color: #555; margin-top: 0.6em; }
 </style>
 <script>
 (function(){
@@ -1094,9 +1087,6 @@
   lcRegisterUpgrader("p.embed-page", upgradeEmbedPage);
   lcRegisterUpgrader("p.embed", upgradeEmbedExternal);
   lcRegisterUpgrader("p.video", upgradeVideo);
-  lcRegisterUpgrader(".highlighter-rouge.map, pre.map", upgradeMap);
-  lcRegisterUpgrader(".highlighter-rouge.qr, pre.qr", upgradeQr);
-  lcRegisterUpgrader(".highlighter-rouge.pytutor, pre.pytutor", upgradePyTutor);
   lcRegisterUpgrader("p.folder", upgradeFolder);
   lcRegisterUpgrader("p.recorder", upgradeRecorder);
   lcRegisterUpgrader("p.lightnodes", upgradeNodes);
@@ -1148,149 +1138,6 @@
   window.lcScanElement = scanElement;
   window.lcApplyIAL   = _applyIAL;
   window.lcRegisterUpgrader = lcRegisterUpgrader;
-
-  var _maplibreQ = null;
-  function loadMapLibre(cb) {
-    if (window.maplibregl) { cb(); return; }
-    if (_maplibreQ) { _maplibreQ.push(cb); return; }
-    _maplibreQ = [cb];
-    var link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.css";
-    document.head.appendChild(link);
-    var s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.js";
-    s.onload = function() { var q = _maplibreQ; _maplibreQ = null; q.forEach(function(f){ f(); }); };
-    document.head.appendChild(s);
-  }
-
-  function upgradeMap(el) {
-    var code = el.querySelector("code");
-    var raw = (code ? code.textContent : el.textContent).trim();
-    var zoom = parseInt(el.getAttribute("zoom") || "12", 10);
-    var h = el.getAttribute("height") || "350";
-    var gid = "lc-map-" + Math.random().toString(36).slice(2, 7);
-    var wrap = document.createElement("div");
-    wrap.className = "lc-map";
-    wrap.id = gid;
-    wrap.style.height = h + "px";
-    el.parentNode.replaceChild(wrap, el);
-    var markers = [];
-    try {
-      var parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        parsed.forEach(function(item) {
-          var mlat = parseFloat(item.lat), mlon = parseFloat(item.lon != null ? item.lon : item.lng);
-          if (!isNaN(mlat) && !isNaN(mlon)) markers.push({ lat: mlat, lon: mlon, label: item.label || item.name || "" });
-        });
-      }
-    } catch(e) {
-      var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
-      if (lines.length >= 2) {
-        var hdrs = lines[0].split(",").map(function(v){ return v.trim(); });
-        var nI = ["label","name"].reduce(function(a, k){ return hdrs.indexOf(k) >= 0 ? hdrs.indexOf(k) : a; }, 0);
-        var laI = hdrs.indexOf("lat") >= 0 ? hdrs.indexOf("lat") : 1;
-        var lnI = ["lon","lng"].reduce(function(a, k){ return hdrs.indexOf(k) >= 0 ? hdrs.indexOf(k) : a; }, 2);
-        lines.slice(1).forEach(function(l) {
-          var c = l.split(",").map(function(v){ return v.trim(); });
-          var mlat = parseFloat(c[laI]), mlon = parseFloat(c[lnI]);
-          if (!isNaN(mlat) && !isNaN(mlon)) markers.push({ lat: mlat, lon: mlon, label: c[nI] || "" });
-        });
-      }
-    }
-    var centerLat = markers.length ? markers.reduce(function(s,m){ return s+m.lat; }, 0)/markers.length : parseFloat(el.getAttribute("lat") || "48.86");
-    var centerLon = markers.length ? markers.reduce(function(s,m){ return s+m.lon; }, 0)/markers.length : parseFloat(el.getAttribute("lon") || "2.35");
-    loadMapLibre(function() {
-      var map = new maplibregl.Map({
-        container: gid,
-        style: "https://tiles.openfreemap.org/styles/positron",
-        center: [centerLon, centerLat],
-        zoom: zoom,
-        pitch: parseFloat(el.getAttribute("pitch") || "0"),
-        bearing: parseFloat(el.getAttribute("bearing") || "0"),
-        maxPitch: 85
-      });
-      map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
-      _lcRegister(wrap, function() { try { map.remove(); } catch(e) {} });
-
-      // Shift+drag to pivot in 3D (bearing + pitch), like deck.gl / Streamlit.
-      // Horizontal → rotate (bearing); vertical → tilt (pitch).
-      var canvas = map.getCanvas();
-      var pivot = null;
-      canvas.addEventListener("mousedown", function(e) {
-        if (!e.shiftKey || e.button !== 0) return;
-        pivot = { x: e.clientX, y: e.clientY, bearing: map.getBearing(), pitch: map.getPitch() };
-        map.dragPan.disable();
-        canvas.style.cursor = "move";
-        e.preventDefault();
-        e.stopPropagation();
-      });
-      window.addEventListener("mousemove", function(e) {
-        if (!pivot) return;
-        map.setBearing(pivot.bearing - (e.clientX - pivot.x) * 0.5);
-        map.setPitch(Math.max(0, Math.min(85, pivot.pitch + (e.clientY - pivot.y) * 0.5)));
-      });
-      window.addEventListener("mouseup", function() {
-        if (!pivot) return;
-        pivot = null;
-        map.dragPan.enable();
-        canvas.style.cursor = "";
-      });
-
-      markers.forEach(function(m) {
-        var dot = document.createElement("div");
-        dot.style.cssText = "width:13px;height:13px;background:#e05454;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer";
-        new maplibregl.Marker({ element: dot })
-          .setLngLat([m.lon, m.lat])
-          .setPopup(new maplibregl.Popup({ offset: 12 }).setText(m.label))
-          .addTo(map);
-      });
-
-      // Hint overlay
-      var hint = document.createElement("div");
-      hint.textContent = "⇧ Shift + drag to tilt / rotate";
-      hint.style.cssText = "position:absolute;bottom:8px;left:8px;background:rgba(255,255,255,0.85);color:#555;font-size:0.72em;padding:3px 8px;border-radius:4px;pointer-events:none;z-index:2";
-      wrap.style.position = "relative";
-      wrap.appendChild(hint);
-    });
-  }
-
-  var _qrcodeQ = null;
-  function loadQRCode(cb) {
-    if (window.QRCode) { cb(); return; }
-    if (_qrcodeQ) { _qrcodeQ.push(cb); return; }
-    _qrcodeQ = [cb];
-    var s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js";
-    s.onload = function() { var q = _qrcodeQ; _qrcodeQ = null; q.forEach(function(f){ f(); }); };
-    document.head.appendChild(s);
-  }
-
-  function upgradeQr(el) {
-    if (el.dataset.lcUpgraded) return;
-    el.dataset.lcUpgraded = "1";
-    var code = el.querySelector("code");
-    var raw = (code ? code.textContent : el.textContent).trim();
-    var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
-    var text = lines[0] || "";
-    var label = lines.length > 1 ? lines.slice(1).join(" ").trim() : "";
-    var size = parseInt(el.getAttribute("size") || "180", 10);
-    if (!text) return;
-    var wrap = document.createElement("div");
-    wrap.className = "lc-qr";
-    var qrDiv = document.createElement("div");
-    wrap.appendChild(qrDiv);
-    if (label) {
-      var cap = document.createElement("div");
-      cap.className = "lc-qr-label";
-      cap.textContent = label;
-      wrap.appendChild(cap);
-    }
-    el.parentNode.replaceChild(wrap, el);
-    loadQRCode(function() {
-      new QRCode(qrDiv, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
-    });
-  }
 
   function upgradeAccordion(el) {
     var sections = parseSections(el);
@@ -2735,52 +2582,6 @@
   if (window.lcPyrunQueue) {
     window.lcPyrunQueue.forEach(function(fn){ try { fn(); } catch (e) {} });
     window.lcPyrunQueue = null;
-  }
-
-  function upgradePyTutor(el) {
-    if (el.dataset.lcUpgraded) return;
-    el.dataset.lcUpgraded = "1";
-    var code = el.querySelector("code");
-    var initialCode = (code ? code.textContent : el.textContent).trim();
-    if (!initialCode) return;
-    var h       = el.getAttribute("height") || "400";
-    var boundTo = el.getAttribute("bound-to");
-
-    function buildUrl(codeStr) {
-      return "https://pythontutor.com/iframe-embed.html#code="
-        + encodeURIComponent(codeStr)
-        + "&py=3&origin=opt-frontend.js&cumulative=false&heapPrimitives=newin&textReferences=false";
-    }
-
-    function makeFrame(src) {
-      var f = document.createElement("iframe");
-      f.src = src; f.width = "100%"; f.height = h + "px";
-      f.style.border = "none"; f.setAttribute("loading", "lazy");
-      return f;
-    }
-
-    var f = makeFrame(buildUrl(initialCode));
-    el.parentNode.replaceChild(f, el);
-
-    if (boundTo) {
-      var runEl = document.getElementById("lc-pyrun-" + boundTo);
-      if (runEl) {
-        var ta = runEl.querySelector(".lc-pyrun-code");
-        if (ta) {
-          var _pytTimer = null;
-          ta.addEventListener("input", function() {
-            clearTimeout(_pytTimer);
-            _pytTimer = setTimeout(function() {
-              // Replace the element entirely — setting src on a hash-based URL
-              // doesn't trigger an iframe reload in any browser.
-              var newF = makeFrame(buildUrl(ta.value));
-              f.parentNode.replaceChild(newF, f);
-              f = newF;
-            }, 600);
-          });
-        }
-      }
-    }
   }
 
   // ── LightNode network graph (D3 force-directed fork map) ───────────────────
