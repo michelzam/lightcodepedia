@@ -103,7 +103,8 @@ Auto-included by docs/_layouts/default.html.
 
     var wrap = document.createElement("div");
     wrap.className = "lc-scene3d";
-    if (el.id) wrap.id = el.id;
+    if (el.id) { wrap.id = el.id; wrap.setAttribute("data-lc-id", el.id); }
+    wrap.setAttribute("height", h);
     el.parentNode.replaceChild(wrap, el);
 
     var stage = document.createElement("div");
