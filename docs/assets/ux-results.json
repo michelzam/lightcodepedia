@@ -1,200 +1,200 @@
 [
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Slides FAB is present on tutorial101",
     "feature": "Slides FAB and presentation mode",
     "tags": "",
-    "seconds": 2.1,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_0"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_0"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Slides FAB popup opens on tap",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.35,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_1"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_1"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Tapping Present closes the popup",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.66,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_2"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_2"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Slides FAB is present on mobile",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.58,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_3"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_3"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "FAB popup appears on tap on mobile",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.42,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_4"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_4"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Home page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.16,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_5"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_5"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Tutorial 101 loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 2.1,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_6"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_6"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Components page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.07,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_7"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_7"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Components examples page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.21,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_8"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_8"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "License page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.0,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_9"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_9"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Grid renders with data",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.83,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_10"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_10"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Chart renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.86,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_11"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_11"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Map renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.87,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_12"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_12"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Video block renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.87,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_13"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_13"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "Grid row selection updates the chart",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 2.48,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_14"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_14"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "X-ray panel appears on hover over a component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.01,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_15"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_15"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "X-ray panel identifies the bound chart component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.11,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_16"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_16"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "X-ray panel identifies the map component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.06,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_17"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_17"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "X-ray scene fits within viewport",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.07,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_18"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_18"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "X-ray is activatable via FAB popup on mobile",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 2.28,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_19"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_19"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "X-ray activates on tap after enabling via FAB popup",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 3.13,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_20"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_20"
   },
   {
-    "status": "✅",
+    "status": "⏳",
     "scenario": "X-ray deactivates by tapping the FAB again",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 3.03,
-    "run": "2026-06-10T00:48Z",
-    "url": "/assets/ux-report.html#scenario_21"
+    "seconds": 0.0,
+    "run": "2026-06-10T00:51Z",
+    "url": "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html#scenario_21"
   }
 ]

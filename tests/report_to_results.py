@@ -54,7 +54,7 @@ def scenario_seconds(el):
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     force = None
-    html_base = "/assets/ux-report.html"
+    html_base = "https://raw.githack.com/michelzam/lightcodepedia/main/docs/assets/ux-report.html"
     for flag in ("--status", "--html-base"):
         if flag in sys.argv:
             val = sys.argv[sys.argv.index(flag) + 1]

@@ -3,7 +3,7 @@ name: UX Tests
 on:
   # Run automatically after Pages deployment completes
   workflow_run:
-    workflows: ["pages"]
+    workflows: ["Deploy Jekyll to GitHub Pages"]
     types: [completed]
   # Run manually against any URL (default: live site)
   workflow_dispatch:
