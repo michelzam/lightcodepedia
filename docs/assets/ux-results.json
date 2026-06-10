@@ -4,8 +4,8 @@
     "scenario": "Slides FAB is present on tutorial101",
     "feature": "Slides FAB and presentation mode",
     "tags": "",
-    "seconds": 2.4,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.19,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_0"
   },
   {
@@ -13,8 +13,8 @@
     "scenario": "Slides FAB popup opens on tap",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.25,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.5,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_1"
   },
   {
@@ -22,8 +22,8 @@
     "scenario": "Tapping Present closes the popup",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.81,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.86,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_2"
   },
   {
@@ -31,8 +31,8 @@
     "scenario": "Slides FAB is present on mobile",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.61,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.94,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_3"
   },
   {
@@ -40,8 +40,8 @@
     "scenario": "FAB popup appears on tap on mobile",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.41,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.68,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_4"
   },
   {
@@ -49,8 +49,8 @@
     "scenario": "Home page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.16,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 1.07,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_5"
   },
   {
@@ -58,8 +58,8 @@
     "scenario": "Tutorial 101 loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 2.09,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.18,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_6"
   },
   {
@@ -67,8 +67,8 @@
     "scenario": "Components page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.06,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 1.01,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_7"
   },
   {
@@ -76,8 +76,8 @@
     "scenario": "Components examples page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.19,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 1.02,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_8"
   },
   {
@@ -85,8 +85,8 @@
     "scenario": "License page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.07,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 1.01,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_9"
   },
   {
@@ -94,8 +94,8 @@
     "scenario": "Grid renders with data",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.93,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.01,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_10"
   },
   {
@@ -103,8 +103,8 @@
     "scenario": "Chart renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.87,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 1.92,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_11"
   },
   {
@@ -112,8 +112,8 @@
     "scenario": "Map renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.9,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.06,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_12"
   },
   {
@@ -121,8 +121,8 @@
     "scenario": "Video block renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.88,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 1.99,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_13"
   },
   {
@@ -130,8 +130,8 @@
     "scenario": "Grid row selection updates the chart",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 2.59,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.57,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_14"
   },
   {
@@ -140,7 +140,7 @@
     "feature": "X-ray inspector",
     "tags": "",
     "seconds": 3.19,
-    "run": "2026-06-10T09:56Z",
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_15"
   },
   {
@@ -148,8 +148,8 @@
     "scenario": "X-ray panel identifies the bound chart component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.06,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 3.09,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_16"
   },
   {
@@ -157,8 +157,8 @@
     "scenario": "X-ray panel identifies the map component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.2,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 3.88,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_17"
   },
   {
@@ -166,8 +166,8 @@
     "scenario": "X-ray scene fits within viewport",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.2,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 3.12,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_18"
   },
   {
@@ -175,8 +175,8 @@
     "scenario": "X-ray is activatable via FAB popup on mobile",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 2.25,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 2.37,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_19"
   },
   {
@@ -185,7 +185,7 @@
     "feature": "X-ray inspector",
     "tags": "@mobile",
     "seconds": 3.12,
-    "run": "2026-06-10T09:56Z",
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_20"
   },
   {
@@ -193,8 +193,8 @@
     "scenario": "X-ray deactivates by tapping the FAB again",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 3.06,
-    "run": "2026-06-10T09:56Z",
+    "seconds": 3.12,
+    "run": "2026-06-10T10:36Z",
     "url": "/assets/ux-report.html#scenario_21"
   }
 ]
