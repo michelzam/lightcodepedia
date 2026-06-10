@@ -16,6 +16,8 @@ Auto-included by docs/_layouts/default.html.
   if (window._lcRecorderReady) return;
   window._lcRecorderReady = true;
 
+  var _lcSiteRepo = {{ site.github.repository_nwo | default: "" | jsonify }};
+
   // ── Screen + face recorder ────────────────────────────────────────────────
   // Inject the recorder CSS once into <head> so it is NOT tied to any widget's
   // lifecycle. (The floating HUD outlives the launcher modal; if its styles lived
