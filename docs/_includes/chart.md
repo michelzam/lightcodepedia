@@ -59,6 +59,13 @@ Auto-included by docs/_layouts/default.html.
     var gid = "lc-chart-" + Math.random().toString(36).slice(2, 7);
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
+    /* carry the declared knobs + associations so the x-ray lens (which
+       reads data-* off the upgraded element) sees what the IAL declared */
+    wrap.setAttribute("data-type", type);
+    if (el.getAttribute("x")) wrap.setAttribute("data-x", el.getAttribute("x"));
+    if (el.getAttribute("y")) wrap.setAttribute("data-y", el.getAttribute("y"));
+    if (bound) wrap.setAttribute("data-bound-to", bound);
+    if (el.id) wrap.setAttribute("data-lc-id", el.id);
     el.parentNode.replaceChild(wrap, el);
 
     function chartColors(data) {

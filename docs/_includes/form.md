@@ -62,6 +62,7 @@ Auto-included by docs/_layouts/default.html.
     var div = document.createElement("div");
     div.className = "lc-form";
     if (opts.id) div.id = "lc-form-" + opts.id;
+    if (opts.id) div.setAttribute("data-lc-id", opts.id);
     var meta = "";
     if (opts.mode) meta = '<span class="lc-form-meta" style="font-style:italic; text-transform:none;">' + escapeHtml(opts.mode) + '</span>';
     else if (opts.format) meta = '<span class="lc-form-meta">' + escapeHtml(opts.format) + '</span>';
@@ -317,6 +318,7 @@ Auto-included by docs/_layouts/default.html.
     var id = el.id || ("frm" + (++FORM_ID));
 
     var wrapper = buildFormWrapper({ id: id, title: title || "Form", format: bound ? "" : format });
+    if (bound) wrapper.setAttribute("data-bound", bound);
     el.parentNode.replaceChild(wrapper, el);
     var body = wrapper.querySelector(".lc-form-body");
 
