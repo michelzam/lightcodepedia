@@ -58,3 +58,11 @@ Feature: X-ray inspector
     Then the FAB button has the xray-active style
     And I tap the slides FAB button
     Then the FAB button does not have the xray-active style
+
+  Scenario: Shift x-ray reveals the whole connected data chain
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I shift-hover over the chart component
+    Then the x-ray scene mentions "Chart"
+    And the x-ray scene mentions "Datagrid"
+    And the x-ray scene mentions "Dataset"

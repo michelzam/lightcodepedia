@@ -6,6 +6,9 @@ JS_ERROR_IGNORE = {
     "favicon",
     "ResizeObserver loop",
     "Non-Error promise rejection",
+    # unauthenticated GitHub API calls get rate-limited from shared CI IPs;
+    # the widgets handle it gracefully, but the browser still logs the 403
+    "the server responded with a status of 403",
 }
 
 

@@ -290,24 +290,67 @@ Auto-included by docs/_layouts/default.html.
       place(p0, rect.left + OFF, rect.top + OFF);
       if (!shift) { svg.style.display = "none"; return; }   // lens mode: clip applied later
       svg.style.display = "block";
-      const links = (data && data.links) || [];
-      let gi = 0;
-      links.forEach((lk, idx) => {
-        const p = panel(idx + 1);
-        p.innerHTML = schematic(lk.target, inspectTarget(lk.target, lk.id));
+      // ── connected subgraph: transitive closure over the typed associations,
+      //    both directions — forward links from each node's dump, plus a DOM
+      //    scan for referrers (elements whose bind/bound-to/bound names it) ──
+      const nodes = [], byId = new Map(), byEl = new Map(), edges = [], eSeen = new Set();
+      function addNode(name, id, el, dump) {
+        if (id && byId.has(id)) return byId.get(id);
+        if (el && byEl.has(el)) return byEl.get(el);
+        const n = { name, id: id || "", el: el || null, dump: dump || null, fresh: true };
+        nodes.push(n);
+        if (id) byId.set(id, n);
+        if (el) byEl.set(el, n);
+        return n;
+      }
+      function addEdge(a, b, role, list) {
+        const k = nodes.indexOf(a) + ">" + nodes.indexOf(b) + ":" + role;
+        if (eSeen.has(k)) return;
+        eSeen.add(k); edges.push({ a, b, role, list });
+      }
+      const REF_ATTRS = [["data-bind", "bind"], ["data-bound-to", "bound_to"], ["data-bound", "bound"]];
+      const wrapName = el => { if (el && el.classList) for (const [t, n] of WRAP)
+        if (el.classList.contains(t)) return n; return null; };
+      const root = addNode(hit.name, hit.el.getAttribute("data-lc-id") || "", hit.el, data);
+      root.fresh = false;
+      const queue = [root];
+      while (queue.length && nodes.length < 24) {
+        const n = queue.shift();
+        ((n.dump && n.dump.links) || []).forEach(lk => {
+          const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
+          const t = addNode(lk.target, lk.id, tEl, null);
+          if (t.fresh) { t.fresh = false; t.dump = inspectTarget(lk.target, lk.id); queue.push(t); }
+          addEdge(n, t, lk.role, lk.list);
+        });
+        if (n.id) REF_ATTRS.forEach(([attr, role]) => {
+          document.querySelectorAll("[" + attr + "='" + n.id + "']").forEach(rEl => {
+            const rn = wrapName(rEl); if (!rn) return;
+            const r = addNode(rn, rEl.getAttribute("data-lc-id") || "", rEl, null);
+            if (r.fresh) { r.fresh = false; r.dump = inspect(rEl); queue.push(r); }
+            addEdge(r, n, role, false);
+          });
+        });
+      }
+      let pi = 0, gi = 0;
+      nodes.forEach(n => {
+        if (n === root) { n.panel = p0; return; }
+        const p = panel(++pi);
+        p.innerHTML = schematic(n.name, n.dump);
         p.classList.add("see");
-        const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
-        if (visible(tEl)) {
-          const tr = tEl.getBoundingClientRect();
+        if (n.el && visible(n.el)) {
+          const tr = n.el.getBoundingClientRect();
           place(p, tr.left + OFF, tr.top + OFF);
         } else {                                            // hidden object → its own panel
           place(p, rect.right + 70, rect.top + gi * 104); gi++;
         }
-        const r0 = p0.getBoundingClientRect(), r1 = p.getBoundingClientRect();
+        n.panel = p;
+      });
+      edges.forEach(eg => {
+        const r0 = eg.a.panel.getBoundingClientRect(), r1 = eg.b.panel.getBoundingClientRect();
         const e0 = edgePoint(r0, center(r1).x, center(r1).y);
         const e1 = edgePoint(r1, center(r0).x, center(r0).y);
         pipe(e0.x, e0.y, e1.x, e1.y);
-        plabel((e0.x + e1.x) / 2, (e0.y + e1.y) / 2, (lk.list ? "⦙ " : "") + disp(lk.role));
+        plabel((e0.x + e1.x) / 2, (e0.y + e1.y) / 2, (eg.list ? "⦙ " : "") + disp(eg.role));
       });
       requestAnimationFrame(fitScene);                     // fit after browser lays out panels
     }

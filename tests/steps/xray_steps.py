@@ -180,3 +180,32 @@ def step_fab_active(context):
 def step_fab_inactive(context):
     fab = context.page.locator(SEL_FAB)
     expect(fab).not_to_have_class(re.compile(r"lc-xray-active"), timeout=3_000)
+
+
+def _shift_alt_hover(page, locator):
+    """Pointermove with Alt+Shift — the connected-scene x-ray mode."""
+    locator.wait_for(state="visible", timeout=15_000)
+    locator.scroll_into_view_if_needed()
+    page.wait_for_timeout(300)
+    box = locator.bounding_box()
+    cx = box["x"] + box["width"] / 2
+    cy = box["y"] + box["height"] / 2
+    page.evaluate(
+        "([x, y]) => window.dispatchEvent(new PointerEvent('pointermove',"
+        " {clientX: x, clientY: y, altKey: true, shiftKey: true,"
+        "  bubbles: true, cancelable: true}))",
+        [cx, cy]
+    )
+    page.wait_for_timeout(800)
+
+
+@when("I shift-hover over the chart component")
+def step_shift_hover_chart(context):
+    _shift_alt_hover(context.page, context.page.locator(SEL_CHART).first)
+
+
+@then('the x-ray scene mentions "{keyword}"')
+def step_scene_mentions(context, keyword):
+    scene = context.page.locator("#lcx-scene")
+    # the MicroPython engine loads lazily; the scene rebuilds when ready
+    expect(scene).to_contain_text(keyword, timeout=30_000)
