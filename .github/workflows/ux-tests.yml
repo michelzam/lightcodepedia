@@ -66,8 +66,10 @@ jobs:
             echo "No change in results."
           else
             git commit -m "chore: update UX test results"
-            # The loop guard above stops ux-tests re-running on this bot commit
-            git pull --rebase origin main
+            # The loop guard above stops ux-tests re-running on this bot commit.
+            # Use merge -X ours so concurrent runs never hit a rebase conflict.
+            git fetch origin main
+            git merge origin/main -X ours --no-edit
             git push origin HEAD:main
           fi
 
