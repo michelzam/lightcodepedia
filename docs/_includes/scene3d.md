@@ -50,6 +50,13 @@ Auto-included by docs/_layouts/default.html.
 .lc-s3d-console div:last-child { opacity: 1; }
 </style>
 
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+
 <script>
 (function () {
   if (window._lcScene3dReady) return;
@@ -60,9 +67,11 @@ Auto-included by docs/_layouts/default.html.
   var _threeP = null;
   function loadThree() {
     if (_threeP) return _threeP;
+    /* OrbitControls imports the bare specifier "three" internally,
+       resolved by the importmap above. */
     _threeP = Promise.all([
-      import("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"),
-      import("https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js")
+      import("three"),
+      import("three/addons/controls/OrbitControls.js")
     ]).then(function (mods) {
       return { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
     });
