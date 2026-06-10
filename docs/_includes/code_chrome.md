@@ -89,20 +89,7 @@
 .lc-carousel-dots span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin: 0 3px; cursor: pointer; transition: background 0.2s; }
 .lc-carousel-dots span.active { background: #0066cc; }
 /* tabs (global — also emitted inline by tabs.md include) */
-.lc-tabs { border: 1px solid #ddd; border-radius: 6px; margin: 1em 0; overflow: hidden; }
-.lc-tabs .lc-tab-bar { display: flex; background: #f5f5f5; border-bottom: 1px solid #ddd; flex-wrap: wrap; }
-.lc-tabs .lc-tab-btn { background: none; border: none; padding: 0.6em 1.2em; cursor: pointer; font-size: 0.95em; color: #555; border-right: 1px solid #ddd; }
-.lc-tabs .lc-tab-btn:hover { background: #eaeaea; }
-.lc-tabs .lc-tab-btn.active { background: white; color: #0066cc; font-weight: 600; box-shadow: inset 0 -3px 0 #0066cc; }
-.lc-tabs .lc-tab-panel { display: none; padding: 1em 1.4em; }
-.lc-tabs .lc-tab-panel.active { display: block; }
 /* accordion */
-.lc-accordion { margin: 1em 0; }
-.lc-accordion details { border: 1px solid #ddd; border-radius: 6px; margin: 0.4em 0; overflow: hidden; }
-.lc-accordion details summary { padding: 0.7em 1em; background: #f5f5f5; cursor: pointer; font-weight: 600; list-style: none; user-select: none; }
-.lc-accordion details summary::-webkit-details-marker { display: none; }
-.lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #e8f0fe; color: #0066cc; }
-.lc-accordion details .lc-ac-body { padding: 0.8em 1.2em; }
 /* lazy blocks */
 .lc-lazy-block { border: 1px solid #ddd; border-radius: 6px; margin: 0.5em 0; overflow: hidden; }
 .lc-lazy-block > summary { padding: 0.65em 1em; background: #f5f5f5; cursor: pointer; font-weight: 600; list-style: none; user-select: none; }
@@ -110,17 +97,7 @@
 .lc-lazy-block[open] > summary { background: #e8f0fe; color: #0066cc; border-bottom: 1px solid #ddd; }
 .lc-lazy-block .lc-lazy-content { padding: 0.3em 0 0; }
 /* radio */
-.lc-radio-group { margin: 1em 0; }
-.lc-radio-options { margin-bottom: 1em; padding: 0.6em 1em; background: #f5f5f5; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 0.2em 0; }
-.lc-radio-options label { margin-right: 1.4em; cursor: pointer; font-weight: 500; }
-.lc-radio-options input { margin-right: 0.4em; }
-.lc-radio-body { padding: 1em 1.4em; background: white; border: 1px solid #eee; border-left: 3px solid #0066cc; border-radius: 0 6px 6px 0; }
-.lc-radio-content { display: none; }
-.lc-radio-content.active { display: block; }
 /* grid */
-.lc-grid { display: grid; gap: 18px; margin: 1em 0; }
-.lc-grid .lc-grid-cell { min-width: 0; }
-.lc-grid .lc-grid-cell > h3 { margin-top: 0; margin-bottom: 0.6em; font-size: 1em; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
 /* dropdown */
 .lc-dropdown { position: relative; display: inline-block; margin: 0.3em 0; }
 .lc-dd-toggle { background: #0066cc; color: white; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer; font-size: 0.95em; }
@@ -140,14 +117,6 @@
 /* scrollable */
 .lc-scrollable { overflow-y: auto; padding: 1em 1.4em; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; margin: 1em 0; }
 /* cards */
-.lc-cards { display: grid; gap: 18px; margin: 1em 0; }
-.lc-cards .lc-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.2em 1.4em; background: white; transition: transform 0.15s, box-shadow 0.15s; }
-.lc-cards .lc-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); border-color: #0066cc; }
-.lc-cards .lc-card h3 { margin-top: 0; margin-bottom: 0.5em; font-size: 1.1em; color: #222; }
-.lc-cards .lc-card p { margin: 0 0 0.6em; color: #555; line-height: 1.45; }
-.lc-cards .lc-card p:last-child { margin-bottom: 0; }
-.lc-cards .lc-card a { color: #0066cc; text-decoration: none; font-weight: 500; }
-.lc-cards .lc-card a:hover { text-decoration: underline; }
 /* feature status dots on folder cards */
 .lc-card-features { display: flex; gap: 0.35em; align-items: center; margin-top: 0.65em; flex-wrap: wrap; }
 .lc-feat-dot { display: inline-flex; align-items: center; gap: 0.2em; font-size: 0.72em; font-weight: 600; padding: 0.1em 0.45em; border-radius: 99px; line-height: 1.6; }
@@ -155,8 +124,6 @@
 .lc-feat-failing  { background: #fee2e2; color: #b91c1c; }
 .lc-feat-pending  { background: #fef3c7; color: #92400e; }
 .lc-feat-none     { background: #f3f4f6; color: #6b7280; }
-@media (max-width: 700px) { .lc-cards { grid-template-columns: repeat(2, 1fr) !important; } }
-@media (max-width: 480px) { .lc-cards { grid-template-columns: 1fr !important; } }
 /* blocks */
 .lc-blocks { display: grid; gap: 18px; margin: 1em 0; }
 .lc-block { border: 1px solid #ddd; border-radius: 8px; padding: 1.5em 2em; background: #fff; overflow: hidden; }
@@ -1074,13 +1041,7 @@
   lcRegisterUpgrader(".highlighter-rouge.repl, pre.repl", upgradeRepl);
   lcRegisterUpgrader(".highlighter-rouge.code, pre.code", upgradeCode);
   lcRegisterUpgrader("ul.carousel", upgradeCarousel);
-  lcRegisterUpgrader(".highlighter-rouge.accordion, pre.accordion", upgradeAccordion);
-  lcRegisterUpgrader(".highlighter-rouge.tabs, pre.tabs", upgradeTabsInline);
-  lcRegisterUpgrader("p.tabs", upgradeTabsFile);
-  lcRegisterUpgrader(".highlighter-rouge.radio, pre.radio", upgradeRadio);
-  lcRegisterUpgrader(".highlighter-rouge.grid, pre.grid", upgradeGrid);
   lcRegisterUpgrader(".highlighter-rouge.scrollable, pre.scrollable", upgradeScrollable);
-  lcRegisterUpgrader(".highlighter-rouge.cards, pre.cards", upgradeCards);
   lcRegisterUpgrader(".highlighter-rouge.block, .highlighter-rouge.blocks, pre.block, pre.blocks", upgradeBlock);
   lcRegisterUpgrader("ul.dropdown", upgradeDropdown);
   lcRegisterUpgrader("p.button", upgradeButton);
@@ -1135,168 +1096,11 @@
     return window.marked ? marked.parse(norm) : "<pre>" + s + "</pre>";
   }
   window.lcLoadMarked = loadMarked;
+  window.lcParseSections = parseSections;
+  window.lcMarkdownBody = markdownBody;
   window.lcScanElement = scanElement;
   window.lcApplyIAL   = _applyIAL;
   window.lcRegisterUpgrader = lcRegisterUpgrader;
-
-  function upgradeAccordion(el) {
-    var sections = parseSections(el);
-    if (!sections.length) return;
-    var wrap = document.createElement("div");
-    wrap.className = "lc-accordion";
-    sections.forEach(function(s) {
-      var d = document.createElement("details");
-      var sum = document.createElement("summary");
-      sum.textContent = s.label;
-      var body = document.createElement("div");
-      body.className = "lc-ac-body";
-      d.appendChild(sum);
-      d.appendChild(body);
-      d.addEventListener("toggle", function() {
-        if (!d.open || body.dataset.lcReady) return;
-        body.dataset.lcReady = "1";
-        loadMarked(function() {
-          body.innerHTML = markdownBody(s.body);
-          _applyIAL(body);
-          if (window.lcScanElement) window.lcScanElement(body);
-          else scanElement(body);
-        });
-      });
-      wrap.appendChild(d);
-    });
-    el.parentNode.replaceChild(wrap, el);
-  }
-
-  function upgradeTabsInline(el) {
-    var sections = parseSections(el);
-    if (!sections.length) return;
-    var gid = el.id || ("lc-ti-" + Math.random().toString(36).slice(2, 7));
-    loadMarked(function() {
-      var bar = sections.map(function(s, i){
-        return "<button class=\"lc-tab-btn" + (i===0?" active":"") + "\" data-tab=\"" + gid + "-" + i + "\">" + s.label + "</button>";
-      }).join("");
-      var panels = sections.map(function(s, i){
-        return "<div id=\"" + gid + "-" + i + "\" class=\"lc-tab-panel" + (i===0?" active":"") + "\">" + markdownBody(s.body) + "</div>";
-      }).join("");
-      var wrap = document.createElement("div");
-      wrap.className = "lc-tabs";
-      wrap.innerHTML = "<div class=\"lc-tab-bar\">" + bar + "</div>" + panels;
-      wrap.querySelectorAll(".lc-tab-btn").forEach(function(b){
-        b.addEventListener("click", function(){
-          wrap.querySelectorAll(".lc-tab-btn").forEach(function(x){x.classList.remove("active");});
-          wrap.querySelectorAll(".lc-tab-panel").forEach(function(x){x.classList.remove("active");});
-          b.classList.add("active");
-          document.getElementById(b.dataset.tab).classList.add("active");
-        });
-      });
-      el.parentNode.replaceChild(wrap, el);
-    });
-  }
-
-  function upgradeTabsFile(el) {
-    if (el.dataset.lcUpgraded) return;
-    el.dataset.lcUpgraded = "1";
-    var a = el.querySelector("a");
-    if (!a) return;
-    var filePath = a.getAttribute("href").replace(/^\/+|\/+$/g, "");
-    var gid = el.getAttribute("id") || ("lc-tf-" + Math.random().toString(36).slice(2, 7));
-    var placeholder = document.createElement("div");
-    placeholder.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading tabs…</div>";
-    el.parentNode.replaceChild(placeholder, el);
-    if (!_lcSiteRepo) {
-      placeholder.innerHTML = "<div class='lc-tabs' style='padding:1em;color:#c00'>⚠️ site.github.repository_nwo not set.</div>";
-      return;
-    }
-    var rawUrl = "https://raw.githubusercontent.com/" + _lcSiteRepo + "/main/docs/" + filePath + ".md";
-    fetch(rawUrl)
-      .then(function(r) { if (!r.ok) throw new Error("File not found: " + filePath + ".md"); return r.text(); })
-      .then(function(text) {
-        var lines = text.split("\n");
-        var i = 0;
-        if (lines[0] && lines[0].trim() === "---") {
-          i = 1;
-          while (i < lines.length && lines[i].trim() !== "---") i++;
-          i++;
-        }
-        var body = lines.slice(i).join("\n");
-        var sections = body.split(/\n(?=### )/).map(function(s) {
-          var sl = s.split("\n");
-          return { label: sl[0].replace(/^###\s*/, "").trim(), body: sl.slice(1).join("\n").trim() };
-        }).filter(function(s) { return s.label; });
-        if (!sections.length) {
-          placeholder.innerHTML = "<div class='lc-tabs' style='padding:1em;color:#c00'>⚠️ No ### sections found in " + escapeHtml(filePath) + ".md</div>";
-          return;
-        }
-        loadMarked(function() {
-          var bar = sections.map(function(s, i) {
-            return "<button class=\"lc-tab-btn" + (i===0?" active":"") + "\" data-tab=\"" + gid + "-" + i + "\">" + escapeHtml(s.label) + "</button>";
-          }).join("");
-          var panels = sections.map(function(s, i) {
-            return "<div id=\"" + gid + "-" + i + "\" class=\"lc-tab-panel" + (i===0?" active":"") + "\">" + marked.parse(s.body) + "</div>";
-          }).join("");
-          var wrap = document.createElement("div");
-          wrap.className = "lc-tabs";
-          wrap.innerHTML = "<div class=\"lc-tab-bar\">" + bar + "</div>" + panels;
-          wrap.querySelectorAll(".lc-tab-btn").forEach(function(b) {
-            b.addEventListener("click", function() {
-              wrap.querySelectorAll(".lc-tab-btn").forEach(function(x) { x.classList.remove("active"); });
-              wrap.querySelectorAll(".lc-tab-panel").forEach(function(x) { x.classList.remove("active"); });
-              b.classList.add("active");
-              document.getElementById(b.dataset.tab).classList.add("active");
-            });
-          });
-          placeholder.parentNode.replaceChild(wrap, placeholder);
-        });
-      })
-      .catch(function(e) {
-        placeholder.innerHTML = "<div class='lc-tabs' style='padding:1em;color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
-      });
-  }
-
-  function upgradeRadio(el) {
-    var sections = parseSections(el);
-    if (!sections.length) return;
-    var gid = el.id || ("lc-rg-" + Math.random().toString(36).slice(2, 7));
-    loadMarked(function() {
-      var radios = sections.map(function(s, i){
-        return "<label><input type=\"radio\" name=\"" + gid + "\" data-target=\"" + gid + "-" + i + "\"" + (i===0?" checked":"") + "> " + s.label + "</label>";
-      }).join("");
-      var panels = sections.map(function(s, i){
-        return "<div id=\"" + gid + "-" + i + "\" class=\"lc-radio-content" + (i===0?" active":"") + "\">" + markdownBody(s.body) + "</div>";
-      }).join("");
-      var wrap = document.createElement("div");
-      wrap.className = "lc-radio-group";
-      wrap.innerHTML = "<div class=\"lc-radio-options\">" + radios + "</div><div class=\"lc-radio-body\">" + panels + "</div>";
-      wrap.querySelectorAll("input[type=radio]").forEach(function(r){
-        r.addEventListener("change", function(){
-          wrap.querySelectorAll(".lc-radio-content").forEach(function(x){x.classList.remove("active");});
-          document.getElementById(r.dataset.target).classList.add("active");
-        });
-      });
-      el.parentNode.replaceChild(wrap, el);
-    });
-  }
-
-  function upgradeGrid(el) {
-    var sections = parseSections(el);
-    if (!sections.length) return;
-    var cols = el.getAttribute("cols") || "auto";
-    var gap = el.getAttribute("gap") || "18";
-    var hideHeadings = el.getAttribute("headings") === "hide";
-    var tpl = cols === "auto" ? "repeat(auto-fit,minmax(280px,1fr))" : "repeat(" + cols + ",1fr)";
-    loadMarked(function() {
-      var cells = sections.map(function(s){
-        var h = hideHeadings ? "" : "<h3>" + s.label + "</h3>";
-        return "<div class=\"lc-grid-cell\">" + h + markdownBody(s.body) + "</div>";
-      }).join("");
-      var wrap = document.createElement("div");
-      wrap.className = "lc-grid";
-      wrap.style.gridTemplateColumns = tpl;
-      wrap.style.gap = gap + "px";
-      wrap.innerHTML = cells;
-      el.parentNode.replaceChild(wrap, el);
-    });
-  }
 
   function upgradeScrollable(el) {
     var h = el.getAttribute("height") || "300";
@@ -1652,26 +1456,6 @@
       .catch(function(e) {
         wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
       });
-  }
-
-  function upgradeCards(el) {
-    var sections = parseSections(el);
-    if (!sections.length) return;
-    var cols = el.getAttribute("cols") || "auto";
-    var gap = el.getAttribute("gap") || "18";
-    var colStyle = cols === "auto"
-      ? "repeat(auto-fit, minmax(240px, 1fr))"
-      : "repeat(" + cols + ", 1fr)";
-    var wrap = document.createElement("div");
-    wrap.className = "lc-cards";
-    wrap.style.gridTemplateColumns = colStyle;
-    wrap.style.gap = gap + "px";
-    el.parentNode.replaceChild(wrap, el);
-    loadMarked(function() {
-      wrap.innerHTML = sections.map(function(s) {
-        return "<div class=\"lc-card\"><h3>" + s.label + "</h3>" + markdownBody(s.body) + "</div>";
-      }).join("");
-    });
   }
 
   function _applyIAL(root) {
