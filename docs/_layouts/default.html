@@ -7,6 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ page.title | default: site.title }}</title>
   {% if page.permalink == "/404.html" %}<meta name="robots" content="noindex">{% endif %}
+  <!-- Import maps must be parsed before any <script type="module"> triggers a
+       load (mermaid, diagram, xray), so this lives in <head>, not in the
+       component include that uses it (scene3d.md). -->
+  <script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  } }
+  </script>
 </head>
 <body>
 {% include topbar.md %}

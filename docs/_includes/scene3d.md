@@ -50,12 +50,9 @@ Auto-included by docs/_layouts/default.html.
 .lc-s3d-console div:last-child { opacity: 1; }
 </style>
 
-<script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-} }
-</script>
+<!-- The Three.js import map lives in _layouts/default.html <head>: an import
+     map parsed after another include's module script starts loading throws a
+     console error on every page. -->
 
 <script>
 (function () {
