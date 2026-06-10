@@ -1,11 +1,11 @@
 [
   {
-    "status": "❌",
+    "status": "✅",
     "scenario": "Avatar examples page loads without errors",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.39,
-    "run": "2026-06-10T20:24Z",
+    "seconds": 2.03,
+    "run": "2026-06-10T20:50Z",
     "url": "/assets/ux-report.html#scenario_0"
   },
   {
@@ -13,8 +13,8 @@
     "scenario": "The avatar overlay character appears",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-06-10T20:24Z",
+    "seconds": 1.03,
+    "run": "2026-06-10T20:50Z",
     "url": "/assets/ux-report.html#scenario_1"
   },
   {
@@ -22,8 +22,8 @@
     "scenario": "The trigger starts the avatar speaking",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.35,
-    "run": "2026-06-10T20:24Z",
+    "seconds": 1.38,
+    "run": "2026-06-10T20:50Z",
     "url": "/assets/ux-report.html#scenario_2"
   },
   {
@@ -31,8 +31,8 @@
     "scenario": "Clicking the trigger again stops the avatar",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.8,
-    "run": "2026-06-10T20:24Z",
+    "seconds": 1.72,
+    "run": "2026-06-10T20:50Z",
     "url": "/assets/ux-report.html#scenario_3"
   },
   {
@@ -40,180 +40,207 @@
     "scenario": "X-ray identifies the Avatar component",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 2.17,
-    "run": "2026-06-10T20:24Z",
+    "seconds": 2.21,
+    "run": "2026-06-10T20:50Z",
     "url": "/assets/ux-report.html#scenario_4"
   },
   {
-    "status": "❌",
+    "status": "✅",
+    "scenario": "Nodes page loads",
+    "feature": "LightNode network page",
+    "tags": "",
+    "seconds": 1.17,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_5"
+  },
+  {
+    "status": "✅",
+    "scenario": "The network map renders",
+    "feature": "LightNode network page",
+    "tags": "",
+    "seconds": 1.02,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_6"
+  },
+  {
+    "status": "✅",
+    "scenario": "The UX results dataset renders the scenario grid",
+    "feature": "LightNode network page",
+    "tags": "",
+    "seconds": 1.03,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_7"
+  },
+  {
+    "status": "✅",
     "scenario": "3D playground page loads without errors",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 1.14,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_5"
+    "seconds": 1.13,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_8"
   },
   {
     "status": "✅",
     "scenario": "The 3D scene canvas renders",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 1.36,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_6"
+    "seconds": 1.07,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_9"
   },
   {
     "status": "✅",
     "scenario": "Both objects expose their attribute panels",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 1.07,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_7"
+    "seconds": 1.09,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_10"
   },
   {
     "status": "✅",
     "scenario": "Calling a method logs the call to the scene console",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 1.95,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_8"
+    "seconds": 1.81,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_11"
   },
   {
     "status": "✅",
     "scenario": "Editing an attribute logs the assignment",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 1.71,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_9"
+    "seconds": 1.6,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_12"
   },
   {
     "status": "✅",
     "scenario": "X-ray identifies the Scene3d component",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 3.11,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_10"
+    "seconds": 2.89,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_13"
   },
   {
     "status": "✅",
     "scenario": "Slides FAB is present on tutorial101",
     "feature": "Slides FAB and presentation mode",
     "tags": "",
-    "seconds": 2.29,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_11"
+    "seconds": 2.43,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_14"
   },
   {
     "status": "✅",
     "scenario": "Slides FAB popup opens on tap",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.72,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_12"
+    "seconds": 2.53,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_15"
   },
   {
     "status": "✅",
     "scenario": "Tapping Present closes the popup",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.67,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_13"
+    "seconds": 3.04,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_16"
   },
   {
     "status": "✅",
     "scenario": "Slides FAB is present on mobile",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.65,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_14"
+    "seconds": 2.88,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_17"
   },
   {
     "status": "✅",
     "scenario": "FAB popup appears on tap on mobile",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.33,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_15"
-  },
-  {
-    "status": "❌",
-    "scenario": "Home page loads",
-    "feature": "Core pages load without errors",
-    "tags": "",
-    "seconds": 1.15,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_16"
-  },
-  {
-    "status": "❌",
-    "scenario": "Tutorial 101 loads",
-    "feature": "Core pages load without errors",
-    "tags": "",
-    "seconds": 1.92,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_17"
-  },
-  {
-    "status": "❌",
-    "scenario": "Components page loads",
-    "feature": "Core pages load without errors",
-    "tags": "",
-    "seconds": 1.12,
-    "run": "2026-06-10T20:24Z",
+    "seconds": 2.35,
+    "run": "2026-06-10T20:50Z",
     "url": "/assets/ux-report.html#scenario_18"
   },
   {
-    "status": "❌",
-    "scenario": "Components examples page loads",
+    "status": "✅",
+    "scenario": "Home page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.18,
-    "run": "2026-06-10T20:24Z",
+    "seconds": 1.14,
+    "run": "2026-06-10T20:50Z",
     "url": "/assets/ux-report.html#scenario_19"
   },
   {
-    "status": "❌",
-    "scenario": "License page loads",
+    "status": "✅",
+    "scenario": "Tutorial 101 loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.13,
-    "run": "2026-06-10T20:24Z",
+    "seconds": 1.97,
+    "run": "2026-06-10T20:50Z",
     "url": "/assets/ux-report.html#scenario_20"
   },
   {
-    "status": "❌",
+    "status": "✅",
+    "scenario": "Components page loads",
+    "feature": "Core pages load without errors",
+    "tags": "",
+    "seconds": 1.01,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_21"
+  },
+  {
+    "status": "✅",
+    "scenario": "Components examples page loads",
+    "feature": "Core pages load without errors",
+    "tags": "",
+    "seconds": 1.03,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_22"
+  },
+  {
+    "status": "✅",
+    "scenario": "License page loads",
+    "feature": "Core pages load without errors",
+    "tags": "",
+    "seconds": 1.02,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_23"
+  },
+  {
+    "status": "✅",
     "scenario": "Start page loads without errors",
     "feature": "Onboarding wizard",
     "tags": "",
-    "seconds": 1.1,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_21"
+    "seconds": 1.03,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_24"
   },
   {
     "status": "✅",
     "scenario": "The wizard renders six steps with only the first active",
     "feature": "Onboarding wizard",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_22"
+    "seconds": 1.02,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_25"
   },
   {
     "status": "✅",
     "scenario": "Confirming a GitHub account advances to the access-key step",
     "feature": "Onboarding wizard",
     "tags": "",
-    "seconds": 1.46,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_23"
+    "seconds": 1.34,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_26"
   },
   {
     "status": "✅",
@@ -221,124 +248,124 @@
     "feature": "Onboarding wizard",
     "tags": "",
     "seconds": 1.66,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_24"
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_27"
   },
   {
     "status": "✅",
     "scenario": "Karma rewards are advertised on the wizard steps",
     "feature": "Onboarding wizard",
     "tags": "",
-    "seconds": 1.0,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_25"
+    "seconds": 1.04,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_28"
   },
   {
     "status": "✅",
     "scenario": "Grid renders with data",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.92,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_26"
+    "seconds": 1.95,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_29"
   },
   {
     "status": "✅",
     "scenario": "Chart renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.92,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_27"
+    "seconds": 1.96,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_30"
   },
   {
     "status": "✅",
     "scenario": "Map renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 2.01,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_28"
+    "seconds": 1.94,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_31"
   },
   {
     "status": "✅",
     "scenario": "Video block renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 2.01,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_29"
+    "seconds": 1.91,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_32"
   },
   {
     "status": "✅",
     "scenario": "Grid row selection updates the chart",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 2.61,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_30"
+    "seconds": 2.54,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_33"
   },
   {
     "status": "✅",
     "scenario": "X-ray panel appears on hover over a component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.18,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_31"
+    "seconds": 3.17,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_34"
   },
   {
     "status": "✅",
     "scenario": "X-ray panel identifies the bound chart component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.29,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_32"
+    "seconds": 3.13,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_35"
   },
   {
     "status": "✅",
     "scenario": "X-ray panel identifies the map component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.13,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_33"
+    "seconds": 3.16,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_36"
   },
   {
     "status": "✅",
     "scenario": "X-ray scene fits within viewport",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.16,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_34"
+    "seconds": 3.17,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_37"
   },
   {
     "status": "✅",
     "scenario": "X-ray is activatable via FAB popup on mobile",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 2.34,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_35"
+    "seconds": 2.31,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_38"
   },
   {
     "status": "✅",
     "scenario": "X-ray activates on tap after enabling via FAB popup",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 3.16,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_36"
+    "seconds": 3.17,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_39"
   },
   {
     "status": "✅",
     "scenario": "X-ray deactivates by tapping the FAB again",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 3.06,
-    "run": "2026-06-10T20:24Z",
-    "url": "/assets/ux-report.html#scenario_37"
+    "seconds": 3.16,
+    "run": "2026-06-10T20:50Z",
+    "url": "/assets/ux-report.html#scenario_40"
   }
 ]
