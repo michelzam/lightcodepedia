@@ -25,7 +25,7 @@ Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
 <style>
-.lc-chart { margin: 1em 0; }
+.lc-chart { margin: 1em 0; position: relative; }
 .lc-chart svg { display: block; width: 100%; height: auto; }
 .lc-chart-title { font-size: 0.82em; font-weight: 600; color: #374151; margin-bottom: 0.3em; }
 </style>
