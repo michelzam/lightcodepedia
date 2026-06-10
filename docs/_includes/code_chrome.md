@@ -81,26 +81,12 @@
 .lc-pyrepl-input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; padding: 0; }
 .lc-pyrepl-input:disabled { color: #666; }
 
-.lc-carousel { position: relative; padding: 1.2em 2em; min-height: 4em; background: #fafafa; border-left: 4px solid #0066cc; border-radius: 0 6px 6px 0; margin: 1em 0; }
-.lc-carousel-item { display: none; font-style: italic; color: #444; line-height: 1.5; }
-.lc-carousel-item.active { display: block; animation: lc-fade 0.4s ease; }
-@keyframes lc-fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
-.lc-carousel-dots { text-align: center; margin-top: 0.8em; }
-.lc-carousel-dots span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin: 0 3px; cursor: pointer; transition: background 0.2s; }
-.lc-carousel-dots span.active { background: #0066cc; }
 /* tabs (global — also emitted inline by tabs.md include) */
 /* accordion */
 /* lazy blocks */
 /* radio */
 /* grid */
 /* dropdown */
-.lc-dropdown { position: relative; display: inline-block; margin: 0.3em 0; }
-.lc-dd-toggle { background: #0066cc; color: white; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer; font-size: 0.95em; }
-.lc-dd-toggle:hover { background: #0052a3; }
-.lc-dd-menu { display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ddd; border-radius: 4px; min-width: 180px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); z-index: 500; margin-top: 4px; }
-.lc-dd-menu.open { display: block; }
-.lc-dd-menu a { display: block; padding: 0.6em 1em; color: #333; text-decoration: none; }
-.lc-dd-menu a:hover { background: #f5f5f5; color: #0066cc; }
 /* button */
 .lc-btn { display: inline-block; padding: 0.5em 1.2em; background: #0066cc; color: white !important; text-decoration: none !important; border-radius: 4px; font-weight: 600; transition: background 0.15s; margin: 0.2em 0.3em 0.2em 0; }
 .lc-btn:hover { background: #0052a3; }
@@ -110,7 +96,6 @@
 .lc-btn-outline { background: transparent; color: #0066cc !important; border: 2px solid #0066cc; padding: calc(0.5em - 2px) calc(1.2em - 2px); }
 .lc-btn-outline:hover { background: #0066cc; color: white !important; }
 /* scrollable */
-.lc-scrollable { overflow-y: auto; padding: 1em 1.4em; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; margin: 1em 0; }
 /* cards */
 /* feature status dots on folder cards */
 .lc-card-features { display: flex; gap: 0.35em; align-items: center; margin-top: 0.65em; flex-wrap: wrap; }
@@ -119,13 +104,6 @@
 .lc-feat-failing  { background: #fee2e2; color: #b91c1c; }
 .lc-feat-pending  { background: #fef3c7; color: #92400e; }
 .lc-feat-none     { background: #f3f4f6; color: #6b7280; }
-/* menu (horizontal nav from markdown links) */
-.lc-menu { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3em 1.5em; padding: 0.5em 0; margin: 0.5em 0 1.2em; border-bottom: 1px solid #eee; }
-.lc-menu a { display: inline-flex; align-items: center; gap: 0.4em; text-decoration: none; color: #333; font-weight: 500; font-size: 0.96em; padding: 0.2em 0; }
-.lc-menu a:hover { color: #0066cc; }
-.lc-menu .lc-menu-ic { font-size: 1.1em; line-height: 1; }
-/* embed */
-.lc-embed { margin: 0.5em 0; }
 /* chart */
 </style>
 <script>
@@ -1009,18 +987,11 @@
   lcRegisterUpgrader(".highlighter-rouge.run, pre.run", upgradeRun);
   lcRegisterUpgrader(".highlighter-rouge.repl, pre.repl", upgradeRepl);
   lcRegisterUpgrader(".highlighter-rouge.code, pre.code", upgradeCode);
-  lcRegisterUpgrader("ul.carousel", upgradeCarousel);
-  lcRegisterUpgrader(".highlighter-rouge.scrollable, pre.scrollable", upgradeScrollable);
-  lcRegisterUpgrader("ul.dropdown", upgradeDropdown);
   lcRegisterUpgrader("p.button", upgradeButton);
-  lcRegisterUpgrader("p.embed-page", upgradeEmbedPage);
-  lcRegisterUpgrader("p.embed", upgradeEmbedExternal);
-  lcRegisterUpgrader("p.video", upgradeVideo);
   lcRegisterUpgrader("p.folder", upgradeFolder);
   lcRegisterUpgrader("p.recorder", upgradeRecorder);
   lcRegisterUpgrader("p.lightnodes", upgradeNodes);
   lcRegisterUpgrader("p.deploys", upgradeDeploys);
-  lcRegisterUpgrader("p.menu, ul.menu", upgradeMenu);
 
   function scan() {
     _applyIAL(document);
@@ -1069,34 +1040,6 @@
   window.lcScanElement = scanElement;
   window.lcApplyIAL   = _applyIAL;
   window.lcRegisterUpgrader = lcRegisterUpgrader;
-
-  function upgradeScrollable(el) {
-    var h = el.getAttribute("height") || "300";
-    var code = el.querySelector("code");
-    var content = code ? code.innerHTML : el.innerHTML;
-    var wrap = document.createElement("div");
-    wrap.className = "lc-scrollable";
-    wrap.style.maxHeight = h + "px";
-    wrap.innerHTML = "<pre style=\"margin:0;white-space:pre-wrap;\">" + content + "</pre>";
-    el.parentNode.replaceChild(wrap, el);
-  }
-
-  function upgradeDropdown(el) {
-    var label = el.getAttribute("label") || "Menu";
-    var gid = el.id || ("lc-dd-" + Math.random().toString(36).slice(2, 7));
-    var links = Array.from(el.querySelectorAll("li a")).map(function(a){
-      return "<a href=\"" + a.href + "\">" + a.textContent + "</a>";
-    }).join("");
-    var wrap = document.createElement("div");
-    wrap.className = "lc-dropdown";
-    wrap.id = "lc-dd-" + gid;
-    wrap.innerHTML = "<button class=\"lc-dd-toggle\">" + label + "</button><div class=\"lc-dd-menu\">" + links + "</div>";
-    var btn = wrap.querySelector(".lc-dd-toggle");
-    var menu = wrap.querySelector(".lc-dd-menu");
-    btn.addEventListener("click", function(e){ e.stopPropagation(); menu.classList.toggle("open"); });
-    document.addEventListener("click", function(){ menu.classList.remove("open"); }, { passive: true });
-    el.parentNode.replaceChild(wrap, el);
-  }
 
   function upgradeButton(el) {
     var a = el.querySelector("a");
@@ -1151,67 +1094,6 @@
       var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
       try { if (runFn) runFn.call(mp, fullCode); } catch (e) { console.error("[lc-button]", e); }
     });
-  }
-
-  function _iframeEl(src, h) {
-    var f = document.createElement("iframe");
-    f.src = src; f.width = "100%"; f.height = h || "400";
-    f.setAttribute("loading", "lazy"); f.setAttribute("allowfullscreen", "");
-    f.style.border = "none";
-    return f;
-  }
-  function upgradeEmbedPage(el) {
-    var a = el.querySelector("a");
-    if (!a) return;
-    var h = el.getAttribute("height") || "400";
-    var src = a.getAttribute("href");
-    if (src && src.indexOf("?") === -1) src += "?embed=true"; else src += "&embed=true";
-    el.parentNode.replaceChild(_iframeEl(src, h), el);
-  }
-  function upgradeEmbedExternal(el) {
-    var a = el.querySelector("a");
-    if (!a) return;
-    var href = a.getAttribute("href");
-    // External URLs → iframe
-    if (/^https?:\/\//i.test(href)) {
-      el.parentNode.replaceChild(_iframeEl(href, el.getAttribute("height") || "600"), el);
-      return;
-    }
-    // Local module → fetch the raw markdown source and render it inline.
-    // [Lucky](/_dog) → docs/_dog.md fetched from raw.githubusercontent.
-    var container = document.createElement("div");
-    container.className = "lc-embed";
-    container.innerHTML = "<div style='color:#aaa;font-style:italic;padding:0.5em 0'>⏳ Loading…</div>";
-    el.parentNode.replaceChild(container, el);
-    var rel = href.replace(/^\/+|\/+$/g, "");
-    if (!/\.md$/i.test(rel)) rel += ".md";
-    var srcUrl = _lcSiteRepo
-      ? "https://raw.githubusercontent.com/" + _lcSiteRepo + "/HEAD/docs/" + rel
-      : "/" + rel;
-    fetch(srcUrl)
-      .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-      .then(function(text) {
-        // strip optional YAML front matter
-        if (text.indexOf("---") === 0) {
-          var end = text.indexOf("\n---", 3);
-          if (end >= 0) { var nl = text.indexOf("\n", end + 1); text = nl >= 0 ? text.slice(nl + 1) : ""; }
-        }
-        loadMarked(function() { container.innerHTML = marked.parse(text.trim()); });
-      })
-      .catch(function(err) {
-        container.innerHTML = "<div style='color:#c00'>⚠️ Could not load " + escapeHtml(href) + ": " + escapeHtml(err.message) + "</div>";
-      });
-  }
-  function upgradeVideo(el) {
-    var a = el.querySelector("a");
-    if (!a) return;
-    var href = a.getAttribute("href");
-    var src = href;
-    var gdrive = href.match(/^gdrive:(.+)/);
-    if (gdrive) src = "https://drive.google.com/file/d/" + gdrive[1] + "/preview";
-    var yt = href.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
-    if (yt) src = "https://www.youtube.com/embed/" + yt[1];
-    el.parentNode.replaceChild(_iframeEl(src, el.getAttribute("height") || "400"), el);
   }
 
   function extractPageMeta(text) {
@@ -1442,36 +1324,6 @@
       while ((kv = kvRe.exec(body)) !== null) prev.setAttribute(kv[1], kv[2]);
       p.parentNode.removeChild(p);
     });
-  }
-
-  function upgradeCarousel(el) {
-    var items = Array.from(el.querySelectorAll("li")).map(function(li){ return li.innerHTML; });
-    if (!items.length) return;
-    var delay = parseInt(el.getAttribute("delay") || "4000", 10);
-    var gid = el.id || ("lc-car-" + Math.random().toString(36).slice(2, 7));
-    var itemsHtml = items.map(function(h, i){
-      return '<div class="lc-carousel-item' + (i === 0 ? " active" : "") + '">' + h + '</div>';
-    }).join("");
-    var dotsHtml = items.map(function(_, i){
-      return '<span class="' + (i === 0 ? "active" : "") + '" data-idx="' + i + '"></span>';
-    }).join("");
-    var wrapper = document.createElement("div");
-    wrapper.className = "lc-carousel";
-    wrapper.id = gid;
-    wrapper.innerHTML = itemsHtml + '<div class="lc-carousel-dots">' + dotsHtml + '</div>';
-    el.parentNode.replaceChild(wrapper, el);
-    var elItems = wrapper.querySelectorAll(".lc-carousel-item");
-    var dots = wrapper.querySelectorAll(".lc-carousel-dots span");
-    var idx = 0;
-    function show(n) {
-      elItems.forEach(function(x){ x.classList.remove("active"); });
-      dots.forEach(function(x){ x.classList.remove("active"); });
-      elItems[n].classList.add("active");
-      dots[n].classList.add("active");
-      idx = n;
-    }
-    dots.forEach(function(d){ d.addEventListener("click", function(){ show(parseInt(d.dataset.idx, 10)); }); });
-    setInterval(function(){ show((idx + 1) % elItems.length); }, delay);
   }
 
   // ── Screen + face recorder ────────────────────────────────────────────────
@@ -2561,28 +2413,6 @@
   // The same link format that powers the site's own top bar (see menu.md):
   //   [🎓 Tutorial](/t) [🧩 Components](/c)
   //   {: .menu }
-  function upgradeMenu(el) {
-    if (el.dataset.lcUpgraded) return;
-    el.dataset.lcUpgraded = "1";
-    var links = el.querySelectorAll("a");
-    if (!links.length) return;
-    var nav = document.createElement("nav");
-    nav.className = "lc-menu";
-    Array.prototype.forEach.call(links, function(a) {
-      var t = (a.textContent || "").trim();
-      var sp = t.indexOf(" ");
-      var icon = "", label = t;
-      if (sp > 0) { icon = t.slice(0, sp); label = t.slice(sp + 1); }
-      var na = document.createElement("a");
-      na.href = a.getAttribute("href") || "#";
-      if (a.getAttribute("target")) na.target = a.getAttribute("target");
-      na.innerHTML = (icon ? '<span class="lc-menu-ic">' + escapeHtml(icon) + '</span>' : '')
-        + '<span class="lc-menu-lb">' + escapeHtml(label) + '</span>';
-      nav.appendChild(na);
-    });
-    el.parentNode.replaceChild(nav, el);
-  }
-
   // ── GitHub deploy/activity list (Actions runs) ─────────────────────────────
   function upgradeDeploys(el) {
     if (el.dataset.lcUpgraded) return;
