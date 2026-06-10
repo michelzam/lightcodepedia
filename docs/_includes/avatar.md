@@ -175,6 +175,7 @@ Auto-included by docs/_layouts/default.html.
       var host = document.createElement("div");
       host.className = "lc-avatar-host";
       host.id = "lc-avatar-" + elId;
+      host.setAttribute("data-lc-id", elId);
       host.style.left = "6vw";
 
       var char = document.createElement("div");
@@ -248,6 +249,7 @@ Auto-included by docs/_layouts/default.html.
     var av = window._lcAvatars[id];
     if (!av || av.playing) return;
     av.playing = true; av.idx = 0;
+    av.host.setAttribute("data-state", "speaking");
     if (av.lottieAnim) av.lottieAnim.play();
     nextLine(id);
     updateTriggers(id);
@@ -257,6 +259,7 @@ Auto-included by docs/_layouts/default.html.
     var av = window._lcAvatars[id];
     if (!av) return;
     av.playing = false;
+    av.host.setAttribute("data-state", "idle");
     window.speechSynthesis && window.speechSynthesis.cancel();
     if (av.lottieAnim) av.lottieAnim.stop();
     av.bubble.classList.remove("visible");
