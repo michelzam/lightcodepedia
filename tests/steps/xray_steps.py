@@ -45,6 +45,21 @@ def step_hover_map(context):
     _alt_hover(context.page, context.page.locator(SEL_MAP).first)
 
 
+@when("I hover over the scene3d component")
+def step_hover_scene3d(context):
+    scene = context.page.locator(".lc-scene3d").first
+    # wait for the Three.js canvas so the upgrade is complete before hovering
+    context.page.locator(".lc-scene3d canvas").first.wait_for(
+        state="visible", timeout=25_000
+    )
+    _alt_hover(context.page, scene)
+
+
+@when('I hover over the avatar overlay "{avatar_id}"')
+def step_hover_avatar(context, avatar_id):
+    _alt_hover(context.page, context.page.locator("#lc-avatar-" + avatar_id))
+
+
 @then("an x-ray panel is visible")
 def step_xray_visible(context):
     panel = context.page.locator(SEL_XRAY_PANEL).first
