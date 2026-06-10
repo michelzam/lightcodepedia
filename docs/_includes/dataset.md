@@ -94,7 +94,7 @@ Auto-included by docs/_layouts/default.html.
     var link = el.querySelector("a[href]");
     if (link) {
       var href = link.getAttribute("href");
-      if (/^https?:\/\//.test(href)) {
+      if (/^(https?:\/\/|\/)/.test(href)) {
         fetch(href)
           .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
           .then(function (text) {

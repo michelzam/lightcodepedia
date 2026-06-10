@@ -21,7 +21,7 @@ The live network map.
 Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) written in Gherkin (behave + Playwright). Each row below is one `Scenario` from a `.feature` file, with its result from the latest run against the live site.
 
 
-[ux-results](https://raw.githubusercontent.com/michelzam/lightcodepedia/main/docs/assets/ux-results.json)
+[ux-results]({{ '/assets/ux-results.json' | relative_url }})
 {: .dataset id="uxtests" }
 
 [Latest scenarios](#)
