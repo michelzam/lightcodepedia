@@ -23,11 +23,34 @@ script:
     say: "This is Gatin, my Lottie colleague. Anything Lottie can draw can be a character."
   - at: "#how_it_works"
     say: "And this table explains every attribute. See you there!"
+  - at: "#memo_demo"
+    say: "(a real recorded voice — my mouth follows its waveform)"
+    audio: /assets/audio/memoji_voice_8s.m4a
 ```
 {: .avatar #prof_avatar }
 
 [▶ Play](#)
 {: .avatar-trigger target="prof_avatar" label-stop="⏹ Stop" }
+
+---
+
+## 🧙 Memo — a recorded Memoji {#memo_demo}
+
+The realism ceiling: a **recorded character**. This is an iPhone Memoji clip
+committed to the repo — real facial expression, real lips, real voice, one
+take. Any `video:` clip (H.264 mp4) works the same way.
+
+```yaml
+name: "Memo"
+video: /assets/avatar/memoji_wizard.mp4
+script:
+  - say: "Recorded narration — face, lips and voice are one take."
+    video: true
+```
+{: .avatar #memo_avatar size="180" }
+
+[▶ Play](#)
+{: .avatar-trigger target="memo_avatar" label-stop="⏹ Stop" }
 
 ---
 
@@ -84,6 +107,7 @@ script:
 |---|---|
 | `script` | Lines the avatar speaks in order — a string, or `at:` + `say:` to walk to and spotlight the element the line describes |
 | `audio` (per line) | URL of a pre-generated audio file — plays instead of browser TTS, and the mouth follows the real waveform (lip-sync) |
+| `video` | A recorded character clip (e.g. iPhone Memoji, H.264 mp4); lines with `video: true` play it with sound — real face, real lips, real voice |
 | `path` | Fallback movement for untargeted lines: `left`, `center`, `right`, or `wander` |
 | `voice` | BCP-47 tag — the **best-quality** matching browser voice is picked (neural/natural/premium ranked first) |
 | `rate` / `pitch` | Speech tuning (defaults `0.95` / `1.05`) |
