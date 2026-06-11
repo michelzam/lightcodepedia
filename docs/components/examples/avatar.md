@@ -46,7 +46,7 @@ to your take. Cues can also drive slides: `slide: next`.)
 name: "Aristotle"
 video: /assets/avatar/aristotle.mp4
 script:
-  - say: "Ἀριστοτέλης — recorded narration, one take."
+  - say: "Aristotle — recorded narration, one take."
     video: true
     cues:
       - t: 0
