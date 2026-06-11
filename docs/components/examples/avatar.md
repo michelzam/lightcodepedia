@@ -53,8 +53,10 @@ script:
         at: "#prof_light"
       - t: 10
         at: "#gatin_demo"
+        say: "...caption changes!"
       - t: 20
         at: "#how_it_works"
+        say: "...enjoy!"
 ```
 {: .avatar #aristotle_avatar size="180" }
 
