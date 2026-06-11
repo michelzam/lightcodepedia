@@ -507,10 +507,21 @@ Auto-included by docs/_layouts/default.html.
       v.muted = true;
       v.preload = "metadata";
       v.setAttribute("playsinline", "");
-      v.addEventListener("loadedmetadata", function () {
-        if (av0 && av0.transparent && /\.webm(\?|$)/i.test(v.currentSrc || "")) {
-          av0.host.classList.add("lc-avatar-alpha");
-        }
+      v.addEventListener("loadeddata", function () {
+        /* "picked the webm" is not enough: WebKit decodes VP9 but drops the
+           alpha plane (black background). Probe a real pixel instead — the
+           frame corner is always background, so transparent there means the
+           alpha actually survived decoding. */
+        if (!av0 || !av0.transparent) return;
+        try {
+          var c = document.createElement("canvas");
+          c.width = 32; c.height = 24;
+          var cx = c.getContext("2d", { willReadFrequently: true });
+          cx.drawImage(v, 0, 0, 32, 24);
+          if (cx.getImageData(1, 1, 1, 1).data[3] < 16) {
+            av0.host.classList.add("lc-avatar-alpha");
+          }
+        } catch (e) { /* tainted/unsupported → keep the round crop */ }
       });
       char.appendChild(v);
       if (av0) av0.videoEl = v;
