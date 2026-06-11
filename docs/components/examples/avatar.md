@@ -79,17 +79,20 @@ demo is Rive's hello-world (state machine `bumpy`, one trigger); swap in any
 character from the [Rive community](https://rive.app/community/).
 
 ```yaml
-name: "Riv"
+name: Riv
 path: right
 voice: en-US
 rive:
-  url: "https://cdn.rive.app/animations/vehicles.riv"
-  stateMachine: "bumpy"
+  url: https://cdn.rive.app/animations/vehicles.riv
+  stateMachine: bumpy
 script:
-  - say: "Watch the road — this bump is scripted."
-    input: "bump"
-  - "Name an input 'talk' and your character follows the speech."
-  - "A 'mouth' number input even follows the waveform."
+- say: Watch the road — this bump is scripted.
+  input: bump
+  audio: /assets/audio/riv_avatar/line_01.wav
+- say: Name an input 'talk' and your character follows the speech.
+  audio: /assets/audio/riv_avatar/line_02.wav
+- say: A 'mouth' number input even follows the waveform.
+  audio: /assets/audio/riv_avatar/line_03.wav
 ```
 {: .avatar #riv_avatar size="170" }
 
