@@ -343,7 +343,15 @@ Auto-included by docs/_layouts/default.html.
     var t = null;
     try { t = document.querySelector(sel); } catch (e) {}
     if (!t) return false;
-    t.scrollIntoView({ behavior: "smooth", block: "center" });
+    var S = window.lcSlides;
+    if (S && S.isActive && S.isActive() && S.slideOf) {
+      /* slide mode: walk the deck to the slide that holds the target and
+         disclose it (all fragments) — the narration drives the presentation */
+      var si = S.slideOf(t);
+      if (si >= 0) S.goto(si, true);
+    } else {
+      t.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
     clearSpot(av);
     av.spot = t;
     t.classList.add("lc-avatar-spot");
@@ -593,10 +601,14 @@ Auto-included by docs/_layouts/default.html.
     updateTriggers(id);
   }
 
-  function stopPlay(id) {
+  function stopPlay(id, completed) {
     var av = window._lcAvatars[id];
     if (!av) return;
     av.playing = false;
+    try {
+      av.host.dispatchEvent(new CustomEvent("lc-avatar-ended",
+        { bubbles: true, detail: { id: id, completed: !!completed } }));
+    } catch (e) {}
     if (av._cueOff) av._cueOff();
     av.host.setAttribute("data-state", "idle");
     av.host.classList.remove("lc-avatar-talking");
@@ -613,7 +625,7 @@ Auto-included by docs/_layouts/default.html.
   function nextLine(id) {
     var av = window._lcAvatars[id];
     if (!av || !av.playing) return;
-    if (av.idx >= av.script.length) { stopPlay(id); return; }
+    if (av.idx >= av.script.length) { stopPlay(id, true); return; }
 
     var line = av.script[av.idx];
     av.idx++;
@@ -692,6 +704,43 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
+  /* ── studio trigger: record the narrated walk ─────────
+     Opens the screen recorder; once recording starts (the stop button
+     appears — the screen picker needs a real user gesture), enters slide
+     mode and plays the avatar; when the script completes, stops the
+     recording and leaves the deck. The recorder's review panel then offers
+     the YouTube upload. */
+  function upgradeStudio(el) {
+    if (el.dataset.lcAvtStudioDone) return;
+    el.dataset.lcAvtStudioDone = "1";
+    var targetId = el.getAttribute("target") || "";
+    el.classList.add("lc-avatar-trigger");
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (!window.lcOpenRecorder) return;
+      window.lcOpenRecorder();
+      var deadline = Date.now() + 60000;
+      var poll = setInterval(function () {
+        if (Date.now() > deadline) { clearInterval(poll); return; }
+        var stopBtn = document.querySelector(".lc-rec-stop, [data-lc-stop]");
+        if (!stopBtn) return;
+        clearInterval(poll);
+        if (window.lcSlides) window.lcSlides.enter();
+        setTimeout(function () { startPlay(targetId); updateTriggers(targetId); }, 800);
+        var onEnd = function (ev) {
+          if (!ev.detail || ev.detail.id !== targetId || !ev.detail.completed) return;
+          document.removeEventListener("lc-avatar-ended", onEnd);
+          setTimeout(function () {
+            var sb = document.querySelector(".lc-rec-stop, [data-lc-stop]");
+            if (sb) sb.click();
+            if (window.lcSlides) window.lcSlides.exit();
+          }, 1200);
+        };
+        document.addEventListener("lc-avatar-ended", onEnd);
+      }, 400);
+    });
+  }
+
   function updateTriggers(id) {
     var av = window._lcAvatars && window._lcAvatars[id];
     document.querySelectorAll("[data-avt-target='" + id + "']").forEach(function (btn) {
@@ -710,6 +759,7 @@ Auto-included by docs/_layouts/default.html.
   if (window.lcRegisterUpgrader) {
     window.lcRegisterUpgrader(".highlighter-rouge.avatar, pre.avatar", upgradeAvatar);
     window.lcRegisterUpgrader("p.avatar-trigger, a.avatar-trigger", upgradeTrigger);
+    window.lcRegisterUpgrader("p.avatar-studio, a.avatar-studio", upgradeStudio);
   }
 
 })();

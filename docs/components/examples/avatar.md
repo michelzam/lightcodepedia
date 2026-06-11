@@ -135,6 +135,22 @@ script:
 
 The `{: .avatar-trigger target="id" }` IAL on any link wires it into a play/stop button. Multiple avatars on one page stagger automatically — they never stack.
 
+## 🎬 Slide mode & studio mode
+
+**In slide mode** (📽️), `at:` cues don't scroll — they **drive the deck**: the
+avatar walks the presentation to the slide holding its target and discloses it
+(fragments included). A narrated script over a slide deck is a self-running,
+voice-over presentation.
+
+**Studio mode** records it: `{: .avatar-studio target="id" }` on a link opens
+the screen recorder; once you pick the screen and recording starts, the page
+enters slide mode and the avatar plays — and when the script completes, the
+recording stops, the deck exits, and the recorder's review panel offers the
+**YouTube upload**. One take, from narration to published video.
+
+[🎬 Record Aristotle's tour](#)
+{: .avatar-studio target="aristotle_avatar" }
+
 A note on voices: browser TTS quality varies (Chrome's Google voices and Safari's enhanced voices sound best). For **studio quality that's identical for every visitor**, generate audio files once (any TTS studio — ElevenLabs, OpenAI TTS…), commit them under `/assets/audio/`, and give each script line an `audio:` URL — the avatar plays the file with real lip-sync and falls back to TTS where no file is given.
 
 **Working Lottie sources (CORS-open via `raw.githubusercontent.com`):**
