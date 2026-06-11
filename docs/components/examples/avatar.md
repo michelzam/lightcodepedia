@@ -87,11 +87,14 @@ rive:
   stateMachine: bumpy
 script:
 - say: Watch the road — this bump is scripted.
+  at: "#aristotle_avatar"
   input: bump
   audio: /assets/audio/riv_avatar/line_01.wav
 - say: Name an input 'talk' and your character follows the speech.
   audio: /assets/audio/riv_avatar/line_02.wav
-- say: A 'mouth' number input even follows the waveform.
+  at: "#rive_demo"
+- say: A 'mouth' number input even follows the universal waveform.
+  at: "#how_it_works"
   audio: /assets/audio/riv_avatar/line_03.wav
 ```
 {: .avatar #riv_avatar size="170" }
