@@ -1,7 +1,9 @@
 {%- comment -%}
-Avatar — speaking overlay character driven by Web Speech API, with an
-animated built-in face (or a Lottie animation) that follows the content
-it narrates.
+Avatar — speaking overlay character that narrates content and follows the
+elements it describes. Voice: per-line audio files (studio TTS, with real
+amplitude lip-sync) or the Web Speech API. Face: built-in animated SVG
+(blinks, breathes, eyes track the spotlighted element, mouth follows the
+audio) or any Lottie animation.
 
 Usage:
   ```yaml
@@ -12,23 +14,26 @@ Usage:
     - "Hello! Let's explore Python objects together."
     - at: "#dog_grid_tuto"
       say: "This grid is editable — click a cell."
-    - at: "#how-it-works"
+    - at: "#how_it_works"
       say: "Here is how everything fits."
+      audio: /assets/audio/prof_03.mp3
   ```
   {: .avatar #prof }
 
   [▶ Play](#)
   {: .avatar-trigger target="prof" label-stop="⏹ Stop" }
 
-Script lines are strings (the avatar wanders) or {at, say} objects: `at` is
-a CSS selector — the avatar scrolls there, parks beside the element,
-spotlights it, and speaks the line.
+Script lines are strings (the avatar wanders) or objects:
+  at:    CSS selector — scroll there, park beside it, spotlight it
+  say:   the line (spoken + shown in the bubble)
+  audio: URL of a pre-generated audio file — plays instead of browser TTS,
+         and the mouth follows the actual waveform
 
 Attributes on .avatar:
   id        — referenced by .avatar-trigger's target=""
   path      — left | center | right | wander (fallback for untargeted lines)
   voice     — BCP-47 tag; the best-quality matching browser voice is picked
-  rate/pitch (YAML) — speech tuning (defaults 0.95 / 1.05)
+  rate/pitch (YAML) — TTS tuning (defaults 0.95 / 1.05)
   lottie    — URL to a Lottie JSON animation (optional; default: built-in face)
   autoplay  — "true" to start on page load (default: false)
   size      — pixel size of the character bubble (default: 140)
@@ -45,6 +50,18 @@ Auto-included by docs/_layouts/default.html.
               top 1.6s cubic-bezier(.4,0,.2,1),
               bottom 0.8s ease;
 }
+/* pose layer: travel lean + landing bounce (separate from the char's
+   breathing so the transforms don't fight) */
+.lc-avatar-pose { transition: transform 0.5s ease; }
+.lc-avatar-host.lc-avt-move-r .lc-avatar-pose { transform: rotate(5deg); }
+.lc-avatar-host.lc-avt-move-l .lc-avatar-pose { transform: rotate(-5deg); }
+.lc-avatar-host.lc-avt-land .lc-avatar-pose { animation: lc-avt-land 0.45s ease; }
+@keyframes lc-avt-land {
+  0% { transform: scale(1, 1); }
+  40% { transform: scale(1.06, 0.9); }
+  70% { transform: scale(0.97, 1.04); }
+  100% { transform: scale(1, 1); }
+}
 /* ── character bubble ────────────────────────────────── */
 .lc-avatar-char {
   pointer-events: auto;
@@ -55,18 +72,22 @@ Auto-included by docs/_layouts/default.html.
   background: #fff;
   display: flex; align-items: center; justify-content: center;
   position: relative;
+  animation: lc-avt-breathe 4s ease-in-out infinite;
 }
-.lc-avatar-char:hover { transform: scale(1.07); }
+@keyframes lc-avt-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+.lc-avatar-char:hover { filter: brightness(1.06); }
 /* built-in animated face */
 .lc-avatar-face { width: 100%; height: 100%; }
 .lc-avatar-face svg { width: 100%; height: 100%; display: block; }
-.lc-avatar-face .eye,
+.lc-avatar-face .eye-g,
 .lc-avatar-face .mouth { transform-box: fill-box; transform-origin: center; }
-.lc-avatar-face .eye { animation: lc-avt-blink 4.2s infinite; }
+.lc-avatar-face .eye-g { animation: lc-avt-blink 4.2s infinite; }
+.lc-avatar-face .pupil { transition: transform 0.3s ease; }
 @keyframes lc-avt-blink {
   0%, 93%, 100% { transform: scaleY(1); }
   95%, 97%      { transform: scaleY(0.08); }
 }
+/* TTS lines flap the mouth on a loop; audio lines drive it per-frame in JS */
 .lc-avatar-talking .lc-avatar-face .mouth {
   animation: lc-avt-mouth 0.24s ease-in-out infinite alternate;
 }
@@ -162,7 +183,6 @@ Auto-included by docs/_layouts/default.html.
   };
 
   /* ── speech synthesis ──────────────────────────────── */
-  /* voices arrive asynchronously in most browsers */
   var _voices = [];
   function refreshVoices() {
     _voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
@@ -172,8 +192,7 @@ Auto-included by docs/_layouts/default.html.
     window.speechSynthesis.onvoiceschanged = refreshVoices;
   }
 
-  /* prefer the highest-quality voice for the requested language: neural /
-     natural / premium voices first, cloud voices over robotic local ones */
+  /* prefer the highest-quality voice for the requested language */
   var _RANK = ["neural", "natural", "premium", "enhanced", "google", "siri", "aria", "samantha"];
   function pickVoice(tag) {
     if (!_voices.length) refreshVoices();
@@ -194,7 +213,7 @@ Auto-included by docs/_layouts/default.html.
     return cand[0];
   }
 
-  function speak(text, voiceTag, tune, onEnd) {
+  function speak(text, voiceTag, tune, onBoundary, onEnd) {
     if (!window.speechSynthesis) { onEnd && onEnd(); return; }
     window.speechSynthesis.cancel();
     var utt = new SpeechSynthesisUtterance(text);
@@ -202,20 +221,64 @@ Auto-included by docs/_layouts/default.html.
     utt.pitch = (tune && tune.pitch) || 1.05;
     var v = pickVoice(voiceTag);
     if (v) utt.voice = v;
+    utt.onboundary = function (e) { if (onBoundary) onBoundary(e); };
     utt.onend = function () { if (onEnd) onEnd(); };
     window.speechSynthesis.speak(utt);
   }
 
-  /* ── script lines: "text" or { at: selector, say: text } ── */
-  function lineSpec(x) {
-    if (x && typeof x === "object") {
-      return { at: String(x.at || ""), say: String(x.say || x.text || "") };
-    }
-    return { at: "", say: String(x) };
+  /* ── audio lines: real lip-sync from the waveform ───── */
+  function stopAudio(av) {
+    if (av.audioEl) { try { av.audioEl.pause(); } catch (e) {} av.audioEl = null; }
+    av.analyser = null;
+  }
+  function playAudio(av, url, onEnd) {
+    stopAudio(av);
+    var a = new Audio();
+    a.crossOrigin = "anonymous";
+    a.src = url;
+    av.audioEl = a;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) {
+        var ctx = av.actx || (av.actx = new AC());
+        if (ctx.state === "suspended") ctx.resume();
+        var src = ctx.createMediaElementSource(a);
+        var an = ctx.createAnalyser();
+        an.fftSize = 256;
+        src.connect(an); an.connect(ctx.destination);
+        av.analyser = an;
+        mouthLoop(av);
+      }
+    } catch (e) { /* no analyser → CSS flap still runs */ }
+    var done = function () { stopAudio(av); resetMouth(av); onEnd(); };
+    a.onended = done;
+    a.onerror = done;
+    a.play().catch(done);
+  }
+  function mouthLoop(av) {
+    if (!av.analyser || !av.playing) { resetMouth(av); return; }
+    var data = new Uint8Array(av.analyser.frequencyBinCount);
+    av.analyser.getByteFrequencyData(data);
+    var sum = 0;
+    for (var i = 2; i < 40; i++) sum += data[i];   // voice band
+    var v = Math.min(1, (sum / 38) / 110);
+    if (av.mouth) av.mouth.style.transform = "scaleY(" + (1 + v * 3.4) + ")";
+    requestAnimationFrame(function () { mouthLoop(av); });
+  }
+  function resetMouth(av) {
+    if (av.mouth) av.mouth.style.transform = "";
   }
 
-  /* park the character beside the element it describes (after the smooth
-     scroll settles), preferring its right side, staying in the viewport */
+  /* ── script lines: "text" or { at, say, audio } ─────── */
+  function lineSpec(x) {
+    if (x && typeof x === "object") {
+      return { at: String(x.at || ""), say: String(x.say || x.text || ""),
+               audio: String(x.audio || "") };
+    }
+    return { at: "", say: String(x), audio: "" };
+  }
+
+  /* park the character beside the element it describes; eyes follow it */
   function anchorTo(av, sel) {
     var t = null;
     try { t = document.querySelector(sel); } catch (e) {}
@@ -232,15 +295,52 @@ Auto-included by docs/_layouts/default.html.
       left = Math.max(pad, Math.min(window.innerWidth - s - pad, left));
       var top = r.top + r.height / 2 - s / 2;
       top = Math.max(s * 0.8, Math.min(window.innerHeight - s - pad, top));
-      av.host.style.bottom = "auto";
-      av.host.style.top = top + "px";
-      av.host.style.left = left + "px";
+      moveHost(av, left + "px", top + "px");
+      lookAt(av, r.left + r.width / 2, r.top + r.height / 2);
     }, 480);
     return true;
   }
 
   function clearSpot(av) {
     if (av.spot) { av.spot.classList.remove("lc-avatar-spot"); av.spot = null; }
+  }
+
+  /* travel with a lean in the direction of movement; bounce on arrival */
+  function moveHost(av, left, top) {
+    var fromX = av.host.getBoundingClientRect().left;
+    if (top != null) { av.host.style.bottom = "auto"; av.host.style.top = top; }
+    else { av.host.style.bottom = "90px"; av.host.style.top = "auto"; }
+    if (left) av.host.style.left = left;
+    requestAnimationFrame(function () {
+      var dx = av.host.getBoundingClientRect().left - fromX;
+      if (Math.abs(dx) < 4) return;
+      av.host.classList.add(dx > 0 ? "lc-avt-move-r" : "lc-avt-move-l");
+      clearTimeout(av._moveT);
+      av._moveT = setTimeout(function () {
+        av.host.classList.remove("lc-avt-move-r", "lc-avt-move-l");
+        av.host.classList.add("lc-avt-land");
+        setTimeout(function () { av.host.classList.remove("lc-avt-land"); }, 500);
+      }, 1500);
+    });
+  }
+
+  /* pupils glance toward a viewport point (built-in face only) */
+  function lookAt(av, x, y) {
+    if (!av.pupils) return;
+    var r = av.char.getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    var dx = x - cx, dy = y - cy, L = Math.hypot(dx, dy) || 1;
+    var m = 2.4;
+    av.pupils.forEach(function (p) {
+      p.style.transform = "translate(" + (dx / L * m) + "px," + (dy / L * m) + "px)";
+    });
+  }
+  function lookIdle(av) {
+    if (!av.pupils) return;
+    var a = Math.random() * Math.PI * 2, m = Math.random() * 1.8;
+    av.pupils.forEach(function (p) {
+      p.style.transform = "translate(" + (Math.cos(a) * m) + "px," + (Math.sin(a) * m) + "px)";
+    });
   }
 
   /* ── upgrade .avatar code block ───────────────────── */
@@ -272,11 +372,15 @@ Auto-included by docs/_layouts/default.html.
       host.setAttribute("data-lc-id", elId);
       host.style.left = (6 + (slot % 5) * 16) + "vw";
 
+      var pose = document.createElement("div");
+      pose.className = "lc-avatar-pose";
+      host.appendChild(pose);
+
       var char = document.createElement("div");
       char.className = "lc-avatar-char";
       char.style.width  = size + "px";
       char.style.height = size + "px";
-      host.appendChild(char);
+      pose.appendChild(char);
 
       var bubble = document.createElement("div");
       bubble.className = "lc-avatar-speech";
@@ -285,16 +389,20 @@ Auto-included by docs/_layouts/default.html.
       document.body.appendChild(host);
 
       /* register for trigger lookup */
-      (window._lcAvatars = window._lcAvatars || {})[elId] = {
+      var av = (window._lcAvatars = window._lcAvatars || {})[elId] = {
         host: host, bubble: bubble, char: char,
         script: script, path: pathName, voice: voiceTag,
         tune: { rate: parseFloat(cfg.rate) || 0, pitch: parseFloat(cfg.pitch) || 0 },
         lottie: lottieUrl, size: size, spot: null,
+        pupils: null, mouth: null, audioEl: null, analyser: null,
         playing: false, idx: 0, lottieDone: false
       };
 
       /* init character graphic */
       initChar(elId, lottieUrl, char, size);
+
+      /* idle saccades keep the built-in face alive */
+      setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
 
       /* click to play/stop */
       char.addEventListener("click", function () { togglePlay(elId); });
@@ -309,7 +417,7 @@ Auto-included by docs/_layouts/default.html.
   function initChar(id, lottieUrl, char, size) {
     if (lottieUrl) {
       loadLottie().then(function (lottie) {
-        if (!lottie) { addFace(char); return; }
+        if (!lottie) { addFace(id, char); return; }
         var div = document.createElement("div");
         div.className = "lc-avatar-lottie";
         char.appendChild(div);
@@ -321,13 +429,13 @@ Auto-included by docs/_layouts/default.html.
         if (av) { av.lottieAnim = anim; av.lottieDone = true; }
       });
     } else {
-      addFace(char);
+      addFace(id, char);
     }
   }
 
-  /* built-in face: warm circle, blinking eyes, mouth that flaps while
-     speaking (the host carries .lc-avatar-talking during each line) */
-  function addFace(char) {
+  /* built-in face: blinks, breathes, pupils track the spotlight, mouth
+     flaps for TTS and follows the waveform for audio lines */
+  function addFace(id, char) {
     var face = document.createElement("div");
     face.className = "lc-avatar-face";
     face.innerHTML =
@@ -335,13 +443,24 @@ Auto-included by docs/_layouts/default.html.
       '<circle cx="50" cy="50" r="50" fill="#ffd166"/>' +
       '<circle cx="29" cy="60" r="7" fill="#f4978e" opacity="0.55"/>' +
       '<circle cx="71" cy="60" r="7" fill="#f4978e" opacity="0.55"/>' +
-      '<circle class="eye" cx="35" cy="43" r="5.2" fill="#1e293b"/>' +
-      '<circle class="eye" cx="65" cy="43" r="5.2" fill="#1e293b"/>' +
-      '<path d="M30 36 Q35 32 40 36" stroke="#b98a3f" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
-      '<path d="M60 36 Q65 32 70 36" stroke="#b98a3f" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+      '<g class="eye-g">' +
+      '<circle cx="35" cy="43" r="7" fill="#fff" stroke="#e0c285" stroke-width="1"/>' +
+      '<circle class="pupil" cx="35" cy="43" r="3.4" fill="#1e293b"/>' +
+      '</g>' +
+      '<g class="eye-g">' +
+      '<circle cx="65" cy="43" r="7" fill="#fff" stroke="#e0c285" stroke-width="1"/>' +
+      '<circle class="pupil" cx="65" cy="43" r="3.4" fill="#1e293b"/>' +
+      '</g>' +
+      '<path d="M28 34 Q35 30 42 34" stroke="#b98a3f" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+      '<path d="M58 34 Q65 30 72 34" stroke="#b98a3f" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
       '<ellipse class="mouth" cx="50" cy="68" rx="11" ry="3.2" fill="#7c2d12"/>' +
       '</svg>';
     char.appendChild(face);
+    var av = window._lcAvatars[id];
+    if (av) {
+      av.pupils = Array.prototype.slice.call(face.querySelectorAll(".pupil"));
+      av.mouth = face.querySelector(".mouth");
+    }
   }
 
   /* ── playback ──────────────────────────────────────── */
@@ -357,7 +476,7 @@ Auto-included by docs/_layouts/default.html.
     if (!av || av.playing) return;
     av.playing = true; av.idx = 0;
     av.host.setAttribute("data-state", "speaking");
-    if (av.lottieAnim) av.lottieAnim.play();
+    if (av.lottieAnim) { av.lottieAnim.play(); av.lottieAnim.setSpeed(1); }
     nextLine(id);
     updateTriggers(id);
   }
@@ -369,6 +488,8 @@ Auto-included by docs/_layouts/default.html.
     av.host.setAttribute("data-state", "idle");
     av.host.classList.remove("lc-avatar-talking");
     clearSpot(av);
+    stopAudio(av);
+    resetMouth(av);
     window.speechSynthesis && window.speechSynthesis.cancel();
     if (av.lottieAnim) av.lottieAnim.stop();
     av.bubble.classList.remove("visible");
@@ -387,20 +508,46 @@ Auto-included by docs/_layouts/default.html.
     var anchored = line.at && anchorTo(av, line.at);
     if (!anchored) {
       clearSpot(av);
-      av.host.style.top = "auto";
-      av.host.style.bottom = "90px";
+      moveHost(av, "", null);
       Object.assign(av.host.style, (PATHS[av.path] || PATHS.wander)(av.idx - 1));
+      if (av.pupils) lookAt(av, window.innerWidth / 2, 0);
     }
 
-    /* show bubble + animate the mouth while this line is spoken */
-    av.bubble.textContent = line.say;
     av.bubble.classList.add("visible");
     av.host.classList.add("lc-avatar-talking");
+    if (av.lottieAnim) av.lottieAnim.setSpeed(1.5);
 
-    speak(line.say, av.voice, av.tune, function () {
+    var finish = function () {
       av.host.classList.remove("lc-avatar-talking");
+      if (av.lottieAnim) av.lottieAnim.setSpeed(0.7);
       av.bubble.classList.remove("visible");
       setTimeout(function () { nextLine(id); }, 500);
+    };
+
+    if (line.audio) {
+      /* studio voice: bubble shows the full line, mouth follows the waveform */
+      av.bubble.textContent = line.say;
+      playAudio(av, line.audio, finish);
+      return;
+    }
+
+    /* TTS: reveal the bubble word by word as boundaries fire */
+    var words = line.say.split(" ");
+    av.bubble.textContent = "";
+    var revealed = 0;
+    var revealT = setTimeout(function () {
+      /* no boundary events (some browsers) → show the whole line */
+      if (!av.bubble.textContent) av.bubble.textContent = line.say;
+    }, 400);
+    speak(line.say, av.voice, av.tune, function (e) {
+      if (e && e.name === "word" && revealed < words.length) {
+        revealed += 1;
+        av.bubble.textContent = words.slice(0, revealed).join(" ");
+      }
+    }, function () {
+      clearTimeout(revealT);
+      av.bubble.textContent = line.say;
+      finish();
     });
   }
 

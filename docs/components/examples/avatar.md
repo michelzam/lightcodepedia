@@ -83,6 +83,7 @@ script:
 | Attribute | Role |
 |---|---|
 | `script` | Lines the avatar speaks in order — a string, or `at:` + `say:` to walk to and spotlight the element the line describes |
+| `audio` (per line) | URL of a pre-generated audio file — plays instead of browser TTS, and the mouth follows the real waveform (lip-sync) |
 | `path` | Fallback movement for untargeted lines: `left`, `center`, `right`, or `wander` |
 | `voice` | BCP-47 tag — the **best-quality** matching browser voice is picked (neural/natural/premium ranked first) |
 | `rate` / `pitch` | Speech tuning (defaults `0.95` / `1.05`) |
@@ -92,7 +93,7 @@ script:
 
 The `{: .avatar-trigger target="id" }` IAL on any link wires it into a play/stop button. Multiple avatars on one page stagger automatically — they never stack.
 
-A note on voices: quality is the browser's, not ours — Chrome's Google voices and Safari's enhanced voices sound best, and the same page sounds different per browser. For studio-quality narration, a cloud TTS with a user-supplied key (the agent component's pattern) would be the next step.
+A note on voices: browser TTS quality varies (Chrome's Google voices and Safari's enhanced voices sound best). For **studio quality that's identical for every visitor**, generate audio files once (any TTS studio — ElevenLabs, OpenAI TTS…), commit them under `/assets/audio/`, and give each script line an `audio:` URL — the avatar plays the file with real lip-sync and falls back to TTS where no file is given.
 
 **Working Lottie sources (CORS-open via `raw.githubusercontent.com`):**
 
