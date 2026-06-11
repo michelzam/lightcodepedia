@@ -889,6 +889,25 @@ class Video(Block):
     pass
 
 
+@component(icon="▶️",
+           attrs=[{"n": "playing", "t": "bool"}, {"n": "label", "t": "str"}],
+           assoc=[{"n": "target", "target": "Avatar"}])
+class AvatarTrigger(Block):
+    @property
+    def playing(self):
+        return self.has_class("playing")
+
+    @property
+    def label(self):
+        return self.text
+
+    @property
+    def target(self):
+        gid = self._attr("data-avt-target") or ""
+        el = js.window.document.querySelector("[data-lc-id='" + gid + "']") if gid else None
+        return _wrap(el)
+
+
 # ════════════════════════ resolver ══════════════════════════════════════════
 
 _WRAP = [
@@ -904,6 +923,7 @@ _WRAP = [
     ("lc-embed", EmbedPage), ("lc-video", Video), ("lc-accordion", Accordion),
     ("lc-blocks", Blocks),
     ("lc-scene3d", Scene3d), ("lc-avatar-host", Avatar),
+    ("lc-avatar-trigger", AvatarTrigger),
 ]
 
 

@@ -209,3 +209,8 @@ def step_scene_mentions(context, keyword):
     scene = context.page.locator("#lcx-scene")
     # the MicroPython engine loads lazily; the scene rebuilds when ready
     expect(scene).to_contain_text(keyword, timeout=30_000)
+
+
+@when('I shift-hover over the avatar overlay "{avatar_id}"')
+def step_shift_hover_avatar(context, avatar_id):
+    _shift_alt_hover(context.page, context.page.locator("#lc-avatar-" + avatar_id))

@@ -39,6 +39,7 @@ digraph component_model {
     Accordion [label="{🪗 Accordion ➭ 🧩|▸ open\l▸ close\l▸ sections\l}"]
     Agent [label="{🤖 Agent ➭ 🧩|🔡 system\l🔤 model\l🔢 temperature\l🔢 max tokens\l🔤 intro\l🔤 placeholder\l|▸ ask\l}"]
     Avatar [label="{🗣️ Avatar ➭ 🧩|🎛️ state\l🔢 size\l🔘 playing\l🔤 speech\l|▹ play ▹\l▹ stop ▹\l}"]
+    AvatarTrigger [label="{▶️ AvatarTrigger ➭ 🧩|🔘 playing\l🔤 label\l}"]
     Blocks [label="{🧱 Blocks ➭ 🧩}"]
     Cards [label="{🃏 Cards ➭ 🧩|🔤 cols\l🔢 gap\l}"]
     Carousel [label="{🎠 Carousel ➭ 🧩|🔢 delay\l|▸ next\l▸ prev\l▸ goto\l}"]
@@ -80,6 +81,7 @@ digraph component_model {
   st_Avatar_idle -> st_Avatar_speaking [xlabel="play", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
   st_Avatar_speaking -> st_Avatar_idle [xlabel="stop", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
   st_Avatar_idle -> Avatar [style=dashed, arrowhead=none, color="gray70"]
+  AvatarTrigger -> Avatar [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="target", fontsize=8]
   Form -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bound", fontsize=8]
   subgraph cluster_states_Quiz {
     label="❓ states 🎛️"; fontsize=10;
