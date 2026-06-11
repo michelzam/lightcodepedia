@@ -117,7 +117,7 @@ _[Map documentation →](/components/map)_
 
 ## 📊 How to add a data table and chart
 
-Paste a CSV block, add `{: .datagrid format="csv" #my-grid }`. Then paste the same CSV again for the chart, add `{: .chart bound-to="my-grid" }`.
+Paste a CSV block, add `{: .datagrid format="csv" #my_grid }`. Then paste the same CSV again for the chart, add `{: .chart bound-to="my_grid" }`.
 
 ````markdown
 ```csv
@@ -126,7 +126,7 @@ Paris,2161000,105
 Berlin,3600000,892
 Madrid,3300000,604
 ```
-{: .datagrid #city-grid format="csv" }
+{: .datagrid #city_grid format="csv" }
 
 ```csv
 city,population,area
@@ -134,10 +134,10 @@ Paris,2161000,105
 Berlin,3600000,892
 Madrid,3300000,604
 ```
-{: .chart type="bar" bound-to="city-grid" x="city" }
+{: .chart type="bar" bound-to="city_grid" x="city" }
 ````
 
-The `#city-grid` gives the table a name. `bound-to="city-grid"` tells the chart to listen to it.
+The `#city_grid` gives the table a name. `bound-to="city_grid"` tells the chart to listen to it. Use **snake_case** names — component ids double as Python identifiers in the typed layer (`self.page.city_grid`).
 
 **Q:** What turns a plain code block into an interactive component?
 
@@ -207,8 +207,8 @@ _[Tabs documentation →](/components/tabs)_
 |---|---|
 | Code runner | `{: .run }` |
 | Map | `{: .map height="300" }` |
-| Data table | `{: .datagrid format="csv" #my-id }` |
-| Bar chart | `{: .chart type="bar" bound-to="my-id" x="col" }` |
+| Data table | `{: .datagrid format="csv" #my_id }` |
+| Bar chart | `{: .chart type="bar" bound-to="my_id" x="col" }` |
 | AI assistant | `{: .agent }` |
 | Tabs | `{: .tabs }` (on a link to a pages/ file) |
 | Accordion | `{: .accordion }` |

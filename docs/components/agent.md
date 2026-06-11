@@ -124,7 +124,7 @@ Live demo — paste your PAT and ask it something:
 system: You are a cheerful Python tutor. Keep answers short and practical.
 intro: "Paste your PAT above, then ask me anything about Python."
 ```
-{: .agent id="demo-tutor" }
+{: .agent id="demo_tutor" }
 
 On first use the panel asks for a PAT. Paste it, click **Save & start**, and your browser offers to remember it in the OS keychain. Next visit the field auto-fills.
 

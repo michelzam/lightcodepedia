@@ -60,7 +60,7 @@ Use `bound-to` to link a `.pytutor` block to a `.run` editor. Every time you edi
 for i in range(3):
     print(i * 2)
 ```
-{: .run #live-demo }
+{: .run #live_demo }
 
 ### 🔬 Visualizer (updates as you type)
 
@@ -68,7 +68,7 @@ for i in range(3):
 for i in range(3):
     print(i * 2)
 ```
-{: .pytutor bound-to="live-demo" height="450" }
+{: .pytutor bound-to="live_demo" height="450" }
 ````
 {: .blocks cols="2" }
 

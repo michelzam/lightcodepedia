@@ -27,10 +27,10 @@ script:
   - "State you can read. Behavior you can invoke."
   - "That's all an object is."
 ```
-{: .avatar #gatin-avatar }
+{: .avatar #gatin_avatar }
 
 [▶ Play](#)
-{: .avatar-trigger target="gatin-avatar" label-stop="⏹ Stop" }
+{: .avatar-trigger target="gatin_avatar" label-stop="⏹ Stop" }
 
 ---
 
@@ -50,10 +50,10 @@ script:
   - "wanda.swim() — Wanda circles her bowl."
   - "Same idea. Different object. Different behavior."
 ```
-{: .avatar #adrock-avatar size="150" }
+{: .avatar #adrock_avatar size="150" }
 
 [▶ Play](#)
-{: .avatar-trigger target="adrock-avatar" label-stop="⏹ Stop" }
+{: .avatar-trigger target="adrock_avatar" label-stop="⏹ Stop" }
 
 ---
 

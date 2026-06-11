@@ -22,7 +22,7 @@ Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightco
 
 
 [ux-results]({{ '/assets/ux-results.json' | relative_url }})
-{: .dataset id="uxtests" }
+{: .dataset #uxtests }
 
 [Latest scenarios](#)
 {: .datagrid bind="uxtests" rows="25" }
