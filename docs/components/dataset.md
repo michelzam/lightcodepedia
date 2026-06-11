@@ -58,14 +58,14 @@ Frank,71,4
 
 Apply `{: .dataset }` to a **link** — the href is fetched and parsed as JSON or CSV. The datagrid shows `⏳ Loading…` until data arrives (charts too).
 
-[https://jsonplaceholder.typicode.com/todos?_limit=8](#)
+[todos — jsonplaceholder](https://jsonplaceholder.typicode.com/todos?_limit=8)
 {: .dataset id="todos" }
 
 [Todo list](#)
 {: .datagrid bind="todos" rows="5" }
 
 ````markdown
-[https://jsonplaceholder.typicode.com/todos?_limit=8](#)
+[todos — jsonplaceholder](https://jsonplaceholder.typicode.com/todos?_limit=8)
 {: .dataset id="todos" }
 
 [Todo list](#)
