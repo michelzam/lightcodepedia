@@ -468,6 +468,9 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
 
     function toggle() { body.classList.contains('lc-slides-active') ? exit() : enter(); }
 
+    /* scripted control (avatar narration cues, BDD steps) */
+    window.lcSlides = { next: next, prev: prev, enter: enter, exit: exit, toggle: toggle };
+
     partition();
     if (!hasDeck()) {
       fab.setAttribute('data-no-slides', 'true');

@@ -286,13 +286,43 @@ Auto-included by docs/_layouts/default.html.
     v.play().catch(function () { onEnd(); });
   }
 
+  /* ── timed cues inside one recorded take ─────────────
+     cues: [{ t: seconds, at: selector, say: caption, slide: next|prev|start|exit }]
+     While the media plays, each cue fires when currentTime crosses t: the
+     character walks to `at`, the caption changes to `say`, slides advance. */
+  function attachCues(av, media, cues) {
+    if (!media || !Array.isArray(cues) || !cues.length) return;
+    var sorted = cues.slice().sort(function (a, b) { return (Number(a.t) || 0) - (Number(b.t) || 0); });
+    var i = 0;
+    var onTime = function () {
+      while (i < sorted.length && media.currentTime >= (Number(sorted[i].t) || 0)) {
+        applyCue(av, sorted[i]); i++;
+      }
+    };
+    media.addEventListener("timeupdate", onTime);
+    av._cueOff = function () { media.removeEventListener("timeupdate", onTime); av._cueOff = null; };
+    onTime();
+  }
+  function applyCue(av, c) {
+    if (c.at) anchorTo(av, String(c.at));
+    if (c.say != null) av.bubble.textContent = String(c.say);
+    if (c.slide != null && window.lcSlides) {
+      var sl = String(c.slide);
+      if (sl === "next") window.lcSlides.next();
+      else if (sl === "prev") window.lcSlides.prev();
+      else if (sl === "start") window.lcSlides.enter();
+      else if (sl === "exit") window.lcSlides.exit();
+    }
+  }
+
   /* ── script lines: "text" or { at, say, audio } ─────── */
   function lineSpec(x) {
     if (x && typeof x === "object") {
       return { at: String(x.at || ""), say: String(x.say || x.text || ""),
-               audio: String(x.audio || ""), video: String(x.video || "") };
+               audio: String(x.audio || ""), video: String(x.video || ""),
+               cues: Array.isArray(x.cues) ? x.cues : [] };
     }
-    return { at: "", say: String(x), audio: "", video: "" };
+    return { at: "", say: String(x), audio: "", video: "", cues: [] };
   }
 
   /* park the character beside the element it describes; eyes follow it */
@@ -517,6 +547,7 @@ Auto-included by docs/_layouts/default.html.
     var av = window._lcAvatars[id];
     if (!av) return;
     av.playing = false;
+    if (av._cueOff) av._cueOff();
     av.host.setAttribute("data-state", "idle");
     av.host.classList.remove("lc-avatar-talking");
     clearSpot(av);
@@ -551,6 +582,7 @@ Auto-included by docs/_layouts/default.html.
     if (av.lottieAnim) av.lottieAnim.setSpeed(1.5);
 
     var finish = function () {
+      if (av._cueOff) av._cueOff();
       av.host.classList.remove("lc-avatar-talking");
       if (av.lottieAnim) av.lottieAnim.setSpeed(0.7);
       av.bubble.classList.remove("visible");
@@ -561,6 +593,7 @@ Auto-included by docs/_layouts/default.html.
       /* recorded narration: real face, real voice — the bubble is a caption */
       av.bubble.textContent = line.say;
       playVideoLine(av, line.video, finish);
+      attachCues(av, av.videoEl, line.cues);
       return;
     }
 
@@ -568,6 +601,7 @@ Auto-included by docs/_layouts/default.html.
       /* studio voice: bubble shows the full line, mouth follows the waveform */
       av.bubble.textContent = line.say;
       playAudio(av, line.audio, finish);
+      attachCues(av, av.audioEl, line.cues);
       return;
     }
 
