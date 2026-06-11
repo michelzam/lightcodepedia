@@ -34,6 +34,15 @@ def step_trigger_stop_label(context, avatar_id):
     )
 
 
+@then('the avatar "{avatar_id}" shows a "{selector}" character')
+def step_avatar_char_kind(context, avatar_id, selector):
+    # the character graphic appears only after its runtime (Rive/Lottie)
+    # loads from the CDN — allow time for that round trip
+    expect(_host(context, avatar_id).locator(selector)).to_be_visible(
+        timeout=20_000
+    )
+
+
 @then('the avatar "{avatar_id}" is in the "{state}" state')
 def step_avatar_state(context, avatar_id, state):
     expect(_host(context, avatar_id)).to_have_attribute(

@@ -28,6 +28,12 @@ Feature: Avatar — speaking overlay instructor
     And I click the avatar trigger for "gatin_avatar"
     Then the avatar "gatin_avatar" is in the "idle" state
 
+  Scenario: A Rive state-machine character renders on canvas
+    When I navigate to "/components/examples/avatar"
+    And I wait for the page to be interactive
+    Then the avatar overlay "riv_avatar" is visible
+    And the avatar "riv_avatar" shows a "canvas.lc-avatar-rive" character
+
   Scenario: X-ray identifies the Avatar component
     When I navigate to "/components/examples/avatar"
     And I wait for the page to be interactive

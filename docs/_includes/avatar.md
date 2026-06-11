@@ -3,7 +3,7 @@ Avatar — speaking overlay character that narrates content and follows the
 elements it describes. Voice: per-line audio files (studio TTS, with real
 amplitude lip-sync) or the Web Speech API. Face: built-in animated SVG
 (blinks, breathes, eyes track the spotlighted element, mouth follows the
-audio) or any Lottie animation.
+audio), any Lottie animation, a Rive state machine, or a recorded video.
 
 Usage:
   ```yaml
@@ -34,7 +34,13 @@ Attributes on .avatar:
   path      — left | center | right | wander (fallback for untargeted lines)
   voice     — BCP-47 tag; the best-quality matching browser voice is picked
   rate/pitch (YAML) — TTS tuning (defaults 0.95 / 1.05)
-  lottie    — URL to a Lottie JSON animation (optional; default: built-in face)
+  lottie    — URL to a Lottie JSON animation (optional; default: built-in
+              face), or { url, idle: [from,to], talk: [from,to] } — frame
+              segments looped per state instead of just changing tempo
+  rive      — URL to a .riv file, or { url, stateMachine: "name" }: the
+              state machine's inputs are auto-wired — a boolean named like
+              "talk" follows the speaking state, a number named like "mouth"
+              follows the live waveform, triggers fire as each line starts
   video     — recorded character clip URL, or a list of fallbacks (alpha
               WebM first, H.264 mp4 second) — script lines with video: true
               play it with sound: real face, real lips, real voice
@@ -101,6 +107,8 @@ Auto-included by docs/_layouts/default.html.
 @keyframes lc-avt-mouth { from { transform: scaleY(1); } to { transform: scaleY(3.6); } }
 /* Lottie fills the bubble */
 .lc-avatar-lottie { width: 100%; height: 100%; }
+/* Rive state-machine character fills the bubble */
+.lc-avatar-rive { width: 100%; height: 100%; display: block; }
 /* video character (recorded narration — e.g. a Memoji) fills the bubble */
 .lc-avatar-video { width: 100%; height: 100%; object-fit: cover; display: block; }
 /* transparent character (alpha webm): no porthole — the face floats free */
@@ -173,7 +181,20 @@ Auto-included by docs/_layouts/default.html.
     return _lottieP;
   }
 
-  /* ── YAML loader (reuse code_chrome's window.jsyaml if present) ─── */
+  /* ── Rive loader (state-machine characters) ────────── */
+  var _riveP = null;
+  function loadRive() {
+    if (window.rive) return Promise.resolve(window.rive);
+    if (_riveP) return _riveP;
+    _riveP = new Promise(function (resolve) {
+      var s = document.createElement("script");
+      s.src = "https://unpkg.com/@rive-app/canvas@2";
+      s.onload  = function () { resolve(window.rive || null); };
+      s.onerror = function () { resolve(null); };
+      document.head.appendChild(s);
+    });
+    return _riveP;
+  }
   var _yP = null;
   function loadYaml() {
     if (window.jsyaml) return Promise.resolve(window.jsyaml);
@@ -280,10 +301,12 @@ Auto-included by docs/_layouts/default.html.
     for (var i = 2; i < 40; i++) sum += data[i];   // voice band
     var v = Math.min(1, (sum / 38) / 110);
     if (av.mouth) av.mouth.style.transform = "scaleY(" + (1 + v * 3.4) + ")";
+    if (av.riveMouth) { try { av.riveMouth.value = v * 100; } catch (e) {} }
     requestAnimationFrame(function () { mouthLoop(av); });
   }
   function resetMouth(av) {
     if (av.mouth) av.mouth.style.transform = "";
+    if (av.riveMouth) { try { av.riveMouth.value = 0; } catch (e) {} }
   }
 
   function playVideoLine(av, url, onEnd) {
@@ -440,7 +463,19 @@ Auto-included by docs/_layouts/default.html.
       var script   = Array.isArray(cfg.script) ? cfg.script.map(lineSpec) : [];
       var pathName = cfg.path  || "wander";
       var voiceTag = cfg.voice || "";
-      var lottieUrl= cfg.lottie || "";
+      /* lottie: URL, or { url, idle: [from,to], talk: [from,to] } */
+      var lottieCfg = cfg.lottie || "";
+      var lottieUrl = (lottieCfg && typeof lottieCfg === "object")
+        ? String(lottieCfg.url || lottieCfg.src || "") : String(lottieCfg || "");
+      var lottieSeg = (lottieCfg && typeof lottieCfg === "object" &&
+                       Array.isArray(lottieCfg.idle) && Array.isArray(lottieCfg.talk))
+        ? { idle: lottieCfg.idle, talk: lottieCfg.talk } : null;
+      /* rive: URL, or { url, stateMachine: "name" } */
+      var riveCfg = cfg.rive || "";
+      var riveUrl = (riveCfg && typeof riveCfg === "object")
+        ? String(riveCfg.url || riveCfg.src || "") : String(riveCfg || "");
+      var riveSm  = (riveCfg && typeof riveCfg === "object")
+        ? String(riveCfg.stateMachine || "") : "";
       var videoUrl = cfg.video || "";
       var transparent = cfg.transparent === true;
       var autoplay = cfg.autoplay === true || el.getAttribute("autoplay") === "true";
@@ -473,14 +508,17 @@ Auto-included by docs/_layouts/default.html.
         host: host, bubble: bubble, char: char,
         script: script, path: pathName, voice: voiceTag,
         tune: { rate: parseFloat(cfg.rate) || 0, pitch: parseFloat(cfg.pitch) || 0 },
-        lottie: lottieUrl, video: videoUrl, transparent: transparent,
+        lottie: lottieUrl, lottieSeg: lottieSeg,
+        rive: riveUrl, riveSm: riveSm,
+        riveAnim: null, riveTalk: null, riveMouth: null, riveTriggers: [],
+        video: videoUrl, transparent: transparent,
         size: size, spot: null,
         pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
         playing: false, idx: 0, lottieDone: false
       };
 
       /* init character graphic */
-      initChar(elId, videoUrl, lottieUrl, char, size);
+      initChar(elId, char, size);
 
       /* idle saccades keep the built-in face alive */
       setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
@@ -495,7 +533,10 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
-  function initChar(id, videoUrl, lottieUrl, char, size) {
+  function initChar(id, char, size) {
+    var av1 = window._lcAvatars[id];
+    var videoUrl  = av1 ? av1.video  : "";
+    var lottieUrl = av1 ? av1.lottie : "";
     if (videoUrl) {
       /* recorded character (e.g. a Memoji) — real lips, real voice;
          idle = paused first frame, video lines play it with sound.
@@ -533,6 +574,30 @@ Auto-included by docs/_layouts/default.html.
       });
       char.appendChild(v);
       if (av0) av0.videoEl = v;
+      return;
+    }
+    if (av1 && av1.rive) {
+      /* Rive character: a live state machine, not a recording — its inputs
+         (talk / mouth / triggers) are discovered on load and driven by the
+         narration. */
+      loadRive().then(function (rive) {
+        if (!rive) { addFace(id, char); return; }
+        var cv = document.createElement("canvas");
+        cv.className = "lc-avatar-rive";
+        cv.width = size * 2; cv.height = size * 2;
+        char.appendChild(cv);
+        var opts = {
+          src: av1.rive, canvas: cv, autoplay: true,
+          onLoad: function () {
+            try { av1.riveAnim.resizeDrawingSurfaceToCanvas(); } catch (e) {}
+            wireRiveInputs(av1, rive);
+          }
+        };
+        if (av1.riveSm) opts.stateMachines = av1.riveSm;
+        try { opts.layout = new rive.Layout({ fit: rive.Fit.Cover }); } catch (e) {}
+        try { av1.riveAnim = new rive.Rive(opts); }
+        catch (e) { cv.remove(); addFace(id, char); }
+      });
       return;
     }
     if (lottieUrl) {
@@ -583,6 +648,49 @@ Auto-included by docs/_layouts/default.html.
     }
   }
 
+  /* discover the loaded Rive state machine's inputs: a boolean named like
+     "talk" follows the speaking state, a number named like "mouth" follows
+     the live waveform (vector lip-sync), every trigger fires line by line */
+  function wireRiveInputs(av, rive) {
+    var r = av.riveAnim;
+    if (!r) return;
+    var names = av.riveSm ? [av.riveSm] : (r.stateMachineNames || []);
+    if (!av.riveSm && names.length) { try { r.play(names[0]); } catch (e) {} }
+    var T = rive.StateMachineInputType || {};
+    names.forEach(function (nm) {
+      var inputs = [];
+      try { inputs = r.stateMachineInputs(nm) || []; } catch (e) {}
+      inputs.forEach(function (inp) {
+        var n = String(inp.name || "").toLowerCase();
+        if (inp.type === T.Boolean) {
+          if (!av.riveTalk && /talk|speak|active|play|press|hover/.test(n)) av.riveTalk = inp;
+        } else if (inp.type === T.Number) {
+          if (!av.riveMouth && /mouth|talk|loud|level|volume/.test(n)) av.riveMouth = inp;
+        } else if (typeof inp.fire === "function") {
+          av.riveTriggers.push(inp);
+        }
+      });
+    });
+  }
+
+  /* flip the character into/out of its talking state, whatever it's made
+     of: Lottie → talk/idle segments (or tempo), Rive → talk input (or fire
+     a trigger so even input-less hello-world files visibly react) */
+  function charTalk(av, on) {
+    if (av.lottieAnim) {
+      if (av.lottieSeg) {
+        av.lottieAnim.playSegments(on ? av.lottieSeg.talk : av.lottieSeg.idle, true);
+      } else {
+        av.lottieAnim.setSpeed(on ? 1.5 : 0.7);
+      }
+    }
+    if (av.riveTalk) { try { av.riveTalk.value = on; } catch (e) {} }
+    else if (on && av.riveTriggers.length) {
+      try { av.riveTriggers[(av.idx - 1) % av.riveTriggers.length].fire(); } catch (e) {}
+    }
+    if (!on && av.riveMouth) { try { av.riveMouth.value = 0; } catch (e) {} }
+  }
+
   /* ── playback ──────────────────────────────────────── */
   function togglePlay(id) {
     var av = window._lcAvatars && window._lcAvatars[id];
@@ -596,7 +704,10 @@ Auto-included by docs/_layouts/default.html.
     if (!av || av.playing) return;
     av.playing = true; av.idx = 0;
     av.host.setAttribute("data-state", "speaking");
-    if (av.lottieAnim) { av.lottieAnim.play(); av.lottieAnim.setSpeed(1); }
+    if (av.lottieAnim) {
+      if (av.lottieSeg) av.lottieAnim.playSegments(av.lottieSeg.idle, true);
+      else { av.lottieAnim.play(); av.lottieAnim.setSpeed(1); }
+    }
     nextLine(id);
     updateTriggers(id);
   }
@@ -618,6 +729,7 @@ Auto-included by docs/_layouts/default.html.
     if (av.videoEl) { try { av.videoEl.pause(); av.videoEl.muted = true; } catch (e) {} }
     window.speechSynthesis && window.speechSynthesis.cancel();
     if (av.lottieAnim) av.lottieAnim.stop();
+    if (av.riveTalk) { try { av.riveTalk.value = false; } catch (e) {} }
     av.bubble.classList.remove("visible");
     updateTriggers(id);
   }
@@ -641,12 +753,12 @@ Auto-included by docs/_layouts/default.html.
 
     av.bubble.classList.add("visible");
     av.host.classList.add("lc-avatar-talking");
-    if (av.lottieAnim) av.lottieAnim.setSpeed(1.5);
+    charTalk(av, true);
 
     var finish = function () {
       if (av._cueOff) av._cueOff();
       av.host.classList.remove("lc-avatar-talking");
-      if (av.lottieAnim) av.lottieAnim.setSpeed(0.7);
+      charTalk(av, false);
       av.bubble.classList.remove("visible");
       setTimeout(function () { nextLine(id); }, 500);
     };
