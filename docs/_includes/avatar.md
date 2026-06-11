@@ -28,6 +28,9 @@ Script lines are strings (the avatar wanders) or objects:
   say:   the line (spoken + shown in the bubble)
   audio: URL of a pre-generated audio file — plays instead of browser TTS,
          and the mouth follows the actual waveform
+  input: drive the Rive character's state machine for this line —
+         "bark" fires the trigger named bark, { run: true, speed: 7 }
+         sets boolean/number inputs (also available inside cues)
 
 Attributes on .avatar:
   id        — referenced by .avatar-trigger's target=""
@@ -341,6 +344,7 @@ Auto-included by docs/_layouts/default.html.
   }
   function applyCue(av, c) {
     if (c.at) anchorTo(av, String(c.at));
+    if (c.input) setRiveInputs(av, c.input);
     if (c.say != null) av.bubble.textContent = String(c.say);
     if (c.slide != null && window.lcSlides) {
       var sl = String(c.slide);
@@ -356,9 +360,10 @@ Auto-included by docs/_layouts/default.html.
     if (x && typeof x === "object") {
       return { at: String(x.at || ""), say: String(x.say || x.text || ""),
                audio: String(x.audio || ""), video: String(x.video || ""),
+               input: x.input || null,
                cues: Array.isArray(x.cues) ? x.cues : [] };
     }
-    return { at: "", say: String(x), audio: "", video: "", cues: [] };
+    return { at: "", say: String(x), audio: "", video: "", input: null, cues: [] };
   }
 
   /* park the character beside the element it describes; eyes follow it */
@@ -510,7 +515,8 @@ Auto-included by docs/_layouts/default.html.
         tune: { rate: parseFloat(cfg.rate) || 0, pitch: parseFloat(cfg.pitch) || 0 },
         lottie: lottieUrl, lottieSeg: lottieSeg,
         rive: riveUrl, riveSm: riveSm,
-        riveAnim: null, riveTalk: null, riveMouth: null, riveTriggers: [],
+        riveAnim: null, riveTalk: null, riveMouth: null,
+        riveTriggers: [], riveInputs: null,
         video: videoUrl, transparent: transparent,
         size: size, spot: null,
         pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
@@ -650,18 +656,21 @@ Auto-included by docs/_layouts/default.html.
 
   /* discover the loaded Rive state machine's inputs: a boolean named like
      "talk" follows the speaking state, a number named like "mouth" follows
-     the live waveform (vector lip-sync), every trigger fires line by line */
+     the live waveform (vector lip-sync), every trigger fires line by line —
+     and ALL inputs are reachable by name through input: on lines and cues */
   function wireRiveInputs(av, rive) {
     var r = av.riveAnim;
     if (!r) return;
     var names = av.riveSm ? [av.riveSm] : (r.stateMachineNames || []);
     if (!av.riveSm && names.length) { try { r.play(names[0]); } catch (e) {} }
     var T = rive.StateMachineInputType || {};
+    av.riveInputs = {};
     names.forEach(function (nm) {
       var inputs = [];
       try { inputs = r.stateMachineInputs(nm) || []; } catch (e) {}
       inputs.forEach(function (inp) {
         var n = String(inp.name || "").toLowerCase();
+        av.riveInputs[n] = inp;
         if (inp.type === T.Boolean) {
           if (!av.riveTalk && /talk|speak|active|play|press|hover/.test(n)) av.riveTalk = inp;
         } else if (inp.type === T.Number) {
@@ -673,10 +682,32 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
+  /* drive named state-machine inputs declaratively:
+     "bark"                  → fire the trigger named bark
+     { run: true, speed: 7 } → set boolean / number inputs (truthy fires
+                               a trigger of that name too) */
+  function setRiveInputs(av, spec) {
+    if (!spec || !av.riveInputs) return;
+    if (typeof spec === "string") {
+      var t = av.riveInputs[spec.toLowerCase()];
+      if (t && typeof t.fire === "function") { try { t.fire(); } catch (e) {} }
+      return;
+    }
+    Object.keys(spec).forEach(function (k) {
+      var inp = av.riveInputs[k.toLowerCase()];
+      if (!inp) return;
+      try {
+        if (typeof inp.fire === "function") { if (spec[k]) inp.fire(); }
+        else inp.value = spec[k];
+      } catch (e) {}
+    });
+  }
+
   /* flip the character into/out of its talking state, whatever it's made
      of: Lottie → talk/idle segments (or tempo), Rive → talk input (or fire
-     a trigger so even input-less hello-world files visibly react) */
-  function charTalk(av, on) {
+     a trigger so even input-less hello-world files visibly react — unless
+     the line drives inputs explicitly) */
+  function charTalk(av, on, explicit) {
     if (av.lottieAnim) {
       if (av.lottieSeg) {
         av.lottieAnim.playSegments(on ? av.lottieSeg.talk : av.lottieSeg.idle, true);
@@ -685,7 +716,7 @@ Auto-included by docs/_layouts/default.html.
       }
     }
     if (av.riveTalk) { try { av.riveTalk.value = on; } catch (e) {} }
-    else if (on && av.riveTriggers.length) {
+    else if (on && !explicit && av.riveTriggers.length) {
       try { av.riveTriggers[(av.idx - 1) % av.riveTriggers.length].fire(); } catch (e) {}
     }
     if (!on && av.riveMouth) { try { av.riveMouth.value = 0; } catch (e) {} }
@@ -753,7 +784,8 @@ Auto-included by docs/_layouts/default.html.
 
     av.bubble.classList.add("visible");
     av.host.classList.add("lc-avatar-talking");
-    charTalk(av, true);
+    charTalk(av, true, !!line.input);
+    if (line.input) setRiveInputs(av, line.input);
 
     var finish = function () {
       if (av._cueOff) av._cueOff();
