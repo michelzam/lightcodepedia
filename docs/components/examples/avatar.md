@@ -4,7 +4,7 @@ title: "Speaking Avatar — Overlay Instructor"
 
 # 🗣️ Speaking Avatar
 
-A speaking overlay character that narrates content while moving across the screen — and can **follow the elements it describes**: give a script line an `at:` selector and the avatar scrolls there, parks beside it, spotlights it, and speaks. Driven by **Web Speech API** (browser-native TTS) with an animated built-in face, or any **Lottie** animation.
+A speaking overlay character that narrates content while moving across the screen — and can **follow the elements it describes**: give a script line an `at:` selector and the avatar scrolls there, parks beside it, spotlights it, and speaks. Driven by **Web Speech API** (browser-native TTS) with an animated built-in face, any **Lottie** animation, a **Rive** state machine, or a recorded video character.
 
 Press **▶ Play** to start, or click the character directly to toggle.
 
@@ -117,6 +117,37 @@ script:
 
 ---
 
+## 🚙 Riv — a Rive state-machine character {#rive_demo}
+
+Lottie characters are **recordings** — they play, faster or slower. **Rive**
+characters are **state machines**: idle/talk/blink states with runtime
+*inputs* the narration drives live. A boolean input named like `talk` follows
+the speech, a number input named like `mouth` follows the actual waveform
+(vector lip-sync), and **trigger** inputs fire as each line starts. This demo
+uses Rive's hello-world file (state machine `bumpy`) — its `bump` trigger
+fires on every line, so the truck hits a pothole each time it "speaks". Swap
+in any character from the [Rive community](https://rive.app/community/)
+(Remix → download the `.riv`).
+
+```yaml
+name: "Riv"
+path: right
+voice: en-US
+rive:
+  url: "https://cdn.rive.app/animations/vehicles.riv"
+  stateMachine: "bumpy"
+script:
+  - "I'm a Rive state machine — my bumps are an input, not a recording."
+  - "Give your character a talk input and it follows the speech."
+  - "A mouth number input even follows the waveform. Vector lip-sync."
+```
+{: .avatar #riv_avatar size="170" }
+
+[▶ Play](#)
+{: .avatar-trigger target="riv_avatar" label-stop="⏹ Stop" }
+
+---
+
 ## How it works {#how_it_works}
 
 | Attribute | Role |
@@ -129,7 +160,8 @@ script:
 | `path` | Fallback movement for untargeted lines: `left`, `center`, `right`, or `wander` |
 | `voice` | BCP-47 tag — the **best-quality** matching browser voice is picked (neural/natural/premium ranked first) |
 | `rate` / `pitch` | Speech tuning (defaults `0.95` / `1.05`) |
-| `lottie` | URL to a Lottie JSON animation — omit it for the built-in animated face |
+| `lottie` | URL to a Lottie JSON animation — or `{url, idle: [from,to], talk: [from,to]}` to loop **frame segments** per state (characters authored with idle + talking sequences switch properly instead of just changing tempo) |
+| `rive` | URL to a `.riv` file — or `{url, stateMachine: "name"}`. The state machine's inputs are **auto-wired**: a boolean named like `talk` follows the speech, a number named like `mouth` follows the live waveform, triggers fire line by line |
 | `size` | Bubble diameter in px (default: 140) |
 | `autoplay` | `true` to start on page load |
 
@@ -155,10 +187,12 @@ published video.
 
 A note on voices: browser TTS quality varies (Chrome's Google voices and Safari's enhanced voices sound best). For **studio quality that's identical for every visitor**, generate audio files once (any TTS studio — ElevenLabs, OpenAI TTS…), commit them under `/assets/audio/`, and give each script line an `audio:` URL — the avatar plays the file with real lip-sync and falls back to TTS where no file is given.
 
-**Working Lottie sources (CORS-open via `raw.githubusercontent.com`):**
+## 🎭 Finding better characters {#finding_characters}
 
-- 🐱 Gatin cat — `https://raw.githubusercontent.com/airbnb/lottie-web/master/demo/gatin/data.json`
-- 🪢 Adrock rope-jumper — `https://raw.githubusercontent.com/airbnb/lottie-web/master/demo/adrock/data.json`
-- 🏃 Jumping character — `https://raw.githubusercontent.com/airbnb/lottie-web/master/demo/happy2016/data.json`
+Gatin and Adrock are from the 2016-era lottie-web demo folder — fine as proofs, dated as faces. Where to shop for an upgrade:
 
-Any public JSON on `raw.githubusercontent.com` works — it sends `Access-Control-Allow-Origin: *`.
+- **[LottieFiles free characters](https://lottiefiles.com/free-animations/characters)** — hundreds of thousands of free animations. Pick one → *Download → Lottie JSON* → commit it under `/assets/avatar/` and point `lottie:` at it (self-hosted = same-origin, no CORS worries, survives CDN changes). If the character was authored with idle **and** talking sequences, give the frame ranges as `idle:`/`talk:` segments and it switches states for real.
+- **[Rive community](https://rive.app/community/)** — the genuinely *dynamic* tier: characters built as **state machines**. *Remix → Download .riv* → `rive: {url, stateMachine}`. Name an input `talk` (boolean) or `mouth` (number 0–100) in the Rive editor and the avatar drives it automatically — speech state and waveform lip-sync included, no code.
+- **Remote URLs** also work when the host is CORS-open: any public file on `raw.githubusercontent.com` (sends `Access-Control-Allow-Origin: *`), e.g. the demo cat `https://raw.githubusercontent.com/airbnb/lottie-web/master/demo/gatin/data.json`.
+
+The realism ladder, bottom to top: built-in SVG face → Lottie (canned loop) → Lottie with idle/talk segments → **Rive state machine with talk + mouth inputs** → recorded video character (Aristotle above).
