@@ -680,6 +680,17 @@ Auto-included by docs/_layouts/default.html.
         }
       });
     });
+    /* surface what this character can do — authors read this in the
+       console to write their input: lines without opening the editor */
+    var found = Object.keys(av.riveInputs).map(function (k) {
+      var i = av.riveInputs[k];
+      var kind = typeof i.fire === "function" ? "trigger"
+        : typeof i.value === "boolean" ? "boolean" : "number";
+      return k + " (" + kind + ")";
+    });
+    if (found.length) {
+      console.info("[avatar] rive inputs of \"" + (names[0] || "?") + "\": " + found.join(", "));
+    }
   }
 
   /* drive named state-machine inputs declaratively:
