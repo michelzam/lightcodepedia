@@ -469,7 +469,25 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
     function toggle() { body.classList.contains('lc-slides-active') ? exit() : enter(); }
 
     /* scripted control (avatar narration cues, BDD steps) */
-    window.lcSlides = { next: next, prev: prev, enter: enter, exit: exit, toggle: toggle };
+    function gotoSlide(i, revealAll) {
+      if (!hasDeck() || i < 0 || i >= slides.length) return;
+      current = i;
+      if (revealAll) {
+        revealed[current] = slides[current].querySelectorAll('.lc-slide-fragment').length;
+      }
+      showSlide();
+    }
+    function slideOf(el) {
+      for (var i = 0; i < slides.length; i++) {
+        if (slides[i].contains(el)) return i;
+      }
+      return -1;
+    }
+    window.lcSlides = {
+      next: next, prev: prev, enter: enter, exit: exit, toggle: toggle,
+      goto: gotoSlide, slideOf: slideOf,
+      isActive: function () { return body.classList.contains('lc-slides-active'); }
+    };
 
     partition();
     if (!hasDeck()) {
