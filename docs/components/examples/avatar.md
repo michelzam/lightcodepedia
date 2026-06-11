@@ -143,10 +143,12 @@ avatar walks the presentation to the slide holding its target and discloses it
 voice-over presentation.
 
 **Studio mode** records it: `{: .avatar-studio target="id" }` on a link opens
-the screen recorder; once you pick the screen and recording starts, the page
-enters slide mode and the avatar plays — and when the script completes, the
-recording stops, the deck exits, and the recorder's review panel offers the
-**YouTube upload**. One take, from narration to published video.
+the screen recorder **pre-configured for the avatar** — camera and mic off
+(the avatar is the face and the voice), screen/tab audio on. Pick the tab,
+recording starts, the page enters slide mode and the avatar plays — and when
+the script completes, the recording stops, the deck exits, and the recorder's
+review panel offers the **YouTube upload**. One take, from narration to
+published video.
 
 [🎬 Record Aristotle's tour](#)
 {: .avatar-studio target="aristotle_avatar" }
