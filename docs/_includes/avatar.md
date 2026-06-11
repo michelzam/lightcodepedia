@@ -35,6 +35,9 @@ Attributes on .avatar:
   voice     — BCP-47 tag; the best-quality matching browser voice is picked
   rate/pitch (YAML) — TTS tuning (defaults 0.95 / 1.05)
   lottie    — URL to a Lottie JSON animation (optional; default: built-in face)
+  video     — URL of a recorded character clip (e.g. an iPhone Memoji, H.264
+              mp4) — script lines with video: true play it with sound: real
+              face, real lips, real voice
   autoplay  — "true" to start on page load (default: false)
   size      — pixel size of the character bubble (default: 140)
 
@@ -94,6 +97,8 @@ Auto-included by docs/_layouts/default.html.
 @keyframes lc-avt-mouth { from { transform: scaleY(1); } to { transform: scaleY(3.6); } }
 /* Lottie fills the bubble */
 .lc-avatar-lottie { width: 100%; height: 100%; }
+/* video character (recorded narration — e.g. a Memoji) fills the bubble */
+.lc-avatar-video { width: 100%; height: 100%; object-fit: cover; display: block; }
 /* ── spotlight on the element being described ────────── */
 .lc-avatar-spot {
   outline: 3px solid #f59e0b; outline-offset: 4px;
@@ -269,13 +274,25 @@ Auto-included by docs/_layouts/default.html.
     if (av.mouth) av.mouth.style.transform = "";
   }
 
+  function playVideoLine(av, url, onEnd) {
+    var v = av.videoEl;
+    if (!v) { onEnd(); return; }
+    var src = (url && url !== "true") ? url : av.video;
+    if (src && v.getAttribute("src") !== src) v.src = src;
+    v.muted = false;
+    try { v.currentTime = 0; } catch (e) {}
+    v.onended = function () { v.muted = true; onEnd(); };
+    v.onerror = function () { onEnd(); };
+    v.play().catch(function () { onEnd(); });
+  }
+
   /* ── script lines: "text" or { at, say, audio } ─────── */
   function lineSpec(x) {
     if (x && typeof x === "object") {
       return { at: String(x.at || ""), say: String(x.say || x.text || ""),
-               audio: String(x.audio || "") };
+               audio: String(x.audio || ""), video: String(x.video || "") };
     }
-    return { at: "", say: String(x), audio: "" };
+    return { at: "", say: String(x), audio: "", video: "" };
   }
 
   /* park the character beside the element it describes; eyes follow it */
@@ -363,6 +380,7 @@ Auto-included by docs/_layouts/default.html.
       var pathName = cfg.path  || "wander";
       var voiceTag = cfg.voice || "";
       var lottieUrl= cfg.lottie || "";
+      var videoUrl = cfg.video || "";
       var autoplay = cfg.autoplay === true || el.getAttribute("autoplay") === "true";
 
       /* build overlay host — stagger instances so they never stack */
@@ -393,13 +411,13 @@ Auto-included by docs/_layouts/default.html.
         host: host, bubble: bubble, char: char,
         script: script, path: pathName, voice: voiceTag,
         tune: { rate: parseFloat(cfg.rate) || 0, pitch: parseFloat(cfg.pitch) || 0 },
-        lottie: lottieUrl, size: size, spot: null,
-        pupils: null, mouth: null, audioEl: null, analyser: null,
+        lottie: lottieUrl, video: videoUrl, size: size, spot: null,
+        pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
         playing: false, idx: 0, lottieDone: false
       };
 
       /* init character graphic */
-      initChar(elId, lottieUrl, char, size);
+      initChar(elId, videoUrl, lottieUrl, char, size);
 
       /* idle saccades keep the built-in face alive */
       setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
@@ -414,7 +432,21 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
-  function initChar(id, lottieUrl, char, size) {
+  function initChar(id, videoUrl, lottieUrl, char, size) {
+    if (videoUrl) {
+      /* recorded character (e.g. a Memoji) — real lips, real voice;
+         idle = paused first frame, video lines play it with sound */
+      var v = document.createElement("video");
+      v.className = "lc-avatar-video";
+      v.src = videoUrl;
+      v.muted = true;
+      v.preload = "metadata";
+      v.setAttribute("playsinline", "");
+      char.appendChild(v);
+      var av0 = window._lcAvatars[id];
+      if (av0) av0.videoEl = v;
+      return;
+    }
     if (lottieUrl) {
       loadLottie().then(function (lottie) {
         if (!lottie) { addFace(id, char); return; }
@@ -490,6 +522,7 @@ Auto-included by docs/_layouts/default.html.
     clearSpot(av);
     stopAudio(av);
     resetMouth(av);
+    if (av.videoEl) { try { av.videoEl.pause(); av.videoEl.muted = true; } catch (e) {} }
     window.speechSynthesis && window.speechSynthesis.cancel();
     if (av.lottieAnim) av.lottieAnim.stop();
     av.bubble.classList.remove("visible");
@@ -523,6 +556,13 @@ Auto-included by docs/_layouts/default.html.
       av.bubble.classList.remove("visible");
       setTimeout(function () { nextLine(id); }, 500);
     };
+
+    if (line.video) {
+      /* recorded narration: real face, real voice — the bubble is a caption */
+      av.bubble.textContent = line.say;
+      playVideoLine(av, line.video, finish);
+      return;
+    }
 
     if (line.audio) {
       /* studio voice: bubble shows the full line, mouth follows the waveform */
