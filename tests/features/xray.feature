@@ -70,5 +70,5 @@ Feature: X-ray inspector
   Scenario: Shift x-ray connects the trigger to its avatar
     When I navigate to "/components/examples/avatar"
     And I wait for the page to be interactive
-    And I shift-hover over the avatar overlay "gatin_avatar"
+    And I shift-hover over the avatar overlay "prof_avatar"
     Then the x-ray scene mentions "AvatarTrigger"
