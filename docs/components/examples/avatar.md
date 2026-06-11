@@ -187,6 +187,25 @@ published video.
 
 A note on voices: browser TTS quality varies (Chrome's Google voices and Safari's enhanced voices sound best). For **studio quality that's identical for every visitor**, generate audio files once (any TTS studio — ElevenLabs, OpenAI TTS…), commit them under `/assets/audio/`, and give each script line an `audio:` URL — the avatar plays the file with real lip-sync and falls back to TTS where no file is given.
 
+### 🎙️ Your own voice — cloned locally, for free {#voice_cloning}
+
+Better than any stock studio voice: **yours**. [VoiceClone Studio](https://github.com/GeorgesZam/voice_cloning_local) (by Georges Zam) wraps [Chatterbox TTS](https://github.com/resemble-ai/chatterbox) — open-source zero-shot voice cloning that runs on your own machine (CUDA, Apple Silicon, or CPU): give it a **10–20 s clean recording** of your voice and any text, and it speaks the text *as you*.
+
+Two ways to feed the avatar with it:
+
+1. **By hand** — run the Streamlit app, paste each script line, download the WAV, commit it under `/assets/audio/`, add the `audio:` URL to the line.
+2. **The pipeline** — `tools/gen_voice_lines.py` does the loop for a whole page: it reads every `.avatar` block, voices each line that lacks an `audio:` (skipping recorded `video:` takes), writes `/assets/audio/<avatar_id>/line_NN.wav`, and rewires the YAML:
+
+   ```
+   pip install chatterbox-tts torchaudio
+   python3 tools/gen_voice_lines.py docs/components/examples/avatar.md \
+       --ref my_voice.m4a --avatar gatin_avatar --write
+   ```
+
+   `--lang fr` switches to the multilingual model, `--exaggeration`/`--cfg-weight` are the same dials as the Studio's sliders, `--dry-run` previews. The script lines in the markdown stay the single source of truth — the audio is generated *from* them.
+
+Clone only voices you have the right to clone — your own, or with explicit consent.
+
 ## 🎭 Finding better characters {#finding_characters}
 
 Gatin and Adrock are from the 2016-era lottie-web demo folder — fine as proofs, dated as faces. Where to shop for an upgrade:
