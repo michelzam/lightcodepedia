@@ -143,7 +143,7 @@ Corgi,35,95
 Pug,15,98
 Bulldog,14,90
 ```
-{: .dataset id="dog_data" }
+{: .dataset #dog_data }
 
 ```csv
 ```

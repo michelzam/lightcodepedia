@@ -15,7 +15,7 @@ Go,22,22,77,20
 Swift,18,28,73,10
 Kotlin,16,22,72,18
 ```
-{: .datagrid #lang-grid format="csv" title="Programming languages" height="240" }
+{: .datagrid #lang_grid format="csv" title="Programming languages" height="240" }
 
 ```csv
 language,popularity,demand,pay_index,growth
@@ -28,7 +28,7 @@ Go,22,22,77,20
 Swift,18,28,73,10
 Kotlin,16,22,72,18
 ```
-{: .chart type="bar" bound-to="lang-grid" x="language" height="280" }
+{: .chart type="bar" bound-to="lang_grid" x="language" height="280" }
 
 _Columns: **popularity** = % devs using it · **demand** = job market index · **pay\_index** = relative salary · **growth** = YoY % change_
 
@@ -44,14 +44,14 @@ language,popularity,demand,pay_index,growth
 Python,58,80,72,15
 ...
 ```
-{: .datagrid #lang-grid format="csv" title="Languages" height="240" }
+{: .datagrid #lang_grid format="csv" title="Languages" height="240" }
 
 ```csv
 language,popularity,demand,pay_index,growth
 Python,58,80,72,15
 ...
 ```
-{: .chart type="bar" bound-to="lang-grid" x="language" }
+{: .chart type="bar" bound-to="lang_grid" x="language" }
 ````
 
 Keep the same data in both blocks — `bound-to` overrides the chart's static rendering and updates the bars on every row click. The data rows are needed so Jekyll produces a proper code block (without them, it may render as plain text).
@@ -80,4 +80,4 @@ Go,22,22,77,20
 Swift,18,28,73,10
 Kotlin,16,22,72,18
 ```
-{: .chart type="doughnut" bound-to="lang-grid" x="language" height="260" }
+{: .chart type="doughnut" bound-to="lang_grid" x="language" height="260" }

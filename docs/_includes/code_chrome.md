@@ -244,12 +244,16 @@
       var prev = p.previousElementSibling;
       if (!prev) return;
       var body = m[1];
-      var c, classRe = /\.([\w-]+)/g;
-      while ((c = classRe.exec(body)) !== null) prev.classList.add(c[1]);
-      var idM = body.match(/#([\w-]+)/);
-      if (idM) prev.id = idM[1];
       var kv, kvRe = /([\w-]+)="([^"]*)"/g;
       while ((kv = kvRe.exec(body)) !== null) prev.setAttribute(kv[1], kv[2]);
+      /* .class and #id shorthands are read from the declaration minus the
+         key="value" pairs, so dots/hashes inside attribute values (href="#x",
+         title="v1.2") cannot leak in as bogus classes or ids */
+      var rest = body.replace(/([\w-]+)="([^"]*)"/g, " ");
+      var c, classRe = /\.([\w-]+)/g;
+      while ((c = classRe.exec(rest)) !== null) prev.classList.add(c[1]);
+      var idM = rest.match(/#([\w-]+)/);
+      if (idM) prev.id = idM[1];
       p.parentNode.removeChild(p);
     });
   }

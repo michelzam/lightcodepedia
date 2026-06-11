@@ -60,7 +60,7 @@ A slower carousel — one slide every 8 seconds:
 - 🐢 Slow rotation gives readers time to actually finish a sentence.
 - 🦥 Eight seconds feels long when you're watching it. It's fine for readers.
 - ⏰ Use `delay="8000"` for longer quotes. Use `delay="2000"` for quick tips.
-{: .carousel delay="8000" id="slow-demo" }
+{: .carousel delay="8000" id="slow_demo" }
 
 Two carousels need distinct ids:
 
