@@ -94,6 +94,11 @@ Auto-included by docs/_layouts/default.html.
     var link = el.querySelector("a[href]");
     if (link) {
       var href = link.getAttribute("href");
+      /* forgiving: authors often write the URL as the visible link text
+         with a dummy "#" href — use the text when it looks like a URL */
+      if (!/^(https?:\/\/|\/)/.test(href) && /^https?:\/\//.test((link.textContent || "").trim())) {
+        href = link.textContent.trim();
+      }
       if (/^(https?:\/\/|\/)/.test(href)) {
         fetch(href)
           .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
