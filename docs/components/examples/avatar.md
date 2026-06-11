@@ -49,17 +49,19 @@ video:
   - /assets/avatar/aristotle.mp4
 transparent: true
 script:
-  - say: "Aristotle — recorded narration, one take."
+  - say: "Hi, I'm Aristotle, considered by some father of modern science."
     video: true
     cues:
       - t: 0
-        at: "#prof_light"
+        at: "#aristotle_avatar"
+      - t: 5
+        say: "I look smart, isn't it?"
       - t: 10
         at: "#gatin_demo"
-        say: "...caption changes!"
+        say: "⏳ I'm a time-travaler!"
       - t: 20
         at: "#how_it_works"
-        say: "...enjoy!"
+        say: "😊 Happy learning!"
 ```
 {: .avatar #aristotle_avatar size="180" }
 
