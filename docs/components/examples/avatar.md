@@ -44,7 +44,10 @@ to your take. Cues can also drive slides: `slide: next`.)
 
 ```yaml
 name: "Aristotle"
-video: /assets/avatar/aristotle.mp4
+video:
+  - /assets/avatar/aristotle_alpha.webm
+  - /assets/avatar/aristotle.mp4
+transparent: true
 script:
   - say: "Aristotle — recorded narration, one take."
     video: true
@@ -118,7 +121,8 @@ script:
 |---|---|
 | `script` | Lines the avatar speaks in order — a string, or `at:` + `say:` to walk to and spotlight the element the line describes |
 | `audio` (per line) | URL of a pre-generated audio file — plays instead of browser TTS, and the mouth follows the real waveform (lip-sync) |
-| `video` | A recorded character clip (e.g. iPhone Memoji, H.264 mp4); lines with `video: true` play it with sound — real face, real lips, real voice |
+| `video` | A recorded character clip, or a list of fallbacks (alpha WebM first, mp4 second); lines with `video: true` play it with sound — real face, real lips, real voice |
+| `transparent` | `true` + an alpha WebM source: the black background disappears and the character floats free (browsers without VP9-alpha fall back to the round crop) |
 | `cues` (per recorded line) | `[{t, at, say, slide}]` — at `t` seconds into the recording, walk to `at`, change the caption to `say`, or drive slides (`slide: next/prev/start/exit`) — one take, choreographed |
 | `path` | Fallback movement for untargeted lines: `left`, `center`, `right`, or `wander` |
 | `voice` | BCP-47 tag — the **best-quality** matching browser voice is picked (neural/natural/premium ranked first) |
