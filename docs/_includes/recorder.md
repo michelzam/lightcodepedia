@@ -88,6 +88,9 @@ Auto-included by docs/_layouts/default.html.
     ensureRecorderStyles();
     hooks = hooks || {};
     var pipAttr = el.getAttribute("pip") || "bottom-right";
+    var camOn = (el.getAttribute("camera") || "on") !== "off";
+    var micOn = (el.getAttribute("mic") || "on") !== "off";
+    var sndOn = (el.getAttribute("sound") || "off") === "on";
     var pipSize = parseInt(el.getAttribute("size") || "240", 10);
     var camZoom = parseFloat(el.getAttribute("zoom") || "1.35");
     var fps     = parseInt(el.getAttribute("fps")  || "25",  10);
@@ -123,9 +126,9 @@ Auto-included by docs/_layouts/default.html.
       '<div class="lc-rec-head"><span class="lc-rec-dot" id="lc-rd"></span><span>🎬 Screen Recorder</span></div>',
       '<div class="lc-rec-body">',
       '  <div class="lc-rec-opts" id="lc-ropts">',
-      isMacSafari ? '' : '    <span class="lc-rec-opt on"  id="lc-ropt-cam">📷 Camera</span>',
-      '    <span class="lc-rec-opt on"  id="lc-ropt-mic">🎤 Mic</span>',
-      canScreen ? '<span class="lc-rec-opt off" id="lc-ropt-snd">🔊 Screen audio</span>' : '',
+      isMacSafari ? '' : '    <span class="lc-rec-opt ' + (camOn ? 'on' : 'off') + '"  id="lc-ropt-cam">📷 Camera</span>',
+      '    <span class="lc-rec-opt ' + (micOn ? 'on' : 'off') + '"  id="lc-ropt-mic">🎤 Mic</span>',
+      canScreen ? '<span class="lc-rec-opt ' + (sndOn ? 'on' : 'off') + '" id="lc-ropt-snd">🔊 Screen audio</span>' : '',
       isMacSafari ? '' : '<span class="lc-rec-opt" id="lc-ropt-bg">🖼 BG: Off</span>',
       '  </div>',
       '  <div class="lc-rec-actions">',
@@ -796,7 +799,7 @@ Auto-included by docs/_layouts/default.html.
     close.title = "Close"; close.textContent = "✕"; close.style.color = "#fff";
     var p = document.createElement("p");
     p.className = "recorder";
-    ["pip","size","zoom","fps"].forEach(function(k){ if (opts[k] != null) p.setAttribute(k, opts[k]); });
+    ["pip","size","zoom","fps","camera","mic","sound"].forEach(function(k){ if (opts[k] != null) p.setAttribute(k, opts[k]); });
     panel.appendChild(close);
     panel.appendChild(p);
     ov.appendChild(panel);

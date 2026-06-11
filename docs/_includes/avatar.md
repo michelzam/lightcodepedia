@@ -718,7 +718,9 @@ Auto-included by docs/_layouts/default.html.
     el.addEventListener("click", function (e) {
       e.preventDefault();
       if (!window.lcOpenRecorder) return;
-      window.lcOpenRecorder();
+      /* the avatar is the face and the voice: no camera, no mic —
+         and screen/tab audio ON so the narration lands in the video */
+      window.lcOpenRecorder({ camera: "off", mic: "off", sound: "on" });
       var deadline = Date.now() + 60000;
       var poll = setInterval(function () {
         if (Date.now() > deadline) { clearInterval(poll); return; }
