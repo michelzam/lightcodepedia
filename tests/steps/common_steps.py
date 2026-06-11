@@ -9,6 +9,9 @@ JS_ERROR_IGNORE = {
     # unauthenticated GitHub API calls get rate-limited from shared CI IPs;
     # the widgets handle it gracefully, but the browser still logs the 403
     "the server responded with a status of 403",
+    # CDN libraries probe experimental APIs (Compute Pressure) on load;
+    # Chrome logs the rejected probe as an error, functionality unaffected
+    "compute-pressure",
 }
 
 
