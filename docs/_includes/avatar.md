@@ -35,9 +35,12 @@ Attributes on .avatar:
   voice     — BCP-47 tag; the best-quality matching browser voice is picked
   rate/pitch (YAML) — TTS tuning (defaults 0.95 / 1.05)
   lottie    — URL to a Lottie JSON animation (optional; default: built-in face)
-  video     — URL of a recorded character clip (e.g. an iPhone Memoji, H.264
-              mp4) — script lines with video: true play it with sound: real
-              face, real lips, real voice
+  video     — recorded character clip URL, or a list of fallbacks (alpha
+              WebM first, H.264 mp4 second) — script lines with video: true
+              play it with sound: real face, real lips, real voice
+  transparent — true + an alpha WebM source: black background keyed away,
+              the character floats free (non-VP9-alpha browsers keep the
+              round crop via the mp4 fallback)
   autoplay  — "true" to start on page load (default: false)
   size      — pixel size of the character bubble (default: 140)
 
@@ -54,8 +57,9 @@ Auto-included by docs/_layouts/default.html.
               bottom 0.8s ease;
 }
 /* pose layer: travel lean + landing bounce (separate from the char's
-   breathing so the transforms don't fight) */
-.lc-avatar-pose { transition: transform 0.5s ease; }
+   breathing so the transforms don't fight); also hosts the speech bubble —
+   inside the char it was clipped by the circular crop's overflow:hidden */
+.lc-avatar-pose { position: relative; transition: transform 0.5s ease; }
 .lc-avatar-host.lc-avt-move-r .lc-avatar-pose { transform: rotate(5deg); }
 .lc-avatar-host.lc-avt-move-l .lc-avatar-pose { transform: rotate(-5deg); }
 .lc-avatar-host.lc-avt-land .lc-avatar-pose { animation: lc-avt-land 0.45s ease; }
@@ -99,6 +103,14 @@ Auto-included by docs/_layouts/default.html.
 .lc-avatar-lottie { width: 100%; height: 100%; }
 /* video character (recorded narration — e.g. a Memoji) fills the bubble */
 .lc-avatar-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* transparent character (alpha webm): no porthole — the face floats free */
+.lc-avatar-alpha .lc-avatar-char {
+  background: transparent; box-shadow: none; border-radius: 0; overflow: visible;
+}
+.lc-avatar-alpha .lc-avatar-video {
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.25));
+}
 /* ── spotlight on the element being described ────────── */
 .lc-avatar-spot {
   outline: 3px solid #f59e0b; outline-offset: 4px;
@@ -277,7 +289,8 @@ Auto-included by docs/_layouts/default.html.
   function playVideoLine(av, url, onEnd) {
     var v = av.videoEl;
     if (!v) { onEnd(); return; }
-    var src = (url && url !== "true") ? url : av.video;
+    /* per-line url overrides; otherwise the character's <source> list rules */
+    var src = (url && url !== "true") ? url : "";
     if (src && v.getAttribute("src") !== src) v.src = src;
     v.muted = false;
     try { v.currentTime = 0; } catch (e) {}
@@ -337,11 +350,21 @@ Auto-included by docs/_layouts/default.html.
     setTimeout(function () {
       if (!av.playing) return;
       var r = t.getBoundingClientRect(), s = av.size, pad = 10;
-      var left = r.right + 18;
-      if (left + s > window.innerWidth - pad) left = r.left - s - 18;
+      var left, top;
+      var roomR = window.innerWidth - r.right, roomL = r.left;
+      if (Math.max(roomR, roomL) >= s + 28) {
+        /* desktop: park on the roomier side, vertically centered */
+        left = roomR >= s + 28 ? r.right + 18 : r.left - s - 18;
+        top = r.top + r.height / 2 - s / 2;
+        top = Math.max(s * 0.8, Math.min(window.innerHeight - s - pad, top));
+      } else {
+        /* narrow viewport (phone): float above the element, centered —
+           beside it there is no margin and the character covers the text */
+        left = r.left + r.width / 2 - s / 2;
+        top = r.top - s - 22;
+        if (top < 90) top = Math.min(window.innerHeight - s - pad, r.bottom + 22);
+      }
       left = Math.max(pad, Math.min(window.innerWidth - s - pad, left));
-      var top = r.top + r.height / 2 - s / 2;
-      top = Math.max(s * 0.8, Math.min(window.innerHeight - s - pad, top));
       moveHost(av, left + "px", top + "px");
       lookAt(av, r.left + r.width / 2, r.top + r.height / 2);
     }, 480);
@@ -411,6 +434,7 @@ Auto-included by docs/_layouts/default.html.
       var voiceTag = cfg.voice || "";
       var lottieUrl= cfg.lottie || "";
       var videoUrl = cfg.video || "";
+      var transparent = cfg.transparent === true;
       var autoplay = cfg.autoplay === true || el.getAttribute("autoplay") === "true";
 
       /* build overlay host — stagger instances so they never stack */
@@ -432,7 +456,7 @@ Auto-included by docs/_layouts/default.html.
 
       var bubble = document.createElement("div");
       bubble.className = "lc-avatar-speech";
-      char.appendChild(bubble);
+      pose.appendChild(bubble);
 
       document.body.appendChild(host);
 
@@ -441,7 +465,8 @@ Auto-included by docs/_layouts/default.html.
         host: host, bubble: bubble, char: char,
         script: script, path: pathName, voice: voiceTag,
         tune: { rate: parseFloat(cfg.rate) || 0, pitch: parseFloat(cfg.pitch) || 0 },
-        lottie: lottieUrl, video: videoUrl, size: size, spot: null,
+        lottie: lottieUrl, video: videoUrl, transparent: transparent,
+        size: size, spot: null,
         pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
         playing: false, idx: 0, lottieDone: false
       };
@@ -465,15 +490,29 @@ Auto-included by docs/_layouts/default.html.
   function initChar(id, videoUrl, lottieUrl, char, size) {
     if (videoUrl) {
       /* recorded character (e.g. a Memoji) — real lips, real voice;
-         idle = paused first frame, video lines play it with sound */
+         idle = paused first frame, video lines play it with sound.
+         A list of URLs becomes <source> fallbacks (alpha webm first,
+         mp4 for browsers without VP9-alpha); transparent styling only
+         applies when the alpha source actually got picked. */
       var v = document.createElement("video");
       v.className = "lc-avatar-video";
-      v.src = videoUrl;
+      var av0 = window._lcAvatars[id];
+      var list = Array.isArray(videoUrl) ? videoUrl : [videoUrl];
+      list.forEach(function (u) {
+        var so = document.createElement("source");
+        so.src = String(u);
+        if (/\.webm(\?|$)/i.test(String(u))) so.type = 'video/webm; codecs="vp9"';
+        v.appendChild(so);
+      });
       v.muted = true;
       v.preload = "metadata";
       v.setAttribute("playsinline", "");
+      v.addEventListener("loadedmetadata", function () {
+        if (av0 && av0.transparent && /\.webm(\?|$)/i.test(v.currentSrc || "")) {
+          av0.host.classList.add("lc-avatar-alpha");
+        }
+      });
       char.appendChild(v);
-      var av0 = window._lcAvatars[id];
       if (av0) av0.videoEl = v;
       return;
     }
