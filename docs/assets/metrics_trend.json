@@ -1,3 +1,12 @@
 [
- {"run": "(awaiting first CI run)", "pages": 0, "heap_max_mb": 0, "heap_avg_mb": 0, "dom_max": 0, "errors": 0, "passed": 0, "scenarios": 0}
+ {
+  "run": "2026-06-12T14:45Z",
+  "pages": 13,
+  "heap_max_mb": 51,
+  "heap_avg_mb": 20.2,
+  "dom_max": 1592,
+  "errors": 0,
+  "passed": 58,
+  "scenarios": 58
+ }
 ]
