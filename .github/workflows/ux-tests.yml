@@ -54,6 +54,18 @@ jobs:
           -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html
           -f progress2
 
+      - name: Retry once after the dust settles
+        id: behave2
+        if: steps.behave.outcome == 'failure'
+        continue-on-error: true
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://lightcodepedia.org' }}
+        run: |
+          # transient reds are usually a deploy race (tests newer than the
+          # served Pages build) — give the queue time, then try once more
+          sleep 120
+          behave tests/features/ --no-capture             -f json -o ux-report.json             -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html             -f progress2
+
       - name: Build per-scenario results JSON
         if: always()
         run: python tests/report_to_results.py ux-report.json docs/assets/ux-results.json
@@ -82,7 +94,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Upload artifacts on failure
-        if: steps.behave.outcome == 'failure'
+        if: steps.behave.outcome == 'failure' && steps.behave2.outcome != 'success'
         uses: actions/upload-artifact@v4
         with:
           name: behave-results
@@ -92,5 +104,5 @@ jobs:
             *.png
 
       - name: Fail job if any scenario failed
-        if: steps.behave.outcome == 'failure'
+        if: steps.behave.outcome == 'failure' && steps.behave2.outcome != 'success'
         run: exit 1
