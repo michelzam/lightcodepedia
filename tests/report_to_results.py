@@ -70,12 +70,20 @@ def main():
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
     rows = []
     idx = 0
+    steps = steps_failed = feats_failed = 0
     for feat in report:
         fname = (feat.get("name") or "").strip()
+        feat_failed = False
         for el in feat.get("elements", []):
             if el.get("type") != "scenario":
                 continue
+            for s in el.get("steps", []):
+                steps += 1
+                if (s.get("result") or {}).get("status") in ("failed", "error"):
+                    steps_failed += 1
             st = force or scenario_status(el)
+            if st == "failed":
+                feat_failed = True
             rows.append({
                 "status": ICON.get(st, "⚪"),
                 "scenario": (el.get("name") or "").strip(),
@@ -86,11 +94,27 @@ def main():
                 "url": f"{html_base}#scenario_{idx}",
             })
             idx += 1
+        if feat_failed:
+            feats_failed += 1
 
     with open(out, "w") as fh:
         json.dump(rows, fh, ensure_ascii=False, indent=2)
 
     passed = sum(1 for r in rows if r["status"] == "✅")
+
+    # one-row headline for the Gherkin report section title
+    import os
+    summary = [{
+        "run": stamp,
+        "features": len(report), "features_failed": feats_failed,
+        "scenarios": len(rows),
+        "scenarios_failed": sum(1 for r in rows if r["status"] == "❌"),
+        "steps": steps, "steps_failed": steps_failed,
+    }]
+    spath = os.path.join(os.path.dirname(out) or ".", "ux-summary.json")
+    with open(spath, "w") as fh:
+        json.dump(summary, fh, indent=1)
+
     print(f"Wrote {len(rows)} scenarios to {out} ({passed} passed)")
 
 

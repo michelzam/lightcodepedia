@@ -25,6 +25,7 @@ Feature: Vitals and model integrity — the platform measures itself
     And I wait for the page to be interactive
     Then an accordion title mirrors "📡"
     And an accordion title mirrors "✅"
+    And an accordion title mirrors "steps"
 
   Scenario: Fleet metrics from CI render on the nodes page
     When I navigate to "/nodes"

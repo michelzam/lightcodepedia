@@ -69,10 +69,11 @@ Auto-included by docs/_layouts/default.html.
       if (!data || !data.length) { chip.textContent = "—"; return; }
       var row = pick === "first" ? data[0] : data[data.length - 1];
       if (requires && !row[requires]) {
-        chip.textContent = "…";
+        chip.style.display = "none";
         chip.removeAttribute("data-acc-summary");
         return;
       }
+      chip.style.display = "";
       var out = format.replace(/\{(\w+)\}/g, function (_, k) {
         if (k === "count") return String(data.length);
         var v = row[k];

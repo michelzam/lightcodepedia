@@ -76,7 +76,17 @@ Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightco
 [Latest scenarios](#)
 {: .datagrid bind="uxtests" rows="25" hints="status: ✅ passed / ❌ failed in the latest run | scenario: the Gherkin scenario name | feature: which .feature file it lives in | tags: @mobile runs on an iPhone viewport | seconds: how long it took | run: when the suite ran — click a row for the full step trace" }
 
-### 📋 Full Gherkin report
+### !📋 Full Gherkin report
+
+[summary]({{ '/assets/ux-summary.json' | relative_url }})
+{: .dataset #ux_summary }
+
+[totals](#)
+{: .stat bind="ux_summary" format="{features} features · {scenarios} scenarios · {steps} steps" requires="steps" ok-when="scenarios_failed==0" }
+
+[failures](#)
+{: .stat bind="ux_summary" format="{scenarios_failed} scenarios · {steps_failed} steps failed" requires="scenarios_failed" ok-when="scenarios_failed==0" }
+
 Every step of every scenario from the latest run, with timings. Also available [in its own tab](/assets/ux-report.html).
 
 [Behave report](/assets/ux-report.html)
