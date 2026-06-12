@@ -172,7 +172,8 @@ Auto-included by docs/_layouts/default.html.
         + cols.map(function (c) {
             var arrow = sortCol === c ? (sortAsc ? " ↑" : " ↓") : "";
             var hint = hints[c] ? " title='" + hints[c].replace(/'/g, "&#39;") + "' class='lc-th-hint'" : "";
-            return "<th data-col='" + c + "'" + hint + ">" + c + arrow + "</th>";
+            var label = window.lcPrettifyKey ? window.lcPrettifyKey(c) : c;
+            return "<th data-col='" + c + "'" + hint + ">" + label + arrow + "</th>";
           }).join("") + "</tr></thead><tbody>"
         + slice.map(function (row) {
             var urlVal = urlCol ? (row[urlCol] || "") : "";

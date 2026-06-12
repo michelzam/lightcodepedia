@@ -30,10 +30,10 @@ Auto-included by docs/_layouts/default.html.
 
 .lc-accordion { margin: 1em 0; }
 .lc-accordion details { border: 1px solid #ddd; border-radius: 6px; margin: 0.4em 0; overflow: hidden; }
-.lc-accordion details summary { padding: 0.7em 1em; background: #f5f5f5; cursor: pointer; font-weight: 600; list-style: none; user-select: none; }
+.lc-accordion details summary { padding: 0.7em 1em; background: #fbfcfd; cursor: pointer; font-weight: 600; list-style: none; user-select: none; }
 .lc-accordion details summary::-webkit-details-marker { display: none; }
 .lc-acc-live { float: right; font-weight: 400; font-size: 0.82em; color: #64748b; margin-left: 1em; }
-.lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #e8f0fe; color: #0066cc; }
+.lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #f0f6ff; color: #0066cc; }
 .lc-accordion details .lc-ac-body { padding: 0.8em 1.2em; }
 
 .lc-radio-group { margin: 1em 0; }
