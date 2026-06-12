@@ -26,6 +26,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-table { width: 100%; border-collapse: collapse; }
 .lc-dg-table th, .lc-dg-table td { padding: 0.4em 0.75em; border: 1px solid #e5e7eb; text-align: left; white-space: nowrap; }
 .lc-dg-table th { background: #f9fafb; font-weight: 600; color: #374151; cursor: pointer; user-select: none; }
+.lc-dg-table th.lc-th-hint { text-decoration: underline dotted #9ca3af; text-underline-offset: 3px; cursor: help; }
 .lc-dg-table th:hover { background: #f3f4f6; }
 .lc-dg-table tr:nth-child(even) td { background: #fafafa; }
 .lc-dg-table td { color: #111827; user-select: text; }
@@ -139,6 +140,12 @@ Auto-included by docs/_layouts/default.html.
     el = wrap;
 
     var sortCol = null, sortAsc = true, page = 0;
+    /* hints="col: explanation | col2: ..." -> hover tooltips on headers */
+    var hints = {};
+    (el.getAttribute("hints") || "").split("|").forEach(function (h) {
+      var i = h.indexOf(":");
+      if (i > 0) hints[h.slice(0, i).trim()] = h.slice(i + 1).trim();
+    });
 
     function render(data) {
       if (!data || !data.length) {
@@ -164,7 +171,8 @@ Auto-included by docs/_layouts/default.html.
       var html = "<table class='lc-dg-table'><thead><tr>"
         + cols.map(function (c) {
             var arrow = sortCol === c ? (sortAsc ? " ↑" : " ↓") : "";
-            return "<th data-col='" + c + "'>" + c + arrow + "</th>";
+            var hint = hints[c] ? " title='" + hints[c].replace(/'/g, "&#39;") + "' class='lc-th-hint'" : "";
+            return "<th data-col='" + c + "'" + hint + ">" + c + arrow + "</th>";
           }).join("") + "</tr></thead><tbody>"
         + slice.map(function (row) {
             var urlVal = urlCol ? (row[urlCol] || "") : "";

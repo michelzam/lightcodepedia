@@ -233,7 +233,8 @@ Auto-included by docs/_layouts/default.html.
     data.forEach(function (d, i) {
       var val = +d[yCol] || 0;
       var bH  = (val / maxV) * cH, bX = pL + i * gap + (gap - barW) / 2, bY = pT + cH - bH;
-      svgEl(svg, NS, "rect", { x: bX, y: bY, width: barW, height: Math.max(bH, 1), fill: "#0066cc", rx: 2, opacity: 0.82, "data-value": val });
+      var bar = svgEl(svg, NS, "rect", { x: bX, y: bY, width: barW, height: Math.max(bH, 1), fill: "#0066cc", rx: 2, opacity: 0.82, "data-value": val });
+      svgEl(bar, NS, "title", {}).textContent = d[xCol] + " — " + yCol + ": " + val;
       /* x label */
       svgEl(svg, NS, "text", { x: bX + barW / 2, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
         .textContent = String(d[xCol]).substring(0, 7);
@@ -267,13 +268,18 @@ Auto-included by docs/_layouts/default.html.
     });
     svgEl(svg, NS, "polyline", { points: pts.join(" "), stroke: "#0066cc", fill: "none", "stroke-width": 2, "stroke-linejoin": "round" });
 
-    /* dots + x labels */
+    /* dots (hover for the exact value) + x labels, thinned when dense */
+    var lblEvery = Math.max(1, Math.ceil(data.length / Math.max(2, Math.floor(cW / 40))));
     data.forEach(function (d, i) {
       var val = +d[yCol] || 0;
       var x = pL + i * step, y = pT + cH - ((val - minV) / range) * cH;
       svgEl(svg, NS, "circle", { cx: x, cy: y, r: 3, fill: "#0066cc" });
-      svgEl(svg, NS, "text", { x: x, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
-        .textContent = String(d[xCol]).substring(0, 7);
+      var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent" });
+      svgEl(hit, NS, "title", {}).textContent = xCol + " " + d[xCol] + " — " + yCol + ": " + val;
+      if (i % lblEvery === 0 || i === data.length - 1) {
+        svgEl(svg, NS, "text", { x: x, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
+          .textContent = String(d[xCol]).substring(0, 7);
+      }
     });
 
     svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af",
