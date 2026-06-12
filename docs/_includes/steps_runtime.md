@@ -457,7 +457,7 @@ class Feature(Block):
 @component(icon="🖱️",
            attrs=[{"n": "text", "t": "str"}, {"n": "color", "t": "str"}],
            assoc=[{"n": "page", "target": "Page"}],
-           events=["on_click"])
+           events=["on_click"], methods=["click"])
 class Button(Block):
     @property
     def text(self):

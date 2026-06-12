@@ -52,6 +52,29 @@ def load_runtime():
     return ns
 
 
+def lint_methods(ns):
+    """Checked redundancy: methods= in @component duplicates the def names by
+    necessity (MicroPython can't introspect class bodies in the browser), so
+    the generator — running under full CPython — verifies the two never
+    drift: every declared method must exist as a callable, every public
+    own-method must be declared."""
+    problems = []
+    for cname, spec in ns["_MODEL"].items():
+        cls = ns.get(cname)
+        if cls is None:
+            continue
+        declared = {m["n"] for m in spec.get("methods", [])}
+        for m in sorted(declared):
+            if not callable(getattr(cls, m, None)):
+                problems.append(f"{cname}: declares '{m}' but no callable exists")
+        own = {k for k, v in vars(cls).items()
+               if callable(v) and not k.startswith("_")
+               and not isinstance(v, property)}
+        for m in sorted(own - declared):
+            problems.append(f"{cname}: public method '{m}' missing from @component(methods=...)")
+    return problems
+
+
 def gap_components(model):
     """Gallery widgets that have no typed wrapper class → fall back to Block."""
     out = []
@@ -109,6 +132,12 @@ def write_model_json(ns):
 
 if __name__ == "__main__":
     ns = load_runtime()
+    problems = lint_methods(ns)
+    if problems:
+        for p in problems:
+            print("model lint:", p, file=sys.stderr)
+        raise SystemExit("model lint failed: the model would lie (" +
+                         str(len(problems)) + " mismatch(es))")
     model = ns["_MODEL"]
     to_dot = ns["to_dot"]
     gaps = gap_components(model)
