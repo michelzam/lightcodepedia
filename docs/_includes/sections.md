@@ -32,6 +32,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-accordion details { border: 1px solid #ddd; border-radius: 6px; margin: 0.4em 0; overflow: hidden; }
 .lc-accordion details summary { padding: 0.7em 1em; background: #f5f5f5; cursor: pointer; font-weight: 600; list-style: none; user-select: none; }
 .lc-accordion details summary::-webkit-details-marker { display: none; }
+.lc-acc-live { float: right; font-weight: 400; font-size: 0.82em; color: #64748b; margin-left: 1em; }
 .lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #e8f0fe; color: #0066cc; }
 .lc-accordion details .lc-ac-body { padding: 0.8em 1.2em; }
 
@@ -79,21 +80,48 @@ Auto-included by docs/_layouts/default.html.
     var wrap = document.createElement("div");
     wrap.className = "lc-accordion";
     sections.forEach(function(s) {
+      /* a "!" label prefix renders the body eagerly (while still shut) so
+         live components inside — vitals, checks — exist from page load */
+      var eager = s.label.charAt(0) === "!";
+      var label = eager ? s.label.slice(1).trim() : s.label;
       var d = document.createElement("details");
       var sum = document.createElement("summary");
-      sum.textContent = s.label;
+      sum.textContent = label;
+      var live = document.createElement("span");
+      live.className = "lc-acc-live";
+      sum.appendChild(live);
       var body = document.createElement("div");
       body.className = "lc-ac-body";
       d.appendChild(sum);
       d.appendChild(body);
-      d.addEventListener("toggle", function() {
-        if (!d.open || body.dataset.lcReady) return;
+      function render() {
+        if (body.dataset.lcReady) return;
         body.dataset.lcReady = "1";
         loadMarked(function() {
           body.innerHTML = markdownBody(s.body);
           window.lcScanElement(body); /* IAL + full upgrade pipeline */
+          /* mirror live counters into the summary: any element in the body
+             with data-acc-summary shows its value in the title, visible
+             even when the section is shut */
+          var sync = function() {
+            var parts = [];
+            body.querySelectorAll("[data-acc-summary]").forEach(function(n) {
+              var v = n.getAttribute("data-acc-summary");
+              if (v) parts.push(v);
+            });
+            live.textContent = parts.length ? parts.join("  ·  ") : "";
+          };
+          try {
+            new MutationObserver(sync).observe(body, {
+              subtree: true, childList: true,
+              attributes: true, attributeFilter: ["data-acc-summary"]
+            });
+          } catch (e) {}
+          sync();
         });
-      });
+      }
+      d.addEventListener("toggle", function() { if (d.open) render(); });
+      if (eager) render();
       wrap.appendChild(d);
     });
     el.parentNode.replaceChild(wrap, el);

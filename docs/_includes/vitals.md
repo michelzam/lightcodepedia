@@ -4,6 +4,11 @@ LC components, transferred bytes, and web vitals (LCP/CLS) on an interval,
 and publishes the rows as a standard dataset — display is the ordinary
 grid/chart bound to it, so the whole chain shows up in X-ray.
 
+Sampling is opt-in: the card renders with an on/off switch, OFF by
+default (no background work); the choice persists in localStorage.
+Inside an accordion, the card mirrors its counters into the section
+title via data-acc-summary — visible even when the section is shut.
+
 Usage:
   Page vitals collector.
   {: .vitals #page_vitals interval="2" max="120" }
@@ -30,10 +35,26 @@ Auto-included by docs/_layouts/default.html.
 }
 .lc-vitals .lc-vitals-dot {
   width: 9px; height: 9px; border-radius: 50%;
+  background: #94a3b8;
+}
+.lc-vitals.on .lc-vitals-dot {
   background: #22c55e; animation: lc-vitals-pulse 2s ease-in-out infinite;
 }
 @keyframes lc-vitals-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 .lc-vitals b { color: #0f172a; }
+/* on/off switch */
+.lc-vitals-switch {
+  width: 34px; height: 18px; border-radius: 9px; border: none;
+  background: #cbd5e1; cursor: pointer; position: relative; flex: none;
+  transition: background 0.2s;
+}
+.lc-vitals-switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%; background: #fff;
+  transition: left 0.2s;
+}
+.lc-vitals.on .lc-vitals-switch { background: #22c55e; }
+.lc-vitals.on .lc-vitals-switch::after { left: 18px; }
 </style>
 
 <script>
@@ -106,17 +127,18 @@ Auto-included by docs/_layouts/default.html.
     var every = Math.max(0.5, parseFloat(el.getAttribute("interval") || "2"));
     var max = parseInt(el.getAttribute("max") || "120", 10);
 
-    loadTokens();
-    startObservers();
-
     var wrap = document.createElement("div");
     wrap.className = "lc-vitals";
+    /* the card IS the publisher of `id` — bind= declarations resolve
+       against it even while the switch is off (no data published yet) */
     wrap.setAttribute("data-lc-id", id);
-    wrap.innerHTML = '<span class="lc-vitals-dot"></span><span class="lc-vitals-text">📊 sampling…</span>';
+    wrap.innerHTML =
+      '<button class="lc-vitals-switch" title="Start/stop sampling" aria-label="vitals on/off"></button>' +
+      '<span class="lc-vitals-dot"></span><span class="lc-vitals-text"></span>';
     el.parentNode.replaceChild(wrap, el);
     var text = wrap.querySelector(".lc-vitals-text");
 
-    var t0 = Date.now(), rows = [];
+    var t0 = Date.now(), rows = [], timer = null;
     function tick() {
       var row = sample(t0);
       rows.push(row);
@@ -125,6 +147,9 @@ Auto-included by docs/_layouts/default.html.
       wrap.setAttribute("data-samples", rows.length);
       wrap.setAttribute("data-heap", row.heap_mb == null ? "" : row.heap_mb);
       wrap.setAttribute("data-dom", row.dom_nodes);
+      wrap.setAttribute("data-acc-summary",
+        "📊 " + (row.heap_mb == null ? "" : row.heap_mb + " MB · ") +
+        row.dom_nodes + " nodes · " + row.lc_components + " comp");
       text.innerHTML =
         "📊 <b>" + (row.heap_mb == null ? "n/a" : row.heap_mb + " MB") + "</b> heap · " +
         "<b>" + row.dom_nodes + "</b> DOM nodes · " +
@@ -134,8 +159,31 @@ Auto-included by docs/_layouts/default.html.
         "CLS <b>" + row.cls + "</b>" +
         (row.heap_mb == null ? " <span style='color:#94a3b8'>(heap: Chrome/Edge only)</span>" : "");
     }
-    tick();
-    var timer = setInterval(tick, every * 1000);
+    function start() {
+      if (timer) return;
+      wrap.classList.add("on");
+      loadTokens();
+      startObservers();
+      t0 = Date.now();
+      tick();
+      timer = setInterval(tick, every * 1000);
+    }
+    function stop() {
+      clearInterval(timer); timer = null;
+      wrap.classList.remove("on");
+      text.textContent = "📊 vitals off — flip the switch to sample";
+      wrap.setAttribute("data-acc-summary", "📊 off");
+    }
+    wrap.querySelector(".lc-vitals-switch").addEventListener("click", function () {
+      var on = !timer;
+      try { localStorage.setItem("lc_vitals_on", on ? "1" : ""); } catch (e) {}
+      on ? start() : stop();
+    });
+
+    var remembered = "";
+    try { remembered = localStorage.getItem("lc_vitals_on") || ""; } catch (e) {}
+    remembered === "1" ? start() : stop();
+
     if (window.lcRegisterCleanup) {
       window.lcRegisterCleanup(wrap, function () { clearInterval(timer); });
     }
