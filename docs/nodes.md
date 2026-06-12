@@ -26,7 +26,7 @@ Model integrity.
 The live card above measures only the page you're on; pages here are independent documents. So the **CI suite does the rounds**: on every deploy it visits each page and records heap, DOM size, components, transfer, LCP and console errors — identical conditions, every run. Newest run on top.
 
 [fleet stat](#)
-{: .stat bind="fleet_trend" format="📡 {pages} pages · max {heap_max_mb} MB" }
+{: .stat bind="fleet_trend" format="📡 {pages} pages · max {heap_max_mb} MB" requires="pages" }
 
 [metrics]({{ '/assets/metrics.json' | relative_url }})
 {: .dataset #fleet_metrics }
@@ -46,6 +46,11 @@ Drag to rearrange. Click any node to open its card.
 The live network map.
 {: .lightnodes }
 
+Most recent forks first — click a row to visit.
+
+[Recent forks](#)
+{: .datagrid bind="lightnodes" rows="6" hints="node: who forked | repo: the fork | forked: when it was created | level: forks-of-forks distance from the root | stars: its stargazers" }
+
 ### !🚀 Deployment activity
 
 [deploys-data](#)
@@ -60,7 +65,7 @@ The live network map.
 ### !🧪 UX test results
 
 [ux stat](#)
-{: .stat bind="fleet_trend" format="✅ {passed}/{scenarios} scenarios" }
+{: .stat bind="fleet_trend" format="{passed}/{scenarios} scenarios" requires="scenarios" ok-when="passed==scenarios" }
 
 Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) written in Gherkin (behave + Playwright). Each row below is one `Scenario` from a `.feature` file, with its result from the latest run against the live site.
 
