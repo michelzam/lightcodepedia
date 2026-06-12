@@ -60,7 +60,7 @@ Most recent forks first — click a row to visit.
 {: .stat bind="deploys" pick="first" format="🚀 last: {status} {state} · {when}" }
 
 [Latest runs](#)
-{: .datagrid bind="deploys" rows="10" }
+{: .datagrid bind="deploys" rows="10" hints="status: outcome icon — ✅ success, ❌ failure, 🔄 running | commit: first line of the commit message | workflow: which pipeline ran | state: completed conclusion or current phase | when: how long ago it started | author: who pushed" }
 
 ### !🧪 UX test results
 
@@ -74,7 +74,7 @@ Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightco
 {: .dataset #uxtests }
 
 [Latest scenarios](#)
-{: .datagrid bind="uxtests" rows="25" }
+{: .datagrid bind="uxtests" rows="25" hints="status: ✅ passed / ❌ failed in the latest run | scenario: the Gherkin scenario name | feature: which .feature file it lives in | tags: @mobile runs on an iPhone viewport | seconds: how long it took | run: when the suite ran — click a row for the full step trace" }
 
 ### 📋 Full Gherkin report
 Every step of every scenario from the latest run, with timings. Also available [in its own tab](/assets/ux-report.html).
