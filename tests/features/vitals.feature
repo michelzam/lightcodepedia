@@ -3,10 +3,12 @@ Feature: Vitals and model integrity — the platform measures itself
   Background:
     Given I have a clean browser page
 
-  Scenario: The vitals collector publishes live samples on the nodes page
+  Scenario: The vitals switch is off by default and samples when turned on
     When I navigate to "/nodes"
     And I wait for the page to be interactive
     And I open the accordion section "📊 Vitals & model check"
+    Then the vitals card is off
+    When I turn the vitals switch on
     Then the vitals card shows at least 2 samples
     And the "page_vitals" bound grid shows at least 2 rows
 
@@ -15,6 +17,7 @@ Feature: Vitals and model integrity — the platform measures itself
     And I wait for the page to be interactive
     And I open the accordion section "📊 Vitals & model check"
     Then the model check card reports no broken references
+    And an accordion title mirrors "🧪"
 
   Scenario: Model integrity holds on the tutorial data chain
     When I navigate to "/tutorial101"

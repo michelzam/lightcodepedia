@@ -11,6 +11,7 @@ Feature: LightNode network page
   Scenario: The network map renders
     When I navigate to "/nodes"
     And I wait for the page to be interactive
+    And I open the accordion section "Network map"
     Then the LightNode network map is visible
 
   Scenario: The UX results dataset renders the scenario grid

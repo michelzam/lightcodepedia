@@ -113,6 +113,8 @@ Auto-included by docs/_layouts/default.html.
       var r = window.lcModelCheck();
       wrap.setAttribute("data-checked", r.checked);
       wrap.setAttribute("data-broken", r.broken.length);
+      wrap.setAttribute("data-acc-summary",
+        r.broken.length ? "🧪 ⚠️ " + r.broken.length + " broken" : "🧪 ✅ " + r.checked);
       wrap.classList.toggle("ok", !r.broken.length);
       wrap.classList.toggle("bad", !!r.broken.length);
       var head = r.broken.length

@@ -24,6 +24,9 @@ Auto-included by docs/_layouts/default.html.
     /* inject a small control bar right after the hidden element */
     var bar = document.createElement("div");
     bar.className = "lc-deploys-bar";
+    /* the bar IS the publisher of dsId — modelcheck resolves bind=
+       declarations against it even while signed-out (no data published) */
+    bar.setAttribute("data-lc-id", dsId);
     bar.innerHTML = [
       '<style>',
       '.lc-deploys-bar{display:flex;align-items:center;gap:8px;font-size:.82em;color:#6b7280;margin:.25em 0}',
