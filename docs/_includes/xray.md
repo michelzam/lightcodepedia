@@ -63,7 +63,7 @@ Auto-included by docs/_layouts/default.html.
 </style>
 
 <script type="module">
-  const URL = "{{ "/assets/component-model.json" | relative_url }}";
+  const URL = "{{ "/assets/component-model.json" | relative_url }}?v={{ site.time | date: '%s' }}";
   const MP_URL = "https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs";
   const R = 95, OFF = 10;
   let DATA = null;
