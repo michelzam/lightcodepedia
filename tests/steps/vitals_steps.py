@@ -47,6 +47,11 @@ def step_grid_hints(context, dataset_id):
             "    wrapAttrs: g ? Array.from(g.attributes).map(a => a.name + '=' + a.value.slice(0, 40)) : null,"
             "    thead: thead ? thead.outerHTML.slice(0, 500) : null,"
             "    prettify: typeof window.lcPrettifyKey,"
+            "    elemsWithHintsAttr: document.querySelectorAll('[hints]').length,"
+            "    unconsumedIALs: Array.from(document.querySelectorAll('p'))"
+            "      .filter(x => (x.textContent || '').indexOf('hints=') >= 0)"
+            "      .map(x => x.textContent.slice(0, 120)),"
+            "    gridsBound: document.querySelectorAll(sel).length,"
             "  });"
             "}",
             sel,
