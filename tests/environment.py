@@ -24,7 +24,9 @@ def before_all(context):
     )
     context.base_url = BASE_URL
     # fleet metrics: one row per page per run, captured after each scenario
-    context.lc_metrics = {}          # path -> metrics row (last visit wins)
+    context.lc_metrics = {}          # path -> metrics row (measured cold, at suite end)
+    context.lc_pages = set()         # every site path the scenarios visited
+    context.lc_errors = {}           # path -> max console errors in one scenario
     context.lc_status = [0, 0]       # [passed, total]
     context.lc_run = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
     context.lc_tokens = []
@@ -37,6 +39,7 @@ def before_all(context):
 
 def after_all(context):
     try:
+        _measure_cold(context)
         _write_metrics(context)
     except Exception as e:
         print("metrics write skipped:", e)
@@ -74,7 +77,12 @@ def after_scenario(context, scenario):
     if getattr(scenario.status, "name", str(scenario.status)) == "passed":
         context.lc_status[0] += 1
     try:
-        _capture_page(context)
+        url = context.page.url or ""
+        if url.startswith(context.base_url):
+            path = url[len(context.base_url):].split("#")[0].split("?")[0] or "/"
+            context.lc_pages.add(path)
+            prev = context.lc_errors.get(path, 0)
+            context.lc_errors[path] = max(prev, context.lc_console_errors)
     except Exception:
         pass  # metrics must never fail the suite
     context.page.close()
@@ -88,6 +96,7 @@ _CAPTURE_JS = """(tokens) => new Promise((res) => {
       if (e.length) lcp = Math.round(e[e.length - 1].startTime);
     }).observe({ type: "largest-contentful-paint", buffered: true });
   } catch (e) {}
+  try { if (window.gc) window.gc(); } catch (e) {}
   setTimeout(() => {
     try { if (window.gc) { window.gc(); window.gc(); } } catch (e) {}
     let transfer = 0;
@@ -109,16 +118,32 @@ _CAPTURE_JS = """(tokens) => new Promise((res) => {
 })"""
 
 
-def _capture_page(context):
-    url = context.page.url or ""
-    if not url.startswith(context.base_url):
+def _measure_cold(context):
+    """Visit every recorded path once, cold, in a fresh browser process —
+    per-page heap without residue from the scenario browser's history.
+    performance.memory is process-wide, so isolation is the only honest way."""
+    if not context.lc_pages:
         return
-    path = url[len(context.base_url):].split("#")[0].split("?")[0] or "/"
-    row = context.page.evaluate(_CAPTURE_JS, context.lc_tokens)
-    row["page"] = path
-    row["console_errors"] = context.lc_console_errors
-    row["run"] = context.lc_run
-    context.lc_metrics[path] = row
+    browser = _pw.chromium.launch(
+        headless=True, args=["--js-flags=--expose-gc"]
+    )
+    for path in sorted(context.lc_pages):
+        try:
+            page = browser.new_page(viewport={"width": 1280, "height": 800})
+            page.goto(context.base_url + path, wait_until="load", timeout=30_000)
+            page.wait_for_timeout(1500)  # upgrades settle
+            row = page.evaluate(_CAPTURE_JS, context.lc_tokens)
+            row["page"] = path
+            row["console_errors"] = context.lc_errors.get(path, 0)
+            row["run"] = context.lc_run
+            context.lc_metrics[path] = row
+            page.close()
+        except Exception:
+            try:
+                page.close()
+            except Exception:
+                pass
+    browser.close()
 
 
 def _read_json(path):
