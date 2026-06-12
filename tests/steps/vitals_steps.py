@@ -29,6 +29,15 @@ def step_vitals_samples(context, n):
     )
 
 
+@then('the "{dataset_id}" grid explains its columns on hover')
+def step_grid_hints(context, dataset_id):
+    import re as _re
+    th = context.page.locator(
+        ".lc-datagrid[data-bind='" + dataset_id + "'] th.lc-th-hint"
+    ).first
+    expect(th).to_have_attribute("title", _re.compile(r".{10,}"), timeout=15_000)
+
+
 @then("the model check card reports no broken references")
 def step_modelcheck_card(context):
     card = context.page.locator(".lc-modelcheck")

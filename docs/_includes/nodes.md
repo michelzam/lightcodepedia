@@ -75,7 +75,8 @@ Auto-included by docs/_layouts/default.html.
       var popup    = document.getElementById("lc-nodes-popup");
 
       var GRAPH_TTL = 3600000;
-      var GRAPH_KEY = "lc_nodes_graph", GRAPH_TS_KEY = "lc_nodes_ts";
+      /* v2: nodes carry forked/updated dates — key bump invalidates old caches */
+      var GRAPH_KEY = "lc_nodes_graph_v2", GRAPH_TS_KEY = "lc_nodes_ts_v2";
 
       var COLORS = ["#f5a623", "#0066cc", "#2a9d2a", "#9b59b6", "#e74c3c"];
       function nodeColor(d) { return COLORS[Math.min(d.level, COLORS.length - 1)]; }
@@ -134,7 +135,8 @@ Auto-included by docs/_layouts/default.html.
                           id: f.full_name, login: f.owner.login, avatar: f.owner.avatar_url,
                           level: w.depth + 1, forkCount: f.forks_count || 0,
                           stars: f.stargazers_count || 0, pinned: false,
-                          forked: (f.created_at || "").slice(0, 10)
+                          forked: (f.created_at || "").slice(0, 10),
+                          updated: (f.pushed_at || "").slice(0, 10)
                         };
                         links.push({ source: w.id, target: f.full_name });
                         if (f.forks_count > 0 && w.depth + 1 < MAX_DEPTH) {
@@ -216,7 +218,8 @@ Auto-included by docs/_layouts/default.html.
             .filter(function (d) { return d.level > 0; })
             .map(function (d) {
               return { node: d.login, repo: d.id, forked: d.forked || "",
-                       level: d.level, stars: d.stars || 0,
+                       updated: d.updated || "", level: d.level,
+                       stars: d.stars || 0,
                        url: "https://github.com/" + d.id };
             })
             .sort(function (a, b) { return a.forked < b.forked ? 1 : -1; }));
