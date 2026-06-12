@@ -313,7 +313,7 @@ class Block(Object):
 
 # ════════════════════════ data + leaf wrappers ══════════════════════════════
 
-@component(icon="🗃️", attrs=[{"n": "loaded", "t": "bool"}, {"n": "count", "t": "int"}])
+@component(icon="🛢️", attrs=[{"n": "loaded", "t": "bool"}, {"n": "count", "t": "int"}])
 class Dataset(Object):
     def __init__(self, id):
         self._el = None
