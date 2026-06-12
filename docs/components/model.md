@@ -51,6 +51,7 @@ digraph component_model {
     Grid [label="{▤ Grid ➭ 🧩|🔤 cols\l🔢 gap\l🔤 headings\l}"]
     Map [label="{🗺️ Map ➭ 🧩|🔢 lat\l🔢 lng\l🔢 zoom\l🔢 height\l|▸ pan to\l▸ set zoom\l}"]
     Menu [label="{🍔 Menu ➭ 🧩|▸ items\l}"]
+    ModelCheck [label="{🧪 ModelCheck ➭ 🧩|🔢 checked\l🔢 broken\l🔘 ok\l}"]
     Pytutor [label="{🔬 Pytutor ➭ 🧩|🔢 height\l🔤 bound to\l}"]
     Qr [label="{🔳 Qr ➭ 🧩|🔢 size\l}"]
     Quiz [label="{❓ Quiz ➭ 🧩|🎛️ state\l🔘 multi\l🔘 graded\l|▹ check ▹\l}"]
@@ -64,6 +65,7 @@ digraph component_model {
     Tabs [label="{📑 Tabs ➭ 🧩|🔢 active\l|▸ select\l}"]
     Text [label="{🔤 Text ➭ 🧩}"]
     Video [label="{🎬 Video ➭ 🧩|🔢 height\l}"]
+    Vitals [label="{📊 Vitals ➭ 🧩|🔢 samples\l🔢 heap mb\l🔢 dom nodes\l}"]
   }
   Datagrid -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bind", fontsize=8]
   Chart -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bind", fontsize=8]
