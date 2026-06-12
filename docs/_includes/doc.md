@@ -9,7 +9,7 @@
   {%- assign _docrepo = site.github.repository_nwo | default: "michelzam/lightcodepedia" -%}
   {%- assign pdf_url = "https://cdn.jsdelivr.net/gh/" | append: _docrepo | append: "@main/pdfs/" | append: subpath | append: include.name | append: ".pdf" -%}
 
-  <iframe src="{{ pdf_url }}" width="100%" height="600" style="border:none;"></iframe>
+  <iframe src="{{ pdf_url }}" width="100%" height="600" loading="lazy" style="border:none;"></iframe>
   <p><a href="{{ pdf_url }}" target="_blank">📄 Open {{ include.name }}.pdf in a new tab</a></p>
 
 {% else %}

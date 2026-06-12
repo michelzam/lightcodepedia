@@ -130,6 +130,17 @@ def _measure_cold(context):
     for path in sorted(context.lc_pages):
         try:
             page = browser.new_page(viewport={"width": 1280, "height": 800})
+            # Playwright disables site isolation, so cross-origin iframes
+            # (YouTube, online IDEs, PDFs) share the renderer and their JS
+            # heap would count as the page's. Block their documents: the
+            # metric is the weight of OUR page, not its guests.
+            page.route(
+                "**/*",
+                lambda route, req: route.abort()
+                if req.resource_type == "document"
+                and not req.url.startswith(context.base_url)
+                else route.continue_(),
+            )
             page.goto(context.base_url + path, wait_until="load", timeout=30_000)
             page.wait_for_timeout(1500)  # upgrades settle
             row = page.evaluate(_CAPTURE_JS, context.lc_tokens)
