@@ -889,6 +889,41 @@ class Video(Block):
     pass
 
 
+@component(icon="📊",
+           attrs=[{"n": "samples", "t": "int"}, {"n": "heap_mb", "t": "float"},
+                  {"n": "dom_nodes", "t": "int"}])
+class Vitals(Block):
+    @property
+    def samples(self):
+        return int(self._attr("data-samples") or 0)
+
+    @property
+    def heap_mb(self):
+        v = self._attr("data-heap")
+        return float(v) if v else None
+
+    @property
+    def dom_nodes(self):
+        return int(self._attr("data-dom") or 0)
+
+
+@component(icon="🧪",
+           attrs=[{"n": "checked", "t": "int"}, {"n": "broken", "t": "int"},
+                  {"n": "ok", "t": "bool"}])
+class ModelCheck(Block):
+    @property
+    def checked(self):
+        return int(self._attr("data-checked") or 0)
+
+    @property
+    def broken(self):
+        return int(self._attr("data-broken") or 0)
+
+    @property
+    def ok(self):
+        return self._attr("data-checked") is not None and self.broken == 0
+
+
 @component(icon="▶️",
            attrs=[{"n": "playing", "t": "bool"}, {"n": "label", "t": "str"}],
            assoc=[{"n": "target", "target": "Avatar"}])
@@ -923,6 +958,7 @@ _WRAP = [
     ("lc-embed", EmbedPage), ("lc-video", Video), ("lc-accordion", Accordion),
     ("lc-blocks", Blocks),
     ("lc-scene3d", Scene3d), ("lc-avatar-host", Avatar),
+    ("lc-vitals", Vitals), ("lc-modelcheck", ModelCheck),
     ("lc-avatar-trigger", AvatarTrigger),
 ]
 
