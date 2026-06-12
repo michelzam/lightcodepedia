@@ -25,7 +25,7 @@ digraph component_model {
     style=filled; fillcolor="gray98"; color="gray85"; margin=16; penwidth=0.3;
     Object [label="{◻️ Object|🔤 id\l}"]
     Page [label="{📄 Page ➭ ◻️|🔤 id\l|▸ feature\l▸ features\l}"]
-    Dataset [label="{🗃️ Dataset ➭ ◻️|🔘 loaded\l🔢 count\l}"]
+    Dataset [label="{🛢️ Dataset ➭ ◻️|🔘 loaded\l🔢 count\l}"]
     Bar [label="{▮ Bar ➭ ◻️|🔢 value\l🔤 color\l}"]
   }
   subgraph cluster_pkg_ui {
