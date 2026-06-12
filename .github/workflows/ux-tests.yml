@@ -63,7 +63,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/assets/ux-results.json docs/assets/ux-report.html docs/assets/metrics.json docs/assets/metrics_trend.json
+          git add docs/assets/ux-results.json docs/assets/ux-report.html docs/assets/ux-summary.json docs/assets/metrics.json docs/assets/metrics_trend.json
           if git diff --cached --quiet; then
             echo "No change in results."
           else
