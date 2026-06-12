@@ -22,8 +22,11 @@ And a structural check: every binding declared on this page — `bind=`, `bound-
 Model integrity.
 {: .modelcheck }
 
-### 📡 Fleet metrics — every page, every deploy
+### !📡 Fleet metrics — every page, every deploy
 The live card above measures only the page you're on; pages here are independent documents. So the **CI suite does the rounds**: on every deploy it visits each page and records heap, DOM size, components, transfer, LCP and console errors — identical conditions, every run. Newest run on top.
+
+[fleet stat](#)
+{: .stat bind="fleet_trend" format="📡 {pages} pages · max {heap_max_mb} MB" }
 
 [metrics]({{ '/assets/metrics.json' | relative_url }})
 {: .dataset #fleet_metrics }
@@ -37,21 +40,28 @@ The live card above measures only the page you're on; pages here are independent
 [Heaviest page per run](#)
 {: .chart bind="fleet_trend" type="line" x="run" y="heap_max_mb" title="Max page heap (MB) per run" }
 
-### 🌐 Network map
+### !🌐 Network map
 Drag to rearrange. Click any node to open its card.
 
 The live network map.
 {: .lightnodes }
 
-### 🚀 Deployment activity
+### !🚀 Deployment activity
 
 [deploys-data](#)
 {: .deploys count="10" }
 
+[deploys stat](#)
+{: .stat bind="deploys" pick="first" format="🚀 last: {status} {state} · {when}" }
+
 [Latest runs](#)
 {: .datagrid bind="deploys" rows="10" }
 
-### 🧪 UX test results
+### !🧪 UX test results
+
+[ux stat](#)
+{: .stat bind="fleet_trend" format="✅ {passed}/{scenarios} scenarios" }
+
 Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) written in Gherkin (behave + Playwright). Each row below is one `Scenario` from a `.feature` file, with its result from the latest run against the live site.
 
 

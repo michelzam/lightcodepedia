@@ -62,6 +62,7 @@ digraph component_model {
     Scene3d [label="{🧊 Scene3d ➭ 🧩|🔢 height\l🔘 loaded\l🔤 last log\l|▸ bark\l▸ run\l▸ wag tail\l▸ swim\l▸ blow bubble\l}"]
     Scrollable [label="{📜 Scrollable ➭ 🧩|🔢 height\l}"]
     Slides [label="{🎞️ Slides ➭ 🧩|🔢 current\l|▸ next\l▸ prev\l▸ goto\l}"]
+    Stat [label="{🏷️ Stat ➭ 🧩|🔤 value\l}"]
     Tabs [label="{📑 Tabs ➭ 🧩|🔢 active\l|▸ select\l}"]
     Text [label="{🔤 Text ➭ 🧩}"]
     Video [label="{🎬 Video ➭ 🧩|🔢 height\l}"]

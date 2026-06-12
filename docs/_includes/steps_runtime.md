@@ -907,6 +907,13 @@ class Vitals(Block):
         return int(self._attr("data-dom") or 0)
 
 
+@component(icon="🏷️", attrs=[{"n": "value", "t": "str"}])
+class Stat(Block):
+    @property
+    def value(self):
+        return self.text
+
+
 @component(icon="🧪",
            attrs=[{"n": "checked", "t": "int"}, {"n": "broken", "t": "int"},
                   {"n": "ok", "t": "bool"}])
@@ -958,7 +965,7 @@ _WRAP = [
     ("lc-embed", EmbedPage), ("lc-video", Video), ("lc-accordion", Accordion),
     ("lc-blocks", Blocks),
     ("lc-scene3d", Scene3d), ("lc-avatar-host", Avatar),
-    ("lc-vitals", Vitals), ("lc-modelcheck", ModelCheck),
+    ("lc-vitals", Vitals), ("lc-modelcheck", ModelCheck), ("lc-stat", Stat),
     ("lc-avatar-trigger", AvatarTrigger),
 ]
 

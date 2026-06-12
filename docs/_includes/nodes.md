@@ -206,6 +206,8 @@ Auto-included by docs/_layouts/default.html.
       }
 
       function render(nodes, links) {
+        /* headline for the accordion title while the section is shut */
+        wrap.setAttribute("data-acc-summary", "\ud83c\udf10 " + nodes.length + " node" + (nodes.length === 1 ? "" : "s"));
         var W   = wrap.offsetWidth || 900;
         var svg = d3.select("#lc-nodes-svg").attr("viewBox", "0 0 " + W + " " + H);
         svg.on("click", function () { popup.style.display = "none"; });

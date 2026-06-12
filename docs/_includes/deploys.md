@@ -110,7 +110,12 @@ Auto-included by docs/_layouts/default.html.
         var ongoing = runs.some(function (r) { return r.status !== "completed"; });
         spEl.textContent = ongoing ? "● live" : "updated " + new Date().toLocaleTimeString();
         clearTimeout(pollTimer);
-        if (ongoing && polls < 25) { polls++; pollTimer = setTimeout(fetchRuns, 12000); }
+        /* frugal: keep live-polling only while the bar is actually visible
+           (inside an open accordion section); shut sections keep the first
+           numbers and refresh on demand via the button */
+        if (ongoing && polls < 25 && bar.offsetParent !== null) {
+          polls++; pollTimer = setTimeout(fetchRuns, 12000);
+        }
         else polls = 0;
       })
       .catch(function (e) {
