@@ -11,6 +11,7 @@ Feature: Vitals and model integrity — the platform measures itself
     When I turn the vitals switch on
     Then the vitals card shows at least 2 samples
     And the "page_vitals" bound grid shows at least 2 rows
+    And the "page_vitals" grid explains its columns on hover
 
   Scenario: The model check card finds no broken references on the nodes page
     When I navigate to "/nodes"

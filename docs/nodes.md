@@ -49,7 +49,7 @@ The live network map.
 Most recent forks first — click a row to visit.
 
 [Recent forks](#)
-{: .datagrid bind="lightnodes" rows="6" hints="node: who forked | repo: the fork | forked: when it was created | level: forks-of-forks distance from the root | stars: its stargazers" }
+{: .datagrid bind="lightnodes" rows="6" hints="node: who forked | repo: the fork | forked: when the fork was created | updated: last push to the fork — is it alive? | level: forks-of-forks distance from the root | stars: its stargazers" }
 
 ### !🚀 Deployment activity
 
