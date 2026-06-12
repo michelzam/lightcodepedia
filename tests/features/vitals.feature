@@ -19,6 +19,12 @@ Feature: Vitals and model integrity — the platform measures itself
     Then the model check card reports no broken references
     And an accordion title mirrors "🧪"
 
+  Scenario: Fleet metrics from CI render on the nodes page
+    When I navigate to "/nodes"
+    And I wait for the page to be interactive
+    And I open the accordion section "Fleet metrics"
+    Then the "fleet_metrics" bound grid shows at least 1 rows
+
   Scenario: Model integrity holds on the tutorial data chain
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive

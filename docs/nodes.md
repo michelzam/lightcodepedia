@@ -22,6 +22,21 @@ And a structural check: every binding declared on this page — `bind=`, `bound-
 Model integrity.
 {: .modelcheck }
 
+### 📡 Fleet metrics — every page, every deploy
+The live card above measures only the page you're on; pages here are independent documents. So the **CI suite does the rounds**: on every deploy it visits each page and records heap, DOM size, components, transfer, LCP and console errors — identical conditions, every run. Newest run on top.
+
+[metrics]({{ '/assets/metrics.json' | relative_url }})
+{: .dataset #fleet_metrics }
+
+[Per page](#)
+{: .datagrid bind="fleet_metrics" rows="15" }
+
+[trend]({{ '/assets/metrics_trend.json' | relative_url }})
+{: .dataset #fleet_trend }
+
+[Heaviest page per run](#)
+{: .chart bind="fleet_trend" type="line" x="run" y="heap_max_mb" title="Max page heap (MB) per run" }
+
 ### 🌐 Network map
 Drag to rearrange. Click any node to open its card.
 
