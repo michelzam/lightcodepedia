@@ -1,3 +1,11 @@
 [
- {"run": "(awaiting first CI run)", "features": 0, "features_failed": 0, "scenarios": 0, "scenarios_failed": 0, "steps": 0, "steps_failed": 0}
+ {
+  "run": "2026-06-12T15:22Z",
+  "features": 11,
+  "features_failed": 1,
+  "scenarios": 59,
+  "scenarios_failed": 2,
+  "steps": 314,
+  "steps_failed": 2
+ }
 ]
