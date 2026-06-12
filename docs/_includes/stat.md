@@ -21,6 +21,7 @@ Auto-included by docs/_layouts/default.html.
   background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 999px;
   padding: 0.15em 0.7em; margin: 0.2em 0;
 }
+.lc-stat.lc-stat-bad { border-color: #fecaca; background: #fef2f2; }
 </style>
 
 <script>
@@ -34,7 +35,28 @@ Auto-included by docs/_layouts/default.html.
     var bindId = el.getAttribute("bind") || "";
     var format = el.getAttribute("format") || "{count}";
     var pick   = el.getAttribute("pick") || "last";
+    /* requires="col": show nothing meaningful until that column is truthy
+       (placeholder/seed rows never reach the title) */
+    var requires = el.getAttribute("requires") || "";
+    /* ok-when="passed==scenarios": traffic light — ✅ when true, 🔴 when
+       false; right side may be another column or a number */
+    var okWhen = el.getAttribute("ok-when") || "";
     if (!bindId) return;
+
+    function evalOk(row) {
+      var m = okWhen.match(/^(\w+)\s*(==|>=|<=|>|<)\s*(\w+)$/);
+      if (!m) return null;
+      var a = +row[m[1]];
+      var b = (m[3] in row) ? +row[m[3]] : +m[3];
+      if (isNaN(a) || isNaN(b)) return null;
+      switch (m[2]) {
+        case "==": return a === b;
+        case ">=": return a >= b;
+        case "<=": return a <= b;
+        case ">":  return a > b;
+        default:   return a < b;
+      }
+    }
 
     var chip = document.createElement("span");
     chip.className = "lc-stat";
@@ -46,11 +68,19 @@ Auto-included by docs/_layouts/default.html.
     function render(data) {
       if (!data || !data.length) { chip.textContent = "—"; return; }
       var row = pick === "first" ? data[0] : data[data.length - 1];
+      if (requires && !row[requires]) {
+        chip.textContent = "…";
+        chip.removeAttribute("data-acc-summary");
+        return;
+      }
       var out = format.replace(/\{(\w+)\}/g, function (_, k) {
         if (k === "count") return String(data.length);
         var v = row[k];
         return v == null ? "—" : String(v);
       });
+      var ok = okWhen ? evalOk(row) : null;
+      if (ok !== null) out = (ok ? "✅ " : "🔴 ") + out;
+      chip.classList.toggle("lc-stat-bad", ok === false);
       chip.textContent = out;
       chip.setAttribute("data-acc-summary", out);
     }

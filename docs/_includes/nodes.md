@@ -32,6 +32,7 @@ Auto-included by docs/_layouts/default.html.
     var H         = parseInt(el.getAttribute("height") || "580", 10);
 
     var wrap = document.createElement("div");
+    wrap.setAttribute("data-lc-id", "lightnodes"); /* publisher of the forks dataset */
     wrap.id = "lc-nodes-wrap";
     wrap.style.cssText = "position:relative;margin:1.5em 0";
     wrap.innerHTML = [
@@ -132,7 +133,8 @@ Auto-included by docs/_layouts/default.html.
                         nodes[f.full_name] = {
                           id: f.full_name, login: f.owner.login, avatar: f.owner.avatar_url,
                           level: w.depth + 1, forkCount: f.forks_count || 0,
-                          stars: f.stargazers_count || 0, pinned: false
+                          stars: f.stargazers_count || 0, pinned: false,
+                          forked: (f.created_at || "").slice(0, 10)
                         };
                         links.push({ source: w.id, target: f.full_name });
                         if (f.forks_count > 0 && w.depth + 1 < MAX_DEPTH) {
@@ -208,6 +210,17 @@ Auto-included by docs/_layouts/default.html.
       function render(nodes, links) {
         /* headline for the accordion title while the section is shut */
         wrap.setAttribute("data-acc-summary", "\ud83c\udf10 " + nodes.length + " node" + (nodes.length === 1 ? "" : "s"));
+        /* the crawl doubles as a dataset: most recent forks first */
+        if (window.lcSetDataset) {
+          window.lcSetDataset("lightnodes", nodes
+            .filter(function (d) { return d.level > 0; })
+            .map(function (d) {
+              return { node: d.login, repo: d.id, forked: d.forked || "",
+                       level: d.level, stars: d.stars || 0,
+                       url: "https://github.com/" + d.id };
+            })
+            .sort(function (a, b) { return a.forked < b.forked ? 1 : -1; }));
+        }
         var W   = wrap.offsetWidth || 900;
         var svg = d3.select("#lc-nodes-svg").attr("viewBox", "0 0 " + W + " " + H);
         svg.on("click", function () { popup.style.display = "none"; });
