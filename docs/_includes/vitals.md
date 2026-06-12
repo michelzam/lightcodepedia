@@ -62,7 +62,7 @@ Auto-included by docs/_layouts/default.html.
   if (window._lcVitalsReady) return;
   window._lcVitalsReady = true;
 
-  var MODEL_URL = "{{ "/assets/component-model.json" | relative_url }}";
+  var MODEL_URL = "{{ "/assets/component-model.json" | relative_url }}?v={{ site.time | date: '%s' }}";
   var wrapTokens = null;
   function loadTokens() {
     if (wrapTokens) return;
