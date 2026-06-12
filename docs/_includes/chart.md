@@ -192,6 +192,12 @@ Auto-included by docs/_layouts/default.html.
     else wrap.innerHTML = "<p style='color:#888;font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
   }
 
+  /* tick labels: integers collide when the axis range is narrow
+     (e.g. a 4-7 MB heap) — show one decimal once steps drop below 2 */
+  function tickLabel(v, span) {
+    return span < 8 ? (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, "") : String(Math.round(v));
+  }
+
   function chartSVG(el, W, H) {
     var NS = "http://www.w3.org/2000/svg";
     var svg = document.createElementNS(NS, "svg");
@@ -220,7 +226,7 @@ Auto-included by docs/_layouts/default.html.
     [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
       var v = maxV * f, y = pT + cH - f * cH;
       svgEl(svg, NS, "line", { x1: pL - 4, y1: y, x2: pL + cW, y2: y, stroke: f === 0 ? "#9ca3af" : "#f3f4f6", "stroke-width": 1 });
-      svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" }).textContent = Math.round(v);
+      svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" }).textContent = tickLabel(v, maxV);
     });
 
     /* bars */
@@ -252,7 +258,7 @@ Auto-included by docs/_layouts/default.html.
     [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
       var v = minV + range * f, y = pT + cH - f * cH;
       svgEl(svg, NS, "line", { x1: pL, y1: y, x2: pL + cW, y2: y, stroke: f === 0 ? "#9ca3af" : "#f3f4f6", "stroke-width": 1 });
-      svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" }).textContent = Math.round(v);
+      svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" }).textContent = tickLabel(v, range);
     });
 
     var pts = data.map(function (d, i) {
