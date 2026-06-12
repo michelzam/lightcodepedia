@@ -32,10 +32,26 @@ def step_vitals_samples(context, n):
 @then('the "{dataset_id}" grid explains its columns on hover')
 def step_grid_hints(context, dataset_id):
     import re as _re
-    th = context.page.locator(
-        ".lc-datagrid[data-bind='" + dataset_id + "'] th.lc-th-hint"
-    ).first
-    expect(th).to_have_attribute("title", _re.compile(r".{10,}"), timeout=15_000)
+    sel = ".lc-datagrid[data-bind='" + dataset_id + "']"
+    th = context.page.locator(sel + " th.lc-th-hint").first
+    try:
+        expect(th).to_have_attribute("title", _re.compile(r".{10,}"), timeout=15_000)
+    except Exception:
+        # no more theories: dump what the live DOM actually contains
+        evidence = context.page.evaluate(
+            "(sel) => {"
+            "  const g = document.querySelector(sel);"
+            "  const thead = g && g.querySelector('thead');"
+            "  return JSON.stringify({"
+            "    grid: !!g,"
+            "    wrapAttrs: g ? Array.from(g.attributes).map(a => a.name + '=' + a.value.slice(0, 40)) : null,"
+            "    thead: thead ? thead.outerHTML.slice(0, 500) : null,"
+            "    prettify: typeof window.lcPrettifyKey,"
+            "  });"
+            "}",
+            sel,
+        )
+        raise AssertionError("no hinted headers — DOM evidence: " + str(evidence))
 
 
 @then("the model check card reports no broken references")
