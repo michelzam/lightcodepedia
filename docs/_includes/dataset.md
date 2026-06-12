@@ -130,6 +130,14 @@ Auto-included by docs/_layouts/default.html.
     if (!bindId) return; /* skip old-style code-block datagrids */
     el.dataset.lcDgDone = "1";
     var perPage = parseInt(el.getAttribute("rows") || "0", 10) || 0;
+    /* hints="col: explanation | col2: ..." → header tooltips. Read from the
+       declaration HERE — below, el is reassigned to the fresh wrapper and
+       the original attributes are gone with the replaced element. */
+    var hints = {};
+    (el.getAttribute("hints") || "").split("|").forEach(function (h) {
+      var i = h.indexOf(":");
+      if (i > 0) hints[h.slice(0, i).trim()] = h.slice(i + 1).trim();
+    });
 
     var lcId = el.getAttribute("id") || "";
     var wrap = document.createElement("div");
@@ -140,12 +148,6 @@ Auto-included by docs/_layouts/default.html.
     el = wrap;
 
     var sortCol = null, sortAsc = true, page = 0;
-    /* hints="col: explanation | col2: ..." -> hover tooltips on headers */
-    var hints = {};
-    (el.getAttribute("hints") || "").split("|").forEach(function (h) {
-      var i = h.indexOf(":");
-      if (i > 0) hints[h.slice(0, i).trim()] = h.slice(i + 1).trim();
-    });
 
     function render(data) {
       if (!data || !data.length) {
