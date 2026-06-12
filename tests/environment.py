@@ -16,7 +16,12 @@ _browser = None
 def before_all(context):
     global _pw, _browser
     _pw = sync_playwright().start()
-    _browser = _pw.chromium.launch(headless=True)
+    # --expose-gc lets the metrics capture force a collection first, so
+    # heap_mb measures THIS page, not residue from earlier scenarios in the
+    # shared renderer process
+    _browser = _pw.chromium.launch(
+        headless=True, args=["--js-flags=--expose-gc"]
+    )
     context.base_url = BASE_URL
     # fleet metrics: one row per page per run, captured after each scenario
     context.lc_metrics = {}          # path -> metrics row (last visit wins)
@@ -84,6 +89,7 @@ _CAPTURE_JS = """(tokens) => new Promise((res) => {
     }).observe({ type: "largest-contentful-paint", buffered: true });
   } catch (e) {}
   setTimeout(() => {
+    try { if (window.gc) { window.gc(); window.gc(); } } catch (e) {}
     let transfer = 0;
     try {
       performance.getEntriesByType("resource")

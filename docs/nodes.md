@@ -15,7 +15,7 @@ Page vitals collector.
 {: .chart bind="page_vitals" type="line" x="t" y="heap_mb" title="JS heap (MB)" }
 
 [Samples](#)
-{: .datagrid bind="page_vitals" rows="8" }
+{: .datagrid bind="page_vitals" rows="8" hints="t: seconds since the switch was flipped | heap_mb: JS heap in use (Chrome/Edge only) — sawtooth = allocate then garbage-collect, a rising floor = leak | dom_nodes: elements in the DOM — grows here because each sample adds chart points | lc_components: upgraded LC components (model wrap tokens) | listeners: dataset subscriptions (this chart + this grid) | transfer_kb: bytes over the network since load | lcp_ms: Largest Contentful Paint — when the main content became visible | cls: Cumulative Layout Shift — how much the page jumped while loading (0 = rock steady)" }
 
 And a structural check: every binding declared on this page — `bind=`, `bound-to=`, avatar targets and `at:` walks — must resolve to something real. The same check gates CI on the example pages.
 
@@ -32,7 +32,7 @@ The live card above measures only the page you're on; pages here are independent
 {: .dataset #fleet_metrics }
 
 [Per page](#)
-{: .datagrid bind="fleet_metrics" rows="15" }
+{: .datagrid bind="fleet_metrics" rows="15" hints="run: which CI run measured it | page: every page the UX suite visited | heap_mb: JS heap after the page was exercised — compare pages, watch for climbers | dom_nodes: elements in the DOM at the end of the scenario | lc_components: upgraded LC components on the page | transfer_kb: bytes downloaded | lcp_ms: Largest Contentful Paint | console_errors: console errors during the scenario (0 is the only good number)" }
 
 [trend]({{ '/assets/metrics_trend.json' | relative_url }})
 {: .dataset #fleet_trend }
