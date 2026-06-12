@@ -8,5 +8,15 @@
   "errors": 0,
   "passed": 58,
   "scenarios": 58
+ },
+ {
+  "run": "2026-06-12T14:55Z",
+  "pages": 13,
+  "heap_max_mb": 48.1,
+  "heap_avg_mb": 19.4,
+  "dom_max": 1431,
+  "errors": 0,
+  "passed": 59,
+  "scenarios": 59
  }
 ]
