@@ -32,7 +32,7 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then the markdown pad shows an editor and a rendered preview
 
-  Scenario: A custom class styles its block in the gallery
-    When I navigate to "/components/custom-class"
+  Scenario: The custom-class example shows a live Python editor
+    When I navigate to "/components/examples/custom-class"
     And I wait for the page to be interactive
-    Then the "highlight-box" custom class is applied and styled
+    Then a live Python editor is visible

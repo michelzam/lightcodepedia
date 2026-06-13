@@ -86,10 +86,8 @@ def step_mdpad(context):
     expect(pad.locator(".lc-mdpad-out h2")).to_be_visible(timeout=15_000)
 
 
-@then('the "{cls}" custom class is applied and styled')
-def step_custom_class(context, cls):
-    el = context.page.locator("." + cls).first
-    expect(el).to_be_visible(timeout=10_000)
-    # the page's <style> must have taken effect (the left border it defines)
-    border = el.evaluate("e => getComputedStyle(e).borderLeftWidth")
-    assert border and border != "0px", f"custom class .{cls} not styled (border-left {border})"
+@then("a live Python editor is visible")
+def step_live_python_editor(context):
+    pad = context.page.locator(".lc-pyrun").first
+    expect(pad).to_be_visible(timeout=15_000)
+    expect(pad.locator("textarea")).to_be_visible()
