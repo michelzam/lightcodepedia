@@ -137,13 +137,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 .ed-log-instr { font-size: 0.9em; color: #1f2937; }
 .ed-log-meta { font-size: 0.78em; color: #9ca3af; margin-top: 0.15em; }
 /* ── ✨ AI edit dialog ─────────────────────────────────── */
-#ed-agent-dialog { position: absolute; inset: 0; z-index: 30; display: flex;
-  align-items: flex-start; justify-content: center; background: rgba(15,23,42,0.28); }
+/* floating, non-modal: drag by the header, click elsewhere to re-scope */
+#ed-agent-dialog { position: fixed; top: 100px; right: 24px; z-index: 1001; width: min(420px, 92vw); }
 #ed-agent-dialog.ed-hidden { display: none; }
-#ed-ag-card { background: #fff; border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
-  width: min(560px, 92%); margin-top: 7vh; padding: 0.9em 1em; display: flex;
-  flex-direction: column; gap: 0.6em; max-height: 80vh; overflow: auto; }
-#ed-ag-head { font-weight: 600; display: flex; align-items: center; gap: 0.4em; }
+#ed-ag-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.28); padding: 0.8em 0.9em; display: flex;
+  flex-direction: column; gap: 0.55em; max-height: 78vh; overflow: auto; }
+#ed-ag-head { font-weight: 600; display: flex; align-items: center; gap: 0.4em;
+  cursor: move; user-select: none; }
 #ed-ag-scope { font-weight: 400; font-size: 0.84em; color: #6b7280; flex: 1; }
 #ed-ag-x { color: #9ca3af; text-decoration: none; font-size: 1.1em; }
 #ed-agent-prompt { resize: vertical; min-height: 3.4em; font: inherit; font-size: 0.92em;
@@ -441,6 +442,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (logPane) logPane.classList.add("ed-hidden");
     var agDlg = document.getElementById("ed-agent-dialog");
     if (agDlg) agDlg.classList.add("ed-hidden");
+    loadCompModel(); // fetch type→icon map (once)
     buildGrid(); // always build — shows placeholder if no file yet
 
     if (_pat && _repo) {
@@ -1150,6 +1152,35 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
   }
 
+  /* component model → icon by IAL type (e.g. "datagrid" → "▦") */
+  var _compModel = null;
+  function loadCompModel() {
+    if (_compModel) return;
+    fetch("{{ "/assets/component-model.json" | relative_url }}")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        _compModel = d.model || {};
+        var bp = document.getElementById("ed-blocks-pane");
+        if (bp && bp.classList.contains("ed-active")) buildGrid();  // repaint with icons
+      })
+      .catch(function () { _compModel = {}; });
+  }
+  function iconFor(type) {
+    if (!type || !_compModel) return "";
+    var c = _compModel[compName(type)];
+    return (c && c.icon) || "";
+  }
+  /* a sub-block's "(component)" placeholder is noise — show its icon instead */
+  function subTitleHtml(b) {
+    if (b.heading === "(component)") {
+      var ic = iconFor(b.type);
+      return ic
+        ? "<span title='" + escH(compName(b.type)) + "' style='font-size:1.1em'>" + ic + "</span>"
+        : "<em style='color:#777'>." + escH(b.type || "") + "</em>";
+    }
+    return "<em style='color:#777'>" + escH(b.heading) + "</em>";
+  }
+
   function buildGrid() {
     var inp = document.getElementById("ed-input");
     if (!inp) return;
@@ -1173,7 +1204,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var titleHtml = b.preamble
         ? "<em style='color:#bbb'>preamble</em>"
         : (b.fenceChild ? "<span style='color:#aaa'>– " + escH(b.heading) + "</span>"
-          : b.subBlock ? "<em style='color:#777'>" + escH(b.heading) + "</em>"
+          : b.subBlock ? subTitleHtml(b)
           : escH(b.heading));
       var typeHtml = (b.type && !b.hasSubComponents) ? "<span class='ed-block-type'>." + escH(b.type) + "</span>" : "";
       var knobHtml = Object.keys(b.knobs||{}).map(function(k){
@@ -1211,6 +1242,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       _formDirty = false; // explicit click clears any pending form edit
       _selIdx = parseInt(tr.dataset.idx);
       buildGrid();
+      // floating ✨ box open? follow the new selection (prompt is kept)
+      var dlg = document.getElementById("ed-agent-dialog");
+      if (dlg && !dlg.classList.contains("ed-hidden")) refreshAgentScope();
     });
 
     grid.addEventListener("dragstart", function(e) {
@@ -1462,6 +1496,17 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var dlg = document.getElementById("ed-agent-dialog");
     if (dlg) dlg.classList.add("ed-hidden");
   }
+  /* re-aim the open box at the current selection — keeps the typed prompt,
+     drops any stale plan. Scope follows block selection, never focus. */
+  function refreshAgentScope() {
+    _agentScope = captureScope();
+    var sc = document.getElementById("ed-ag-scope");
+    if (sc) sc.textContent = "· " + _agentScope.label;
+    var plan = document.getElementById("ed-ag-plan");
+    if (plan) { plan.classList.add("ed-hidden"); plan.innerHTML = ""; }
+    _agentPlan = null;
+    agentStatus("", false);
+  }
 
   /* apply find/replace edits locally; untouched text cannot change */
   function applyEdits(text, edits) {
@@ -1561,10 +1606,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (inp) { inp.value = r.text; setDirty(true); updatePreview(r.text); }
     _agentLog.push({ instruction: _agentPlan.instruction, scope: _agentPlan.scope, count: r.applied.length });
     _agentPlan = null;
-    closeAgentDialog();
     renderLog();
-    if (typeof buildGrid === "function") buildGrid();
-    toast("✨ " + r.applied.length + " edit(s) applied — review in Raw, then Save.", true);
+    buildGrid();          // block text changed — repaint the grid
+    refreshAgentScope();  // re-aim at the edited block; box stays open
+    agentStatus("✓ applied — pick another block, or ✕ to close.", false);
+    toast("✨ " + r.applied.length + " edit(s) applied.", true);
   }
 
   function renderLog() {
@@ -1602,6 +1648,26 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       return;
     }
   });
+
+  /* drag the floating ✨ box by its header */
+  (function () {
+    var dlg = null, ox = 0, oy = 0, dragging = false;
+    document.addEventListener("mousedown", function (e) {
+      if (!e.target.closest("#ed-ag-head") || e.target.closest("#ed-ag-x")) return;
+      dlg = document.getElementById("ed-agent-dialog");
+      if (!dlg) return;
+      var r = dlg.getBoundingClientRect();
+      ox = e.clientX - r.left; oy = e.clientY - r.top;
+      dlg.style.right = "auto"; dlg.style.left = r.left + "px"; dlg.style.top = r.top + "px";
+      dragging = true; e.preventDefault();
+    });
+    document.addEventListener("mousemove", function (e) {
+      if (!dragging || !dlg) return;
+      dlg.style.left = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - ox)) + "px";
+      dlg.style.top  = Math.max(48, Math.min(window.innerHeight - 40, e.clientY - oy)) + "px";
+    });
+    document.addEventListener("mouseup", function () { dragging = false; });
+  })();
 
   /* ── Raw editor cursor → preview highlight ──────────── */
   (function() {
