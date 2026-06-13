@@ -131,6 +131,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-raw-pane.ed-hidden { display: none; }
 #ed-blocks-pane { display: none; flex: 1; flex-direction: column; overflow: hidden; }
 #ed-blocks-pane.ed-active { display: flex; }
+#ed-agent-pane { display: flex; flex: 1; flex-direction: column; overflow: hidden; padding: 0.6em; gap: 0.5em; }
+#ed-agent-pane.ed-hidden { display: none; }
+#ed-agent-prompt { flex: 1; min-height: 0; resize: none; font: inherit; font-size: 0.9em;
+  border: 1px solid #d0d7de; border-radius: 6px; padding: 0.6em; line-height: 1.45; }
+#ed-agent-bar { display: flex; align-items: center; gap: 0.8em; }
+#ed-agent-status { font-size: 0.84em; color: #777; }
+#ed-agent-status.ed-err { color: #b91c1c; }
 
 /* ── Grid/form splitter ─────────────────────────────── */
 #ed-grid-splitter {
@@ -294,9 +301,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         <div id="ed-tabs">
           <span class="ed-tab active" data-tab="blocks">⊞ Blocks</span>
           <span class="ed-tab" data-tab="raw">✏️ Raw</span>
+          <span class="ed-tab" data-tab="agent">✨ Agent</span>
         </div>
         <div id="ed-raw-pane" class="ed-hidden">
           <textarea id="ed-input" placeholder="Select a file to start editing…" spellcheck="false"></textarea>
+        </div>
+        <div id="ed-agent-pane" class="ed-hidden">
+          <textarea id="ed-agent-prompt" spellcheck="false"
+            placeholder="Describe the change in plain words — e.g. “add a short intro paragraph above the first heading”. The whole page is sent as context; the reply rewrites it, and you review in Raw before saving."></textarea>
+          <div id="ed-agent-bar">
+            <a href="#" class="lc-btn" id="ed-agent-ask">✨ Ask</a>
+            <span id="ed-agent-status"></span>
+          </div>
         </div>
         <div id="ed-blocks-pane" class="ed-active">
           <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
@@ -388,6 +404,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     document.querySelectorAll(".ed-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab === "blocks"); });
     if (rawPane) rawPane.classList.add("ed-hidden");
     if (blkPane) blkPane.classList.add("ed-active");
+    var agPane = document.getElementById("ed-agent-pane");
+    if (agPane) agPane.classList.add("ed-hidden");
     buildGrid(); // always build — shows placeholder if no file yet
 
     if (_pat && _repo) {
@@ -1315,12 +1333,75 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     document.querySelectorAll(".ed-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab === name); });
     var raw    = document.getElementById("ed-raw-pane");
     var blocks = document.getElementById("ed-blocks-pane");
-    if (name === "blocks") {
-      raw.classList.add("ed-hidden"); blocks.classList.add("ed-active");
-      buildGrid();
-    } else {
-      raw.classList.remove("ed-hidden"); blocks.classList.remove("ed-active");
-    }
+    var agent  = document.getElementById("ed-agent-pane");
+    blocks.classList.toggle("ed-active", name === "blocks");
+    raw.classList.toggle("ed-hidden", name !== "raw");
+    if (agent) agent.classList.toggle("ed-hidden", name !== "agent");
+    if (name === "blocks") buildGrid();
+  });
+
+  /* ── Agent tab: prompt → rewritten page ──────────────────
+     Single-shot edit assist. Sends the whole current markdown plus the
+     instruction to GitHub Models, writes the rewritten page back into the
+     Raw textarea for review, and switches there. Reuses the editor's PAT;
+     the human reviews in Raw and commits with the normal Save. */
+  function agentStatus(msg, err) {
+    var s = document.getElementById("ed-agent-status");
+    if (!s) return;
+    s.textContent = msg || "";
+    s.classList.toggle("ed-err", !!err);
+  }
+
+  function agentAsk() {
+    var promptEl = document.getElementById("ed-agent-prompt");
+    var inp = document.getElementById("ed-input");
+    var instruction = (promptEl && promptEl.value || "").trim();
+    if (!instruction) { agentStatus("Type what you'd like changed first.", true); return; }
+    if (!_pat) { agentStatus("Connect a GitHub token (Setup) to use the agent.", true); return; }
+    var page = (inp && inp.value) || "";
+    if (!page) { agentStatus("Load a file first.", true); return; }
+
+    agentStatus("✨ Thinking…", false);
+    fetch("https://models.github.ai/inference/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + _pat, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini",
+        messages: [
+          { role: "system", content:
+            "You edit a single Markdown page for a Jekyll site that uses kramdown " +
+            "IAL ({: .class #id attr=\"value\" } on the line after a block). " +
+            "Apply the user's change and return ONLY the complete updated page in " +
+            "one ```markdown fenced block — keep the front matter, headings, and " +
+            "every IAL line intact unless the change requires otherwise." },
+          { role: "user", content:
+            "Change requested:\n" + instruction + "\n\nCurrent page:\n```markdown\n" + page + "\n```" }
+        ]
+      })
+    }).then(function (r) {
+      return r.json().then(function (data) { return { status: r.status, data: data }; });
+    }).then(function (res) {
+      if (res.status === 401 || res.status === 403) { agentStatus("Token rejected — try a fresh PAT.", true); return; }
+      if (res.status === 429) { agentStatus("Rate limited — wait a moment.", true); return; }
+      if (res.status >= 400) {
+        agentStatus((res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status), true); return;
+      }
+      var choice = res.data.choices && res.data.choices[0];
+      var text = choice && choice.message && choice.message.content || "";
+      var m = text.match(/```(?:markdown|md)?\s*\n([\s\S]*?)\n```/);
+      var updated = (m ? m[1] : text).trim();
+      if (!updated) { agentStatus("Empty reply — try rephrasing.", true); return; }
+      if (inp) { inp.value = updated; setDirty(true); updatePreview(updated); }
+      agentStatus("✓ Applied — review in Raw, then Save.", false);
+      var rawTab = document.querySelector(".ed-tab[data-tab='raw']");
+      if (rawTab) rawTab.click();
+    }).catch(function (err) {
+      agentStatus("Network error: " + (err && err.message || err), true);
+    });
+  }
+
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("#ed-agent-ask")) { e.preventDefault(); agentAsk(); }
   });
 
   /* ── Raw editor cursor → preview highlight ──────────── */
