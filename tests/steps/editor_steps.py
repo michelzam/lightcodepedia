@@ -1,3 +1,5 @@
+import re
+
 from behave import when, then
 from playwright.sync_api import expect
 
@@ -8,9 +10,16 @@ def step_open_editor(context):
     fab.wait_for(state="visible", timeout=15_000)
     fab.click()
     expect(context.page.locator("#ed-drawer")).to_have_class(
-        # the drawer adds the "open" class when shown
-        __import__("re").compile(r"\bopen\b"), timeout=10_000
+        re.compile(r"\bopen\b"), timeout=10_000
     )
+
+
+@when('I click the editor "{elem_id}" button')
+def step_click_editor_button(context, elem_id):
+    btn = context.page.locator("#" + elem_id)
+    btn.wait_for(state="visible", timeout=10_000)
+    btn.click()
+    context.page.wait_for_timeout(200)
 
 
 @when('I switch to the editor "{name}" tab')
@@ -24,3 +33,8 @@ def step_switch_tab(context, name):
 @then("the editor agent pane shows a prompt box")
 def step_agent_prompt_visible(context):
     expect(context.page.locator("#ed-agent-prompt")).to_be_visible(timeout=10_000)
+
+
+@then("the editor log pane is visible")
+def step_log_pane_visible(context):
+    expect(context.page.locator("#ed-log-pane")).to_be_visible(timeout=10_000)
