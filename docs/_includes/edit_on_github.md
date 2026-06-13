@@ -136,6 +136,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 .ed-log-item { border-bottom: 1px solid #f0f0f0; padding: 0.45em 0.35em; }
 .ed-log-instr { font-size: 0.9em; color: #1f2937; }
 .ed-log-meta { font-size: 0.78em; color: #9ca3af; margin-top: 0.15em; }
+.ed-log-undo { float: right; font-size: 0.82em; color: #0066cc; text-decoration: none; }
+.ed-log-undo:hover { text-decoration: underline; }
 /* ── ✨ AI edit dialog ─────────────────────────────────── */
 /* floating, non-modal: drag by the header, click elsewhere to re-scope */
 #ed-agent-dialog { position: fixed; top: 100px; right: 24px; z-index: 1001; width: min(420px, 92vw); }
@@ -532,7 +534,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   function loadFile(path) {
     if (_dirty && !confirm("Discard unsaved changes to " + (_curFile || "this file") + "?")) return;
     _curFile = path; _curSha = null;
-    _agentLog = []; renderLog();   // each file gets its own AI edit log
+    _actionLog = []; renderLog();  // each file gets its own action log
     setDirty(false);
     var inp = document.getElementById("ed-input");
     if (inp) inp.value = "Loading…";
@@ -578,6 +580,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         _curSha = data.content.sha;
         _savedContent = inp.value;
         toast("Saved · " + data.commit.sha.slice(0, 7) + " ✓", true);
+        pushAction("💾", "Saved · " + data.commit.sha.slice(0, 7), null);  // trace (no undo)
         setDirty(false);
         loadFiles();
         loadHistory();
@@ -1170,6 +1173,20 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var c = _compModel[compName(type)];
     return (c && c.icon) || "";
   }
+  /* validate fenced data (json / yaml) in a block's content before applying */
+  function checkBlockSyntax(content) {
+    var re = /```(json|ya?ml)\s*\r?\n([\s\S]*?)\r?\n```/gi, m, errs = [];
+    while ((m = re.exec(content))) {
+      var lang = m[1].toLowerCase(), body = m[2];
+      if (lang === "json") {
+        try { JSON.parse(body); } catch (e) { errs.push("JSON error: " + e.message); }
+      } else if (window.jsyaml) {
+        try { window.jsyaml.load(body); } catch (e) { errs.push("YAML error: " + (e.message || e)); }
+      }
+    }
+    return errs;
+  }
+
   /* a sub-block's "(component)" placeholder is noise — show its icon instead */
   function subTitleHtml(b) {
     if (b.heading === "(component)") {
@@ -1226,6 +1243,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (_selIdx >= 0 && _selIdx < _blocks.length) {
       showBlockForm(_selIdx);
       highlightInPreview(_blocks[_selIdx]);
+      /* keep the selected row in view (centre it in the grid, not the page) */
+      var g = document.getElementById("ed-grid"), row = g && g.querySelector("tr.ed-sel");
+      if (g && row) {
+        var gr = g.getBoundingClientRect(), rr = row.getBoundingClientRect();
+        g.scrollTop += (rr.top - gr.top) - (gr.height / 2 - rr.height / 2);
+      }
     }
   }
 
@@ -1376,11 +1399,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
     document.getElementById("ebf-apply").addEventListener("click", function(e) {
       e.preventDefault();
+      var cnt     = document.getElementById("ebf-content").value;
+      var errs = checkBlockSyntax(cnt);   // check first — don't apply broken data
+      if (errs.length) { toast("⚠ " + errs[0] + " — fix before applying.", false); return; }
+      var inp = document.getElementById("ed-input");
+      var before = inp.value;             // snapshot for undo
       _formDirty = false;
       var title   = document.getElementById("ebf-title").value;
       var type    = document.getElementById("ebf-type").value;
       var knobsIn = document.getElementById("ebf-knobs").value.trim();
-      var cnt     = document.getElementById("ebf-content").value;
       var prefix  = "#".repeat(b.level || 1);
       var newLines = [prefix + " " + title];
       if (cnt.trim()) newLines.push("", cnt.trim());
@@ -1389,10 +1416,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       b.knobs = {}; var kr2 = /(\w+)="([^"]*)"/g, km2;
       while ((km2 = kr2.exec(knobsIn))) b.knobs[km2[1]] = km2[2];
       b.lines = newLines;
-      var inp = document.getElementById("ed-input");
       var newText = blocksToText(_blocks);
       inp.value = newText; setDirty(true); updatePreview(newText);
       buildGrid();
+      pushAction(iconFor(type) || "✏️", "Edited " + (type ? compName(type) : (title || "block")).slice(0, 40), before);
     });
   }
 
@@ -1419,7 +1446,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
      author approves or retries before anything changes. Untouched text
      cannot change; each applied edit is logged, and Save prefills its
      commit message from that log. */
-  var _agentLog = [];        // applied edits, in order
+  var _actionLog = [];       // mutating actions (undoable) + saves (traced)
   var _agentPlan = null;     // edits awaiting approval
   var _agentScope = null;    // {label, text} the current ask is focused on
 
@@ -1523,7 +1550,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     return { text: next, applied: applied, skipped: skipped };
   }
 
-  function agentAsk() {
+  function agentAsk(temp) {
     var promptEl = document.getElementById("ed-agent-prompt");
     var inp = document.getElementById("ed-input");
     var instruction = (promptEl && promptEl.value || "").trim();
@@ -1533,14 +1560,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (!page) { agentStatus("Load a file first.", true); return; }
     var scope = _agentScope || captureScope();
 
-    agentStatus("✨ Planning…", false);
+    agentStatus(temp ? "✨ Rethinking…" : "✨ Planning…", false);
     fetch("https://models.github.ai/inference/chat/completions", {
       method: "POST",
       headers: { "Authorization": "Bearer " + _pat, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini",
         max_tokens: 1500,
-        temperature: 0,
+        /* non-zero so fuzzy asks vary run-to-run; Retry passes a higher
+           value (temperature 0 returns an identical plan every time) */
+        temperature: (temp != null ? temp : 0.4),
         messages: [
           { role: "system", content:
             "You edit a Markdown page by returning exact find/replace edits — never " +
@@ -1612,34 +1641,57 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var page = (inp && inp.value) || "";
     var r = applyEdits(page, _agentPlan.edits);
     if (inp) { inp.value = r.text; setDirty(true); updatePreview(r.text); }
-    _agentLog.push({ instruction: _agentPlan.instruction, scope: _agentPlan.scope, count: r.applied.length });
+    pushAction("✨", _agentPlan.instruction + " (" + _agentPlan.scope + ")", page);
     _agentPlan = null;
-    renderLog();
     buildGrid();          // block text changed — repaint the grid
     refreshAgentScope();  // re-aim at the edited block; box stays open
     agentStatus("✓ applied — pick another block, or ✕ to close.", false);
     toast("✨ " + r.applied.length + " edit(s) applied.", true);
   }
 
+  /* unified action log: every mutating action records a before-snapshot so
+     it can be undone; saves are traced (no undo). Newest first. */
+  function pushAction(icon, label, before) {
+    _actionLog.push({ icon: icon, label: label, before: before, ts: Date.now() });
+    renderLog();
+  }
+
   function renderLog() {
     var box = document.getElementById("ed-log");
     if (!box) return;
-    if (!_agentLog.length) {
-      box.innerHTML = "<p style='color:#bbb;padding:1em'>No AI edits yet. Select a block or text, then ✨ to ask for a change.</p>";
+    if (!_actionLog.length) {
+      box.innerHTML = "<p style='color:#bbb;padding:1em'>No edits yet. Edit a block, or use ✨ to ask for a change — each action is logged here and can be undone.</p>";
       return;
     }
-    box.innerHTML = _agentLog.map(function (e, i) {
-      return "<div class='ed-log-item'><div class='ed-log-instr'>" + (i + 1) + ". " + escPlan(e.instruction) + "</div>" +
-        "<div class='ed-log-meta'>" + escPlan(e.scope) + " · " + e.count + " edit(s)</div></div>";
+    box.innerHTML = _actionLog.map(function (e, i) { return { e: e, i: i }; }).reverse().map(function (o) {
+      var e = o.e;
+      var undo = (e.before != null)
+        ? "<a href='#' class='ed-log-undo' data-undo='" + o.i + "'>↩ Undo</a>" : "";
+      return "<div class='ed-log-item'><div class='ed-log-instr'>" + e.icon + " " + escPlan(e.label) + undo + "</div>" +
+        "<div class='ed-log-meta'>" + timeAgo(new Date(e.ts)) + "</div></div>";
     }).join("");
   }
 
-  /* commit message prefilled from the AI edit log */
+  function undoAction(idx) {
+    var entry = _actionLog[idx];
+    if (!entry || entry.before == null) return;
+    var inp = document.getElementById("ed-input");
+    if (inp) { inp.value = entry.before; setDirty(true); updatePreview(entry.before); }
+    _actionLog = _actionLog.slice(0, idx);   // this action and any after it are undone
+    buildGrid(); renderLog();
+    toast("↩ Undone: " + entry.label, true);
+  }
+
+  /* commit message prefilled from the edits made since the last save */
   function logCommitMessage() {
-    if (!_agentLog.length) return "";
-    if (_agentLog.length === 1) return _agentLog[0].instruction;
-    return "AI edits (" + _agentLog.length + "): " +
-      _agentLog.map(function (e) { return e.instruction; }).join("; ");
+    var since = [];
+    for (var i = _actionLog.length - 1; i >= 0; i--) {
+      if (_actionLog[i].icon === "💾") break;          // stop at the last save
+      if (_actionLog[i].before != null) since.unshift(_actionLog[i].label);
+    }
+    if (!since.length) return "";
+    if (since.length === 1) return since[0];
+    return "Edits (" + since.length + "): " + since.join("; ");
   }
 
   document.addEventListener("click", function (e) {
@@ -1647,12 +1699,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (e.target.closest("#ed-ag-x"))      { e.preventDefault(); closeAgentDialog(); return; }
     if (e.target.closest("#ed-agent-ask")) { e.preventDefault(); agentAsk(); return; }
     if (e.target.closest("#ed-ag-approve")){ e.preventDefault(); agentApprove(); return; }
+    var undoEl = e.target.closest(".ed-log-undo");
+    if (undoEl) { e.preventDefault(); undoAction(parseInt(undoEl.getAttribute("data-undo"), 10)); return; }
     if (e.target.closest("#ed-ag-retry")) {
       e.preventDefault();
-      var plan = document.getElementById("ed-ag-plan");
-      if (plan) { plan.classList.add("ed-hidden"); plan.innerHTML = ""; }
-      _agentPlan = null;
-      var p = document.getElementById("ed-agent-prompt"); if (p) p.focus();
+      agentAsk(0.9);   // retry with more variety (temperature 0 returns the same plan)
       return;
     }
   });
