@@ -10,8 +10,8 @@ There's one lightcodepedia twist: any `[^footnote]` reference becomes a hover/ta
 
 Type markdown on the left. See the rendered result on the right — instantly, as you type.
 
-<div id="md-pg" style="display:flex;gap:0.75em;margin:1em 0;min-height:220px;">
-<textarea id="md-input" spellcheck="false" style="flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.85em;line-height:1.5;padding:0.8em;border:1px solid #d0d0d0;border-radius:6px;resize:vertical;background:#1e1e2e;color:#cdd6f4;">## Hello, Markdown!
+````markdown
+## Hello, Markdown!
 
 **Bold text** and *italic text* and `inline code`.
 
@@ -36,30 +36,8 @@ Type markdown on the left. See the rendered result on the right — instantly, a
 def greet(name):
     print(f"Hello, {name}!")
 ```
-</textarea>
-<div id="md-preview" style="flex:1;min-width:0;padding:0.8em;border:1px solid #d0d0d0;border-radius:6px;background:#fafafa;overflow:auto;font-size:0.95em;"></div>
-</div>
-<script>
-(function(){
-  var loaded = false;
-  function init(){
-    if(loaded) return;
-    loaded = true;
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/marked@9/marked.min.js';
-    s.onload = function(){
-      var inp = document.getElementById('md-input');
-      var out = document.getElementById('md-preview');
-      function render(){ out.innerHTML = marked.parse(inp.value); }
-      inp.addEventListener('input', render);
-      render();
-    };
-    document.head.appendChild(s);
-  }
-  var el = document.getElementById('md-pg');
-  if(el){ var obs = new IntersectionObserver(function(e){ if(e[0].isIntersecting){ init(); obs.disconnect(); }},{threshold:0.1}); obs.observe(el); }
-})();
-</script>
+````
+{: .mdpad rows="16" }
 
 Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The preview updates on every keystroke — no server, just JavaScript[^marked] in the browser.
 

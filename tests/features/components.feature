@@ -26,3 +26,8 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     And I click the bound grid "monthly_grid" row containing "Feb"
     Then the detail chart bound to "monthly_grid" renders a canvas
+
+  Scenario: The markdown pad renders a live preview
+    When I navigate to "/components/text"
+    And I wait for the page to be interactive
+    Then the markdown pad shows an editor and a rendered preview
