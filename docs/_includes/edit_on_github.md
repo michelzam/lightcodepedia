@@ -1340,11 +1340,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (name === "blocks") buildGrid();
   });
 
-  /* ── Agent tab: prompt → rewritten page ──────────────────
-     Single-shot edit assist. Sends the whole current markdown plus the
-     instruction to GitHub Models, writes the rewritten page back into the
-     Raw textarea for review, and switches there. Reuses the editor's PAT;
-     the human reviews in Raw and commits with the normal Save. */
+  /* ── Agent tab: prompt → minimal find/replace edits ──────
+     The model returns a small JSON list of exact find/replace pairs, NOT
+     the whole page — so it can only ever change the spans it matches and
+     can never truncate or gut the document. Edits apply locally; the
+     result lands in Raw for review and the normal Save commits it. */
   function agentStatus(msg, err) {
     var s = document.getElementById("ed-agent-status");
     if (!s) return;
@@ -1367,21 +1367,21 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       headers: { "Authorization": "Bearer " + _pat, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini",
-        max_tokens: 8000,
+        max_tokens: 2000,
         temperature: 0,
         messages: [
           { role: "system", content:
-            "You make the SMALLEST possible edit to a single Markdown page for a " +
-            "Jekyll site that uses kramdown IAL ({: .class #id attr=\"value\" } on " +
-            "the line after a block; a leading \"!\" inside an accordion section " +
-            "title is a meaningful eager-render flag). " +
-            "Reproduce the ENTIRE page character-for-character — front matter, every " +
-            "heading, paragraph, code fence and IAL line — changing ONLY what the " +
-            "instruction asks. Never summarize, reword, reformat, reorder, or drop " +
-            "anything else. Return only the full updated page in one ```markdown fence." },
+            "You edit a Markdown page by returning a minimal list of exact " +
+            "find/replace edits — never the whole page. Each \"find\" MUST be a " +
+            "substring copied verbatim from the page, long enough to occur exactly " +
+            "once (include surrounding text to disambiguate). \"replace\" is what it " +
+            "becomes (\"\" deletes it). Make the smallest edits that satisfy the " +
+            "instruction and touch nothing else. Note: a leading \"!\" in an " +
+            "accordion section title is a meaningful eager-render flag. " +
+            "Respond with ONLY a JSON array, e.g. " +
+            "[{\"find\":\"!\\ud83d\\udcca Vitals\",\"replace\":\"\\ud83d\\udcca Vitals\"}]" },
           { role: "user", content:
-            "Change requested:\n" + instruction + "\n\nReturn the whole page with " +
-            "just that change applied:\n```markdown\n" + page + "\n```" }
+            "Instruction: " + instruction + "\n\nPage:\n```markdown\n" + page + "\n```" }
         ]
       })
     }).then(function (r) {
@@ -1394,19 +1394,33 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       }
       var choice = res.data.choices && res.data.choices[0];
       var text = choice && choice.message && choice.message.content || "";
-      var m = text.match(/```(?:markdown|md)?\s*\n([\s\S]*?)\n```/);
-      var updated = (m ? m[1] : text).trim();
-      if (!updated) { agentStatus("Empty reply — try rephrasing.", true); return; }
-      /* guard against the model truncating/summarising the whole page: a
-         small edit must not shrink it much. Refuse rather than gut it. */
-      if (page.length > 200 && updated.length < page.length * 0.7) {
-        var lost = Math.round((1 - updated.length / page.length) * 100);
-        agentStatus("⚠ Reply dropped " + lost + "% of the page — not applied. " +
-                    "Ask for a more specific change.", true);
+      /* pull the JSON array out of the reply (tolerate a ```json fence) */
+      var jm = text.match(/\[[\s\S]*\]/);
+      var edits;
+      try { edits = JSON.parse(jm ? jm[0] : text); } catch (e) { edits = null; }
+      if (!edits || !edits.length) { agentStatus("No edits returned — try rephrasing.", true); return; }
+
+      /* apply locally: each find must match, exactly once. Untouched text
+         literally cannot change — the page can only gain the named edits. */
+      var next = page, applied = 0, missed = [], ambiguous = [];
+      edits.forEach(function (ed) {
+        var f = ed && ed.find, rep = (ed && ed.replace != null) ? ed.replace : "";
+        if (!f) return;
+        var first = next.indexOf(f);
+        if (first < 0) { missed.push(f); return; }
+        if (next.indexOf(f, first + 1) >= 0) { ambiguous.push(f); return; }
+        next = next.slice(0, first) + rep + next.slice(first + f.length);
+        applied++;
+      });
+
+      if (!applied) {
+        agentStatus("Couldn't locate the text to change — try naming it more exactly.", true);
         return;
       }
-      if (inp) { inp.value = updated; setDirty(true); updatePreview(updated); }
-      agentStatus("✓ Applied — review in Raw, then Save.", false);
+      if (inp) { inp.value = next; setDirty(true); updatePreview(next); }
+      var note = "✓ " + applied + " edit" + (applied === 1 ? "" : "s") + " applied — review in Raw, then Save.";
+      if (missed.length || ambiguous.length) note += " (" + (missed.length + ambiguous.length) + " skipped)";
+      agentStatus(note, false);
       var rawTab = document.querySelector(".ed-tab[data-tab='raw']");
       if (rawTab) rawTab.click();
     }).catch(function (err) {
