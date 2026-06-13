@@ -907,6 +907,14 @@ class Vitals(Block):
         return int(self._attr("data-dom") or 0)
 
 
+@component(icon="✍️", attrs=[{"n": "rows", "t": "int", "data": True}])
+class Mdpad(Block):
+    @property
+    def rendered(self):
+        o = self._el.querySelector(".lc-mdpad-out") if self._el is not None else None
+        return str(o.textContent or "").strip() if o is not None else ""
+
+
 @component(icon="🏷️", attrs=[{"n": "value", "t": "str"}])
 class Stat(Block):
     @property
@@ -965,7 +973,7 @@ _WRAP = [
     ("lc-embed", EmbedPage), ("lc-video", Video), ("lc-accordion", Accordion),
     ("lc-blocks", Blocks),
     ("lc-scene3d", Scene3d), ("lc-avatar-host", Avatar),
-    ("lc-vitals", Vitals), ("lc-modelcheck", ModelCheck), ("lc-stat", Stat),
+    ("lc-vitals", Vitals), ("lc-modelcheck", ModelCheck), ("lc-stat", Stat), ("lc-mdpad", Mdpad),
     ("lc-avatar-trigger", AvatarTrigger),
 ]
 

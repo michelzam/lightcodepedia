@@ -50,6 +50,7 @@ digraph component_model {
     Form [label="{📝 Form ➭ 🧩|🔤 title\l🔤 format\l🔘 editable\l|▸ submit\l}"]
     Grid [label="{▤ Grid ➭ 🧩|🔤 cols\l🔢 gap\l🔤 headings\l}"]
     Map [label="{🗺️ Map ➭ 🧩|🔢 lat\l🔢 lng\l🔢 zoom\l🔢 height\l|▸ pan to\l▸ set zoom\l}"]
+    Mdpad [label="{✍️ Mdpad ➭ 🧩|🔢 rows\l}"]
     Menu [label="{🍔 Menu ➭ 🧩|▸ items\l}"]
     ModelCheck [label="{🧪 ModelCheck ➭ 🧩|🔢 checked\l🔢 broken\l🔘 ok\l}"]
     Pytutor [label="{🔬 Pytutor ➭ 🧩|🔢 height\l🔤 bound to\l}"]

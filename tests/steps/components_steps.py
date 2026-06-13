@@ -75,3 +75,12 @@ def step_detail_chart_canvas(context, grid_id):
         ".lc-chart[data-bound-to='" + grid_id + "'] canvas"
     ).first
     expect(canvas).to_be_visible(timeout=10_000)
+
+
+@then("the markdown pad shows an editor and a rendered preview")
+def step_mdpad(context):
+    pad = context.page.locator(".lc-mdpad").first
+    expect(pad).to_be_visible(timeout=15_000)
+    expect(pad.locator("textarea.lc-mdpad-in")).to_be_visible()
+    # the preview renders the seed markdown to HTML (a heading element appears)
+    expect(pad.locator(".lc-mdpad-out h2")).to_be_visible(timeout=15_000)
