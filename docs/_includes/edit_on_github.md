@@ -133,6 +133,24 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-blocks-pane.ed-active { display: flex; }
 #ed-log-pane { display: flex; flex: 1; flex-direction: column; overflow: auto; padding: 0.4em; }
 #ed-log-pane.ed-hidden { display: none; }
+/* ── Features tab ─────────────────────────────────────── */
+#ed-features-pane { display: flex; flex: 1; flex-direction: column; overflow: hidden; }
+#ed-features-pane.ed-hidden { display: none; }
+#ed-feat-grid { flex: 1; min-height: 60px; overflow: auto; }
+#ed-feat-grid table { width: 100%; border-collapse: collapse; font-size: 0.86em; }
+#ed-feat-grid th, #ed-feat-grid td { text-align: left; padding: 0.4em 0.6em; border-bottom: 1px solid #f0f0f0; }
+#ed-feat-grid th { color: #6b7280; font-weight: 600; position: sticky; top: 0; background: #fafafa; }
+#ed-feat-grid tr[data-fi] { cursor: pointer; }
+#ed-feat-grid tr[data-fi]:hover td { background: #f8f8f8; }
+#ed-feat-grid tr.ed-fsel td { background: #e8f2ff; }
+.ed-fstatus { display: inline-flex; align-items: center; gap: 0.3em; padding: 0.08em 0.55em; border-radius: 99px; font-size: 0.82em; font-weight: 500; }
+.ed-fstatus.passing { background: #dcfce7; color: #15803d; }
+.ed-fstatus.failing { background: #fee2e2; color: #b91c1c; }
+.ed-fstatus.pending { background: #fef3c7; color: #92400e; }
+.ed-fstatus.none    { background: #f1f5f9; color: #64748b; }
+#ed-feat-splitter { height: 1px; background: #e5e7eb; flex: none; margin: 0.3em 0; }
+#ed-feat-preview { flex: 1; min-height: 80px; overflow: auto; padding: 0.3em 0.6em; }
+#ed-feat-preview:empty::before { content: "Select a feature to preview it live — run it, and its status is saved with the page."; color: #bbb; font-size: 0.85em; display: block; padding: 1em; }
 .ed-log-item { border-bottom: 1px solid #f0f0f0; padding: 0.45em 0.35em; }
 .ed-log-instr { font-size: 0.9em; color: #1f2937; }
 .ed-log-meta { font-size: 0.78em; color: #9ca3af; margin-top: 0.15em; }
@@ -328,10 +346,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         <div id="ed-tabs">
           <span class="ed-tab active" data-tab="blocks">⊞ Blocks</span>
           <span class="ed-tab" data-tab="raw">✏️ Raw</span>
+          <span class="ed-tab" data-tab="features">🧪 Features</span>
           <span class="ed-tab" data-tab="log">📝 Log</span>
         </div>
         <div id="ed-raw-pane" class="ed-hidden">
           <textarea id="ed-input" placeholder="Select a file to start editing…" spellcheck="false"></textarea>
+        </div>
+        <div id="ed-features-pane" class="ed-hidden">
+          <div id="ed-feat-grid"><p style="color:#bbb;padding:1em">No features on this page. A <code>{: .feature }</code> block appears here.</p></div>
+          <div id="ed-feat-splitter"></div>
+          <div id="ed-feat-preview"></div>
         </div>
         <div id="ed-log-pane" class="ed-hidden">
           <div id="ed-log"><p style="color:#bbb;padding:1em">No AI edits yet. Select a block or text, then ✨ to ask for a change.</p></div>
@@ -442,6 +466,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (blkPane) blkPane.classList.add("ed-active");
     var logPane = document.getElementById("ed-log-pane");
     if (logPane) logPane.classList.add("ed-hidden");
+    var featPane = document.getElementById("ed-features-pane");
+    if (featPane) featPane.classList.add("ed-hidden");
     var agDlg = document.getElementById("ed-agent-dialog");
     if (agDlg) agDlg.classList.add("ed-hidden");
     loadCompModel(); // fetch type→icon map (once)
@@ -1432,11 +1458,119 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var raw    = document.getElementById("ed-raw-pane");
     var blocks = document.getElementById("ed-blocks-pane");
     var log    = document.getElementById("ed-log-pane");
+    var feats  = document.getElementById("ed-features-pane");
     blocks.classList.toggle("ed-active", name === "blocks");
     raw.classList.toggle("ed-hidden", name !== "raw");
     if (log) log.classList.toggle("ed-hidden", name !== "log");
+    if (feats) feats.classList.toggle("ed-hidden", name !== "features");
     if (name === "blocks") buildGrid();
     if (name === "log") renderLog();
+    if (name === "features") buildFeatureGrid();
+  });
+
+  /* ── 🧪 Features tab ─────────────────────────────────────
+     Lists the page's .feature blocks; selecting one renders it live
+     below. Running it updates its status, which is written back into the
+     block's {: .feature status="…" } IAL so a Save persists the real
+     result. */
+  var _featSelIdx = -1;
+
+  function featureName(b) {
+    var lines = b.lines || [];
+    for (var i = 0; i < lines.length; i++) {
+      var m = lines[i].match(/^\s*Feature:\s*(.+)/i);
+      if (m) return m[1].trim();
+    }
+    return (b.heading && b.heading !== "(component)") ? b.heading : "Feature";
+  }
+
+  function featureRows() {
+    var out = [];
+    (_blocks || []).forEach(function (b, i) {
+      if (b.type === "feature") {
+        out.push({ i: i, name: featureName(b),
+          status: (b.knobs && b.knobs.status) || "none",
+          tags: (b.knobs && b.knobs.tags) || "" });
+      }
+    });
+    return out;
+  }
+
+  function buildFeatureGrid() {
+    var grid = document.getElementById("ed-feat-grid");
+    if (!grid) return;
+    var rows = featureRows();
+    if (!rows.length) {
+      grid.innerHTML = "<p style='color:#bbb;padding:1em'>No features on this page. A <code>{: .feature }</code> block appears here.</p>";
+      var pv = document.getElementById("ed-feat-preview"); if (pv) pv.innerHTML = "";
+      _featSelIdx = -1;
+      return;
+    }
+    var html = "<table><thead><tr><th>Feature</th><th style='width:92px'>Status</th><th>Tags</th></tr></thead><tbody>";
+    rows.forEach(function (r) {
+      html += "<tr data-fi='" + r.i + "'" + (r.i === _featSelIdx ? " class='ed-fsel'" : "") + ">"
+        + "<td>" + escH(r.name) + "</td>"
+        + "<td><span class='ed-fstatus " + escH(r.status) + "'>" + escH(r.status) + "</span></td>"
+        + "<td style='color:#888'>" + escH(r.tags) + "</td></tr>";
+    });
+    grid.innerHTML = html + "</tbody></table>";
+  }
+
+  function previewFeature(idx) {
+    var b = _blocks[idx];
+    if (!b || b.type !== "feature") return;
+    _featSelIdx = idx;
+    buildFeatureGrid();
+    var prev = document.getElementById("ed-feat-preview");
+    var text = (b.lines || []).join("\n");
+    function doRender() {
+      prev.innerHTML = window.marked ? window.marked.parse(normIAL(text)) : "<pre>" + escH(text) + "</pre>";
+      if (window.lcApplyIAL) window.lcApplyIAL(prev);
+      if (window.lcScanElement) window.lcScanElement(prev);
+      watchFeatureStatus(prev, idx);
+    }
+    if (window.marked) doRender();
+    else if (window.lcLoadMarked) window.lcLoadMarked(doRender);
+  }
+
+  /* rewrite a feature block's {: .feature … } line from its knobs */
+  function reserializeFeature(b) {
+    var lines = b.lines || [];
+    for (var i = lines.length - 1; i >= 0; i--) {
+      if (/^\s*\{:\s*\.feature\b/.test(lines[i])) {
+        var kn = b.knobs || {};
+        var parts = Object.keys(kn).map(function (k) { return k + "=\"" + kn[k] + "\""; });
+        lines[i] = "{: .feature" + (parts.length ? " " + parts.join(" ") : "") + " }";
+        return;
+      }
+    }
+  }
+
+  /* capture the live status (after ▶ Run) back into the source block */
+  function watchFeatureStatus(prev, idx) {
+    var card = prev.querySelector(".lc-feature");
+    if (!card) return;
+    function apply() {
+      var st = card.getAttribute("data-status");
+      if (!st || st === "none") return;
+      var b = _blocks[idx];
+      if (!b || (b.knobs && b.knobs.status === st)) return;
+      b.knobs = b.knobs || {};
+      b.knobs.status = st;
+      reserializeFeature(b);
+      var inp = document.getElementById("ed-input");
+      if (inp) { inp.value = blocksToText(_blocks); setDirty(true); updatePreview(inp.value); }
+      buildFeatureGrid();
+    }
+    try {
+      new MutationObserver(apply).observe(card, { attributes: true, attributeFilter: ["data-status"] });
+    } catch (e) {}
+    apply();
+  }
+
+  document.addEventListener("click", function (e) {
+    var fr = e.target.closest("#ed-feat-grid tr[data-fi]");
+    if (fr) { previewFeature(parseInt(fr.getAttribute("data-fi"), 10)); }
   });
 
   /* ── ✨ AI edit: scoped · previewed · logged ─────────────

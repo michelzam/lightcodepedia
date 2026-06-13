@@ -21,3 +21,10 @@ Feature: Page editor — ✨ AI edit dialog
     And I open the page editor
     And I switch to the editor "log" tab
     Then the editor log pane is visible
+
+  Scenario: The editor has a Features tab
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And I switch to the editor "features" tab
+    Then the editor features pane is visible
