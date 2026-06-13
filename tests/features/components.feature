@@ -31,3 +31,8 @@ Feature: Component gallery behaviors
     When I navigate to "/components/text"
     And I wait for the page to be interactive
     Then the markdown pad shows an editor and a rendered preview
+
+  Scenario: A custom class styles its block in the gallery
+    When I navigate to "/components/custom-class"
+    And I wait for the page to be interactive
+    Then the "highlight-box" custom class is applied and styled
