@@ -1367,15 +1367,21 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       headers: { "Authorization": "Bearer " + _pat, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini",
+        max_tokens: 8000,
+        temperature: 0,
         messages: [
           { role: "system", content:
-            "You edit a single Markdown page for a Jekyll site that uses kramdown " +
-            "IAL ({: .class #id attr=\"value\" } on the line after a block). " +
-            "Apply the user's change and return ONLY the complete updated page in " +
-            "one ```markdown fenced block — keep the front matter, headings, and " +
-            "every IAL line intact unless the change requires otherwise." },
+            "You make the SMALLEST possible edit to a single Markdown page for a " +
+            "Jekyll site that uses kramdown IAL ({: .class #id attr=\"value\" } on " +
+            "the line after a block; a leading \"!\" inside an accordion section " +
+            "title is a meaningful eager-render flag). " +
+            "Reproduce the ENTIRE page character-for-character — front matter, every " +
+            "heading, paragraph, code fence and IAL line — changing ONLY what the " +
+            "instruction asks. Never summarize, reword, reformat, reorder, or drop " +
+            "anything else. Return only the full updated page in one ```markdown fence." },
           { role: "user", content:
-            "Change requested:\n" + instruction + "\n\nCurrent page:\n```markdown\n" + page + "\n```" }
+            "Change requested:\n" + instruction + "\n\nReturn the whole page with " +
+            "just that change applied:\n```markdown\n" + page + "\n```" }
         ]
       })
     }).then(function (r) {
@@ -1391,6 +1397,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var m = text.match(/```(?:markdown|md)?\s*\n([\s\S]*?)\n```/);
       var updated = (m ? m[1] : text).trim();
       if (!updated) { agentStatus("Empty reply — try rephrasing.", true); return; }
+      /* guard against the model truncating/summarising the whole page: a
+         small edit must not shrink it much. Refuse rather than gut it. */
+      if (page.length > 200 && updated.length < page.length * 0.7) {
+        var lost = Math.round((1 - updated.length / page.length) * 100);
+        agentStatus("⚠ Reply dropped " + lost + "% of the page — not applied. " +
+                    "Ask for a more specific change.", true);
+        return;
+      }
       if (inp) { inp.value = updated; setDirty(true); updatePreview(updated); }
       agentStatus("✓ Applied — review in Raw, then Save.", false);
       var rawTab = document.querySelector(".ed-tab[data-tab='raw']");
