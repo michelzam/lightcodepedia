@@ -282,10 +282,17 @@ class Object:
            attrs=[{"n": "exists", "t": "bool"},
                   {"n": "visible", "t": "bool"},
                   {"n": "text", "t": "str"}],
+           assoc=[{"n": "page", "target": "Page"}],
            methods=["click", "has_class"])
 class Block(Object):
     def __bool__(self):
         return self._el is not None
+
+    @property
+    def page(self):
+        """Every visible component can reach its page — and through it any
+        other component by id (self.page.<data-lc-id>)."""
+        return Page()
 
     @property
     def exists(self):
@@ -456,7 +463,6 @@ class Feature(Block):
 
 @component(icon="🖱️",
            attrs=[{"n": "text", "t": "str"}, {"n": "color", "t": "str"}],
-           assoc=[{"n": "page", "target": "Page"}],
            events=["on_click"], methods=["click"])
 class Button(Block):
     @property
@@ -479,10 +485,6 @@ class Button(Block):
                 self._el.setAttribute("data-color", v)
             else:
                 self._el.removeAttribute("data-color")
-
-    @property
-    def page(self):
-        return Page()
 
     def _event_src(self, name):
         # on_click carries its Python body in data-lc-py (see click()).
