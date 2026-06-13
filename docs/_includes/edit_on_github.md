@@ -1548,9 +1548,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
             "enough to occur exactly once. \"replace\" is what it becomes (\"\" deletes " +
             "it). Make the smallest edits that satisfy the instruction and touch " +
             "nothing else. A leading \"!\" in an accordion title is a meaningful " +
-            "eager-render flag. Respond with ONLY a JSON object: " +
-            "{\"explanation\":\"<one plain-English sentence describing the change>\"," +
-            "\"edits\":[{\"find\":\"old\",\"replace\":\"new\"}]}" },
+            "eager-render flag.\n" +
+            "First READ the existing content. Never add an item that is already " +
+            "present, even under a different spelling, name, or coordinates. If the " +
+            "requested change is already there, return an empty \"edits\" array and " +
+            "say so in the explanation. If the instruction is vague (e.g. \"add a " +
+            "park\"), pick ONE concrete option that is NOT already present and name " +
+            "your choice in the explanation.\n" +
+            "Respond with ONLY a JSON object: {\"explanation\":\"<one sentence naming " +
+            "exactly what changed>\",\"edits\":[{\"find\":\"old\",\"replace\":\"new\"}]}" },
           { role: "user", content:
             "Instruction: " + instruction +
             "\n\nApply it within this section:\n```\n" + scope.text + "\n```" +
@@ -1572,7 +1578,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var edits = null, explanation = "";
       if (Array.isArray(parsed)) edits = parsed;
       else if (parsed && Array.isArray(parsed.edits)) { edits = parsed.edits; explanation = parsed.explanation || ""; }
-      if (!edits || !edits.length) { agentStatus("No edits proposed — rephrase?", true); return; }
+      if (!edits) { agentStatus("Couldn't read a plan — rephrase?", true); return; }
+      /* empty edits = deliberate no-op (e.g. "already present") — show why */
+      if (!edits.length) { agentStatus(explanation || "Nothing to change — it may already be present.", false); return; }
       var dry = applyEdits(page, edits);   // dry-run to preview what will land
       if (!dry.applied.length) { agentStatus("Couldn't locate the text — name it more exactly.", true); return; }
       _agentPlan = { instruction: instruction, scope: scope.label, explanation: explanation, edits: dry.applied };
