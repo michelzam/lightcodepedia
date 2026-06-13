@@ -50,6 +50,28 @@ print(wanda.run())
 
 One class, two objects — each carries its own attributes, each behaves on its own state. That's the whole idea of object-oriented programming.
 
+## 🔗 Objects that know each other
+
+Objects communicate by holding a **reference to another object**. Declare the link as a typed attribute — `friend: Pet` — then follow it from one object to the next:
+
+```python
+class Pet:
+    def __init__(self, name, species):
+        self.name = name
+        self.species = species
+        self.friend = None              # friend: Pet — a typed link to another object
+
+lucky = Pet("Lucky", "dog")
+wanda = Pet("Wanda", "fish")
+lucky.friend = wanda                    # now Lucky knows Wanda
+print(lucky.name, "→", lucky.friend.name, "the", lucky.friend.species)
+```
+{: .run rows="13" }
+
+`lucky.friend.species` *hops* from one object to another through an attribute you declared. That declared link is how a graph of objects is navigated.
+
+The platform's own components get this for free: each one inherits a base class `Block`, which hands it `self.page` — a live directory that resolves any other component by id (`self.page.dog_grid`). Your own classes aren't components, so you simply declare the exact links you need — `friend: Pet` — and nothing more. Same idea; explicit instead of built in.
+
 ## 🎯 Your turn
 
 Add a `fetch()` method that returns `"<name> fetches the ball!"`, then call it. The Run button checks nothing — just see your class come alive:
