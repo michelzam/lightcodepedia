@@ -38,3 +38,8 @@ def step_agent_prompt_visible(context):
 @then("the editor log pane is visible")
 def step_log_pane_visible(context):
     expect(context.page.locator("#ed-log-pane")).to_be_visible(timeout=10_000)
+
+
+@then("the editor features pane is visible")
+def step_features_pane_visible(context):
+    expect(context.page.locator("#ed-features-pane")).to_be_visible(timeout=10_000)
