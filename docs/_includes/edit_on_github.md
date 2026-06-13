@@ -131,13 +131,34 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-raw-pane.ed-hidden { display: none; }
 #ed-blocks-pane { display: none; flex: 1; flex-direction: column; overflow: hidden; }
 #ed-blocks-pane.ed-active { display: flex; }
-#ed-agent-pane { display: flex; flex: 1; flex-direction: column; overflow: hidden; padding: 0.6em; gap: 0.5em; }
-#ed-agent-pane.ed-hidden { display: none; }
-#ed-agent-prompt { flex: 1; min-height: 0; resize: none; font: inherit; font-size: 0.9em;
-  border: 1px solid #d0d7de; border-radius: 6px; padding: 0.6em; line-height: 1.45; }
-#ed-agent-bar { display: flex; align-items: center; gap: 0.8em; }
+#ed-log-pane { display: flex; flex: 1; flex-direction: column; overflow: auto; padding: 0.4em; }
+#ed-log-pane.ed-hidden { display: none; }
+.ed-log-item { border-bottom: 1px solid #f0f0f0; padding: 0.45em 0.35em; }
+.ed-log-instr { font-size: 0.9em; color: #1f2937; }
+.ed-log-meta { font-size: 0.78em; color: #9ca3af; margin-top: 0.15em; }
+/* ── ✨ AI edit dialog ─────────────────────────────────── */
+#ed-agent-dialog { position: absolute; inset: 0; z-index: 30; display: flex;
+  align-items: flex-start; justify-content: center; background: rgba(15,23,42,0.28); }
+#ed-agent-dialog.ed-hidden { display: none; }
+#ed-ag-card { background: #fff; border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  width: min(560px, 92%); margin-top: 7vh; padding: 0.9em 1em; display: flex;
+  flex-direction: column; gap: 0.6em; max-height: 80vh; overflow: auto; }
+#ed-ag-head { font-weight: 600; display: flex; align-items: center; gap: 0.4em; }
+#ed-ag-scope { font-weight: 400; font-size: 0.84em; color: #6b7280; flex: 1; }
+#ed-ag-x { color: #9ca3af; text-decoration: none; font-size: 1.1em; }
+#ed-agent-prompt { resize: vertical; min-height: 3.4em; font: inherit; font-size: 0.92em;
+  border: 1px solid #d0d7de; border-radius: 6px; padding: 0.55em; line-height: 1.45; }
+#ed-ag-actions { display: flex; align-items: center; gap: 0.8em; }
 #ed-agent-status { font-size: 0.84em; color: #777; }
 #ed-agent-status.ed-err { color: #b91c1c; }
+#ed-ag-plan.ed-hidden { display: none; }
+.ed-ag-planhead { font-size: 0.82em; color: #6b7280; margin-bottom: 0.3em; }
+.ed-ag-edit { font-family: monospace; font-size: 0.82em; border: 1px solid #eee;
+  border-radius: 6px; margin: 0.3em 0; overflow: hidden; }
+.ed-ag-del { background: #fef2f2; color: #b91c1c; padding: 0.25em 0.5em; white-space: pre-wrap; }
+.ed-ag-add { background: #f0fdf4; color: #166534; padding: 0.25em 0.5em; white-space: pre-wrap; }
+.ed-ag-skip { font-size: 0.8em; color: #b45309; margin: 0.3em 0 0; }
+.ed-ag-approve { display: flex; gap: 0.6em; margin-top: 0.5em; }
 
 /* ── Grid/form splitter ─────────────────────────────── */
 #ed-grid-splitter {
@@ -287,6 +308,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     <span id="ed-build" style="font-size:0.78em;color:#888;margin-left:0.5em;flex-shrink:0"></span>
     <a href="#" class="lc-btn lc-btn-secondary" id="ed-zoom-btn" title="Toggle 50% preview scale" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">50%</a>
     <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em">+ New</a>
+    <a href="#" class="lc-btn lc-btn-secondary" id="ed-agent-btn" title="Ask AI to change the selected block (✨)" style="font-size:0.82em;padding:0.35em 0.7em">✨</a>
     <a href="#" class="lc-btn" id="ed-save-btn" style="font-size:0.82em;padding:0.35em 0.9em">💾 Save</a>
     <a href="#" id="ed-close-btn" title="Close (Esc)"
        style="font-size:1.3em;color:#888;text-decoration:none;padding:0 0.2em;line-height:1;margin-left:0.2em">✕</a>
@@ -301,18 +323,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         <div id="ed-tabs">
           <span class="ed-tab active" data-tab="blocks">⊞ Blocks</span>
           <span class="ed-tab" data-tab="raw">✏️ Raw</span>
-          <span class="ed-tab" data-tab="agent">✨ Agent</span>
+          <span class="ed-tab" data-tab="log">📝 Log</span>
         </div>
         <div id="ed-raw-pane" class="ed-hidden">
           <textarea id="ed-input" placeholder="Select a file to start editing…" spellcheck="false"></textarea>
         </div>
-        <div id="ed-agent-pane" class="ed-hidden">
-          <textarea id="ed-agent-prompt" spellcheck="false"
-            placeholder="Describe the change in plain words — e.g. “add a short intro paragraph above the first heading”. The whole page is sent as context; the reply rewrites it, and you review in Raw before saving."></textarea>
-          <div id="ed-agent-bar">
-            <a href="#" class="lc-btn" id="ed-agent-ask">✨ Ask</a>
-            <span id="ed-agent-status"></span>
-          </div>
+        <div id="ed-log-pane" class="ed-hidden">
+          <div id="ed-log"><p style="color:#bbb;padding:1em">No AI edits yet. Select a block or text, then ✨ to ask for a change.</p></div>
         </div>
         <div id="ed-blocks-pane" class="ed-active">
           <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
@@ -322,6 +339,20 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       </div>
     </div>
   </div><!-- /body -->
+
+  <!-- ✨ AI edit dialog (scoped to the current selection) -->
+  <div id="ed-agent-dialog" class="ed-hidden">
+    <div id="ed-ag-card">
+      <div id="ed-ag-head">✨ Ask AI <span id="ed-ag-scope"></span><a href="#" id="ed-ag-x" title="Close">✕</a></div>
+      <textarea id="ed-agent-prompt" spellcheck="false"
+        placeholder="Describe the change to this block — e.g. “remove the ! from the title”, “make the intro one sentence shorter”. The model proposes exact edits you approve before anything changes."></textarea>
+      <div id="ed-ag-actions">
+        <a href="#" class="lc-btn" id="ed-agent-ask">✨ Plan the change</a>
+        <span id="ed-agent-status"></span>
+      </div>
+      <div id="ed-ag-plan" class="ed-hidden"></div>
+    </div>
+  </div>
 </div><!-- /drawer -->
 
 <!-- FAB -->
@@ -404,8 +435,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     document.querySelectorAll(".ed-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab === "blocks"); });
     if (rawPane) rawPane.classList.add("ed-hidden");
     if (blkPane) blkPane.classList.add("ed-active");
-    var agPane = document.getElementById("ed-agent-pane");
-    if (agPane) agPane.classList.add("ed-hidden");
+    var logPane = document.getElementById("ed-log-pane");
+    if (logPane) logPane.classList.add("ed-hidden");
+    var agDlg = document.getElementById("ed-agent-dialog");
+    if (agDlg) agDlg.classList.add("ed-hidden");
     buildGrid(); // always build — shows placeholder if no file yet
 
     if (_pat && _repo) {
@@ -495,6 +528,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   function loadFile(path) {
     if (_dirty && !confirm("Discard unsaved changes to " + (_curFile || "this file") + "?")) return;
     _curFile = path; _curSha = null;
+    _agentLog = []; renderLog();   // each file gets its own AI edit log
     setDirty(false);
     var inp = document.getElementById("ed-input");
     if (inp) inp.value = "Loading…";
@@ -529,9 +563,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (d.permissions && !d.permissions.push) {
         toast("No write access to " + esc(d.full_name) + " — use your fork.", false); return;
       }
-      var msg = prompt("Commit message:", (_curSha ? "Update " : "Add ") + _curFile.split("/").pop());
+      var fallback = (_curSha ? "Update " : "Add ") + _curFile.split("/").pop();
+      var msg = prompt("Commit message:", logCommitMessage() || fallback);
       if (msg === null) return;
-      if (!msg.trim()) msg = (_curSha ? "Update " : "Add ") + _curFile.split("/").pop();
+      if (!msg.trim()) msg = fallback;
       var body = { message: msg, content: b64e(inp.value), branch: "main" };
       if (_curSha) body.sha = _curSha;
       gh("PUT", "/contents/" + _curFile, body, function (data) {
@@ -1333,103 +1368,206 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     document.querySelectorAll(".ed-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab === name); });
     var raw    = document.getElementById("ed-raw-pane");
     var blocks = document.getElementById("ed-blocks-pane");
-    var agent  = document.getElementById("ed-agent-pane");
+    var log    = document.getElementById("ed-log-pane");
     blocks.classList.toggle("ed-active", name === "blocks");
     raw.classList.toggle("ed-hidden", name !== "raw");
-    if (agent) agent.classList.toggle("ed-hidden", name !== "agent");
+    if (log) log.classList.toggle("ed-hidden", name !== "log");
     if (name === "blocks") buildGrid();
+    if (name === "log") renderLog();
   });
 
-  /* ── Agent tab: prompt → minimal find/replace edits ──────
-     The model returns a small JSON list of exact find/replace pairs, NOT
-     the whole page — so it can only ever change the spans it matches and
-     can never truncate or gut the document. Edits apply locally; the
-     result lands in Raw for review and the normal Save commits it. */
+  /* ── ✨ AI edit: scoped · previewed · logged ─────────────
+     The ✨ button opens a dialog scoped to the current selection (a block
+     in the grid, the Raw selection, or the whole page). The model returns
+     a small JSON list of exact find/replace edits — the PLAN — which the
+     author approves or retries before anything changes. Untouched text
+     cannot change; each applied edit is logged, and Save prefills its
+     commit message from that log. */
+  var _agentLog = [];        // applied edits, in order
+  var _agentPlan = null;     // edits awaiting approval
+  var _agentScope = null;    // {label, text} the current ask is focused on
+
   function agentStatus(msg, err) {
     var s = document.getElementById("ed-agent-status");
     if (!s) return;
     s.textContent = msg || "";
     s.classList.toggle("ed-err", !!err);
   }
+  function escPlan(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /* the edit's context: selected block › Raw selection › whole page */
+  function captureScope() {
+    var inp = document.getElementById("ed-input");
+    var page = (inp && inp.value) || "";
+    if (typeof _selIdx === "number" && _blocks && _blocks[_selIdx]) {
+      var b = _blocks[_selIdx];
+      var hp = "#".repeat(Math.min(b.level || 3, 6));
+      var text = ((b.heading ? hp + " " + b.heading + "\n" : "") +
+        ((b.lines && b.lines.length) ? b.lines.join("\n") : "")).trim();
+      if (text && page.indexOf(text) >= 0) {
+        return { label: "block · " + (b.heading || "untitled").slice(0, 38), text: text };
+      }
+    }
+    if (inp && inp.selectionEnd > inp.selectionStart) {
+      var sel = page.slice(inp.selectionStart, inp.selectionEnd).trim();
+      if (sel) return { label: "selection · " + sel.length + " chars", text: sel };
+    }
+    return { label: "whole page", text: page };
+  }
+
+  function openAgentDialog() {
+    var drawer = document.getElementById("ed-drawer");
+    if (!drawer || !drawer.classList.contains("open")) return;
+    var dlg = document.getElementById("ed-agent-dialog");
+    if (!dlg) return;
+    _agentScope = captureScope();
+    var sc = document.getElementById("ed-ag-scope");
+    if (sc) sc.textContent = "· " + _agentScope.label;
+    var plan = document.getElementById("ed-ag-plan");
+    if (plan) { plan.classList.add("ed-hidden"); plan.innerHTML = ""; }
+    _agentPlan = null;
+    agentStatus("", false);
+    dlg.classList.remove("ed-hidden");
+    var p = document.getElementById("ed-agent-prompt");
+    if (p) p.focus();
+  }
+  function closeAgentDialog() {
+    var dlg = document.getElementById("ed-agent-dialog");
+    if (dlg) dlg.classList.add("ed-hidden");
+  }
+
+  /* apply find/replace edits locally; untouched text cannot change */
+  function applyEdits(text, edits) {
+    var next = text, applied = [], skipped = [];
+    edits.forEach(function (ed) {
+      var f = ed && ed.find, rep = (ed && ed.replace != null) ? ed.replace : "";
+      if (!f) return;
+      var first = next.indexOf(f);
+      if (first < 0) { skipped.push(f); return; }
+      if (next.indexOf(f, first + 1) >= 0) { skipped.push(f); return; }
+      next = next.slice(0, first) + rep + next.slice(first + f.length);
+      applied.push({ find: f, replace: rep });
+    });
+    return { text: next, applied: applied, skipped: skipped };
+  }
 
   function agentAsk() {
     var promptEl = document.getElementById("ed-agent-prompt");
     var inp = document.getElementById("ed-input");
     var instruction = (promptEl && promptEl.value || "").trim();
-    if (!instruction) { agentStatus("Type what you'd like changed first.", true); return; }
-    if (!_pat) { agentStatus("Connect a GitHub token (Setup) to use the agent.", true); return; }
+    if (!instruction) { agentStatus("Type the change first.", true); return; }
+    if (!_pat) { agentStatus("Connect a GitHub token (Setup) first.", true); return; }
     var page = (inp && inp.value) || "";
     if (!page) { agentStatus("Load a file first.", true); return; }
+    var scope = _agentScope || captureScope();
 
-    agentStatus("✨ Thinking…", false);
+    agentStatus("✨ Planning…", false);
     fetch("https://models.github.ai/inference/chat/completions", {
       method: "POST",
       headers: { "Authorization": "Bearer " + _pat, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini",
-        max_tokens: 2000,
+        max_tokens: 1500,
         temperature: 0,
         messages: [
           { role: "system", content:
             "You edit a Markdown page by returning a minimal list of exact " +
             "find/replace edits — never the whole page. Each \"find\" MUST be a " +
-            "substring copied verbatim from the page, long enough to occur exactly " +
-            "once (include surrounding text to disambiguate). \"replace\" is what it " +
-            "becomes (\"\" deletes it). Make the smallest edits that satisfy the " +
-            "instruction and touch nothing else. Note: a leading \"!\" in an " +
-            "accordion section title is a meaningful eager-render flag. " +
-            "Respond with ONLY a JSON array, e.g. " +
-            "[{\"find\":\"!\\ud83d\\udcca Vitals\",\"replace\":\"\\ud83d\\udcca Vitals\"}]" },
+            "substring copied verbatim, long enough to occur exactly once. " +
+            "\"replace\" is what it becomes (\"\" deletes it). Make the smallest " +
+            "edits that satisfy the instruction and touch nothing else. A leading " +
+            "\"!\" in an accordion title is a meaningful eager-render flag. Respond " +
+            "with ONLY a JSON array, e.g. [{\"find\":\"old\",\"replace\":\"new\"}]" },
           { role: "user", content:
-            "Instruction: " + instruction + "\n\nPage:\n```markdown\n" + page + "\n```" }
+            "Instruction: " + instruction +
+            "\n\nApply it within this section:\n```\n" + scope.text + "\n```" +
+            "\n\nFull page for context:\n```markdown\n" + page + "\n```" }
         ]
       })
     }).then(function (r) {
       return r.json().then(function (data) { return { status: r.status, data: data }; });
     }).then(function (res) {
-      if (res.status === 401 || res.status === 403) { agentStatus("Token rejected — try a fresh PAT.", true); return; }
+      if (res.status === 401 || res.status === 403) { agentStatus("Token rejected — fresh PAT?", true); return; }
       if (res.status === 429) { agentStatus("Rate limited — wait a moment.", true); return; }
-      if (res.status >= 400) {
-        agentStatus((res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status), true); return;
-      }
+      if (res.status >= 400) { agentStatus((res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status), true); return; }
       var choice = res.data.choices && res.data.choices[0];
-      var text = choice && choice.message && choice.message.content || "";
-      /* pull the JSON array out of the reply (tolerate a ```json fence) */
-      var jm = text.match(/\[[\s\S]*\]/);
-      var edits;
-      try { edits = JSON.parse(jm ? jm[0] : text); } catch (e) { edits = null; }
-      if (!edits || !edits.length) { agentStatus("No edits returned — try rephrasing.", true); return; }
+      var txt = choice && choice.message && choice.message.content || "";
+      var jm = txt.match(/\[[\s\S]*\]/);
+      var edits; try { edits = JSON.parse(jm ? jm[0] : txt); } catch (e) { edits = null; }
+      if (!edits || !edits.length) { agentStatus("No edits proposed — rephrase?", true); return; }
+      var dry = applyEdits(page, edits);   // dry-run to preview what will land
+      if (!dry.applied.length) { agentStatus("Couldn't locate the text — name it more exactly.", true); return; }
+      _agentPlan = { instruction: instruction, scope: scope.label, edits: dry.applied };
+      renderPlan(dry.applied, dry.skipped);
+      agentStatus("", false);
+    }).catch(function (err) { agentStatus("Network error: " + (err && err.message || err), true); });
+  }
 
-      /* apply locally: each find must match, exactly once. Untouched text
-         literally cannot change — the page can only gain the named edits. */
-      var next = page, applied = 0, missed = [], ambiguous = [];
-      edits.forEach(function (ed) {
-        var f = ed && ed.find, rep = (ed && ed.replace != null) ? ed.replace : "";
-        if (!f) return;
-        var first = next.indexOf(f);
-        if (first < 0) { missed.push(f); return; }
-        if (next.indexOf(f, first + 1) >= 0) { ambiguous.push(f); return; }
-        next = next.slice(0, first) + rep + next.slice(first + f.length);
-        applied++;
-      });
+  function renderPlan(applied, skipped) {
+    var plan = document.getElementById("ed-ag-plan");
+    if (!plan) return;
+    var rows = applied.map(function (e) {
+      return "<div class='ed-ag-edit'><div class='ed-ag-del'>− " + escPlan(e.find) + "</div>" +
+        "<div class='ed-ag-add'>+ " + escPlan(e.replace || "(deleted)") + "</div></div>";
+    }).join("");
+    var skip = skipped.length ? "<p class='ed-ag-skip'>" + skipped.length + " edit(s) skipped (not found / ambiguous)</p>" : "";
+    plan.innerHTML = "<div class='ed-ag-planhead'>Planned change · " + applied.length + " edit(s)</div>" +
+      rows + skip +
+      "<div class='ed-ag-approve'><a href='#' class='lc-btn' id='ed-ag-approve'>✓ Approve</a>" +
+      "<a href='#' class='lc-btn lc-btn-secondary' id='ed-ag-retry'>↻ Retry</a></div>";
+    plan.classList.remove("ed-hidden");
+  }
 
-      if (!applied) {
-        agentStatus("Couldn't locate the text to change — try naming it more exactly.", true);
-        return;
-      }
-      if (inp) { inp.value = next; setDirty(true); updatePreview(next); }
-      var note = "✓ " + applied + " edit" + (applied === 1 ? "" : "s") + " applied — review in Raw, then Save.";
-      if (missed.length || ambiguous.length) note += " (" + (missed.length + ambiguous.length) + " skipped)";
-      agentStatus(note, false);
-      var rawTab = document.querySelector(".ed-tab[data-tab='raw']");
-      if (rawTab) rawTab.click();
-    }).catch(function (err) {
-      agentStatus("Network error: " + (err && err.message || err), true);
-    });
+  function agentApprove() {
+    if (!_agentPlan) return;
+    var inp = document.getElementById("ed-input");
+    var page = (inp && inp.value) || "";
+    var r = applyEdits(page, _agentPlan.edits);
+    if (inp) { inp.value = r.text; setDirty(true); updatePreview(r.text); }
+    _agentLog.push({ instruction: _agentPlan.instruction, scope: _agentPlan.scope, count: r.applied.length });
+    _agentPlan = null;
+    closeAgentDialog();
+    renderLog();
+    if (typeof buildGrid === "function") buildGrid();
+    toast("✨ " + r.applied.length + " edit(s) applied — review in Raw, then Save.", true);
+  }
+
+  function renderLog() {
+    var box = document.getElementById("ed-log");
+    if (!box) return;
+    if (!_agentLog.length) {
+      box.innerHTML = "<p style='color:#bbb;padding:1em'>No AI edits yet. Select a block or text, then ✨ to ask for a change.</p>";
+      return;
+    }
+    box.innerHTML = _agentLog.map(function (e, i) {
+      return "<div class='ed-log-item'><div class='ed-log-instr'>" + (i + 1) + ". " + escPlan(e.instruction) + "</div>" +
+        "<div class='ed-log-meta'>" + escPlan(e.scope) + " · " + e.count + " edit(s)</div></div>";
+    }).join("");
+  }
+
+  /* commit message prefilled from the AI edit log */
+  function logCommitMessage() {
+    if (!_agentLog.length) return "";
+    if (_agentLog.length === 1) return _agentLog[0].instruction;
+    return "AI edits (" + _agentLog.length + "): " +
+      _agentLog.map(function (e) { return e.instruction; }).join("; ");
   }
 
   document.addEventListener("click", function (e) {
-    if (e.target.closest("#ed-agent-ask")) { e.preventDefault(); agentAsk(); }
+    if (e.target.closest("#ed-agent-btn")) { e.preventDefault(); openAgentDialog(); return; }
+    if (e.target.closest("#ed-ag-x"))      { e.preventDefault(); closeAgentDialog(); return; }
+    if (e.target.closest("#ed-agent-ask")) { e.preventDefault(); agentAsk(); return; }
+    if (e.target.closest("#ed-ag-approve")){ e.preventDefault(); agentApprove(); return; }
+    if (e.target.closest("#ed-ag-retry")) {
+      e.preventDefault();
+      var plan = document.getElementById("ed-ag-plan");
+      if (plan) { plan.classList.add("ed-hidden"); plan.innerHTML = ""; }
+      _agentPlan = null;
+      var p = document.getElementById("ed-agent-prompt"); if (p) p.focus();
+      return;
+    }
   });
 
   /* ── Raw editor cursor → preview highlight ──────────── */
