@@ -152,6 +152,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-agent-status { font-size: 0.84em; color: #777; }
 #ed-agent-status.ed-err { color: #b91c1c; }
 #ed-ag-plan.ed-hidden { display: none; }
+.ed-ag-exp { font-size: 0.9em; color: #1f2937; background: #f1f5ff; border: 1px solid #dbe4ff;
+  border-radius: 6px; padding: 0.5em 0.7em; margin: 0 0 0.5em; line-height: 1.45; }
 .ed-ag-planhead { font-size: 0.82em; color: #6b7280; margin-bottom: 0.3em; }
 .ed-ag-edit { font-family: monospace; font-size: 0.82em; border: 1px solid #eee;
   border-radius: 6px; margin: 0.3em 0; overflow: hidden; }
@@ -1397,24 +1399,47 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  /* the edit's context: selected block › Raw selection › whole page */
+  /* "datagrid" → "Datagrid", "embed-page" → "EmbedPage" (the component name) */
+  function compName(type) {
+    return (type || "").split(/[-_]/).map(function (s) {
+      return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+    }).join("");
+  }
+
+  /* the edit's context: selected block › Raw selection › whole page.
+     A parsed block already carries .type (component class) and .knobs
+     (its IAL attributes) and its .lines include the heading line. */
   function captureScope() {
     var inp = document.getElementById("ed-input");
     var page = (inp && inp.value) || "";
     if (typeof _selIdx === "number" && _blocks && _blocks[_selIdx]) {
       var b = _blocks[_selIdx];
-      var hp = "#".repeat(Math.min(b.level || 3, 6));
-      var text = ((b.heading ? hp + " " + b.heading + "\n" : "") +
-        ((b.lines && b.lines.length) ? b.lines.join("\n") : "")).trim();
+      var text = (b.lines && b.lines.length) ? b.lines.join("\n").trim() : "";
       if (text && page.indexOf(text) >= 0) {
-        return { label: "block · " + (b.heading || "untitled").slice(0, 38), text: text };
+        var label;
+        if (b.preamble) label = "page header";
+        else if (b.type) label = compName(b.type) + (b.knobs && b.knobs.id ? " #" + b.knobs.id : "");
+        else label = (b.heading || "section").slice(0, 40);
+        return { label: label, text: text, type: b.type || null, knobs: b.knobs || {} };
       }
     }
     if (inp && inp.selectionEnd > inp.selectionStart) {
       var sel = page.slice(inp.selectionStart, inp.selectionEnd).trim();
-      if (sel) return { label: "selection · " + sel.length + " chars", text: sel };
+      if (sel) return { label: "selection · " + sel.length + " chars", text: sel, type: null, knobs: {} };
     }
-    return { label: "whole page", text: page };
+    return { label: "whole page", text: page, type: null, knobs: {} };
+  }
+
+  /* tell the model what component it's editing, so the edit stays valid */
+  function componentNote(scope) {
+    if (!scope.type) return "";
+    var knobs = Object.keys(scope.knobs || {}).map(function (k) {
+      return k + "=\"" + scope.knobs[k] + "\"";
+    }).join(" ");
+    return "\n\nThe scoped block is a \"" + compName(scope.type) + "\" component, " +
+      "declared with `{: ." + scope.type + (knobs ? " " + knobs : "") + " }`. Preserve that " +
+      "IAL line and keep the change compatible with this component — do not remove or " +
+      "rename its class or break its attributes unless explicitly asked.";
   }
 
   function openAgentDialog() {
@@ -1473,16 +1498,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         temperature: 0,
         messages: [
           { role: "system", content:
-            "You edit a Markdown page by returning a minimal list of exact " +
-            "find/replace edits — never the whole page. Each \"find\" MUST be a " +
-            "substring copied verbatim, long enough to occur exactly once. " +
-            "\"replace\" is what it becomes (\"\" deletes it). Make the smallest " +
-            "edits that satisfy the instruction and touch nothing else. A leading " +
-            "\"!\" in an accordion title is a meaningful eager-render flag. Respond " +
-            "with ONLY a JSON array, e.g. [{\"find\":\"old\",\"replace\":\"new\"}]" },
+            "You edit a Markdown page by returning exact find/replace edits — never " +
+            "the whole page. Each \"find\" MUST be a substring copied verbatim, long " +
+            "enough to occur exactly once. \"replace\" is what it becomes (\"\" deletes " +
+            "it). Make the smallest edits that satisfy the instruction and touch " +
+            "nothing else. A leading \"!\" in an accordion title is a meaningful " +
+            "eager-render flag. Respond with ONLY a JSON object: " +
+            "{\"explanation\":\"<one plain-English sentence describing the change>\"," +
+            "\"edits\":[{\"find\":\"old\",\"replace\":\"new\"}]}" },
           { role: "user", content:
             "Instruction: " + instruction +
             "\n\nApply it within this section:\n```\n" + scope.text + "\n```" +
+            componentNote(scope) +
             "\n\nFull page for context:\n```markdown\n" + page + "\n```" }
         ]
       })
@@ -1494,26 +1521,32 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (res.status >= 400) { agentStatus((res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status), true); return; }
       var choice = res.data.choices && res.data.choices[0];
       var txt = choice && choice.message && choice.message.content || "";
-      var jm = txt.match(/\[[\s\S]*\]/);
-      var edits; try { edits = JSON.parse(jm ? jm[0] : txt); } catch (e) { edits = null; }
+      /* accept {explanation, edits} or a bare [edits] array */
+      var jm = txt.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+      var parsed; try { parsed = JSON.parse(jm ? jm[0] : txt); } catch (e) { parsed = null; }
+      var edits = null, explanation = "";
+      if (Array.isArray(parsed)) edits = parsed;
+      else if (parsed && Array.isArray(parsed.edits)) { edits = parsed.edits; explanation = parsed.explanation || ""; }
       if (!edits || !edits.length) { agentStatus("No edits proposed — rephrase?", true); return; }
       var dry = applyEdits(page, edits);   // dry-run to preview what will land
       if (!dry.applied.length) { agentStatus("Couldn't locate the text — name it more exactly.", true); return; }
-      _agentPlan = { instruction: instruction, scope: scope.label, edits: dry.applied };
-      renderPlan(dry.applied, dry.skipped);
+      _agentPlan = { instruction: instruction, scope: scope.label, explanation: explanation, edits: dry.applied };
+      renderPlan(explanation, dry.applied, dry.skipped);
       agentStatus("", false);
     }).catch(function (err) { agentStatus("Network error: " + (err && err.message || err), true); });
   }
 
-  function renderPlan(applied, skipped) {
+  function renderPlan(explanation, applied, skipped) {
     var plan = document.getElementById("ed-ag-plan");
     if (!plan) return;
+    var exp = explanation ? "<p class='ed-ag-exp'>" + escPlan(explanation) + "</p>" : "";
     var rows = applied.map(function (e) {
       return "<div class='ed-ag-edit'><div class='ed-ag-del'>− " + escPlan(e.find) + "</div>" +
         "<div class='ed-ag-add'>+ " + escPlan(e.replace || "(deleted)") + "</div></div>";
     }).join("");
     var skip = skipped.length ? "<p class='ed-ag-skip'>" + skipped.length + " edit(s) skipped (not found / ambiguous)</p>" : "";
-    plan.innerHTML = "<div class='ed-ag-planhead'>Planned change · " + applied.length + " edit(s)</div>" +
+    plan.innerHTML = exp +
+      "<div class='ed-ag-planhead'>Planned change · " + applied.length + " edit(s)</div>" +
       rows + skip +
       "<div class='ed-ag-approve'><a href='#' class='lc-btn' id='ed-ag-approve'>✓ Approve</a>" +
       "<a href='#' class='lc-btn lc-btn-secondary' id='ed-ag-retry'>↻ Retry</a></div>";
