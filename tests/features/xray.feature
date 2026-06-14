@@ -72,3 +72,9 @@ Feature: X-ray inspector
     And I wait for the page to be interactive
     And I shift-hover over the avatar overlay "prof_avatar"
     Then the x-ray scene mentions "AvatarTrigger"
+
+  Scenario: Shift x-ray labels a query result as Query, not its Dataset base
+    When I navigate to "/components/query"
+    And I wait for the page to be interactive
+    And I shift-hover over the chart component
+    Then the x-ray scene mentions "Query"
