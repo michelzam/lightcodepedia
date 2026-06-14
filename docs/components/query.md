@@ -52,6 +52,20 @@ SELECT region, SUM(amount) AS total FROM sales GROUP BY region
 
 SQL runs via [AlaSQL](https://github.com/AlaSQL/alasql) in the browser. It's permissive, learner-friendly SQL (`SELECT`/`JOIN`/`GROUP BY`/window functions) — not a strict ANSI reference.
 
+## ✏️ Live SQL editor
+
+Add `editable="true"` and the block becomes a **SQL editor** wired to the same data. Edit the query, press **▶ Run**, and everything bound to its result moves — a live SQL playground, no server:
+
+```sql
+SELECT breed, MAX(cuteness) AS top FROM dogs GROUP BY breed ORDER BY top DESC
+```
+{: .query bind="dogs" #live_q editable="true" }
+
+[Result](#)
+{: .datagrid bind="live_q" }
+
+Try changing `MAX` to `MIN`, or `cuteness` to `weight_kg`, and Run — the grid updates. The result is still a dataset, so a chart could bind to `live_q` just the same.
+
 **Q:** A `{: .chart bind="by_breed" }` is pointed at a query result. What does the chart need to know about the query?
 
 - [x] Nothing — a query is a dataset, so the chart binds to it the same way.
