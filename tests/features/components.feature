@@ -36,3 +36,8 @@ Feature: Component gallery behaviors
     When I navigate to "/components/examples/custom-class"
     And I wait for the page to be interactive
     Then a live Python editor is visible
+
+  Scenario: A query aggregates a dataset into a bound grid
+    When I navigate to "/components/query"
+    And I wait for the page to be interactive
+    Then the "by_breed" bound grid shows at least 3 rows

@@ -27,6 +27,7 @@ digraph component_model {
     Page [label="{📄 Page ➭ ◻️|🔤 id\l|▸ feature\l▸ features\l}"]
     Dataset [label="{🛢️ Dataset ➭ ◻️|🔘 loaded\l🔢 count\l}"]
     Bar [label="{▮ Bar ➭ ◻️|🔢 value\l🔤 color\l}"]
+    Query [label="{🔎 Query|🔤 query\l🔘 loaded\l🔢 count\l}"]
   }
   subgraph cluster_pkg_ui {
     label="🎨 ui"; labeljust=l; fontsize=10; fontcolor="gray40";
@@ -87,6 +88,7 @@ digraph component_model {
   st_Avatar_idle -> Avatar [style=dashed, arrowhead=none, color="gray70"]
   AvatarTrigger -> Avatar [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="target", fontsize=8]
   Form -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bound", fontsize=8]
+  Query -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="source", fontsize=8]
   subgraph cluster_states_Quiz {
     label="❓ states 🎛️"; fontsize=10;
     style="filled,rounded"; fillcolor="gray94"; color="gray85"; margin=12; nodesep=0.9;
@@ -109,6 +111,7 @@ digraph component_model {
   st_Recorder_idle -> st_Recorder_recording [xlabel="start", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
   st_Recorder_recording -> st_Recorder_stopped [xlabel="stop", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
   st_Recorder_idle -> Recorder [style=dashed, arrowhead=none, color="gray70"]
+  Query -> Dataset [arrowhead=empty, color=black, penwidth=0.3, constraint=true]
   subgraph cluster_legend {
     style=invis;
     __legend [label="{Legend|🔤 str or 🔡 long str\l🔢 int or float\l🔘 bool\l🕗 datetime\l🔒 password\l🔤 ⦙ list of 🔤\l◻️ Object from kore\l📦 any\l🐟 custom type Fish\l /  derived\l _  private\l =  default value\l⤴️ reflexive reference\l↩️ ⦙ reflexive collection\l ♢ composite or owned\l|⚡️ event or code\l ▸ method\l ▹ conditionnal method\l ▹ with transition ▹\l|🎛️ state machine\l➡️ initial state\l| ➭  inherits from\l|🛄 imported py\l}", style="filled", fillcolor="gray98", color="gray80", fontcolor="#505050", fontsize=10]

@@ -352,6 +352,31 @@ class Dataset(Object):
         return int(arr.length) if arr else 0
 
 
+@component(icon="🔎",
+           attrs=[{"n": "query", "t": "str"}, {"n": "loaded", "t": "bool"},
+                  {"n": "count", "t": "int"}],
+           assoc=[{"n": "source", "target": "Dataset"}])
+class Query(Dataset):
+    """A dataset computed by SQL over other datasets — it IS a Dataset (it
+    publishes its result under its id), so consumers can't tell it apart."""
+    def __init__(self, ref=None):
+        self._el = None
+        if ref is not None and hasattr(ref, "getAttribute"):   # X-ray wraps by element
+            self._el = ref
+            self._id = ref.getAttribute("data-lc-id") or ""
+        else:                                                  # resolver builds by id
+            self._id = ref or ""
+
+    @property
+    def query(self):
+        return str(self._el.getAttribute("data-query") or "") if self._el is not None else ""
+
+    @property
+    def source(self):
+        sid = self._el.getAttribute("data-bind") if self._el is not None else None
+        return Dataset((str(sid).split(",")[0] if sid else ""))
+
+
 @component(icon="▮", attrs=[{"n": "value", "t": "float"}, {"n": "color", "t": "str"}])
 class Bar(Object):
     @property
@@ -963,6 +988,7 @@ class AvatarTrigger(Block):
 # ════════════════════════ resolver ══════════════════════════════════════════
 
 _WRAP = [
+    ("lc-query", Query),
     ("lc-datagrid", Datagrid), ("lc-chart", Chart), ("lc-feature", Feature),
     ("lc-button", Button), ("lc-btn", Button), ("lc-carousel", Carousel),
     ("lc-cards", Cards), ("lc-dropdown", Dropdown), ("lc-folder", Folder),
