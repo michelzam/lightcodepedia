@@ -1129,8 +1129,18 @@ def scenario(label):
         return fn
     return decorator
 
+def _in_editor(el):
+    # the page editor renders a live preview of the page, so every component
+    # exists twice (real page + #ed-drawer preview). Its copies must not count
+    # toward page-level id checks, or features run in the editor falsely fail.
+    e = getattr(el, "_el", None)
+    try:
+        return bool(e) and bool(e.closest("#ed-drawer"))
+    except Exception:
+        return False
+
 def _builtin_unique_ids(ctx):
-    els = Object._all("[data-lc-id]")
+    els = [el for el in Object._all("[data-lc-id]") if not _in_editor(el)]
     ids = [el._attr("data-lc-id") for el in els]
     seen, dupes = set(), set()
     for i in ids:
@@ -1140,7 +1150,7 @@ def _builtin_unique_ids(ctx):
 def _builtin_python_ids(ctx):
     import re as _re
     _id_re = _re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
-    els = Object._all("[data-lc-id]")
+    els = [el for el in Object._all("[data-lc-id]") if not _in_editor(el)]
     bad = [el._attr("data-lc-id") for el in els
            if not _id_re.match(el._attr("data-lc-id") or "")]
     assert not bad, "ids must be valid Python identifiers: " + str(bad)
