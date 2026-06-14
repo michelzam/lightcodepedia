@@ -55,7 +55,7 @@ Auto-included by docs/_layouts/default.html.
                           transparent 62%);
               display: none; }
   .lcx-svg { position: absolute; inset: 0; width: 100%; height: 100%;
-             pointer-events: none; display: none; z-index: 6; }  /* pipes paint ABOVE the panels — never dimmed behind a semi-transparent inspector */
+             pointer-events: none; display: none; z-index: 6; overflow: visible; }  /* pipes paint ABOVE the panels (never dimmed behind a semi-transparent inspector) and aren't clipped at the screen edge when panels spread past it */
   /* fluid flow: round globules travel target → source (binded → binder) */
   @keyframes lcxflow { to { stroke-dashoffset: 19; } }
   .lcx-flow { animation: lcxflow .8s linear infinite; }
@@ -215,8 +215,11 @@ Auto-included by docs/_layouts/default.html.
       e.classList.add("lcx-edge"); svg.appendChild(e); return e;
     }
     function routePath(sx, sy, tx, ty, r) {
-      const mx = (sx + tx) / 2;
-      const pts = [{ x: sx, y: sy }, { x: mx, y: sy }, { x: mx, y: ty }, { x: tx, y: ty }];
+      // lead along the dominant axis so the pipe leaves each panel perpendicular
+      // to the border edgePoint() picked — clean elbows for both rows and columns
+      const pts = Math.abs(tx - sx) >= Math.abs(ty - sy)
+        ? [{ x: sx, y: sy }, { x: (sx + tx) / 2, y: sy }, { x: (sx + tx) / 2, y: ty }, { x: tx, y: ty }]
+        : [{ x: sx, y: sy }, { x: sx, y: (sy + ty) / 2 }, { x: tx, y: (sy + ty) / 2 }, { x: tx, y: ty }];
       let d = "M" + sx + "," + sy;
       const near = (a, b, k) => { const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
         const t = Math.min(k, L / 2) / L; return { x: a.x + dx * t, y: a.y + dy * t }; };
