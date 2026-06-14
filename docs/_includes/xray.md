@@ -318,8 +318,12 @@ Auto-included by docs/_layouts/default.html.
         const n = queue.shift();
         ((n.dump && n.dump.links) || []).forEach(lk => {
           const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
-          const t = addNode(lk.target, lk.id, tEl, null);
-          if (t.fresh) { t.fresh = false; t.dump = inspectTarget(lk.target, lk.id); queue.push(t); }
+          // the live element's actual class wins over the declared association
+          // target — a bind says "Dataset", but the element may be a Query
+          // (which IS a Dataset). Without this the proxy shows as its base.
+          const nm = (tEl && wrapName(tEl)) || lk.target;
+          const t = addNode(nm, lk.id, tEl, null);
+          if (t.fresh) { t.fresh = false; t.dump = inspectTarget(nm, lk.id); queue.push(t); }
           addEdge(n, t, lk.role, lk.list);
         });
         if (n.id) REF_ATTRS.forEach(([attr, role]) => {
