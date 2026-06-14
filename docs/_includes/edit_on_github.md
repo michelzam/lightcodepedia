@@ -1487,7 +1487,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   function featureRows() {
     var out = [];
     (_blocks || []).forEach(function (b, i) {
-      if (b.type === "feature") {
+      // a feature under a heading appears twice in _blocks — the parent and
+      // an extracted sub-block. Keep the parent only: blocksToText
+      // serialises it (sub-blocks are skipped), so status write-back lands.
+      if (b.type === "feature" && !b.subBlock) {
         out.push({ i: i, name: featureName(b),
           status: (b.knobs && b.knobs.status) || "none",
           tags: (b.knobs && b.knobs.tags) || "" });
