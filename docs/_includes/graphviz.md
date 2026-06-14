@@ -15,6 +15,23 @@ Auto-included by docs/_layouts/default.html.
 (function () {
   var VIZ_URL = "{{ "/assets/js/viz-global.js" | relative_url }}";
 
+  // Lazy-load the WASM engine on first use (page diagram or editor tab).
+  function ensureViz() {
+    return window._lcVizReady || (window._lcVizReady = new Promise(function (resolve, reject) {
+      if (window.Viz) { window.Viz.instance().then(resolve).catch(reject); return; }
+      var s = document.createElement("script");
+      s.src = VIZ_URL;
+      s.onload = function () { window.Viz.instance().then(resolve).catch(reject); };
+      s.onerror = function () { reject(new Error("failed to load " + VIZ_URL)); };
+      document.head.appendChild(s);
+    }));
+  }
+  // Reusable DOT string → SVG string. Used by the page editor's Diagram tab to
+  // render a per-page class diagram without needing a .diagram block on the page.
+  window.lcDotToSvg = function (src) {
+    return ensureViz().then(function (viz) { return viz.renderString(src, { format: "svg" }); });
+  };
+
   // Collect DOT blocks already in the DOM (script is at end of body).
   var blocks = [];
   document.querySelectorAll("div.language-dot").forEach(function (wrap) {
@@ -45,19 +62,7 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
-  // Lazy-load viz-global.js only when this page actually has DOT blocks.
-  window._lcVizReady = window._lcVizReady || (function () {
-    return new Promise(function (resolve, reject) {
-      if (window.Viz) { window.Viz.instance().then(resolve).catch(reject); return; }
-      var s = document.createElement("script");
-      s.src = VIZ_URL;
-      s.onload = function () { window.Viz.instance().then(resolve).catch(reject); };
-      s.onerror = function () { reject(new Error("failed to load " + VIZ_URL)); };
-      document.head.appendChild(s);
-    });
-  })();
-
-  window._lcVizReady.then(render).catch(function (e) {
+  ensureViz().then(render).catch(function (e) {
     console.error("[graphviz] init:", e);
     blocks.forEach(function (b) { showErr(b.el, "renderer failed: " + e); });
   });
