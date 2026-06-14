@@ -1546,42 +1546,27 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     else if (window.lcLoadMarked) window.lcLoadMarked(doRender);
   }
 
-  /* rewrite a feature block's {: .feature … } line from its knobs */
-  function reserializeFeature(b) {
-    var lines = b.lines || [];
-    for (var i = lines.length - 1; i >= 0; i--) {
-      if (/^\s*\{:\s*\.feature\b/.test(lines[i])) {
-        var kn = b.knobs || {};
-        var parts = Object.keys(kn).map(function (k) { return k + "=\"" + kn[k] + "\""; });
-        lines[i] = "{: .feature" + (parts.length ? " " + parts.join(" ") : "") + " }";
-        return;
-      }
-    }
-  }
-
-  /* each preview card maps by position to a feature row; when its status
-     changes (▶ Run / Run All) write it back into the source block's IAL */
+  /* the feature component writes the run status back into #ed-input itself
+     (it recognises #ed-feat-preview). Here we only mirror each card's status
+     class into the grid badge so the list stays in sync after a run. */
   function wireWriteback(prev, rows) {
     var cards = prev.querySelectorAll(".lc-feature");
     cards.forEach(function (card, k) {
       if (k >= rows.length) return;
       var idx = rows[k].i;
-      function apply() {
-        var st = card.getAttribute("data-status");
-        if (!st || st === "none") return;
+      function refresh() {
+        var st = card.classList.contains("lc-feature-passing") ? "passing"
+               : card.classList.contains("lc-feature-failing") ? "failing"
+               : card.classList.contains("lc-feature-pending") ? "pending" : null;
+        if (!st) return;
         var b = _blocks[idx];
-        if (!b || (b.knobs && b.knobs.status === st)) return;
-        b.knobs = b.knobs || {};
-        b.knobs.status = st;
-        reserializeFeature(b);
-        var inp = document.getElementById("ed-input");
-        if (inp) { inp.value = blocksToText(_blocks); setDirty(true); updatePreview(inp.value); }
+        if (b) { b.knobs = b.knobs || {}; b.knobs.status = st; }
         buildFeatureGrid();
       }
       try {
-        new MutationObserver(apply).observe(card, { attributes: true, attributeFilter: ["data-status"] });
+        new MutationObserver(refresh).observe(card, { attributes: true, attributeFilter: ["class"] });
       } catch (e) {}
-      apply();
+      refresh();
     });
   }
 
