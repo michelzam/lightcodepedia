@@ -242,11 +242,14 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     }
     if (card._lcSuiteEl) updateSuiteSummary(card._lcSuiteEl);
 
-    /* write status back to editor source so the user can save the result */
-    var preview = document.getElementById("ed-preview");
+    /* write status back to editor source so the user can save the result.
+       Works whether the feature was run in the main preview (#ed-preview)
+       or the editor's Features tab (#ed-feat-preview): the card's position
+       among its container's cards = the Nth {: .feature } in the source. */
+    var host = card.closest && card.closest("#ed-preview, #ed-feat-preview");
     var inp = document.getElementById("ed-input");
-    if (preview && inp && preview.contains(card) && status) {
-      var allCards = preview.querySelectorAll(".lc-feature");
+    if (host && inp && status) {
+      var allCards = host.querySelectorAll(".lc-feature");
       var idx = Array.prototype.indexOf.call(allCards, card);
       if (idx >= 0) {
         var count = -1;
