@@ -30,6 +30,16 @@ Auto-included by docs/_layouts/default.html.
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .lc-query.err { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+/* editable mode: a live SQL editor that publishes its result as a dataset */
+.lc-query-wrap { margin: 0.6em 0; }
+.lc-query-editor {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em; line-height: 1.5; padding: 0.6em;
+  border: 1px solid #d0d7de; border-radius: 6px; background: #fafafa; color: #111;
+}
+.lc-query-bar { display: flex; align-items: center; gap: 0.7em; margin-top: 0.4em; }
+.lc-query-bar .lc-btn { font-size: 0.82em; padding: 0.3em 0.85em; }
 </style>
 
 <script>
@@ -56,26 +66,52 @@ Auto-included by docs/_layouts/default.html.
   function upgradeQuery(el) {
     if (el.dataset.lcQueryDone) return;
     el.dataset.lcQueryDone = "1";
-    var sql   = (el.querySelector("code") || el).textContent.trim();
+    var seed  = (el.querySelector("code") || el).textContent.trim();
     var outId = el.id || el.getAttribute("id") || "query";
     var binds = (el.getAttribute("bind") || "").split(",")
       .map(function (s) { return s.trim(); }).filter(Boolean);
+    var editable = el.getAttribute("editable") === "true";
 
     var chip = document.createElement("span");
     chip.className = "lc-query";
     chip.setAttribute("data-lc-id", outId);
     if (binds.length) chip.setAttribute("data-bind", binds.join(","));
-    chip.setAttribute("data-query", sql);
-    chip.title = sql;
+    chip.setAttribute("data-query", seed);
+    chip.setAttribute("data-editable", editable ? "true" : "false");
+    chip.title = seed;
     chip.textContent = "🔎 …";
-    el.parentNode.replaceChild(chip, el);
 
+    var ta = null;
+    if (editable) {
+      /* live SQL editor — edit, ▶ Run, and everything bound downstream moves */
+      var wrap = document.createElement("div");
+      wrap.className = "lc-query-wrap";
+      ta = document.createElement("textarea");
+      ta.className = "lc-query-editor";
+      ta.spellcheck = false;
+      ta.value = seed;
+      ta.rows = Math.min(12, Math.max(3, seed.split("\n").length + 1));
+      var bar = document.createElement("div");
+      bar.className = "lc-query-bar";
+      var runBtn = document.createElement("a");
+      runBtn.href = "#"; runBtn.className = "lc-btn"; runBtn.textContent = "▶ Run";
+      runBtn.addEventListener("click", function (e) { e.preventDefault(); run(); });
+      bar.appendChild(runBtn); bar.appendChild(chip);
+      wrap.appendChild(ta); wrap.appendChild(bar);
+      el.parentNode.replaceChild(wrap, el);
+    } else {
+      el.parentNode.replaceChild(chip, el);
+    }
+
+    function currentSql() { return ta ? ta.value : seed; }
     function fail(msg) {
       chip.className = "lc-query err";
       chip.textContent = "🔎 ⚠ " + String(msg).slice(0, 70);
       if (window.lcSetDataset) window.lcSetDataset(outId, []);
     }
     function run() {
+      var sql = currentSql();
+      chip.setAttribute("data-query", sql);
       loadAlaSQL().then(function (alasql) {
         if (!alasql) { fail("AlaSQL failed to load"); return; }
         try {
@@ -92,7 +128,7 @@ Auto-included by docs/_layouts/default.html.
       });
     }
 
-    /* reactive: re-run when any input dataset changes */
+    /* reactive: re-run (with the current SQL) when any input changes */
     binds.forEach(function (id) {
       window.lcDatasetListeners[id] = window.lcDatasetListeners[id] || [];
       window.lcDatasetListeners[id].push(run);

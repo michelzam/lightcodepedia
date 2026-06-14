@@ -27,7 +27,7 @@ digraph component_model {
     Page [label="{📄 Page ➭ ◻️|🔤 id\l|▸ feature\l▸ features\l}"]
     Dataset [label="{🛢️ Dataset ➭ ◻️|🔘 loaded\l🔢 count\l}"]
     Bar [label="{▮ Bar ➭ ◻️|🔢 value\l🔤 color\l}"]
-    Query [label="{🔎 Query|🔤 query\l🔘 loaded\l🔢 count\l}"]
+    Query [label="{🔎 Query|🔤 query\l🔘 editable\l🔘 loaded\l🔢 count\l}"]
   }
   subgraph cluster_pkg_ui {
     label="🎨 ui"; labeljust=l; fontsize=10; fontcolor="gray40";

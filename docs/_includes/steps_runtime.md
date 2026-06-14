@@ -353,12 +353,13 @@ class Dataset(Object):
 
 
 @component(icon="🔎",
-           attrs=[{"n": "query", "t": "str"}, {"n": "loaded", "t": "bool"},
-                  {"n": "count", "t": "int"}],
+           attrs=[{"n": "query", "t": "str"}, {"n": "editable", "t": "bool"},
+                  {"n": "loaded", "t": "bool"}, {"n": "count", "t": "int"}],
            assoc=[{"n": "source", "target": "Dataset"}])
 class Query(Dataset):
     """A dataset computed by SQL over other datasets — it IS a Dataset (it
-    publishes its result under its id), so consumers can't tell it apart."""
+    publishes its result under its id), so consumers can't tell it apart.
+    With editable, the SQL comes from a live editor instead of the source."""
     def __init__(self, ref=None):
         self._el = None
         if ref is not None and hasattr(ref, "getAttribute"):   # X-ray wraps by element
@@ -370,6 +371,10 @@ class Query(Dataset):
     @property
     def query(self):
         return str(self._el.getAttribute("data-query") or "") if self._el is not None else ""
+
+    @property
+    def editable(self):
+        return self._el is not None and self._el.getAttribute("data-editable") == "true"
 
     @property
     def source(self):

@@ -91,3 +91,8 @@ def step_live_python_editor(context):
     pad = context.page.locator(".lc-pyrun").first
     expect(pad).to_be_visible(timeout=15_000)
     expect(pad.locator("textarea")).to_be_visible()
+
+
+@then("a live SQL editor is visible")
+def step_sql_editor_visible(context):
+    expect(context.page.locator("textarea.lc-query-editor").first).to_be_visible(timeout=10_000)
