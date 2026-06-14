@@ -55,7 +55,7 @@ Auto-included by docs/_layouts/default.html.
                           transparent 62%);
               display: none; }
   .lcx-svg { position: absolute; inset: 0; width: 100%; height: 100%;
-             pointer-events: none; display: none; }  /* behind panels, inside #lcx-scene */
+             pointer-events: none; display: none; z-index: 6; }  /* pipes paint ABOVE the panels — never dimmed behind a semi-transparent inspector */
   /* fluid flow: round globules travel target → source (binded → binder) */
   @keyframes lcxflow { to { stroke-dashoffset: 19; } }
   .lcx-flow { animation: lcxflow .8s linear infinite; }
@@ -349,21 +349,25 @@ Auto-included by docs/_layouts/default.html.
         }
         n.panel = p;
       });
-      // ── de-overlap: greedy pass pushing colliding panels below their
-      //    blocker (hovered panel placed first stays anchored); pipes are
-      //    drawn after, and fitScene rescales if the scene grew ──
-      const placedR = [];
+      // ── de-overlap: separate each panel from already-placed ones along the
+      //    axis of least penetration — a would-be vertical pile of a hub's
+      //    panels spreads sideways into a row instead of one cramped column,
+      //    which also un-stacks the pipes. The hovered panel is placed first
+      //    and stays anchored; fitScene rescales after if the scene grew. ──
+      const placedR = [], GAP = 12;
       nodes.forEach(n => {
         const p = n.panel;
         let x = p.offsetLeft, y = p.offsetTop;
         const w = p.offsetWidth, h = p.offsetHeight;
         let guard = 0, moved = true;
-        while (moved && guard++ < 24) {
+        while (moved && guard++ < 48) {
           moved = false;
           for (const q of placedR) {
-            if (x < q.x + q.w + 8 && q.x < x + w + 8 && y < q.y + q.h + 8 && q.y < y + h + 8) {
-              y = q.y + q.h + 12;
-              p.style.top = y + "px";
+            const ox = Math.min(x + w, q.x + q.w) - Math.max(x, q.x);   // horizontal overlap
+            const oy = Math.min(y + h, q.y + q.h) - Math.max(y, q.y);   // vertical overlap
+            if (ox > -GAP && oy > -GAP) {                               // closer than GAP on both axes
+              if (ox < oy) { x += ox + GAP; p.style.left = x + "px"; }  // push along the tighter axis
+              else { y += oy + GAP; p.style.top = y + "px"; }
               moved = true;
             }
           }
