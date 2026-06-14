@@ -57,7 +57,7 @@ SQL runs via [AlaSQL](https://github.com/AlaSQL/alasql) in the browser. It's per
 Add `editable="true"` and the block becomes a **SQL editor** wired to the same data. Edit the query, press **▶ Run**, and everything bound to its result moves — a live SQL playground, no server:
 
 ```sql
-SELECT breed, MAX(cuteness) AS top FROM dogs GROUP BY breed ORDER BY top DESC
+SELECT breed, MAX(cuteness) AS cutest FROM dogs GROUP BY breed ORDER BY cutest DESC
 ```
 {: .query bind="dogs" #live_q editable="true" }
 
