@@ -43,3 +43,29 @@ def step_log_pane_visible(context):
 @then("the editor features pane is visible")
 def step_features_pane_visible(context):
     expect(context.page.locator("#ed-features-pane")).to_be_visible(timeout=10_000)
+
+
+@when("I load sample components into the editor")
+def step_load_sample(context):
+    md = (
+        "# Demo\n\n"
+        "data\n{: .dataset #ds }\n\n"
+        'grid\n{: .datagrid bind="ds" }\n\n'
+        'chart\n{: .chart bind="ds" }\n'
+    )
+    context.page.evaluate(
+        "(v) => { document.getElementById('ed-input').value = v; }", md
+    )
+
+
+@then("the editor diagram pane is visible")
+def step_diagram_pane_visible(context):
+    expect(context.page.locator("#ed-diagram-pane")).to_be_visible(timeout=10_000)
+
+
+@then("the editor diagram renders a class graph")
+def step_diagram_svg(context):
+    pane = context.page.locator("#ed-diagram-pane")
+    # the DOT engine (WASM) lazy-loads, then renders the inline SVG
+    expect(pane.locator("svg").first).to_be_visible(timeout=25_000)
+    expect(pane).to_contain_text("Datagrid", timeout=25_000)

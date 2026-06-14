@@ -28,3 +28,18 @@ Feature: Page editor — ✨ AI edit dialog
     And I open the page editor
     And I switch to the editor "features" tab
     Then the editor features pane is visible
+
+  Scenario: The editor has a Diagram tab
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And I switch to the editor "diagram" tab
+    Then the editor diagram pane is visible
+
+  Scenario: The Diagram tab renders the page's class graph
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And I load sample components into the editor
+    And I switch to the editor "diagram" tab
+    Then the editor diagram renders a class graph

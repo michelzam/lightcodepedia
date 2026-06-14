@@ -133,6 +133,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-blocks-pane.ed-active { display: flex; }
 #ed-log-pane { display: flex; flex: 1; flex-direction: column; overflow: auto; padding: 0.4em; }
 #ed-log-pane.ed-hidden { display: none; }
+#ed-diagram-pane { display: flex; flex: 1; flex-direction: column; overflow: auto; padding: 0.6em; }
+#ed-diagram-pane.ed-hidden { display: none; }
+#ed-diagram-pane .ed-diagram-wrap { overflow: auto; flex: 1; }
+#ed-diagram-pane .ed-diagram-wrap svg { max-width: 100%; height: auto; }
+#ed-diagram-legend { font-size: 0.76em; color: #9ca3af; padding: 0.3em 0.2em 0.5em; }
+#ed-diagram-legend b { color: #6b7280; font-weight: 600; }
 /* ── Features tab ─────────────────────────────────────── */
 #ed-features-pane { display: flex; flex: 1; flex-direction: column; overflow: hidden; }
 #ed-features-pane.ed-hidden { display: none; }
@@ -350,6 +356,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           <span class="ed-tab active" data-tab="blocks">⊞ Blocks</span>
           <span class="ed-tab" data-tab="raw">✏️ Raw</span>
           <span class="ed-tab" data-tab="features">🧪 Features</span>
+          <span class="ed-tab" data-tab="diagram">🗺️ Diagram</span>
           <span class="ed-tab" data-tab="log">📝 Log</span>
         </div>
         <div id="ed-raw-pane" class="ed-hidden">
@@ -363,6 +370,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           <div id="ed-feat-grid"><p style="color:#bbb;padding:1em">No features on this page. A <code>{: .feature }</code> block appears here.</p></div>
           <div id="ed-feat-splitter"></div>
           <div id="ed-feat-preview"></div>
+        </div>
+        <div id="ed-diagram-pane" class="ed-hidden">
+          <p style="color:#bbb;padding:1em">Load a file to see its class diagram.</p>
         </div>
         <div id="ed-log-pane" class="ed-hidden">
           <div id="ed-log"><p style="color:#bbb;padding:1em">No AI edits yet. Select a block or text, then ✨ to ask for a change.</p></div>
@@ -475,6 +485,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (logPane) logPane.classList.add("ed-hidden");
     var featPane = document.getElementById("ed-features-pane");
     if (featPane) featPane.classList.add("ed-hidden");
+    var diagPane = document.getElementById("ed-diagram-pane");
+    if (diagPane) diagPane.classList.add("ed-hidden");
     var agDlg = document.getElementById("ed-agent-dialog");
     if (agDlg) agDlg.classList.add("ed-hidden");
     loadCompModel(); // fetch type→icon map (once)
@@ -1190,14 +1202,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   /* component model → icon by IAL type (e.g. "datagrid" → "▦") */
   var _compModel = null;
+  var _compIcons = {};
   function loadCompModel() {
     if (_compModel) return;
     fetch("{{ "/assets/component-model.json" | relative_url }}")
       .then(function (r) { return r.json(); })
       .then(function (d) {
         _compModel = d.model || {};
+        _compIcons = d.icons || {};
         var bp = document.getElementById("ed-blocks-pane");
         if (bp && bp.classList.contains("ed-active")) buildGrid();  // repaint with icons
+        var dp = document.getElementById("ed-diagram-pane");
+        if (dp && !dp.classList.contains("ed-hidden")) renderDiagram();  // repaint once model lands
       })
       .catch(function () { _compModel = {}; });
   }
@@ -1205,6 +1221,125 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (!type || !_compModel) return "";
     var c = _compModel[compName(type)];
     return (c && c.icon) || "";
+  }
+
+  /* ── 🗺️ Diagram tab ───────────────────────────────────────
+     A per-page class diagram: the component classes actually used in the file
+     being edited, their generalization up to the two roots (Block, Object),
+     and the blue association edges among them. Rendered as Graphviz DOT via
+     the shared window.lcDotToSvg helper (graphviz.md). */
+  function pageClassNames() {
+    var inp = document.getElementById("ed-input");
+    var seen = {}, out = [];
+    if (!inp || !_compModel) return out;
+    var raw = parseBlocks(inp.value || ""), blocks = [];
+    raw.forEach(function (b) { blocks = blocks.concat(extractSubBlocks(b)); });
+    blocks.forEach(function (b) {
+      if (!b.type) return;
+      var cn = compName(b.type);
+      if (_compModel[cn] && !seen[cn]) { seen[cn] = 1; out.push(cn); }
+    });
+    return out;
+  }
+  function dotEsc(s) { return String(s).replace(/_/g, " ").replace(/["{}|<>]/g, ""); }
+  function nodeLabel(n) {
+    var c = _compModel[n] || {}, parts = [(c.icon ? c.icon + " " : "") + dotEsc(n)];
+    var attrs = (c.attrs || []).map(function (a) {
+      return (_compIcons[a.t] || "•") + (a.list ? "⦙" : "") + " " + dotEsc(a.n) + "\\l";
+    }).join("");
+    var meths = (c.methods || []).map(function (m) {
+      return (m.post ? "▹ " + dotEsc(m.n) + " ▹" : "▸ " + dotEsc(m.n)) + "\\l";
+    }).join("");
+    if (attrs) parts.push(attrs);
+    if (meths) parts.push(meths);
+    return "{" + parts.join("|") + "}";
+  }
+  // resolve an association target to a node in the set, preferring a present
+  // subclass (a Chart bind="Dataset" pointed at a Query resolves to Query)
+  function resolveTarget(target, nodes, present) {
+    if (nodes[target]) return target;
+    for (var i = 0; i < present.length; i++) {
+      var c = present[i];
+      while (c && _compModel[c]) {
+        var base = (_compModel[c].bases || [])[0];
+        if (base === target) return present[i];
+        c = base;
+      }
+    }
+    return null;
+  }
+  function buildPageDot(present) {
+    if (!present.length) return null;
+    var nodes = {};
+    present.forEach(function (n) { nodes[n] = "page"; });
+    // walk each class up to its roots (Block / Object) so generalization shows
+    present.forEach(function (n) {
+      var c = n;
+      while (c && _compModel[c]) {
+        var base = (_compModel[c].bases || [])[0];
+        if (base && _compModel[base]) { if (!nodes[base]) nodes[base] = "base"; c = base; }
+        else break;
+      }
+    });
+    var FONT = 'fontname="Source Sans Pro, sans-serif"', L = [];
+    L.push('digraph page_model {');
+    L.push('  rankdir=BT; nodesep=0.3; ranksep=0.5;');
+    L.push('  graph [splines=ortho, ' + FONT + ', fontsize=10];');
+    L.push('  node [' + FONT + ', shape=record, style="filled,rounded", color="gray75", fillcolor=white, fontsize=10, penwidth=0.5];');
+    L.push('  edge [' + FONT + ', fontsize=8, penwidth=0.6, arrowsize=0.8];');
+    Object.keys(nodes).forEach(function (n) {
+      L.push('  ' + n + ' [label="' + nodeLabel(n) + '"' +
+        (nodes[n] === "base" ? ', fillcolor="gray95", color="gray80"' : '') + ']');
+    });
+    // generalization edges (UML hollow triangle) toward Block / Object
+    Object.keys(nodes).forEach(function (n) {
+      var base = (_compModel[n].bases || [])[0];
+      if (base && nodes[base]) L.push('  ' + n + ' -> ' + base +
+        ' [arrowhead=onormal, color="gray60", arrowsize=1.0]');
+    });
+    // association edges (blue), among the present classes
+    present.forEach(function (owner) {
+      (_compModel[owner].assoc || []).forEach(function (a) {
+        var tgt = resolveTarget(a.target, nodes, present);
+        if (!tgt) return;
+        L.push('  ' + owner + ' -> ' + tgt + ' [color=blue, fontcolor=blue, weight=8,' +
+          ' headlabel="' + (a.list ? "⦙ " : "") + dotEsc(a.n) + '", labeldistance=2.2, arrowsize=0.7]');
+      });
+    });
+    L.push('}');
+    return L.join("\n");
+  }
+  function renderDiagram() {
+    var pane = document.getElementById("ed-diagram-pane");
+    if (!pane) return;
+    if (!_compModel) {
+      loadCompModel();
+      pane.innerHTML = "<p style='color:#bbb;padding:1em'>Loading model…</p>";
+      return; // loadCompModel repaints this pane when the model lands
+    }
+    var present = pageClassNames();
+    if (!present.length) {
+      pane.innerHTML = "<p style='color:#bbb;padding:1em'>No components on this page yet. " +
+        "Add a <code>{: .datagrid }</code>, <code>{: .chart }</code>, … and the classes appear here.</p>";
+      return;
+    }
+    if (!window.lcDotToSvg) {
+      pane.innerHTML = "<p style='color:#b00;padding:1em'>Diagram engine unavailable.</p>";
+      return;
+    }
+    var dot = buildPageDot(present);
+    pane.innerHTML = "<p style='color:#bbb;padding:0.6em'>Rendering diagram…</p>";
+    window.lcDotToSvg(dot).then(function (svg) {
+      pane.innerHTML =
+        "<div id='ed-diagram-legend'><b>" + present.length + "</b> component class" +
+        (present.length === 1 ? "" : "es") + " on this page — " +
+        "<span style='color:#3a6'>▸ generalize</span> to <b>Block</b> / <b>Object</b>, " +
+        "<span style='color:blue'>→ associations</span> in blue.</div>" +
+        "<div class='ed-diagram-wrap'>" + svg + "</div>";
+    }).catch(function (e) {
+      pane.innerHTML = "<pre style='color:#b00;padding:1em;white-space:pre-wrap'>Diagram error: " +
+        escH(String((e && e.message) || e)) + "</pre>";
+    });
   }
   /* validate fenced data (json / yaml) in a block's content before applying */
   function checkBlockSyntax(content) {
@@ -1466,13 +1601,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var blocks = document.getElementById("ed-blocks-pane");
     var log    = document.getElementById("ed-log-pane");
     var feats  = document.getElementById("ed-features-pane");
+    var diag   = document.getElementById("ed-diagram-pane");
     blocks.classList.toggle("ed-active", name === "blocks");
     raw.classList.toggle("ed-hidden", name !== "raw");
     if (log) log.classList.toggle("ed-hidden", name !== "log");
     if (feats) feats.classList.toggle("ed-hidden", name !== "features");
+    if (diag) diag.classList.toggle("ed-hidden", name !== "diagram");
     if (name === "blocks") buildGrid();
     if (name === "log") renderLog();
     if (name === "features") openFeatures();
+    if (name === "diagram") renderDiagram();
   });
 
   /* ── 🧪 Features tab ─────────────────────────────────────
