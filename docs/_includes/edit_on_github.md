@@ -136,6 +136,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 /* ── Features tab ─────────────────────────────────────── */
 #ed-features-pane { display: flex; flex: 1; flex-direction: column; overflow: hidden; }
 #ed-features-pane.ed-hidden { display: none; }
+#ed-feat-bar { flex: none; display: flex; align-items: center; gap: 0.7em; padding: 0.45em 0.6em; border-bottom: 1px solid #f0f0f0; }
+#ed-feat-bar .lc-btn { font-size: 0.82em; padding: 0.3em 0.85em; }
+#ed-feat-bar-note { font-size: 0.78em; color: #9ca3af; }
 #ed-feat-grid { flex: 1; min-height: 60px; overflow: auto; }
 #ed-feat-grid table { width: 100%; border-collapse: collapse; font-size: 0.86em; }
 #ed-feat-grid th, #ed-feat-grid td { text-align: left; padding: 0.4em 0.6em; border-bottom: 1px solid #f0f0f0; }
@@ -353,6 +356,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           <textarea id="ed-input" placeholder="Select a file to start editing…" spellcheck="false"></textarea>
         </div>
         <div id="ed-features-pane" class="ed-hidden">
+          <div id="ed-feat-bar">
+            <a href="#" class="lc-btn" id="ed-feat-runall">▶ Run all</a>
+            <span id="ed-feat-bar-note">selecting a row scrolls to it; ▶ Run all runs the whole suite</span>
+          </div>
           <div id="ed-feat-grid"><p style="color:#bbb;padding:1em">No features on this page. A <code>{: .feature }</code> block appears here.</p></div>
           <div id="ed-feat-splitter"></div>
           <div id="ed-feat-preview"></div>
@@ -1465,7 +1472,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (feats) feats.classList.toggle("ed-hidden", name !== "features");
     if (name === "blocks") buildGrid();
     if (name === "log") renderLog();
-    if (name === "features") buildFeatureGrid();
+    if (name === "features") openFeatures();
   });
 
   /* ── 🧪 Features tab ─────────────────────────────────────
@@ -1519,18 +1526,21 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     grid.innerHTML = html + "</tbody></table>";
   }
 
-  function previewFeature(idx) {
-    var b = _blocks[idx];
-    if (!b || b.type !== "feature") return;
-    _featSelIdx = idx;
-    buildFeatureGrid();
+  /* render ALL features stacked in the preview. Scanning the root upgrades
+     each card AND (via the feature component's lcScanElement hook) inserts
+     its own "▶ Run All" suite dashboard when there are 2+ runnable cards —
+     so the test suite the .feature page shows appears here too. */
+  function renderFeatures() {
     var prev = document.getElementById("ed-feat-preview");
-    var text = (b.lines || []).join("\n");
+    if (!prev) return;
+    var rows = featureRows();
+    if (!rows.length) { prev.innerHTML = ""; return; }
+    var md = rows.map(function (r) { return (_blocks[r.i].lines || []).join("\n"); }).join("\n\n");
     function doRender() {
-      prev.innerHTML = window.marked ? window.marked.parse(normIAL(text)) : "<pre>" + escH(text) + "</pre>";
+      prev.innerHTML = window.marked ? window.marked.parse(normIAL(md)) : "<pre>" + escH(md) + "</pre>";
       if (window.lcApplyIAL) window.lcApplyIAL(prev);
       if (window.lcScanElement) window.lcScanElement(prev);
-      watchFeatureStatus(prev, idx);
+      wireWriteback(prev, rows);
     }
     if (window.marked) doRender();
     else if (window.lcLoadMarked) window.lcLoadMarked(doRender);
@@ -1549,31 +1559,55 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
   }
 
-  /* capture the live status (after ▶ Run) back into the source block */
-  function watchFeatureStatus(prev, idx) {
-    var card = prev.querySelector(".lc-feature");
-    if (!card) return;
-    function apply() {
-      var st = card.getAttribute("data-status");
-      if (!st || st === "none") return;
-      var b = _blocks[idx];
-      if (!b || (b.knobs && b.knobs.status === st)) return;
-      b.knobs = b.knobs || {};
-      b.knobs.status = st;
-      reserializeFeature(b);
-      var inp = document.getElementById("ed-input");
-      if (inp) { inp.value = blocksToText(_blocks); setDirty(true); updatePreview(inp.value); }
-      buildFeatureGrid();
-    }
-    try {
-      new MutationObserver(apply).observe(card, { attributes: true, attributeFilter: ["data-status"] });
-    } catch (e) {}
-    apply();
+  /* each preview card maps by position to a feature row; when its status
+     changes (▶ Run / Run All) write it back into the source block's IAL */
+  function wireWriteback(prev, rows) {
+    var cards = prev.querySelectorAll(".lc-feature");
+    cards.forEach(function (card, k) {
+      if (k >= rows.length) return;
+      var idx = rows[k].i;
+      function apply() {
+        var st = card.getAttribute("data-status");
+        if (!st || st === "none") return;
+        var b = _blocks[idx];
+        if (!b || (b.knobs && b.knobs.status === st)) return;
+        b.knobs = b.knobs || {};
+        b.knobs.status = st;
+        reserializeFeature(b);
+        var inp = document.getElementById("ed-input");
+        if (inp) { inp.value = blocksToText(_blocks); setDirty(true); updatePreview(inp.value); }
+        buildFeatureGrid();
+      }
+      try {
+        new MutationObserver(apply).observe(card, { attributes: true, attributeFilter: ["data-status"] });
+      } catch (e) {}
+      apply();
+    });
   }
+
+  /* open the tab: list + render all features so the suite is ready */
+  function openFeatures() { buildFeatureGrid(); renderFeatures(); }
 
   document.addEventListener("click", function (e) {
     var fr = e.target.closest("#ed-feat-grid tr[data-fi]");
-    if (fr) { previewFeature(parseInt(fr.getAttribute("data-fi"), 10)); }
+    if (fr) {
+      var idx = parseInt(fr.getAttribute("data-fi"), 10);
+      _featSelIdx = idx; buildFeatureGrid();
+      var rows = featureRows(), k = -1;
+      for (var j = 0; j < rows.length; j++) { if (rows[j].i === idx) { k = j; break; } }
+      var cards = document.querySelectorAll("#ed-feat-preview .lc-feature");
+      if (k >= 0 && cards[k]) cards[k].scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (e.target.closest("#ed-feat-runall")) {
+      e.preventDefault();
+      var pv = document.getElementById("ed-feat-preview");
+      var suiteRun = pv && pv.querySelector(".lc-suite-run");
+      if (suiteRun) { suiteRun.click(); return; }      // ≥2 features: drive the suite
+      var one = pv && pv.querySelector(".lc-feature .lc-feature-run");
+      if (one) one.click();                            // single feature
+      return;
+    }
   });
 
   /* ── ✨ AI edit: scoped · previewed · logged ─────────────
