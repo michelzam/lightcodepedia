@@ -147,7 +147,7 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
    the page becomes a full-viewport scroll-snap container, one section per
    snap. Native scroll-snap gives the momentum-then-snap feel; tall sections
    simply grow past 100dvh and the container scrolls through them. */
-body.lc-reel-active { overflow: hidden; }
+body.lc-reel-active { overflow: hidden; padding-top: 0 !important; }
 body.lc-reel-active #lc-topbar,
 body.lc-reel-active .lc-edit-fab { display: none !important; }
 body.lc-reel-active .markdown-body {
