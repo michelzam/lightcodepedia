@@ -36,7 +36,7 @@ script:
     say: "Now the services nearby. Click a row and the chart follows it — the app is comparing options to get Lucky rescued."
   - at: "#m1-map"
     input: bump
-    say: "And here's where to go. Real vets, real parks — Lucky's rescue, mapped."
+    say: "And here's where to go — Lake Park, Riverside Park, even UWM where you'll hunt your credits. Lucky's rescue, mapped on Milwaukee's East Side."
   - at: "#m1-design"
     say: "Pop the hood: the screen, the model, and the code are three views of one thing."
   - at: "#m1-specs"
@@ -71,9 +71,9 @@ the Navigator understands *who needs help*.
 who: Lucky (and me)
 need: Find a vet — Lucky swallowed something
 urgency: high
-location: 5th arrondissement
+location: East Side, Milwaukee (by UWM)
 has_car: false
-budget_eur: 80
+budget_usd: 80
 ```
 {: .form editable="true" }
 ````
@@ -89,12 +89,12 @@ sort and a chart that follows your selection — **select a row** to compare.
 
 ```csv
 service,kind,neighbourhood,distance_km,rating
-Dr. Patel Veterinary,vet,5th,1.4,4.8
-City Lost-Pet Hotline,hotline,—,0.0,4.7
-Bois de Boulogne Dog Run,park,16th,2.1,4.6
-Happy Tails Shelter,adoption,11th,3.2,4.5
-Good Dog Training,training,10th,2.7,4.4
-PawPrint Grooming,grooming,3rd,0.9,4.2
+UWM School of Information Studies,credits,Kenwood Campus,0.2,5.0
+Lake Park,park,East Side,1.1,4.8
+Riverside Park,park,Riverwest,1.9,4.6
+Estabrook Park,park,Shorewood,3.4,4.7
+Lakeshore Veterinary Specialists,vet,Glendale,6.1,4.7
+MADACC Lost-Pet Hotline,hotline,—,0.0,4.6
 ```
 {: .dataset #paws_services }
 
@@ -112,16 +112,17 @@ PawPrint Grooming,grooming,3rd,0.9,4.2
 ### 3️⃣ Find it on the map {#m1-map}
 
 ````
-### 🗺️ Where to go [Zoom in — the vet and the parks are real places]
+### 🗺️ Where to go [Zoom in — the parks and campus are real Milwaukee places]
 
 ```json
 [
-  { "lat": 48.8462, "lon": 2.3372, "label": "🏥 Dr. Patel Veterinary" },
-  { "lat": 48.8620, "lon": 2.2474, "label": "🌳 Bois de Boulogne Dog Run" },
-  { "lat": 48.8795, "lon": 2.3090, "label": "🐾 PawPrint Grooming" }
+  { "lat": 43.0766, "lon": -87.8817, "label": "🎓 UWM — School of Information Studies (hunt your credits)" },
+  { "lat": 43.0556, "lon": -87.8720, "label": "🌳 Lake Park" },
+  { "lat": 43.0731, "lon": -87.8957, "label": "🌳 Riverside Park" },
+  { "lat": 43.0958, "lon": -87.9036, "label": "🌳 Estabrook Park" }
 ]
 ```
-{: .map height="320" zoom="12" }
+{: .map height="320" zoom="13" }
 ````
 {: .block }
 
@@ -142,7 +143,7 @@ separate things. They're **views of one underlying model**. Try it:
 
 You don't design anything yet. You just learn that **every live thing on the
 page has a structure you can look into** — screen, model and code are three
-faces of the same object. We'll open each face in later modules.
+faces of the same object. We'll open each face in later chapters.
 
 ## 📜 Specs — the promises were there all along {#m1-specs}
 
@@ -158,7 +159,7 @@ and checked **automatically** every time the app changes. On Lightcodepedia you
 can see this exact idea running live: the
 [evidence page](/nodes) shows the site testing **itself** after every update,
 and turning the results into living documentation. The features were there from
-your very first click — you just couldn't see them. We'll write our own in M7.
+your very first click — you just couldn't see them. We'll write our own a few chapters on.
 
 ---
 
@@ -174,7 +175,6 @@ The five ideas that make everything else possible — in plain words:
 
 ## 🎲 Test yourself
 
-````
 **Q:** In BUILD-AI, what do you need before you can build a working app?
 
 - [ ] Several years of programming experience
@@ -206,7 +206,6 @@ The five ideas that make everything else possible — in plain words:
 - [x] the promises the app keeps, written down and checked automatically
 - [ ] a marketing brochure
 {: .quiz }
-````
 
 ## 📖 From the future, decoded — the real words
 
