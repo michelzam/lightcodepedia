@@ -531,12 +531,20 @@ body.lc-reel-active .lc-reel-bar {
       }
       if (progEl) progEl.textContent = (currentReelIndex() + 1) + ' / ' + slides.length;
     }
-    function enterReel() {
+    function enterReel(viaUrl) {
       if (!hasDeck()) return;
       if (body.classList.contains('lc-slides-active')) exit();      // mutually exclusive
       body.classList.add('lc-reel-active');
       syncReelFab(true);
-      syncReelUrl(true);
+      try {
+        var url = new URL(location.href); url.searchParams.set('reel', '1');
+        var u = url.toString().replace(/\?$/, '');
+        // push a history entry on interactive entry so the browser Back button
+        // exits the reel (rather than leaving the page); on a ?reel= load we
+        // just replace, since that load is already its own history entry
+        if (viaUrl) history.replaceState({ lcReel: 1 }, '', u);
+        else history.pushState({ lcReel: 1 }, '', u);
+      } catch (e) {}
       try { main.scrollTo(0, 0); } catch (e) { main.scrollTop = 0; }
       syncReelBar();
     }
@@ -734,6 +742,10 @@ body.lc-reel-active .lc-reel-bar {
       if (!body.classList.contains('lc-reel-active')) return;
       if (e.key === 'Escape') { exitReel(); e.preventDefault(); }
     });
+    /* browser Back exits the reel (consumes the entry pushed on enter) */
+    window.addEventListener('popstate', function(){
+      if (body.classList.contains('lc-reel-active')) exitReel();
+    });
     /* keep the sticky bar's position counter live as the reel scrolls */
     var _reelTick = false;
     main.addEventListener('scroll', function(){
@@ -777,7 +789,7 @@ body.lc-reel-active .lc-reel-bar {
         setTimeout(enter, 0);
       }
       if (params.has('reel') && params.get('reel') !== '0' && params.get('reel') !== 'false') {
-        setTimeout(enterReel, 0);
+        setTimeout(function(){ enterReel(true); }, 0);
       }
     } catch (e) {}
 
