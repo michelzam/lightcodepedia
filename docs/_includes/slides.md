@@ -174,6 +174,10 @@ body.lc-reel-active .lc-reel-bar {
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   border-bottom: 1px solid #eef1f4;
 }
+.lc-reel-back { flex: none; border: none; background: none; cursor: pointer;
+  font-size: 1.6em; line-height: 1; color: #1f2937; padding: 0; margin: -0.1em 0.1em 0 -0.2em;
+  -webkit-appearance: none; appearance: none; }
+.lc-reel-back:hover { color: #0066cc; }
 .lc-reel-bar-title { flex: 1; min-width: 0; font-weight: 700; color: #1f2937;
   font-size: 1.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lc-reel-bar-progress { flex: none; color: #6b7280; font-size: 0.82em;
@@ -187,7 +191,8 @@ body.lc-reel-active .lc-reel-bar {
   <button class="lc-bl-popup-item" id="lc-bl-reel-btn"    type="button">📲 Reel</button>
   <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    type="button">🔬 X-ray</button>
 </div>
-<div class="lc-reel-bar" aria-hidden="true">
+<div class="lc-reel-bar">
+  <button class="lc-reel-back" type="button" aria-label="Back to previous page" title="Back">‹</button>
   <span class="lc-reel-bar-title"></span>
   <span class="lc-reel-bar-progress"></span>
 </div>
@@ -745,6 +750,15 @@ body.lc-reel-active .lc-reel-bar {
     /* browser Back exits the reel (consumes the entry pushed on enter) */
     window.addEventListener('popstate', function(){
       if (body.classList.contains('lc-reel-active')) exitReel();
+    });
+    /* visible ‹ Back in the reel bar — navigate to the previous page (distinct
+       from scroll-up, which only moves between sections); if there's nowhere
+       to go back to, just exit the reel */
+    var reelBack = document.querySelector('.lc-reel-back');
+    if (reelBack) reelBack.addEventListener('click', function(e){
+      e.preventDefault();
+      if (history.length > 1) history.back();
+      else exitReel();
     });
     /* keep the sticky bar's position counter live as the reel scrolls */
     var _reelTick = false;
