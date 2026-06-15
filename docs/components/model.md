@@ -27,6 +27,7 @@ digraph component_model {
     Page [label="{📄 Page ➭ ◻️|🔤 id\l|▸ feature\l▸ features\l}"]
     Dataset [label="{🛢️ Dataset ➭ ◻️|🔘 loaded\l🔢 count\l}"]
     Bar [label="{▮ Bar ➭ ◻️|🔢 value\l🔤 color\l}"]
+    KnowledgeNode [label="{📚 KnowledgeNode ➭ ◻️|🎛️ state\l🔤 title\l🔤 goal\l🔤 use case\l⦙ key concepts\l🔢 karma\l|▹ discover ▹\l▹ design ▹\l▹ specify ▹\l▹ master ▹\l}"]
     Query [label="{🔎 Query|🔤 query\l🔘 editable\l🔘 loaded\l🔢 count\l}"]
   }
   subgraph cluster_pkg_ui {
@@ -88,6 +89,25 @@ digraph component_model {
   st_Avatar_idle -> Avatar [style=dashed, arrowhead=none, color="gray70"]
   AvatarTrigger -> Avatar [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="target", fontsize=8]
   Form -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bound", fontsize=8]
+  KnowledgeNode -> KnowledgeNode [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="⦙ prerequisites", fontsize=8]
+  KnowledgeNode -> KnowledgeNode [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="⦙ next", fontsize=8]
+  KnowledgeNode -> Quiz [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="⦙ quiz", fontsize=8]
+  subgraph cluster_states_KnowledgeNode {
+    label="📚 states 🎛️"; fontsize=10;
+    style="filled,rounded"; fillcolor="gray94"; color="gray85"; margin=12; nodesep=0.9;
+    node [fontname="Source Sans Pro, sans-serif", shape=record, style="filled,rounded", fillcolor="white", color="gray", fontsize=10, penwidth=0.3]
+    edge [style=solid, arrowhead=vee, penwidth=0.2, arrowsize=0.7, fontsize=8]
+    st_KnowledgeNode_locked [label="➡️ locked"]
+    st_KnowledgeNode_discovering [label="discovering"]
+    st_KnowledgeNode_designing [label="designing"]
+    st_KnowledgeNode_specifying [label="specifying"]
+    st_KnowledgeNode_mastered [label="mastered"]
+  }
+  st_KnowledgeNode_locked -> st_KnowledgeNode_discovering [xlabel="discover", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
+  st_KnowledgeNode_discovering -> st_KnowledgeNode_designing [xlabel="design", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
+  st_KnowledgeNode_designing -> st_KnowledgeNode_specifying [xlabel="specify", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
+  st_KnowledgeNode_specifying -> st_KnowledgeNode_mastered [xlabel="master", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
+  st_KnowledgeNode_locked -> KnowledgeNode [style=dashed, arrowhead=none, color="gray70"]
   Query -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="source", fontsize=8]
   subgraph cluster_states_Quiz {
     label="❓ states 🎛️"; fontsize=10;

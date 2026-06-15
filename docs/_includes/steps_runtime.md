@@ -648,6 +648,49 @@ class Quiz(Block):
         return self._tap(".lc-quiz-check, [data-lc-check]")
 
 
+@component(icon="📚",
+           attrs=[{"n": "title", "t": "str", "data": True, "d": ""},
+                  {"n": "goal", "t": "str", "data": True, "d": ""},
+                  {"n": "use_case", "t": "str", "data": True, "d": ""},
+                  {"n": "key_concepts", "t": "list"},
+                  {"n": "karma", "t": "int", "data": True, "d": 0}],
+           assoc=[{"n": "prerequisites", "target": "KnowledgeNode", "list": True},
+                  {"n": "next", "target": "KnowledgeNode", "list": True},
+                  {"n": "quiz", "target": "Quiz", "list": True}],
+           methods=["discover", "design", "specify", "master"],
+           states=["locked", "discovering", "designing", "specifying", "mastered"])
+class KnowledgeNode(Object):
+    """A single learning topic, modelled as a stateful object.
+
+    Encapsulates one BUILD-AI module: its from-the-future goal, the use-case
+    slice it teaches, its key concepts and quiz, the karma it grants, and its
+    place in the graph (prerequisites ←→ next). Its state machine *is* the
+    teaching method — the three Aristotelian unities, walked in order:
+    locked → discovering (place) → designing (action) → specifying (time) →
+    mastered.
+    """
+
+    @transition(["locked"], "discovering")
+    def discover(self):
+        """Unity of place — meet the running thing as a user."""
+        return self
+
+    @transition(["discovering"], "designing")
+    def design(self):
+        """Unity of action — open the synchronised screen / model / code."""
+        return self
+
+    @transition(["designing"], "specifying")
+    def specify(self):
+        """Unity of time — reveal the specs that were there all along."""
+        return self
+
+    @transition(["specifying"], "mastered")
+    def master(self):
+        """Quiz passed, karma granted — the verified topic becomes a block."""
+        return self
+
+
 @component(icon="📑", attrs=[{"n": "active", "t": "int"}], methods=["select"])
 class Tabs(Block):
     @property
