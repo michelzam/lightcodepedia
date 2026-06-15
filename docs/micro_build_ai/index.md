@@ -27,63 +27,110 @@ AI as a power tool, not a magic box.
 
 - ✅ **No prerequisites.** No programming, no maths, no installs.
 - ✅ **Browser only.** Everything runs on this page.
-- ✅ **8 short modules.** Each leaves you with something that works.
+- ✅ **3 build sprints + a capstone.** Each one ships something that works.
 - ✅ **A credential at the end** — earn karma as you go.
 
-## 🌙 How this works — we moonwalk
+## 🌀 We don't march — we spiral
 
-Most courses start at the bottom (theory) and climb to a result you might reach
-someday. **We do the opposite.** You start at the **goal** — a finished,
-working app — then walk *backwards*, peeling back one layer per module, until
-you reach the single idea it grew from. You'll feel like you're moving forward
-the whole time, while the curriculum quietly walks you back to the foundations.
+A lot of courses teach the software lifecycle as a straight line: requirements,
+then design, then build, then test, then deploy — eight neat modules, one after
+another. That's a *waterfall*, and it's a strange way to teach building *with
+AI*, which is anything but linear.
+
+**So we spiral instead.** You travel the *whole* lifecycle — idea → build → test
+→ ship — in a short loop, then go around again with higher stakes. Three loops,
+two weeks each, then two weeks for a project of your own:
+
+```mermaid
+graph LR
+  K([🔑 Get your key<br/>account + token]):::key --> I1
+  I1[🏃 Iteration 1 · Make it exist<br/>idea → running thing]:::iter --> I2
+  I2[🏃 Iteration 2 · Make it right for someone<br/>a real user & requirement]:::iter --> I3
+  I3[🏃 Iteration 3 · Make it last<br/>survive change & deploy]:::iter --> CAP
+  CAP[🏆 Capstone · Make your own<br/>your problem, no scaffold]:::cap
+  classDef key fill:#ffd400,stroke:#222,color:#222;
+  classDef iter fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+  classDef cap fill:#1e88e5,stroke:#222,color:#fff;
+```
+
+Each loop has an **escalating constraint** — a new "urgent need" that pulls in
+exactly the components and concepts you need to clear it. Nothing is taught
+"because the syllabus says so"; you meet a tool the moment the project hits a
+wall that needs it.
+
+| Weeks | Iteration | The constraint that creates the need | What it pulls in |
+|---|---|---|---|
+| 1–2 | 🏃 **Make it exist** | idea → a running thing, fast | your key, `.form`, `.diagram`, the build-&-see-it-run loop |
+| 3–4 | 🏃 **Make it right for someone** | a *real* user with a *real* requirement | user stories, `.datagrid`, acceptance tests |
+| 5–6 | 🏃 **Make it last** | it has to survive change and be deployed | CI/CD, the verification suite, observability |
+| 7–8 | 🏆 **Capstone** | *your* problem — no scaffold | whatever the catalog offers, pulled on demand |
+
+> Notice the shape of this very site: feature cards written as user stories →
+> an automated suite that re-checks them on every change → results published as
+> living proof. The course teaches the exact loop the medium is built from.
+{: .speaker-note }
+
+## 🌙 Inside each loop — we moonwalk
+
+Within every iteration the same three-beat rhythm repeats. We start at the
+**goal** — a finished, working thing — then walk *backwards*, peeling back one
+layer at a time, until we reach the single idea it grew from. You feel like
+you're moving forward the whole time, while the curriculum quietly walks you
+back to the foundations.
+
+1. 🐾 **Discover** — use the live thing as a user. *Behavior before architecture.*
+2. 🔧 **Design** — open it up: the screen, the model and the code are three views of one thing.
+3. 📜 **Specs** — see the promises it keeps (tests), turned into living documentation and reusable blocks.
 
 > This is the *Aristotelian* way: **from the future** — build (and use) the app
 > *before* its specs and model. The features were there all along; you just
 > discover them last.
 {: .speaker-note }
 
-Inside **every** module the same three-beat rhythm repeats:
+## 🔑 First need: get your key
 
-1. 🐾 **Discover** — use the live thing as a user. *Behavior before architecture.*
-2. 🔧 **Design** — open it up: the screen, the model and the code are three views of one thing.
-3. 📜 **Specs** — see the promises it keeps (tests), turned into living documentation and reusable blocks.
+Iteration 1 opens with the one thing everything else depends on. To **really ask
+Ari** for help, and to **ship your own work later**, you need a free GitHub
+account and a key (a token). It takes about a minute, and it's the first urgent
+need the project hands you — not paperwork, but the thing that switches the
+lights on. You use **your own** credits; nothing is billed to anyone else, and
+no key ever touches our servers.
 
-## 🗺️ The map
+[🔑 Get your key → start Iteration 1](/micro_build_ai/onboarding)
+{: .lc-btn }
 
-```mermaid
-graph TD
-  G([🎯 The goal: a useful app — already built]):::goal --> M1
-  M1[🔮 M1 · From the future<br/>use the finished Paws Support Navigator] --> M2
-  M2[🤖 M2 · The AI inside<br/>summarise · classify · recommend · explain] --> M3
-  M3[🗣️ M3 · Directing AI<br/>prompt · disclose · check · stay in control] --> M4
-  M4[✅ M4 · Can we trust it?<br/>examples it must pass · testing] --> M5
-  M5[⚙️ M5 · Rules & data<br/>eligibility rules · the services behind it] --> M6
-  M6[🧱 M6 · Building blocks<br/>forms · grids · maps, snapped together] --> M7
-  M7[📜 M7 · The spec<br/>the plain-language description of behaviour] --> M8
-  M8[💡 M8 · The idea + the user<br/>one person, one problem — now you build]:::seed
-  classDef goal fill:#ffd400,stroke:#222,color:#222;
-  classDef seed fill:#1e88e5,stroke:#222,color:#fff;
-```
+## 📚 The catalog — pulled on demand
+
+The lifecycle topics aren't a fixed track anymore; they're a **catalog of
+knowledge nodes** you route through as each iteration's needs demand. Every node
+is modelled as the same `KnowledgeNode` (see the [component model](/components/model))
+— a tiny state machine you walk: `discover → design → specify → master`.
+
+[📚 Browse the catalog](/micro_build_ai/catalog)
+{: .lc-btn }
 
 ## 🤖 Meet your guide
 
 Throughout the journey, **Ari** — your Aristotelian guide — is one click away to
-rephrase anything, answer "but why?", and nudge you when you're stuck. The pet
-you teach is **Lucky** 🐕 (with **Wanda** 🐠 as the resident skeptic).
+rephrase anything, answer "but why?", and nudge you when you're stuck. Ari isn't
+a link to somewhere else: it's a **live assistant right on the page**, powered by
+your own key. The pet you teach is **Lucky** 🐕 (with **Wanda** 🐠 as the
+resident skeptic).
 
 ```
-### ▶️ Start the journey
-Module 1 is the big reveal — the finished app, in your hands.
+### 🔑 Start here
+The first need: an account and a key. One minute, then Ari is live.
 
-[Begin → M1 · From the future](/micro_build_ai/m1-from-the-future)
+[Get your key → Iteration 1](/micro_build_ai/onboarding)
 
-### 🧭 How to read a module
-Every module follows the same shape, so you always know where you are.
+### 📚 The catalog
+Every lifecycle topic as a knowledge node, pulled in when you need it.
 
-[See the node template](/micro_build_ai/node-template)
+[Browse the catalog](/micro_build_ai/catalog)
 
-### 🏠 Back to the site
-[Lightcodepedia home →](/)
+### 🤖 Ask Ari
+Your live Aristotelian guide — chat with it right here once you have a key.
+
+[Meet Ari](/micro_build_ai/ari)
 ```
 {: .cards cols="3" }

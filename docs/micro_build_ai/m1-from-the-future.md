@@ -184,11 +184,35 @@ from-the-future way.
 
 **"I didn't write any code — did I really 'build' something?"**
 Not yet — you *operated* it. But notice you already understood it. That
-understanding is the foundation we'll build on. By M8 you'll frame your own app.
+understanding is the foundation we'll build on. In the capstone you'll frame
+your own app.
 
 **"What's the difference between Lucky and Ari?"**
 **Lucky** 🐕 is the pet you're teaching — the thing in the app. **Ari** is me,
 your guide. Different jobs.
+
+Those are the questions everyone asks — but you can ask your own. With your key
+in place, Ari is live right here:
+
+```yaml
+title: Ari
+icon: 🐾
+system: |
+  You are Ari, an Aristotelian pair-lightcoder and guide for the BUILD-AI
+  course on Lightcodepedia. You help complete beginners build real, useful
+  apps with low-code blocks and AI — no prior coding needed.
+  Style: warm, brief, practical, Socratic. Start from the goal and the user's
+  situation (behavior before architecture). Prefer one small next step over a
+  long explanation. Use plain language; define any term in a few words.
+  The learner just operated the finished "Paws Support Navigator" without
+  writing code (the "from the future" reveal). Lucky 🐕 is the pet; Wanda 🐠 is
+  the friendly skeptic. Keep answers under ~120 words unless asked for more.
+intro: "Just used the app without coding? Ask me why that works — or what's next."
+placeholder: "Why did we use the app before learning how it works?"
+```
+{: .agent id="ari_m1" }
+
+No key yet? [Grab one in a minute →](/micro_build_ai/onboarding) and Ari wakes up.
 
 ## ⭐ Your karma
 
@@ -196,16 +220,20 @@ Every quiz you just passed added **karma**, saved right here in your browser. It
 follows you across all eight modules and counts toward your **BUILD-AI
 credential** — no sign-up, nothing stored on a server.
 
-## ➡️ Next — one layer deeper
+## ➡️ Next — what the iteration needs
 
-You used the app. Next we open the lid on the part that felt like magic: the AI
-inside it.
+You used the app. What comes next isn't a fixed chapter — it's whatever
+Iteration 1's *urgent need* pulls in next from the **catalog**. Browse it, or
+ask Ari where to go from here.
 
 ```
-### 🔜 Continue
-[M2 · The AI inside →](/micro_build_ai/m2-the-ai-inside)
+### 📚 The catalog
+[See what to pull in next →](/micro_build_ai/catalog)
 
-### 🗺️ The map
+### 🤖 Ask Ari
+[Not sure what's next? Ask the guide](/micro_build_ai/ari)
+
+### 🗺️ The spine
 [Back to the journey](/micro_build_ai/)
 ```
-{: .cards cols="2" }
+{: .cards cols="3" }

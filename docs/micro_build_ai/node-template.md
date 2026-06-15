@@ -93,9 +93,11 @@ top-down. Keep it to 3–4 lines.*
 
 ## 🤖 Ask Ari
 
-> *Ari is the guide — scripted-first (no setup, works offline).* Provide a short
-> curated Q&A of the questions learners actually ask in this module. (Optional:
-> upgrade to a live `{: .agent }` assistant where a key/proxy is available.)
+> *Ari is the guide.* Lead with a short curated Q&A (works even before a key, and
+> seeds the questions learners actually ask). Then drop a **live Ari panel** —
+> learners get their key in [onboarding](/micro_build_ai/onboarding), so by the
+> time they reach any node, Ari can really answer. Brand it with `title: Ari`
+> and `icon: 🐾`, and tailor the `system:` prompt to this node's moment.
 
 **"Why did we use the app before learning how it works?"**
 Because behavior is easier to grasp than architecture — you build intuition
@@ -103,6 +105,20 @@ first, then we explain the machinery underneath.
 
 **"I'm stuck — where do I look?"**
 Re-read the **Key concepts** card above; each line maps to one quiz question.
+
+```yaml
+title: Ari
+icon: 🐾
+system: |
+  You are Ari, an Aristotelian pair-lightcoder for the BUILD-AI course.
+  Warm, brief, Socratic. Start from the goal; offer one small next step.
+  Tailor this line to the node's moment. Keep answers under ~120 words.
+intro: "Ask me anything about this node."
+placeholder: "Why does this matter?"
+```
+{: .agent id="ari_node" }
+
+No key yet? [Get one →](/micro_build_ai/onboarding)
 
 ## ⭐ Your karma
 

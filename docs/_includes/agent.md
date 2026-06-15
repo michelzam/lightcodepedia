@@ -19,7 +19,9 @@ Bound to a runner (writes code back to a .run editor):
   {: .agent bound="play" }
 
 YAML knobs (optional):
-  system, model, temperature, max_tokens, intro, placeholder
+  system, model, temperature, max_tokens, intro, placeholder,
+  title, icon  (panel header text + emoji — default "Agent" / 🤖;
+                set title: Ari to brand the panel as the guide)
 IAL knobs:
   id="..."    required when there are multiple agents on a page
   rows="3"    prompt input height
@@ -196,7 +198,9 @@ Auto-included by docs/_layouts/default.html.
     intro: '',
     placeholder: 'Ask anything...',
     temperature: 0.7,
-    max_tokens: 500
+    max_tokens: 500,
+    title: 'Agent',
+    icon: '🤖'
   };
 
   // ===== panel structure =====
@@ -208,8 +212,8 @@ Auto-included by docs/_layouts/default.html.
     var boundLabel = boundId ? '<span class="lc-agent-bound">linked to <code>#' + escapeHtml(boundId) + '</code></span>' : '';
     div.innerHTML =
       '<div class="lc-agent-head">' +
-        '<span class="lc-agent-icon" aria-hidden="true">🤖</span>' +
-        '<span class="lc-agent-title">Agent</span>' +
+        '<span class="lc-agent-icon" aria-hidden="true">' + escapeHtml(cfg.icon) + '</span>' +
+        '<span class="lc-agent-title">' + escapeHtml(cfg.title) + '</span>' +
         boundLabel +
         '<button type="button" class="lc-agent-key" title="Change token" aria-label="Change token">🔑</button>' +
       '</div>' +
