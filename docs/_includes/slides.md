@@ -159,11 +159,25 @@ body.lc-reel-active .markdown-body {
 body.lc-reel-active .lc-slide {
   min-height: 100vh; min-height: 100dvh;
   scroll-snap-align: start; scroll-snap-stop: always;
-  box-sizing: border-box; padding: 2.6em 1.4em 3.2em;
-  display: flex; flex-direction: column; justify-content: center;
+  box-sizing: border-box; padding: 4.2em 1.4em 3.2em;
+  display: flex; flex-direction: column; justify-content: flex-start;
   max-width: 900px; margin: 0 auto;
 }
 body.lc-reel-active .lc-slide > :first-child { margin-top: 0; }
+/* sticky context bar: the page's common title + live position */
+.lc-reel-bar { display: none; }
+body.lc-reel-active .lc-reel-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1001;
+  display: flex; align-items: center; gap: 0.8em;
+  padding: 0.7em 1.1em; box-sizing: border-box;
+  background: rgba(255,255,255,0.92);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border-bottom: 1px solid #eef1f4;
+}
+.lc-reel-bar-title { flex: 1; min-width: 0; font-weight: 700; color: #1f2937;
+  font-size: 1.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lc-reel-bar-progress { flex: none; color: #6b7280; font-size: 0.82em;
+  font-variant-numeric: tabular-nums; }
 </style>
 <a class="lc-slides-fab" href="#" title="Present as slides" aria-label="Present as slides">
   <span class="lc-slides-fab-icon" aria-hidden="true">📽️</span><span class="lc-slides-fab-label">Present</span>
@@ -172,6 +186,10 @@ body.lc-reel-active .lc-slide > :first-child { margin-top: 0; }
   <button class="lc-bl-popup-item" id="lc-bl-present-btn" type="button">📽️ Present</button>
   <button class="lc-bl-popup-item" id="lc-bl-reel-btn"    type="button">📲 Reel</button>
   <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    type="button">🔬 X-ray</button>
+</div>
+<div class="lc-reel-bar" aria-hidden="true">
+  <span class="lc-reel-bar-title"></span>
+  <span class="lc-reel-bar-progress"></span>
 </div>
 <nav class="lc-slides-nav" role="toolbar" aria-label="Slide navigation">
   <button class="lc-slides-nav-prev" type="button" title="Previous (←)" aria-label="Previous slide">◀</button>
@@ -494,6 +512,25 @@ body.lc-reel-active .lc-slide > :first-child { margin-top: 0; }
     function toggle() { body.classList.contains('lc-slides-active') ? exit() : enter(); }
 
     /* ── Reel mode — same sections, Instagram-style vertical snap ──────── */
+    function currentReelIndex() {
+      var top = main.getBoundingClientRect().top, best = 0, bestD = Infinity;
+      slides.forEach(function(s, i){
+        var d = Math.abs(s.getBoundingClientRect().top - top);
+        if (d < bestD) { bestD = d; best = i; }
+      });
+      return best;
+    }
+    function syncReelBar() {
+      var bar = document.querySelector('.lc-reel-bar');
+      if (!bar) return;
+      var titleEl = bar.querySelector('.lc-reel-bar-title');
+      var progEl = bar.querySelector('.lc-reel-bar-progress');
+      if (titleEl) {
+        var h1 = main.querySelector('h1');
+        titleEl.textContent = (h1 && h1.textContent.trim()) || document.title || 'Reel';
+      }
+      if (progEl) progEl.textContent = (currentReelIndex() + 1) + ' / ' + slides.length;
+    }
     function enterReel() {
       if (!hasDeck()) return;
       if (body.classList.contains('lc-slides-active')) exit();      // mutually exclusive
@@ -501,6 +538,7 @@ body.lc-reel-active .lc-slide > :first-child { margin-top: 0; }
       syncReelFab(true);
       syncReelUrl(true);
       try { main.scrollTo(0, 0); } catch (e) { main.scrollTop = 0; }
+      syncReelBar();
     }
     function exitReel() {
       body.classList.remove('lc-reel-active');
@@ -696,6 +734,18 @@ body.lc-reel-active .lc-slide > :first-child { margin-top: 0; }
       if (!body.classList.contains('lc-reel-active')) return;
       if (e.key === 'Escape') { exitReel(); e.preventDefault(); }
     });
+    /* keep the sticky bar's position counter live as the reel scrolls */
+    var _reelTick = false;
+    main.addEventListener('scroll', function(){
+      if (!body.classList.contains('lc-reel-active') || _reelTick) return;
+      _reelTick = true;
+      requestAnimationFrame(function(){
+        _reelTick = false;
+        var bar = document.querySelector('.lc-reel-bar');
+        var progEl = bar && bar.querySelector('.lc-reel-bar-progress');
+        if (progEl) progEl.textContent = (currentReelIndex() + 1) + ' / ' + slides.length;
+      });
+    }, { passive: true });
     /* Reel is "sticky": while active, internal navigations carry ?reel=1
        forward so the experience continues across pages (tap a card → the next
        page opens as a reel). Skips external links, downloads, new-tab clicks
