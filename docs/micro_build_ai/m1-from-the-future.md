@@ -1,4 +1,4 @@
-# 🔮 M1 · From the future
+# 🔮 Chapter 1 · From the future
 
 ## 🎯 The goal
 
@@ -15,6 +15,39 @@ to uncover how a dog (and you) could possibly make such a thing.
 > being curious, not the price of admission.
 {: .speaker-note }
 
+## 🚗 Short on time? Let me drive
+
+Ari's little roadster can take the wheel and **drive you through this whole
+chapter** — it rolls to each part of Lucky's app, spotlights it, and explains it
+out loud. Press play and ride along, or read on and explore at your own pace.
+
+```yaml
+voice: en-US
+rate: 1.0
+rive:
+  url: https://cdn.rive.app/animations/vehicles.riv
+script:
+  - say: "Buckle up — I'll drive you through Lucky's app in under a minute. Here we go!"
+  - at: "#m1-situation"
+    input: bump
+    say: "First stop: Lucky's situation. This card is the app listening — who needs help, and how badly. Change a field and everything reacts."
+  - at: "#lc-datagrid-paws_grid"
+    input: bump
+    say: "Now the services nearby. Click a row and the chart follows it — the app is comparing options to get Lucky rescued."
+  - at: "#m1-map"
+    input: bump
+    say: "And here's where to go. Real vets, real parks — Lucky's rescue, mapped."
+  - at: "#m1-design"
+    say: "Pop the hood: the screen, the model, and the code are three views of one thing."
+  - at: "#m1-specs"
+    say: "The app kept promises the whole time you used it. Those promises are its spec — you'll write your own soon."
+  - say: "That's the chapter! Now take the wheel yourself. See you in the next one."
+```
+{: .avatar #m1_drive size="150" }
+
+[🚗 Let me drive you faster](#)
+{: .avatar-trigger target="m1_drive" label-stop="⏹ Stop the car" }
+
 ## 🧱 Before you start
 
 Nothing. Bring curiosity and a browser. This is the first stop on the map.
@@ -26,7 +59,7 @@ Nothing. Bring curiosity and a browser. This is the first stop on the map.
 This is the real thing. Poke it. Notice that **you already know how to use it**,
 even though nobody has explained anything yet.
 
-### 1️⃣ Tell it your situation
+### 1️⃣ Tell it your situation {#m1-situation}
 
 This card is a live object — change any field and it updates instantly. It's how
 the Navigator understands *who needs help*.
@@ -76,7 +109,7 @@ PawPrint Grooming,grooming,3rd,0.9,4.2
 ````
 {: .blocks cols="2" }
 
-### 3️⃣ Find it on the map
+### 3️⃣ Find it on the map {#m1-map}
 
 ````
 ### 🗺️ Where to go [Zoom in — the vet and the parks are real places]
@@ -98,7 +131,7 @@ first.*
 
 ---
 
-## 🔧 Design — peek under the hood (just a peek)
+## 🔧 Design — peek under the hood (just a peek) {#m1-design}
 
 Here's the first secret: the form, the table, the chart and the map aren't four
 separate things. They're **views of one underlying model**. Try it:
@@ -111,7 +144,7 @@ You don't design anything yet. You just learn that **every live thing on the
 page has a structure you can look into** — screen, model and code are three
 faces of the same object. We'll open each face in later modules.
 
-## 📜 Specs — the promises were there all along
+## 📜 Specs — the promises were there all along {#m1-specs}
 
 Why did the app feel trustworthy? Because it was quietly **keeping promises** the
 whole time you used it — for example:
@@ -174,6 +207,26 @@ The five ideas that make everything else possible — in plain words:
 - [ ] a marketing brochure
 {: .quiz }
 ````
+
+## 📖 Chapter 1, decoded — the real words
+
+You just did real software engineering; we only dressed it in a story. Here's
+the translation, so the official words click into place *after* you've felt what
+they mean:
+
+| In the story | What professionals call it |
+|---|---|
+| Using Lucky's finished app *before* building it | **Outside-in** (behavior-first) design |
+| "The card that listens" — change a field, it reacts | A **data-bound form / model** |
+| "The list that compares options for Lucky" | A **data grid** (a table view of records) |
+| "Find it on the map" | A **map / geospatial view** of the same data |
+| "Screen, model and code are three views of one thing" | **Model–View synchronization** |
+| "The promises the app kept the whole time" | The **specification** (acceptance criteria) |
+| "Promises checked automatically on every change" | **Automated / acceptance tests** |
+
+> Tell the story first; reveal the vocabulary last. By the time a learner hears
+> "acceptance test," they've already *felt* one keeping Lucky safe.
+{: .speaker-note }
 
 ## 🤖 Ask Ari
 
