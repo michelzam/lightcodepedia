@@ -56,6 +56,10 @@ SUITE DASHBOARD  — auto-injected before the first feature card when
 Knobs for .feature:
   status="…"   passing | failing | pending
   tags="…"     comma-separated chips
+  visible="true"  SHOW the card. Default is HIDDEN: a .feature is a spec/test,
+                  not learner-facing content, so it stays out of sight unless
+                  the author opts in (a ".visible" class works too). The editor
+                  preview always shows features so they can be authored.
 
 Auto-included by docs/_layouts/default.html.
 Registers with window.lcScanElement so the editor preview also renders cards.
@@ -67,6 +71,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-passing { border-left-color: #22c55e; }
 .lc-feature-failing  { border-left-color: #ef4444; }
 .lc-feature-pending  { border-left-color: #f59e0b; }
+/* hidden by default — a .feature is a spec/test, shown only with visible="true" */
+.lc-feature-hidden { display: none; }
 
 /* ── header ──────────────────────────────────────────────────── */
 .lc-feature-header { display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap; padding: 0.55em 1em 0.5em; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 0.88em; }
@@ -472,8 +478,15 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     }
 
     var lcId = el.getAttribute("id") || "";
+    /* Hidden by default: a .feature is a spec/test, not learner-facing content.
+       It only shows when the author opts in with visible="true" (or a .visible
+       class). Inside the editor preview it always shows so authors can work. */
+    var inEditor  = el.closest && el.closest("#ed-preview, #ed-feat-preview");
+    var visAttr   = el.getAttribute("visible");
+    var isVisible = !!inEditor || el.classList.contains("visible") || (visAttr != null && visAttr !== "false");
     var card = document.createElement("div");
-    card.className = "lc-feature" + (status ? " lc-feature-" + status : "");
+    card.className = "lc-feature" + (status ? " lc-feature-" + status : "") + (isVisible ? "" : " lc-feature-hidden");
+    card._lcHidden = !isVisible;
     if (lcId) card.setAttribute("data-lc-id", lcId);
     card._lcFeatureName = featureName;
     card._lcFeatureTags = tagsRaw ? tagsRaw.split(",").map(function(t){ return t.trim(); }) : [];
@@ -609,7 +622,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     /* collect all runnable cards in DOM order within this root */
     var allCards = (root || document).querySelectorAll(".lc-feature");
     var runnable = [];
-    allCards.forEach(function(c) { if (c.querySelector(".lc-feature-run")) runnable.push(c); });
+    allCards.forEach(function(c) { if (c.querySelector(".lc-feature-run") && !c._lcHidden) runnable.push(c); });
     if (runnable.length < 2) return;
 
     var suite = document.createElement("div");

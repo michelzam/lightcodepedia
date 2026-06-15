@@ -2,6 +2,8 @@
 
 Render Gherkin BDD scenarios as styled cards. Embed `:::python ... :::` blocks directly after each step to attach a runnable implementation — the card gets a **▶ Run** button and the code appears as expandable step panels. `self.page`, `Dataset`, `Block`, `Datagrid`, `Chart`, and `Feature` are available in every step.
 
+> **Visibility:** a `.feature` is **hidden by default** — it's a spec/test, not learner-facing content, so it stays out of sight and out of the page's flow. Add `visible="true"` (or a `.visible` class) to show a card; every example on this page opts in explicitly. Inside the **editor preview**, features always show so you can author them.
+
 ## 📺 Display-only (no runner)
 
 ```gherkin
@@ -14,7 +16,7 @@ Feature: User login
     When I enter valid credentials
     Then I should see the dashboard
 ```
-{: .feature tags="smoke,auth" }
+{: .feature visible="true" tags="smoke,auth" }
 
 ## 🏃🏻‍♀️ With runnable steps
 
@@ -43,7 +45,7 @@ Feature: Temperature converter
     assert (0 * 9 / 5) + 32 == 32.0
     :::
 ```
-{: .feature id="temp_feature" status="passing" tags="math,utils" }
+{: .feature visible="true" id="temp_feature" status="passing" tags="math,utils" }
 
 `self` is shared across all steps in a run — state set in one step (`self.celsius`) is available in later ones.
 
@@ -68,7 +70,7 @@ Feature: List validator
     assert self.result == False, "Expected validation to fail for empty list"
     :::
 ```
-{: .feature id="list_feature" status="pending" tags="validation" }
+{: .feature visible="true" id="list_feature" status="pending" tags="validation" }
 
 ## 🔬 Page access probe
 
@@ -118,7 +120,7 @@ Feature: Page component access
         f"expected 3 < 5 < 7, got {[b.value for b in bars]}"
     :::
 ```
-{: .feature id="page_probe" status="pending" tags="probe" }
+{: .feature visible="true" id="page_probe" status="pending" tags="probe" }
 
 ## 🖱️ Button with Python handler
 
@@ -179,7 +181,7 @@ Feature: Button handler
     assert self.max_bar.value > bars[2].value
     :::
 ```
-{: .feature id="btn_handler" status="pending" tags="button,probe" }
+{: .feature visible="true" id="btn_handler" status="pending" tags="button,probe" }
 
 ## 🥸 How to write one
 
@@ -202,7 +204,7 @@ Feature: My feature
     assert self.y == 84
     :::
 ```
-{: .feature id="my_feature" status="pending" tags="example" }
+{: .feature visible="true" id="my_feature" status="pending" tags="example" }
 ````
 
 - `:::python ... :::` is parsed from the Gherkin block — not rendered as a separate code block.
