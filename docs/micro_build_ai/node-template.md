@@ -8,6 +8,21 @@ Each chapter tells one turn of the **moonwalk** and discloses it in the
 **three-unity** rhythm — **one place, one action, one unit of time**. The order
 below is the order on the page.
 
+## 📐 Size every chapter by the three unities
+
+The three unities aren't only a rhythm — they're a **sizing rubric**. Declare
+each chapter's signature up front (lead with it — *from the future*):
+
+| Unity | Measures | Keep it… |
+|---|---|---|
+| 🐾 **Place** | sections the learner experiments in | few — about 3 |
+| 🔧 **Action** | new concepts introduced (knowledge nodes) | bounded — name every one in the glossary |
+| 📜 **Time** | minutes to a working understanding | short — you start at the goal |
+
+A good chapter keeps all three small: a handful of places to play, a countable
+set of concepts, and a few minutes to "get it" because the desirable future is
+shown first.
+
 ## 📚 Author note — a chapter is internally a `KnowledgeNode`
 
 *For authors only — do **not** disclose this class to learners early.* Each

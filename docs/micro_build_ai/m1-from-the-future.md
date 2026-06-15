@@ -15,6 +15,21 @@ to uncover how a dog (and you) could possibly make such a thing.
 > being curious, not the price of admission.
 {: .speaker-note }
 
+## 📐 Chapter 1 by the three unities
+
+Here's the whole chapter measured the Aristotelian way — **one place, one
+action, one unit of time** — so you know its size before you start:
+
+| Unity | What it measures | Chapter 1 |
+|---|---|---|
+| 🐾 **Place** | sections you experiment in | **3** |
+| 🔧 **Action** | new concepts you meet | **13** |
+| 📜 **Time** | minutes to a working understanding | **~10** |
+
+You begin at the **goal** — a finished, working app (the desirable future) — so
+those ten minutes buy real understanding, not just exposure. Small place,
+bounded concepts, short time: a chapter you can actually finish.
+
 ## 🚗 Short on time? Let me drive
 
 Ari's little roadster can take the wheel and **drive you through this whole
@@ -209,12 +224,12 @@ The five ideas that make everything else possible — in plain words:
 
 ## 📖 From the future, decoded — the real words
 
-You just did real software engineering; we only dressed it in a story. Aristotle
-sorted a good story by **three unities — one place, one action, one unit of
-time**; this chapter introduces its new ideas the same way. Here's every one,
-sorted so the official words click into place *after* you've felt them:
+You just did real software engineering; we only dressed it in a story. Here are
+the chapter's **thirteen new concepts** — its *action* — grouped by the beat
+where you met them, each mapped to the official word (so it clicks *after*
+you've felt it):
 
-**🐾 One place — what you *did* (Discover)**
+**🐾 While you played (Discover)**
 
 | In the story | What professionals call it |
 |---|---|
@@ -225,7 +240,7 @@ sorted so the official words click into place *after* you've felt them:
 | Select a row and the chart follows it | A **linked view**[^linked-view] |
 | "Find it on the map" | A **map / geospatial view**[^geospatial] |
 
-**🔧 One action — what it's *made of* (Design)**
+**🔧 While you looked inside (Design)**
 
 | In the story | What professionals call it |
 |---|---|
@@ -233,7 +248,7 @@ sorted so the official words click into place *after* you've felt them:
 | The structure and live values behind the screen | The **model**[^model] |
 | Screen and model staying in lock-step | **Model–View synchronization**[^mvc] |
 
-**📜 One unit of time — the *promises kept* (Specs)**
+**📜 While the app kept its promises (Specs)**
 
 | In the story | What professionals call it |
 |---|---|
@@ -242,10 +257,10 @@ sorted so the official words click into place *after* you've felt them:
 | "Promises checked automatically on every change" | **Acceptance tests**[^acceptance] |
 | Those checks turned into docs that can't go stale | **Living documentation**[^living-docs] |
 
-So Chapter 1 quietly introduces **thirteen** new ideas — **six** in *place*,
-**three** in *action*, **four** in *time* — and not one of them needed you to
-write a line of code, or to meet a single *class*. You played with **objects**;
-the blueprint behind them waits for a later chapter.
+So the chapter's **action** is **13 new concepts** — met across **3 sections**
+of play, in about **10 minutes** — and not one of them needed you to write a
+line of code, or to meet a single *class*. You played with **objects**; the
+blueprint behind them waits for a later chapter.
 
 > Tell the story first; reveal the vocabulary last. By the time a learner hears
 > "acceptance test," they've already *felt* one keeping Lucky safe. Hover any
