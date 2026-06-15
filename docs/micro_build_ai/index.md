@@ -1,6 +1,6 @@
 # 🐾 BUILD-AI — Become a Builder
 
-![AI is reshaping the world. Builders wanted. — UWM School of Information Studies](/micro_build_ai/AI-Builders.png)
+<img src="/micro_build_ai/AI-Builders.png" alt="AI is reshaping the world. Builders wanted. — UWM School of Information Studies" style="display:block; width:100%; max-width:640px; margin:1.2em auto; border-radius:10px;">
 
 ````
 ### 🌍 You have ideas. Now you can build them.
@@ -29,7 +29,7 @@ AI as a power tool, not a magic box.
 
 - ✅ **No prerequisites.** No programming, no maths, no installs.
 - ✅ **Browser only.** Everything runs on this page.
-- ✅ **3 build sprints + a chapter of your own.** Each one ships something that works.
+- ✅ **3 build chapters + a final one that's yours.** Each one ships something that works.
 - ✅ **A credential at the end** — earn karma as you go.
 
 ## 🌀 We don't march — we spiral
@@ -40,31 +40,31 @@ another. That's a *waterfall*, and it's a strange way to teach building *with
 AI*, which is anything but linear.
 
 **So we spiral instead.** You travel the *whole* lifecycle — idea → build → test
-→ ship — in a short loop, then go around again with higher stakes. Three loops,
+→ ship — in a short arc, then go around again with higher stakes. Three chapters,
 two weeks each, then two weeks for a project of your own:
 
 ```mermaid
 graph LR
   K([🔑 Get your key<br/>account + token]):::key --> I1
-  I1[🏃 Iteration 1 · Make it exist<br/>idea → running thing]:::iter --> I2
-  I2[🏃 Iteration 2 · Make it right for someone<br/>a real user & requirement]:::iter --> I3
-  I3[🏃 Iteration 3 · Make it last<br/>survive change & deploy]:::iter --> CAP
+  I1[📖 Chapter 1 · Make it exist<br/>idea → running thing]:::iter --> I2
+  I2[📖 Chapter 2 · Make it right for someone<br/>a real user & requirement]:::iter --> I3
+  I3[📖 Chapter 3 · Make it last<br/>survive change & deploy]:::iter --> CAP
   CAP[🏆 The last chapter · yours<br/>save a world of your own]:::cap
   classDef key fill:#ffd400,stroke:#222,color:#222;
   classDef iter fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
   classDef cap fill:#1e88e5,stroke:#222,color:#fff;
 ```
 
-Each loop has an **escalating constraint** — a new "urgent need" that pulls in
+Each chapter has an **escalating constraint** — a new "urgent need" that pulls in
 exactly the components and concepts you need to clear it. Nothing is taught
 "because the syllabus says so"; you meet a tool the moment the project hits a
 wall that needs it.
 
-| Weeks | Iteration | The constraint that creates the need | What it pulls in |
+| Weeks | Chapter | The constraint that creates the need | What it pulls in |
 |---|---|---|---|
-| 1–2 | 🏃 **Make it exist** | idea → a running thing, fast | your key, `.form`, `.diagram`, the build-&-see-it-run loop |
-| 3–4 | 🏃 **Make it right for someone** | a *real* user with a *real* requirement | user stories, `.datagrid`, acceptance tests |
-| 5–6 | 🏃 **Make it last** | it has to survive change and be deployed | CI/CD, the verification suite, observability |
+| 1–2 | 📖 **Make it exist** | idea → a running thing, fast | your key, `.form`, `.diagram`, the build-&-see-it-run loop |
+| 3–4 | 📖 **Make it right for someone** | a *real* user with a *real* requirement | user stories, `.datagrid`, acceptance tests |
+| 5–6 | 📖 **Make it last** | it has to survive change and be deployed | CI/CD, the verification suite, observability |
 | 7–8 | 🏆 **The last chapter** (capstone) | *your* world to save — no scaffold | whatever the catalog offers, pulled on demand |
 
 > Notice the shape of this very site: feature cards written as user stories →
@@ -72,9 +72,9 @@ wall that needs it.
 > living proof. The course teaches the exact loop the medium is built from.
 {: .speaker-note }
 
-## 🌙 Inside each loop — we moonwalk
+## 🌙 Inside each chapter — we moonwalk
 
-Within every iteration the same three-beat rhythm repeats. We start at the
+Within every chapter the same three-beat rhythm repeats. We start at the
 **goal** — a finished, working thing — then walk *backwards*, peeling back one
 layer at a time, until we reach the single idea it grew from. You feel like
 you're moving forward the whole time, while the curriculum quietly walks you
@@ -91,20 +91,20 @@ back to the foundations.
 
 ## 🔑 First need: get your key
 
-Iteration 1 opens with the one thing everything else depends on. To **really ask
+Chapter 1 opens with the one thing everything else depends on. To **really ask
 Ari** for help, and to **ship your own work later**, you need a free GitHub
 account and a key (a token). It takes about a minute, and it's the first urgent
 need the project hands you — not paperwork, but the thing that switches the
 lights on. You use **your own** credits; nothing is billed to anyone else, and
 no key ever touches our servers.
 
-[🔑 Get your key → start Iteration 1](/micro_build_ai/onboarding)
+[🔑 Get your key → start Chapter 1](/micro_build_ai/onboarding)
 {: .lc-btn }
 
 ## 📚 The catalog — pulled on demand
 
 The lifecycle topics aren't a fixed track anymore; they're a **catalog of
-chapters** you route through as each iteration's needs demand. Every chapter is
+chapters** you route through as each chapter's needs demand. Every chapter is
 modelled as a `KnowledgeNode` (see the [component model](/components/model)) — a
 tiny state machine you walk: `discover → design → specify → master`. And the
 **[final chapter](/micro_build_ai/capstone) is one you write yourself** — a
@@ -125,7 +125,7 @@ resident skeptic).
 ### 🔑 Start here
 The first need: an account and a key. One minute, then Ari is live.
 
-[Get your key → Iteration 1](/micro_build_ai/onboarding)
+[Get your key → Chapter 1](/micro_build_ai/onboarding)
 
 ### 📚 The catalog
 Every lifecycle topic as a chapter, pulled in when you need it.

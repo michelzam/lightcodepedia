@@ -64,7 +64,7 @@ Ari needs your GitHub Models key to think. It's free and takes about a minute.
 
 ```
 ### 🗺️ The spine
-[The 3-iteration journey](/micro_build_ai/)
+[The 3-chapter journey](/micro_build_ai/)
 
 ### 📚 The catalog
 [Browse all nodes](/micro_build_ai/catalog)

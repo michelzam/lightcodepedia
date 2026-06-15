@@ -133,7 +133,7 @@ Key in hand and Ari live, you're ready to finish what you started.
 
 ```
 ### 🔮 Back to Lucky
-[Chapter 1 — From the future →](/micro_build_ai/m1-from-the-future)
+[From the future →](/micro_build_ai/m1-from-the-future)
 
 ### 📚 The catalog
 [Browse all chapters](/micro_build_ai/catalog)

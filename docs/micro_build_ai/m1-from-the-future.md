@@ -1,4 +1,4 @@
-# 🔮 Chapter 1 · From the future
+# 🔮 From the future
 
 ## 🎯 The goal
 
@@ -208,7 +208,7 @@ The five ideas that make everything else possible — in plain words:
 {: .quiz }
 ````
 
-## 📖 Chapter 1, decoded — the real words
+## 📖 From the future, decoded — the real words
 
 You just did real software engineering; we only dressed it in a story. Here's
 the translation, so the official words click into place *after* you've felt what
@@ -277,7 +277,7 @@ credential** — no sign-up, nothing stored on a server.
 
 ## ➡️ Next — where the story goes
 
-You used the app. The next chapter isn't fixed — it's whatever Iteration 1's
+You used the app. What comes next isn't fixed — it's whatever Chapter 1's
 *urgent need* pulls in next from the **catalog**. Browse it, or ask Ari where to
 go from here.
 

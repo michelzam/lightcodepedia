@@ -2,8 +2,8 @@
 
 The lifecycle isn't a track you march down — it's an **atlas you route through**.
 Each entry below is a **chapter**: a self-contained turn of the moonwalk
-you pull in when an iteration's *urgent need* calls for it. Some are live now;
-others get built when an iteration first demands them — which is exactly how a
+you pull in when a chapter's *urgent need* calls for it. Some are live now;
+others get built when a chapter first demands them — which is exactly how a
 real backlog grows.
 
 ## 🧬 Every chapter is the same shape
@@ -17,13 +17,13 @@ through the page:
 
 `locked → discovering` *(place)* `→ designing` *(action)* `→ specifying`
 *(time)* `→ mastered`. Chapters link to each other through `prerequisites` and
-`next`, so the catalog is a **graph**, not a list — an iteration is just a path
+`next`, so the catalog is a **graph**, not a list — a chapter is just a path
 through it. Hold **⌥ Option / Alt** and hover a chapter's widgets to x-ray them
 against this model.
 
 ---
 
-## 🏃 Iteration 1 · Make it exist
+## 📖 Chapter 1 · Make it exist
 
 *Constraint: turn an idea into a running thing, fast.*
 
@@ -50,7 +50,7 @@ Your live Aristotelian guide, powered by your own key.
 
 ---
 
-## 🏃 Iteration 2 · Make it right for someone
+## 📖 Chapter 2 · Make it right for someone
 
 *Constraint: a real user shows up with a real requirement.*
 
@@ -77,7 +77,7 @@ The examples it must pass — acceptance tests as living promises.
 
 ---
 
-## 🏃 Iteration 3 · Make it last
+## 📖 Chapter 3 · Make it last
 
 *Constraint: it has to survive change and be deployed for real.*
 
@@ -130,7 +130,7 @@ learners always know where they are.
 
 ```
 ### 🗺️ Back to the spine
-[The 3-iteration journey](/micro_build_ai/)
+[The 3-chapter journey](/micro_build_ai/)
 
 ### 🧭 Node template
 [The author's skeleton](/micro_build_ai/node-template)
