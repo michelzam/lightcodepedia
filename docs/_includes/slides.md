@@ -159,7 +159,7 @@ body.lc-reel-active .markdown-body {
 body.lc-reel-active .lc-slide {
   min-height: 100vh; min-height: 100dvh;
   scroll-snap-align: start; scroll-snap-stop: always;
-  box-sizing: border-box; padding: 4.2em 1.4em 3.2em;
+  box-sizing: border-box; padding: 3.2em 1.4em 3.2em;
   display: flex; flex-direction: column; justify-content: flex-start;
   max-width: 900px; margin: 0 auto;
 }
@@ -169,7 +169,7 @@ body.lc-reel-active .lc-slide > :first-child { margin-top: 0; }
 body.lc-reel-active .lc-reel-bar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 1001;
   display: flex; align-items: center; gap: 0.8em;
-  padding: 0.7em 1.1em; box-sizing: border-box;
+  padding: 0.55em 1.1em; box-sizing: border-box;
   background: rgba(255,255,255,0.92);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   border-bottom: 1px solid #eef1f4;
