@@ -1,14 +1,14 @@
 # 📚 The BUILD-AI catalog
 
 The lifecycle isn't a track you march down — it's an **atlas you route through**.
-Each entry below is a **knowledge node**: a self-contained turn of the moonwalk
+Each entry below is a **chapter**: a self-contained turn of the moonwalk
 you pull in when an iteration's *urgent need* calls for it. Some are live now;
 others get built when an iteration first demands them — which is exactly how a
 real backlog grows.
 
-## 🧬 Every node is the same shape
+## 🧬 Every chapter is the same shape
 
-A node is modelled as a `KnowledgeNode` — a real class in the
+A chapter is modelled as a `KnowledgeNode` — a real class in the
 [component model](/components/model). Its **state machine is the path you walk**
 through the page:
 
@@ -16,9 +16,9 @@ through the page:
 {: .diagram scope="KnowledgeNode" }
 
 `locked → discovering` *(place)* `→ designing` *(action)* `→ specifying`
-*(time)* `→ mastered`. Nodes link to each other through `prerequisites` and
+*(time)* `→ mastered`. Chapters link to each other through `prerequisites` and
 `next`, so the catalog is a **graph**, not a list — an iteration is just a path
-through it. Hold **⌥ Option / Alt** and hover a node's widgets to x-ray them
+through it. Hold **⌥ Option / Alt** and hover a chapter's widgets to x-ray them
 against this model.
 
 ---
@@ -32,19 +32,19 @@ against this model.
 **Need:** "I want to ask Ari and ship my own work."
 Account + token, staged for least privilege.
 
-[Open node →](/micro_build_ai/onboarding)
+[Open chapter →](/micro_build_ai/onboarding)
 
 ### 🔮 From the future · live
 **Need:** "Show me it's even possible."
 Operate the finished Paws Support Navigator as a user — no code.
 
-[Open node →](/micro_build_ai/m1-from-the-future)
+[Open chapter →](/micro_build_ai/m1-from-the-future)
 
 ### 🤖 Ask Ari · live
 **Need:** "I'm stuck and want to ask, right now."
 Your live Aristotelian guide, powered by your own key.
 
-[Open node →](/micro_build_ai/ari)
+[Open chapter →](/micro_build_ai/ari)
 ```
 {: .cards cols="3" }
 
@@ -104,17 +104,18 @@ Plain-language behavior → an automated suite → living docs.
 
 ---
 
-## 🏆 Capstone · Make your own
+## 🏆 The last chapter · yours
 
-*Constraint: your problem, your scaffold-free build. You pull from the whole
-atlas on demand.*
+*Constraint: your world to save, your scaffold-free build. The story doesn't end
+here — it hands you the pen. You pull from the whole atlas on demand.*
 
 ```
-### 💡 The idea + the user · planned
-**Need:** "One person, one problem — now I build."
-Frame your own app from a single real user and their situation.
+### 💡 Your world to save · live
+**Need:** "One person, one problem — now I build, for real."
+Frame your own app from a single real user and ship it. The never-ending story's
+final chapter is the one you write.
 
-[Pulled in when needed]
+[Open chapter →](/micro_build_ai/capstone)
 ```
 {: .cards cols="1" }
 
@@ -122,10 +123,10 @@ Frame your own app from a single real user and their situation.
 
 ## 🧭 For authors
 
-Building a new node? Start from the
+Building a new chapter? Start from the
 [node template](/micro_build_ai/node-template) — it's the author's skeleton and
-a reading aid in one. Every node follows the same three-unity shape, so learners
-always know where they are.
+a reading aid in one. Every chapter follows the same three-unity shape, so
+learners always know where they are.
 
 ```
 ### 🗺️ Back to the spine

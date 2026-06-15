@@ -27,7 +27,7 @@ AI as a power tool, not a magic box.
 
 - ✅ **No prerequisites.** No programming, no maths, no installs.
 - ✅ **Browser only.** Everything runs on this page.
-- ✅ **3 build sprints + a capstone.** Each one ships something that works.
+- ✅ **3 build sprints + a chapter of your own.** Each one ships something that works.
 - ✅ **A credential at the end** — earn karma as you go.
 
 ## 🌀 We don't march — we spiral
@@ -47,7 +47,7 @@ graph LR
   I1[🏃 Iteration 1 · Make it exist<br/>idea → running thing]:::iter --> I2
   I2[🏃 Iteration 2 · Make it right for someone<br/>a real user & requirement]:::iter --> I3
   I3[🏃 Iteration 3 · Make it last<br/>survive change & deploy]:::iter --> CAP
-  CAP[🏆 Capstone · Make your own<br/>your problem, no scaffold]:::cap
+  CAP[🏆 The last chapter · yours<br/>save a world of your own]:::cap
   classDef key fill:#ffd400,stroke:#222,color:#222;
   classDef iter fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
   classDef cap fill:#1e88e5,stroke:#222,color:#fff;
@@ -63,7 +63,7 @@ wall that needs it.
 | 1–2 | 🏃 **Make it exist** | idea → a running thing, fast | your key, `.form`, `.diagram`, the build-&-see-it-run loop |
 | 3–4 | 🏃 **Make it right for someone** | a *real* user with a *real* requirement | user stories, `.datagrid`, acceptance tests |
 | 5–6 | 🏃 **Make it last** | it has to survive change and be deployed | CI/CD, the verification suite, observability |
-| 7–8 | 🏆 **Capstone** | *your* problem — no scaffold | whatever the catalog offers, pulled on demand |
+| 7–8 | 🏆 **The last chapter** (capstone) | *your* world to save — no scaffold | whatever the catalog offers, pulled on demand |
 
 > Notice the shape of this very site: feature cards written as user stories →
 > an automated suite that re-checks them on every change → results published as
@@ -102,9 +102,11 @@ no key ever touches our servers.
 ## 📚 The catalog — pulled on demand
 
 The lifecycle topics aren't a fixed track anymore; they're a **catalog of
-knowledge nodes** you route through as each iteration's needs demand. Every node
-is modelled as the same `KnowledgeNode` (see the [component model](/components/model))
-— a tiny state machine you walk: `discover → design → specify → master`.
+chapters** you route through as each iteration's needs demand. Every chapter is
+modelled as a `KnowledgeNode` (see the [component model](/components/model)) — a
+tiny state machine you walk: `discover → design → specify → master`. And the
+**[final chapter](/micro_build_ai/capstone) is one you write yourself** — a
+world of your own to save.
 
 [📚 Browse the catalog](/micro_build_ai/catalog)
 {: .lc-btn }
@@ -124,7 +126,7 @@ The first need: an account and a key. One minute, then Ari is live.
 [Get your key → Iteration 1](/micro_build_ai/onboarding)
 
 ### 📚 The catalog
-Every lifecycle topic as a knowledge node, pulled in when you need it.
+Every lifecycle topic as a chapter, pulled in when you need it.
 
 [Browse the catalog](/micro_build_ai/catalog)
 

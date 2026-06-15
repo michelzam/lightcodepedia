@@ -72,6 +72,13 @@ top-down. Keep it to 3–4 lines.*
 > This is the learner's takeaway card, and it's exactly what the quiz below
 > tests. Mirror the wording so the quiz feels fair.
 
+> *Glossary by footnote — every new term gets a `[^term]` at first use, defined
+> at the foot of the page.* kramdown collects them into a **Definitions** section
+> (with hover popovers via `footnote_tips`), so each chapter builds its own
+> glossary for free. Then close the chapter with a **"decoded"** table mapping
+> the story's metaphors to that official vocabulary — story first, words last.
+{: .speaker-note }
+
 - **Concept 1** — one-line plain-language definition.
 - **Concept 2** — …
 - **Concept 3** — …

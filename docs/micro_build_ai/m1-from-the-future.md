@@ -216,16 +216,18 @@ they mean:
 
 | In the story | What professionals call it |
 |---|---|
-| Using Lucky's finished app *before* building it | **Outside-in** (behavior-first) design |
-| "The card that listens" — change a field, it reacts | A **data-bound form / model** |
-| "The list that compares options for Lucky" | A **data grid** (a table view of records) |
-| "Find it on the map" | A **map / geospatial view** of the same data |
-| "Screen, model and code are three views of one thing" | **Model–View synchronization** |
-| "The promises the app kept the whole time" | The **specification** (acceptance criteria) |
-| "Promises checked automatically on every change" | **Automated / acceptance tests** |
+| Using Lucky's finished app *before* building it | **Outside-in**[^outside-in] (behavior-first) design |
+| "The card that listens" — change a field, it reacts | A **data-bound form**[^data-bound] / model |
+| "The list that compares options for Lucky" | A **data grid**[^data-grid] (a table view of records) |
+| "Find it on the map" | A **map / geospatial view**[^geospatial] of the same data |
+| "Screen, model and code are three views of one thing" | **Model–View synchronization**[^mvc] |
+| "The promises the app kept the whole time" | The **specification**[^specification] (acceptance criteria) |
+| "Promises checked automatically on every change" | **Automated / acceptance tests**[^acceptance] |
 
 > Tell the story first; reveal the vocabulary last. By the time a learner hears
-> "acceptance test," they've already *felt* one keeping Lucky safe.
+> "acceptance test," they've already *felt* one keeping Lucky safe. Hover any
+> term above to see its definition — they all collect into the **Definitions**
+> glossary at the foot of the chapter.
 {: .speaker-note }
 
 ## 🤖 Ask Ari
@@ -273,11 +275,11 @@ Every quiz you just passed added **karma**, saved right here in your browser. It
 follows you across all eight modules and counts toward your **BUILD-AI
 credential** — no sign-up, nothing stored on a server.
 
-## ➡️ Next — what the iteration needs
+## ➡️ Next — where the story goes
 
-You used the app. What comes next isn't a fixed chapter — it's whatever
-Iteration 1's *urgent need* pulls in next from the **catalog**. Browse it, or
-ask Ari where to go from here.
+You used the app. The next chapter isn't fixed — it's whatever Iteration 1's
+*urgent need* pulls in next from the **catalog**. Browse it, or ask Ari where to
+go from here.
 
 ```
 ### 📚 The catalog
@@ -290,3 +292,11 @@ ask Ari where to go from here.
 [Back to the journey](/micro_build_ai/)
 ```
 {: .cards cols="3" }
+
+[^outside-in]: **Outside-in design** — building from the user's behavior and the finished experience *inward* to the code, instead of bottom-up from the database. Also called behavior-first.
+[^data-bound]: **Data-bound form** — an input whose fields are wired to a data model, so editing the screen changes the data and vice-versa, live.
+[^data-grid]: **Data grid** — a table view of structured records you can sort, select and compare; selecting a row can drive other widgets.
+[^geospatial]: **Geospatial view** — data placed on a map by latitude/longitude, so *where* something is becomes part of the information.
+[^mvc]: **Model–View synchronization** — keeping the screen (view) and the underlying data (model) in lock-step, so a change in one is reflected in the other automatically.
+[^specification]: **Specification** — the agreed promises an app must keep, written in plain language; when made checkable they become *acceptance criteria*.
+[^acceptance]: **Acceptance test** — an automated check that the app keeps a specific promise; it runs on every change and fails loudly if the promise breaks.

@@ -1,135 +1,150 @@
-# 🔑 Get your key — Iteration 1 starts here
+# 🔑 Rescue Lucky — and get the key that lets you
 
-Everything in BUILD-AI that feels like magic — asking **Ari** for help, and later
-**shipping your own app** — runs on one small thing: a **key** (a *token*) tied to
-your own free GitHub account. This is the first urgent need the project hands
-you. It takes about a minute, and then the lights come on.
+Open Lucky's record in the Navigator and you'll see it still reads
+**"stray · unclaimed."** It's wrong. He *was* rescued — by you, last chapter. But
+when you reach for **Save**, it's locked. 🔒
 
-> Why first? Because the key is what makes Ari *live* and what lets you publish
-> your own work. We don't front-load theory; we front-load the one dependency
-> everything else pulls on.
+You can *look* at Lucky's world, but you can't *change* it yet. To actually
+rescue him — to fix that record and make it stick — you need to be able to
+**save changes**. And to save changes, you need your own free account and a
+**key**. That's the whole reason this chapter exists: not paperwork — *the thing
+that unlocks Save so you can finish the rescue.*
+
+> The need is emotional first, technical second. Students don't set up a key
+> because a syllabus says so; they set it up because Lucky's record is wrong and
+> they can't stand it. The credential rides in on the story.
 {: .speaker-note }
 
 ## 1️⃣ Get a GitHub account (30 seconds)
 
-If you don't have one yet, create a free account:
+Your account is your **identity**[^identity] — the name the save is signed with.
+Free, no payment, no setup:
 
 [Create a free GitHub account →](https://github.com/signup){: .lc-btn }
 
-That's the whole step. No payment, no setup.
+## 2️⃣ Get a key — only as much as the moment needs
 
-## 2️⃣ Get a key — staged, just enough
-
-You don't need one big powerful key. You need **the smallest key for what you're
-doing right now**, and you upgrade it only when a new need appears. That habit —
-*least privilege* — is itself one of the first things a builder learns.
+You don't grab one all-powerful key. You take **the smallest key for what you're
+doing right now**, and you upgrade only when the story asks for more. That habit
+has a name — *least privilege*[^least-privilege] — and it's the first real
+security instinct a builder learns.
 
 ```
-### 🤖 Now — a key to ask Ari
-**Goal:** chat with Ari on this site. Nothing else.
-**Key:** a classic token with **zero scopes** — safe to create in seconds.
+### 🐾 Now — a key to *plan* the rescue
+**Goal:** ask Ari for help thinking it through. Read-only — it can't change a thing.
+**Key:** a classic token[^pat] with **zero scopes**[^scope] — the safest thing
+you can hand a browser.
 
 1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
 2. Click **Generate new token (classic)**.
-3. Give it a name. **Leave every checkbox unchecked.**
-4. Click **Generate** → copy the token (starts with `ghp_…`).
+3. Name it. **Leave every checkbox unchecked.**
+4. **Generate** → copy the token (`ghp_…`).
 
-Paste it into any 🤖 Ari panel and you're talking. A blank-scope key can read
-GitHub Models and **nothing else** — the safest thing you can hand a browser.
+Paste it into any 🤖 Ari panel and you can talk through Lucky's rescue. A
+blank-scope key reads GitHub Models and **nothing else** — it could never
+overwrite his record by accident.
 
-### 🚀 Later — a key to ship your fork
-**Goal:** edit and publish your *own* copy of a page (Iteration 1's "make it
-exist" payoff, and every iteration after).
-**Key:** a classic token with the **`repo`** scope.
+### 💾 To actually *save* Lucky
+**Goal:** fix the record in your own copy and make it stick.
+**Key:** a classic token with the **`repo`** scope — the one that can write.
 
-You'll do this *when you first need to ship* — not now. When that need arrives:
+You'll do this *the moment you save* — not a second before:
 
 1. Generate a new classic token.
-2. Check the **`repo`** scope (covers reading and writing your fork).
-3. Use it in the ✏️ editor (and it also works for Ari).
+2. Check the **`repo`** scope (read **and** write to your fork[^fork]).
+3. Use it in the ✏️ editor — now **Save** unlocks, and Lucky's record changes.
 
-We escalate **on demand**, deliberately — a broader key only when a broader need
-shows up. That's the same just-in-time rule the whole course runs on.
+A key that can *write* is a bigger responsibility, so it arrives only when a
+bigger need does. That's least privilege, lived.
 ```
 {: .radio }
 
-> Most common stumble: students grab the powerful `repo` key on day one "to be
-> safe." It's the opposite of safe. Start blank-scope for Ari; escalate when the
-> ship step actually arrives.
+> The two tabs are the lesson: a read-only key to *think*, a write key to *act* —
+> and the write key shows up exactly when the story needs it, never earlier.
 {: .speaker-note }
 
 ## 🧠 Where does your key go?
 
-Nowhere near us. When you ask Ari, your browser sends the question **straight to
-`models.github.ai`** with your key attached. The key travels from *your* browser
-to *GitHub* — never to a Lightcodepedia server, because there isn't one. No
-shared key, no request log, no storage we control. Your browser may offer to
-remember the key in your OS keychain; that's the browser, not us.
+Nowhere near us. When you ask Ari or hit Save, your browser talks **straight to
+GitHub** with your key attached. It travels from *your* browser to *GitHub* —
+never to a Lightcodepedia server, because there isn't one. No shared key, no
+log, no storage we control. Your browser may offer to remember it in your OS
+keychain; that's the browser, not us.
 
-**Q:** When you click *Ask* on an Ari panel, who receives your key?
+**Q:** Lucky's record won't save — the button is locked. Which key fixes that?
 
-- [ ] A Lightcodepedia server stores it in a cookie.
-- [ ] It's baked into the page's JavaScript at build time.
-- [x] Only your browser — it goes directly to `models.github.ai`.
-- [ ] Whoever's nearest. Keys are gregarious.
+- [ ] A classic token with **zero scopes**.
+- [x] A classic token with **`repo`** scope — the one allowed to write.
+- [ ] No key — Save is broken site-wide. (It isn't.)
+- [ ] Any key at all; scopes are decoration. (They're not.)
 {: .quiz }
 
-**Q:** You just want to chat with Ari today. Which key is the right one?
+**Q:** You only want to *ask Ari* about the rescue right now. Safest key?
 
-- [x] A classic token with **zero scopes** — least privilege.
-- [ ] A classic token with `repo` — "to be safe."
-- [ ] A fine-grained token with every permission enabled.
-- [ ] No key — the site has a shared one. (It doesn't.)
+- [x] Zero-scope classic token — read-only, least privilege.
+- [ ] A `repo` token, "to be safe." (That's *less* safe.)
+- [ ] A fine-grained token with every permission on.
+- [ ] A shared site key. (There is none.)
 {: .quiz }
 
-## 🤖 Try it — say hi to Ari
+## 🤖 Talk the rescue through with Ari
 
-Paste your fresh key in the panel below, then ask Ari anything. The moment it
-answers, your key works and Iteration 1 is truly underway.
+Paste your fresh key and ask Ari how to fix Lucky's record — or anything else.
+The moment it answers, your key works and the rescue is underway.
 
 ```yaml
 title: Ari
 icon: 🐾
 system: |
   You are Ari, an Aristotelian pair-lightcoder and guide for the BUILD-AI
-  course on Lightcodepedia. You help complete beginners build real, useful
-  apps with low-code blocks and AI — no prior coding needed.
-  Style: warm, brief, practical, Socratic. Start from the goal and the user's
-  situation (behavior before architecture). Prefer one small next step over a
-  long explanation. Use plain language; define any term in a few words.
-  The learner is teaching a dog named Lucky 🐕 to use AI to build the "Paws
-  Support Navigator"; Wanda 🐠 is the friendly skeptic. If asked for code, keep
-  it minimal and say what it does. Gently steer off-topic questions back to
-  building. Keep answers under ~120 words unless asked for more.
-intro: "Welcome! Paste your key above, then ask me how to begin Iteration 1."
-placeholder: "How do I start building the Paws Support Navigator?"
+  course on Lightcodepedia. Right now the learner is setting up their GitHub
+  account and key so they can "rescue Lucky" — fix his record and save it.
+  Explain accounts, tokens, scopes and least privilege in plain, warm, brief,
+  Socratic language, always tied back to the story (read-only to plan, a write
+  key to save). Prefer one small next step. Keep answers under ~120 words.
+intro: "Paste your key above, then ask me how to unlock Save and fix Lucky's record."
+placeholder: "Why can't I save Lucky's record yet?"
 ```
 {: .agent id="ari_onboard" }
 
-> First-run tip: the panel asks for the key once. After **Save & start**, your
-> browser offers to remember it in the OS keychain — that's encrypted storage
-> the browser owns, not localStorage we control.
-{: .speaker-note }
+## 📖 Chapter decoded — the real words
+
+You just did real security and identity work. The story called it a rescue;
+here's what professionals call each piece:
+
+| In the story | What professionals call it |
+|---|---|
+| "The name your save is signed with" | **Authentication / identity**[^identity] |
+| "The key that unlocks Save" | A **Personal Access Token (PAT)** |
+| "How much the key is allowed to touch" | Its **scope**[^scope] |
+| "Take only as much key as the moment needs" | **Least privilege**[^least-privilege] |
+| "Your own copy of the app to change" | A **fork**[^fork] |
+| "Read-only to plan, a write key to act" | **Read vs. read-write access** |
 
 ## ⭐ Your karma
 
-Passing the two checks above added **karma**, saved right here in your browser.
-It follows you across the whole journey and counts toward your **BUILD-AI
+Passing the checks above added **karma**, saved right here in your browser. It
+follows you across the whole story and counts toward your **BUILD-AI
 credential** — no sign-up, nothing stored on a server.
 
-## ➡️ Next — make something exist
+## ➡️ Next — go save him
 
-Key in hand and Ari live, you're ready for the first build. Head into the
-catalog and start operating the finished app — *behavior before architecture.*
+Key in hand and Ari live, you're ready to finish what you started.
 
 ```
-### 🔮 First node
-[From the future — use the finished app →](/micro_build_ai/m1-from-the-future)
+### 🔮 Back to Lucky
+[Chapter 1 — From the future →](/micro_build_ai/m1-from-the-future)
 
 ### 📚 The catalog
-[Browse all nodes](/micro_build_ai/catalog)
+[Browse all chapters](/micro_build_ai/catalog)
 
 ### 🗺️ The spine
 [Back to the journey](/micro_build_ai/)
 ```
 {: .cards cols="3" }
+
+[^identity]: **Authentication / identity** — proving *who* is making a change, so a save can be attributed (and trusted). Your GitHub account is that identity.
+[^pat]: **Personal Access Token (PAT)** — a key GitHub issues for API access instead of your password. Classic PATs work out of the box; fine-grained ones spell out each permission.
+[^scope]: **Scope** — exactly what a token is allowed to do. Zero scopes can read public models only; the `repo` scope can read and write your repositories.
+[^least-privilege]: **Least privilege** — granting only the minimum access a task needs, so a leaked or misused key can do the least possible harm.
+[^fork]: **Fork** — your own copy of a repository. You change *your* fork freely without touching the original, and a write-capable key pushes saves to it.
