@@ -42,3 +42,16 @@ def step_reel_bar(context):
 def step_reel_exit(context):
     context.page.evaluate("() => window.lcReel && window.lcReel.exit()")
     context.page.wait_for_timeout(200)
+
+
+@when("I enter reel mode")
+def step_reel_enter(context):
+    context.page.evaluate("() => window.lcReel && window.lcReel.enter()")
+    context.page.wait_for_timeout(300)
+
+
+@when("I press the browser back button")
+def step_reel_back(context):
+    # same-document history entry (pushed on reel enter) — fire popstate
+    context.page.evaluate("() => history.back()")
+    context.page.wait_for_timeout(500)
