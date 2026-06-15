@@ -141,12 +141,36 @@ body.lc-notes-on .speaker-note p:first-of-type { margin-top: 0; }
 body.lc-notes-on .speaker-note p:last-of-type { margin-bottom: 0; }
 .lc-slides-notes-badge { position: fixed; top: 1em; left: 50%; transform: translateX(-50%); background: #fffae0; color: #b45309; padding: 0.3em 0.9em; border-radius: 14px; font-size: 0.78em; font-weight: 600; border: 1px solid #f0c97a; z-index: 1001; display: none; pointer-events: none; }
 body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block; }
+
+/* ── Reel mode — Instagram-style vertical snap between titles ───────────
+   Reuses the .lc-slide sections partition() already builds (split at H2):
+   the page becomes a full-viewport scroll-snap container, one section per
+   snap. Native scroll-snap gives the momentum-then-snap feel; tall sections
+   simply grow past 100dvh and the container scrolls through them. */
+body.lc-reel-active { overflow: hidden; }
+body.lc-reel-active #lc-topbar,
+body.lc-reel-active .lc-edit-fab { display: none !important; }
+body.lc-reel-active .markdown-body {
+  max-width: none; margin: 0; padding: 0;
+  height: 100vh; height: 100dvh;
+  overflow-y: scroll; scroll-snap-type: y mandatory;
+  scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+}
+body.lc-reel-active .lc-slide {
+  min-height: 100vh; min-height: 100dvh;
+  scroll-snap-align: start; scroll-snap-stop: always;
+  box-sizing: border-box; padding: 2.6em 1.4em 3.2em;
+  display: flex; flex-direction: column; justify-content: center;
+  max-width: 900px; margin: 0 auto;
+}
+body.lc-reel-active .lc-slide > :first-child { margin-top: 0; }
 </style>
 <a class="lc-slides-fab" href="#" title="Present as slides" aria-label="Present as slides">
   <span class="lc-slides-fab-icon" aria-hidden="true">📽️</span><span class="lc-slides-fab-label">Present</span>
 </a>
 <div class="lc-bl-popup" id="lc-bl-popup" role="menu" aria-label="Actions">
   <button class="lc-bl-popup-item" id="lc-bl-present-btn" type="button">📽️ Present</button>
+  <button class="lc-bl-popup-item" id="lc-bl-reel-btn"    type="button">📲 Reel</button>
   <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    type="button">🔬 X-ray</button>
 </div>
 <nav class="lc-slides-nav" role="toolbar" aria-label="Slide navigation">
@@ -454,6 +478,7 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
 
     function enter() {
       if (!hasDeck()) return;
+      if (body.classList.contains('lc-reel-active')) exitReel();   // mutually exclusive
       body.classList.add('lc-slides-active');
       showSlide();
       syncFab(true);
@@ -467,6 +492,38 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
     }
 
     function toggle() { body.classList.contains('lc-slides-active') ? exit() : enter(); }
+
+    /* ── Reel mode — same sections, Instagram-style vertical snap ──────── */
+    function enterReel() {
+      if (!hasDeck()) return;
+      if (body.classList.contains('lc-slides-active')) exit();      // mutually exclusive
+      body.classList.add('lc-reel-active');
+      syncReelFab(true);
+      syncReelUrl(true);
+      try { main.scrollTo(0, 0); } catch (e) { main.scrollTop = 0; }
+    }
+    function exitReel() {
+      body.classList.remove('lc-reel-active');
+      syncReelFab(false);
+      syncReelUrl(false);
+    }
+    function toggleReel() { body.classList.contains('lc-reel-active') ? exitReel() : enterReel(); }
+    function syncReelFab(active) {
+      var icon = fab.querySelector('.lc-slides-fab-icon');
+      var label = fab.querySelector('.lc-slides-fab-label');
+      if (icon) icon.textContent = active ? '✕' : '📽️';
+      if (label) label.textContent = active ? 'Exit reel' : 'Present';
+      fab.setAttribute('title', active ? 'Exit reel (Esc)' : 'Present as slides');
+      fab.setAttribute('aria-label', fab.getAttribute('title'));
+    }
+    function syncReelUrl(active) {
+      try {
+        var url = new URL(location.href);
+        if (active) url.searchParams.set('reel', '1');
+        else url.searchParams.delete('reel');
+        history.replaceState(null, '', url.toString().replace(/\?$/, ''));
+      } catch (e) {}
+    }
 
     /* scripted control (avatar narration cues, BDD steps) */
     function gotoSlide(i, revealAll) {
@@ -487,6 +544,10 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
       next: next, prev: prev, enter: enter, exit: exit, toggle: toggle,
       goto: gotoSlide, slideOf: slideOf,
       isActive: function () { return body.classList.contains('lc-slides-active'); }
+    };
+    window.lcReel = {
+      enter: enterReel, exit: exitReel, toggle: toggleReel,
+      isActive: function () { return body.classList.contains('lc-reel-active'); }
     };
 
     partition();
@@ -521,6 +582,7 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
     fab.addEventListener('click', function(e) {
       e.preventDefault();
       if (window.lcxIsActive && window.lcxIsActive()) { xrayOff(); return; }
+      if (body.classList.contains('lc-reel-active')) { exitReel(); return; }
       if (touchOnly && !body.classList.contains('lc-slides-active')) {
         popup.classList.contains('open') ? closePopup() : openPopup();
         return;
@@ -538,6 +600,10 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
         fab.classList.add('lc-xray-active');
         fab.querySelector('.lc-slides-fab-icon').textContent = '🔬';
       }
+    });
+    var reelBtn = document.getElementById('lc-bl-reel-btn');
+    if (reelBtn) reelBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); closePopup(); toggleReel();
     });
 
     document.addEventListener('click', function(e) {
@@ -625,6 +691,31 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
       else next();
     });
 
+    /* Reel: Esc exits; native scroll-snap does the paging (no nav keys). */
+    document.addEventListener('keydown', function(e){
+      if (!body.classList.contains('lc-reel-active')) return;
+      if (e.key === 'Escape') { exitReel(); e.preventDefault(); }
+    });
+    /* Reel is "sticky": while active, internal navigations carry ?reel=1
+       forward so the experience continues across pages (tap a card → the next
+       page opens as a reel). Skips external links, downloads, new-tab clicks
+       and in-page #anchors. Capture phase so it wins over other link handlers. */
+    document.addEventListener('click', function(e){
+      if (!body.classList.contains('lc-reel-active')) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+      var a = e.target.closest && e.target.closest('a[href]');
+      if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+      var raw = a.getAttribute('href') || '';
+      if (!raw || raw.charAt(0) === '#') return;
+      var url;
+      try { url = new URL(a.href, location.href); } catch (err) { return; }
+      if (url.origin !== location.origin) return;
+      if (url.searchParams.get('reel') === '1') return;
+      url.searchParams.set('reel', '1');
+      e.preventDefault();
+      location.href = url.pathname + url.search + url.hash;
+    }, true);
+
     try {
       var params = new URL(location.href).searchParams;
       if (params.has('notes') && params.get('notes') !== '0' && params.get('notes') !== 'false') {
@@ -634,6 +725,9 @@ body.lc-slides-active.lc-notes-on .lc-slides-notes-badge { display: inline-block
         var startN = parseInt(params.get('slides'), 10);
         if (!isNaN(startN) && startN >= 0 && startN < slides.length) current = startN;
         setTimeout(enter, 0);
+      }
+      if (params.has('reel') && params.get('reel') !== '0' && params.get('reel') !== 'false') {
+        setTimeout(enterReel, 0);
       }
     } catch (e) {}
 
