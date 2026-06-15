@@ -209,24 +209,48 @@ The five ideas that make everything else possible — in plain words:
 
 ## 📖 From the future, decoded — the real words
 
-You just did real software engineering; we only dressed it in a story. Here's
-the translation, so the official words click into place *after* you've felt what
-they mean:
+You just did real software engineering; we only dressed it in a story. Aristotle
+sorted a good story by **three unities — one place, one action, one unit of
+time**; this chapter introduces its new ideas the same way. Here's every one,
+sorted so the official words click into place *after* you've felt them:
+
+**🐾 One place — what you *did* (Discover)**
 
 | In the story | What professionals call it |
 |---|---|
-| Using Lucky's finished app *before* building it | **Outside-in**[^outside-in] (behavior-first) design |
-| "The card that listens" — change a field, it reacts | A **data-bound form**[^data-bound] / model |
-| "The list that compares options for Lucky" | A **data grid**[^data-grid] (a table view of records) |
-| "Find it on the map" | A **map / geospatial view**[^geospatial] of the same data |
-| "Screen, model and code are three views of one thing" | **Model–View synchronization**[^mvc] |
-| "The promises the app kept the whole time" | The **specification**[^specification] (acceptance criteria) |
-| "Promises checked automatically on every change" | **Automated / acceptance tests**[^acceptance] |
+| Lucky, and the Navigator itself — things you use and poke | An **object**[^object] (an instance) |
+| The ready-made pieces you dropped in, never coded | **Low-code blocks**[^block] |
+| "The card that listens" — change a field, it reacts | A **data-bound form**[^data-bound] |
+| "The list that compares options for Lucky" | A **data grid**[^data-grid] |
+| Select a row and the chart follows it | A **linked view**[^linked-view] |
+| "Find it on the map" | A **map / geospatial view**[^geospatial] |
+
+**🔧 One action — what it's *made of* (Design)**
+
+| In the story | What professionals call it |
+|---|---|
+| The lens that bares a widget's insides (⌥-hover) | An **inspector**[^inspector] (X-ray) |
+| The structure and live values behind the screen | The **model**[^model] |
+| Screen and model staying in lock-step | **Model–View synchronization**[^mvc] |
+
+**📜 One unit of time — the *promises kept* (Specs)**
+
+| In the story | What professionals call it |
+|---|---|
+| Meeting the finished app *before* building it | **Outside-in**[^outside-in], behavior-first |
+| "The promises the app kept the whole time" | The **specification**[^specification] |
+| "Promises checked automatically on every change" | **Acceptance tests**[^acceptance] |
+| Those checks turned into docs that can't go stale | **Living documentation**[^living-docs] |
+
+So Chapter 1 quietly introduces **thirteen** new ideas — **six** in *place*,
+**three** in *action*, **four** in *time* — and not one of them needed you to
+write a line of code, or to meet a single *class*. You played with **objects**;
+the blueprint behind them waits for a later chapter.
 
 > Tell the story first; reveal the vocabulary last. By the time a learner hears
 > "acceptance test," they've already *felt* one keeping Lucky safe. Hover any
-> term above to see its definition — they all collect into the **Definitions**
-> glossary at the foot of the chapter.
+> term to see its definition — they all collect into the **Definitions** glossary
+> at the foot of the chapter.
 {: .speaker-note }
 
 ## 🤖 Ask Ari
@@ -299,3 +323,9 @@ go from here.
 [^mvc]: **Model–View synchronization** — keeping the screen (view) and the underlying data (model) in lock-step, so a change in one is reflected in the other automatically.
 [^specification]: **Specification** — the agreed promises an app must keep, written in plain language; when made checkable they become *acceptance criteria*.
 [^acceptance]: **Acceptance test** — an automated check that the app keeps a specific promise; it runs on every change and fails loudly if the promise breaks.
+[^object]: **Object (instance)** — a concrete, working thing you can use and inspect, like Lucky or the Navigator itself. You meet objects first; the shared blueprint behind many objects comes in a later chapter.
+[^block]: **Low-code block** — a ready-made building piece (a form, a table, a map, a chart) you drop in and configure instead of coding it from scratch.
+[^linked-view]: **Linked view** — two widgets wired together so acting on one updates the other; here, selecting a service row drives the ratings chart.
+[^inspector]: **Inspector (X-ray)** — a tool that reveals an object's inside — its type and the live value of every setting — without changing it (⌥-hover the lens).
+[^model]: **Model** — the structured data and live values behind a view: what the widget really *is*, underneath what you see. (The shared blueprint — its *class* — comes later.)
+[^living-docs]: **Living documentation** — documentation generated from the specs and re-checked on every change, so it can never drift out of date.

@@ -6,20 +6,18 @@ you pull in when a chapter's *urgent need* calls for it. Some are live now;
 others get built when a chapter first demands them — which is exactly how a
 real backlog grows.
 
-## 🧬 Every chapter is the same shape
+## 🧭 Every chapter has the same shape
 
-A chapter is modelled as a `KnowledgeNode` — a real class in the
-[component model](/components/model). Its **state machine is the path you walk**
-through the page:
+You walk every chapter the same way, so you always know where you are: you
+**discover** it *(one place)*, **design** it *(one action)*, then pin down its
+**specs** *(one unit of time)* — until it's yours. Each chapter points to what
+comes before and after it, so the catalog is a map you route through, not a
+track you march down.
 
-[KnowledgeNode](#)
-{: .diagram scope="KnowledgeNode" }
-
-`locked → discovering` *(place)* `→ designing` *(action)* `→ specifying`
-*(time)* `→ mastered`. Chapters link to each other through `prerequisites` and
-`next`, so the catalog is a **graph**, not a list — a chapter is just a path
-through it. Hold **⌥ Option / Alt** and hover a chapter's widgets to x-ray them
-against this model.
+> The chapters are **objects you play with** first. What they all secretly have
+> in common — the blueprint behind them — you uncover in a later chapter, once
+> the objects feel familiar. Don't name the class yet.
+{: .speaker-note }
 
 ---
 

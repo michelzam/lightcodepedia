@@ -1,25 +1,32 @@
-# 🧭 Node template — how every module is built
+# 🧭 Node template — how every chapter is built
 
-*This page is the **author's skeleton** for a BUILD-AI module ("node"). Copy it
-to start a new module, then replace the placeholder text. It is also a reading
-aid for learners: every module follows this exact shape, so you always know
-where you are.*
+*This page is the **author's skeleton** for a BUILD-AI chapter. Copy it to start
+a new chapter, then replace the placeholder text. It's also a reading aid: every
+chapter follows this exact shape, so you always know where you are.*
 
-Each node tells one turn of the **moonwalk** and discloses it in the
-**three-unity** rhythm. The order below is the order on the page.
+Each chapter tells one turn of the **moonwalk** and discloses it in the
+**three-unity** rhythm — **one place, one action, one unit of time**. The order
+below is the order on the page.
 
-## 📚 A module *is* a KnowledgeNode
+## 📚 Author note — a chapter is internally a `KnowledgeNode`
 
-Each module is modelled as a `KnowledgeNode` — a real class in the
-[component model](/components/model). Its **state machine is the path you walk**
-through the page:
+*For authors only — do **not** disclose this class to learners early.* Each
+chapter is modelled as a `KnowledgeNode` (a real class in the
+[component model](/components/model)); its state machine is the path the learner
+walks: `locked → discovering` *(place)* `→ designing` *(action)* `→ specifying`
+*(time)* `→ mastered`.
+
+> **Objects before classes.** Learners play with each chapter as an *object*
+> first. The shared `KnowledgeNode` class is revealed only in a later "Design"
+> chapter, once objects feel familiar — keep it out of the early chapters, the
+> catalog, and the front page.
+{: .speaker-note }
 
 [KnowledgeNode](#)
 {: .diagram scope="KnowledgeNode" }
 
-`locked → discovering` *(place)* `→ designing` *(action)* `→ specifying`
-*(time)* `→ mastered`. Hold **⌥ Option / Alt** and hover a module's widgets to
-x-ray them against this model.
+Hold **⌥ Option / Alt** and hover a chapter's widgets to x-ray them against this
+model.
 
 ---
 

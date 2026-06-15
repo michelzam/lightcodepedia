@@ -104,10 +104,9 @@ no key ever touches our servers.
 ## 📚 The catalog — pulled on demand
 
 The lifecycle topics aren't a fixed track anymore; they're a **catalog of
-chapters** you route through as each chapter's needs demand. Every chapter is
-modelled as a `KnowledgeNode` (see the [component model](/components/model)) — a
-tiny state machine you walk: `discover → design → specify → master`. And the
-**[final chapter](/micro_build_ai/capstone) is one you write yourself** — a
+chapters** you route through as each chapter's needs demand — each one a thing
+you open, play with, and finish (`discover → design → specify → master`). And
+the **[final chapter](/micro_build_ai/capstone) is one you write yourself** — a
 world of your own to save.
 
 [📚 Browse the catalog](/micro_build_ai/catalog)
