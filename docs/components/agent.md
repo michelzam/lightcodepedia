@@ -145,8 +145,6 @@ All configuration goes in the YAML block.
 | `max_tokens` | `500` | Caps response length (and API cost) |
 | `intro` | (none) | A hint rendered above the input |
 | `placeholder` | "Ask anything..." | Placeholder text in the prompt field |
-| `title` | "Agent" | Panel header text — set `title: Ari` to brand it as the guide |
-| `icon` | 🤖 | Header emoji shown before the title |
 
 A fully-dressed example:
 
