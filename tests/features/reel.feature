@@ -12,6 +12,7 @@ Feature: Reel mode — Instagram-style vertical snap between titles
     And I wait for the page to be interactive
     Then the page is in reel mode
     And the content is a vertical scroll-snap container
+    And the reel shows a sticky title bar
 
   Scenario: Reel mode can be exited
     When I navigate to "/tutorial101?reel=1"

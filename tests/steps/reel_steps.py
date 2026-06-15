@@ -26,6 +26,18 @@ def step_reel_snap(context):
     assert snap and "y" in snap, "expected a y scroll-snap container, got %r" % (snap,)
 
 
+@then("the reel shows a sticky title bar")
+def step_reel_bar(context):
+    expect(context.page.locator(".lc-reel-bar")).to_be_visible(timeout=10_000)
+    # the bar carries the page's common title (non-empty) and a position counter
+    expect(context.page.locator(".lc-reel-bar-title")).to_contain_text(
+        re.compile(r"\S"), timeout=10_000
+    )
+    expect(context.page.locator(".lc-reel-bar-progress")).to_contain_text(
+        "/", timeout=10_000
+    )
+
+
 @when("I exit reel mode")
 def step_reel_exit(context):
     context.page.evaluate("() => window.lcReel && window.lcReel.exit()")
