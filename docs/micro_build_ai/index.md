@@ -1,7 +1,9 @@
 # 🐾 BUILD-AI — Become a Builder
 
+![AI is reshaping the world. Builders wanted. — UWM School of Information Studies](/micro_build_ai/AI-Builders.png)
+
 ````
-### 🌍 AI is reshaping the world. Builders wanted.
+### 🌍 You have ideas. Now you can build them.
 
 People have ideas — but most can't build them. **That just changed.**
 
