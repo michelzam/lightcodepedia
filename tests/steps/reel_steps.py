@@ -55,3 +55,9 @@ def step_reel_back(context):
     # same-document history entry (pushed on reel enter) — fire popstate
     context.page.evaluate("() => history.back()")
     context.page.wait_for_timeout(500)
+
+
+@when("I click the reel back button")
+def step_reel_back_btn(context):
+    context.page.locator(".lc-reel-back").click()
+    context.page.wait_for_timeout(500)

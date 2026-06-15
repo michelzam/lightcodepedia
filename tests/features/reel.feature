@@ -28,3 +28,11 @@ Feature: Reel mode — Instagram-style vertical snap between titles
     Then the page is in reel mode
     When I press the browser back button
     Then the page is not in reel mode
+
+  Scenario: The reel bar has a visible Back control
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I enter reel mode
+    Then the page is in reel mode
+    When I click the reel back button
+    Then the page is not in reel mode
