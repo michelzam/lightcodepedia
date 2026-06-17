@@ -174,22 +174,7 @@ print("hello")
 ```
 ````
 
-Common language tags: `python`, `yaml`, `json`, `markdown`, `liquid`, `csv`, `bash`. **Highlighting is automatic** — the language tag colours the syntax for you. Python:
-
-```python
-def greet(name):
-    # a friendly hello
-    return f"Hello, {name}!"
-```
-{: #lc-py-demo }
-
-…and YAML:
-
-```yaml
-name: Lucky
-age: 3
-breed: Beagle
-```
+Common language tags: `python`, `yaml`, `json`, `markdown`, `liquid`, `csv`, `bash`.
 
 To make a block **live** (editable and runnable), add `{: .run }` on the very next line:
 

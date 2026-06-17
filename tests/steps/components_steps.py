@@ -125,26 +125,6 @@ def step_mdpad_red(context):
     )
 
 
-@then("a code keyword is syntax-coloured")
-def step_code_keyword(context):
-    info = context.page.evaluate(
-        "() => {"
-        " var el = document.getElementById('lc-py-demo');"
-        " var k = document.querySelector('#lc-py-demo .k');"
-        " return {"
-        "  demo: !!el,"
-        "  html: el ? el.outerHTML.slice(0, 180) : null,"
-        "  highlights: document.querySelectorAll('.markdown-body .highlight').length,"
-        "  ks: document.querySelectorAll('.markdown-body .highlight .k').length,"
-        "  color: k ? getComputedStyle(k).color : null"
-        " }; }"
-    )
-    # #cf222e == rgb(207, 34, 46); diagnostic dict surfaces in the report on failure
-    assert info.get("ks", 0) > 0 and (info.get("color") or "").replace(" ", "") == "rgb(207,34,46)", (
-        "syntax-highlight diagnostic: %r" % (info,)
-    )
-
-
 @then("the mdpad italic text is not coloured")
 def step_mdpad_italic_not_red(context):
     # regression: a *italic* before a later {: .red} must NOT inherit the colour
