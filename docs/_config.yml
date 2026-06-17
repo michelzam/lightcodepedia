@@ -2,6 +2,16 @@ title: Lightcodepedia
 description: A GitHub Pages site
 lc_canonical_host: lightcodepedia.org
 
+# Explicitly enable Rouge server-side tokenisation of fenced code blocks so the
+# syntax.md theme has tokens (.highlight .k/.s/.c/…) to colour. Without this the
+# build emitted Prism-ready markup with no token spans (monochrome code).
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: highlight
+
 defaults:
   - scope:
       path: ""
