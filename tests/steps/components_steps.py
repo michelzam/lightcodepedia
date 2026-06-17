@@ -133,9 +133,9 @@ def step_code_keyword(context):
         "() => { var e = document.querySelector('.markdown-body .highlight .k');"
         " return e ? getComputedStyle(e).color : null; }"
     )
-    # #cf222e == rgb(207, 34, 43)
-    assert color and color.replace(" ", "") == "rgb(207,34,43)", (
-        "expected keyword red rgb(207,34,43), got %r" % (color,)
+    # #cf222e == rgb(207, 34, 46)
+    assert color and color.replace(" ", "") == "rgb(207,34,46)", (
+        "expected keyword red rgb(207,34,46), got %r" % (color,)
     )
 
 

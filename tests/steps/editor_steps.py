@@ -99,3 +99,27 @@ def step_block_content_dark(context):
     assert bg and bg.replace(" ", "") == "rgb(30,30,46)", (
         "expected dark block content editor, got %r" % (bg,)
     )
+
+
+@then("the editor formatting toolbar is visible")
+def step_fmt_bar_visible(context):
+    expect(
+        context.page.locator(".ed-fmt-bar button[data-fmt='bold']").first
+    ).to_be_visible(timeout=10_000)
+
+
+@when("I bold a selection with the toolbar")
+def step_toolbar_bold(context):
+    # seed text, select it, then click Bold
+    context.page.evaluate(
+        "() => { var t = document.getElementById('ed-input');"
+        " t.value = 'hello'; t.focus(); t.setSelectionRange(0, 5); }"
+    )
+    context.page.locator(".ed-fmt-bar button[data-fmt='bold']").first.click()
+    context.page.wait_for_timeout(200)
+
+
+@then('the raw editor contains "{snippet}"')
+def step_raw_contains(context, snippet):
+    val = context.page.evaluate("() => document.getElementById('ed-input').value")
+    assert snippet in val, "expected %r in the raw editor, got %r" % (snippet, val)
