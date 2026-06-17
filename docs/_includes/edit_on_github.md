@@ -250,6 +250,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 }
 #ed-block-form textarea { font-family: monospace; resize: none; flex: 1; min-height: 0; margin-bottom: 0; }
 #ed-block-form textarea[readonly] { background: #f6f8fa; color: #444; }
+/* the Content field is the same dark "workshop" surface as the Raw tab —
+   scoped to .ebf-content-wrap so heading / type / knob fields stay light */
+#ed-block-form .ebf-content-wrap textarea,
+#ed-block-form .ebf-content-wrap textarea[readonly] {
+  background: #1e1e2e; color: #cdd6f4; caret-color: #89b4fa;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+#ed-block-form .ebf-content-wrap textarea::placeholder { color: #6c7086; }
+#ed-block-form .ebf-content-wrap textarea::selection { background: #585b70; color: #fff; }
 #ed-block-form select { cursor: pointer; }
 /* .ebf-scroll wraps all scrollable form content; .ebf-actions sits outside it, always visible */
 .ebf-scroll { flex: 1; overflow-y: auto; min-height: 0; padding: 0.8em 1em 0.2em; display: flex; flex-direction: column; }

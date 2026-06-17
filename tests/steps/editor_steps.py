@@ -78,3 +78,24 @@ def step_raw_dark(context):
     )
     # #1e1e2e (matches the mdpad editor) == rgb(30, 30, 46)
     assert bg.replace(" ", "") == "rgb(30,30,46)", "expected dark raw editor, got %r" % (bg,)
+
+
+@when("I select the first block")
+def step_select_first_block(context):
+    row = context.page.locator("#ed-grid tr[data-idx]").first
+    row.wait_for(state="visible", timeout=10_000)
+    row.click()
+    context.page.wait_for_timeout(400)
+
+
+@then("the block content editor is dark themed")
+def step_block_content_dark(context):
+    ta = context.page.locator(".ebf-content-wrap textarea").first
+    ta.wait_for(state="visible", timeout=10_000)
+    bg = context.page.evaluate(
+        "() => { var t = document.querySelector('.ebf-content-wrap textarea');"
+        " return t ? getComputedStyle(t).backgroundColor : null; }"
+    )
+    assert bg and bg.replace(" ", "") == "rgb(30,30,46)", (
+        "expected dark block content editor, got %r" % (bg,)
+    )

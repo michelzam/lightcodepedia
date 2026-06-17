@@ -50,3 +50,12 @@ Feature: Page editor — ✨ AI edit dialog
     And I open the page editor
     And I switch to the editor "raw" tab
     Then the raw editor is dark themed
+
+  Scenario: The Blocks-tab Content editor is dark too
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And I load sample components into the editor
+    And I switch to the editor "blocks" tab
+    And I select the first block
+    Then the block content editor is dark themed
