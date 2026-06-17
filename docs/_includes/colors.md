@@ -14,14 +14,15 @@ or platform chrome. Documented live in /components/text.
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 <style>
-.markdown-body .red, .markdown-body .green, .markdown-body .blue,
-.markdown-body .amber, .markdown-body .muted, .markdown-body .hl {
+/* rendered-markdown surfaces: page content (incl. mdpad / section widgets,
+   which nest inside it) plus the editor's live-preview panes */
+:is(.markdown-body, #ed-preview, #ed-feat-preview) :is(.red, .green, .blue, .amber, .muted, .hl) {
   font-style: inherit; font-weight: inherit;   /* carrier *…* / **…** ⇒ plain colour */
 }
-.markdown-body .red   { color: #c0392b; }
-.markdown-body .green { color: #2e7d32; }
-.markdown-body .blue  { color: #1565c0; }
-.markdown-body .amber { color: #b45309; }
-.markdown-body .muted { color: #6b7280; }
-.markdown-body .hl    { background: #fff3a3; border-radius: 3px; padding: 0 0.22em; }
+:is(.markdown-body, #ed-preview, #ed-feat-preview) .red   { color: #c0392b; }
+:is(.markdown-body, #ed-preview, #ed-feat-preview) .green { color: #2e7d32; }
+:is(.markdown-body, #ed-preview, #ed-feat-preview) .blue  { color: #1565c0; }
+:is(.markdown-body, #ed-preview, #ed-feat-preview) .amber { color: #b45309; }
+:is(.markdown-body, #ed-preview, #ed-feat-preview) .muted { color: #6b7280; }
+:is(.markdown-body, #ed-preview, #ed-feat-preview) .hl    { background: #fff3a3; border-radius: 3px; padding: 0 0.22em; }
 </style>

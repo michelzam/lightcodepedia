@@ -224,12 +224,32 @@
       return { label: label, body: body };
     }).filter(function(s){ return s.label; });
   }
+  // Inline kramdown span-IAL the live (marked) renderers can't do: turn
+  // "<em>word</em>{: .red}" into "<em class=\"red\">word</em>" so colour classes
+  // (and any inline class) work in mdpad / the editor / section widgets, matching
+  // what kramdown emits server-side. Literal IAL inside `code spans` is untouched.
+  function inlineIAL(html) {
+    return String(html).replace(
+      /<(em|strong|code|a)\b([^>]*)>([\s\S]*?)<\/\1>\s*\{:\s*([^}]*?)\s*\}/g,
+      function (m, tag, attrs, inner, ial) {
+        var cls = (ial.match(/\.[-\w]+/g) || []).map(function (c) { return c.slice(1); });
+        if (!cls.length) return m;
+        if (/\bclass\s*=\s*"/.test(attrs)) {
+          attrs = attrs.replace(/class\s*=\s*"([^"]*)"/, function (mm, ex) { return 'class="' + ex + " " + cls.join(" ") + '"'; });
+        } else {
+          attrs += ' class="' + cls.join(" ") + '"';
+        }
+        return "<" + tag + attrs + ">" + inner + "</" + tag + ">";
+      }
+    );
+  }
   function markdownBody(s) {
     /* ensure IAL tags land on their own paragraph so _applyIAL can process them */
     var norm = s.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
-    return window.marked ? marked.parse(norm) : "<pre>" + s + "</pre>";
+    return window.marked ? inlineIAL(marked.parse(norm)) : "<pre>" + s + "</pre>";
   }
   window.lcLoadMarked = loadMarked;
+  window.lcInlineIAL = inlineIAL;
   window.lcParseSections = parseSections;
   window.lcMarkdownBody = markdownBody;
   window.lcScanElement = scanElement;

@@ -15,6 +15,8 @@ Type markdown on the left. See the rendered result on the right — instantly, a
 
 **Bold text** and *italic text* and `inline code`.
 
+Inline *colour*{: .red} works in the live preview too.
+
 - First bullet
 - Second bullet
 - Third bullet

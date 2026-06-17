@@ -182,7 +182,7 @@ Auto-included by docs/_layouts/default.html.
           var end = text.indexOf("\n---", 3);
           if (end >= 0) { var nl = text.indexOf("\n", end + 1); text = nl >= 0 ? text.slice(nl + 1) : ""; }
         }
-        loadMarked(function() { container.innerHTML = marked.parse(text.trim()); });
+        loadMarked(function() { container.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(text.trim())); });
       })
       .catch(function(err) {
         container.innerHTML = "<div style='color:#c00'>⚠️ Could not load " + escapeHtml(href) + ": " + escapeHtml(err.message) + "</div>";

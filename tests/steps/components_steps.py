@@ -110,3 +110,16 @@ def step_red_colour(context):
     assert color and color.replace(" ", "") == "rgb(192,57,43)", (
         "expected red rgb(192,57,43), got %r" % (color,)
     )
+
+
+@then("the mdpad preview shows a red word")
+def step_mdpad_red(context):
+    el = context.page.locator(".lc-mdpad-out .red").first
+    el.wait_for(state="attached", timeout=20_000)
+    color = context.page.evaluate(
+        "() => { var e = document.querySelector('.lc-mdpad-out .red');"
+        " return e ? getComputedStyle(e).color : null; }"
+    )
+    assert color and color.replace(" ", "") == "rgb(192,57,43)", (
+        "expected red in mdpad preview, got %r" % (color,)
+    )

@@ -724,7 +724,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         out.appendChild(bar);
         // Render markdown into a child container
         var body = document.createElement("div");
-        body.innerHTML = marked.parse(normIAL(src));
+        body.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(normIAL(src)));
         out.appendChild(body);
         // Apply IAL markers then run the full component upgrade pipeline
         if (window.lcApplyIAL)    window.lcApplyIAL(body);
@@ -1697,7 +1697,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (!rows.length) { prev.innerHTML = ""; return; }
     var md = rows.map(function (r) { return (_blocks[r.i].lines || []).join("\n"); }).join("\n\n");
     function doRender() {
-      prev.innerHTML = window.marked ? window.marked.parse(normIAL(md)) : "<pre>" + escH(md) + "</pre>";
+      prev.innerHTML = window.marked ? (window.lcInlineIAL || function (h) { return h; })(window.marked.parse(normIAL(md))) : "<pre>" + escH(md) + "</pre>";
       if (window.lcApplyIAL) window.lcApplyIAL(prev);
       if (window.lcScanElement) window.lcScanElement(prev);
       wireWriteback(prev, rows);

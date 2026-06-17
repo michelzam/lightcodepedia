@@ -68,7 +68,7 @@ Auto-included by docs/_layouts/default.html.
 
     function render() {
       out.innerHTML = window.marked
-        ? window.marked.parse(ta.value)
+        ? (window.lcInlineIAL || function (h) { return h; })(window.marked.parse(ta.value))
         : "<pre>" + ta.value.replace(/[&<]/g, function (c) { return c === "&" ? "&amp;" : "&lt;"; }) + "</pre>";
     }
     ta.addEventListener("input", render);

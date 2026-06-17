@@ -192,7 +192,7 @@ Auto-included by docs/_layouts/default.html.
             return "<button class=\"lc-tab-btn" + (i===0?" active":"") + "\" data-tab=\"" + gid + "-" + i + "\">" + escapeHtml(s.label) + "</button>";
           }).join("");
           var panels = sections.map(function(s, i) {
-            return "<div id=\"" + gid + "-" + i + "\" class=\"lc-tab-panel" + (i===0?" active":"") + "\">" + marked.parse(s.body) + "</div>";
+            return "<div id=\"" + gid + "-" + i + "\" class=\"lc-tab-panel" + (i===0?" active":"") + "\">" + (window.lcInlineIAL || function (h) { return h; })(marked.parse(s.body)) + "</div>";
           }).join("");
           var wrap = document.createElement("div");
           wrap.className = "lc-tabs";

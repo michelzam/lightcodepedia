@@ -52,3 +52,8 @@ Feature: Component gallery behaviors
     When I navigate to "/components/text"
     And I wait for the page to be interactive
     Then a red coloured word is rendered
+
+  Scenario: Colour classes also work in the mdpad live preview
+    When I navigate to "/components/text"
+    And I wait for the page to be interactive
+    Then the mdpad preview shows a red word
