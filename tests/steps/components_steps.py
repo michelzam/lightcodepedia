@@ -96,3 +96,17 @@ def step_live_python_editor(context):
 @then("a live SQL editor is visible")
 def step_sql_editor_visible(context):
     expect(context.page.locator("textarea.lc-query-editor").first).to_be_visible(timeout=10_000)
+
+
+@then("a red coloured word is rendered")
+def step_red_colour(context):
+    el = context.page.locator(".markdown-body .red").first
+    el.wait_for(state="attached", timeout=10_000)
+    color = context.page.evaluate(
+        "() => { var e = document.querySelector('.markdown-body .red');"
+        " return e ? getComputedStyle(e).color : null; }"
+    )
+    # #c0392b == rgb(192, 57, 43)
+    assert color and color.replace(" ", "") == "rgb(192,57,43)", (
+        "expected red rgb(192,57,43), got %r" % (color,)
+    )

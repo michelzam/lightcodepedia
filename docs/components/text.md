@@ -94,6 +94,30 @@ The six marks you'll use every day:
 
 All of these work inside a paragraph — no blank lines needed around them.
 
+## 🎨 Colour — tint a word
+
+Markdown has no colour syntax, but lightcodepedia ships a few **colour classes** you apply with an IAL[^ial] — no HTML, no CSS to write. Wrap the word in `*…*` (the asterisks are just the carrier; the class shows it as plain colour):
+
+- `*danger*{: .red}` → *danger*{: .red}
+- `*success*{: .green}` → *success*{: .green}
+- `*note*{: .blue}` → *note*{: .blue}
+- `*warning*{: .amber}` → *warning*{: .amber}
+- `*aside*{: .muted}` → *aside*{: .muted}
+- `*highlight*{: .hl}` → *highlight*{: .hl} — a background mark
+
+A whole phrase works too: `**the entire thing**{: .green}` → **the entire thing**{: .green}.
+
+> Keep colour *meaningful*{: .blue} — red for caution, green for good — rather than decorative. A class is themeable and consistent; a hand-typed HTML colour is neither.
+{: .speaker-note }
+
+**Q:** How do you colour a word green without writing any HTML?
+
+- [ ] `<span style="color:green">word</span>` in the markdown.
+- [x] `*word*{: .green}` — an IAL colour class on an inline carrier.
+- [ ] `{green}word{/green}` — a colour shortcode.
+- [ ] You can't; markdown has no colour at all.
+{: .quiz }
+
 ## 📋 Lists — bullets and numbers
 
 **Bullets** — any of `-`, `*`, or `+` starts a list item:
@@ -271,6 +295,7 @@ Then `{: .form bound="dogs" }` on another block binds a form to that grid. The `
 | `> q` | blockquote |
 | `- ` / `1.` | list item |
 | <code>```python</code> | fenced code block |
+| `*x*{: .red}` | *red* coloured word (also `.green .blue .amber .muted .hl`) |
 | `{: .class }` | IAL — attach attributes to block above |
 | `[^x]` / <code>[^x]:</code> | footnote ref + definition (popover) |
 

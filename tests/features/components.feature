@@ -47,3 +47,8 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then a live SQL editor is visible
     And the "live_q" bound grid shows at least 3 rows
+
+  Scenario: Inline IAL colour classes tint text
+    When I navigate to "/components/text"
+    And I wait for the page to be interactive
+    Then a red coloured word is rendered
