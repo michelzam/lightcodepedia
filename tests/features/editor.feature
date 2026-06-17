@@ -51,6 +51,15 @@ Feature: Page editor — ✨ AI edit dialog
     And I switch to the editor "raw" tab
     Then the raw editor is dark themed
 
+  Scenario: The Raw editor has a formatting toolbar
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And I switch to the editor "raw" tab
+    Then the editor formatting toolbar is visible
+    When I bold a selection with the toolbar
+    Then the raw editor contains "**"
+
   Scenario: The Blocks-tab Content editor is dark too
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive

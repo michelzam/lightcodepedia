@@ -89,7 +89,6 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   caret-color: #89b4fa;
 }
 #ed-input::placeholder { color: #6c7086; }
-#ed-input::selection { background: #585b70; color: #fff; }
 #ed-preview { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; box-sizing: border-box; }
 /* 50% zoom mode: render content at 200% width then scale to fit */
 #ed-preview.lc-zoom { overflow-x: hidden; }
@@ -141,6 +140,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 }
 #ed-raw-shop b { color: #cdd6f4; font-weight: 600; }
 #ed-raw-shop .ed-shop-grow { margin-left: auto; opacity: 0.7; }
+/* ── ✏️ formatting toolbar (inserts markdown; storage stays pure md) ── */
+.ed-fmt-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 3px;
+  padding: 4px 7px; background: #181825; border-bottom: 1px solid #313244; }
+.ed-fmt-bar button[data-fmt], .ed-fmt-bar .ed-fmt-col {
+  background: #313244; color: #cdd6f4; border: none; border-radius: 4px; cursor: pointer;
+  font-size: 0.82em; padding: 3px 9px; font-family: inherit; line-height: 1.5; }
+.ed-fmt-bar button[data-fmt]:hover { background: #45475a; }
+.ed-fmt-bar .ed-fmt-sep { width: 1px; align-self: stretch; background: #313244; margin: 0 2px; }
+.ed-fmt-bar .ed-fmt-col { padding: 2px 4px; }
 #ed-blocks-pane { display: none; flex: 1; flex-direction: column; overflow: hidden; }
 #ed-blocks-pane.ed-active { display: flex; }
 #ed-log-pane { display: flex; flex: 1; flex-direction: column; overflow: auto; padding: 0.4em; }
@@ -258,7 +266,6 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 #ed-block-form .ebf-content-wrap textarea::placeholder { color: #6c7086; }
-#ed-block-form .ebf-content-wrap textarea::selection { background: #585b70; color: #fff; }
 #ed-block-form select { cursor: pointer; }
 /* .ebf-scroll wraps all scrollable form content; .ebf-actions sits outside it, always visible */
 .ebf-scroll { flex: 1; overflow-y: auto; min-height: 0; padding: 0.8em 1em 0.2em; display: flex; flex-direction: column; }
@@ -512,6 +519,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var agDlg = document.getElementById("ed-agent-dialog");
     if (agDlg) agDlg.classList.add("ed-hidden");
     loadCompModel(); // fetch type→icon map (once)
+    attachFmtToolbar(document.getElementById("ed-input")); // format-by-click on the Raw editor
     buildGrid(); // always build — shows placeholder if no file yet
 
     if (_pat && _repo) {
@@ -1514,6 +1522,71 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     form.style.height = half + "px";
   }
 
+  /* ── ✏️ formatting toolbar ────────────────────────────────
+     Inserts plain markdown at the cursor/selection so an author can format by
+     clicking instead of typing syntax — the stored file stays pure markdown.
+     Reused on the Raw editor and the block Content field. */
+  var FMT_BTNS =
+    '<button type="button" data-fmt="bold" title="Bold"><b>B</b></button>' +
+    '<button type="button" data-fmt="italic" title="Italic"><i>I</i></button>' +
+    '<button type="button" data-fmt="code" title="Inline code">&lt;&gt;</button>' +
+    '<span class="ed-fmt-sep"></span>' +
+    '<button type="button" data-fmt="h2" title="Heading">H</button>' +
+    '<button type="button" data-fmt="list" title="Bullet list">&#8226;</button>' +
+    '<button type="button" data-fmt="link" title="Link">&#128279;</button>' +
+    '<span class="ed-fmt-sep"></span>' +
+    '<select class="ed-fmt-col" title="Colour"><option value="">&#127912;</option>' +
+      '<option value="red">red</option><option value="green">green</option>' +
+      '<option value="blue">blue</option><option value="amber">amber</option>' +
+      '<option value="hl">highlight</option></select>';
+
+  function applyFmt(ta, kind, arg) {
+    var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value, sel = v.slice(s, e);
+    function set(val, ns, ne) { ta.value = val; ta.selectionStart = ns; ta.selectionEnd = ne; }
+    function wrap(mark) {
+      var t = sel || "text";
+      set(v.slice(0, s) + mark + t + mark + v.slice(e), s + mark.length, s + mark.length + t.length);
+    }
+    function prefix(p) {
+      var ls = v.lastIndexOf("\n", s - 1) + 1, le = v.indexOf("\n", e); if (le < 0) le = v.length;
+      var blk = v.slice(ls, le).split("\n").map(function (l) { return p + l; }).join("\n");
+      set(v.slice(0, ls) + blk + v.slice(le), ls, ls + blk.length);
+    }
+    if (kind === "bold") wrap("**");
+    else if (kind === "italic") wrap("*");
+    else if (kind === "code") wrap("`");
+    else if (kind === "h2") prefix("## ");
+    else if (kind === "list") prefix("- ");
+    else if (kind === "link") {
+      var lt = sel || "text", li = "[" + lt + "](url)";
+      set(v.slice(0, s) + li + v.slice(e), s + li.length - 4, s + li.length - 1);
+    } else if (kind === "colour") {
+      var ct = sel || "text", ci = "*" + ct + "*{: ." + (arg || "red") + "}";
+      set(v.slice(0, s) + ci + v.slice(e), s + 1, s + 1 + ct.length);
+    }
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+    ta.focus();
+  }
+
+  function attachFmtToolbar(ta) {
+    if (!ta || ta.dataset.fmtBar) return;
+    ta.dataset.fmtBar = "1";
+    var bar = document.createElement("div");
+    bar.className = "ed-fmt-bar";
+    bar.innerHTML = FMT_BTNS;
+    ta.parentNode.insertBefore(bar, ta);
+    // keep the textarea's focus + selection when a format button is clicked
+    bar.addEventListener("mousedown", function (ev) { if (ev.target.closest("button[data-fmt]")) ev.preventDefault(); });
+    bar.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button[data-fmt]"); if (!b) return;
+      ev.preventDefault(); applyFmt(ta, b.getAttribute("data-fmt"));
+    });
+    var col = bar.querySelector(".ed-fmt-col");
+    if (col) col.addEventListener("change", function () {
+      if (col.value) { applyFmt(ta, "colour", col.value); col.value = ""; }
+    });
+  }
+
   function showBlockForm(idx) {
     var b = _blocks[idx];
     var form = document.getElementById("ed-block-form");
@@ -1565,6 +1638,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       + "<textarea id='ebf-content'>" + escH(content) + "</textarea></div>"
       + "</div>"
       + "<div class='ebf-actions'><a href='#' class='lc-btn' id='ebf-apply' style='font-size:0.82em;padding:0.32em 0.9em'>Apply</a></div>";
+
+    attachFmtToolbar(document.getElementById("ebf-content"));   // format-by-click on the Content field
 
     /* mark form dirty on any change so hover sync won't clobber edits */
     form.addEventListener("input", function() { _formDirty = true; });
