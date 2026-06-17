@@ -229,8 +229,10 @@
   // (and any inline class) work in mdpad / the editor / section widgets, matching
   // what kramdown emits server-side. Literal IAL inside `code spans` is untouched.
   function inlineIAL(html) {
+    // [^<] for the carrier's content so the match can't span across other tags
+    // (a lazy .*? would stretch from an earlier <em> to a later </em>{: .x})
     return String(html).replace(
-      /<(em|strong|code|a)\b([^>]*)>([\s\S]*?)<\/\1>\s*\{:\s*([^}]*?)\s*\}/g,
+      /<(em|strong|code|a)\b([^>]*)>([^<]*)<\/\1>\s*\{:\s*([^}]*?)\s*\}/g,
       function (m, tag, attrs, inner, ial) {
         var cls = (ial.match(/\.[-\w]+/g) || []).map(function (c) { return c.slice(1); });
         if (!cls.length) return m;

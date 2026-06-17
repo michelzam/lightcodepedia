@@ -137,3 +137,18 @@ def step_code_keyword(context):
     assert color and color.replace(" ", "") == "rgb(207,34,43)", (
         "expected keyword red rgb(207,34,43), got %r" % (color,)
     )
+
+
+@then("the mdpad italic text is not coloured")
+def step_mdpad_italic_not_red(context):
+    # regression: a *italic* before a later {: .red} must NOT inherit the colour
+    color = context.page.evaluate(
+        "() => { var ems = document.querySelectorAll('.lc-mdpad-out em');"
+        " for (var i = 0; i < ems.length; i++) {"
+        "   if (/italic/.test(ems[i].textContent)) return getComputedStyle(ems[i]).color;"
+        " } return null; }"
+    )
+    # .red is #c0392b == rgb(192, 57, 43); the italic word must not be that
+    assert color and color.replace(" ", "") != "rgb(192,57,43)", (
+        "italic text wrongly coloured red: %r" % (color,)
+    )
