@@ -69,3 +69,12 @@ def step_diagram_svg(context):
     # the DOT engine (WASM) lazy-loads, then renders the inline SVG
     expect(pane.locator("svg").first).to_be_visible(timeout=25_000)
     expect(pane).to_contain_text("Datagrid", timeout=25_000)
+
+
+@then("the raw editor is dark themed")
+def step_raw_dark(context):
+    bg = context.page.evaluate(
+        "() => getComputedStyle(document.getElementById('ed-input')).backgroundColor"
+    )
+    # #1e1e2e (matches the mdpad editor) == rgb(30, 30, 46)
+    assert bg.replace(" ", "") == "rgb(30,30,46)", "expected dark raw editor, got %r" % (bg,)

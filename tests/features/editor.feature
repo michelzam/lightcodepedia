@@ -43,3 +43,10 @@ Feature: Page editor — ✨ AI edit dialog
     And I load sample components into the editor
     And I switch to the editor "diagram" tab
     Then the editor diagram renders a class graph
+
+  Scenario: The Raw tab is the dark basement workshop
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And I switch to the editor "raw" tab
+    Then the raw editor is dark themed

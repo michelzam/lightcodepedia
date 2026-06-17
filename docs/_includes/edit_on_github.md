@@ -84,9 +84,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
 #ed-input {
   flex: 1; border: none; resize: none;
-  font-family: monospace; font-size: 0.88em; padding: 1em; line-height: 1.6;
-  outline: none; background: #fdfcfb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; padding: 1em; line-height: 1.6;
+  outline: none; background: #1e1e2e; color: #cdd6f4;   /* dark workshop — matches the mdpad editor */
+  caret-color: #89b4fa;
 }
+#ed-input::placeholder { color: #6c7086; }
+#ed-input::selection { background: #585b70; color: #fff; }
 #ed-preview { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; box-sizing: border-box; }
 /* 50% zoom mode: render content at 200% width then scale to fit */
 #ed-preview.lc-zoom { overflow-x: hidden; }
@@ -127,8 +130,17 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 }
 .ed-tab.active { color: #0066cc; border-bottom-color: #0066cc; font-weight: 600; }
 .ed-tab:hover:not(.active) { color: #333; }
-#ed-raw-pane { display: flex; flex: 1; overflow: hidden; }
+#ed-raw-pane { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 #ed-raw-pane.ed-hidden { display: none; }
+/* the raw source is the "basement workshop" the self-growing house is built from */
+#ed-raw-shop {
+  flex: none; display: flex; align-items: center; gap: 0.5em;
+  padding: 0.42em 0.95em; font-size: 0.76em; letter-spacing: 0.02em;
+  background: #181825; color: #6c7086; border-bottom: 1px solid #313244;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; user-select: none;
+}
+#ed-raw-shop b { color: #cdd6f4; font-weight: 600; }
+#ed-raw-shop .ed-shop-grow { margin-left: auto; opacity: 0.7; }
 #ed-blocks-pane { display: none; flex: 1; flex-direction: column; overflow: hidden; }
 #ed-blocks-pane.ed-active { display: flex; }
 #ed-log-pane { display: flex; flex: 1; flex-direction: column; overflow: auto; padding: 0.4em; }
@@ -360,6 +372,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           <span class="ed-tab" data-tab="log">📝 Log</span>
         </div>
         <div id="ed-raw-pane" class="ed-hidden">
+          <div id="ed-raw-shop">🔧 <b>basement workshop</b> · the source the self-growing house is built from<span class="ed-shop-grow">🌱→🏠</span></div>
           <textarea id="ed-input" placeholder="Select a file to start editing…" spellcheck="false"></textarea>
         </div>
         <div id="ed-features-pane" class="ed-hidden">
