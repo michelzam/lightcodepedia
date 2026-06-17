@@ -123,3 +123,17 @@ def step_mdpad_red(context):
     assert color and color.replace(" ", "") == "rgb(192,57,43)", (
         "expected red in mdpad preview, got %r" % (color,)
     )
+
+
+@then("a code keyword is syntax-coloured")
+def step_code_keyword(context):
+    el = context.page.locator(".markdown-body .highlight .k").first
+    el.wait_for(state="attached", timeout=10_000)
+    color = context.page.evaluate(
+        "() => { var e = document.querySelector('.markdown-body .highlight .k');"
+        " return e ? getComputedStyle(e).color : null; }"
+    )
+    # #cf222e == rgb(207, 34, 43)
+    assert color and color.replace(" ", "") == "rgb(207,34,43)", (
+        "expected keyword red rgb(207,34,43), got %r" % (color,)
+    )

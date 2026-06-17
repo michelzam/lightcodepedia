@@ -57,3 +57,8 @@ Feature: Component gallery behaviors
     When I navigate to "/components/text"
     And I wait for the page to be interactive
     Then the mdpad preview shows a red word
+
+  Scenario: Fenced code blocks get syntax-highlight colours
+    When I navigate to "/components/text"
+    And I wait for the page to be interactive
+    Then a code keyword is syntax-coloured
