@@ -1,25 +1,5 @@
 [
  {
-  "run": "2026-06-14T10:01Z",
-  "pages": 15,
-  "heap_max_mb": 31.6,
-  "heap_avg_mb": 13.4,
-  "dom_max": 1480,
-  "errors": 1,
-  "passed": 64,
-  "scenarios": 64
- },
- {
-  "run": "2026-06-14T10:41Z",
-  "pages": 16,
-  "heap_max_mb": 31.6,
-  "heap_avg_mb": 13.3,
-  "dom_max": 1482,
-  "errors": 1,
-  "passed": 64,
-  "scenarios": 65
- },
- {
   "run": "2026-06-14T10:46Z",
   "pages": 16,
   "heap_max_mb": 31.6,
@@ -298,5 +278,25 @@
   "errors": 1,
   "passed": 79,
   "scenarios": 79
+ },
+ {
+  "run": "2026-06-17T11:56Z",
+  "pages": 16,
+  "heap_max_mb": 31.6,
+  "heap_avg_mb": 13.3,
+  "dom_max": 1503,
+  "errors": 1,
+  "passed": 79,
+  "scenarios": 80
+ },
+ {
+  "run": "2026-06-17T12:01Z",
+  "pages": 16,
+  "heap_max_mb": 31.6,
+  "heap_avg_mb": 13.3,
+  "dom_max": 1503,
+  "errors": 0,
+  "passed": 79,
+  "scenarios": 80
  }
 ]
