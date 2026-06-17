@@ -260,17 +260,17 @@
   "scenarios": 79
  },
  {
-  "run": "2026-06-17T11:56Z",
+  "run": "2026-06-17T12:00Z",
   "pages": 16,
   "heap_max_mb": 31.6,
   "heap_avg_mb": 13.3,
   "dom_max": 1503,
-  "errors": 1,
+  "errors": 0,
   "passed": 79,
   "scenarios": 80
  },
  {
-  "run": "2026-06-17T12:01Z",
+  "run": "2026-06-17T12:06Z",
   "pages": 16,
   "heap_max_mb": 31.6,
   "heap_avg_mb": 13.3,
