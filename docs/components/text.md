@@ -181,6 +181,7 @@ def greet(name):
     # a friendly hello
     return f"Hello, {name}!"
 ```
+{: #lc-py-demo }
 
 …and YAML:
 

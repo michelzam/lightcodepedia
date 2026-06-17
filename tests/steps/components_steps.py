@@ -127,10 +127,12 @@ def step_mdpad_red(context):
 
 @then("a code keyword is syntax-coloured")
 def step_code_keyword(context):
-    el = context.page.locator(".markdown-body .highlight .k").first
+    # target the dedicated demo block (#lc-py-demo) so the assertion isn't a
+    # race with the mdpad block, whose embedded python also produces .k
+    el = context.page.locator("#lc-py-demo .k").first
     el.wait_for(state="attached", timeout=10_000)
     color = context.page.evaluate(
-        "() => { var e = document.querySelector('.markdown-body .highlight .k');"
+        "() => { var e = document.querySelector('#lc-py-demo .k');"
         " return e ? getComputedStyle(e).color : null; }"
     )
     # #cf222e == rgb(207, 34, 46)
