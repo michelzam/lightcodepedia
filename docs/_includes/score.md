@@ -28,6 +28,16 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
 .lc-score-popover .lc-score-line .lc-score-mark.no { color: #c62828; }
 .lc-score-popover .lc-score-total { margin-top: 0.5em; padding-top: 0.5em; border-top: 1px solid #f0c97a; font-weight: 600; color: #b45309; display: flex; justify-content: space-between; }
 @media (max-width: 700px) { .lc-score-popover { right: 0.8em; top: 100px; } body.lc-slides-active .lc-score-popover { top: 3em; } }
+/* a score remembered from a previous visit (no live answers yet this session) */
+.lc-score-fab.lc-score-remembered { opacity: 0.9; }
+/* per-page score tag in the corner of a card that links to that page */
+.lc-card { position: relative; }
+.lc-card-score { position: absolute; top: 8px; right: 8px; z-index: 1;
+  font: 600 0.72em/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 0.12em 0.5em; border-radius: 999px; background: #eef2f7; color: #64748b;
+  pointer-events: none; }
+.lc-card-score.partial { background: #fef9c3; color: #854d0e; }
+.lc-card-score.full { background: #dcfce7; color: #166534; }
 </style>
 <button class="lc-score-fab" type="button" aria-label="Show quiz score">
   <span class="lc-score-fab-icon" aria-hidden="true">🏆</span><span class="lc-score-fab-label">0/0</span>
@@ -35,10 +45,59 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
 <div class="lc-score-popover" role="status" aria-live="polite"></div>
 <script>
 (function(){
+  /* ── persisted per-page scores (localStorage) ──────────────────────────
+     Keyed by a normalised path so /foo, /foo.html and /foo/ all match. */
+  function normPath(p){
+    try { p = new URL(p || location.href, location.origin).pathname; }
+    catch (e) { p = location.pathname; }
+    p = p.replace(/index\.html?$/i, "").replace(/\.html?$/i, "");
+    if (p.length > 1) p = p.replace(/\/+$/, "");
+    return p || "/";
+  }
+  function loadScores(){ try { return JSON.parse(localStorage.getItem("lc_scores") || "{}"); } catch (e) { return {}; } }
+  function saveScores(o){ try { localStorage.setItem("lc_scores", JSON.stringify(o)); } catch (e) {} }
+  window.lcPageScores = { get: function(p){ return loadScores()[normPath(p)]; }, all: loadScores, norm: normPath };
+
+  /* tag every card that links to a page you've scored with that score */
+  function decorateCards(){
+    var scores = loadScores();
+    document.querySelectorAll(".lc-card").forEach(function(card){
+      if (card.dataset.lcScored) return;
+      var a = card.querySelector("a[href]"); if (!a) return;
+      var s = scores[normPath(a.getAttribute("href"))];
+      if (!s || !s.total) return;
+      card.dataset.lcScored = "1";
+      var tag = document.createElement("span");
+      tag.className = "lc-card-score" + (s.won >= s.total ? " full" : (s.won > 0 ? " partial" : ""));
+      tag.textContent = s.won + "/" + s.total;
+      tag.title = "Your score on this page";
+      card.appendChild(tag);
+    });
+  }
+  var _cardTick = false;
+  function scheduleDecorate(){
+    if (_cardTick) return; _cardTick = true;
+    requestAnimationFrame(function(){ _cardTick = false; decorateCards(); });
+  }
+
   window.lcQuizScore = window.lcQuizScore || (function(){
     var quizzes = {};  // {id: {correct: bool, attempts: N}}
     var order = [];
     var subscribers = [];
+    var PATH = normPath();
+    var seed = loadScores()[PATH] || null;   // score remembered from a previous visit
+
+    function sessionWon(){ return order.filter(function(id){ return quizzes[id].correct; }).length; }
+    function persist(){
+      if (!order.length) return;            // nothing answered this visit — don't overwrite
+      var all = loadScores(), prev = all[PATH] || { won: 0, total: 0 };
+      // keep the best: never regress a remembered score on a partial re-visit
+      all[PATH] = { won: Math.max(prev.won || 0, sessionWon()),
+                    total: Math.max(prev.total || 0, order.length),
+                    ts: new Date().toISOString() };
+      seed = all[PATH];
+      saveScores(all);
+    }
 
     function fab(){ return document.querySelector('.lc-score-fab'); }
     function pop(){ return document.querySelector('.lc-score-popover'); }
@@ -48,13 +107,15 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
 
     function render() {
       var f = fab(); if (!f) return;
-      var total = order.length;
-      if (total === 0) {
-        f.classList.remove('lc-score-visible');
-        return;
+      var sTotal = order.length, sWon = sessionWon();
+      var total = sTotal, won = sWon, remembered = false;
+      if (seed && seed.total) {
+        if (sTotal === 0) { total = seed.total; won = seed.won; remembered = true; }  // show last visit's score
+        else { won = Math.max(won, seed.won); total = Math.max(total, seed.total); }
       }
-      var won = order.filter(function(id){ return quizzes[id].correct; }).length;
+      if (total === 0) { f.classList.remove('lc-score-visible'); return; }
       f.querySelector('.lc-score-fab-label').textContent = won + '/' + total;
+      f.classList.toggle('lc-score-remembered', remembered);
       f.classList.add('lc-score-visible');
     }
 
@@ -78,10 +139,12 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
         }
         quizzes[quizId].correct = !!correct;
         quizzes[quizId].attempts++;
+        persist();
         render();
         renderPopover();
         notify();
       },
+      refresh: function(){ render(); },
       reset: function() {
         quizzes = {};
         order = [];
@@ -112,6 +175,11 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
     document.addEventListener('keydown', function(e){
       if (e.key === 'Escape') p.classList.remove('lc-score-popover-visible');
     });
+    // show a score remembered from a previous visit
+    if (window.lcQuizScore && window.lcQuizScore.refresh) window.lcQuizScore.refresh();
+    // tag cards now and as they upgrade (cards.md / sections.md render late)
+    decorateCards();
+    new MutationObserver(scheduleDecorate).observe(document.body, { childList: true, subtree: true });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
