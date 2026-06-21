@@ -1,6 +1,6 @@
 # 🐾 BUILD-AI — Become a Builder
 
-![AI is reshaping the world. Builders wanted. — UWM School of Information Studies](/micro_build_ai/AI-Builders.png){: style="display:block; width:100%; max-width:880px; margin:1.2em auto; border-radius:10px;" }
+![AI is reshaping the world. Builders wanted. — UWM School of Information Studies](/micro_build_ai/AI-Builders.png){: .lc-banner }
 
 ````
 ### 🌍 You have ideas. Now you can build them.
