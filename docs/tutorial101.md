@@ -35,7 +35,7 @@ Lightcode relies on **nothing** on the server side. It runs **markdown** files w
 
 **Man's best friend** 🐶
 
-![Lucky — a black Labrador](https://picsum.photos/id/237/500/400)
+![Lucky — a black Labrador](/assets/lab.jpg)
 
 Cute, huh — this local dog?
 
