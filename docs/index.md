@@ -61,7 +61,7 @@ Browse the library of interactive widgets you can use in your pages.
 ```
 {: .cards cols="3" }
 
-## 🗒️ Admin
+## 🗒️ More
 
 ```
 ### 🗒️ Pages
@@ -74,10 +74,11 @@ Authors, contributors, status and EU funding.
 
 [About →](/about)
 
-### 📦 More
-Older demos, examples, readings and guides — preserved for reference.
+### 📦 Legacy
+Legacy: demos, examples, readings and guides — preserved for reference.
 
 [More →](/archive/)
+
 ```
 {: .cards cols="3" }
 
