@@ -61,7 +61,7 @@ Browse the library of interactive widgets you can use in your pages.
 ```
 {: .cards cols="3" }
 
-## 🗒️ Admin
+## 🗒️ More
 
 ```
 ### 🗒️ Pages
@@ -74,10 +74,11 @@ Authors, contributors, status and EU funding.
 
 [About →](/about)
 
-### 📦 More
-Older demos, examples, readings and guides — preserved for reference.
+### 🤖 BUILD-AI
+Learn how to build apps with AI.
 
-[More →](/archive/)
+[Explore →](/micro_build_ai/)
+
 ```
 {: .cards cols="3" }
 
