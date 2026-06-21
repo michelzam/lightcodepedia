@@ -18,10 +18,11 @@ A growing network of educators, researchers and developers across Europe and bey
 
 [See all contributors →](/archive/about)
 
-## 📊 Status
 
-{% include status.html %}.
-## 🇪🇺 EU Funding
+## 📦 Legacy
+Legacy: demos, examples, readings and guides — preserved for reference.
+[More →](/archive/)
+
 
 Lightcodepedia grew out of a project co-funded by the Erasmus+ programme of the European Union (Project Nr. 2022-1-FR01-KA220-HED-00086863), which powered the platform's earlier Streamlit-based generation. The current serverless platform was built independently after the funding period.
 
