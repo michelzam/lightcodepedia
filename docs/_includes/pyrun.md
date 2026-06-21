@@ -92,6 +92,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrepl-input:disabled { color: #666; }
 
 .lc-btn { display: inline-block; padding: 0.5em 1.2em; background: #0066cc; color: white !important; text-decoration: none !important; border-radius: 4px; font-weight: 600; transition: background 0.15s; margin: 0.2em 0.3em 0.2em 0; }
+/* safety net: if {: .lc-btn } is written on its own line it becomes a block IAL
+   on the wrapping <p>, leaving the inner link the site colour (low contrast);
+   force the inner link readable so the button works either way */
+.lc-btn a { color: #fff !important; }
 .lc-btn:hover { background: #0052a3; }
 .lc-btn-secondary { background: #6c757d; } .lc-btn-secondary:hover { background: #5a6268; }
 .lc-btn-success { background: #28a745; } .lc-btn-success:hover { background: #1e7e34; }
