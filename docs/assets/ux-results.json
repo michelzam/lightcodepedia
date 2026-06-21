@@ -180,7 +180,7 @@
     "url": "/assets/ux-report.html#scenario_19"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The editor has a Diagram tab",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -189,7 +189,7 @@
     "url": "/assets/ux-report.html#scenario_20"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The Diagram tab renders the page's class graph",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -198,7 +198,7 @@
     "url": "/assets/ux-report.html#scenario_21"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The Raw tab is the dark basement workshop",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -216,7 +216,7 @@
     "url": "/assets/ux-report.html#scenario_23"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The Blocks-tab Content editor is dark too",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -234,7 +234,7 @@
     "url": "/assets/ux-report.html#scenario_25"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "A graded quiz is recorded into the homework karma",
     "feature": "Homework — record karma and hand it in",
     "tags": "",
@@ -540,7 +540,7 @@
     "url": "/assets/ux-report.html#scenario_59"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Chart renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -666,7 +666,7 @@
     "url": "/assets/ux-report.html#scenario_73"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray panel identifies the map component",
     "feature": "X-ray inspector",
     "tags": "",
