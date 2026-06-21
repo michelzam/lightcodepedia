@@ -48,7 +48,7 @@ Content on the right.
 
 ```
 ### 🐕 Meet Lucky
-![Lucky](https://lightcodepedia.jollybush-84a428fe.francecentral.azurecontainerapps.io/media/8fd1c9c5fa0e06f96b21dd9440b20d673e30499dda6a6ade356edb3c.jpg)
+![Lucky](/assets/lab.jpg)
 
 This is **Lucky** — a three-year-old Beagle who loves parks, tennis balls, and long naps.
 ```

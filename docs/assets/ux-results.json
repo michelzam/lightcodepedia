@@ -603,7 +603,7 @@
     "url": "/assets/ux-report.html#scenario_66"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Shut accordion titles carry headline metrics",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",

@@ -33,8 +33,13 @@ def step_navigate(context, path):
 
 @when("I wait for the page to be interactive")
 def step_wait_interactive(context):
-    # Use "load" rather than "networkidle" — WASM downloads keep network busy indefinitely
-    context.page.wait_for_load_state("load", timeout=20_000)
+    # Wait for the DOM, not "load": the load event waits for *every image*, so one
+    # slow or dead external image (a CDN that hangs) blocks readiness even though
+    # the page is fully interactive — cascading into spurious timeouts. Real
+    # interactivity is verified by "the LC platform is loaded" (the runtime-injected
+    # FAB) and per-component assertions. ("networkidle" is unusable too — WASM
+    # downloads keep the network busy indefinitely.)
+    context.page.wait_for_load_state("domcontentloaded", timeout=20_000)
     context.page.wait_for_timeout(800)
 
 
