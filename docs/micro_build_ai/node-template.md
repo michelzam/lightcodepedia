@@ -145,7 +145,7 @@ system: |
 intro: "Ask me anything about this node."
 placeholder: "Why does this matter?"
 ```
-{: .agent id="ari_node" }
+{: .agent #ari_node }
 
 No key yet? [Get one →](/micro_build_ai/onboarding)
 

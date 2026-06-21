@@ -60,18 +60,18 @@ A slower carousel — one slide every 8 seconds:
 - 🐢 Slow rotation gives readers time to actually finish a sentence.
 - 🦥 Eight seconds feels long when you're watching it. It's fine for readers.
 - ⏰ Use `delay="8000"` for longer quotes. Use `delay="2000"` for quick tips.
-{: .carousel delay="8000" id="slow_demo" }
+{: .carousel delay="8000" #slow_demo }
 
 Two carousels need distinct ids:
 
 ```markdown
 - Item A1.
 - Item A2.
-{: .carousel id="quotes" }
+{: .carousel #quotes }
 
 - Item B1.
 - Item B2.
-{: .carousel id="tips" delay="6000" }
+{: .carousel #tips delay="6000" }
 ```
 
 **Q:** You have two carousels on the same page but the second one's dots control the first one too. What's missing?

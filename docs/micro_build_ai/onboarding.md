@@ -105,7 +105,7 @@ system: |
 intro: "Paste your key above, then ask me how to unlock Save and fix Lucky's record."
 placeholder: "Why can't I save Lucky's record yet?"
 ```
-{: .agent id="ari_onboard" }
+{: .agent #ari_onboard }
 
 ## 📖 Chapter decoded — the real words
 

@@ -62,7 +62,7 @@ system: |
 intro: "Tell me who you want to help — and we'll find the one rescue to build first."
 placeholder: "I want to help people who... but it feels too big."
 ```
-{: .agent id="ari_capstone" }
+{: .agent #ari_capstone }
 
 No key yet? [Get one →](/micro_build_ai/onboarding) — it's also how you'll ship.
 

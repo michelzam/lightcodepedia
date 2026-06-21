@@ -45,7 +45,7 @@ Feature: Temperature converter
     assert (0 * 9 / 5) + 32 == 32.0
     :::
 ```
-{: .feature visible="true" id="temp_feature" status="passing" tags="math,utils" }
+{: .feature visible="true" #temp_feature status="passing" tags="math,utils" }
 
 `self` is shared across all steps in a run — state set in one step (`self.celsius`) is available in later ones.
 
@@ -70,7 +70,7 @@ Feature: List validator
     assert self.result == False, "Expected validation to fail for empty list"
     :::
 ```
-{: .feature visible="true" id="list_feature" status="pending" tags="validation" }
+{: .feature visible="true" #list_feature status="pending" tags="validation" }
 
 ## 🔬 Page access probe
 
@@ -79,10 +79,10 @@ Steps can reach any component on the page via `self.page.<id>`. The dataset and 
 ```json
 [{"label":"A","value":3},{"label":"B","value":7},{"label":"C","value":5}]
 ```
-{: .dataset id="probe_data" }
+{: .dataset #probe_data }
 
 [Probe chart](#)
-{: .chart bind="probe_data" type="bar" x="label" y="value" id="probe_chart" }
+{: .chart bind="probe_data" type="bar" x="label" y="value" #probe_chart }
 
 ```gherkin
 Feature: Page component access
@@ -120,7 +120,7 @@ Feature: Page component access
         f"expected 3 < 5 < 7, got {[b.value for b in bars]}"
     :::
 ```
-{: .feature visible="true" id="page_probe" status="pending" tags="probe" }
+{: .feature visible="true" #page_probe status="pending" tags="probe" }
 
 ## 🖱️ Button with Python handler
 
@@ -181,7 +181,7 @@ Feature: Button handler
     assert self.max_bar.value > bars[2].value
     :::
 ```
-{: .feature visible="true" id="btn_handler" status="pending" tags="button,probe" }
+{: .feature visible="true" #btn_handler status="pending" tags="button,probe" }
 
 ## 🥸 How to write one
 
@@ -204,7 +204,7 @@ Feature: My feature
     assert self.y == 84
     :::
 ```
-{: .feature visible="true" id="my_feature" status="pending" tags="example" }
+{: .feature visible="true" #my_feature status="pending" tags="example" }
 ````
 
 - `:::python ... :::` is parsed from the Gherkin block — not rendered as a separate code block.

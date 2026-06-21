@@ -261,7 +261,7 @@ The pattern you'll see most often after plain markdown is the **IAL[^ial]**: a `
 - name: Lucky
 - name: Wanda
 ```
-{: .datagrid id="dogs" }
+{: .datagrid #dogs }
 ````
 
 Then `{: .form bound="dogs" }` on another block binds a form to that grid. The `.datagrid`, `.form`, `.run`, `.quiz`, `.agent` — all IAL.
@@ -269,7 +269,7 @@ Then `{: .form bound="dogs" }` on another block binds a form to that grid. The `
 **Rules:**
 - Must be on its own line, immediately after the block (no blank line between).
 - Multiple classes: `{: .class1 .class2 }`.
-- Mix classes and key-value pairs: `{: .run id="demo" rows="4" }`.
+- Mix classes and key-value pairs: `{: .run #demo rows="4" }`.
 
 **Q:** You write `{: .datagrid }` but leave a blank line between it and the YAML block. What happens?
 
@@ -316,6 +316,6 @@ Then `{: .form bound="dogs" }` on another block binds a form to that grid. The `
 
 [^pop]: **Footnote popover** — lightcodepedia's extension of kramdown's standard `[^name]` footnote syntax. Instead of jumping to the bottom of the page, the definition appears as a small popup/tooltip right where the reference appears. Works on hover (desktop) and tap (mobile).
 
-[^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class id="x" key="value" }` syntax. Placed on its own line right after a block, it attaches HTML attributes to that block. Every interactive component on this site is activated this way.
+[^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class #x key="value" }` syntax. Placed on its own line right after a block, it attaches HTML attributes to that block. Every interactive component on this site is activated this way.
 
 [^marked]: **marked.js** — a fast, lightweight JavaScript Markdown parser (~50 KB). Used here to render the live playground preview entirely in the browser. It handles CommonMark / GitHub-Flavored Markdown but not kramdown-specific extensions like IAL or footnotes.

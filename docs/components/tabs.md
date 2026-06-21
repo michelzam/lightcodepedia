@@ -71,7 +71,7 @@ Add another `### Section` → a new tab appears. Remove one → it's gone.
 
 ```markdown
 [→](pages/my_tabs)
-{: .tabs id="tab1" }
+{: .tabs #tab1 }
 ```
 
 ## ⚠️ Limits worth knowing

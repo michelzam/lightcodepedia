@@ -14,7 +14,7 @@ Invisible data block that `.datagrid` and `.chart` bind to. Declare data once, r
   {"month":"Jun","revenue":7100,"costs":3800}
 ]
 ```
-{: .dataset id="monthly" }
+{: .dataset #monthly }
 
 [Revenue by month](#)
 {: .chart bind="monthly" type="bar" x="month" y="revenue" title="Revenue (€)" }
@@ -49,7 +49,7 @@ Dave,65,7
 Eve,95,1
 Frank,71,4
 ```
-{: .dataset id="scores" }
+{: .dataset #scores }
 
 [Scores](#)
 {: .datagrid bind="scores" rows="3" }
@@ -59,14 +59,14 @@ Frank,71,4
 Apply `{: .dataset }` to a **link** — the href is fetched and parsed as JSON or CSV. The datagrid shows `⏳ Loading…` until data arrives (charts too).
 
 [todos — jsonplaceholder](https://jsonplaceholder.typicode.com/todos?_limit=8)
-{: .dataset id="todos" }
+{: .dataset #todos }
 
 [Todo list](#)
 {: .datagrid bind="todos" rows="5" }
 
 ````markdown
 [todos — jsonplaceholder](https://jsonplaceholder.typicode.com/todos?_limit=8)
-{: .dataset id="todos" }
+{: .dataset #todos }
 
 [Todo list](#)
 {: .datagrid bind="todos" rows="5" }
@@ -83,7 +83,7 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
   {"name":"MDN","type":"Docs","url":"https://developer.mozilla.org"}
 ]
 ```
-{: .dataset id="links" }
+{: .dataset #links }
 
 [Sites](#)
 {: .datagrid bind="links" }
@@ -94,7 +94,7 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 ```json
 [{"x":"A","y":10},{"x":"B","y":20}]
 ```
-{: .dataset id="mydata" }
+{: .dataset #mydata }
 
 [Chart](#)
 {: .chart bind="mydata" type="bar" x="x" y="y" title="My chart" }

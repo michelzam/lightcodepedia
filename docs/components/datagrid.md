@@ -127,9 +127,9 @@ Add `editable="true"` and double-click any primitive cell to edit. Numbers stay 
   breed: Husky
   adopted: false
 ```
-{: .datagrid id="editable-dogs" editable="true" height="200" }
+{: .datagrid #editable_dogs editable="true" height="200" }
 
-When a [📝 Form](/components/form) is bound to this grid (`bound="editable-dogs"`), edits here repaint the form automatically.
+When a [📝 Form](/components/form) is bound to this grid (`bound="editable_dogs"`), edits here repaint the form automatically.
 
 ## 🔗 Master/detail — two grids linked
 
@@ -144,7 +144,7 @@ When a [📝 Form](/components/form) is bound to this grid (`bound="editable-dog
   {"city": "Mexico City","country":"Mexico","population": 21581000}
 ]
 ```
-{: .datagrid id="md-cities" format="json" height="200" }
+{: .datagrid #md_cities format="json" height="200" }
 
 ```json
 [
@@ -159,7 +159,7 @@ When a [📝 Form](/components/form) is bound to this grid (`bound="editable-dog
   {"name":"Diego",  "breed":"Chihuahua",      "age":5,"city":"Mexico City"}
 ]
 ```
-{: .datagrid id="md-dogs" format="json" detail-of="md-cities" filter="city=city" height="240" }
+{: .datagrid #md_dogs format="json" detail-of="md_cities" filter="city=city" height="240" }
 
 Deselect a city row (click again) and the full dog list returns.
 
@@ -225,7 +225,7 @@ dogs = yaml.load("""
 show.grid(dogs, title="Dogs from Python", height=220)
 print(f"{len(dogs)} rows rendered.")
 ```
-{: .run id="show-grid-demo" rows="16" }
+{: .run #show_grid_demo rows="16" }
 
 ## ⚠️ Limits worth knowing
 

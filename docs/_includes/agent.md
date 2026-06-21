@@ -11,7 +11,7 @@ Bound to a runner (writes code back to a .run editor):
   ```python
   print('fix me'
   ```
-  {: .run id="play" }
+  {: .run #play }
 
   ```yaml
   system: You are a Python tutor. Reply with full updated code.

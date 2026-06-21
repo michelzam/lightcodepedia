@@ -9,7 +9,7 @@ Usage:
   ```json
   [{"month":"Jan","sales":100},{"month":"Feb","sales":150}]
   ```
-  {: .dataset id="sales" }
+  {: .dataset #sales }
 
   [Sales Table](#)
   {: .datagrid bind="sales" rows="5" }
@@ -91,7 +91,7 @@ Auto-included by docs/_layouts/default.html.
     var id = el.id || el.getAttribute("id");
     if (!id) return;
 
-    /* remote variant: apply {: .dataset id="x" } to a link → fetch its href */
+    /* remote variant: apply {: .dataset #x } to a link → fetch its href */
     var link = el.querySelector("a[href]");
     if (link) {
       var href = link.getAttribute("href");

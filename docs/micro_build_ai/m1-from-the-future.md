@@ -303,7 +303,7 @@ system: |
 intro: "Just used the app without coding? Ask me why that works — or what's next."
 placeholder: "Why did we use the app before learning how it works?"
 ```
-{: .agent id="ari_m1" }
+{: .agent #ari_m1 }
 
 No key yet? [Grab one in a minute →](/micro_build_ai/onboarding) and Ari wakes up.
 

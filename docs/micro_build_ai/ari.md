@@ -32,7 +32,7 @@ system: |
 intro: "Hi, I'm Ari. Ask me about anything in BUILD-AI — concepts, your app, or what to do next."
 placeholder: "Why do we use the finished app before learning how it works?"
 ```
-{: .agent id="ari_main" rows="4" }
+{: .agent #ari_main rows="4" }
 
 > No panel above asking for text, just a key field? That's expected on first
 > visit — paste the key from onboarding and Ari wakes up. One key unlocks every

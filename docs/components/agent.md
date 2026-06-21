@@ -124,7 +124,7 @@ Live demo — paste your PAT and ask it something:
 system: You are a cheerful Python tutor. Keep answers short and practical.
 intro: "Paste your PAT above, then ask me anything about Python."
 ```
-{: .agent id="demo_tutor" }
+{: .agent #demo_tutor }
 
 On first use the panel asks for a PAT. Paste it, click **Save & start**, and your browser offers to remember it in the OS keychain. Next visit the field auto-fills.
 
@@ -158,7 +158,7 @@ intro: "Type any English sentence — get French back."
 placeholder: "Hello, how are you?"
 temperature: 0.3
 ```
-{: .agent id="fr" }
+{: .agent #fr }
 ````
 
 Renders to:
@@ -172,7 +172,7 @@ intro: "Type any English sentence — get French back."
 placeholder: "Hello, how are you?"
 temperature: 0.3
 ```
-{: .agent id="fr" }
+{: .agent #fr }
 
 **Q:** You want the model's output to be as creative and unpredictable as possible. Which `temperature` do you set?
 
@@ -191,14 +191,14 @@ Add `bound="run-id"` to tie an agent to a Python editor. Every question automati
 # fix me — this errors
 print('hello'
 ```
-{: .run id="buggy" rows="4" }
+{: .run #buggy rows="4" }
 
 ```yaml
 system: |
   You are a Python tutor. When asked to fix code, reply with the
   COMPLETE fixed code in a single python fenced block. Keep prose short.
 ```
-{: .agent bound="buggy" id="tutor" }
+{: .agent bound="buggy" #tutor }
 ````
 
 Renders to:
@@ -207,14 +207,14 @@ Renders to:
 # fix me — this errors
 print('hello'
 ```
-{: .run id="buggy" rows="4" }
+{: .run #buggy rows="4" }
 
 ```yaml
 system: |
   You are a Python tutor. When asked to fix code, reply with the
   COMPLETE fixed code in a single python fenced block. Keep prose short.
 ```
-{: .agent bound="buggy" id="tutor" }
+{: .agent bound="buggy" #tutor }
 
 **Try it:**
 

@@ -82,7 +82,7 @@ breed: Beagle
 weight_kg: 11.2
 adopted: true
 ```
-{: .form editable="true" id="edit-form-demo" }
+{: .form editable="true" #edit_form_demo }
 
 Numbers stay numeric — the editor rejects non-numeric input by reverting to the previous value. Lists and nested dicts stay read-only for now.
 
@@ -107,7 +107,7 @@ An empty `{: .form bound="<id>" }` waits for a row to be clicked in the named da
   weight_kg: 24.5
   adopted: false
 ```
-{: .datagrid id="dogs" height="200" }
+{: .datagrid #dogs height="200" }
 
 ```yaml
 ```
@@ -145,11 +145,11 @@ Combine `editable="true"` AND `bound="<id>"`: edits in the form flow back to the
   breed: Husky
   adopted: false
 ```
-{: .datagrid id="edit-md-dogs" height="180" }
+{: .datagrid #edit_md_dogs height="180" }
 
 ```yaml
 ```
-{: .form bound="edit-md-dogs" editable="true" id="edit-form-bound" }
+{: .form bound="edit_md_dogs" editable="true" #edit_form_bound }
 
 Click a dog, change a field in the form — the grid cell updates in place. If the grid is also `editable="true"`, double-clicking a grid cell repaints the form too.
 
@@ -198,7 +198,7 @@ show.form({
     "population": 37400068
 }, title="Tokyo")
 ```
-{: .run id="show-form-demo" rows="14" }
+{: .run #show_form_demo rows="14" }
 
 ```python
 show.form(obj, title=None)

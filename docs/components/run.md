@@ -15,7 +15,7 @@ def greet(name):
 greet("Lightcoder")
 greet("World")
 ```
-{: .run id="first-run" }
+{: .run #first_run }
 
 That's it. The runner loads Python[^wasm] on first click (~300 KB, cached after). Next run is instant.
 
@@ -89,7 +89,7 @@ dogs = ["Lucky", "Wanda", "Max"]
 for d in dogs:
     print(d)
 ```
-{: .run id="init-split" rows="4" }
+{: .run #init_split rows="4" }
 
 Everything above `# ---` is init — runs once, invisible to the learner. Everything below is the editable body.
 
@@ -138,7 +138,7 @@ for d in dogs:
 
 print(f"Showed {len(dogs)} dogs.")
 ```
-{: .run id="yaml-cards" rows="18" }
+{: .run #yaml_cards rows="18" }
 
 Custom classes work too — `show()` reads `__dict__`:
 
@@ -153,7 +153,7 @@ pets = [Pet("Lucky", 3, "Beagle"), Pet("Wanda", 5, "Poodle")]
 for p in pets:
     show(p)
 ```
-{: .run id="custom-class" rows="10" }
+{: .run #custom_class rows="10" }
 
 For a sortable, filterable table instead of cards, use `show.grid(rows)`:
 
@@ -166,7 +166,7 @@ dogs = [
 show.grid(dogs, title="Shelter dogs", height=200)
 print("Grid rendered.")
 ```
-{: .run id="show-grid" rows="8" }
+{: .run #show_grid rows="8" }
 
 ## 🧲 Bound card — a live mirrored object
 
@@ -178,7 +178,7 @@ o = Object(name='Lucky', age=3, breed='Beagle')
 o.age += 1
 print(o)
 ```
-{: .run bound="o" folded="true" rows="3" id="bound-demo" }
+{: .run bound="o" folded="true" rows="3" #bound_demo }
 
 `Object(**kw)` is a built-in `SimpleNamespace`-style holder. Pair it with `bound="o"` and the card above the editor reflects every mutation.
 
@@ -209,7 +209,7 @@ def greet(name):
     """
     return "Hello, " + name + "!"
 ```
-{: .run id="doctests-demo" rows="18" }
+{: .run #doctests_demo rows="18" }
 
 Hit **▶ Run** first (so the functions exist), then **🧪 Test**. Try breaking a return value to see a red failure row.
 
@@ -226,7 +226,7 @@ The REPL[^repl] is the interactive prompt — type a Python expression, press En
 
 ```python
 ```
-{: .repl id="main-repl" }
+{: .repl #main_repl }
 
 Try typing these one at a time:
 
@@ -247,7 +247,7 @@ A pre-warmed REPL with `math` already imported:
 import math
 print("math loaded!")
 ```
-{: .repl id="prewarmed" }
+{: .repl #prewarmed }
 
 **Q:** You type `x = 5` in the REPL and press Enter. What do you see?
 
