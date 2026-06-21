@@ -162,7 +162,7 @@
     "url": "/assets/ux-report.html#scenario_17"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The editor has a Log tab",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -198,7 +198,7 @@
     "url": "/assets/ux-report.html#scenario_21"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The Raw tab is the dark basement workshop",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -216,7 +216,7 @@
     "url": "/assets/ux-report.html#scenario_23"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The Blocks-tab Content editor is dark too",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -225,7 +225,7 @@
     "url": "/assets/ux-report.html#scenario_24"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "A homework param chain starts a recorded session",
     "feature": "Homework — record karma and hand it in",
     "tags": "",
@@ -270,7 +270,7 @@
     "url": "/assets/ux-report.html#scenario_29"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Picking the right answer grades it correct",
     "feature": "Quiz grading",
     "tags": "",
@@ -297,7 +297,7 @@
     "url": "/assets/ux-report.html#scenario_32"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Reel mode can be exited",
     "feature": "Reel mode — Instagram-style vertical snap between titles",
     "tags": "",
@@ -666,7 +666,7 @@
     "url": "/assets/ux-report.html#scenario_73"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray panel identifies the map component",
     "feature": "X-ray inspector",
     "tags": "",
@@ -675,7 +675,7 @@
     "url": "/assets/ux-report.html#scenario_74"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray scene fits within viewport",
     "feature": "X-ray inspector",
     "tags": "",
@@ -693,7 +693,7 @@
     "url": "/assets/ux-report.html#scenario_76"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray activates on tap after enabling via FAB popup",
     "feature": "X-ray inspector",
     "tags": "@mobile",

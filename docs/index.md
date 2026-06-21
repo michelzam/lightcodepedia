@@ -74,10 +74,10 @@ Authors, contributors, status and EU funding.
 
 [About →](/about)
 
-### 📦 Legacy
-Legacy: demos, examples, readings and guides — preserved for reference.
+### 🤖 BUILD-AI
+Learn how to build apps with AI.
 
-[More →](/archive/)
+[Explore →](/micro_build_ai/)
 
 ```
 {: .cards cols="3" }
