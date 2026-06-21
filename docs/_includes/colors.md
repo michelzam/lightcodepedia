@@ -1,5 +1,5 @@
 {%- comment -%}
-Inline colour utilities for content authors.
+Inline style utilities for content authors — colour spans plus a banner image class.
 
 Markdown has no colour syntax; these classes let an author tint a word with a
 kramdown span IAL — no HTML, no CSS to write:
@@ -25,4 +25,10 @@ Auto-included by docs/_layouts/default.html.
 :is(.markdown-body, #ed-preview, #ed-feat-preview) .amber { color: #b45309; }
 :is(.markdown-body, #ed-preview, #ed-feat-preview) .muted { color: #6b7280; }
 :is(.markdown-body, #ed-preview, #ed-feat-preview) .hl    { background: #fff3a3; border-radius: 3px; padding: 0 0.22em; }
+
+/* banner image: centered, rounded, responsive — lets an author drop a hero
+   image without inline style:  ![alt](/path.png){: .lc-banner }  */
+:is(.markdown-body, #ed-preview, #ed-feat-preview) .lc-banner {
+  display: block; width: 100%; max-width: 880px; margin: 1.2em auto; border-radius: 10px;
+}
 </style>

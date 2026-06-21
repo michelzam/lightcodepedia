@@ -189,7 +189,7 @@
     "url": "/assets/ux-report.html#scenario_20"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The Diagram tab renders the page's class graph",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -198,7 +198,7 @@
     "url": "/assets/ux-report.html#scenario_21"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The Raw tab is the dark basement workshop",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -234,7 +234,7 @@
     "url": "/assets/ux-report.html#scenario_25"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "A graded quiz is recorded into the homework karma",
     "feature": "Homework — record karma and hand it in",
     "tags": "",
@@ -531,7 +531,7 @@
     "url": "/assets/ux-report.html#scenario_58"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Grid renders with data",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -540,7 +540,7 @@
     "url": "/assets/ux-report.html#scenario_59"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Chart renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -549,7 +549,7 @@
     "url": "/assets/ux-report.html#scenario_60"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Map renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -558,7 +558,7 @@
     "url": "/assets/ux-report.html#scenario_61"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Video block renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -567,7 +567,7 @@
     "url": "/assets/ux-report.html#scenario_62"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Grid row selection updates the chart",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -576,7 +576,7 @@
     "url": "/assets/ux-report.html#scenario_63"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Selecting a tutorial grid row drives the detail chart",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -621,7 +621,7 @@
     "url": "/assets/ux-report.html#scenario_68"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Model integrity holds on the tutorial data chain",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",
@@ -648,7 +648,7 @@
     "url": "/assets/ux-report.html#scenario_71"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray panel appears on hover over a component",
     "feature": "X-ray inspector",
     "tags": "",
@@ -657,7 +657,7 @@
     "url": "/assets/ux-report.html#scenario_72"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray panel identifies the bound chart component",
     "feature": "X-ray inspector",
     "tags": "",
@@ -666,7 +666,7 @@
     "url": "/assets/ux-report.html#scenario_73"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray panel identifies the map component",
     "feature": "X-ray inspector",
     "tags": "",
@@ -675,7 +675,7 @@
     "url": "/assets/ux-report.html#scenario_74"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray scene fits within viewport",
     "feature": "X-ray inspector",
     "tags": "",
@@ -684,7 +684,7 @@
     "url": "/assets/ux-report.html#scenario_75"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray is activatable via FAB popup on mobile",
     "feature": "X-ray inspector",
     "tags": "@mobile",
@@ -693,7 +693,7 @@
     "url": "/assets/ux-report.html#scenario_76"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray activates on tap after enabling via FAB popup",
     "feature": "X-ray inspector",
     "tags": "@mobile",
@@ -702,7 +702,7 @@
     "url": "/assets/ux-report.html#scenario_77"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray deactivates by tapping the FAB again",
     "feature": "X-ray inspector",
     "tags": "@mobile",
@@ -711,7 +711,7 @@
     "url": "/assets/ux-report.html#scenario_78"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Shift x-ray reveals the whole connected data chain",
     "feature": "X-ray inspector",
     "tags": "",
