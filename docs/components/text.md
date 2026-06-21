@@ -1,4 +1,4 @@
-# ✍️ Text — Markdown basics
+# ✍️ Text
 
 Every page on this site is a plain text file written in Markdown[^md] — the lightweight format that turns `**bold**` into **bold** and `## Heading` into a big header. This page is your cheat sheet and playground.
 
