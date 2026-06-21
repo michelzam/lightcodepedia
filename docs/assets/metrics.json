@@ -1,5 +1,165 @@
 [
  {
+  "run": "2026-06-21T23:10Z",
+  "page": "/",
+  "heap_mb": 9.5,
+  "dom_nodes": 357,
+  "lc_components": 13,
+  "transfer_kb": 281,
+  "lcp_ms": 213,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/archive/help",
+  "heap_mb": 9.5,
+  "dom_nodes": 294,
+  "lc_components": 8,
+  "transfer_kb": 268,
+  "lcp_ms": 185,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/",
+  "heap_mb": 9.5,
+  "dom_nodes": 415,
+  "lc_components": 10,
+  "transfer_kb": 268,
+  "lcp_ms": 163,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/accordion",
+  "heap_mb": 9.5,
+  "dom_nodes": 348,
+  "lc_components": 12,
+  "transfer_kb": 269,
+  "lcp_ms": 175,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/dataset",
+  "heap_mb": 9.5,
+  "dom_nodes": 790,
+  "lc_components": 16,
+  "transfer_kb": 340,
+  "lcp_ms": 173,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/examples/",
+  "heap_mb": 9.5,
+  "dom_nodes": 283,
+  "lc_components": 9,
+  "transfer_kb": 267,
+  "lcp_ms": 669,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/examples/avatar",
+  "heap_mb": 23.4,
+  "dom_nodes": 720,
+  "lc_components": 15,
+  "transfer_kb": 287,
+  "lcp_ms": 194,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/examples/custom-class",
+  "heap_mb": 9.5,
+  "dom_nodes": 581,
+  "lc_components": 14,
+  "transfer_kb": 275,
+  "lcp_ms": 376,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/examples/lucky3d",
+  "heap_mb": 28,
+  "dom_nodes": 493,
+  "lc_components": 11,
+  "transfer_kb": 534,
+  "lcp_ms": 181,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/form",
+  "heap_mb": 13.6,
+  "dom_nodes": 1502,
+  "lc_components": 21,
+  "transfer_kb": 629,
+  "lcp_ms": 210,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/query",
+  "heap_mb": 11.3,
+  "dom_nodes": 406,
+  "lc_components": 15,
+  "transfer_kb": 373,
+  "lcp_ms": 177,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/components/text",
+  "heap_mb": 9.5,
+  "dom_nodes": 768,
+  "lc_components": 17,
+  "transfer_kb": 290,
+  "lcp_ms": 182,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/license",
+  "heap_mb": 9.5,
+  "dom_nodes": 364,
+  "lc_components": 8,
+  "transfer_kb": 269,
+  "lcp_ms": 270,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/nodes",
+  "heap_mb": 9.5,
+  "dom_nodes": 1120,
+  "lc_components": 24,
+  "transfer_kb": 380,
+  "lcp_ms": 170,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/start",
+  "heap_mb": 9.5,
+  "dom_nodes": 395,
+  "lc_components": 8,
+  "transfer_kb": 274,
+  "lcp_ms": 149,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-21T23:10Z",
+  "page": "/tutorial101",
+  "heap_mb": 31.6,
+  "dom_nodes": 1044,
+  "lc_components": 29,
+  "transfer_kb": 965,
+  "lcp_ms": 163,
+  "console_errors": 0
+ },
+ {
   "run": "2026-06-21T23:04Z",
   "page": "/",
   "heap_mb": 9.5,
@@ -4317,166 +4477,6 @@
   "lc_components": 29,
   "transfer_kb": 917,
   "lcp_ms": 170,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/",
-  "heap_mb": 9.5,
-  "dom_nodes": 353,
-  "lc_components": 13,
-  "transfer_kb": 277,
-  "lcp_ms": 244,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/archive/help",
-  "heap_mb": 9.5,
-  "dom_nodes": 290,
-  "lc_components": 8,
-  "transfer_kb": 264,
-  "lcp_ms": 224,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/",
-  "heap_mb": 9.5,
-  "dom_nodes": 411,
-  "lc_components": 10,
-  "transfer_kb": 264,
-  "lcp_ms": 241,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/accordion",
-  "heap_mb": 9.5,
-  "dom_nodes": 344,
-  "lc_components": 12,
-  "transfer_kb": 265,
-  "lcp_ms": 243,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/dataset",
-  "heap_mb": 9.5,
-  "dom_nodes": 786,
-  "lc_components": 16,
-  "transfer_kb": 336,
-  "lcp_ms": 223,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/examples/",
-  "heap_mb": 9.5,
-  "dom_nodes": 279,
-  "lc_components": 9,
-  "transfer_kb": 264,
-  "lcp_ms": 738,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/examples/avatar",
-  "heap_mb": 23.4,
-  "dom_nodes": 716,
-  "lc_components": 15,
-  "transfer_kb": 283,
-  "lcp_ms": 220,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/examples/custom-class",
-  "heap_mb": 9.5,
-  "dom_nodes": 577,
-  "lc_components": 14,
-  "transfer_kb": 271,
-  "lcp_ms": 225,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/examples/lucky3d",
-  "heap_mb": 28,
-  "dom_nodes": 489,
-  "lc_components": 11,
-  "transfer_kb": 530,
-  "lcp_ms": 249,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/form",
-  "heap_mb": 13.6,
-  "dom_nodes": 1498,
-  "lc_components": 21,
-  "transfer_kb": 626,
-  "lcp_ms": 255,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/query",
-  "heap_mb": 11.3,
-  "dom_nodes": 402,
-  "lc_components": 15,
-  "transfer_kb": 369,
-  "lcp_ms": 221,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/components/text",
-  "heap_mb": 9.5,
-  "dom_nodes": 711,
-  "lc_components": 16,
-  "transfer_kb": 285,
-  "lcp_ms": 317,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/license",
-  "heap_mb": 9.5,
-  "dom_nodes": 360,
-  "lc_components": 8,
-  "transfer_kb": 265,
-  "lcp_ms": 292,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/nodes",
-  "heap_mb": 9.5,
-  "dom_nodes": 1113,
-  "lc_components": 24,
-  "transfer_kb": 376,
-  "lcp_ms": 475,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/start",
-  "heap_mb": 9.5,
-  "dom_nodes": 391,
-  "lc_components": 8,
-  "transfer_kb": 270,
-  "lcp_ms": 250,
-  "console_errors": 0
- },
- {
-  "run": "2026-06-15T23:31Z",
-  "page": "/tutorial101",
-  "heap_mb": 31.6,
-  "dom_nodes": 1040,
-  "lc_components": 29,
-  "transfer_kb": 917,
-  "lcp_ms": 468,
   "console_errors": 0
  }
 ]
