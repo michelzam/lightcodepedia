@@ -1038,7 +1038,7 @@ class AvatarTrigger(Block):
 _WRAP = [
     ("lc-query", Query),
     ("lc-datagrid", Datagrid), ("lc-chart", Chart), ("lc-feature", Feature),
-    ("lc-button", Button), ("lc-btn", Button), ("lc-carousel", Carousel),
+    ("lc-button", Button), ("button", Button), ("lc-carousel", Carousel),
     ("lc-cards", Cards), ("lc-dropdown", Dropdown), ("lc-folder", Folder),
     ("lc-grid", Grid), ("lc-map", Map), ("lc-menu", Menu),
     ("lc-radio-group", Radio), ("lc-quiz", Quiz), ("lc-tabs", Tabs),

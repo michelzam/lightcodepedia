@@ -1,4 +1,8 @@
-# 📐 Component Model
+---
+title: Component Model
+---
+
+# Component Model
 
 The typed **coder-side Python API** available in every `.feature` step and
 `.button` handler. Reach any named component via `self.page.<id>` — the resolver

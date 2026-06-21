@@ -39,7 +39,7 @@ Auto-included by docs/_layouts/default.html.
   border: 1px solid #d0d7de; border-radius: 6px; background: #fafafa; color: #111;
 }
 .lc-query-bar { display: flex; align-items: center; gap: 0.7em; margin-top: 0.4em; }
-.lc-query-bar .lc-btn { font-size: 0.82em; padding: 0.3em 0.85em; }
+.lc-query-bar .button { font-size: 0.82em; padding: 0.3em 0.85em; }
 </style>
 
 <script>
@@ -94,7 +94,7 @@ Auto-included by docs/_layouts/default.html.
       var bar = document.createElement("div");
       bar.className = "lc-query-bar";
       var runBtn = document.createElement("a");
-      runBtn.href = "#"; runBtn.className = "lc-btn"; runBtn.textContent = "▶ Run";
+      runBtn.href = "#"; runBtn.className = "button"; runBtn.textContent = "▶ Run";
       runBtn.addEventListener("click", function (e) { e.preventDefault(); run(); });
       bar.appendChild(runBtn); bar.appendChild(chip);
       wrap.appendChild(ta); wrap.appendChild(bar);

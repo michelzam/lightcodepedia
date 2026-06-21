@@ -163,7 +163,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-features-pane { display: flex; flex: 1; flex-direction: column; overflow: hidden; }
 #ed-features-pane.ed-hidden { display: none; }
 #ed-feat-bar { flex: none; display: flex; align-items: center; gap: 0.7em; padding: 0.45em 0.6em; border-bottom: 1px solid #f0f0f0; }
-#ed-feat-bar .lc-btn { font-size: 0.82em; padding: 0.3em 0.85em; }
+#ed-feat-bar .button { font-size: 0.82em; padding: 0.3em 0.85em; }
 #ed-feat-bar-note { font-size: 0.78em; color: #9ca3af; }
 #ed-feat-grid { flex: 1; min-height: 60px; overflow: auto; }
 #ed-feat-grid table { width: 100%; border-collapse: collapse; font-size: 0.86em; }
@@ -353,8 +353,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
             <input id="ed-repo" type="text" placeholder="owner/repo-name" autocomplete="off">
           </label>
           <div style="margin-top:0.6em;display:flex;gap:0.4em;flex-wrap:wrap">
-            <a href="#" class="lc-btn" id="ed-connect-btn" style="font-size:0.82em;padding:0.35em 0.9em">Connect</a>
-            <a href="#" class="lc-btn lc-btn-danger" id="ed-disconnect-btn" style="font-size:0.82em;padding:0.35em 0.9em;display:none">Disconnect</a>
+            <a href="#" class="button" id="ed-connect-btn" style="font-size:0.82em;padding:0.35em 0.9em">Connect</a>
+            <a href="#" class="button button-danger" id="ed-disconnect-btn" style="font-size:0.82em;padding:0.35em 0.9em;display:none">Disconnect</a>
           </div>
           <div id="ed-status"></div>
         </details>
@@ -366,10 +366,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     </div><!-- /files-btn -->
 
     <span id="ed-build" style="font-size:0.78em;color:#888;margin-left:0.5em;flex-shrink:0"></span>
-    <a href="#" class="lc-btn lc-btn-secondary" id="ed-zoom-btn" title="Toggle 50% preview scale" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">50%</a>
-    <a href="#" class="lc-btn lc-btn-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em">+ New</a>
-    <a href="#" class="lc-btn lc-btn-secondary" id="ed-agent-btn" title="Ask AI to change the selected block (✨)" style="font-size:0.82em;padding:0.35em 0.7em">✨</a>
-    <a href="#" class="lc-btn" id="ed-save-btn" style="font-size:0.82em;padding:0.35em 0.9em">💾 Save</a>
+    <a href="#" class="button button-secondary" id="ed-zoom-btn" title="Toggle 50% preview scale" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">50%</a>
+    <a href="#" class="button button-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em">+ New</a>
+    <a href="#" class="button button-secondary" id="ed-agent-btn" title="Ask AI to change the selected block (✨)" style="font-size:0.82em;padding:0.35em 0.7em">✨</a>
+    <a href="#" class="button" id="ed-save-btn" style="font-size:0.82em;padding:0.35em 0.9em">💾 Save</a>
     <a href="#" id="ed-close-btn" title="Close (Esc)"
        style="font-size:1.3em;color:#888;text-decoration:none;padding:0 0.2em;line-height:1;margin-left:0.2em">✕</a>
   </div>
@@ -393,7 +393,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         </div>
         <div id="ed-features-pane" class="ed-hidden">
           <div id="ed-feat-bar">
-            <a href="#" class="lc-btn" id="ed-feat-runall">▶ Run all</a>
+            <a href="#" class="button" id="ed-feat-runall">▶ Run all</a>
             <span id="ed-feat-bar-note">selecting a row scrolls to it; ▶ Run all runs the whole suite</span>
           </div>
           <div id="ed-feat-grid"><p style="color:#bbb;padding:1em">No features on this page. A <code>{: .feature }</code> block appears here.</p></div>
@@ -422,7 +422,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       <textarea id="ed-agent-prompt" spellcheck="false"
         placeholder="Describe the change to this block — e.g. “remove the ! from the title”, “make the intro one sentence shorter”. The model proposes exact edits you approve before anything changes."></textarea>
       <div id="ed-ag-actions">
-        <a href="#" class="lc-btn" id="ed-agent-ask">✨ Plan the change</a>
+        <a href="#" class="button" id="ed-agent-ask">✨ Plan the change</a>
         <span id="ed-agent-status"></span>
       </div>
       <div id="ed-ag-plan" class="ed-hidden"></div>
@@ -1637,7 +1637,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       + "<div class='ebf-content-wrap'><label>Content</label>"
       + "<textarea id='ebf-content'>" + escH(content) + "</textarea></div>"
       + "</div>"
-      + "<div class='ebf-actions'><a href='#' class='lc-btn' id='ebf-apply' style='font-size:0.82em;padding:0.32em 0.9em'>Apply</a></div>";
+      + "<div class='ebf-actions'><a href='#' class='button' id='ebf-apply' style='font-size:0.82em;padding:0.32em 0.9em'>Apply</a></div>";
 
     attachFmtToolbar(document.getElementById("ebf-content"));   // format-by-click on the Content field
 
@@ -2021,8 +2021,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     plan.innerHTML = exp +
       "<div class='ed-ag-planhead'>Planned change · " + applied.length + " edit(s)</div>" +
       rows + skip +
-      "<div class='ed-ag-approve'><a href='#' class='lc-btn' id='ed-ag-approve'>✓ Approve</a>" +
-      "<a href='#' class='lc-btn lc-btn-secondary' id='ed-ag-retry'>↻ Retry</a></div>";
+      "<div class='ed-ag-approve'><a href='#' class='button' id='ed-ag-approve'>✓ Approve</a>" +
+      "<a href='#' class='button button-secondary' id='ed-ag-retry'>↻ Retry</a></div>";
     plan.classList.remove("ed-hidden");
   }
 

@@ -98,7 +98,7 @@ need the project hands you — not paperwork, but the thing that switches the
 lights on. You use **your own** credits; nothing is billed to anyone else, and
 no key ever touches our servers.
 
-[🔑 Get your key → start Chapter 1](/micro_build_ai/onboarding){: .lc-btn }
+[🔑 Get your key → start Chapter 1](/micro_build_ai/onboarding){: .button }
 
 ## 📚 The catalog — pulled on demand
 
@@ -108,7 +108,7 @@ you open, play with, and finish (`discover → design → specify → master`). 
 the **[final chapter](/micro_build_ai/capstone) is one you write yourself** — a
 world of your own to save.
 
-[📚 Browse the catalog](/micro_build_ai/catalog){: .lc-btn }
+[📚 Browse the catalog](/micro_build_ai/catalog){: .button }
 
 ## 🤖 Meet your guide
 

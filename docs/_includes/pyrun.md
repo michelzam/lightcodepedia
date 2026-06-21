@@ -91,17 +91,17 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrepl-input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; padding: 0; }
 .lc-pyrepl-input:disabled { color: #666; }
 
-.lc-btn { display: inline-block; padding: 0.5em 1.2em; background: #0066cc; color: white !important; text-decoration: none !important; border-radius: 4px; font-weight: 600; transition: background 0.15s; margin: 0.2em 0.3em 0.2em 0; }
-/* safety net: if {: .lc-btn } is written on its own line it becomes a block IAL
+.button { display: inline-block; padding: 0.5em 1.2em; background: #0066cc; color: white !important; text-decoration: none !important; border-radius: 4px; font-weight: 600; transition: background 0.15s; margin: 0.2em 0.3em 0.2em 0; }
+/* safety net: if {: .button } is written on its own line it becomes a block IAL
    on the wrapping <p>, leaving the inner link the site colour (low contrast);
    force the inner link readable so the button works either way */
-.lc-btn a { color: #fff !important; }
-.lc-btn:hover { background: #0052a3; }
-.lc-btn-secondary { background: #6c757d; } .lc-btn-secondary:hover { background: #5a6268; }
-.lc-btn-success { background: #28a745; } .lc-btn-success:hover { background: #1e7e34; }
-.lc-btn-danger { background: #dc3545; } .lc-btn-danger:hover { background: #bd2130; }
-.lc-btn-outline { background: transparent; color: #0066cc !important; border: 2px solid #0066cc; padding: calc(0.5em - 2px) calc(1.2em - 2px); }
-.lc-btn-outline:hover { background: #0066cc; color: white !important; }
+.button a { color: #fff !important; }
+.button:hover { background: #0052a3; }
+.button-secondary { background: #6c757d; } .button-secondary:hover { background: #5a6268; }
+.button-success { background: #28a745; } .button-success:hover { background: #1e7e34; }
+.button-danger { background: #dc3545; } .button-danger:hover { background: #bd2130; }
+.button-outline { background: transparent; color: #0066cc !important; border: 2px solid #0066cc; padding: calc(0.5em - 2px) calc(1.2em - 2px); }
+.button-outline:hover { background: #0066cc; color: white !important; }
 </style>
 
 <script>
@@ -822,8 +822,8 @@ Auto-included by docs/_layouts/default.html.
 
     // Plain styled-link button (existing behaviour).
     var style = el.getAttribute("style-variant") || "";
-    a.classList.add("lc-btn");
-    if (style) a.classList.add("lc-btn-" + style);
+    a.classList.add("button");
+    if (style) a.classList.add("button-" + style);
     el.classList.remove("button");
   }
 

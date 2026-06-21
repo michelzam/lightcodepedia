@@ -60,7 +60,7 @@ skeptic who asks the awkward questions so you don't have to.
 
 Ari needs your GitHub Models key to think. It's free and takes about a minute.
 
-[🔑 Get your key →](/micro_build_ai/onboarding){: .lc-btn }
+[🔑 Get your key →](/micro_build_ai/onboarding){: .button }
 
 ```
 ### 🗺️ The spine

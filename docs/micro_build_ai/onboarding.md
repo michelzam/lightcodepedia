@@ -20,7 +20,7 @@ that unlocks Save so you can finish the rescue.*
 Your account is your **identity**[^identity] — the name the save is signed with.
 Free, no payment, no setup:
 
-[Create a free GitHub account →](https://github.com/signup){: .lc-btn }
+[Create a free GitHub account →](https://github.com/signup){: .button }
 
 ## 2️⃣ Get a key — only as much as the moment needs
 
