@@ -99,19 +99,20 @@ Everything above `# ---` is init — runs once, invisible to the learner. Everyt
 
 ## 🤫 Silent mode — background setup
 
-`silent="true"` runs the block at page load with no visible UI. Use it to pre-compute something or render into a `<div>` elsewhere on the page.
+`silent="true"` runs the block at page load with no visible UI. Use it to pre-compute something or render into an element elsewhere on the page.
 
 ```python
 from js import document
-el = document.getElementById("hello-target")
+el = document.getElementById("hello_target")
 if el is not None:
     el.innerHTML = "✨ rendered by silent Python ✨"
 ```
 {: .run silent="true" }
 
-<div id="hello-target" style="padding:0.6em;background:#f3f4f6;border-radius:6px;">(loading…)</div>
+(loading…)
+{: #hello_target }
 
-The div above was written by the invisible runner above. No button, no output pane — just the effect.
+The text above was written by the invisible runner above. No button, no output pane — just the effect.
 
 ## 🃏 Cards — visualizing objects
 
