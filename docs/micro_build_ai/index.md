@@ -20,7 +20,7 @@ If Lucky can, so can you.
 ````
 {: .blocks cols="2" }
 
-## 🧩 What *BUILD-AI*{: .blue } means
+## 🧩 What *BUILD-AI*{: .hl } means
 
 **BUILD-AI** = **B**usiness-oriented **U**pskilling with **I**ncremental
 **L**ow-code **D**elivery and **AI**. In plain words: you learn to *build real

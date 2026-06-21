@@ -12,7 +12,7 @@ def step_record_reload(context, score):
         [won, total],
     )
     context.page.wait_for_timeout(200)
-    context.page.reload(wait_until="load")
+    context.page.reload(wait_until="domcontentloaded")
     context.page.wait_for_timeout(800)
 
 
@@ -38,7 +38,7 @@ def step_store_score(context, score, path):
 
 @when("I reload the page")
 def step_reload(context):
-    context.page.reload(wait_until="load")
+    context.page.reload(wait_until="domcontentloaded")
     context.page.wait_for_timeout(1000)
 
 
