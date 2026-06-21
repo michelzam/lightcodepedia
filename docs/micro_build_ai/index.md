@@ -1,6 +1,6 @@
 # 🐾 BUILD-AI — Become a Builder
 
-<img src="/micro_build_ai/AI-Builders.png" alt="AI is reshaping the world. Builders wanted. — UWM School of Information Studies" style="display:block; width:100%; max-width:640px; margin:1.2em auto; border-radius:10px;">
+![AI is reshaping the world. Builders wanted. — UWM School of Information Studies](/micro_build_ai/AI-Builders.png){: .lc-banner }
 
 ````
 ### 🌍 You have ideas. Now you can build them.
@@ -20,7 +20,7 @@ If Lucky can, so can you.
 ````
 {: .blocks cols="2" }
 
-## 🧩 What "BUILD-AI" means
+## 🧩 What *BUILD-AI*{: .hl } means
 
 **BUILD-AI** = **B**usiness-oriented **U**pskilling with **I**ncremental
 **L**ow-code **D**elivery and **AI**. In plain words: you learn to *build real

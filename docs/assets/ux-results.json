@@ -180,7 +180,7 @@
     "url": "/assets/ux-report.html#scenario_19"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The editor has a Diagram tab",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -189,7 +189,7 @@
     "url": "/assets/ux-report.html#scenario_20"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The Diagram tab renders the page's class graph",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
@@ -315,7 +315,7 @@
     "url": "/assets/ux-report.html#scenario_34"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The reel bar has a visible Back control",
     "feature": "Reel mode — Instagram-style vertical snap between titles",
     "tags": "",
@@ -414,7 +414,7 @@
     "url": "/assets/ux-report.html#scenario_45"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Tapping Present closes the popup",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
@@ -450,7 +450,7 @@
     "url": "/assets/ux-report.html#scenario_49"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Tutorial 101 loads",
     "feature": "Core pages load without errors",
     "tags": "",
@@ -531,7 +531,7 @@
     "url": "/assets/ux-report.html#scenario_58"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Grid renders with data",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -549,7 +549,7 @@
     "url": "/assets/ux-report.html#scenario_60"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Map renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -558,7 +558,7 @@
     "url": "/assets/ux-report.html#scenario_61"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Video block renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -567,7 +567,7 @@
     "url": "/assets/ux-report.html#scenario_62"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Grid row selection updates the chart",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
@@ -621,7 +621,7 @@
     "url": "/assets/ux-report.html#scenario_68"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "Model integrity holds on the tutorial data chain",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",
@@ -675,7 +675,7 @@
     "url": "/assets/ux-report.html#scenario_74"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "X-ray scene fits within viewport",
     "feature": "X-ray inspector",
     "tags": "",
