@@ -89,7 +89,7 @@ This is a `proxy`, including content from another module.
 
 ### 🐕 Proxy too [Just another proxy to the same module]
 
-Just another `proxy`, including content from the same other module.
+Just another `proxy`, including content from the same module.
 
 [Lucky](/_dog)
 
