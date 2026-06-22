@@ -85,6 +85,34 @@ Auto-included by docs/_layouts/default.html.
     return out;
   }
 
+  /* extract a nested array (path="a.b") and turn an object-of-equal-length-
+     arrays (e.g. Open-Meteo's daily/hourly) into rows — so live APIs that nest
+     or columnarise their data still bind to grids and charts. */
+  function shapeData(data, el) {
+    var path = el.getAttribute("path");
+    if (path) {
+      path.split(".").forEach(function (k) {
+        if (data && typeof data === "object" && data[k] != null) data = data[k];
+      });
+    }
+    if (data && !Array.isArray(data) && typeof data === "object") {
+      var keys = Object.keys(data);
+      if (keys.length && keys.every(function (k) { return Array.isArray(data[k]); })) {
+        var n = data[keys[0]].length;
+        if (keys.every(function (k) { return data[k].length === n; })) {
+          var rows = [];
+          for (var i = 0; i < n; i++) {
+            var row = {};
+            keys.forEach(function (k) { row[k] = data[k][i]; });
+            rows.push(row);
+          }
+          return rows;
+        }
+      }
+    }
+    return Array.isArray(data) ? data : [data];
+  }
+
   /* ── .dataset upgrade ───────────────────────────── */
   function upgradeDataset(el) {
     if (el.dataset.lcDsDone) return; el.dataset.lcDsDone = "1";
@@ -106,8 +134,7 @@ Auto-included by docs/_layouts/default.html.
           .then(function (text) {
             var data;
             try { data = JSON.parse(text); } catch (e) { data = parseCSV(text); }
-            if (!Array.isArray(data)) data = [data];
-            window.lcSetDataset(id, data);
+            window.lcSetDataset(id, shapeData(data, el));
           })
           .catch(function (e) { window.lcSetDataset(id, [{ "⚠️": e.message }]); });
         return;
@@ -119,8 +146,7 @@ Auto-included by docs/_layouts/default.html.
     var text = code.textContent.trim();
     var data;
     try { data = JSON.parse(text); } catch (e) { data = parseCSV(text); }
-    if (!Array.isArray(data)) data = [data];
-    window.lcSetDataset(id, data);
+    window.lcSetDataset(id, shapeData(data, el));
   }
 
   /* ── .datagrid upgrade ──────────────────────────── */
