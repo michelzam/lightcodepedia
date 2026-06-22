@@ -206,6 +206,206 @@
   "dom_nodes": 357,
   "lc_components": 13,
   "transfer_kb": 282,
+  "lcp_ms": 291,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/archive/help",
+  "heap_mb": 9.5,
+  "dom_nodes": 294,
+  "lc_components": 8,
+  "transfer_kb": 269,
+  "lcp_ms": 104,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/",
+  "heap_mb": 9.5,
+  "dom_nodes": 624,
+  "lc_components": 11,
+  "transfer_kb": 270,
+  "lcp_ms": 272,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/accordion",
+  "heap_mb": 9.5,
+  "dom_nodes": 594,
+  "lc_components": 13,
+  "transfer_kb": 275,
+  "lcp_ms": 195,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/cards",
+  "heap_mb": 9.5,
+  "dom_nodes": 537,
+  "lc_components": 16,
+  "transfer_kb": 287,
+  "lcp_ms": 109,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/dataset",
+  "heap_mb": 9.5,
+  "dom_nodes": 665,
+  "lc_components": 11,
+  "transfer_kb": 340,
+  "lcp_ms": 402,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/dropdown",
+  "heap_mb": 9.5,
+  "dom_nodes": 460,
+  "lc_components": 12,
+  "transfer_kb": 275,
+  "lcp_ms": 194,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/examples/",
+  "heap_mb": 9.5,
+  "dom_nodes": 283,
+  "lc_components": 9,
+  "transfer_kb": 268,
+  "lcp_ms": 515,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/examples/avatar",
+  "heap_mb": 23.4,
+  "dom_nodes": 720,
+  "lc_components": 15,
+  "transfer_kb": 287,
+  "lcp_ms": 108,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/examples/custom-class",
+  "heap_mb": 9.5,
+  "dom_nodes": 581,
+  "lc_components": 14,
+  "transfer_kb": 275,
+  "lcp_ms": 199,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/examples/lucky3d",
+  "heap_mb": 28,
+  "dom_nodes": 493,
+  "lc_components": 11,
+  "transfer_kb": 534,
+  "lcp_ms": 110,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/form",
+  "heap_mb": 13.6,
+  "dom_nodes": 1502,
+  "lc_components": 21,
+  "transfer_kb": 630,
+  "lcp_ms": 201,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/query",
+  "heap_mb": 11.3,
+  "dom_nodes": 374,
+  "lc_components": 13,
+  "transfer_kb": 374,
+  "lcp_ms": 114,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/radio",
+  "heap_mb": 9.5,
+  "dom_nodes": 488,
+  "lc_components": 12,
+  "transfer_kb": 286,
+  "lcp_ms": 200,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/tabs",
+  "heap_mb": 9.5,
+  "dom_nodes": 528,
+  "lc_components": 14,
+  "transfer_kb": 287,
+  "lcp_ms": 182,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/components/text",
+  "heap_mb": 9.5,
+  "dom_nodes": 768,
+  "lc_components": 17,
+  "transfer_kb": 290,
+  "lcp_ms": 113,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/license",
+  "heap_mb": 9.5,
+  "dom_nodes": 364,
+  "lc_components": 8,
+  "transfer_kb": 270,
+  "lcp_ms": 217,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/nodes",
+  "heap_mb": 9.5,
+  "dom_nodes": 1117,
+  "lc_components": 24,
+  "transfer_kb": 381,
+  "lcp_ms": 99,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/start",
+  "heap_mb": 9.5,
+  "dom_nodes": 395,
+  "lc_components": 8,
+  "transfer_kb": 275,
+  "lcp_ms": 85,
+  "console_errors": 0
+ },
+ {
+  "run": "2026-06-22T16:31Z",
+  "page": "/tutorial101",
+  "heap_mb": 31.6,
+  "dom_nodes": 1042,
+  "lc_components": 29,
+  "transfer_kb": 966,
+  "lcp_ms": 91,
+  "console_errors": 1
+ },
+ {
+  "run": "2026-06-22T16:24Z",
+  "page": "/",
+  "heap_mb": 9.5,
+  "dom_nodes": 357,
+  "lc_components": 13,
+  "transfer_kb": 282,
   "lcp_ms": 120,
   "console_errors": 0
  },
