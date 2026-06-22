@@ -8,6 +8,8 @@ Auto-included by docs/_layouts/default.html.
 
 <style>
 .lc-card-features { display: flex; gap: 0.35em; align-items: center; margin-top: 0.65em; flex-wrap: wrap; }
+.lc-card-tags { display: flex; gap: 0.3em; flex-wrap: wrap; margin-top: 0.45em; }
+.lc-card-tag { font-size: 0.7em; font-weight: 600; padding: 0.1em 0.5em; border-radius: 99px; background: #e0f2fe; color: #075985; line-height: 1.6; }
 .lc-feat-dot { display: inline-flex; align-items: center; gap: 0.2em; font-size: 0.72em; font-weight: 600; padding: 0.1em 0.45em; border-radius: 99px; line-height: 1.6; }
 .lc-feat-passing { background: #dcfce7; color: #15803d; }
 .lc-feat-failing  { background: #fee2e2; color: #b91c1c; }
@@ -117,7 +119,8 @@ Auto-included by docs/_layouts/default.html.
               var fRe = /\{:\s*\.feature\b([^}]*)\}/g, fm;
               while ((fm = fRe.exec(scanText)) !== null) {
                 var sm = fm[1].match(/\bstatus="(\w+)"/);
-                features.push(sm ? sm[1] : "");
+                var tm = fm[1].match(/\btags="([^"]*)"/);
+                features.push({ status: sm ? sm[1] : "", tags: tm ? tm[1] : "" });
               }
               /* collect internal links for hover ribbons */
               var cleanLinks = text.replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "").replace(/`[^`\n]+`/g, "");
@@ -170,7 +173,7 @@ Auto-included by docs/_layouts/default.html.
           /* feature status dots */
           if (item.features && item.features.length) {
             var counts = {};
-            item.features.forEach(function(s) { counts[s || "none"] = (counts[s || "none"] || 0) + 1; });
+            item.features.forEach(function(f) { var s = (f && f.status) || "none"; counts[s] = (counts[s] || 0) + 1; });
             var dots = "";
             if (counts.passing) dots += "<span class='lc-feat-dot lc-feat-passing' title='" + counts.passing + " passing scenario" + (counts.passing > 1 ? "s" : "") + "'>● " + counts.passing + "</span>";
             if (counts.failing)  dots += "<span class='lc-feat-dot lc-feat-failing'  title='" + counts.failing  + " failing scenario"  + (counts.failing  > 1 ? "s" : "") + "'>✗ " + counts.failing  + "</span>";
@@ -178,6 +181,13 @@ Auto-included by docs/_layouts/default.html.
             if (counts.none && !counts.passing && !counts.failing && !counts.pending)
               dots += "<span class='lc-feat-dot lc-feat-none' title='" + counts.none + " scenario" + (counts.none > 1 ? "s" : "") + " (no status set)'>● " + counts.none + "</span>";
             if (dots) card += "<div class='lc-card-features'>" + dots + "</div>";
+            var tagSeen = {}, tagList = [];
+            item.features.forEach(function(f) {
+              (((f && f.tags) || "").split(",")).forEach(function(t) {
+                t = t.trim(); if (t && !tagSeen[t]) { tagSeen[t] = 1; tagList.push(t); }
+              });
+            });
+            if (tagList.length) card += "<div class='lc-card-tags'>" + tagList.map(function(t) { return "<span class='lc-card-tag'>" + escapeHtml(t) + "</span>"; }).join("") + "</div>";
           }
           return card + '</div>';
         }).join("");
