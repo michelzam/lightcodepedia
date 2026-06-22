@@ -12,6 +12,35 @@ A styled call-to-action link. Write a normal markdown link, add `{: .button }` i
 [✗ Delete](#){: .button .button-danger }
 [Outline](#){: .button .button-outline }
 
+```gherkin
+Feature: A link becomes a styled button
+  As a lowcoder
+  I want a markdown link tagged .button to render as a call-to-action
+  So that I get buttons and color variants with no HTML or CSS
+
+  Scenario: The variant buttons render with their labels
+    Given the buttons above
+    :::python
+    self.btns = [Button(b._el) for b in Object._all(".button")]
+    self.labels = [b.text for b in self.btns]
+    :::
+    When they have rendered
+    Then the primary button is present
+    :::python
+    assert any("Get started" in t for t in self.labels), self.labels
+    :::
+    And the danger variant renders the Delete button
+    :::python
+    self.danger = None
+    for b in self.btns:
+        if b._el.classList.contains("button-danger"):
+            self.danger = b
+    assert self.danger is not None, [b._el.getAttribute("class") for b in self.btns]
+    assert "Delete" in self.danger.text, self.danger.text
+    :::
+```
+{: .feature tags="ui" status="passing" }
+
 ## 🛠️ How to make one
 
 Add `{: .button }` **immediately** after the closing `]` of any markdown link — no space, no newline:

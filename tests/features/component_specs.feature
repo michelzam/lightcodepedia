@@ -40,6 +40,38 @@ Feature: Component specs run green
     And I run the page's embedded features
     Then every embedded feature passes
 
+  Scenario: Menu spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/menu"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-menu"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Carousel spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/carousel"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-carousel"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Button spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/button"
+    And I wait for the page to be interactive
+    And I wait for the selector ".button"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Quiz spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/quiz"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-quiz"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
   Scenario: Dataset spec passes
     Given I have a clean browser page
     When I navigate to "/components/dataset"

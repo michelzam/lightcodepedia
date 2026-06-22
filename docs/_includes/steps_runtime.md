@@ -552,21 +552,34 @@ class Button(Block):
 # ════════════════════════ gallery component wrappers ═════════════════════════
 # Knobs are typed properties (data-* backed); behaviours are methods.
 
-@component(icon="🎠", attrs=[{"n": "delay", "t": "int", "data": True, "d": 4000}],
+@component(icon="🎠", attrs=[{"n": "delay", "t": "int", "data": True, "d": 4000},
+                            {"n": "current", "t": "int"}],
            methods=["next", "prev", "goto"])
 class Carousel(Block):
-    def next(self):
-        return self._tap(".lc-next, [data-lc-next]")
+    @property
+    def current(self):
+        items = self._qq(".lc-carousel-item")
+        for i in range(len(items)):
+            if items[i]._el.classList.contains("active"):
+                return i
+        return 0
 
-    def prev(self):
-        return self._tap(".lc-prev, [data-lc-prev]")
+    def _dots(self):
+        return self._el.querySelectorAll(".lc-carousel-dots span") if self._el else None
 
     def goto(self, n):
-        if self._el is not None:
-            dots = self._el.querySelectorAll(".lc-dot, [data-go]")
-            if dots is not None and int(dots.length) > n:
-                dots.item(n).click()
+        d = self._dots()
+        if d is not None and int(d.length) > n:
+            d.item(n).click()
         return self
+
+    def next(self):
+        items = self._qq(".lc-carousel-item")
+        return self.goto((self.current + 1) % len(items)) if items else self
+
+    def prev(self):
+        items = self._qq(".lc-carousel-item")
+        return self.goto((self.current - 1) % len(items)) if items else self
 
 
 @component(icon="🃏",
@@ -672,12 +685,21 @@ class Radio(Block):
 @component(icon="❓",
            attrs=[{"n": "multi", "t": "bool", "data": True, "d": False},
                   {"n": "graded", "t": "bool"}],
-           methods=["check"],
+           methods=["pick", "check"],
            states=["pending", "graded"])
 class Quiz(Block):
     @property
     def graded(self):
-        return self.has_class("graded")
+        # a quiz is graded once any option has been revealed as ✓ or ✗
+        return any(o._el.classList.contains("lc-quiz-correct") or
+                   o._el.classList.contains("lc-quiz-wrong")
+                   for o in self._qq("li"))
+
+    def pick(self, n):
+        opts = self._qq("li")
+        if n < len(opts):
+            opts[n]._el.click()
+        return self
 
     @transition(["pending"], "graded")
     def check(self):

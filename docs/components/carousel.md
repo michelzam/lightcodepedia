@@ -14,6 +14,31 @@ Auto-rotating content panels — perfect for rotating quotes, tips, or testimoni
 
 Watch the dot advance every 4 seconds. Click a dot to jump. That's the whole widget.
 
+```gherkin
+Feature: A bullet list becomes a rotating carousel
+  As a lowcoder
+  I want list items shown one at a time with dot navigation
+  So that I can rotate quotes or tips with no JavaScript
+
+  Scenario: Clicking a dot jumps to that item
+    Given the carousel above
+    :::python
+    self.car = Carousel(Object._all(".lc-carousel")[0]._el)
+    self.items = self.car._qq(".lc-carousel-item")
+    :::
+    When I jump to the third item
+    :::python
+    self.car.goto(2)
+    :::
+    Then only the third item is showing
+    :::python
+    assert self.items[2]._el.classList.contains("active")
+    assert not self.items[0]._el.classList.contains("active")
+    assert self.car.current == 2, self.car.current
+    :::
+```
+{: .feature tags="ui" status="passing" }
+
 > Ask yourself: "When would you use a carousel vs a bullet list?"
 > Good answers: testimonials where you want one voice at a time, rotating tips that
 > would overwhelm if shown all at once, a "quote of the day" style slot.

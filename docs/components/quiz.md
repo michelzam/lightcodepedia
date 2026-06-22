@@ -20,6 +20,41 @@ Click any option. Wrong answer? You see a red ✗ on that pick. The correct answ
 > The treasure-hunt behavior surprises everyone — most expect the answer to be revealed immediately.
 {: .speaker-note }
 
+```gherkin
+Feature: A task list becomes an interactive quiz
+  As a lowcoder
+  I want a bullet list with [x]/[ ] markers to grade clicks
+  So that learners self-check with no backend
+
+  Scenario: Picking an option reveals a verdict on it
+    Given a single-select quiz on this page
+    :::python
+    self.quiz = None
+    for q in Object._all(".lc-quiz"):
+        if q._attr("multi") != "true":
+            self.quiz = Quiz(q._el)
+            break
+    assert self.quiz is not None, "no single-select quiz found"
+    self.opts = self.quiz._qq("li")
+    :::
+    When nothing has been clicked yet
+    Then the quiz is ungraded
+    :::python
+    assert not self.quiz.graded
+    :::
+    When I pick the first option
+    :::python
+    self.quiz.pick(0)
+    :::
+    Then that option is revealed as right or wrong
+    :::python
+    first = self.opts[0]._el
+    assert first.classList.contains("lc-quiz-correct") or first.classList.contains("lc-quiz-wrong")
+    assert self.quiz.graded
+    :::
+```
+{: .feature tags="ui" status="passing" }
+
 ## 🛠️ How to make a quiz
 
 Write a bullet list with `[x]` on the correct answer and `[ ]` on the wrong ones. Add `{: .quiz }` on the very next line.
