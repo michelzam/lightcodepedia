@@ -2,6 +2,13 @@ from behave import when, then
 from playwright.sync_api import expect
 
 
+@when('I wait for the selector "{css}"')
+def step_wait_selector(context, css):
+    # file-backed components (e.g. tabs) render after an async fetch; wait for
+    # them to exist before driving them from the in-page runner.
+    context.page.locator(css).first.wait_for(state="visible", timeout=20_000)
+
+
 @when("I run the page's embedded features")
 def step_run_features(context):
     # Hidden features (visible=false) render display:none. Un-hide so their

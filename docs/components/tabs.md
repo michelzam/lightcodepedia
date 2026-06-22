@@ -11,6 +11,44 @@ Show alternative content panels — only one tab visible at a time. Each `### He
 
 Click any tab. The active tab is highlighted in blue; the others hide. That's the whole widget.
 
+```gherkin
+Feature: Tabs show one panel at a time
+  As a reader
+  I want to switch between alternative content panels
+  So that I focus on one at a time without scrolling
+
+  Scenario: Selecting a tab makes it the active one
+    Given the tabs above
+    :::python
+    self.tabs = Tabs._all(".lc-tabs")[0]
+    self.tabs.select(0)
+    :::
+    When I select the second tab
+    :::python
+    self.tabs.select(1)
+    :::
+    Then the second tab is active
+    :::python
+    assert self.tabs.active == 1
+    :::
+
+  Scenario: Switching back activates the first tab
+    Given the second tab is active
+    :::python
+    self.tabs = Tabs._all(".lc-tabs")[0]
+    self.tabs.select(1)
+    :::
+    When I select the first tab
+    :::python
+    self.tabs.select(0)
+    :::
+    Then the first tab is active
+    :::python
+    assert self.tabs.active == 0
+    :::
+```
+{: .feature tags="ui" }
+
 > Ask: "When would you use tabs vs a bullet list?"
 > Good answers: comparing alternatives side-by-side, hiding advanced content until needed,
 > showing the same thing in multiple languages.
