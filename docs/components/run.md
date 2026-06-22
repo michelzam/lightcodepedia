@@ -36,7 +36,7 @@ Feature: A fenced block becomes a Python runner
     assert self.runner.visible
     :::
 ```
-{: .feature tags="lifecycle" status="passing" }
+{: .feature tags="code" status="passing" }
 
 > Ask yourself: "What do you expect to see before you click ▶ Run?"
 > Pause. Predict, then run it. The prediction habit is the whole lesson.

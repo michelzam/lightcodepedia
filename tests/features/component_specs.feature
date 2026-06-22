@@ -176,6 +176,14 @@ Feature: Component specs run green
     And I run the page's embedded features
     Then every embedded feature passes
 
+  Scenario: Diagram spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/diagram"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-diagram"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
   Scenario: Dataset spec passes
     Given I have a clean browser page
     When I navigate to "/components/dataset"

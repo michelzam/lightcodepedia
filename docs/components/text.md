@@ -60,7 +60,7 @@ Feature: A markdown block becomes a live editor and preview
     assert self.pad.visible
     :::
 ```
-{: .feature tags="ui" status="passing" }
+{: .feature tags="code" status="passing" }
 
 > Great opener for the first class: "Type your name in bold. Now make it a heading."
 > The instant feedback loop lands faster than any explanation.
