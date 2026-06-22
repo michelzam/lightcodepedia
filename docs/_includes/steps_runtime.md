@@ -171,6 +171,15 @@ class Object:
         # just on Block. Block keeps declaring it for the diagram.
         return str(self._el.textContent or "").strip() if self._el else ""
 
+    @property
+    def visible(self):
+        # like text: any wrapped element can report visibility. Block keeps
+        # declaring it for the diagram.
+        if not self._el:
+            return False
+        cs = js.window.getComputedStyle(self._el)
+        return str(cs.display) != "none" and str(cs.visibility) != "hidden"
+
     def _event_src(self, name):
         """Live source of a declared event handler (for the x-ray inspector).
         Default: none. Wrappers that carry handler code override this."""
@@ -304,13 +313,6 @@ class Block(Object):
     @property
     def exists(self):
         return self._el is not None
-
-    @property
-    def visible(self):
-        if not self._el:
-            return False
-        cs = js.window.getComputedStyle(self._el)
-        return str(cs.display) != "none" and str(cs.visibility) != "hidden"
 
     def has_class(self, name):
         return bool(self._el and self._el.classList.contains(name))
