@@ -7,6 +7,25 @@ Force-directed graph of pages in a directory. Nodes are pages; edges are directe
 [Browse](/docs/components)
 {: .sitemap path="docs/components" height="460" }
 
+```gherkin
+Feature: A directory becomes a force-directed sitemap
+  As a lowcoder
+  I want pages and their links drawn as a graph
+  So that I can see a folder's structure at a glance
+
+  Scenario: The block upgrades into a sitemap graph
+    Given the sitemap above
+    :::python
+    self.sm = Object._all(".lc-sitemap")[0]
+    :::
+    When the page has upgraded it
+    Then it is a visible sitemap
+    :::python
+    assert self.sm.visible
+    :::
+```
+{: .feature tags="lifecycle" status="passing" }
+
 ## 🥸 How to write one
 
 Put a link to the directory you want to map, then apply `{: .sitemap }`:

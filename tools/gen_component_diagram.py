@@ -106,6 +106,27 @@ component.
 {diagram}
 ```
 
+```gherkin
+Feature: The model renders from its own source
+  As a curious lowcoder
+  I want the class model drawn from the runtime's @component declarations
+  So that this diagram can never drift from the code it documents
+
+  Scenario: The page shows the model title and its class diagram
+    Given this page generated from steps_runtime.md
+    :::python
+    self.heads = Object._all("h1")
+    self.dia = Object._all(".lc-dot-diagram") or Object._all(".language-dot")
+    :::
+    When it has rendered
+    Then it carries the model title and a diagram
+    :::python
+    assert any("Component Model" in h.text for h in self.heads), [h.text for h in self.heads]
+    assert len(self.dia) >= 1
+    :::
+```
+{{: .feature tags="lifecycle" status="passing" }}
+
 ## 🔗 Related components & examples
 
 ```
