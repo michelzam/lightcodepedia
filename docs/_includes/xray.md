@@ -311,7 +311,7 @@ Auto-included by docs/_layouts/default.html.
         if (eSeen.has(k)) return;
         eSeen.add(k); edges.push({ a, b, role, list });
       }
-      const REF_ATTRS = [["data-bind", "bind"], ["data-bound-to", "bound_to"], ["data-bound", "bound"], ["data-avt-target", "target"]];
+      const REF_ATTRS = [["data-bind", "source"], ["data-bound-to", "master"], ["data-bound", "master"], ["data-avt-target", "target"]];
       const wrapName = el => { if (el && el.classList) for (const [t, n] of WRAP)
         if (el.classList.contains(t)) return n; return null; };
       const root = addNode(hit.name, hit.el.getAttribute("data-lc-id") || "", hit.el, data);

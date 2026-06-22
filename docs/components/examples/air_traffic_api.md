@@ -1,24 +1,24 @@
 # ✈️ Live air traffic (API)
 
-Aircraft currently in the sky near Paris, pulled **live** from the free [adsb.lol](https://adsb.lol) API (a community network of ADS-B receivers) — no key. `path="ac"` lifts the aircraft array out of the response; a query renames a handful of the ~30 raw fields into readable columns.
+Military aircraft **in the air right now, worldwide**, pulled live from the free [adsb.lol](https://adsb.lol) API (a community network of ADS-B receivers) — no key. The global military feed is busy around the clock, so there's almost always something flying (a small geographic radius over one city often isn't). `path="ac"` lifts the aircraft array out of the response; a query renames a few of the ~30 raw fields.
 
-[adsb.lol — within 25 nm of Paris](https://api.adsb.lol/v2/lat/48.85/lon/2.35/dist/25)
+[adsb.lol — military aircraft aloft](https://api.adsb.lol/v2/mil)
 {: .dataset #flights path="ac" }
 
 ```sql
-SELECT flight AS callsign, t AS type, alt_baro AS altitude_ft, gs AS speed_kts, track AS heading
-FROM flights WHERE flight <> '' ORDER BY altitude_ft DESC
+SELECT flight AS callsign, t AS type, r AS registration, alt_baro AS altitude_ft, gs AS speed_kts
+FROM flights ORDER BY altitude_ft DESC
 ```
-{: .query source="flights" #nearby }
+{: .query source="flights" #aloft }
 
-[Aircraft overhead](#)
-{: .datagrid source="nearby" rows="20" }
+[Aircraft aloft — sorted by altitude](#)
+{: .datagrid source="aloft" rows="20" }
 
 ## How it works
 
 - `{: .dataset #flights path="ac" }` on a link fetches the API and extracts the `ac` array — one object per aircraft.
-- `{: .query source="flights" }` selects and renames a few columns and drops aircraft with no callsign.
-- The grid binds with `source="nearby"`, sorted by altitude.
+- `{: .query source="flights" }` selects and renames a few of the raw fields.
+- The grid binds with `source="aloft"`, sorted by altitude.
 
-> Live data: how many planes appear depends on real traffic — quiet hours may show only a handful, busy ones dozens. adsb.lol is a free community API and can rate-limit.
+> Live data from a free community API: the list reflects real flights and varies minute to minute. The service can rate-limit or, occasionally, be unreachable from the browser (CORS) — if the grid shows *No data*, that's the upstream, not the wiring.
 {: .speaker-note }
