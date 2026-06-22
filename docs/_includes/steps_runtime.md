@@ -164,6 +164,13 @@ class Object:
     def id(self):
         return self._attr("data-lc-id") or ""
 
+    @property
+    def text(self):
+        # every wrapped element exposes its text — _q/_qq return Objects, so
+        # sub-elements (a th, a td, a title span) need this on the base, not
+        # just on Block. Block keeps declaring it for the diagram.
+        return str(self._el.textContent or "").strip() if self._el else ""
+
     def _event_src(self, name):
         """Live source of a declared event handler (for the x-ray inspector).
         Default: none. Wrappers that carry handler code override this."""
@@ -304,10 +311,6 @@ class Block(Object):
             return False
         cs = js.window.getComputedStyle(self._el)
         return str(cs.display) != "none" and str(cs.visibility) != "hidden"
-
-    @property
-    def text(self):
-        return str(self._el.textContent or "").strip() if self._el else ""
 
     def has_class(self, name):
         return bool(self._el and self._el.classList.contains(name))
