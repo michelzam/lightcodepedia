@@ -97,11 +97,11 @@ Auto-included by docs/_layouts/default.html.
    force the inner link readable so the button works either way */
 .button a { color: #fff !important; }
 .button:hover { background: #0052a3; }
-.button-secondary { background: #6c757d; } .button-secondary:hover { background: #5a6268; }
-.button-success { background: #28a745; } .button-success:hover { background: #1e7e34; }
-.button-danger { background: #dc3545; } .button-danger:hover { background: #bd2130; }
-.button-outline { background: transparent; color: #0066cc !important; border: 2px solid #0066cc; padding: calc(0.5em - 2px) calc(1.2em - 2px); }
-.button-outline:hover { background: #0066cc; color: white !important; }
+.button[kind="secondary"], .button-secondary { background: #6c757d; } .button[kind="secondary"]:hover, .button-secondary:hover { background: #5a6268; }
+.button[kind="success"], .button-success { background: #28a745; } .button[kind="success"]:hover, .button-success:hover { background: #1e7e34; }
+.button[kind="danger"], .button-danger { background: #dc3545; } .button[kind="danger"]:hover, .button-danger:hover { background: #bd2130; }
+.button[kind="outline"], .button-outline { background: transparent; color: #0066cc !important; border: 2px solid #0066cc; padding: calc(0.5em - 2px) calc(1.2em - 2px); }
+.button[kind="outline"]:hover, .button-outline:hover { background: #0066cc; color: white !important; }
 </style>
 
 <script>

@@ -505,9 +505,16 @@ class Feature(Block):
 
 
 @component(icon="🖱️",
-           attrs=[{"n": "text", "t": "str"}, {"n": "color", "t": "str"}],
+           attrs=[{"n": "text", "t": "str"},
+                  {"n": "kind", "t": "str", "data": True, "d": "", "attr": "kind"},
+                  {"n": "color", "t": "str"}],
            events=["on_click"], methods=["click"])
 class Button(Block):
+    @property
+    def kind(self):
+        # link-button variant knob: secondary | success | danger | outline
+        return self._attr("kind") or ""
+
     @property
     def text(self):
         return str(self._el.textContent or "").strip() if self._el else ""

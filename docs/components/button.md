@@ -7,10 +7,10 @@ A styled call-to-action link. Write a normal markdown link, add `{: .button }` i
 ## 👀 See it in action
 
 [🚀 Get started](/components/run){: .button }
-[Learn more](/components/text){: .button .button-secondary }
-[✓ Done](/components/quiz){: .button .button-success }
-[✗ Delete](#){: .button .button-danger }
-[Outline](#){: .button .button-outline }
+[Learn more](/components/text){: .button kind="secondary" }
+[✓ Done](/components/quiz){: .button kind="success" }
+[✗ Delete](#){: .button kind="danger" }
+[Outline](#){: .button kind="outline" }
 
 ```gherkin
 Feature: A link becomes a styled button
@@ -55,31 +55,58 @@ This is kramdown's **inline IAL** — it attaches the class directly to the `<a>
 | You write | Result |
 |---|---|
 | `{: .button }` | Blue (primary) |
-| `{: .button .button-secondary }` | Grey |
-| `{: .button .button-success }` | Green |
-| `{: .button .button-danger }` | Red |
-| `{: .button .button-outline }` | Transparent with blue border |
+| `{: .button kind="secondary" }` | Grey |
+| `{: .button kind="success" }` | Green |
+| `{: .button kind="danger" }` | Red |
+| `{: .button kind="outline" }` | Transparent with blue border |
+
+The variant is a single knob, `kind`, with values `secondary`, `success`, `danger`, or `outline`. Omit it for the blue primary.
 
 
 ## Events
 
 [🗓️ Event: ON](#)
-{: .button }
+{: .button #event_btn }
 ```python
 def on_click(button):
-    if button.text == "ON" 
+    if "ON" in button.text:
         button.text = "OFF"
     else:
         button.text = "ON"
 ```
 {: .onclick }
 
+> The handler needs an `#id` (here `#event_btn`): a click resolves the button by id to run its Python. Without one, the click can't find its handler.
+
+```gherkin
+Feature: A button runs Python on click
+  As a lowcoder
+  I want a :::python::: handler attached to a .button
+  So that clicking it changes the page with no JavaScript
+
+  Scenario: Clicking the event button toggles ON and OFF
+    Given the #event_btn button and its on_click handler
+    :::python
+    self.eb = self.page.event_btn
+    self.before = self.eb.text
+    :::
+    When its handler runs
+    :::python
+    self.eb.click()
+    :::
+    Then the label flips between ON and OFF
+    :::python
+    assert ("ON" in self.before) != ("ON" in self.eb.text), (self.before, self.eb.text)
+    :::
+```
+{: .feature tags="events" status="passing" }
+
 ## 🏁 Final exam
 
 **Q:** Which markdown produces a green button linking to `/submit`?
 
-- [ ] `[Submit](/submit){: .button-success }` — variant class only.
-- [x] `[Submit](/submit){: .button .button-success }` — base class + variant.
-- [ ] `[Submit](/submit){: .btn .btn-success }` — Bootstrap-style classes.
-- [ ] Only the old `{% raw %}{% include button.md %}{% endraw %}` form produces colored buttons.
+- [x] `[Submit](/submit){: .button kind="success" }` — base class + the `kind` knob.
+- [ ] `[Submit](/submit){: .button success }` — `success` isn't a value without `kind=`.
+- [ ] `[Submit](/submit){: .button .success }` — `success` as a bare class does nothing.
+- [ ] `[Submit](/submit){: .btn kind="success" }` — wrong base class.
 {: .quiz }

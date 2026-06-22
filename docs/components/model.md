@@ -33,7 +33,7 @@ digraph component_model {
     Datagrid [label="{▦ Datagrid ➭ 🧩|🔢 row count\l🔤⦙ headers\l📦⦙ rows\l|▸ header\l}"]
     Chart [label="{📈 Chart ➭ 🧩|🔤 type\l🔤 x\l🔤 y\l🔢 bar count\l🔢 point count\l}"]
     Feature [label="{🦄 Feature ➭ 🧩|🔤 title\l🔤 status\l|▸ run\l}"]
-    Button [label="{🖱️ Button ➭ 🧩|🔤 text\l🔤 color\l|⚡ on click\l▸ click\l}"]
+    Button [label="{🖱️ Button ➭ 🧩|🔤 text\l🔤 kind\l🔤 color\l|⚡ on click\l▸ click\l}"]
     Accordion [label="{🪗 Accordion ➭ 🧩|▸ open\l▸ close\l▸ sections\l}"]
     Agent [label="{🤖 Agent ➭ 🧩|🔡 system\l🔤 model\l🔢 temperature\l🔢 max tokens\l🔤 intro\l🔤 placeholder\l|▸ ask\l}"]
     Avatar [label="{🗣️ Avatar ➭ 🧩|🎛️ state\l🔢 size\l🔘 playing\l🔤 speech\l|▹ play ▹\l▹ stop ▹\l}"]

@@ -127,7 +127,7 @@ Feature: Page component access
 Click the button to highlight the tallest bar; click again to reset. The `:::python:::` fence after the `.button` IAL defines the click handler; `button.page` gives full page access.
 
 [Highlight max bar ▶](#)
-{: .button data-lc-id="highlight_btn" }
+{: .button #highlight_btn }
 
 ```python
 def on_click(button):
