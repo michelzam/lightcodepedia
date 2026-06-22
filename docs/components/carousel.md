@@ -53,7 +53,7 @@ Each `- bullet` becomes one carousel slide. Items support inline markdown — **
 | Attribute | Default | What it does |
 |---|---|---|
 | `delay="N"` | `4000` | Milliseconds between auto-advances |
-| `id="…"` | auto | Required when more than one carousel lives on the same page |
+| `#id` | auto | Optional — auto-assigned if omitted; add one only to reference this carousel from elsewhere |
 
 A slower carousel — one slide every 8 seconds:
 
@@ -77,9 +77,9 @@ Two carousels need distinct ids:
 **Q:** You have two carousels on the same page but the second one's dots control the first one too. What's missing?
 
 - [ ] `class="isolated"` on the second carousel.
-- [x] A distinct `id=` on each `{: .carousel }` — required when more than one lives on a page.
+- [ ] A distinct `#id` on each — otherwise they cross-wire.
 - [ ] Separate `<section>` wrappers around each carousel.
-- [ ] Nothing is missing. Shared dots are a known feature.
+- [x] Nothing — each carousel auto-isolates, so this never actually happens.
 {: .quiz }
 
 ## 🏁 Final exam — boss level
@@ -89,7 +89,7 @@ Two carousels need distinct ids:
 - [x] Each `- bullet` becomes one rotating slide.
 - [x] Inline markdown (bold, links, code) works inside items.
 - [ ] `delay=` is in seconds — `delay="4"` means 4 seconds.
-- [x] Without an `id=`, two carousels on the same page will conflict.
+- [ ] Two carousels on a page conflict unless each gets an `#id`.
 - [ ] Items must be plain text — no markdown inside bullets.
 {: .quiz multi="true" }
 

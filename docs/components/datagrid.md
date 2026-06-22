@@ -64,7 +64,7 @@ Each object becomes a row; its keys become the column headers. Header labels are
 
 | Attribute | What it does |
 |---|---|
-| `id="…"` | Required when you have more than one grid on the same page |
+| `#id` | Optional — auto-assigned if omitted; add one only to bind or reference this grid |
 | `title="…"` | Title bar shown above the grid |
 | `height="400"` | Grid height in pixels (default 400) |
 | `format="yaml"` | `yaml` (default), `json`, or `csv` |
@@ -76,8 +76,8 @@ Each object becomes a row; its keys become the column headers. Header labels are
 
 - [ ] `format="yaml"` on both.
 - [ ] A blank line between the two YAML blocks.
-- [x] `id="…"` on each grid — required when more than one lives on a page.
-- [ ] They can't coexist. One grid per page — site policy.
+- [ ] An `#id` on each grid — otherwise they interfere.
+- [x] Nothing — each grid auto-gets a unique id and stays independent.
 {: .quiz }
 
 ## 📋 Other data formats

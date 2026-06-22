@@ -57,7 +57,7 @@ Keys become the left-column labels (auto-prettified: `weight_kg` → **Weight Kg
 
 | Attribute | What it does |
 |---|---|
-| `id="…"` | Required when more than one form lives on the same page |
+| `#id` | Optional — auto-assigned if omitted; add one only to reference this form from elsewhere |
 | `title="…"` | Title bar — overrides the auto-inferred name/title/label/id |
 | `format="yaml"` | `yaml` (default) or `json` |
 | `bound="<grid-id>"` | Link to a datagrid — form fills when a row is selected |
@@ -66,8 +66,8 @@ Keys become the left-column labels (auto-prettified: `weight_kg` → **Weight Kg
 **Q:** You put two forms on a page and only one shows up. What did you forget?
 
 - [ ] A `format="yaml"` on the second one.
-- [x] An `id="…"` on each form — required when more than one lives on a page.
-- [ ] A blank line between the two blocks.
+- [ ] An `#id` on each form — otherwise only one shows.
+- [x] Nothing — each form auto-gets a unique id and renders independently.
 - [ ] To feed the page. It gets cranky when hungry.
 {: .quiz }
 

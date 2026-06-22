@@ -60,7 +60,7 @@ That's the whole syntax. The page upgrades the static code block into a live edi
 
 | Attribute | What it does |
 |---|---|
-| `id="myrunner"` | Required when you have more than one runner per page |
+| `#id` | Optional — auto-assigned if omitted; add one only to reference this runner from elsewhere |
 | `rows="3"` | Editor height in lines (default 6) |
 | `folded="true"` | Editor starts hidden behind a click-to-expand toggle — great for "here's the setup code" |
 | `bound="o"` | Mirror a variable `o` as a live card above the editor — see the card section below |

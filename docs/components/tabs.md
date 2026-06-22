@@ -105,7 +105,7 @@ Add another `### Section` → a new tab appears. Remove one → it's gone.
 
 | Attribute | Default | What it does |
 |---|---|---|
-| `id="…"` | auto | Required when more than one tabs widget lives on a page |
+| `#id` | auto | Optional — auto-assigned if omitted; add one only to reference this widget from elsewhere |
 
 ```markdown
 [→](pages/my_tabs)
@@ -133,8 +133,8 @@ Add another `### Section` → a new tab appears. Remove one → it's gone.
 
 **Q:** You want two separate tabs widgets on the same page. What do you add to each link line?
 
-- [ ] Nothing — tabs widgets are automatically namespaced by file path.
-- [x] A distinct `id="…"` attribute on each `{: .tabs }` IAL.
+- [x] Nothing — each tabs widget already gets a unique auto id.
+- [ ] A distinct `#id` on each, or they collide.
 - [ ] A `namespace="…"` parameter.
 - [ ] You can't — one tabs widget per page is the hard limit.
 {: .quiz }

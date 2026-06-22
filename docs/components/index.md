@@ -39,8 +39,12 @@ Feature: Component palette
     Then I can see only  blocks
       with simple markdown and kramdown (IAL) 
       and some blocks and fences in yaml, python and csv
-    And IAL have simpl names, with pythonistic #id, and knob names
-      simple knobs with obvious default values 
+    And IAL have simple names, with pythonistic #id and knob names,
+      and knobs have obvious default values
+    And ids are written as #snake_case and auto-assigned (#component_01,
+      #component_02 …) when omitted — so an author is never forced to set one;
+      they add an explicit #id only to address a block from elsewhere
+      (bind=, links, self.page.<id>)
     And there is no js, html, css
 
   Scenario: from the future

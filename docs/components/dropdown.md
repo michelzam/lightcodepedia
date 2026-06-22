@@ -81,7 +81,7 @@ Each `- [label](url)` becomes one menu item.
 | Attribute | Default | What it does |
 |---|---|---|
 | `label="…"` | `"Menu"` | Button label |
-| `id="…"` | auto | Required when more than one dropdown lives on the same page |
+| `#id` | auto | Optional — auto-assigned if omitted; add one only to reference this dropdown from elsewhere |
 
 ## 🏁 Final exam
 
@@ -90,5 +90,5 @@ Each `- [label](url)` becomes one menu item.
 - [x] Each `- [label](url)` bullet becomes one menu item.
 - [x] A document-level click listener closes the menu when you click outside.
 - [ ] Items must be plain text — markdown links don't work inside bullets.
-- [x] `id=` is required when more than one dropdown lives on the page.
+- [ ] An `#id` is required when there is more than one dropdown.
 {: .quiz multi="true" }
