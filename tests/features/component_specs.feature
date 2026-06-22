@@ -184,6 +184,22 @@ Feature: Component specs run green
     And I run the page's embedded features
     Then every embedded feature passes
 
+  Scenario: Model spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/model"
+    And I wait for the page to be interactive
+    And I wait for the selector "h1"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Sitemap spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/sitemap"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-sitemap"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
   Scenario: Dataset spec passes
     Given I have a clean browser page
     When I navigate to "/components/dataset"
