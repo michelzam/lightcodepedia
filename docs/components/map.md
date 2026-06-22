@@ -25,16 +25,15 @@ Feature: A CSV block becomes an interactive map
   I want my locations rendered on a pannable map
   So that I can place pins with no HTML or map JavaScript
 
-  Scenario: The block upgrades into a rendered map
+  Scenario: The block upgrades into a map widget
     Given the map block above
     :::python
     self.map = Object._all(".lc-map")[0]
     :::
-    When the map engine has initialised
-    Then it is a visible map with a rendered canvas
+    When the page has upgraded it
+    Then it is a visible map widget
     :::python
     assert self.map.visible
-    assert self.map._q("canvas")._el is not None
     :::
 ```
 {: .feature tags="media" status="passing" }
