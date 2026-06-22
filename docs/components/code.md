@@ -36,7 +36,7 @@ Feature: A fenced block becomes a titled code card
     assert "greet" in self.code.text, self.code.text[:60]
     :::
 ```
-{: .feature tags="lifecycle" status="passing" }
+{: .feature tags="code" status="passing" }
 
 > When demoing: point at the language badge (top-right) and the title bar.
 > Ask yourself: "how many lines of extra markup did that take?" Answer: one.

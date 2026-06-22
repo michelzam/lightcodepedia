@@ -16,6 +16,25 @@ model.
 [Component model](#)
 {: .diagram }
 
+```gherkin
+Feature: The component model renders as a live diagram
+  As a curious lowcoder
+  I want the class model drawn in the browser from its own source
+  So that the diagram can never drift from the runtime
+
+  Scenario: The block upgrades into a diagram
+    Given the diagram above
+    :::python
+    self.dia = Object._all(".lc-diagram")[0]
+    :::
+    When the page has upgraded it
+    Then it is a visible diagram
+    :::python
+    assert self.dia.visible
+    :::
+```
+{: .feature tags="lifecycle" status="passing" }
+
 ## 🔬 Scoped to one class
 
 `scope="Chart"` shows `Chart` with everything it touches — its `Block`/`Object`

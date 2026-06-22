@@ -270,12 +270,12 @@
   "scenarios": 100
  },
  {
-  "run": "2026-06-22T21:48Z",
-  "pages": 33,
-  "heap_max_mb": 37.8,
-  "heap_avg_mb": 12.7,
-  "dom_max": 1906,
-  "errors": 9,
+  "run": "2026-06-22T21:52Z",
+  "pages": 34,
+  "heap_max_mb": 54.2,
+  "heap_avg_mb": 13.1,
+  "dom_max": 1900,
+  "errors": 1,
   "passed": 103,
   "scenarios": 103
  },
