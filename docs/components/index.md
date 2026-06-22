@@ -36,7 +36,7 @@ Feature: Component palette
     Then I can see only  blocks
       with simple markdown and kramdown (IAL) 
       and some blocks and fences in yaml, python and csv
-    And IAL have simpl names, with pythonistic #id, 
+    And IAL have simpl names, with pythonistic #id, and knob names
       simple knobs with obvious default values 
     And there is no js, html, css
   Scenario: from the future
