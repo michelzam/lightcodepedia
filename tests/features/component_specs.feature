@@ -25,3 +25,10 @@ Feature: Component specs run green
     And I wait for the page to be interactive
     And I run the page's embedded features
     Then every embedded feature passes
+
+  Scenario: Dropdown spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/dropdown"
+    And I wait for the page to be interactive
+    And I run the page's embedded features
+    Then every embedded feature passes

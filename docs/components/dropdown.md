@@ -1,6 +1,6 @@
 # ▾ Dropdown
 
-A button that reveals a list of links on click. Closes when you click anywhere else. Good for navigation menus or any "pick one of these links" pattern.
+Too many links crowding your page? Tuck them behind a button! **Dropdown is your instrument** ▾ — one click reveals the list, a click anywhere else hides it again. Great for navigation menus or any "pick one of these" moment.
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
@@ -11,6 +11,44 @@ A button that reveals a list of links on click. Closes when you click anywhere e
 - [📝 Form](/components/form)
 - [🧪 Quiz](/components/quiz)
 {: .dropdown label="Components ▾" }
+
+```gherkin
+Feature: Dropdown reveals its links on demand
+  As a reader
+  I want a button that unfolds a list of links
+  So that navigation stays tidy until I need it
+
+  Scenario: Opening the dropdown reveals its menu
+    Given the dropdown above
+    :::python
+    self.dd = Dropdown._all(".lc-dropdown")[0]
+    self.dd.close()
+    :::
+    When I open it
+    :::python
+    self.dd.open()
+    :::
+    Then its menu is shown
+    :::python
+    assert self.dd.opened
+    :::
+
+  Scenario: Closing the dropdown hides its menu
+    Given the dropdown above, opened
+    :::python
+    self.dd = Dropdown._all(".lc-dropdown")[0]
+    self.dd.open()
+    :::
+    When I close it
+    :::python
+    self.dd.close()
+    :::
+    Then its menu is hidden
+    :::python
+    assert not self.dd.opened
+    :::
+```
+{: .feature tags="ui" }
 
 Click the button. Pick a link. Click anywhere else to close.
 

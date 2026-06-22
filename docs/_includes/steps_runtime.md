@@ -566,14 +566,24 @@ class Cards(Block):
 @component(icon="🔽", attrs=[{"n": "label", "t": "str", "data": True, "d": "Menu"}],
            methods=["open", "close"])
 class Dropdown(Block):
+    def _menu(self):
+        return self._el.querySelector(".lc-dd-menu") if self._el else None
+
+    @property
+    def opened(self):
+        m = self._menu()
+        return bool(m and m.classList.contains("open"))
+
     def open(self):
-        if self._el is not None:
-            self._el.classList.add("open")
+        m = self._menu()
+        if m is not None:
+            m.classList.add("open")
         return self
 
     def close(self):
-        if self._el is not None:
-            self._el.classList.remove("open")
+        m = self._menu()
+        if m is not None:
+            m.classList.remove("open")
         return self
 
 
