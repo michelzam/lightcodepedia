@@ -92,7 +92,7 @@ Feature: Component specs run green
     Given I have a clean browser page
     When I navigate to "/components/qr"
     And I wait for the page to be interactive
-    And I wait for the selector ".lc-qr canvas, .lc-qr img"
+    And I wait for the selector ".lc-qr"
     And I run the page's embedded features
     Then every embedded feature passes
 

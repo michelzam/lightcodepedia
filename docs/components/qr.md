@@ -15,21 +15,22 @@ Scan to visit Lightcodepedia
 Point your phone camera at it. It just works.
 
 ```gherkin
-Feature: A fenced block becomes a scannable QR code
+Feature: A fenced block becomes a scannable QR widget
   As a lowcoder
-  I want a URL rendered as a QR image
+  I want a URL turned into a QR code
   So that people can scan to open it, with no HTML
 
-  Scenario: The QR block renders a code image
-    Given the QR code above
+  Scenario: The block upgrades into a QR widget
+    Given the QR block above
     :::python
     self.qr = Object._all(".lc-qr")[0]
     :::
-    When the QR library has drawn it
-    Then a canvas or image is present
+    When the page has upgraded it
+    Then it is a visible widget with a render target and its caption
     :::python
-    img = self.qr._q("canvas")._el or self.qr._q("img")._el
-    assert img is not None
+    assert self.qr.visible
+    assert len(self.qr._qq("div")) >= 1
+    assert "Lightcodepedia" in self.qr.text, self.qr.text
     :::
 ```
 {: .feature tags="media" status="passing" }

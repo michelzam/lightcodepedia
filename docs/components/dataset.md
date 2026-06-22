@@ -77,7 +77,7 @@ Feature: One dataset feeds many bound views
     assert not self.trs[0]._el.classList.contains("lc-dg-selected")
     :::
 ```
-{: .feature tags="data" }
+{: .feature tags="data" status="passing"}
 
 ## CSV example
 
