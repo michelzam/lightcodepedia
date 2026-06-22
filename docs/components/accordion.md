@@ -72,7 +72,7 @@ Feature: Accordion panels toggle independently
     assert self.panels[0]._el.open and self.panels[1]._el.open
     :::
 ```
-{: .feature tags="ui" }
+{: .feature tags="ui" status="passing"}
 
 > Ask yourself: "What kind of content belongs in an accordion?"
 > Good answers: FAQs, step-by-step instructions, reference tables you don't want to scroll past.
