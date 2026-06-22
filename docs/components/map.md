@@ -19,6 +19,25 @@ Parc de Bercy,48.8369,2.3832
 
 Click a marker to see the park name. Scroll to zoom. Drag to pan.
 
+```gherkin
+Feature: A CSV block becomes an interactive map
+  As a lowcoder
+  I want one pin per CSV row on a pannable map
+  So that I can place locations with no HTML or map JavaScript
+
+  Scenario: Each CSV row becomes a marker
+    Given the map above (six Paris parks)
+    :::python
+    self.markers = Object._all(".lc-map")[0]._qq(".leaflet-marker-icon")
+    :::
+    When Leaflet has placed the pins
+    Then there is one marker per row
+    :::python
+    assert len(self.markers) == 6, len(self.markers)
+    :::
+```
+{: .feature tags="media" status="passing" }
+
 > This is the Paris dog-walking map from `tutorial101.yaml` — same dataset, now interactive in the browser.
 > Ask yourself: "Which park is closest to the centre of Paris?"
 {: .speaker-note }
