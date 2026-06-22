@@ -33,7 +33,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-pages { display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em; font-size: 0.82em; color: #6b7280; }
 .lc-dg-pages button { background: none; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.15em 0.55em; cursor: pointer; color: #374151; }
 .lc-dg-pages button:hover { background: #f3f4f6; }
-.lc-datagrid[data-lc-id] .lc-dg-table tbody tr { cursor: pointer; }
+.lc-dg-table tbody tr { cursor: pointer; }
 .lc-dg-table tr.lc-dg-selected td { background: #e8f0fe !important; }
 
 /* ── button ─────────────────────────────────────────── */
@@ -213,16 +213,16 @@ Auto-included by docs/_layouts/default.html.
           var u = tr.getAttribute("data-url");
           if (u) tr.addEventListener("click", function () { window.open(u, "_blank", "noopener"); });
         });
-      }
-      if (lcId) {
-        /* master/detail source: clicking a row publishes it, so bound-to
-           charts and bound forms can hang off this grid (dataset → grid → detail) */
+      } else {
+        /* every bound grid: clicking a row selects it (visual highlight). If the
+           grid has an id it also publishes, so bound-to charts and bound forms
+           can hang off it (dataset → grid → detail). */
         var trs = el.querySelectorAll("tbody tr");
         trs.forEach(function (tr, i) {
           tr.addEventListener("click", function () {
-            window.lcMasterDetail.publish(lcId, slice[i] || null);
             trs.forEach(function (x) { x.classList.remove("lc-dg-selected"); });
             tr.classList.add("lc-dg-selected");
+            if (lcId) window.lcMasterDetail.publish(lcId, slice[i] || null);
           });
         });
       }
