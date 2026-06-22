@@ -219,4 +219,4 @@ Feature: My feature
 |---|---|---|---|
 | `.feature` | `status="…"` | `passing` · `failing` · `pending` | Border colour and badge; updated live after a run |
 | `.feature` | `tags="…"` | comma-separated | Chips in the card header |
-| `.feature` | `id="…"` | Python-compatible id | Makes the card reachable as `self.page.<id>` in any step |
+| `.feature` | `#<id>` | Python-compatible id | Makes the card reachable as `self.page.<id>` in any step |
