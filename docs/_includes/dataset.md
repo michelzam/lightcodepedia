@@ -128,6 +128,9 @@ Auto-included by docs/_layouts/default.html.
     if (el.dataset.lcDgDone || el.dataset.lcUpgraded) return;
     var bindId = el.getAttribute("source") || el.getAttribute("bind");
     if (!bindId) return; /* skip old-style code-block datagrids */
+    /* source="file:path" loads a repo file (read format now — el is replaced below) */
+    var fileRef = bindId.indexOf("file:") === 0 ? bindId.slice(5).trim() : "";
+    var fileFmt = fileRef && window.lcInferFormat ? window.lcInferFormat(fileRef, el.getAttribute("format")) : "yaml";
     el.dataset.lcDgDone = "1";
     var perPage = parseInt(el.getAttribute("rows") || "0", 10) || 0;
     /* hints="col: explanation | col2: ..." → header tooltips. Read from the
@@ -226,6 +229,19 @@ Auto-included by docs/_layouts/default.html.
           });
         });
       }
+    }
+
+    /* repo-file source: fetch once and render (no dataset listener) */
+    if (fileRef) {
+      el.innerHTML = "<p style='color:#888;font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
+      var useCdn = window.lcUseCdn ? window.lcUseCdn() : false;
+      var srcs = window.lcFileSrc(fileRef);
+      fetch(useCdn ? srcs.cdn : srcs.raw)
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + fileRef); return r.text(); })
+        .then(function (text) { return window.lcParseDataText(text, fileFmt); })
+        .then(function (data) { render(Array.isArray(data) ? data : [data]); })
+        .catch(function (e) { el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ " + e.message + "</p>"; });
+      return;
     }
 
     /* register as persistent listener so auto-refresh re-renders */

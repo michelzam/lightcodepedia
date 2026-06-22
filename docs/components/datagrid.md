@@ -201,30 +201,19 @@ Deselect a city row (click again) and the full dog list returns.
 
 ## 📂 Loading from a repo file
 
-Use `{% raw %}{% include datagrid_file.md path="…" %}{% endraw %}` to load a file that lives in the repo. The grid always shows the current content — no copy-paste needed when the file changes.
+Point `source` at a repo file with the `file:` prefix and the grid loads it live — no fenced block, no copy-paste when the file changes:
 
-{% raw %}
-```liquid
-{% include datagrid_file.md path="data/cities.json" title="World cities" height="300" %}
-```
-{% endraw %}
+````markdown
+[World cities](#)
+{: .datagrid source="file:data/cities.json" title="World cities" height="300" }
+````
 
 Renders to:
 
-{% include datagrid_file.md path="data/cities.json" title="World cities" height="300" %}
+[World cities](#)
+{: .datagrid source="file:data/cities.json" title="World cities" height="300" }
 
-The *(live)* or *(cdn)* tag in the title bar shows which source the data came from.
-
-### File-loader knobs
-
-| Attribute | What it does |
-|---|---|
-| `path="…"` | Repo-relative path — format auto-inferred from `.csv`/`.json`/`.yaml` extension |
-| `format="…"` | Override the inferred format |
-| `title="…"` | Title bar — defaults to the path |
-| `height="…"` | Pixel height — default 400 |
-| `src="https://…"` | External URL escape hatch (bypasses repo/branch logic) |
-| `repo="org/repo"` `branch="…"` | Override repo + branch (defaults: current site, `main`) |
+The *(live)* or *(cdn)* tag in the title bar shows which source the data came from. The path is repo-relative; format is auto-inferred from the `.csv` / `.json` / `.yaml` extension (override with `format="…"`).
 
 ## 🐍 From a Python runner — `show.grid()`
 

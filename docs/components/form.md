@@ -155,27 +155,21 @@ Click a dog, change a field in the form — the grid cell updates in place. If t
 
 ## 📂 Loading from a repo file
 
-`{% raw %}{% include form_file.md path="…" %}{% endraw %}` fetches a JSON or YAML file from the repo and renders it as a form — always showing the current file content.
+Point `source` at a repo file with the `file:` prefix — an empty `{: .form }` block loads and renders it live, always showing the current file content:
 
-{% raw %}
-```liquid
-{% include form_file.md path="data/lucky.json" %}
+`````markdown
 ```
-{% endraw %}
+```
+{: .form source="file:data/lucky.json" }
+`````
 
 Renders to:
 
-{% include form_file.md path="data/lucky.json" %}
+```
+```
+{: .form source="file:data/lucky.json" }
 
-### File-loader knobs
-
-| Attribute | What it does |
-|---|---|
-| `path="…"` | Repo-relative path — format auto-inferred from `.json`/`.yaml`/`.yml` |
-| `format="…"` | Override the inferred format |
-| `title="…"` | Title bar — defaults to the path |
-| `src="https://…"` | External URL escape hatch |
-| `repo="org/repo"` `branch="…"` | Override repo + branch (defaults: current site, `main`) |
+The path is repo-relative; format is auto-inferred from the `.json` / `.yaml` extension (override with `format="…"`). The title-bar *(live)* / *(cdn)* tag shows which source the data came from.
 
 ## 🐍 From a Python runner — `show.form()`
 

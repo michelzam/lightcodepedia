@@ -317,6 +317,24 @@ Auto-included by docs/_layouts/default.html.
     var editable = el.getAttribute("editable") === "true";
     var id = el.id || ("frm" + (++FORM_ID));
 
+    /* source="file:path" loads one object from a repo file */
+    var source = el.getAttribute("source") || "";
+    var fileRef = source.indexOf("file:") === 0 ? source.slice(5).trim() : "";
+    if (fileRef) {
+      var fileFmt = window.lcInferFormat(fileRef, el.getAttribute("format"));
+      var fileCdn = window.lcUseCdn();
+      var srcs = window.lcFileSrc(fileRef);
+      var fwrap = buildFormWrapper({ id: id, title: title || fileRef, format: "", mode: fileCdn ? "cdn" : "live" });
+      el.parentNode.replaceChild(fwrap, el);
+      var fbody = fwrap.querySelector(".lc-form-body");
+      fetch(fileCdn ? srcs.cdn : srcs.raw)
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + fileRef); return r.text(); })
+        .then(function (text) { return parseDatagridText(text, fileFmt); })
+        .then(function (obj) { renderFormBody(fbody, obj, { editable: editable }); })
+        .catch(function (e) { fbody.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>'; });
+      return;
+    }
+
     var wrapper = buildFormWrapper({ id: id, title: title || "Form", format: bound ? "" : format });
     if (bound) wrapper.setAttribute("data-bound", bound);
     el.parentNode.replaceChild(wrapper, el);

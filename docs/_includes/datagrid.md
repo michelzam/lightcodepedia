@@ -41,6 +41,31 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   var loadAgGrid  = window.lcAgGridReady;
   var parseDatagridText = window.lcParseDataText;
 
+  /* repo-file source: source="file:path/in/repo" → raw/cdn URLs, mirroring the
+     old datagrid_file.md include. Shared with form.md via window. */
+  var LC_REPO   = {{ site.github.repository_nwo | default: "" | jsonify }};
+  var LC_BRANCH = "main";
+  var LC_SHA    = {{ site.github.build_revision | default: "main" | jsonify }};
+  var LC_CANON  = {{ site.lc_canonical_host | default: "" | jsonify }};
+  function lcFileSrc(path) {
+    return {
+      raw: "https://raw.githubusercontent.com/" + LC_REPO + "/" + LC_BRANCH + "/" + path,
+      cdn: "https://cdn.jsdelivr.net/gh/" + LC_REPO + "@" + LC_SHA + "/" + path
+    };
+  }
+  function lcUseCdn() {
+    return (LC_CANON && location.hostname === LC_CANON) || location.search.indexOf("cdn=1") >= 0;
+  }
+  function lcInferFormat(path, given) {
+    if (given) return given.toLowerCase();
+    if (/\.json$/i.test(path)) return "json";
+    if (/\.csv$/i.test(path))  return "csv";
+    return "yaml";
+  }
+  window.lcFileSrc = lcFileSrc;
+  window.lcUseCdn = lcUseCdn;
+  window.lcInferFormat = lcInferFormat;
+
   function inferColumns(rows) {
     var seen = {}, cols = [];
     for (var r = 0; r < rows.length; r++) {
@@ -172,6 +197,9 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   var DG_ID = 0;
   function upgradeDatagridInline(el) {
     if (el.dataset.lcUpgraded) return;
+    /* file: sources render via the bound upgrader (dataset.md); skip without
+       claiming the element so that upgrader can take it. */
+    if ((el.getAttribute("source") || "").indexOf("file:") === 0) return;
     el.dataset.lcUpgraded = "1";
     var codeNode = el.querySelector("code");
     var raw = codeNode ? codeNode.textContent : "";
