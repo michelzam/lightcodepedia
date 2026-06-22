@@ -54,6 +54,26 @@ This is **Lucky** — a three-year-old Beagle who loves parks, tennis balls, and
 ```
 {: .block }
 
+```gherkin
+Feature: A fenced block becomes a bordered card
+  As a lowcoder
+  I want content wrapped in a card, optionally side by side
+  So that I can lay out blocks with no HTML or CSS
+
+  Scenario: Each section becomes a block card
+    Given the block examples on this page
+    :::python
+    self.cells = Object._all(".lc-block")
+    :::
+    When they have rendered
+    Then there are block cards and one holds Lucky's profile
+    :::python
+    assert len(self.cells) >= 2, len(self.cells)
+    assert any("Lucky" in c.text for c in self.cells), [c.text[:30] for c in self.cells]
+    :::
+```
+{: .feature tags="ui" status="passing" }
+
 ## Example — two blocks side by side
 
 ```

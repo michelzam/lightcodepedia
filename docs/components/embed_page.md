@@ -16,6 +16,27 @@ Embed another page from this site, an external URL, or a video — using a markd
 [🐍 Run component](/components/run)
 {: .embed-page height="400" }
 
+```gherkin
+Feature: A link becomes an embedded page
+  As a lowcoder
+  I want a page shown inside the current one
+  So that I can compose pages without copy-pasting their content
+
+  Scenario: The link is replaced by an iframe of that page
+    Given the embed-page above (it embeds /components/run)
+    :::python
+    self.frame = Object._all("iframe.lc-embed-page")[0]
+    :::
+    When it has rendered
+    Then it is an iframe of the page in embed mode
+    :::python
+    self.src = self.frame._attr("src") or ""
+    assert "/components/run" in self.src, self.src
+    assert "embed=true" in self.src, self.src
+    :::
+```
+{: .feature tags="ui" status="passing" }
+
 > Ask yourself: "What does the embedded page look like vs the normal page?"
 > Point out the missing topbar — `?embed=true` strips the chrome.
 {: .speaker-note }

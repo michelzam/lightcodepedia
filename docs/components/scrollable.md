@@ -24,6 +24,26 @@ Line 12: Server running healthy.
 
 Scroll inside the box. The rest of the page stays put.
 
+```gherkin
+Feature: A fenced block becomes a fixed-height scroll box
+  As a lowcoder
+  I want long content kept in a scrollable box
+  So that it stays present without dominating the page
+
+  Scenario: The content is wrapped in a scrollable box
+    Given the scrollable block above
+    :::python
+    self.box = Object._all(".lc-scrollable")[0]
+    :::
+    When it has rendered
+    Then it is a visible box that still holds the content
+    :::python
+    assert self.box.visible
+    assert "Listening on port 8080" in self.box.text, self.box.text[:80]
+    :::
+```
+{: .feature tags="ui" status="passing" }
+
 ## 🛠️ How to make one
 
 Put content in a plain fenced block, then add `{: .scrollable height="N" }`:

@@ -104,6 +104,30 @@ Feature: Component specs run green
     And I run the page's embedded features
     Then every embedded feature passes
 
+  Scenario: Scrollable spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/scrollable"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-scrollable"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Block spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/block"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-block"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Embed spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    And I wait for the selector "iframe.lc-embed-page"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
   Scenario: Dataset spec passes
     Given I have a clean browser page
     When I navigate to "/components/dataset"
