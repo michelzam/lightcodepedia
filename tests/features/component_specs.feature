@@ -100,7 +100,7 @@ Feature: Component specs run green
     Given I have a clean browser page
     When I navigate to "/components/map"
     And I wait for the page to be interactive
-    And I wait for the selector ".leaflet-marker-icon"
+    And I wait for the selector ".lc-map canvas"
     And I run the page's embedded features
     Then every embedded feature passes
 
