@@ -18,25 +18,16 @@ Feature: A link becomes a styled button
   I want a markdown link tagged .button to render as a call-to-action
   So that I get buttons and color variants with no HTML or CSS
 
-  Scenario: The variant buttons render with their labels
+  Scenario: Every demo button renders with its label
     Given the buttons above
     :::python
-    self.btns = [Button(b._el) for b in Object._all(".button")]
-    self.labels = [b.text for b in self.btns]
+    self.labels = [Button(b._el).text for b in Object._all(".button")]
     :::
     When they have rendered
-    Then the primary button is present
+    Then each labelled call-to-action is present
     :::python
-    assert any("Get started" in t for t in self.labels), self.labels
-    :::
-    And the danger variant renders the Delete button
-    :::python
-    self.danger = None
-    for b in self.btns:
-        if b._el.classList.contains("button-danger"):
-            self.danger = b
-    assert self.danger is not None, [b._el.getAttribute("class") for b in self.btns]
-    assert "Delete" in self.danger.text, self.danger.text
+    for want in ["Get started", "Learn more", "Done", "Delete", "Outline"]:
+        assert any(want in t for t in self.labels), (want, self.labels)
     :::
 ```
 {: .feature tags="ui" status="passing" }

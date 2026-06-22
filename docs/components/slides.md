@@ -54,7 +54,7 @@ Feature: Any page splits into a slide deck
     assert "Slides" in self.slides[0].text, self.slides[0].text[:60]
     :::
 ```
-{: .feature tags="ui" status="passing" }
+{: .feature tags="learn" status="passing" }
 
 > If a student asks about `###`, point at the design-tips section.
 > Common confusion — they assume more `#` = more breaks.

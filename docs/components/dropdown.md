@@ -48,7 +48,7 @@ Feature: Dropdown reveals its links on demand
     assert not self.dd.opened
     :::
 ```
-{: .feature tags="ui" }
+{: .feature tags="ui" status="passing"}
 
 Click the button. Pick a link. Click anywhere else to close.
 
