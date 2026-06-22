@@ -1,6 +1,6 @@
 # 🪗 Accordion
 
-Collapsible sections — each one a `<details>` panel that opens and closes on click. Perfect for FAQs, long reference material, or anything you want learners to discover at their own pace.
+Ever need to avoid throwing too much text at someone all at once, and let them unfold it bit by bit, at their own pace? **The accordion is your instrument!** 🪗 Tap a heading, the section opens; tap again, it tucks away. Perfect for FAQs, long references, or anything worth discovering on demand.
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
