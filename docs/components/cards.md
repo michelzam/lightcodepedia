@@ -47,7 +47,7 @@ Feature: Cards lay content out as a clickable grid
     assert all(c._q("a")._el is not None for c in self.cards)
     :::
 ```
-{: .feature tags="ui" }
+{: .feature tags="ui" status="passing"}
 
 Hover over a card — it lifts and gets a blue border. Resize the window to see auto-reflow.
 

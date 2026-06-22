@@ -47,7 +47,7 @@ Feature: Tabs show one panel at a time
     assert self.tabs.active == 0
     :::
 ```
-{: .feature tags="ui" }
+{: .feature tags="ui" status="passing"}
 
 > Ask yourself: "When would you use tabs vs a bullet list?"
 > Good answers: comparing alternatives side-by-side, hiding advanced content until needed,
