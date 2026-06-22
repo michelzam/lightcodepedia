@@ -63,7 +63,7 @@ Feature: Radio shows one panel, chosen by a button
     assert self.radio.active == 0
     :::
 ```
-{: .feature tags="ui" }
+{: .feature tags="ui" status="passing"}
 
 Click each radio button. The panel swaps instantly.
 

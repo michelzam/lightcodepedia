@@ -101,7 +101,7 @@ Feature: A query is a dataset that computes itself
     assert self.grid.row_count == 3, self.grid.row_count
     :::
 ```
-{: .feature tags="data" }
+{: .feature tags="data" status="passing"}
 
 ## 🔗 Related components & examples
 
