@@ -53,7 +53,7 @@ Feature: A task list becomes an interactive quiz
     assert self.quiz.graded
     :::
 ```
-{: .feature tags="ui" status="passing" }
+{: .feature tags="learn" status="passing" }
 
 ## 🛠️ How to make a quiz
 
