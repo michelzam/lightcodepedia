@@ -45,7 +45,7 @@ Feature: Temperature converter
     assert (0 * 9 / 5) + 32 == 32.0
     :::
 ```
-{: .feature visible="true" #temp_feature status="passing" tags="math,utils" }
+{: .feature visible="true" #temp_feature status="passing" }
 
 `self` is shared across all steps in a run — state set in one step (`self.celsius`) is available in later ones.
 
@@ -70,7 +70,7 @@ Feature: List validator
     assert self.result == False, "Expected validation to fail for empty list"
     :::
 ```
-{: .feature visible="true" #list_feature status="pending" tags="validation" }
+{: .feature visible="true" #list_feature status="pending" }
 
 ## 🔬 Page access probe
 
@@ -120,7 +120,7 @@ Feature: Page component access
         f"expected 3 < 5 < 7, got {[b.value for b in bars]}"
     :::
 ```
-{: .feature visible="true" #page_probe status="pending" tags="probe" }
+{: .feature visible="true" #page_probe status="pending" tags="specs" }
 
 ## 🖱️ Button with Python handler
 
@@ -181,7 +181,7 @@ Feature: Button handler
     assert self.max_bar.value > bars[2].value
     :::
 ```
-{: .feature visible="true" #btn_handler status="pending" tags="button,probe" }
+{: .feature visible="true" #btn_handler status="pending" tags="button,events" }
 
 ## 🥸 How to write one
 
@@ -204,7 +204,7 @@ Feature: My feature
     assert self.y == 84
     :::
 ```
-{: .feature visible="true" #my_feature status="pending" tags="example" }
+{: .feature visible="true" #my_feature status="pending" }
 ````
 
 - `:::python ... :::` is parsed from the Gherkin block — not rendered as a separate code block.
