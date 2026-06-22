@@ -19,6 +19,25 @@ greet("World")
 
 That's it. The runner loads Python[^wasm] on first click (~300 KB, cached after). Next run is instant.
 
+```gherkin
+Feature: A fenced block becomes a Python runner
+  As a lowcoder
+  I want to run Python in the browser with a Run button
+  So that lessons are executable with no server
+
+  Scenario: The block upgrades into a runner
+    Given the runner above
+    :::python
+    self.runner = self.page.first_run
+    :::
+    When the page has upgraded it
+    Then it is a visible runner
+    :::python
+    assert self.runner.visible
+    :::
+```
+{: .feature tags="lifecycle" status="passing" }
+
 > Ask yourself: "What do you expect to see before you click ▶ Run?"
 > Pause. Predict, then run it. The prediction habit is the whole lesson.
 {: .speaker-note }

@@ -27,12 +27,14 @@ Auto-included by docs/_layouts/default.html.
 
     function makeFrame(src) {
       var f = document.createElement("iframe");
+      f.className = "lc-pytutor";
       f.src = src; f.width = "100%"; f.height = h + "px";
       f.style.border = "none"; f.setAttribute("loading", "lazy");
       return f;
     }
 
     var f = makeFrame(buildUrl(initialCode));
+    if (el.id) f.setAttribute("data-lc-id", el.id);
     el.parentNode.replaceChild(f, el);
 
     if (boundTo) {

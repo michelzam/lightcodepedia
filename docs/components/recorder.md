@@ -9,6 +9,25 @@ Record this page.
 
 Click **🎬 Set up recording**, share your screen when the browser asks, then press **▶ Start** on the floating panel when you're ready. **⏸ Pause** any time, then **⏹ Stop** to review and save.
 
+```gherkin
+Feature: A recorder panel captures the screen
+  As a creator
+  I want to record this page to share a walkthrough
+  So that I can teach asynchronously with no extra tools
+
+  Scenario: The block upgrades into a recorder panel
+    Given the recorder above
+    :::python
+    self.rec = Object._all(".lc-recorder")[0]
+    :::
+    When the page has upgraded it
+    Then it is a visible recorder panel
+    :::python
+    assert self.rec.visible
+    :::
+```
+{: .feature tags="learn" status="passing" }
+
 ---
 
 ## Launch from anywhere

@@ -43,6 +43,25 @@ def greet(name):
 
 Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The preview updates on every keystroke — no server, just JavaScript[^marked] in the browser.
 
+```gherkin
+Feature: A markdown block becomes a live editor and preview
+  As a lowcoder
+  I want to type markdown and see it render as I type
+  So that I can learn and draft with instant feedback
+
+  Scenario: The block upgrades into a live preview pad
+    Given the live editor above
+    :::python
+    self.pad = Object._all(".lc-mdpad")[0]
+    :::
+    When the page has upgraded it
+    Then it is a visible editor and preview
+    :::python
+    assert self.pad.visible
+    :::
+```
+{: .feature tags="ui" status="passing" }
+
 > Great opener for the first class: "Type your name in bold. Now make it a heading."
 > The instant feedback loop lands faster than any explanation.
 {: .speaker-note }
