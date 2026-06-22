@@ -416,7 +416,10 @@ class Datagrid(Block):
         # tbody tr, used by source-bound grids) and AG Grid (.ag-row in the body
         # viewport, used by code-block grids). Count whichever this grid uses.
         n = len(self._qq("tbody tr"))
-        return n if n else len(self._qq(".ag-center-cols-container .ag-row"))
+        if n:
+            return n
+        ag = self._qq(".ag-center-cols-container .ag-row")
+        return len(ag) if ag else len(self._qq(".ag-row"))
 
     @property
     def headers(self):
