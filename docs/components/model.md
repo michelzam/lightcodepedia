@@ -1,4 +1,8 @@
-# 📐 Component Model
+---
+title: Component Model
+---
+
+# Component Model
 
 The typed **coder-side Python API** available in every `.feature` step and
 `.button` handler. Reach any named component via `self.page.<id>` — the resolver
@@ -134,5 +138,10 @@ digraph component_model {
   }
 }
 ```
+
+## 🔗 Related components & examples
+
+- Browse the [🧩 component gallery](/components/) and try the [🔬 live examples](/components/examples)
+- See this model rendered **live** with the [📐 diagram](/components/diagram) component
 
 Regenerate with `python tools/gen_component_diagram.py`.

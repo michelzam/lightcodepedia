@@ -144,3 +144,9 @@ Cards and grid share the same `### ` source format — swap the IAL class to cha
 - [x] `{: .cards }` and `{: .grid }` use the same `### ` source format.
 - [x] Cards lift and get a blue border on hover.
 {: .quiz multi="true" }
+
+## 🔗 Related components & examples
+
+- [▦ Grid](/components/grid) — the same tiles without the click target
+- [🪗 Accordion](/components/accordion) · [📑 Tabs](/components/tabs) — other ways to group content
+- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)

@@ -138,3 +138,9 @@ Add another `### Section` → a new tab appears. Remove one → it's gone.
 - [ ] A `namespace="…"` parameter.
 - [ ] You can't — one tabs widget per page is the hard limit.
 {: .quiz }
+
+## 🔗 Related components & examples
+
+- [🪗 Accordion](/components/accordion) — the same sections as fold-down panels (many open at once)
+- [📻 Radio](/components/radio) — the same sections, picked with radio buttons
+- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)

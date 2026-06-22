@@ -92,3 +92,9 @@ Each `- [label](url)` becomes one menu item.
 - [ ] Items must be plain text — markdown links don't work inside bullets.
 - [ ] An `#id` is required when there is more than one dropdown.
 {: .quiz multi="true" }
+
+## 🔗 Related components & examples
+
+- [🍔 Menu](/components/menu) — a fuller navigation menu
+- [🃏 Cards](/components/cards) — show the choices as a grid of tiles instead
+- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
