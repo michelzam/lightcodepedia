@@ -697,7 +697,7 @@ class Tabs(Block):
     def active(self):
         if self._el is None:
             return 0
-        tabs = self._el.querySelectorAll(".lc-tab")
+        tabs = self._el.querySelectorAll(".lc-tab-btn")
         for i in range(int(tabs.length)):
             if tabs.item(i).classList.contains("active"):
                 return i
@@ -705,7 +705,7 @@ class Tabs(Block):
 
     def select(self, n):
         if self._el is not None:
-            tabs = self._el.querySelectorAll(".lc-tab")
+            tabs = self._el.querySelectorAll(".lc-tab-btn")
             if tabs is not None and int(tabs.length) > n:
                 tabs.item(n).click()
         return self

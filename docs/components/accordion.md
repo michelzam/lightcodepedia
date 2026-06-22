@@ -20,6 +20,60 @@ Go to the [🐍 Run](/components/run) page, edit the code, and hit ▶ Run. That
 
 Click each section to open it. Click again to close.
 
+```gherkin
+Feature: Accordion panels toggle independently
+  As a reader
+  I want sections that expand and collapse on click
+  So that I can reveal long content at my own pace
+
+  Scenario: A closed panel opens when its header is clicked
+    Given the accordion above with every panel closed
+    :::python
+    self.panels = Object._all(".lc-accordion")[0]._qq("details")
+    for p in self.panels: p._el.removeAttribute("open")
+    :::
+    When I click the first panel's summary
+    :::python
+    self.panels[0]._tap("summary")
+    :::
+    Then the first panel is open
+    :::python
+    assert self.panels[0]._el.open
+    :::
+
+  Scenario: An open panel closes when its header is clicked again
+    Given the accordion above with the first panel open
+    :::python
+    self.panels = Object._all(".lc-accordion")[0]._qq("details")
+    self.panels[0]._el.setAttribute("open", "")
+    :::
+    When I click the first panel's summary
+    :::python
+    self.panels[0]._tap("summary")
+    :::
+    Then the first panel is closed
+    :::python
+    assert not self.panels[0]._el.open
+    :::
+
+  Scenario: Two panels can be open at once
+    Given the accordion above with every panel closed
+    :::python
+    self.panels = Object._all(".lc-accordion")[0]._qq("details")
+    for p in self.panels: p._el.removeAttribute("open")
+    :::
+    When I open the first and second panels
+    :::python
+    self.panels[0]._tap("summary")
+    self.panels[1]._tap("summary")
+    :::
+    Then both panels stay open
+    :::python
+    assert self.panels[0]._el.open and self.panels[1]._el.open
+    :::
+```
+{: .feature tags="ui" }
+
 > Ask learners: "What kind of content belongs in an accordion?"
 > Good answers: FAQs, step-by-step instructions, reference tables you don't want to scroll past.
 {: .speaker-note }
