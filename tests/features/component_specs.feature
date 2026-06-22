@@ -80,6 +80,22 @@ Feature: Component specs run green
     And I run the page's embedded features
     Then every embedded feature passes
 
+  Scenario: Grid spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/grid"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-grid-cell"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: QR spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/qr"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-qr canvas, .lc-qr img"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
   Scenario: Dataset spec passes
     Given I have a clean browser page
     When I navigate to "/components/dataset"

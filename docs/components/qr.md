@@ -14,6 +14,26 @@ Scan to visit Lightcodepedia
 
 Point your phone camera at it. It just works.
 
+```gherkin
+Feature: A fenced block becomes a scannable QR code
+  As a lowcoder
+  I want a URL rendered as a QR image
+  So that people can scan to open it, with no HTML
+
+  Scenario: The QR block renders a code image
+    Given the QR code above
+    :::python
+    self.qr = Object._all(".lc-qr")[0]
+    :::
+    When the QR library has drawn it
+    Then a canvas or image is present
+    :::python
+    img = self.qr._q("canvas")._el or self.qr._q("img")._el
+    assert img is not None
+    :::
+```
+{: .feature tags="media" status="passing" }
+
 ## 🛠️ How to make one
 
 Put the URL (or any text) on the first line. An optional second line becomes a caption below the code.

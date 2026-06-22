@@ -20,6 +20,29 @@ No login, no API key, no quota. Open source, forever.
 
 Resize your browser window — the columns reflow automatically.
 
+```gherkin
+Feature: A fenced block becomes a responsive column grid
+  As a lowcoder
+  I want each ### section laid out as a column cell
+  So that I get a feature-highlight layout with no HTML or CSS
+
+  Scenario: Each ### section becomes a grid cell
+    Given the grid above (Fast, Private, Free)
+    :::python
+    self.cells = Object._all(".lc-grid")[0]._qq(".lc-grid-cell")
+    :::
+    When it has rendered
+    Then it has one cell per section
+    :::python
+    assert len(self.cells) == 3, len(self.cells)
+    :::
+    And the first cell mentions WebAssembly
+    :::python
+    assert "WebAssembly" in self.cells[0].text, self.cells[0].text[:80]
+    :::
+```
+{: .feature tags="ui" status="passing" }
+
 > Grid + icons is the classic "feature highlight" layout.
 > Ask yourself: "Where have you seen this pattern before?" Probably a dozen SaaS landing pages.
 {: .speaker-note }
