@@ -16,7 +16,7 @@ Feature: User login
     When I enter valid credentials
     Then I should see the dashboard
 ```
-{: .feature visible="true" tags="smoke,auth" }
+{: .feature visible="true" }
 
 ## 🏃🏻‍♀️ With runnable steps
 
