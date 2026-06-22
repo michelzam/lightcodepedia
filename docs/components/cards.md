@@ -1,6 +1,6 @@
 # 🃏 Cards
 
-A responsive grid of content cards — each with a title, body text, and optional link. Swap `{: .grid }` for `{: .cards }` and you get clickable cards instead of plain cells.
+Got a handful of options to show off? Lay them out as **cards!** 🃏 A tidy, responsive grid where each idea gets its own tappable tile — title, blurb, and a link. (Same content as a [grid](/components/grid), just clickable.)
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
@@ -20,6 +20,34 @@ Chat with your AI pair lightcoder.
 [Chat with Ari →](/ari)
 ```
 {: .cards cols="3" }
+
+```gherkin
+Feature: Cards lay content out as a clickable grid
+  As a reader
+  I want each idea shown as its own card
+  So that I can scan them and pick at a glance
+
+  Scenario: Each section becomes its own card
+    Given the cards above
+    :::python
+    self.cards = Object._all(".lc-cards")[0]._qq(".lc-card")
+    :::
+    Then there is one card per section
+    :::python
+    assert len(self.cards) == 3
+    :::
+
+  Scenario: Every card offers a link to follow
+    Given the cards above
+    :::python
+    self.cards = Object._all(".lc-cards")[0]._qq(".lc-card")
+    :::
+    Then each card has a link
+    :::python
+    assert all(c._q("a")._el is not None for c in self.cards)
+    :::
+```
+{: .feature tags="ui" }
 
 Hover over a card — it lifts and gets a blue border. Resize the window to see auto-reflow.
 
