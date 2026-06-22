@@ -19,7 +19,7 @@ greet("Lightcoder")
 That's Option 2 — one IAL[^ial] line added to a plain fenced block. Let's build up from the simplest form.
 
 > When demoing: point at the language badge (top-right) and the title bar.
-> Ask: "how many lines of extra markup did that take?" Answer: one.
+> Ask yourself: "how many lines of extra markup did that take?" Answer: one.
 {: .speaker-note }
 
 ## ✏️ Option 1 — plain fenced block (built-in)
@@ -158,7 +158,7 @@ An example loading a CSV from the repo:
 
 - [ ] Nothing — `.run` and `.code` do the same thing.
 - [ ] The block gets a title bar but the code is still read-only.
-- [x] The block becomes a live editor: the student can edit and run the code.
+- [x] The block becomes a live editor: you can edit and run the code.
 - [ ] The page crashes because `.run` is only valid on YAML blocks.
 {: .quiz }
 

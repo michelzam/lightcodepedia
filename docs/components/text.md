@@ -249,7 +249,7 @@ Without any extra work, lightcodepedia turns the little number link into a **hov
 4. The same `[^anyname]` can appear multiple times — one definition covers all.
 
 > "The popover thing" is consistently the most-noticed feature by new visitors.
-> "Wait — it showed me the definition without a page jump?" — let them discover it.
+> "Wait — it showed me the definition without a page jump?" — discover it for yourself.
 {: .speaker-note }
 
 ## ⚙️ IAL — the power move

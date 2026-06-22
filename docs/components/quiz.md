@@ -124,7 +124,7 @@ Toggle each ☐ to ☑, hit **Check**. Re-toggle and re-check until you've found
 **Q:** A student clicks **Check** and only `for` is marked ✓. They haven't found `while` yet. What does the quiz show?
 
 - [x] ✗ on their wrong picks; the missed correct answer (`while`) stays hidden.
-- [ ] All correct answers are revealed so the student can learn.
+- [ ] All correct answers are revealed so you can learn.
 - [ ] The quiz resets and they start over.
 - [ ] A confetti explosion. They found one — celebrate the partial win.
 {: .quiz }

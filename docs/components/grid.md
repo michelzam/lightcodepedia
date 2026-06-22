@@ -21,7 +21,7 @@ No login, no API key, no quota. Open source, forever.
 Resize your browser window — the columns reflow automatically.
 
 > Grid + icons is the classic "feature highlight" layout.
-> Ask: "Where have you seen this pattern before?" They'll name a dozen SaaS landing pages.
+> Ask yourself: "Where have you seen this pattern before?" Probably a dozen SaaS landing pages.
 {: .speaker-note }
 
 **Q:** You shrink the browser to phone width. What happens to the three columns?

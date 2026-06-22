@@ -20,7 +20,7 @@ Parc de Bercy,48.8369,2.3832
 Click a marker to see the park name. Scroll to zoom. Drag to pan.
 
 > This is the Paris dog-walking map from `tutorial101.yaml` — same dataset, now interactive in the browser.
-> Ask: "Which park is closest to the centre of Paris?"
+> Ask yourself: "Which park is closest to the centre of Paris?"
 {: .speaker-note }
 
 **Q:** You click a marker. What appears?

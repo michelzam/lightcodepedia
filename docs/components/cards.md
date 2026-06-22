@@ -23,7 +23,7 @@ Chat with your AI pair lightcoder.
 
 Hover over a card — it lifts and gets a blue border. Resize the window to see auto-reflow.
 
-> Ask: "Which card would you click first, and why?"
+> Ask yourself: "Which card would you click first, and why?"
 > The hover effect is a tiny UX cue that says "I'm clickable."
 {: .speaker-note }
 

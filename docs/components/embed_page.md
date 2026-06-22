@@ -16,7 +16,7 @@ Embed another page from this site, an external URL, or a video — using a markd
 [🐍 Run component](/components/run)
 {: .embed-page height="400" }
 
-> Ask: "What does the embedded page look like vs the normal page?"
+> Ask yourself: "What does the embedded page look like vs the normal page?"
 > Point out the missing topbar — `?embed=true` strips the chrome.
 {: .speaker-note }
 

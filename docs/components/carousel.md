@@ -14,7 +14,7 @@ Auto-rotating content panels — perfect for rotating quotes, tips, or testimoni
 
 Watch the dot advance every 4 seconds. Click a dot to jump. That's the whole widget.
 
-> Ask: "When would you use a carousel vs a bullet list?"
+> Ask yourself: "When would you use a carousel vs a bullet list?"
 > Good answers: testimonials where you want one voice at a time, rotating tips that
 > would overwhelm if shown all at once, a "quote of the day" style slot.
 {: .speaker-note }

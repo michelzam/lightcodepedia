@@ -20,7 +20,7 @@ Whisper,3
 The bar color is a blue gradient — darker = faster. Edit the numbers and reload to see the chart update.
 
 > This data comes straight from `tutorial101.yaml` → `charts.yaml`. Same dogs, same speeds.
-> Ask: "Which dog would you take for a sprint?"
+> Ask yourself: "Which dog would you take for a sprint?"
 {: .speaker-note }
 
 **Q:** You change `Rocket`'s speed from 6 to 1. What changes in the chart?

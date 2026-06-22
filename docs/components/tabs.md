@@ -49,7 +49,7 @@ Feature: Tabs show one panel at a time
 ```
 {: .feature tags="ui" }
 
-> Ask: "When would you use tabs vs a bullet list?"
+> Ask yourself: "When would you use tabs vs a bullet list?"
 > Good answers: comparing alternatives side-by-side, hiding advanced content until needed,
 > showing the same thing in multiple languages.
 {: .speaker-note }

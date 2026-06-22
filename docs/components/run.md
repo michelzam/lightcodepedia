@@ -19,8 +19,8 @@ greet("World")
 
 That's it. The runner loads Python[^wasm] on first click (~300 KB, cached after). Next run is instant.
 
-> Ask students: "What do you expect to see before you click ▶ Run?"
-> Pause. Let them predict. Then run it. The prediction habit is the whole lesson.
+> Ask yourself: "What do you expect to see before you click ▶ Run?"
+> Pause. Predict, then run it. The prediction habit is the whole lesson.
 {: .speaker-note }
 
 **Q:** You changed `"World"` to `"Python"` and hit ▶ Run. What do you see?

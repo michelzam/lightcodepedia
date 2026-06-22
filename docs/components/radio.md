@@ -67,7 +67,7 @@ Feature: Radio shows one panel, chosen by a button
 
 Click each radio button. The panel swaps instantly.
 
-> Ask: "When would you choose radio over tabs?"
+> Ask yourself: "When would you choose radio over tabs?"
 > Good answer: when the options feel like a **choice** (pick one) rather than **categories** (browse any).
 {: .speaker-note }
 

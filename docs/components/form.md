@@ -26,7 +26,7 @@ notes: null
 
 Notice how different types render differently: numbers in green, booleans as checkboxes, lists as pills, nested dicts as a labeled button (hover it for the full JSON), and `null` as an italic dash.
 
-> Ask: "What happens when you hover the Vet button?"
+> Ask yourself: "What happens when you hover the Vet button?"
 > Walk through each type rendering. The type-awareness is the point.
 {: .speaker-note }
 

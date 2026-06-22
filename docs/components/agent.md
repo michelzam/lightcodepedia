@@ -15,7 +15,7 @@ No magic — just a direct HTTPS call you could paste into `curl`.
 
 This site has no server-side code, no shared API key, and no request log. Zero.
 
-> Ask: "where does your API key go when you click Ask?" before the demo.
+> Ask yourself: "where does your API key go when you click Ask?" before the demo.
 > Five hands always go up. Walk through the answer: browser → GitHub. That's it.
 {: .speaker-note }
 

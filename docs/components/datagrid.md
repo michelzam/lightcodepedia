@@ -30,7 +30,7 @@ Click a column header to sort. Hover the **☰** icon to filter. Drag a column b
 
 That's a live grid. Sort by age, filter to `adopted = true`, resize the breed column.
 
-> Ask students to predict the sort order before clicking. Then: "what's the youngest dog?"
+> Predict the sort order before you click — then find the youngest dog.
 > The filter question — "show me only the adopted dogs" — always lands well.
 {: .speaker-note }
 
