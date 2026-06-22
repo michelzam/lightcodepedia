@@ -249,7 +249,7 @@ Feature: A single object becomes a labeled form
     assert "Beagle" in self.form.text, self.form.text
     :::
 ```
-{: .feature tags="data" }
+{: .feature tags="data" status="passing"}
 
 ## 🔗 Related components & examples
 
