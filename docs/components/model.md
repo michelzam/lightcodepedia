@@ -2,7 +2,7 @@
 title: Component Model
 ---
 
-# 📐 Component Model
+# Component Model
 
 The typed **coder-side Python API** available in every `.feature` step and
 `.button` handler. Reach any named component via `self.page.<id>` — the resolver
@@ -58,7 +58,7 @@ digraph component_model {
     Pytutor [label="{🔬 Pytutor ➭ 🧩|🔢 height\l🔤 bound to\l}"]
     Qr [label="{🔳 Qr ➭ 🧩|🔢 size\l}"]
     Quiz [label="{❓ Quiz ➭ 🧩|🎛️ state\l🔘 multi\l🔘 graded\l|▹ check ▹\l}"]
-    Radio [label="{📻 Radio ➭ 🧩|🔤 selected\l|▸ select\l}"]
+    Radio [label="{📻 Radio ➭ 🧩|🔤 selected\l🔢 active\l|▸ select\l}"]
     Recorder [label="{🎥 Recorder ➭ 🧩|🎛️ state\l🔤 pip\l🔢 size\l🔢 zoom\l🔢 fps\l|▹ start ▹\l▹ stop ▹\l}"]
     Repl [label="{⌨️ Repl ➭ 🧩}"]
     Run [label="{🐍 Run ➭ 🧩|🔢 rows\l🔘 folded\l🔘 silent\l🔡 init\l🔤 bound\l🔤 expected\l|▸ run\l}"]

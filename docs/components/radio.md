@@ -1,6 +1,6 @@
 # 📻 Radio
 
-Radio-button section switcher — same content format as [📑 Tabs](/components/tabs), different navigation metaphor. Horizontal radio inputs select which panel is visible; only one at a time.
+Got a few options and want the reader to **pick exactly one** before diving in? **Radio is your instrument!** 📻 A row of buttons, one panel at a time — the same content as [📑 Tabs](/components/tabs), but with a "choose one" feel.
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
@@ -26,6 +26,44 @@ Go is simple, fast, and built for networked services. Minimal syntax, fast compi
 - Single binary output
 ```
 {: .radio }
+
+```gherkin
+Feature: Radio shows one panel, chosen by a button
+  As a reader
+  I want to pick which panel I see with a radio button
+  So that I compare options one at a time
+
+  Scenario: Picking an option makes it the selected one
+    Given the radio above
+    :::python
+    self.radio = Radio._all(".lc-radio-group")[0]
+    self.radio.select(0)
+    :::
+    When I pick the second option
+    :::python
+    self.radio.select(1)
+    :::
+    Then the second option is selected
+    :::python
+    assert self.radio.active == 1
+    :::
+
+  Scenario: Only one option is selected at a time
+    Given the radio above with the third option picked
+    :::python
+    self.radio = Radio._all(".lc-radio-group")[0]
+    self.radio.select(2)
+    :::
+    When I pick the first option
+    :::python
+    self.radio.select(0)
+    :::
+    Then the first option is selected
+    :::python
+    assert self.radio.active == 0
+    :::
+```
+{: .feature tags="ui" }
 
 Click each radio button. The panel swaps instantly.
 

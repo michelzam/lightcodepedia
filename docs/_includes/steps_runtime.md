@@ -618,12 +618,25 @@ class Menu(Block):
         return [o.text for o in self._qq("a, li")]
 
 
-@component(icon="📻", attrs=[{"n": "selected", "t": "str"}], methods=["select"])
+@component(icon="📻", attrs=[{"n": "selected", "t": "str"}, {"n": "active", "t": "int"}], methods=["select"])
 class Radio(Block):
     @property
     def selected(self):
-        c = self._q("input:checked")
-        return c.text if c else ""
+        c = self._el.querySelector("input:checked") if self._el else None
+        if not c:
+            return ""
+        lbl = c.parentElement
+        return (lbl.textContent or "").strip() if lbl else ""
+
+    @property
+    def active(self):
+        if self._el is None:
+            return 0
+        ins = self._el.querySelectorAll("input")
+        for i in range(int(ins.length)):
+            if ins.item(i).checked:
+                return i
+        return 0
 
     def select(self, n):
         if self._el is not None:
