@@ -68,7 +68,7 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcQueryDone = "1";
     var seed  = (el.querySelector("code") || el).textContent.trim();
     var outId = el.id || el.getAttribute("id") || "query";
-    var binds = (el.getAttribute("bind") || "").split(",")
+    var binds = (el.getAttribute("source") || el.getAttribute("bind") || "").split(",")
       .map(function (s) { return s.trim(); }).filter(Boolean);
     var editable = el.getAttribute("editable") === "true";
 

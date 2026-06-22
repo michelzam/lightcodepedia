@@ -164,7 +164,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   function readDatagridOpts(el, prefix) {
     return {
       editable: el.getAttribute(prefix + "editable") === "true",
-      detailOf: el.getAttribute(prefix + "detail-of") || "",
+      detailOf: el.getAttribute(prefix + "master") || el.getAttribute(prefix + "detail-of") || "",
       filterExpr: el.getAttribute(prefix + "filter") || ""
     };
   }
@@ -180,7 +180,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     var title = el.getAttribute("title") || "";
     var id = el.id || ("dg" + (++DG_ID));
     var opts = readDatagridOpts(el, "");
-    var bindId = el.getAttribute("bind") || "";
+    var bindId = el.getAttribute("source") || el.getAttribute("bind") || "";
     var wrapper = buildDatagridWrapper({ id: id, title: title, format: bindId ? "" : format, height: height });
     if (bindId) wrapper.setAttribute("data-bind", bindId);
     el.parentNode.replaceChild(wrapper, el);

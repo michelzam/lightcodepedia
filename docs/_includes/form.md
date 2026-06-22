@@ -313,7 +313,7 @@ Auto-included by docs/_layouts/default.html.
     var raw = codeNode ? codeNode.textContent : "";
     var format = (el.getAttribute("format") || "yaml").toLowerCase();
     var title = el.getAttribute("title") || "";
-    var bound = el.getAttribute("bound") || "";
+    var bound = el.getAttribute("master") || el.getAttribute("bound") || "";
     var editable = el.getAttribute("editable") === "true";
     var id = el.id || ("frm" + (++FORM_ID));
 

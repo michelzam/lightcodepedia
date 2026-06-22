@@ -49,13 +49,13 @@ Auto-included by docs/_layouts/default.html.
 
   /* ── inline + master/detail variants (Chart.js) ──────── */
   function upgradeChartInline(el) {
-    if (el.getAttribute("bind")) return; /* dataset-bound — upgradeChartBound below */
+    if (el.getAttribute("source") || el.getAttribute("bind")) return; /* dataset-bound — upgradeChartBound below */
     var code = el.querySelector("code");
     var raw = (code ? code.textContent : el.textContent).trim();
     var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
     var type = el.getAttribute("type") || "bar";
     var h = parseInt(el.getAttribute("height") || "300", 10);
-    var bound = el.getAttribute("bound-to");
+    var bound = el.getAttribute("master") || el.getAttribute("bound-to");
     var gid = "lc-chart-" + Math.random().toString(36).slice(2, 7);
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
@@ -156,7 +156,7 @@ Auto-included by docs/_layouts/default.html.
   /* ── dataset-bound variant (SVG) ─────────────────────── */
   function upgradeChartBound(el) {
     if (el.dataset.lcChDone) return;
-    var bindId = el.getAttribute("bind");
+    var bindId = el.getAttribute("source") || el.getAttribute("bind");
     if (!bindId) return; /* inline/master-detail — upgradeChartInline above */
     el.dataset.lcChDone = "1";
     var type  = el.getAttribute("type") || "bar";
