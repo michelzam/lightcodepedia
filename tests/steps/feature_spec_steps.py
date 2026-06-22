@@ -28,7 +28,11 @@ def step_run_features(context):
     n = btns.count()
     assert n > 0, "no runnable embedded features found on page"
     for i in range(n):
-        btns.nth(i).click()
+        btn = btns.nth(i)
+        # async widgets (e.g. related-card grids) can still be settling and shift
+        # layout under the button; scroll it in and give the click room.
+        btn.scroll_into_view_if_needed(timeout=10_000)
+        btn.click(timeout=20_000)
 
 
 @then("every embedded feature passes")
@@ -38,6 +42,17 @@ def step_features_pass(context):
     assert n > 0, "no embedded features on page"
     for i in range(n):
         # the passing badge appears only when the MicroPython runner finishes green
-        expect(
-            cards.nth(i).locator(".lc-feature-badge-passing")
-        ).to_be_visible(timeout=45_000)
+        try:
+            expect(
+                cards.nth(i).locator(".lc-feature-badge-passing")
+            ).to_be_visible(timeout=45_000)
+        except AssertionError:
+            # surface the in-page runner's own error text (step + builtin rows)
+            # which never reaches behave otherwise — makes failures diagnosable
+            try:
+                detail = (cards.nth(i).inner_text() or "")[:1200]
+            except Exception as e:
+                detail = "<could not read feature card: %s>" % e
+            raise AssertionError(
+                "embedded feature #%d did not pass.\n--- card ---\n%s" % (i, detail)
+            )
