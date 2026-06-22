@@ -196,11 +196,11 @@ Auto-included by docs/_layouts/default.html.
             var counts = {};
             item.features.forEach(function(f) { var s = (f && f.status) || "none"; counts[s] = (counts[s] || 0) + 1; });
             var dots = "";
-            if (counts.passing) dots += "<span class='lc-feat-dot lc-feat-passing' title='" + counts.passing + " passing scenario" + (counts.passing > 1 ? "s" : "") + "'>● " + counts.passing + "</span>";
-            if (counts.failing)  dots += "<span class='lc-feat-dot lc-feat-failing'  title='" + counts.failing  + " failing scenario"  + (counts.failing  > 1 ? "s" : "") + "'>✗ " + counts.failing  + "</span>";
-            if (counts.pending)  dots += "<span class='lc-feat-dot lc-feat-pending'  title='" + counts.pending  + " pending scenario"  + (counts.pending  > 1 ? "s" : "") + "'>◑ " + counts.pending  + "</span>";
+            if (counts.passing) dots += "<span class='lc-feat-dot lc-feat-passing' title='" + counts.passing + " passing feature" + (counts.passing > 1 ? "s" : "") + "'>● " + counts.passing + "</span>";
+            if (counts.failing)  dots += "<span class='lc-feat-dot lc-feat-failing'  title='" + counts.failing  + " failing feature"  + (counts.failing  > 1 ? "s" : "") + "'>✗ " + counts.failing  + "</span>";
+            if (counts.pending)  dots += "<span class='lc-feat-dot lc-feat-pending'  title='" + counts.pending  + " pending feature"  + (counts.pending  > 1 ? "s" : "") + "'>◑ " + counts.pending  + "</span>";
             if (counts.none && !counts.passing && !counts.failing && !counts.pending)
-              dots += "<span class='lc-feat-dot lc-feat-none' title='" + counts.none + " scenario" + (counts.none > 1 ? "s" : "") + " (no status set)'>● " + counts.none + "</span>";
+              dots += "<span class='lc-feat-dot lc-feat-none' title='" + counts.none + " feature" + (counts.none > 1 ? "s" : "") + " (no status set)'>● " + counts.none + "</span>";
             // one bottom row: theme tags on the left (clickable), feature status counter on the right
             var tagsHtml = tagList.length ? "<div class='lc-card-tags'>" + tagList.map(function(t) { return "<span class='lc-card-tag' data-tag='" + escapeHtml(t) + "' title='Filter by " + escapeHtml(t) + "'>" + escapeHtml(t) + "</span>"; }).join("") + "</div>" : "";
             var dotsHtml = dots ? "<div class='lc-card-features'>" + dots + "</div>" : "";
