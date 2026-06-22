@@ -11,6 +11,16 @@ Auto-included by docs/_layouts/default.html.
 .lc-card-features { display: flex; gap: 0.35em; align-items: center; flex-wrap: wrap; margin-left: auto; }
 .lc-card-tags { display: flex; gap: 0.3em; flex-wrap: wrap; }
 .lc-card-tag { font-size: 0.7em; font-weight: 600; padding: 0.1em 0.5em; border-radius: 99px; background: #e0f2fe; color: #075985; line-height: 1.6; }
+.lc-card-tag[data-tag] { cursor: pointer; }
+.lc-card-tag[data-tag]:hover { background: #bae6fd; }
+/* ── tag filter bar (clickable chips above the grid) ── */
+.lc-card-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4em; margin: 0 0 0.9em; }
+.lc-card-filter-label { font-size: 0.75em; font-weight: 600; color: #6b7280; margin-right: 0.1em; }
+.lc-card-filter-chip { font-size: 0.72em; font-weight: 600; padding: 0.2em 0.65em; border-radius: 99px; border: 1px solid #bae6fd; background: #f0f9ff; color: #075985; cursor: pointer; line-height: 1.5; }
+.lc-card-filter-chip:hover { background: #e0f2fe; }
+.lc-card-filter-on { background: #0284c7; color: #fff; border-color: #0284c7; }
+.lc-card-filter-n { opacity: 0.6; font-weight: 500; }
+.lc-card-filter-clear { border-color: #e5e7eb; background: #fff; color: #6b7280; }
 .lc-feat-dot { display: inline-flex; align-items: center; gap: 0.2em; font-size: 0.72em; font-weight: 600; padding: 0.1em 0.45em; border-radius: 99px; line-height: 1.6; }
 .lc-feat-passing { background: #dcfce7; color: #15803d; }
 .lc-feat-failing  { background: #fee2e2; color: #b91c1c; }
@@ -167,9 +177,19 @@ Auto-included by docs/_layouts/default.html.
           });
         });
 
+        var allTags = {};
         wrap.innerHTML = items.map(function(item) {
+          /* this card's distinct feature tags — also feed the filter bar */
+          var tagSeen = {}, tagList = [];
+          (item.features || []).forEach(function(f) {
+            (((f && f.tags) || "").split(",")).forEach(function(t) {
+              t = t.trim();
+              if (t && !tagSeen[t]) { tagSeen[t] = 1; tagList.push(t); allTags[t] = (allTags[t] || 0) + 1; }
+            });
+          });
+          var tagsAttr = tagList.length ? ' data-tags="' + escapeHtml(tagList.join(" ")) + '"' : '';
           var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
-          var card = '<div class="lc-card" data-url="' + item.url + '"' + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+          var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
           if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
           /* feature status dots */
           if (item.features && item.features.length) {
@@ -181,19 +201,60 @@ Auto-included by docs/_layouts/default.html.
             if (counts.pending)  dots += "<span class='lc-feat-dot lc-feat-pending'  title='" + counts.pending  + " pending scenario"  + (counts.pending  > 1 ? "s" : "") + "'>◑ " + counts.pending  + "</span>";
             if (counts.none && !counts.passing && !counts.failing && !counts.pending)
               dots += "<span class='lc-feat-dot lc-feat-none' title='" + counts.none + " scenario" + (counts.none > 1 ? "s" : "") + " (no status set)'>● " + counts.none + "</span>";
-            var tagSeen = {}, tagList = [];
-            item.features.forEach(function(f) {
-              (((f && f.tags) || "").split(",")).forEach(function(t) {
-                t = t.trim(); if (t && !tagSeen[t]) { tagSeen[t] = 1; tagList.push(t); }
-              });
-            });
-            // one bottom row: theme tags on the left, feature status counter on the right
-            var tagsHtml = tagList.length ? "<div class='lc-card-tags'>" + tagList.map(function(t) { return "<span class='lc-card-tag'>" + escapeHtml(t) + "</span>"; }).join("") + "</div>" : "";
+            // one bottom row: theme tags on the left (clickable), feature status counter on the right
+            var tagsHtml = tagList.length ? "<div class='lc-card-tags'>" + tagList.map(function(t) { return "<span class='lc-card-tag' data-tag='" + escapeHtml(t) + "' title='Filter by " + escapeHtml(t) + "'>" + escapeHtml(t) + "</span>"; }).join("") + "</div>" : "";
             var dotsHtml = dots ? "<div class='lc-card-features'>" + dots + "</div>" : "";
             if (tagsHtml || dotsHtml) card += "<div class='lc-card-footer'>" + tagsHtml + dotsHtml + "</div>";
           }
           return card + '</div>';
         }).join("");
+
+        /* ── tag filter bar: clickable chips that show/hide cards by tag ── */
+        var tagNames = Object.keys(allTags).sort();
+        if (tagNames.length >= 2) {
+          var bar = document.createElement("div");
+          bar.className = "lc-card-filter";
+          bar.innerHTML = "<span class='lc-card-filter-label'>Filter:</span>"
+            + tagNames.map(function(t) {
+                return "<button type='button' class='lc-card-filter-chip' data-tag='" + escapeHtml(t) + "'>"
+                  + escapeHtml(t) + " <span class='lc-card-filter-n'>" + allTags[t] + "</span></button>";
+              }).join("")
+            + "<button type='button' class='lc-card-filter-chip lc-card-filter-clear' data-tag='' hidden>✕ clear</button>";
+          wrap.parentNode.insertBefore(bar, wrap);
+
+          var active = {};
+          function applyFilter() {
+            var keys = Object.keys(active), any = keys.length > 0;
+            wrap.querySelectorAll(".lc-card[data-url]").forEach(function(c) {
+              if (!any) { c.style.display = ""; return; }
+              var ct = (c.getAttribute("data-tags") || "").split(" ");
+              c.style.display = keys.some(function(k) { return ct.indexOf(k) >= 0; }) ? "" : "none";
+            });
+            bar.querySelectorAll(".lc-card-filter-chip").forEach(function(chip) {
+              var t = chip.getAttribute("data-tag");
+              if (t) chip.classList.toggle("lc-card-filter-on", !!active[t]);
+            });
+            var clr = bar.querySelector(".lc-card-filter-clear");
+            if (clr) clr.hidden = !any;
+          }
+          function toggleTag(t) {
+            if (!t) active = {};
+            else if (active[t]) delete active[t];
+            else active[t] = 1;
+            applyFilter();
+          }
+          bar.addEventListener("click", function(e) {
+            var chip = e.target.closest(".lc-card-filter-chip");
+            if (chip) toggleTag(chip.getAttribute("data-tag"));
+          });
+          /* per-card chips drive the same filter */
+          wrap.addEventListener("click", function(e) {
+            var chip = e.target.closest(".lc-card-tag[data-tag]");
+            if (!chip) return;
+            e.preventDefault(); e.stopPropagation();
+            toggleTag(chip.getAttribute("data-tag"));
+          });
+        }
 
         /* hover ribbons — overlay SVG draws bezier arcs between linked cards */
         var ribbonSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
