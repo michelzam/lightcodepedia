@@ -259,9 +259,13 @@ Feature: A single object becomes a labeled form
 
 ## 🔗 Related components & examples
 
-- [📊 Datagrid](/components/datagrid) — the list view a form pairs with via `master=`
-- [🛢️ Dataset](/components/dataset) — declare the data a grid + form share
-- [📈 Chart](/components/chart) — another detail view of a selected row
-- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+```
+/components/datagrid
+/components/dataset
+/components/chart
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).
 
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to that block. See [✍️ Text](/components/text).

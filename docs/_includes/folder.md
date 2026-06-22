@@ -57,6 +57,65 @@ Auto-included by docs/_layouts/default.html.
     return { title: title, snippet: snippet };
   }
 
+  /* ── shared card pipeline (also used by related.md) ─────────────── */
+  /* scan a page's markdown for its hidden .feature blocks → [{status, tags}] */
+  function scanFeatures(text) {
+    var scanText = text
+      .replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "")
+      .replace(/`[^`\n]+`/g, "``");
+    var features = [], fRe = /\{:\s*\.feature\b([^}]*)\}/g, fm;
+    while ((fm = fRe.exec(scanText)) !== null) {
+      var sm = fm[1].match(/\bstatus="(\w+)"/);
+      var tm = fm[1].match(/\btags="([^"]*)"/);
+      features.push({ status: sm ? sm[1] : "", tags: tm ? tm[1] : "" });
+    }
+    return features;
+  }
+
+  /* distinct theme tags across a card's features (order preserved) */
+  function cardTagList(features) {
+    var seen = {}, list = [];
+    (features || []).forEach(function(f) {
+      (((f && f.tags) || "").split(",")).forEach(function(t) {
+        t = t.trim(); if (t && !seen[t]) { seen[t] = 1; list.push(t); }
+      });
+    });
+    return list;
+  }
+
+  /* one card's HTML from an item {title, url, snippet, features, isSubdir}.
+     opts.clickableTags=false renders plain (non-filtering) tag chips. */
+  function buildCardHtml(item, opts) {
+    opts = opts || {};
+    var tagList = cardTagList(item.features);
+    var tagsAttr = tagList.length ? ' data-tags="' + escapeHtml(tagList.join(" ")) + '"' : '';
+    var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
+    var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+    if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
+    if (item.features && item.features.length) {
+      var counts = {};
+      item.features.forEach(function(f) { var s = (f && f.status) || "none"; counts[s] = (counts[s] || 0) + 1; });
+      var dots = "";
+      if (counts.passing) dots += "<span class='lc-feat-dot lc-feat-passing' title='" + counts.passing + " passing feature" + (counts.passing > 1 ? "s" : "") + "'>● " + counts.passing + "</span>";
+      if (counts.failing)  dots += "<span class='lc-feat-dot lc-feat-failing'  title='" + counts.failing  + " failing feature"  + (counts.failing  > 1 ? "s" : "") + "'>✗ " + counts.failing  + "</span>";
+      if (counts.pending)  dots += "<span class='lc-feat-dot lc-feat-pending'  title='" + counts.pending  + " pending feature"  + (counts.pending  > 1 ? "s" : "") + "'>◑ " + counts.pending  + "</span>";
+      if (counts.none && !counts.passing && !counts.failing && !counts.pending)
+        dots += "<span class='lc-feat-dot lc-feat-none' title='" + counts.none + " feature" + (counts.none > 1 ? "s" : "") + " (no status set)'>● " + counts.none + "</span>";
+      var clickable = opts.clickableTags !== false;
+      var tagsHtml = tagList.length ? "<div class='lc-card-tags'>" + tagList.map(function(t) {
+        return "<span class='lc-card-tag'" + (clickable ? " data-tag='" + escapeHtml(t) + "' title='Filter by " + escapeHtml(t) + "'" : "") + ">" + escapeHtml(t) + "</span>";
+      }).join("") + "</div>" : "";
+      var dotsHtml = dots ? "<div class='lc-card-features'>" + dots + "</div>" : "";
+      if (tagsHtml || dotsHtml) card += "<div class='lc-card-footer'>" + tagsHtml + dotsHtml + "</div>";
+    }
+    return card + '</div>';
+  }
+
+  window.lcExtractPageMeta = extractPageMeta;
+  window.lcScanFeatures = scanFeatures;
+  window.lcCardTagList = cardTagList;
+  window.lcBuildCardHtml = buildCardHtml;
+
   function upgradeFolder(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
@@ -122,17 +181,7 @@ Auto-included by docs/_layouts/default.html.
             .then(function(text) {
               var meta = extractPageMeta(text);
               var title = meta.title || f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-              /* collect .feature status values — skip code fences and inline code */
-              var scanText = text
-                .replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "")
-                .replace(/`[^`\n]+`/g, "``");
-              var features = [];
-              var fRe = /\{:\s*\.feature\b([^}]*)\}/g, fm;
-              while ((fm = fRe.exec(scanText)) !== null) {
-                var sm = fm[1].match(/\bstatus="(\w+)"/);
-                var tm = fm[1].match(/\btags="([^"]*)"/);
-                features.push({ status: sm ? sm[1] : "", tags: tm ? tm[1] : "" });
-              }
+              var features = scanFeatures(text);
               /* collect internal links for hover ribbons */
               var cleanLinks = text.replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "").replace(/`[^`\n]+`/g, "");
               var pageSlug = f.path.replace(/^docs\//, "").replace(/\.md$/i, "");
@@ -179,34 +228,8 @@ Auto-included by docs/_layouts/default.html.
 
         var allTags = {};
         wrap.innerHTML = items.map(function(item) {
-          /* this card's distinct feature tags — also feed the filter bar */
-          var tagSeen = {}, tagList = [];
-          (item.features || []).forEach(function(f) {
-            (((f && f.tags) || "").split(",")).forEach(function(t) {
-              t = t.trim();
-              if (t && !tagSeen[t]) { tagSeen[t] = 1; tagList.push(t); allTags[t] = (allTags[t] || 0) + 1; }
-            });
-          });
-          var tagsAttr = tagList.length ? ' data-tags="' + escapeHtml(tagList.join(" ")) + '"' : '';
-          var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
-          var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
-          if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
-          /* feature status dots */
-          if (item.features && item.features.length) {
-            var counts = {};
-            item.features.forEach(function(f) { var s = (f && f.status) || "none"; counts[s] = (counts[s] || 0) + 1; });
-            var dots = "";
-            if (counts.passing) dots += "<span class='lc-feat-dot lc-feat-passing' title='" + counts.passing + " passing feature" + (counts.passing > 1 ? "s" : "") + "'>● " + counts.passing + "</span>";
-            if (counts.failing)  dots += "<span class='lc-feat-dot lc-feat-failing'  title='" + counts.failing  + " failing feature"  + (counts.failing  > 1 ? "s" : "") + "'>✗ " + counts.failing  + "</span>";
-            if (counts.pending)  dots += "<span class='lc-feat-dot lc-feat-pending'  title='" + counts.pending  + " pending feature"  + (counts.pending  > 1 ? "s" : "") + "'>◑ " + counts.pending  + "</span>";
-            if (counts.none && !counts.passing && !counts.failing && !counts.pending)
-              dots += "<span class='lc-feat-dot lc-feat-none' title='" + counts.none + " feature" + (counts.none > 1 ? "s" : "") + " (no status set)'>● " + counts.none + "</span>";
-            // one bottom row: theme tags on the left (clickable), feature status counter on the right
-            var tagsHtml = tagList.length ? "<div class='lc-card-tags'>" + tagList.map(function(t) { return "<span class='lc-card-tag' data-tag='" + escapeHtml(t) + "' title='Filter by " + escapeHtml(t) + "'>" + escapeHtml(t) + "</span>"; }).join("") + "</div>" : "";
-            var dotsHtml = dots ? "<div class='lc-card-features'>" + dots + "</div>" : "";
-            if (tagsHtml || dotsHtml) card += "<div class='lc-card-footer'>" + tagsHtml + dotsHtml + "</div>";
-          }
-          return card + '</div>';
+          cardTagList(item.features).forEach(function(t) { allTags[t] = (allTags[t] || 0) + 1; });
+          return buildCardHtml(item, { clickableTags: true });
         }).join("");
 
         /* ── tag filter bar: clickable chips that show/hide cards by tag ── */

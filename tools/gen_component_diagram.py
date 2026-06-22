@@ -108,8 +108,12 @@ component.
 
 ## 🔗 Related components & examples
 
-- Browse the [🧩 component gallery](/components/) and try the [🔬 live examples](/components/examples)
-- See this model rendered **live** with the [📐 diagram](/components/diagram) component
+```
+/components/diagram
+```
+{{: .related }}
+
+Browse the [🧩 component gallery](/components/) and try the [🔬 live examples](/components/examples).
 
 Regenerate with `python tools/gen_component_diagram.py`.
 """

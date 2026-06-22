@@ -167,9 +167,13 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 
 ## 🔗 Related components & examples
 
-- [📊 Datagrid](/components/datagrid) — the table view that binds with `source="…"`
-- [📈 Chart](/components/chart) — plots a dataset (or a selected row, via `master=`)
-- [🔎 Query](/components/query) — a dataset computed by SQL over other datasets
-- [📝 Form](/components/form) — the detail view for one selected row
-- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+```
+/components/datagrid
+/components/chart
+/components/query
+/components/form
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).
 

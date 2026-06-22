@@ -141,6 +141,10 @@ Add another `### Section` → a new tab appears. Remove one → it's gone.
 
 ## 🔗 Related components & examples
 
-- [🪗 Accordion](/components/accordion) — the same sections as fold-down panels (many open at once)
-- [📻 Radio](/components/radio) — the same sections, picked with radio buttons
-- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+```
+/components/accordion
+/components/radio
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).

@@ -131,6 +131,10 @@ Accordion has no extra IAL attributes — the structure comes entirely from `###
 
 ## 🔗 Related components & examples
 
-- [📑 Tabs](/components/tabs) — the same `### ` sections shown as a tab bar
-- [📻 Radio](/components/radio) — the same sections, picked with radio buttons
-- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+```
+/components/tabs
+/components/radio
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).

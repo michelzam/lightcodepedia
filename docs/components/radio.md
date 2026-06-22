@@ -116,6 +116,10 @@ The first section is selected and visible by default.
 
 ## 🔗 Related components & examples
 
-- [📑 Tabs](/components/tabs) — the same sections as a tab bar
-- [🪗 Accordion](/components/accordion) — the same sections, fold-down panels
-- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+```
+/components/tabs
+/components/accordion
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).

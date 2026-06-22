@@ -105,6 +105,11 @@ Feature: A query is a dataset that computes itself
 
 ## 🔗 Related components & examples
 
-- [🛢️ Dataset](/components/dataset) — the raw data a query reads from
-- [📊 Datagrid](/components/datagrid) & [📈 Chart](/components/chart) — bind to a query result with `source="…"`, same as any dataset
-- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+```
+/components/dataset
+/components/datagrid
+/components/chart
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).

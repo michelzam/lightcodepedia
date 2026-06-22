@@ -95,6 +95,10 @@ Each `- [label](url)` becomes one menu item.
 
 ## 🔗 Related components & examples
 
-- [🍔 Menu](/components/menu) — a fuller navigation menu
-- [🃏 Cards](/components/cards) — show the choices as a grid of tiles instead
-- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+```
+/components/menu
+/components/cards
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).

@@ -278,11 +278,15 @@ print(f"{len(dogs)} rows rendered.")
 
 ## 🔗 Related components & examples
 
-- [🛢️ Dataset](/components/dataset) — declare data once, bind a grid with `source="…"`
-- [📝 Form](/components/form) — the detail view a grid drives with `master=`
-- [📈 Chart](/components/chart) — plot the same data, or follow a selected row
-- [🔎 Query](/components/query) — feed a grid from SQL over your datasets
-- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+```
+/components/dataset
+/components/form
+/components/chart
+/components/query
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).
 
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to that block. Every component on this site is activated this way.
 

@@ -133,7 +133,11 @@ Feature: A data block becomes a chart
 
 ## 🔗 Related components & examples
 
-- [🛢️ Dataset](/components/dataset) — bind a chart to shared data with `source="…"`
-- [📊 Datagrid](/components/datagrid) — the table view; drive a chart from a selected row via `master=`
-- [🔎 Query](/components/query) — plot the result of SQL over your datasets
-- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+```
+/components/dataset
+/components/datagrid
+/components/query
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).
