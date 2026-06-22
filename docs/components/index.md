@@ -17,8 +17,7 @@ Welcome, lowcoder! Every interactive component you can use in your `.md` pages.
 [Browse →](docs/components)
 {: .folder cols="3" }
 
-## 🎨 Component palette
-
+---
 ```gherkin
 Feature: Component palette
     As a lazy lowcoder & learner
