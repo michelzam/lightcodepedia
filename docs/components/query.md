@@ -73,3 +73,38 @@ Try changing `MAX` to `MIN`, or `cuteness` to `weight_kg`, and Run — the grid 
 - [ ] The query has to run first and be saved to a file.
 - [ ] Charts can't read query results, only raw datasets.
 {: .quiz }
+
+```gherkin
+Feature: A query is a dataset that computes itself
+  As a lowcoder
+  I want SQL over my datasets to publish a result like any dataset
+  So that grids and charts bind to it with the same source= they always use
+
+  Scenario: The query aggregates its source into a new dataset
+    Given the #dogs dataset of six dogs above
+    And the #by_breed query grouping them by breed
+    :::python
+    self.result = self.page.by_breed
+    :::
+    When the SQL runs in the browser
+    Then the result has one row per distinct breed
+    :::python
+    assert self.result.count == 3, self.result.count
+    :::
+    And a grid bound to the query shows those rows
+    :::python
+    self.grid = None
+    for d in Object._all(".lc-datagrid"):
+        if d._attr("data-bind") == "by_breed":
+            self.grid = Datagrid(d._el)
+    assert self.grid is not None, "no grid bound to by_breed"
+    assert self.grid.row_count == 3, self.grid.row_count
+    :::
+```
+{: .feature tags="data" }
+
+## 🔗 Related components & examples
+
+- [🛢️ Dataset](/components/dataset) — the raw data a query reads from
+- [📊 Datagrid](/components/datagrid) & [📈 Chart](/components/chart) — bind to a query result with `source="…"`, same as any dataset
+- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)

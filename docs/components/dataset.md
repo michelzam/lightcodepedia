@@ -38,6 +38,47 @@ view of your selection.
 [Selected month](#)
 {: .chart master="monthly_grid" x="month" height="240" }
 
+```gherkin
+Feature: One dataset feeds many bound views
+  As a lowcoder
+  I want to declare data once and bind several grids and charts to it
+  So that every view stays in sync without copy-pasting the data
+
+  Scenario: A dataset declared once is shared by every bound view
+    Given the #monthly dataset declared once above
+    :::python
+    self.ds = self.page.monthly
+    :::
+    When a grid binds to it with source="monthly"
+    :::python
+    self.grid = self.page.monthly_grid
+    :::
+    Then the dataset holds all six months
+    :::python
+    assert self.ds.count == 6, self.ds.count
+    :::
+    And the bound grid renders every row
+    :::python
+    assert self.grid.row_count == 6, self.grid.row_count
+    :::
+
+  Scenario: Any bound grid row is selectable
+    Given the #monthly_grid bound grid above
+    :::python
+    self.trs = self.page.monthly_grid._qq("tbody tr")
+    :::
+    When I click its second row
+    :::python
+    self.trs[1]._el.click()
+    :::
+    Then that row is the only selected row
+    :::python
+    assert self.trs[1]._el.classList.contains("lc-dg-selected")
+    assert not self.trs[0]._el.classList.contains("lc-dg-selected")
+    :::
+```
+{: .feature tags="data" }
+
 ## CSV example
 
 ```csv
@@ -123,4 +164,12 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 | `.chart` | `x="…"` | column name | Horizontal axis column |
 | `.chart` | `y="…"` | column name | Vertical axis column |
 | `.chart` | `title="…"` | string | Label above the chart |
+
+## 🔗 Related components & examples
+
+- [📊 Datagrid](/components/datagrid) — the table view that binds with `source="…"`
+- [📈 Chart](/components/chart) — plots a dataset (or a selected row, via `master=`)
+- [🔎 Query](/components/query) — a dataset computed by SQL over other datasets
+- [📝 Form](/components/form) — the detail view for one selected row
+- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
 

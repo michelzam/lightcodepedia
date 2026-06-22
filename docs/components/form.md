@@ -233,4 +233,35 @@ show.form(obj, title=None)
 - [ ] The whole grid refreshes. Banana clears the cache.
 {: .quiz }
 
+```gherkin
+Feature: A single object becomes a labeled form
+  As a lowcoder
+  I want one YAML object rendered as a two-column labeled view
+  So that I can show a record's details without writing any HTML
+
+  Scenario: The dog profile at the top renders as a form
+    Given the standalone form at the top of this page
+    :::python
+    self.form = Form(Object._all(".lc-form")[0]._el)
+    :::
+    When it has finished rendering
+    Then it is visible
+    :::python
+    assert self.form.visible
+    :::
+    And it shows the dog's name and breed
+    :::python
+    assert "Lucky" in self.form.text, self.form.text
+    assert "Beagle" in self.form.text, self.form.text
+    :::
+```
+{: .feature tags="data" }
+
+## 🔗 Related components & examples
+
+- [📊 Datagrid](/components/datagrid) — the list view a form pairs with via `master=`
+- [🛢️ Dataset](/components/dataset) — declare the data a grid + form share
+- [📈 Chart](/components/chart) — another detail view of a selected row
+- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
+
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to that block. See [✍️ Text](/components/text).

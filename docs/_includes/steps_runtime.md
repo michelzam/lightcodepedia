@@ -412,11 +412,18 @@ class Datagrid(Block):
 
     @property
     def row_count(self):
-        return len(self._qq("tbody tr"))
+        # two renderers back a datagrid: the custom HTML table (.lc-dg-table →
+        # tbody tr, used by source-bound grids) and AG Grid (.ag-row in the body
+        # viewport, used by code-block grids). Count whichever this grid uses.
+        n = len(self._qq("tbody tr"))
+        return n if n else len(self._qq(".ag-center-cols-container .ag-row"))
 
     @property
     def headers(self):
-        return [th.text.rstrip(" ↑↓") for th in self._qq("th")]
+        ths = [th.text.rstrip(" ↑↓") for th in self._qq("th")]
+        if ths:
+            return ths
+        return [h.text for h in self._qq(".ag-header-cell-text")]
 
     @property
     def rows(self):

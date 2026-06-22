@@ -131,6 +131,29 @@ Add `editable="true"` and double-click any primitive cell to edit. Numbers stay 
 
 When a [📝 Form](/components/form) is bound to this grid (`master="editable_dogs"`), edits here repaint the form automatically.
 
+```gherkin
+Feature: A data block becomes an interactive grid
+  As a lowcoder
+  I want a fenced YAML/JSON/CSV block to render as a live, sortable table
+  So that I get a real datagrid with no Python, no server, no setup
+
+  Scenario: The editable dogs block renders one row per object
+    Given the #editable_dogs grid above (three dogs)
+    :::python
+    self.grid = self.page.editable_dogs
+    :::
+    When the grid has finished rendering
+    Then it shows exactly three rows
+    :::python
+    assert self.grid.row_count == 3, self.grid.row_count
+    :::
+    And each object's keys became column headers
+    :::python
+    assert len(self.grid.headers) >= 3, self.grid.headers
+    :::
+```
+{: .feature tags="data" }
+
 ## 🔗 Master/detail — two grids linked
 
 `master="<master-id>"` + `filter="<local-field>=<master-field>"` makes a detail grid that filters its rows by the row selected in the master. Click a city below — the dogs grid follows.
@@ -252,6 +275,14 @@ print(f"{len(dogs)} rows rendered.")
 - [ ] Maybe — depends on the browser's karma.
 - [ ] Define "handle". It'll load. It'll also melt the laptop.
 {: .quiz }
+
+## 🔗 Related components & examples
+
+- [🛢️ Dataset](/components/dataset) — declare data once, bind a grid with `source="…"`
+- [📝 Form](/components/form) — the detail view a grid drives with `master=`
+- [📈 Chart](/components/chart) — plot the same data, or follow a selected row
+- [🔎 Query](/components/query) — feed a grid from SQL over your datasets
+- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
 
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to that block. Every component on this site is activated this way.
 

@@ -39,3 +39,43 @@ Feature: Component specs run green
     And I wait for the page to be interactive
     And I run the page's embedded features
     Then every embedded feature passes
+
+  Scenario: Dataset spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/dataset"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-dg-table"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Datagrid spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/datagrid"
+    And I wait for the page to be interactive
+    And I wait for the selector ".ag-row"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Chart spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/chart"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-chart canvas"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Form spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/form"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-form-grid .ag-row"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Query spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/query"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-dg-table"
+    And I run the page's embedded features
+    Then every embedded feature passes

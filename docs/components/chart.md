@@ -106,3 +106,34 @@ Other,15
 - [x] `{: .chart type="doughnut" x="Breed" y="Count" }`
 - [ ] Doughnut is not supported — use `pie` and add a `hole=` attribute.
 {: .quiz }
+
+```gherkin
+Feature: A data block becomes a chart
+  As a lowcoder
+  I want a fenced CSV block to render as a chart
+  So that I can visualize data without config files or a server
+
+  Scenario: The first block renders a bar chart canvas
+    Given the bar chart at the top of this page
+    :::python
+    self.chart = Chart(Object._all(".lc-chart")[0]._el)
+    :::
+    When it has finished rendering
+    Then it is a visible bar chart
+    :::python
+    assert self.chart.visible
+    assert self.chart.type == "bar", self.chart.type
+    :::
+    And it drew a canvas to paint on
+    :::python
+    assert self.chart._q("canvas")._el is not None
+    :::
+```
+{: .feature tags="data" }
+
+## 🔗 Related components & examples
+
+- [🛢️ Dataset](/components/dataset) — bind a chart to shared data with `source="…"`
+- [📊 Datagrid](/components/datagrid) — the table view; drive a chart from a selected row via `master=`
+- [🔎 Query](/components/query) — plot the result of SQL over your datasets
+- Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples)
