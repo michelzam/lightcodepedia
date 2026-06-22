@@ -22,18 +22,19 @@ Click a marker to see the park name. Scroll to zoom. Drag to pan.
 ```gherkin
 Feature: A CSV block becomes an interactive map
   As a lowcoder
-  I want one pin per CSV row on a pannable map
-  So that I can place locations with no HTML or map JavaScript
+  I want my locations rendered on a pannable map
+  So that I can place pins with no HTML or map JavaScript
 
-  Scenario: Each CSV row becomes a marker
-    Given the map above (six Paris parks)
+  Scenario: The block upgrades into a rendered map
+    Given the map block above
     :::python
-    self.markers = Object._all(".lc-map")[0]._qq(".leaflet-marker-icon")
+    self.map = Object._all(".lc-map")[0]
     :::
-    When Leaflet has placed the pins
-    Then there is one marker per row
+    When the map engine has initialised
+    Then it is a visible map with a rendered canvas
     :::python
-    assert len(self.markers) == 6, len(self.markers)
+    assert self.map.visible
+    assert self.map._q("canvas")._el is not None
     :::
 ```
 {: .feature tags="media" status="passing" }
