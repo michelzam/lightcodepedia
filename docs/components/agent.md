@@ -126,6 +126,25 @@ intro: "Paste your PAT above, then ask me anything about Python."
 ```
 {: .agent #demo_tutor }
 
+```gherkin
+Feature: An AI tutor runs right on the page
+  As a learner
+  I want to chat with an AI about the lesson where I am reading
+  So that I learn interactively, using my own key, with no server
+
+  Scenario: The block upgrades into an agent panel
+    Given the agent above
+    :::python
+    self.agent = self.page.demo_tutor
+    :::
+    When the page has upgraded it
+    Then it is a visible agent panel
+    :::python
+    assert self.agent.visible
+    :::
+```
+{: .feature tags="ai,learn" status="passing" }
+
 On first use the panel asks for a PAT. Paste it, click **Save & start**, and your browser offers to remember it in the OS keychain. Next visit the field auto-fills.
 
 > Walk through the PAT entry live — expand the key field, paste,
