@@ -60,6 +60,20 @@ This is kramdown's **inline IAL** — it attaches the class directly to the `<a>
 | `{: .button .button-danger }` | Red |
 | `{: .button .button-outline }` | Transparent with blue border |
 
+
+## Events
+
+[🗓️ Event: ON](#)
+{: .button }
+```python
+def on_click(button):
+    if button.text == "ON" 
+        button.text = "OFF"
+    else:
+        button.text = "ON"
+```
+{: .onclick }
+
 ## 🏁 Final exam
 
 **Q:** Which markdown produces a green button linking to `/submit`?
