@@ -152,7 +152,7 @@ Feature: A data block becomes an interactive grid
     assert len(self.grid.headers) >= 3, self.grid.headers
     :::
 ```
-{: .feature tags="data" }
+{: .feature tags="data" status="passing"}
 
 ## 🔗 Master/detail — two grids linked
 
