@@ -69,8 +69,8 @@ Each object becomes a row; its keys become the column headers. Header labels are
 | `height="400"` | Grid height in pixels (default 400) |
 | `format="yaml"` | `yaml` (default), `json`, or `csv` |
 | `editable="true"` | Double-click a cell to edit in place — see below |
-| `detail-of="<id>"` | Filter this grid by the selected row in another grid — see below |
-| `filter="<local>=<master>"` | Required with `detail-of`: which field to match |
+| `master="<id>"` | Filter this grid by the selected row in another grid — see below |
+| `filter="<local>=<master>"` | Required with `master`: which field to match |
 
 **Q:** You have two grids on the same page and they're interfering with each other. What's missing?
 
@@ -129,11 +129,11 @@ Add `editable="true"` and double-click any primitive cell to edit. Numbers stay 
 ```
 {: .datagrid #editable_dogs editable="true" height="200" }
 
-When a [📝 Form](/components/form) is bound to this grid (`bound="editable_dogs"`), edits here repaint the form automatically.
+When a [📝 Form](/components/form) is bound to this grid (`master="editable_dogs"`), edits here repaint the form automatically.
 
 ## 🔗 Master/detail — two grids linked
 
-`detail-of="<master-id>"` + `filter="<local-field>=<master-field>"` makes a detail grid that filters its rows by the row selected in the master. Click a city below — the dogs grid follows.
+`master="<master-id>"` + `filter="<local-field>=<master-field>"` makes a detail grid that filters its rows by the row selected in the master. Click a city below — the dogs grid follows.
 
 ```json
 [
@@ -159,7 +159,7 @@ When a [📝 Form](/components/form) is bound to this grid (`bound="editable_dog
   {"name":"Diego",  "breed":"Chihuahua",      "age":5,"city":"Mexico City"}
 ]
 ```
-{: .datagrid #md_dogs format="json" detail-of="md_cities" filter="city=city" height="240" }
+{: .datagrid #md_dogs format="json" master="md_cities" filter="city=city" height="240" }
 
 Deselect a city row (click again) and the full dog list returns.
 
@@ -172,7 +172,7 @@ Deselect a city row (click again) and the full dog list returns.
 
 - [ ] `parent="cities"`
 - [ ] `linked="cities"`
-- [x] `detail-of="cities"` plus `filter="city=city"`
+- [x] `master="cities"` plus `filter="city=city"`
 - [ ] `filter="cities"` — one attribute covers everything
 {: .quiz }
 
@@ -240,7 +240,7 @@ print(f"{len(dogs)} rows rendered.")
 
 - [x] YAML, JSON, and CSV are all supported with `format=`.
 - [x] Editable changes are in-memory — refresh discards them.
-- [ ] `detail-of=` works without a `filter=` attribute.
+- [ ] `master=` works without a `filter=` attribute.
 - [x] `show.grid(rows)` inside a Python runner renders a datagrid below the output.
 - [ ] The grid supports server-side pagination by default.
 {: .quiz multi="true" }

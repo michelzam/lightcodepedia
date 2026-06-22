@@ -25,29 +25,29 @@ A query that aggregates it — grouped, counted, averaged, sorted:
 SELECT breed, COUNT(*) AS n, AVG(cuteness) AS cuteness
 FROM dogs GROUP BY breed ORDER BY cuteness DESC
 ```
-{: .query bind="dogs" #by_breed }
+{: .query source="dogs" #by_breed }
 
 [By breed](#)
-{: .datagrid bind="by_breed" }
+{: .datagrid source="by_breed" }
 
 [Cuteness by breed](#)
-{: .chart bind="by_breed" type="bar" x="breed" y="cuteness" }
+{: .chart source="by_breed" type="bar" x="breed" y="cuteness" }
 
 The grid and chart above bind to `by_breed` — a *query result*, not a raw dataset — and neither needed any special wiring. **Shift-X-ray** the chart and you'll see the whole flow light up: `chart → by_breed (Query) → dogs (Dataset)`.
 
 ## 🛠️ How to make one
 
-Put SQL in a fenced block, name the input dataset(s) with `bind=`, and give the result an `id`:
+Put SQL in a fenced block, name the input dataset(s) with `source=`, and give the result an `id`:
 
 ````markdown
 ```sql
 SELECT region, SUM(amount) AS total FROM sales GROUP BY region
 ```
-{: .query bind="sales" #by_region }
+{: .query source="sales" #by_region }
 ````
 
-- `bind="a,b"` — input dataset id(s); reference them as tables by id in the SQL (`FROM a JOIN b …`).
-- `id="…"` — the result is published under this id, so `{: .chart bind="…" }` and friends just work.
+- `source="a,b"` — input dataset id(s); reference them as tables by id in the SQL (`FROM a JOIN b …`).
+- `id="…"` — the result is published under this id, so `{: .chart source="…" }` and friends just work.
 - **Reactive**: edit an upstream `editable` grid and the query — and everything downstream — re-runs live.
 
 SQL runs via [AlaSQL](https://github.com/AlaSQL/alasql) in the browser. It's permissive, learner-friendly SQL (`SELECT`/`JOIN`/`GROUP BY`/window functions) — not a strict ANSI reference.
@@ -59,17 +59,17 @@ Add `editable="true"` and the block becomes a **SQL editor** wired to the same d
 ```sql
 SELECT breed, MAX(cuteness) AS cutest FROM dogs GROUP BY breed ORDER BY cutest DESC
 ```
-{: .query bind="dogs" #live_q editable="true" }
+{: .query source="dogs" #live_q editable="true" }
 
 [Result](#)
-{: .datagrid bind="live_q" }
+{: .datagrid source="live_q" }
 
 Try changing `MAX` to `MIN`, or `cuteness` to `weight_kg`, and Run — the grid updates. The result is still a dataset, so a chart could bind to `live_q` just the same.
 
-**Q:** A `{: .chart bind="by_breed" }` is pointed at a query result. What does the chart need to know about the query?
+**Q:** A `{: .chart source="by_breed" }` is pointed at a query result. What does the chart need to know about the query?
 
 - [x] Nothing — a query is a dataset, so the chart binds to it the same way.
-- [ ] It must use `{: .chart query="…" }` instead of `bind`.
+- [ ] It must use `{: .chart query="…" }` instead of `source`.
 - [ ] The query has to run first and be saved to a file.
 - [ ] Charts can't read query results, only raw datasets.
 {: .quiz }

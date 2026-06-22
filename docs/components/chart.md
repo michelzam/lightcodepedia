@@ -62,6 +62,8 @@ First row = column headers. `x=` picks the label column, `y=` picks the value co
 | `x="col"` | first column | Column to use as labels |
 | `y="col"` | second column | Column to use as values |
 | `height="N"` | `300` | Canvas height in pixels |
+| `source="<id>"` | — | Bind to a dataset / query result by id — the chart redraws when that data changes |
+| `master="<grid-id>"` | — | Follow another grid: redraw from the row selected in it (master → detail) |
 
 **Line chart — same data:**
 

@@ -60,7 +60,7 @@ Keys become the left-column labels (auto-prettified: `weight_kg` → **Weight Kg
 | `#id` | Optional — auto-assigned if omitted; add one only to reference this form from elsewhere |
 | `title="…"` | Title bar — overrides the auto-inferred name/title/label/id |
 | `format="yaml"` | `yaml` (default) or `json` |
-| `bound="<grid-id>"` | Link to a datagrid — form fills when a row is selected |
+| `master="<grid-id>"` | Link to a datagrid — form fills when a row is selected |
 | `editable="true"` | Make primitive fields editable — see below |
 
 **Q:** You put two forms on a page and only one shows up. What did you forget?
@@ -88,7 +88,7 @@ Numbers stay numeric — the editor rejects non-numeric input by reverting to th
 
 ## 🔗 Linked to a datagrid — master/detail
 
-An empty `{: .form bound="<id>" }` waits for a row to be clicked in the named datagrid, then fills itself with that row's data. The grid is the list view; the form is the detail view.
+An empty `{: .form master="<id>" }` waits for a row to be clicked in the named datagrid, then fills itself with that row's data. The grid is the list view; the form is the detail view.
 
 ```yaml
 - name: Lucky
@@ -111,7 +111,7 @@ An empty `{: .form bound="<id>" }` waits for a row to be clicked in the named da
 
 ```yaml
 ```
-{: .form bound="dogs" }
+{: .form master="dogs" }
 
 Click a dog in the grid above — the form fills. Click another dog — the form updates. Click the same row again to deselect.
 
@@ -129,7 +129,7 @@ Click a dog in the grid above — the form fills. Click another dog — the form
 
 ## ✏️🔗 Edit a grid row through the form
 
-Combine `editable="true"` AND `bound="<id>"`: edits in the form flow back to the grid row immediately.
+Combine `editable="true"` AND `master="<id>"`: edits in the form flow back to the grid row immediately.
 
 ```yaml
 - name: Lucky
@@ -149,7 +149,7 @@ Combine `editable="true"` AND `bound="<id>"`: edits in the form flow back to the
 
 ```yaml
 ```
-{: .form bound="edit_md_dogs" editable="true" #edit_form_bound }
+{: .form master="edit_md_dogs" editable="true" #edit_form_bound }
 
 Click a dog, change a field in the form — the grid cell updates in place. If the grid is also `editable="true"`, double-clicking a grid cell repaints the form too.
 
@@ -218,10 +218,10 @@ show.form(obj, title=None)
 
 **Q:** Which of these are TRUE about the form widget? (Pick all that apply.)
 
-- [x] `bound="grid-id"` links the form to a datagrid by id.
+- [x] `master="grid-id"` links the form to a datagrid by id.
 - [x] Source order doesn't matter — a form above the grid still binds.
 - [ ] `null` values render as empty strings.
-- [x] `editable="true"` + `bound=` makes edits flow back to the grid row.
+- [x] `editable="true"` + `master=` makes edits flow back to the grid row.
 - [ ] Multiple forms can't bind to the same datagrid.
 {: .quiz multi="true" }
 
