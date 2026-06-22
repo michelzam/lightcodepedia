@@ -7,8 +7,9 @@ Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
 <style>
-.lc-card-features { display: flex; gap: 0.35em; align-items: center; margin-top: 0.65em; flex-wrap: wrap; }
-.lc-card-tags { display: flex; gap: 0.3em; flex-wrap: wrap; margin-top: 0.45em; }
+.lc-card-footer { display: flex; align-items: center; gap: 0.5em; margin-top: 0.65em; flex-wrap: wrap; }
+.lc-card-features { display: flex; gap: 0.35em; align-items: center; flex-wrap: wrap; margin-left: auto; }
+.lc-card-tags { display: flex; gap: 0.3em; flex-wrap: wrap; }
 .lc-card-tag { font-size: 0.7em; font-weight: 600; padding: 0.1em 0.5em; border-radius: 99px; background: #e0f2fe; color: #075985; line-height: 1.6; }
 .lc-feat-dot { display: inline-flex; align-items: center; gap: 0.2em; font-size: 0.72em; font-weight: 600; padding: 0.1em 0.45em; border-radius: 99px; line-height: 1.6; }
 .lc-feat-passing { background: #dcfce7; color: #15803d; }
@@ -180,14 +181,16 @@ Auto-included by docs/_layouts/default.html.
             if (counts.pending)  dots += "<span class='lc-feat-dot lc-feat-pending'  title='" + counts.pending  + " pending scenario"  + (counts.pending  > 1 ? "s" : "") + "'>◑ " + counts.pending  + "</span>";
             if (counts.none && !counts.passing && !counts.failing && !counts.pending)
               dots += "<span class='lc-feat-dot lc-feat-none' title='" + counts.none + " scenario" + (counts.none > 1 ? "s" : "") + " (no status set)'>● " + counts.none + "</span>";
-            if (dots) card += "<div class='lc-card-features'>" + dots + "</div>";
             var tagSeen = {}, tagList = [];
             item.features.forEach(function(f) {
               (((f && f.tags) || "").split(",")).forEach(function(t) {
                 t = t.trim(); if (t && !tagSeen[t]) { tagSeen[t] = 1; tagList.push(t); }
               });
             });
-            if (tagList.length) card += "<div class='lc-card-tags'>" + tagList.map(function(t) { return "<span class='lc-card-tag'>" + escapeHtml(t) + "</span>"; }).join("") + "</div>";
+            // one bottom row: theme tags on the left, feature status counter on the right
+            var tagsHtml = tagList.length ? "<div class='lc-card-tags'>" + tagList.map(function(t) { return "<span class='lc-card-tag'>" + escapeHtml(t) + "</span>"; }).join("") + "</div>" : "";
+            var dotsHtml = dots ? "<div class='lc-card-features'>" + dots + "</div>" : "";
+            if (tagsHtml || dotsHtml) card += "<div class='lc-card-footer'>" + tagsHtml + dotsHtml + "</div>";
           }
           return card + '</div>';
         }).join("");

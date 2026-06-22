@@ -1129,7 +1129,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           var kn = {}, kr2 = /(\w+)="([^"]*)"/g, km2;
           while ((km2 = kr2.exec(im[2]))) kn[km2[1]] = km2[2];
           subs.push({ level: block.level + 1, heading: title,
-            lines: chunk.slice().concat([line]), type: im[1], knobs: kn, subBlock: true });
+            lines: chunk.slice().concat([line]), type: im[1], knobs: kn,
+            subBlock: true, _parentType: block.type });
         }
         chunk = [];
       } else {
@@ -1732,7 +1733,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       // a feature under a heading appears twice in _blocks — the parent and
       // an extracted sub-block. Keep the parent only: blocksToText
       // serialises it (sub-blocks are skipped), so status write-back lands.
-      if (b.type === "feature" && !b.subBlock) {
+      // a sole-feature section yields a parent typed "feature" (plus a dup
+      // sub-block); a feature sharing a section with other components yields
+      // only a sub-block. Take feature parents, and feature sub-blocks whose
+      // parent isn't itself a feature, so co-located specs still list here.
+      if (b.type === "feature" && !(b.subBlock && b._parentType === "feature")) {
         out.push({ i: i, name: featureName(b),
           status: (b.knobs && b.knobs.status) || "none",
           tags: (b.knobs && b.knobs.tags) || "" });
