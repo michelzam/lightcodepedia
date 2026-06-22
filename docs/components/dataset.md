@@ -17,26 +17,26 @@ Invisible data block that `.datagrid` and `.chart` bind to. Declare data once, r
 {: .dataset #monthly }
 
 [Revenue by month](#)
-{: .chart bind="monthly" type="bar" x="month" y="revenue" title="Revenue (€)" }
+{: .chart source="monthly" type="bar" x="month" y="revenue" title="Revenue (€)" }
 
 [Costs trend](#)
-{: .chart bind="monthly" type="line" x="month" y="costs" title="Costs (€)" }
+{: .chart source="monthly" type="line" x="month" y="costs" title="Costs (€)" }
 
 [Full table](#)
-{: .datagrid bind="monthly" rows="4" }
+{: .datagrid source="monthly" rows="4" }
 
 ## Master/detail — dataset → grid → chart
 
 Give the bound grid an **id** and it becomes a master/detail source: clicking
-a row publishes it, and a `bound-to` chart renders that row's numeric fields.
+a row publishes it, and a `master` chart renders that row's numeric fields.
 One dataset, declared once — the grid is its list view, the chart the detail
 view of your selection.
 
 [Pick a month](#)
-{: .datagrid bind="monthly" rows="6" #monthly_grid }
+{: .datagrid source="monthly" rows="6" #monthly_grid }
 
 [Selected month](#)
-{: .chart bound-to="monthly_grid" x="month" height="240" }
+{: .chart master="monthly_grid" x="month" height="240" }
 
 ## CSV example
 
@@ -52,7 +52,7 @@ Frank,71,4
 {: .dataset #scores }
 
 [Scores](#)
-{: .datagrid bind="scores" rows="3" }
+{: .datagrid source="scores" rows="3" }
 
 ## Remote / URL source
 
@@ -62,14 +62,14 @@ Apply `{: .dataset }` to a **link** — the href is fetched and parsed as JSON o
 {: .dataset #todos }
 
 [Todo list](#)
-{: .datagrid bind="todos" rows="5" }
+{: .datagrid source="todos" rows="5" }
 
 ````markdown
 [todos — jsonplaceholder](https://jsonplaceholder.typicode.com/todos?_limit=8)
 {: .dataset #todos }
 
 [Todo list](#)
-{: .datagrid bind="todos" rows="5" }
+{: .datagrid source="todos" rows="5" }
 ````
 
 ## Clickable rows
@@ -86,7 +86,7 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 {: .dataset #links }
 
 [Sites](#)
-{: .datagrid bind="links" }
+{: .datagrid source="links" }
 
 ## 🥸 How to write one
 
@@ -97,15 +97,15 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 {: .dataset #mydata }
 
 [Chart](#)
-{: .chart bind="mydata" type="bar" x="x" y="y" title="My chart" }
+{: .chart source="mydata" type="bar" x="x" y="y" title="My chart" }
 
 [Table](#)
-{: .datagrid bind="mydata" rows="10" }
+{: .datagrid source="mydata" rows="10" }
 ````
 
 - The `.dataset` block is **hidden** — it only registers the data.
 - Apply to a **link** (`[Label](https://…)`) to fetch from a URL instead.
-- `bind="id"` wires a view to the dataset; multiple views can share one dataset.
+- `source="id"` wires a view to the dataset; multiple views can share one dataset.
 - Click any **column header** to sort. Sorting persists through pagination.
 - Add a **`url` column** to make rows clickable links.
 
@@ -113,12 +113,12 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 
 | Block | Attribute | Values | What it does |
 |---|---|---|---|
-| `.dataset` | `id="…"` | any string | Registers data under this key |
+| `.dataset` | `#id` | snake_case | Registers data under this key |
 | `.dataset` | _(applied to a link)_ | `https://…` href | Fetches JSON or CSV from the URL |
-| `.datagrid` | `bind="…"` | dataset id | Which dataset to display |
+| `.datagrid` | `source="…"` | dataset id | Which dataset to display |
 | `.datagrid` | `rows="…"` | number | Rows per page (0 = all) |
 | `.datagrid` | `url` column | URL string | Hidden column; makes rows clickable links |
-| `.chart` | `bind="…"` | dataset id | Which dataset to plot |
+| `.chart` | `source="…"` | dataset id | Which dataset to plot |
 | `.chart` | `type="…"` | `bar` · `line` | Chart type |
 | `.chart` | `x="…"` | column name | Horizontal axis column |
 | `.chart` | `y="…"` | column name | Vertical axis column |
