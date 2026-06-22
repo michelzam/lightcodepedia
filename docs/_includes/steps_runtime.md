@@ -403,11 +403,11 @@ class Bar(Object):
            attrs=[{"n": "row_count", "t": "int"},
                   {"n": "headers", "t": "str", "list": True},
                   {"n": "rows", "t": "ref", "list": True}],
-           assoc=[{"n": "bind", "target": "Dataset"}],
+           assoc=[{"n": "source", "target": "Dataset"}],
            methods=["header"])
 class Datagrid(Block):
     @property
-    def bind(self):
+    def source(self):
         return Dataset(self._attr("data-bind") or "")
 
     @property
@@ -451,8 +451,8 @@ class Datagrid(Block):
                   {"n": "y", "t": "str", "data": True, "d": ""},
                   {"n": "bar_count", "t": "int"},
                   {"n": "point_count", "t": "int"}],
-           assoc=[{"n": "bind", "target": "Dataset"},
-                  {"n": "bound_to", "target": "Datagrid"},
+           assoc=[{"n": "source", "target": "Dataset"},
+                  {"n": "master", "target": "Datagrid"},
                   {"n": "bars", "target": "Bar", "list": True}])
 class Chart(Block):
     @property
@@ -460,11 +460,11 @@ class Chart(Block):
         return [Bar(r._el) for r in self._qq("rect")]
 
     @property
-    def bind(self):
+    def source(self):
         return Dataset(self._attr("data-bind") or "")
 
     @property
-    def bound_to(self):
+    def master(self):
         gid = self._attr("data-bound-to") or ""
         el = js.window.document.querySelector("[data-lc-id='" + gid + "']")
         return Datagrid(el)
@@ -748,11 +748,11 @@ class Tabs(Block):
            attrs=[{"n": "title", "t": "str", "data": True, "d": ""},
                   {"n": "format", "t": "str", "data": True, "d": "yaml"},
                   {"n": "editable", "t": "bool", "data": True, "d": False}],
-           assoc=[{"n": "bound", "target": "Datagrid"}],
+           assoc=[{"n": "master", "target": "Datagrid"}],
            methods=["submit"])
 class Form(Block):
     @property
-    def bound(self):
+    def master(self):
         gid = self._attr("data-bound") or ""
         el = js.window.document.querySelector("[data-lc-id='" + gid + "']") if gid else None
         return _wrap(el)
@@ -858,7 +858,7 @@ class Run(Block):
 
 @component(icon="🔬",
            attrs=[{"n": "height", "t": "int", "data": True, "d": 400},
-                  {"n": "bound_to", "t": "str", "data": True, "d": "",
+                  {"n": "master", "t": "str", "data": True, "d": "",
                    "attr": "data-bound-to"}])
 class Pytutor(Block):
     pass

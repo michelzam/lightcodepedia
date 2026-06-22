@@ -104,10 +104,10 @@ Feature: Page component access
     assert self.page.probe_chart.x    == "label", f"x: {self.page.probe_chart.x}"
     assert self.page.probe_chart.y    == "value", f"y: {self.page.probe_chart.y}"
     :::
-    And its bind references probe_data
+    And its source references probe_data
     :::python
-    assert self.page.probe_chart.bind == self.page.probe_data, \
-        f"bind mismatch: {self.page.probe_chart.bind._id!r}"
+    assert self.page.probe_chart.source == self.page.probe_data, \
+        f"source mismatch: {self.page.probe_chart.source._id!r}"
     :::
     Then it has rendered bars
     :::python

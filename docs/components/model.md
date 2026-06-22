@@ -51,7 +51,7 @@ digraph component_model {
     Mdpad [label="{✍️ Mdpad ➭ 🧩|🔢 rows\l}"]
     Menu [label="{🍔 Menu ➭ 🧩|▸ items\l}"]
     ModelCheck [label="{🧪 ModelCheck ➭ 🧩|🔢 checked\l🔢 broken\l🔘 ok\l}"]
-    Pytutor [label="{🔬 Pytutor ➭ 🧩|🔢 height\l🔤 bound to\l}"]
+    Pytutor [label="{🔬 Pytutor ➭ 🧩|🔢 height\l🔤 master\l}"]
     Qr [label="{🔳 Qr ➭ 🧩|🔢 size\l}"]
     Quiz [label="{❓ Quiz ➭ 🧩|🎛️ state\l🔘 multi\l🔘 graded\l|▹ check ▹\l}"]
     Radio [label="{📻 Radio ➭ 🧩|🔤 selected\l🔢 active\l|▸ select\l}"]
@@ -68,9 +68,9 @@ digraph component_model {
     Vitals [label="{📊 Vitals ➭ 🧩|🔢 samples\l🔢 heap mb\l🔢 dom nodes\l}"]
   }
   Block -> Page [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="page", fontsize=8]
-  Datagrid -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bind", fontsize=8]
-  Chart -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bind", fontsize=8]
-  Chart -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bound to", fontsize=8]
+  Datagrid -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="source", fontsize=8]
+  Chart -> Dataset [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="source", fontsize=8]
+  Chart -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="master", fontsize=8]
   Chart -> Bar [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="⦙ bars", fontsize=8]
   subgraph cluster_states_Avatar {
     label="🗣️ states 🎛️"; fontsize=10;
@@ -84,7 +84,7 @@ digraph component_model {
   st_Avatar_speaking -> st_Avatar_idle [xlabel="stop", fontsize=8, color="gray45", fontcolor="gray45", minlen=2, constraint=false]
   st_Avatar_idle -> Avatar [style=dashed, arrowhead=none, color="gray70"]
   AvatarTrigger -> Avatar [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="target", fontsize=8]
-  Form -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="bound", fontsize=8]
+  Form -> Datagrid [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="master", fontsize=8]
   KnowledgeNode -> KnowledgeNode [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="⦙ prerequisites", fontsize=8]
   KnowledgeNode -> KnowledgeNode [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="⦙ next", fontsize=8]
   KnowledgeNode -> Quiz [color=blue, fontcolor=blue, weight=8, labeldistance=2, headlabel="⦙ quiz", fontsize=8]
