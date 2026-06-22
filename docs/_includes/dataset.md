@@ -126,7 +126,7 @@ Auto-included by docs/_layouts/default.html.
   /* ── .datagrid upgrade ──────────────────────────── */
   function upgradeDatagridBound(el) {
     if (el.dataset.lcDgDone || el.dataset.lcUpgraded) return;
-    var bindId = el.getAttribute("bind");
+    var bindId = el.getAttribute("source") || el.getAttribute("bind");
     if (!bindId) return; /* skip old-style code-block datagrids */
     el.dataset.lcDgDone = "1";
     var perPage = parseInt(el.getAttribute("rows") || "0", 10) || 0;

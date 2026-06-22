@@ -32,7 +32,7 @@ Auto-included by docs/_layouts/default.html.
   function upgradeStat(el) {
     if (el.dataset.lcStatDone) return;
     el.dataset.lcStatDone = "1";
-    var bindId = el.getAttribute("bind") || "";
+    var bindId = el.getAttribute("source") || el.getAttribute("bind") || "";
     var format = el.getAttribute("format") || "{count}";
     var pick   = el.getAttribute("pick") || "last";
     /* requires="col": show nothing meaningful until that column is truthy

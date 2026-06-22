@@ -17,7 +17,7 @@ Auto-included by docs/_layouts/default.html.
     var initialCode = (code ? code.textContent : el.textContent).trim();
     if (!initialCode) return;
     var h       = el.getAttribute("height") || "400";
-    var boundTo = el.getAttribute("bound-to");
+    var boundTo = el.getAttribute("master") || el.getAttribute("bound-to");
 
     function buildUrl(codeStr) {
       return "https://pythontutor.com/iframe-embed.html#code="
