@@ -45,7 +45,7 @@ Feature: Temperature converter
     assert (0 * 9 / 5) + 32 == 32.0
     :::
 ```
-{: .feature visible="true" #temp_feature status="passing" }
+{: .feature visible="true" #temp_feature status="passing" tags="lifecycle" }
 
 `self` is shared across all steps in a run — state set in one step (`self.celsius`) is available in later ones.
 
