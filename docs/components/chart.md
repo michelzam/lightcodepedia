@@ -129,7 +129,7 @@ Feature: A data block becomes a chart
     assert self.chart._q("canvas")._el is not None
     :::
 ```
-{: .feature tags="data" }
+{: .feature tags="data" status="passing"}
 
 ## 🔗 Related components & examples
 

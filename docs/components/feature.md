@@ -181,7 +181,7 @@ Feature: Button handler
     assert self.max_bar.value > bars[2].value
     :::
 ```
-{: .feature visible="true" #btn_handler status="pending" tags="button,events" }
+{: .feature visible="true" #btn_handler status="pending" tags="events" }
 
 ## 🥸 How to write one
 
