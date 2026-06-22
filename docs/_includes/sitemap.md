@@ -286,6 +286,8 @@ Attributes:
     var H = parseInt(el.getAttribute("height") || "420", 10);
     if (!_repo || !path) { el.innerHTML = "<div class='lc-sm-msg'>⚠ set path</div>"; return; }
     el.style.height = H + "px";
+    el.classList.add("lc-sitemap");   /* style + make the widget selectable now,
+                                          not only after the async graph builds */
     el.innerHTML = "<div class='lc-sm-msg'>Loading graph…</div>";
 
     var pat = localStorage.getItem("lc_ed_pat") || "";
