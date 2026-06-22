@@ -33,6 +33,29 @@ The split is purely structural — no special marker required.
 
 So a normal lesson with five `## h2` sections becomes a six-slide deck (intro + five sections), automatically.
 
+```gherkin
+Feature: Any page splits into a slide deck
+  As a lowcoder
+  I want each ## h2 to become a slide with no special markup
+  So that the same markdown reads scrolly and presents as a deck
+
+  Scenario: The page is split into one slide per section
+    Given this page has several ## h2 sections
+    :::python
+    self.slides = Object._all(".lc-slide")
+    :::
+    When the slide engine has run
+    Then it produced several slides (intro + one per ## h2)
+    :::python
+    assert len(self.slides) >= 6, len(self.slides)
+    :::
+    And the first slide carries the page title
+    :::python
+    assert "Slides" in self.slides[0].text, self.slides[0].text[:60]
+    :::
+```
+{: .feature tags="ui" status="passing" }
+
 > If a student asks about `###`, point at the design-tips section.
 > Common confusion — they assume more `#` = more breaks.
 {: .speaker-note }
