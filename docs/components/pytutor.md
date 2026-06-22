@@ -11,6 +11,25 @@ for i in x:
 ```
 {: .pytutor height="420" }
 
+```gherkin
+Feature: A fenced block becomes a step-through visualizer
+  As a learner
+  I want my code visualized step by step
+  So that I can see how variables and the call stack change
+
+  Scenario: The block upgrades into a visualizer frame
+    Given the pytutor block above
+    :::python
+    self.viz = Object._all(".lc-pytutor")[0]
+    :::
+    When the page has upgraded it
+    Then it is a visible visualizer
+    :::python
+    assert self.viz.visible
+    :::
+```
+{: .feature tags="lifecycle,learn" status="passing" }
+
 ## Recursive function
 
 ```python

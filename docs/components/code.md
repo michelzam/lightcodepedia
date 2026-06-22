@@ -18,6 +18,26 @@ greet("Lightcoder")
 
 That's Option 2 — one IAL[^ial] line added to a plain fenced block. Let's build up from the simplest form.
 
+```gherkin
+Feature: A fenced block becomes a titled code card
+  As a lowcoder
+  I want code shown with a title bar and highlighting
+  So that I can present code cleanly with no HTML
+
+  Scenario: The block upgrades into a code card
+    Given the code block above
+    :::python
+    self.code = Object._all(".lc-code")[0]
+    :::
+    When the page has upgraded it
+    Then it is a visible code card holding the snippet
+    :::python
+    assert self.code.visible
+    assert "greet" in self.code.text, self.code.text[:60]
+    :::
+```
+{: .feature tags="code" status="passing" }
+
 > When demoing: point at the language badge (top-right) and the title bar.
 > Ask yourself: "how many lines of extra markup did that take?" Answer: one.
 {: .speaker-note }
