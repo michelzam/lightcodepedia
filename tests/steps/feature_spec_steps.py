@@ -9,6 +9,13 @@ def step_wait_selector(context, css):
     context.page.locator(css).first.wait_for(state="visible", timeout=20_000)
 
 
+@when('I wait for {n:d} elements matching "{css}"')
+def step_wait_count(context, n, css):
+    # AG Grid renders rows progressively — the first row appearing does not mean
+    # all rows are in the DOM. Wait for the exact count before asserting on it.
+    expect(context.page.locator(css)).to_have_count(n, timeout=20_000)
+
+
 @when("I run the page's embedded features")
 def step_run_features(context):
     # Hidden features (visible=false) render display:none. Un-hide so their

@@ -52,7 +52,7 @@ Feature: Component specs run green
     Given I have a clean browser page
     When I navigate to "/components/datagrid"
     And I wait for the page to be interactive
-    And I wait for the selector "[data-lc-id='editable_dogs'] .ag-row"
+    And I wait for 3 elements matching "[data-lc-id='editable_dogs'] .ag-center-cols-container .ag-row"
     And I run the page's embedded features
     Then every embedded feature passes
 
