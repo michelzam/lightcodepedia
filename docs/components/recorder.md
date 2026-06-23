@@ -145,3 +145,13 @@ The file is named `recording-YYYY-MM-DD-HH-MM-SS.webm` (or `.mp4` on Safari).
 - **No upload, no server** — the file is written directly to your downloads folder.
 - **Desktop recording is single-page** — the recording stops if you navigate to another page, because the browser reloads everything. Record one page per video on desktop.
 - **iPhone recording spans pages** — on iOS the recorder shows your floating face cam and you start *native* screen recording from Control Centre. Because iOS owns the capture, it keeps going as you move across pages. Long-press the ⏺ button to enable the microphone.
+
+## 🧠 Quick check
+
+**Q:** You hit ⏹ Stop. Where does your recording go?
+
+- [x] Straight to a file you save locally — no upload, no server, no cloud.
+- [ ] To a mysterious data centre that now knows your screen habits.
+- [ ] Into the void, never to be seen again.
+- [ ] To your most embarrassing group chat, automatically.
+{: .quiz }

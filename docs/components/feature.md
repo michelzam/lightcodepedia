@@ -220,3 +220,13 @@ Feature: My feature
 | `.feature` | `status="…"` | `passing` · `failing` · `pending` | Border colour and badge; updated live after a run |
 | `.feature` | `tags="…"` | comma-separated | Chips in the card header |
 | `.feature` | `#<id>` | Python-compatible id | Makes the card reachable as `self.page.<id>` in any step |
+
+## 🧠 Quick check
+
+**Q:** A `.feature` is hidden by default. Why hide your beautiful specs?
+
+- [x] They're tests, not lesson content — they run quietly and prove things still work.
+- [ ] Specs are introverts.
+- [ ] To build suspense before the big reveal.
+- [ ] The author is embarrassed by their Gherkin.
+{: .quiz }

@@ -55,3 +55,13 @@ Requires a GitHub Personal Access Token saved via the **Sign in** button (top-ri
 - Uses the GitHub Actions API (`/repos/{owner}/{repo}/actions/runs`). Requires **Actions enabled** on the repo.
 - Each refresh counts against your hourly GitHub rate limit; remaining calls appear in your avatar menu.
 - For a GitHub Pages site the relevant workflow is **pages-build-deployment**.
+
+## 🧠 Quick check
+
+**Q:** Your deploy is taking a minute. What's the most likely culprit?
+
+- [x] GitHub Pages is rebuilding the site — give it a moment, it's doing its best.
+- [ ] The hamster powering the server unionised.
+- [ ] You deployed on a Friday. Everyone knows the rules.
+- [ ] The bytes got lost and are asking for directions.
+{: .quiz }

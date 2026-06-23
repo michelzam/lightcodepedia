@@ -106,3 +106,13 @@ your code here
 | `bound-to` | — | ID of a `.run` block (without `#`). Reloads the visualizer on every keystroke (debounced 600 ms). |
 
 Always runs on the latest Python 3 available in the Python Tutor embed.
+
+## 🧠 Quick check
+
+**Q:** It "works on your machine" but a learner is lost. What does pytutor show them?
+
+- [x] Each step — variables and the call stack changing — so they see *why*, not just *what*.
+- [ ] A motivational poster.
+- [ ] The phone number for tech support.
+- [ ] Nothing. It just judges you silently.
+{: .quiz }

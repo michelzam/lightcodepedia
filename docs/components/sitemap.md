@@ -49,3 +49,13 @@ Put a link to the directory you want to map, then apply `{: .sitemap }`:
 |---|---|---|
 | `path="…"` | _(required)_ | GitHub repo path of the directory to scan |
 | `height="…"` | `420` | SVG canvas height in px |
+
+## 🧠 Quick check
+
+**Q:** In the sitemap graph, heavily linked-to pages float upward. Why?
+
+- [x] More incoming links = more "gravity" pulling them up — a natural hierarchy.
+- [ ] They are full of helium.
+- [ ] They paid for premium placement.
+- [ ] The graph likes them better. Graphs have favourites.
+{: .quiz }

@@ -42,3 +42,13 @@ The `docs/components` folder contains many `.md` files **and** a subfolder `exam
 
 [Browse →](docs/play)
 {: .folder cols="4" }
+
+## 🧠 Quick check
+
+**Q:** A folder turns a directory into a grid of cards automatically. How many cards must you write by hand?
+
+- [x] Zero. It reads the folder and builds them for you.
+- [ ] One per page, lovingly handcrafted at midnight.
+- [ ] Depends how much coffee you've had.
+- [ ] All of them, in raw HTML, like an animal.
+{: .quiz }

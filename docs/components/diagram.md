@@ -83,3 +83,13 @@ Release the key to dismiss.
 |---|---|---|
 | `scope="…"` | (whole model) | A **class** name (class + neighbours), a **package** (`ui` / `kore`), or `*` for the whole model |
 | `states="…"` | `true` | Set `false`/`off` to hide the state-machine clusters |
+
+## 🧠 Quick check
+
+**Q:** This class diagram is drawn in the browser from the component classes themselves. Why bother, instead of a nice static PNG?
+
+- [x] A PNG goes stale the second the code changes; this one literally cannot lie.
+- [ ] PNGs are too mainstream.
+- [ ] The author lost the PNG and panicked.
+- [ ] Graphviz threatened legal action.
+{: .quiz }

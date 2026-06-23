@@ -68,3 +68,12 @@ Feature: Component palette
     Then I can see easily join other related components and examples
 ```
 {: .feature visible="false" tags="learning" }
+## 🧠 Quick check
+
+**Q:** Every component on this site activates the same way. How?
+
+- [x] One kramdown IAL — `{: .class }` on the line after a block. No HTML, no JS.
+- [ ] A 600-line config file and a quiet prayer.
+- [ ] `npm install everything`.
+- [ ] You email the maintainer and wait by the phone.
+{: .quiz }

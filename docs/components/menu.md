@@ -65,3 +65,13 @@ So the `.menu` component lets you build that same kind of nav anywhere in your o
 
 - Links open in the same tab by default; add `{:target="_blank"}` to a link for a new tab.
 - Pure markdown — no HTML needed. The bar is responsive and wraps on small screens.
+
+## 🧠 Quick check
+
+**Q:** A `.menu` turns a row of links into a nav bar. What's the secret ingredient?
+
+- [x] Plain markdown links + `{: .menu }`. That's the whole recipe.
+- [ ] A `<nav>`, three `<div>`s, and a flexbox you'll cry over.
+- [ ] jQuery. Obviously.
+- [ ] A navigation consultant on retainer.
+{: .quiz }

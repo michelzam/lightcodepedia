@@ -177,3 +177,13 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 
 Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).
 
+
+## 🧠 Quick check
+
+**Q:** A `.dataset` block renders nothing on the page. Where did your data go?
+
+- [x] Registered in memory under its `#id` — invisible isn't gone; grids and charts read it.
+- [ ] It evaporated. Data is a gas at room temperature.
+- [ ] Hiding behind the chart. It's shy around strangers.
+- [ ] You forgot to feed it. Hungry datasets sulk and hide.
+{: .quiz }
