@@ -38,6 +38,7 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
   pointer-events: none; }
 .lc-card-score.partial { background: #fef9c3; color: #854d0e; }
 .lc-card-score.full { background: #dcfce7; color: #166534; }
+.lc-card-score.lc-card-unstarted { background: #f1f5f9; color: #94a3b8; }
 /* gray "remaining" = quizzes on the page you have not answered yet */
 .lc-score-fab-remaining { color: #9ca3af; font-weight: 600; }
 .lc-score-fab-remaining:empty { display: none; }
@@ -69,20 +70,31 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       if (card.dataset.lcScored) return;
       var a = card.querySelector("a[href]"); if (!a) return;
       var s = scores[normPath(a.getAttribute("href"))];
-      if (!s || !s.total) return;
+      var answered = (s && s.total) || 0;
+      /* total quizzes: from the folder's md count (data-quizzes) for pages you
+         have not visited, falling back to the remembered count. */
+      var quizTotal = parseInt(card.getAttribute("data-quizzes") || "0", 10) || (s && s.quizzes) || 0;
+      var rem = Math.max(0, quizTotal - answered);
+      if (!answered && rem === 0) return;   // no score and no quizzes — nothing to show
       card.dataset.lcScored = "1";
       var tag = document.createElement("span");
-      tag.className = "lc-card-score" + (s.won >= s.total ? " full" : (s.won > 0 ? " partial" : ""));
-      var rem = Math.max(0, (s.quizzes || 0) - s.total);
-      tag.innerHTML = s.won + "/" + s.total + (rem > 0 ? " <span class='lc-card-rem'>+" + rem + "</span>" : "");
-      tag.title = "Your score on this page" + (rem > 0 ? " — " + rem + " quiz" + (rem > 1 ? "zes" : "") + " unanswered" : "");
+      if (answered) {
+        tag.className = "lc-card-score" + (s.won >= answered ? " full" : (s.won > 0 ? " partial" : ""));
+        tag.innerHTML = s.won + "/" + answered + (rem > 0 ? " <span class='lc-card-rem'>+" + rem + "</span>" : "");
+        tag.title = "Your score on this page" + (rem > 0 ? " — " + rem + " quiz" + (rem > 1 ? "zes" : "") + " unanswered" : "");
+      } else {
+        /* never started, but the page has quizzes */
+        tag.className = "lc-card-score lc-card-unstarted";
+        tag.innerHTML = "<span class='lc-card-rem'>" + rem + " ❓</span>";
+        tag.title = rem + " quiz" + (rem > 1 ? "zes" : "") + " — not started";
+      }
       card.appendChild(tag);
     });
   }
   var _cardTick = false;
   function scheduleDecorate(){
     if (_cardTick) return; _cardTick = true;
-    requestAnimationFrame(function(){ _cardTick = false; decorateCards(); });
+    requestAnimationFrame(function(){ _cardTick = false; decorateCards(); if (window.lcQuizScore && window.lcQuizScore.refresh) window.lcQuizScore.refresh(); });
   }
 
   window.lcQuizScore = window.lcQuizScore || (function(){
@@ -119,19 +131,27 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
         if (sTotal === 0) { total = seed.total; won = seed.won; remembered = true; }  // show last visit's score
         else { won = Math.max(won, seed.won); total = Math.max(total, seed.total); }
       }
-      if (total === 0) { f.classList.remove('lc-score-visible'); return; }
-      f.querySelector('.lc-score-fab-label').textContent = won + '/' + total;
-      /* gray count of quizzes on this page not yet answered */
+      /* gray count of quizzes on this page not yet answered — shown even on a
+         page you've never started (0 answered, all remaining). Mutate only when
+         the value changes, so this can be re-run from the MutationObserver
+         (after quizzes upgrade) without looping. */
       var quizCount = document.querySelectorAll('.lc-quiz').length;
       if (quizCount === 0 && seed && seed.quizzes) quizCount = seed.quizzes;
       var remaining = Math.max(0, quizCount - total);
+      if (total === 0 && remaining === 0) { f.classList.remove('lc-score-visible'); return; }
+      var labelEl = f.querySelector('.lc-score-fab-label');
+      var newLabel = total > 0 ? (won + '/' + total) : '';
+      if (labelEl.textContent !== newLabel) labelEl.textContent = newLabel;
       var remEl = f.querySelector('.lc-score-fab-remaining');
       if (remEl) {
-        remEl.textContent = remaining > 0 ? ' +' + remaining : '';
-        remEl.title = remaining > 0 ? remaining + ' quiz' + (remaining > 1 ? 'zes' : '') + ' not answered yet' : '';
+        var newRem = remaining > 0 ? (total > 0 ? ' +' + remaining : remaining + ' ❓') : '';
+        if (remEl.textContent !== newRem) {
+          remEl.textContent = newRem;
+          remEl.title = remaining > 0 ? remaining + ' quiz' + (remaining > 1 ? 'zes' : '') + ' not answered yet' : '';
+        }
       }
       f.classList.toggle('lc-score-remembered', remembered);
-      f.classList.add('lc-score-visible');
+      if (!f.classList.contains('lc-score-visible')) f.classList.add('lc-score-visible');
     }
 
     function renderPopover() {

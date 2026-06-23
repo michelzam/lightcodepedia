@@ -76,6 +76,17 @@ Auto-included by docs/_layouts/default.html.
     return features;
   }
 
+  /* count the .quiz widgets on a page (skip code fences / inline code) so a
+     card can show how many quizzes are still unanswered even before you visit */
+  function countQuizzes(text) {
+    var scanText = text
+      .replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "")
+      .replace(/`[^`\n]+`/g, "``");
+    var n = 0, qRe = /\{:\s*\.quiz\b[^}]*\}/g;
+    while (qRe.exec(scanText) !== null) n++;
+    return n;
+  }
+
   /* distinct theme tags across a card's features (order preserved) */
   function cardTagList(features) {
     var seen = {}, list = [];
@@ -96,7 +107,7 @@ Auto-included by docs/_layouts/default.html.
     var nonpassing = feats.filter(function(f) { return ((f && f.status) || "none") !== "passing"; }).length;
     var tagsAttr = tagList.length ? ' data-tags="' + escapeHtml(tagList.join(" ")) + '"' : '';
     var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
-    var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + ' data-nonpassing="' + nonpassing + '"' + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+    var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
     if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
     if (item.features && item.features.length) {
       var counts = {};
@@ -188,6 +199,7 @@ Auto-included by docs/_layouts/default.html.
               var meta = extractPageMeta(text);
               var title = meta.title || f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
               var features = scanFeatures(text);
+              var quizzes = countQuizzes(text);
               /* collect internal links for hover ribbons */
               var cleanLinks = text.replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "").replace(/`[^`\n]+`/g, "");
               var pageSlug = f.path.replace(/^docs\//, "").replace(/\.md$/i, "");
@@ -195,7 +207,7 @@ Auto-included by docs/_layouts/default.html.
               while ((lm = lRe.exec(cleanLinks)) !== null) {
                 var h = lm[1]; if (/^https?:|^mailto:/.test(h)) continue; rawHrefs.push({ h: h, base: pageSlug });
               }
-              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features, rawHrefs: rawHrefs };
+              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features, quizzes: quizzes, rawHrefs: rawHrefs };
             })
             .catch(function() {
               var title = f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
@@ -245,8 +257,9 @@ Auto-included by docs/_layouts/default.html.
            per-page score in localStorage) and not-yet-passing features. */
         var cardsArr = Array.prototype.slice.call(wrap.querySelectorAll(".lc-card[data-url]"));
         function cardUnanswered(c) {
+          var total = parseInt(c.getAttribute("data-quizzes") || "0", 10);
           var s = window.lcPageScores && window.lcPageScores.get(c.getAttribute("data-url"));
-          return s ? Math.max(0, (s.quizzes || 0) - (s.total || 0)) : 0;
+          return Math.max(0, total - (s ? (s.total || 0) : 0));
         }
         function cardNonpassing(c) { return parseInt(c.getAttribute("data-nonpassing") || "0", 10); }
         var nUnanswered = cardsArr.filter(function(c) { return cardUnanswered(c) > 0; }).length;
