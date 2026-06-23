@@ -38,9 +38,13 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
   pointer-events: none; }
 .lc-card-score.partial { background: #fef9c3; color: #854d0e; }
 .lc-card-score.full { background: #dcfce7; color: #166534; }
+/* gray "remaining" = quizzes on the page you have not answered yet */
+.lc-score-fab-remaining { color: #9ca3af; font-weight: 600; }
+.lc-score-fab-remaining:empty { display: none; }
+.lc-card-rem { color: #9ca3af; font-weight: 600; margin-left: 0.15em; }
 </style>
 <button class="lc-score-fab" type="button" aria-label="Show quiz score">
-  <span class="lc-score-fab-icon" aria-hidden="true">🏆</span><span class="lc-score-fab-label">0/0</span>
+  <span class="lc-score-fab-icon" aria-hidden="true">🏆</span><span class="lc-score-fab-label">0/0</span><span class="lc-score-fab-remaining"></span>
 </button>
 <div class="lc-score-popover" role="status" aria-live="polite"></div>
 <script>
@@ -69,8 +73,9 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       card.dataset.lcScored = "1";
       var tag = document.createElement("span");
       tag.className = "lc-card-score" + (s.won >= s.total ? " full" : (s.won > 0 ? " partial" : ""));
-      tag.textContent = s.won + "/" + s.total;
-      tag.title = "Your score on this page";
+      var rem = Math.max(0, (s.quizzes || 0) - s.total);
+      tag.innerHTML = s.won + "/" + s.total + (rem > 0 ? " <span class='lc-card-rem'>+" + rem + "</span>" : "");
+      tag.title = "Your score on this page" + (rem > 0 ? " — " + rem + " quiz" + (rem > 1 ? "zes" : "") + " unanswered" : "");
       card.appendChild(tag);
     });
   }
@@ -94,6 +99,7 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       // keep the best: never regress a remembered score on a partial re-visit
       all[PATH] = { won: Math.max(prev.won || 0, sessionWon()),
                     total: Math.max(prev.total || 0, order.length),
+                    quizzes: Math.max(prev.quizzes || 0, document.querySelectorAll('.lc-quiz').length),
                     ts: new Date().toISOString() };
       seed = all[PATH];
       saveScores(all);
@@ -115,6 +121,15 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       }
       if (total === 0) { f.classList.remove('lc-score-visible'); return; }
       f.querySelector('.lc-score-fab-label').textContent = won + '/' + total;
+      /* gray count of quizzes on this page not yet answered */
+      var quizCount = document.querySelectorAll('.lc-quiz').length;
+      if (quizCount === 0 && seed && seed.quizzes) quizCount = seed.quizzes;
+      var remaining = Math.max(0, quizCount - total);
+      var remEl = f.querySelector('.lc-score-fab-remaining');
+      if (remEl) {
+        remEl.textContent = remaining > 0 ? ' +' + remaining : '';
+        remEl.title = remaining > 0 ? remaining + ' quiz' + (remaining > 1 ? 'zes' : '') + ' not answered yet' : '';
+      }
       f.classList.toggle('lc-score-remembered', remembered);
       f.classList.add('lc-score-visible');
     }

@@ -21,6 +21,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-card-filter-on { background: #0284c7; color: #fff; border-color: #0284c7; }
 .lc-card-filter-n { opacity: 0.6; font-weight: 500; }
 .lc-card-filter-clear { border-color: #e5e7eb; background: #fff; color: #6b7280; }
+/* state filters (remaining work) are amber to set them apart from theme tags */
+.lc-card-filter-state { border-color: #fcd34d; background: #fffbeb; color: #92400e; }
+.lc-card-filter-state:hover { background: #fef3c7; }
+.lc-card-filter-state.lc-card-filter-on { background: #0284c7; color: #fff; border-color: #0284c7; }
 .lc-feat-dot { display: inline-flex; align-items: center; gap: 0.2em; font-size: 0.72em; font-weight: 600; padding: 0.1em 0.45em; border-radius: 99px; line-height: 1.6; }
 .lc-feat-passing { background: #dcfce7; color: #15803d; }
 .lc-feat-failing  { background: #fee2e2; color: #b91c1c; }
@@ -88,9 +92,11 @@ Auto-included by docs/_layouts/default.html.
   function buildCardHtml(item, opts) {
     opts = opts || {};
     var tagList = cardTagList(item.features);
+    var feats = item.features || [];
+    var nonpassing = feats.filter(function(f) { return ((f && f.status) || "none") !== "passing"; }).length;
     var tagsAttr = tagList.length ? ' data-tags="' + escapeHtml(tagList.join(" ")) + '"' : '';
     var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
-    var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+    var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + ' data-nonpassing="' + nonpassing + '"' + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
     if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
     if (item.features && item.features.length) {
       var counts = {};
@@ -234,48 +240,74 @@ Auto-included by docs/_layouts/default.html.
 
         /* ── tag filter bar: clickable chips that show/hide cards by tag ── */
         var tagNames = Object.keys(allTags).sort();
-        if (tagNames.length >= 2) {
+
+        /* state filters ("remaining work"): unanswered quizzes (from the
+           per-page score in localStorage) and not-yet-passing features. */
+        var cardsArr = Array.prototype.slice.call(wrap.querySelectorAll(".lc-card[data-url]"));
+        function cardUnanswered(c) {
+          var s = window.lcPageScores && window.lcPageScores.get(c.getAttribute("data-url"));
+          return s ? Math.max(0, (s.quizzes || 0) - (s.total || 0)) : 0;
+        }
+        function cardNonpassing(c) { return parseInt(c.getAttribute("data-nonpassing") || "0", 10); }
+        var nUnanswered = cardsArr.filter(function(c) { return cardUnanswered(c) > 0; }).length;
+        var nNonpassing = cardsArr.filter(function(c) { return cardNonpassing(c) > 0; }).length;
+
+        if (tagNames.length >= 2 || nUnanswered || nNonpassing) {
           var bar = document.createElement("div");
           bar.className = "lc-card-filter";
-          bar.innerHTML = "<span class='lc-card-filter-label'>Filter:</span>"
-            + tagNames.map(function(t) {
-                return "<button type='button' class='lc-card-filter-chip' data-tag='" + escapeHtml(t) + "'>"
-                  + escapeHtml(t) + " <span class='lc-card-filter-n'>" + allTags[t] + "</span></button>";
-              }).join("")
-            + "<button type='button' class='lc-card-filter-chip lc-card-filter-clear' data-tag='' hidden>✕ clear</button>";
+          var chips = "<span class='lc-card-filter-label'>Filter:</span>";
+          if (tagNames.length >= 2) chips += tagNames.map(function(t) {
+            return "<button type='button' class='lc-card-filter-chip' data-tag='" + escapeHtml(t) + "'>"
+              + escapeHtml(t) + " <span class='lc-card-filter-n'>" + allTags[t] + "</span></button>";
+          }).join("");
+          if (nNonpassing) chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-state='nonpassing' title='Cards with features not yet passing'>✗ to fix <span class='lc-card-filter-n'>" + nNonpassing + "</span></button>";
+          if (nUnanswered) chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-state='unanswered' title='Cards with quizzes you have not answered'>❓ unanswered <span class='lc-card-filter-n'>" + nUnanswered + "</span></button>";
+          chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-clear' data-tag='' hidden>✕ clear</button>";
+          bar.innerHTML = chips;
           wrap.parentNode.insertBefore(bar, wrap);
 
           var active = {};
+          function chipKey(chip) {
+            if (chip.getAttribute("data-state")) return "state:" + chip.getAttribute("data-state");
+            return chip.getAttribute("data-tag") || "";
+          }
+          function cardMatches(c, key) {
+            if (key.indexOf("state:") === 0) {
+              var st = key.slice(6);
+              if (st === "unanswered") return cardUnanswered(c) > 0;
+              if (st === "nonpassing") return cardNonpassing(c) > 0;
+              return false;
+            }
+            return (c.getAttribute("data-tags") || "").split(" ").indexOf(key) >= 0;
+          }
           function applyFilter() {
             var keys = Object.keys(active), any = keys.length > 0;
-            wrap.querySelectorAll(".lc-card[data-url]").forEach(function(c) {
-              if (!any) { c.style.display = ""; return; }
-              var ct = (c.getAttribute("data-tags") || "").split(" ");
-              c.style.display = keys.some(function(k) { return ct.indexOf(k) >= 0; }) ? "" : "none";
+            cardsArr.forEach(function(c) {
+              c.style.display = (!any || keys.some(function(k) { return cardMatches(c, k); })) ? "" : "none";
             });
             bar.querySelectorAll(".lc-card-filter-chip").forEach(function(chip) {
-              var t = chip.getAttribute("data-tag");
-              if (t) chip.classList.toggle("lc-card-filter-on", !!active[t]);
+              var key = chipKey(chip);
+              if (key) chip.classList.toggle("lc-card-filter-on", !!active[key]);
             });
             var clr = bar.querySelector(".lc-card-filter-clear");
             if (clr) clr.hidden = !any;
           }
-          function toggleTag(t) {
-            if (!t) active = {};
-            else if (active[t]) delete active[t];
-            else active[t] = 1;
+          function toggleKey(key) {
+            if (!key) active = {};
+            else if (active[key]) delete active[key];
+            else active[key] = 1;
             applyFilter();
           }
           bar.addEventListener("click", function(e) {
             var chip = e.target.closest(".lc-card-filter-chip");
-            if (chip) toggleTag(chip.getAttribute("data-tag"));
+            if (chip) toggleKey(chipKey(chip));
           });
-          /* per-card chips drive the same filter */
+          /* per-card tag chips drive the same filter */
           wrap.addEventListener("click", function(e) {
             var chip = e.target.closest(".lc-card-tag[data-tag]");
             if (!chip) return;
             e.preventDefault(); e.stopPropagation();
-            toggleTag(chip.getAttribute("data-tag"));
+            toggleKey(chip.getAttribute("data-tag"));
           });
         }
 
