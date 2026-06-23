@@ -43,6 +43,9 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
 .lc-score-fab-remaining { color: #9ca3af; font-weight: 600; }
 .lc-score-fab-remaining:empty { display: none; }
 .lc-card-rem { color: #9ca3af; font-weight: 600; margin-left: 0.15em; }
+/* the chip is pointer-events:none so it never blocks the card; re-enable it on
+   the two numbers so their explaining tooltips appear on hover */
+.lc-card-won, .lc-card-rem { pointer-events: auto; cursor: help; }
 </style>
 <button class="lc-score-fab" type="button" aria-label="Show quiz score">
   <span class="lc-score-fab-icon" aria-hidden="true">🏆</span><span class="lc-score-fab-label">0/0</span><span class="lc-score-fab-remaining"></span>
@@ -78,15 +81,15 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       if (!answered && rem === 0) return;   // no score and no quizzes — nothing to show
       card.dataset.lcScored = "1";
       var tag = document.createElement("span");
+      var remTip = rem + " quiz" + (rem > 1 ? "zes" : "") + " not answered yet";
       if (answered) {
         tag.className = "lc-card-score" + (s.won >= answered ? " full" : (s.won > 0 ? " partial" : ""));
-        tag.innerHTML = s.won + "/" + answered + (rem > 0 ? " <span class='lc-card-rem'>+" + rem + "</span>" : "");
-        tag.title = "Your score on this page" + (rem > 0 ? " — " + rem + " quiz" + (rem > 1 ? "zes" : "") + " unanswered" : "");
+        tag.innerHTML = "<span class='lc-card-won' title='Quiz score: " + s.won + " correct of " + answered + " answered'>" + s.won + "/" + answered + "</span>"
+          + (rem > 0 ? " <span class='lc-card-rem' title='" + remTip + "'>+" + rem + "</span>" : "");
       } else {
         /* never started, but the page has quizzes */
         tag.className = "lc-card-score lc-card-unstarted";
-        tag.innerHTML = "<span class='lc-card-rem'>" + rem + " ❓</span>";
-        tag.title = rem + " quiz" + (rem > 1 ? "zes" : "") + " — not started";
+        tag.innerHTML = "<span class='lc-card-rem' title='" + remTip + "'>" + rem + "</span>";
       }
       card.appendChild(tag);
     });
