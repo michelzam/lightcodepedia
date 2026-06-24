@@ -89,6 +89,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   caret-color: #89b4fa;
 }
 #ed-input::placeholder { color: #6c7086; }
+/* line-number gutter for the Raw editor */
+#ed-raw-body { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+#ed-gutter { flex: none; overflow: hidden; background: #181825; border-right: 1px solid #313244; }
+#ed-gutter-inner { padding: 1em 0.55em 1em 0.75em; min-width: 1.6em; text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; line-height: 1.6;
+  color: #585b70; white-space: pre; pointer-events: none; user-select: none; will-change: transform; }
 #ed-preview { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; box-sizing: border-box; }
 /* 50% zoom mode: render content at 200% width then scale to fit */
 #ed-preview.lc-zoom { overflow-x: hidden; }
@@ -389,7 +395,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         </div>
         <div id="ed-raw-pane" class="ed-hidden">
           <div id="ed-raw-shop">🔧 <b>basement workshop</b> · the source the self-growing house is built from<span class="ed-shop-grow">🌱→🏠</span></div>
-          <textarea id="ed-input" placeholder="Select a file to start editing…" spellcheck="false"></textarea>
+          <div id="ed-raw-body">
+            <div id="ed-gutter"><div id="ed-gutter-inner">1</div></div>
+            <textarea id="ed-input" placeholder="Select a file to start editing…" spellcheck="false" wrap="off"></textarea>
+          </div>
         </div>
         <div id="ed-features-pane" class="ed-hidden">
           <div id="ed-feat-bar">
@@ -521,6 +530,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (agDlg) agDlg.classList.add("ed-hidden");
     loadCompModel(); // fetch type→icon map (once)
     attachFmtToolbar(document.getElementById("ed-input")); // format-by-click on the Raw editor
+    initRawGutter(); // line-number gutter for the Raw editor
     buildGrid(); // always build — shows placeholder if no file yet
 
     if (_pat && _repo) {
@@ -1707,6 +1717,39 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     });
   }
 
+  /* Line-number gutter for the Raw editor: numbers track the content (typing,
+     file loads, AI edits, format inserts) and follow the textarea's scroll. */
+  function initRawGutter() {
+    var input = document.getElementById("ed-input");
+    var inner = document.getElementById("ed-gutter-inner");
+    if (!input || !inner) return;
+    var lastN = -1;
+    function render() {
+      var n = (input.value.match(/\n/g) || []).length + 1;
+      if (n === lastN) return;
+      lastN = n;
+      var s = "";
+      for (var i = 1; i <= n; i++) s += (i > 1 ? "\n" : "") + i;
+      inner.textContent = s;
+    }
+    function sync() { inner.style.transform = "translateY(" + (-input.scrollTop) + "px)"; }
+    function refresh() { render(); sync(); }
+    input.addEventListener("input", refresh);
+    input.addEventListener("scroll", sync);
+    /* programmatic writes (loadFile, AI edits, feature status) bypass the
+       'input' event — intercept the value setter once so the gutter still tracks */
+    try {
+      var desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
+      Object.defineProperty(input, "value", {
+        configurable: true,
+        get: function () { return desc.get.call(this); },
+        set: function (v) { desc.set.call(this, v); refresh(); }
+      });
+    } catch (e) {}
+    window._lcEdGutterRefresh = refresh;
+    refresh();
+  }
+
   /* Tab switching */
   document.addEventListener("click", function(e) {
     var tab = e.target.closest(".ed-tab");
@@ -1723,6 +1766,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (log) log.classList.toggle("ed-hidden", name !== "log");
     if (feats) feats.classList.toggle("ed-hidden", name !== "features");
     if (diag) diag.classList.toggle("ed-hidden", name !== "diagram");
+    if (name === "raw" && window._lcEdGutterRefresh) window._lcEdGutterRefresh();
     if (name === "blocks") buildGrid();
     if (name === "log") renderLog();
     if (name === "features") openFeatures();
