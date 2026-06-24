@@ -27,6 +27,8 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
 .lc-score-popover .lc-score-line .lc-score-mark.ok { color: #2e7d32; }
 .lc-score-popover .lc-score-line .lc-score-mark.no { color: #c62828; }
 .lc-score-popover .lc-score-total { margin-top: 0.5em; padding-top: 0.5em; border-top: 1px solid #f0c97a; font-weight: 600; color: #b45309; display: flex; justify-content: space-between; }
+.lc-score-popover .lc-score-reset { margin-top: 0.7em; width: 100%; background: #fff8e1; border: 1px solid #f0c97a; color: #b45309; border-radius: 6px; padding: 0.45em 0.6em; cursor: pointer; font-size: 0.82em; font-weight: 600; font-family: inherit; }
+.lc-score-popover .lc-score-reset:hover { background: #fdecc8; border-color: #b45309; }
 @media (max-width: 700px) { .lc-score-popover { right: 0.8em; top: 100px; } body.lc-slides-active .lc-score-popover { top: 3em; } }
 /* a score remembered from a previous visit (no live answers yet this session) */
 .lc-score-fab.lc-score-remembered { opacity: 0.9; }
@@ -160,13 +162,24 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
     function renderPopover() {
       var p = pop(); if (!p) return;
       var won = order.filter(function(id){ return quizzes[id].correct; }).length;
-      var lines = order.map(function(id, i){
-        var q = quizzes[id];
-        var mark = q.correct ? '<span class="lc-score-mark ok">✓</span>' : '<span class="lc-score-mark no">✗</span>';
-        var label = 'Q' + (i + 1);
-        return '<div class="lc-score-line"><span>' + label + '</span>' + mark + '</div>';
-      }).join('');
-      p.innerHTML = '<h4>This session</h4>' + lines + '<div class="lc-score-total"><span>Score</span><span>' + won + '/' + order.length + '</span></div>';
+      var body;
+      if (order.length) {
+        var lines = order.map(function(id, i){
+          var q = quizzes[id];
+          var mark = q.correct ? '<span class="lc-score-mark ok">✓</span>' : '<span class="lc-score-mark no">✗</span>';
+          return '<div class="lc-score-line"><span>Q' + (i + 1) + '</span>' + mark + '</div>';
+        }).join('');
+        body = '<h4>This session</h4>' + lines +
+               '<div class="lc-score-total"><span>Score</span><span>' + won + '/' + order.length + '</span></div>';
+      } else if (seed && seed.total) {
+        body = '<h4>Remembered</h4><div class="lc-score-total"><span>Last visit</span><span>' +
+               seed.won + '/' + seed.total + '</span></div>';
+      } else {
+        body = '<h4>Quiz score</h4><div class="lc-score-line"><span>No quizzes answered yet</span><span></span></div>';
+      }
+      var hasScore = order.length || (seed && seed.total);
+      p.innerHTML = body +
+        (hasScore ? '<button class="lc-score-reset" type="button">🗑 Reset this page’s score</button>' : '');
     }
 
     return {
@@ -182,13 +195,17 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
         renderPopover();
         notify();
       },
-      refresh: function(){ render(); },
+      refresh: function(){ render(); renderPopover(); },
       reset: function() {
         quizzes = {};
         order = [];
+        /* also forget the score remembered from previous visits (localStorage) */
+        var all = loadScores();
+        if (all[PATH]) { delete all[PATH]; saveScores(all); }
+        seed = null;
         render();
         renderPopover();
-        var p = pop(); if (p) p.classList.remove('lc-score-popover-visible');
+        decorateCards();
         notify();
       },
       get: function(quizId) { return quizzes[quizId]; },
@@ -204,6 +221,11 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
     f.addEventListener('click', function(e){
       e.stopPropagation();
       p.classList.toggle('lc-score-popover-visible');
+    });
+    p.addEventListener('click', function(e){
+      if (!e.target.closest('.lc-score-reset')) return;
+      e.stopPropagation();
+      if (window.lcQuizScore && window.lcQuizScore.reset) window.lcQuizScore.reset();
     });
     document.addEventListener('click', function(e){
       if (!p.contains(e.target) && !f.contains(e.target)) {
