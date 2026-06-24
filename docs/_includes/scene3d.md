@@ -48,6 +48,38 @@ Auto-included by docs/_layouts/default.html.
   font-size: 0.82em; min-height: 86px; }
 .lc-s3d-console div { opacity: 0.55; }
 .lc-s3d-console div:last-child { opacity: 1; }
+
+/* ── quest mode (goal="adopt_wanda") ─────────────────── */
+.lc-s3d-goal { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
+  margin: 0 0 12px; padding: 11px 15px; border-radius: 10px;
+  background: #fff7ed; border: 1px solid #fed7aa; color: #7c2d12;
+  font-size: 0.98em; line-height: 1.45; }
+.lc-s3d-goal code { background: #ffedd5; padding: 1px 6px; border-radius: 4px;
+  font-size: 0.92em; color: #9a3412; }
+.lc-s3d-goal-hint { color: #9a6a3c; font-size: 0.88em; }
+.lc-s3d-goal.lc-s3d-goal-done { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+.lc-s3d-goal.lc-s3d-goal-done code { background: #d1fae5; color: #047857; }
+.lc-s3d-win { display: none; margin-top: 14px; padding: 14px 18px; border-radius: 10px;
+  background: linear-gradient(90deg, #dcfce7, #f0fdf4); border: 1px solid #86efac;
+  color: #14532d; font-size: 1.18em; font-weight: 600; line-height: 1.4;
+  animation: lc-s3d-pop 0.4s ease; }
+.lc-s3d-win.lc-s3d-win-show { display: block; }
+.lc-s3d-win .lc-s3d-win-sub { display: block; margin-top: 3px; font-size: 0.72em;
+  font-weight: 500; color: #15803d; }
+.lc-s3d-win code { background: #bbf7d0; padding: 1px 6px; border-radius: 4px; color: #166534; }
+@keyframes lc-s3d-pop { 0% { transform: scale(0.96); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+/* ── code trail (trail="true") ───────────────────────── */
+.lc-s3d-trail { margin-top: 14px; border: 1px solid #1e293b; border-radius: 8px; overflow: hidden; }
+.lc-s3d-trail-head { background: #1e293b; color: #e2e8f0; padding: 7px 14px;
+  font-family: monospace; font-size: 0.8em; letter-spacing: 0.02em; }
+.lc-s3d-trail-body { background: #0b1220; color: #7dd3fc; padding: 10px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82em;
+  line-height: 1.55; max-height: 190px; overflow-y: auto; white-space: pre-wrap; }
+.lc-s3d-trail-body:empty::before { content: "# nothing yet — start experimenting…"; color: #475569; }
+.lc-s3d-trail-body div { animation: lc-s3d-fadein 0.25s ease; }
+.lc-s3d-trail-body .lc-s3d-trail-cmt { color: #94a3b8; font-style: italic; }
+@keyframes lc-s3d-fadein { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
 </style>
 
 <!-- The Three.js import map lives in _layouts/default.html <head>: an import
@@ -97,12 +129,27 @@ Auto-included by docs/_layouts/default.html.
 
     var raw = (el.querySelector("code") || el).textContent.trim();
     var h = parseInt(el.getAttribute("height") || "440", 10);
+    /* optional quest layer — gated knobs, off for the plain playground */
+    var quest = (el.getAttribute("goal") || "").trim() === "adopt_wanda";
+    var wantTrail = el.hasAttribute("trail") && el.getAttribute("trail") !== "false";
+    var trailBody = null;   /* assigned below; log() feeds it when present */
 
     var wrap = document.createElement("div");
     wrap.className = "lc-scene3d";
     if (el.id) { wrap.id = el.id; wrap.setAttribute("data-lc-id", el.id); }
     wrap.setAttribute("height", h);
     el.parentNode.replaceChild(wrap, el);
+
+    var goalEl = null, winEl = null;
+    if (quest) {
+      goalEl = document.createElement("div");
+      goalEl.className = "lc-s3d-goal";
+      goalEl.innerHTML =
+        '🎯 <b>Goal — adopt Wanda:</b> reach <code>wanda.adopted = True</code>.' +
+        '<span class="lc-s3d-goal-hint">Experiment with their attributes &amp; behaviours to' +
+        ' discover how. Objects can trigger one another…</span>';
+      wrap.appendChild(goalEl);
+    }
 
     var stage = document.createElement("div");
     stage.className = "lc-s3d-stage";
@@ -117,15 +164,47 @@ Auto-included by docs/_layouts/default.html.
     var consoleEl = document.createElement("div");
     consoleEl.className = "lc-s3d-console";
     var hint = document.createElement("div");
-    hint.textContent = "# edit an attribute or call a method…";
+    hint.textContent = quest
+      ? "# experiment — find out how to get Wanda adopted…"
+      : "# edit an attribute or call a method…";
     consoleEl.appendChild(hint);
     wrap.appendChild(consoleEl);
+
+    /* success banner (quest mode) */
+    if (quest) {
+      winEl = document.createElement("div");
+      winEl.className = "lc-s3d-win";
+      winEl.innerHTML = '🎉 <b>Wanda adopted!</b> She’s home at the castle.' +
+        '<span class="lc-s3d-win-sub">goal reached — <code>wanda.adopted == True</code></span>';
+      wrap.appendChild(winEl);
+    }
+
+    /* code trail (uncapped record of the whole journey) */
+    if (wantTrail) {
+      var trailEl = document.createElement("div");
+      trailEl.className = "lc-s3d-trail";
+      var trailHead = document.createElement("div");
+      trailHead.className = "lc-s3d-trail-head";
+      trailHead.textContent = "🧭 Code trail — every click, as code";
+      trailBody = document.createElement("div");
+      trailBody.className = "lc-s3d-trail-body";
+      trailEl.appendChild(trailHead);
+      trailEl.appendChild(trailBody);
+      wrap.appendChild(trailEl);
+    }
 
     function log(line) {
       var d = document.createElement("div");
       d.textContent = line;
       consoleEl.appendChild(d);
       while (consoleEl.children.length > 6) consoleEl.removeChild(consoleEl.firstChild);
+      if (trailBody) {
+        var t = document.createElement("div");
+        t.textContent = line;
+        if (line.charAt(0) === "#") t.className = "lc-s3d-trail-cmt";
+        trailBody.appendChild(t);
+        trailBody.scrollTop = trailBody.scrollHeight;
+      }
     }
 
     Promise.all([loadThree(), loadYaml()]).then(function (results) {
@@ -160,11 +239,17 @@ Auto-included by docs/_layouts/default.html.
 
       function resize() {
         var w = stage.clientWidth;
+        if (!w) return;   /* hidden (slide / tab not active yet) — wait for it to show */
         renderer.setSize(w, h);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
       }
       window.addEventListener("resize", resize);
+      /* a second instance can boot inside a hidden slide (clientWidth 0); resize
+         the moment the stage gains real width — e.g. its slide becomes active */
+      if (window.ResizeObserver) {
+        try { new ResizeObserver(function () { resize(); }).observe(stage); } catch (e) {}
+      }
 
       scene.add(new THREE.AmbientLight(0xffffff, 0.75));
       var sun = new THREE.DirectionalLight(0xfff4e0, 1.2);
@@ -191,9 +276,29 @@ Auto-included by docs/_layouts/default.html.
       var L = { weight: +(LA.weight_kg || 28), speed: +(LA.top_speed_kmh || 40),
                 adopted: !!LA.adopted, state: "idle", t: 0, angle: 0 };
       var W = { weight: +(WA.weight_kg || 0.03), speed: +(WA.top_speed_kmh || 6),
-                adopted: !!WA.adopted, boost: 0, angle: 0 };
+                adopted: !!WA.adopted, boost: 0, angle: 0, homing: false };
       var bubbles = [];
       var woof = { mesh: null, t: 0 };
+
+      /* ── quest state machine (only live when goal="adopt_wanda") ──
+         The chain — Wanda's bubble startles Lucky → Lucky's bark invites
+         Wanda → Wanda reaches the castle → adopted — is the hidden logic the
+         learner discovers by experimenting. Each link is one object
+         triggering another; the learner only ever sees the goal + controls. */
+      var solved = false;
+      function showWin() {
+        if (solved) return;
+        solved = true;
+        if (winEl)  winEl.classList.add("lc-s3d-win-show");
+        if (goalEl) goalEl.classList.add("lc-s3d-goal-done");
+      }
+      function arriveHome() {
+        if (solved) return;
+        W.homing = false; W.adopted = true; W3.castle.visible = true;
+        if (wPanel.setAdopted) wPanel.setAdopted(true);
+        log("wanda.adopted = True   # 🏰 she reaches the castle — adopted!");
+        showWin();
+      }
 
       function dogScale() { L3.group.scale.setScalar(0.55 + L.weight / 55); }
       function fishScale() { W3.fish.scale.setScalar(0.8 + W.weight * 1.6); }
@@ -206,7 +311,7 @@ Auto-included by docs/_layouts/default.html.
       lPanel.onWeight  = function (v) { L.weight = v; dogScale(); log("lucky.weight_kg = " + v); };
       lPanel.onSpeed   = function (v) { L.speed = v;  log("lucky.top_speed_kmh = " + v); };
       lPanel.onAdopted = function (v) { L.adopted = v; L3.collar.visible = v; log("lucky.adopted = " + v); };
-      lPanel.onBark    = function () {
+      function doBark(auto) {
         L.state = "bark"; L.t = 0;
         var c = document.createElement("canvas"); c.width = 256; c.height = 96;
         var ctx = c.getContext("2d");
@@ -218,7 +323,17 @@ Auto-included by docs/_layouts/default.html.
         if (woof.mesh) scene.remove(woof.mesh);
         scene.add(sp); woof.mesh = sp; woof.t = 0;
         log('lucky.bark()  → "Woof! Woof!"');
-      };
+        /* a bark invites Wanda to come home (quest link 3) */
+        if (quest && !solved) {
+          setTimeout(function () {
+            if (solved) return;
+            log("# 📣 Lucky’s bark invites Wanda to come to his place");
+            log("wanda.swim()   # she sets off for the castle");
+            W.boost = 3; W.homing = true;
+          }, 900);
+        }
+      }
+      lPanel.onBark = function () { doBark(false); };
       lPanel.onRun  = function () { L.state = "run"; L.t = 0; log("lucky.run()  # speed = " + L.speed + " km/h"); };
       lPanel.onWag  = function () { L.state = "wag"; L.t = 0; log("lucky.wag_tail()"); };
 
@@ -226,7 +341,11 @@ Auto-included by docs/_layouts/default.html.
       wPanel.onColour  = function (hex, name) { W3.mat.color.set(hex); log('wanda.colour = "' + name + '"'); };
       wPanel.onWeight  = function (v) { W.weight = v; fishScale(); log("wanda.weight_kg = " + v); };
       wPanel.onSpeed   = function (v) { W.speed = v;  log("wanda.top_speed_kmh = " + v); };
-      wPanel.onAdopted = function (v) { W.adopted = v; W3.castle.visible = v; log("wanda.adopted = " + v); };
+      wPanel.onAdopted = function (v) {
+        W.adopted = v; W3.castle.visible = v;
+        if (quest) { log("wanda.adopted = " + (v ? "True" : "False")); if (v) showWin(); }
+        else log("wanda.adopted = " + v);
+      };
       wPanel.onSwim    = function () { W.boost = 3; log("wanda.swim()  # speed = " + W.speed + " km/h"); };
       wPanel.onBubble  = function () {
         for (var i = 0; i < 5; i++) {
@@ -240,6 +359,11 @@ Auto-included by docs/_layouts/default.html.
           scene.add(b); bubbles.push(b);
         }
         log("wanda.blow_bubble()");
+        /* a surprised bubble floats over and startles Lucky (quest link 2) */
+        if (quest && !solved) {
+          log("# 🫧 surprise! a bubble drifts up and over toward Lucky…");
+          setTimeout(function () { if (!solved) doBark(true); }, 1500);
+        }
       };
 
       /* animation loop */
@@ -279,12 +403,36 @@ Auto-included by docs/_layouts/default.html.
           if (woof.t > 1) { scene.remove(woof.mesh); woof.mesh = null; }
         }
 
-        var boost = W.boost > 0 ? 2.2 : 1;
-        if (W.boost > 0) W.boost -= dt;
-        W.angle += dt * (0.4 + W.speed / 12) * boost;
-        W3.fish.position.set(Math.cos(W.angle) * 0.78, 1.3 + Math.sin(t * 2) * 0.07, Math.sin(W.angle) * 0.55);
-        W3.fish.rotation.y = -W.angle + Math.PI;
-        W3.tail.rotation.y = Math.sin(t * 10 * boost) * 0.5;
+        if (quest && solved) {
+          /* adopted — glide to the castle and settle there with a gentle bob */
+          var tgS = W3.castle.position;           /* local (0.5, 0.42, -0.4) */
+          var fpS = W3.fish.position;
+          var kS = Math.min(1, dt * 1.8);
+          fpS.x += (tgS.x - fpS.x) * kS;
+          fpS.z += (tgS.z - fpS.z) * kS;
+          fpS.y += ((tgS.y + 0.55 + Math.sin(t * 2) * 0.04) - fpS.y) * kS;
+          W3.fish.rotation.y += dt * 0.6;
+          W3.tail.rotation.y = Math.sin(t * 8) * 0.4;
+        } else if (quest && W.homing) {
+          /* swim down to the castle — her new home (quest link 4) */
+          var tg = W3.castle.position;
+          var fp = W3.fish.position;
+          var k = Math.min(1, dt * 1.8);
+          fp.x += (tg.x - fp.x) * k;
+          fp.y += ((tg.y + 0.55) - fp.y) * k;
+          fp.z += (tg.z - fp.z) * k;
+          W3.fish.rotation.y += dt * 3;
+          W3.tail.rotation.y = Math.sin(t * 16) * 0.6;
+          var dxh = fp.x - tg.x, dyh = fp.y - (tg.y + 0.55), dzh = fp.z - tg.z;
+          if (Math.sqrt(dxh * dxh + dyh * dyh + dzh * dzh) < 0.22) arriveHome();
+        } else {
+          var boost = W.boost > 0 ? 2.2 : 1;
+          if (W.boost > 0) W.boost -= dt;
+          W.angle += dt * (0.4 + W.speed / 12) * boost;
+          W3.fish.position.set(Math.cos(W.angle) * 0.78, 1.3 + Math.sin(t * 2) * 0.07, Math.sin(W.angle) * 0.55);
+          W3.fish.rotation.y = -W.angle + Math.PI;
+          W3.tail.rotation.y = Math.sin(t * 10 * boost) * 0.5;
+        }
 
         for (var i = bubbles.length - 1; i >= 0; i--) {
           var b = bubbles[i];
@@ -412,7 +560,9 @@ Auto-included by docs/_layouts/default.html.
       function (hex, name) { if (h.onColour) h.onColour(hex, name); }));
     el.appendChild(makeRange("weight_kg",    0.01, 0.5,  0.01, +(attrs.weight_kg      || 0.03), function (v) { if (h.onWeight)  h.onWeight(v); }));
     el.appendChild(makeRange("top_speed_kmh",   1,  15,  1,    +(attrs.top_speed_kmh || 6),     function (v) { if (h.onSpeed)   h.onSpeed(v); }));
-    el.appendChild(makeCheck("adopted", !!attrs.adopted, "(adopted fish get a castle)",           function (v) { if (h.onAdopted) h.onAdopted(v); }));
+    var adoptedRow = makeCheck("adopted", !!attrs.adopted, "(adopted fish get a castle)",        function (v) { if (h.onAdopted) h.onAdopted(v); });
+    el.appendChild(adoptedRow);
+    h.setAdopted = function (v) { var cb = adoptedRow.querySelector("input[type=checkbox]"); if (cb) cb.checked = v; };
     el.appendChild(makeMethods(["swim()", "blow_bubble()"],
       [function () { if (h.onSwim)   h.onSwim();   },
        function () { if (h.onBubble) h.onBubble(); }]));
