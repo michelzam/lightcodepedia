@@ -33,7 +33,7 @@ Why the server-based approach was abandoned:
 
 A *sister* of the Erasmus branch, not its continuation: it shares the
 repository and the pedagogical mission, but no code. Everything runs in the
-visitor's browser — Python via Pyodide, interactivity via the component
+visitor's browser — Python via Micropython, interactivity via the component
 runtime — on a static GitHub Pages site. All state is client-side or flat
 files committed to `main`.
 
