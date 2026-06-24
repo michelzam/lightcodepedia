@@ -57,6 +57,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-s3d-goal code { background: #ffedd5; padding: 1px 6px; border-radius: 4px;
   font-size: 0.92em; color: #9a3412; }
 .lc-s3d-goal-hint { color: #9a6a3c; font-size: 0.88em; }
+.lc-s3d-row input[type=checkbox]:disabled { cursor: not-allowed; opacity: 0.5; }
 .lc-s3d-goal.lc-s3d-goal-done { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
 .lc-s3d-goal.lc-s3d-goal-done code { background: #d1fae5; color: #047857; }
 .lc-s3d-win { display: none; margin-top: 14px; padding: 14px 18px; border-radius: 10px;
@@ -133,6 +134,10 @@ Auto-included by docs/_layouts/default.html.
     var quest = (el.getAttribute("goal") || "").trim() === "adopt_wanda";
     var wantTrail = el.hasAttribute("trail") && el.getAttribute("trail") !== "false";
     var trailBody = null;   /* assigned below; log() feeds it when present */
+    /* console (the generated-code log): on for the plain playground, off for
+       the quest unless explicitly forced with console="true" */
+    var consoleAttr = el.getAttribute("console");
+    var consoleOn = consoleAttr != null ? (consoleAttr !== "false") : !quest;
 
     var wrap = document.createElement("div");
     wrap.className = "lc-scene3d";
@@ -145,9 +150,9 @@ Auto-included by docs/_layouts/default.html.
       goalEl = document.createElement("div");
       goalEl.className = "lc-s3d-goal";
       goalEl.innerHTML =
-        '🎯 <b>Goal — adopt Wanda:</b> reach <code>wanda.adopted = True</code>.' +
-        '<span class="lc-s3d-goal-hint">Experiment with their attributes &amp; behaviours to' +
-        ' discover how. Objects can trigger one another…</span>';
+        '🎯 <b>Challenge — adopt Wanda:</b> get <code>wanda.adopted → True</code>.' +
+        '<span class="lc-s3d-goal-hint">The checkbox is locked — only a <b>behaviour</b> can flip it.' +
+        ' And dogs and fish don’t share a language: only Lucky can reach Wanda. Find the sequence.</span>';
       wrap.appendChild(goalEl);
     }
 
@@ -169,6 +174,7 @@ Auto-included by docs/_layouts/default.html.
       : "# edit an attribute or call a method…";
     consoleEl.appendChild(hint);
     wrap.appendChild(consoleEl);
+    if (!consoleOn) consoleEl.style.display = "none";   /* hide the generated code */
 
     /* success banner (quest mode) */
     if (quest) {
@@ -223,6 +229,12 @@ Auto-included by docs/_layouts/default.html.
       var wPanel = buildFishPanel(WA, log);
       panels.appendChild(lPanel.el);
       panels.appendChild(wPanel.el);
+      /* challenge mode: adoption is a consequence of behaviour, not a flag you
+         tick — lock the checkboxes so only the method sequence can win */
+      if (quest) {
+        if (lPanel.disableAdopted) lPanel.disableAdopted();
+        if (wPanel.disableAdopted) wPanel.disableAdopted();
+      }
 
       /* Three.js scene */
       stage.innerHTML = "";
@@ -372,6 +384,7 @@ Auto-included by docs/_layouts/default.html.
       function tick() {
         animId = requestAnimationFrame(tick);
         var dt = Math.min(clock.getDelta(), 0.05);
+        if (!stage.clientWidth) return;   /* hidden slide — keep the loop alive, skip rendering */
         var t = clock.elapsedTime;
 
         if (L.state === "run") {
@@ -541,7 +554,9 @@ Auto-included by docs/_layouts/default.html.
       function (hex, name) { if (h.onColour) h.onColour(hex, name); }));
     el.appendChild(makeRange("weight_kg",    8, 60,  1,    +(attrs.weight_kg      || 28),   function (v) { if (h.onWeight)  h.onWeight(v); }));
     el.appendChild(makeRange("top_speed_kmh", 10, 75, 1,    +(attrs.top_speed_kmh || 40),   function (v) { if (h.onSpeed)   h.onSpeed(v); }));
-    el.appendChild(makeCheck("adopted", !!attrs.adopted, "(adopted dogs wear a red collar)", function (v) { if (h.onAdopted) h.onAdopted(v); }));
+    var adoptedRowD = makeCheck("adopted", !!attrs.adopted, "(adopted dogs wear a red collar)", function (v) { if (h.onAdopted) h.onAdopted(v); });
+    el.appendChild(adoptedRowD);
+    h.disableAdopted = function () { var cb = adoptedRowD.querySelector("input[type=checkbox]"); if (cb) { cb.disabled = true; cb.title = "locked — only a behaviour can change this"; } };
     el.appendChild(makeMethods(["bark()", "run()", "wag_tail()"],
       [function () { if (h.onBark) h.onBark(); },
        function () { if (h.onRun)  h.onRun();  },
@@ -563,6 +578,7 @@ Auto-included by docs/_layouts/default.html.
     var adoptedRow = makeCheck("adopted", !!attrs.adopted, "(adopted fish get a castle)",        function (v) { if (h.onAdopted) h.onAdopted(v); });
     el.appendChild(adoptedRow);
     h.setAdopted = function (v) { var cb = adoptedRow.querySelector("input[type=checkbox]"); if (cb) cb.checked = v; };
+    h.disableAdopted = function () { var cb = adoptedRow.querySelector("input[type=checkbox]"); if (cb) { cb.disabled = true; cb.title = "locked — only a behaviour can change this"; } };
     el.appendChild(makeMethods(["swim()", "blow_bubble()"],
       [function () { if (h.onSwim)   h.onSwim();   },
        function () { if (h.onBubble) h.onBubble(); }]));
