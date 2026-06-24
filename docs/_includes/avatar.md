@@ -51,6 +51,9 @@ Attributes on .avatar:
               the character floats free (non-VP9-alpha browsers keep the
               round crop via the mp4 fallback)
   autoplay  — "true" to start on page load (default: false)
+  step      — "true" for step-by-step playback: each click on the trigger (or
+              the character) speaks the next line and stops; the trigger reads
+              ▶ Start → Next → (n/total) → ↺ Replay. Ideal for live walk-throughs.
   size      — pixel size of the character bubble (default: 140)
 
 Auto-included by docs/_layouts/default.html.
@@ -484,6 +487,7 @@ Auto-included by docs/_layouts/default.html.
       var videoUrl = cfg.video || "";
       var transparent = cfg.transparent === true;
       var autoplay = cfg.autoplay === true || el.getAttribute("autoplay") === "true";
+      var step = cfg.step === true || el.getAttribute("step") === "true";
 
       /* build overlay host — stagger instances so they never stack */
       var host = document.createElement("div");
@@ -520,7 +524,7 @@ Auto-included by docs/_layouts/default.html.
         video: videoUrl, transparent: transparent,
         size: size, spot: null,
         pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
-        playing: false, idx: 0, lottieDone: false
+        playing: false, idx: 0, lottieDone: false, step: step
       };
 
       /* init character graphic */
@@ -737,7 +741,12 @@ Auto-included by docs/_layouts/default.html.
   function togglePlay(id) {
     var av = window._lcAvatars && window._lcAvatars[id];
     if (!av) return;
-    if (av.playing) { stopPlay(id); } else { startPlay(id); }
+    if (av.step) {
+      /* step mode: the trigger (and the character) advance one line per click */
+      if (!av.playing) startPlay(id); else nextLine(id);
+    } else {
+      if (av.playing) { stopPlay(id); } else { startPlay(id); }
+    }
     updateTriggers(id);
   }
 
@@ -802,6 +811,7 @@ Auto-included by docs/_layouts/default.html.
       if (av._cueOff) av._cueOff();
       av.host.classList.remove("lc-avatar-talking");
       charTalk(av, false);
+      if (av.step) { updateTriggers(id); return; }   /* keep the caption; wait for the next click */
       av.bubble.classList.remove("visible");
       setTimeout(function () { nextLine(id); }, 500);
     };
@@ -902,9 +912,16 @@ Auto-included by docs/_layouts/default.html.
     var av = window._lcAvatars && window._lcAvatars[id];
     document.querySelectorAll("[data-avt-target='" + id + "']").forEach(function (btn) {
       var playing = av && av.playing;
-      btn.textContent = playing
-        ? (btn.getAttribute("data-avt-stop") || "⏹ Stop")
-        : (btn.getAttribute("data-avt-play") || "▶ Play");
+      if (av && av.step) {
+        /* step mode: Start → Next → … → Replay */
+        btn.textContent = playing
+          ? "Next → (" + av.idx + "/" + av.script.length + ")"
+          : (av.idx > 0 ? "↺ Replay" : (btn.getAttribute("data-avt-play") || "▶ Start"));
+      } else {
+        btn.textContent = playing
+          ? (btn.getAttribute("data-avt-stop") || "⏹ Stop")
+          : (btn.getAttribute("data-avt-play") || "▶ Play");
+      }
       btn.classList.toggle("playing", !!playing);
     });
   }

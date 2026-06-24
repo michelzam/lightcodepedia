@@ -34,6 +34,30 @@ script:
 
 ---
 
+## 🪜 Step-by-step — you click for the next line {#step_demo}
+
+Add `step="true"` and the avatar **waits between lines**: each click on the trigger
+(or the character) speaks the next line and stops. The button reads
+**▶ Start → Next → (n/total) → ↺ Replay**. Ideal for live walk-throughs and
+screen recordings, where you set the pace and sync narration to what you're doing.
+
+```yaml
+name: "Step Guide"
+voice: en-US
+script:
+  - "Click Next — I wait for you between every line."
+  - at: "#how_it_works"
+    say: "Now we're at the attribute table. Click again when you're ready…"
+  - at: "#finding_characters"
+    say: "…and now down here. You set the pace — perfect for recording."
+```
+{: .avatar #step_avatar step="true" }
+
+[▶ Start](#)
+{: .avatar-trigger target="step_avatar" label-stop="⏹ Stop" }
+
+---
+
 ## 🧙 Aristotle — a recorded Memoji on a timed walk {#aristotle_demo}
 
 The realism ceiling: a **recorded character** — an iPhone Memoji with a real
@@ -119,6 +143,7 @@ script:
 | `path` | Movement for untargeted lines: `left`, `center`, `right`, `wander` |
 | `voice`, `rate`, `pitch` | TTS tuning — best-quality matching browser voice is picked |
 | `size` / `autoplay` | Bubble diameter in px (140) / start on page load |
+| `step` | `"true"`: step-by-step — each click on the trigger (or character) speaks the next line and stops (`▶ Start → Next → ↺ Replay`) |
 
 `{: .avatar-trigger target="id" }` on any link makes a play/stop button. Multiple avatars stagger automatically.
 
