@@ -86,7 +86,7 @@ script:
         at: "#how_it_works"
         say: "😊 Happy learning!"
 ```
-{: .avatar #aristotle_avatar size="180" }
+{: .avatar #aristotle_avatar size="180" step="true"}
 
 [▶ Play](#)
 {: .avatar-trigger target="aristotle_avatar" label-stop="⏹ Stop" }
