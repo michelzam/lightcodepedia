@@ -1603,7 +1603,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var bar = document.createElement("div");
     bar.className = "ed-fmt-bar";
     bar.innerHTML = FMT_BTNS;
-    ta.parentNode.insertBefore(bar, ta);
+    /* the Raw textarea sits in a flex row (gutter | textarea); put the toolbar
+       in the column above that row, not inside it */
+    var anchor = ta.closest("#ed-raw-body") || ta;
+    anchor.parentNode.insertBefore(bar, anchor);
     // keep the textarea's focus + selection when a format button is clicked
     bar.addEventListener("mousedown", function (ev) { if (ev.target.closest("button[data-fmt]")) ev.preventDefault(); });
     bar.addEventListener("click", function (ev) {
