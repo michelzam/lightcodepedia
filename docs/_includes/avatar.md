@@ -358,6 +358,30 @@ Auto-included by docs/_layouts/default.html.
     }
   }
 
+  /* step mode over a recorded take: play to each cue, then PAUSE and wait for
+     the next click — so one video walks beat by beat at the presenter's pace
+     (and reaches its end, where the next click stops it). */
+  function attachCuesStep(av, media, cues, id) {
+    if (!media || !Array.isArray(cues) || !cues.length) return;
+    var sorted = cues.slice().sort(function (a, b) { return (Number(a.t) || 0) - (Number(b.t) || 0); });
+    var i = 0;
+    while (i < sorted.length && (Number(sorted[i].t) || 0) <= 0.1) { applyCue(av, sorted[i]); i++; }
+    var onTime = function () {
+      if (i < sorted.length && media.currentTime >= (Number(sorted[i].t) || 0)) {
+        try { media.pause(); } catch (e) {}
+        applyCue(av, sorted[i]); i++;
+        av._stepResume = function () {
+          av._stepResume = null;
+          try { media.play().catch(function () {}); } catch (e) {}
+          updateTriggers(id);
+        };
+        updateTriggers(id);
+      }
+    };
+    media.addEventListener("timeupdate", onTime);
+    av._cueOff = function () { media.removeEventListener("timeupdate", onTime); av._cueOff = null; av._stepResume = null; };
+  }
+
   /* ── script lines: "text" or { at, say, audio } ─────── */
   function lineSpec(x) {
     if (x && typeof x === "object") {
@@ -742,8 +766,11 @@ Auto-included by docs/_layouts/default.html.
     var av = window._lcAvatars && window._lcAvatars[id];
     if (!av) return;
     if (av.step) {
-      /* step mode: the trigger (and the character) advance one line per click */
-      if (!av.playing) startPlay(id); else nextLine(id);
+      /* step mode: advance one beat per click — a script line, or, inside a
+         recorded take, the next cue (the video pauses between cues) */
+      if (!av.playing) startPlay(id);
+      else if (av._stepResume) av._stepResume();
+      else nextLine(id);
     } else {
       if (av.playing) { stopPlay(id); } else { startPlay(id); }
     }
@@ -772,6 +799,7 @@ Auto-included by docs/_layouts/default.html.
         { bubbles: true, detail: { id: id, completed: !!completed } }));
     } catch (e) {}
     if (av._cueOff) av._cueOff();
+    av._stepResume = null;
     av.host.setAttribute("data-state", "idle");
     av.host.classList.remove("lc-avatar-talking");
     clearSpot(av);
@@ -820,7 +848,8 @@ Auto-included by docs/_layouts/default.html.
       /* recorded narration: real face, real voice — the bubble is a caption */
       av.bubble.textContent = line.say;
       playVideoLine(av, line.video, finish);
-      attachCues(av, av.videoEl, line.cues);
+      if (av.step && Array.isArray(line.cues) && line.cues.length) attachCuesStep(av, av.videoEl, line.cues, id);
+      else attachCues(av, av.videoEl, line.cues);
       return;
     }
 
@@ -914,9 +943,9 @@ Auto-included by docs/_layouts/default.html.
       var playing = av && av.playing;
       if (av && av.step) {
         /* step mode: Start → Next → … → Replay */
-        btn.textContent = playing
-          ? "Next → (" + av.idx + "/" + av.script.length + ")"
-          : (av.idx > 0 ? "↺ Replay" : (btn.getAttribute("data-avt-play") || "▶ Start"));
+        btn.textContent = !playing
+          ? (av.idx > 0 ? "↺ Replay" : (btn.getAttribute("data-avt-play") || "▶ Start"))
+          : (av._stepResume ? "Next →" : "Next → (" + av.idx + "/" + av.script.length + ")");
       } else {
         btn.textContent = playing
           ? (btn.getAttribute("data-avt-stop") || "⏹ Stop")
