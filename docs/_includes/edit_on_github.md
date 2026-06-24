@@ -434,8 +434,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 <a class="lc-edit-fab" id="ed-fab"
    href="#"
    data-page-path="{{ page.path }}"
-   title="Edit this page (⌃⌥⇧E)"
-   aria-keyshortcuts="Control+Alt+Shift+E"
+   title="Edit this page (⌥⇧E)"
+   aria-keyshortcuts="Alt+Shift+E"
    aria-label="Edit this page">
   <span class="lc-edit-fab-icon" aria-hidden="true">✏️</span>
   <span class="lc-edit-fab-label">Edit page</span>
@@ -937,9 +937,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var d = document.getElementById("ed-drawer");
       if (d && d.classList.contains("open")) { e.preventDefault(); saveFile(); }
     }
-    /* Ctrl+Alt+Shift+E (⌃⌥⇧E on Mac) opens the editor from anywhere it's
-       available. e.code is used so Option+E's dead-key on Mac doesn't matter. */
-    if (e.ctrlKey && e.altKey && e.shiftKey && e.code === "KeyE") {
+    /* Shift+Alt+E (⌥⇧E on Mac) opens the editor from anywhere it's available.
+       e.code is used so Option+E's dead-key behaviour on Mac doesn't matter. */
+    if (!e.ctrlKey && !e.metaKey && e.altKey && e.shiftKey && e.code === "KeyE") {
       var fab = document.getElementById("ed-fab");
       var dr = document.getElementById("ed-drawer");
       if (fab && getComputedStyle(fab).display !== "none" && dr && !dr.classList.contains("open")) {
@@ -953,7 +953,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var fab = document.getElementById("ed-fab");
     if (!fab) return;
     var isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
-    fab.title = "Edit this page (" + (isMac ? "⌃⌥⇧E" : "Ctrl+Alt+Shift+E") + ")";
+    fab.title = "Edit this page (" + (isMac ? "⌥⇧E" : "Alt+Shift+E") + ")";
   })();
 
   /* ── Files dropdown toggle ──────────────────────────── */
