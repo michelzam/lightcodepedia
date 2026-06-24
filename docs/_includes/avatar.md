@@ -358,30 +358,6 @@ Auto-included by docs/_layouts/default.html.
     }
   }
 
-  /* step mode over a recorded take: play to each cue, then PAUSE and wait for
-     the next click — so one video walks beat by beat at the presenter's pace
-     (and reaches its end, where the next click stops it). */
-  function attachCuesStep(av, media, cues, id) {
-    if (!media || !Array.isArray(cues) || !cues.length) return;
-    var sorted = cues.slice().sort(function (a, b) { return (Number(a.t) || 0) - (Number(b.t) || 0); });
-    var i = 0;
-    while (i < sorted.length && (Number(sorted[i].t) || 0) <= 0.1) { applyCue(av, sorted[i]); i++; }
-    var onTime = function () {
-      if (i < sorted.length && media.currentTime >= (Number(sorted[i].t) || 0)) {
-        try { media.pause(); } catch (e) {}
-        applyCue(av, sorted[i]); i++;
-        av._stepResume = function () {
-          av._stepResume = null;
-          try { media.play().catch(function () {}); } catch (e) {}
-          updateTriggers(id);
-        };
-        updateTriggers(id);
-      }
-    };
-    media.addEventListener("timeupdate", onTime);
-    av._cueOff = function () { media.removeEventListener("timeupdate", onTime); av._cueOff = null; av._stepResume = null; };
-  }
-
   /* ── script lines: "text" or { at, say, audio } ─────── */
   function lineSpec(x) {
     if (x && typeof x === "object") {
@@ -766,11 +742,14 @@ Auto-included by docs/_layouts/default.html.
     var av = window._lcAvatars && window._lcAvatars[id];
     if (!av) return;
     if (av.step) {
-      /* step mode: advance one beat per click — a script line, or, inside a
-         recorded take, the next cue (the video pauses between cues) */
+      /* step mode: one beat per click. For a recorded take, a click
+         pauses/resumes the video at the current time index (cues stay as
+         decorative comments); otherwise advance to the next script line. */
       if (!av.playing) startPlay(id);
-      else if (av._stepResume) av._stepResume();
-      else nextLine(id);
+      else if (av._videoStep && av.videoEl && !av.videoEl.ended) {
+        if (av.videoEl.paused) { try { av.videoEl.play().catch(function () {}); } catch (e) {} }
+        else { try { av.videoEl.pause(); } catch (e) {} }
+      } else nextLine(id);
     } else {
       if (av.playing) { stopPlay(id); } else { startPlay(id); }
     }
@@ -799,7 +778,7 @@ Auto-included by docs/_layouts/default.html.
         { bubbles: true, detail: { id: id, completed: !!completed } }));
     } catch (e) {}
     if (av._cueOff) av._cueOff();
-    av._stepResume = null;
+    av._videoStep = null;
     av.host.setAttribute("data-state", "idle");
     av.host.classList.remove("lc-avatar-talking");
     clearSpot(av);
@@ -820,6 +799,7 @@ Auto-included by docs/_layouts/default.html.
 
     var line = av.script[av.idx];
     av.idx++;
+    av._videoStep = false;   /* set true only while a recorded take is playing */
 
     /* move the character: to the element it describes, or along the path */
     var anchored = line.at && anchorTo(av, line.at);
@@ -845,11 +825,13 @@ Auto-included by docs/_layouts/default.html.
     };
 
     if (line.video) {
-      /* recorded narration: real face, real voice — the bubble is a caption */
+      /* recorded narration: real face, real voice — the bubble is a caption.
+         In step mode a click pauses/resumes the take at the current time index
+         (see togglePlay); the cues just overlay their funny comments. */
       av.bubble.textContent = line.say;
+      av._videoStep = !!av.step;
       playVideoLine(av, line.video, finish);
-      if (av.step && Array.isArray(line.cues) && line.cues.length) attachCuesStep(av, av.videoEl, line.cues, id);
-      else attachCues(av, av.videoEl, line.cues);
+      attachCues(av, av.videoEl, line.cues);
       return;
     }
 
@@ -942,10 +924,14 @@ Auto-included by docs/_layouts/default.html.
     document.querySelectorAll("[data-avt-target='" + id + "']").forEach(function (btn) {
       var playing = av && av.playing;
       if (av && av.step) {
-        /* step mode: Start → Next → … → Replay */
-        btn.textContent = !playing
-          ? (av.idx > 0 ? "↺ Replay" : (btn.getAttribute("data-avt-play") || "▶ Start"))
-          : (av._stepResume ? "Next →" : "Next → (" + av.idx + "/" + av.script.length + ")");
+        /* step mode: Start → (Pause/Resume a take · Next for lines) → Replay */
+        if (!playing) {
+          btn.textContent = av.idx > 0 ? "↺ Replay" : (btn.getAttribute("data-avt-play") || "▶ Start");
+        } else if (av._videoStep && av.videoEl && !av.videoEl.ended) {
+          btn.textContent = av.videoEl.paused ? "▶ Resume" : "⏸ Pause";
+        } else {
+          btn.textContent = "Next → (" + av.idx + "/" + av.script.length + ")";
+        }
       } else {
         btn.textContent = playing
           ? (btn.getAttribute("data-avt-stop") || "⏹ Stop")
