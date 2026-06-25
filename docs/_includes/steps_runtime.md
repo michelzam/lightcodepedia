@@ -778,12 +778,22 @@ class Tabs(Block):
         return self
 
 
+class _Attrs(object):
+    """Attribute view over a dict — form.data.url returns that field's value
+    (or None). Used by Form.data so handlers read self.page.<form>.data.<field>."""
+    def __init__(self, d):
+        self._d = d or {}
+
+    def __getattr__(self, name):
+        return self._d.get(name)
+
+
 @component(icon="📝",
            attrs=[{"n": "title", "t": "str", "data": True, "d": ""},
                   {"n": "format", "t": "str", "data": True, "d": "yaml"},
                   {"n": "editable", "t": "bool", "data": True, "d": False}],
            assoc=[{"n": "master", "target": "Datagrid"}],
-           methods=["submit", "field"])
+           methods=["submit"])
 class Form(Block):
     @property
     def master(self):
@@ -791,16 +801,17 @@ class Form(Block):
         el = js.window.document.querySelector("[data-lc-id='" + gid + "']") if gid else None
         return _wrap(el)
 
-    def field(self, name):
-        """Current value of a form field. The form publishes its live object to
-        data-lc-value, so a button's on_click can read self.page.<form>.field()."""
+    @property
+    def data(self):
+        """Live field values as attributes: self.page.<form>.data.<field>.
+        The form republishes its object to data-lc-value on every edit."""
         import json
         raw = self._attr("data-lc-value") or "{}"
         try:
             d = json.loads(raw)
         except Exception:
             d = {}
-        return d.get(name)
+        return _Attrs(d)
 
     def submit(self):
         return self._tap("button[type=submit], .lc-form-submit")

@@ -203,9 +203,9 @@ url: ""
 
 ```python
 def on_click(button):
-    u = (Page().analysis_src.field("url") or "").strip()
+    u = (button.page.analysis_src.data.url or "").strip()
     if u:
-        Page().analysis_frame.load(u)
+        button.page.analysis_frame.load(u)
 ```
 {: .onclick }
 
