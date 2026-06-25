@@ -31,6 +31,9 @@ Script lines are strings (the avatar wanders) or objects:
   input: drive the Rive character's state machine for this line —
          "bark" fires the trigger named bark, { run: true, speed: 7 }
          sets boolean/number inputs (also available inside cues)
+  pause: seconds to hold after this line finishes, before the next one
+         (default 0.5s). A video cue can take pause: too — after its actions
+         the take pauses that many seconds, then resumes on its own.
 
 Attributes on .avatar:
   id        — referenced by .avatar-trigger's target=""
@@ -347,6 +350,12 @@ Auto-included by docs/_layouts/default.html.
            pause the take here and let a click resume it */
         if (c.step) { try { media.pause(); } catch (e) {} av._videoStep = true;
           if (id) updateTriggers(id); break; }
+        /* or hold for a fixed beat: after the cue's actions, pause the take
+           c.pause seconds, then resume on its own (before the next cue) */
+        if (c.pause) { try { media.pause(); } catch (e) {}
+          setTimeout(function () { try { media.play().catch(function () {}); } catch (e) {} },
+                     (Number(c.pause) || 0) * 1000);
+          break; }
       }
     };
     media.addEventListener("timeupdate", onTime);
@@ -373,9 +382,10 @@ Auto-included by docs/_layouts/default.html.
                audio: String(x.audio || ""), video: String(x.video || ""),
                input: x.input || null,
                cues: Array.isArray(x.cues) ? x.cues : [],
-               step: (x.step === undefined ? null : x.step) };   /* per-line override of the avatar's step */
+               step: (x.step === undefined ? null : x.step),   /* per-line override of the avatar's step */
+               pause: (x.pause === undefined ? null : Number(x.pause)) };   /* seconds to hold after this line */
     }
-    return { at: "", say: String(x), audio: "", video: "", input: null, cues: [], step: null };
+    return { at: "", say: String(x), audio: "", video: "", input: null, cues: [], step: null, pause: null };
   }
 
   /* park the character beside the element it describes; eyes follow it */
@@ -837,7 +847,9 @@ Auto-included by docs/_layouts/default.html.
       charTalk(av, false);
       if (av._curStep) { av._waiting = true; updateTriggers(id); return; }  /* wait for the next click */
       av.bubble.classList.remove("visible");
-      setTimeout(function () { nextLine(id); }, 500);
+      /* hold for the line's configured pause (seconds) before the next line — default 0.5s */
+      var _gap = (line.pause != null && !isNaN(line.pause)) ? line.pause * 1000 : 500;
+      setTimeout(function () { nextLine(id); }, _gap);
     };
 
     if (line.video) {
