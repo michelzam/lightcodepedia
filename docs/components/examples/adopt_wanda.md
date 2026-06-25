@@ -191,6 +191,13 @@ wanda:
 
 **🎬**{: title="Replay and solve — the code trail fills with every click, wrong turns included. That's what we can capture today." }
 
+### 🔬 KARMA analysis
+
+[Analyse](#)
+{: .imgload #karma_analysis }
+
+**🎬**{: title="Off-camera: open 'Source URL', paste the analysis image URL, then collapse it. On camera: open 'Analysis' → Analyse → the image loads live — never committed to the repo, URL never on screen." }
+
 ## 📝 The empty Log {#log_beat}
 
 # 📝 Switch to the editor → the **Log** tab
