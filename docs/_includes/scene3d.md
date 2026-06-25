@@ -88,19 +88,6 @@ Auto-included by docs/_layouts/default.html.
 .lc-s3d-trail-body .lc-s3d-trail-cmt { color: #94a3b8; font-style: italic; }
 @keyframes lc-s3d-fadein { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
 
-/* ── learning-trace graph (graph="true") ─────────────── */
-.lc-s3d-graph { display: none; margin-top: 14px; border: 1px solid #bbf7d0; border-radius: 8px;
-  background: #f6fef9; padding: 11px 14px; animation: lc-s3d-pop 0.4s ease; }
-.lc-s3d-graph-head { font-size: 0.82em; color: #15803d; font-weight: 600; margin-bottom: 8px; }
-.lc-s3d-graph svg { display: block; width: 100%; height: auto; }
-.lc-s3d-graph-cap { margin-top: 8px; font-size: 0.8em; color: #4b5563; line-height: 1.5; }
-.lc-s3d-graph-cap b { color: #15803d; }
-.lc-s3d-graph-off { margin-top: 11px; font-size: 0.8em; color: #b91c1c; line-height: 1.95; }
-.lc-s3d-off-chip { display: inline-block; background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c;
-  border-radius: 6px; padding: 1px 8px; margin: 1px 3px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.lc-s3d-graph-mis { margin-top: 9px; font-size: 0.82em; color: #92400e; background: #fffbeb;
-  border-left: 3px solid #f59e0b; padding: 7px 11px; border-radius: 0 5px 5px 0; line-height: 1.5; }
-.lc-s3d-graph-mis b { color: #b45309; }
 </style>
 
 <!-- The Three.js import map lives in _layouts/default.html <head>: an import
@@ -158,10 +145,6 @@ Auto-included by docs/_layouts/default.html.
        the quest unless explicitly forced with console="true" */
     var consoleAttr = el.getAttribute("console");
     var consoleOn = consoleAttr != null ? (consoleAttr !== "false") : !quest;
-    /* graph="true": after the win, draw an illustrative "learning trace" of the
-       path the learner found (with how many off-path tries it took) */
-    var wantGraph = el.hasAttribute("graph") && el.getAttribute("graph") !== "false";
-    var graphBody = null;
 
     var wrap = document.createElement("div");
     wrap.className = "lc-scene3d";
@@ -221,20 +204,6 @@ Auto-included by docs/_layouts/default.html.
       trailEl.appendChild(trailHead);
       trailEl.appendChild(trailBody);
       wrap.appendChild(trailEl);
-    }
-
-    /* learning-trace graph (hidden until the win) */
-    var graphEl = null;
-    if (wantGraph) {
-      graphEl = document.createElement("div");
-      graphEl.className = "lc-s3d-graph";
-      var graphHead = document.createElement("div");
-      graphHead.className = "lc-s3d-graph-head";
-      graphHead.textContent = "🌱 Learning trace — the path the learner found";
-      graphBody = document.createElement("div");
-      graphEl.appendChild(graphHead);
-      graphEl.appendChild(graphBody);
-      wrap.appendChild(graphEl);
     }
 
     function log(line) {
@@ -332,65 +301,11 @@ Auto-included by docs/_layouts/default.html.
 
       /* ── quest state machine (only live when goal="adopt_wanda") ── */
       var solved = false;
-      var offPath = [];   /* off-path actions taken before the path emerged */
-      function offStep(label, cat) { offPath.push({ label: label, cat: cat }); }
       function showWin() {
         if (solved) return;
         solved = true;
         if (winEl)  winEl.classList.add("lc-s3d-win-show");
         if (goalEl) goalEl.classList.add("lc-s3d-goal-done");
-        if (wantGraph) renderGraph();
-      }
-      function renderGraph() {
-        if (!graphBody || !graphEl) return;
-        var nodes = ["🐕 hungry", "🐕 fed", "🐠 curious", "🐠 ready", "🏰 home"];
-        var labels = ["eat()", "perks up", "blow_bubble()", "bark()"];
-        var n = nodes.length, GW = 760, GH = 96, pad = 14;
-        var gap = (GW - 2 * pad) / n;
-        var s = '<svg viewBox="0 0 ' + GW + ' ' + GH + '" preserveAspectRatio="xMidYMid meet">';
-        s += '<defs><marker id="lcah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">' +
-             '<path d="M0,0 L6,3 L0,6 Z" fill="#22c55e"/></marker></defs>';
-        for (var i = 0; i < n; i++) {
-          var cx = pad + gap * (i + 0.5);
-          if (i < n - 1) {
-            var nx = pad + gap * (i + 1.5);
-            s += '<line x1="' + (cx + 40) + '" y1="52" x2="' + (nx - 40) + '" y2="52" stroke="#86efac" stroke-width="3" marker-end="url(#lcah)"/>';
-            s += '<text x="' + ((cx + nx) / 2) + '" y="40" text-anchor="middle" font-size="13" fill="#15803d" font-family="ui-monospace,monospace">' + labels[i] + '</text>';
-          }
-          s += '<rect x="' + (cx - 40) + '" y="38" width="80" height="30" rx="8" fill="#dcfce7" stroke="#22c55e"/>';
-          s += '<text x="' + cx + '" y="57" text-anchor="middle" font-size="12" fill="#14532d">' + nodes[i] + '</text>';
-        }
-        s += '</svg>';
-
-        /* off-path tries, in red — deduped with counts, plus the misconception
-           the dominant kind of wrong move usually reveals */
-        var counts = {}, order = [], cats = {};
-        offPath.forEach(function (o) {
-          if (!(o.label in counts)) { counts[o.label] = 0; order.push(o.label); }
-          counts[o.label]++;
-          cats[o.cat] = (cats[o.cat] || 0) + 1;
-        });
-        var off = "";
-        if (order.length) {
-          off = '<div class="lc-s3d-graph-off">🔴 off-path: ' + order.map(function (l) {
-            return '<span class="lc-s3d-off-chip">' + l + (counts[l] > 1 ? " ×" + counts[l] : "") + "</span>";
-          }).join(" ") + "</div>";
-          var domCat = null, domN = -1;
-          Object.keys(cats).forEach(function (c) { if (cats[c] > domN) { domN = cats[c]; domCat = c; } });
-          var MIS = {
-            attr: "changing an <b>attribute</b> (a weight, a colour…) reaches the goal. But attributes are <i>state</i> that describe the object — only <b>behaviours</b> (methods) make things happen.",
-            move: "<b>any</b> action makes progress. But only the right behaviour in the right state advances — running or swimming doesn’t bring Wanda home; <b>only Lucky can reach her</b>.",
-            early: "a behaviour works <b>any time</b>. But Wanda only answers once she’s <i>ready</i> — the <b>order</b> is the algorithm."
-          };
-          if (MIS[domCat]) off += '<div class="lc-s3d-graph-mis">💡 <b>likely misconception:</b> ' + MIS[domCat] + "</div>";
-        }
-
-        graphBody.innerHTML = s + off +
-          '<div class="lc-s3d-graph-cap">🧭 the learner tried <b>' + offPath.length +
-          '</b> off-path action' + (offPath.length === 1 ? '' : 's') + ' before this path emerged.' +
-          ' &nbsp;✨ <b>a karmic learning trace</b> — illustrative; KARMA turns the raw trail into' +
-          ' meaningful, auditable measurement.</div>';
-        graphEl.style.display = "block";
       }
 
       function dogScale() { L3.group.scale.setScalar((0.55 + L.weight / 55) * L.grow); }
@@ -425,15 +340,14 @@ Auto-included by docs/_layouts/default.html.
         }
       }
 
-      /* attribute handlers — shared by both modes (in the quest, fiddling an
-         attribute is off-path exploration, so it counts toward the trace) */
-      lPanel.onColour = function (hex, name) { L3.mat.color.set(hex); log('lucky.colour = "' + name + '"'); if (quest) offStep("lucky.colour", "attr"); };
-      lPanel.onWeight = function (v) { L.weight = v; dogScale(); log("lucky.weight_kg = " + v); if (quest) offStep("lucky.weight_kg", "attr"); };
-      lPanel.onSpeed  = function (v) { L.speed = v;  log("lucky.top_speed_kmh = " + v); if (quest) offStep("lucky.top_speed_kmh", "attr"); };
+      /* attribute handlers — shared by both modes */
+      lPanel.onColour = function (hex, name) { L3.mat.color.set(hex); log('lucky.colour = "' + name + '"'); };
+      lPanel.onWeight = function (v) { L.weight = v; dogScale(); log("lucky.weight_kg = " + v); };
+      lPanel.onSpeed  = function (v) { L.speed = v;  log("lucky.top_speed_kmh = " + v); };
       lPanel.onAdopted = function (v) { L.adopted = v; L3.collar.visible = v; log("lucky.adopted = " + v); };
-      wPanel.onColour = function (hex, name) { W3.mat.color.set(hex); log('wanda.colour = "' + name + '"'); if (quest) offStep("wanda.colour", "attr"); };
-      wPanel.onWeight = function (v) { W.weight = v; fishScale(); log("wanda.weight_kg = " + v); if (quest) offStep("wanda.weight_kg", "attr"); };
-      wPanel.onSpeed  = function (v) { W.speed = v;  log("wanda.top_speed_kmh = " + v); if (quest) offStep("wanda.top_speed_kmh", "attr"); };
+      wPanel.onColour = function (hex, name) { W3.mat.color.set(hex); log('wanda.colour = "' + name + '"'); };
+      wPanel.onWeight = function (v) { W.weight = v; fishScale(); log("wanda.weight_kg = " + v); };
+      wPanel.onSpeed  = function (v) { W.speed = v;  log("wanda.top_speed_kmh = " + v); };
 
       if (quest) {
         /* Each pet is a tiny state machine; a behaviour only fires in the
@@ -472,19 +386,18 @@ Auto-included by docs/_layouts/default.html.
             W.adopted = true; W3.castle.visible = true;
             if (wPanel.setAdopted) wPanel.setAdopted(true);
             showWin();
-          } else { offStep("lucky.bark()", "early"); }
+          }
           syncChips(); refreshGates();
         };
-        lPanel.onRun = function () { L.state = "run"; L.t = 0; log("lucky.run()   # exploring…"); offStep("lucky.run()", "move"); };
-        lPanel.onWag = function () { L.state = "wag"; L.t = 0; log("lucky.wag_tail()   # exploring…"); offStep("lucky.wag_tail()", "move"); };
+        lPanel.onRun = function () { L.state = "run"; L.t = 0; log("lucky.run()   # exploring…"); };
+        lPanel.onWag = function () { L.state = "wag"; L.t = 0; log("lucky.wag_tail()   # exploring…"); };
         wPanel.onBubble = function () {
           spawnBubbles();
           log("wanda.blow_bubble()");
           if (sm.wanda === "curious") { sm.wanda = "ready"; log("# 🫧 a bubble! Wanda: curious → ready"); }
-          else offStep("wanda.blow_bubble()", "early");
           syncChips(); refreshGates();
         };
-        wPanel.onSwim = function () { W.boost = 3; log("wanda.swim()   # exploring…"); offStep("wanda.swim()", "move"); };
+        wPanel.onSwim = function () { W.boost = 3; log("wanda.swim()   # exploring…"); };
         syncChips(); refreshGates();
       } else {
         /* plain playground — every behaviour fires directly */
