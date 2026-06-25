@@ -204,6 +204,15 @@ url: ""
 ```python
 def on_click(button):
     u = (button.page.analysis_src.data.url or "").strip()
+    # a Google Drive share link → its direct-image CDN form (needs "Anyone with the link")
+    if "drive.google.com" in u:
+        fid = ""
+        if "/d/" in u:
+            fid = u.split("/d/")[1].split("/")[0].split("?")[0]
+        elif "id=" in u:
+            fid = u.split("id=")[1].split("&")[0]
+        if fid:
+            u = "https://lh3.googleusercontent.com/d/" + fid
     if u:
         button.page.analysis_frame.load(u)
 ```
