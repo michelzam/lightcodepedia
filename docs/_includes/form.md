@@ -218,6 +218,13 @@ Auto-included by docs/_layouts/default.html.
       return { _key: k, label: prettifyKey(k), value: obj[k], _type: typeOfValue(obj[k]) };
     });
 
+    /* publish the live object on the wrapper so Python (Form.field) can read it */
+    function _publishFormValue() {
+      var w = bodyEl.closest(".lc-form");
+      if (w) { try { w.setAttribute("data-lc-value", JSON.stringify(obj)); } catch (e) {} }
+    }
+    _publishFormValue();
+
     var gridDiv = document.createElement("div");
     gridDiv.className = "lc-form-grid ag-theme-alpine";
     bodyEl.appendChild(gridDiv);
@@ -295,6 +302,7 @@ Auto-included by docs/_layouts/default.html.
           obj[k] = nv;
           // Re-derive type from the new value
           event.data._type = typeOfValue(nv);
+          _publishFormValue();
           if (opts.onChange) opts.onChange(obj, k, nv);
         }
       };

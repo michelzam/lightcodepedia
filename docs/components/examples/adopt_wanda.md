@@ -193,10 +193,26 @@ wanda:
 
 ### 🔬 KARMA analysis
 
-[Analyse](#)
-{: .imgload #karma_analysis }
+```yaml
+url: ""
+```
+{: .form #analysis_src editable="true" title="Analysis source" }
 
-**🎬**{: title="Off-camera: open 'Source URL', paste the analysis image URL, then collapse it. On camera: open 'Analysis' → Analyse → the image loads live — never committed to the repo, URL never on screen." }
+[Analyse](#)
+{: .button #analyse_btn }
+
+```python
+def on_click(button):
+    u = (Page().analysis_src.field("url") or "").strip()
+    if u:
+        Page().analysis_frame.load(u)
+```
+{: .onclick }
+
+[blank](about:blank)
+{: .embed-page #analysis_frame height="360" }
+
+**🎬**{: title="Off-camera: type the analysis image URL into the form's url field. On camera: click Analyse → it loads into the frame. The image is never committed; the URL lives only in the form." }
 
 ## 📝 The empty Log {#log_beat}
 

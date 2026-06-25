@@ -783,13 +783,24 @@ class Tabs(Block):
                   {"n": "format", "t": "str", "data": True, "d": "yaml"},
                   {"n": "editable", "t": "bool", "data": True, "d": False}],
            assoc=[{"n": "master", "target": "Datagrid"}],
-           methods=["submit"])
+           methods=["submit", "field"])
 class Form(Block):
     @property
     def master(self):
         gid = self._attr("data-bound") or ""
         el = js.window.document.querySelector("[data-lc-id='" + gid + "']") if gid else None
         return _wrap(el)
+
+    def field(self, name):
+        """Current value of a form field. The form publishes its live object to
+        data-lc-value, so a button's on_click can read self.page.<form>.field()."""
+        import json
+        raw = self._attr("data-lc-value") or "{}"
+        try:
+            d = json.loads(raw)
+        except Exception:
+            d = {}
+        return d.get(name)
 
     def submit(self):
         return self._tap("button[type=submit], .lc-form-submit")
@@ -898,9 +909,13 @@ class Pytutor(Block):
     pass
 
 
-@component(icon="🖼️", attrs=[{"n": "height", "t": "int", "data": True, "d": 400}])
+@component(icon="🖼️", attrs=[{"n": "height", "t": "int", "data": True, "d": 400}],
+           methods=["load"])
 class EmbedPage(Block):
-    pass
+    def load(self, url):
+        """Point the embedded iframe at a new URL (e.g. from a button on_click)."""
+        if self._el is not None:
+            self._el.src = url
 
 
 @component(icon="🪗", methods=["open", "close", "sections"])

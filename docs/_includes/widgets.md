@@ -152,7 +152,9 @@ Auto-included by docs/_layouts/default.html.
     var h = el.getAttribute("height") || "400";
     var src = a.getAttribute("href");
     if (src && src.indexOf("?") === -1) src += "?embed=true"; else src += "&embed=true";
-    el.parentNode.replaceChild(_iframeEl(src, h, "lc-embed-page"), el);
+    var f = _iframeEl(src, h, "lc-embed-page");
+    if (el.id) { f.id = el.id; f.setAttribute("data-lc-id", el.id); }   /* so self.page.<id>.load() works */
+    el.parentNode.replaceChild(f, el);
   }
   function upgradeEmbedExternal(el) {
     var a = el.querySelector("a");
