@@ -1,5 +1,9 @@
 # 1️⃣ The Platform 🚁
 
+## 🤹🏼‍♂️ Learning pleayground
+Discover the platform, challenge, a gap and the future.
+
+
 <!--
 ## (Nice animated gif here)
 While the avatar starts
@@ -40,7 +44,6 @@ script:
 **🎬**{: title="Record in one pass: press 📽️, then ▶ Start and Next → to advance one beat at a time — the guide waits between lines. Do your interactions between clicks: feed Lucky / blow a bubble on the quest; open the editor → 📝 Log on the Log step." }
 
 --> 
-## ① The platform today {#platform}
 
 ```
 ### 💡Lightcodepedia
@@ -52,7 +55,7 @@ script:
 ![Lucky — a black Labrador](/assets/lab.jpg)
 
 
-### 🎥 Interactive
+### 🕹️ Interactive
 🎵 Play and 📽️ Record **videos** (like this one)  
 📊 **Data** — forms, grids, charts  
 
@@ -65,7 +68,6 @@ script:
 
 
 ## 📊 Living Components — Progressive disclosure
-
 
 ````
 ### 🐕 Data [Editable — click a cell to change a value, then watch the chart]
@@ -99,8 +101,9 @@ Updates when you select a dog.
 [Selected dog](#)
 {: .chart type="bar" bound-to="dog_grid_tuto" x="breed" height="280" }
 
-### 🐍 Code — write & run Python
 
+### 🐍 Code — write & run Python & AI
+````
 ```python
 class Dog:
     def __init__(self, name):
@@ -108,9 +111,9 @@ class Dog:
     def bark(self):
         return self.name + " says Woof!"
 
-print(Dog("Lucky").bark())
+print(Dog("Lucky").bark()
 ```
-{: .run }
+{: .run # buggy }
 
 ### 🎲 Quiz — instant feedback
 **Q:** What makes something an *object*?
@@ -121,6 +124,14 @@ print(Dog("Lucky").bark())
 {: .quiz }
 ````
 {: .blocks cols="2" }
+
+```yaml
+system: |
+  You are a Python tutor. When asked to fix code, reply with the
+  COMPLETE fixed code in a single python fenced block. Keep prose short.
+```
+{: .agent bound="buggy" #tutor }
+
 
 ## ✨ Momentum
 🏅 **Peer-reviewed at ACM SIGCSE** — Demo & Poster *(2026)* · Tutorial *(2025)* · Jury *(2024)* · Exhibitor *(2023)*
