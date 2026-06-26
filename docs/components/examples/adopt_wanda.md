@@ -119,59 +119,13 @@ system: |
 {: .blocks }
 
 
-
 # 2️⃣ Adopt Wanda 🐕 + 🐠 = 🏰
 
-🐠 Here is a challenge: Adopt Wanda, a fish.  
+🐠 Challenge: Adopt Wanda, a fish. 
 🐕 Yet only the brave dog Lucky can do communicate with.   
+🎯 __Actualy, it's all about problem solving with object states and behavior.__
 
 ## 🥎 Play with pets
-
-
-```yaml
-lucky:
-  colour: Golden
-  weight_kg: 30
-  top_speed_kmh: 45
-  adopted: true
-wanda:
-  colour: Orange
-  weight_kg: 0.03
-  top_speed_kmh: 6
-  adopted: false
-```
-{: .scene3d #explore_scene height="420" console="false" }
-
-**🎬**{: title="Free play: click attributes & methods, watch the pets react. No goal yet — and no code shown." }
-
-## ✅ Check understanding {#understanding}
-
-Classical way: learner explores, finds the solution, submit assignment and answer the quiz.
-**Q:** You click `wanda.blow_bubble()`. What is that?
-
-- [ ] An **attribute** — a value stored on Wanda.
-
-  > Attributes are *state* you read or set — like `colour` or `adopted`. `blow_bubble()` *does* something instead.
-
-- [x] A **method** — behaviour Wanda can perform.
-
-  > Exactly — behaviour an object invokes, usually using its own state.
-
-- [ ] A separate program you `import`.
-
-  > No — it belongs to the object itself. That co-location of state **and** behaviour is what makes it an object.
-
-- [ ] Nothing — fish can't blow bubbles.
-
-  > They can here! An object's behaviour is whatever it's defined to do — Wanda's bubble even nudges Lucky.
-{: .quiz #check_objects }
-
-**🎬**{: title="Let them answer — feedback appears on every option, right and wrong. The platform checks understanding inline." }
-
-## Yet, Does this reflect the learning?
-However, the gap is that, whatever the learning environment is, only the final photo is not reliable enough to confirm learrnerss’ skill match CLO, including in the AI era where a copy/paste gives a shortcut, jeopardising both academic cunduct and student’s later biger problems.
-
-## 🎯 Act 2 — The challenge {#gap}
 
 ```yaml
 lucky:
@@ -187,11 +141,17 @@ wanda:
 ```
 {: .scene3d #challenge_scene height="420" goal="adopt_wanda" }
 
-**🎬**{: title="Locked checkbox; each method only fires in the right state (chips show it). Discover the order: eat → Wanda curious → blow_bubble → bark → adopted. Try off-path moves too — solved in the dark, no trace." }
-
 ## 🕵️ The finish photo {#finish}
 
-**Q:** A learner submits the "finish photo" — Wanda adopted, the quiz passed. From that result alone, can you tell whether it was their own reasoning or an AI-assisted paste?
+## Yet, Does this reflect the learning?
+However, the gap is that, whatever the learning environment is, only the final photo 
+is not reliable enough to confirm learrnerss’ skill match CLO, including in the AI era 
+where a copy/paste gives a shortcut, jeopardising both academic cunduct and student’s 
+later biger problems.
+
+If you're an educator you can ask yourself
+**Q:** A learner submits the "finish photo" — Wanda adopted, the quiz passed. 
+From that result alone, can you tell whether it was their own reasoning or an AI-assisted paste?
 
 - [x] No — the finish looks identical either way. You'd need the *process*.
 
@@ -210,7 +170,6 @@ wanda:
   > You can't watch everyone — which is why the *trace* matters.
 {: .quiz #finish_photo }
 
-**🎬**{: title="Same submitted state + quiz, whether reasoned or pasted. That's the gap KARMA fills." }
 
 ## 🧭 Act 3 — With traces: KARMA {#karma}
 
