@@ -113,7 +113,8 @@ system: |
 
 ```
 ### 🧑🏻‍🎓 Workshops and Summer Schools
-![Summer School](/assets/SummerSchoolZoom.jpg){: height="200" }
+👍 Thumbs up at scale!
+![Summer School](/assets/SummerSchoolZoom.jpg)
 ```
 {: .blocks }
 
