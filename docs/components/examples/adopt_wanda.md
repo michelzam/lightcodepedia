@@ -1,10 +1,11 @@
-# 1️⃣ The Platform
+# 1️⃣ The Platform 🚁
 
-
+<!--
 ## (Nice animated gif here)
 While the avatar starts
 
 **Learners _build_ — they don't just read.**  ·  explore → challenge → KARMA
+
 
 ```yaml
 name: "Prof. LC"
@@ -38,6 +39,7 @@ script:
 
 **🎬**{: title="Record in one pass: press 📽️, then ▶ Start and Next → to advance one beat at a time — the guide waits between lines. Do your interactions between clicks: feed Lucky / blow a bubble on the quest; open the editor → 📝 Log on the Log step." }
 
+--> 
 ## ① The platform today {#platform}
 
 
@@ -312,6 +314,7 @@ def on_click(button):
 - 🎯 **Goal-matched** — measured against the **assignment's goal**.
 - 🤔 **Struggle as signal** — choices, hesitations, misconceptions used **positively**.
 - ⏱️ **Real-time** — assess and **guide** as the learner works.
+- 🎨 Mass customisation!
 
 **The activity is live on the open platform today. KARMA fills the Log — so students get the feedback they need.**
 
