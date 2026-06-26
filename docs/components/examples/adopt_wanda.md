@@ -1,7 +1,8 @@
-# 🐕🐠 Adopt Wanda
+# 1️⃣ The Platform
+
 
 ## (Nice animated gif here)
-While the avarat starts
+While the avatar starts
 
 **Learners _build_ — they don't just read.**  ·  explore → challenge → KARMA
 
@@ -42,47 +43,64 @@ script:
 
 ```
 ### 💡Lightcodepedia
-- Is an open, low-code learning platform:  
-- learners learn to **build** interactive content 
-- from plain **markdown** — no HTML, no JavaScript, no server.
+📖 Open, low-code, scalable **learning** platform  
+👷🏻‍♂️ Learners learn to **build** interactive content  
+❣️ From plain **markdown**{: .red }, no ~~HTML, JS, server.~~  
+🤖 AI empowered, yet, yet **free** to use  
+🖼️ Text, **images** & videos, Iiteractive maps & embeds  
+![Lucky — a black Labrador](/assets/lab.jpg)
 
-### 🎙️ Showing 
-- Text, images & video, Iiteractive maps & embeds
-- Data — forms, grids, charts
-- **Objects** — state + behaviour
-- Quizzes with instant feedback
-- 📽️ Recording video like this one (and becoming creator) 
+
+### 🎥 Interactive
+🎵 Play and 📽️ Record **videos** (like this one)  
+📊 **Data** — forms, grids, charts  
+
+[▶️ Led Zeppelin — Black Dog](https://youtu.be/mX4OPdzcIaI)
+
+{: .video height="380" }
+
 ```
-{: .blocks cols="2"}
+{: .blocks cols="2" }
 
-## ✨ Momentum
-🏅 **Peer-reviewed at ACM SIGCSE** — Demo & Poster *(2026)* · Tutorial *(2025)* · Jury *(2024)* · Exhibitor *(2023)*
+
+## 📊 Living Components — Progressive disclosure
+
+
+````
+### 🐕 Data [Editable — click a cell to change a value, then watch the chart]
+
+Select a dog to update the chart.
+
+```csv
+breed,top_speed_kmh,cute
+Greyhound,72,70
+Saluki,68,72
+Vizsla,64,78
+Jack Russell,56,85
+Border Collie,48,82
+German Shepherd,48,80
+Labrador,40,92
+Beagle,40,88
+Corgi,35,95
+Pug,15,98
+Bulldog,14,90
 ```
-### 🎓 ACM SIGCSE TS 2026_ — Anonymous Peer Review
-- 💬 _A rare fusion of low-code technology and computing pedagogy — innovative and grounded._
-- 💬 _The progression from visual exploration to executable models supports authentic learning while staying accessible for diverse learners._
-{: .carousel delay="10000"}
-### 👨‍🎓 UWM Student Feedback
-- 💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._
-- 💬 _More quotes here_
-{: .carousel delay="10000"}
-###
+{: .dataset #dog_data }
+
+```csv
 ```
-{: .blocks cols="2"}
+{: .datagrid bind="dog_data" #dog_grid_tuto title="Dog top speeds & cuteness" height="280" editable="true" }
 
-### Workshops and summer schools
-![Summer Schools](/assets/SummerSchoolZoom.jpg){: height="320" }
+### 📊 Chart [Updates live when you select or edit a row]
+
+Updates when you select a dog.
+
+[Selected dog](#)
+{: .chart type="bar" bound-to="dog_grid_tuto" x="breed" height="280" }
+````
+{: .blocks cols="2" }
 
 
-
-
-**🎬**{: title="Swipe the quotes carousel on camera — peer review + Luke (UWM)." }
-
-## 🧩 Build it live {#features}
-
-One line of markdown becomes a real widget — here a **code runner** and a **quiz**, side by side:
-
-## Interactive familiar widgets 
 ```
 ### Interactive familiar widgets 
 - ✅ Text, images & video
@@ -118,7 +136,28 @@ print(Dog("Lucky").bark())
 ````
 {: .blocks cols="2" }
 
-…and more — maps, grids, charts, video, 3D objects: see [Tutorial 101](/tutorial101).
+## ✨ Momentum
+🏅 **Peer-reviewed at ACM SIGCSE** — Demo & Poster *(2026)* · Tutorial *(2025)* · Jury *(2024)* · Exhibitor *(2023)*
+```
+### 🎓 ACM SIGCSE TS 2026_ — Anonymous Peer Review
+- 💬 _A rare fusion of low-code technology and computing pedagogy — innovative and grounded._
+- 💬 _The progression from visual exploration to executable models supports authentic learning while staying accessible for diverse learners._
+{: .carousel delay="10000"}
+### 👨‍🎓 UWM Student Feedback
+- 💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._
+- 💬 _More quotes here_
+{: .carousel delay="10000"}
+###
+```
+{: .blocks cols="2"}
+
+### Workshops and summer schools
+![Summer Schools](/assets/SummerSchoolZoom.jpg){: height="320" }
+
+
+# 2️⃣ Adopt Wanda 🐕🐠 
+
+Thomas, an undocumented neurodivergent learner has a challenge: 
 
 **🎬**{: title="Run the code (▶), then answer the quiz — both are live widgets from plain markdown." }
 
