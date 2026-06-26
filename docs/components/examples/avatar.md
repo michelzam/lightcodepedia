@@ -93,14 +93,23 @@ script:
 
 ---
 
-## 🔒 Runtime video — a private URL, never in the repo {#runtime_video}
+## 🔒 Runtime video — a private clip, never in the repo {#runtime_video}
 
-Same recorded-character idea, but the clip's URL is **never committed**. Type it
-into the secret panel *off-camera*, **fold** it, then press ▶ Play — the avatar
-plays it with its cues. An unlisted **YouTube** link plays through the embed; a
-direct **.mp4/.webm** keeps alpha transparency and frame-accurate cues. The wiring
-is `button.page.secret_avatar.video(url)` — three existing pieces (form + button +
-avatar), no URL on camera, nothing in the repo.
+Same recorded-character idea, but the clip is **never committed**. Two ways to
+feed it at runtime, both off-camera:
+
+- **📁 Choose a local file** — pick any video on your machine; it plays as an
+  in-memory blob (never uploaded, committed, or even typed) **with sound**, and a
+  VP9-alpha `.webm` keeps its transparency. *(`file:///Users/…` paths can't be
+  used — browsers block a web page from reading your disk; the picker is how you
+  hand one over.)*
+- **🔗 A URL** — a **served** path like `/assets/clip.mp4` (commit it, or run
+  `jekyll serve` locally and gitignore it) or any direct `.mp4/.webm` link. An
+  unlisted **YouTube** link works too, but the browser autoplays it **muted** —
+  so for narration prefer a file.
+
+Both routes end at `button.page.secret_avatar.video(url)`; cues fire by real
+playback time either way. Set it, **fold** the panel, press ▶ Play.
 
 ````
 ### !🔗 Video source — *set off-camera, then fold*
@@ -121,6 +130,9 @@ def on_click(button):
 {: .onclick }
 ````
 {: .accordion }
+
+[📁 Choose a local video…](#)
+{: .avatar-trigger target="secret_avatar" pick="video" }
 
 ```yaml
 name: "Aristotle"
@@ -195,7 +207,7 @@ script:
 | `size` / `autoplay` | Bubble diameter in px (140) / start on page load |
 | `step` | `"true"`: step-by-step — each click on the trigger (or character) speaks the next line and stops (`▶ Start → Next → ↺ Replay`) |
 
-`{: .avatar-trigger target="id" }` on any link makes a play/stop button. Multiple avatars stagger automatically.
+`{: .avatar-trigger target="id" }` on any link makes a play/stop button. Multiple avatars stagger automatically. Add the **`pick`** knob — `{: .avatar-trigger target="id" pick="video" }` — and the same trigger instead opens a local file picker: the chosen video plays as the avatar from an in-memory blob (with sound), never uploaded or committed.
 
 **Runtime source** — `Page().<avatar>.video(url)` (e.g. from a button `on_click`) sets the clip at runtime, so a private URL never lives in the repo: a direct `.mp4/.webm` plays through the avatar's `<video>` (alpha + frame-accurate cues), an unlisted **YouTube** link plays through its embed with a shim so the same cues still fire. See [🔒 Runtime video](#runtime_video) above.
 

@@ -1014,14 +1014,34 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
-  /* ── upgrade .avatar-trigger links ────────────────── */
+  /* ── upgrade .avatar-trigger links ──────────────────
+     A `pick` knob turns the trigger into a local-file picker instead of a play
+     button: it plays a video off your disk as the avatar (an in-memory blob URL
+     — never uploaded, committed, or typed; sound + alpha kept). The native
+     picker is opened from this *synchronous* click so the user gesture survives
+     (a button on_click runs async and the browser would block it). */
   function upgradeTrigger(el) {
     if (el.dataset.lcAvtTrigDone) return;
     el.dataset.lcAvtTrigDone = "1";
-    var targetId  = el.getAttribute("target") || "";
+    var targetId = el.getAttribute("target") || "";
+    el.classList.add("lc-avatar-trigger");
+    if (el.getAttribute("pick") != null) {
+      el.addEventListener("click", function (e) {
+        e.preventDefault();
+        var inp = document.createElement("input");
+        inp.type = "file"; inp.accept = "video/*"; inp.style.display = "none";
+        inp.addEventListener("change", function () {
+          var f = inp.files && inp.files[0];
+          if (f && window.lcAvatarSetVideo) window.lcAvatarSetVideo(targetId, URL.createObjectURL(f));
+          inp.remove();
+        });
+        document.body.appendChild(inp);
+        inp.click();
+      });
+      return;
+    }
     var labelPlay = el.textContent.trim() || "▶ Play";
     var labelStop = el.getAttribute("label-stop") || "⏹ Stop";
-    el.classList.add("lc-avatar-trigger");
     el.setAttribute("data-avt-target", targetId);
     el.setAttribute("data-avt-play", labelPlay);
     el.setAttribute("data-avt-stop", labelStop);
@@ -1080,8 +1100,8 @@ Auto-included by docs/_layouts/default.html.
             : (btn.getAttribute("data-avt-play") || (av && av.step ? "▶ Start" : "▶ Play"));
       } else if (av._waiting) {
         txt = "Next →";                                   /* paused at a step boundary */
-      } else if (av._videoStep && av.videoEl && !av.videoEl.ended) {
-        txt = av.videoEl.paused ? "▶ Resume" : "⏸ Pause"; /* recorded take in progress */
+      } else if (av._videoStep && (av._media || av.videoEl) && !(av._media || av.videoEl).ended) {
+        txt = (av._media || av.videoEl).paused ? "▶ Resume" : "⏸ Pause"; /* recorded take in progress */
       } else if (av._curStep || av.step) {
         txt = "Next →";                                   /* a step context, mid-play */
       } else {
