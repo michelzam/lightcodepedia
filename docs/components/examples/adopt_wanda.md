@@ -111,8 +111,10 @@ system: |
 ```
 {: .blocks cols="2"}
 
-## 🧑🏻‍🎓 Workshops and Summer Schools
-![Summer School](/assets/SummerSchoolZoom.jpg){: height="320" }
+```
+### 🧑🏻‍🎓 Workshops and Summer Schools
+![Summer School](/assets/SummerSchoolZoom.jpg){: height="200" }
+```
 {: .blocks }
 
 
