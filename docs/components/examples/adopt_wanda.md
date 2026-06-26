@@ -73,6 +73,10 @@ script:
 ###
 ```
 {: .blocks cols="2"}
+### Workshops and summer schools
+
+![Summer Schools](/assets/SummerSchoolZoom.jpg)
+{: .embed-page height="50" }
 
 
 **🎬**{: title="Swipe the quotes carousel on camera — peer review + Luke (UWM)." }
