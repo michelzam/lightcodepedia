@@ -4,6 +4,9 @@ tags: learn
 ---
 # 🐕🐠 Adopt Wanda
 
+## (Nice animated gif here)
+While the avarat starts
+
 **Learners _build_ — they don't just read.**  ·  explore → challenge → KARMA
 
 ```yaml
@@ -40,29 +43,56 @@ script:
 
 ## ① The platform today {#platform}
 
-**Lightcodepedia** is an open, low-code learning platform: learners **build**
-interactive content from plain **markdown** — no HTML, no JavaScript, no server.
 
-- ✅ Text, images & video
-- ✅ Interactive maps & embeds
-- ✅ Data — forms, grids, charts
-- ✅ **Objects** — state + behaviour
-- ✅ Quizzes with instant feedback
+```
+### 💡Lightcodepedia
+- Is an open, low-code learning platform:  
+- learners learn to **build** interactive content 
+- from plain **markdown** — no HTML, no JavaScript, no server.
 
+### 🎙️ Showing 
+- Text, images & video, Iiteractive maps & embeds
+- Data — forms, grids, charts
+- **Objects** — state + behaviour
+- Quizzes with instant feedback
+- 📽️ Recording video like this one (and becoming creator) 
+```
+{: .blocks cols="2"}
+
+## ✨ Momentum
 🏅 **Peer-reviewed at ACM SIGCSE** — Demo & Poster *(2026)* · Tutorial *(2025)* · Jury *(2024)* · Exhibitor *(2023)*
-
-### 🏅 ACM SIGCSE — Peer Review & UWM Student Feedback
-
-- 💬 _A rare fusion of low-code technology and computing pedagogy — innovative and grounded._  _Anonymous peer review — 🎓 ACM SIGCSE TS 2026_
-- 💬 _The progression from visual exploration to executable models supports authentic learning while staying accessible for diverse learners._  _Anonymous peer review — 🎓 ACM SIGCSE TS 2026_
-- 💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._  — 🎓 Luke — undergraduate student, UW Milwaukee
+```
+### 🎓 ACM SIGCSE TS 2026_ — Anonymous Peer Review
+- 💬 _A rare fusion of low-code technology and computing pedagogy — innovative and grounded._
+- 💬 _The progression from visual exploration to executable models supports authentic learning while staying accessible for diverse learners._
 {: .carousel }
+### 👨‍🎓 UWM Student Feedback
+- 💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._
+- 💬 _More quotes here_
+{: .carousel }
+###
+```
+{: .blocks cols="2"}
+
 
 **🎬**{: title="Swipe the quotes carousel on camera — peer review + Luke (UWM)." }
 
 ## 🧩 Build it live {#features}
 
 One line of markdown becomes a real widget — here a **code runner** and a **quiz**, side by side:
+
+## Interactive familiar widgets 
+```
+### Interactive familiar widgets 
+- ✅ Text, images & video
+- ✅ Interactive maps & embeds
+
+### Interactive familiar widgets 
+- Data — forms, grids, charts
+- with progressive disclosure x-ray!
+
+```
+{: .blocks cols="2" }
 
 ````
 ### 🐍 Code — write & run Python
