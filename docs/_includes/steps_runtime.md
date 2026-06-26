@@ -1011,7 +1011,7 @@ class Scene3d(Block):
            attrs=[{"n": "size", "t": "int"},
                   {"n": "playing", "t": "bool"},
                   {"n": "speech", "t": "str"}],
-           methods=["play", "stop"],
+           methods=["play", "stop", "video"],
            states=["idle", "speaking"])
 class Avatar(Block):
     def _reg(self):
@@ -1049,6 +1049,16 @@ class Avatar(Block):
     def stop(self):
         if self.playing:
             self._tap(".lc-avatar-char")
+        return self
+
+    def video(self, url):
+        """Set a runtime video source (direct .mp4/.webm URL or a YouTube link)
+        for this avatar — e.g. from a button on_click, so the URL never lives in
+        the repo. A script line with `video: true` then plays this source with
+        its cues; YouTube links play through the embed, file URLs keep alpha."""
+        fn = getattr(js.window, "lcAvatarSetVideo", None)
+        if fn is not None and self.id:
+            fn(self.id, str(url or ""))
         return self
 
 

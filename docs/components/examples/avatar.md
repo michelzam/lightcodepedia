@@ -93,6 +93,56 @@ script:
 
 ---
 
+## 🔒 Runtime video — a private URL, never in the repo {#runtime_video}
+
+Same recorded-character idea, but the clip's URL is **never committed**. Type it
+into the secret panel *off-camera*, **fold** it, then press ▶ Play — the avatar
+plays it with its cues. An unlisted **YouTube** link plays through the embed; a
+direct **.mp4/.webm** keeps alpha transparency and frame-accurate cues. The wiring
+is `button.page.secret_avatar.video(url)` — three existing pieces (form + button +
+avatar), no URL on camera, nothing in the repo.
+
+````
+### !🔗 Video source — *set off-camera, then fold*
+```yaml
+video_url: ""
+```
+{: .form #secret_src editable="true" title="Private video URL" }
+
+[📼 Load video](#)
+{: .button #load_secret_video }
+
+```python
+def on_click(button):
+    u = (button.page.secret_src.data.video_url or "").strip()
+    if u:
+        button.page.secret_avatar.video(u)
+```
+{: .onclick }
+````
+{: .accordion }
+
+```yaml
+name: "Aristotle"
+transparent: true
+script:
+  - say: "My clip is loaded at runtime — its URL is never in the repository."
+    video: true
+    cues:
+      - t: 0
+        at: "#runtime_video"
+      - t: 6
+        say: "Cues still fire — by real playback time, YouTube or file alike."
+      - t: 16
+        say: "Fold the panel, press Play, record. The URL stays off camera."
+```
+{: .avatar #secret_avatar size="180" step="true" }
+
+[▶ Play](#)
+{: .avatar-trigger target="secret_avatar" label-stop="⏹ Stop" }
+
+---
+
 ## 🚙 Riv — a Rive state-machine character {#rive_demo}
 
 A Rive character is a **state machine with inputs**, not a recording — and the
@@ -146,6 +196,8 @@ script:
 | `step` | `"true"`: step-by-step — each click on the trigger (or character) speaks the next line and stops (`▶ Start → Next → ↺ Replay`) |
 
 `{: .avatar-trigger target="id" }` on any link makes a play/stop button. Multiple avatars stagger automatically.
+
+**Runtime source** — `Page().<avatar>.video(url)` (e.g. from a button `on_click`) sets the clip at runtime, so a private URL never lives in the repo: a direct `.mp4/.webm` plays through the avatar's `<video>` (alpha + frame-accurate cues), an unlisted **YouTube** link plays through its embed with a shim so the same cues still fire. See [🔒 Runtime video](#runtime_video) above.
 
 ## 🎬 Slide mode & studio mode
 

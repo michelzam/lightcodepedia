@@ -322,17 +322,121 @@ Auto-included by docs/_layouts/default.html.
     if (av.riveMouth) { try { av.riveMouth.value = 0; } catch (e) {} }
   }
 
+  /* ── runtime video source (set from a form field, never in the repo) ──
+     window.lcAvatarSetVideo(id, url): a direct .mp4/.webm plays through the
+     avatar's <video> (alpha + frame-accurate cues); a YouTube link plays via
+     the embed, with a <video>-like shim so the same cue logic still runs. */
+  function _ytId(u) {
+    var m = String(u).match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/);
+    return m ? m[1] : "";
+  }
+  function _isYouTube(u) { return !!_ytId(u); }
+  function _loadYTApi(cb) {
+    if (window.YT && window.YT.Player) { cb(); return; }
+    (window._lcYTQ = window._lcYTQ || []).push(cb);
+    if (window._lcYTApiLoading) return;
+    window._lcYTApiLoading = true;
+    var prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function () {
+      if (prev) { try { prev(); } catch (e) {} }
+      var q = window._lcYTQ || []; window._lcYTQ = [];
+      q.forEach(function (f) { try { f(); } catch (e) {} });
+    };
+    var s = document.createElement("script");
+    s.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(s);
+  }
+  function _ytTeardown(av) {
+    if (!av) return;
+    if (av._ytTimer)  { clearInterval(av._ytTimer); av._ytTimer = null; }
+    if (av._ytPlayer) { try { av._ytPlayer.destroy(); } catch (e) {} av._ytPlayer = null; }
+    var face = av.char && av.char.querySelector(".lc-avatar-face");
+    if (face) face.style.display = "";
+    if (av.videoEl) av.videoEl.style.display = "";
+  }
+
+  window.lcAvatarSetVideo = function (id, url) {
+    var av = window._lcAvatars && window._lcAvatars[id];
+    if (!av) return;
+    url = String(url || "").trim();
+    av.runtimeVideo = url;
+    if (!url) return;
+    if (_isYouTube(url)) { _loadYTApi(function () {}); return; }  /* warm the API; player built on play */
+    /* direct file URL: face/TTS avatars have no <video> — build one now */
+    if (!av.videoEl) {
+      var v = document.createElement("video");
+      v.className = "lc-avatar-video";
+      v.muted = true; v.preload = "metadata"; v.setAttribute("playsinline", "");
+      var face = av.char.querySelector(".lc-avatar-face"); if (face) face.style.display = "none";
+      av.char.appendChild(v);
+      av.videoEl = v;
+    }
+    av.videoEl.style.display = "";
+    if (av.videoEl.getAttribute("src") !== url) av.videoEl.src = url;
+  };
+
+  /* play a YouTube clip in the avatar bubble; returns a <video>-like shim
+     (currentTime/paused/ended/play/pause/timeupdate) so attachCues, togglePlay
+     and stopPlay drive it exactly like a recorded <video>. */
+  function playYouTubeLine(av, url, onEnd) {
+    var vid = _ytId(url);
+    if (!vid) { onEnd(); return null; }
+    _ytTeardown(av);
+    if (av.videoEl) { try { av.videoEl.pause(); } catch (e) {} av.videoEl.style.display = "none"; }
+    var face = av.char.querySelector(".lc-avatar-face"); if (face) face.style.display = "none";
+    var mount = document.createElement("div");
+    mount.className = "lc-avatar-video";
+    mount.style.cssText = "width:100%;height:100%";
+    av.char.appendChild(mount);
+    var ended = false, listeners = [];
+    var shim = {
+      get currentTime() { try { return av._ytPlayer ? (av._ytPlayer.getCurrentTime() || 0) : 0; } catch (e) { return 0; } },
+      get paused()  { try { return av._ytPlayer ? av._ytPlayer.getPlayerState() !== 1 : true; } catch (e) { return true; } },
+      get ended()   { return ended; },
+      play:  function () { try { av._ytPlayer && av._ytPlayer.playVideo(); } catch (e) {} return Promise.resolve(); },
+      pause: function () { try { av._ytPlayer && av._ytPlayer.pauseVideo(); } catch (e) {} },
+      addEventListener: function (ev, fn) {
+        if (ev !== "timeupdate") return;
+        listeners.push(fn);
+        if (!av._ytTimer) av._ytTimer = setInterval(function () { listeners.forEach(function (f) { f(); }); }, 150);
+      },
+      removeEventListener: function (ev, fn) {
+        listeners = listeners.filter(function (x) { return x !== fn; });
+        if (av._ytTimer && !listeners.length) { clearInterval(av._ytTimer); av._ytTimer = null; }
+      }
+    };
+    av._media = shim;
+    _loadYTApi(function () {
+      try {
+        av._ytPlayer = new window.YT.Player(mount, {
+          width: "100%", height: "100%", videoId: vid,
+          playerVars: { autoplay: 1, controls: 1, rel: 0, modestbranding: 1, playsinline: 1, fs: 0 },
+          events: {
+            onReady: function (e) { try { e.target.playVideo(); } catch (_) {} },
+            onStateChange: function (e) { if (e.data === window.YT.PlayerState.ENDED) { ended = true; onEnd(); } }
+          }
+        });
+      } catch (e) { onEnd(); }
+    });
+    return shim;
+  }
+
   function playVideoLine(av, url, onEnd) {
+    var rt = av.runtimeVideo || "";
+    if (rt && _isYouTube(rt)) return playYouTubeLine(av, rt, onEnd);
     var v = av.videoEl;
-    if (!v) { onEnd(); return; }
-    /* per-line url overrides; otherwise the character's <source> list rules */
-    var src = (url && url !== "true") ? url : "";
+    if (!v) { onEnd(); return null; }
+    /* runtime URL wins; else per-line url override; else the <source> list */
+    var src = rt || ((url && url !== "true") ? url : "");
     if (src && v.getAttribute("src") !== src) v.src = src;
+    v.style.display = "";
     v.muted = false;
     try { v.currentTime = 0; } catch (e) {}
     v.onended = function () { v.muted = true; onEnd(); };
     v.onerror = function () { onEnd(); };
     v.play().catch(function () { onEnd(); });
+    av._media = v;
+    return v;
   }
 
   /* ── timed cues inside one recorded take ─────────────
@@ -765,10 +869,11 @@ Auto-included by docs/_layouts/default.html.
     } else if (av._waiting) {
       /* paused at a step boundary → advance to the next line */
       av._waiting = false; nextLine(id);
-    } else if (av._videoStep && av.videoEl && !av.videoEl.ended) {
+    } else if (av._videoStep && (av._media || av.videoEl) && !(av._media || av.videoEl).ended) {
       /* a recorded take is the step unit → pause/resume at the current time index */
-      if (av.videoEl.paused) { try { av.videoEl.play().catch(function () {}); } catch (e) {} }
-      else { try { av.videoEl.pause(); } catch (e) {} }
+      var m = av._media || av.videoEl;
+      if (m.paused) { try { m.play().catch(function () {}); } catch (e) {} }
+      else { try { m.pause(); } catch (e) {} }
     } else if (av._curStep || av.step) {
       /* mid-line in a step context → skip ahead to the next line */
       nextLine(id);
@@ -808,6 +913,8 @@ Auto-included by docs/_layouts/default.html.
     stopAudio(av);
     resetMouth(av);
     if (av.videoEl) { try { av.videoEl.pause(); av.videoEl.muted = true; } catch (e) {} }
+    if (av._media && av._media !== av.videoEl) { try { av._media.pause(); } catch (e) {} }
+    _ytTeardown(av); av._media = null;
     window.speechSynthesis && window.speechSynthesis.cancel();
     if (av.lottieAnim) av.lottieAnim.stop();
     if (av.riveTalk) { try { av.riveTalk.value = false; } catch (e) {} }
@@ -826,6 +933,7 @@ Auto-included by docs/_layouts/default.html.
     av._curStep = (line.step != null) ? !!line.step : !!av.step;
     av._waiting = false;       /* set when paused at a step boundary, click advances */
     av._videoStep = false;     /* set while a recorded take is the step unit */
+    if (!line.video) _ytTeardown(av);   /* leaving a video take → drop any YT player */
 
     /* move the character: to the element it describes, or along the path */
     var anchored = line.at && anchorTo(av, line.at);
@@ -858,8 +966,8 @@ Auto-included by docs/_layouts/default.html.
          time index (see togglePlay); the cues just overlay their funny comments. */
       av.bubble.textContent = line.say;
       av._videoStep = av._curStep;
-      playVideoLine(av, line.video, finish);
-      attachCues(av, av.videoEl, line.cues, id);
+      var media = playVideoLine(av, line.video, finish);
+      attachCues(av, media || av.videoEl, line.cues, id);
       return;
     }
 
