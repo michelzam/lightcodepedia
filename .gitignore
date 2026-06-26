@@ -7,3 +7,5 @@ pretty.output
 lib/*
 .devcontainer/*
 HANDOFF.md
+docs/_site/
+.jekyll-cache/
