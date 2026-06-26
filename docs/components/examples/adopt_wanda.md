@@ -1,7 +1,3 @@
----
-title: "Adopt Wanda — the platform, the gap & KARMA"
-tags: learn
----
 # 🐕🐠 Adopt Wanda
 
 ## (Nice animated gif here)
@@ -65,11 +61,11 @@ script:
 ### 🎓 ACM SIGCSE TS 2026_ — Anonymous Peer Review
 - 💬 _A rare fusion of low-code technology and computing pedagogy — innovative and grounded._
 - 💬 _The progression from visual exploration to executable models supports authentic learning while staying accessible for diverse learners._
-{: .carousel }
+{: .carousel delay="10000"}
 ### 👨‍🎓 UWM Student Feedback
 - 💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._
 - 💬 _More quotes here_
-{: .carousel }
+{: .carousel delay="10000"}
 ###
 ```
 {: .blocks cols="2"}
