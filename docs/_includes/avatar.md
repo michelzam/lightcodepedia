@@ -410,9 +410,24 @@ Auto-included by docs/_layouts/default.html.
       try {
         av._ytPlayer = new window.YT.Player(mount, {
           width: "100%", height: "100%", videoId: vid,
-          playerVars: { autoplay: 1, controls: 1, rel: 0, modestbranding: 1, playsinline: 1, fs: 0 },
+          playerVars: { autoplay: 1, controls: 0, rel: 0, modestbranding: 1,
+                        playsinline: 1, fs: 0, disablekb: 1, iv_load_policy: 3, cc_load_policy: 0 },
           events: {
-            onReady: function (e) { try { e.target.playVideo(); } catch (_) {} },
+            onReady: function (e) {
+              try {
+                var f = e.target.getIframe();
+                /* fill the round avatar with a 16:9 cover and push YouTube's
+                   chrome (top title, bottom progress + logo) outside the
+                   circular crop; pointer-events:none kills the hover bar and
+                   centre button — taps fall through to the avatar/trigger */
+                f.style.border = "0";
+                f.style.height = "100%";
+                f.style.width = "177.78%";
+                f.style.marginLeft = "-38.89%";
+                f.style.pointerEvents = "none";
+                e.target.playVideo();
+              } catch (_) {}
+            },
             onStateChange: function (e) { if (e.data === window.YT.PlayerState.ENDED) { ended = true; onEnd(); } }
           }
         });
