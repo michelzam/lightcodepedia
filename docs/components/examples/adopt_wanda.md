@@ -125,26 +125,27 @@ print(Dog("Lucky").bark())
 ## ✨ Momentum
 🏅 **Peer-reviewed at ACM SIGCSE** — Demo & Poster *(2026)* · Tutorial *(2025)* · Jury *(2024)* · Exhibitor *(2023)*
 ```
-### 🎓 ACM SIGCSE TS 2026_ — Anonymous Peer Review
+### 🎓 ACM SIGCSE TS 2026 — Peer Review
 - 💬 _A rare fusion of low-code technology and computing pedagogy — innovative and grounded._
 - 💬 _The progression from visual exploration to executable models supports authentic learning while staying accessible for diverse learners._
-{: .carousel delay="10000"}
+- 💬 A deeply thoughtful and forward-thinking contribution that bridges professional software practices with approachable computing education.
+
+{: .blocks }
 ### 👨‍🎓 UWM Student Feedback
 - 💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._
-- 💬 _More quotes here_
-{: .carousel delay="10000"}
+{: .block }
 ###
 ```
 {: .blocks cols="2"}
 
-### Workshops and summer schools
+### Workshops and Summer Schools
 ![Summer Schools](/assets/SummerSchoolZoom.jpg){: height="320" }
 
 
 # 2️⃣ Adopt Wanda 🐕 + 🐠 = 🏰
 
 🐠 Here is a challenge: Adopt Wanda, a fish.  
-🐕 Yet only his brave dog Lucky can do it.   
+🐕 Yet only the brave dog Lucky can do communicate with.   
 
 ## 🥎 Play with pets
 <!--
@@ -171,6 +172,7 @@ wanda:
 
 ## ✅ Check understanding {#understanding}
 
+Classical way: learner explores, finds the solution, submit assignment and answer the quiz.
 **Q:** You click `wanda.blow_bubble()`. What is that?
 
 - [ ] An **attribute** — a value stored on Wanda.
@@ -191,6 +193,9 @@ wanda:
 {: .quiz #check_objects }
 
 **🎬**{: title="Let them answer — feedback appears on every option, right and wrong. The platform checks understanding inline." }
+
+## Yet, Does this reflect the learning?
+However, the gap is that, whatever the learning environment is, only the final photo is not reliable enough to confirm learrnerss’ skill match CLO, including in the AI era where a copy/paste gives a shortcut, jeopardising both academic cunduct and student’s later biger problems.
 
 ## 🎯 Act 2 — The challenge {#gap}
 
