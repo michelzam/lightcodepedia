@@ -42,13 +42,12 @@ script:
 --> 
 ## ① The platform today {#platform}
 
-
 ```
 ### 💡Lightcodepedia
 📖 Open, low-code, scalable **learning** platform  
 👷🏻‍♂️ Learners learn to **build** interactive content  
 ❣️ From plain **markdown**{: .red }, no ~~HTML, JS, server.~~  
-🤖 AI empowered, yet, yet **free** to use  
+🤖 AI empowered, yet **free** to use  
 🖼️ Text, **images** & videos, Iiteractive maps & embeds  
 ![Lucky — a black Labrador](/assets/lab.jpg)
 
@@ -99,24 +98,9 @@ Updates when you select a dog.
 
 [Selected dog](#)
 {: .chart type="bar" bound-to="dog_grid_tuto" x="breed" height="280" }
-````
-{: .blocks cols="2" }
 
-
-```
-### Interactive familiar widgets 
-- ✅ Text, images & video
-- ✅ Interactive maps & embeds
-
-### Interactive familiar widgets 
-- Data — forms, grids, charts
-- with progressive disclosure x-ray!
-
-```
-{: .blocks cols="2" }
-
-````
 ### 🐍 Code — write & run Python
+
 ```python
 class Dog:
     def __init__(self, name):
@@ -157,13 +141,17 @@ print(Dog("Lucky").bark())
 ![Summer Schools](/assets/SummerSchoolZoom.jpg){: height="320" }
 
 
-# 2️⃣ Adopt Wanda 🐕🐠 
+# 2️⃣ Adopt Wanda 🐕 + 🐠 = 🏰
 
-Thomas, an undocumented neurodivergent learner has a challenge: 
+🐠 Here is a challenge: Adopt Wanda, a fish.  
+🐕 Yet only his brave dog Lucky can do it.   
 
+## 🥎 Play with pets
+<!--
 **🎬**{: title="Run the code (▶), then answer the quiz — both are live widgets from plain markdown." }
 
 ## 🐾 Act 1 — Meet the objects {#explore}
+-->
 
 ```yaml
 lucky:
