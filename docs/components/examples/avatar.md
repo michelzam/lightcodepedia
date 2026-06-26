@@ -93,23 +93,23 @@ script:
 
 ---
 
-## 🔒 Runtime video — a private clip, never in the repo {#runtime_video}
+## 🔒 Runtime video — a secret clip that never touches the repo {#runtime_video}
 
-Same recorded-character idea, but the clip is **never committed**. Two ways to
-feed it at runtime, both off-camera:
+**For a secret video, use 📁 Choose a local file** (below). The browser reads it
+straight off your disk into an **in-memory blob** and plays it as the avatar —
+**never uploaded, never committed, never even typed**, gone when you close the
+tab. **With sound**, and a VP9-alpha `.webm` keeps its transparency. Nothing
+about the clip reaches GitHub. *(`file:///Users/…` paths can't be used directly —
+browsers block a page from reading your disk; the picker is exactly how you hand
+one over, privately.)*
 
-- **📁 Choose a local file** — pick any video on your machine; it plays as an
-  in-memory blob (never uploaded, committed, or even typed) **with sound**, and a
-  VP9-alpha `.webm` keeps its transparency. *(`file:///Users/…` paths can't be
-  used — browsers block a web page from reading your disk; the picker is how you
-  hand one over.)*
-- **🔗 A URL** — a **served** path like `/assets/clip.mp4` (commit it, or run
-  `jekyll serve` locally and gitignore it) or any direct `.mp4/.webm` link. An
-  unlisted **YouTube** link works too, but the browser autoplays it **muted** —
-  so for narration prefer a file.
+**Only for a clip you're fine publishing**, the form also accepts a URL — a
+served `/assets/clip.mp4`, any direct `.mp4/.webm` link, or an unlisted
+**YouTube** link (which autoplays **muted**). For your secret recording: use the
+picker, not a URL.
 
 Both routes end at `button.page.secret_avatar.video(url)`; cues fire by real
-playback time either way. Set it, **fold** the panel, press ▶ Play.
+playback time. Set it, **fold** the panel, press ▶ Play.
 
 ````
 ### !🔗 Video source — *set off-camera, then fold*
