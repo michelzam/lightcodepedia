@@ -1,49 +1,7 @@
 # 1️⃣ The Platform 🚁
 
 ## 🤹🏼‍♂️ Learning pleayground
-Discover the platform, challenge, a gap and the future.
-
-
-<!--
-## (Nice animated gif here)
-While the avatar starts
-
-**Learners _build_ — they don't just read.**  ·  explore → challenge → KARMA
-
-
-```yaml
-name: "Prof. LC"
-voice: en-US
-rate: 0.96
-script:
-  - say: "Adopt Wanda — a learning scenario in three acts: explore, then a challenge, then KARMA."
-  - at: "#platform"
-    say: "Lightcodepedia is an open, low-code platform: learners build interactive content from plain markdown. And it's peer-recognised at ACM SIGCSE."
-  - at: "#features"
-    say: "Everything is live. Here are Lucky and Wanda as editable objects — and there are maps, grids, charts and quizzes too."
-  - at: "#explore"
-    say: "Act one: meet the objects. Edit attributes, call methods, watch the pets react. Free play — no goal yet."
-  - at: "#understanding"
-    say: "We check understanding as we go — a quick quiz, with feedback on every choice."
-  - at: "#gap"
-    say: "Act two: the challenge. Adopt Wanda — but the checkbox is locked and only Lucky can reach her. Each pet is a little state machine: feed Lucky, he grows, Wanda gets curious, she blows a bubble, then Lucky barks her home. The learner discovers that order — exploring in the dark, with no traces."
-  - at: "#finish"
-    say: "All we receive is the finish photo: the final state, the quiz passed. From that alone — was it the learner's own reasoning, or an AI-assisted paste? You can't tell."
-  - at: "#karma"
-    say: "Act three: with traces. Every step is written back as code — that's what we can capture today."
-  - at: "#analyse_btn"
-    say: "Instead of the only finish photo, what if we can see the movie of the learning journey? That's where KARMA's meaningful, auditable process will live."
-  - at: "#value"
-    say: "KARMA brings generic, transparent, scalable instrumentation. Goal-matched traces. Hesitations and misconceptions as positive signals. Assess and guide, in real time."
-```
-{: .avatar #guide size="150" step="true" }
-
-[▶ Start](#)
-{: .avatar-trigger target="guide" label-stop="⏹ Stop" }
-
-**🎬**{: title="Record in one pass: press 📽️, then ▶ Start and Next → to advance one beat at a time — the guide waits between lines. Do your interactions between clicks: feed Lucky / blow a bubble on the quest; open the editor → 📝 Log on the Log step." }
-
---> 
+🔭 Discover the platform, challenge, a gap and the future.
 
 ```
 ### 💡Lightcodepedia
@@ -100,10 +58,13 @@ Updates when you select a dog.
 
 [Selected dog](#)
 {: .chart type="bar" bound-to="dog_grid_tuto" x="breed" height="280" }
-
+````
+{: .blocks cols="2" }
 
 ### 🐍 Code — write & run Python & AI
 ````
+
+###  Code
 ```python
 class Dog:
     def __init__(self, name):
@@ -113,7 +74,7 @@ class Dog:
 
 print(Dog("Lucky").bark()
 ```
-{: .run # buggy }
+{: .run #buggy }
 
 ### 🎲 Quiz — instant feedback
 **Q:** What makes something an *object*?
@@ -125,6 +86,8 @@ print(Dog("Lucky").bark()
 ````
 {: .blocks cols="2" }
 
+
+### Agent
 ```yaml
 system: |
   You are a Python tutor. When asked to fix code, reply with the
@@ -137,20 +100,21 @@ system: |
 🏅 **Peer-reviewed at ACM SIGCSE** — Demo & Poster *(2026)* · Tutorial *(2025)* · Jury *(2024)* · Exhibitor *(2023)*
 ```
 ### 🎓 ACM SIGCSE TS 2026 — Peer Review
-- 💬 _A rare fusion of low-code technology and computing pedagogy — innovative and grounded._
-- 💬 _The progression from visual exploration to executable models supports authentic learning while staying accessible for diverse learners._
-- 💬 A deeply thoughtful and forward-thinking contribution that bridges professional software practices with approachable computing education.
+💬 _A rare fusion of low-code technology and computing pedagogy — innovative and grounded._  
+💬 _The progression from visual exploration to executable models supports authentic learning while staying accessible for diverse learners._  
+💬 A deeply thoughtful and forward-thinking contribution that bridges professional software practices with approachable computing education.
 
-{: .blocks }
 ### 👨‍🎓 UWM Student Feedback
-- 💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._
+💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._
 {: .block }
 ###
 ```
 {: .blocks cols="2"}
 
-### Workshops and Summer Schools
-![Summer Schools](/assets/SummerSchoolZoom.jpg){: height="320" }
+## 🧑🏻‍🎓 Workshops and Summer Schools
+![Summer School](/assets/SummerSchoolZoom.jpg){: height="320" }
+{: .blocks }
+
 
 
 # 2️⃣ Adopt Wanda 🐕 + 🐠 = 🏰
@@ -159,11 +123,7 @@ system: |
 🐕 Yet only the brave dog Lucky can do communicate with.   
 
 ## 🥎 Play with pets
-<!--
-**🎬**{: title="Run the code (▶), then answer the quiz — both are live widgets from plain markdown." }
 
-## 🐾 Act 1 — Meet the objects {#explore}
--->
 
 ```yaml
 lucky:
