@@ -212,9 +212,11 @@ Auto-included by docs/_layouts/default.html.
       var pos = hudInitialPos();
       Object.keys(pos).forEach(function(k){ hud.style[k] = pos[k]; });
 
-      // On macOS the face comes from the native Presenter Overlay, so we show only
-      // the floating controls (timer + pause + stop) — no camera pip, no segmentation.
-      if (!isMacSafari) {
+      // The camera pip is only meaningful when the camera is on. With camera off
+      // (e.g. a local-video avatar narrates), skip it entirely — just the floating
+      // controls (timer + pause + stop), no empty circle. On macOS the face comes
+      // from the native Presenter Overlay, so there too we show only the controls.
+      if (!isMacSafari && camOn) {
         var pipWrap = document.createElement("div");
         pipWrap.className = "lc-rec-hud-pip";
         pipWrap.style.width = pipSize + "px";
@@ -240,7 +242,7 @@ Auto-included by docs/_layouts/default.html.
         bgHidVid.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
         document.body.appendChild(bgHidVid);
         hud.appendChild(pipWrap);
-      } else {
+      } else if (isMacSafari) {
         // small label so the floating control reads as "recording" without a face
         hudLabel = document.createElement("div");
         hudLabel.className = "lc-rec-hud-timer";
