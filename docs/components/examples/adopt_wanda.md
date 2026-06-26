@@ -26,8 +26,8 @@ script:
     say: "All we receive is the finish photo: the final state, the quiz passed. From that alone — was it the learner's own reasoning, or an AI-assisted paste? You can't tell."
   - at: "#karma"
     say: "Act three: with traces. Every step is written back as code — that's what we can capture today."
-  - at: "#log_beat"
-    say: "Open the page editor: there is a Log tab, waiting and empty. That's where KARMA's meaningful, auditable process will live."
+  - at: "#analyse_btn"
+    say: "Instead of the only finish photo, what if we can see the movie of the learning journey? That's where KARMA's meaningful, auditable process will live."
   - at: "#value"
     say: "KARMA brings generic, transparent, scalable instrumentation. Goal-matched traces. Hesitations and misconceptions as positive signals. Assess and guide, in real time."
 ```
