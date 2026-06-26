@@ -935,7 +935,7 @@ class EmbedPage(Block):
         if self._el is None:
             return
         doc = ("<!doctype html><meta charset=utf-8>"
-               "<style>html,body{margin:0;height:100%;background:#0b1020}"
+               "<style>html,body{margin:0;height:100%;background:#fff}"
                "body{display:flex;align-items:center;justify-content:center}"
                "img{max-width:100%;max-height:100%;object-fit:contain;display:block}"
                "</style><img src='" + url + "'>")
