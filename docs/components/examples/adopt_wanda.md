@@ -193,11 +193,14 @@ wanda:
 
 ### 🔬 KARMA analysis
 
+````
+### !🔗 Source URL — *set off-camera*
 ```yaml
 url: ""
 ```
 {: .form #analysis_src editable="true" title="Analysis source" }
 
+### !🖼️ Analysis
 [Analyse](#)
 {: .button #analyse_btn }
 
@@ -220,8 +223,10 @@ def on_click(button):
 
 [blank](about:blank)
 {: .embed-page #analysis_frame height="360" }
+````
+{: .accordion }
 
-**🎬**{: title="Off-camera: type the analysis image URL into the form's url field. On camera: click Analyse → it loads into the frame. The image is never committed; the URL lives only in the form." }
+**🎬**{: title="Two-section accordion (eager): off-camera, open 🔗 Source URL → paste the image URL into the form → collapse it. On camera, open 🖼️ Analysis → Analyse → the image loads auto-fitted. Never committed; URL only in the form." }
 
 ## 📝 The empty Log {#log_beat}
 
