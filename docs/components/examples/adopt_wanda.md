@@ -214,7 +214,7 @@ def on_click(button):
         if fid:
             u = "https://lh3.googleusercontent.com/d/" + fid
     if u:
-        button.page.analysis_frame.load(u)
+        button.page.analysis_frame.image(u)
 ```
 {: .onclick }
 

@@ -921,12 +921,25 @@ class Pytutor(Block):
 
 
 @component(icon="🖼️", attrs=[{"n": "height", "t": "int", "data": True, "d": 400}],
-           methods=["load"])
+           methods=["load", "image"])
 class EmbedPage(Block):
     def load(self, url):
         """Point the embedded iframe at a new URL (e.g. from a button on_click)."""
         if self._el is not None:
             self._el.src = url
+
+    def image(self, url):
+        """Show a single image, auto-fitted (object-fit: contain) inside the frame.
+        A bare iframe pointed at an image shows the browser's raw image document,
+        which the page can't style — so we wrap it in a tiny centred srcdoc."""
+        if self._el is None:
+            return
+        doc = ("<!doctype html><meta charset=utf-8>"
+               "<style>html,body{margin:0;height:100%;background:#0b1020}"
+               "body{display:flex;align-items:center;justify-content:center}"
+               "img{max-width:100%;max-height:100%;object-fit:contain;display:block}"
+               "</style><img src='" + url + "'>")
+        self._el.srcdoc = doc
 
 
 @component(icon="🪗", methods=["open", "close", "sections"])
