@@ -167,8 +167,12 @@ Auto-included by docs/_layouts/default.html.
     var optMic  = wrap.querySelector("#lc-ropt-mic");
     var optSnd  = wrap.querySelector("#lc-ropt-snd");
 
-    // On macOS we don't run our own camera — the native Presenter Overlay owns it.
-    var useCam = !isMacSafari, useMic = true, useSnd = false;
+    // Initial capture state must match the chips (camOn/micOn/sndOn, from the
+    // camera=/mic=/sound= attributes) — otherwise e.g. sound="on" shows a green
+    // "Screen audio" chip while getDisplayMedia is still asked for audio:false
+    // (no sound recorded), and mic="off" still captures the mic (clicks).
+    // On macOS we never run our own camera — the native Presenter Overlay owns it.
+    var useCam = camOn && !isMacSafari, useMic = micOn, useSnd = sndOn;
     var bgMode = "none";
     var optBg  = wrap.querySelector("#lc-ropt-bg");
     var bgCycle  = ["none","blur","dark","blue","green","white"];
