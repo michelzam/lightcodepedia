@@ -654,7 +654,12 @@ Auto-included by docs/_layouts/default.html.
             video: isSafari
               ? { frameRate: fps, width: { max: 1920 }, height: { max: 1080 } }
               : { frameRate: fps, width: { ideal: 3840 }, height: { ideal: 2160 } },
-            audio: useSnd
+            audio: useSnd,
+            // Chrome hides the tab that started the capture from the picker by
+            // default (a self-capture / "infinity mirror" guard) — but that tab
+            // is exactly the page we want to record. Put it back in the list.
+            // (Safari/Firefox ignore the hint.)
+            selfBrowserSurface: "include"
           })
           .then(function(screenStream) {
             createHUD();
