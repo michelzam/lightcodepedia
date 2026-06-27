@@ -1,8 +1,12 @@
 # 1️⃣ The Platform 🚁
 
-## 🤹🏼‍♂️ Learning pleayground
+## 🤹🏼‍♂️ Learning Playground
 🔭 Discover the platform, challenge, a gap and the future.
 {: .block #welcome }
+
+[▶ Play](#)
+{: .avatar-trigger target="secret_avatar" label-stop="⏹ Stop" }
+
 
 ```
 ### 💡Lightcodepedia 
@@ -271,9 +275,6 @@ script:
 
 ```
 {: .avatar #secret_avatar size="180" step="true" }
-
-[▶ Play](#)
-{: .avatar-trigger target="secret_avatar" label-stop="⏹ Stop" }
 
 
 ### !🖼️ Analysis
