@@ -191,12 +191,32 @@ wanda:
 
 ### 🔬 KARMA analysis
 
+
 ````
 ### !🔗 Source URL — *set off-camera*
 ```yaml
 url: ""
 ```
 {: .form #analysis_src editable="true" title="Analysis source" }
+
+#### !🔗 Video source — *set off-camera, then fold*
+```yaml
+video_url: ""
+```
+{: .form #secret_src editable="true" title="Private video URL" }
+
+[📼 Load video](#)
+{: .button #load_secret_video }
+
+```python
+def on_click(button):
+    u = (button.page.secret_src.data.video_url or "").strip()
+    if u:
+        button.page.secret_avatar.video(u)
+```
+{: .onclick }
+
+
 
 ### !🖼️ Analysis
 [Analyse](#)
