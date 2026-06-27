@@ -2,9 +2,10 @@
 
 ## 🤹🏼‍♂️ Learning pleayground
 🔭 Discover the platform, challenge, a gap and the future.
+{: .block #welcome }
 
 ```
-### 💡Lightcodepedia {#welcome}
+### 💡Lightcodepedia 
 📖 Open, low-code, scalable **learning** platform  
 👷🏻‍♂️ Learners learn to **build** interactive content  
 ❣️ From plain **markdown**{: .red }, no ~~HTML, JS, server.~~  
@@ -19,7 +20,7 @@
 
 [▶️ Led Zeppelin — Black Dog](https://youtu.be/mX4OPdzcIaI)
 
-{: .video height="380" }
+{: .video height="380" #interactive}
 
 ```
 {: .blocks cols="2" }
@@ -84,7 +85,7 @@ print(Dog("Lucky").bark()
 - [ ] A file you `import`.
 {: .quiz }
 ````
-{: .blocks cols="2" }
+{: .blocks cols="2" #quiz1}
 
 
 ### Agent
@@ -106,7 +107,7 @@ system: |
 
 ### 👨‍🎓 UWM Student Feedback
 💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._
-{: .block }
+{: .block #momentum}
 ###
 ```
 {: .blocks cols="2"}
@@ -189,7 +190,7 @@ wanda:
 
 **🎬**{: title="Replay and solve — the code trail fills with every click, wrong turns included. That's what we can capture today." }
 
-### 🔬 KARMA analysis
+### 🔬 KARMA analysis{#analysis}
 
 
 ````
@@ -228,10 +229,45 @@ script:
     cues:
       - t: 0
         at: "#welcome"
-      - t: 6
-        say: "Cues still fire — by real playback time, YouTube or file alike."
-      - t: 16
-        say: "Fold the panel, press Play, record. The URL stays off camera."
+        say: "Welcome"
+      - t: 21
+        at: "#interactive"
+        say: "Users can play, learn, and earn credits 🏆"
+      - t: 30
+        at: "#dog_grid_tuto"
+        say: "Select your breed."
+      - t: 34
+        at: "#buggy"
+        say: "Code"
+      - t: 38
+        at: "#tutor"
+        say: "Ask for help."
+      - t: 38
+        at: "#quiz1"
+        say: "Answer quiz."
+      - t: 47
+        at: "#momentum"
+        say: "Momentum"
+      - t: 60
+        at: "#challenge_scene"
+        say: "Challenge"
+      - t: 90
+        at: "#finish"
+        say: "Finish photo"
+      - t: 115        
+        at: "#karma"
+        say: "Beyond the platform: Karma"
+      - t: 138
+        at: "#finish"
+        say: "Finish photo"
+      - t: 140
+        at: "#analysis"
+        say: "Analysis"
+      - t: 160
+        at: "#value"
+        say: "Thanks for watching"
+
+
 ```
 {: .avatar #secret_avatar size="180" step="true" }
 
