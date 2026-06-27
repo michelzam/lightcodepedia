@@ -230,7 +230,6 @@ script:
       - t: 0
         at: "#welcome"
         say: "Welcome"
-        pause: 2
       - t: 21
         at: "#interactive"
         say: "Users can play, learn, and earn credits 🏆"
