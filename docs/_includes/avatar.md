@@ -449,7 +449,15 @@ Auto-included by docs/_layouts/default.html.
     try { v.currentTime = 0; } catch (e) {}
     v.onended = function () { v.muted = true; onEnd(); };
     v.onerror = function () { onEnd(); };
-    v.play().catch(function () { onEnd(); });
+    v.play().catch(function (e) {
+      /* A pause:/step: cue on the very first beat calls pause() while this
+         play() is still starting, so the browser rejects it with AbortError.
+         That is NOT the clip ending — swallow it so the cues stay attached and
+         the pause's own timer resumes playback. Real failures (bad/empty source)
+         reject with a different name and still fall through to onEnd. */
+      if (e && e.name === "AbortError") return;
+      onEnd();
+    });
     av._media = v;
     return v;
   }
