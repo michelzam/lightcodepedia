@@ -14,7 +14,7 @@
 ![Lucky — a black Labrador](/assets/lab.jpg)
 
 
-### 🕹️ Interactive {#interactive}
+### 🕹️ Interactive 
 🎵 Play and 📽️ Record **videos** (like this one)  
 📊 **Data** — forms, grids, charts  
 
@@ -23,10 +23,11 @@
 {: .video height="380"}
 
 ```
-{: .blocks cols="2" }
+{: .blocks cols="2" #interactive }
 
 
 ## 📊 Living Components — Progressive disclosure
+{: .block #living_components}
 
 ````
 ### 🐕 Data [Editable — click a cell to change a value, then watch the chart]
@@ -60,7 +61,7 @@ Updates when you select a dog.
 [Selected dog](#)
 {: .chart type="bar" bound-to="dog_grid_tuto" x="breed" height="280" }
 ````
-{: .blocks cols="2" }
+{: .blocks cols="2" #chart1 }
 
 ### 🐍 Code — write & run Python & AI
 ````
@@ -234,7 +235,7 @@ script:
         at: "#interactive"
         say: "Users can play, learn, and earn credits 🏆"
       - t: 30
-        at: "#dog_grid_tuto"
+        at: "#living_components"
         say: "Select your breed."
       - t: 34
         at: "#buggy"
