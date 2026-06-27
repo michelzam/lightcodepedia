@@ -125,8 +125,8 @@ system: |
 {: .blocks }
 
 
-# 2️⃣ Adopt Wanda 🐕 + 🐠 = 🏰
 
+# 2️⃣ Adopt Wanda 🐕 + 🐠 = 🏰
 🐠 Challenge: Adopt Wanda, a fish. 
 🐕 Yet only the brave dog Lucky can do communicate with.   
 🎯 __Actualy, it's all about problem solving with object states and behavior.__
