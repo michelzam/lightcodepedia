@@ -319,6 +319,14 @@ Auto-included by docs/_layouts/default.html.
       if (!hud || isMacSafari || !hudCamVid) return;
       var pipWrap = hud.querySelector(".lc-rec-hud-pip");
       var offEl   = hud.querySelector(".lc-cam-off");
+      if (!useCam) {
+        // camera deselected (toggled off, or no stream) → hide the whole circle,
+        // not a black "camera-off" placeholder. Only the timer + controls remain.
+        if (pipWrap) pipWrap.style.display = "none";
+        stopBg();
+        return;
+      }
+      if (pipWrap) pipWrap.style.display = "";
       var showBg  = bgMode !== "none" && useCam && !!camStream;
       if (bgCanvas) bgCanvas.style.display = showBg ? "block" : "none";
       if (useCam && camStream) {
