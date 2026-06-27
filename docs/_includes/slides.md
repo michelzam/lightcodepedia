@@ -227,7 +227,7 @@ body.lc-reel-active .lc-reel-bar {
     var slides = [];
     var current = 0;
     var revealed = [];
-    var WIDGET_SEL = '.lc-pyrun, .lc-pyrepl, .lc-datagrid, .lc-form, .ag-root-wrapper, .lc-tabs, .lc-quiz, .lc-quiz-bar, .lc-agent';
+    var WIDGET_SEL = '.lc-pyrun, .lc-pyrepl, .lc-datagrid, .lc-form, .ag-root-wrapper, .lc-tabs, .lc-quiz, .lc-quiz-bar, .lc-agent, .lc-scene3d, .lc-carousel, .lc-accordion';
 
     function partition() {
       var children = Array.prototype.slice.call(main.children);
