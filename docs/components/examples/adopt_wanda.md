@@ -1,7 +1,6 @@
 ## 1️⃣ The Platform 🚁
 
-## 🤹🏼‍♂️ Learning Playground
-🔭 Discover the platform, challenge, a gap and the future.
+🤹🏼‍♂️ Learning Playground: 1️⃣ Discover, 2️⃣ Challenge / Gap, and 3️⃣ The Future -> Karma.
 {: .block #welcome }
 
 [▶ Play](#)
