@@ -14,13 +14,13 @@
 ![Lucky — a black Labrador](/assets/lab.jpg)
 
 
-### 🕹️ Interactive
+### 🕹️ Interactive {#interactive}
 🎵 Play and 📽️ Record **videos** (like this one)  
 📊 **Data** — forms, grids, charts  
 
 [▶️ Led Zeppelin — Black Dog](https://youtu.be/mX4OPdzcIaI)
 
-{: .video height="380" #interactive}
+{: .video height="380"}
 
 ```
 {: .blocks cols="2" }
