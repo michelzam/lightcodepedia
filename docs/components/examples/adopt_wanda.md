@@ -1,4 +1,4 @@
-# 1️⃣ The Platform 🚁
+## 1️⃣ The Platform 🚁
 
 ## 🤹🏼‍♂️ Learning Playground
 🔭 Discover the platform, challenge, a gap and the future.
@@ -126,7 +126,7 @@ system: |
 
 
 
-# 2️⃣ Adopt Wanda 🐕 + 🐠 = 🏰
+## 2️⃣ Adopt Wanda 🐕 + 🐠 = 🏰
 🐠 Challenge: Adopt Wanda, a fish. 
 🐕 Yet only the brave dog Lucky can do communicate with.   
 🎯 __Actualy, it's all about problem solving with object states and behavior.__
@@ -177,7 +177,7 @@ From that result alone, can you tell whether it was their own reasoning or an AI
 {: .quiz #finish_photo }
 
 
-## 🧭 Act 3 — With traces: KARMA {#karma}
+## 3️⃣ Play with Traces: KARMA {#karma}
 
 ```yaml
 lucky:
