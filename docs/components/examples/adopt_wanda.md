@@ -4,7 +4,7 @@
 🔭 Discover the platform, challenge, a gap and the future.
 
 ```
-### 💡Lightcodepedia
+### 💡Lightcodepedia {#welcome}
 📖 Open, low-code, scalable **learning** platform  
 👷🏻‍♂️ Learners learn to **build** interactive content  
 ❣️ From plain **markdown**{: .red }, no ~~HTML, JS, server.~~  
@@ -216,7 +216,24 @@ def on_click(button):
 ```
 {: .onclick }
 
+[📁 Choose a local video…](#)
+{: .avatar-trigger target="secret_avatar" pick="video" }
 
+```yaml
+name: "Aristotle"
+transparent: true
+script:
+  - say: "Welcome to Karma,  the next big feature."
+    video: true
+    cues:
+      - t: 0
+        at: "#welcome"
+      - t: 6
+        say: "Cues still fire — by real playback time, YouTube or file alike."
+      - t: 16
+        say: "Fold the panel, press Play, record. The URL stays off camera."
+```
+{: .avatar #secret_avatar size="180" step="true" }
 
 ### !🖼️ Analysis
 [Analyse](#)
