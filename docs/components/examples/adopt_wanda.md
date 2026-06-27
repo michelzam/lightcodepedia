@@ -235,6 +235,10 @@ script:
 ```
 {: .avatar #secret_avatar size="180" step="true" }
 
+[▶ Play](#)
+{: .avatar-trigger target="secret_avatar" label-stop="⏹ Stop" }
+
+
 ### !🖼️ Analysis
 [Analyse](#)
 {: .button #analyse_btn }
@@ -261,13 +265,6 @@ def on_click(button):
 ````
 {: .accordion }
 
-**🎬**{: title="Two-section accordion (eager): off-camera, open 🔗 Source URL → paste the image URL into the form → collapse it. On camera, open 🖼️ Analysis → Analyse → the image loads auto-fitted. Never committed; URL only in the form." }
-
-## 📝 The empty Log {#log_beat}
-
-# 📝 Switch to the editor → the **Log** tab
-
-**🎬**{: title="Open the page editor (✏️ / ⌥⇧E) → 📝 Log. Empty by design — Process Log · coming with KARMA. The trail shows WHAT was clicked; the Log is HOW they got there." }
 
 ## 💡 What KARMA brings {#value}
 
