@@ -134,19 +134,37 @@ def on_click(button):
 [📁 Choose a local video…](#)
 {: .avatar-trigger target="secret_avatar" pick="video" }
 
+**Your planned cues live on the `video: true` line, under `cues:`.** Each fires at
+its `t:` (seconds *into the clip*, by real playback time) and can change the
+**bubble** (`say:`), **walk** the avatar to an element (`at:`), **hold** a beat then
+resume on its own (`pause:` seconds), or **stop until you click ▶** (`step: true`).
+Author the timeline once — it runs the same for a local file, a direct URL, or YouTube:
+
 ```yaml
 name: "Aristotle"
 transparent: true
 script:
-  - say: "My clip is loaded at runtime — its URL is never in the repository."
-    video: true
+  # ONE recorded take = your local clip. cues: choreograph it by the clip's OWN
+  # playback time — t: is seconds INTO the video, not wall-clock.
+  - say: "Loaded from my disk — my cues run off the clip's own timeline."
+    video: true                      # source = the file you picked (or a URL)
     cues:
-      - t: 0
-        at: "#runtime_video"
-      - t: 6
-        say: "Cues still fire — by real playback time, YouTube or file alike."
-      - t: 16
-        say: "Fold the panel, press Play, record. The URL stays off camera."
+      - t: 0                         # 0.0 s in …
+        at: "#runtime_video"         #   walk to & spotlight this element
+        say: "t: is seconds into the clip"   #   set the speech bubble
+      - t: 4                         # 4 s — just swap the caption
+        say: "💬 a fresh bubble, no narration cut"
+      - t: 8                         # 8 s — stroll elsewhere, mid-clip
+        at: "#how_it_works"
+        say: "I can move while the video keeps playing"
+      - t: 12                        # 12 s — freeze, then resume by myself
+        say: "⏸ holding 3 s… then I carry on"
+        pause: 3                     #   pause the clip 3 s after this cue
+      - t: 18                        # 18 s — wait for a human
+        say: "👉 click ▶ to continue"
+        step: true                   #   stop here until you press ▶
+      - t: 24
+        say: "😊 last beat — happy recording!"
 ```
 {: .avatar #secret_avatar size="180" step="true" }
 
