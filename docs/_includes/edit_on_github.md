@@ -512,6 +512,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (prev) { prev.style.flex = ""; prev.style.width = ""; }
 
     d.classList.add("open");
+    document.body.classList.add("ed-drawer-open"); // lets the score FAB (and others) hide behind the editor
     document.body.style.overflow = "hidden";
 
     // Blocks tab is always the default view on open
@@ -545,12 +546,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (_dirty && !confirm("Discard unsaved changes to " + (_curFile || "this file") + "?")) return;
     if (_dirty && _savedContent !== null) {
       var inp = document.getElementById("ed-input");
-      if (inp) { inp.value = _savedContent; updatePreview(_savedContent); }
+      if (inp) { inp.value = _savedContent; if (inp._hist) inp._hist.reset(); updatePreview(_savedContent); }
       _blocks = []; _selIdx = -1; buildGrid();
     }
     setDirty(false);
     var d = document.getElementById("ed-drawer");
     if (d) d.classList.remove("open");
+    document.body.classList.remove("ed-drawer-open");
     setTimeout(function() { document.body.style.overflow = ""; }, 260);
   }
 
@@ -632,7 +634,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       _curSha = data.sha;
       var content = b64d(data.content.replace(/\n/g, ""));
       _savedContent = content;
-      if (inp) { inp.value = content; updatePreview(content); }
+      if (inp) { inp.value = content; if (inp._hist) inp._hist.reset(); updatePreview(content); }
       setDirty(false);
       loadHistory();
       // refresh blocks grid whenever new content loads
@@ -946,6 +948,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if ((e.metaKey || e.ctrlKey) && e.key === "s") {
       var d = document.getElementById("ed-drawer");
       if (d && d.classList.contains("open")) { e.preventDefault(); saveFile(); }
+    }
+    // Undo/redo in a code editor with its own history (native undo is wiped by
+    // the toolbar/Blocks programmatic edits, so we drive our own stack).
+    if ((e.metaKey || e.ctrlKey) && /^[zy]$/i.test(e.key)) {
+      var ae = document.activeElement;
+      if (ae && ae._hist) {
+        e.preventDefault();
+        if (/y/i.test(e.key) || e.shiftKey) ae._hist.redo(); else ae._hist.undo();
+      }
     }
     /* Shift+Alt+E (⌥⇧E on Mac) opens the editor from anywhere it's available.
        e.code is used so Option+E's dead-key behaviour on Mac doesn't matter. */
@@ -1530,7 +1541,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       _selIdx = to > _dragFrom ? to - 1 : to;
       var inp = document.getElementById("ed-input");
       var newText = blocksToText(_blocks);
-      inp.value = newText; setDirty(true); updatePreview(newText);
+      inp.value = newText; if (inp._hist) inp._hist.reset(); setDirty(true); updatePreview(newText);
       buildGrid();
     });
   }
@@ -1556,6 +1567,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
      clicking instead of typing syntax — the stored file stays pure markdown.
      Reused on the Raw editor and the block Content field. */
   var FMT_BTNS =
+    '<button type="button" data-fmt="undo" title="Undo (⌘Z)">&#8630;</button>' +
+    '<button type="button" data-fmt="redo" title="Redo (⌘⇧Z)">&#8631;</button>' +
+    '<span class="ed-fmt-sep"></span>' +
     '<button type="button" data-fmt="bold" title="Bold"><b>B</b></button>' +
     '<button type="button" data-fmt="italic" title="Italic"><i>I</i></button>' +
     '<button type="button" data-fmt="code" title="Inline code">&lt;&gt;</button>' +
@@ -1570,6 +1584,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       '<option value="hl">highlight</option></select>';
 
   function applyFmt(ta, kind, arg) {
+    if (ta._hist) ta._hist.flush();   // capture the pre-format state so undo can revert it
     var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value, sel = v.slice(s, e);
     function set(val, ns, ne) { ta.value = val; ta.selectionStart = ns; ta.selectionEnd = ne; }
     function wrap(mark) {
@@ -1597,9 +1612,56 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     ta.focus();
   }
 
+  /* ── undo/redo history for a code editor ──────────────────
+     The format toolbar (and the Blocks grid) set ta.value directly, which wipes
+     the browser's native undo — so each editor textarea keeps its own snapshot
+     stack. Typing runs coalesce (debounced); format actions flush first. */
+  function edHist(ta) {
+    if (ta._hist) return ta._hist;
+    var undo = [{ v: ta.value, s: ta.selectionStart || 0, e: ta.selectionEnd || 0 }];
+    var redo = [], timer = null, applying = false, MAX = 200;
+    function snap() {
+      timer = null;
+      var top = undo[undo.length - 1];
+      if (top && top.v === ta.value) return;
+      undo.push({ v: ta.value, s: ta.selectionStart, e: ta.selectionEnd });
+      if (undo.length > MAX) undo.shift();
+      redo.length = 0;
+    }
+    function restore(st) {
+      applying = true;
+      ta.value = st.v;
+      try { ta.selectionStart = st.s; ta.selectionEnd = st.e; } catch (_) {}
+      ta.dispatchEvent(new Event("input", { bubbles: true }));  // preview + dirty
+      applying = false; ta.focus();
+    }
+    ta.addEventListener("input", function () {
+      if (applying) return;
+      clearTimeout(timer); timer = setTimeout(snap, 220);
+    });
+    ta._hist = {
+      flush: function () { clearTimeout(timer); snap(); },
+      reset: function () { clearTimeout(timer); timer = null;
+        undo = [{ v: ta.value, s: 0, e: 0 }]; redo = []; },
+      undo: function () {
+        clearTimeout(timer); snap();
+        if (undo.length < 2) return;
+        redo.push(undo.pop());
+        restore(undo[undo.length - 1]);
+      },
+      redo: function () {
+        clearTimeout(timer);
+        if (!redo.length) return;
+        var st = redo.pop(); undo.push(st); restore(st);
+      }
+    };
+    return ta._hist;
+  }
+
   function attachFmtToolbar(ta) {
     if (!ta || ta.dataset.fmtBar) return;
     ta.dataset.fmtBar = "1";
+    edHist(ta);   // give this editor an undo/redo stack
     var bar = document.createElement("div");
     bar.className = "ed-fmt-bar";
     bar.innerHTML = FMT_BTNS;
@@ -1611,7 +1673,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     bar.addEventListener("mousedown", function (ev) { if (ev.target.closest("button[data-fmt]")) ev.preventDefault(); });
     bar.addEventListener("click", function (ev) {
       var b = ev.target.closest("button[data-fmt]"); if (!b) return;
-      ev.preventDefault(); applyFmt(ta, b.getAttribute("data-fmt"));
+      ev.preventDefault();
+      var f = b.getAttribute("data-fmt");
+      if (f === "undo") { if (ta._hist) ta._hist.undo(); return; }
+      if (f === "redo") { if (ta._hist) ta._hist.redo(); return; }
+      applyFmt(ta, f);
     });
     var col = bar.querySelector(".ed-fmt-col");
     if (col) col.addEventListener("change", function () {
@@ -1714,7 +1780,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       while ((km2 = kr2.exec(knobsIn))) b.knobs[km2[1]] = km2[2];
       b.lines = newLines;
       var newText = blocksToText(_blocks);
-      inp.value = newText; setDirty(true); updatePreview(newText);
+      inp.value = newText; if (inp._hist) inp._hist.reset(); setDirty(true); updatePreview(newText);
       buildGrid();
       pushAction(iconFor(type) || "✏️", "Edited " + (type ? compName(type) : (title || "block")).slice(0, 40), before);
     });

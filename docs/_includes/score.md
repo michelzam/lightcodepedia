@@ -16,6 +16,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-score-fab:hover { background: #fff8e1; border-color: #b45309; box-shadow: 0 4px 14px rgba(180, 83, 9, 0.18); transform: translateY(-1px); }
 body.lc-slides-active .lc-score-fab { top: 1em; }
 .lc-embed-mode .lc-score-fab { display: none !important; }
+body.ed-drawer-open .lc-score-fab, body.ed-drawer-open .lc-score-popover { display: none !important; }
 @media (max-width: 700px) { .lc-score-fab { top: 56px; right: 0.8em; } body.lc-slides-active .lc-score-fab { top: 0.6em; } }
 
 .lc-score-popover { position: fixed; top: 104px; right: 1.2em; background: white; border: 1px solid #f0c97a; border-radius: 8px; padding: 0.8em 1em; box-shadow: 0 6px 20px rgba(0,0,0,0.14); z-index: 1000; min-width: 200px; max-width: 280px; display: none; font-size: 0.85em; }
