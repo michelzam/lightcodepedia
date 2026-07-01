@@ -255,6 +255,14 @@ Auto-included by docs/_layouts/default.html.
       controls.target.set(0, 0.8, 0);
       controls.maxPolarAngle = Math.PI * 0.49;
       controls.enableDamping = true;
+      // The scene lives inside a scrolling page (and the reel's vertical
+      // scroll-snap). OrbitControls' wheel-zoom swallows the page scroll, so a
+      // scene section traps the reel. Drop wheel-zoom → the wheel scrolls the
+      // page; drag still rotates. touch-action:pan-y (set AFTER OrbitControls,
+      // which forces "none") lets a vertical swipe scroll the page while a
+      // horizontal drag still rotates — so touch scrolling isn't trapped either.
+      controls.enableZoom = false;
+      renderer.domElement.style.touchAction = "pan-y";
 
       function resize() {
         var w = stage.clientWidth;
