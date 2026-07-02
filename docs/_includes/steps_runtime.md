@@ -30,7 +30,14 @@ try:
     _LC_INSPECT
 except NameError:
     _LC_INSPECT = {}
+try:
+    _LC_NEW
+except NameError:
     _LC_NEW = []
+try:
+    _LC_OBJS
+except NameError:
+    _LC_OBJS = []
 
 # ════════════════════════ model metadata (single source) ═════════════════════
 # Type → icon. Mirrors usecases/module_manager/backend/module_decorator.py.
@@ -127,6 +134,9 @@ class Attr:
         Attr._count[0] += 1
         self._ord = Attr._count[0]
         self.t = typ if isinstance(typ, str) else getattr(typ, "__name__", "str")
+        # a non-builtin type names a Model class → a typed reference. Use the
+        # string form for forward/self references: bestie = Attr("Pet")
+        self.ref = self.t not in ("int", "float", "bool", "str")
         self.d = default
         self.min = min
         self.max = max
@@ -140,6 +150,15 @@ class Attr:
         self.n = None
 
     def _coerce(self, v):
+        if self.ref:
+            # accept an instance, a bound global name, or None ("" from the widget)
+            if v is None or v == "":
+                return None
+            if isinstance(v, str):
+                v = globals().get(v)
+            if v is None or not _lc_isa(v, self.t):
+                raise ValueError(str(self.n) + " expects a " + self.t)
+            return v
         try:
             if self.t == "int":
                 v = int(v)
@@ -164,6 +183,8 @@ class Attr:
         d = {"n": self.n, "t": ("password" if self.secret else self.t), "d": self.d,
              "ro": self.ro, "unit": self.unit, "hint": self.hint, "secret": self.secret,
              "field": True, "state": self.is_state}
+        if self.ref:
+            d["ref"] = self.t
         if self.min is not None:
             d["min"] = self.min
         if self.max is not None:
@@ -182,6 +203,28 @@ class State(Attr):
     def __init__(self, initial, states, hint=""):
         Attr.__init__(self, "str", initial, enum=list(states), ro=True, hint=hint)
         self.is_state = True
+
+
+def _lc_isa(obj, cls_name):
+    """Class-name chain check (survives preamble re-runs, unlike isinstance)."""
+    n = type(obj).__name__
+    seen = set()
+    while n and n not in seen:
+        if n == cls_name:
+            return True
+        seen.add(n)
+        bs = _MODEL.get(n, {}).get("bases") or []
+        n = bs[0] if bs else None
+    return False
+
+
+def _lc_name_of(inst):
+    """The bound global name of an instance (how learners know it)."""
+    g = globals()
+    for k in g:
+        if g[k] is inst and not k.startswith("_"):
+            return k
+    return ""
 
 
 def _lc_field_prop(f):
@@ -220,11 +263,13 @@ def _lc_harvest(cls):
         return cls._lc_fields, cls._lc_statef
     own = []
     for n in dir(cls):
+        if n.startswith("_"):
+            continue          # fields are public; skips harvest bookkeeping too
         try:
             v = getattr(cls, n)
         except Exception:
             continue
-        if isinstance(v, Attr):
+        if isinstance(v, Attr) and v.n in (None, n):
             v.n = n
             own.append(v)
     own.sort(key=lambda f: f._ord)
@@ -292,7 +337,8 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
             "icon": icon,
             "bases": [b.__name__ for b in cls.__bases__],
             "attrs": [dict(a) for a in attrs] + [f._spec_dict() for f in fields],
-            "assoc": [dict(a) for a in assoc],
+            "assoc": [dict(a) for a in assoc]
+                     + [{"n": f.n, "target": f.t} for f in fields if f.ref],
             "events": list(events),
             "methods": meth_specs,
             "states": list(states) or (list(statef.enum) if statef is not None else []),
@@ -522,6 +568,7 @@ class Model(Object):
         for f in cls._lc_fields:
             self._v[f.n] = f.d
         _LC_NEW.append(self)
+        _LC_OBJS.append(self)   # reference picklists offer every live instance
 
     def _set(self, name, value):
         """Protected write: behaviours use it to change ro fields (validated)."""
@@ -1530,7 +1577,15 @@ def _lc_inspect_schema(obj):
     fields = []
     for f in cls._lc_fields:
         d = f._spec_dict()
-        d["v"] = obj._v.get(f.n, f.d)
+        v = obj._v.get(f.n, f.d)
+        if f.ref:
+            # value = the referenced instance's name; options = every live,
+            # type-compatible instance (subclasses included — polymorphism)
+            d["v"] = _lc_name_of(v) if v is not None else ""
+            d["options"] = [_lc_name_of(o) for o in _LC_OBJS
+                            if o is not obj and _lc_isa(o, f.t) and _lc_name_of(o)]
+        else:
+            d["v"] = v
         fields.append(d)
     meths = []
     tmeta = cls._lc_tmeta or {}
@@ -1563,16 +1618,10 @@ def _lc_push_obj(obj):
 
 
 def _lc_inspect_bind(elid, insts):
-    g = globals()
     pairs = []
     for inst in insts:
-        name = ""
-        for k in g:
-            if g[k] is inst and not k.startswith("_"):
-                name = k
-                break
         inst._lc_elid = elid
-        pairs.append((name or "obj" + str(len(pairs) + 1), inst))
+        pairs.append((_lc_name_of(inst) or "obj" + str(len(pairs) + 1), inst))
     _LC_INSPECT[elid] = pairs
     _lc_inspect_push(elid)
 
@@ -1692,7 +1741,9 @@ def _disp(name):
 
 
 def _attr_icon(a):
-    ico = ICON.get(a.get("t", "ref"), "📦")
+    t = a.get("t", "ref")
+    # a custom type shows the referenced class's own icon (🐟 for a Fish ref)
+    ico = ICON.get(t) or _MODEL.get(t, {}).get("icon") or "📦"
     if a.get("list"):
         ico = ico + ICON["list"]
     return ico
@@ -1934,7 +1985,14 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
         h += "<div class='lc-ins-row'" + (f.hint ? " title='" + esc(f.hint) + "'" : "") + ">"
           + "<label>" + esc(f.n).replace(/_/g, " ") + unit + "</label><div class='lc-ins-ctl'>";
         var dis = f.ro ? " disabled" : "";
-        if (f.t === "bool") {
+        if (f.ref) {
+          /* typed reference → picklist of live, type-compatible instances */
+          h += "<select data-f='" + esc(f.n) + "' data-t='str'" + dis + "><option value=''>—</option>";
+          (f.options || []).forEach(function (o) {
+            h += "<option" + (o === f.v ? " selected" : "") + ">" + esc(o) + "</option>";
+          });
+          h += "</select><span class='lc-ins-ro'>:" + esc(f.ref) + "</span>";
+        } else if (f.t === "bool") {
           h += "<input type='checkbox' data-f='" + esc(f.n) + "' data-t='bool'" + (f.v ? " checked" : "") + dis + ">"
             + (f.ro ? "<span class='lc-ins-ro'>🔒</span>" : "");
         } else if (f.ro) {

@@ -57,6 +57,42 @@ Click it twice: the second call raises `PreconditionError` — `eat()` needs
 `hungry`, and Lucky is already `fed`. The gate is a property of the **model**,
 not of any particular button.
 
+## 🐾 Inheritance & references — a Pet with a bestie {#pet_demo}
+
+Classes inherit fields, states and behaviours; a field typed with **another
+Model class** becomes a **picklist of live instances** — subclasses included,
+so a Dog's bestie can be a Fish:
+
+```python
+@component(icon="🐾")
+class Pet(Model):
+    mood   = State("bored", ["bored", "happy"])
+    bestie = Attr("Pet", None, hint="Best friend — any Pet will do")
+
+    @transition(pre=["bored"], post="happy")
+    def play(self): pass
+
+@component(icon="🐕")
+class Dog(Pet):
+    weight_kg = Attr(float, 30, min=20, max=60, unit="kg")
+
+@component(icon="🐠")
+class Fish(Pet):
+    bubbles = Attr(int, 0, min=0, max=99)
+
+rex   = Dog()
+wanda = Fish()
+```
+{: .inspector #pet_widget }
+
+Open **rex**'s `bestie` picklist: it offers `wanda` — a Fish *is a* Pet, so the
+cross-species friendship type-checks. In code, `rex.bestie = wanda` works too,
+while `rex.bestie = some_rock` raises `ValueError: bestie expects a Pet`. Note
+`Attr("Pet")` — the class names *itself* as a string (it doesn't exist yet on
+that line), the classic forward reference. And the [component model
+diagram](/components/model) now draws `Pet → Pet` as a reflexive `bestie`
+association, plus the inheritance arrows — from these same declarations.
+
 ## ⚙️ How it works {#how_it_works}
 
 | Declaration | The widget renders |
@@ -68,6 +104,7 @@ not of any particular button.
 | `ro=True` | a locked value 🔒 — direct writes raise; behaviours use `self._set(name, value)` |
 | `hint="…"` | a tooltip on the row |
 | `State("hungry", ["hungry", "fed"])` | the chips row — current state highlighted |
+| `Attr("Pet")` | a **picklist** of live, type-compatible instances (subclasses count); wrong types raise |
 | `@transition(pre=["hungry"], post="fed")` | a gated button — disabled outside `pre`, moves the state to `post` |
 
 - **Everything is an Object** — `Model` descends from the same `Object` root as
