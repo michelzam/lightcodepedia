@@ -48,9 +48,16 @@ ICON = {
     "guard": "▹", "trans": "▹", "fsm": "🎛️", "init": "➡️",
 }
 
-_MODEL = {}        # class name → spec dict
-_CLASSES = {}      # class name → class object (for per-class to_dot dispatch)
-_TRANSITIONS = {}  # function object → (precondition states, postcondition state)
+# The registries persist across preamble re-runs (every button click re-runs
+# the preamble): builtins re-register identically on each run, but author
+# classes defined by page blocks register only once — wiping the dicts would
+# drop them from diagrams, the x-ray and reference type-checks.
+try:
+    _MODEL
+except NameError:
+    _MODEL = {}        # class name → spec dict
+    _CLASSES = {}      # class name → class object (for per-class to_dot dispatch)
+    _TRANSITIONS = {}  # function object → (pre states, post state, axis, order)
 
 # Bases shown as a "➭ <icon>" marker in the class title instead of a drawn edge.
 # Object and Block are notorious roots — almost everything descends from them,
@@ -206,7 +213,18 @@ class State(Attr):
 
 
 def _lc_isa(obj, cls_name):
-    """Class-name chain check (survives preamble re-runs, unlike isinstance)."""
+    """Class-name chain check. Walks the instance's own class chain (always
+    true to the object, whatever the registry state), then falls back to the
+    _MODEL bases — name-based on both paths, so it survives preamble re-runs
+    where isinstance would compare stale class objects."""
+    k = type(obj)
+    seen = set()
+    while k is not None and k.__name__ not in seen:
+        if k.__name__ == cls_name:
+            return True
+        seen.add(k.__name__)
+        bs = getattr(k, "__bases__", None)
+        k = bs[0] if bs else None
     n = type(obj).__name__
     seen = set()
     while n and n not in seen:

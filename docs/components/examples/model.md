@@ -123,6 +123,112 @@ association, and the mood statechart hangs below:
 - **No `@component`? Still works.** A plain `class Cat(Object)` self-registers
   on first use; the decorator just adds the icon.
 
+## 🧪 Behavior checks {#behavior_checks}
+
+The model's promises, verified live — press ▶ to run them in this very page's
+Python runtime (the CD suite runs them on every deploy too):
+
+```gherkin
+Feature: Live models validate, gate and reference
+  As a page author
+  I want declared fields and transitions enforced everywhere
+  So that widgets, buttons and code cannot break the model
+
+  Scenario: Fields clamp, enums reject, read-only locks
+    Given a fresh dog model
+    :::python
+    @component(icon="🐶")
+    class FDog(Object):
+        mood      = State("hungry", ["hungry", "fed"])
+        colour    = Attr(str, "Golden", enum=["Golden", "Black"])
+        weight_kg = Attr(float, 30, min=20, max=60)
+        adopted   = Attr(bool, False, ro=True)
+
+        @transition(pre=["hungry"], post="fed")
+        def eat(dog):
+            dog._set("weight_kg", dog.weight_kg + 1)
+    self.dog = FDog()
+    assert self.dog.mood == "hungry" and self.dog.weight_kg == 30
+    :::
+    When I push the weight past its max
+    :::python
+    self.dog.weight_kg = 999
+    :::
+    Then it clamps to the declared range
+    :::python
+    assert self.dog.weight_kg == 60, self.dog.weight_kg
+    :::
+    Then a colour outside the enum is refused
+    :::python
+    try:
+        self.dog.colour = "Pink"
+        assert False, "enum should reject Pink"
+    except ValueError as e:
+        assert "one of" in str(e)
+    :::
+    Then adopted cannot be assigned directly
+    :::python
+    try:
+        self.dog.adopted = True
+        assert False, "ro should reject a direct write"
+    except AttributeError as e:
+        assert "behaviour" in str(e)
+    :::
+
+  Scenario: Behaviours gate on state and apply their post-state
+    Given the dog is still hungry
+    :::python
+    assert self.dog.mood == "hungry"
+    :::
+    When it eats
+    :::python
+    self.dog.eat()
+    :::
+    Then it is fed — and refuses to eat again
+    :::python
+    assert self.dog.mood == "fed"
+    try:
+        self.dog.eat()
+        assert False, "the gate should refuse a second meal"
+    except PreconditionError as e:
+        assert "needs hungry" in str(e)
+    :::
+
+  Scenario: References type-check and survive a runtime refresh
+    Given a pet family with a bestie reference
+    :::python
+    @component(icon="🐾")
+    class FPet(Object):
+        bestie = Attr("FPet", None)
+
+    @component(icon="🐟")
+    class FFish(FPet):
+        pass
+    self.rex = FPet()
+    self.fish = FFish()
+    :::
+    When the runtime preamble re-runs, as any button click makes it do
+    :::python
+    _p = js.window.document.getElementById("lc-steps-preamble").textContent
+    exec(_p, globals())
+    :::
+    Then a subclass instance is still accepted as bestie
+    :::python
+    self.rex.bestie = self.fish
+    assert self.rex.bestie is self.fish
+    :::
+    Then a non-pet is still refused
+    :::python
+    class FRock(Object):
+        pass
+    try:
+        self.rex.bestie = FRock()
+        assert False, "a rock is no bestie"
+    except ValueError as e:
+        assert "expects a FPet" in str(e)
+    :::
+```
+
 **Q:** `lucky.adopted = True` raises an error, yet after `bark()` the box is
 ticked. Why?
 
