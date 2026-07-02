@@ -250,7 +250,9 @@ def _lc_field_prop(f):
         return self._v.get(f.n, f.d)
 
     def fset(self, val):
-        if f.ro:
+        # ro guards the outside world; inside the object's OWN behaviour
+        # (@transition methods bracket themselves) plain assignment works.
+        if f.ro and not getattr(self, "_lc_active", 0):
             raise AttributeError(f.n + " is read-only — only a behaviour can change it")
         self._v[f.n] = f._coerce(val)
         _lc_push_obj(self)
@@ -258,7 +260,9 @@ def _lc_field_prop(f):
 
 
 def _lc_guard(name, fn, pre, post, sfn):
-    """Wrap a Model transition method: gate on the State field, apply post."""
+    """Wrap a transition method: gate on the State field, apply post — and
+    mark the instance as running its own behaviour, so ro fields accept
+    plain assignment from inside (the lock only faces the outside world)."""
     def w(self, *a, **k):
         if sfn and pre:
             f = type(self)._lc_fmap.get(sfn)
@@ -266,7 +270,11 @@ def _lc_guard(name, fn, pre, post, sfn):
             if cur not in pre:
                 raise PreconditionError(name + "() needs " + "/".join(pre)
                                         + " — " + sfn + " is " + str(cur))
-        r = fn(self, *a, **k)
+        self._lc_active = getattr(self, "_lc_active", 0) + 1
+        try:
+            r = fn(self, *a, **k)
+        finally:
+            self._lc_active -= 1
         if sfn and post:
             self._v[sfn] = post
         _lc_push_obj(self)

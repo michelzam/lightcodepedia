@@ -27,8 +27,8 @@ class Dog(Object):
 
     @transition(pre=["fed"])
     def bark(self):
-        self._set("last_said", "Woof!")
-        self._set("adopted", True)
+        self.last_said = "Woof!"
+        self.adopted = True
 
 lucky = Dog()
 ```
@@ -106,7 +106,7 @@ association, and the mood statechart hangs below:
 | `Attr(str, "Golden", enum=[…])` | a dropdown — other values raise `ValueError` |
 | `Attr(bool, False)` | a checkbox |
 | `Attr(str, "", secret=True)` | a password field |
-| `ro=True` | a locked value 🔒 — direct writes raise; behaviours use `self._set(name, value)` |
+| `ro=True` | a locked value 🔒 — outside writes raise; the object's **own behaviours** simply assign it |
 | `hint="…"` | a tooltip on the row |
 | `State("hungry", ["hungry", "fed"])` | the chips row — current state highlighted |
 | `Attr("Pet")` | a **picklist** of live, type-compatible instances (subclasses count); wrong types raise |
@@ -147,6 +147,10 @@ Feature: Live models validate, gate and reference
         @transition(pre=["hungry"], post="fed")
         def eat(dog):
             dog.weight_kg += 1
+
+        @transition(pre=["fed"])
+        def bark(dog):
+            dog.adopted = True
     self.dog = FDog()
     assert self.dog.mood == "hungry" and self.dog.weight_kg == 30
     :::
@@ -193,6 +197,11 @@ Feature: Live models validate, gate and reference
     except PreconditionError as e:
         assert "needs hungry" in str(e)
     :::
+    Then its own behaviour may write what outsiders cannot
+    :::python
+    self.dog.bark()
+    assert self.dog.adopted is True
+    :::
 
   Scenario: References type-check and survive a runtime refresh
     Given a pet family with a bestie reference
@@ -238,8 +247,9 @@ ticked. Why?
 
 - [x] `adopted` is read-only state: only a **behaviour** may change it.
 
-  > Exactly — behaviours use `self._set(…)`, the protected write. Outcomes are
-  > *reached* through the object's own methods, never assigned from outside.
+  > Exactly — inside `bark()` the object assigns its own field; from outside,
+  > the same assignment raises. Outcomes are *reached* through the object's
+  > own methods, never imposed from outside.
 
 - [ ] Booleans can't be assigned in Python.
 
