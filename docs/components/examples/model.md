@@ -23,7 +23,7 @@ class Dog(Object):
 
     @transition(pre=["hungry"], post="fed")
     def eat(self):
-        self._set("weight_kg", self.weight_kg + 1)
+        self.weight_kg += 1
 
     @transition(pre=["fed"])
     def bark(self):
@@ -146,7 +146,7 @@ Feature: Live models validate, gate and reference
 
         @transition(pre=["hungry"], post="fed")
         def eat(dog):
-            dog._set("weight_kg", dog.weight_kg + 1)
+            dog.weight_kg += 1
     self.dog = FDog()
     assert self.dog.mood == "hungry" and self.dog.weight_kg == 30
     :::
