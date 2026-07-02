@@ -1376,9 +1376,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
     return null;
   }
-  function userLabel(n, u, users) {
+  function userLabel(n, u, users, nodes) {
     var parts = [(u.icon ? u.icon + " " : "") + dotEsc(n)];
     var attrs = u.fields.map(function (f) {
+      // DRY: a reference drawn as an association edge is not repeated as an
+      // attribute row (the row survives only when the target isn't drawn)
+      var isRef = !/^(str|int|float|bool)$/.test(f.t) && !f.state;
+      if (isRef && nodes && nodes[f.t]) return "";
       var ic = f.state ? "🎛️"
         : (_compIcons[f.t] || (users[f.t] || {}).icon || (_compModel[f.t] || {}).icon || "📦");
       return ic + " " + dotEsc(f.n) + "\\l";
@@ -1418,7 +1422,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     L.push('  node [' + FONT + ', shape=record, style="filled,rounded", color="gray75", fillcolor=white, fontsize=10, penwidth=0.5];');
     L.push('  edge [' + FONT + ', fontsize=8, penwidth=0.6, arrowsize=0.8];');
     Object.keys(nodes).forEach(function (n) {
-      var lbl = nodes[n] === "user" ? userLabel(n, users[n], users) : nodeLabel(n);
+      var lbl = nodes[n] === "user" ? userLabel(n, users[n], users, nodes) : nodeLabel(n);
       L.push('  ' + n + ' [label="' + lbl + '"' +
         (nodes[n] === "base" ? ', fillcolor="gray95", color="gray80"' : '') + ']');
     });

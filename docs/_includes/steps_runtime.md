@@ -486,7 +486,7 @@ class Object:
 
     # ── per-class diagram contribution (SSOT = cls._spec, set by @component) ──
     @classmethod
-    def _dot_node(cls):
+    def _dot_node(cls, sel=None):
         # Plain record label (like the original ModuleDecorator): {title|attrs|meths}
         sp = cls._spec
         title = ((sp["icon"] + " ") if sp["icon"] else "") + cls.__name__
@@ -497,6 +497,11 @@ class Object:
         if sp.get("states"):                       # stateful → show current state
             rows += ICON["fsm"] + " state\\l"
         for a in sp["attrs"]:
+            # DRY: a reference drawn as an association edge is not repeated as
+            # an attribute row — the row only appears when the target class is
+            # outside the diagram, so the reference is never silently lost.
+            if a.get("ref") and (sel is None or a["ref"] in sel):
+                continue
             rows += _attr_icon(a) + " " + _disp(a["n"]) + "\\l"
         meth = ""
         for e in sp["events"]:
@@ -573,7 +578,7 @@ class Object:
     @classmethod
     def to_dot(cls, sel=None):
         """Dump THIS class's contribution: node + associations + state machine."""
-        return "\n".join([cls._dot_node()] + cls._dot_assoc(sel)
+        return "\n".join([cls._dot_node(sel)] + cls._dot_assoc(sel)
                          + cls._dot_states())
 
 
@@ -1892,7 +1897,7 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
         L.append('    style=filled; fillcolor="gray98"; color="gray85";'
                  ' margin=16; penwidth=0.3;')
         for n in groups[p]:
-            L.append("  " + _CLASSES[n]._dot_node())
+            L.append("  " + _CLASSES[n]._dot_node(sel))
         L.append("  }")
 
     # associations + state machines (kept at top level, may cross clusters)
