@@ -24,6 +24,14 @@ Auto-included by docs/_layouts/default.html.
 import js
 import json
 
+# Inspector-widget registries survive preamble re-runs (buttons re-run it on
+# every click): bound instances and the new-instance capture list must persist.
+try:
+    _LC_INSPECT
+except NameError:
+    _LC_INSPECT = {}
+    _LC_NEW = []
+
 # ════════════════════════ model metadata (single source) ═════════════════════
 # Type → icon. Mirrors usecases/module_manager/backend/module_decorator.py.
 ICON = {
@@ -44,7 +52,10 @@ _TRANSITIONS = {}  # function object → (precondition states, postcondition sta
 _DOT_ROOT_BASES = {"Object", "Block"}
 
 
-def transition(pre=(), post=None):
+_T_ORD = [0]   # declaration counter — keeps method buttons in source order
+
+
+def transition(pre=(), post=None, state=None):
     """Decorate a method as a state transition.
 
     @transition(["pending", "placed"], "paid")
@@ -52,9 +63,13 @@ def transition(pre=(), post=None):
 
     `pre` lists the states the method may be called from (guard); `post` is the
     single state it moves the object to. Read back by @component for the diagram.
+    On Model classes the method is also wrapped: calling it outside `pre` raises
+    PreconditionError, and `post` is applied on success. `state` names which
+    State field the transition drives (default: the class's first State field).
     """
     def deco(fn):
-        _TRANSITIONS[fn] = (list(pre), post)
+        _T_ORD[0] += 1
+        _TRANSITIONS[fn] = (list(pre), post, state, _T_ORD[0])
         return fn
     return deco
 
@@ -89,6 +104,163 @@ def _prop(attr, typ, default, settable):
     return property(fget)
 
 
+# ════════════════════════ declarative fields (Attr / State) ══════════════════
+# Author-defined domain classes declare their fields pydantic-style — one line
+# carries type, default, constraints and UI metadata. @component harvests them
+# into the same _MODEL spec the diagrams, x-ray and inspector widget consume.
+
+class PreconditionError(Exception):
+    pass
+
+
+class Attr:
+    """A declarative field: Attr(float, 30, min=20, max=60, unit="kg", ...).
+
+    Knobs: min/max/step (numbers), enum (choices), ro (read-only from outside —
+    only a behaviour may change it, via self._set), unit, hint (tooltip),
+    secret (render as password). Values live per-instance; writes validate.
+    """
+    _count = [0]
+
+    def __init__(self, typ=str, default=None, min=None, max=None, step=None,
+                 enum=None, ro=False, unit="", hint="", secret=False):
+        Attr._count[0] += 1
+        self._ord = Attr._count[0]
+        self.t = typ if isinstance(typ, str) else getattr(typ, "__name__", "str")
+        self.d = default
+        self.min = min
+        self.max = max
+        self.step = step
+        self.enum = list(enum) if enum else None
+        self.ro = bool(ro)
+        self.unit = unit
+        self.hint = hint
+        self.secret = bool(secret)
+        self.is_state = False
+        self.n = None
+
+    def _coerce(self, v):
+        try:
+            if self.t == "int":
+                v = int(v)
+            elif self.t == "float":
+                v = float(v)
+            elif self.t == "bool":
+                v = v if isinstance(v, bool) else str(v).lower() in ("true", "1", "yes", "on")
+            elif self.t == "str":
+                v = "" if v is None else str(v)
+        except Exception:
+            raise ValueError(str(self.n) + " expects " + self.t)
+        if self.t in ("int", "float"):
+            if self.min is not None and v < self.min:
+                v = self.min
+            if self.max is not None and v > self.max:
+                v = self.max
+        if self.enum is not None and v not in self.enum:
+            raise ValueError(str(self.n) + " must be one of: " + ", ".join(str(x) for x in self.enum))
+        return v
+
+    def _spec_dict(self):
+        d = {"n": self.n, "t": ("password" if self.secret else self.t), "d": self.d,
+             "ro": self.ro, "unit": self.unit, "hint": self.hint, "secret": self.secret,
+             "field": True, "state": self.is_state}
+        if self.min is not None:
+            d["min"] = self.min
+        if self.max is not None:
+            d["max"] = self.max
+        if self.step is not None:
+            d["step"] = self.step
+        if self.enum is not None:
+            d["enum"] = list(self.enum)
+        return d
+
+
+class State(Attr):
+    """A state-machine axis: State("hungry", ["hungry", "fed"]). Read-only —
+    only @transition behaviours move it. First State field = the class state."""
+
+    def __init__(self, initial, states, hint=""):
+        Attr.__init__(self, "str", initial, enum=list(states), ro=True, hint=hint)
+        self.is_state = True
+
+
+def _lc_field_prop(f):
+    def fget(self):
+        return self._v.get(f.n, f.d)
+
+    def fset(self, val):
+        if f.ro:
+            raise AttributeError(f.n + " is read-only — only a behaviour can change it")
+        self._v[f.n] = f._coerce(val)
+        _lc_push_obj(self)
+    return property(fget, fset)
+
+
+def _lc_guard(name, fn, pre, post, sfn):
+    """Wrap a Model transition method: gate on the State field, apply post."""
+    def w(self, *a, **k):
+        if sfn and pre:
+            f = type(self)._lc_fmap.get(sfn)
+            cur = self._v.get(sfn, f.d if f else None)
+            if cur not in pre:
+                raise PreconditionError(name + "() needs " + "/".join(pre)
+                                        + " — " + sfn + " is " + str(cur))
+        r = fn(self, *a, **k)
+        if sfn and post:
+            self._v[sfn] = post
+        _lc_push_obj(self)
+        return r
+    return w
+
+
+def _lc_harvest(cls):
+    """Collect Attr fields + transition metadata from a class body; replace the
+    fields with validating properties; gate transition methods (Model only)."""
+    if getattr(cls, "_lc_harvested_for", None) is cls:
+        return cls._lc_fields, cls._lc_statef
+    own = []
+    for n in dir(cls):
+        try:
+            v = getattr(cls, n)
+        except Exception:
+            continue
+        if isinstance(v, Attr):
+            v.n = n
+            own.append(v)
+    own.sort(key=lambda f: f._ord)
+    fields = list(getattr(cls, "_lc_fields", []) or []) + own
+    statef = None
+    for f in fields:
+        if f.is_state:
+            statef = f
+            break
+    tmeta = dict(getattr(cls, "_lc_tmeta", {}) or {})
+    for n in dir(cls):
+        try:
+            fn = getattr(cls, n)
+        except Exception:
+            continue
+        if not callable(fn):
+            continue          # only functions can carry @transition metadata
+        m = _TRANSITIONS.get(fn)
+        if m:
+            tmeta[n] = (list(m[0]), m[1], m[2] or (statef.n if statef else None), m[3])
+    for f in own:
+        setattr(cls, f.n, _lc_field_prop(f))
+    if statef is not None:
+        for n in tmeta:
+            fn = getattr(cls, n, None)
+            if fn is not None and _TRANSITIONS.get(fn) is not None:   # not yet wrapped
+                pre, post, sfn, _o = tmeta[n]
+                setattr(cls, n, _lc_guard(n, fn, pre, post, sfn))
+    cls._lc_fields = fields
+    cls._lc_fmap = {f.n: f for f in fields}
+    cls._lc_statef = statef
+    cls._lc_tmeta = tmeta
+    cls._lc_harvested_for = cls
+    return fields, statef
+
+
 def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
     """Class decorator: generate data-* knob properties and register the spec.
 
@@ -97,6 +269,7 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
     resolved here into each method's spec (pre / post).
     """
     def deco(cls):
+        fields, statef = _lc_harvest(cls)   # declarative Attr/State fields (may be none)
         for a in attrs:
             if a.get("data"):
                 cname = a["n"]
@@ -106,16 +279,23 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
         meth_specs = []
         for m in methods:
             fn = getattr(cls, m, None)
-            pre, post = _TRANSITIONS.get(fn, ([], None))
+            meta = _TRANSITIONS.get(fn) or (getattr(cls, "_lc_tmeta", {}) or {}).get(m)
+            pre, post = (meta[0], meta[1]) if meta else ([], None)
             meth_specs.append({"n": m, "pre": list(pre), "post": post})
+        # transition-decorated methods join the spec even when not listed
+        tmeta = getattr(cls, "_lc_tmeta", {}) or {}
+        listed = set(methods)
+        for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
+            if n not in listed:
+                meth_specs.append({"n": n, "pre": list(tmeta[n][0]), "post": tmeta[n][1]})
         spec = {
             "icon": icon,
             "bases": [b.__name__ for b in cls.__bases__],
-            "attrs": [dict(a) for a in attrs],
+            "attrs": [dict(a) for a in attrs] + [f._spec_dict() for f in fields],
             "assoc": [dict(a) for a in assoc],
             "events": list(events),
             "methods": meth_specs,
-            "states": list(states),
+            "states": list(states) or (list(statef.enum) if statef is not None else []),
         }
         cls._spec = spec          # SSOT lives on the class itself
         _MODEL[cls.__name__] = spec
@@ -321,6 +501,40 @@ class Block(Object):
         if self._el:
             self._el.click()
         return self
+
+
+# ════════════════════════ Model — author-defined domain objects ══════════════
+# Pure-Python objects (no DOM element) declared with Attr/State fields and
+# @transition behaviours. They join the same family tree (Object) and the same
+# _MODEL registry, so diagrams, the x-ray and the .inspector widget all see
+# them. Plain `class Dog(Model)` works too — Model self-registers lazily when
+# the class wasn't decorated with @component.
+
+@component(icon="🧬")
+class Model(Object):
+    def __init__(self):
+        cls = type(self)
+        if getattr(cls, "_lc_harvested_for", None) is not cls:
+            component(icon="📦")(cls)          # undecorated subclass → register now
+        Object.__init__(self, None)
+        self._v = {}
+        self._lc_elid = None
+        for f in cls._lc_fields:
+            self._v[f.n] = f.d
+        _LC_NEW.append(self)
+
+    def _set(self, name, value):
+        """Protected write: behaviours use it to change ro fields (validated)."""
+        f = type(self)._lc_fmap.get(name)
+        self._v[name] = f._coerce(value) if f is not None else value
+        _lc_push_obj(self)
+        return self
+
+    @property
+    def state(self):
+        """The first State field's current value (the class's canonical state)."""
+        sf = type(self)._lc_statef
+        return self._v.get(sf.n, sf.d) if sf is not None else ""
 
 
 # ════════════════════════ data + leaf wrappers ══════════════════════════════
@@ -1305,6 +1519,99 @@ class Page(Object):
         return Feature._all(".lc-feature")
 
 
+# ════════════════════════ inspector widget bridge ════════════════════════════
+# A {: .inspector } block binds Model instances to a DOM card. Python owns the
+# truth: every field write / transition pushes a fresh schema to the JS
+# renderer, so widget, REPL and buttons all stay in sync.
+
+def _lc_inspect_schema(obj):
+    cls = type(obj)
+    sp = getattr(cls, "_spec", None) or {}
+    fields = []
+    for f in cls._lc_fields:
+        d = f._spec_dict()
+        d["v"] = obj._v.get(f.n, f.d)
+        fields.append(d)
+    meths = []
+    tmeta = cls._lc_tmeta or {}
+    for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
+        pre, post, sfn, _o = tmeta[n]
+        cur = obj._v.get(sfn) if sfn else None
+        meths.append({"n": n, "pre": pre, "post": post,
+                      "enabled": (not pre) or (cur in pre)})
+    return {"cls": cls.__name__, "icon": sp.get("icon", ""),
+            "doc": str(getattr(cls, "__doc__", "") or ""),
+            "fields": fields, "methods": meths}
+
+
+def _lc_inspect_push(elid, err=""):
+    pairs = _LC_INSPECT.get(elid) or []
+    cards = []
+    for name, inst in pairs:
+        d = _lc_inspect_schema(inst)
+        d["name"] = name
+        cards.append(d)
+    fn = getattr(js.window, "_lcInspectorRender", None)
+    if fn is not None:
+        fn(elid, json.dumps({"cards": cards, "error": err}))
+
+
+def _lc_push_obj(obj):
+    elid = getattr(obj, "_lc_elid", None)
+    if elid:
+        _lc_inspect_push(elid)
+
+
+def _lc_inspect_bind(elid, insts):
+    g = globals()
+    pairs = []
+    for inst in insts:
+        name = ""
+        for k in g:
+            if g[k] is inst and not k.startswith("_"):
+                name = k
+                break
+        inst._lc_elid = elid
+        pairs.append((name or "obj" + str(len(pairs) + 1), inst))
+    _LC_INSPECT[elid] = pairs
+    _lc_inspect_push(elid)
+
+
+def _lc_inspect_bind_new(elid):
+    """Bind every Model instance created by the block that just ran."""
+    _lc_inspect_bind(elid, list(_LC_NEW))
+    _LC_NEW[:] = []
+
+
+def _lc_inspect_bind_names(elid, names):
+    g = globals()
+    want = [n.strip() for n in str(names).split(",")]
+    _lc_inspect_bind(elid, [g[n] for n in want if n in g])
+    _LC_NEW[:] = []
+
+
+def _lc_inspect_set(elid, name, field, vjson):
+    err = ""
+    for nm, inst in (_LC_INSPECT.get(elid) or []):
+        if nm == name:
+            try:
+                setattr(inst, field, json.loads(vjson))
+            except Exception as e:
+                err = str(e)
+    _lc_inspect_push(elid, err)
+
+
+def _lc_inspect_call(elid, name, meth):
+    err = ""
+    for nm, inst in (_LC_INSPECT.get(elid) or []):
+        if nm == name:
+            try:
+                getattr(inst, meth)()
+            except Exception as e:
+                err = str(e)
+    _lc_inspect_push(elid, err)
+
+
 # ════════════════════════ runner infrastructure ═════════════════════════════
 
 class _Ctx:
@@ -1544,4 +1851,184 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
 
     L.append("}")
     return "\n".join(L)
+</script>
+
+<style>
+/* ── .inspector — auto-widget generated from a Model class ─────────────── */
+.lc-inspector { margin: 1em 0; display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.92em; }
+.lc-ins-card { flex: 1 1 260px; max-width: 420px; border: 1px solid #d8dee6; border-radius: 10px; padding: 12px 14px; background: #fff; }
+.lc-ins-head { font-weight: 600; margin-bottom: 8px; color: #1e293b; }
+.lc-ins-head .lc-ins-cls { color: #64748b; font-weight: 400; }
+.lc-ins-doc { font-size: 0.85em; color: #64748b; margin: -4px 0 8px; }
+.lc-ins-chips { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin: 6px 0 10px; }
+.lc-ins-chips .lc-ins-axis { font-family: monospace; font-size: 0.85em; color: #64748b; margin-right: 2px; }
+.lc-ins-chip { font-family: monospace; font-size: 0.82em; padding: 2px 9px; border-radius: 999px; background: #e5e7eb; color: #6b7280; }
+.lc-ins-chip.active { background: #dc2626; color: #fff; font-weight: 600; box-shadow: 0 0 0 2px rgba(220,38,38,0.18); }
+.lc-ins-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.lc-ins-row > label { flex: 0 0 40%; font-family: monospace; font-size: 0.88em; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-ins-row > label .lc-ins-unit { color: #94a3b8; }
+.lc-ins-ctl { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.lc-ins-ctl input[type=range] { flex: 1; min-width: 0; }
+.lc-ins-ctl input[type=text], .lc-ins-ctl input[type=password], .lc-ins-ctl input[type=number], .lc-ins-ctl select {
+  flex: 1; min-width: 0; font: inherit; font-size: 0.88em; padding: 2px 6px; border: 1px solid #cbd5e1; border-radius: 5px; }
+.lc-ins-ctl output { font-family: monospace; font-size: 0.85em; color: #0066cc; min-width: 3.5em; text-align: right; }
+.lc-ins-ro { font-family: monospace; font-size: 0.88em; color: #64748b; }
+.lc-ins-meths { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.lc-ins-meths button { font-family: monospace; font-size: 0.86em; padding: 4px 12px; border: none; border-radius: 6px;
+  cursor: pointer; background: #0066cc; color: #fff; }
+.lc-ins-meths button:hover:not(:disabled) { background: #0052a3; }
+.lc-ins-meths button:disabled { background: #cbd5e1; color: #eef2f7; cursor: not-allowed; }
+.lc-ins-meths button .lc-ins-post { opacity: 0.75; font-size: 0.9em; }
+.lc-ins-err { flex-basis: 100%; font-family: monospace; font-size: 0.85em; color: #b91c1c; background: #fef2f2;
+  border: 1px solid #fecaca; border-radius: 6px; padding: 5px 10px; }
+.lc-ins-loading { color: #94a3b8; font-size: 0.9em; padding: 8px 0; }
+</style>
+
+<script>
+(function () {
+  if (window._lcInspectorReady) return;
+  window._lcInspectorReady = true;
+
+  var INS_N = 0;
+
+  function mpReady() {
+    if (!window._lcMpReady) {
+      window._lcMpReady = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
+        .then(function (mjs) { return mjs.loadMicroPython({ stdout: function () {}, stderr: function () {} }); });
+    }
+    return window._lcMpReady;
+  }
+  function runPy(mp, code) {
+    var fn = mp.runPython || mp.exec || mp.pyexec || mp.run;
+    if (fn) fn.call(mp, code);
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* the Python side pushes a fresh schema here after every change */
+  window._lcInspectorRender = function (elid, payload) {
+    var host = document.querySelector("[data-lc-inspector='" + elid + "']");
+    if (!host) return;
+    var d;
+    try { d = JSON.parse(payload); } catch (e) { return; }
+    var h = "";
+    (d.cards || []).forEach(function (c) {
+      h += "<div class='lc-ins-card' data-card='" + esc(c.name) + "'>";
+      h += "<div class='lc-ins-head'>" + esc(c.icon) + " " + esc(c.name)
+        + " <span class='lc-ins-cls'>· " + esc(c.cls) + "</span></div>";
+      if (c.doc) h += "<div class='lc-ins-doc'>" + esc(c.doc) + "</div>";
+      (c.fields || []).forEach(function (f) {          /* state axes → chip rows */
+        if (!f.state) return;
+        h += "<div class='lc-ins-chips'><span class='lc-ins-axis'>" + esc(f.n) + "</span>";
+        (f.enum || []).forEach(function (s) {
+          h += "<span class='lc-ins-chip" + (s === f.v ? " active" : "") + "'>" + esc(s) + "</span>";
+        });
+        h += "</div>";
+      });
+      (c.fields || []).forEach(function (f) {
+        if (f.state) return;
+        var unit = f.unit ? " <span class='lc-ins-unit'>(" + esc(f.unit) + ")</span>" : "";
+        h += "<div class='lc-ins-row'" + (f.hint ? " title='" + esc(f.hint) + "'" : "") + ">"
+          + "<label>" + esc(f.n).replace(/_/g, " ") + unit + "</label><div class='lc-ins-ctl'>";
+        var dis = f.ro ? " disabled" : "";
+        if (f.t === "bool") {
+          h += "<input type='checkbox' data-f='" + esc(f.n) + "' data-t='bool'" + (f.v ? " checked" : "") + dis + ">"
+            + (f.ro ? "<span class='lc-ins-ro'>🔒</span>" : "");
+        } else if (f.ro) {
+          h += "<span class='lc-ins-ro'>" + esc(f.v) + " 🔒</span>";
+        } else if (f.enum) {
+          h += "<select data-f='" + esc(f.n) + "' data-t='str'>";
+          f.enum.forEach(function (o) {
+            h += "<option" + (o === f.v ? " selected" : "") + ">" + esc(o) + "</option>";
+          });
+          h += "</select>";
+        } else if ((f.t === "int" || f.t === "float") && f.min != null && f.max != null) {
+          var step = f.step != null ? f.step : (f.t === "int" ? 1 : (f.max - f.min) / 100);
+          h += "<input type='range' data-f='" + esc(f.n) + "' data-t='num' min='" + f.min
+            + "' max='" + f.max + "' step='" + step + "' value='" + f.v + "'>"
+            + "<output>" + esc(f.v) + "</output>";
+        } else if (f.t === "int" || f.t === "float") {
+          h += "<input type='number' data-f='" + esc(f.n) + "' data-t='num' value='" + esc(f.v) + "'>";
+        } else {
+          h += "<input type='" + (f.secret ? "password" : "text") + "' data-f='" + esc(f.n)
+            + "' data-t='str' value='" + esc(f.v) + "'>";
+        }
+        h += "</div></div>";
+      });
+      if ((c.methods || []).length) {
+        h += "<div class='lc-ins-meths'>";
+        c.methods.forEach(function (m) {
+          var tip = m.enabled ? (m.post ? "→ " + m.post : "") : "needs: " + (m.pre || []).join(" / ");
+          h += "<button data-m='" + esc(m.n) + "'" + (m.enabled ? "" : " disabled")
+            + (tip ? " title='" + esc(tip) + "'" : "") + ">" + esc(m.n) + "()"
+            + (m.post ? " <span class='lc-ins-post'>▸ " + esc(m.post) + "</span>" : "") + "</button>";
+        });
+        h += "</div>";
+      }
+      h += "</div>";
+    });
+    if (d.error) h += "<div class='lc-ins-err'>⚠️ " + esc(d.error) + "</div>";
+    host.innerHTML = h;
+  };
+
+  function pySend(code) { mpReady().then(function (mp) { try { runPy(mp, code); } catch (e) { console.error("[lc-inspector]", e); } }); }
+
+  function upgradeInspector(el) {
+    if (el.dataset.lcInsDone) return;
+    el.dataset.lcInsDone = "1";
+    var code = (el.querySelector("code") || el).textContent;
+    var elid = el.id || ("insp" + (++INS_N));
+    var bind = el.getAttribute("bind") || "";
+    var host = document.createElement("div");
+    host.className = "lc-inspector";
+    host.id = elid;
+    host.setAttribute("data-lc-id", elid);
+    host.setAttribute("data-lc-inspector", elid);
+    host.innerHTML = "<div class='lc-ins-loading'>⏳ Building the model widget…</div>";
+    el.parentNode.replaceChild(host, el);
+
+    /* widget edits → Python setters (validation lives there) */
+    host.addEventListener("change", function (ev) {
+      var t = ev.target, f = t.getAttribute && t.getAttribute("data-f");
+      if (!f) return;
+      var card = t.closest("[data-card]"); if (!card) return;
+      var v = t.type === "checkbox" ? t.checked : (t.getAttribute("data-t") === "num" ? Number(t.value) : t.value);
+      pySend("_lc_inspect_set(" + JSON.stringify(elid) + "," + JSON.stringify(card.getAttribute("data-card"))
+        + "," + JSON.stringify(f) + "," + JSON.stringify(JSON.stringify(v)) + ")");
+    });
+    host.addEventListener("input", function (ev) {   /* live slider label */
+      var t = ev.target;
+      if (t.type === "range" && t.nextElementSibling) t.nextElementSibling.textContent = t.value;
+    });
+    host.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button[data-m]");
+      if (!b || b.disabled) return;
+      var card = b.closest("[data-card]"); if (!card) return;
+      pySend("_lc_inspect_call(" + JSON.stringify(elid) + "," + JSON.stringify(card.getAttribute("data-card"))
+        + "," + JSON.stringify(b.getAttribute("data-m")) + ")");
+    });
+
+    var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
+    var tail = bind
+      ? "\n_lc_inspect_bind_names(" + JSON.stringify(elid) + ", " + JSON.stringify(bind) + ")\n"
+      : "\n_lc_inspect_bind_new(" + JSON.stringify(elid) + ")\n";
+    mpReady().then(function (mp) {
+      try { runPy(mp, preamble + "\n_LC_NEW[:] = []\n" + code + tail); }
+      catch (e) {
+        host.innerHTML = "<div class='lc-ins-err'>⚠️ " + esc(e.message || e) + "</div>";
+        console.error("[lc-inspector]", e);
+      }
+    }).catch(function (e) {
+      host.innerHTML = "<div class='lc-ins-err'>⚠️ Python runtime failed to load</div>";
+      console.error("[lc-inspector]", e);
+    });
+  }
+
+  if (window.lcRegisterUpgrader) {
+    window.lcRegisterUpgrader(".highlighter-rouge.inspector, pre.inspector", upgradeInspector);
+  }
+})();
 </script>
