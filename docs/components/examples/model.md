@@ -209,8 +209,7 @@ Feature: Live models validate, gate and reference
     :::
     When the runtime preamble re-runs, as any button click makes it do
     :::python
-    _p = js.window.document.getElementById("lc-steps-preamble").textContent
-    exec(_p, globals())
+    self.page._reload_runtime()
     :::
     Then a subclass instance is still accepted as bestie
     :::python

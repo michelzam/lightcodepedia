@@ -425,6 +425,15 @@ class Object:
         _lc_push_obj(self)
         return self
 
+    def _reload_runtime(self):
+        """Re-run the steps preamble in place — exactly what a button click
+        does. Object is the js bridge, so author code (feature steps) calls
+        this instead of touching js/DOM directly."""
+        el = js.window.document.getElementById("lc-steps-preamble")
+        if el is not None:
+            exec(str(el.textContent), globals())
+        return self
+
     @property
     def id(self):
         return self._attr("data-lc-id") or ""
