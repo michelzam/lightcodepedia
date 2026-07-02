@@ -1419,7 +1419,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     L.push('digraph page_model {');
     L.push('  rankdir=BT; nodesep=0.3; ranksep=0.5;');
     L.push('  graph [splines=ortho, ' + FONT + ', fontsize=10];');
-    L.push('  node [' + FONT + ', shape=record, style="filled,rounded", color="gray75", fillcolor=white, fontsize=10, penwidth=0.5];');
+    // classes are square records — rounded corners are reserved for states
+    L.push('  node [' + FONT + ', shape=record, style=filled, color="gray75", fillcolor=white, fontsize=10, penwidth=0.5];');
     L.push('  edge [' + FONT + ', fontsize=8, penwidth=0.6, arrowsize=0.8];');
     Object.keys(nodes).forEach(function (n) {
       var lbl = nodes[n] === "user" ? userLabel(n, users[n], users, nodes) : nodeLabel(n);
