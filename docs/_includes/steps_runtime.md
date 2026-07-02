@@ -187,7 +187,8 @@ class Attr:
         return v
 
     def _spec_dict(self):
-        d = {"n": self.n, "t": ("password" if self.secret else self.t), "d": self.d,
+        t = "password" if self.secret else ("fsm" if self.is_state else self.t)
+        d = {"n": self.n, "t": t, "d": self.d,
              "ro": self.ro, "unit": self.unit, "hint": self.hint, "secret": self.secret,
              "field": True, "state": self.is_state}
         if self.ref:
@@ -306,6 +307,8 @@ def _lc_harvest(cls):
             statef = f
             break
     tmeta = dict(getattr(cls, "_lc_tmeta", {}) or {})
+    own_t = {}   # transitions declared in THIS class body — inherited ones are
+                 # already wrapped, so they no longer match the registry
     for n in dir(cls):
         try:
             fn = getattr(cls, n)
@@ -316,6 +319,7 @@ def _lc_harvest(cls):
         m = _TRANSITIONS.get(fn)
         if m:
             tmeta[n] = (list(m[0]), m[1], m[2] or (statef.n if statef else None), m[3])
+            own_t[n] = tmeta[n]
     for f in own:
         setattr(cls, f.n, _lc_field_prop(f))
     if statef is not None:
@@ -325,6 +329,8 @@ def _lc_harvest(cls):
                 pre, post, sfn, _o = tmeta[n]
                 setattr(cls, n, _lc_guard(n, fn, pre, post, sfn))
     cls._lc_fields = fields
+    cls._lc_own = own          # DRY: specs/diagrams show only own declarations
+    cls._lc_own_t = own_t
     cls._lc_fmap = {f.n: f for f in fields}
     cls._lc_statef = statef
     cls._lc_tmeta = tmeta
@@ -353,21 +359,26 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
             meta = _TRANSITIONS.get(fn) or (getattr(cls, "_lc_tmeta", {}) or {}).get(m)
             pre, post = (meta[0], meta[1]) if meta else ([], None)
             meth_specs.append({"n": m, "pre": list(pre), "post": post})
-        # transition-decorated methods join the spec even when not listed
-        tmeta = getattr(cls, "_lc_tmeta", {}) or {}
+        # transition-decorated methods declared HERE join the spec even when
+        # not listed (inherited ones stay on the base class's node — DRY)
+        own_t = getattr(cls, "_lc_own_t", {}) or {}
         listed = set(methods)
-        for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
+        for n in sorted(own_t, key=lambda k: own_t[k][3]):
             if n not in listed:
-                meth_specs.append({"n": n, "pre": list(tmeta[n][0]), "post": tmeta[n][1]})
+                meth_specs.append({"n": n, "pre": list(own_t[n][0]), "post": own_t[n][1]})
         spec = {
             "icon": icon,
             "bases": [b.__name__ for b in cls.__bases__],
-            "attrs": [dict(a) for a in attrs] + [f._spec_dict() for f in fields],
+            "attrs": [dict(a) for a in attrs]
+                     + [f._spec_dict() for f in getattr(cls, "_lc_own", [])],
             "assoc": [dict(a) for a in assoc]
-                     + [{"n": f.n, "target": f.t} for f in fields if f.ref],
+                     + [{"n": f.n, "target": f.t}
+                        for f in getattr(cls, "_lc_own", []) if f.ref],
             "events": list(events),
             "methods": meth_specs,
-            "states": list(states) or (list(statef.enum) if statef is not None else []),
+            "states": list(states) or (list(statef.enum)
+                      if statef is not None and statef in getattr(cls, "_lc_own", [])
+                      else []),
         }
         cls._spec = spec          # SSOT lives on the class itself
         _MODEL[cls.__name__] = spec
@@ -494,7 +505,7 @@ class Object:
             if b in _DOT_ROOT_BASES:
                 title += " ➭ " + (_MODEL.get(b, {}).get("icon") or "◻️")
         rows = ""
-        if sp.get("states"):                       # stateful → show current state
+        if sp.get("states") and not any(a.get("state") for a in sp["attrs"]):
             rows += ICON["fsm"] + " state\\l"
         for a in sp["attrs"]:
             # DRY: a reference drawn as an association edge is not repeated as
@@ -1539,7 +1550,8 @@ def _lcx_dump(obj):
             links.append({"role": role, "target": target, "id": tid, "list": is_list})
     sp = _MODEL.get(cn, {})
     return {"cls": cn, "vals": vals, "events": evts, "links": links,
-            "state": (obj.state if sp.get("states") else "")}
+            "state": (obj.state if (sp.get("states")
+                      or getattr(type(obj), "_lc_statef", None) is not None) else "")}
 
 
 def lcx_inspect():
