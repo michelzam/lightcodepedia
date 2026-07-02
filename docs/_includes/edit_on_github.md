@@ -165,6 +165,22 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-diagram-pane .ed-diagram-wrap svg { max-width: 100%; height: auto; }
 #ed-diagram-legend { font-size: 0.76em; color: #9ca3af; padding: 0.3em 0.2em 0.5em; }
 #ed-diagram-legend b { color: #6b7280; font-weight: 600; }
+/* ── lint chip + findings panel ───────────────────────── */
+#ed-lint { font-size: 0.8em; font-weight: 600; padding: 2px 9px; border-radius: 11px;
+  cursor: pointer; user-select: none; flex-shrink: 0; margin-left: 0.4em;
+  background: #eef7ee; color: #1e7a2e; border: 1px solid #cde8cd; }
+#ed-lint.warn { background: #fff7e6; color: #915f00; border-color: #ffd98a; }
+#ed-lint.err  { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+#ed-lint-panel { display: none; position: absolute; top: 44px; left: 220px; z-index: 60;
+  background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  max-width: 560px; max-height: 45vh; overflow: auto; font-size: 0.8em; padding: 4px 0; }
+#ed-lint-panel.open { display: block; }
+.ed-lint-item { padding: 4px 12px; cursor: pointer; display: flex; gap: 8px; align-items: baseline; white-space: nowrap; }
+.ed-lint-item:hover { background: #f0f6ff; }
+.ed-lint-item .ln { color: #888; font-family: monospace; flex-shrink: 0; min-width: 3.5em; }
+.ed-lint-item .msg { overflow: hidden; text-overflow: ellipsis; }
+.ed-lint-empty { padding: 6px 12px; color: #1e7a2e; }
+
 /* ── Features tab ─────────────────────────────────────── */
 #ed-features-pane { display: flex; flex: 1; flex-direction: column; overflow: hidden; }
 #ed-features-pane.ed-hidden { display: none; }
@@ -372,6 +388,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     </div><!-- /files-btn -->
 
     <span id="ed-build" style="font-size:0.78em;color:#888;margin-left:0.5em;flex-shrink:0"></span>
+    <span id="ed-lint" title="Draft checks — syntax, knobs, ids, references">✓</span>
+    <div id="ed-lint-panel"></div>
     <a href="#" class="button button-secondary" id="ed-zoom-btn" title="Toggle 50% preview scale" style="font-size:0.82em;padding:0.35em 0.9em;margin-left:auto">50%</a>
     <a href="#" class="button button-secondary" id="ed-new-btn" style="font-size:0.82em;padding:0.35em 0.9em">+ New</a>
     <a href="#" class="button button-secondary" id="ed-agent-btn" title="Ask AI to change the selected block (✨)" style="font-size:0.82em;padding:0.35em 0.7em">✨</a>
@@ -457,6 +475,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   function setDirty(on) {
     _dirty = on;
+    if (window._edLintSoon) window._edLintSoon();   // draft checks track every change
     var fnEl = document.getElementById("ed-filename");
     if (!fnEl) return;
     fnEl.textContent = on ? (_curFile || "New file") + " (unsaved)" : (_curFile || "No file selected");
@@ -657,6 +676,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (d.permissions && !d.permissions.push) {
         toast("No write access to " + esc(d.full_name) + " — use your fork.", false); return;
       }
+      var lintErrs = (_lintFindings || []).filter(function (f) { return f.sev === "error"; });
+      if (lintErrs.length && !confirm("⚠️ " + lintErrs.length + " reference/id error" +
+          (lintErrs.length === 1 ? "" : "s") + " in the draft (see the ✖ chip). Save anyway?")) return;
       var fallback = (_curSha ? "Update " : "Add ") + _curFile.split("/").pop();
       var msg = prompt("Commit message:", logCommitMessage() || fallback);
       if (msg === null) return;
@@ -1918,6 +1940,231 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (name === "log") renderLog();
     if (name === "features") openFeatures();
     if (name === "diagram") renderDiagram();
+  });
+
+  /* ── ✓ draft linter (Tier 1) ──────────────────────────────
+     Checks the draft as you type: python fences compile (via the shared
+     MicroPython, no execution), yaml fences parse, IAL knobs match the
+     component model, component ids are unique and python-istic, and
+     reference knobs (bind / bound-to / target / …) plus avatar `at: "#id"`
+     cues resolve to ids/anchors that exist in the draft. Severities:
+     error = broken reference / duplicate id (would fail at runtime),
+     warn = syntax, info = suspicious knob. Advisory: save asks, never blocks. */
+  var _lintFindings = [], _lintTimer = null, _lintSeq = 0;
+  var LINT_REF_KNOBS = { "bind": 1, "bound-to": 1, "target": 1, "master": 1, "bound": 1 };
+
+  function edLoadYaml(cb) {
+    if (window.jsyaml) return cb(window.jsyaml);
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js";
+    s.onload = function () { cb(window.jsyaml); };
+    s.onerror = function () { cb(null); };
+    document.head.appendChild(s);
+  }
+
+  function lintParse(text) {
+    /* one pass: fences (nested — containers hold live blocks on this
+       platform), IAL lines, ids (IAL #id + heading {#id} anchors) */
+    var lines = text.split("\n");
+    var fences = [], ials = [], ids = {}, stack = [];
+    lines.forEach(function (ln, i) {
+      var f = ln.match(/^(`{3,})(\w*)\s*$/);
+      if (f) {
+        var top = stack[stack.length - 1];
+        if (top && f[1].length >= top.ticks && !f[2]) {
+          top.end = i; fences.push(stack.pop());
+        } else {
+          stack.push({ ticks: f[1].length, lang: (f[2] || "").toLowerCase(), start: i, end: -1 });
+        }
+        return;
+      }
+      var m = ln.match(/^\{:(.+)\}\s*$/);
+      if (m && !stack.length) ials.push(lintIal(m[1], i));
+      else if (m) ials.push(lintIal(m[1], i));   // container bodies are live too
+      var h = ln.match(/\{#([A-Za-z_][\w-]*)\}/);
+      if (h && !ids[h[1]]) ids[h[1]] = i;
+    });
+    ials.forEach(function (a) {
+      if (a.id && ids[a.id] === undefined) ids[a.id] = a.line;
+    });
+    fences.forEach(function (f) { f.body = lines.slice(f.start + 1, f.end).join("\n"); });
+    return { lines: lines, fences: fences, ials: ials, ids: ids };
+  }
+
+  function lintIal(inner, line) {
+    var classes = [], id = null, knobs = {}, m;
+    var reC = /(?:^|\s)\.([\w-]+)/g, reI = /(?:^|\s)#([\w-]+)/g, reK = /([\w-]+)="([^"]*)"/g;
+    while ((m = reC.exec(inner))) classes.push(m[1]);
+    while ((m = reI.exec(inner))) id = m[1];
+    while ((m = reK.exec(inner))) knobs[m[1]] = m[2];
+    return { line: line, classes: classes, id: id, knobs: knobs };
+  }
+
+  function lintDraft(text, done) {
+    var P = lintParse(text), F = [];
+    function add(sev, line, msg) { F.push({ sev: sev, line: line, msg: msg }); }
+
+    /* ids: duplicates + python-istic (component ids only) */
+    var seen = {};
+    P.ials.forEach(function (a) {
+      if (!a.id) return;
+      if (seen[a.id] !== undefined) add("error", a.line, "duplicate id #" + a.id + " (first at line " + (seen[a.id] + 1) + ")");
+      else seen[a.id] = a.line;
+      if (!/^[A-Za-z_]\w*$/.test(a.id)) add("warn", a.line, "id #" + a.id + " is not a python identifier");
+    });
+
+    /* references: knob → an id that exists in the draft */
+    P.ials.forEach(function (a) {
+      Object.keys(a.knobs).forEach(function (k) {
+        if (LINT_REF_KNOBS[k] && a.knobs[k] && P.ids[a.knobs[k]] === undefined) {
+          add("error", a.line, k + '="' + a.knobs[k] + '" — no component with that id in this draft');
+        }
+      });
+    });
+
+    /* avatar cues: at: "#id" must resolve (heading anchors count) */
+    P.fences.forEach(function (f) {
+      if (f.lang !== "yaml") return;
+      f.body.split("\n").forEach(function (ln, j) {
+        var m = ln.match(/^\s*(?:-\s+)?at:\s*["']#([A-Za-z_][\w-]*)["']/);
+        if (m && P.ids[m[1]] === undefined) {
+          add("error", f.start + 1 + j + 1, 'at: "#' + m[1] + '" — no such id/anchor in this draft');
+        }
+      });
+    });
+
+    /* knobs vs the component model (conservative: only exact type matches) */
+    if (_compModel) P.ials.forEach(function (a) {
+      var cls = null;
+      for (var i = 0; i < a.classes.length && !cls; i++) {
+        var cn = compName(a.classes[i]);
+        if (_compModel[cn]) cls = _compModel[cn];
+      }
+      if (!cls) return;
+      (cls.attrs || []).forEach(function (at) {
+        var v = a.knobs[at.n];
+        if (v === undefined) return;
+        if ((at.t === "int" || at.t === "float") && v !== "" && isNaN(Number(v))) {
+          add("info", a.line, at.n + '="' + v + '" — expected a ' + at.t);
+        }
+        if (at.t === "bool" && !/^(true|false|1|0|yes|no|on|off)$/i.test(v)) {
+          add("info", a.line, at.n + '="' + v + '" — expected true/false');
+        }
+      });
+    });
+
+    /* yaml fences parse */
+    var yamls = P.fences.filter(function (f) { return f.lang === "yaml" && f.body.trim(); });
+    /* python fences compile (module-level; gherkin :::python steps as functions) */
+    var pys = [];
+    P.fences.forEach(function (f) {
+      if (f.lang === "python" && f.body.trim()) pys.push({ line: f.start + 1, src: f.body });
+      if (f.lang === "gherkin") {
+        var rel = 0, inPy = false, buf = [], at0 = 0;
+        f.body.split("\n").forEach(function (ln, j) {
+          if (/^\s*:::python\s*$/.test(ln)) { inPy = true; buf = []; at0 = j; return; }
+          if (/^\s*:::\s*$/.test(ln)) {
+            if (inPy && buf.length) pys.push({ line: f.start + 1 + at0 + 1,
+              src: "def _lint(self):\n" + buf.map(function (l) { return "    " + l; }).join("\n") });
+            inPy = false; return;
+          }
+          if (inPy) buf.push(ln);
+        });
+      }
+    });
+
+    var seq = ++_lintSeq, pending = 1;
+    function finish() { if (--pending === 0 && seq === _lintSeq) done(F.sort(function (x, y) { return x.line - y.line; })); }
+
+    if (yamls.length) {
+      pending++;
+      edLoadYaml(function (jsyaml) {
+        if (jsyaml) yamls.forEach(function (f) {
+          try { jsyaml.load(f.body); }
+          catch (e) {
+            var l = (e.mark && typeof e.mark.line === "number") ? f.start + 1 + e.mark.line + 1 : f.start + 1;
+            add("warn", l, "yaml: " + String(e.reason || e.message || e).slice(0, 90));
+          }
+        });
+        finish();
+      });
+    }
+    if (pys.length && window._lcMpReady) {
+      pending++;
+      window._lcMpReady.then(function (mp) {
+        try {
+          var run = mp.runPython || mp.exec || mp.pyexec || mp.run;
+          window._edLintSrcs = pys.map(function (p) { return p.src; });
+          run.call(mp,
+            "import js, json\n" +
+            "_out = []\n" +
+            "for _i in range(int(js.window._edLintSrcs.length)):\n" +
+            "    try:\n" +
+            "        compile(str(js.window._edLintSrcs[_i]), '<lint>', 'exec')\n" +
+            "    except Exception as _e:\n" +
+            "        _out.append([_i, str(_e)])\n" +
+            "js.window._edLintPy = json.dumps(_out)\n");
+          JSON.parse(window._edLintPy || "[]").forEach(function (r) {
+            add("warn", pys[r[0]].line, "python: " + String(r[1]).slice(0, 90));
+          });
+        } catch (e) { /* runtime unavailable → skip python checks */ }
+        finish();
+      }).catch(finish);
+    }
+    finish();
+  }
+
+  function renderLint() {
+    var chip = document.getElementById("ed-lint");
+    var panel = document.getElementById("ed-lint-panel");
+    if (!chip || !panel) return;
+    var errs = _lintFindings.filter(function (f) { return f.sev === "error"; }).length;
+    var warns = _lintFindings.filter(function (f) { return f.sev !== "error"; }).length;
+    chip.className = errs ? "err" : (warns ? "warn" : "");
+    chip.textContent = errs ? "✖ " + errs + (warns ? " +" + warns : "")
+                     : (warns ? "⚠ " + warns : "✓");
+    var ICONS = { error: "✖", warn: "⚠", info: "ℹ" };
+    panel.innerHTML = _lintFindings.length
+      ? _lintFindings.map(function (f) {
+          return "<div class='ed-lint-item' data-line='" + f.line + "'>" +
+            "<span>" + ICONS[f.sev] + "</span><span class='ln'>" + (f.line + 1) + "</span>" +
+            "<span class='msg'>" + escH(f.msg) + "</span></div>";
+        }).join("")
+      : "<div class='ed-lint-empty'>✓ no findings — ids, references, knobs and syntax look good</div>";
+  }
+
+  window._edLintSoon = function () {
+    clearTimeout(_lintTimer);
+    _lintTimer = setTimeout(function () {
+      var inp = document.getElementById("ed-input");
+      if (!inp || !inp.value) { _lintFindings = []; renderLint(); return; }
+      lintDraft(inp.value, function (f) { _lintFindings = f; renderLint(); });
+    }, 900);
+  };
+
+  document.addEventListener("click", function (e) {
+    var chip = e.target.closest("#ed-lint");
+    var panel = document.getElementById("ed-lint-panel");
+    if (chip && panel) { panel.classList.toggle("open"); return; }
+    var item = e.target.closest(".ed-lint-item");
+    if (item) {
+      var ln = parseInt(item.getAttribute("data-line"), 10);
+      var tab = document.querySelector('.ed-tab[data-tab="raw"]');
+      if (tab) tab.click();
+      var ta = document.getElementById("ed-input");
+      if (ta) {
+        var pos = 0, ls = ta.value.split("\n");
+        for (var i = 0; i < ln && i < ls.length; i++) pos += ls[i].length + 1;
+        ta.focus();
+        ta.setSelectionRange(pos, pos + (ls[ln] || "").length);
+        var lh = parseFloat(getComputedStyle(ta).lineHeight) || 18;
+        ta.scrollTop = Math.max(0, ln * lh - ta.clientHeight / 2);
+      }
+      return;
+    }
+    if (panel && panel.classList.contains("open") && !e.target.closest("#ed-lint-panel")) {
+      panel.classList.remove("open");
+    }
   });
 
   /* ── 🧪 Features tab ─────────────────────────────────────
