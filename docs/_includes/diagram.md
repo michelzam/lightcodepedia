@@ -41,6 +41,12 @@ Auto-included by docs/_layouts/default.html.
       // Define the model once; each diagram just calls to_dot(scope).
       run.call(mp, preamble);
 
+      var rendered = [];
+      function renderOne(div, arg, sm) {
+        run.call(mp, "import js\njs.window._lcDiagramDot = to_dot(" + arg
+                     + ", statemachines=" + sm + ")\n");
+        div.innerHTML = viz.renderString(window._lcDiagramDot || "digraph{}", { format: "svg" });
+      }
       nodes.forEach(function (el) {
         var scope = (el.getAttribute("scope") || "").replace(/[^A-Za-z0-9_*]/g, "");
         var arg = (scope && scope !== "*") ? ('"' + scope + '"') : "None";
@@ -49,14 +55,12 @@ Auto-included by docs/_layouts/default.html.
         var sm = (st === "false" || st === "off" || st === "no" || st === "0")
                  ? "False" : "True";
         try {
-          run.call(mp, "import js\njs.window._lcDiagramDot = to_dot(" + arg
-                       + ", statemachines=" + sm + ")\n");
-          var svg = viz.renderString(window._lcDiagramDot || "digraph{}", { format: "svg" });
           var div = document.createElement("div");
           div.className = "lc-dot-diagram lc-diagram";
           div.style.cssText = "overflow:auto;line-height:1";
-          div.innerHTML = svg;
           el.parentNode.replaceChild(div, el);
+          renderOne(div, arg, sm);
+          rendered.push({ div: div, arg: arg, sm: sm });
         } catch (e) {
           console.error("[lc-diagram]", e);
           var pre = document.createElement("pre");
@@ -64,6 +68,13 @@ Auto-included by docs/_layouts/default.html.
           pre.textContent = "[diagram] " + e;
           el.parentNode.replaceChild(pre, el);
         }
+      });
+      // author classes land in the shared runtime once an .inspector block has
+      // run — redraw so the page's diagrams tell the whole story
+      document.addEventListener("lc-model-changed", function () {
+        rendered.forEach(function (r) {
+          try { renderOne(r.div, r.arg, r.sm); } catch (e) { console.error("[lc-diagram]", e); }
+        });
       });
     } catch (e) {
       console.error("[lc-diagram] init", e);

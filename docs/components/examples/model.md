@@ -14,7 +14,7 @@ diagram, x-ray.
 
 ```python
 @component(icon="🐕")
-class Dog(Model):
+class Dog(Object):
     mood      = State("hungry", ["hungry", "fed"])
     colour    = Attr(str, "Golden", enum=["Golden", "Black", "Brown", "White"])
     weight_kg = Attr(float, 30, min=20, max=60, step=0.5, unit="kg", hint="Healthy range 20–60 kg")
@@ -65,7 +65,7 @@ so a Dog's bestie can be a Fish:
 
 ```python
 @component(icon="🐾")
-class Pet(Model):
+class Pet(Object):
     mood   = State("bored", ["bored", "happy"])
     bestie = Attr("Pet", None, hint="Best friend — any Pet will do")
 
@@ -89,9 +89,14 @@ Open **rex**'s `bestie` picklist: it offers `wanda` — a Fish *is a* Pet, so th
 cross-species friendship type-checks. In code, `rex.bestie = wanda` works too,
 while `rex.bestie = some_rock` raises `ValueError: bestie expects a Pet`. Note
 `Attr("Pet")` — the class names *itself* as a string (it doesn't exist yet on
-that line), the classic forward reference. And the [component model
-diagram](/components/model) now draws `Pet → Pet` as a reflexive `bestie`
-association, plus the inheritance arrows — from these same declarations.
+that line), the classic forward reference.
+
+And the declarations draw their own picture — **Pet is an Object** (the ➭ ◻️
+marker), Dog and Fish generalize to Pet, `bestie` loops back as a reflexive
+association, and the mood statechart hangs below:
+
+[class diagram](#)
+{: .diagram scope="Pet" }
 
 ## ⚙️ How it works {#how_it_works}
 
@@ -107,13 +112,15 @@ association, plus the inheritance arrows — from these same declarations.
 | `Attr("Pet")` | a **picklist** of live, type-compatible instances (subclasses count); wrong types raise |
 | `@transition(pre=["hungry"], post="fed")` | a gated button — disabled outside `pre`, moves the state to `post` |
 
-- **Everything is an Object** — `Model` descends from the same `Object` root as
-  every component, so your classes join the [component model](/components/model)
-  diagram: fields, guarded methods ▹ and the statechart, drawn automatically.
+- **Everything is an Object** — your classes inherit `Object` directly, the
+  same root every component descends from, so they join the
+  [component model](/components/model) diagram: fields, guarded methods ▹ and
+  the statechart, drawn automatically. The editor's 🗺️ Diagram tab reads them
+  straight from the page source.
 - **Validation lives in the model.** The widget, the REPL and buttons all go
   through the same setters — clamping, enum checks and preconditions apply
   everywhere, with teachable error messages.
-- **No `@component`? Still works.** A plain `class Cat(Model)` self-registers
+- **No `@component`? Still works.** A plain `class Cat(Object)` self-registers
   on first use; the decorator just adds the icon.
 
 **Q:** `lucky.adopted = True` raises an error, yet after `bark()` the box is

@@ -357,6 +357,20 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
 class Object:
     def __init__(self, el=None):
         self._el = el
+        # Everything is an Object — including author-defined domain classes,
+        # which declare Attr/State fields. Undecorated subclasses self-register
+        # on first use; classes with fields get per-instance storage and join
+        # the live-instance registry (reference picklists, inspector cards).
+        cls = type(self)
+        if getattr(cls, "_lc_harvested_for", None) is not cls:
+            component(icon="📦")(cls)
+        if cls._lc_fields:
+            self._v = {}
+            for f in cls._lc_fields:
+                self._v[f.n] = f.d
+            self._lc_elid = None
+            _LC_NEW.append(self)
+            _LC_OBJS.append(self)
 
     @classmethod
     def _all(cls, css):
@@ -386,6 +400,13 @@ class Object:
                 sub.click()
         return self
 
+    def _set(self, name, value):
+        """Protected write: behaviours use it to change ro fields (validated)."""
+        f = (getattr(type(self), "_lc_fmap", None) or {}).get(name)
+        self._v[name] = f._coerce(value) if f is not None else value
+        _lc_push_obj(self)
+        return self
+
     @property
     def id(self):
         return self._attr("data-lc-id") or ""
@@ -413,7 +434,10 @@ class Object:
 
     @property
     def state(self):
-        """Current state-machine state (data-state); defaults to the initial."""
+        """Current state: the first State field (models), else data-state."""
+        sf = getattr(type(self), "_lc_statef", None)
+        if sf is not None:
+            return self._v.get(sf.n, sf.d)
         v = self._attr("data-state")
         if v:
             return v
@@ -549,39 +573,10 @@ class Block(Object):
         return self
 
 
-# ════════════════════════ Model — author-defined domain objects ══════════════
-# Pure-Python objects (no DOM element) declared with Attr/State fields and
-# @transition behaviours. They join the same family tree (Object) and the same
-# _MODEL registry, so diagrams, the x-ray and the .inspector widget all see
-# them. Plain `class Dog(Model)` works too — Model self-registers lazily when
-# the class wasn't decorated with @component.
-
-@component(icon="🧬")
-class Model(Object):
-    def __init__(self):
-        cls = type(self)
-        if getattr(cls, "_lc_harvested_for", None) is not cls:
-            component(icon="📦")(cls)          # undecorated subclass → register now
-        Object.__init__(self, None)
-        self._v = {}
-        self._lc_elid = None
-        for f in cls._lc_fields:
-            self._v[f.n] = f.d
-        _LC_NEW.append(self)
-        _LC_OBJS.append(self)   # reference picklists offer every live instance
-
-    def _set(self, name, value):
-        """Protected write: behaviours use it to change ro fields (validated)."""
-        f = type(self)._lc_fmap.get(name)
-        self._v[name] = f._coerce(value) if f is not None else value
-        _lc_push_obj(self)
-        return self
-
-    @property
-    def state(self):
-        """The first State field's current value (the class's canonical state)."""
-        sf = type(self)._lc_statef
-        return self._v.get(sf.n, sf.d) if sf is not None else ""
+# Author-defined domain classes inherit Object directly — everything is an
+# Object. The field machinery (Attr/State storage, registries, _set) lives on
+# Object itself; `Model` remains as a compatibility alias.
+Model = Object
 
 
 # ════════════════════════ data + leaf wrappers ══════════════════════════════
@@ -2074,7 +2069,11 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
       ? "\n_lc_inspect_bind_names(" + JSON.stringify(elid) + ", " + JSON.stringify(bind) + ")\n"
       : "\n_lc_inspect_bind_new(" + JSON.stringify(elid) + ")\n";
     mpReady().then(function (mp) {
-      try { runPy(mp, preamble + "\n_LC_NEW[:] = []\n" + code + tail); }
+      try {
+        runPy(mp, preamble + "\n_LC_NEW[:] = []\n" + code + tail);
+        /* page diagrams redraw so freshly-declared classes join the picture */
+        document.dispatchEvent(new CustomEvent("lc-model-changed"));
+      }
       catch (e) {
         host.innerHTML = "<div class='lc-ins-err'>⚠️ " + esc(e.message || e) + "</div>";
         console.error("[lc-inspector]", e);

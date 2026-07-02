@@ -1311,6 +1311,44 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     });
     return out;
   }
+  /* author-defined model classes, parsed from the draft's python blocks:
+     class Pet(Object): with Attr/State fields and @transition methods. The
+     draft is the truth here (no runtime needed) — the picture matches what's
+     in the editor, saved or not. */
+  function pageUserClasses() {
+    var inp = document.getElementById("ed-input");
+    var out = {};
+    if (!inp) return out;
+    var fence = /```python\r?\n([\s\S]*?)\r?\n```/g, m;
+    while ((m = fence.exec(inp.value || ""))) {
+      var lines = m[1].split(/\r?\n/), icon = "", cur = null, pendTrans = false;
+      lines.forEach(function (ln) {
+        var mi = ln.match(/^@component\(.*icon\s*=\s*["']([^"']+)["']/);
+        if (mi) { icon = mi[1]; return; }
+        var mc = ln.match(/^class\s+(\w+)\s*\(\s*(\w+)\s*\)\s*:/);
+        if (mc) {
+          cur = { icon: icon, base: mc[2], fields: [], meths: [], assoc: [] };
+          out[mc[1]] = cur; icon = ""; pendTrans = false; return;
+        }
+        if (!cur) return;
+        if (/^\S/.test(ln)) { cur = null; return; }          // dedent → class body ended
+        var mf = ln.match(/^\s+(\w+)\s*=\s*(Attr|State)\(\s*(?:["'](\w+)["']|(\w+))?/);
+        if (mf) {
+          var t = mf[3] || mf[4] || "str", isState = mf[2] === "State";
+          cur.fields.push({ n: mf[1], t: t, state: isState });
+          if (!isState && !/^(str|int|float|bool)$/.test(t)) cur.assoc.push({ n: mf[1], target: t });
+          return;
+        }
+        if (/^\s+@transition\(/.test(ln)) { pendTrans = true; return; }
+        var md = ln.match(/^\s+def\s+(\w+)\s*\(/);
+        if (md) {
+          if (md[1].charAt(0) !== "_") cur.meths.push({ n: md[1], trans: pendTrans });
+          pendTrans = false;
+        }
+      });
+    }
+    return out;
+  }
   function dotEsc(s) { return String(s).replace(/_/g, " ").replace(/["{}|<>]/g, ""); }
   function nodeLabel(n) {
     var c = _compModel[n] || {}, parts = [(c.icon ? c.icon + " " : "") + dotEsc(n)];
@@ -1338,10 +1376,32 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
     return null;
   }
-  function buildPageDot(present) {
-    if (!present.length) return null;
+  function userLabel(n, u, users) {
+    var parts = [(u.icon ? u.icon + " " : "") + dotEsc(n)];
+    var attrs = u.fields.map(function (f) {
+      var ic = f.state ? "🎛️"
+        : (_compIcons[f.t] || (users[f.t] || {}).icon || (_compModel[f.t] || {}).icon || "📦");
+      return ic + " " + dotEsc(f.n) + "\\l";
+    }).join("");
+    var meths = u.meths.map(function (m) {
+      return (m.trans ? "▹ " + dotEsc(m.n) + " ▹" : "▸ " + dotEsc(m.n)) + "\\l";
+    }).join("");
+    if (attrs) parts.push(attrs);
+    if (meths) parts.push(meths);
+    return "{" + parts.join("|") + "}";
+  }
+  function buildPageDot(present, users) {
+    users = users || {};
+    var userNames = Object.keys(users);
+    if (!present.length && !userNames.length) return null;
     var nodes = {};
     present.forEach(function (n) { nodes[n] = "page"; });
+    userNames.forEach(function (n) { if (!nodes[n]) nodes[n] = "user"; });
+    // authored classes generalize to each other or into the component model
+    userNames.forEach(function (n) {
+      var b = users[n].base;
+      if (b && !nodes[b] && !users[b] && _compModel[b]) nodes[b] = "base";
+    });
     // walk each class up to its roots (Block / Object) so generalization shows
     present.forEach(function (n) {
       var c = n;
@@ -1358,12 +1418,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     L.push('  node [' + FONT + ', shape=record, style="filled,rounded", color="gray75", fillcolor=white, fontsize=10, penwidth=0.5];');
     L.push('  edge [' + FONT + ', fontsize=8, penwidth=0.6, arrowsize=0.8];');
     Object.keys(nodes).forEach(function (n) {
-      L.push('  ' + n + ' [label="' + nodeLabel(n) + '"' +
+      var lbl = nodes[n] === "user" ? userLabel(n, users[n], users) : nodeLabel(n);
+      L.push('  ' + n + ' [label="' + lbl + '"' +
         (nodes[n] === "base" ? ', fillcolor="gray95", color="gray80"' : '') + ']');
     });
     // generalization edges (UML hollow triangle) toward Block / Object
     Object.keys(nodes).forEach(function (n) {
-      var base = (_compModel[n].bases || [])[0];
+      var base = nodes[n] === "user" ? users[n].base : (_compModel[n].bases || [])[0];
       if (base && nodes[base]) L.push('  ' + n + ' -> ' + base +
         ' [arrowhead=onormal, color="gray60", arrowsize=1.0]');
     });
@@ -1374,6 +1435,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         if (!tgt) return;
         L.push('  ' + owner + ' -> ' + tgt + ' [color=blue, fontcolor=blue, weight=8,' +
           ' headlabel="' + (a.list ? "⦙ " : "") + dotEsc(a.n) + '", labeldistance=2.2, arrowsize=0.7]');
+      });
+    });
+    // authored references (bestie = Attr("Pet")) — blue, possibly reflexive
+    userNames.forEach(function (owner) {
+      users[owner].assoc.forEach(function (a) {
+        if (!nodes[a.target]) return;
+        L.push('  ' + owner + ' -> ' + a.target + ' [color=blue, fontcolor=blue, weight=8,' +
+          ' headlabel="' + dotEsc(a.n) + '", labeldistance=2.2, arrowsize=0.7]');
       });
     });
     L.push('}');
@@ -1388,7 +1457,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       return; // loadCompModel repaints this pane when the model lands
     }
     var present = pageClassNames();
-    if (!present.length) {
+    var users = pageUserClasses();
+    var nUsers = Object.keys(users).length;
+    if (!present.length && !nUsers) {
       pane.innerHTML = "<p style='color:#bbb;padding:1em'>No components on this page yet. " +
         "Add a <code>{: .datagrid }</code>, <code>{: .chart }</code>, … and the classes appear here.</p>";
       return;
@@ -1397,12 +1468,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       pane.innerHTML = "<p style='color:#b00;padding:1em'>Diagram engine unavailable.</p>";
       return;
     }
-    var dot = buildPageDot(present);
+    var dot = buildPageDot(present, users);
     pane.innerHTML = "<p style='color:#bbb;padding:0.6em'>Rendering diagram…</p>";
     window.lcDotToSvg(dot).then(function (svg) {
       pane.innerHTML =
         "<div id='ed-diagram-legend'><b>" + present.length + "</b> component class" +
-        (present.length === 1 ? "" : "es") + " on this page — " +
+        (present.length === 1 ? "" : "es") +
+        (nUsers ? " + <b>" + nUsers + "</b> authored model" + (nUsers === 1 ? "" : "s") : "") +
+        " on this page — " +
         "<span style='color:#3a6'>▸ generalize</span> to <b>Block</b> / <b>Object</b>, " +
         "<span style='color:blue'>→ associations</span> in blue.</div>" +
         "<div class='ed-diagram-wrap'>" + svg + "</div>";
