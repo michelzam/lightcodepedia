@@ -228,6 +228,7 @@ Feature: Live models validate, gate and reference
         assert "expects a FPet" in str(e)
     :::
 ```
+{: .feature tags="model,learn" }
 
 **Q:** `lucky.adopted = True` raises an error, yet after `bark()` the box is
 ticked. Why?
