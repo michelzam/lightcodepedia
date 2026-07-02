@@ -540,11 +540,17 @@ class Object:
         cn = cls.__name__
         def sid(s):
             return "st_" + cn + "_" + s
-        # label = class icon + "states" + 🎛️ (no class name — the icon and the
-        # dashed tie already identify the owning class)
+        # label = class icon + the State FIELD's name (mood) + 🎛️ — falls
+        # back to "states" for legacy states= classes with no named field.
+        # (no class name — the icon and the dashed tie identify the owner)
         ico = (sp["icon"] + " ") if sp["icon"] else ""
+        sfn = None
+        for a in sp["attrs"]:
+            if a.get("state"):
+                sfn = a["n"]
+                break
         L = ["  subgraph cluster_states_" + cn + " {",
-             '    label="' + ico + "states " + ICON["fsm"] + '"; fontsize=10;',
+             '    label="' + ico + _disp(sfn or "states") + " " + ICON["fsm"] + '"; fontsize=10;',
              '    style="filled,rounded"; fillcolor="gray94"; color="gray85";'
              ' margin=12; nodesep=0.9;',
              '    node [fontname="Source Sans Pro, sans-serif", shape=record,'
