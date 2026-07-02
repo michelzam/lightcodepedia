@@ -1962,11 +1962,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     document.head.appendChild(s);
   }
 
+  var LINT_LIVE_CONTAINERS = { blocks: 1, block: 1, accordion: 1, tabs: 1,
+                               cards: 1, grid: 1, radio: 1, carousel: 1 };
+
   function lintParse(text) {
-    /* one pass: fences (nested — containers hold live blocks on this
-       platform), IAL lines, ids (IAL #id + heading {#id} anchors) */
+    /* fences can nest; a lang-less fence whose trailing IAL marks it as a
+       section container (.blocks/.accordion/…) holds LIVE blocks — anything
+       else fenced is display-only text and must not contribute ids, refs or
+       code to the checks. */
     var lines = text.split("\n");
-    var fences = [], ials = [], ids = {}, stack = [];
+    var fences = [], stack = [], owner = [];
     lines.forEach(function (ln, i) {
       var f = ln.match(/^(`{3,})(\w*)\s*$/);
       if (f) {
@@ -1974,20 +1979,49 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         if (top && f[1].length >= top.ticks && !f[2]) {
           top.end = i; fences.push(stack.pop());
         } else {
-          stack.push({ ticks: f[1].length, lang: (f[2] || "").toLowerCase(), start: i, end: -1 });
+          stack.push({ ticks: f[1].length, lang: (f[2] || "").toLowerCase(),
+                       start: i, end: -1, parent: top || null, live: false });
         }
+        owner[i] = stack[stack.length - 1] || null;
         return;
       }
+      owner[i] = stack[stack.length - 1] || null;
+    });
+    while (stack.length) { var u = stack.pop(); u.end = lines.length; fences.push(u); }
+    /* liveness: the first IAL right after a lang-less fence names its container */
+    fences.forEach(function (f) {
+      if (f.lang) return;
+      for (var j = f.end + 1; j <= f.end + 2 && j < lines.length; j++) {
+        var m = (lines[j] || "").match(/^\{:(.+)\}\s*$/);
+        if (m) {
+          lintIal(m[1], j).classes.forEach(function (c) { if (LINT_LIVE_CONTAINERS[c]) f.live = true; });
+          break;
+        }
+        if ((lines[j] || "").trim()) break;
+      }
+    });
+    function chainLive(f) {
+      while (f) {
+        if (f.lang || !f.live) return false;   // code fences never host IALs
+        f = f.parent;
+      }
+      return true;
+    }
+    var ials = [], ids = {};
+    lines.forEach(function (ln, i) {
+      if (!chainLive(owner[i])) return;        // display-only region
       var m = ln.match(/^\{:(.+)\}\s*$/);
-      if (m && !stack.length) ials.push(lintIal(m[1], i));
-      else if (m) ials.push(lintIal(m[1], i));   // container bodies are live too
+      if (m) ials.push(lintIal(m[1], i));
       var h = ln.match(/\{#([A-Za-z_][\w-]*)\}/);
-      if (h && !ids[h[1]]) ids[h[1]] = i;
+      if (h && ids[h[1]] === undefined) ids[h[1]] = i;
     });
     ials.forEach(function (a) {
       if (a.id && ids[a.id] === undefined) ids[a.id] = a.line;
     });
-    fences.forEach(function (f) { f.body = lines.slice(f.start + 1, f.end).join("\n"); });
+    fences.forEach(function (f) {
+      f.body = lines.slice(f.start + 1, f.end).join("\n");
+      f.checked = (f.parent === null) || chainLive(f.parent);   // code checks apply to live code only
+    });
     return { lines: lines, fences: fences, ials: ials, ids: ids };
   }
 
@@ -2017,18 +2051,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     P.ials.forEach(function (a) {
       Object.keys(a.knobs).forEach(function (k) {
         if (LINT_REF_KNOBS[k] && a.knobs[k] && P.ids[a.knobs[k]] === undefined) {
-          add("error", a.line, k + '="' + a.knobs[k] + '" — no component with that id in this draft');
+          add("warn", a.line, k + '="' + a.knobs[k] + '" — no such id in this draft (ok if it\'s created at runtime)');
         }
       });
     });
 
     /* avatar cues: at: "#id" must resolve (heading anchors count) */
     P.fences.forEach(function (f) {
-      if (f.lang !== "yaml") return;
+      if (f.lang !== "yaml" || !f.checked) return;
       f.body.split("\n").forEach(function (ln, j) {
         var m = ln.match(/^\s*(?:-\s+)?at:\s*["']#([A-Za-z_][\w-]*)["']/);
         if (m && P.ids[m[1]] === undefined) {
-          add("error", f.start + 1 + j + 1, 'at: "#' + m[1] + '" — no such id/anchor in this draft');
+          add("warn", f.start + 1 + j + 1, 'at: "#' + m[1] + '" — no such id/anchor in this draft (ok if generated at runtime)');
         }
       });
     });
@@ -2054,10 +2088,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     });
 
     /* yaml fences parse */
-    var yamls = P.fences.filter(function (f) { return f.lang === "yaml" && f.body.trim(); });
+    var yamls = P.fences.filter(function (f) { return f.lang === "yaml" && f.checked && f.body.trim(); });
     /* python fences compile (module-level; gherkin :::python steps as functions) */
     var pys = [];
     P.fences.forEach(function (f) {
+      if (!f.checked) return;
       if (f.lang === "python" && f.body.trim()) pys.push({ line: f.start + 1, src: f.body });
       if (f.lang === "gherkin") {
         var rel = 0, inPy = false, buf = [], at0 = 0;
