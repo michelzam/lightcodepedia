@@ -320,6 +320,23 @@ def _lc_harvest(cls):
         if m:
             tmeta[n] = (list(m[0]), m[1], m[2] or (statef.n if statef else None), m[3])
             own_t[n] = tmeta[n]
+    # public plain methods (no underscore) are part of the author surface —
+    # they become widget buttons. The framework surface (anything Object
+    # itself carries) and transition methods are excluded; inherited author
+    # methods arrive via the parent's _lc_pub.
+    _root = globals().get("Object")
+    pub = {}
+    if _root is not None and cls is not _root:
+        pub = dict(getattr(cls, "_lc_pub", {}) or {})
+        for n in dir(cls):
+            if n.startswith("_") or n in tmeta or hasattr(_root, n):
+                continue
+            try:
+                fn = getattr(cls, n)
+            except Exception:
+                continue
+            if callable(fn) and not isinstance(fn, type):
+                pub[n] = True
     for f in own:
         setattr(cls, f.n, _lc_field_prop(f))
     if statef is not None:
@@ -331,6 +348,7 @@ def _lc_harvest(cls):
     cls._lc_fields = fields
     cls._lc_own = own          # DRY: specs/diagrams show only own declarations
     cls._lc_own_t = own_t
+    cls._lc_pub = pub
     cls._lc_fmap = {f.n: f for f in fields}
     cls._lc_statef = statef
     cls._lc_tmeta = tmeta
@@ -366,6 +384,12 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
         for n in sorted(own_t, key=lambda k: own_t[k][3]):
             if n not in listed:
                 meth_specs.append({"n": n, "pre": list(own_t[n][0]), "post": own_t[n][1]})
+                listed.add(n)
+        if fields:   # author models: own public plain methods join the node
+            base = cls.__bases__[0] if cls.__bases__ else None
+            for n in sorted(getattr(cls, "_lc_pub", {}) or {}):
+                if n not in listed and not (base is not None and hasattr(base, n)):
+                    meth_specs.append({"n": n, "pre": [], "post": None})
         spec = {
             "icon": icon,
             "bases": [b.__name__ for b in cls.__bases__],
@@ -1647,6 +1671,9 @@ def _lc_inspect_schema(obj):
         cur = obj._v.get(sfn) if sfn else None
         meths.append({"n": n, "pre": pre, "post": post,
                       "enabled": (not pre) or (cur in pre)})
+    for n in sorted(getattr(cls, "_lc_pub", {}) or {}):
+        if n not in tmeta:
+            meths.append({"n": n, "pre": [], "post": None, "enabled": True})
     return {"cls": cls.__name__, "icon": sp.get("icon", ""),
             "doc": str(getattr(cls, "__doc__", "") or ""),
             "fields": fields, "methods": meths}
