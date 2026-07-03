@@ -260,6 +260,20 @@ def _lc_field_prop(f):
     return property(fget, fset)
 
 
+def _lc_bracket(fn):
+    """Mark the instance as running its own behaviour for the duration of a
+    plain public method — ro/State fields accept assignment from inside,
+    exactly as they do inside @transition behaviours."""
+    def w(self, *a, **k):
+        self._lc_active = getattr(self, "_lc_active", 0) + 1
+        try:
+            return fn(self, *a, **k)
+        finally:
+            self._lc_active -= 1
+            _lc_push_obj(self)
+    return w
+
+
 def _lc_guard(name, fn, pre, post, sfn):
     """Wrap a transition method: gate on the State field, apply post — and
     mark the instance as running its own behaviour, so ro fields accept
@@ -339,6 +353,15 @@ def _lc_harvest(cls):
                 pub[n] = True
     for f in own:
         setattr(cls, f.n, _lc_field_prop(f))
+    if fields:
+        base = cls.__bases__[0] if cls.__bases__ else None
+        for n in pub:
+            if base is not None and hasattr(base, n):
+                continue                      # inherited — wrapped on the parent
+            fn = getattr(cls, n, None)
+            if fn is None or not callable(fn) or type(fn).__name__ == "bound_method":
+                continue                      # skip classmethod-style callables
+            setattr(cls, n, _lc_bracket(fn))
     if statef is not None:
         for n in tmeta:
             fn = getattr(cls, n, None)
