@@ -354,13 +354,24 @@ def _lc_harvest(cls):
     for f in own:
         setattr(cls, f.n, _lc_field_prop(f))
     if fields:
+        # ALL of the class's own methods are behaviours — public (buttons),
+        # _helpers, and __init__ (constructors set initial state). Inherited
+        # methods were wrapped by their declaring class; the framework surface
+        # (whatever is literally Object's) is excluded by identity.
         base = cls.__bases__[0] if cls.__bases__ else None
-        for n in pub:
-            if base is not None and hasattr(base, n):
-                continue                      # inherited — wrapped on the parent
-            fn = getattr(cls, n, None)
-            if fn is None or not callable(fn) or type(fn).__name__ == "bound_method":
-                continue                      # skip classmethod-style callables
+        for n in dir(cls):
+            if n in tmeta or (n.startswith("__") and n != "__init__"):
+                continue
+            try:
+                fn = getattr(cls, n)
+            except Exception:
+                continue
+            if not callable(fn) or isinstance(fn, type) or type(fn).__name__ == "bound_method":
+                continue
+            if base is not None and getattr(base, n, None) is fn:
+                continue                      # inherited — wrapped where declared
+            if _root is not None and getattr(_root, n, None) is fn:
+                continue                      # framework surface
             setattr(cls, n, _lc_bracket(fn))
     if statef is not None:
         for n in tmeta:
