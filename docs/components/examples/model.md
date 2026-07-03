@@ -115,6 +115,7 @@ association, and the mood statechart hangs below:
 | `State("hungry", ["hungry", "fed"])` | the chips row — current state highlighted |
 | `Attr("Pet")` | a **picklist** of live, type-compatible instances (subclasses count); wrong types raise |
 | `@transition(pre=["hungry"], post="fed")` | a gated button — disabled outside `pre`, moves the state to `post` |
+| `def run(self): …` | **every public method is a button** — no decorator needed; `_underscore` methods stay internal |
 
 - **Everything is an Object** — your classes inherit `Object` directly, the
   same root every component descends from, so they join the
