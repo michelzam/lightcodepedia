@@ -78,11 +78,12 @@ class Pet(Object):
 
     @transition(pre=["bored"], post="happy")
     def play(self):
-        if self.bestie and self.bestie.mood == "happy":
+        if self.bestie:
             self.bestie._adopt()          # tell, don't grab: the bestie adopts itself
 
     def _adopt(self):
-        self.adopted = True
+        if self.mood == "happy":
+            self.adopted = True
 
 @component(icon="🐕")
 class Dog(Pet):
