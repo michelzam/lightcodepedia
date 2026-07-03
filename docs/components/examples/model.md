@@ -32,6 +32,8 @@ class Dog(Object):
 
     def run(self):
         self.weight_kg -= 1
+        if self.weight_kg < 30:
+            self.mood = "hungry"
 
 
 lucky = Dog()
