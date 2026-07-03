@@ -30,6 +30,10 @@ class Dog(Object):
         self.last_said = "Woof!"
         self.adopted = True
 
+    def run(self):
+        self.weight_kg -= 1
+
+
 lucky = Dog()
 ```
 {: .inspector #lucky_widget }
