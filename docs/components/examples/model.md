@@ -74,9 +74,13 @@ so a Dog's bestie can be a Fish:
 class Pet(Object):
     mood   = State("bored", ["bored", "happy"])
     bestie = Attr("Pet", None, hint="Best friend — any Pet will do")
+    adopted   = Attr(bool, False, ro=True, hint="Locked — only a behaviour flips it")
 
     @transition(pre=["bored"], post="happy")
-    def play(self): pass
+    def play(self): 
+        if self.bestie:
+            if self.bestie.mood == "happy":
+                self.bestie.adopted = True
 
 @component(icon="🐕")
 class Dog(Pet):
