@@ -15,7 +15,7 @@ diagram, x-ray.
 ```python
 @component(icon="🐕")
 class Dog(Object):
-    mood      = State("hungry", ["hungry", "fed"])
+    mood      = State(["hungry", "fed"])
     colour    = Attr(str, "Golden", enum=["Golden", "Black", "Brown", "White"])
     weight_kg = Attr(float, 30, min=20, max=60, step=0.5, unit="kg", hint="Healthy range 20–60 kg")
     last_said = Attr(str, "…", ro=True, hint="Only bark() can change it")
@@ -72,15 +72,17 @@ so a Dog's bestie can be a Fish:
 ```python
 @component(icon="🐾")
 class Pet(Object):
-    mood   = State("bored", ["bored", "happy"])
-    bestie = Attr("Pet", None, hint="Best friend — any Pet will do")
-    adopted   = Attr(bool, False, ro=True, hint="Locked — only a behaviour flips it")
+    mood    = State(["bored", "happy"])
+    bestie  = Attr("Pet", None, hint="Best friend — any Pet will do")
+    adopted = Attr(bool, False, ro=True, hint="Locked — only a behaviour flips it")
 
     @transition(pre=["bored"], post="happy")
-    def play(self): 
-        if self.bestie:
-            if self.bestie.mood == "happy":
-                self.bestie.adopted = True
+    def play(self):
+        if self.bestie and self.bestie.mood == "happy":
+            self.bestie._adopt()          # tell, don't grab: the bestie adopts itself
+
+    def _adopt(self):
+        self.adopted = True
 
 @component(icon="🐕")
 class Dog(Pet):
@@ -101,6 +103,12 @@ while `rex.bestie = some_rock` raises `ValueError: bestie expects a Pet`. Note
 `Attr("Pet")` — the class names *itself* as a string (it doesn't exist yet on
 that line), the classic forward reference.
 
+And friendship pays: make **wanda** play (she turns happy), pick her as rex's
+bestie, then make **rex** play — wanda gets **adopted**. Look at *how*:
+`self.bestie._adopt()` — one object never reaches into another's locked
+fields (`self.bestie.adopted = True` raises); it **asks** the other to act.
+Tell, don't grab.
+
 And the declarations draw their own picture — **Pet is an Object** (the ➭ ◻️
 marker), Dog and Fish generalize to Pet, `bestie` loops back as a reflexive
 association, and the mood statechart hangs below:
@@ -118,7 +126,7 @@ association, and the mood statechart hangs below:
 | `Attr(str, "", secret=True)` | a password field |
 | `ro=True` | a locked value 🔒 — outside writes raise; the object's **own behaviours** simply assign it |
 | `hint="…"` | a tooltip on the row |
-| `State("hungry", ["hungry", "fed"])` | the chips row — current state highlighted |
+| `State(["hungry", "fed"])` | the chips row — first state is the initial one, current highlighted |
 | `Attr("Pet")` | a **picklist** of live, type-compatible instances (subclasses count); wrong types raise |
 | `@transition(pre=["hungry"], post="fed")` | a gated button — disabled outside `pre`, moves the state to `post` |
 | `def run(self): …` | **every public method is a button** — no decorator needed; `_underscore` methods stay internal |
@@ -150,7 +158,7 @@ Feature: Live models validate, gate and reference
     :::python
     @component(icon="🐶")
     class FDog(Object):
-        mood      = State("hungry", ["hungry", "fed"])
+        mood      = State(["hungry", "fed"])
         colour    = Attr(str, "Golden", enum=["Golden", "Black"])
         weight_kg = Attr(float, 30, min=20, max=60)
         adopted   = Attr(bool, False, ro=True)

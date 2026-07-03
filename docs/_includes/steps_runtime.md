@@ -205,10 +205,14 @@ class Attr:
 
 
 class State(Attr):
-    """A state-machine axis: State("hungry", ["hungry", "fed"]). Read-only —
-    only @transition behaviours move it. First State field = the class state."""
+    """A state-machine axis: State(["hungry", "fed"]) — the first state is the
+    initial one. Read-only — only behaviours move it. The first State field is
+    the class's canonical state. (Legacy two-arg form still accepted.)"""
 
-    def __init__(self, initial, states, hint=""):
+    def __init__(self, initial, states=None, hint=""):
+        if states is None and isinstance(initial, (list, tuple)):
+            states = list(initial)
+            initial = states[0]
         Attr.__init__(self, "str", initial, enum=list(states), ro=True, hint=hint)
         self.is_state = True
 
