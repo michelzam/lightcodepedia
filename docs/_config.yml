@@ -1,6 +1,7 @@
 title: Lightcodepedia
 description: A GitHub Pages site
 lc_canonical_host: lightcodepedia.org
+lc_canonical_owner: michelzam   # the root repo owner; forks compare against this to flag themselves
 
 
 defaults:

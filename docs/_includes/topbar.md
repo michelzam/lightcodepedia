@@ -134,6 +134,14 @@ body {
 .lc-embed-mode #lc-topbar { display: none !important; }
 .lc-embed-mode body { padding-top: 0 !important; }
 .lc-embed-mode .markdown-body > h1:first-of-type { display: none !important; }
+/* fork awareness — shown only when the site is served from a fork's Pages URL */
+#lc-fork-hint {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 10px;
+  padding: 2px 10px; border-radius: 999px; font-size: 0.78em; font-weight: 600;
+  color: #8a5a00; background: #fff5d6; border: 1px solid #f0d38a;
+  text-decoration: none; white-space: nowrap;
+}
+#lc-fork-hint:hover { background: #ffeab0; }
 </style>
 <div id="lc-topbar">
   <a class="lc-brand" href="/">💡 Lightcodepedia</a>
@@ -181,6 +189,94 @@ body {
     </div>
   </div>
 </div>
+<script>
+/* ── Fork-aware base URL & internal links ───────────────────────────────────
+   The canonical site is a custom domain (baseurl ""). A fork is served at
+   <owner>.github.io/<repo>/ (baseurl "/<repo>"), so author-written root-relative
+   links like "/pages/x" must gain the "/<repo>" segment or they 404 on the
+   owner's root. LC_BASE is derived from the LIVE url (robust to a stray CNAME a
+   fork inherits) and is "" on the canonical domain — so everything below is a
+   pure no-op on the origin; only forks pay any cost or change behaviour. */
+(function () {
+  var LC_REPO_NAME   = {{ site.github.repository_name | default: "" | jsonify }};
+  var LC_CANON_HOST  = {{ site.lc_canonical_host | default: "" | jsonify }};
+  var LC_CANON_OWNER = {{ site.lc_canonical_owner | default: "" | jsonify }};
+
+  // base = "/<repo>" only when the current path is actually served under it
+  var p = location.pathname, LC_BASE = "";
+  if (LC_REPO_NAME && (p === "/" + LC_REPO_NAME || p.indexOf("/" + LC_REPO_NAME + "/") === 0))
+    LC_BASE = "/" + LC_REPO_NAME;
+  window.lcBaseUrl = LC_BASE;
+
+  // prepend the base to an internal, root-relative path — external links,
+  // protocol-relative ("//host"), anchors and already-based paths pass through
+  window.lcResolveUrl = function (href) {
+    if (!href || typeof href !== "string") return href;
+    if (href.charAt(0) !== "/" || href.charAt(1) === "/") return href;
+    if (LC_BASE && (href === LC_BASE || href.indexOf(LC_BASE + "/") === 0)) return href;
+    return LC_BASE + href;
+  };
+
+  function fixAnchor(a) {
+    var h = a.getAttribute("href");
+    if (!h || h.charAt(0) !== "/" || h.charAt(1) === "/") return;
+    if (h === LC_BASE || h.indexOf(LC_BASE + "/") === 0) return;
+    a.setAttribute("href", LC_BASE + h);
+  }
+  window.lcFixLinks = function (root) {
+    if (!LC_BASE) return;
+    (root || document).querySelectorAll('a[href^="/"]').forEach(fixAnchor);
+  };
+
+  if (LC_BASE) {
+    var boot = function () {
+      window.lcFixLinks(document);
+      // widgets (sections, related, sitemap, blocks…) inject links later — fix
+      // those too, so navigation stays on the fork everywhere.
+      try {
+        new MutationObserver(function (muts) {
+          for (var i = 0; i < muts.length; i++) {
+            var added = muts[i].addedNodes;
+            for (var j = 0; j < added.length; j++) {
+              var el = added[j];
+              if (el.nodeType !== 1) continue;
+              if (el.tagName === "A") fixAnchor(el);
+              else if (el.querySelectorAll) el.querySelectorAll('a[href^="/"]').forEach(fixAnchor);
+            }
+          }
+        }).observe(document.body, { childList: true, subtree: true });
+      } catch (e) {}
+    };
+    if (document.readyState !== "loading") boot();
+    else document.addEventListener("DOMContentLoaded", boot);
+  }
+
+  // ── "you're on a fork" hint ───────────────────────────────────────────────
+  var hostOwner = /\.github\.io$/i.test(location.hostname)
+    ? location.hostname.replace(/\.github\.io$/i, "") : "";
+  var onCanonical = LC_CANON_HOST && location.hostname === LC_CANON_HOST;
+  var isFork = !onCanonical && hostOwner &&
+    (!LC_CANON_OWNER || hostOwner.toLowerCase() !== LC_CANON_OWNER.toLowerCase());
+  if (isFork) {
+    var addHint = function () {
+      var bar = document.getElementById("lc-topbar");
+      if (!bar || document.getElementById("lc-fork-hint")) return;
+      var chip = document.createElement("a");
+      chip.id = "lc-fork-hint";
+      chip.href = "https://github.com/" + hostOwner + "/" + (LC_REPO_NAME || "");
+      chip.target = "_blank"; chip.rel = "noopener";
+      chip.title = "You're viewing " + hostOwner + "'s fork of Lightcodepedia — "
+                 + "links stay on this fork, not the original site.";
+      chip.textContent = "⑂ " + hostOwner + "’s fork";
+      var brand = bar.querySelector(".lc-brand");
+      if (brand && brand.nextSibling) bar.insertBefore(chip, brand.nextSibling);
+      else bar.appendChild(chip);
+    };
+    if (document.readyState !== "loading") addHint();
+    else document.addEventListener("DOMContentLoaded", addHint);
+  }
+})();
+</script>
 {% include code_chrome.md %}
 <script>
 (function(){
