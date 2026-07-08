@@ -28,6 +28,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
 .lc-datagrid-grid { width: 100%; }
 .lc-datagrid-status { padding: 0.7em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #666; font-style: italic; }
 .lc-datagrid-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
+/* ƒ computed columns — derived, read-only, recomputed live from a formula */
+.lc-datagrid-grid .ag-cell.lc-dg-computed { background: #f6f8fa; color: #0a5; font-variant-numeric: tabular-nums; }
 </style>
 
 <script>
@@ -65,6 +67,18 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   window.lcFileSrc = lcFileSrc;
   window.lcUseCdn = lcUseCdn;
   window.lcInferFormat = lcInferFormat;
+
+  /* "col = expr; col2 = expr2" → [{col, expr}] — a formula per computed column,
+     evaluated in declaration order so a column may reference an earlier one. */
+  function parseComputeSpecs(str) {
+    if (!str) return [];
+    return str.split(";").map(function (part) {
+      var i = part.indexOf("=");
+      if (i < 0) return null;
+      var col = part.slice(0, i).trim(), expr = part.slice(i + 1).trim();
+      return (col && expr) ? { col: col, expr: expr } : null;
+    }).filter(Boolean);
+  }
 
   function inferColumns(rows) {
     var seen = {}, cols = [];
@@ -120,10 +134,30 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         showError("Empty dataset — nothing to show.");
         return;
       }
+      /* computed columns: seed them so they appear as (read-only) columns; a
+         formula fills them once the page runtime is ready, and on every edit. */
+      var computeSpecs = parseComputeSpecs(opts.compute);
+      var computedSet = {};
+      if (computeSpecs.length) {
+        computeSpecs.forEach(function (s) { computedSet[s.col] = true; });
+        data.forEach(function (row) {
+          if (row && typeof row === "object")
+            computeSpecs.forEach(function (s) { if (!(s.col in row)) row[s.col] = "…"; });
+        });
+      }
       var cols = inferColumns(data);
       if (cols.length === 0) {
         showError("No columns inferred — rows must be objects with keys.");
         return;
+      }
+      if (computeSpecs.length) {
+        cols.forEach(function (c) {
+          if (computedSet[c.field]) {
+            c.editable = false;
+            c.cellClass = "lc-dg-computed";
+            c.headerName = "ƒ " + c.headerName;
+          }
+        });
       }
       if (statusEl && statusEl.parentNode) statusEl.remove();
       gridEl.style.display = "";
@@ -157,10 +191,58 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
           if (opts.bindId && window.lcSetDataset) {
             window.lcSetDataset(opts.bindId, window.lcDatasets[opts.bindId] || data);
           }
+          // an input cell changed → the ƒ columns recompute from their formulas
+          recompute();
         };
       }
       var api = window.agGrid.createGrid(gridEl, gridOptions);
       window.lcMasterDetail.registerGrid(gridId, api);
+
+      /* Recompute every ƒ column: eval each formula per row with that row's
+         fields as locals, in the shared page runtime (so a formula can also
+         call a .run silent model). eval, not exec — a bad formula shows ⚠ in
+         its own cell, never a frozen grid. */
+      function recompute() {
+        if (!computeSpecs.length || recompute._busy || !window.lcPageRuntime) return;
+        recompute._busy = true;
+        try { window._lcDgRows = JSON.stringify(data); }
+        catch (e) { recompute._busy = false; return; }
+        window._lcDgSpecs = JSON.stringify(computeSpecs);
+        window.lcPageRuntime().then(function (mp) {
+          try {
+            (mp.runPython || mp.run).call(mp,
+              "import js, json\n" +
+              "_rows = json.loads(str(js.window._lcDgRows))\n" +
+              "_specs = json.loads(str(js.window._lcDgSpecs))\n" +
+              "def _num(v):\n" +               // AG Grid edits come back as strings; a
+              "    if not isinstance(v, str): return v\n" +   // numeric-looking one becomes a number
+              "    s = v.strip()\n" +          // just for the formula (input cells are untouched)
+              "    try: return int(s) if s.lstrip('+-').isdigit() else float(s)\n" +
+              "    except (ValueError, TypeError): return v\n" +
+              "for _r in _rows:\n" +
+              "    for _k in list(_r.keys()): _r[_k] = _num(_r[_k])\n" +
+              "    for _s in _specs:\n" +
+              "        try:\n" +
+              "            _r[_s['col']] = eval(_s['expr'], globals(), _r)\n" +
+              "        except Exception as _e:\n" +
+              "            _r[_s['col']] = '\\u26a0 ' + str(_e)\n" +
+              "js.window._lcDgOut = json.dumps(_rows)\n");
+            var out = JSON.parse(window._lcDgOut);
+            data.forEach(function (row, i) {
+              var o = out[i]; if (!o) return;
+              computeSpecs.forEach(function (s) { row[s.col] = o[s.col]; });
+            });
+            api.refreshCells({ force: true });
+          } catch (e) { if (window.console) console.warn("[lc datagrid compute]", e.message || e); }
+          recompute._busy = false;
+        }).catch(function () { recompute._busy = false; });
+      }
+      if (computeSpecs.length) {
+        recompute();
+        // also recompute when a form/model elsewhere changes (a formula may read
+        // a page global); recompute never dispatches the event, so no loop.
+        document.addEventListener("lc-model-changed", recompute);
+      }
 
       // grid-to-grid master/detail: detail-of="<master-id>" filter="<local>=<master>"
       if (opts.detailOf && opts.filterExpr) {
@@ -190,7 +272,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     return {
       editable: el.getAttribute(prefix + "editable") === "true",
       detailOf: el.getAttribute(prefix + "master") || el.getAttribute(prefix + "detail-of") || "",
-      filterExpr: el.getAttribute(prefix + "filter") || ""
+      filterExpr: el.getAttribute(prefix + "filter") || "",
+      compute: el.getAttribute(prefix + "compute") || ""
     };
   }
 
