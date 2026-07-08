@@ -10,9 +10,10 @@ Cells — reactive spreadsheet cells: a knob (or a run of prose) is a cell.
 
 There is no component to declare. Cells evaluate in the page's own Python
 runtime — the same instance a hidden `{: .run silent="true" }` block seeds with
-its model (constants, helper functions). Editable {: .form } fields are injected
-as plain variables, so a formula reads `price` or `subtotal()` directly,
-spreadsheet-style. Every form edit (and every silent model run) fires
+its model (constants, helper functions). Each editable {: .form } is a scope
+keyed by its id, so a formula can say `inputs.price` (explicit) or just `price`
+(bare sugar, when that field name is unique on the page) — flat when safe,
+scoped when needed. Every form edit (and every silent model run) fires
 `lc-model-changed`; the cells recompute.
 
 Cells are eval'd, never exec'd: a statement can't be typed into one, and a
@@ -70,28 +71,46 @@ Auto-included by docs/_layouts/default.html.
     return cells.length + vis.length;
   }
 
-  /* Every editable form publishes its object as JSON on its wrapper — merge
-     them so their keys become variables the formulas can read by name. */
+  /* Every editable form publishes its object as JSON on its wrapper. Each form
+     is a scope keyed by its id — `inputs.price` — and any field that lives in
+     exactly one form is also exposed bare — `price` — as unambiguous sugar.
+     A field name shared by two forms is dropped from the bare set, so the
+     scoped form (`inputs.price` vs `shipping.price`) is the only way to reach
+     it: flat when safe, scoped when needed. */
   function readInputs() {
-    var merged = {};
+    var scopes = {}, counts = {}, vals = {};
     document.querySelectorAll(".lc-form[data-lc-value]").forEach(function (f) {
-      try {
-        var o = JSON.parse(f.getAttribute("data-lc-value"));
-        for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) merged[k] = o[k];
-      } catch (e) {}
+      var id = f.getAttribute("data-lc-id") || "";
+      var o;
+      try { o = JSON.parse(f.getAttribute("data-lc-value")); } catch (e) { return; }
+      if (!o || typeof o !== "object") return;
+      if (id) scopes[id] = o;
+      for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) {
+        counts[k] = (counts[k] || 0) + 1;
+        vals[k] = o[k];
+      }
     });
-    return merged;
+    var bare = {};
+    for (var k in counts) if (counts[k] === 1) bare[k] = vals[k];
+    return { scopes: scopes, bare: bare };
   }
 
   function evalAll(m) {
-    window._lcCellInputs = JSON.stringify(readInputs());
+    var inp = readInputs();
+    window._lcCellScopes = JSON.stringify(inp.scopes);
+    window._lcCellBare = JSON.stringify(inp.bare);
     var exprs = cells.map(function (c) { return c.getAttribute("data-expr"); })
       .concat(vis.map(function (v) { return "bool(" + v.expr + ")"; }));
     window._lcCellExprs = JSON.stringify(exprs);
     run(m,
       "import js, json\n" +
-      "_inp = json.loads(str(js.window._lcCellInputs))\n" +
-      "for _k in _inp: globals()[_k] = _inp[_k]\n" +
+      "class _Scope:\n" +
+      "    def __init__(self, d):\n" +
+      "        for _k in d: setattr(self, _k, d[_k])\n" +
+      "_sc = json.loads(str(js.window._lcCellScopes))\n" +
+      "for _sid in _sc: globals()[_sid] = _Scope(_sc[_sid])\n" +
+      "_bare = json.loads(str(js.window._lcCellBare))\n" +
+      "for _k in _bare: globals()[_k] = _bare[_k]\n" +
       "_out = []\n" +
       "for _e in json.loads(str(js.window._lcCellExprs)):\n" +
       "    try:\n" +

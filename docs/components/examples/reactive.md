@@ -26,6 +26,13 @@ shipping over 50, **Total {= price * qty + (0 if price * qty >= 50 else 5) }**.
 Change `price` or `qty` → every `{= … }` recomputes. No `if` in the markup, no
 refresh — the cells track the form.
 
+**Name the source when you like.** Each form is a scope keyed by its id, so the
+explicit way to say the same subtotal is **{= inputs.price * inputs.qty }**. Bare
+`price` is just sugar that works because no *other* form has a `price`; when two
+forms would collide, the scope (`inputs.price` vs `shipping.price`) is how you
+say which — flat when safe, scoped when needed. It's the same `id.field` you use
+from Python (`Page().inputs.data.price`), one scope model for the whole page.
+
 ## 👁️ `visible` is just a cell {#visibility}
 
 Point the same mechanism at a boolean and it decides whether a block shows.
