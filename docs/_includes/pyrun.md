@@ -754,30 +754,44 @@ Auto-included by docs/_layouts/default.html.
     attach("lc-pyrun-" + id, opts);
   }
 
-  function runSilent(code) {
-    var id = "silent" + (++RUN_ID);
+  /* The shared page runtime: one persistent MicroPython instance that silent
+     setup code seeds and reactive {= cells } read. It's separate from the
+     button/preamble instance (window._lcMpReady) — this one holds page data
+     and model defs, so a `.run silent` block is the page's model, and its
+     names stay live for the cells. Exported so cells.md evaluates in it. */
+  function pageRuntime() {
+    if (window._lcPageRuntime) return window._lcPageRuntime;
     var view = document.createElement("div");
-    view.id = "lc-pyrun-" + id + "-view";
-    view.style.display = "none";
+    view.id = "lc-pyrun-page-view"; view.style.display = "none";
     var bound = document.createElement("div");
-    bound.id = "lc-pyrun-" + id + "-bound";
-    bound.style.display = "none";
+    bound.id = "lc-pyrun-page-bound"; bound.style.display = "none";
     document.body.appendChild(view);
     document.body.appendChild(bound);
-    var BOOTSTRAP = BOOTSTRAP_TPL.replace(/__ID__/g, id);
-    Promise.all([
+    window._lcPageRuntime = Promise.all([
       import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs"),
       loadJsYaml()
     ])
       .then(function(results){
         return results[0].loadMicroPython({
           stdout: function(){},
-          stderr: function(t){ if (window.console) console.warn("[lc silent stderr]", t); }
+          stderr: function(t){ if (window.console) console.warn("[lc page-rt stderr]", t); }
         });
       })
       .then(function(mp){
-        try { mp.runPython(BOOTSTRAP); } catch (e) { if (window.console) console.warn("[lc silent bootstrap]", e.message || e); }
+        try { mp.runPython(BOOTSTRAP_TPL.replace(/__ID__/g, "page")); }
+        catch (e) { if (window.console) console.warn("[lc page-rt bootstrap]", e.message || e); }
+        return mp;
+      });
+    return window._lcPageRuntime;
+  }
+  window.lcPageRuntime = pageRuntime;
+
+  function runSilent(code) {
+    pageRuntime()
+      .then(function(mp){
         try { mp.runPython(code); } catch (e) { if (window.console) console.warn("[lc silent code]", e.message || e); }
+        /* the page model just changed — cells and diagrams recompute */
+        try { document.dispatchEvent(new CustomEvent("lc-model-changed", { detail: { source: "run-silent" } })); } catch (e) {}
       })
       .catch(function(e){ if (window.console) console.warn("[lc silent load]", e.message || e); });
   }

@@ -1,25 +1,23 @@
 {%- comment -%}
-Cells — reactive spreadsheet cells for any page, activated from md + IAL.
+Cells — reactive spreadsheet cells: a knob (or a run of prose) is a cell.
 
-A knob is a spreadsheet cell: it holds a literal, or a `= formula` — a Python
-*expression* (never a statement: cells are eval'd, not exec'd) evaluated live
-and re-run whenever its inputs change.
+  {= expr }               an inline cell anywhere in prose — replaced by the
+                          value of the Python *expression* `expr`, recomputed
+                          whenever the page's data changes.
 
-  python block + {: .cells }   the shared model — plain Python defs/consts,
-                               exec'd once into an isolated page namespace.
-                               Several blocks compose into the same namespace.
+  {: visible="= expr" }   any block shows only while `bool(expr)` is true —
+                          `visible` is just another cell.
 
-  {= expr }                    an inline cell anywhere in prose — replaced by
-                               the value of `expr`, recomputed on every change.
+There is no component to declare. Cells evaluate in the page's own Python
+runtime — the same instance a hidden `{: .run silent="true" }` block seeds with
+its model (constants, helper functions). Editable {: .form } fields are injected
+as plain variables, so a formula reads `price` or `subtotal()` directly,
+spreadsheet-style. Every form edit (and every silent model run) fires
+`lc-model-changed`; the cells recompute.
 
-  {: visible="= expr" }        any block shows only while `bool(expr)` is true —
-                               `visible` is just another cell.
-
-Inputs come from the page's editable forms: every {: .form } publishes its
-object as JSON, and its keys are injected as variables in the cell namespace.
-Editing a form fires `lc-model-changed`; the cells recompute. Nothing global is
-touched — formulas can't reach the platform runtime, and a cyclic formula fails
-*safe* (a value like "⚠ maximum recursion…", never a frozen page).
+Cells are eval'd, never exec'd: a statement can't be typed into one, and a
+cyclic formula fails *safe* (a value like "⚠ maximum recursion…", never a
+frozen page).
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -37,21 +35,11 @@ Auto-included by docs/_layouts/default.html.
   if (window._lcCellsReady) return;
   window._lcCellsReady = true;
 
-  var NS = "_LC_CELL_NS";
-  var mpReady = null;
-  function mp() {
-    if (!mpReady) {
-      mpReady = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
-        .then(function (m) { return m.loadMicroPython({ stdout: function () {}, stderr: function () {} }); });
-    }
-    return mpReady;
-  }
   function run(m, code) { (m.runPython || m.exec || m.run).call(m, code); }
+  var cells = [], vis = [], wired = false;
 
-  var cells = [], vis = [], booted = false;
-
-  /* Walk text for {= expr } and replace each with a live <span>. Code, the
-     model listings and this page's script/style are left untouched. */
+  /* Walk text for {= expr } and replace each with a live <span>. Code fences,
+     scripts and styles are left untouched. */
   function collect() {
     var root = document.querySelector("main") || document.body;
     var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
@@ -59,7 +47,7 @@ Auto-included by docs/_layouts/default.html.
     while ((n = walker.nextNode())) if (n.nodeValue.indexOf("{=") >= 0) hits.push(n);
     hits.forEach(function (t) {
       if (t.parentNode && t.parentNode.closest &&
-          t.parentNode.closest("pre, code, script, style, .lc-cells-model")) return;
+          t.parentNode.closest("pre, code, script, style")) return;
       var s = t.nodeValue, re = /\{=\s*([\s\S]*?)\s*\}/g, m, last = 0,
           frag = document.createDocumentFragment(), any = false;
       while ((m = re.exec(s))) {
@@ -79,10 +67,11 @@ Auto-included by docs/_layouts/default.html.
       var v = (el.getAttribute("visible") || "").trim();
       if (v.charAt(0) === "=") vis.push({ el: el, expr: v.slice(1) });
     });
+    return cells.length + vis.length;
   }
 
-  /* Every editable form publishes its object as JSON on the wrapper — merge
-     them all so their keys become variables the formulas can read. */
+  /* Every editable form publishes its object as JSON on its wrapper — merge
+     them so their keys become variables the formulas can read by name. */
   function readInputs() {
     var merged = {};
     document.querySelectorAll(".lc-form[data-lc-value]").forEach(function (f) {
@@ -101,12 +90,12 @@ Auto-included by docs/_layouts/default.html.
     window._lcCellExprs = JSON.stringify(exprs);
     run(m,
       "import js, json\n" +
-      NS + ".update(json.loads(str(js.window._lcCellInputs)))\n" +
-      "_ex = json.loads(str(js.window._lcCellExprs))\n" +
+      "_inp = json.loads(str(js.window._lcCellInputs))\n" +
+      "for _k in _inp: globals()[_k] = _inp[_k]\n" +
       "_out = []\n" +
-      "for _e in _ex:\n" +
+      "for _e in json.loads(str(js.window._lcCellExprs)):\n" +
       "    try:\n" +
-      "        _out.append(str(eval(_e, " + NS + ")))\n" +
+      "        _out.append(str(eval(_e)))\n" +
       "    except Exception as _err:\n" +
       "        _out.append('\\u26a0 ' + str(_err))\n" +
       "js.window._lcCellOut = json.dumps(_out)\n");
@@ -121,35 +110,20 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
-  function init() {
-    if (booted) return;
-    booted = true;
-    var models = document.querySelectorAll(".highlighter-rouge.cells, pre.cells");
-    models.forEach(function (el) { el.classList.add("lc-cells-model"); });
-    collect();
-    mp().then(function (m) {
-      run(m, "import js\n" + NS + " = {}");
-      models.forEach(function (el) {
-        var codeEl = el.querySelector("code") || el;
-        window._lcCellModel = codeEl.textContent || "";
-        run(m, "try:\n exec(str(js.window._lcCellModel), " + NS +
-               ")\nexcept Exception as _e:\n js.window.console.error('[cells model] ' + str(_e))\n");
-      });
-      evalAll(m);
+  function start() {
+    if (wired) return;
+    if (!collect()) return;               // no cells on this page — nothing to do
+    if (!window.lcPageRuntime) return;    // pyrun provides the shared runtime
+    wired = true;
+    window.lcPageRuntime().then(function (m) {
+      // Listen first, then paint: if a `.run silent` model seeds the runtime
+      // after this eval, its lc-model-changed still triggers a recompute.
       document.addEventListener("lc-model-changed", function () { evalAll(m); });
+      evalAll(m);
     });
   }
 
-  /* The first {: .cells } model block on the page ignites the engine, which
-     then discovers every cell, form and model block in one pass. */
-  function upgradeModel(el) {
-    if (el.dataset.lcCellsSeen) return;
-    el.dataset.lcCellsSeen = "1";
-    init();
-  }
-
-  if (window.lcRegisterUpgrader) {
-    window.lcRegisterUpgrader(".highlighter-rouge.cells, pre.cells", upgradeModel);
-  }
+  if (document.readyState !== "loading") start();
+  else document.addEventListener("DOMContentLoaded", start);
 })();
 </script>

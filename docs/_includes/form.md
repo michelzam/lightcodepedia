@@ -304,7 +304,7 @@ Auto-included by docs/_layouts/default.html.
           event.data._type = typeOfValue(nv);
           _publishFormValue();
           // A form is a live data source: announce the edit on the platform's
-          // reactive bus so {: .cells } formulas (and diagrams) recompute.
+          // reactive bus so {= …} cells (and diagrams) recompute.
           try { document.dispatchEvent(new CustomEvent("lc-model-changed", { detail: { source: "form" } })); } catch (e) {}
           if (opts.onChange) opts.onChange(obj, k, nv);
         }
