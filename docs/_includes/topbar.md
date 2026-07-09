@@ -176,6 +176,7 @@ body {
           <div class="lc-ud-login" id="lc-ud-login"></div>
         </div>
       </div>
+      <a class="lc-ud-row" href="/"><span>💡</span><span>Lightcodepedia</span></a>
       <a class="lc-ud-row" id="lc-ud-repo-link" href="#" target="_blank">
         <span>📁</span><span class="lc-ud-repo" id="lc-ud-repo-label"></span>
       </a>
