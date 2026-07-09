@@ -819,10 +819,25 @@ body.lc-reel-active .lc-reel-bar {
     }
   }
 
+  /* A link/element marked slides="true" opens its TARGET as a deck: append
+     ?slides=0 so the destination page auto-enters slide mode on load. Runs on
+     every page (even one with no deck of its own), so a hub can launch a node. */
+  function rewriteSlideLinks() {
+    var links = document.querySelectorAll('a[slides="true"], [slides="true"] a[href]');
+    Array.prototype.forEach.call(links, function (a) {
+      var href = a.getAttribute('href') || '';
+      if (!href || href.charAt(0) === '#' || /^[a-z][a-z0-9+.-]*:/i.test(href)) return; // anchor / external scheme
+      if (/[?&]slides=/.test(href)) return;                                              // already set
+      var hash = '', hi = href.indexOf('#');
+      if (hi >= 0) { hash = href.slice(hi); href = href.slice(0, hi); }
+      a.setAttribute('href', href + (href.indexOf('?') >= 0 ? '&' : '?') + 'slides=0' + hash);
+    });
+  }
+  function _lcSlidesBoot() { rewriteSlideLinks(); setTimeout(init, 0); }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 0); });
+    document.addEventListener('DOMContentLoaded', _lcSlidesBoot);
   } else {
-    setTimeout(init, 0);
+    _lcSlidesBoot();
   }
 })();
 </script>

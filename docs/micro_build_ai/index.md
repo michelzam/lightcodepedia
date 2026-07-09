@@ -99,6 +99,7 @@ lights on. You use **your own** credits; nothing is billed to anyone else, and
 no key ever touches our servers.
 
 [🔑 Get your key → start Chapter 1](/micro_build_ai/onboarding){: .button }
+[📽️ Take the guided tour →](/micro_build_ai/m1-from-the-future){: .button slides="true" }
 
 ## 📚 The catalog — pulled on demand
 
