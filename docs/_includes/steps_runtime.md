@@ -1672,6 +1672,10 @@ class Page(Object):
         ds = getattr(js.window, "lcDatasets", None)
         if ds and getattr(ds, name, None) is not None:
             return Dataset(name)
+        # cross-page persisted state: Page().<node>.<component>.<field>
+        st = _store_tree()
+        if name in st and isinstance(st[name], dict):
+            return _StoreScope(st[name])
         raise AttributeError("no component with id='" + name + "' on this page")
 
     def feature(self, n=0):
@@ -2020,6 +2024,76 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
 
     L.append("}")
     return "\n".join(L)
+
+
+# ════════════════════════ structural Store (browser-instance) ════════════════
+# Learner state lives in this browser (window.lcStore -> localStorage), keyed by
+# the structural path node.component.field. Files/inline are design-time seeds;
+# only learner edits reach the Store. Reads are Store-over-seed, and an unset
+# path is empty — never an error. The same path works in cells, Python and
+# storage. The whole tree is injected as nested namespaces so build_ai.profile
+# .nickname resolves as plain attribute access (and Page().build_ai... too).
+
+class _StoreScope:
+    def __init__(self, d):
+        for _k, _v in (d.items() if isinstance(d, dict) else []):
+            setattr(self, _k, _StoreScope(_v) if isinstance(_v, dict) else _v)
+    def __getattr__(self, name):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return ""                       # unset structural field -> empty
+
+def _store_tree():
+    try:
+        raw = js.window.lcStore.tree()
+        return json.loads(str(raw)) if raw else {}
+    except Exception:
+        return {}
+
+class _Store:
+    def get(self, path, default=""):
+        node = _store_tree()
+        for seg in str(path).split("."):
+            if isinstance(node, dict) and seg in node:
+                node = node[seg]
+            else:
+                return default
+        return node
+    def set(self, path, value):
+        try:
+            js.window.lcStore.set(path, value)
+        except Exception:
+            pass
+        _inject_store()                 # refresh the bare namespaces after a write
+    def reset(self):
+        try:
+            js.window.lcStore.reset()
+        except Exception:
+            pass
+        _inject_store()
+    def tree(self):
+        return _store_tree()
+
+Store = _Store()
+
+def eval_cell(expr):
+    """Evaluate a {= cell } expression in the page's namespace (store + defs)."""
+    return eval(str(expr), globals())
+
+_STORE_KEYS = set()
+def _inject_store():
+    global _STORE_KEYS
+    _g = globals()
+    tree = _store_tree()
+    for _k in list(_STORE_KEYS):        # drop namespaces no longer in the store
+        if _k not in tree and _k in _g:
+            del _g[_k]
+    _STORE_KEYS = set()
+    for _k, _v in tree.items():
+        _g[_k] = _StoreScope(_v) if isinstance(_v, dict) else _v
+        _STORE_KEYS.add(_k)
+
+_inject_store()
 </script>
 
 <style>

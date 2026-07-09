@@ -90,3 +90,67 @@ Python fence — and knobs stay declarative dataflow. Spreadsheet, not BASIC.
 with the linter topo-sorting cell dependencies to catch cycles at author time.
 Model in a hidden `.run`, inputs in a `.form`, results in `{= … }` cells — three
 things you already have, wired by dataflow.
+
+## 🗂️ Structural state — one address everywhere {#state}
+
+A value has one address, `node.component.field`, and it means the same thing in
+a `{= }` cell, in Python, and in browser storage (the **Store** — localStorage,
+per-browser). Design-time seeds (inline/file) are defaults; only what the learner
+*sets* reaches the Store, so a nickname captured once personalizes every page.
+
+```gherkin
+Feature: Structural state — one address in cells, Python and storage
+  As an author
+  I want node.component.field to resolve the same everywhere and persist per-browser
+  So that a learner's answers personalize the whole credential with no server
+
+  Scenario: An absolute path reads the same value on every surface
+    Given a clean store
+    :::python
+    Store.reset()
+    :::
+    When the welcome node captures a nickname
+    :::python
+    Store.set("welcome.profile.nickname", "Rex")
+    :::
+    Then the Store, the injected name and Page() all agree
+    :::python
+    assert Store.get("welcome.profile.nickname") == "Rex"
+    assert welcome.profile.nickname == "Rex"
+    assert Page().welcome.profile.nickname == "Rex"
+    :::
+
+  Scenario: Seeds don't pollute the Store; only edits persist, and survive a reload
+    Given a clean store
+    :::python
+    Store.reset()
+    assert Store.get("build_ai.profile.nickname") == ""
+    :::
+    When the learner sets a value
+    :::python
+    Store.set("build_ai.profile.nickname", "Rex")
+    :::
+    Then it survives a runtime reload — browser-instance, localStorage
+    :::python
+    assert build_ai.profile.nickname == "Rex"
+    self.page._reload_runtime()
+    assert Store.get("build_ai.profile.nickname") == "Rex"
+    :::
+
+  Scenario: An unset field is empty, and a conditional reads the store
+    Given a dog-builder profile
+    :::python
+    Store.reset()
+    Store.set("build_ai.profile.building_for", "dogs")
+    :::
+    Then unset fields are blank and a visible= flag evaluates
+    :::python
+    assert build_ai.profile.nickname == ""
+    assert eval_cell("build_ai.profile.building_for == 'dogs'") is True
+    :::
+```
+{: .feature tags="state,learn" }
+
+*(Next: the `.form persist="build_ai"` knob writes these edits for you, and
+`{= welcome.profile.nickname }` reads them inline — the widget wiring on top of
+this Store.)*
