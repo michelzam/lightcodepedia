@@ -208,6 +208,14 @@ Auto-included by docs/_layouts/default.html.
       bodyEl.innerHTML = '<div class="lc-form-err">Expected a single object; got ' + escapeHtml(Array.isArray(obj) ? "array" : typeof obj) + '</div>';
       return;
     }
+    /* Store-over-seed: a persisted field the learner has set overrides its
+       design-time default; unset fields keep the seed. */
+    if (opts.persist && opts.formId && window.lcStore) {
+      Object.keys(obj).forEach(function (k) {
+        var sv = window.lcStore.get(opts.persist + "." + opts.formId + "." + k);
+        if (sv !== undefined) obj[k] = sv;
+      });
+    }
     var keys = Object.keys(obj);
     if (keys.length === 0) {
       bodyEl.innerHTML = '<div class="lc-form-empty">(empty object)</div>';
@@ -303,6 +311,10 @@ Auto-included by docs/_layouts/default.html.
           // Re-derive type from the new value
           event.data._type = typeOfValue(nv);
           _publishFormValue();
+          // persist the learner's edit to the browser Store (also fires the bus)
+          if (opts.persist && opts.formId && window.lcStore) {
+            window.lcStore.set(opts.persist + "." + opts.formId + "." + k, nv);
+          }
           // A form is a live data source: announce the edit on the platform's
           // reactive bus so {= …} cells (and diagrams) recompute.
           try { document.dispatchEvent(new CustomEvent("lc-model-changed", { detail: { source: "form" } })); } catch (e) {}
@@ -327,6 +339,13 @@ Auto-included by docs/_layouts/default.html.
     var bound = el.getAttribute("master") || el.getAttribute("bound") || "";
     var editable = el.getAttribute("editable") === "true";
     var id = el.id || ("frm" + (++FORM_ID));
+    /* persist="true" -> keyed by this page's slug; persist="scope" -> a stable
+       top segment (e.g. build_ai). Learner edits save to the Store under
+       <scope>.<id>.<field>; seeds hydrate only where the Store is unset. */
+    var persist = el.getAttribute("persist") || "";
+    var persistScope = persist === "true"
+      ? ((location.pathname.replace(/\/+$/, "").split("/").pop() || "index").replace(/\.html$/, ""))
+      : persist;
 
     /* source="file:path" loads one object from a repo file */
     var source = el.getAttribute("source") || "";
@@ -341,7 +360,7 @@ Auto-included by docs/_layouts/default.html.
       fetch(fileCdn ? srcs.cdn : srcs.raw)
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + fileRef); return r.text(); })
         .then(function (text) { return parseDatagridText(text, fileFmt); })
-        .then(function (obj) { renderFormBody(fbody, obj, { editable: editable }); })
+        .then(function (obj) { renderFormBody(fbody, obj, { editable: editable, persist: persistScope, formId: id }); })
         .catch(function (e) { fbody.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>'; });
       return;
     }
@@ -376,7 +395,7 @@ Auto-included by docs/_layouts/default.html.
     try { dataPromise = parseDatagridText(raw, format); }
     catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
     dataPromise.then(function(obj){
-      renderFormBody(body, obj, { editable: editable });
+      renderFormBody(body, obj, { editable: editable, persist: persistScope, formId: id });
       if (!title) setFormTitle(wrapper, inferFormTitle(obj) || "Form");
     }).catch(function(e){
       body.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>';

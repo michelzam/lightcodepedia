@@ -104,10 +104,20 @@ Auto-included by docs/_layouts/default.html.
     window._lcCellExprs = JSON.stringify(exprs);
     run(m,
       "import js, json\n" +
-      "class _Scope:\n" +
+      "class _Scope:\n" +                       // recursive: flat form scopes AND nested store nodes
       "    def __init__(self, d):\n" +
-      "        for _k in d: setattr(self, _k, d[_k])\n" +
-      "_sc = json.loads(str(js.window._lcCellScopes))\n" +
+      "        for _k, _v in (d.items() if isinstance(d, dict) else []):\n" +
+      "            setattr(self, _k, _Scope(_v) if isinstance(_v, dict) else _v)\n" +
+      "    def __getattr__(self, _n):\n" +        // unset structural field -> empty, never ⚠
+      "        if _n.startswith('_'): raise AttributeError(_n)\n" +
+      "        return ''\n" +
+      "try:\n" +                                 // site-wide persisted state (Store)
+      "    _st = json.loads(str(js.window.lcStore.tree()))\n" +
+      "except Exception:\n" +
+      "    _st = {}\n" +
+      "for _sk, _sv in _st.items():\n" +
+      "    globals()[_sk] = _Scope(_sv) if isinstance(_sv, dict) else _sv\n" +
+      "_sc = json.loads(str(js.window._lcCellScopes))\n" +   // this page's form scopes
       "for _sid in _sc: globals()[_sid] = _Scope(_sc[_sid])\n" +
       "_bare = json.loads(str(js.window._lcCellBare))\n" +
       "for _k in _bare: globals()[_k] = _bare[_k]\n" +
