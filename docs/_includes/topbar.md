@@ -145,12 +145,14 @@ body {
 </style>
 <div id="lc-topbar">
   <a class="lc-brand" href="/">💡 Lightcodepedia</a>
-  {% comment %} A menu.md inside a folder becomes the menu for that whole branch
-     (every page under it); otherwise the site-root menu.md is used. {% endcomment %}
+  {% comment %} A folder's menu.md becomes the menu for that whole branch, but it
+     must opt in with `menu: true` in its front matter — so pages that merely
+     happen to be named menu.md (e.g. the .menu component's own doc page) are not
+     picked up. Otherwise the site-root menu.md is used. {% endcomment %}
   {% assign _seg = page.path | split: "/" | first %}
   {% assign _fmpath = _seg | append: "/menu.md" %}
-  {% assign _menu = site.pages | where: "path", _fmpath | first %}
-  {% unless _menu %}{% assign _menu = site.pages | where: "path", "menu.md" | first %}{% endunless %}
+  {% assign _fm = site.pages | where: "path", _fmpath | first %}
+  {% if _fm.menu %}{% assign _menu = _fm %}{% else %}{% assign _menu = site.pages | where: "path", "menu.md" | first %}{% endif %}
   <div class="lc-links">
     {{ _menu.content | markdownify }}
   </div>
