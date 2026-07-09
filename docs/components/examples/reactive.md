@@ -98,6 +98,17 @@ a `{= }` cell, in Python, and in browser storage (the **Store** — localStorage
 per-browser). Design-time seeds (inline/file) are defaults; only what the learner
 *sets* reaches the Store, so a nickname captured once personalizes every page.
 
+**Try it live** — type a name, then **reload the page**: it sticks (this browser only).
+
+```yaml
+nickname: ""
+```
+{: .form #whoami persist="build_ai" editable="true" title="You" }
+
+Hello **{= whoami.nickname or 'stranger' }** — nice to meet you 🐾
+
+The acceptance feature below proves the *same* Store from Python — press ▶:
+
 ```gherkin
 Feature: Structural state — one address in cells, Python and storage
   As an author
