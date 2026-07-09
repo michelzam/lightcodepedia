@@ -15,6 +15,25 @@ that unlocks Save so you can finish the rescue.*
 > they can't stand it. The credential rides in on the story.
 {: .speaker-note }
 
+## 🐾 First — what should Lucky call you?
+
+Before the rescue, Lucky wants to know who's saving him. A name, a nickname, a
+wanna-be handle — your call. It stays **in your browser only**: nothing is sent
+anywhere, and there's no right answer to look up.
+
+```yaml
+nickname: ""
+```
+{: .form #you persist="build_ai" editable="true" title="You" }
+
+Nice to meet you, **{= you.nickname or 'builder' }** — Lucky's counting on you. 🐾
+
+> A personal question, on purpose: no lookup-able answer, so there's no incentive
+> to ask an AI — and it's stored locally, then used to greet the learner by name
+> across every chapter (a small thread of belonging). Later beats read it as the
+> absolute path `build_ai.you.nickname`.
+{: .speaker-note }
+
 ## 1️⃣ Get a GitHub account (30 seconds)
 
 Your account is your **identity**[^identity] — the name the save is signed with.
@@ -124,8 +143,8 @@ here's what professionals call each piece:
 ## ⭐ Your karma
 
 Passing the checks above added **karma**, saved right here in your browser. It
-follows you across the whole story and counts toward your **BUILD-AI
-credential** — no sign-up, nothing stored on a server.
+follows **{= you.nickname or 'you' }** across the whole story and counts toward
+your **BUILD-AI credential** — no sign-up, nothing stored on a server.
 
 ## ➡️ Next — go save him
 
