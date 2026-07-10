@@ -104,13 +104,21 @@ Auto-included by docs/_layouts/default.html.
     window._lcCellExprs = JSON.stringify(exprs);
     run(m,
       "import js, json\n" +
-      "class _Scope:\n" +                       // recursive: flat form scopes AND nested store nodes
+      "class _Empty:\n" +                        // null-object: chains, prints '', falsy for `or`
+      "    def __getattr__(self, _n):\n" +
+      "        if _n.startswith('_'): raise AttributeError(_n)\n" +
+      "        return self\n" +
+      "    def __bool__(self): return False\n" +
+      "    def __str__(self): return ''\n" +
+      "    def __repr__(self): return ''\n" +
+      "    def __eq__(self, _o): return _o == '' or _o is None or _o is self\n" +
+      "class _Scope:\n" +                        // recursive: flat form scopes AND nested store nodes
       "    def __init__(self, d):\n" +
       "        for _k, _v in (d.items() if isinstance(d, dict) else []):\n" +
       "            setattr(self, _k, _Scope(_v) if isinstance(_v, dict) else _v)\n" +
-      "    def __getattr__(self, _n):\n" +        // unset structural field -> empty, never ⚠
+      "    def __getattr__(self, _n):\n" +        // unset structural field -> empty, chainable
       "        if _n.startswith('_'): raise AttributeError(_n)\n" +
-      "        return ''\n" +
+      "        return _Empty()\n" +
       "try:\n" +                                 // site-wide persisted state (Store)
       "    _st = json.loads(str(js.window.lcStore.tree()))\n" +
       "except Exception:\n" +
@@ -123,10 +131,18 @@ Auto-included by docs/_layouts/default.html.
       "for _k in _bare: globals()[_k] = _bare[_k]\n" +
       "_out = []\n" +
       "for _e in json.loads(str(js.window._lcCellExprs)):\n" +
-      "    try:\n" +
-      "        _out.append(str(eval(_e)))\n" +
-      "    except Exception as _err:\n" +
-      "        _out.append('\\u26a0 ' + str(_err))\n" +
+      "    _tries = 0\n" +
+      "    while True:\n" +
+      "        try:\n" +
+      "            _out.append(str(eval(_e))); break\n" +
+      "        except NameError as _ne:\n" +      // undefined scope (e.g. an unset store node)
+      "            _p = str(_ne).split(chr(39)); _tries += 1\n" +
+      "            if len(_p) > 1 and _tries < 6:\n" +
+      "                globals()[_p[1]] = _Empty()\n" +
+      "            else:\n" +
+      "                _out.append('\\u26a0 ' + str(_ne)); break\n" +
+      "        except Exception as _err:\n" +
+      "            _out.append('\\u26a0 ' + str(_err)); break\n" +
       "js.window._lcCellOut = json.dumps(_out)\n");
     var out;
     try { out = JSON.parse(window._lcCellOut); } catch (e) { return; }
