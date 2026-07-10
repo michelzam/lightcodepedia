@@ -20,10 +20,9 @@ If Lucky can, so can you.
 ````
 {: .blocks cols="2" }
 
-## 👋 Welcome to BUILD-AI
+## 👋 Meet Lucky
 
-Let's discover your hidden powers and release your full potential. I'm **Lucky**,
-your guide 🐕 — I like water, fish, and balls. **How about you?**
+I'm **Lucky** 🐕, your guide. I like water, fish, and balls. **You?**
 
 ```yaml
 nickname: ""
@@ -33,14 +32,14 @@ passion: ""
 ```
 {: .form #you persist="build_ai" editable="true" title="You" }
 
-Nice to meet you, **{= build_ai.you.nickname or 'friend' }**! 🎾
+Hi **{= build_ai.you.nickname or 'friend' }**! 🎾
 
-**Seal the meet — check everything true. Lucky is…**
+**Lucky is…** *(check all true)*
 
 - [x] your guide
 - [ ] a fish
 - [x] a dog
-- [x] a fan of balls 🎾
+- [x] likes balls
 - [ ] a robot
 {: .quiz multi="true" }
 
