@@ -43,6 +43,8 @@ Hi **{= build_ai.you.nickname or 'friend' }**! 🎾
 - [ ] a robot
 {: .quiz multi="true" }
 
+[🐾 Help Lucky →](/micro_build_ai/help-lucky){: .button }
+
 ## 🧩 What *BUILD-AI*{: .hl } means
 
 **BUILD-AI** = **B**usiness-oriented **U**pskilling with **I**ncremental
