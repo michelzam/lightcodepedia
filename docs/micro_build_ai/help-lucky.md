@@ -27,32 +27,35 @@ Lucky can't read many words, so keep it big:
 ```
 {: .map height="280" zoom="14" }
 
-### 🔍 Where's the ball?
+### 🔍 Aim for the ball
 
-Clues: it's **yellow**, **small**, and Lucky last saw it **near the water** 💧.
-Tell him where to look, then hit **Find**:
+Slide **x** and **y** to point where Lucky should dig 🎯 — it's near the water 💧 —
+then hit **Find**:
 
 ```yaml
-where: ""
+x: 20
+y: 80
 ```
-{: .form #hunt editable="true" title="Look where?" }
+{: .form #hunt editable="true" sliders="x,y" min="0" max="100" step="5" title="Aim 🎯" }
 
 [🔍 Find it](#)
 {: .button #find }
 
 ```python
 def on_click(button):
-    where = (Page().hunt.data.where or "").lower()
-    tries = int(Store.get("build_ai.hunt.tries") or 0)
-    if "water" in where or "pond" in where or "lake" in where:
+    x = float(Page().hunt.data.x or 0)
+    y = float(Page().hunt.data.y or 0)
+    dist = ((x - 70) ** 2 + (y - 30) ** 2) ** 0.5   # the ball rests near the water (70, 30)
+    if dist <= 12:
         Store.set("build_ai.hunt.found", True)
         Store.set("build_ai.hunt.points", int(Store.get("build_ai.hunt.points") or 0) + 10)
     else:
-        Store.set("build_ai.hunt.tries", tries + 1)
+        Store.set("build_ai.hunt.tries", int(Store.get("build_ai.hunt.tries") or 0) + 1)
+        Store.set("build_ai.hunt.hot", "🔥 warmer!" if dist < 30 else "❄️ colder…")
 ```
 {: .onclick }
 
-🐕 Not there… Lucky keeps sniffing by the **water** 💧. Try again!
+🐕 Not there — **{= build_ai.hunt.hot or 'keep aiming' }** Try again.
 {: visible="= build_ai.hunt.tries and not build_ai.hunt.found" }
 
 🎾 **Found it!** +10 exploration points — you're at **{= build_ai.hunt.points or 0 }**. Lucky's over the moon!

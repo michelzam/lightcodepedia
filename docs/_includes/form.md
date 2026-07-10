@@ -108,6 +108,31 @@ Auto-included by docs/_layouts/default.html.
       var t = params.data._type;
       var v = params.value;
 
+      /* gauge: a numeric field named in sliders="…" renders as a range input */
+      var slid = opts.sliders && opts.sliders[params.data._key];
+      if (slid) {
+        var sw = document.createElement("div");
+        sw.className = "lc-form-bool";
+        var rng = document.createElement("input");
+        rng.type = "range";
+        rng.min = slid.min; rng.max = slid.max; rng.step = slid.step;
+        rng.value = (v === null || v === undefined || isNaN(Number(v))) ? slid.min : v;
+        rng.disabled = !opts.editable;
+        rng.style.flex = "1";
+        var rl = document.createElement("span");
+        rl.className = "lc-form-num";
+        rl.textContent = rng.value;
+        if (opts.editable) {
+          rng.addEventListener("input", function () {
+            rl.textContent = rng.value;
+            params.node.setDataValue("value", Number(rng.value));
+          });
+        }
+        sw.appendChild(rng);
+        sw.appendChild(rl);
+        return sw;
+      }
+
       if (t === "boolean") {
         var w = document.createElement("div");
         w.className = "lc-form-bool";
@@ -264,6 +289,7 @@ Auto-included by docs/_layouts/default.html.
           // Arrays and objects are read-only in v1.
           editable: function(params){
             if (!opts.editable) return false;
+            if (opts.sliders && opts.sliders[params.data._key]) return false; // slider handles it
             var t = params.data._type;
             return t === "string" || t === "number" || t === "null";
           },
@@ -346,6 +372,14 @@ Auto-included by docs/_layouts/default.html.
     var persistScope = persist === "true"
       ? ((location.pathname.replace(/\/+$/, "").split("/").pop() || "index").replace(/\.html$/, ""))
       : persist;
+    /* sliders="x,y" renders those numeric fields as range gauges (min/max/step) */
+    var _smin = parseFloat(el.getAttribute("min")); if (isNaN(_smin)) _smin = 0;
+    var _smax = parseFloat(el.getAttribute("max")); if (isNaN(_smax)) _smax = 100;
+    var _sstep = parseFloat(el.getAttribute("step")); if (isNaN(_sstep)) _sstep = 1;
+    var slidersMap = {};
+    (el.getAttribute("sliders") || "").split(",").forEach(function (f) {
+      f = f.trim(); if (f) slidersMap[f] = { min: _smin, max: _smax, step: _sstep };
+    });
 
     /* source="file:path" loads one object from a repo file */
     var source = el.getAttribute("source") || "";
@@ -360,7 +394,7 @@ Auto-included by docs/_layouts/default.html.
       fetch(fileCdn ? srcs.cdn : srcs.raw)
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + fileRef); return r.text(); })
         .then(function (text) { return parseDatagridText(text, fileFmt); })
-        .then(function (obj) { renderFormBody(fbody, obj, { editable: editable, persist: persistScope, formId: id }); })
+        .then(function (obj) { renderFormBody(fbody, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap }); })
         .catch(function (e) { fbody.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>'; });
       return;
     }
@@ -395,7 +429,7 @@ Auto-included by docs/_layouts/default.html.
     try { dataPromise = parseDatagridText(raw, format); }
     catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
     dataPromise.then(function(obj){
-      renderFormBody(body, obj, { editable: editable, persist: persistScope, formId: id });
+      renderFormBody(body, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap });
       if (!title) setFormTitle(wrapper, inferFormTitle(obj) || "Form");
     }).catch(function(e){
       body.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>';
