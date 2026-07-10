@@ -133,6 +133,33 @@ Auto-included by docs/_layouts/default.html.
         return sw;
       }
 
+      /* pick list: a field named in options="field=a|b|c" renders as a dropdown */
+      var picks = opts.options && opts.options[params.data._key];
+      if (picks) {
+        var pw = document.createElement("div");
+        pw.className = "lc-form-bool";
+        var sel = document.createElement("select");
+        sel.className = "lc-form-select";
+        sel.disabled = !opts.editable;
+        sel.style.flex = "1";
+        if (picks.indexOf(String(v)) < 0) {
+          var ph = document.createElement("option");
+          ph.value = ""; ph.textContent = (v == null || v === "") ? "— pick —" : String(v);
+          sel.appendChild(ph);
+        }
+        picks.forEach(function (o) {
+          var op = document.createElement("option");
+          op.value = o; op.textContent = o;
+          if (String(v) === o) op.selected = true;
+          sel.appendChild(op);
+        });
+        if (opts.editable) {
+          sel.addEventListener("change", function () { params.node.setDataValue("value", sel.value); });
+        }
+        pw.appendChild(sel);
+        return pw;
+      }
+
       if (t === "boolean") {
         var w = document.createElement("div");
         w.className = "lc-form-bool";
@@ -290,6 +317,7 @@ Auto-included by docs/_layouts/default.html.
           editable: function(params){
             if (!opts.editable) return false;
             if (opts.sliders && opts.sliders[params.data._key]) return false; // slider handles it
+            if (opts.options && opts.options[params.data._key]) return false; // dropdown handles it
             var t = params.data._type;
             return t === "string" || t === "number" || t === "null";
           },
@@ -380,6 +408,15 @@ Auto-included by docs/_layouts/default.html.
     (el.getAttribute("sliders") || "").split(",").forEach(function (f) {
       f = f.trim(); if (f) slidersMap[f] = { min: _smin, max: _smax, step: _sstep };
     });
+    /* options="field=a|b|c; field2=x|y" renders those fields as pick-list dropdowns */
+    var optionsMap = {};
+    (el.getAttribute("options") || "").split(";").forEach(function (part) {
+      var eq = part.indexOf("=");
+      if (eq < 0) return;
+      var f = part.slice(0, eq).trim();
+      var os = part.slice(eq + 1).split("|").map(function (s) { return s.trim(); }).filter(Boolean);
+      if (f && os.length) optionsMap[f] = os;
+    });
 
     /* source="file:path" loads one object from a repo file */
     var source = el.getAttribute("source") || "";
@@ -394,7 +431,7 @@ Auto-included by docs/_layouts/default.html.
       fetch(fileCdn ? srcs.cdn : srcs.raw)
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + fileRef); return r.text(); })
         .then(function (text) { return parseDatagridText(text, fileFmt); })
-        .then(function (obj) { renderFormBody(fbody, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap }); })
+        .then(function (obj) { renderFormBody(fbody, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap, options: optionsMap }); })
         .catch(function (e) { fbody.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>'; });
       return;
     }
@@ -429,7 +466,7 @@ Auto-included by docs/_layouts/default.html.
     try { dataPromise = parseDatagridText(raw, format); }
     catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
     dataPromise.then(function(obj){
-      renderFormBody(body, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap });
+      renderFormBody(body, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap, options: optionsMap });
       if (!title) setFormTitle(wrapper, inferFormTitle(obj) || "Form");
     }).catch(function(e){
       body.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>';

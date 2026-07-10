@@ -91,7 +91,7 @@ Pick where Lucky's headed — the line below follows you:
 place: Lake Park
 emoji: 🌳
 ```
-{: .form #dest editable="true" title="Destination" }
+{: .form #dest editable="true" options="place=Lake Park|Riverside Park|Estabrook Park" title="Destination" }
 
 Lucky's off to **{= dest.place or 'the park' }** {= dest.emoji or '🌳' }!
 
