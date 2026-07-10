@@ -2,66 +2,105 @@
 title: "Help Lucky"
 ---
 
-# 🐾 Help Lucky get to the park
+# 🐾 Help Lucky find his ball
 
-Lucky wants to play 🎾 — but he's a little lost. Let's help him!
+Lucky lost his ball at the park 🎾. Let's help him find it!
 
-## 1. He needs a sign
+## 🥇 First — just help him
 
-Lucky can't read many words, so keep it big and clear:
+### 🪧 He needs a sign
+
+Lucky can't read many words, so keep it big:
 
 ````
 # 🐾 ➡️ 🌳
-### 🎾 **PARK!** ☀️🐿️
+### 🎾 **PARK!** ☀️
 ````
 {: .block }
 
-## 2. Make it your own
-
-Type on the left — the sign changes on the right, live:
-
-```markdown
-# 🐾 ➡️ 🌳
-### 🎾 **PARK!** ☀️🐿️
-```
-{: .mdpad rows="8" }
-
-## 3. Show him the way
-
-Here's the park. Zoom in and drag around:
+### 🗺️ The way to the park
 
 ```json
 [
   { "lat": 43.0556, "lon": -87.8720, "label": "🌳 Lucky's park 🎾" }
 ]
 ```
-{: .map height="300" zoom="14" }
+{: .map height="280" zoom="14" }
 
-## 4. Find his ball
+### 🔍 Where's the ball?
 
-Point Lucky to his favorite:
-
-- [x] 🎾 tennis ball
-- [ ] 🏀 basketball
-- [ ] ⚽ soccer ball
-- [ ] 🔴 red rubber
-{: .quiz }
-
-## 5. Set Lucky up
-
-Change a field — it's Lucky's setup for the trip:
+Clues: it's **yellow**, **small**, and Lucky last saw it **near the water** 💧.
+Tell him where to look, then hit **Find**:
 
 ```yaml
-colour: Golden
-size: medium
-ball: 🎾
-happy: true
+where: ""
 ```
-{: .form #lucky editable="true" title="Lucky" }
+{: .form #hunt editable="true" title="Look where?" }
 
-## 🎉 Off you go!
+[🔍 Find it](#)
+{: .button #find }
 
-Thanks, **{= build_ai.you.nickname or 'friend' }** — Lucky's on his way. 🐾🎾
+```python
+def on_click(button):
+    where = (Page().hunt.data.where or "").lower()
+    tries = int(Store.get("build_ai.hunt.tries") or 0)
+    if "water" in where or "pond" in where or "lake" in where:
+        Store.set("build_ai.hunt.found", True)
+        Store.set("build_ai.hunt.points", int(Store.get("build_ai.hunt.points") or 0) + 10)
+    else:
+        Store.set("build_ai.hunt.tries", tries + 1)
+```
+{: .onclick }
+
+🐕 Not there… Lucky keeps sniffing by the **water** 💧. Try again!
+{: visible="= build_ai.hunt.tries and not build_ai.hunt.found" }
+
+🎾 **Found it!** +10 exploration points — you're at **{= build_ai.hunt.points or 0 }**. Lucky's over the moon!
+{: visible="= build_ai.hunt.found" }
+
+**Quick one — where do lost things usually hide?**
+{: visible="= build_ai.hunt.found" }
+
+- [x] where they were last seen
+- [ ] somewhere brand new
+- [ ] nowhere — they're just gone
+{: .quiz visible="= build_ai.hunt.found" }
+
+## 🥈 Then — make it yours
+
+No account, nothing to install — your changes just stick, right here in your browser.
+
+### ✏️ Change the sign
+
+Type on the left, watch it change on the right:
+
+```markdown
+# 🐾 ➡️ 🌳
+### 🎾 **PARK!** ☀️
+```
+{: .mdpad rows="7" }
+
+### 🎚️ Set the destination
+
+Pick where Lucky's headed — the line below follows you:
+
+```yaml
+place: Lake Park
+emoji: 🌳
+```
+{: .form #dest editable="true" title="Destination" }
+
+Lucky's off to **{= dest.place or 'the park' }** {= dest.emoji or '🌳' }!
+
+## 🥉 Finally — make it real
+
+You changed Lucky's sign and picked his spot — and it stuck! But only **here**, in
+your browser. Want to **keep it for real** and let other people use it too?
+
+That's the moment you get your own place to save — and *only* now, because *now*
+there's a real reason.
+
+[🔑 Set up to save →](/micro_build_ai/onboarding){: .button }
 
 ```
 ### 🏠 Back
