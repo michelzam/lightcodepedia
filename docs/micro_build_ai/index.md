@@ -35,6 +35,15 @@ passion: ""
 
 Nice to meet you, **{= build_ai.you.nickname or 'friend' }**! 🎾
 
+**Seal the meet — check everything true. Lucky is…**
+
+- [x] your guide
+- [ ] a fish
+- [x] a dog
+- [x] a fan of balls 🎾
+- [ ] a robot
+{: .quiz multi="true" }
+
 ## 🧩 What *BUILD-AI*{: .hl } means
 
 **BUILD-AI** = **B**usiness-oriented **U**pskilling with **I**ncremental
