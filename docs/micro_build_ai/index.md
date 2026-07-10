@@ -20,11 +20,10 @@ If Lucky can, so can you.
 ````
 {: .blocks cols="2" }
 
-## 👋 Join the journey — introduce yourself
+## 👋 Welcome to BUILD-AI
 
-Every good build starts with a builder. Tell us a little about you — it's your
-**invitation to join**. It stays **in your browser only**: no account, nothing
-sent anywhere, and nothing to look up (so no reason to ask an AI).
+Let's discover your hidden powers and release your full potential. I'm **Lucky**,
+your guide 🐕 — I like water, fish, and balls. **How about you?**
 
 ```yaml
 nickname: ""
@@ -32,18 +31,9 @@ beverage: ""
 pet: ""
 passion: ""
 ```
-{: .form #you persist="build_ai" editable="true" title="Your builder card" }
+{: .form #you persist="build_ai" editable="true" title="You" }
 
-Welcome aboard, **{= build_ai.you.nickname or 'builder' }**! Grab your
-**{= build_ai.you.beverage or 'favorite drink' }**, bring
-**{= build_ai.you.pet or 'your sidekick' }**, and let's build something for
-**{= build_ai.you.passion or 'what you care about' }**. 🚀
-
-> The welcome *is* the hook: four personal questions with no lookup-able answers
-> (nothing to ask an AI), stored locally, then woven through every chapter —
-> `build_ai.you.nickname`, `.beverage`, `.pet`, `.passion`. Belonging first,
-> curriculum second.
-{: .speaker-note }
+Nice to meet you, **{= build_ai.you.nickname or 'friend' }**! 🎾
 
 ## 🧩 What *BUILD-AI*{: .hl } means
 

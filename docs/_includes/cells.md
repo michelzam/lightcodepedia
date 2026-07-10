@@ -37,6 +37,11 @@ Auto-included by docs/_layouts/default.html.
   window._lcCellsReady = true;
 
   function run(m, code) { (m.runPython || m.exec || m.run).call(m, code); }
+  /* kramdown "smart quotes" turn straight quotes in prose into curly ones, which
+     Python can't parse — normalise them back so string literals in a cell work. */
+  function deSmart(s) {
+    return String(s).replace(/[‘’‛′]/g, "'").replace(/[“”″]/g, '"');
+  }
   var cells = [], vis = [], wired = false;
 
   /* Walk text for {= expr } and replace each with a live <span>. Code fences,
@@ -99,8 +104,8 @@ Auto-included by docs/_layouts/default.html.
     var inp = readInputs();
     window._lcCellScopes = JSON.stringify(inp.scopes);
     window._lcCellBare = JSON.stringify(inp.bare);
-    var exprs = cells.map(function (c) { return c.getAttribute("data-expr"); })
-      .concat(vis.map(function (v) { return "bool(" + v.expr + ")"; }));
+    var exprs = cells.map(function (c) { return deSmart(c.getAttribute("data-expr")); })
+      .concat(vis.map(function (v) { return "bool(" + deSmart(v.expr) + ")"; }));
     window._lcCellExprs = JSON.stringify(exprs);
     run(m,
       "import js, json\n" +
