@@ -188,8 +188,19 @@
     });
   }
 
+  // Stash each id'd source block's markup BEFORE it is upgraded, so a later
+  // inline editor (X-ray edit) can read its knobs/content and re-render it.
+  var _srcSnap = {};
+  function _snapshotSources(root) {
+    root.querySelectorAll("[id]").forEach(function (el) {
+      if (el.id && _srcSnap[el.id] === undefined && !el.dataset.lcUpgraded) _srcSnap[el.id] = el.outerHTML;
+    });
+  }
+  window.lcSourceOf = function (id) { return _srcSnap[id]; };
+
   function scan() {
     _applyIAL(document);
+    _snapshotSources(document);
     _runUpgraders(document);
     _scanned = true;
   }
