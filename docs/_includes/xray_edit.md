@@ -21,7 +21,7 @@ source from window.lcSourceOf (code_chrome). Auto-included by default.html.
 #lcx-edit button { font: inherit; padding: .35em .8em; border-radius: 5px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
 #lcx-edit .lcx-apply { background: #0066cc; color: #fff; border-color: #0066cc; }
 #lcx-edit .lcx-save { color: #8a5a00; background: #fff5d6; border-color: #f0d38a; margin-left: auto; }
-#lcx-gear { position: fixed; z-index: 9000; display: none; width: 26px; height: 26px; padding: 0;
+#lcx-gear { position: fixed; z-index: 9999; display: none; width: 26px; height: 26px; padding: 0;
   border-radius: 50%; border: 1px solid #cbd5e1; background: rgba(255,255,255,.92);
   box-shadow: 0 2px 8px rgba(0,0,0,.18); cursor: pointer; font-size: 14px; line-height: 24px; text-align: center; }
 #lcx-gear:hover { background: #eef4ff; border-color: #0066cc; }
@@ -43,8 +43,9 @@ source from window.lcSourceOf (code_chrome). Auto-included by default.html.
 
   function parseSrc(html) { var t = document.createElement("div"); t.innerHTML = html; return t.firstElementChild; }
 
-  function open(el) {
-    var id = el.getAttribute("data-lc-id") || el.id; if (!id) return;
+  function open(ref) {
+    var id = (typeof ref === "string") ? ref : (ref && (ref.getAttribute("data-lc-id") || ref.id));
+    if (!id) return;
     var src = window.lcSourceOf && window.lcSourceOf(id); if (!src) return;
     var srcEl = parseSrc(src); if (!srcEl) return;
     curId = id; curSrc = src;
@@ -100,10 +101,12 @@ source from window.lcSourceOf (code_chrome). Auto-included by default.html.
     }, true);
 
     // ── Gear affordance ──────────────────────────────────────────────────────
-    // Hover any editable component → a ⚙️ appears at its top-right corner; click
-    // it to open this dialog. No Alt-lens needed (the lens is transient on
-    // desktop, so click-to-edit was effectively invisible there).
-    var gear = document.getElementById("lcx-gear"), gearFor = null, hideT = null;
+    // Hover (or tap) any editable component → a ⚙️ appears at its top-right
+    // corner; press it to open this dialog. No Alt-lens needed (the lens is
+    // transient on desktop, so click-to-edit was effectively invisible there).
+    // The target id is stashed on the gear, and we fire on pointerdown so a
+    // global capturing click handler can't swallow it (and taps work on touch).
+    var gear = document.getElementById("lcx-gear"), hideT = null;
     function editableAt(node) {
       var el = node && node.closest ? node.closest("[data-lc-id]") : null;
       while (el) {
@@ -114,28 +117,34 @@ source from window.lcSourceOf (code_chrome). Auto-included by default.html.
       }
       return null;
     }
-    function placeGear(el) {
+    function showGear(el) {
       var r = el.getBoundingClientRect();
-      gear.style.left = Math.min(window.innerWidth - 32, r.right - 30) + "px";
+      gear.dataset.forId = el.getAttribute("data-lc-id") || "";
+      gear.style.left = Math.min(window.innerWidth - 34, r.right - 30) + "px";
       gear.style.top  = Math.max(6, r.top + 6) + "px";
       gear.style.display = "block";
     }
-    function hideGear() { gear.style.display = "none"; gearFor = null; }
+    function hideGear() { gear.style.display = "none"; gear.dataset.forId = ""; }
     function keepGear() { if (hideT) { clearTimeout(hideT); hideT = null; } }
-    function scheduleHide() { keepGear(); hideT = setTimeout(hideGear, 260); }
-    document.addEventListener("pointermove", function (e) {
+    function scheduleHide() { keepGear(); hideT = setTimeout(hideGear, 300); }
+    function overComponent(e) {
       if (panel.classList.contains("open")) return;      // dialog open: leave the gear alone
-      if (e.target === gear) { keepGear(); return; }
+      if (e.target === gear || gear.contains(e.target)) { keepGear(); return; }
       var comp = editableAt(e.target);
-      if (comp) { keepGear(); gearFor = comp; placeGear(comp); }
-      else scheduleHide();
-    });
-    gear.addEventListener("mouseenter", keepGear);
-    gear.addEventListener("mouseleave", scheduleHide);
-    gear.addEventListener("click", function (e) {
+      if (comp) { keepGear(); showGear(comp); } else scheduleHide();
+    }
+    document.addEventListener("pointermove", overComponent);
+    document.addEventListener("pointerdown", overComponent);   // reveal on tap (touch has no hover)
+    gear.addEventListener("pointerenter", keepGear);
+    gear.addEventListener("pointerleave", scheduleHide);
+
+    function activate(e) {
       e.preventDefault(); e.stopPropagation();
-      if (gearFor) open(gearFor);
-    });
+      var id = gear.dataset.forId;
+      if (id) { open(id); hideGear(); }
+    }
+    gear.addEventListener("pointerdown", activate);   // robust vs. global click swallowers + touch
+    gear.addEventListener("click", activate);         // fallback for engines without pointer events
     window.addEventListener("scroll", hideGear, true);
   }
   if (document.readyState !== "loading") boot(); else document.addEventListener("DOMContentLoaded", boot);
