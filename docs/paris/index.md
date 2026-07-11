@@ -151,12 +151,20 @@ qualificatifs:
     for (var i = 0; i < PERIODS.length; i++) if (PERIODS[i].slug === slug) return PERIODS[i].title;
     return slug;
   }
-  function periodSlug(title) {
-    var t = (title || "").toLowerCase().trim();
-    for (var i = 0; i < PERIODS.length; i++) {
-      if (PERIODS[i].title.toLowerCase() === t || PERIODS[i].slug === t) return PERIODS[i].slug;
+  function norm(s) {
+    s = (s || "").toLowerCase().trim();
+    return s.normalize ? s.normalize("NFD").replace(new RegExp("[\\u0300-\\u036f]", "g"), "") : s;
+  }
+  function findPeriod(q) {
+    var n = norm(q); if (!n) return null;
+    var i, starts = null, incl = null, t, sl;
+    for (i = 0; i < PERIODS.length; i++) {
+      t = norm(PERIODS[i].title); sl = PERIODS[i].slug;
+      if (t === n || sl === n) return PERIODS[i];         // exact
+      if (!starts && t.indexOf(n) === 0) starts = PERIODS[i]; // préfixe
+      if (!incl && t.indexOf(n) !== -1) incl = PERIODS[i];    // contient
     }
-    return null;
+    return starts || incl || null;
   }
 
   // ── Sérialiseur YAML (schéma-ordonné, style bloc) ─────────────────────────
@@ -311,15 +319,16 @@ qualificatifs:
       document.body.appendChild(dl);
     }
     var add = document.createElement("button"); add.type = "button"; add.className = "pfe-add"; add.textContent = "＋";
+    var hint = document.createElement("span"); hint.className = "pfe-hint";
     function commitPick() {
-      var slug = periodSlug(inp.value);
-      if (!slug) { inp.value = ""; return; }
-      if (_rec[f.name].indexOf(slug) === -1) _rec[f.name].push(slug);
+      var p = findPeriod(inp.value);
+      if (!p) { hint.textContent = inp.value.trim() ? " ✗ aucune époque « " + inp.value.trim() + " »" : ""; return; }
+      if (_rec[f.name].indexOf(p.slug) === -1) _rec[f.name].push(p.slug);
       inp.value = ""; drawRelation(host, f); renderYaml();
     }
     add.onclick = commitPick;
-    inp.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); commitPick(); } };
-    row.appendChild(inp); row.appendChild(add); host.appendChild(row);
+    inp.onkeydown = function (e) { if (e.key === "Enter" || e.keyCode === 13) { e.preventDefault(); commitPick(); } };
+    row.appendChild(inp); row.appendChild(add); row.appendChild(hint); host.appendChild(row);
   }
   function relChip(f, slug, host) {
     var c = document.createElement("span"); c.className = "pfe-chip";
