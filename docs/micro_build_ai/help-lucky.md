@@ -29,8 +29,8 @@ Lucky can't read many words, so keep it big:
 
 ### 🔍 Aim for the ball
 
-The ball is **near the water** 💧. Slide **x** and **y** to aim — the hint updates
-as you move:
+The ball 🎾 is **near the water** 💧. Slide **x** and **y** — it moves toward the
+target 🎯:
 
 ```yaml
 x: 20
@@ -39,20 +39,23 @@ y: 80
 {: .form #hunt editable="true" sliders="x,y" min="0" max="100" step="5" title="Aim 🎯" }
 
 ```python
-def _dist():
-    x = hunt.x or 0
-    y = hunt.y or 0
-    return ((x - 70) ** 2 + (y - 30) ** 2) ** 0.5
+def _row(val, tgt):
+    n = 12
+    b = min(n - 1, max(0, round((val or 0) / 100 * (n - 1))))
+    t = min(n - 1, max(0, round(tgt / 100 * (n - 1))))
+    return "".join("🎾" if i == b else ("🎯" if i == t else "▫️") for i in range(n))
+def x_row(): return _row(hunt.x, 70)
+def y_row(): return _row(hunt.y, 30)
 def hint():
-    d = _dist()
-    if d <= 12: return "🎾 Found it! Lucky's got his ball!"
-    if d < 30:  return "🔥 Warmer…"
-    return "❄️ Cold — head for the water 💧"
+    d = (((hunt.x or 0) - 70) ** 2 + ((hunt.y or 0) - 30) ** 2) ** 0.5
+    return "🎾 Found it!" if d <= 10 else ("🔥 warmer…" if d < 30 else "❄️ cold")
 ```
 {: .run silent="true" }
 
-### {= hint() }
-{: .nofragments }
+x&nbsp;&nbsp;{= x_row() }
+y&nbsp;&nbsp;{= y_row() }
+
+**{= hint() }**
 
 **Where do lost things usually hide?**
 
