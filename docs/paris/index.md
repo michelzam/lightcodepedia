@@ -2,22 +2,27 @@
 title: PoC — Éditeur de fiches YAML
 ---
 
-# Pour Toni — est-ce ce que tu veux ?
+# Pour Toni — ces composants te conviennent-ils (en fonctionnalité) ?
 
-Ce prototype tourne **sur lightcodepedia (GitHub Pages), sans serveur, sans base, sans Sveltia**.
-Il édite tes fiches YAML **structurées** avec un formulaire **piloté par le schéma** — et il te pose
-la question : **est-ce la direction que tu veux ?**
+On te propose des composants pedia à brancher sur ton corpus YAML. Deux hypothèses, qu'on tranchera
+**plus tard, selon ton retour** :
 
-En direct (essaie sur ton tél) :
+- **Hypothèse 1 — on ajoute** ces composants à ta structure existante ;
+- **Hypothèse 2 — on remplace** certaines briques par ces composants.
 
-- **bascule Personnage ⇄ Événement** — *deux schémas différents, un seul moteur* (c'est le test de généralisation) ;
-- édite : texte, listes, **vocabulaire fermé** (menu), **relations par nom** (recherche → puce), **objets imbriqués**
-  (la datation), **liste d'objets** (les points d'un itinéraire, chacun relié à une adresse) ;
-- à droite : le **YAML ré-émis** sans perte de champ ; au milieu : l'**aperçu rendu** — l'aperçu fidèle que Sveltia n'a pas ;
-- **💾 Commiter** écrit dans git via l'API GitHub (historique, PR, workflow, comme d'habitude).
+**La seule question de cette étape est fonctionnelle : est-ce que ces composants clés font ce que tu veux ?**
+Essaie-les ci-dessous (ça marche sur ton tél) :
 
-**Est-ce ce que tu veux ?** Si oui, la suite est de replier ce moteur dans un composant réutilisable
-(usage 100 % Markdown/IAL) et de le brancher sur le vrai corpus. Dis-nous ce qui manque.
+1. **Formulaire piloté par schéma** — champs typés, **vocabulaire fermé** (menu), **relations par nom**
+   (recherche → puce), **objets imbriqués** (la datation) et **listes d'objets** (les points d'un événement,
+   chacun relié à une adresse). Démontré sur **Personnage ⇄ Événement** (un seul moteur, via le sélecteur de type).
+2. **Aperçu fidèle + WYSIWYG en place** — édite **directement sur la fiche telle qu'elle est rendue**
+   (clique le nom, la bio…) ; le YAML se ré-émet sans perte.
+3. **Carte alimentée par les données** — les adresses/points d'une fiche sur une carte. *(prochaine étape)*
+4. **IA in-form** — bouton « Suggérer / Vérifier » dans la fiche. *(prochaine étape)*
+
+**Dis-nous, pour chaque composant : ça te convient ? à ajuster ? non ?** On décidera « ajout » vs
+« remplacement » ensuite, en fonction de ton feedback.
 
 > **Comment tester — à lire avant de conclure.** Deux niveaux à ne pas confondre :
 >
