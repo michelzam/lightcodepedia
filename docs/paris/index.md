@@ -26,6 +26,7 @@ sans Sveltia ni backend. C'est le *test décisif nº 1* de Toni transformé en d
     <section class="pfe-card">
       <h3>Formulaire typé (schéma → widgets)</h3>
       <div id="pfe-form"><p class="pfe-mut">Chargement…</p></div>
+      <p id="pfe-source" class="pfe-mut"></p>
     </section>
     <section class="pfe-card">
       <h3>YAML ré-émis (round-trip valide-schéma)</h3>
@@ -42,6 +43,7 @@ sans Sveltia ni backend. C'est le *test décisif nº 1* de Toni transformé en d
     </div>
     <div class="pfe-row">
       <button id="pfe-commit-btn" type="button">💾 Commiter le YAML ré-émis</button>
+      <button id="pfe-reload-btn" type="button">🔄 Recharger depuis le fichier</button>
       <span id="pfe-status" class="pfe-mut"></span>
     </div>
     <p class="pfe-mut">Le PAT est lu dans <code>localStorage.lc_ed_pat</code> — renseigne-le d'abord
@@ -288,6 +290,7 @@ qualificatifs:
     var row = document.createElement("div"); row.className = "pfe-listrow";
     var inp = document.createElement("input"); inp.type = "text"; inp.value = _rec[f.name][idx];
     inp.oninput = function () { _rec[f.name][idx] = inp.value; renderYaml(); };
+    inp.onchange = function () { _rec[f.name][idx] = inp.value.trim(); inp.value = _rec[f.name][idx]; renderYaml(); };
     var x = document.createElement("button"); x.type = "button"; x.className = "pfe-x"; x.textContent = "×";
     x.onclick = function () { _rec[f.name].splice(idx, 1); drawList(inp.parentNode.parentNode, f); renderYaml(); };
     row.appendChild(inp); row.appendChild(x); return row;
@@ -333,6 +336,7 @@ qualificatifs:
   // ── Commit (API GitHub — même contrat que edit_on_github) ─────────────────
   function b64e(s) { return btoa(unescape(encodeURIComponent(s))); }
   function wireCommit() {
+    $("pfe-reload-btn").onclick = loadFiche;
     $("pfe-commit-btn").onclick = function () {
       var pat = localStorage.getItem("lc_ed_pat");
       var repo = $("pfe-repo").value || localStorage.getItem("lc_ed_repo") || "";
@@ -358,13 +362,24 @@ qualificatifs:
   }
 
   // ── Boot ──────────────────────────────────────────────────────────────────
-  function boot() {
-    var raw = $("pfe-fiche").textContent;
-    try { _rec = window.jsyaml.load(raw); }
+  function initFrom(raw, srcLabel) {
+    try { _rec = window.jsyaml.load(raw) || {}; }
     catch (e) { $("pfe-form").innerHTML = "<p style='color:#c00'>YAML illisible : " + e.message + "</p>"; return; }
     _origKeys = []; for (var k in _rec) if (_rec.hasOwnProperty(k)) _origKeys.push(k);
-    renderHead(); renderForm(); renderYaml(); wireCommit();
+    renderHead(); renderForm(); renderYaml();
+    var se = $("pfe-source"); if (se) se.textContent = "Fiche chargée depuis : " + srcLabel;
   }
+  function loadFiche() {
+    var repo = $("pfe-repo").value || localStorage.getItem("lc_ed_repo") || "michelzam/lightcodepedia";
+    var branch = $("pfe-branch").value || "main";
+    var path = $("pfe-path").value || "docs/paris/sample/a-de-longpre.yaml";
+    var url = "https://raw.githubusercontent.com/" + repo + "/" + branch + "/" + path + "?t=" + (new Date().getTime());
+    var se = $("pfe-source"); if (se) se.textContent = "Chargement depuis " + path + " …";
+    fetch(url).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(function (txt) { initFrom(txt, path + " @ " + branch + " (fichier réel)"); })
+      .catch(function () { initFrom($("pfe-fiche").textContent, "copie intégrée à la page (repli hors-ligne)"); });
+  }
+  function boot() { wireCommit(); loadFiche(); }
   if (window.jsyaml) { boot(); }
   else {
     var s = document.createElement("script");
