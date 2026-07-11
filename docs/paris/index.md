@@ -2,25 +2,35 @@
 title: PoC — Éditeur de fiches YAML
 ---
 
-# PoC — Éditeur de fiches structurées (Paris révolutionnaire)
+# Pour Toni — est-ce ce que tu veux ?
 
-Preuve de concept **isolée** (`docs/paris/`) : lire une **fiche YAML structurée** →
-la rendre dans un **formulaire typé piloté par un schéma** → la réécrire en YAML
-**valide-schéma** (ordre de clés stable, aucun champ perdu), le tout **sur GitHub Pages**,
-sans Sveltia ni backend. C'est le *test décisif nº 1* de Toni transformé en démo :
-« éditer nos fiches structurées **sans les casser** ».
+Ce prototype tourne **sur lightcodepedia (GitHub Pages), sans serveur, sans base, sans Sveltia**.
+Il édite tes fiches YAML **structurées** avec un formulaire **piloté par le schéma** — et il te pose
+la question : **est-ce la direction que tu veux ?**
 
-- **Sous-ensemble édité** (schéma) : `title` (texte), `gender` (select fermé),
-  `professions` (liste), `periods` (relation par nom → époques).
-- **Tout le reste de la fiche est préservé** tel quel (round-trip sans perte).
-- Le panneau de droite montre le YAML **ré-émis en direct** à chaque frappe.
-- Le bouton **Commiter** réutilise le PAT de l'éditeur pedia (icône ✏️ → `lc_ed_pat`) et
-  l'API GitHub — même contrat que `edit_on_github`.
+En direct (essaie sur ton tél) :
+
+- **bascule Personnage ⇄ Événement** — *deux schémas différents, un seul moteur* (c'est le test de généralisation) ;
+- édite : texte, listes, **vocabulaire fermé** (menu), **relations par nom** (recherche → puce), **objets imbriqués**
+  (la datation), **liste d'objets** (les points d'un itinéraire, chacun relié à une adresse) ;
+- à droite : le **YAML ré-émis** sans perte de champ ; au milieu : l'**aperçu rendu** — l'aperçu fidèle que Sveltia n'a pas ;
+- **💾 Commiter** écrit dans git via l'API GitHub (historique, PR, workflow, comme d'habitude).
+
+**Est-ce ce que tu veux ?** Si oui, la suite est de replier ce moteur dans un composant réutilisable
+(usage 100 % Markdown/IAL) et de le brancher sur le vrai corpus. Dis-nous ce qui manque.
 
 <div id="pfe" markdown="0">
   <div class="pfe-meta">
     <span class="pfe-tag" id="pfe-type">type</span>
     <b id="pfe-id">id</b> · <span id="pfe-slug" class="pfe-mut">slug</span>
+  </div>
+  <div class="pfe-row">
+    <label>Type de fiche
+      <select id="pfe-type-sel">
+        <option value="persons">Personnage</option>
+        <option value="events">Événement</option>
+      </select>
+    </label>
   </div>
   <div class="pfe-cols">
     <section class="pfe-card">
@@ -52,11 +62,11 @@ sans Sveltia ni backend. C'est le *test décisif nº 1* de Toni transformé en d
     </div>
     <p class="pfe-mut">Le PAT est lu dans <code>localStorage.lc_ed_pat</code> — renseigne-le d'abord
     via l'éditeur ✏️ en bas à droite. Pour écrire dans <code>noventa98/Paris-Rev</code> (privé),
-    mets le dépôt + le chemin réel (<code>poc/content/persons/…</code>) et un PAT qui y a accès.</p>
+    mets le dépôt + le chemin réel et un PAT qui y a accès.</p>
   </section>
 </div>
 
-<script type="application/yaml" id="pfe-fiche">
+<script type="application/yaml" id="pfe-fiche-persons">
 id: a-de-longpre
 slug: a-de-longpre
 type: person
@@ -86,15 +96,57 @@ qualificatifs:
   - républicain
 </script>
 
+<script type="application/yaml" id="pfe-fiche-events">
+id: 4eme-siege-de-la-maison-d-edition-gallimard
+slug: 4eme-siege-de-la-maison-d-edition-gallimard
+type: event
+title: 4ème siège de la maison d'édition Gallimard
+daterange:
+  startYear: 1930
+  endYear: 1945
+  precision: year
+location:
+  ordered: false
+  approximate: false
+  points:
+    - street: 5-rue-sebastien-bottin
+      primary: true
+      note: Siège de la maison d'édition Gallimard
+epochs:
+  - entre-deux-guerres
+themes:
+  - litterature
+districts:
+  - 7
+people:
+  - albert-camus
+  - robert-desnos
+  - paul-eluard
+  - jules-supervielle
+  - roger-martin-du-gard
+bibliography:
+  - id: dictionnaire-historique-des-rues-de-paris-hillairet-jacques
+    page: t2 p 584
+externalLinks: []
+body: ""
+workflow:
+  draft: false
+  aiText: null
+  edited: false
+  validated: false
+  reviewRequested: true
+  reviewNote: Migré de l'export XWiki 2026-04-05 — à vérifier.
+</script>
+
 <style>
 #pfe { margin: 1.5em 0; font-size: 0.95em; }
-#pfe .pfe-meta { margin-bottom: 0.8em; }
+#pfe .pfe-meta { margin-bottom: 0.6em; }
 #pfe .pfe-tag { background:#eef; color:#446; border-radius:4px; padding:0.1em 0.5em; font-size:0.8em; margin-right:0.5em; }
 #pfe .pfe-mut { color:#888; }
 #pfe .pfe-cols { display:flex; gap:1em; flex-wrap:wrap; align-items:flex-start; }
-#pfe .pfe-card { flex:1 1 320px; border:1px solid #e3e3e3; border-radius:8px; padding:1em; background:#fff; }
+#pfe .pfe-card { flex:1 1 300px; border:1px solid #e3e3e3; border-radius:8px; padding:1em; background:#fff; }
 #pfe .pfe-card h3 { margin:0 0 0.7em; font-size:0.95em; }
-#pfe .pfe-yaml { background:#0f1720; color:#d6e2ef; padding:0.9em; border-radius:6px; overflow:auto; max-height:520px; white-space:pre; font-size:0.82em; line-height:1.45; }
+#pfe .pfe-yaml { background:#0f1720; color:#d6e2ef; padding:0.9em; border-radius:6px; overflow:auto; max-height:520px; white-space:pre; font-size:0.8em; line-height:1.45; }
 #pfe .pfe-field { margin-bottom:0.9em; }
 #pfe .pfe-field > label { display:block; font-weight:600; margin-bottom:0.25em; }
 #pfe .pfe-field .pfe-hint { font-weight:400; color:#999; font-size:0.82em; }
@@ -107,8 +159,11 @@ qualificatifs:
 #pfe .pfe-chip { background:#eef4ff; border:1px solid #cfe0ff; border-radius:14px; padding:0.15em 0.6em; font-size:0.85em; }
 #pfe .pfe-chip button { border:none; background:transparent; cursor:pointer; color:#667; margin-left:0.3em; }
 #pfe .pfe-row { display:flex; gap:0.8em; flex-wrap:wrap; align-items:center; margin-bottom:0.6em; }
-#pfe .pfe-row label { font-size:0.85em; display:flex; flex-direction:column; gap:0.2em; }
+#pfe .pfe-row > label { font-size:0.85em; display:flex; flex-direction:column; gap:0.2em; }
 #pfe .pfe-commit button { background:#2563eb; color:#fff; border:none; border-radius:6px; padding:0.5em 1em; cursor:pointer; font:inherit; }
+#pfe .pfe-group { border-left:3px solid #e3e3e3; padding-left:0.8em; margin:0.2em 0; }
+#pfe .pfe-item { border:1px solid #eee; border-radius:6px; padding:0.6em 0.8em; margin-bottom:0.5em; }
+#pfe .pfe-item-hd { display:flex; justify-content:space-between; align-items:center; font-weight:600; color:#556; font-size:0.82em; margin-bottom:0.4em; }
 #pfe .pfe-suggest { border:1px solid #e0e0e0; border-radius:6px; margin-top:0.2em; overflow:hidden; }
 #pfe .pfe-sug { padding:0.45em 0.6em; cursor:pointer; border-bottom:1px solid #f0f0f0; }
 #pfe .pfe-sug:last-child { border-bottom:none; }
@@ -123,6 +178,8 @@ qualificatifs:
 #pfe .pv-lab { font-weight:600; color:#556; font-size:0.85em; margin-right:0.3em; }
 #pfe .pv-chip { display:inline-block; background:#f1f3f6; border-radius:12px; padding:0.1em 0.55em; font-size:0.85em; margin:0.1em 0.15em 0.1em 0; }
 #pfe .pv-chip.pv-rel { background:#eef4ff; border:1px solid #cfe0ff; }
+#pfe .pv-list { margin:0.2em 0 0.5em 1.1em; padding:0; }
+#pfe .pv-mut { color:#999; font-size:0.9em; }
 #pfe .pv-body { margin-top:0.7em; }
 #pfe .pv-body p { margin:0.4em 0; }
 </style>
@@ -131,77 +188,109 @@ qualificatifs:
 (function () {
   "use strict";
 
-  // ── Schéma du sous-ensemble édité (donnée, pas code) — miroir du config.yml Sveltia ──
-  var SCHEMA = [
-    { name: "title", label: "Nom affiché", widget: "string" },
-    { name: "gender", label: "Genre", widget: "select",
-      options: ["", "masculin", "féminin", "non-binaire", "inconnu"] },
-    { name: "professions", label: "Professions / activités", widget: "list",
-      hint: "Vocabulaire contrôlé v1.3 — forme masculin singulier" },
-    { name: "periods", label: "Époques", widget: "relation", collection: "periods",
-      hint: "Relation par nom → stocke le slug, affiche le titre" }
-  ];
+  // ── Index de relations (en prod : généré au build depuis le corpus) ───────
+  var INDEX = {
+    periods: [
+      { slug: "revolution-francaise", title: "Révolution française" },
+      { slug: "revolutions-de-1848", title: "Révolutions de 1848" },
+      { slug: "commune-de-paris", title: "Commune de Paris" },
+      { slug: "second-empire", title: "Second Empire" },
+      { slug: "troisieme-republique", title: "Troisième République" },
+      { slug: "belle-epoque", title: "Belle Époque" },
+      { slug: "entre-deux-guerres", title: "Entre-deux-guerres" },
+      { slug: "ere-contemporaine", title: "Ère contemporaine" }
+    ],
+    themes: [
+      { slug: "litterature", title: "Littérature" },
+      { slug: "arts-plastiques", title: "Arts plastiques" },
+      { slug: "femmes-artistes", title: "Femmes artistes" },
+      { slug: "montmartre", title: "Montmartre" }
+    ],
+    addresses: [
+      { slug: "5-rue-sebastien-bottin", title: "5 rue Sébastien-Bottin" },
+      { slug: "12-rue-cortot", title: "12 rue Cortot" },
+      { slug: "place-charles-de-gaulle", title: "Place Charles-de-Gaulle" }
+    ],
+    persons: [
+      { slug: "albert-camus", title: "Albert Camus" },
+      { slug: "robert-desnos", title: "Robert Desnos" },
+      { slug: "paul-eluard", title: "Paul Éluard" },
+      { slug: "jules-supervielle", title: "Jules Supervielle" },
+      { slug: "roger-martin-du-gard", title: "Roger Martin du Gard" },
+      { slug: "a-de-longpre", title: "A. de Longpré" },
+      { slug: "suzanne-valadon", title: "Suzanne Valadon" }
+    ]
+  };
 
-  // Ordre canonique de sérialisation (schéma persons). Les clés absentes sont sautées ;
-  // les clés inconnues sont préservées, ajoutées à la fin.
-  var PERSON_ORDER = ["id","slug","type","title","entityType","gender","sortName","bornName",
-    "aka","image","birth","death","professions","qualificatifs","fate","nationalities",
-    "periods","themes","addresses","bibliography","externalLinks","body","workflow"];
+  // ── Types : deux schémas, un seul moteur ──────────────────────────────────
+  var PERSON_ORDER = ["id","slug","type","title","entityType","gender","sortName","bornName","aka","image","birth","death","professions","qualificatifs","fate","nationalities","periods","themes","addresses","bibliography","externalLinks","body","workflow"];
+  var EVENT_ORDER  = ["id","slug","type","title","image","daterange","location","epochs","themes","districts","people","bibliography","externalLinks","body","workflow"];
 
-  // Index minimal d'époques pour le widget relation (en prod : index JSON pré-généré au build).
-  var PERIODS = [
-    { slug: "revolution-francaise", title: "Révolution française" },
-    { slug: "revolutions-de-1848", title: "Révolutions de 1848" },
-    { slug: "commune-de-paris", title: "Commune de Paris" },
-    { slug: "second-empire", title: "Second Empire" },
-    { slug: "troisieme-republique", title: "Troisième République" },
-    { slug: "belle-epoque", title: "Belle Époque" },
-    { slug: "entre-deux-guerres", title: "Entre-deux-guerres" },
-    { slug: "ere-contemporaine", title: "Ère contemporaine" }
-  ];
+  var TYPES = {
+    persons: {
+      label: "Personnage", path: "docs/paris/sample/a-de-longpre.yaml", inlineId: "pfe-fiche-persons", order: PERSON_ORDER,
+      schema: [
+        { name: "title", label: "Nom affiché", widget: "string" },
+        { name: "gender", label: "Genre", widget: "select", options: ["", "masculin", "féminin", "non-binaire", "inconnu"] },
+        { name: "professions", label: "Professions / activités", widget: "list", hint: "vocabulaire contrôlé v1.3" },
+        { name: "periods", label: "Époques", widget: "relation", collection: "periods", multiple: true }
+      ],
+      preview: personPreview
+    },
+    events: {
+      label: "Événement", path: "docs/paris/sample/gallimard-siege.yaml", inlineId: "pfe-fiche-events", order: EVENT_ORDER,
+      schema: [
+        { name: "title", label: "Titre", widget: "string" },
+        { name: "daterange", label: "Datation", widget: "object", fields: [
+          { name: "startYear", label: "Année de début", widget: "number" },
+          { name: "endYear", label: "Année de fin", widget: "number" },
+          { name: "precision", label: "Précision", widget: "select", options: ["exact", "month", "year", "circa", "unknown"] }
+        ]},
+        { name: "location", label: "Localisation", widget: "object", fields: [
+          { name: "ordered", label: "Itinéraire ordonné", widget: "boolean" },
+          { name: "approximate", label: "Approximatif", widget: "boolean" },
+          { name: "points", label: "Point", widget: "objectlist", fields: [
+            { name: "street", label: "Adresse (relation)", widget: "relation", collection: "addresses" },
+            { name: "role", label: "Rôle", widget: "string" },
+            { name: "primary", label: "Point principal", widget: "boolean" },
+            { name: "note", label: "Nom du lieu", widget: "string" }
+          ]}
+        ]},
+        { name: "epochs", label: "Époques", widget: "relation", collection: "periods", multiple: true },
+        { name: "themes", label: "Thèmes", widget: "relation", collection: "themes", multiple: true },
+        { name: "people", label: "Personnages", widget: "relation", collection: "persons", multiple: true }
+      ],
+      preview: eventPreview
+    }
+  };
 
-  var _rec = null;
-  var _origKeys = [];
+  var _type = "persons", _rec = null, _origKeys = [];
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
   function $(id) { return document.getElementById(id); }
+  function el(t, c) { var e = document.createElement(t); if (c) e.className = c; return e; }
+  function txt(s) { return document.createTextNode(s); }
   function rep(s, n) { var o = ""; for (var i = 0; i < n; i++) o += s; return o; }
   function isArr(v) { return Object.prototype.toString.call(v) === "[object Array]"; }
   function isObj(v) { return v && typeof v === "object" && !isArr(v); }
-  function periodTitle(slug) {
-    for (var i = 0; i < PERIODS.length; i++) if (PERIODS[i].slug === slug) return PERIODS[i].title;
-    return slug;
-  }
-  function norm(s) {
-    s = (s || "").toLowerCase().trim();
-    return s.normalize ? s.normalize("NFD").replace(new RegExp("[\\u0300-\\u036f]", "g"), "") : s;
-  }
-  function findPeriod(q) {
-    var n = norm(q); if (!n) return null;
-    var i, starts = null, incl = null, t, sl;
-    for (i = 0; i < PERIODS.length; i++) {
-      t = norm(PERIODS[i].title); sl = PERIODS[i].slug;
-      if (t === n || sl === n) return PERIODS[i];         // exact
-      if (!starts && t.indexOf(n) === 0) starts = PERIODS[i]; // préfixe
-      if (!incl && t.indexOf(n) !== -1) incl = PERIODS[i];    // contient
-    }
-    return starts || incl || null;
-  }
-  function matchPeriods(q, exclude) {
-    var n = norm(q); exclude = exclude || [];
+  function escHtml(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function escAttr(s) { return escHtml(s).replace(/"/g, "&quot;"); }
+  function norm(s) { s = (s || "").toLowerCase().trim(); return s.normalize ? s.normalize("NFD").replace(new RegExp("[\\u0300-\\u036f]", "g"), "") : s; }
+  function relTitle(coll, slug) { var a = INDEX[coll] || [], i; for (i = 0; i < a.length; i++) if (a[i].slug === slug) return a[i].title; return slug; }
+  function matchRel(coll, q, exclude) {
+    var a = INDEX[coll] || [], n = norm(q); exclude = exclude || [];
     if (!n) return [];
     var starts = [], incl = [], i, p, t;
-    for (i = 0; i < PERIODS.length; i++) {
-      p = PERIODS[i]; if (exclude.indexOf(p.slug) !== -1) continue;
+    for (i = 0; i < a.length; i++) {
+      p = a[i]; if (exclude.indexOf(p.slug) !== -1) continue;
       t = norm(p.title);
       if (t.indexOf(n) === 0 || p.slug.indexOf(n) === 0) starts.push(p);
       else if (t.indexOf(n) !== -1 || p.slug.indexOf(n) !== -1) incl.push(p);
     }
     return starts.concat(incl).slice(0, 8);
   }
-  function escHtml(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-  function escAttr(s) { return escHtml(s).replace(/"/g, "&quot;"); }
 
-  // ── Sérialiseur YAML (schéma-ordonné, style bloc) ─────────────────────────
+  // ── Sérialiseur YAML (générique, schéma-ordonné, style bloc) ──────────────
   function quote(s) { return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'; }
   function scalarStr(s) {
     if (s === "") return '""';
@@ -220,23 +309,20 @@ qualificatifs:
     if (t === "number" || t === "boolean") return String(v);
     var s = String(v);
     if (s.indexOf("\n") !== -1) {
-      var lines = s.replace(/\n+$/, "").split("\n");
-      var out = "|-";
-      for (var i = 0; i < lines.length; i++) out += "\n" + pad + "  " + lines[i];
+      var lines = s.replace(/\n+$/, "").split("\n"), out = "|-", i;
+      for (i = 0; i < lines.length; i++) out += "\n" + pad + "  " + lines[i];
       return out;
     }
     return scalarStr(s);
   }
   function orderedKeys(map, order) {
     var keys = [], seen = {}, k, i;
-    if (order) {
-      for (i = 0; i < order.length; i++) { k = order[i]; if (map.hasOwnProperty(k)) { keys.push(k); seen[k] = 1; } }
-    }
+    if (order) for (i = 0; i < order.length; i++) { k = order[i]; if (map.hasOwnProperty(k)) { keys.push(k); seen[k] = 1; } }
     for (k in map) if (map.hasOwnProperty(k) && !seen[k]) keys.push(k);
     return keys;
   }
   function emitMap(map, indent, order) {
-    var pad = rep("  ", indent), keys = orderedKeys(map, order), out = [], i;
+    var keys = orderedKeys(map, order), out = [], i;
     for (i = 0; i < keys.length; i++) out.push(emitKV(map, keys[i], indent));
     return out.join("\n");
   }
@@ -262,7 +348,7 @@ qualificatifs:
     if (isArr(item)) return pad + "- []";
     return pad + "- " + scalarInline(item, pad);
   }
-  function toYaml(rec) { return emitMap(rec, 0, PERSON_ORDER) + "\n"; }
+  function toYaml(rec) { return emitMap(rec, 0, TYPES[_type].order) + "\n"; }
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
   function renderHead() {
@@ -272,184 +358,231 @@ qualificatifs:
   }
   function renderYaml() {
     $("pfe-yaml").textContent = toYaml(_rec);
-    var lost = 0, k;
-    for (var i = 0; i < _origKeys.length; i++) { k = _origKeys[i]; if (!_rec.hasOwnProperty(k)) lost++; }
+    var lost = 0, k, i;
+    for (i = 0; i < _origKeys.length; i++) { k = _origKeys[i]; if (!_rec.hasOwnProperty(k)) lost++; }
     $("pfe-integrity").textContent = lost === 0
       ? "✔ " + _origKeys.length + " clés d'origine préservées — aucune perte."
       : "⚠ " + lost + " clé(s) perdue(s).";
     renderPreview();
   }
+  function renderPreview() { var e = $("pfe-preview"); if (e) e.innerHTML = TYPES[_type].preview(_rec); }
+  function rerender() { renderForm(); renderYaml(); }
+  function renderForm() {
+    var box = $("pfe-form"); box.innerHTML = "";
+    var s = TYPES[_type].schema, i;
+    for (i = 0; i < s.length; i++) box.appendChild(buildField(_rec, s[i]));
+  }
+
+  // ── Widgets (génériques, liés à (obj, fieldDef)) ──────────────────────────
+  function buildField(obj, fd) {
+    var wrap = el("div", "pfe-field"), lab = el("label");
+    lab.appendChild(txt(fd.label));
+    if (fd.hint) { var h = el("span", "pfe-hint"); h.appendChild(txt(" — " + fd.hint)); lab.appendChild(h); }
+    wrap.appendChild(lab); wrap.appendChild(ctrlFor(obj, fd)); return wrap;
+  }
+  function ctrlFor(obj, fd) {
+    var w = fd.widget;
+    if (w === "string") return strCtrl(obj, fd);
+    if (w === "number") return numCtrl(obj, fd);
+    if (w === "boolean") return boolCtrl(obj, fd);
+    if (w === "select") return selCtrl(obj, fd);
+    if (w === "list") return listCtrl(obj, fd);
+    if (w === "relation") return relCtrl(obj, fd);
+    if (w === "object") return objCtrl(obj, fd);
+    if (w === "objectlist") return objListCtrl(obj, fd);
+    return txt("(widget inconnu)");
+  }
+  function strCtrl(obj, fd) {
+    var i = el("input"); i.type = "text"; i.value = obj[fd.name] != null ? obj[fd.name] : "";
+    i.oninput = function () { obj[fd.name] = i.value; renderYaml(); };
+    return i;
+  }
+  function numCtrl(obj, fd) {
+    var i = el("input"); i.type = "text"; i.setAttribute("inputmode", "numeric");
+    i.value = obj[fd.name] == null ? "" : obj[fd.name];
+    i.oninput = function () {
+      var v = i.value.trim();
+      if (v === "") delete obj[fd.name];
+      else { var n = Number(v); obj[fd.name] = isNaN(n) ? v : n; }
+      renderYaml();
+    };
+    return i;
+  }
+  function boolCtrl(obj, fd) {
+    var c = el("input"); c.type = "checkbox"; c.checked = !!obj[fd.name];
+    c.onchange = function () { obj[fd.name] = c.checked; renderYaml(); };
+    return c;
+  }
+  function selCtrl(obj, fd) {
+    var s = el("select"), j;
+    for (j = 0; j < fd.options.length; j++) {
+      var op = el("option"); op.value = fd.options[j];
+      op.textContent = fd.options[j] === "" ? "—" : fd.options[j];
+      if ((obj[fd.name] || "") === fd.options[j]) op.selected = true;
+      s.appendChild(op);
+    }
+    s.onchange = function () { if (s.value === "") delete obj[fd.name]; else obj[fd.name] = s.value; renderYaml(); };
+    return s;
+  }
+  function listCtrl(obj, fd) {
+    if (!isArr(obj[fd.name])) obj[fd.name] = [];
+    var box = el("div");
+    obj[fd.name].forEach(function (val, idx) {
+      var row = el("div", "pfe-listrow"), i = el("input");
+      i.type = "text"; i.value = val;
+      i.oninput = function () { obj[fd.name][idx] = i.value; renderYaml(); };
+      i.onchange = function () { obj[fd.name][idx] = i.value.trim(); i.value = obj[fd.name][idx]; renderYaml(); };
+      var x = el("button", "pfe-x"); x.type = "button"; x.appendChild(txt("×"));
+      x.onclick = function () { obj[fd.name].splice(idx, 1); rerender(); };
+      row.appendChild(i); row.appendChild(x); box.appendChild(row);
+    });
+    var add = el("button", "pfe-add"); add.type = "button"; add.appendChild(txt("＋ ajouter"));
+    add.onclick = function () { obj[fd.name].push(""); rerender(); };
+    box.appendChild(add); return box;
+  }
+  function relChipNode(coll, slug, onRemove) {
+    var c = el("span", "pfe-chip"); c.appendChild(txt(relTitle(coll, slug)));
+    var b = el("button"); b.type = "button"; b.appendChild(txt("×")); b.onclick = onRemove;
+    c.appendChild(b); return c;
+  }
+  function suggestBox(coll, exclude, onPick) {
+    var box = el("div"), row = el("div", "pfe-listrow"), i = el("input");
+    i.type = "text"; i.setAttribute("autocomplete", "off"); i.placeholder = "Chercher dans « " + coll + " » par nom…";
+    var add = el("button", "pfe-add"); add.type = "button"; add.appendChild(txt("＋"));
+    row.appendChild(i); row.appendChild(add); box.appendChild(row);
+    var sug = el("div", "pfe-suggest"); box.appendChild(sug);
+    function draw() {
+      var q = i.value, m = matchRel(coll, q, exclude); sug.innerHTML = "";
+      if (!q.trim()) return;
+      if (!m.length) { var e = el("div", "pfe-sug-empty"); e.appendChild(txt("✗ aucun résultat « " + q.trim() + " »")); sug.appendChild(e); return; }
+      m.forEach(function (p) {
+        var d = el("div", "pfe-sug"); d.appendChild(txt(p.title));
+        d.onmousedown = function (ev) { ev.preventDefault(); onPick(p); };
+        sug.appendChild(d);
+      });
+    }
+    i.oninput = draw;
+    i.onkeydown = function (e) { if (e.key === "Enter" || e.keyCode === 13) { e.preventDefault(); var m = matchRel(coll, i.value, exclude); if (m.length) onPick(m[0]); } };
+    add.onclick = function () { var m = matchRel(coll, i.value, exclude); if (m.length) onPick(m[0]); };
+    return box;
+  }
+  function relCtrl(obj, fd) {
+    var coll = fd.collection, box = el("div");
+    if (fd.multiple) {
+      if (!isArr(obj[fd.name])) obj[fd.name] = [];
+      var chips = el("div", "pfe-chips");
+      obj[fd.name].forEach(function (slug) {
+        chips.appendChild(relChipNode(coll, slug, function () { var k = obj[fd.name].indexOf(slug); if (k !== -1) obj[fd.name].splice(k, 1); rerender(); }));
+      });
+      box.appendChild(chips);
+      box.appendChild(suggestBox(coll, obj[fd.name], function (p) { if (obj[fd.name].indexOf(p.slug) === -1) obj[fd.name].push(p.slug); rerender(); }));
+    } else if (obj[fd.name]) {
+      var chips2 = el("div", "pfe-chips");
+      chips2.appendChild(relChipNode(coll, obj[fd.name], function () { delete obj[fd.name]; rerender(); }));
+      box.appendChild(chips2);
+    } else {
+      box.appendChild(suggestBox(coll, [], function (p) { obj[fd.name] = p.slug; rerender(); }));
+    }
+    return box;
+  }
+  function objCtrl(obj, fd) {
+    if (!isObj(obj[fd.name])) obj[fd.name] = {};
+    var g = el("div", "pfe-group"), i;
+    for (i = 0; i < fd.fields.length; i++) g.appendChild(buildField(obj[fd.name], fd.fields[i]));
+    return g;
+  }
+  function objListCtrl(obj, fd) {
+    if (!isArr(obj[fd.name])) obj[fd.name] = [];
+    var box = el("div");
+    obj[fd.name].forEach(function (item, idx) {
+      if (!isObj(item)) { item = {}; obj[fd.name][idx] = item; }
+      var g = el("div", "pfe-group pfe-item"), hd = el("div", "pfe-item-hd");
+      hd.appendChild(txt(fd.label + " " + (idx + 1)));
+      var x = el("button", "pfe-x"); x.type = "button"; x.appendChild(txt("×"));
+      x.onclick = function () { obj[fd.name].splice(idx, 1); rerender(); };
+      hd.appendChild(x); g.appendChild(hd);
+      for (var k = 0; k < fd.fields.length; k++) g.appendChild(buildField(item, fd.fields[k]));
+      box.appendChild(g);
+    });
+    var add = el("button", "pfe-add"); add.type = "button"; add.appendChild(txt("＋ ajouter " + (fd.label || "élément")));
+    add.onclick = function () { obj[fd.name].push({}); rerender(); };
+    box.appendChild(add); return box;
+  }
+
+  // ── Aperçus (par type) ────────────────────────────────────────────────────
   function pvChips(label, arr) {
     if (!isArr(arr) || !arr.length) return "";
-    var h = '<div class="pv-row"><span class="pv-lab">' + label + '</span>';
-    for (var i = 0; i < arr.length; i++) h += '<span class="pv-chip">' + escHtml(arr[i]) + '</span>';
+    var h = '<div class="pv-row"><span class="pv-lab">' + label + '</span>', i;
+    for (i = 0; i < arr.length; i++) h += '<span class="pv-chip">' + escHtml(arr[i]) + '</span>';
     return h + '</div>';
   }
-  function pvPeriods(arr) {
+  function pvRel(label, coll, arr) {
     if (!isArr(arr) || !arr.length) return "";
-    var h = '<div class="pv-row"><span class="pv-lab">Époques</span>';
-    for (var i = 0; i < arr.length; i++) h += '<span class="pv-chip pv-rel">' + escHtml(periodTitle(arr[i])) + '</span>';
+    var h = '<div class="pv-row"><span class="pv-lab">' + label + '</span>', i;
+    for (i = 0; i < arr.length; i++) h += '<span class="pv-chip pv-rel">' + escHtml(relTitle(coll, arr[i])) + '</span>';
     return h + '</div>';
   }
   function mdMini(t) {
-    var paras = String(t).split(/\n\s*\n/), h = "";
-    for (var i = 0; i < paras.length; i++) if (paras[i].trim()) h += '<p>' + escHtml(paras[i].trim()).replace(/\n/g, "<br>") + '</p>';
+    var paras = String(t).split(/\n\s*\n/), h = "", i;
+    for (i = 0; i < paras.length; i++) if (paras[i].trim()) h += '<p>' + escHtml(paras[i].trim()).replace(/\n/g, "<br>") + '</p>';
     return h;
   }
-  function renderPreview() {
-    var el = $("pfe-preview"); if (!el) return;
-    var r = _rec, fem = r.gender === "féminin", h = '<div class="pv-fiche">';
+  function personPreview(r) {
+    var fem = r.gender === "féminin", h = '<div class="pv-fiche">';
     if (r.image && r.image.src) h += '<img class="pv-portrait" src="' + escAttr(r.image.src) + '" alt="' + escAttr(r.image.alt || "") + '">';
     h += '<h2 class="pv-name">' + escHtml(r.title || "(sans nom)") + '</h2>';
     var v = [];
     if (r.birth && (r.birth.year || r.birth.place)) v.push((fem ? "Née" : "Né") + " " + [r.birth.year, r.birth.place].filter(Boolean).join(" à "));
     if (r.death && (r.death.year || r.death.place)) v.push((fem ? "Morte" : "Mort") + " " + [r.death.year, r.death.place].filter(Boolean).join(" à "));
     if (v.length) h += '<p class="pv-vitals">' + escHtml(v.join(" · ")) + '</p>';
-    h += pvChips("Professions", r.professions);
-    h += pvChips("Qualificatifs", r.qualificatifs);
-    h += pvChips("Nationalités", r.nationalities);
-    h += pvPeriods(r.periods);
+    h += pvChips("Professions", r.professions) + pvChips("Qualificatifs", r.qualificatifs) + pvChips("Nationalités", r.nationalities) + pvRel("Époques", "periods", r.periods);
     if (r.body) h += '<div class="pv-body">' + mdMini(r.body) + '</div>';
-    el.innerHTML = h + '</div>';
+    return h + '</div>';
   }
-  function field(label, hint, node) {
-    var wrap = document.createElement("div"); wrap.className = "pfe-field";
-    var lab = document.createElement("label"); lab.textContent = label;
-    if (hint) { var h = document.createElement("span"); h.className = "pfe-hint"; h.textContent = " — " + hint; lab.appendChild(h); }
-    wrap.appendChild(lab); wrap.appendChild(node); return wrap;
-  }
-  function renderForm() {
-    var box = $("pfe-form"); box.innerHTML = "";
-    for (var i = 0; i < SCHEMA.length; i++) box.appendChild(widget(SCHEMA[i]));
-  }
-  function widget(f) {
-    if (f.widget === "string") {
-      var inp = document.createElement("input"); inp.type = "text"; inp.value = _rec[f.name] || "";
-      inp.oninput = function () { _rec[f.name] = inp.value; renderYaml(); };
-      return field(f.label, f.hint, inp);
+  function eventPreview(r) {
+    var h = '<div class="pv-fiche"><h2 class="pv-name">' + escHtml(r.title || "(sans titre)") + '</h2>';
+    if (r.daterange) {
+      var d = r.daterange, dr = d.startYear != null ? String(d.startYear) : "";
+      if (d.endYear != null && d.endYear !== d.startYear) dr += (dr ? "–" : "") + d.endYear;
+      if (dr) h += '<p class="pv-vitals">' + escHtml(dr) + (d.precision && d.precision !== "exact" ? " (" + escHtml(d.precision) + ")" : "") + '</p>';
     }
-    if (f.widget === "select") {
-      var sel = document.createElement("select"), j;
-      for (j = 0; j < f.options.length; j++) {
-        var op = document.createElement("option"); op.value = f.options[j];
-        op.textContent = f.options[j] === "" ? "—" : f.options[j];
-        if ((_rec[f.name] || "") === f.options[j]) op.selected = true;
-        sel.appendChild(op);
-      }
-      sel.onchange = function () {
-        if (sel.value === "") delete _rec[f.name]; else _rec[f.name] = sel.value;
-        renderYaml();
-      };
-      return field(f.label, f.hint, sel);
+    if (r.location && isArr(r.location.points) && r.location.points.length) {
+      h += '<div class="pv-row"><span class="pv-lab">Lieux</span></div><ul class="pv-list">';
+      r.location.points.forEach(function (p) {
+        var name = p.note || relTitle("addresses", p.street || "") || p.role || "(point)";
+        h += '<li>' + escHtml(name) + (p.street ? ' <span class="pv-mut">(' + escHtml(relTitle("addresses", p.street)) + ')</span>' : "") + (p.primary ? " ★" : "") + '</li>';
+      });
+      h += '</ul>';
     }
-    if (f.widget === "list") {
-      if (!isArr(_rec[f.name])) _rec[f.name] = [];
-      var host = document.createElement("div");
-      drawList(host, f); return field(f.label, f.hint, host);
-    }
-    if (f.widget === "relation") {
-      if (!isArr(_rec[f.name])) _rec[f.name] = [];
-      var host2 = document.createElement("div");
-      drawRelation(host2, f); return field(f.label, f.hint, host2);
-    }
-    return field(f.label, f.hint, document.createTextNode("(widget inconnu)"));
-  }
-  function drawList(host, f) {
-    host.innerHTML = ""; var arr = _rec[f.name], i;
-    for (i = 0; i < arr.length; i++) host.appendChild(listRow(f, i));
-    var add = document.createElement("button"); add.type = "button"; add.className = "pfe-add";
-    add.textContent = "＋ ajouter";
-    add.onclick = function () { _rec[f.name].push(""); drawList(host, f); renderYaml(); };
-    host.appendChild(add);
-  }
-  function listRow(f, idx) {
-    var row = document.createElement("div"); row.className = "pfe-listrow";
-    var inp = document.createElement("input"); inp.type = "text"; inp.value = _rec[f.name][idx];
-    inp.oninput = function () { _rec[f.name][idx] = inp.value; renderYaml(); };
-    inp.onchange = function () { _rec[f.name][idx] = inp.value.trim(); inp.value = _rec[f.name][idx]; renderYaml(); };
-    var x = document.createElement("button"); x.type = "button"; x.className = "pfe-x"; x.textContent = "×";
-    x.onclick = function () { _rec[f.name].splice(idx, 1); drawList(inp.parentNode.parentNode, f); renderYaml(); };
-    row.appendChild(inp); row.appendChild(x); return row;
-  }
-  function drawRelation(host, f) {
-    host.innerHTML = "";
-    var chips = document.createElement("div"); chips.className = "pfe-chips";
-    var arr = _rec[f.name], i;
-    for (i = 0; i < arr.length; i++) chips.appendChild(relChip(f, arr[i], host));
-    host.appendChild(chips);
-    var row = document.createElement("div"); row.className = "pfe-listrow";
-    var inp = document.createElement("input"); inp.type = "text";
-    inp.setAttribute("autocomplete", "off"); inp.placeholder = "Chercher une époque par nom…";
-    var add = document.createElement("button"); add.type = "button"; add.className = "pfe-add"; add.textContent = "＋";
-    row.appendChild(inp); row.appendChild(add); host.appendChild(row);
-    var sug = document.createElement("div"); sug.className = "pfe-suggest"; host.appendChild(sug);
-    function pick(p) {
-      if (_rec[f.name].indexOf(p.slug) === -1) _rec[f.name].push(p.slug);
-      inp.value = ""; drawRelation(host, f); renderYaml();
-    }
-    function refresh() {
-      var q = inp.value, matches = matchPeriods(q, _rec[f.name]);
-      sug.innerHTML = "";
-      if (!q.trim()) return;
-      if (!matches.length) { sug.innerHTML = '<div class="pfe-sug-empty">✗ aucune époque « ' + escHtml(q.trim()) + ' »</div>'; return; }
-      for (var j = 0; j < matches.length; j++) {
-        (function (p) {
-          var d = document.createElement("div"); d.className = "pfe-sug"; d.textContent = p.title;
-          d.onmousedown = function (e) { e.preventDefault(); pick(p); };
-          sug.appendChild(d);
-        })(matches[j]);
-      }
-    }
-    inp.oninput = refresh;
-    inp.onkeydown = function (e) {
-      if (e.key === "Enter" || e.keyCode === 13) {
-        e.preventDefault();
-        var m = matchPeriods(inp.value, _rec[f.name]); if (m.length) pick(m[0]);
-      }
-    };
-    add.onclick = function () { var m = matchPeriods(inp.value, _rec[f.name]); if (m.length) pick(m[0]); };
-  }
-  function relChip(f, slug, host) {
-    var c = document.createElement("span"); c.className = "pfe-chip";
-    c.appendChild(document.createTextNode(periodTitle(slug)));
-    var b = document.createElement("button"); b.type = "button"; b.textContent = "×";
-    b.onclick = function () {
-      var idx = _rec[f.name].indexOf(slug);
-      if (idx !== -1) _rec[f.name].splice(idx, 1);
-      drawRelation(host, f); renderYaml();
-    };
-    c.appendChild(b); return c;
+    h += pvRel("Époques", "periods", r.epochs) + pvRel("Thèmes", "themes", r.themes) + pvRel("Personnages", "persons", r.people);
+    if (r.body) h += '<div class="pv-body">' + mdMini(r.body) + '</div>';
+    return h + '</div>';
   }
 
-  // ── Commit (API GitHub — même contrat que edit_on_github) ─────────────────
+  // ── Commit / chargement (API GitHub — même contrat que edit_on_github) ─────
   function b64e(s) { return btoa(unescape(encodeURIComponent(s))); }
   function wireCommit() {
     $("pfe-reload-btn").onclick = loadFiche;
     $("pfe-commit-btn").onclick = function () {
       var pat = localStorage.getItem("lc_ed_pat");
       var repo = $("pfe-repo").value || localStorage.getItem("lc_ed_repo") || "";
-      var path = $("pfe-path").value, branch = $("pfe-branch").value || "main";
-      var st = $("pfe-status");
+      var path = $("pfe-path").value, branch = $("pfe-branch").value || "main", st = $("pfe-status");
       if (!pat) { st.textContent = "Aucun PAT dans lc_ed_pat — renseigne-le via ✏️."; return; }
       if (!repo || !path) { st.textContent = "Dépôt et chemin requis."; return; }
       st.textContent = "Lecture du SHA…";
       var api = "https://api.github.com/repos/" + repo + "/contents/" + path;
       var H = { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
-      fetch(api + "?ref=" + encodeURIComponent(branch), { headers: H })
+      fetch(api + "?ref=" + encodeURIComponent(branch), { headers: H, cache: "no-store" })
         .then(function (r) { return r.json(); })
         .then(function (cur) {
-          var body = { message: "PoC: édition fiche " + (_rec.id || path), content: b64e(toYaml(_rec)), branch: branch };
+          var body = { message: "PoC: édition " + _type + " " + (_rec.id || path), content: b64e(toYaml(_rec)), branch: branch };
           if (cur && cur.sha) body.sha = cur.sha;
           return fetch(api, { method: "PUT", headers: H, body: JSON.stringify(body) }).then(function (r) { return r.json(); });
         })
-        .then(function (res) {
-          st.textContent = res && res.commit ? "✔ Commit " + res.commit.sha.substring(0, 7) : "✖ " + ((res && res.message) || "échec");
-        })
+        .then(function (res) { st.textContent = res && res.commit ? "✔ Commit " + res.commit.sha.substring(0, 7) : "✖ " + ((res && res.message) || "échec"); })
         .catch(function (e) { st.textContent = "✖ " + e.message; });
     };
   }
-
-  // ── Boot ──────────────────────────────────────────────────────────────────
   function initFrom(raw, srcLabel) {
     try { _rec = window.jsyaml.load(raw) || {}; }
     catch (e) { $("pfe-form").innerHTML = "<p style='color:#c00'>YAML illisible : " + e.message + "</p>"; return; }
@@ -460,21 +593,23 @@ qualificatifs:
   function loadFiche() {
     var repo = $("pfe-repo").value || localStorage.getItem("lc_ed_repo") || "michelzam/lightcodepedia";
     var branch = $("pfe-branch").value || "main";
-    var path = $("pfe-path").value || "docs/paris/sample/a-de-longpre.yaml";
+    var path = $("pfe-path").value || TYPES[_type].path;
     var pat = localStorage.getItem("lc_ed_pat");
-    // GitHub contents API with the raw media type: always fresh (no CDN cache,
-    // unlike raw.githubusercontent). Same host edit_on_github already uses.
-    var url = "https://api.github.com/repos/" + repo + "/contents/" + path +
-              "?ref=" + encodeURIComponent(branch) + "&t=" + (new Date().getTime());
+    var url = "https://api.github.com/repos/" + repo + "/contents/" + path + "?ref=" + encodeURIComponent(branch) + "&t=" + (new Date().getTime());
     var H = { Accept: "application/vnd.github.raw", "X-GitHub-Api-Version": "2022-11-28" };
     if (pat) H.Authorization = "Bearer " + pat;
     var se = $("pfe-source"); if (se) se.textContent = "Chargement depuis " + path + " (API GitHub) …";
     fetch(url, { headers: H, cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-      .then(function (txt) { initFrom(txt, path + " @ " + branch + " (API GitHub, frais)"); })
-      .catch(function () { initFrom($("pfe-fiche").textContent, "copie intégrée à la page (repli hors-ligne)"); });
+      .then(function (t) { initFrom(t, path + " @ " + branch + " (API GitHub, frais)"); })
+      .catch(function () { initFrom($(TYPES[_type].inlineId).textContent, "copie intégrée (" + _type + ", repli)"); });
   }
-  function boot() { wireCommit(); loadFiche(); }
+  function wireType() {
+    var sel = $("pfe-type-sel"); sel.value = _type;
+    sel.onchange = function () { _type = sel.value; $("pfe-path").value = TYPES[_type].path; $("pfe-status").textContent = ""; loadFiche(); };
+  }
+
+  function boot() { wireCommit(); wireType(); $("pfe-path").value = TYPES[_type].path; loadFiche(); }
   if (window.jsyaml) { boot(); }
   else {
     var s = document.createElement("script");
@@ -488,21 +623,11 @@ qualificatifs:
 
 ---
 
-## Comment ça marche (et pourquoi c'est fidèle à ta philosophie)
+## Note technique (productisation)
 
-**Runtime** : page statique GitHub Pages + JS navigateur + API GitHub. Aucun serveur, aucune base,
-aucun Sveltia. Le YAML est parsé par `js-yaml` (jsDelivr, comme les autres composants pedia) ;
-la **ré-émission** est un sérialiseur maison **ordonné par le schéma** (clés stables, `null` gérés,
-clés inconnues préservées) — c'est un round-trip **valide-schéma**, pas octet-pour-octet, exactement
-comme Sveltia.
-
-**Fidélité à « md/kd/IAL »** : ici le PoC est volontairement câblé à la main (un `<script>` dans la page).
-La productisation consiste à replier ce moteur dans un **composant** `_includes/` — comme `map`/`form`/`datagrid` —
-dont l'usage devient une simple directive IAL, ex. un bloc + `{: .fiche-editor collection="persons" }`.
-Le moteur (JS) vit alors **une seule fois** dans l'include ; l'auteur, lui, n'écrit que du md/kramdown/IAL.
-C'est le contrat déjà en vigueur pour tous les composants pedia.
-
-**Ce qui manque encore** pour la parité complète avec le `config.yml` (hors périmètre de ce PoC) :
-les widgets `object`/`image` imbriqués, la validation de vocabulaire fermé sur `professions`,
-l'index de relations pré-généré au build (ici : liste minimale en dur), et le passage `PUT main` → branche/PR
-pour le workflow brouillon→revue→publié.
+Même moteur pour **Personnage** et **Événement** : le formulaire, la sérialisation et l'aperçu sont
+**pilotés par un schéma** (widgets `string / number / boolean / select / list / relation / object / objectlist`).
+Ajouter un type = ajouter une entrée de schéma — **pas de code**. Le sérialiseur YAML est générique
+(objets et listes imbriqués), en round-trip **valide-schéma** (comme Sveltia). La productisation :
+replier ce moteur dans `_includes/fiche_editor.md` pour un usage **100 % Markdown/IAL**
+(`{: .fiche-editor collection="persons" }`), et générer l'index de relations au build.

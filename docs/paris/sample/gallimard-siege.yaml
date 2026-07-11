@@ -1,0 +1,39 @@
+id: 4eme-siege-de-la-maison-d-edition-gallimard
+slug: 4eme-siege-de-la-maison-d-edition-gallimard
+type: event
+title: 4ème siège de la maison d'édition Gallimard
+daterange:
+  startYear: 1930
+  endYear: 1945
+  precision: year
+location:
+  ordered: false
+  approximate: false
+  points:
+    - street: 5-rue-sebastien-bottin
+      primary: true
+      note: Siège de la maison d'édition Gallimard
+epochs:
+  - entre-deux-guerres
+themes:
+  - litterature
+districts:
+  - 7
+people:
+  - albert-camus
+  - robert-desnos
+  - paul-eluard
+  - jules-supervielle
+  - roger-martin-du-gard
+bibliography:
+  - id: dictionnaire-historique-des-rues-de-paris-hillairet-jacques
+    page: t2 p 584
+externalLinks: []
+body: ""
+workflow:
+  draft: false
+  aiText: null
+  edited: false
+  validated: false
+  reviewRequested: true
+  reviewNote: Migré de l'export XWiki 2026-04-05 — à vérifier.
