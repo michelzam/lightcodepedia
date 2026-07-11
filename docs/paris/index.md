@@ -29,6 +29,10 @@ sans Sveltia ni backend. C'est le *test décisif nº 1* de Toni transformé en d
       <p id="pfe-source" class="pfe-mut"></p>
     </section>
     <section class="pfe-card">
+      <h3>Aperçu rendu (live)</h3>
+      <div id="pfe-preview" class="pfe-preview"></div>
+    </section>
+    <section class="pfe-card">
       <h3>YAML ré-émis (round-trip valide-schéma)</h3>
       <pre id="pfe-yaml" class="pfe-yaml">…</pre>
       <p class="pfe-mut" id="pfe-integrity"></p>
@@ -105,6 +109,22 @@ qualificatifs:
 #pfe .pfe-row { display:flex; gap:0.8em; flex-wrap:wrap; align-items:center; margin-bottom:0.6em; }
 #pfe .pfe-row label { font-size:0.85em; display:flex; flex-direction:column; gap:0.2em; }
 #pfe .pfe-commit button { background:#2563eb; color:#fff; border:none; border-radius:6px; padding:0.5em 1em; cursor:pointer; font:inherit; }
+#pfe .pfe-suggest { border:1px solid #e0e0e0; border-radius:6px; margin-top:0.2em; overflow:hidden; }
+#pfe .pfe-sug { padding:0.45em 0.6em; cursor:pointer; border-bottom:1px solid #f0f0f0; }
+#pfe .pfe-sug:last-child { border-bottom:none; }
+#pfe .pfe-sug:hover, #pfe .pfe-sug:active { background:#eef4ff; }
+#pfe .pfe-sug-empty { padding:0.45em 0.6em; color:#c0392b; font-size:0.85em; }
+#pfe .pfe-preview { font-size:0.95em; }
+#pfe .pv-fiche { line-height:1.5; }
+#pfe .pv-portrait { float:right; max-width:120px; border-radius:6px; margin:0 0 0.5em 0.8em; }
+#pfe .pv-name { margin:0 0 0.15em; font-size:1.25em; }
+#pfe .pv-vitals { color:#666; margin:0 0 0.6em; font-style:italic; }
+#pfe .pv-row { margin:0.25em 0; }
+#pfe .pv-lab { font-weight:600; color:#556; font-size:0.85em; margin-right:0.3em; }
+#pfe .pv-chip { display:inline-block; background:#f1f3f6; border-radius:12px; padding:0.1em 0.55em; font-size:0.85em; margin:0.1em 0.15em 0.1em 0; }
+#pfe .pv-chip.pv-rel { background:#eef4ff; border:1px solid #cfe0ff; }
+#pfe .pv-body { margin-top:0.7em; }
+#pfe .pv-body p { margin:0.4em 0; }
 </style>
 
 <script>
@@ -166,6 +186,20 @@ qualificatifs:
     }
     return starts || incl || null;
   }
+  function matchPeriods(q, exclude) {
+    var n = norm(q); exclude = exclude || [];
+    if (!n) return [];
+    var starts = [], incl = [], i, p, t;
+    for (i = 0; i < PERIODS.length; i++) {
+      p = PERIODS[i]; if (exclude.indexOf(p.slug) !== -1) continue;
+      t = norm(p.title);
+      if (t.indexOf(n) === 0 || p.slug.indexOf(n) === 0) starts.push(p);
+      else if (t.indexOf(n) !== -1 || p.slug.indexOf(n) !== -1) incl.push(p);
+    }
+    return starts.concat(incl).slice(0, 8);
+  }
+  function escHtml(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function escAttr(s) { return escHtml(s).replace(/"/g, "&quot;"); }
 
   // ── Sérialiseur YAML (schéma-ordonné, style bloc) ─────────────────────────
   function quote(s) { return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'; }
@@ -243,6 +277,40 @@ qualificatifs:
     $("pfe-integrity").textContent = lost === 0
       ? "✔ " + _origKeys.length + " clés d'origine préservées — aucune perte."
       : "⚠ " + lost + " clé(s) perdue(s).";
+    renderPreview();
+  }
+  function pvChips(label, arr) {
+    if (!isArr(arr) || !arr.length) return "";
+    var h = '<div class="pv-row"><span class="pv-lab">' + label + '</span>';
+    for (var i = 0; i < arr.length; i++) h += '<span class="pv-chip">' + escHtml(arr[i]) + '</span>';
+    return h + '</div>';
+  }
+  function pvPeriods(arr) {
+    if (!isArr(arr) || !arr.length) return "";
+    var h = '<div class="pv-row"><span class="pv-lab">Époques</span>';
+    for (var i = 0; i < arr.length; i++) h += '<span class="pv-chip pv-rel">' + escHtml(periodTitle(arr[i])) + '</span>';
+    return h + '</div>';
+  }
+  function mdMini(t) {
+    var paras = String(t).split(/\n\s*\n/), h = "";
+    for (var i = 0; i < paras.length; i++) if (paras[i].trim()) h += '<p>' + escHtml(paras[i].trim()).replace(/\n/g, "<br>") + '</p>';
+    return h;
+  }
+  function renderPreview() {
+    var el = $("pfe-preview"); if (!el) return;
+    var r = _rec, fem = r.gender === "féminin", h = '<div class="pv-fiche">';
+    if (r.image && r.image.src) h += '<img class="pv-portrait" src="' + escAttr(r.image.src) + '" alt="' + escAttr(r.image.alt || "") + '">';
+    h += '<h2 class="pv-name">' + escHtml(r.title || "(sans nom)") + '</h2>';
+    var v = [];
+    if (r.birth && (r.birth.year || r.birth.place)) v.push((fem ? "Née" : "Né") + " " + [r.birth.year, r.birth.place].filter(Boolean).join(" à "));
+    if (r.death && (r.death.year || r.death.place)) v.push((fem ? "Morte" : "Mort") + " " + [r.death.year, r.death.place].filter(Boolean).join(" à "));
+    if (v.length) h += '<p class="pv-vitals">' + escHtml(v.join(" · ")) + '</p>';
+    h += pvChips("Professions", r.professions);
+    h += pvChips("Qualificatifs", r.qualificatifs);
+    h += pvChips("Nationalités", r.nationalities);
+    h += pvPeriods(r.periods);
+    if (r.body) h += '<div class="pv-body">' + mdMini(r.body) + '</div>';
+    el.innerHTML = h + '</div>';
   }
   function field(label, hint, node) {
     var wrap = document.createElement("div"); wrap.className = "pfe-field";
@@ -311,24 +379,35 @@ qualificatifs:
     host.appendChild(chips);
     var row = document.createElement("div"); row.className = "pfe-listrow";
     var inp = document.createElement("input"); inp.type = "text";
-    inp.setAttribute("list", "pfe-periods-dl"); inp.placeholder = "Chercher une époque par nom…";
-    var dl = document.getElementById("pfe-periods-dl");
-    if (!dl) {
-      dl = document.createElement("datalist"); dl.id = "pfe-periods-dl";
-      for (i = 0; i < PERIODS.length; i++) { var o = document.createElement("option"); o.value = PERIODS[i].title; dl.appendChild(o); }
-      document.body.appendChild(dl);
-    }
+    inp.setAttribute("autocomplete", "off"); inp.placeholder = "Chercher une époque par nom…";
     var add = document.createElement("button"); add.type = "button"; add.className = "pfe-add"; add.textContent = "＋";
-    var hint = document.createElement("span"); hint.className = "pfe-hint";
-    function commitPick() {
-      var p = findPeriod(inp.value);
-      if (!p) { hint.textContent = inp.value.trim() ? " ✗ aucune époque « " + inp.value.trim() + " »" : ""; return; }
+    row.appendChild(inp); row.appendChild(add); host.appendChild(row);
+    var sug = document.createElement("div"); sug.className = "pfe-suggest"; host.appendChild(sug);
+    function pick(p) {
       if (_rec[f.name].indexOf(p.slug) === -1) _rec[f.name].push(p.slug);
       inp.value = ""; drawRelation(host, f); renderYaml();
     }
-    add.onclick = commitPick;
-    inp.onkeydown = function (e) { if (e.key === "Enter" || e.keyCode === 13) { e.preventDefault(); commitPick(); } };
-    row.appendChild(inp); row.appendChild(add); row.appendChild(hint); host.appendChild(row);
+    function refresh() {
+      var q = inp.value, matches = matchPeriods(q, _rec[f.name]);
+      sug.innerHTML = "";
+      if (!q.trim()) return;
+      if (!matches.length) { sug.innerHTML = '<div class="pfe-sug-empty">✗ aucune époque « ' + escHtml(q.trim()) + ' »</div>'; return; }
+      for (var j = 0; j < matches.length; j++) {
+        (function (p) {
+          var d = document.createElement("div"); d.className = "pfe-sug"; d.textContent = p.title;
+          d.onmousedown = function (e) { e.preventDefault(); pick(p); };
+          sug.appendChild(d);
+        })(matches[j]);
+      }
+    }
+    inp.oninput = refresh;
+    inp.onkeydown = function (e) {
+      if (e.key === "Enter" || e.keyCode === 13) {
+        e.preventDefault();
+        var m = matchPeriods(inp.value, _rec[f.name]); if (m.length) pick(m[0]);
+      }
+    };
+    add.onclick = function () { var m = matchPeriods(inp.value, _rec[f.name]); if (m.length) pick(m[0]); };
   }
   function relChip(f, slug, host) {
     var c = document.createElement("span"); c.className = "pfe-chip";
