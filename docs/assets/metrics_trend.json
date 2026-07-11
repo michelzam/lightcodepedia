@@ -1,15 +1,5 @@
 [
  {
-  "run": "2026-07-09T21:47Z",
-  "pages": 41,
-  "heap_max_mb": 57.5,
-  "heap_avg_mb": 14.7,
-  "dom_max": 1926,
-  "errors": 0,
-  "passed": 85,
-  "scenarios": 112
- },
- {
   "run": "2026-07-09T22:03Z",
   "pages": 41,
   "heap_max_mb": 57.5,
@@ -296,6 +286,16 @@
   "heap_avg_mb": 14.7,
   "dom_max": 1940,
   "errors": 1,
+  "passed": 112,
+  "scenarios": 112
+ },
+ {
+  "run": "2026-07-11T21:44Z",
+  "pages": 41,
+  "heap_max_mb": 57.5,
+  "heap_avg_mb": 14.7,
+  "dom_max": 1916,
+  "errors": 10,
   "passed": 112,
   "scenarios": 112
  }
