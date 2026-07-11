@@ -382,10 +382,17 @@ qualificatifs:
     var repo = $("pfe-repo").value || localStorage.getItem("lc_ed_repo") || "michelzam/lightcodepedia";
     var branch = $("pfe-branch").value || "main";
     var path = $("pfe-path").value || "docs/paris/sample/a-de-longpre.yaml";
-    var url = "https://raw.githubusercontent.com/" + repo + "/" + branch + "/" + path + "?t=" + (new Date().getTime());
-    var se = $("pfe-source"); if (se) se.textContent = "Chargement depuis " + path + " …";
-    fetch(url).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-      .then(function (txt) { initFrom(txt, path + " @ " + branch + " (fichier réel)"); })
+    var pat = localStorage.getItem("lc_ed_pat");
+    // GitHub contents API with the raw media type: always fresh (no CDN cache,
+    // unlike raw.githubusercontent). Same host edit_on_github already uses.
+    var url = "https://api.github.com/repos/" + repo + "/contents/" + path +
+              "?ref=" + encodeURIComponent(branch) + "&t=" + (new Date().getTime());
+    var H = { Accept: "application/vnd.github.raw", "X-GitHub-Api-Version": "2022-11-28" };
+    if (pat) H.Authorization = "Bearer " + pat;
+    var se = $("pfe-source"); if (se) se.textContent = "Chargement depuis " + path + " (API GitHub) …";
+    fetch(url, { headers: H, cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(function (txt) { initFrom(txt, path + " @ " + branch + " (API GitHub, frais)"); })
       .catch(function () { initFrom($("pfe-fiche").textContent, "copie intégrée à la page (repli hors-ligne)"); });
   }
   function boot() { wireCommit(); loadFiche(); }
