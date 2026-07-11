@@ -19,6 +19,26 @@ En direct (essaie sur ton tél) :
 **Est-ce ce que tu veux ?** Si oui, la suite est de replier ce moteur dans un composant réutilisable
 (usage 100 % Markdown/IAL) et de le brancher sur le vrai corpus. Dis-nous ce qui manque.
 
+> **Comment tester — à lire avant de conclure.** Deux niveaux à ne pas confondre :
+>
+> 1. **Évaluer l'édition — aucun compte, aucun PAT, aucun fork.** Tout ce qui est *lecture,
+>    formulaire, round-trip YAML et WYSIWYG* marche pour toi **sans rien installer**. C'est
+>    l'essentiel de ton « test décisif ». Tu ne peux simplement pas *enregistrer* (le bouton 💾
+>    écrit par défaut dans le dépôt de Michel, où tu n'as pas les droits — un commit y échouera).
+> 2. **Tester la persistance réelle sur TON corpus — pas besoin de forker pedia.** Cette page est
+>    du JS statique : pointe-la sur ton dépôt.
+>    - **Dépôt** = `noventa98/Paris-Rev` · **Chemin** = `poc/content/persons/<une-fiche>.yaml` ·
+>      **Branche** = une branche de test (ex. `poc-pedia`).
+>    - Crée un **PAT fine-grained** limité à ce **seul** dépôt (*Contents: Read and write*), courte durée.
+>    - Colle-le via l'éditeur ✏️ (stocké dans **ton** navigateur, `lc_ed_pat`).
+>    - Édite une vraie fiche → **💾 Commiter** → un commit atterrit **chez toi** (ta build / Sveltia le voient).
+>    Le PAT reste dans ton navigateur et part directement vers l'API GitHub. Comme la page est servie
+>    par le site de Michel, utilise un **PAT fine-grained jetable** par prudence.
+>
+> *Alternative sans PAT :* Michel peut t'ajouter comme **collaborateur** d'un petit dépôt bac-à-sable,
+> ou on peut ajouter plus tard un **mode local** (comme le `local_backend` de Sveltia) qui édite un
+> clone local sans jeton.
+
 <div id="pfe" markdown="0">
   <div class="pfe-meta">
     <span class="pfe-tag" id="pfe-type">type</span>
@@ -61,9 +81,12 @@ En direct (essaie sur ton tél) :
       <button id="pfe-reload-btn" type="button">🔄 Recharger depuis le fichier</button>
       <span id="pfe-status" class="pfe-mut"></span>
     </div>
-    <p class="pfe-mut">Le PAT est lu dans <code>localStorage.lc_ed_pat</code> — renseigne-le d'abord
-    via l'éditeur ✏️ en bas à droite. Pour écrire dans <code>noventa98/Paris-Rev</code> (privé),
-    mets le dépôt + le chemin réel et un PAT qui y a accès.</p>
+    <p class="pfe-mut"><b>Éditer et voir le round-trip ne demande rien.</b> Seul ce bouton écrit dans git.
+    Par défaut il vise <code>michelzam/lightcodepedia</code> (Toni n'y a pas les droits → un commit
+    échouera). Pour tester la persistance sur ton corpus, mets <b>ton</b> dépôt
+    (<code>noventa98/Paris-Rev</code>) + un chemin réel + une branche de test, et un
+    <b>PAT fine-grained</b> (Contents: Read &amp; Write) limité à ce dépôt, collé via ✏️
+    (<code>lc_ed_pat</code>, reste dans ton navigateur). Voir l'encadré « Comment tester » en haut.</p>
   </section>
 </div>
 
