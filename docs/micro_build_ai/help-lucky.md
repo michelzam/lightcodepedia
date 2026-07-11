@@ -20,24 +20,24 @@ Lucky can't read many words, so keep it big:
 
 ### 🌳 Throw the ball in the park
 
-Slide **x** and **y** to move the ball 🎾 onto the park 🌳 — then hit **Fetch**,
-and Lucky runs for it!
+Slide to move the ball 🎾 onto the park 🌳 — then hit **Fetch**, and Lucky runs for it!
 
 ```yaml
-x: 20
-y: 80
+lat: 43.045
+lon: -87.885
 ```
-{: .form #hunt editable="true" sliders="x,y" min="0" max="100" step="5" title="Throw 🎾" }
+{: .form #hunt editable="true" sliders="lat:43.04:43.07:0.002,lon:-87.90:-87.85:0.002" title="Where to throw 🎾" }
 
 ```
-(park)
+label,lat,lon
+🌳 Lake Park,43.055,-87.872
 ```
-{: .playfield #field bind="hunt" park="70,30" }
+{: .map bind="hunt" bindicon="🎾" fetch="🐕" target="43.055,-87.872" radius="0.004" zoom="14" height="340" }
 
 **What makes a good throw?**
 
-- [x] line up both x *and* y on the park
-- [ ] just x is enough
+- [x] line up **both** sliders on the park
+- [ ] just one slider is enough
 - [ ] Lucky fetches from anywhere
 {: .quiz }
 

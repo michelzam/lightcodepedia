@@ -29,6 +29,19 @@ Auto-included by docs/_layouts/default.html.
     document.head.appendChild(s);
   }
 
+  // Glide a marker from one lng/lat to another over ms (rAF interpolation) —
+  // smooth, and it doesn't fight MapLibre's own transform like a CSS transition would.
+  function animateMarker(marker, from, to, ms, done) {
+    var start = null;
+    function frame(t) {
+      if (start === null) start = t;
+      var k = Math.min(1, (t - start) / ms);
+      marker.setLngLat([from[0] + (to[0] - from[0]) * k, from[1] + (to[1] - from[1]) * k]);
+      if (k < 1) requestAnimationFrame(frame); else if (done) done();
+    }
+    requestAnimationFrame(frame);
+  }
+
   function upgradeMap(el) {
     var code = el.querySelector("code");
     var raw = (code ? code.textContent : el.textContent).trim();
@@ -111,28 +124,69 @@ Auto-included by docs/_layouts/default.html.
           .addTo(map);
       });
 
-      // bind="formid": a movable dot that follows a form's lat/lon. Shows
-      // learners that values (the form) drive behaviour (where the dot lands) —
+      // bind="formid": a movable dot that follows a form's lat/lon, plus an
+      // optional fetch="🐕" button that runs a fetcher to the dot and cheers if
+      // it landed near target=. Shows learners that values (the form) drive
+      // behaviour (where the dot lands, whether Lucky reaches the park) —
       // params → a function call, felt now, named later.
       var bind = el.getAttribute("bind") || "";
       if (bind) {
+        wrap.style.position = "relative";
+        var ballLngLat = [centerLon, centerLat];
         var pin = document.createElement("div");
         pin.textContent = el.getAttribute("bindicon") || "📍";
-        pin.style.cssText = "font-size:1.7em;line-height:1;cursor:grab;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))";
-        var bmarker = new maplibregl.Marker({ element: pin, anchor: "bottom" })
-          .setLngLat([centerLon, centerLat])
+        pin.style.cssText = "font-size:1.7em;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))";
+        var bmarker = new maplibregl.Marker({ element: pin, anchor: "center" })
+          .setLngLat(ballLngLat)
           .addTo(map);
+
+        // fetch="icon": a Fetch button; the fetcher glides to the ball, then
+        // cheers only if it's within radius= of target= (both in degrees).
+        var fetchIcon = el.getAttribute("fetch") || "";
+        var status = null, inPark = function () { return false; };
+        if (fetchIcon) {
+          var tg = (el.getAttribute("target") || "").split(",").map(function (s) { return parseFloat(s.trim()); });
+          var tgtLngLat = (tg.length >= 2 && !isNaN(tg[0]) && !isNaN(tg[1]))
+            ? [tg[1], tg[0]]                                      // target= is "lat,lon"
+            : (markers.length ? [markers[0].lon, markers[0].lat] : [centerLon, centerLat]);
+          var radius = parseFloat(el.getAttribute("radius")); if (isNaN(radius)) radius = 0.004;
+          inPark = function () { return Math.hypot(ballLngLat[0] - tgtLngLat[0], ballLngLat[1] - tgtLngLat[1]) <= radius; };
+
+          var dog = document.createElement("div");
+          dog.textContent = fetchIcon;
+          dog.style.cssText = "font-size:1.7em;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))";
+          var b0 = map.getBounds();
+          var dogMarker = new maplibregl.Marker({ element: dog, anchor: "center" })
+            .setLngLat([b0.getWest(), b0.getSouth()])           // trots in from a corner
+            .addTo(map);
+
+          status = document.createElement("div");
+          status.style.cssText = "position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:3;background:rgba(255,255,255,.9);padding:3px 12px;border-radius:12px;font-size:.82em;white-space:nowrap";
+          var fbtn = document.createElement("button");
+          fbtn.textContent = fetchIcon + " Fetch!";
+          fbtn.style.cssText = "position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;padding:.4em 1em;border-radius:8px;border:1px solid #6ab04c;background:#fff;cursor:pointer;font:inherit";
+          fbtn.addEventListener("click", function () {
+            var f0 = dogMarker.getLngLat();
+            animateMarker(dogMarker, [f0.lng, f0.lat], ballLngLat, 700, function () {
+              status.textContent = inPark() ? "🎾 Fetched! Good boy, Lucky! 🐾" : "🐕 Got it — now land it in the park 🌳!";
+            });
+          });
+          wrap.appendChild(status);
+          wrap.appendChild(fbtn);
+        }
+
         function moveBound() {
           var f = document.querySelector(".lc-form[data-lc-id='" + bind + "']");
           if (!f) return;
           try {
             var d = JSON.parse(f.getAttribute("data-lc-value") || "{}");
             var la = parseFloat(d.lat), lo = parseFloat(d.lon != null ? d.lon : d.lng);
-            if (!isNaN(la) && !isNaN(lo)) bmarker.setLngLat([lo, la]);
+            if (!isNaN(la) && !isNaN(lo)) { ballLngLat = [lo, la]; bmarker.setLngLat(ballLngLat); }
           } catch (e) {}
+          if (status) status.textContent = inPark() ? "🎯 In the park! Hit Fetch 🐕" : "Slide to move the ball 🎾";
         }
         document.addEventListener("lc-model-changed", moveBound);
-        if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function() {
+        if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function () {
           document.removeEventListener("lc-model-changed", moveBound);
         });
         moveBound();
