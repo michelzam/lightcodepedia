@@ -1,151 +1,179 @@
 {%- comment -%}
-X-ray edit — click a widget while X-ray is active to edit its knobs + content in
-a small dialog. Applies live (re-render); does NOT save (no account) — reload
-loses it, which is the incentive to create an account. Reads the pre-upgrade
-source from window.lcSourceOf (code_chrome). Auto-included by default.html.
+X-ray edit — hover (or tap) any part of the page: its "ghost" outline appears
+with a ⚙️ badge on the corner. Click the gear to edit that block in a modal.
+Works for EVERY top-level markdown block (paragraphs, headings, lists, code)
+and for components (knobs + content, re-rendered live). Nothing is saved —
+"Keep changes" leads to account creation, which is the whole incentive; reload
+loses everything. A component's editable source comes from window.lcSourceOf
+(code_chrome); a plain block is edited in place. Auto-included by default.html.
 {%- endcomment -%}
 
 <style>
-#lcx-edit { position: fixed; right: 16px; bottom: 16px; width: 320px; max-height: 72vh; overflow: auto;
-  background: #fff; border: 1px solid #d0d0d0; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.18);
-  z-index: 10001; display: none; font-size: 0.9em; }
-#lcx-edit.open { display: block; }
-#lcx-edit h4 { margin: 0; padding: .55em .9em; background: #f3f4f6; border-bottom: 1px solid #e0e0e0;
-  font-family: ui-monospace, Menlo, monospace; font-size: .85em; }
-#lcx-edit .lcx-body { padding: .6em .9em; }
-#lcx-edit label { display: block; color: #666; font-size: .78em; margin: .5em 0 .12em; }
-#lcx-edit input, #lcx-edit textarea { width: 100%; box-sizing: border-box; padding: .35em .5em;
-  border: 1px solid #d0d0d0; border-radius: 5px; font: inherit; }
-#lcx-edit textarea { font-family: ui-monospace, Menlo, monospace; min-height: 84px; resize: vertical; }
-#lcx-edit .lcx-bar { display: flex; gap: .5em; padding: .55em .9em; border-top: 1px solid #e0e0e0; }
-#lcx-edit button { font: inherit; padding: .35em .8em; border-radius: 5px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
+#lcx-ghost { position: fixed; z-index: 9997; display: none; pointer-events: none;
+  border: 1.5px dashed rgba(0,102,204,.55); border-radius: 6px; background: rgba(0,102,204,.06); }
+#lcx-gear { position: fixed; z-index: 9998; display: none; width: 26px; height: 26px; padding: 0;
+  border-radius: 50%; border: 1px solid #0066cc; background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.22); cursor: pointer; font-size: 14px; line-height: 24px; text-align: center; }
+#lcx-gear:hover { background: #eef4ff; }
+#lcx-edit { width: min(560px, 92vw); max-height: 82vh; overflow: auto; padding: 0;
+  border: none; border-radius: 12px; box-shadow: 0 18px 60px rgba(0,0,0,.32); }
+#lcx-edit::backdrop { background: rgba(15,23,42,.35); }
+#lcx-edit h4 { margin: 0; padding: .7em 1em; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;
+  font-family: ui-monospace, Menlo, monospace; font-size: .9em; }
+#lcx-edit .lcx-body { padding: .8em 1em; }
+#lcx-edit label { display: block; color: #555; font-size: .8em; margin: .7em 0 .18em; }
+#lcx-edit input, #lcx-edit textarea { width: 100%; box-sizing: border-box; padding: .45em .6em;
+  border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+#lcx-edit textarea { font-family: ui-monospace, Menlo, monospace; min-height: 120px; resize: vertical; }
+#lcx-edit .lcx-bar { display: flex; gap: .55em; padding: .7em 1em; border-top: 1px solid #e5e7eb; background: #fafafa; }
+#lcx-edit button { font: inherit; padding: .45em .9em; border-radius: 7px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
 #lcx-edit .lcx-apply { background: #0066cc; color: #fff; border-color: #0066cc; }
-#lcx-edit .lcx-save { color: #8a5a00; background: #fff5d6; border-color: #f0d38a; margin-left: auto; }
-#lcx-gear { position: fixed; z-index: 9999; display: none; width: 26px; height: 26px; padding: 0;
-  border-radius: 50%; border: 1px solid #cbd5e1; background: rgba(255,255,255,.92);
-  box-shadow: 0 2px 8px rgba(0,0,0,.18); cursor: pointer; font-size: 14px; line-height: 24px; text-align: center; }
-#lcx-gear:hover { background: #eef4ff; border-color: #0066cc; }
+#lcx-edit .lcx-keep { color: #166534; background: #dcfce7; border-color: #86efac; margin-left: auto; }
 </style>
-<button id="lcx-gear" title="Edit this ✎" aria-label="Edit this component">⚙️</button>
-<div id="lcx-edit">
+
+<div id="lcx-ghost"></div>
+<button id="lcx-gear" title="Edit this ✎" aria-label="Edit this block">⚙️</button>
+<dialog id="lcx-edit">
   <h4 id="lcx-edit-title">Edit</h4>
   <div class="lcx-body" id="lcx-edit-body"></div>
   <div class="lcx-bar">
     <button class="lcx-apply" id="lcx-apply">Apply</button>
     <button id="lcx-close">Close</button>
-    <button class="lcx-save" id="lcx-save" title="Create an account to keep changes">🔒 Save</button>
+    <button class="lcx-keep" id="lcx-keep" title="Create an account to keep changes">💾 Keep changes</button>
   </div>
-</div>
+</dialog>
+
 <script>
 (function () {
   if (window._lcxEditReady) return; window._lcxEditReady = true;
-  var panel, curId, curSrc;
+  var MAIN, ghost, gear, dlg, hideT = null, ghostEl = null;
+  var curEl = null, curId = "", curSnap = "", isComponent = false;
 
   function parseSrc(html) { var t = document.createElement("div"); t.innerHTML = html; return t.firstElementChild; }
+  function openDlg() { if (dlg.open) return; if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); }
+  function closeDlg() { if (dlg.close) dlg.close(); else dlg.removeAttribute("open"); }
 
-  function open(ref) {
-    var id = (typeof ref === "string") ? ref : (ref && (ref.getAttribute("data-lc-id") || ref.id));
-    if (!id) return;
-    var src = window.lcSourceOf && window.lcSourceOf(id); if (!src) return;
-    var srcEl = parseSrc(src); if (!srcEl) return;
-    curId = id; curSrc = src;
+  // The top-level markdown block under a node — a direct child of <main>.
+  // Components are top-level children too, so this treats them uniformly.
+  function blockAt(node) {
+    if (!MAIN || !node) return null;
+    if (node === gear || node === ghost || (dlg && dlg.contains(node))) return null;
+    var el = node.nodeType === 1 ? node : node.parentElement;
+    while (el && el.parentElement && el.parentElement !== MAIN) el = el.parentElement;
+    if (!el || el.parentElement !== MAIN || el === ghost || el === gear) return null;
+    var r = el.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4) return null;   // skip collapsed/empty blocks
+    return el;
+  }
+
+  function showGhost(el) {
+    ghostEl = el;
+    var r = el.getBoundingClientRect();
+    ghost.style.left = (r.left - 3) + "px";
+    ghost.style.top = (r.top - 3) + "px";
+    ghost.style.width = (r.width + 6) + "px";
+    ghost.style.height = (r.height + 6) + "px";
+    ghost.style.display = "block";
+    gear.style.left = Math.min(window.innerWidth - 30, r.right - 13) + "px";   // badge on the corner
+    gear.style.top = Math.max(2, r.top - 13) + "px";
+    gear.style.display = "block";
+  }
+  function hideGhost() { ghost.style.display = "none"; gear.style.display = "none"; ghostEl = null; }
+  function keep() { if (hideT) { clearTimeout(hideT); hideT = null; } }
+  function scheduleHide() { keep(); hideT = setTimeout(hideGhost, 320); }
+
+  function track(e) {
+    if (dlg && dlg.open) return;
+    if (e.target === gear || e.target === ghost) { keep(); return; }
+    var b = blockAt(e.target);
+    if (b) { keep(); showGhost(b); } else scheduleHide();
+  }
+
+  function open(block) {
+    if (!block) return;
+    curEl = block;
+    curId = (block.getAttribute && (block.getAttribute("data-lc-id") || block.id)) || "";
+    curSnap = (curId && window.lcSourceOf && window.lcSourceOf(curId)) || "";
+    isComponent = !!curSnap;
+    var srcEl = isComponent ? parseSrc(curSnap) : block;
+    if (!srcEl) return;
+
     var body = document.getElementById("lcx-edit-body"); body.innerHTML = "";
-    Array.prototype.forEach.call(srcEl.attributes, function (a) {
-      if (a.name === "id" || a.name === "class" || a.name.indexOf("data-") === 0) return;
-      var lab = document.createElement("label"); lab.textContent = a.name;
-      var inp = document.createElement("input"); inp.value = a.value; inp.setAttribute("data-knob", a.name);
-      body.appendChild(lab); body.appendChild(inp);
-    });
-    var codeEl = srcEl.querySelector("code") || srcEl;
-    var clab = document.createElement("label"); clab.textContent = "content";
-    var ta = document.createElement("textarea"); ta.id = "lcx-content";
-    ta.value = (codeEl.textContent || "").replace(/\n$/, "");
+    if (isComponent) {
+      Array.prototype.forEach.call(srcEl.attributes, function (a) {
+        if (a.name === "id" || a.name === "class" || a.name.indexOf("data-") === 0) return;
+        var lab = document.createElement("label"); lab.textContent = a.name;
+        var inp = document.createElement("input"); inp.value = a.value; inp.setAttribute("data-knob", a.name);
+        body.appendChild(lab); body.appendChild(inp);
+      });
+    }
+    var clab = document.createElement("label");
+    clab.textContent = isComponent ? "content" : "content (html)";
+    var ta = document.createElement("textarea"); ta.id = "lcx-content"; ta.setAttribute("autofocus", "");
+    if (isComponent) {
+      var codeEl = srcEl.querySelector("code") || srcEl;
+      ta.value = (codeEl.textContent || "").replace(/\n$/, "");
+    } else {
+      ta.value = block.innerHTML.trim();
+    }
     body.appendChild(clab); body.appendChild(ta);
-    var cls = (srcEl.className || "").split(" ").filter(function (c) { return c && c !== "highlighter-rouge" && c.indexOf("language-") !== 0; })[0] || id;
-    document.getElementById("lcx-edit-title").textContent = "✏️ ." + cls + "  #" + id;
-    panel.classList.add("open");
+
+    var name = isComponent
+      ? "." + ((srcEl.className || "").split(" ").filter(function (c) { return c && c !== "highlighter-rouge" && c.indexOf("language-") !== 0; })[0] || curId)
+      : "<" + block.tagName.toLowerCase() + ">";
+    document.getElementById("lcx-edit-title").textContent = "✏️ " + name + (curId ? "  #" + curId : "");
+
+    hideGhost();
+    openDlg();                                     // modal top-layer → focus works, page handlers can't interfere
+    setTimeout(function () { ta.focus(); }, 0);
   }
 
   function apply() {
     try {
-      var srcEl = parseSrc(curSrc);
-      Array.prototype.forEach.call(document.querySelectorAll("#lcx-edit-body input[data-knob]"), function (inp) {
-        srcEl.setAttribute(inp.getAttribute("data-knob"), inp.value);
-      });
-      var code = srcEl.querySelector("code");
       var val = document.getElementById("lcx-content").value;
-      if (code) code.textContent = val + "\n"; else srcEl.textContent = val;
-      var widget = document.querySelector("[data-lc-id='" + curId + "']")
-                || document.getElementById("lc-form-" + curId) || document.getElementById(curId);
-      if (widget && widget.parentNode) {
-        widget.parentNode.replaceChild(srcEl, widget);
-        if (window.lcScanElement) window.lcScanElement(srcEl.parentNode);
+      if (isComponent) {
+        var srcEl = parseSrc(curSnap);
+        Array.prototype.forEach.call(document.querySelectorAll("#lcx-edit-body input[data-knob]"), function (inp) {
+          srcEl.setAttribute(inp.getAttribute("data-knob"), inp.value);
+        });
+        var code = srcEl.querySelector("code");
+        if (code) code.textContent = val + "\n"; else srcEl.textContent = val;
+        var widget = document.querySelector("[data-lc-id='" + curId + "']") || document.getElementById(curId);
+        if (widget && widget.parentNode) {
+          widget.parentNode.replaceChild(srcEl, widget);
+          if (window.lcScanElement) window.lcScanElement(srcEl.parentNode);
+        }
+      } else if (curEl) {
+        curEl.innerHTML = val;                    // plain block: edit in place
       }
     } catch (e) { if (window.console) console.warn("[lcx-edit]", e); }
   }
 
+  function keepChanges() {
+    apply();
+    var go = window.confirm("Your changes live only in this browser — reload and they're gone.\n\nCreate an account to keep them?");
+    if (go) location.href = window.lcResolveUrl ? window.lcResolveUrl("/micro_build_ai/onboarding") : "/micro_build_ai/onboarding";
+  }
+
   function boot() {
-    panel = document.getElementById("lcx-edit");
-    document.getElementById("lcx-close").addEventListener("click", function () { panel.classList.remove("open"); });
+    MAIN = document.querySelector("main.markdown-body") || document.querySelector("main");
+    ghost = document.getElementById("lcx-ghost");
+    gear = document.getElementById("lcx-gear");
+    dlg = document.getElementById("lcx-edit");
+    document.getElementById("lcx-close").addEventListener("click", closeDlg);
     document.getElementById("lcx-apply").addEventListener("click", apply);
-    document.getElementById("lcx-save").addEventListener("click", function () {
-      alert("Nothing's saved — reload and it's gone. Create an account to keep your changes.");
-    });
-    document.addEventListener("click", function (e) {
-      if (!(window.lcxIsActive && window.lcxIsActive())) return;       // only while X-ray is on
-      if (panel.contains(e.target)) return;
-      var el = e.target.closest("[data-lc-id]"); if (!el) return;
-      if (!(window.lcSourceOf && window.lcSourceOf(el.getAttribute("data-lc-id") || el.id))) return;
-      e.preventDefault(); e.stopPropagation();
-      open(el);
-    }, true);
+    document.getElementById("lcx-keep").addEventListener("click", keepChanges);
+    dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); });   // click backdrop to close
 
-    // ── Gear affordance ──────────────────────────────────────────────────────
-    // Hover (or tap) any editable component → a ⚙️ appears at its top-right
-    // corner; press it to open this dialog. No Alt-lens needed (the lens is
-    // transient on desktop, so click-to-edit was effectively invisible there).
-    // The target id is stashed on the gear, and we fire on pointerdown so a
-    // global capturing click handler can't swallow it (and taps work on touch).
-    var gear = document.getElementById("lcx-gear"), hideT = null;
-    function editableAt(node) {
-      var el = node && node.closest ? node.closest("[data-lc-id]") : null;
-      while (el) {
-        var id = el.getAttribute("data-lc-id");
-        if (id && window.lcSourceOf && window.lcSourceOf(id)) return el;
-        var par = el.parentElement;
-        el = par && par.closest ? par.closest("[data-lc-id]") : null;
-      }
-      return null;
-    }
-    function showGear(el) {
-      var r = el.getBoundingClientRect();
-      gear.dataset.forId = el.getAttribute("data-lc-id") || "";
-      gear.style.left = Math.min(window.innerWidth - 34, r.right - 30) + "px";
-      gear.style.top  = Math.max(6, r.top + 6) + "px";
-      gear.style.display = "block";
-    }
-    function hideGear() { gear.style.display = "none"; gear.dataset.forId = ""; }
-    function keepGear() { if (hideT) { clearTimeout(hideT); hideT = null; } }
-    function scheduleHide() { keepGear(); hideT = setTimeout(hideGear, 300); }
-    function overComponent(e) {
-      if (panel.classList.contains("open")) return;      // dialog open: leave the gear alone
-      if (e.target === gear || gear.contains(e.target)) { keepGear(); return; }
-      var comp = editableAt(e.target);
-      if (comp) { keepGear(); showGear(comp); } else scheduleHide();
-    }
-    document.addEventListener("pointermove", overComponent);
-    document.addEventListener("pointerdown", overComponent);   // reveal on tap (touch has no hover)
-    gear.addEventListener("pointerenter", keepGear);
+    document.addEventListener("pointermove", track);
+    document.addEventListener("pointerdown", track);   // reveal on tap (touch has no hover)
+    gear.addEventListener("pointerenter", keep);
     gear.addEventListener("pointerleave", scheduleHide);
-
-    function activate(e) {
-      e.preventDefault(); e.stopPropagation();
-      var id = gear.dataset.forId;
-      if (id) { open(id); hideGear(); }
-    }
-    gear.addEventListener("pointerdown", activate);   // robust vs. global click swallowers + touch
+    function activate(e) { e.preventDefault(); e.stopPropagation(); if (ghostEl) open(ghostEl); }
+    gear.addEventListener("pointerdown", activate);   // fire on pointerdown so nothing can swallow it
     gear.addEventListener("click", activate);         // fallback for engines without pointer events
-    window.addEventListener("scroll", hideGear, true);
+    window.addEventListener("scroll", hideGhost, true);
+    window.addEventListener("resize", hideGhost);
   }
   if (document.readyState !== "loading") boot(); else document.addEventListener("DOMContentLoaded", boot);
 })();
