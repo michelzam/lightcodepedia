@@ -21,7 +21,12 @@ source from window.lcSourceOf (code_chrome). Auto-included by default.html.
 #lcx-edit button { font: inherit; padding: .35em .8em; border-radius: 5px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
 #lcx-edit .lcx-apply { background: #0066cc; color: #fff; border-color: #0066cc; }
 #lcx-edit .lcx-save { color: #8a5a00; background: #fff5d6; border-color: #f0d38a; margin-left: auto; }
+#lcx-gear { position: fixed; z-index: 9000; display: none; width: 26px; height: 26px; padding: 0;
+  border-radius: 50%; border: 1px solid #cbd5e1; background: rgba(255,255,255,.92);
+  box-shadow: 0 2px 8px rgba(0,0,0,.18); cursor: pointer; font-size: 14px; line-height: 24px; text-align: center; }
+#lcx-gear:hover { background: #eef4ff; border-color: #0066cc; }
 </style>
+<button id="lcx-gear" title="Edit this ✎" aria-label="Edit this component">⚙️</button>
 <div id="lcx-edit">
   <h4 id="lcx-edit-title">Edit</h4>
   <div class="lcx-body" id="lcx-edit-body"></div>
@@ -93,6 +98,45 @@ source from window.lcSourceOf (code_chrome). Auto-included by default.html.
       e.preventDefault(); e.stopPropagation();
       open(el);
     }, true);
+
+    // ── Gear affordance ──────────────────────────────────────────────────────
+    // Hover any editable component → a ⚙️ appears at its top-right corner; click
+    // it to open this dialog. No Alt-lens needed (the lens is transient on
+    // desktop, so click-to-edit was effectively invisible there).
+    var gear = document.getElementById("lcx-gear"), gearFor = null, hideT = null;
+    function editableAt(node) {
+      var el = node && node.closest ? node.closest("[data-lc-id]") : null;
+      while (el) {
+        var id = el.getAttribute("data-lc-id");
+        if (id && window.lcSourceOf && window.lcSourceOf(id)) return el;
+        var par = el.parentElement;
+        el = par && par.closest ? par.closest("[data-lc-id]") : null;
+      }
+      return null;
+    }
+    function placeGear(el) {
+      var r = el.getBoundingClientRect();
+      gear.style.left = Math.min(window.innerWidth - 32, r.right - 30) + "px";
+      gear.style.top  = Math.max(6, r.top + 6) + "px";
+      gear.style.display = "block";
+    }
+    function hideGear() { gear.style.display = "none"; gearFor = null; }
+    function keepGear() { if (hideT) { clearTimeout(hideT); hideT = null; } }
+    function scheduleHide() { keepGear(); hideT = setTimeout(hideGear, 260); }
+    document.addEventListener("pointermove", function (e) {
+      if (panel.classList.contains("open")) return;      // dialog open: leave the gear alone
+      if (e.target === gear) { keepGear(); return; }
+      var comp = editableAt(e.target);
+      if (comp) { keepGear(); gearFor = comp; placeGear(comp); }
+      else scheduleHide();
+    });
+    gear.addEventListener("mouseenter", keepGear);
+    gear.addEventListener("mouseleave", scheduleHide);
+    gear.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (gearFor) open(gearFor);
+    });
+    window.addEventListener("scroll", hideGear, true);
   }
   if (document.readyState !== "loading") boot(); else document.addEventListener("DOMContentLoaded", boot);
 })();
