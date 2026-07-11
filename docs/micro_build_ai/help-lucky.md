@@ -18,50 +18,27 @@ Lucky can't read many words, so keep it big:
 ````
 {: .block }
 
-### 🗺️ The way to the park
+### 🌳 Throw the ball in the park
 
-```json
-[
-  { "lat": 43.0556, "lon": -87.8720, "label": "🌳 Lucky's park 🎾" }
-]
-```
-{: .map height="280" zoom="14" }
-
-### 🔍 Aim for the ball
-
-The ball 🎾 is **near the water** 💧. Slide **x** and **y** — it moves toward the
-target 🎯:
+Slide **x** and **y** to move the ball 🎾 onto the park 🌳 — then hit **Fetch**,
+and Lucky runs for it!
 
 ```yaml
 x: 20
 y: 80
 ```
-{: .form #hunt editable="true" sliders="x,y" min="0" max="100" step="5" title="Aim 🎯" }
+{: .form #hunt editable="true" sliders="x,y" min="0" max="100" step="5" title="Throw 🎾" }
 
-```python
-def _row(val, tgt):
-    n = 12
-    b = min(n - 1, max(0, round((val or 0) / 100 * (n - 1))))
-    t = min(n - 1, max(0, round(tgt / 100 * (n - 1))))
-    return "".join("🎾" if i == b else ("🎯" if i == t else "▫️") for i in range(n))
-def x_row(): return _row(hunt.x, 70)
-def y_row(): return _row(hunt.y, 30)
-def hint():
-    d = (((hunt.x or 0) - 70) ** 2 + ((hunt.y or 0) - 30) ** 2) ** 0.5
-    return "🎾 Found it!" if d <= 10 else ("🔥 warmer…" if d < 30 else "❄️ cold")
 ```
-{: .run silent="true" }
+(park)
+```
+{: .playfield #field bind="hunt" park="70,30" }
 
-x&nbsp;&nbsp;{= x_row() }
-y&nbsp;&nbsp;{= y_row() }
+**What makes a good throw?**
 
-**{= hint() }**
-
-**Where do lost things usually hide?**
-
-- [x] where they were last seen
-- [ ] somewhere brand new
-- [ ] nowhere — they're just gone
+- [x] line up both x *and* y on the park
+- [ ] just x is enough
+- [ ] Lucky fetches from anywhere
 {: .quiz }
 
 ## 🥈 Then — change things
