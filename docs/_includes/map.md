@@ -111,6 +111,33 @@ Auto-included by docs/_layouts/default.html.
           .addTo(map);
       });
 
+      // bind="formid": a movable dot that follows a form's lat/lon. Shows
+      // learners that values (the form) drive behaviour (where the dot lands) —
+      // params → a function call, felt now, named later.
+      var bind = el.getAttribute("bind") || "";
+      if (bind) {
+        var pin = document.createElement("div");
+        pin.textContent = el.getAttribute("bindicon") || "📍";
+        pin.style.cssText = "font-size:1.7em;line-height:1;cursor:grab;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))";
+        var bmarker = new maplibregl.Marker({ element: pin, anchor: "bottom" })
+          .setLngLat([centerLon, centerLat])
+          .addTo(map);
+        function moveBound() {
+          var f = document.querySelector(".lc-form[data-lc-id='" + bind + "']");
+          if (!f) return;
+          try {
+            var d = JSON.parse(f.getAttribute("data-lc-value") || "{}");
+            var la = parseFloat(d.lat), lo = parseFloat(d.lon != null ? d.lon : d.lng);
+            if (!isNaN(la) && !isNaN(lo)) bmarker.setLngLat([lo, la]);
+          } catch (e) {}
+        }
+        document.addEventListener("lc-model-changed", moveBound);
+        if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function() {
+          document.removeEventListener("lc-model-changed", moveBound);
+        });
+        moveBound();
+      }
+
       // Hint overlay
       var hint = document.createElement("div");
       hint.textContent = "⇧ Shift + drag to tilt / rotate";

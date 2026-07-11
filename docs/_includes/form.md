@@ -410,9 +410,15 @@ Auto-included by docs/_layouts/default.html.
     var _smin = parseFloat(el.getAttribute("min")); if (isNaN(_smin)) _smin = 0;
     var _smax = parseFloat(el.getAttribute("max")); if (isNaN(_smax)) _smax = 100;
     var _sstep = parseFloat(el.getAttribute("step")); if (isNaN(_sstep)) _sstep = 1;
+    // sliders="x,y" (shared min/max/step) or per-field "lat:43.05:43.09:0.005,lon:…"
     var slidersMap = {};
     (el.getAttribute("sliders") || "").split(",").forEach(function (f) {
-      f = f.trim(); if (f) slidersMap[f] = { min: _smin, max: _smax, step: _sstep };
+      var p = f.trim().split(":"); var name = p[0].trim(); if (!name) return;
+      slidersMap[name] = {
+        min:  p.length > 1 ? parseFloat(p[1]) : _smin,
+        max:  p.length > 2 ? parseFloat(p[2]) : _smax,
+        step: p.length > 3 ? parseFloat(p[3]) : _sstep
+      };
     });
     /* options="field=a|b|c; field2=x|y" renders those fields as pick-list dropdowns */
     var optionsMap = {};
