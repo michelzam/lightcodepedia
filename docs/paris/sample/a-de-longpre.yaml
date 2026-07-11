@@ -1,0 +1,27 @@
+id: a-de-longpre
+slug: a-de-longpre
+type: person
+title: A. de Longpré
+sortName: Longpré, A. de
+professions:
+  - homme politique
+nationalities:
+  - France
+periods:
+  - revolutions-de-1848
+themes: []
+addresses: []
+bibliography: []
+externalLinks: []
+body: président
+workflow:
+  draft: false
+  aiText: null
+  edited: true
+  validated: true
+  reviewRequested: false
+  reviewNote: Enrichi par IA (suggestions §7.2), revu et accepté.
+entityType: person
+gender: masculin
+qualificatifs:
+  - républicain
