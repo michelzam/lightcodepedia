@@ -39,7 +39,8 @@ En direct (essaie sur ton tél) :
       <p id="pfe-source" class="pfe-mut"></p>
     </section>
     <section class="pfe-card">
-      <h3>Aperçu rendu (live)</h3>
+      <h3>Aperçu rendu (live) — ✎ éditable</h3>
+      <p class="pfe-mut">Clique le <b>nom</b> ou la <b>bio</b> pour éditer directement sur le rendu (WYSIWYG).</p>
       <div id="pfe-preview" class="pfe-preview"></div>
     </section>
     <section class="pfe-card">
@@ -182,6 +183,11 @@ workflow:
 #pfe .pv-mut { color:#999; font-size:0.9em; }
 #pfe .pv-body { margin-top:0.7em; }
 #pfe .pv-body p { margin:0.4em 0; }
+#pfe .pv-edit { cursor:text; border-radius:3px; transition:box-shadow .1s; }
+#pfe .pv-edit:hover { box-shadow: inset 0 -2px 0 #cfe0ff; }
+#pfe .pv-edit:focus { outline:2px solid #2563eb; outline-offset:2px; background:#fbfdff; }
+#pfe .pv-name.pv-edit:empty::before { content:"(cliquer pour nommer)"; color:#bbb; }
+#pfe .pv-body.pv-edit:empty::before { content:"(cliquer pour ajouter une bio)"; color:#bbb; }
 </style>
 
 <script>
@@ -356,16 +362,30 @@ workflow:
     $("pfe-id").textContent = _rec.id || "(sans id)";
     $("pfe-slug").textContent = _rec.slug || "";
   }
-  function renderYaml() {
+  function syncYaml() {
     $("pfe-yaml").textContent = toYaml(_rec);
     var lost = 0, k, i;
     for (i = 0; i < _origKeys.length; i++) { k = _origKeys[i]; if (!_rec.hasOwnProperty(k)) lost++; }
     $("pfe-integrity").textContent = lost === 0
       ? "✔ " + _origKeys.length + " clés d'origine préservées — aucune perte."
       : "⚠ " + lost + " clé(s) perdue(s).";
-    renderPreview();
   }
-  function renderPreview() { var e = $("pfe-preview"); if (e) e.innerHTML = TYPES[_type].preview(_rec); }
+  function renderYaml() { syncYaml(); renderPreview(); }
+  function renderPreview() { var e = $("pfe-preview"); if (!e) return; e.innerHTML = TYPES[_type].preview(_rec); wireInlineEdit(); }
+  // WYSIWYG en place : les éléments .pv-edit de l'aperçu sont éditables au clic.
+  // Pendant la frappe on ne resynchronise QUE le YAML (pas l'aperçu) pour garder le curseur.
+  function wireInlineEdit() {
+    var els = $("pfe-preview").querySelectorAll(".pv-edit"), i;
+    for (i = 0; i < els.length; i++) {
+      (function (e) {
+        var fld = e.getAttribute("data-fld"), single = e.getAttribute("data-single") === "1";
+        function read() { return (single ? e.textContent : e.innerText).replace(/ /g, " "); }
+        e.oninput = function () { _rec[fld] = read(); syncYaml(); };
+        e.onblur = function () { _rec[fld] = read().replace(/\n+$/, ""); rerender(); };
+        if (single) e.onkeydown = function (ev) { if (ev.key === "Enter" || ev.keyCode === 13) { ev.preventDefault(); e.blur(); } };
+      })(els[i]);
+    }
+  }
   function rerender() { renderForm(); renderYaml(); }
   function renderForm() {
     var box = $("pfe-form"); box.innerHTML = "";
@@ -530,17 +550,17 @@ workflow:
   function personPreview(r) {
     var fem = r.gender === "féminin", h = '<div class="pv-fiche">';
     if (r.image && r.image.src) h += '<img class="pv-portrait" src="' + escAttr(r.image.src) + '" alt="' + escAttr(r.image.alt || "") + '">';
-    h += '<h2 class="pv-name">' + escHtml(r.title || "(sans nom)") + '</h2>';
+    h += '<h2 class="pv-name pv-edit" contenteditable="true" data-fld="title" data-single="1">' + escHtml(r.title || "") + '</h2>';
     var v = [];
     if (r.birth && (r.birth.year || r.birth.place)) v.push((fem ? "Née" : "Né") + " " + [r.birth.year, r.birth.place].filter(Boolean).join(" à "));
     if (r.death && (r.death.year || r.death.place)) v.push((fem ? "Morte" : "Mort") + " " + [r.death.year, r.death.place].filter(Boolean).join(" à "));
     if (v.length) h += '<p class="pv-vitals">' + escHtml(v.join(" · ")) + '</p>';
     h += pvChips("Professions", r.professions) + pvChips("Qualificatifs", r.qualificatifs) + pvChips("Nationalités", r.nationalities) + pvRel("Époques", "periods", r.periods);
-    if (r.body) h += '<div class="pv-body">' + mdMini(r.body) + '</div>';
+    h += '<div class="pv-body pv-edit" contenteditable="true" data-fld="body">' + mdMini(r.body || "") + '</div>';
     return h + '</div>';
   }
   function eventPreview(r) {
-    var h = '<div class="pv-fiche"><h2 class="pv-name">' + escHtml(r.title || "(sans titre)") + '</h2>';
+    var h = '<div class="pv-fiche"><h2 class="pv-name pv-edit" contenteditable="true" data-fld="title" data-single="1">' + escHtml(r.title || "") + '</h2>';
     if (r.daterange) {
       var d = r.daterange, dr = d.startYear != null ? String(d.startYear) : "";
       if (d.endYear != null && d.endYear !== d.startYear) dr += (dr ? "–" : "") + d.endYear;
@@ -555,7 +575,7 @@ workflow:
       h += '</ul>';
     }
     h += pvRel("Époques", "periods", r.epochs) + pvRel("Thèmes", "themes", r.themes) + pvRel("Personnages", "persons", r.people);
-    if (r.body) h += '<div class="pv-body">' + mdMini(r.body) + '</div>';
+    h += '<div class="pv-body pv-edit" contenteditable="true" data-fld="body">' + mdMini(r.body || "") + '</div>';
     return h + '</div>';
   }
 
