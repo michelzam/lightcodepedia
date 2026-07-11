@@ -2,9 +2,14 @@ id: a-de-longpre
 slug: a-de-longpre
 type: person
 title: A. de Longpré
+entityType: person
+gender: masculin
 sortName: Longpré, A. de
 professions:
   - homme politique
+  - "journaliste "
+qualificatifs:
+  - républicain
 nationalities:
   - France
 periods:
@@ -21,7 +26,3 @@ workflow:
   validated: true
   reviewRequested: false
   reviewNote: Enrichi par IA (suggestions §7.2), revu et accepté.
-entityType: person
-gender: masculin
-qualificatifs:
-  - républicain
