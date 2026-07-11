@@ -69,11 +69,11 @@ def on_click(button):
 - [ ] nowhere — they're just gone
 {: .quiz visible="= build_ai.hunt.found" }
 
-## 🥈 Then — make it yours
+## 🥈 Then — change things
 
-No account, nothing to install — your changes just stick, right here in your browser.
+Make Lucky's sign your own, and pick where he's headed. Everything updates **live**:
 
-### ✏️ Change the sign
+### ✏️ The sign
 
 Type on the left, watch it change on the right:
 
@@ -83,9 +83,7 @@ Type on the left, watch it change on the right:
 ```
 {: .mdpad rows="7" }
 
-### 🎚️ Set the destination
-
-Pick where Lucky's headed — the line below follows you:
+### 🎚️ The destination
 
 ```yaml
 place: Lake Park
@@ -95,15 +93,18 @@ emoji: 🌳
 
 Lucky's off to **{= dest.place or 'the park' }** {= dest.emoji or '🌳' }!
 
-## 🥉 Finally — make it real
+*Play all you like — nothing can break, and nothing's saved yet.*
 
-You changed Lucky's sign and picked his spot — and it stuck! But only **here**, in
-your browser. Want to **keep it for real** and let other people use it too?
+## 🥉 Keep it — make it real
 
-That's the moment you get your own place to save — and *only* now, because *now*
-there's a real reason.
+**Reload the page.** 😮 Your sign and destination snapped right back to default —
+your changes are **gone**.
 
-[🔑 Set up to save →](/micro_build_ai/onboarding){: .button }
+That's the deal: you can play and change anything, but to **keep** your work — and
+let other people see it — you need your own place to save it. That's the *only*
+reason to sign up: to make your changes stick.
+
+[🔒 Save my changes — set me up →](/micro_build_ai/onboarding){: .button }
 
 ```
 ### 🏠 Back
