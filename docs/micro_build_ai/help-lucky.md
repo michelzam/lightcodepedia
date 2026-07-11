@@ -29,8 +29,8 @@ Lucky can't read many words, so keep it big:
 
 ### 🔍 Aim for the ball
 
-Slide **x** and **y** to point where Lucky should dig 🎯 — it's near the water 💧 —
-then hit **Find**:
+The ball is **near the water** 💧. Slide **x** and **y** to aim — the hint updates
+as you move:
 
 ```yaml
 x: 20
@@ -38,36 +38,28 @@ y: 80
 ```
 {: .form #hunt editable="true" sliders="x,y" min="0" max="100" step="5" title="Aim 🎯" }
 
-[🔍 Find it](#)
-{: .button #find }
-
 ```python
-def on_click(button):
-    x = float(Page().hunt.data.x or 0)
-    y = float(Page().hunt.data.y or 0)
-    dist = ((x - 70) ** 2 + (y - 30) ** 2) ** 0.5   # the ball rests near the water (70, 30)
-    if dist <= 12:
-        Store.set("build_ai.hunt.found", True)
-        Store.set("build_ai.hunt.points", int(Store.get("build_ai.hunt.points") or 0) + 10)
-    else:
-        Store.set("build_ai.hunt.tries", int(Store.get("build_ai.hunt.tries") or 0) + 1)
-        Store.set("build_ai.hunt.hot", "🔥 warmer!" if dist < 30 else "❄️ colder…")
+def _dist():
+    x = hunt.x or 0
+    y = hunt.y or 0
+    return ((x - 70) ** 2 + (y - 30) ** 2) ** 0.5
+def hint():
+    d = _dist()
+    if d <= 12: return "🎾 Found it! Lucky's got his ball!"
+    if d < 30:  return "🔥 Warmer…"
+    return "❄️ Cold — head for the water 💧"
 ```
-{: .onclick }
+{: .run silent="true" }
 
-🐕 Not there — **{= build_ai.hunt.hot or 'keep aiming' }** Try again.
-{: visible="= build_ai.hunt.tries and not build_ai.hunt.found" }
+### {= hint() }
+{: .nofragments }
 
-🎾 **Found it!** +10 exploration points — you're at **{= build_ai.hunt.points or 0 }**. Lucky's over the moon!
-{: visible="= build_ai.hunt.found" }
-
-**Quick one — where do lost things usually hide?**
-{: visible="= build_ai.hunt.found" }
+**Where do lost things usually hide?**
 
 - [x] where they were last seen
 - [ ] somewhere brand new
 - [ ] nowhere — they're just gone
-{: .quiz visible="= build_ai.hunt.found" }
+{: .quiz }
 
 ## 🥈 Then — change things
 

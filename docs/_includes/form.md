@@ -123,10 +123,14 @@ Auto-included by docs/_layouts/default.html.
         rl.className = "lc-form-num";
         rl.textContent = rng.value;
         if (opts.editable) {
-          rng.addEventListener("input", function () {
-            rl.textContent = rng.value;
-            params.node.setDataValue("value", Number(rng.value));
-          });
+          // keep the grid from hijacking the drag (row-select / cell focus)
+          rng.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+          rng.addEventListener("touchstart", function (e) { e.stopPropagation(); }, { passive: true });
+          rng.addEventListener("click", function (e) { e.stopPropagation(); });
+          // update the label live while dragging, but only COMMIT on release —
+          // committing on every input re-renders the cell and breaks the drag
+          rng.addEventListener("input", function () { rl.textContent = rng.value; });
+          rng.addEventListener("change", function () { params.node.setDataValue("value", Number(rng.value)); });
         }
         sw.appendChild(rng);
         sw.appendChild(rl);
@@ -154,6 +158,8 @@ Auto-included by docs/_layouts/default.html.
           sel.appendChild(op);
         });
         if (opts.editable) {
+          sel.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+          sel.addEventListener("click", function (e) { e.stopPropagation(); });
           sel.addEventListener("change", function () { params.node.setDataValue("value", sel.value); });
         }
         pw.appendChild(sel);
