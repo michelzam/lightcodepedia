@@ -421,9 +421,12 @@ Auto-included by docs/_layouts/default.html.
     window.lcxTouchOn   = () => { _touchOn = true;  loadMP(); };
     window.lcxTouchOff  = () => { _touchOn = false; hideAll(); };
 
-    const isFAB = e => e.target.closest && e.target.closest('.lc-slides-fab, #lc-bl-popup');
+    // Let taps on the FAB, the popup, and the inline editor (dialog + gear)
+    // through untouched — preventDefault here would block the editor's fields
+    // from taking focus, and the FAB/gear from firing their own taps.
+    const isFAB = e => e.target.closest && e.target.closest('.lc-slides-fab, #lc-bl-popup, #lcx-edit, #lcx-gear');
     function showTouch(e) {
-      if (!_touchOn || isFAB(e)) return;   // let FAB taps through so click fires
+      if (!_touchOn || isFAB(e)) return;   // let FAB / editor taps through so focus + click fire
       e.preventDefault();
       const t = e.touches[0];
       const hit = classAt(t.clientX, t.clientY);
