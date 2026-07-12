@@ -250,6 +250,37 @@ Auto-included by docs/_layouts/default.html.
     };
   }
 
+  // Fence-embedded per-field config: a field whose value is a config object —
+  // {value, min, max, step} for a slider, or {value, options: [...]} for a
+  // pick-list — declares its own widget, so no sliders=/options= attribute is
+  // needed and the field + its range live together once. Pull the scalar into
+  // obj[k] and fold the config into the slider/option maps. Runs before
+  // store-over-seed so the config survives a persisted scalar. The attributes
+  // stay a fallback and win for fields not declared in the fence.
+  var _CFG_KEYS = { value: 1, min: 1, max: 1, step: 1, options: 1 };
+  function extractFieldConfig(obj, opts) {
+    opts.sliders = opts.sliders || {};
+    opts.options = opts.options || {};
+    Object.keys(obj).forEach(function (k) {
+      var v = obj[k];
+      if (!v || typeof v !== "object" || Array.isArray(v)) return;
+      var ks = Object.keys(v);
+      if (!ks.length || !ks.every(function (kk) { return _CFG_KEYS[kk]; })) return;  // a real object, leave it
+      if (Array.isArray(v.options)) opts.options[k] = v.options.map(String);
+      if (("min" in v) || ("max" in v) || ("step" in v)) {
+        opts.sliders[k] = {
+          min:  v.min  != null ? parseFloat(v.min)  : 0,
+          max:  v.max  != null ? parseFloat(v.max)  : 100,
+          step: v.step != null ? parseFloat(v.step) : 1
+        };
+      }
+      obj[k] = ("value" in v) ? v.value
+             : opts.sliders[k] ? opts.sliders[k].min
+             : opts.options[k] ? opts.options[k][0]
+             : "";
+    });
+  }
+
   function renderFormBody(bodyEl, obj, opts) {
     opts = opts || {};
     // Tear down any previous AG Grid instance attached here
@@ -266,6 +297,7 @@ Auto-included by docs/_layouts/default.html.
       bodyEl.innerHTML = '<div class="lc-form-err">Expected a single object; got ' + escapeHtml(Array.isArray(obj) ? "array" : typeof obj) + '</div>';
       return;
     }
+    extractFieldConfig(obj, opts);   // fence-declared slider/option config → maps (before store override)
     /* Store-over-seed: a persisted field the learner has set overrides its
        design-time default; unset fields keep the seed. */
     if (opts.persist && opts.formId && window.lcStore) {

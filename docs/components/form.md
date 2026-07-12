@@ -86,6 +86,40 @@ adopted: true
 
 Numbers stay numeric — the editor rejects non-numeric input by reverting to the previous value. Lists and nested dicts stay read-only for now.
 
+## 🎚️ Interactive fields — sliders & pick-lists
+
+A field renders as a **slider** or a **pick-list** when you describe it with a small config object right in the fence — so the field and its range live together, declared once:
+
+- `{value, min, max, step}` → a **slider**. `step` sets the granularity; `value` is the starting position (omit it to start at `min`).
+- `{value, options: [...]}` → a **pick-list** dropdown. `value` is the current choice (omit it to start at the first option).
+
+````markdown
+```yaml
+lat:   {value: 43.06, min: 43.05, max: 43.075, step: 0.005}
+place: {value: Lake Park, options: [Lake Park, Riverside Park, Estabrook Park]}
+```
+{: .form editable="true" }
+````
+
+The widget is inferred from the keys — no separate attribute needed — and the published value is always the plain scalar (`lat` reads back as `43.06`, not the config object), so cells and Python see a clean number or string:
+
+```yaml
+lat:   {value: 43.06, min: 43.05, max: 43.075, step: 0.005}
+lon:   {value: -87.88, min: -87.89, max: -87.865, step: 0.005}
+place: {value: Lake Park, options: [Lake Park, Riverside Park, Estabrook Park]}
+```
+{: .form editable="true" #interactive_demo title="Scene" }
+
+The older attribute form still works as a fallback (`sliders="lat:43.05:43.075:0.005"`, `options="place=A|B|C"`), but it repeats the field name — prefer the fence.
+
+**Q:** How does a field become a slider?
+
+- [ ] Add `type="slider"` to the `.form` IAL.
+- [x] Give its value a `{min, max, step}` config object in the fence.
+- [ ] Sliders are automatic for any number field.
+- [ ] You can't — numbers are always text inputs.
+{: .quiz }
+
 ## 🔗 Linked to a datagrid — master/detail
 
 An empty `{: .form master="<id>" }` waits for a row to be clicked in the named datagrid, then fills itself with that row's data. The grid is the list view; the form is the detail view.
@@ -206,7 +240,7 @@ show.form(obj, title=None)
 - **Single record only.** For lists, use `.datagrid`. They pair naturally: grid as overview, form as detail.
 - **Lists and dicts are read-only** in v1. Editing a pill list or a nested dict needs richer UI — deferred.
 - **Edits are in-memory.** Refresh discards them. No persistence layer yet.
-- **No validation hooks.** Numbers reject non-numeric input; strings accept anything. Ask if you want `pattern=` / `min=` / `required=`.
+- **Sliders & pick-lists** come from a field's `{min, max, step}` / `{options: […]}` config in the fence (see above). Other validation (`pattern=`, `required=`) — ask.
 
 ## 🏁 Final exam — boss level
 

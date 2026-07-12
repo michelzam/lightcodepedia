@@ -23,10 +23,10 @@ Lucky can't read many words, so keep it big:
 Slide to move the ball 🎾 onto the park 🌳 — then hit **Fetch**, and Lucky runs for it!
 
 ```yaml
-lat: 43.075
-lon: -87.865
+lat: {value: 43.075, min: 43.050, max: 43.075, step: 0.005}
+lon: {value: -87.865, min: -87.890, max: -87.865, step: 0.005}
 ```
-{: .form #hunt editable="true" sliders="lat:43.050:43.075:0.005,lon:-87.890:-87.865:0.005" title="Where to throw 🎾" }
+{: .form #hunt editable="true" title="Where to throw 🎾" }
 
 ```
 label,lat,lon
@@ -58,10 +58,10 @@ Type on the left, watch it change on the right:
 ### 🎚️ The destination
 
 ```yaml
-place: Lake Park
+place: {value: Lake Park, options: [Lake Park, Riverside Park, Estabrook Park]}
 emoji: 🌳
 ```
-{: .form #dest editable="true" options="place=Lake Park|Riverside Park|Estabrook Park" title="Destination" }
+{: .form #dest editable="true" title="Destination" }
 
 Lucky's off to **{= dest.place or 'the park' }** {= dest.emoji or '🌳' }!
 
