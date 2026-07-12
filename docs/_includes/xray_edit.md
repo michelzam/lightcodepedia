@@ -37,9 +37,9 @@ loses everything. A component's editable source comes from window.lcSourceOf
   <h4 id="lcx-edit-title">Edit</h4>
   <div class="lcx-body" id="lcx-edit-body"></div>
   <div class="lcx-bar">
-    <button class="lcx-apply" id="lcx-apply">Apply</button>
-    <button id="lcx-close">Close</button>
-    <button class="lcx-keep" id="lcx-keep" title="Create an account to keep changes">💾 Keep changes</button>
+    <button type="button" class="lcx-apply" id="lcx-apply">Apply</button>
+    <button type="button" id="lcx-close">Close</button>
+    <button type="button" class="lcx-keep" id="lcx-keep" title="Create an account to keep changes">💾 Keep changes</button>
   </div>
 </dialog>
 
@@ -49,21 +49,38 @@ loses everything. A component's editable source comes from window.lcSourceOf
   var MAIN, ghost, gear, dlg, hideT = null, ghostEl = null;
   var curEl = null, curId = "", curSnap = "", isComponent = false;
 
+  var FRIENDLY = { P: "text", H1: "heading", H2: "heading", H3: "heading", H4: "heading", H5: "heading", H6: "heading",
+    LI: "list item", PRE: "code", BLOCKQUOTE: "quote", FIGURE: "figure", TABLE: "table", DT: "term", DD: "definition" };
+
   function parseSrc(html) { var t = document.createElement("div"); t.innerHTML = html; return t.firstElementChild; }
   function openDlg() { if (dlg.open) return; if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); }
   function closeDlg() { if (dlg.close) dlg.close(); else dlg.removeAttribute("open"); }
+  // Fire on pointerdown (not click): a tap that dismisses the on-screen keyboard
+  // shifts the layout, so the follow-up click can miss the button entirely.
+  function onTap(btn, fn) {
+    var lock = false;
+    function run(e) { if (lock) return; lock = true; setTimeout(function () { lock = false; }, 400);
+      e.preventDefault(); e.stopPropagation(); fn(); }
+    btn.addEventListener("pointerdown", run);
+    btn.addEventListener("click", run);   // fallback for engines without pointer events
+  }
 
-  // The top-level markdown block under a node — a direct child of <main>.
-  // Components are top-level children too, so this treats them uniformly.
+  // The tightest editable block under a node: a component if we're inside one,
+  // otherwise the nearest basic block (paragraph, heading, list item, code…).
+  // NOT the coarse <section>/<div> container that wraps them.
+  var BLOCK_SEL = "p,h1,h2,h3,h4,h5,h6,li,pre,blockquote,figure,table,dt,dd";
   function blockAt(node) {
     if (!MAIN || !node) return null;
     if (node === gear || node === ghost || (dlg && dlg.contains(node))) return null;
     var el = node.nodeType === 1 ? node : node.parentElement;
-    while (el && el.parentElement && el.parentElement !== MAIN) el = el.parentElement;
-    if (!el || el.parentElement !== MAIN || el === ghost || el === gear) return null;
-    var r = el.getBoundingClientRect();
+    if (!el || !el.closest) return null;
+    var comp = el.closest("[data-lc-id]");
+    if (comp && MAIN.contains(comp)) return comp;
+    var blk = el.closest(BLOCK_SEL);
+    if (!blk || !MAIN.contains(blk)) return null;
+    var r = blk.getBoundingClientRect();
     if (r.width < 4 || r.height < 4) return null;   // skip collapsed/empty blocks
-    return el;
+    return blk;
   }
 
   function showGhost(el) {
@@ -107,21 +124,20 @@ loses everything. A component's editable source comes from window.lcSourceOf
         body.appendChild(lab); body.appendChild(inp);
       });
     }
-    var clab = document.createElement("label");
-    clab.textContent = isComponent ? "content" : "content (html)";
+    var clab = document.createElement("label"); clab.textContent = "content";
     var ta = document.createElement("textarea"); ta.id = "lcx-content"; ta.setAttribute("autofocus", "");
     if (isComponent) {
       var codeEl = srcEl.querySelector("code") || srcEl;
       ta.value = (codeEl.textContent || "").replace(/\n$/, "");
     } else {
-      ta.value = block.innerHTML.trim();
+      ta.value = (block.textContent || "").trim();   // plain text — never raw HTML
     }
     body.appendChild(clab); body.appendChild(ta);
 
     var name = isComponent
       ? "." + ((srcEl.className || "").split(" ").filter(function (c) { return c && c !== "highlighter-rouge" && c.indexOf("language-") !== 0; })[0] || curId)
-      : "<" + block.tagName.toLowerCase() + ">";
-    document.getElementById("lcx-edit-title").textContent = "✏️ " + name + (curId ? "  #" + curId : "");
+      : (FRIENDLY[block.tagName] || block.tagName.toLowerCase());
+    document.getElementById("lcx-edit-title").textContent = "✏️ " + name + (isComponent && curId ? "  #" + curId : "");
 
     hideGhost();
     openDlg();                                     // modal top-layer → focus works, page handlers can't interfere
@@ -144,7 +160,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
           if (window.lcScanElement) window.lcScanElement(srcEl.parentNode);
         }
       } else if (curEl) {
-        curEl.innerHTML = val;                    // plain block: edit in place
+        curEl.textContent = val;                  // plain block: edit its text in place
       }
     } catch (e) { if (window.console) console.warn("[lcx-edit]", e); }
   }
@@ -160,9 +176,9 @@ loses everything. A component's editable source comes from window.lcSourceOf
     ghost = document.getElementById("lcx-ghost");
     gear = document.getElementById("lcx-gear");
     dlg = document.getElementById("lcx-edit");
-    document.getElementById("lcx-close").addEventListener("click", closeDlg);
-    document.getElementById("lcx-apply").addEventListener("click", apply);
-    document.getElementById("lcx-keep").addEventListener("click", keepChanges);
+    onTap(document.getElementById("lcx-close"), closeDlg);
+    onTap(document.getElementById("lcx-apply"), apply);
+    onTap(document.getElementById("lcx-keep"), keepChanges);
     dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); });   // click backdrop to close
 
     document.addEventListener("pointermove", track);
