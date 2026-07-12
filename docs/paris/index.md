@@ -67,6 +67,8 @@ Essaie-les ci-dessous (ça marche sur ton tél) :
       <h3>Aperçu rendu (live) — ✎ éditable</h3>
       <p class="pfe-mut">Clique le <b>nom</b> ou la <b>bio</b> pour éditer directement sur le rendu (WYSIWYG).</p>
       <div id="pfe-preview" class="pfe-preview"></div>
+      <div id="pfe-map" class="pfe-map" style="display:none"></div>
+      <p class="pfe-mut" id="pfe-map-note"></p>
     </section>
     <section class="pfe-card">
       <h3>YAML ré-émis (round-trip valide-schéma)</h3>
@@ -74,6 +76,14 @@ Essaie-les ci-dessous (ça marche sur ton tél) :
       <p class="pfe-mut" id="pfe-integrity"></p>
     </section>
   </div>
+  <section class="pfe-card">
+    <h3>IA in-form — « l'IA propose, tu décides »</h3>
+    <div class="pfe-row">
+      <button id="pfe-ia-btn" type="button">🪄 Suggérer</button>
+      <input id="pfe-ia-endpoint" placeholder="URL de ton micro-service IA (optionnel)">
+    </div>
+    <div id="pfe-ia"></div>
+  </section>
   <section class="pfe-card pfe-commit">
     <h3>Commiter (optionnel — écrit via l'API GitHub)</h3>
     <div class="pfe-row">
@@ -216,6 +226,10 @@ workflow:
 #pfe .pv-edit:focus { outline:2px solid #2563eb; outline-offset:2px; background:#fbfdff; }
 #pfe .pv-name.pv-edit:empty::before { content:"(cliquer pour nommer)"; color:#bbb; }
 #pfe .pv-body.pv-edit:empty::before { content:"(cliquer pour ajouter une bio)"; color:#bbb; }
+#pfe .pfe-map { height:220px; border:1px solid #e0e0e0; border-radius:6px; margin-top:0.8em; }
+#pfe #pfe-ia-endpoint { flex:1; min-width:180px; }
+#pfe .pfe-sug-row { display:flex; align-items:center; gap:0.5em; padding:0.4em 0; border-bottom:1px solid #f2f2f2; }
+#pfe .pfe-sug-row span { flex:1; font-size:0.9em; }
 </style>
 
 <script>
@@ -243,9 +257,11 @@ workflow:
       { slug: "montmartre", title: "Montmartre" }
     ],
     addresses: [
-      { slug: "5-rue-sebastien-bottin", title: "5 rue Sébastien-Bottin" },
-      { slug: "12-rue-cortot", title: "12 rue Cortot" },
-      { slug: "place-charles-de-gaulle", title: "Place Charles-de-Gaulle" }
+      { slug: "5-rue-sebastien-bottin", title: "5 rue Sébastien-Bottin", lat: 48.8557, lng: 2.3268 },
+      { slug: "12-rue-cortot", title: "12 rue Cortot", lat: 48.8869, lng: 2.3410 },
+      { slug: "place-charles-de-gaulle", title: "Place Charles-de-Gaulle", lat: 48.8738, lng: 2.2950 },
+      { slug: "24-rue-houdon", title: "24 rue Houdon", lat: 48.8836, lng: 2.3376 },
+      { slug: "cimetiere-de-levallois", title: "Cimetière de Levallois", lat: 48.8975, lng: 2.2836 }
     ],
     persons: [
       { slug: "albert-camus", title: "Albert Camus" },
@@ -402,7 +418,7 @@ workflow:
       ? "✔ " + _origKeys.length + " clés d'origine préservées — aucune perte."
       : "⚠ " + lost + " clé(s) perdue(s).";
   }
-  function renderYaml() { syncYaml(); renderPreview(); }
+  function renderYaml() { syncYaml(); renderPreview(); renderMap(); }
   function renderPreview() { var e = $("pfe-preview"); if (!e) return; e.innerHTML = TYPES[_type].preview(_rec); wireInlineEdit(); }
   // WYSIWYG en place : les éléments .pv-edit de l'aperçu sont éditables au clic.
   // Pendant la frappe on ne resynchronise QUE le YAML (pas l'aperçu) pour garder le curseur.
@@ -423,6 +439,83 @@ workflow:
     var box = $("pfe-form"); box.innerHTML = "";
     var s = TYPES[_type].schema, i;
     for (i = 0; i < s.length; i++) box.appendChild(buildField(_rec, s[i]));
+  }
+
+  // ── Carte alimentée par les données ───────────────────────────────────────
+  var _map = null, _mapSig = "";
+  function addrCoord(slug) { var a = INDEX.addresses, i; for (i = 0; i < a.length; i++) if (a[i].slug === slug && a[i].lat != null) return a[i]; return null; }
+  function geoTotal(rec) {
+    if (rec.type === "person" && isArr(rec.addresses)) return rec.addresses.length;
+    if (rec.location && isArr(rec.location.points)) return rec.location.points.length;
+    return 0;
+  }
+  function geoPoints(rec) {
+    var pts = [], i, c;
+    if (rec.type === "person" && isArr(rec.addresses)) {
+      for (i = 0; i < rec.addresses.length; i++) { c = addrCoord(rec.addresses[i].id); if (c) pts.push({ lat: c.lat, lng: c.lng, label: c.title + (rec.addresses[i].role ? " — " + rec.addresses[i].role : "") }); }
+    } else if (rec.location && isArr(rec.location.points)) {
+      for (i = 0; i < rec.location.points.length; i++) { c = addrCoord(rec.location.points[i].street); if (c) pts.push({ lat: c.lat, lng: c.lng, label: rec.location.points[i].note || c.title }); }
+    }
+    return pts;
+  }
+  function loadLeaflet() {
+    if (document.getElementById("pfe-leaflet-js")) return;
+    var css = document.createElement("link"); css.rel = "stylesheet"; css.href = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(css);
+    var js = document.createElement("script"); js.id = "pfe-leaflet-js"; js.src = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+    js.onload = function () { _mapSig = ""; renderMap(); }; document.head.appendChild(js);
+  }
+  function renderMap() {
+    var host = $("pfe-map"), note = $("pfe-map-note"); if (!host) return;
+    var pts = geoPoints(_rec), total = geoTotal(_rec), sig = JSON.stringify(pts);
+    if (note) note.textContent = pts.length
+      ? "Carte : " + pts.length + "/" + total + " lieu(x) géolocalisé(s) (index de démo)."
+      : (total ? total + " lieu(x), aucun géolocalisé dans l'index de démo." : "");
+    if (sig === _mapSig && _map) return;
+    _mapSig = sig;
+    if (!window.L) { loadLeaflet(); return; }
+    if (_map) { _map.remove(); _map = null; }
+    if (!pts.length) { host.style.display = "none"; return; }
+    host.style.display = "block";
+    _map = L.map(host, { scrollWheelZoom: false });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap", maxZoom: 19 }).addTo(_map);
+    var g = [], i; for (i = 0; i < pts.length; i++) { L.marker([pts[i].lat, pts[i].lng]).addTo(_map).bindPopup(pts[i].label); g.push([pts[i].lat, pts[i].lng]); }
+    if (g.length === 1) _map.setView(g[0], 14); else _map.fitBounds(g, { padding: [25, 25] });
+    setTimeout(function () { if (_map) _map.invalidateSize(); }, 0);
+  }
+
+  // ── IA in-form (« l'IA propose, tu décides ») ─────────────────────────────
+  function wireIA() { $("pfe-ia-btn").onclick = suggest; }
+  function suggest() {
+    var box = $("pfe-ia"), url = $("pfe-ia-endpoint").value.trim();
+    box.innerHTML = "<p class='pfe-mut'>Analyse…</p>";
+    if (url) {
+      fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fiche: _rec }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { renderSuggestions(d.suggestions || [], false); })
+        .catch(function (e) { box.innerHTML = "<p class='pfe-sug-empty'>Service IA injoignable : " + escHtml(e.message) + "</p>"; });
+    } else {
+      renderSuggestions(localSuggest(_rec), true);
+    }
+  }
+  function localSuggest(rec) {
+    var s = [];
+    if (!rec.body || !String(rec.body).trim()) s.push({ text: "Corps (bio) vide → insérer une amorce à rédiger", apply: function (r) { r.body = "À compléter : biographie de " + (rec.title || "cette fiche") + "."; } });
+    if (rec.workflow && rec.workflow.reviewRequested && !rec.workflow.validated) s.push({ text: "Relecture demandée mais non validée → marquer « validé »", apply: function (r) { r.workflow.validated = true; r.workflow.reviewRequested = false; } });
+    if (rec.type === "person" && isArr(rec.periods) && rec.periods.indexOf("commune-de-1871") === -1 && rec.death && rec.death.year >= 1871 && rec.birth && rec.birth.year <= 1871) s.push({ text: "Époque « Commune de 1871 » plausible (vécu en 1871) → l'ajouter", apply: function (r) { if (!isArr(r.periods)) r.periods = []; r.periods.push("commune-de-1871"); } });
+    if (!s.length) s.push({ text: "Aucune suggestion structurelle sur cette fiche (démo).", apply: null });
+    return s;
+  }
+  function applyOf(sg) { if (typeof sg.apply === "function") return sg.apply; if (sg.field) return function (r) { r[sg.field] = sg.value; }; return null; }
+  function renderSuggestions(list, demo) {
+    var box = $("pfe-ia"); box.innerHTML = "";
+    if (demo) { var n = el("p", "pfe-mut"); n.appendChild(txt("Démo locale (aucun appel IA). Renseigne l'URL de ton micro-service pour de vraies suggestions.")); box.appendChild(n); }
+    list.forEach(function (sg) {
+      var row = el("div", "pfe-sug-row"), t = el("span"); t.appendChild(txt(sg.text || sg.label || "(suggestion)")); row.appendChild(t);
+      var ap = applyOf(sg);
+      if (ap) { var b = el("button", "pfe-add"); b.type = "button"; b.appendChild(txt("Appliquer")); b.onclick = function () { ap(_rec); rerender(); row.style.opacity = 0.5; b.disabled = true; }; row.appendChild(b); }
+      var ig = el("button", "pfe-x"); ig.type = "button"; ig.appendChild(txt("Ignorer")); ig.onclick = function () { if (row.parentNode) row.parentNode.removeChild(row); }; row.appendChild(ig);
+      box.appendChild(row);
+    });
   }
 
   // ── Widgets (génériques, liés à (obj, fieldDef)) ──────────────────────────
@@ -663,7 +756,7 @@ workflow:
     sel.onchange = function () { _type = sel.value; $("pfe-path").value = TYPES[_type].path; $("pfe-status").textContent = ""; loadFiche(); };
   }
 
-  function boot() { wireCommit(); wireType(); $("pfe-path").value = TYPES[_type].path; loadFiche(); }
+  function boot() { wireCommit(); wireType(); wireIA(); $("pfe-path").value = TYPES[_type].path; loadFiche(); }
   if (window.jsyaml) { boot(); }
   else {
     var s = document.createElement("script");
