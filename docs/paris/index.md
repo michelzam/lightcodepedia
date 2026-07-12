@@ -2,32 +2,22 @@
 title: PoC — Éditeur de fiches YAML
 ---
 
-# Pour Toni — ces composants te conviennent-ils (en fonctionnalité) ?
+# Paris révolutionnaire — éditeur de fiches (démo pour Toni)
 
-On te propose des composants pedia à brancher sur ton corpus YAML. Deux hypothèses, qu'on tranchera
-**plus tard, selon ton retour** :
+Les composants pedia posés sur des fiches YAML structurées, **sans serveur ni Sveltia**.
+**Rien à installer, aucun compte.** Essaie ci-dessous ; pour tester **une de tes fiches**, colle son YAML
+dans « Tester ta propre fiche ».
 
-- **Hypothèse 1 — on ajoute** ces composants à ta structure existante ;
-- **Hypothèse 2 — on remplace** certaines briques par ces composants.
+**Les 4 composants à valider** — dis-nous, pour chacun : *convient / à ajuster / non* :
 
-**La seule question de cette étape est fonctionnelle : est-ce que ces composants clés font ce que tu veux ?**
-Essaie-les ci-dessous (ça marche sur ton tél) :
+1. **Formulaire piloté par schéma** — vocabulaire fermé, relations par nom, objets imbriqués, liste de
+   points reliés aux adresses. Bascule **Personnage ⇄ Événement** (un seul moteur).
+2. **Aperçu + WYSIWYG en place** — édite le **nom** ou la **bio** directement sur la fiche rendue.
+3. **Carte** — les adresses/points de la fiche affichés sur une carte.
+4. **IA in-form** — « 🪄 Suggérer » : l'IA propose, tu appliques (branchable sur ton micro-service).
 
-1. **Formulaire piloté par schéma** — champs typés, **vocabulaire fermé** (menu), **relations par nom**
-   (recherche → puce), **objets imbriqués** (la datation) et **listes d'objets** (les points d'un événement,
-   chacun relié à une adresse). Démontré sur **Personnage ⇄ Événement** (un seul moteur, via le sélecteur de type).
-2. **Aperçu fidèle + WYSIWYG en place** — édite **directement sur la fiche telle qu'elle est rendue**
-   (clique le nom, la bio…) ; le YAML se ré-émet sans perte.
-3. **Carte alimentée par les données** — les adresses/points d'une fiche sur une carte. *(prochaine étape)*
-4. **IA in-form** — bouton « Suggérer / Vérifier » dans la fiche. *(prochaine étape)*
-
-**Dis-nous, pour chaque composant : ça te convient ? à ajuster ? non ?** On décidera « ajout » vs
-« remplacement » ensuite, en fonction de ton feedback.
-
-> **Comment tester — aucun compte requis.** Tout (formulaire, round-trip YAML, WYSIWYG, carte, IA)
-> marche en lecture directe : ouvre la page et essaie. Pour tester **ta propre fiche**, **colle son YAML**
-> dans « Tester ta propre fiche » juste sous le sélecteur de type — toujours sans compte, sans jeton.
-> Le bouton 💾 (écrire dans git) est optionnel et ne concerne pas l'évaluation.
+Round-trip YAML **sans perte** (dates non quotées préservées, `null`, listes, corps en bloc).
+**Deux pistes, à trancher selon ton retour :** on **ajoute** ces composants à ton CMS, ou on en **remplace**.
 
 <div id="pfe" markdown="0">
   <div class="pfe-meta">
@@ -74,8 +64,8 @@ Essaie-les ci-dessous (ça marche sur ton tél) :
     </div>
     <div id="pfe-ia"></div>
   </section>
-  <section class="pfe-card pfe-commit">
-    <h3>Commiter (optionnel — écrit via l'API GitHub)</h3>
+  <details class="pfe-card pfe-commit">
+    <summary>💾 Écrire dans git (optionnel — non requis pour l'évaluation)</summary>
     <div class="pfe-row">
       <label>Dépôt <input id="pfe-repo" placeholder="michelzam/lightcodepedia"></label>
       <label>Chemin <input id="pfe-path" value="docs/paris/sample/a-de-longpre.yaml"></label>
@@ -86,10 +76,9 @@ Essaie-les ci-dessous (ça marche sur ton tél) :
       <button id="pfe-reload-btn" type="button">🔄 Recharger depuis le fichier</button>
       <span id="pfe-status" class="pfe-mut"></span>
     </div>
-    <p class="pfe-mut"><b>Optionnel — inutile pour l'évaluation.</b> Éditer et voir le round-trip ne
-    demandent aucun compte. Ce bouton écrit dans git et requiert un PAT ; pour juste tester une fiche,
-    utilise « Coller ta propre fiche » en haut.</p>
-  </section>
+    <p class="pfe-mut">Éditer et voir le round-trip ne demandent aucun compte. Ce bouton écrit dans git
+    (PAT requis) ; pour juste tester une fiche, utilise « Coller ta propre fiche » en haut.</p>
+  </details>
 </div>
 
 <script type="application/yaml" id="pfe-fiche-persons">
@@ -768,11 +757,5 @@ workflow:
 
 ---
 
-## Note technique (productisation)
-
-Même moteur pour **Personnage** et **Événement** : le formulaire, la sérialisation et l'aperçu sont
-**pilotés par un schéma** (widgets `string / number / boolean / select / list / relation / object / objectlist`).
-Ajouter un type = ajouter une entrée de schéma — **pas de code**. Le sérialiseur YAML est générique
-(objets et listes imbriqués), en round-trip **valide-schéma** (comme Sveltia). La productisation :
-replier ce moteur dans `_includes/fiche_editor.md` pour un usage **100 % Markdown/IAL**
-(`{: .fiche-editor collection="persons" }`), et générer l'index de relations au build.
+*Même moteur pour Personnage et Événement : formulaire, sérialisation et aperçu sont pilotés par le
+schéma — ajouter un type = une entrée de schéma, pas de code.*
