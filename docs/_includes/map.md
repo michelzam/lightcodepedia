@@ -161,7 +161,7 @@ Auto-included by docs/_layouts/default.html.
           dog.textContent = fetchIcon;
           dog.style.cssText = "font-size:1.7em;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))";
           var dogMarker = new maplibregl.Marker({ element: dog, anchor: "center" })
-            .setLngLat(tgtLngLat)                                // waits at the park
+            .setLngLat(tgtLngLat)                                // parked to a corner by fitAll (never on the red dot)
             .addTo(map);
 
           status = document.createElement("div");
@@ -190,6 +190,10 @@ Auto-included by docs/_layouts/default.html.
           var b = new maplibregl.LngLatBounds(pts[0], pts[0]);
           pts.forEach(function (p) { b.extend(p); });
           map.fitBounds(b, { padding: 60, maxZoom: zoom, duration: 0 });
+          if (dogMarker) {                                   // park Lucky in a corner — off the red dot
+            var sw = map.getBounds().getSouthWest(), c = map.getCenter();
+            dogMarker.setLngLat([sw.lng + (c.lng - sw.lng) * 0.2, sw.lat + (c.lat - sw.lat) * 0.2]);
+          }
           didFit = true;
         }
 
