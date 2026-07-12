@@ -9,9 +9,9 @@ loses everything. A component's editable source comes from window.lcSourceOf
 {%- endcomment -%}
 
 <style>
-#lcx-ghost { position: fixed; z-index: 9997; display: none; pointer-events: none;
+#lcx-ghost { position: fixed; z-index: 99995; display: none; pointer-events: none;
   border: 1.5px dashed rgba(0,102,204,.55); border-radius: 6px; background: rgba(0,102,204,.06); }
-#lcx-gear { position: fixed; z-index: 9998; display: none; width: 26px; height: 26px; padding: 0;
+#lcx-gear { position: fixed; z-index: 100001; display: none; width: 26px; height: 26px; padding: 0;
   border-radius: 50%; border: 1px solid #0066cc; background: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,.22); cursor: pointer; font-size: 14px; line-height: 24px; text-align: center; }
 #lcx-gear:hover { background: #eef4ff; }
@@ -99,8 +99,15 @@ loses everything. A component's editable source comes from window.lcSourceOf
   function keep() { if (hideT) { clearTimeout(hideT); hideT = null; } }
   function scheduleHide() { keep(); hideT = setTimeout(hideGhost, 320); }
 
+  // Edit affordance lives only inside X-ray mode: Option/Alt held (desktop) or
+  // the X-ray toggle on (touch). Otherwise the page reads clean, no gears.
+  function xrayActive(e) {
+    if (e && e.altKey) return true;
+    return !!(window.lcxIsActive && window.lcxIsActive());
+  }
   function track(e) {
     if (dlg && dlg.open) return;
+    if (!xrayActive(e)) { if (e.target !== gear) hideGhost(); return; }   // stay if the pointer is on the gear
     if (e.target === gear || e.target === ghost) { keep(); return; }
     var b = blockAt(e.target);
     if (b) { keep(); showGhost(b); } else scheduleHide();
