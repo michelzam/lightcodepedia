@@ -143,21 +143,25 @@ Auto-included by docs/_layouts/default.html.
         // fetch="icon": a Fetch button; the fetcher glides to the ball, then
         // cheers only if it's within radius= of target= (both in degrees).
         var fetchIcon = el.getAttribute("fetch") || "";
-        var status = null, inPark = function () { return false; };
+        var status = null, tgtLngLat = null, inPark = function () { return false; };
         if (fetchIcon) {
           var tg = (el.getAttribute("target") || "").split(",").map(function (s) { return parseFloat(s.trim()); });
-          var tgtLngLat = (tg.length >= 2 && !isNaN(tg[0]) && !isNaN(tg[1]))
+          tgtLngLat = (tg.length >= 2 && !isNaN(tg[0]) && !isNaN(tg[1]))
             ? [tg[1], tg[0]]                                      // target= is "lat,lon"
             : (markers.length ? [markers[0].lon, markers[0].lat] : [centerLon, centerLat]);
           var radius = parseFloat(el.getAttribute("radius")); if (isNaN(radius)) radius = 0.004;
-          inPark = function () { return Math.hypot(ballLngLat[0] - tgtLngLat[0], ballLngLat[1] - tgtLngLat[1]) <= radius; };
+          // atomic: fit x AND y independently (a box), not the combined distance
+          // — each slider stands on its own, easier to reason about and to land.
+          inPark = function () {
+            return Math.abs(ballLngLat[0] - tgtLngLat[0]) <= radius
+                && Math.abs(ballLngLat[1] - tgtLngLat[1]) <= radius;
+          };
 
           var dog = document.createElement("div");
           dog.textContent = fetchIcon;
           dog.style.cssText = "font-size:1.7em;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))";
-          var b0 = map.getBounds();
           var dogMarker = new maplibregl.Marker({ element: dog, anchor: "center" })
-            .setLngLat([b0.getWest(), b0.getSouth()])           // trots in from a corner
+            .setLngLat(tgtLngLat)                                // waits at the park
             .addTo(map);
 
           status = document.createElement("div");
@@ -175,13 +179,27 @@ Auto-included by docs/_layouts/default.html.
           wrap.appendChild(fbtn);
         }
 
+        // Frame every object (park, ball, Lucky) so they're all visible on load,
+        // capped at the author's zoom so it never zooms in past the given level.
+        var didFit = false;
+        function fitAll() {
+          var pts = markers.map(function (m) { return [m.lon, m.lat]; });
+          pts.push(ballLngLat);
+          if (tgtLngLat) pts.push(tgtLngLat);
+          if (pts.length < 2) return;
+          var b = new maplibregl.LngLatBounds(pts[0], pts[0]);
+          pts.forEach(function (p) { b.extend(p); });
+          map.fitBounds(b, { padding: 60, maxZoom: zoom, duration: 0 });
+          didFit = true;
+        }
+
         function moveBound() {
           var f = document.querySelector(".lc-form[data-lc-id='" + bind + "']");
           if (!f) return;
           try {
             var d = JSON.parse(f.getAttribute("data-lc-value") || "{}");
             var la = parseFloat(d.lat), lo = parseFloat(d.lon != null ? d.lon : d.lng);
-            if (!isNaN(la) && !isNaN(lo)) { ballLngLat = [lo, la]; bmarker.setLngLat(ballLngLat); }
+            if (!isNaN(la) && !isNaN(lo)) { ballLngLat = [lo, la]; bmarker.setLngLat(ballLngLat); if (!didFit) fitAll(); }
           } catch (e) {}
           if (status) status.textContent = inPark() ? "🎯 In the park! Hit Fetch 🐕" : "Slide to move the ball 🎾";
         }
@@ -190,6 +208,7 @@ Auto-included by docs/_layouts/default.html.
           document.removeEventListener("lc-model-changed", moveBound);
         });
         moveBound();
+        if (!didFit) fitAll();   // fit park + initial ball even before the form publishes
       }
 
       // Hint overlay

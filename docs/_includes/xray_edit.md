@@ -24,6 +24,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
 #lcx-edit label { display: block; color: #555; font-size: .8em; margin: .7em 0 .18em; }
 #lcx-edit input, #lcx-edit textarea { width: 100%; box-sizing: border-box; padding: .45em .6em;
   border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+#lcx-edit input[type=checkbox] { width: auto; height: 1.35em; margin: .2em 0; }
 #lcx-edit textarea { font-family: ui-monospace, Menlo, monospace; min-height: 120px; resize: vertical; }
 #lcx-edit .lcx-bar { display: flex; gap: .55em; padding: .7em 1em; border-top: 1px solid #e5e7eb; background: #fafafa; }
 #lcx-edit button { font: inherit; padding: .45em .9em; border-radius: 7px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
@@ -53,6 +54,23 @@ loses everything. A component's editable source comes from window.lcSourceOf
     LI: "list item", PRE: "code", BLOCKQUOTE: "quote", FIGURE: "figure", TABLE: "table", DT: "term", DD: "definition" };
 
   function parseSrc(html) { var t = document.createElement("div"); t.innerHTML = html; return t.firstElementChild; }
+  // Render a knob as the control its value implies: bool → checkbox,
+  // int/float → number (step from the decimals), everything else → text.
+  function knobInput(name, value) {
+    var v = (value || "").trim(), inp;
+    if (/^(true|false)$/i.test(v)) {
+      inp = document.createElement("input"); inp.type = "checkbox"; inp.checked = /^true$/i.test(v);
+    } else if (/^-?\d+$/.test(v)) {
+      inp = document.createElement("input"); inp.type = "number"; inp.step = "1"; inp.value = v; inp.inputMode = "numeric";
+    } else if (/^-?\d*\.\d+$/.test(v)) {
+      inp = document.createElement("input"); inp.type = "number"; inp.value = v; inp.inputMode = "decimal";
+      inp.step = String(1 / Math.pow(10, v.split(".")[1].length));
+    } else {
+      inp = document.createElement("input"); inp.type = "text"; inp.value = value;
+    }
+    inp.setAttribute("data-knob", name);
+    return inp;
+  }
   function openDlg() { if (dlg.open) return; if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); }
   function closeDlg() { if (dlg.close) dlg.close(); else dlg.removeAttribute("open"); }
   // Fire on pointerdown (not click): a tap that dismisses the on-screen keyboard
@@ -127,8 +145,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
       Array.prototype.forEach.call(srcEl.attributes, function (a) {
         if (a.name === "id" || a.name === "class" || a.name.indexOf("data-") === 0) return;
         var lab = document.createElement("label"); lab.textContent = a.name;
-        var inp = document.createElement("input"); inp.value = a.value; inp.setAttribute("data-knob", a.name);
-        body.appendChild(lab); body.appendChild(inp);
+        body.appendChild(lab); body.appendChild(knobInput(a.name, a.value));
       });
     }
     var clab = document.createElement("label"); clab.textContent = "content";
@@ -157,7 +174,8 @@ loses everything. A component's editable source comes from window.lcSourceOf
       if (isComponent) {
         var srcEl = parseSrc(curSnap);
         Array.prototype.forEach.call(document.querySelectorAll("#lcx-edit-body input[data-knob]"), function (inp) {
-          srcEl.setAttribute(inp.getAttribute("data-knob"), inp.value);
+          var val = inp.type === "checkbox" ? (inp.checked ? "true" : "false") : inp.value;
+          srcEl.setAttribute(inp.getAttribute("data-knob"), val);
         });
         var code = srcEl.querySelector("code");
         if (code) code.textContent = val + "\n"; else srcEl.textContent = val;

@@ -23,16 +23,16 @@ Lucky can't read many words, so keep it big:
 Slide to move the ball 🎾 onto the park 🌳 — then hit **Fetch**, and Lucky runs for it!
 
 ```yaml
-lat: 43.045
+lat: 43.055
 lon: -87.885
 ```
-{: .form #hunt editable="true" sliders="lat:43.04:43.07:0.002,lon:-87.90:-87.85:0.002" title="Where to throw 🎾" }
+{: .form #hunt editable="true" sliders="lat:43.055:43.065:0.005,lon:-87.885:-87.875:0.005" title="Where to throw 🎾" }
 
 ```
 label,lat,lon
-🌳 Lake Park,43.055,-87.872
+🌳 Lake Park,43.060,-87.880
 ```
-{: .map bind="hunt" bindicon="🎾" fetch="🐕" target="43.055,-87.872" radius="0.004" zoom="14" height="340" }
+{: .map bind="hunt" bindicon="🎾" fetch="🐕" target="43.060,-87.880" radius="0.004" zoom="14" height="340" }
 
 **What makes a good throw?**
 
