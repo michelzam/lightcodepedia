@@ -1,0 +1,57 @@
+# Fiche de TEST round-trip (faits publics ; dates volontairement NON quotées).
+# Stand-in : les fichiers reçus étaient metadata.yaml (ancien style blocs) + body.md vide,
+# pas le louise-michel.yaml du schéma plat. Remplace-la par ta vraie fiche via le champ
+# « Chemin » (branche poc-pedia) pour tester tes 37 adresses.
+id: louise-michel
+slug: louise-michel
+type: person
+title: Louise Michel
+sortName: Michel, Louise
+entityType: person
+gender: féminin
+birth:
+  date: 1830-05-29
+  year: 1830
+  place: Vroncourt-la-Côte
+death:
+  date: 1905-01-09
+  year: 1905
+  place: Marseille
+professions:
+  - institutrice
+  - anarchiste
+qualificatifs:
+  - communarde
+  - féministe
+nationalities:
+  - France
+periods:
+  - commune-de-1871
+  - troisieme-republique
+  - second-empire
+themes:
+  - paris-feministe
+addresses:
+  - id: 24-rue-houdon
+    role: résidence
+    period: 1871
+  - id: cimetiere-de-levallois
+    role: mémoire
+image:
+  src: /fiches/louise-michel.jpg
+  alt: Portrait de Louise Michel
+  credit: BnF · domaine public — Gallica
+bibliography: []
+externalLinks: []
+body: |
+  Institutrice et militante anarchiste, figure majeure de la Commune de Paris (1871).
+  Déportée en Nouvelle-Calédonie, elle y prend le parti des Kanaks.
+
+  Surnommée « la Vierge rouge », elle demeure une icône des mouvements ouvrier et féministe.
+workflow:
+  draft: false
+  aiText: null
+  edited: true
+  validated: false
+  reviewRequested: true
+  reviewNote: null

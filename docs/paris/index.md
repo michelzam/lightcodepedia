@@ -228,6 +228,8 @@ workflow:
       { slug: "revolution-francaise", title: "Révolution française" },
       { slug: "revolutions-de-1848", title: "Révolutions de 1848" },
       { slug: "commune-de-paris", title: "Commune de Paris" },
+      { slug: "commune-de-1871", title: "Commune de 1871" },
+      { slug: "guerre-de-1870", title: "Guerre de 1870" },
       { slug: "second-empire", title: "Second Empire" },
       { slug: "troisieme-republique", title: "Troisième République" },
       { slug: "belle-epoque", title: "Belle Époque" },
@@ -262,7 +264,7 @@ workflow:
 
   var TYPES = {
     persons: {
-      label: "Personnage", path: "docs/paris/sample/a-de-longpre.yaml", inlineId: "pfe-fiche-persons", order: PERSON_ORDER,
+      label: "Personnage", path: "docs/paris/sample/louise-michel.yaml", inlineId: "pfe-fiche-persons", order: PERSON_ORDER,
       schema: [
         { name: "title", label: "Nom affiché", widget: "string" },
         { name: "gender", label: "Genre", widget: "select", options: ["", "masculin", "féminin", "non-binaire", "inconnu"] },
@@ -344,7 +346,7 @@ workflow:
     var s = String(v);
     if (s.indexOf("\n") !== -1) {
       var lines = s.replace(/\n+$/, "").split("\n"), out = "|-", i;
-      for (i = 0; i < lines.length; i++) out += "\n" + pad + "  " + lines[i];
+      for (i = 0; i < lines.length; i++) out += "\n" + (lines[i] === "" ? "" : pad + "  " + lines[i]);
       return out;
     }
     return scalarStr(s);
@@ -382,7 +384,9 @@ workflow:
     if (isArr(item)) return pad + "- []";
     return pad + "- " + scalarInline(item, pad);
   }
-  function toYaml(rec) { return emitMap(rec, 0, TYPES[_type].order) + "\n"; }
+  // order = null : on préserve l'ordre des clés du fichier chargé → diffs git minimaux
+  // (pas de ré-imposition d'un ordre canonique).
+  function toYaml(rec) { return emitMap(rec, 0, null) + "\n"; }
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
   function renderHead() {
@@ -632,7 +636,9 @@ workflow:
     };
   }
   function initFrom(raw, srcLabel) {
-    try { _rec = window.jsyaml.load(raw) || {}; }
+    // CORE_SCHEMA (YAML 1.2) : n'active PAS le type timestamp — 1830-05-29 reste une CHAÎNE
+    // (le défaut de js-yaml 4.1 le convertirait en Date puis en ISO 1830-05-29T00:00:00.000Z).
+    try { _rec = window.jsyaml.load(raw, { schema: window.jsyaml.CORE_SCHEMA }) || {}; }
     catch (e) { $("pfe-form").innerHTML = "<p style='color:#c00'>YAML illisible : " + e.message + "</p>"; return; }
     _origKeys = []; for (var k in _rec) if (_rec.hasOwnProperty(k)) _origKeys.push(k);
     renderHead(); renderForm(); renderYaml();
