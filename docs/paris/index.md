@@ -24,25 +24,10 @@ Essaie-les ci-dessous (ça marche sur ton tél) :
 **Dis-nous, pour chaque composant : ça te convient ? à ajuster ? non ?** On décidera « ajout » vs
 « remplacement » ensuite, en fonction de ton feedback.
 
-> **Comment tester — à lire avant de conclure.** Deux niveaux à ne pas confondre :
->
-> 1. **Évaluer l'édition — aucun compte, aucun PAT, aucun fork.** Tout ce qui est *lecture,
->    formulaire, round-trip YAML et WYSIWYG* marche pour toi **sans rien installer**. C'est
->    l'essentiel de ton « test décisif ». Tu ne peux simplement pas *enregistrer* (le bouton 💾
->    écrit par défaut dans le dépôt de Michel, où tu n'as pas les droits — un commit y échouera).
-> 2. **Tester la persistance réelle sur TON corpus — pas besoin de forker pedia.** Cette page est
->    du JS statique : pointe-la sur ton dépôt.
->    - **Dépôt** = `noventa98/Paris-Rev` · **Chemin** = `poc/content/persons/<une-fiche>.yaml` ·
->      **Branche** = une branche de test (ex. `poc-pedia`).
->    - Crée un **PAT fine-grained** limité à ce **seul** dépôt (*Contents: Read and write*), courte durée.
->    - Colle-le via l'éditeur ✏️ (stocké dans **ton** navigateur, `lc_ed_pat`).
->    - Édite une vraie fiche → **💾 Commiter** → un commit atterrit **chez toi** (ta build / Sveltia le voient).
->    Le PAT reste dans ton navigateur et part directement vers l'API GitHub. Comme la page est servie
->    par le site de Michel, utilise un **PAT fine-grained jetable** par prudence.
->
-> *Alternative sans PAT :* Michel peut t'ajouter comme **collaborateur** d'un petit dépôt bac-à-sable,
-> ou on peut ajouter plus tard un **mode local** (comme le `local_backend` de Sveltia) qui édite un
-> clone local sans jeton.
+> **Comment tester — aucun compte requis.** Tout (formulaire, round-trip YAML, WYSIWYG, carte, IA)
+> marche en lecture directe : ouvre la page et essaie. Pour tester **ta propre fiche**, **colle son YAML**
+> dans « Tester ta propre fiche » juste sous le sélecteur de type — toujours sans compte, sans jeton.
+> Le bouton 💾 (écrire dans git) est optionnel et ne concerne pas l'évaluation.
 
 <div id="pfe" markdown="0">
   <div class="pfe-meta">
@@ -57,6 +42,11 @@ Essaie-les ci-dessous (ça marche sur ton tél) :
       </select>
     </label>
   </div>
+  <details class="pfe-paste">
+    <summary>Tester ta propre fiche — colle son YAML ici (aucun compte requis)</summary>
+    <textarea id="pfe-paste-txt" rows="6" placeholder="Colle le contenu d'une fiche YAML (Personnage ou Événement)…"></textarea>
+    <button id="pfe-paste-btn" type="button" class="pfe-add">Charger cette fiche</button>
+  </details>
   <div class="pfe-cols">
     <section class="pfe-card">
       <h3>Formulaire typé (schéma → widgets)</h3>
@@ -96,12 +86,9 @@ Essaie-les ci-dessous (ça marche sur ton tél) :
       <button id="pfe-reload-btn" type="button">🔄 Recharger depuis le fichier</button>
       <span id="pfe-status" class="pfe-mut"></span>
     </div>
-    <p class="pfe-mut"><b>Éditer et voir le round-trip ne demande rien.</b> Seul ce bouton écrit dans git.
-    Par défaut il vise <code>michelzam/lightcodepedia</code> (Toni n'y a pas les droits → un commit
-    échouera). Pour tester la persistance sur ton corpus, mets <b>ton</b> dépôt
-    (<code>noventa98/Paris-Rev</code>) + un chemin réel + une branche de test, et un
-    <b>PAT fine-grained</b> (Contents: Read &amp; Write) limité à ce dépôt, collé via ✏️
-    (<code>lc_ed_pat</code>, reste dans ton navigateur). Voir l'encadré « Comment tester » en haut.</p>
+    <p class="pfe-mut"><b>Optionnel — inutile pour l'évaluation.</b> Éditer et voir le round-trip ne
+    demandent aucun compte. Ce bouton écrit dans git et requiert un PAT ; pour juste tester une fiche,
+    utilise « Coller ta propre fiche » en haut.</p>
   </section>
 </div>
 
@@ -230,6 +217,9 @@ workflow:
 #pfe #pfe-ia-endpoint { flex:1; min-width:180px; }
 #pfe .pfe-sug-row { display:flex; align-items:center; gap:0.5em; padding:0.4em 0; border-bottom:1px solid #f2f2f2; }
 #pfe .pfe-sug-row span { flex:1; font-size:0.9em; }
+#pfe .pfe-paste { margin-bottom:0.8em; font-size:0.9em; }
+#pfe .pfe-paste summary { cursor:pointer; color:#2563eb; }
+#pfe .pfe-paste textarea { width:100%; box-sizing:border-box; font-family:monospace; font-size:0.8em; margin:0.4em 0; padding:0.5em; border:1px solid #ccc; border-radius:5px; }
 </style>
 
 <script>
@@ -756,7 +746,15 @@ workflow:
     sel.onchange = function () { _type = sel.value; $("pfe-path").value = TYPES[_type].path; $("pfe-status").textContent = ""; loadFiche(); };
   }
 
-  function boot() { wireCommit(); wireType(); wireIA(); $("pfe-path").value = TYPES[_type].path; loadFiche(); }
+  function wirePaste() {
+    $("pfe-paste-btn").onclick = function () {
+      var t = $("pfe-paste-txt").value; if (!t.trim()) return;
+      _type = /(^|\n)\s*type:\s*event\b/.test(t) ? "events" : "persons";
+      $("pfe-type-sel").value = _type;
+      initFrom(t, "fiche collée (aucun compte)");
+    };
+  }
+  function boot() { wireCommit(); wireType(); wireIA(); wirePaste(); $("pfe-path").value = TYPES[_type].path; loadFiche(); }
   if (window.jsyaml) { boot(); }
   else {
     var s = document.createElement("script");
