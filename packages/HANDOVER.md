@@ -111,6 +111,11 @@ Both packages are now publish-ready and non-regression covered:
     `yaml_io.md` is still in sync with `lc-serialize` (SSOT drift guard).
   - publish (Michel, after `npm login`): `npm run publish-all`  → `npm publish --workspaces`
     (each declares `publishConfig.access: public`).
+- **Continuous delivery (semver):** the **Publish LC bricks** GitHub Action ships a version
+  automatically — bump a package's version + merge to `main`, and it tests (both suites +
+  drift guard) then publishes *only* the changed package, idempotently, with provenance, and
+  tags it. So `npm update` stays a no-regression op (§5). One-time: add an npm `NPM_TOKEN`
+  repo secret. Flow + semver rules in `packages/RELEASING.md`; history in `packages/CHANGELOG.md`.
 
 Not done here, on purpose (needs your call — see §"engine vs face" note to Michel): the
 **editor engine** (`lc-record`, the headless brain our pedia and Toni both render) and any

@@ -1,0 +1,68 @@
+name: Publish LC bricks
+
+# Continuous delivery for the @karmicsoft/lc-* packages.
+# Bump a package's version (semver) and merge to main → this tests everything,
+# then publishes ONLY the packages whose version isn't on npm yet (idempotent:
+# unchanged versions are skipped, so it never republishes or errors).
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "packages/lc-serialize/**"
+      - "packages/lc-schema/**"
+      - "packages/package.json"
+      - ".github/workflows/publish-bricks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write      # push version tags
+  id-token: write      # npm provenance (public repo)
+
+concurrency:
+  group: "publish-bricks"
+  cancel-in-progress: false
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install
+        run: npm install
+
+      - name: Test (both bricks + SSOT drift guard)
+        run: npm test
+
+      - name: Publish changed versions (semver-gated, idempotent)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -e
+          published=""
+          for pkg in lc-serialize lc-schema; do
+            name=$(node -p "require('./$pkg/package.json').name")
+            ver=$(node -p "require('./$pkg/package.json').version")
+            onnpm=$(npm view "$name@$ver" version 2>/dev/null || true)
+            if [ "$onnpm" = "$ver" ]; then
+              echo "· $name@$ver already on npm — skip"
+            else
+              echo "↑ publishing $name@$ver"
+              ( cd "$pkg" && npm publish --provenance --access public )
+              git tag "$pkg-v$ver" || true
+              published="$published $pkg-v$ver"
+            fi
+          done
+          if [ -n "$published" ]; then git push --tags || true; fi
+          echo "Published:${published:- (nothing new)}"
