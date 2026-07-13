@@ -92,6 +92,30 @@ When `lc-editor` starts committing: agree on the **commit-message format** and t
 
 ---
 
+## 8. Socle status — publish-ready (updated)
+
+Both packages are now publish-ready and non-regression covered:
+
+- **TypeScript types** ship (`index.d.ts` + `types` export) — clean DX in Astro/TS.
+- **`js-yaml` pin verified** (`^4.3.0` resolves to 4.3.0; `CORE_SCHEMA` + `load` work on
+  js-yaml 4.x *and* 5.x — checked, no change needed).
+- **BDD non-regression suites** (`node test.mjs` in each): 17 scenarios for lc-serialize
+  (dates-as-strings, `|`/`|-`/`|+` chomping, null/[], key order, flow/comment drift-but-
+  lossless, idempotence), 14 for lc-schema (every widget mapping + robustness).
+- **Corpus checker** ships as a `bin`: `npx @karmicsoft/lc-serialize lc-serialize-check ./content`
+  (the §2/CI gate, zero-dep). Verified on our real fiches: **0 data-loss**; the one
+  hand-commented fiche shows byte-drift = *dropped comments only* (lossless) — the exact
+  behavior to expect on Toni's corpus.
+- **One command each** (from `packages/`):
+  - verify: `npm test`  → runs both BDD suites **and** confirms the pedia's generated
+    `yaml_io.md` is still in sync with `lc-serialize` (SSOT drift guard).
+  - publish (Michel, after `npm login`): `npm run publish-all`  → `npm publish --workspaces`
+    (each declares `publishConfig.access: public`).
+
+Not done here, on purpose (needs your call — see §"engine vs face" note to Michel): the
+**editor engine** (`lc-record`, the headless brain our pedia and Toni both render) and any
+Web-Component face. Shipped now = the two pure bricks, clean.
+
 ## For your Claude Code — checklist
 
 - [ ] `npm i @karmicsoft/lc-serialize @karmicsoft/lc-schema` (pinned). **Do not** edit `node_modules` / vendor / regenerate them.

@@ -4,21 +4,38 @@
   "description": "Faithful YAML round-trip for git-backed structured content — a LightCode brick.",
   "type": "module",
   "main": "index.js",
+  "types": "index.d.ts",
   "exports": {
-    ".": "./index.js"
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "bin": {
+    "lc-serialize-check": "./check-corpus.mjs"
   },
   "files": [
     "index.js",
+    "index.d.ts",
+    "check-corpus.mjs",
     "example.yaml",
     "LICENSE",
     "README.md"
   ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "test": "node test.mjs"
   },
   "license": "SEE LICENSE IN LICENSE",
   "author": "KarmicSoft",
   "homepage": "https://lightcodepedia.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/michelzam/lightcodepedia",
+    "directory": "packages/lc-serialize"
+  },
   "dependencies": {
     "js-yaml": "^4.3.0"
   },

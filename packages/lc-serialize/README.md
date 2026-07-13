@@ -31,7 +31,22 @@ isLossless(yamlText);             // parsed data survives round-trip (order-inde
 `dump(obj, { order })` — pass an explicit key order if you want a canonical order
 instead of the object's own order. Omit it to preserve the source order.
 
-## CI recipe (round-trip over the whole corpus)
+## One-liner corpus check (CLI)
+
+Ships a `bin` — point it at a folder (or a file); exits non-zero on any data loss:
+
+```sh
+npx @karmicsoft/lc-serialize lc-serialize-check ./content
+#  → "N file(s) checked · 0 data-loss · K byte-drift (advisory)"
+#  LC_VERBOSE=1 lists every drifting file
+```
+
+`isLossless` is the gate (must be 0). Byte-drift is advisory: a lossless file can
+still reformat — **comments are dropped** and flow style (`{a: 1}` / `[1, 2]`)
+becomes block. On a Sveltia-generated corpus drift ≈ 0; hand-annotated files drift
+by exactly their comments.
+
+## CI recipe (round-trip over the whole corpus, in code)
 
 ```js
 import { isLossless, isByteIdentical } from '@karmicsoft/lc-serialize';

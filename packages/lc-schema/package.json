@@ -4,21 +4,34 @@
   "description": "Schema → neutral IR → widget definitions (schema compiler) — a LightCode brick.",
   "type": "module",
   "main": "index.js",
+  "types": "index.d.ts",
   "exports": {
-    ".": "./index.js"
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
   },
   "files": [
     "index.js",
+    "index.d.ts",
     "example.config.yml",
     "LICENSE",
     "README.md"
   ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "test": "node test.mjs"
   },
   "license": "SEE LICENSE IN LICENSE",
   "author": "KarmicSoft",
   "homepage": "https://lightcodepedia.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/michelzam/lightcodepedia",
+    "directory": "packages/lc-schema"
+  },
   "dependencies": {
     "js-yaml": "^4.3.0"
   },

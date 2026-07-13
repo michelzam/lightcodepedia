@@ -1,0 +1,19 @@
+{
+  "name": "@karmicsoft/lc-bricks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LightCode bricks workspace — test & publish the @karmicsoft/lc-* packages.",
+  "type": "module",
+  "workspaces": [
+    "lc-serialize",
+    "lc-schema"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces && node gen-includes.mjs --check",
+    "check-corpus": "node lc-serialize/check-corpus.mjs",
+    "publish-all": "npm publish --workspaces"
+  },
+  "license": "SEE LICENSE IN lc-serialize/LICENSE",
+  "author": "KarmicSoft",
+  "homepage": "https://lightcodepedia.org"
+}
