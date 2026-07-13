@@ -78,6 +78,11 @@ Single-object attribute view via `{: .form }`. Pair with a datagrid via `bound=`
 
 [Open →](form)
 
+### 🗂️ Record
+Schema-driven record editor via `{: .record }` — typed form, in-place WYSIWYG preview, lossless YAML round-trip, generic map, in-form AI and git commit.
+
+[Open →](record)
+
 ### 📽️ Slides
 Present any markdown page as a deck — `## h2` becomes a slide, bullets auto-fragment. No source markup; click 📽️ at the bottom-left to enter.
 

@@ -64,7 +64,9 @@ Set each field's `widget` in the schema:
 | Attribute | What it does |
 |---|---|
 | `schema="id"` | **Required.** A `.dataset` holding the schema array |
-| `index="id"` | A `.dataset` holding the relation index `{ collection: [{slug,title}] }` |
+| `index="id"` | A `.dataset` holding the relation index `{ collection: [{slug,title,lat,lng}] }` |
+| `map="true"` | Map of the record's geolocated points — reuses `.map` |
+| `mapengine="leaflet"` | Leaflet + OSM instead of the default MapLibre |
 | `ai="true"` | Show the in-form AI panel (Suggest → Apply / Ignore) |
 | `endpoint="…"` | Default AI endpoint URL (the learner can override in the panel) |
 | `commit="true"` | Show the git-commit panel (PAT from `edit_on_github`) |
@@ -81,10 +83,12 @@ Set each field's `widget` in the schema:
 
 ## 👀 Live example
 
-A full Paris *Personnage* fiche — typed form, in-place preview, lossless YAML,
-AI and commit:
+Two fiche types — *Personnage* and *Événement* — driven by the **same** engine,
+sharing one relation index. Between them they exercise all nine widgets (the
+event uses nested `object`/`objectlist`, `number`, `boolean`), and fields not in
+the schema still round-trip losslessly:
 
-[Open the Paris fiche example →](/components/examples/record)
+[Open the Paris fiche examples →](/components/examples/record)
 
 ## ⚠️ Limits worth knowing
 
@@ -95,8 +99,10 @@ AI and commit:
   fallback runs (no domain heuristics).
 - **Commit** reuses `edit_on_github`'s PAT (`lc_ed_pat`) — editing needs no
   account; only the write does.
-- **Map** for a record's geo points is a **separate step** — it will reuse
-  `.map` fed by an adapter (the geo-extraction config is still being designed).
+- **Map** (`map="true"`) is generic and config-free: any **index** entry with
+  `lat`/`lng` whose slug appears anywhere in the record is plotted (reuses
+  `.map`; `mapengine="leaflet"` for Toni's Leaflet UX). Give geolocatable
+  collections coordinates in the index and the points follow.
 
 ## 🔗 Related
 
