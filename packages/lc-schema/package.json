@@ -1,0 +1,37 @@
+{
+  "name": "@karmicsoft/lc-schema",
+  "version": "0.1.0",
+  "description": "Schema → neutral IR → widget definitions (schema compiler) — a LightCode brick.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "example.config.yml",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "KarmicSoft",
+  "homepage": "https://lightcodepedia.org",
+  "dependencies": {
+    "js-yaml": "^4.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "schema",
+    "low-code",
+    "forms",
+    "sveltia",
+    "zod",
+    "lightcode",
+    "karmicsoft"
+  ]
+}

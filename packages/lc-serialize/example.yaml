@@ -1,0 +1,27 @@
+# Example fiche — feed it to load()/dump() to see the round-trip.
+id: louise-michel
+slug: louise-michel
+type: person
+title: Louise Michel
+gender: féminin
+birth:
+  date: 1830-05-29
+  year: 1830
+professions:
+  - institutrice
+  - anarchiste
+addresses:
+  - id: 24-rue-houdon
+    role: résidence
+    period: 1871
+  - id: cimetiere-de-levallois
+    role: mémoire
+image:
+  credit: BnF · domaine public — Gallica
+body: |
+  Institutrice et militante anarchiste.
+
+  Surnommée « la Vierge rouge ».
+workflow:
+  draft: false
+  aiText: null

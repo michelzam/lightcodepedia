@@ -1,0 +1,35 @@
+{
+  "name": "@karmicsoft/lc-serialize",
+  "version": "0.1.0",
+  "description": "Faithful YAML round-trip for git-backed structured content — a LightCode brick.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "example.yaml",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "KarmicSoft",
+  "homepage": "https://lightcodepedia.org",
+  "dependencies": {
+    "js-yaml": "^4.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "yaml",
+    "round-trip",
+    "git-cms",
+    "lightcode",
+    "karmicsoft"
+  ]
+}

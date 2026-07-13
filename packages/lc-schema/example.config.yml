@@ -1,0 +1,33 @@
+# Minimal Sveltia/Decap config excerpt — feed it to fromSveltiaConfig().
+collections:
+  - name: persons
+    label: Personnages
+    folder: content/persons
+    extension: yaml
+    identifier_field: title
+    fields:
+      - { name: title, label: Nom affiché, widget: string }
+      - { name: gender, label: Genre, widget: select, required: false,
+          options: [masculin, féminin, non-binaire, inconnu] }
+      - name: professions
+        label: Professions
+        widget: list
+        required: false
+        field: { name: profession, widget: string }
+      - name: periods
+        label: Époques
+        widget: relation
+        collection: periods
+        multiple: true
+        search_fields: [title]
+        value_field: '{{slug}}'
+        display_fields: [title]
+      - name: addresses
+        label: Adresses
+        widget: list
+        required: false
+        fields:
+          - { name: id, label: Adresse, widget: relation, collection: addresses,
+              value_field: '{{slug}}', display_fields: [title] }
+          - { name: role, label: Rôle, widget: string, required: false }
+      - { name: body, label: Biographie, widget: markdown }
