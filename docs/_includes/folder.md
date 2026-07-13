@@ -6,8 +6,12 @@ from the repository. Activated by IAL: {: .folder } on a link paragraph.
 
 Knobs:
   cols="auto"       grid columns (default auto-fit) or a fixed number
-  sort="name"       "name" (default, alphabetical) or "recent" (newest first)
+  sort="name"       initial order: "name" (default, alphabetical) or "recent"
   show-private      include _-prefixed files
+
+A viewer-facing "Sort: Name / 🕒 Recent" control is always shown. Git last-commit
+dates are fetched LAZILY — only when Recent is engaged — so Name stays cheap.
+Recent reveals a 📅 date tag per card and "Modified: hour/day/week/month" filters.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -209,14 +213,9 @@ Auto-included by docs/_layouts/default.html.
         });
 
         var pageFetches = pages.map(function(f) {
-          /* last-commit date (authoritative "most recent") — parallel, graceful */
-          var gitDateP = apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/commits?path=" + encodeURIComponent(f.path) + "&per_page=1")
-            .then(function(cs) { return (cs && cs[0] && cs[0].commit) ? ((cs[0].commit.committer || cs[0].commit.author || {}).date || null) : null; })
-            .catch(function() { return null; });
-          var textP = fetch(f.download_url).then(function(r) { return r.text(); });
-          return Promise.all([textP, gitDateP])
-            .then(function(res) {
-              var text = res[0], gitDate = res[1];
+          return fetch(f.download_url)
+            .then(function(r) { return r.text(); })
+            .then(function(text) {
               var meta = extractPageMeta(text);
               var title = meta.title || f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
               var features = scanFeatures(text);
@@ -228,11 +227,13 @@ Auto-included by docs/_layouts/default.html.
               while ((lm = lRe.exec(cleanLinks)) !== null) {
                 var h = lm[1]; if (/^https?:|^mailto:/.test(h)) continue; rawHrefs.push({ h: h, base: pageSlug });
               }
-              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features, quizzes: quizzes, rawHrefs: rawHrefs, date: meta.date || gitDate || null };
+              /* date: front-matter date now (free); git last-commit date fetched
+                 lazily only when the viewer sorts/filters by date (path kept). */
+              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features, quizzes: quizzes, rawHrefs: rawHrefs, date: meta.date || null, path: f.path };
             })
             .catch(function() {
               var title = f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-              return { title: title, snippet: "", url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, "") };
+              return { title: title, snippet: "", url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), path: f.path };
             });
         });
 
@@ -246,17 +247,6 @@ Auto-included by docs/_layouts/default.html.
         if (!items || !items.length) {
           wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
           return;
-        }
-        /* sort="recent": newest first by date (ISO sorts lexically); dated
-           before undated, then by title. Default "name" keeps the alpha order. */
-        if (sortMode === "recent") {
-          items.sort(function(a, b) {
-            var da = a.date || "", db = b.date || "";
-            if (da && db) return db < da ? -1 : (db > da ? 1 : 0);
-            if (da) return -1;
-            if (db) return 1;
-            return (a.title || "").localeCompare(b.title || "");
-          });
         }
         /* resolve internal links between items */
         var urlSet = {};
@@ -297,6 +287,7 @@ Auto-included by docs/_layouts/default.html.
         var nUnanswered = cardsArr.filter(function(c) { return cardUnanswered(c) > 0; }).length;
         var nNonpassing = cardsArr.filter(function(c) { return cardNonpassing(c) > 0; }).length;
 
+        var tagBar = null, resetTagFilter = function() {};   // set below so the sort control can coordinate
         if (tagNames.length >= 2 || nUnanswered || nNonpassing) {
           var bar = document.createElement("div");
           bar.className = "lc-card-filter";
@@ -354,7 +345,96 @@ Auto-included by docs/_layouts/default.html.
             e.preventDefault(); e.stopPropagation();
             toggleKey(chip.getAttribute("data-tag"));
           });
+          tagBar = bar;
+          resetTagFilter = function() { active = {}; applyFilter(); };
         }
+
+        /* ── sort control (viewer-facing) + time filters ──────────────────
+           Name (default, alphabetical) vs Recent (newest-first). Git dates are
+           fetched LAZILY — only when Recent is engaged — so Name stays cheap.
+           The two modes are exclusive: Name shows the tag filters, Recent shows
+           a 📅 date tag per card and the modified-within filters. */
+        var alphaOrder = cardsArr.slice();          // initial DOM order = the name sort
+        var datesLoaded = false, timeSecs = 0;
+        var sortCtl = document.createElement("div");
+        sortCtl.className = "lc-card-filter";
+        sortCtl.innerHTML =
+          "<span class='lc-card-filter-label'>Sort:</span>" +
+          "<button type='button' class='lc-card-filter-chip' data-sort='name'>Name</button>" +
+          "<button type='button' class='lc-card-filter-chip' data-sort='recent'>🕒 Recent</button>" +
+          "<span class='lc-card-times' style='display:none'>" +
+            "<span class='lc-card-filter-label' style='margin-left:0.5em'>Modified:</span>" +
+            "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='3600'>hour</button>" +
+            "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='86400'>day</button>" +
+            "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='604800'>week</button>" +
+            "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='2592000'>month</button>" +
+          "</span>";
+        wrap.parentNode.insertBefore(sortCtl, wrap);
+        var timesWrap = sortCtl.querySelector(".lc-card-times");
+
+        function cardItem(c) { return urlSet[c.getAttribute("data-url")]; }
+        function paintDate(c) {
+          var it = cardItem(c); if (!it) return;
+          var tag = c.querySelector(".lc-card-date");
+          if (!it.date) { if (tag) tag.remove(); return; }
+          c.setAttribute("data-date", it.date);
+          if (!tag) { tag = document.createElement("div"); tag.className = "lc-card-date"; c.appendChild(tag); }
+          tag.textContent = "📅 " + fmtDate(it.date);
+        }
+        function reflowRibbon() { if (ribbonSvg && ribbonSvg.parentNode === wrap) wrap.appendChild(ribbonSvg); }
+        function ensureDates() {
+          if (datesLoaded) return Promise.resolve();
+          datesLoaded = true;
+          return Promise.all(cardsArr.map(function(c) {
+            var it = cardItem(c);
+            if (!it || it.date || !it.path) return Promise.resolve();
+            return apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/commits?path=" + encodeURIComponent(it.path) + "&per_page=1")
+              .then(function(cs) { it.date = (cs && cs[0] && cs[0].commit) ? ((cs[0].commit.committer || cs[0].commit.author || {}).date || null) : null; })
+              .catch(function() {});
+          }));
+        }
+        function orderBy(mode) {
+          var order = mode === "recent"
+            ? cardsArr.slice().sort(function(a, b) {
+                var da = (cardItem(a) || {}).date || "", db = (cardItem(b) || {}).date || "";
+                if (da && db) return db < da ? -1 : (db > da ? 1 : 0);
+                if (da) return -1; if (db) return 1;
+                return (a.getAttribute("data-url") || "").localeCompare(b.getAttribute("data-url"));
+              })
+            : alphaOrder;
+          order.forEach(function(c) { wrap.appendChild(c); });
+          reflowRibbon();
+        }
+        function applyTime() {
+          cardsArr.forEach(function(c) {
+            if (!timeSecs) { c.style.display = ""; return; }
+            var d = (cardItem(c) || {}).date;
+            c.style.display = (d && (Date.now() - (new Date(d)).getTime()) <= timeSecs * 1000) ? "" : "none";
+          });
+          timesWrap.querySelectorAll("[data-age]").forEach(function(ch) {
+            ch.classList.toggle("lc-card-filter-on", parseInt(ch.getAttribute("data-age"), 10) === timeSecs);
+          });
+        }
+        function setMode(mode) {
+          var recent = mode === "recent";
+          sortCtl.querySelectorAll("[data-sort]").forEach(function(b) { b.classList.toggle("lc-card-filter-on", b.getAttribute("data-sort") === mode); });
+          if (tagBar) tagBar.style.display = recent ? "none" : "";
+          resetTagFilter();                                  // leave the other mode's filter clean
+          timeSecs = 0;
+          if (recent) {
+            timesWrap.style.display = "";
+            ensureDates().then(function() { cardsArr.forEach(paintDate); orderBy("recent"); applyTime(); });
+          } else {
+            timesWrap.style.display = "none";
+            cardsArr.forEach(function(c) { var t = c.querySelector(".lc-card-date"); if (t) t.remove(); });
+            orderBy("name"); applyTime();
+          }
+        }
+        sortCtl.addEventListener("click", function(e) {
+          var s = e.target.closest("[data-sort]"), t = e.target.closest("[data-age]");
+          if (s) setMode(s.getAttribute("data-sort"));
+          else if (t) { var k = parseInt(t.getAttribute("data-age"), 10); timeSecs = (timeSecs === k) ? 0 : k; applyTime(); }
+        });
 
         /* hover ribbons — overlay SVG draws bezier arcs between linked cards */
         var ribbonSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -403,6 +483,8 @@ Auto-included by docs/_layouts/default.html.
           cardEl.addEventListener("mouseenter", function() { drawRibbons(cardEl, item.links); });
           cardEl.addEventListener("mouseleave", function() { ribbonSvg.innerHTML = ""; });
         });
+
+        setMode(sortMode === "recent" ? "recent" : "name");   // honor the author's default; viewer can switch
       })
       .catch(function(e) {
         wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
