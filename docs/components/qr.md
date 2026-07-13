@@ -1,5 +1,3 @@
----
----
 # 📱 QR Code
 
 Turn any URL or text into a scannable QR code — one fenced block, one tag.

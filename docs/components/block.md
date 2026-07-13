@@ -1,5 +1,3 @@
----
----
 # 🧱 Block
 
 Wrap content in a bordered card. Use `cols` to place multiple blocks side by side.

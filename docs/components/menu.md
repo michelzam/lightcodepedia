@@ -1,5 +1,3 @@
----
----
 # 🧭 Menu
 
 Turn a set of markdown links into a clean horizontal **navigation bar**. It's the same mechanism that powers this site's own top bar.

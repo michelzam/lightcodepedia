@@ -1,5 +1,3 @@
----
----
 # 🔎 Query
 
 A **query** is a dataset computed by SQL over *other* datasets. Because a `{: .query }` **is** a dataset — it publishes its result under its id — any grid, chart, or stat binds to it exactly like a hand-written `{: .dataset }`. They can't tell the difference: a query is a dataset that computes itself. The SQL runs in your browser (no server), and it re-runs whenever an input changes.

@@ -1,5 +1,3 @@
----
----
 # 🌐 LightNode Network
 
 Every circle is a LightNode — a fork of Lightcodepedia hosted by a community member. The network grows every time someone completes the [onboarding](/start). Open a section below; the headline numbers stay visible up here even when everything is shut.

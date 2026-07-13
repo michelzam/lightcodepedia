@@ -1,6 +1,3 @@
----
----
-
 # 📋 Prerequisite
 
 Declare what a learner should master **before** this page. The platform checks

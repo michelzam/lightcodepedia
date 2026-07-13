@@ -1,5 +1,3 @@
----
----
 # 📁 Folder
 
 Auto-generate a card grid from all `.md` files in a folder — no manual list to maintain. Subfolders that have an `index.md` also appear as cards.

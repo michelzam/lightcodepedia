@@ -1,5 +1,3 @@
----
----
 # 🚀 Deploys
 
 Invisible data source that fetches your **GitHub Actions runs** and registers them as a live `.dataset`. Pair it with a `.datagrid` to get a sortable, auto-refreshing deployment table where every row is a clickable link to that run on GitHub.

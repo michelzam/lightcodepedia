@@ -1,6 +1,3 @@
----
----
-
 # 🗣️ Speaking Avatar
 
 A speaking overlay character that narrates content and **follows the elements it describes**: give a script line an `at:` selector and the avatar scrolls there, parks beside it, spotlights it, and speaks. Three character tiers below — the built-in face, a recorded video, a live state machine.

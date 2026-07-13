@@ -1,6 +1,3 @@
----
----
-
 # 🐕🐠 Lucky & Wanda in 3D
 
 The same two objects you met in [Tutorial 101](/tutorial101) — but alive. Every **attribute** you edit changes what you see. Every **method** you call makes them behave. That's all an object is: state you can read, behavior you can invoke.

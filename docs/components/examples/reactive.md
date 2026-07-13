@@ -1,6 +1,3 @@
----
----
-
 # 🧮 Reactive cells
 
 A knob is a spreadsheet cell: it holds a literal — or a `= formula`, a Python

@@ -1,6 +1,3 @@
----
----
-
 # 🧮 Reactive table — computed columns
 
 A spreadsheet is a grid where some cells are **formulas** that recompute when

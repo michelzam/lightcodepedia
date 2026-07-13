@@ -1,6 +1,3 @@
----
----
-
 # 🐾 Help Lucky find his ball
 
 Lucky lost his ball at the park 🎾. Let's help him find it!

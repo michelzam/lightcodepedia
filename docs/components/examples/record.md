@@ -1,6 +1,3 @@
----
----
-
 # 🗂️ Record editor — a Paris révolutionnaire fiche
 
 A schema-driven [`.record`](/components/record) editor over real *Personnage* and

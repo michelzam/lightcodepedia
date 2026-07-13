@@ -1,6 +1,3 @@
----
----
-
 # Paris révolutionnaire — éditeur de fiches (démo pour Toni)
 
 Cette page ne contient **aucun code moteur** : elle **consomme le composant `[.record](/components/record)`**

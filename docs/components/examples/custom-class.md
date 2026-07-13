@@ -1,6 +1,3 @@
----
----
-
 # 🐍 Your own class
 
 You've met **Lucky** and **Wanda** as objects. Every object is built from a **class** — a blueprint that says what an object *has* (attributes) and what it can *do* (methods). Here you write your own, live in the browser. Edit the code, press **▶ Run**.

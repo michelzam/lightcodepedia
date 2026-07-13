@@ -3,6 +3,12 @@ description: A GitHub Pages site
 lc_canonical_host: lightcodepedia.org
 lc_canonical_owner: michelzam   # the root repo owner; forks compare against this to flag themselves
 
+# Render markdown pages that have NO front matter (GitHub Pages runs this by
+# default; declaring it makes it explicit + works on any Jekyll build). This is
+# what lets a page start straight at "# Heading" — no empty --- block needed.
+plugins:
+  - jekyll-optional-front-matter
+
 
 defaults:
   - scope:

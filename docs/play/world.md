@@ -1,5 +1,3 @@
----
----
 # 🌍 World
 
 Another demo page. Try adding a quiz:

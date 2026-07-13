@@ -1,5 +1,3 @@
----
----
 # 📚 Readings
 Chapters of Course Materials.
 

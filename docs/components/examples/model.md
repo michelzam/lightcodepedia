@@ -1,6 +1,3 @@
----
----
-
 # 🧬 Live Models — classes that build their own widget
 
 Declare a Python class with **typed, constrained fields** and **state-gated
