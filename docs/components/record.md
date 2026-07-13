@@ -83,10 +83,12 @@ Set each field's `widget` in the schema:
 
 ## 👀 Live example
 
-A full Paris *Personnage* fiche — typed form, in-place preview, lossless YAML,
-AI and commit:
+Two fiche types — *Personnage* and *Événement* — driven by the **same** engine,
+sharing one relation index. Between them they exercise all nine widgets (the
+event uses nested `object`/`objectlist`, `number`, `boolean`), and fields not in
+the schema still round-trip losslessly:
 
-[Open the Paris fiche example →](/components/examples/record)
+[Open the Paris fiche examples →](/components/examples/record)
 
 ## ⚠️ Limits worth knowing
 

@@ -41,7 +41,15 @@ a PAT via the ✏️ editor — editing itself needs no account).
     { "slug": "commune-de-1871", "title": "Commune de 1871" },
     { "slug": "second-empire", "title": "Second Empire" },
     { "slug": "troisieme-republique", "title": "Troisième République" },
-    { "slug": "belle-epoque", "title": "Belle Époque" }
+    { "slug": "belle-epoque", "title": "Belle Époque" },
+    { "slug": "entre-deux-guerres", "title": "Entre-deux-guerres" }
+  ],
+  "persons": [
+    { "slug": "albert-camus", "title": "Albert Camus" },
+    { "slug": "robert-desnos", "title": "Robert Desnos" },
+    { "slug": "paul-eluard", "title": "Paul Éluard" },
+    { "slug": "jules-supervielle", "title": "Jules Supervielle" },
+    { "slug": "roger-martin-du-gard", "title": "Roger Martin du Gard" }
   ],
   "themes": [
     { "slug": "litterature", "title": "Littérature" },
@@ -96,6 +104,80 @@ qualificatifs:
 
 *Add a type by adding a schema — no engine code. The same `.record` renders any
 schema; only the `.dataset` blocks change.*
+
+## Same engine, a second type — an *Événement*
+
+The **identical** `.record` engine over an *Événement* schema — reusing the same
+`#paris_index`. This one exercises the nested widgets: `object` (datation),
+`objectlist` (points), `number` (years), `boolean` (flags). Fields not in the
+schema (`districts`, `bibliography`, `workflow`) are still **preserved** in the
+YAML round-trip — check the integrity line.
+
+```json
+[
+  { "name": "title", "label": "Titre", "widget": "string", "wysiwyg": true },
+  { "name": "daterange", "label": "Datation", "widget": "object", "fields": [
+    { "name": "startYear", "label": "Année de début", "widget": "number" },
+    { "name": "endYear", "label": "Année de fin", "widget": "number" },
+    { "name": "precision", "label": "Précision", "widget": "select", "options": ["exact", "month", "year", "circa", "unknown"] }
+  ]},
+  { "name": "location", "label": "Localisation", "widget": "object", "fields": [
+    { "name": "ordered", "label": "Itinéraire ordonné", "widget": "boolean" },
+    { "name": "approximate", "label": "Approximatif", "widget": "boolean" },
+    { "name": "points", "label": "Point", "widget": "objectlist", "fields": [
+      { "name": "street", "label": "Adresse", "widget": "relation", "collection": "addresses" },
+      { "name": "note", "label": "Nom du lieu", "widget": "string" },
+      { "name": "primary", "label": "Point principal", "widget": "boolean" }
+    ]}
+  ]},
+  { "name": "epochs", "label": "Époques", "widget": "relation", "collection": "periods", "multiple": true },
+  { "name": "themes", "label": "Thèmes", "widget": "relation", "collection": "themes", "multiple": true },
+  { "name": "people", "label": "Personnages", "widget": "relation", "collection": "persons", "multiple": true },
+  { "name": "body", "label": "Corps", "widget": "text", "rows": 4, "wysiwyg": true }
+]
+```
+{: .dataset #paris_event_schema }
+
+```yaml
+id: 4eme-siege-de-la-maison-d-edition-gallimard
+slug: 4eme-siege-de-la-maison-d-edition-gallimard
+type: event
+title: 4ème siège de la maison d'édition Gallimard
+daterange:
+  startYear: 1930
+  endYear: 1945
+  precision: year
+location:
+  ordered: false
+  approximate: false
+  points:
+    - street: 5-rue-sebastien-bottin
+      primary: true
+      note: Siège de la maison d'édition Gallimard
+epochs:
+  - entre-deux-guerres
+themes:
+  - litterature
+districts:
+  - 7
+people:
+  - albert-camus
+  - robert-desnos
+  - paul-eluard
+bibliography:
+  - id: dictionnaire-historique-des-rues-de-paris-hillairet-jacques
+    page: t2 p 584
+externalLinks: []
+body: ""
+workflow:
+  draft: false
+  aiText: null
+  edited: false
+  validated: false
+  reviewRequested: true
+  reviewNote: Migré de l'export XWiki 2026-04-05 — à vérifier.
+```
+{: .record schema="paris_event_schema" index="paris_index" map="true" mapengine="leaflet" ai="true" }
 
 ```
 /components/record
