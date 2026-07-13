@@ -144,6 +144,18 @@ Auto-included by docs/_layouts/default.html.
     /* inline code block variant */
     var code = el.querySelector("code") || el;
     var text = code.textContent.trim();
+    var fmt = (el.getAttribute("format") || "").toLowerCase();
+    if (fmt === "yaml" || fmt === "yml") {
+      /* YAML inline (author opt-in): parse via lcYaml so schema/index can be YAML
+         like the rest of the corpus. JSON blocks (no format=) are unchanged. */
+      var regY = function () {
+        var d; try { d = window.lcYaml.load(text); } catch (e) { d = [{ "⚠️": e.message }]; }
+        window.lcSetDataset(id, shapeData(d, el));
+      };
+      if (window.lcYaml && window.lcYaml.ready) window.lcYaml.ready(regY);
+      else window.lcSetDataset(id, [{ "⚠️": "format=yaml needs lcYaml (yaml_io)" }]);
+      return;
+    }
     var data;
     try { data = JSON.parse(text); } catch (e) { data = parseCSV(text); }
     window.lcSetDataset(id, shapeData(data, el));
