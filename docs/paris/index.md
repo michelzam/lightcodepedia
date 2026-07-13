@@ -340,8 +340,12 @@ workflow:
     if (t === "number" || t === "boolean") return String(v);
     var s = String(v);
     if (s.indexOf("\n") !== -1) {
-      var lines = s.replace(/\n+$/, "").split("\n"), out = "|-", i;
+      // Chomping fidèle : | (1 saut final) · |- (0) · |+ (≥2) → round-trip byte-identique.
+      var trail = /(\n*)$/.exec(s)[1].length;
+      var chomp = trail === 0 ? "-" : (trail === 1 ? "" : "+");
+      var lines = s.replace(/\n+$/, "").split("\n"), out = "|" + chomp, i;
       for (i = 0; i < lines.length; i++) out += "\n" + (lines[i] === "" ? "" : pad + "  " + lines[i]);
+      for (i = 0; i < trail - 1; i++) out += "\n";
       return out;
     }
     return scalarStr(s);
