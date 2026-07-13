@@ -9,10 +9,11 @@ Knobs:
   sort="name"       initial order: "name" (default, alphabetical) or "recent"
   show-private      include _-prefixed files
 
-One control bar: Sort (Name / 🕒 Recent) ORDERS only; Filters (tag/state chips
-AND a Modified-within window) hide. Git last-commit dates load LAZILY on the first
-Recent (Name stays cheap); the 📅 tags + "Modified: hour/day/week/month" chips then
-stay in both sorts, so tag and time filters compose.
+One control bar. Sort (Name / 🕒 Recent) only ORDERS. Tag/state chips filter in
+both sorts. The 📅 date tags and "Modified: hour/day/week/month" filters belong to
+Recent — they appear when you switch to Recent (git dates load lazily then, so Name
+stays cheap) and disappear when you go back to Name (initial state). Within Recent,
+tag and Modified filters compose (AND). Every chip shares one look; active = blue.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -28,15 +29,15 @@ Auto-included by docs/_layouts/default.html.
 /* ── tag filter bar (clickable chips above the grid) ── */
 .lc-card-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4em; margin: 0 0 0.9em; }
 .lc-card-filter-label { font-size: 0.75em; font-weight: 600; color: #6b7280; margin-right: 0.1em; }
-.lc-card-filter-chip { font-size: 0.72em; font-weight: 600; padding: 0.2em 0.65em; border-radius: 99px; border: 1px solid #bae6fd; background: #f0f9ff; color: #075985; cursor: pointer; line-height: 1.5; }
-.lc-card-filter-chip:hover { background: #e0f2fe; }
+/* every chip (sort, tag, work-state, time) shares ONE look: neutral pill, filled
+   blue when active. Meaning is carried by the group label + icons, not by colour. */
+.lc-card-filter-chip { font-size: 0.72em; font-weight: 600; padding: 0.2em 0.7em; border-radius: 99px; border: 1px solid #d1d5db; background: #f3f4f6; color: #374151; cursor: pointer; line-height: 1.6; }
+.lc-card-filter-chip:hover { background: #e5e7eb; }
 .lc-card-filter-on { background: #0284c7; color: #fff; border-color: #0284c7; }
-.lc-card-filter-n { opacity: 0.6; font-weight: 500; }
-.lc-card-filter-clear { border-color: #e5e7eb; background: #fff; color: #6b7280; }
-/* state filters (remaining work) are amber to set them apart from theme tags */
-.lc-card-filter-state { border-color: #fcd34d; background: #fffbeb; color: #92400e; }
-.lc-card-filter-state:hover { background: #fef3c7; }
-.lc-card-filter-state.lc-card-filter-on { background: #0284c7; color: #fff; border-color: #0284c7; }
+.lc-card-filter-on:hover { background: #0369a1; }
+.lc-card-filter-n { opacity: 0.65; font-weight: 500; }
+.lc-card-filter-on .lc-card-filter-n { color: #e0f2fe; opacity: 0.9; }
+.lc-card-filter-clear { background: #fff; border-color: #e5e7eb; color: #6b7280; }
 .lc-feat-dot { display: inline-flex; align-items: center; gap: 0.2em; font-size: 0.72em; font-weight: 600; padding: 0.1em 0.45em; border-radius: 99px; line-height: 1.6; }
 .lc-feat-passing { background: #dcfce7; color: #15803d; }
 .lc-feat-failing  { background: #fee2e2; color: #b91c1c; }
@@ -308,15 +309,15 @@ Auto-included by docs/_layouts/default.html.
             return "<button type='button' class='lc-card-filter-chip' data-tag='" + escapeHtml(t) + "'>"
               + escapeHtml(t) + " <span class='lc-card-filter-n'>" + allTags[t] + "</span></button>";
           }).join("");
-          if (nNonpassing) chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-state='nonpassing' title='Cards with features not yet passing'>✗ to fix <span class='lc-card-filter-n'>" + nNonpassing + "</span></button>";
-          if (nUnanswered) chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-state='unanswered' title='Cards with quizzes you have not answered'>❓ unanswered <span class='lc-card-filter-n'>" + nUnanswered + "</span></button>";
+          if (nNonpassing) chips += "<button type='button' class='lc-card-filter-chip' data-state='nonpassing' title='Cards with features not yet passing'>✗ to fix <span class='lc-card-filter-n'>" + nNonpassing + "</span></button>";
+          if (nUnanswered) chips += "<button type='button' class='lc-card-filter-chip' data-state='unanswered' title='Cards with quizzes you have not answered'>❓ unanswered <span class='lc-card-filter-n'>" + nUnanswered + "</span></button>";
         }
         chips += "<span class='lc-card-times' style='display:none'>"
           + "<span class='lc-card-filter-label' style='margin-left:0.6em'>Modified:</span>"
-          + "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='3600'>hour</button>"
-          + "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='86400'>day</button>"
-          + "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='604800'>week</button>"
-          + "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='2592000'>month</button>"
+          + "<button type='button' class='lc-card-filter-chip' data-age='3600'>hour</button>"
+          + "<button type='button' class='lc-card-filter-chip' data-age='86400'>day</button>"
+          + "<button type='button' class='lc-card-filter-chip' data-age='604800'>week</button>"
+          + "<button type='button' class='lc-card-filter-chip' data-age='2592000'>month</button>"
           + "</span>";
         chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-clear' data-clear='1' hidden>✕ clear</button>";
         bar.innerHTML = chips;
@@ -392,12 +393,16 @@ Auto-included by docs/_layouts/default.html.
           bar.querySelectorAll("[data-sort]").forEach(function(b) { b.classList.toggle("lc-card-filter-on", b.getAttribute("data-sort") === mode); });
           if (mode === "recent") {
             ensureDates().then(function() {
-              cardsArr.forEach(paintDate);            // 📅 tags stay once loaded
-              timesWrap.style.display = "";           // Modified filters now usable (in either sort)
+              cardsArr.forEach(paintDate);            // 📅 tags on the cards
+              timesWrap.style.display = "";           // reveal the Modified filters
               orderBy("recent"); applyFilters();
             });
           } else {
-            orderBy("name");                          // date tags + time chips persist if already loaded
+            // back to the initial Name state: no date filters, no date tags
+            timeSecs = 0;                             // drop any active Modified window
+            timesWrap.style.display = "none";
+            cardsArr.forEach(function(c) { var t = c.querySelector(".lc-card-date"); if (t) t.remove(); });
+            orderBy("name"); applyFilters();
           }
         }
         bar.addEventListener("click", function(e) {
