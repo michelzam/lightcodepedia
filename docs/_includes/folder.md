@@ -9,9 +9,10 @@ Knobs:
   sort="name"       initial order: "name" (default, alphabetical) or "recent"
   show-private      include _-prefixed files
 
-A viewer-facing "Sort: Name / 🕒 Recent" control is always shown. Git last-commit
-dates are fetched LAZILY — only when Recent is engaged — so Name stays cheap.
-Recent reveals a 📅 date tag per card and "Modified: hour/day/week/month" filters.
+One control bar: Sort (Name / 🕒 Recent) ORDERS only; Filters (tag/state chips
+AND a Modified-within window) hide. Git last-commit dates load LAZILY on the first
+Recent (Name stays cheap); the 📅 tags + "Modified: hour/day/week/month" chips then
+stay in both sorts, so tag and time filters compose.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -287,101 +288,83 @@ Auto-included by docs/_layouts/default.html.
         var nUnanswered = cardsArr.filter(function(c) { return cardUnanswered(c) > 0; }).length;
         var nNonpassing = cardsArr.filter(function(c) { return cardNonpassing(c) > 0; }).length;
 
-        var tagBar = null, resetTagFilter = function() {};   // set below so the sort control can coordinate
-        if (tagNames.length >= 2 || nUnanswered || nNonpassing) {
-          var bar = document.createElement("div");
-          bar.className = "lc-card-filter";
-          var chips = "<span class='lc-card-filter-label'>Filter:</span>";
-          if (tagNames.length >= 2) chips += tagNames.map(function(t) {
+        /* ── one bar: Sort (orders only) + Filters (compose with AND) ──────
+           Sort = Name | 🕒 Recent, ordering only — it never hides a card.
+           Filters combine: tag/state chips (OR within) AND a Modified-within
+           window. Git dates load LAZILY on first Recent; the 📅 tags and the
+           Modified chips then stay in BOTH sorts, so tags + time work together. */
+        var alphaOrder = cardsArr.slice();            // initial DOM order = the name sort
+        var active = {}, timeSecs = 0, datesLoaded = false;
+        var showTags = tagNames.length >= 2;
+
+        var bar = document.createElement("div");
+        bar.className = "lc-card-filter";
+        var chips = "<span class='lc-card-filter-label'>Sort:</span>"
+          + "<button type='button' class='lc-card-filter-chip' data-sort='name'>Name</button>"
+          + "<button type='button' class='lc-card-filter-chip' data-sort='recent'>🕒 Recent</button>";
+        if (showTags || nNonpassing || nUnanswered) {
+          chips += "<span class='lc-card-filter-label' style='margin-left:0.6em'>Filter:</span>";
+          if (showTags) chips += tagNames.map(function(t) {
             return "<button type='button' class='lc-card-filter-chip' data-tag='" + escapeHtml(t) + "'>"
               + escapeHtml(t) + " <span class='lc-card-filter-n'>" + allTags[t] + "</span></button>";
           }).join("");
           if (nNonpassing) chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-state='nonpassing' title='Cards with features not yet passing'>✗ to fix <span class='lc-card-filter-n'>" + nNonpassing + "</span></button>";
           if (nUnanswered) chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-state='unanswered' title='Cards with quizzes you have not answered'>❓ unanswered <span class='lc-card-filter-n'>" + nUnanswered + "</span></button>";
-          chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-clear' data-tag='' hidden>✕ clear</button>";
-          bar.innerHTML = chips;
-          wrap.parentNode.insertBefore(bar, wrap);
-
-          var active = {};
-          function chipKey(chip) {
-            if (chip.getAttribute("data-state")) return "state:" + chip.getAttribute("data-state");
-            return chip.getAttribute("data-tag") || "";
-          }
-          function cardMatches(c, key) {
-            if (key.indexOf("state:") === 0) {
-              var st = key.slice(6);
-              if (st === "unanswered") return cardUnanswered(c) > 0;
-              if (st === "nonpassing") return cardNonpassing(c) > 0;
-              return false;
-            }
-            return (c.getAttribute("data-tags") || "").split(" ").indexOf(key) >= 0;
-          }
-          function applyFilter() {
-            var keys = Object.keys(active), any = keys.length > 0;
-            cardsArr.forEach(function(c) {
-              c.style.display = (!any || keys.some(function(k) { return cardMatches(c, k); })) ? "" : "none";
-            });
-            bar.querySelectorAll(".lc-card-filter-chip").forEach(function(chip) {
-              var key = chipKey(chip);
-              if (key) chip.classList.toggle("lc-card-filter-on", !!active[key]);
-            });
-            var clr = bar.querySelector(".lc-card-filter-clear");
-            if (clr) clr.hidden = !any;
-          }
-          function toggleKey(key) {
-            if (!key) active = {};
-            else if (active[key]) delete active[key];
-            else active[key] = 1;
-            applyFilter();
-          }
-          bar.addEventListener("click", function(e) {
-            var chip = e.target.closest(".lc-card-filter-chip");
-            if (chip) toggleKey(chipKey(chip));
-          });
-          /* per-card tag chips drive the same filter */
-          wrap.addEventListener("click", function(e) {
-            var chip = e.target.closest(".lc-card-tag[data-tag]");
-            if (!chip) return;
-            e.preventDefault(); e.stopPropagation();
-            toggleKey(chip.getAttribute("data-tag"));
-          });
-          tagBar = bar;
-          resetTagFilter = function() { active = {}; applyFilter(); };
         }
-
-        /* ── sort control (viewer-facing) + time filters ──────────────────
-           Name (default, alphabetical) vs Recent (newest-first). Git dates are
-           fetched LAZILY — only when Recent is engaged — so Name stays cheap.
-           The two modes are exclusive: Name shows the tag filters, Recent shows
-           a 📅 date tag per card and the modified-within filters. */
-        var alphaOrder = cardsArr.slice();          // initial DOM order = the name sort
-        var datesLoaded = false, timeSecs = 0;
-        var sortCtl = document.createElement("div");
-        sortCtl.className = "lc-card-filter";
-        sortCtl.innerHTML =
-          "<span class='lc-card-filter-label'>Sort:</span>" +
-          "<button type='button' class='lc-card-filter-chip' data-sort='name'>Name</button>" +
-          "<button type='button' class='lc-card-filter-chip' data-sort='recent'>🕒 Recent</button>" +
-          "<span class='lc-card-times' style='display:none'>" +
-            "<span class='lc-card-filter-label' style='margin-left:0.5em'>Modified:</span>" +
-            "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='3600'>hour</button>" +
-            "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='86400'>day</button>" +
-            "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='604800'>week</button>" +
-            "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='2592000'>month</button>" +
-          "</span>";
-        wrap.parentNode.insertBefore(sortCtl, wrap);
-        var timesWrap = sortCtl.querySelector(".lc-card-times");
+        chips += "<span class='lc-card-times' style='display:none'>"
+          + "<span class='lc-card-filter-label' style='margin-left:0.6em'>Modified:</span>"
+          + "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='3600'>hour</button>"
+          + "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='86400'>day</button>"
+          + "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='604800'>week</button>"
+          + "<button type='button' class='lc-card-filter-chip lc-card-filter-state' data-age='2592000'>month</button>"
+          + "</span>";
+        chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-clear' data-clear='1' hidden>✕ clear</button>";
+        bar.innerHTML = chips;
+        wrap.parentNode.insertBefore(bar, wrap);
+        var timesWrap = bar.querySelector(".lc-card-times");
 
         function cardItem(c) { return urlSet[c.getAttribute("data-url")]; }
+        function chipKey(chip) {
+          if (chip.getAttribute("data-state")) return "state:" + chip.getAttribute("data-state");
+          return chip.getAttribute("data-tag") || "";
+        }
+        function cardMatches(c, key) {
+          if (key.indexOf("state:") === 0) {
+            var st = key.slice(6);
+            if (st === "unanswered") return cardUnanswered(c) > 0;
+            if (st === "nonpassing") return cardNonpassing(c) > 0;
+            return false;
+          }
+          return (c.getAttribute("data-tags") || "").split(" ").indexOf(key) >= 0;
+        }
+        function withinAge(c) {
+          var d = (cardItem(c) || {}).date;
+          return d && (Date.now() - (new Date(d)).getTime()) <= timeSecs * 1000;
+        }
+        function applyFilters() {                     // tag/state (OR) AND time
+          var keys = Object.keys(active);
+          cardsArr.forEach(function(c) {
+            var tagOk = !keys.length || keys.some(function(k) { return cardMatches(c, k); });
+            c.style.display = (tagOk && (!timeSecs || withinAge(c))) ? "" : "none";
+          });
+          bar.querySelectorAll("[data-tag],[data-state]").forEach(function(chip) {
+            var key = chipKey(chip); if (key) chip.classList.toggle("lc-card-filter-on", !!active[key]);
+          });
+          timesWrap.querySelectorAll("[data-age]").forEach(function(ch) {
+            ch.classList.toggle("lc-card-filter-on", parseInt(ch.getAttribute("data-age"), 10) === timeSecs);
+          });
+          var clr = bar.querySelector("[data-clear]");
+          if (clr) clr.hidden = !(keys.length || timeSecs);
+        }
+        function toggleTag(key) { if (!key) return; if (active[key]) delete active[key]; else active[key] = 1; applyFilters(); }
+        function reflowRibbon() { if (ribbonSvg && ribbonSvg.parentNode === wrap) wrap.appendChild(ribbonSvg); }
         function paintDate(c) {
-          var it = cardItem(c); if (!it) return;
-          var tag = c.querySelector(".lc-card-date");
-          if (!it.date) { if (tag) tag.remove(); return; }
+          var it = cardItem(c); if (!it || !it.date) return;
           c.setAttribute("data-date", it.date);
+          var tag = c.querySelector(".lc-card-date");
           if (!tag) { tag = document.createElement("div"); tag.className = "lc-card-date"; c.appendChild(tag); }
           tag.textContent = "📅 " + fmtDate(it.date);
         }
-        function reflowRibbon() { if (ribbonSvg && ribbonSvg.parentNode === wrap) wrap.appendChild(ribbonSvg); }
         function ensureDates() {
           if (datesLoaded) return Promise.resolve();
           datesLoaded = true;
@@ -405,35 +388,32 @@ Auto-included by docs/_layouts/default.html.
           order.forEach(function(c) { wrap.appendChild(c); });
           reflowRibbon();
         }
-        function applyTime() {
-          cardsArr.forEach(function(c) {
-            if (!timeSecs) { c.style.display = ""; return; }
-            var d = (cardItem(c) || {}).date;
-            c.style.display = (d && (Date.now() - (new Date(d)).getTime()) <= timeSecs * 1000) ? "" : "none";
-          });
-          timesWrap.querySelectorAll("[data-age]").forEach(function(ch) {
-            ch.classList.toggle("lc-card-filter-on", parseInt(ch.getAttribute("data-age"), 10) === timeSecs);
-          });
-        }
-        function setMode(mode) {
-          var recent = mode === "recent";
-          sortCtl.querySelectorAll("[data-sort]").forEach(function(b) { b.classList.toggle("lc-card-filter-on", b.getAttribute("data-sort") === mode); });
-          if (tagBar) tagBar.style.display = recent ? "none" : "";
-          resetTagFilter();                                  // leave the other mode's filter clean
-          timeSecs = 0;
-          if (recent) {
-            timesWrap.style.display = "";
-            ensureDates().then(function() { cardsArr.forEach(paintDate); orderBy("recent"); applyTime(); });
+        function setSort(mode) {
+          bar.querySelectorAll("[data-sort]").forEach(function(b) { b.classList.toggle("lc-card-filter-on", b.getAttribute("data-sort") === mode); });
+          if (mode === "recent") {
+            ensureDates().then(function() {
+              cardsArr.forEach(paintDate);            // 📅 tags stay once loaded
+              timesWrap.style.display = "";           // Modified filters now usable (in either sort)
+              orderBy("recent"); applyFilters();
+            });
           } else {
-            timesWrap.style.display = "none";
-            cardsArr.forEach(function(c) { var t = c.querySelector(".lc-card-date"); if (t) t.remove(); });
-            orderBy("name"); applyTime();
+            orderBy("name");                          // date tags + time chips persist if already loaded
           }
         }
-        sortCtl.addEventListener("click", function(e) {
-          var s = e.target.closest("[data-sort]"), t = e.target.closest("[data-age]");
-          if (s) setMode(s.getAttribute("data-sort"));
-          else if (t) { var k = parseInt(t.getAttribute("data-age"), 10); timeSecs = (timeSecs === k) ? 0 : k; applyTime(); }
+        bar.addEventListener("click", function(e) {
+          var s = e.target.closest("[data-sort]"), a = e.target.closest("[data-age]"),
+              f = e.target.closest("[data-tag],[data-state]"), clr = e.target.closest("[data-clear]");
+          if (s) setSort(s.getAttribute("data-sort"));
+          else if (a) { var k = parseInt(a.getAttribute("data-age"), 10); timeSecs = (timeSecs === k) ? 0 : k; applyFilters(); }
+          else if (f) toggleTag(chipKey(f));
+          else if (clr) { active = {}; timeSecs = 0; applyFilters(); }
+        });
+        /* per-card tag chips drive the same filter */
+        wrap.addEventListener("click", function(e) {
+          var chip = e.target.closest(".lc-card-tag[data-tag]");
+          if (!chip) return;
+          e.preventDefault(); e.stopPropagation();
+          toggleTag(chip.getAttribute("data-tag"));
         });
 
         /* hover ribbons — overlay SVG draws bezier arcs between linked cards */
@@ -484,7 +464,8 @@ Auto-included by docs/_layouts/default.html.
           cardEl.addEventListener("mouseleave", function() { ribbonSvg.innerHTML = ""; });
         });
 
-        setMode(sortMode === "recent" ? "recent" : "name");   // honor the author's default; viewer can switch
+        setSort(sortMode === "recent" ? "recent" : "name");   // honor the author's default; viewer can switch
+        applyFilters();
       })
       .catch(function(e) {
         wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
