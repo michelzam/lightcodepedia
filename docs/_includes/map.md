@@ -42,6 +42,63 @@ Auto-included by docs/_layouts/default.html.
     requestAnimationFrame(frame);
   }
 
+  // ── Leaflet engine (engine="leaflet") ───────────────────────────────────
+  var _leafletQ = null;
+  function loadLeaflet(cb) {
+    if (window.L) { cb(); return; }
+    if (_leafletQ) { _leafletQ.push(cb); return; }
+    _leafletQ = [cb];
+    var css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(css);
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+    s.onload = function () { var q = _leafletQ; _leafletQ = null; q.forEach(function (f) { f(); }); };
+    document.head.appendChild(s);
+  }
+  function renderLeaflet(el, wrap, markers, centerLat, centerLon, zoom) {
+    var map = L.map(wrap, { scrollWheelZoom: false }).setView([centerLat, centerLon], zoom);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { attribution: "© OpenStreetMap", maxZoom: 19 }).addTo(map);
+    if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function () { try { map.remove(); } catch (e) {} });
+
+    var pts = [];
+    markers.forEach(function (m) {
+      var mk = L.marker([m.lat, m.lon]).addTo(map);
+      if (m.label) mk.bindPopup(m.label);
+      pts.push([m.lat, m.lon]);
+    });
+
+    // bind="formid": a movable marker following a form's lat/lon (same contract
+    // as the MapLibre path). fetch= is MapLibre-only (game feature).
+    var bind = el.getAttribute("bind") || "";
+    if (bind) {
+      var bicon = L.divIcon({
+        className: "lc-map-binddot",
+        html: '<div style="font-size:1.6em;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">' + (el.getAttribute("bindicon") || "📍") + "</div>",
+        iconSize: [24, 24], iconAnchor: [12, 12]
+      });
+      var bm = L.marker([centerLat, centerLon], { icon: bicon }).addTo(map);
+      var moveBound = function () {
+        var f = document.querySelector(".lc-form[data-lc-id='" + bind + "']");
+        if (!f) return;
+        try {
+          var d = JSON.parse(f.getAttribute("data-lc-value") || "{}");
+          var la = parseFloat(d.lat), lo = parseFloat(d.lon != null ? d.lon : d.lng);
+          if (!isNaN(la) && !isNaN(lo)) bm.setLatLng([la, lo]);
+        } catch (e) {}
+      };
+      document.addEventListener("lc-model-changed", moveBound);
+      if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function () { document.removeEventListener("lc-model-changed", moveBound); });
+      moveBound();
+    }
+
+    if (pts.length > 1) map.fitBounds(pts, { padding: [30, 30] });
+    else if (pts.length === 1) map.setView(pts[0], zoom);
+    setTimeout(function () { try { map.invalidateSize(); } catch (e) {} }, 0);
+  }
+
   function upgradeMap(el) {
     var code = el.querySelector("code");
     var raw = (code ? code.textContent : el.textContent).trim();
@@ -78,6 +135,12 @@ Auto-included by docs/_layouts/default.html.
     }
     var centerLat = markers.length ? markers.reduce(function(s,m){ return s+m.lat; }, 0)/markers.length : parseFloat(el.getAttribute("lat") || "48.86");
     var centerLon = markers.length ? markers.reduce(function(s,m){ return s+m.lon; }, 0)/markers.length : parseFloat(el.getAttribute("lon") || "2.35");
+    // engine="leaflet" renders with Leaflet + OSM tiles instead of the default
+    // MapLibre/OpenFreeMap — same marker + bind contract, simpler point display.
+    if ((el.getAttribute("engine") || "").toLowerCase() === "leaflet") {
+      loadLeaflet(function () { renderLeaflet(el, wrap, markers, centerLat, centerLon, zoom); });
+      return;
+    }
     loadMapLibre(function() {
       var map = new maplibregl.Map({
         container: gid,
