@@ -25,7 +25,12 @@ relation index are supplied by the author as .dataset blocks.
 
 Knobs:
   schema="id"   required — a .dataset holding the schema array
-  index="id"    optional — a .dataset holding the relation index {coll:[{slug,title}]}
+  index="id"    optional — a .dataset holding the relation index
+                {coll:[{slug,title,lat,lng}]} — entries with lat/lng are mappable
+  map="true"    show a map of the record's geolocated points (reuses .map);
+                any index entry with lat/lng whose slug appears in the record
+  mapengine=""  "leaflet" for Leaflet+OSM, else default MapLibre
+  mapheight=""  map height in px (default 240)
   ai="true"     show the in-form AI panel (Suggest → Apply/Ignore)
   endpoint="…"  default AI endpoint URL (author-configurable; learner can override)
   commit="true" show the git-commit panel (PAT from edit_on_github's lc_ed_pat)
@@ -87,6 +92,28 @@ as strings, and uses faithful | / |- / |+ chomping. Auto-included by default.htm
     (window.lcDatasetListeners[id] = window.lcDatasetListeners[id] || []).push(cb);
   }
 
+  // Generic geo: the index owns coordinates; plot every index entry that has
+  // lat/lng AND whose slug appears anywhere in the record. Works for any shape
+  // (person.addresses, event.location.points, …) — no per-record config.
+  function collectSlugs(v, out) {
+    if (v == null) return;
+    if (typeof v === "string") { out[v] = 1; return; }
+    if (isArr(v)) { for (var i = 0; i < v.length; i++) collectSlugs(v[i], out); return; }
+    if (isObj(v)) { for (var k in v) if (v.hasOwnProperty(k)) collectSlugs(v[k], out); }
+  }
+  function geoPoints(record, index) {
+    var used = {}; collectSlugs(record, used); var pts = [], coll, i, e, lng;
+    for (coll in index) {
+      if (!index.hasOwnProperty(coll)) continue;
+      var arr = index[coll] || [];
+      for (i = 0; i < arr.length; i++) {
+        e = arr[i]; lng = e && (e.lng != null ? e.lng : e.lon);
+        if (e && e.lat != null && lng != null && used[e.slug]) pts.push({ lat: e.lat, lon: lng, label: e.title || e.slug });
+      }
+    }
+    return pts;
+  }
+
   function mdMini(t) {
     var paras = String(t == null ? "" : t).split(/\n\s*\n/), h = "", i;
     for (i = 0; i < paras.length; i++) if (paras[i].trim()) h += "<p>" + escHtml(paras[i].trim()).replace(/\n/g, "<br>") + "</p>";
@@ -125,8 +152,36 @@ as strings, and uses faithful | / |- / |+ chomping. Auto-included by default.htm
       box.innerHTML = genericPreview(state.rec, state.schema, state.index);
       wireInlineEdit(box);
     }
-    function refresh() { syncYaml(); renderPreview(); }        // value edit: keep form DOM
+    function refresh() { syncYaml(); renderPreview(); renderMap(false); }  // value edit: keep form DOM
     function rebuildAll() { buildForm(); refresh(); }          // structural: rebuild form too
+
+    // Map (map="true"): reuse the .map component, fed generic points from the
+    // record + index. Rebuilt only when the point set changes (not on typing).
+    var _mapCard = null, _mapSig = null;
+    var mapEngine = el0.getAttribute("mapengine") || "", mapH = el0.getAttribute("mapheight") || "240";
+    function renderMap(force) {
+      if (!_mapCard) return;
+      var pts = geoPoints(state.rec, state.index), sig = JSON.stringify(pts);
+      _mapCard.querySelector(".lc-rec-map-note").textContent =
+        pts.length ? (pts.length + " geolocated point(s).") : "No geolocated points in this record.";
+      if (!force && sig === _mapSig) return;
+      _mapSig = sig;
+      var host = _mapCard.querySelector(".lc-rec-map"); host.innerHTML = "";
+      if (!pts.length) return;
+      var pre = document.createElement("pre");
+      pre.className = "map";
+      if (mapEngine) pre.setAttribute("engine", mapEngine);
+      pre.setAttribute("height", mapH);
+      pre.textContent = JSON.stringify(pts);
+      host.appendChild(pre);
+      if (window.lcScanElement) window.lcScanElement(host);
+    }
+    function addMap() {
+      _mapCard = el("section", "lc-rec-card");
+      _mapCard.innerHTML = '<h3>Map (from the record’s points)</h3><div class="lc-rec-map"></div><p class="lc-rec-mut lc-rec-map-note"></p>';
+      wrap.appendChild(_mapCard);
+      renderMap(true);
+    }
 
     function genericPreview(rec, schema, index) {
       var h = '<div class="pv-fiche">', i, fd, v;
@@ -260,6 +315,7 @@ as strings, and uses faithful | / |- / |+ chomping. Auto-included by default.htm
             catch (e) { wrap.querySelector(".lc-rec-form").innerHTML = "<p style='color:#c00'>Unreadable YAML: " + escHtml(e.message) + "</p>"; return; }
             state.origKeys = []; for (var k in state.rec) if (state.rec.hasOwnProperty(k)) state.origKeys.push(k);
             buildForm(); refresh();
+            if ((el0.getAttribute("map") || "") === "true") addMap();
             if ((el0.getAttribute("ai") || "") === "true") addAI();
             if ((el0.getAttribute("commit") || "") === "true") addCommit();
           });

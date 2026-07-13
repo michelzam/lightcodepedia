@@ -25,6 +25,7 @@ a PAT via the ✏️ editor — editing itself needs no account).
   { "name": "nationalities", "label": "Nationalités", "widget": "list" },
   { "name": "periods", "label": "Époques", "widget": "relation", "collection": "periods", "multiple": true },
   { "name": "themes", "label": "Thèmes", "widget": "relation", "collection": "themes", "multiple": true },
+  { "name": "addresses", "label": "Adresses", "widget": "relation", "collection": "addresses", "multiple": true },
   { "name": "body", "label": "Bio", "widget": "text", "rows": 5, "wysiwyg": true }
 ]
 ```
@@ -47,6 +48,12 @@ a PAT via the ✏️ editor — editing itself needs no account).
     { "slug": "arts-plastiques", "title": "Arts plastiques" },
     { "slug": "femmes-artistes", "title": "Femmes artistes" },
     { "slug": "montmartre", "title": "Montmartre" }
+  ],
+  "addresses": [
+    { "slug": "5-rue-sebastien-bottin", "title": "5 rue Sébastien-Bottin", "lat": 48.8557, "lng": 2.3268 },
+    { "slug": "12-rue-cortot", "title": "12 rue Cortot", "lat": 48.8869, "lng": 2.3410 },
+    { "slug": "place-charles-de-gaulle", "title": "Place Charles-de-Gaulle", "lat": 48.8738, "lng": 2.2950 },
+    { "slug": "24-rue-houdon", "title": "24 rue Houdon", "lat": 48.8836, "lng": 2.3376 }
   ]
 }
 ```
@@ -67,7 +74,9 @@ nationalities:
 periods:
   - revolutions-de-1848
 themes: []
-addresses: []
+addresses:
+  - 12-rue-cortot
+  - 24-rue-houdon
 bibliography: []
 externalLinks: []
 body: président
@@ -83,7 +92,7 @@ gender: masculin
 qualificatifs:
   - républicain
 ```
-{: .record schema="paris_person_schema" index="paris_index" ai="true" commit="true" path="docs/paris/sample/a-de-longpre.yaml" }
+{: .record schema="paris_person_schema" index="paris_index" map="true" mapengine="leaflet" ai="true" commit="true" path="docs/paris/sample/a-de-longpre.yaml" }
 
 *Add a type by adding a schema — no engine code. The same `.record` renders any
 schema; only the `.dataset` blocks change.*
