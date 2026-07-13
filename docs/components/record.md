@@ -16,18 +16,19 @@ Three blocks: a **schema** (`.dataset`), an optional **relation index**
 (`.dataset`), and the **record** itself, tagged `{: .record }`.
 
 ````markdown
-```json
-[ {"name":"title","label":"Name","widget":"string","wysiwyg":true},
-  {"name":"tags","label":"Tags","widget":"list"},
-  {"name":"era","label":"Era","widget":"relation","collection":"eras","multiple":true},
-  {"name":"body","label":"Notes","widget":"text","rows":5,"wysiwyg":true} ]
+```yaml
+- { name: title, label: Name,  widget: string, wysiwyg: true }
+- { name: tags,  label: Tags,  widget: list }
+- { name: era,   label: Era,   widget: relation, collection: eras, multiple: true }
+- { name: body,  label: Notes, widget: text, rows: 5, wysiwyg: true }
 ```
-{: .dataset #my_schema }
+{: .dataset #my_schema format="yaml" }
 
-```json
-{ "eras": [ {"slug":"belle-epoque","title":"Belle Époque"} ] }
+```yaml
+eras:
+  - { slug: belle-epoque, title: Belle Époque }
 ```
-{: .dataset #my_index }
+{: .dataset #my_index format="yaml" }
 
 ```yaml
 title: A. de Longpré
@@ -37,6 +38,8 @@ body: président
 ```
 {: .record schema="my_schema" index="my_index" }
 ````
+
+The schema and index are `.dataset` blocks — **JSON or YAML** (`format="yaml"`).
 
 The form is built from the schema; fields flagged `"wysiwyg": true` are also
 editable directly on the rendered preview (click the name or the bio). The YAML

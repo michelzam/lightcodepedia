@@ -14,6 +14,10 @@ Usage:
   [Sales Table](#)
   {: .datagrid bind="sales" rows="5" }
 
+Formats: JSON (default) or CSV are auto-detected; add format="yaml" to parse a
+YAML block. Arrays register as rows; a plain object (e.g. a schema/index) is
+registered as-is, so components like .record can read structured config.
+
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
@@ -110,7 +114,23 @@ Auto-included by docs/_layouts/default.html.
         }
       }
     }
-    return Array.isArray(data) ? data : [data];
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === "object") return data;   // a plain object (e.g. a schema index) is kept as-is, not wrapped
+    return [data];
+  }
+
+  /* parse inline/remote text as JSON, YAML (format="yaml"), or CSV, then register */
+  function setFromText(text, fmt, el, id) {
+    if ((fmt === "yaml" || fmt === "yml") && window.lcYaml) {
+      window.lcYaml.ready(function () {
+        var data; try { data = window.lcYaml.load(text); } catch (e) { data = [{ "⚠️": "YAML: " + e.message }]; }
+        window.lcSetDataset(id, shapeData(data, el));
+      });
+      return;
+    }
+    var data;
+    try { data = JSON.parse(text); } catch (e) { data = parseCSV(text); }
+    window.lcSetDataset(id, shapeData(data, el));
   }
 
   /* ── .dataset upgrade ───────────────────────────── */
@@ -132,9 +152,9 @@ Auto-included by docs/_layouts/default.html.
         fetch(href)
           .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
           .then(function (text) {
-            var data;
-            try { data = JSON.parse(text); } catch (e) { data = parseCSV(text); }
-            window.lcSetDataset(id, shapeData(data, el));
+            var fmt = (el.getAttribute("format") || "").toLowerCase();
+            if (!fmt && /\.ya?ml($|\?)/i.test(href)) fmt = "yaml";
+            setFromText(text, fmt, el, id);
           })
           .catch(function (e) { window.lcSetDataset(id, [{ "⚠️": e.message }]); });
         return;
@@ -143,22 +163,7 @@ Auto-included by docs/_layouts/default.html.
 
     /* inline code block variant */
     var code = el.querySelector("code") || el;
-    var text = code.textContent.trim();
-    var fmt = (el.getAttribute("format") || "").toLowerCase();
-    if (fmt === "yaml" || fmt === "yml") {
-      /* YAML inline (author opt-in): parse via lcYaml so schema/index can be YAML
-         like the rest of the corpus. JSON blocks (no format=) are unchanged. */
-      var regY = function () {
-        var d; try { d = window.lcYaml.load(text); } catch (e) { d = [{ "⚠️": e.message }]; }
-        window.lcSetDataset(id, shapeData(d, el));
-      };
-      if (window.lcYaml && window.lcYaml.ready) window.lcYaml.ready(regY);
-      else window.lcSetDataset(id, [{ "⚠️": "format=yaml needs lcYaml (yaml_io)" }]);
-      return;
-    }
-    var data;
-    try { data = JSON.parse(text); } catch (e) { data = parseCSV(text); }
-    window.lcSetDataset(id, shapeData(data, el));
+    setFromText(code.textContent.trim(), (el.getAttribute("format") || "").toLowerCase(), el, id);
   }
 
   /* ── .datagrid upgrade ──────────────────────────── */
