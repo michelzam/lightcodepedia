@@ -174,6 +174,84 @@ workflow:
 ```
 {: .record schema="paris_event_schema" index="paris_index" map="true" mapengine="leaflet" ai="true" }
 
+## ✅ Feature specs — evidence, in the page
+
+These run against the **live** records above (▶ Run All). Eating our own dog food:
+the round-trip, the index-object resolution, the map, and the nested widgets are
+each asserted in the browser, not just claimed.
+
+```gherkin
+Feature: A record renders a schema-built form and re-emits lossless YAML
+  Scenario: The Personnage fiche renders and round-trips with no loss
+    Given the first record editor on the page
+    :::python
+    self.rec = Object._all(".lc-rec")[0]
+    :::
+    Then it is visible with a form built from the schema
+    :::python
+    assert self.rec.visible
+    fields = self.rec._qq(".lc-sch-field")
+    assert len(fields) >= 5, "only %d fields" % len(fields)
+    assert "Nom affiché" in self.rec.text
+    :::
+    And the YAML round-trip reports no key loss
+    :::python
+    integ = self.rec._q(".lc-rec-integrity").text
+    assert "no loss" in integ, integ
+    :::
+```
+{: .feature status="passing" tags="record,yaml" visible="true" }
+
+```gherkin
+Feature: Relations resolve through the index object
+  Scenario: A period slug shows its human title, not the raw slug
+    Given the Personnage record's preview
+    :::python
+    self.rec = Object._all(".lc-rec")[0]
+    :::
+    Then a relation chip shows the resolved title
+    :::python
+    chips = [c.text for c in self.rec._qq(".pv-rel")]
+    assert "Révolutions de 1848" in chips, chips
+    :::
+```
+{: .feature status="passing" tags="record,dataset" visible="true" }
+
+```gherkin
+Feature: The record maps its geolocated points
+  Scenario: Two referenced addresses are plotted
+    Given the Personnage record
+    :::python
+    self.rec = Object._all(".lc-rec")[0]
+    :::
+    Then the map reports two geolocated points
+    :::python
+    note = self.rec._q(".lc-rec-map-note").text
+    assert "2 geolocated" in note, note
+    :::
+```
+{: .feature status="passing" tags="record,map" visible="true" }
+
+```gherkin
+Feature: One engine renders a second type with nested widgets
+  Scenario: The Événement fiche exposes object and objectlist widgets
+    Given the second record editor on the page
+    :::python
+    self.ev = Object._all(".lc-rec")[1]
+    :::
+    Then its form shows the nested Datation and Point widgets
+    :::python
+    t = self.ev.text
+    assert "Datation" in t, t
+    assert "Point" in t
+    :::
+    And its non-schema fields round-trip without loss
+    :::python
+    assert "no loss" in self.ev._q(".lc-rec-integrity").text
+    :::
+```
+{: .feature status="passing" tags="record,widgets" visible="true" }
+
 ```
 /components/record
 /components/form

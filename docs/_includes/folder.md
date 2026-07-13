@@ -1,7 +1,13 @@
 {%- comment -%}
 Folder — card grid of a docs/ subfolder's pages, with per-page
-feature-status dots. Fetches the folder listing and page front matter
+feature-status dots and a 📅 date tag (front-matter `date:` if present, else the
+file's last-commit date). Fetches the folder listing and page front matter
 from the repository. Activated by IAL: {: .folder } on a link paragraph.
+
+Knobs:
+  cols="auto"       grid columns (default auto-fit) or a fixed number
+  sort="name"       "name" (default, alphabetical) or "recent" (newest first)
+  show-private      include _-prefixed files
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -13,6 +19,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-card-tag { font-size: 0.7em; font-weight: 600; padding: 0.1em 0.5em; border-radius: 99px; background: #e0f2fe; color: #075985; line-height: 1.6; }
 .lc-card-tag[data-tag] { cursor: pointer; }
 .lc-card-tag[data-tag]:hover { background: #bae6fd; }
+.lc-card-date { font-size: 0.72em; color: #6b7280; margin-top: 0.3em; }
 /* ── tag filter bar (clickable chips above the grid) ── */
 .lc-card-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4em; margin: 0 0 0.9em; }
 .lc-card-filter-label { font-size: 0.75em; font-weight: 600; color: #6b7280; margin-right: 0.1em; }
@@ -42,10 +49,14 @@ Auto-included by docs/_layouts/default.html.
 
   function extractPageMeta(text) {
     var lines = text.split("\n");
-    var i = 0;
+    var i = 0, fmDate = null;
     if (lines[0] && lines[0].trim() === "---") {
       i = 1;
-      while (i < lines.length && lines[i].trim() !== "---") i++;
+      while (i < lines.length && lines[i].trim() !== "---") {
+        var dm = lines[i].match(/^date:\s*(.+?)\s*$/);
+        if (dm) fmDate = dm[1].replace(/^['"]|['"]$/g, "");
+        i++;
+      }
       i++;
     }
     var title = null, snippet = "";
@@ -58,8 +69,11 @@ Auto-included by docs/_layouts/default.html.
         break;
       }
     }
-    return { title: title, snippet: snippet };
+    return { title: title, snippet: snippet, date: fmDate };
   }
+
+  /* ISO / front-matter date → YYYY-MM-DD for the card's date tag */
+  function fmtDate(d) { var s = String(d || ""); return s.length >= 10 ? s.slice(0, 10) : s; }
 
   /* ── shared card pipeline (also used by related.md) ─────────────── */
   /* scan a page's markdown for its hidden .feature blocks → [{status, tags}] */
@@ -107,8 +121,9 @@ Auto-included by docs/_layouts/default.html.
     var nonpassing = feats.filter(function(f) { return ((f && f.status) || "none") !== "passing"; }).length;
     var tagsAttr = tagList.length ? ' data-tags="' + escapeHtml(tagList.join(" ")) + '"' : '';
     var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
-    var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+    var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + (item.date ? ' data-date="' + escapeHtml(item.date) + '"' : '') + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
     if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
+    if (item.date) card += '<div class="lc-card-date">📅 ' + escapeHtml(fmtDate(item.date)) + '</div>';
     if (item.features && item.features.length) {
       var counts = {};
       item.features.forEach(function(f) { var s = (f && f.status) || "none"; counts[s] = (counts[s] || 0) + 1; });
@@ -141,6 +156,7 @@ Auto-included by docs/_layouts/default.html.
     var path = a.getAttribute("href").replace(/^\/+|\/+$/g, "");
     var cols = el.getAttribute("cols") || "auto";
     var showPrivate = el.getAttribute("show-private") === "true";
+    var sortMode = (el.getAttribute("sort") || "name").toLowerCase();   // "name" (default) | "recent"
     var colStyle = cols === "auto"
       ? "repeat(auto-fit, minmax(200px, 1fr))"
       : "repeat(" + cols + ", 1fr)";
@@ -185,7 +201,7 @@ Auto-included by docs/_layouts/default.html.
                 .then(function(text) {
                   if (!text) return fallback;
                   var meta = extractPageMeta(text);
-                  return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug, isSubdir: true };
+                  return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug, isSubdir: true, date: meta.date };
                 })
                 .catch(function() { return fallback; });
             })
@@ -193,9 +209,14 @@ Auto-included by docs/_layouts/default.html.
         });
 
         var pageFetches = pages.map(function(f) {
-          return fetch(f.download_url)
-            .then(function(r) { return r.text(); })
-            .then(function(text) {
+          /* last-commit date (authoritative "most recent") — parallel, graceful */
+          var gitDateP = apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/commits?path=" + encodeURIComponent(f.path) + "&per_page=1")
+            .then(function(cs) { return (cs && cs[0] && cs[0].commit) ? ((cs[0].commit.committer || cs[0].commit.author || {}).date || null) : null; })
+            .catch(function() { return null; });
+          var textP = fetch(f.download_url).then(function(r) { return r.text(); });
+          return Promise.all([textP, gitDateP])
+            .then(function(res) {
+              var text = res[0], gitDate = res[1];
               var meta = extractPageMeta(text);
               var title = meta.title || f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
               var features = scanFeatures(text);
@@ -207,7 +228,7 @@ Auto-included by docs/_layouts/default.html.
               while ((lm = lRe.exec(cleanLinks)) !== null) {
                 var h = lm[1]; if (/^https?:|^mailto:/.test(h)) continue; rawHrefs.push({ h: h, base: pageSlug });
               }
-              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features, quizzes: quizzes, rawHrefs: rawHrefs };
+              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features, quizzes: quizzes, rawHrefs: rawHrefs, date: meta.date || gitDate || null };
             })
             .catch(function() {
               var title = f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
@@ -225,6 +246,17 @@ Auto-included by docs/_layouts/default.html.
         if (!items || !items.length) {
           wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
           return;
+        }
+        /* sort="recent": newest first by date (ISO sorts lexically); dated
+           before undated, then by title. Default "name" keeps the alpha order. */
+        if (sortMode === "recent") {
+          items.sort(function(a, b) {
+            var da = a.date || "", db = b.date || "";
+            if (da && db) return db < da ? -1 : (db > da ? 1 : 0);
+            if (da) return -1;
+            if (db) return 1;
+            return (a.title || "").localeCompare(b.title || "");
+          });
         }
         /* resolve internal links between items */
         var urlSet = {};
