@@ -1,5 +1,4 @@
 ---
-title: "Live Models — declarative classes, auto-generated widgets"
 ---
 
 # 🧬 Live Models — classes that build their own widget

@@ -1,5 +1,4 @@
 ---
-title: "Reactive table — computed columns"
 ---
 
 # 🧮 Reactive table — computed columns

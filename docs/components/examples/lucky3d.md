@@ -1,5 +1,4 @@
 ---
-title: "Lucky & Wanda — 3D Object Playground"
 ---
 
 # 🐕🐠 Lucky & Wanda in 3D

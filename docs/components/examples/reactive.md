@@ -1,5 +1,4 @@
 ---
-title: "Reactive cells — formulas in any knob"
 ---
 
 # 🧮 Reactive cells

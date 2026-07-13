@@ -1,5 +1,4 @@
 ---
-title: "Your own class — define a custom Python class"
 ---
 
 # 🐍 Your own class

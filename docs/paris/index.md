@@ -1,5 +1,4 @@
 ---
-title: Éditeur de fiches — démo pour Toni
 ---
 
 # Paris révolutionnaire — éditeur de fiches (démo pour Toni)

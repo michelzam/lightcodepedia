@@ -1,5 +1,4 @@
 ---
-title: "Help Lucky"
 ---
 
 # 🐾 Help Lucky find his ball

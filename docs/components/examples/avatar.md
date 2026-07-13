@@ -1,5 +1,4 @@
 ---
-title: "Speaking Avatar — Overlay Instructor"
 ---
 
 # 🗣️ Speaking Avatar

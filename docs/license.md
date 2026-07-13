@@ -1,5 +1,4 @@
 ---
-title: License
 sitemap: false
 ---
 

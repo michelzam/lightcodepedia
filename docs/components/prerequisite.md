@@ -1,5 +1,4 @@
 ---
-title: "Prerequisite — self-directed learning paths"
 ---
 
 # 📋 Prerequisite

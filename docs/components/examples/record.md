@@ -1,5 +1,4 @@
 ---
-title: "Record editor — Paris fiche"
 ---
 
 # 🗂️ Record editor — a Paris révolutionnaire fiche
