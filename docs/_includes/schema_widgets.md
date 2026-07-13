@@ -6,7 +6,7 @@ array; mutations write straight into the record object and call onChange.
 
   window.lcSchema.buildForm(container, record, schema, index, onChange)
      schema : [{ name, label, widget, ... }]  widgets:
-              string · number · boolean · select(options[]) · list ·
+              string · text(rows) · number · boolean · select(options[]) · list ·
               relation(collection, multiple) · object(fields[]) · objectlist(fields[])
      index  : { collection: [{ slug, title, ... }] }  — for relation autocomplete
      onChange(): called after any edit (light) or structural change (rebuild)
@@ -23,7 +23,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-sch-field { margin-bottom: 0.9em; }
 .lc-sch-field > label { display: block; font-weight: 600; margin-bottom: 0.25em; }
 .lc-sch-field .lc-sch-hint { font-weight: 400; color: #999; font-size: 0.82em; }
-.lc-sch-field input[type=text], .lc-sch-field select { width: 100%; box-sizing: border-box; padding: 0.4em 0.55em; border: 1px solid #ccc; border-radius: 5px; font: inherit; }
+.lc-sch-field input[type=text], .lc-sch-field select, .lc-sch-field textarea { width: 100%; box-sizing: border-box; padding: 0.4em 0.55em; border: 1px solid #ccc; border-radius: 5px; font: inherit; }
+.lc-sch-field textarea { resize: vertical; }
 .lc-sch-listrow { display: flex; gap: 0.4em; margin-bottom: 0.35em; }
 .lc-sch-listrow input { flex: 1; }
 .lc-sch-x { border: none; background: #f2f2f2; border-radius: 5px; cursor: pointer; padding: 0 0.6em; font: inherit; }
@@ -76,6 +77,7 @@ Auto-included by docs/_layouts/default.html.
   function ctrlFor(obj, fd, ctx) {
     var w = fd.widget;
     if (w === "string") return strCtrl(obj, fd, ctx);
+    if (w === "text") return textCtrl(obj, fd, ctx);
     if (w === "number") return numCtrl(obj, fd, ctx);
     if (w === "boolean") return boolCtrl(obj, fd, ctx);
     if (w === "select") return selCtrl(obj, fd, ctx);
@@ -101,6 +103,12 @@ Auto-included by docs/_layouts/default.html.
       ctx.change();
     };
     return i;
+  }
+  function textCtrl(obj, fd, ctx) {
+    var t = el("textarea"); t.rows = fd.rows || 4;
+    t.value = obj[fd.name] != null ? obj[fd.name] : "";
+    t.oninput = function () { obj[fd.name] = t.value; ctx.change(); };
+    return t;
   }
   function boolCtrl(obj, fd, ctx) {
     var c = el("input"); c.type = "checkbox"; c.checked = !!obj[fd.name];
