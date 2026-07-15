@@ -10,8 +10,9 @@ timings) into one exportable file with a checksum. It's the **black box** to the
 ## 👀 Try it now
 
 Type your name → **Start** → then **answer the quiz** and **change the form**
-below → **Finish** and **Export**. The summary will show your actions, quiz
-score, and karma; Export hands you the JSON.
+below → **Finish**. Then hit **▶ Replay** to watch **Prof. LC walk your exact
+path** — spotlighting each widget you touched and narrating what you did — and
+**Export** to get the JSON. The summary shows your actions, quiz score, and karma.
 
 Demonstrate: use the widgets below
 {: .demo #try_demo title="Demo the widgets" }
@@ -21,7 +22,7 @@ Demonstrate: use the widgets below
 - [x] `.demo` — the black box
 - [ ] `.recorder` — the camera
 - [ ] `.quiz`
-{: .quiz }
+{: .quiz #demo_quiz }
 
 ```yaml
 name: Lucky
@@ -34,6 +35,24 @@ treats: 3
 > an optional YouTube-link box, and **📤 Export** / **📋 Copy JSON**. The file
 > carries a **sha-256** so casual edits show.
 {: .speaker-note }
+
+## ▶ Replay — the path, re-performed
+
+After **Finish**, **▶ Replay** hands the trace to the [avatar](/components/avatar)
+engine: **Prof. LC** walks from widget to widget in the order you touched them,
+spotlights each one, and narrates the action (*"Clicked 'Add breed' → Set age → 3
+→ answered the quiz"*). Click Prof. LC to stop.
+
+It turns a raw log into something an **educator can watch** — you see the
+*reasoning path*, not just a score: where the learner went, in what order, where
+they paused. Because the replay is rebuilt from the **same events the sha-256
+signs**, it's a faithful re-enactment, not a separate recording.
+
+- Each action is logged with the **widget it touched** (its `#id` / `data-lc-id`)
+  plus the value — so the path is **reproducible**; labels ride on top for reading.
+- Replay runs **on this same page** (the widgets have to be present to be
+  spotlighted). An educator opens the lesson, and — soon — drops in a learner's
+  exported file to replay it. Any code can call `window.lcDemoReplay(trace)`.
 
 ## 🛠️ How to make one
 
@@ -73,6 +92,7 @@ screen-capture permission, so it's optional per demo.
 ## 🔗 Related
 
 ```
+/components/avatar
 /components/recorder
 /components/quiz
 /components/form

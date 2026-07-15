@@ -8,6 +8,15 @@ not keystrokes or screen. Start / Pause / Resume / Finish, then Export one JSON
   Demonstrate: build a form
   {: .demo #build_a_form title="Build a form" }
 
+Each action is logged with the WIDGET it touched (nearest data-lc-id / id) plus
+the value and a human label — reproducibility first, explainability on top. That
+lets ▶ Replay hand the trace to the avatar engine (window.lcAvatarPlay): Prof. LC
+walks the student's path, spotlights each widget in turn, and narrates what they
+did — so an educator watches the reasoning path, not a raw log. Replay is
+reconstructed from the same events the sha-256 signs, so it is a faithful
+re-enactment. window.lcDemoReplay(trace, opts) runs it from any trace object
+(this session, or a file loaded later).
+
 Optional video reuses the existing .recorder (screen + face → YouTube): the 🎥
 button opens it; paste the resulting link into the export before downloading.
 Runs standalone and inside an iframe (log is in-memory; localStorage is only a
@@ -34,6 +43,7 @@ docs/_layouts/default.html.
 .lc-demo-finish { background: #c00; color: #fff; }
 .lc-demo-vid { background: #eee; color: #333; }
 .lc-demo-export { background: #166534; color: #fff; }
+.lc-demo-replay { background: #6d28d9; color: #fff; } .lc-demo-replay:hover { background: #5b21b6; }
 .lc-demo-copy { background: #eef2ff; color: #1e3a8a; border: 1px solid #c7d2fe; }
 .lc-demo-mut { color: #777; font-size: 0.9em; }
 .lc-demo-sum { margin: 0.5em 0; padding: 0.6em 0.8em; background: #f6f7fb; border-radius: 8px; font-size: 0.92em; }
@@ -55,6 +65,55 @@ docs/_layouts/default.html.
       return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
     } catch (e) { return "(hash unavailable)"; }
   }
+
+  // ── which widget was touched (reproducibility) ─────────────────────────────
+  // The stable id an educator can re-find on the same page: the nearest
+  // component instance (data-lc-id), else the nearest element with an id.
+  function cssEsc(s) { return (window.CSS && CSS.escape) ? CSS.escape(String(s)) : String(s).replace(/["\\\]]/g, "\\$&"); }
+  function lcTarget(el) {
+    var comp = el.closest && el.closest("[data-lc-id]");
+    if (comp) { var c = comp.getAttribute("data-lc-id"); return { sel: '[data-lc-id="' + c + '"]', comp: c }; }
+    var ided = el.closest && el.closest("[id]");
+    if (ided && ided.id) return { sel: "#" + cssEsc(ided.id), comp: ided.id };
+    return { sel: "", comp: "" };
+  }
+  function shortVal(v) {
+    var s; try { s = (v && typeof v === "object") ? JSON.stringify(v) : String(v); } catch (e) { s = String(v); }
+    return s.length > 48 ? s.slice(0, 47) + "…" : s;
+  }
+
+  // ── trace → avatar script (record once, replay as a narrated walk) ─────────
+  function buildReplayScript(trace) {
+    var evs = (trace && trace.events) || [], lines = [], prevForms = {};
+    evs.forEach(function (e) {
+      var d = e.detail || {};
+      if (e.type === "click") {
+        var at = d.target || (d.comp ? '[data-lc-id="' + d.comp + '"]' : "");
+        var say = d.label ? ("Clicked “" + d.label + "”") : "Clicked";
+        if (d.value != null && d.value !== "" && d.value !== true) say += " → " + shortVal(d.value);
+        else if (d.value === true) say += " ✓";
+        lines.push({ at: at, say: say, pause: 1.3 });
+      } else if (e.type === "edit") {
+        var forms = d.forms || {};
+        Object.keys(forms).forEach(function (fid) {
+          var cur = forms[fid] || {}, prev = prevForms[fid] || {};
+          Object.keys(cur).forEach(function (k) {
+            if (JSON.stringify(cur[k]) === JSON.stringify(prev[k])) return;   // unchanged
+            lines.push({ at: '[data-lc-id="' + fid + '"]', say: "Set " + k + " → " + shortVal(cur[k]), pause: 1.2 });
+          });
+          prevForms[fid] = cur;
+        });
+      }
+    });
+    return lines;
+  }
+
+  // Public: replay any trace object (this session's, or one loaded from a file).
+  window.lcDemoReplay = function (trace, opts) {
+    var lines = buildReplayScript(trace);
+    if (!lines.length || !window.lcAvatarPlay) return null;
+    return window.lcAvatarPlay(lines, opts || {});
+  };
 
   function upgrade(el) {
     if (el.dataset.lcUpgraded) return; el.dataset.lcUpgraded = "1";
@@ -99,10 +158,14 @@ docs/_layouts/default.html.
     function onClick(e) {
       if (!st.running) return;
       if (e.target.closest(".lc-demo")) return;                 // ignore our own controls
+      if (e.target.closest(".lc-avatar-host")) return;          // ignore a replay avatar
       var t = e.target.closest("button, a, input, label, .lc-quiz li, .lc-card, [data-sort], [data-age], [data-tag]");
       if (!t) return;
       var label = (t.textContent || t.value || t.getAttribute("aria-label") || "").trim().slice(0, 60);
-      log("click", { label: label, tag: t.tagName.toLowerCase() });
+      var tgt = lcTarget(t);
+      var detail = { label: label, tag: t.tagName.toLowerCase(), target: tgt.sel, comp: tgt.comp };
+      if (t.tagName === "INPUT") detail.value = (t.type === "checkbox" || t.type === "radio") ? t.checked : t.value;
+      log("click", detail);
     }
 
     function addListeners() { document.addEventListener("lc-model-changed", onModel); document.addEventListener("click", onClick, true); }
@@ -172,6 +235,7 @@ docs/_layouts/default.html.
       var durationSec = Math.round(activeMs() / 1000);
 
       var out = {
+        v: 2,                              // trace shape: events carry widget id + value
         demo: id, title: title,
         student: st.student,
         startedAt: new Date(st.startWall).toISOString(),
@@ -189,6 +253,7 @@ docs/_layouts/default.html.
           ' · <b>karma ' + karma + '</b></div>' +
         '<input type="text" class="lc-demo-yt" placeholder="Optional: paste your unlisted YouTube link">' +
         '<div class="lc-demo-row">' +
+          (window.lcAvatarPlay ? '<button type="button" class="lc-demo-btn lc-demo-replay">▶ Replay</button>' : '') +
           '<button type="button" class="lc-demo-btn lc-demo-export">📤 Export</button>' +
           '<button type="button" class="lc-demo-btn lc-demo-copy">📋 Copy JSON</button>' +
           '<span class="lc-demo-mut lc-demo-note"></span>' +
@@ -200,6 +265,11 @@ docs/_layouts/default.html.
       }
       var fname = "demo-" + id + "-" + ((st.student.id || st.student.name).replace(/[^\w-]+/g, "_")) + ".json";
       var note = body.querySelector(".lc-demo-note");
+      var rep = body.querySelector(".lc-demo-replay");
+      if (rep) rep.onclick = function () {
+        if (window.lcDemoReplay && window.lcDemoReplay(out)) note.textContent = "Replaying — Prof. LC walks the path.";
+        else note.textContent = "Nothing to replay (no widget actions recorded).";
+      };
       body.querySelector(".lc-demo-export").onclick = function () {
         try {
           var blob = new Blob([build()], { type: "application/json" });

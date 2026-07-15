@@ -1120,6 +1120,68 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
+  /* ── programmatic playback (engine API) ───────────────
+     window.lcAvatarPlay(lines, opts) builds a transient built-in-face avatar,
+     plays a script, and removes itself when the script ends. It reuses the
+     whole walk/spotlight/step machinery above — no config block, no upgrader.
+       lines: [{ at: "#sel", say: "caption", pause?: seconds, step?: bool }]
+       opts:  { voice, step, size, onEnd(detail) }   → returns the transient id
+     .demo replay uses this to turn a recorded trace into a narrated walk. */
+  var PLAY_ID = 0;
+  window.lcAvatarPlay = function (lines, opts) {
+    opts = opts || {};
+    var elId = "avtplay-" + (++PLAY_ID);
+    var size = parseInt(opts.size, 10) || 132;
+
+    var host = document.createElement("div");
+    host.className = "lc-avatar-host";
+    host.id = "lc-avatar-" + elId;
+    host.setAttribute("data-lc-id", elId);
+    host.style.left = "70vw";
+    var pose = document.createElement("div");
+    pose.className = "lc-avatar-pose";
+    host.appendChild(pose);
+    var char = document.createElement("div");
+    char.className = "lc-avatar-char";
+    char.style.width = size + "px"; char.style.height = size + "px";
+    pose.appendChild(char);
+    var bubble = document.createElement("div");
+    bubble.className = "lc-avatar-speech";
+    pose.appendChild(bubble);
+    document.body.appendChild(host);
+
+    var av = (window._lcAvatars = window._lcAvatars || {})[elId] = {
+      host: host, bubble: bubble, char: char,
+      script: (Array.isArray(lines) ? lines : []).map(lineSpec),
+      path: "right", voice: opts.voice || "",
+      tune: { rate: 0, pitch: 0 },
+      lottie: "", lottieSeg: null, rive: "", riveSm: "",
+      riveAnim: null, riveTalk: null, riveMouth: null, riveTriggers: [], riveInputs: null,
+      video: "", transparent: false,
+      size: size, spot: null,
+      pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
+      playing: false, idx: 0, lottieDone: false, step: !!opts.step
+    };
+    initChar(elId, char, size);              /* no video/rive/lottie → built-in face */
+    var idle = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
+    char.addEventListener("click", function () { togglePlay(elId); });
+
+    var onEnd = function (ev) {
+      if (!ev.detail || ev.detail.id !== elId) return;
+      document.removeEventListener("lc-avatar-ended", onEnd);
+      clearInterval(idle);
+      setTimeout(function () {
+        try { host.remove(); } catch (e) {}
+        if (window._lcAvatars) delete window._lcAvatars[elId];
+      }, 500);
+      if (typeof opts.onEnd === "function") { try { opts.onEnd(ev.detail); } catch (e) {} }
+    };
+    document.addEventListener("lc-avatar-ended", onEnd);
+
+    setTimeout(function () { startPlay(elId); }, 300);   /* let voices populate */
+    return elId;
+  };
+
   /* ── boot ────────────────────────────────────────────── */
   /* code_chrome.md (loaded first, via topbar) provides the scan registry:
      one registration covers the initial page scan and all re-scans. */
