@@ -1,6 +1,6 @@
 {
   "name": "@karmicsoft/lc-schema",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Schema → neutral IR → widget definitions (schema compiler) — a LightCode brick.",
   "type": "module",
   "main": "index.js",

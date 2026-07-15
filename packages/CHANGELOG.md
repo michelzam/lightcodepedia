@@ -23,6 +23,20 @@ passed CI (both BDD suites + the SSOT drift guard) before release.
 
 ## @karmicsoft/lc-schema
 
+### 0.1.2
+- **`fromZod` unwraps a wrapped collection root.** A collection whose root is
+  `z.preprocess(fn, z.object(...))` / effects / `.default()` (the Sveltia-null
+  pattern) now compiles to its **fields** instead of **zero fields silently**.
+  Verified on Zod 3 (`ZodEffects`) and Zod 4 (`ZodPipe`).
+- **Fails loud on a bad root.** A non-object root (a bare `z.string()`, etc.) or a
+  function-form `image()` schema now **throws** a clear, actionable error instead
+  of producing an empty form.
+- **Display-label / i18n channel.** `fromZod(schemas, { labels })` takes a map
+  keyed `{ collection: { field: 'Label' } }` (load per locale). Precedence:
+  `opts.labels` → a `.describe('label:…')` directive → the prettified field name.
+- **Prettified fallback splits camelCase** too: `startDay` → "Start Day".
+- Additive and backward-compatible; `fromSveltiaConfig` unchanged.
+
 ### 0.1.1
 - **`fromZod(schemas)`** — compile runtime Zod object schemas (Astro content
   collections) into the same neutral IR. Version-tolerant (Zod 3 & 4). Relations

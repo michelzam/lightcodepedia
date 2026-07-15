@@ -106,5 +106,44 @@ feature('fromZod compiles runtime Zod schemas to the same IR (version-tolerant)'
   scenario('.describe("markdown") → markdown widget', () => eq(zby('bio').widget, 'markdown'));
 }
 
+feature('fromZod unwraps a wrapped collection root (Toni corpus: z.preprocess(stripNull, z.object))');
+{
+  const stripNull = (o) => o;
+  const periods = z.preprocess(stripNull, z.object({
+    startDay: z.number(),
+    aiText: z.string().describe('markdown'),
+  }));
+  const zir = fromZod({ periods: { schema: periods } });
+  const pw = widgets(zir, 'periods');
+  scenario('a root z.preprocess/effects wrapper compiles to the fields, not zero', () => {
+    eq(pw.length, 2);
+    eq(pw.find((f) => f.name === 'startDay').widget, 'number');
+    eq(pw.find((f) => f.name === 'aiText').widget, 'markdown');
+  });
+  scenario('a non-object root throws a clear error (never silent zero fields)', () => {
+    assert.throws(() => fromZod({ bad: z.string() }), /expected a z\.object/);
+  });
+  scenario('a function-form schema (image()) throws asking you to resolve it first', () => {
+    assert.throws(() => fromZod({ img: () => z.object({ a: z.string() }) }), /function/);
+  });
+}
+
+feature('fromZod display labels resolve by precedence (opts.labels → label: → prettified name)');
+{
+  const schema = z.object({
+    startDay: z.number(),
+    name: z.string().describe('label:Époque | text'),
+    aiText: z.string(),
+  });
+  const zir = fromZod({ periods: { schema } }, { labels: { periods: { startDay: 'Jour de début' } } });
+  const lw = widgets(zir, 'periods');
+  const lby = (n) => lw.find((f) => f.name === n);
+  scenario('opts.labels wins (i18n display label, kept out of the schema)', () => eq(lby('startDay').label, 'Jour de début'));
+  scenario('a label: directive is used when opts.labels has none, without eating the widget', () => {
+    eq(lby('name').label, 'Époque'); eq(lby('name').widget, 'text');
+  });
+  scenario('the prettified name splits camelCase as a last resort (aiText → "Ai Text")', () => eq(lby('aiText').label, 'Ai Text'));
+}
+
 console.log(`\n${scen} scenarios, ${fail} failed.`);
 process.exit(fail ? 1 : 0);

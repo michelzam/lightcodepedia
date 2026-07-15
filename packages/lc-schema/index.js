@@ -92,7 +92,11 @@ export function collections(ir) { return ir.collections.map((c) => c.name); }
 // so mark it with .describe('relation:periods') (single) — a z.array of that is
 // a multiple relation. .describe('markdown'|'image'|'text') pick those widgets.
 
-/** Compile a map (or array) of Zod object schemas into the neutral IR. */
+/**
+ * Compile a map (or array) of Zod object schemas into the neutral IR.
+ * `opts.labels` = { collection: { field: 'Display label' } } — i18n display labels
+ * (load per active locale; keeps translations out of the schema).
+ */
 export function fromZod(schemas, opts = {}) {
   const labels = opts.labels || {};
   const entries = isArr(schemas)
@@ -103,8 +107,8 @@ export function fromZod(schemas, opts = {}) {
     source: 'zod',
     collections: entries.map(([name, raw]) => ({
       name,
-      label: labels[name] || prettify(name),
-      fields: zShapeFields(raw),
+      label: prettify(name),
+      fields: zShapeFields(raw, name, labels[name] || {}),
     })),
   };
 }
@@ -112,17 +116,36 @@ export function fromZod(schemas, opts = {}) {
 function zCtor(s) { return (s && s.constructor && s.constructor.name) || ''; }
 function zDesc(s) { return (s && (s.description || (s._def && s._def.description))) || ''; }
 
-function zResolveObject(raw) {
-  let o = raw && raw.schema !== undefined ? raw.schema : raw;   // Astro collection → its .schema
-  if (typeof o === 'function') throw new Error('lc-schema.fromZod: a schema is a function (uses image()) — call it / pass the resolved z.object');
+// Directives packed into .describe() — "relation:periods | label:Époques", or a
+// bare markdown/image/text hint. describe stays free for a plain description too.
+function zParseDesc(desc) {
+  let d = String(desc || ''); const out = {}; let m;
+  if ((m = /relation:([A-Za-z0-9_-]+)/.exec(d))) out.relation = m[1];
+  if ((m = /label:([^|]+)/.exec(d))) { out.label = m[1].trim(); d = d.replace(m[0], ''); }  // strip label before widget scan
+  if (/\bmarkdown\b/i.test(d)) out.widget = 'markdown';
+  else if (/\bimage\b/i.test(d)) out.widget = 'image';
+  else if (/\btext\b/i.test(d)) out.widget = 'text';
+  return out;
+}
+
+// Resolve an Astro collection / raw schema down to the z.object at its root —
+// unwrapping z.preprocess / effects / default / optional first (Sveltia writes
+// null for empty optionals, so real schemas wrap the object in z.preprocess).
+function zResolveObject(raw, collName) {
+  let o = raw && raw.schema !== undefined ? raw.schema : raw;
+  const where = collName ? `collection "${collName}" ` : '';
+  if (typeof o === 'function') throw new Error(`lc-schema.fromZod: ${where}schema is a function (uses image()) — resolve it before passing in`);
+  o = zUnwrap(o).base;
+  if (zCtor(o) !== 'ZodObject') throw new Error(`lc-schema.fromZod: ${where}expected a z.object at the root, got ${zCtor(o) || typeof o} — unwrap z.preprocess/effects first`);
   return o;
 }
-function zShapeFields(raw) {
-  const o = zResolveObject(raw);
-  if (!o || !o._def) return [];
+function zShapeFields(raw, collName, fieldLabels) {
+  const o = zResolveObject(raw, collName);
   let sh = o.shape !== undefined ? o.shape : o._def.shape;
   if (typeof sh === 'function') sh = sh();
-  return sh ? Object.keys(sh).map((n) => zField(n, sh[n])) : [];
+  if (!sh) return [];
+  const labs = fieldLabels || {};
+  return Object.keys(sh).map((n) => zField(n, sh[n], labs[n]));
 }
 
 // Peel Optional / Nullable / Default / Effects|Pipe, tracking required + default.
@@ -132,11 +155,19 @@ function zUnwrap(schema) {
     const k = zCtor(s);
     if (k === 'ZodOptional' || k === 'ZodNullable') { required = false; s = s._def.innerType; }
     else if (k === 'ZodDefault' || k === 'ZodPrefault') { const dv = s._def.defaultValue; def = typeof dv === 'function' ? dv() : dv; required = false; s = s._def.innerType; }
-    else if (k === 'ZodEffects') { s = s._def.schema; }
-    else if (k === 'ZodPipe' || k === 'ZodPipeline') { s = s._def.out || s._def.in; }
+    else if (k === 'ZodEffects') { s = s._def.schema; }                    // v3 preprocess/refine/transform
+    else if (k === 'ZodPipe' || k === 'ZodPipeline') { s = zPipeTarget(s); } // v4 preprocess/pipe
     else break;
   }
   return { base: s, required, def, desc: zDesc(schema) || zDesc(s) };
+}
+// A v4 pipe/preprocess: pick whichever side is the schema (has a shape/_def),
+// preferring the object end so z.preprocess(fn, z.object(...)) resolves.
+function zPipeTarget(s) {
+  const a = s._def && s._def.out, b = s._def && s._def.in;
+  if (a && zCtor(a) === 'ZodObject') return a;
+  if (b && zCtor(b) === 'ZodObject') return b;
+  return a || b || s;
 }
 function zEnumOptions(s) {
   const v = (s && s.options) || (s._def && (s._def.values || (s._def.entries && Object.values(s._def.entries)))) || [];
@@ -144,18 +175,13 @@ function zEnumOptions(s) {
 }
 function zArrayElement(s) { return s._def && (s._def.element || s._def.type); }
 
-function zField(name, schema) {
-  const u = zUnwrap(schema), s = u.base, kind = zCtor(s), desc = u.desc;
-  const out = { name, label: prettify(name), widget: 'string', required: u.required };
+function zField(name, schema, forcedLabel) {
+  const u = zUnwrap(schema), s = u.base, kind = zCtor(s), dir = zParseDesc(u.desc);
+  const out = { name, label: forcedLabel || dir.label || prettify(name), widget: 'string', required: u.required };
   if (u.def !== undefined) out.default = u.def;
 
-  // description conventions win
-  const rel = /relation:([A-Za-z0-9_-]+)/.exec(desc);
-  if (rel) { out.widget = 'relation'; out.collection = rel[1]; if (kind === 'ZodArray') out.multiple = true; return out; }
-  const d = desc.toLowerCase();
-  if (/\bmarkdown\b/.test(d)) { out.widget = 'markdown'; return out; }
-  if (/\bimage\b/.test(d)) { out.widget = 'image'; return out; }
-  if (/\btext\b/.test(d)) { out.widget = 'text'; return out; }
+  if (dir.relation) { out.widget = 'relation'; out.collection = dir.relation; if (kind === 'ZodArray') out.multiple = true; return out; }
+  if (dir.widget) { out.widget = dir.widget; return out; }   // markdown / image / text
 
   if (kind === 'ZodString' || kind === 'ZodLiteral' || kind === 'ZodDate') out.widget = 'string';
   else if (kind === 'ZodNumber' || kind === 'ZodBigInt') out.widget = 'number';
@@ -163,8 +189,8 @@ function zField(name, schema) {
   else if (kind === 'ZodEnum' || kind === 'ZodNativeEnum') { out.widget = 'select'; out.options = zEnumOptions(s).map((v) => ({ label: String(v), value: v })); }
   else if (kind === 'ZodObject') { out.widget = 'object'; out.fields = zShapeFields(s); }
   else if (kind === 'ZodArray') {
-    const elem = zArrayElement(s), eu = zUnwrap(elem), erel = /relation:([A-Za-z0-9_-]+)/.exec(eu.desc);
-    if (erel) { out.widget = 'relation'; out.collection = erel[1]; out.multiple = true; }
+    const elem = zArrayElement(s), eu = zUnwrap(elem), edir = zParseDesc(eu.desc);
+    if (edir.relation) { out.widget = 'relation'; out.collection = edir.relation; out.multiple = true; }
     else if (zCtor(eu.base) === 'ZodObject') { out.widget = 'objectlist'; out.fields = zShapeFields(eu.base); }
     else { out.widget = 'list'; out.item = zField('value', elem); out.multiple = true; }
   }
@@ -174,4 +200,10 @@ function zField(name, schema) {
 const isArr = Array.isArray;
 function firstOf(a) { return isArr(a) ? a[0] : a; }
 function asArray(a) { return isArr(a) ? a : (a == null ? [] : [a]); }
-function prettify(s) { return String(s || '').replace(/[-_]/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()); }
+function prettify(s) {
+  return String(s || '')
+    .replace(/[-_]/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')   // camelCase → words (startDay → Start Day)
+    .replace(/\s+/g, ' ').trim()
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}

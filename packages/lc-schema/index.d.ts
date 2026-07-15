@@ -52,10 +52,24 @@ export function fromSveltiaConfig(config: string | object): IR;
 /**
  * Compile runtime Zod object schemas (Astro content collections) into the same IR.
  * `schemas` is a map `{ name: zObject | { schema } }` or an array `[{ name, schema }]`.
- * Version-tolerant (Zod 3 & 4). Mark relations with `.describe('relation:coll')`
- * and rich text with `.describe('markdown'|'image'|'text')`.
+ * Version-tolerant (Zod 3 & 4). A collection whose root is wrapped in
+ * `z.preprocess(...)` / effects / default is unwrapped to the `z.object` before
+ * reading fields; a non-object root (or a function-form `image()` schema) throws
+ * a clear error rather than compiling to zero fields.
+ *
+ * Widgets & relations come from `.describe()` directives, pipe-separated:
+ *   `.describe('relation:periods')`  — a relation (a `z.array` of it → multiple)
+ *   `.describe('markdown' | 'image' | 'text')` — rich-text / media widgets
+ *   `.describe('label:Époque | text')` — an inline display label + a widget
+ *
+ * Display labels resolve by precedence: `opts.labels` (i18n, per active locale) →
+ * a `label:` directive → the prettified field name (`startDay` → "Start Day").
+ * `opts.labels` is keyed `{ collectionName: { fieldName: 'Label' } }`.
  */
-export function fromZod(schemas: Record<string, any> | Array<{ name: string; schema?: any }>, opts?: { labels?: Record<string, string> }): IR;
+export function fromZod(
+  schemas: Record<string, any> | Array<{ name: string; schema?: any }>,
+  opts?: { labels?: Record<string, Record<string, string>> }
+): IR;
 
 /** The flat field list for one collection (throws if the collection is unknown). */
 export function widgets(ir: IR, collectionName: string): IRField[];

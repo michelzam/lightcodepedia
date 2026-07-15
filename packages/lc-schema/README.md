@@ -45,6 +45,27 @@ doesn't expose its target collection at runtime, so mark relations with
 `.describe('markdown' | 'image' | 'text')` pick those widgets. A schema that is a
 **function** (`({ image }) => z.object(...)`) must be resolved before passing it in.
 
+A collection whose root is wrapped in `z.preprocess(fn, z.object(...))` / effects /
+`.default()` is **unwrapped to the object** before its fields are read. A root that
+is *not* an object (e.g. a bare `z.string()`) throws a clear error instead of
+compiling to **zero fields** silently.
+
+**Display labels & i18n.** Labels resolve by precedence:
+`opts.labels` → a `label:` directive → the prettified field name.
+
+```js
+const ir = fromZod(astro, {
+  labels: { periods: { startDay: 'Jour de début' } },   // per active locale
+});
+```
+
+- `opts.labels` is keyed `{ collection: { field: 'Label' } }` — load it per locale
+  so translations live **outside** the schema (one schema, N locales).
+- Or bake a default label into the schema alongside a widget:
+  `.describe('label:Époque | text')` (the `label:` runs up to the next `|`).
+- With neither, the field name is prettified: `startDay` → **"Start Day"**,
+  `aiText` → **"Ai Text"** (camelCase and `-`/`_` become words).
+
 ### Neutral IR shape
 
 ```
