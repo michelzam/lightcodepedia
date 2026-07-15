@@ -31,7 +31,7 @@ function build() {
 
   const indented = body.split('\n').map((l) => (l ? '  ' + l : l)).join('\n');
 
-  return `<!-- © 2026 KarmicSoft — LightCode Platform. Proprietary, All Rights Reserved. License: /license -->
+  return `<!-- Generated from @karmicsoft/lc-serialize — MIT, © 2026 KarmicSoft. DO NOT EDIT (run: node packages/gen-includes.mjs). -->
 {%- comment -%}
 lcYaml — GENERATED from packages/lc-serialize/index.js (the SSOT). DO NOT EDIT BY
 HAND; run \`node packages/gen-includes.mjs\` to regenerate. The canonical YAML

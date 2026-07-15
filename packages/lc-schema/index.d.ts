@@ -49,6 +49,14 @@ export interface IR {
 /** Compile a Sveltia/Decap config.yml (string or parsed object) into the neutral IR. */
 export function fromSveltiaConfig(config: string | object): IR;
 
+/**
+ * Compile runtime Zod object schemas (Astro content collections) into the same IR.
+ * `schemas` is a map `{ name: zObject | { schema } }` or an array `[{ name, schema }]`.
+ * Version-tolerant (Zod 3 & 4). Mark relations with `.describe('relation:coll')`
+ * and rich text with `.describe('markdown'|'image'|'text')`.
+ */
+export function fromZod(schemas: Record<string, any> | Array<{ name: string; schema?: any }>, opts?: { labels?: Record<string, string> }): IR;
+
 /** The flat field list for one collection (throws if the collection is unknown). */
 export function widgets(ir: IR, collectionName: string): IRField[];
 

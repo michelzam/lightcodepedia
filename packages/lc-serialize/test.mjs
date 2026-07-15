@@ -3,7 +3,7 @@
  * Zero-dependency: a tiny Feature/Scenario harness over node:assert.
  * Run: node test.mjs   (or `npm test`)
  */
-import { load, dump, roundtrip, isByteIdentical, isLossless } from './index.js';
+import { load, dump, roundtrip, isByteIdentical, isLossless, leadingComments } from './index.js';
 import assert from 'node:assert';
 
 let scen = 0, fail = 0;
@@ -102,6 +102,25 @@ scenario('comments are dropped but data is LOSSLESS (advisory drift)', () => {
   const commented = 'a: 1 # inline note\n# leading note\nb: 2\n';
   ok(isLossless(commented));
   ok(!isByteIdentical(commented)); // the comment is gone → drift, not loss
+});
+
+feature('Leading provenance comments survive round-trip byte-identically');
+scenario('a "# source:" header + blank line round-trips exactly', () => {
+  const src = '# source: xwiki-export 2026-04-05\n# reviewed: no\n\ntitle: A. de Longpré\nbody: président\n';
+  ok(isByteIdentical(src));
+  ok(roundtrip(src).startsWith('# source: xwiki-export 2026-04-05\n# reviewed: no\n\n'));
+});
+scenario('leadingComments captures only the leading block (not inline comments)', () => {
+  eq(leadingComments('# a\n# b\n\nk: 1\n# not-leading\n'), '# a\n# b\n\n');
+  eq(leadingComments('k: 1\n'), '');            // file starts with data → empty
+});
+scenario('dump(obj) stays pure — no comments unless you pass leading', () => {
+  eq(dump({ k: 1 }), 'k: 1\n');
+  eq(dump({ k: 1 }, { leading: '# hi\n' }), '# hi\nk: 1\n');
+});
+scenario('the body is still byte-identical (comments do not disturb data)', () => {
+  const src = '# note\nk: 1\nlist:\n  - a\n  - b\n';
+  eq(roundtrip(src), src);
 });
 
 feature('dump options');

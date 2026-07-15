@@ -1,7 +1,7 @@
 # @karmicsoft/lc-schema
 
 Schema → **neutral IR** → widget definitions — a small **schema compiler** and a
-**LightCode** brick. © KarmicSoft (see `LICENSE`).
+**LightCode** brick. MIT — © 2026 KarmicSoft (see `LICENSE`).
 
 ## Why (the SSOT strategy)
 
@@ -23,15 +23,27 @@ no lock-in**.
 npm install @karmicsoft/lc-schema
 ```
 
-## API (v0.1)
+## API
 
 ```js
-import { fromSveltiaConfig, widgets, collections } from '@karmicsoft/lc-schema';
+import { fromSveltiaConfig, fromZod, widgets, collections } from '@karmicsoft/lc-schema';
 
+// from a Sveltia/Decap config.yml:
 const ir = fromSveltiaConfig(readFileSync('public/admin/config.yml', 'utf8'));
+
+// …or from your runtime Zod schemas (Astro content collections):
+import { collections as astro } from './src/content.config.ts';
+const ir2 = fromZod(astro);           // { persons: {schema}, events: {schema} } or { persons: z.object(...) }
+
 collections(ir);            // ["persons", "events", ...]
 widgets(ir, 'persons');     // flat widget list the lc-editor renders
 ```
+
+`fromZod` is **version-tolerant** (Zod 3 & 4). Astro's `reference('periods')`
+doesn't expose its target collection at runtime, so mark relations with
+`.describe('relation:periods')` (a `z.array` of that is a *multiple* relation);
+`.describe('markdown' | 'image' | 'text')` pick those widgets. A schema that is a
+**function** (`({ image }) => z.object(...)`) must be resolved before passing it in.
 
 ### Neutral IR shape
 

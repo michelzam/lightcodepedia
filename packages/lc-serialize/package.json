@@ -1,6 +1,6 @@
 {
   "name": "@karmicsoft/lc-serialize",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Faithful YAML round-trip for git-backed structured content — a LightCode brick.",
   "type": "module",
   "main": "index.js",
@@ -28,7 +28,7 @@
   "scripts": {
     "test": "node test.mjs"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "author": "KarmicSoft",
   "homepage": "https://lightcodepedia.org",
   "repository": {

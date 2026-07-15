@@ -3,8 +3,9 @@
  * Zero-dependency: a tiny Feature/Scenario harness over node:assert.
  * Run: node test.mjs   (or `npm test`)
  */
-import { fromSveltiaConfig, widgets, collections, IR_VERSION } from './index.js';
+import { fromSveltiaConfig, fromZod, widgets, collections, IR_VERSION } from './index.js';
 import { readFileSync } from 'node:fs';
+import { z } from 'zod';
 import assert from 'node:assert';
 
 let scen = 0, fail = 0;
@@ -66,6 +67,44 @@ scenario('an unknown widget falls back to string (never crashes the form)', () =
 scenario('asking for an unknown collection throws', () => {
   assert.throws(() => widgets(ir, 'nope'), /unknown collection/);
 });
+
+feature('fromZod compiles runtime Zod schemas to the same IR (version-tolerant)');
+{
+  const zir = fromZod({
+    persons: {
+      schema: z.object({
+        title: z.string(),
+        gender: z.enum(['masculin', 'féminin', 'inconnu']),
+        age: z.number().optional(),
+        draft: z.boolean().default(false),
+        professions: z.array(z.string()),
+        periods: z.array(z.string().describe('relation:periods')),
+        addresses: z.array(z.object({ id: z.string().describe('relation:addresses'), role: z.string().optional() })),
+        bio: z.string().describe('markdown'),
+      }),
+    },
+  });
+  const zw = widgets(zir, 'persons');
+  const zby = (n) => zw.find((f) => f.name === n);
+  scenario('emits source:zod and the same IR version', () => { eq(zir.source, 'zod'); eq(zir.irVersion, IR_VERSION); });
+  scenario('string / number(optional) / boolean(default) map correctly', () => {
+    eq(zby('title').widget, 'string');
+    eq(zby('age').widget, 'number'); eq(zby('age').required, false);
+    eq(zby('draft').widget, 'boolean'); eq(zby('draft').default, false);
+  });
+  scenario('z.enum → select with {label,value} options', () => {
+    eq(zby('gender').widget, 'select'); ok(zby('gender').options.some((o) => o.value === 'féminin'));
+  });
+  scenario('z.array(scalar) → list; .describe("relation:x") on the item → multiple relation', () => {
+    eq(zby('professions').widget, 'list'); eq(zby('professions').multiple, true);
+    eq(zby('periods').widget, 'relation'); eq(zby('periods').collection, 'periods'); eq(zby('periods').multiple, true);
+  });
+  scenario('z.array(object) → objectlist with nested relation', () => {
+    eq(zby('addresses').widget, 'objectlist');
+    eq(zby('addresses').fields.find((f) => f.name === 'id').collection, 'addresses');
+  });
+  scenario('.describe("markdown") → markdown widget', () => eq(zby('bio').widget, 'markdown'));
+}
 
 console.log(`\n${scen} scenarios, ${fail} failed.`);
 process.exit(fail ? 1 : 0);

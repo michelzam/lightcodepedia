@@ -7,6 +7,7 @@
  *  - unquoted dates kept as strings (no timestamp coercion: 1830-05-29 stays a string)
  *  - block-scalar chomping preserved (| / |- / |+)
  *  - null preserved, nested objects/lists, [] for empty arrays
+ *  - the leading comment block (migration provenance) survives round-trip
  */
 import yaml from 'js-yaml';
 
@@ -15,14 +16,39 @@ export function load(text) {
   return yaml.load(text, { schema: yaml.CORE_SCHEMA });
 }
 
-/** Serialize a plain object to block-style YAML, preserving its key order. */
-export function dump(obj, opts = {}) {
-  return emitMap(obj, 0, opts.order || null) + '\n';
+/**
+ * The leading contiguous block of comment (`# …`) and blank lines before the
+ * first data line, verbatim (with its trailing newline) — e.g. a migration
+ * provenance header. Empty string when the file starts with data.
+ */
+export function leadingComments(text) {
+  const lines = String(text).split('\n');
+  let i = 0;
+  for (; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (t === '' || t[0] === '#') continue;
+    break;
+  }
+  return i === 0 ? '' : lines.slice(0, i).join('\n') + '\n';
 }
 
-/** load() → dump(): the round-trip your CI uses to prove non-loss. */
+/**
+ * Serialize a plain object to block-style YAML, preserving its key order.
+ * `opts.order` — explicit key order. `opts.leading` — a comment block to
+ * re-emit above the data (from leadingComments()). Callers without source text
+ * just call dump(obj) — behaviour is unchanged.
+ */
+export function dump(obj, opts = {}) {
+  const body = emitMap(obj || {}, 0, opts.order || null) + '\n';
+  return opts.leading ? opts.leading + body : body;
+}
+
+/**
+ * load() → dump(): the round-trip the corpus CI uses to prove non-loss.
+ * Comment-aware — the leading provenance block survives byte-identically.
+ */
 export function roundtrip(text) {
-  return dump(load(text));
+  return dump(load(text), { leading: leadingComments(text) });
 }
 
 /** Byte-identical check. Holds for canonical block-style YAML (see README § scope). */

@@ -12,8 +12,10 @@ and **`@karmicsoft/lc-schema`**. This is the *socle* your parcours (§5.1) start
 | `@karmicsoft/lc-serialize` | Faithful YAML round-trip (key order, dates-as-strings, `\|`/`\|-`/`\|+`, null) | **verified** (byte-identical on canonical block YAML) |
 | `@karmicsoft/lc-schema` | Schema → neutral IR → widgets (schema compiler) | v0.1 (Sveltia `config.yml` reader) |
 
-Each ships its **`LICENSE`** and an **example** (`example.yaml`, `example.config.yml`), and
-declares the license in `package.json` — as you asked. Full API in each package's `README.md`.
+Both infra bricks are **MIT** (© 2026 KarmicSoft) — permissive, fork-if-unmaintained;
+the higher bricks (`lc-editor` / `lc-record` / `lc-suggest` / `lc-roles`) keep the
+**LightCode Platform License**. Each ships its `LICENSE` + an example, and declares the
+license in `package.json`. Full API in each package's `README.md`.
 
 ## 2. How to install
 
@@ -117,7 +119,10 @@ Both packages are now publish-ready and non-regression covered:
   tags it. So `npm update` stays a no-regression op (§5). One-time: add an npm `NPM_TOKEN`
   repo secret. Flow + semver rules in `packages/RELEASING.md`; history in `packages/CHANGELOG.md`.
 
-Not done here, on purpose (needs your call — see §"engine vs face" note to Michel): the
+**Decided (Toni's corpus run):** with leading-comment preservation his byte-drift is ≈1%, so
+`lc-record`'s write path is **full-file re-emit** (the simple path), not changed-fields-only.
+
+Not done here, on purpose (needs your call — see §"engine vs face" note to Michel): building the
 **editor engine** (`lc-record`, the headless brain our pedia and Toni both render) and any
 Web-Component face. Shipped now = the two pure bricks, clean.
 
