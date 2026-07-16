@@ -11,18 +11,18 @@ tours — and the player behind the [🎬 demo](/components/demo)'s **▶ Replay
 ## 👀 Try it now
 
 [▶ Play](#)
-{: .avatar-trigger #avatar_go target="prof" }
+{: .avatar_trigger #avatar_go target="prof" }
 
 [🎙️ Generate voices](#)
-{: .avatar-voices target="prof" }
+{: .avatar_voices target="prof" }
 
 ```yaml
 voice: en-US
 script:
   - "Hello! I'm Prof. LC — I narrate pages, line by line."
-  - at: '[data-lc-id="avatar_playground"]'
+  - at: avatar_playground
     say: "I walk to the element I'm describing, and spotlight it."
-  - at: "#avatar_go"
+  - at: avatar_go
     say: "That button started me — it stops me too. Click me to do the same."
   - "Scripts can also play studio audio, or a recorded video of a real face."
 ```
@@ -43,13 +43,13 @@ A YAML fence holds the config + script; a trigger link plays/stops it:
 voice: en-US
 script:
   - "Hello! Let's explore this page together."
-  - at: "#some_widget"
+  - at: some_widget
     say: "This grid is editable — click a cell."
 ```
 {: .avatar #guide }
 
 [▶ Play](#)
-{: .avatar-trigger target="guide" label-stop="⏹ Stop" }
+{: .avatar_trigger target="guide" label-stop="⏹ Stop" }
 ````
 
 ## 📜 Script lines
@@ -58,7 +58,7 @@ A line is a plain string (the character wanders) or an object:
 
 | Key | What it does |
 |---|---|
-| `at:` | CSS selector — scroll there, park beside it, **spotlight** it |
+| `at:` | The **id** of the component (or heading) to walk to — scroll there, park beside it, **spotlight** it |
 | `say:` | The line — spoken, and shown in the speech bubble |
 | `audio:` | URL of a pre-recorded audio file — plays instead of TTS; the mouth follows the real waveform |
 | `video:` | `true` / URL — play the recorded character clip **with sound** for this line (real face, real voice) |
@@ -92,12 +92,12 @@ its mouth follows the voice. Fully procedural — new text never needs new asset
 
 ## 🎬 Studio — record the narrated walk
 
-[🎥 Studio](#)`{: .avatar-studio target="guide" }` opens the
+[🎥 Studio](#)`{: .avatar_studio target="guide" }` opens the
 [screen recorder](/components/recorder), plays the avatar over the page (or the
 [slides](/components/slides) deck), stops when the script ends, and offers the
 YouTube upload — a narrated video of the page, produced by the page itself.
 
-A `pick` trigger (`{: .avatar-trigger pick target="guide" }`) plays a **local**
+A `pick` trigger (`{: .avatar_trigger pick target="guide" }`) plays a **local**
 video file as the character — in-memory only, never uploaded or committed.
 
 ## 🎙️ Studio voices from text — no recording (ElevenLabs)
@@ -109,12 +109,12 @@ of this page):
 
 ````markdown
 [🎙️ Generate voices](#)
-{: .avatar-voices target="guide" }
+{: .avatar_voices target="guide" }
 ````
 
-Click it. It asks (first time only, each remembered **in this browser** — same
-family as the ✏️ editor's PAT): your **ElevenLabs voice id** (`lc_11_voice`)
-and your **API key** (`lc_11_key`). Then, per script line, it:
+Click it. It asks (first time only, each remembered **on this device** — like
+your ✏️ editor connection): your **ElevenLabs voice id** and your **API key**.
+Then, per script line, it:
 
 1. **generates** the missing audio (ElevenLabs, called from *your* browser),
 2. lets you **hear it immediately**,
@@ -140,8 +140,8 @@ and your **API key** (`lc_11_key`). Then, per script line, it:
 ## 🤝 With the demo — ▶ Replay
 
 The [🎬 demo](/components/demo) records a learner's actions; its **▶ Replay**
-compiles that trace into an avatar script and hands it to this engine
-(`window.lcAvatarPlay`): Prof. LC re-walks the learner's path, spotlights each
+compiles that trace into an avatar script and hands it to this engine:
+Prof. LC re-walks the learner's path, spotlights each
 widget they touched, re-applies their edits live, and narrates. Same character,
 two jobs: **guide** on the way in, **witness** on the way back.
 
@@ -152,9 +152,9 @@ two jobs: **guide** on the way in, **witness** on the way back.
   studio quality.
 - **Autoplay needs sound permission** on some browsers — the trigger click is
   the reliable start.
-- The spotlight is an amber outline on the `at:` element; any CSS selector works.
-  Platform components are addressable as `[data-lc-id="your_id"]` (a form's DOM
-  id is prefixed, so the plain `#id` only works for headings and raw elements).
+- The spotlight is an amber outline on the `at:` element. Point `at:` any
+  component's **id** — forms, quizzes, grids and headings all resolve, wherever
+  the platform placed them.
 
 ## 🔗 Related
 

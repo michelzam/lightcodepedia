@@ -61,7 +61,7 @@ script:
 {: .avatar #m1_drive size="150" }
 
 [🚗 Let me drive you faster](#)
-{: .avatar-trigger target="m1_drive" label-stop="⏹ Stop the car" }
+{: .avatar_trigger target="m1_drive" label-stop="⏹ Stop the car" }
 
 ## 🧱 Before you start
 

@@ -26,7 +26,7 @@ script:
 {: .avatar #prof_avatar }
 
 [▶ Play](#)
-{: .avatar-trigger target="prof_avatar" label-stop="⏹ Stop" }
+{: .avatar_trigger target="prof_avatar" label-stop="⏹ Stop" }
 
 ---
 
@@ -50,7 +50,7 @@ script:
 {: .avatar #step_avatar step="true" }
 
 [▶ Start](#)
-{: .avatar-trigger target="step_avatar" label-stop="⏹ Stop" }
+{: .avatar_trigger target="step_avatar" label-stop="⏹ Stop" }
 
 ---
 
@@ -85,7 +85,7 @@ script:
 {: .avatar #aristotle_avatar size="180" step="true"}
 
 [▶ Play](#)
-{: .avatar-trigger target="aristotle_avatar" label-stop="⏹ Stop" }
+{: .avatar_trigger target="aristotle_avatar" label-stop="⏹ Stop" }
 
 ---
 
@@ -128,7 +128,7 @@ def on_click(button):
 {: .accordion }
 
 [📁 Choose a local video…](#)
-{: .avatar-trigger target="secret_avatar" pick="video" }
+{: .avatar_trigger target="secret_avatar" pick="video" }
 
 **Your planned cues live on the `video: true` line, under `cues:`.** Each fires at
 its `t:` (seconds *into the clip*, by real playback time) and can change the
@@ -165,7 +165,7 @@ script:
 {: .avatar #secret_avatar size="180" step="true" }
 
 [▶ Play](#)
-{: .avatar-trigger target="secret_avatar" label-stop="⏹ Stop" }
+{: .avatar_trigger target="secret_avatar" label-stop="⏹ Stop" }
 
 ---
 
@@ -200,7 +200,7 @@ script:
 {: .avatar #riv_avatar size="170" }
 
 [▶ Play](#)
-{: .avatar-trigger target="riv_avatar" label-stop="⏹ Stop" }
+{: .avatar_trigger target="riv_avatar" label-stop="⏹ Stop" }
 
 ---
 
@@ -221,16 +221,16 @@ script:
 | `size` / `autoplay` | Bubble diameter in px (140) / start on page load |
 | `step` | `"true"`: step-by-step — each click on the trigger (or character) speaks the next line and stops (`▶ Start → Next → ↺ Replay`) |
 
-`{: .avatar-trigger target="id" }` on any link makes a play/stop button. Multiple avatars stagger automatically. Add the **`pick`** knob — `{: .avatar-trigger target="id" pick="video" }` — and the same trigger instead opens a local file picker: the chosen video plays as the avatar from an in-memory blob (with sound), never uploaded or committed.
+`{: .avatar_trigger target="id" }` on any link makes a play/stop button. Multiple avatars stagger automatically. Add the **`pick`** knob — `{: .avatar_trigger target="id" pick="video" }` — and the same trigger instead opens a local file picker: the chosen video plays as the avatar from an in-memory blob (with sound), never uploaded or committed.
 
 **Runtime source** — `Page().<avatar>.video(url)` (e.g. from a button `on_click`) sets the clip at runtime, so a private URL never lives in the repo: a direct `.mp4/.webm` plays through the avatar's `<video>` (alpha + frame-accurate cues), an unlisted **YouTube** link plays through its embed with a shim so the same cues still fire. See [🔒 Runtime video](#runtime_video) above.
 
 ## 🎬 Slide mode & studio mode
 
-**In slide mode** (📽️), `at:` cues drive the deck: the avatar walks the presentation to the slide holding its target and discloses it. **Studio mode** records it all: `{: .avatar-studio target="id" }` opens the screen recorder pre-configured (camera/mic off, tab audio on), recording starts, slides enter, the avatar plays — and on the last word the recording stops and the review panel offers the **YouTube upload**.
+**In slide mode** (📽️), `at:` cues drive the deck: the avatar walks the presentation to the slide holding its target and discloses it. **Studio mode** records it all: `{: .avatar_studio target="id" }` opens the screen recorder pre-configured (camera/mic off, tab audio on), recording starts, slides enter, the avatar plays — and on the last word the recording stops and the review panel offers the **YouTube upload**.
 
 [🎬 Record Aristotle's tour](#)
-{: .avatar-studio target="aristotle_avatar" }
+{: .avatar_studio target="aristotle_avatar" }
 
 ## 🎭 Characters & voices {#finding_characters}
 

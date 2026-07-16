@@ -22,10 +22,14 @@ Usage:
   {: .avatar #prof }
 
   [▶ Play](#)
-  {: .avatar-trigger target="prof" label-stop="⏹ Stop" }
+  {: .avatar_trigger target="prof" label-stop="⏹ Stop" }
+
+  (snake_case class names are canonical; avatar-trigger etc. remain as aliases)
 
 Script lines are strings (the avatar wanders) or objects:
-  at:    CSS selector — scroll there, park beside it, spotlight it
+  at:    the id of the component (or heading) to walk to — scroll there, park
+         beside it, spotlight it. Bare ids resolve wherever the platform put
+         the element (#id, data-lc-id, form wrapper); any CSS selector also works
   say:   the line (spoken + shown in the bubble)
   audio: URL of a pre-generated audio file — plays instead of browser TTS,
          and the mouth follows the actual waveform. Generate these FROM the
@@ -74,7 +78,7 @@ Attributes on .avatar:
 
 Voices studio (authoring, in the browser — no terminal):
   [🎙️ Generate voices](#)
-  {: .avatar-voices target="prof" }
+  {: .avatar_voices target="prof" }
   Generates the missing studio files for that avatar's script: calls the
   ElevenLabs API from THIS browser (key prompted once, stored in this browser
   only as lc_11_key — same family as the editor's lc_ed_pat), previews the new
@@ -559,10 +563,26 @@ Auto-included by docs/_layouts/default.html.
     return { at: "", say: String(x), audio: "", video: "", input: null, cues: [], fn: null, step: null, pause: null };
   }
 
+  /* resolve an at:/target reference the pythonistic way: a bare component id
+     finds the element wherever the platform put it (#id, a component's
+     data-lc-id, or a form's prefixed DOM id) — authors never write selectors.
+     Full CSS selectors still work for power users. Shared with modelcheck so
+     the integrity gate and the walk agree on what resolves. */
+  function resolveRef(ref) {
+    ref = String(ref || "").trim();
+    if (!ref) return null;
+    if (/^[A-Za-z_][A-Za-z0-9_-]*$/.test(ref)) {
+      return document.getElementById(ref)
+          || document.querySelector('[data-lc-id="' + ref + '"]')
+          || document.getElementById("lc-form-" + ref);
+    }
+    try { return document.querySelector(ref); } catch (e) { return null; }
+  }
+  window.lcAvatarResolve = resolveRef;
+
   /* park the character beside the element it describes; eyes follow it */
   function anchorTo(av, sel) {
-    var t = null;
-    try { t = document.querySelector(sel); } catch (e) {}
+    var t = resolveRef(sel);
     if (!t) return false;
     var S = window.lcSlides;
     if (S && S.isActive && S.isActive() && S.slideOf) {
@@ -1434,11 +1454,13 @@ Auto-included by docs/_layouts/default.html.
   /* code_chrome.md (loaded first, via topbar) provides the scan registry:
      one registration covers the initial page scan and all re-scans. */
 
+  /* pythonistic (snake_case) names are canonical; the kebab spellings stay
+     as legacy aliases so older pages keep working */
   if (window.lcRegisterUpgrader) {
     window.lcRegisterUpgrader(".highlighter-rouge.avatar, pre.avatar", upgradeAvatar);
-    window.lcRegisterUpgrader("p.avatar-trigger, a.avatar-trigger", upgradeTrigger);
-    window.lcRegisterUpgrader("p.avatar-studio, a.avatar-studio", upgradeStudio);
-    window.lcRegisterUpgrader("p.avatar-voices, a.avatar-voices", upgradeVoices);
+    window.lcRegisterUpgrader("p.avatar_trigger, a.avatar_trigger, p.avatar-trigger, a.avatar-trigger", upgradeTrigger);
+    window.lcRegisterUpgrader("p.avatar_studio, a.avatar_studio, p.avatar-studio, a.avatar-studio", upgradeStudio);
+    window.lcRegisterUpgrader("p.avatar_voices, a.avatar_voices, p.avatar-voices, a.avatar-voices", upgradeVoices);
   }
 
 })();

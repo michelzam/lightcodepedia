@@ -4,7 +4,7 @@
 {: .block #welcome }
 
 [▶ Play](#)
-{: .avatar-trigger target="secret_avatar" label-stop="⏹ Stop" }
+{: .avatar_trigger target="secret_avatar" label-stop="⏹ Stop" }
 
 
 ```
@@ -222,7 +222,7 @@ def on_click(button):
 {: .onclick }
 
 [📁 Choose a local video…](#)
-{: .avatar-trigger target="secret_avatar" pick="video" }
+{: .avatar_trigger target="secret_avatar" pick="video" }
 
 ```yaml
 name: "Aristotle"

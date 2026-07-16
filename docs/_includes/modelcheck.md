@@ -68,8 +68,8 @@ Auto-included by docs/_layouts/default.html.
         }
       });
 
-    /* avatar triggers → registered avatar */
-    root.querySelectorAll("[data-avt-target], .avatar-trigger[target], .avatar-studio[target]")
+    /* avatar triggers → registered avatar (snake_case canonical + kebab aliases) */
+    root.querySelectorAll("[data-avt-target], .avatar-trigger[target], .avatar-studio[target], .avatar-voices[target], .avatar_trigger[target], .avatar_studio[target], .avatar_voices[target]")
       .forEach(function (el) {
         var id = el.getAttribute("data-avt-target") || el.getAttribute("target");
         if (!id) return;
@@ -89,7 +89,9 @@ Auto-included by docs/_layouts/default.html.
         seen[sel] = 1;
         checked++;
         var hit = null;
-        try { hit = document.querySelector(sel); } catch (e) {}
+        /* resolve exactly like the avatar itself: bare component ids or selectors */
+        if (window.lcAvatarResolve) hit = window.lcAvatarResolve(sel);
+        else { try { hit = document.querySelector(sel); } catch (e) {} }
         if (!hit) broken.push({ kind: "at", ref: sel, from: "avatar#" + aid });
       }
       (avs[aid].script || []).forEach(function (line) {

@@ -53,14 +53,14 @@ they paused. Because the replay is rebuilt from the **same events the sha-256
 signs** (starting state included), it's a faithful re-enactment, not a separate
 recording.
 
-- Each action is logged with the **widget it touched** (its `#id` /
-  `data-lc-id`, and the **exact answer item** for quizzes) plus the value — so
-  the path is **reproducible**; labels ride on top for reading.
+- Each action is logged with the **widget it touched** (its **id**, and the
+  **exact answer item** for quizzes) plus the value — so the path is
+  **reproducible**; labels ride on top for reading.
 - **Quiz answers are spotlighted, never re-clicked** — the page's scores stay
   genuine; the replay shows *which* answer was picked without faking a new one.
 - Replay runs **on this same page** (the widgets have to be present to be
   spotlighted). An educator opens the lesson, and — soon — drops in a learner's
-  exported file to replay it. Any code can call `window.lcDemoReplay(trace)`.
+  exported file to replay it.
 
 ## 🛠️ How to make one
 

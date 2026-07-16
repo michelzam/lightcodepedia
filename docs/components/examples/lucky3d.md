@@ -51,4 +51,4 @@ script:
 {: .avatar #lucky_guide size="150" }
 
 [▶ Play the tour](#)
-{: .avatar-trigger target="lucky_guide" label-stop="⏹ Stop" }
+{: .avatar_trigger target="lucky_guide" label-stop="⏹ Stop" }
