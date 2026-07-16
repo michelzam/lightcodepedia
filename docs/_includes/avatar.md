@@ -38,7 +38,8 @@ Script lines are strings (the avatar wanders) or objects:
 Attributes on .avatar:
   id        — referenced by .avatar-trigger's target=""
   path      — left | center | right | wander (fallback for untargeted lines)
-  voice     — BCP-47 tag; the best-quality matching browser voice is picked
+  voice     — BCP-47 tag; the best-quality matching browser voice is picked.
+              "off" = silent: the bubble shows each line, dwells, moves on
   rate/pitch (YAML) — TTS tuning (defaults 0.95 / 1.05)
   lottie    — URL to a Lottie JSON animation (optional; default: built-in
               face), or { url, idle: [from,to], talk: [from,to] } — frame
@@ -509,10 +510,11 @@ Auto-included by docs/_layouts/default.html.
                audio: String(x.audio || ""), video: String(x.video || ""),
                input: x.input || null,
                cues: Array.isArray(x.cues) ? x.cues : [],
+               fn: (typeof x.fn === "function" ? x.fn : null),  /* action hook run as the line starts (lcAvatarPlay callers — e.g. demo replay re-applying a recorded edit) */
                step: (x.step === undefined ? null : x.step),   /* per-line override of the avatar's step */
                pause: (x.pause === undefined ? null : Number(x.pause)) };   /* seconds to hold after this line */
     }
-    return { at: "", say: String(x), audio: "", video: "", input: null, cues: [], step: null, pause: null };
+    return { at: "", say: String(x), audio: "", video: "", input: null, cues: [], fn: null, step: null, pause: null };
   }
 
   /* park the character beside the element it describes; eyes follow it */
@@ -617,6 +619,8 @@ Auto-included by docs/_layouts/default.html.
       var script   = Array.isArray(cfg.script) ? cfg.script.map(lineSpec) : [];
       var pathName = cfg.path  || "wander";
       var voiceTag = cfg.voice || "";
+      var mute     = voiceTag === "off";           /* voice: off → silent bubbles */
+      if (mute) voiceTag = "";
       /* lottie: URL, or { url, idle: [from,to], talk: [from,to] } */
       var lottieCfg = cfg.lottie || "";
       var lottieUrl = (lottieCfg && typeof lottieCfg === "object")
@@ -670,7 +674,7 @@ Auto-included by docs/_layouts/default.html.
         video: videoUrl, transparent: transparent,
         size: size, spot: null,
         pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
-        playing: false, idx: 0, lottieDone: false, step: step
+        playing: false, idx: 0, lottieDone: false, step: step, mute: mute
       };
 
       /* init character graphic */
@@ -971,6 +975,7 @@ Auto-included by docs/_layouts/default.html.
     av.host.classList.add("lc-avatar-talking");
     charTalk(av, true, !!line.input);
     if (line.input) setRiveInputs(av, line.input);
+    if (line.fn) { try { line.fn(); } catch (e) {} }   /* per-line action (demo replay re-applies the recorded value here) */
 
     var finish = function () {
       if (av._cueOff) av._cueOff();
@@ -1004,6 +1009,13 @@ Auto-included by docs/_layouts/default.html.
 
     /* TTS: reveal the bubble word by word as boundaries fire */
     var words = line.say.split(" ");
+    /* voice: "off" (or no TTS at all) — silent walkthrough: show the whole
+       line and dwell long enough to read it, then move on */
+    if (av.mute || !window.speechSynthesis) {
+      av.bubble.textContent = line.say;
+      setTimeout(finish, Math.min(8000, 900 + words.length * 260));
+      return;
+    }
     av.bubble.textContent = "";
     var revealed = 0;
     var revealT = setTimeout(function () {
@@ -1124,14 +1136,17 @@ Auto-included by docs/_layouts/default.html.
      window.lcAvatarPlay(lines, opts) builds a transient built-in-face avatar,
      plays a script, and removes itself when the script ends. It reuses the
      whole walk/spotlight/step machinery above — no config block, no upgrader.
-       lines: [{ at: "#sel", say: "caption", pause?: seconds, step?: bool }]
-       opts:  { voice, step, size, onEnd(detail) }   → returns the transient id
+       lines: [{ at: "#sel", say: "caption", pause?: seconds, step?: bool,
+                 fn?: function }]         — fn runs as its line starts
+       opts:  { voice, rate, pitch, step, size, onEnd(detail) } → transient id;
+              voice: "off" = silent bubbles (no TTS), dwell-then-advance
      .demo replay uses this to turn a recorded trace into a narrated walk. */
   var PLAY_ID = 0;
   window.lcAvatarPlay = function (lines, opts) {
     opts = opts || {};
     var elId = "avtplay-" + (++PLAY_ID);
     var size = parseInt(opts.size, 10) || 132;
+    var mute = opts.voice === "off";
 
     var host = document.createElement("div");
     host.className = "lc-avatar-host";
@@ -1153,14 +1168,14 @@ Auto-included by docs/_layouts/default.html.
     var av = (window._lcAvatars = window._lcAvatars || {})[elId] = {
       host: host, bubble: bubble, char: char,
       script: (Array.isArray(lines) ? lines : []).map(lineSpec),
-      path: "right", voice: opts.voice || "",
-      tune: { rate: 0, pitch: 0 },
+      path: "right", voice: mute ? "" : (opts.voice || ""),
+      tune: { rate: parseFloat(opts.rate) || 0, pitch: parseFloat(opts.pitch) || 0 },
       lottie: "", lottieSeg: null, rive: "", riveSm: "",
       riveAnim: null, riveTalk: null, riveMouth: null, riveTriggers: [], riveInputs: null,
       video: "", transparent: false,
       size: size, spot: null,
       pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
-      playing: false, idx: 0, lottieDone: false, step: !!opts.step
+      playing: false, idx: 0, lottieDone: false, step: !!opts.step, mute: mute
     };
     initChar(elId, char, size);              /* no video/rive/lottie → built-in face */
     var idle = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);

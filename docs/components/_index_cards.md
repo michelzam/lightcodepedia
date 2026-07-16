@@ -84,9 +84,14 @@ Schema-driven record editor via `{: .record }` — typed form, in-place WYSIWYG 
 [Open →](record)
 
 ### 🎬 Demo
-Record a demonstration via `{: .demo }` — Start/Pause/Resume/Finish logs the learner's actions into one exportable file (summary + karma + sha-256). The black box to the recorder's camera.
+Record a demonstration via `{: .demo }` — Start/Pause/Resume/Finish logs the learner's actions into one exportable file (summary + karma + sha-256). The black box to the recorder's camera; ▶ Replay re-performs the path through the avatar.
 
 [Open →](demo)
+
+### 🧑‍🏫 Avatar
+A speaking character via `{: .avatar }` — it walks the page, spotlights the element it describes, and narrates (TTS, studio audio, or a recorded face). Guided tours, narrated videos, and the demo's replay engine.
+
+[Open →](avatar)
 
 ### 📽️ Slides
 Present any markdown page as a deck — `## h2` becomes a slide, bullets auto-fragment. No source markup; click 📽️ at the bottom-left to enter.

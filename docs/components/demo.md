@@ -40,16 +40,24 @@ treats: 3
 
 After **Finish**, **▶ Replay** hands the trace to the [avatar](/components/avatar)
 engine: **Prof. LC** walks from widget to widget in the order you touched them,
-spotlights each one, and narrates the action (*"Clicked 'Add breed' → Set age → 3
-→ answered the quiz"*). Click Prof. LC to stop.
+spotlights each one, narrates the action — and **re-performs it**. The trace
+opens with a snapshot of every form's **starting state**; replay rewinds the
+forms to it, then re-applies each edit **live** as its beat is narrated, through
+the same code path as a human edit — so anything computed from a form
+(`{= …}` cells, diagrams) recomputes during the replay, exactly as it did during
+the session. Click Prof. LC to stop.
 
 It turns a raw log into something an **educator can watch** — you see the
 *reasoning path*, not just a score: where the learner went, in what order, where
 they paused. Because the replay is rebuilt from the **same events the sha-256
-signs**, it's a faithful re-enactment, not a separate recording.
+signs** (starting state included), it's a faithful re-enactment, not a separate
+recording.
 
-- Each action is logged with the **widget it touched** (its `#id` / `data-lc-id`)
-  plus the value — so the path is **reproducible**; labels ride on top for reading.
+- Each action is logged with the **widget it touched** (its `#id` /
+  `data-lc-id`, and the **exact answer item** for quizzes) plus the value — so
+  the path is **reproducible**; labels ride on top for reading.
+- **Quiz answers are spotlighted, never re-clicked** — the page's scores stay
+  genuine; the replay shows *which* answer was picked without faking a new one.
 - Replay runs **on this same page** (the widgets have to be present to be
   spotlighted). An educator opens the lesson, and — soon — drops in a learner's
   exported file to replay it. Any code can call `window.lcDemoReplay(trace)`.
@@ -72,6 +80,10 @@ so that's how the export is attributable.
 |---|---|
 | `#id` | Names this demo (used in the export filename + storage key) |
 | `title="…"` | Shown on the recorder bar and stamped into the export |
+| `voice="…"` | Replay avatar's voice: a language tag (`fr-FR`), or **`off`** for silent bubbles |
+| `rate=` / `pitch=` | Replay TTS tuning (defaults 0.95 / 1.05) |
+| `size=` | Replay avatar's pixel size (default 132) |
+| `step="true"` | Replay advances **one action per click** (▶ Start → Next →) — grade at your own pace |
 
 ## 🎥 Optional video
 

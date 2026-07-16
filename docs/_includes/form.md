@@ -545,6 +545,24 @@ Auto-included by docs/_layouts/default.html.
       });
   }
 
+  // Programmatic edit: set one field of a rendered form BY THE SAME PATH a
+  // human edit takes (grid setDataValue → onCellValueChanged → model +
+  // data-lc-value + lc-model-changed bus + persist). Used by .demo's ▶ Replay
+  // to genuinely re-perform a recorded session. Returns true if applied.
+  window.lcFormSet = function (formId, key, value) {
+    var w = document.querySelector('.lc-form[data-lc-id="' + String(formId).replace(/"/g, '\\"') + '"]');
+    var body = w && w.querySelector(".lc-form-body");
+    var api = body && body._lcGridApi;
+    if (!api) return false;
+    var done = false;
+    try {
+      api.forEachNode(function (node) {
+        if (!done && node.data && node.data._key === key) { node.setDataValue("value", value); done = true; }
+      });
+    } catch (e) { return false; }
+    return done;
+  };
+
   // Called from Python runners: show.form(obj)
   window.lcRenderFormFromJson = function(viewEl, objJson, title) {
     var obj;

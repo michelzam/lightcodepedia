@@ -8,14 +8,21 @@ not keystrokes or screen. Start / Pause / Resume / Finish, then Export one JSON
   Demonstrate: build a form
   {: .demo #build_a_form title="Build a form" }
 
-Each action is logged with the WIDGET it touched (nearest data-lc-id / id) plus
-the value and a human label — reproducibility first, explainability on top. That
-lets ▶ Replay hand the trace to the avatar engine (window.lcAvatarPlay): Prof. LC
-walks the student's path, spotlights each widget in turn, and narrates what they
-did — so an educator watches the reasoning path, not a raw log. Replay is
-reconstructed from the same events the sha-256 signs, so it is a faithful
-re-enactment. window.lcDemoReplay(trace, opts) runs it from any trace object
-(this session, or a file loaded later).
+Each action is logged with the WIDGET it touched (nearest data-lc-id / id, and
+the exact list item for quiz answers) plus the value and a human label —
+reproducibility first, explainability on top. The trace opens with an `init`
+snapshot of every form's starting state, and all of it is signed by the sha-256.
+
+▶ Replay hands the trace to the avatar engine (window.lcAvatarPlay): Prof. LC
+walks the student's path, spotlights each widget, narrates the action — and
+RE-PERFORMS it: the forms are restored to the recorded starting state, then each
+edit is re-applied live through window.lcFormSet (the same code path as a human
+edit, so dependent {= …} cells recompute during the replay). Quiz answers are
+spotlighted (the exact item clicked), never re-scored — scores stay genuine.
+window.lcDemoReplay(trace, opts) runs it from any trace object (this session, or
+a file loaded later). Knobs on the .demo block configure the replay avatar:
+voice="fr-FR" (or "off" for silent bubbles), rate=, pitch=, size=, step="true"
+for click-through.
 
 Optional video reuses the existing .recorder (screen + face → YouTube): the 🎥
 button opens it; paste the resulting link into the export before downloading.
@@ -82,13 +89,28 @@ docs/_layouts/default.html.
     return s.length > 48 ? s.slice(0, 47) + "…" : s;
   }
 
-  // ── trace → avatar script (record once, replay as a narrated walk) ─────────
+  // Snapshot every rendered form's current model — the `init` event at Start
+  // (the recorded starting state) and each debounced `edit` event use this.
+  function snapshotForms() {
+    var forms = {};
+    document.querySelectorAll(".lc-form[data-lc-id]").forEach(function (f) {
+      try { forms[f.getAttribute("data-lc-id")] = JSON.parse(f.getAttribute("data-lc-value") || "null"); } catch (e) {}
+    });
+    return forms;
+  }
+
+  // ── trace → avatar script (record once, replay as a narrated re-performance) ─
+  // Diffs each edit snapshot against the previous one (seeded by `init`, so
+  // untouched defaults never narrate) and attaches an fn that re-applies the
+  // value live via lcFormSet as Prof. LC reaches that beat.
   function buildReplayScript(trace) {
     var evs = (trace && trace.events) || [], lines = [], prevForms = {};
     evs.forEach(function (e) {
       var d = e.detail || {};
-      if (e.type === "click") {
-        var at = d.target || (d.comp ? '[data-lc-id="' + d.comp + '"]' : "");
+      if (e.type === "init") {
+        prevForms = d.forms || {};                       // the recorded starting state
+      } else if (e.type === "click") {
+        var at = d.hit || d.target || (d.comp ? '[data-lc-id="' + d.comp + '"]' : "");
         var say = d.label ? ("Clicked “" + d.label + "”") : "Clicked";
         if (d.value != null && d.value !== "" && d.value !== true) say += " → " + shortVal(d.value);
         else if (d.value === true) say += " ✓";
@@ -99,7 +121,10 @@ docs/_layouts/default.html.
           var cur = forms[fid] || {}, prev = prevForms[fid] || {};
           Object.keys(cur).forEach(function (k) {
             if (JSON.stringify(cur[k]) === JSON.stringify(prev[k])) return;   // unchanged
-            lines.push({ at: '[data-lc-id="' + fid + '"]', say: "Set " + k + " → " + shortVal(cur[k]), pause: 1.2 });
+            lines.push({ at: '[data-lc-id="' + fid + '"]', say: "Set " + k + " → " + shortVal(cur[k]), pause: 1.2,
+                         fn: (function (f2, k2, v2) { return function () {
+                           if (window.lcFormSet) window.lcFormSet(f2, k2, v2);
+                         }; })(fid, k, cur[k]) });
           });
           prevForms[fid] = cur;
         });
@@ -108,10 +133,25 @@ docs/_layouts/default.html.
     return lines;
   }
 
+  // Rewind the page to the trace's recorded starting state (forms only —
+  // quiz scores are never faked), so the replay re-performs from the top.
+  function restoreInit(trace) {
+    if (!window.lcFormSet) return;
+    var evs = (trace && trace.events) || [], init = null;
+    for (var i = 0; i < evs.length; i++) if (evs[i].type === "init") { init = evs[i]; break; }
+    var forms = (init && init.detail && init.detail.forms) || {};
+    Object.keys(forms).forEach(function (fid) {
+      var o = forms[fid];
+      if (!o || typeof o !== "object") return;
+      Object.keys(o).forEach(function (k) { window.lcFormSet(fid, k, o[k]); });
+    });
+  }
+
   // Public: replay any trace object (this session's, or one loaded from a file).
   window.lcDemoReplay = function (trace, opts) {
     var lines = buildReplayScript(trace);
     if (!lines.length || !window.lcAvatarPlay) return null;
+    restoreInit(trace);
     return window.lcAvatarPlay(lines, opts || {});
   };
 
@@ -119,6 +159,15 @@ docs/_layouts/default.html.
     if (el.dataset.lcUpgraded) return; el.dataset.lcUpgraded = "1";
     var id = el.id || ("demo-" + Math.random().toString(36).slice(2, 7));
     var title = el.getAttribute("title") || (el.textContent || "").trim() || "Demonstration";
+    // knobs for the ▶ Replay avatar (read before el is replaced):
+    // voice="fr-FR" | "off" (silent bubbles), rate=, pitch=, size=, step="true"
+    var avOpts = {
+      voice: el.getAttribute("voice") || "",
+      rate:  el.getAttribute("rate")  || "",
+      pitch: el.getAttribute("pitch") || "",
+      size:  el.getAttribute("size")  || "",
+      step:  el.getAttribute("step") === "true"
+    };
 
     var wrap = document.createElement("div");
     wrap.className = "lc-demo"; wrap.setAttribute("data-lc-id", id);
@@ -147,13 +196,7 @@ docs/_layouts/default.html.
     function onModel() {
       if (!st.running) return;
       clearTimeout(_dbTimer);
-      _dbTimer = setTimeout(function () {
-        var forms = {};
-        document.querySelectorAll(".lc-form[data-lc-id]").forEach(function (f) {
-          try { forms[f.getAttribute("data-lc-id")] = JSON.parse(f.getAttribute("data-lc-value") || "null"); } catch (e) {}
-        });
-        log("edit", { forms: forms });
-      }, 400);
+      _dbTimer = setTimeout(function () { log("edit", { forms: snapshotForms() }); }, 400);
     }
     function onClick(e) {
       if (!st.running) return;
@@ -164,6 +207,11 @@ docs/_layouts/default.html.
       var label = (t.textContent || t.value || t.getAttribute("aria-label") || "").trim().slice(0, 60);
       var tgt = lcTarget(t);
       var detail = { label: label, tag: t.tagName.toLowerCase(), target: tgt.sel, comp: tgt.comp };
+      if (t.tagName === "LI" && t.parentNode && tgt.sel) {
+        // the exact answer picked (quiz etc.) — reproducible, not just the label
+        var li = Array.prototype.indexOf.call(t.parentNode.children, t);
+        if (li >= 0) detail.hit = tgt.sel + " li:nth-child(" + (li + 1) + ")";
+      }
       if (t.tagName === "INPUT") detail.value = (t.type === "checkbox" || t.type === "radio") ? t.checked : t.value;
       log("click", detail);
     }
@@ -218,7 +266,13 @@ docs/_layouts/default.html.
     }
 
     // ── transitions ──────────────────────────────────────────────────────────
-    function start() { st.startWall = Date.now(); st.since = Date.now(); st.running = true; addListeners(); startTick(); mark("start"); renderRecording(); }
+    function start() {
+      st.startWall = Date.now(); st.since = Date.now(); st.running = true;
+      addListeners(); startTick(); mark("start");
+      // the recorded starting state — replay rewinds to this before re-performing
+      st.events.push({ t: tnow(), type: "init", detail: { forms: snapshotForms() } });
+      renderRecording();
+    }
     function pause() { st.active += Date.now() - st.since; st.running = false; mark("pause"); stopTick(); renderPaused(); }
     function resume() { st.since = Date.now(); st.running = true; mark("resume"); startTick(); renderRecording(); }
 
@@ -267,7 +321,7 @@ docs/_layouts/default.html.
       var note = body.querySelector(".lc-demo-note");
       var rep = body.querySelector(".lc-demo-replay");
       if (rep) rep.onclick = function () {
-        if (window.lcDemoReplay && window.lcDemoReplay(out)) note.textContent = "Replaying — Prof. LC walks the path.";
+        if (window.lcDemoReplay && window.lcDemoReplay(out, avOpts)) note.textContent = "Replaying — Prof. LC re-performs the path.";
         else note.textContent = "Nothing to replay (no widget actions recorded).";
       };
       body.querySelector(".lc-demo-export").onclick = function () {
