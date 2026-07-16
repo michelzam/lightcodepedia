@@ -1,9 +1,10 @@
 {%- comment -%}
 Avatar — speaking overlay character that narrates content and follows the
 elements it describes. Voice: per-line audio files (studio TTS, with real
-amplitude lip-sync) or the Web Speech API. Face: built-in animated SVG
-(blinks, breathes, eyes track the spotlighted element, mouth follows the
-audio), any Lottie animation, a Rive state machine, or a recorded video.
+amplitude lip-sync) or the Web Speech API. Face: built-in animated "Prof. LC"
+SVG (professor glasses, expressive brows, bow tie; blinks, breathes, eyes and
+head turn toward the spotlighted element, mouth follows the audio), any Lottie
+animation, a Rive state machine, or a recorded video.
 
 Usage:
   ```yaml
@@ -105,12 +106,20 @@ Auto-included by docs/_layouts/default.html.
 @keyframes lc-avt-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
 .lc-avatar-char:hover { filter: brightness(1.06); }
 /* built-in animated face */
-.lc-avatar-face { width: 100%; height: 100%; }
+.lc-avatar-face { width: 100%; height: 100%; transition: transform 0.5s ease; } /* head tilts toward the target */
 .lc-avatar-face svg { width: 100%; height: 100%; display: block; }
 .lc-avatar-face .eye-g,
-.lc-avatar-face .mouth { transform-box: fill-box; transform-origin: center; }
+.lc-avatar-face .mouth,
+.lc-avatar-face .brow { transform-box: fill-box; transform-origin: center; }
 .lc-avatar-face .eye-g { animation: lc-avt-blink 4.2s infinite; }
 .lc-avatar-face .pupil { transition: transform 0.3s ease; }
+/* brows lift and settle while speaking */
+.lc-avatar-talking .lc-avatar-face .brow { animation: lc-avt-brow 1.1s ease-in-out infinite; }
+@keyframes lc-avt-brow {
+  0%, 100% { transform: translateY(0); }
+  30%      { transform: translateY(-1.6px); }
+  60%      { transform: translateY(-0.4px); }
+}
 @keyframes lc-avt-blink {
   0%, 93%, 100% { transform: scaleY(1); }
   95%, 97%      { transform: scaleY(0.08); }
@@ -597,7 +606,7 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
-  /* pupils glance toward a viewport point (built-in face only) */
+  /* pupils glance toward a viewport point; the head tilts the same way */
   function lookAt(av, x, y) {
     if (!av.pupils) return;
     var r = av.char.getBoundingClientRect();
@@ -607,6 +616,7 @@ Auto-included by docs/_layouts/default.html.
     av.pupils.forEach(function (p) {
       p.style.transform = "translate(" + (dx / L * m) + "px," + (dy / L * m) + "px)";
     });
+    if (av.faceEl) av.faceEl.style.transform = "rotate(" + (dx / L * 5) + "deg)";
   }
   function lookIdle(av) {
     if (!av.pupils) return;
@@ -614,6 +624,7 @@ Auto-included by docs/_layouts/default.html.
     av.pupils.forEach(function (p) {
       p.style.transform = "translate(" + (Math.cos(a) * m) + "px," + (Math.sin(a) * m) + "px)";
     });
+    if (av.faceEl) av.faceEl.style.transform = "rotate(" + (Math.random() * 3 - 1.5) + "deg)";
   }
 
   /* ── upgrade .avatar code block ───────────────────── */
@@ -794,33 +805,48 @@ Auto-included by docs/_layouts/default.html.
     }
   }
 
-  /* built-in face: blinks, breathes, pupils track the spotlight, mouth
-     flaps for TTS and follows the waveform for audio lines */
+  /* built-in face — "Prof. LC": warm gradient skin, round professor glasses,
+     expressive brows (raise while talking), sparkle eyes that track the
+     spotlight, a bow tie, and a head that tilts toward what it describes.
+     Blinks, breathes; the mouth flaps for TTS and follows the waveform for
+     audio lines. Fully procedural: new text never needs new assets. */
+  var FACE_ID = 0;
   function addFace(id, char) {
     var face = document.createElement("div");
     face.className = "lc-avatar-face";
+    var g = "lcFaceG" + (++FACE_ID);   /* unique gradient id per instance */
     face.innerHTML =
       '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-      '<circle cx="50" cy="50" r="50" fill="#ffd166"/>' +
-      '<circle cx="29" cy="60" r="7" fill="#f4978e" opacity="0.55"/>' +
-      '<circle cx="71" cy="60" r="7" fill="#f4978e" opacity="0.55"/>' +
-      '<g class="eye-g">' +
-      '<circle cx="35" cy="43" r="7" fill="#fff" stroke="#e0c285" stroke-width="1"/>' +
-      '<circle class="pupil" cx="35" cy="43" r="3.4" fill="#1e293b"/>' +
-      '</g>' +
-      '<g class="eye-g">' +
-      '<circle cx="65" cy="43" r="7" fill="#fff" stroke="#e0c285" stroke-width="1"/>' +
-      '<circle class="pupil" cx="65" cy="43" r="3.4" fill="#1e293b"/>' +
-      '</g>' +
-      '<path d="M28 34 Q35 30 42 34" stroke="#b98a3f" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
-      '<path d="M58 34 Q65 30 72 34" stroke="#b98a3f" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
-      '<ellipse class="mouth" cx="50" cy="68" rx="11" ry="3.2" fill="#7c2d12"/>' +
+      '<defs><radialGradient id="' + g + '" cx="38%" cy="30%" r="80%">' +
+      '<stop offset="0%" stop-color="#ffe4a3"/><stop offset="55%" stop-color="#ffd166"/>' +
+      '<stop offset="100%" stop-color="#f0b445"/></radialGradient></defs>' +
+      '<circle cx="50" cy="50" r="50" fill="url(#' + g + ')"/>' +
+      '<ellipse cx="50" cy="93" rx="42" ry="15" fill="rgba(140,90,20,0.06)"/>' +
+      '<circle cx="26" cy="62" r="6.5" fill="#f4978e" opacity="0.4"/>' +
+      '<circle cx="74" cy="62" r="6.5" fill="#f4978e" opacity="0.4"/>' +
+      '<path class="brow" d="M25 31 Q33 26 42 30" stroke="#8a6428" stroke-width="2.8" fill="none" stroke-linecap="round"/>' +
+      '<path class="brow" d="M58 30 Q67 26 75 31" stroke="#8a6428" stroke-width="2.8" fill="none" stroke-linecap="round"/>' +
+      '<circle cx="34" cy="44" r="11" fill="rgba(255,255,255,0.75)" stroke="#334155" stroke-width="2.4"/>' +
+      '<circle cx="66" cy="44" r="11" fill="rgba(255,255,255,0.75)" stroke="#334155" stroke-width="2.4"/>' +
+      '<path d="M45 43 Q50 40 55 43" stroke="#334155" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+      '<g class="eye-g"><g class="pupil">' +
+      '<circle cx="34" cy="45" r="4.6" fill="#4a3120"/>' +
+      '<circle cx="35.6" cy="43.2" r="1.5" fill="#fff"/></g></g>' +
+      '<g class="eye-g"><g class="pupil">' +
+      '<circle cx="66" cy="45" r="4.6" fill="#4a3120"/>' +
+      '<circle cx="67.6" cy="43.2" r="1.5" fill="#fff"/></g></g>' +
+      '<path d="M47 56 Q50 59 53 56" stroke="#d9a441" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+      '<path class="mouth" d="M38 66 Q50 75 62 66 Q50 70.5 38 66 Z" fill="#7c2d12"/>' +
+      '<path d="M50 90 L37 83.5 L37 96.5 Z" fill="#0066cc" stroke="#0a55a6" stroke-width="1.2"/>' +
+      '<path d="M50 90 L63 83.5 L63 96.5 Z" fill="#0066cc" stroke="#0a55a6" stroke-width="1.2"/>' +
+      '<circle cx="50" cy="90" r="3.4" fill="#0a55a6"/>' +
       '</svg>';
     char.appendChild(face);
     var av = window._lcAvatars[id];
     if (av) {
       av.pupils = Array.prototype.slice.call(face.querySelectorAll(".pupil"));
       av.mouth = face.querySelector(".mouth");
+      av.faceEl = face;   /* tilted toward the spotlighted element */
     }
   }
 

@@ -81,8 +81,10 @@ In the YAML (or as attributes on the block):
 | `video` | A recorded clip URL (or `[webm-alpha, mp4]` fallbacks) — the character *is* the video |
 | `transparent` | `true` + an alpha WebM: the face floats free, no round crop |
 
-Without `lottie`/`rive`/`video`, the built-in SVG face is used — it blinks,
-breathes, its eyes track the spotlighted element, and its mouth follows the voice.
+Without `lottie`/`rive`/`video`, the built-in **Prof. LC** face is used — round
+professor glasses, expressive brows (they lift while speaking), a bow tie; it
+blinks, breathes, its eyes *and head* turn toward the spotlighted element, and
+its mouth follows the voice. Fully procedural — new text never needs new assets.
 
 ## 🎬 Studio — record the narrated walk
 
