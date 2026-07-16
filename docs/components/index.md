@@ -72,8 +72,8 @@ Feature: Component palette
 
 **Q:** Every component on this site activates the same way. How?
 
-- [x] One kramdown IAL — `{: .class }` on the line after a block. No HTML, no JS.
 - [ ] A 600-line config file and a quiet prayer.
 - [ ] `npm install everything`.
 - [ ] You email the maintainer and wait by the phone.
+- [x] One kramdown IAL — `{: .class }` on the line after a block. No HTML, no JS.
 {: .quiz }
