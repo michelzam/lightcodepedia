@@ -70,7 +70,7 @@ In the YAML (or as attributes on the block):
 
 | Knob | What it does |
 |---|---|
-| `voice` | BCP-47 tag (`fr-FR`) — the best-quality matching browser voice is picked. **`off`** = silent: the bubble shows each line, dwells, moves on |
+| `voice` | BCP-47 tag (`fr-FR`) — the best-quality matching browser voice is picked. Default: the page's language (**en-US**). **`off`** = silent: the bubble shows each line, dwells, moves on |
 | `rate` / `pitch` | TTS tuning (defaults 0.95 / 1.05) |
 | `path` | Where untargeted lines park: `left` · `center` · `right` · `wander` |
 | `autoplay` | `true` starts on page load |

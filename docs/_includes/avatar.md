@@ -38,8 +38,9 @@ Script lines are strings (the avatar wanders) or objects:
 Attributes on .avatar:
   id        — referenced by .avatar-trigger's target=""
   path      — left | center | right | wander (fallback for untargeted lines)
-  voice     — BCP-47 tag; the best-quality matching browser voice is picked.
-              "off" = silent: the bubble shows each line, dwells, moves on
+  voice     — BCP-47 tag; the best-quality matching browser voice is picked
+              (default: the page language — en-US). "off" = silent: the
+              bubble shows each line, dwells, moves on
   rate/pitch (YAML) — TTS tuning (defaults 0.95 / 1.05)
   lottie    — URL to a Lottie JSON animation (optional; default: built-in
               face), or { url, idle: [from,to], talk: [from,to] } — frame
@@ -249,11 +250,20 @@ Auto-included by docs/_layouts/default.html.
   function pickVoice(tag) {
     if (!_voices.length) refreshVoices();
     if (!_voices.length) return null;
-    /* no explicit voice → key on the page's language. Without this the quality
-       ranking ran over EVERY installed voice, so another language's "enhanced"
-       voice could win and narrate the page with a foreign accent. */
-    if (!tag) tag = document.documentElement.lang || "en";
-    var cand = _voices.filter(function (v) { return (v.lang || "").toLowerCase().indexOf(tag.toLowerCase()) === 0; });
+    /* no explicit voice → key on the page's language (en-US here). Without
+       this the quality ranking ran over EVERY installed voice, so another
+       language's "enhanced" voice could win and narrate the page with a
+       foreign accent. Fallback relaxes region before language: exact tag
+       (en-us) → base language (en) → anything. */
+    if (!tag) tag = document.documentElement.lang || "en-US";
+    tag = String(tag).toLowerCase().replace("_", "-");
+    var byLang = function (t) {
+      return _voices.filter(function (v) {
+        return (v.lang || "").toLowerCase().replace("_", "-").indexOf(t) === 0;
+      });
+    };
+    var cand = byLang(tag);
+    if (!cand.length && tag.indexOf("-") > 0) cand = byLang(tag.split("-")[0]);
     if (!cand.length) cand = _voices.slice();
     function score(v) {
       var n = (v.name || "").toLowerCase(), s = 0;
