@@ -1247,7 +1247,15 @@ Auto-included by docs/_layouts/default.html.
       if (busy) return;
       var av = window._lcAvatars && window._lcAvatars[targetId];
       if (!av) { el.textContent = "✖ no avatar #" + targetId; return; }
-      if (!av.genVoice) { el.textContent = "✖ add elevenlabs: <voice_id> to the fence first"; return; }
+      if (!av.genVoice) {
+        /* no elevenlabs: in the fence yet — ask, remember as a convenience
+           default, and remind at the end to add it for permanent playback */
+        var vid = window.prompt("ElevenLabs voice id (from elevenlabs.io — your cloned voice works):",
+                                localStorage.getItem("lc_11_voice") || "");
+        if (!vid) return;
+        av.genVoice = vid.trim(); av._genAdhoc = true;
+        try { localStorage.setItem("lc_11_voice", av.genVoice); } catch (err) {}
+      }
       var key = localStorage.getItem("lc_11_key") ||
         window.prompt("ElevenLabs API key (kept in this browser only — like your GitHub PAT):");
       if (!key) return;
@@ -1295,7 +1303,8 @@ Auto-included by docs/_layouts/default.html.
       busy = false;
       el.textContent = "✔ " + made + " generated · " + cached + " cached" +
         (committed ? " · " + committed + " committed" : ((pat && repo) ? "" : " · not committed — connect the ✏️ editor (PAT + repo) first")) +
-        (failed ? " · ✖ " + failed + " failed (see console)" : "");
+        (failed ? " · ✖ " + failed + " failed (see console)" : "") +
+        (av._genAdhoc && (made || cached) ? " · add elevenlabs: " + av.genVoice + " to the fence to keep it" : "");
       setTimeout(function () { el.textContent = label0; }, 8000);
     });
   }

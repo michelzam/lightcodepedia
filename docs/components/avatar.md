@@ -13,6 +13,9 @@ tours — and the player behind the [🎬 demo](/components/demo)'s **▶ Replay
 [▶ Play](#)
 {: .avatar-trigger #avatar_go target="prof" }
 
+[🎙️ Generate voices](#)
+{: .avatar-voices target="prof" }
+
 ```yaml
 voice: en-US
 script:
