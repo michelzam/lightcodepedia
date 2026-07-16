@@ -80,6 +80,7 @@ In the YAML (or as attributes on the block):
 | `rive` | A `.riv` URL or `{ url, stateMachine }` — inputs named like *talk*/*mouth* are auto-wired to the narration |
 | `video` | A recorded clip URL (or `[webm-alpha, mp4]` fallbacks) — the character *is* the video |
 | `transparent` | `true` + an alpha WebM: the face floats free, no round crop |
+| `elevenlabs` | An ElevenLabs voice id (or `{ voice, model }`) — playback auto-finds each line's pre-generated studio file and falls back to TTS; see 🎙️ below |
 
 Without `lottie`/`rive`/`video`, the built-in **Prof. LC** face is used — round
 professor glasses, expressive brows (they lift while speaking), a bow tie; it
@@ -99,24 +100,42 @@ video file as the character — in-memory only, never uploaded or committed.
 ## 🎙️ Studio voices from text — no recording (ElevenLabs)
 
 Browser TTS is the zero-setup default; for **studio quality that still needs no
-recording**, generate the audio **from the script text** at authoring time:
+recording**, generate the audio **from the script text**. Straight from the
+page — no terminal:
 
-```sh
-ELEVENLABS_API_KEY=sk_…  node packages/gen-audio.mjs docs/your-page.md \
-  --voice <voice_id> --write
-```
+1. Add your ElevenLabs voice to the fence, and a generate button next to it:
 
-The tool scans the page's `.avatar` fences, sends each line to ElevenLabs
-**once**, saves the mp3s under `/assets/audio/`, and (with `--write`) fills the
-`audio:` keys in. The avatar then plays them with **real waveform lip-sync**.
+   ````markdown
+   ```yaml
+   elevenlabs: <voice_id>        # your (cloned) ElevenLabs voice
+   script:
+     - "Hello! Let's explore this page."
+   ```
+   {: .avatar #guide }
 
-- **Change a line → re-run**: files are named by a hash of the text, so only
-  the changed lines are regenerated — the rest cost nothing. `--dry` previews.
-- **Your own voice**: clone it once on elevenlabs.io (included in paid plans),
-  pass that voice id — every new text speaks as *you*, never recorded again.
-- **Safe by design**: the API key stays on your machine at generation time;
-  the site serves plain static files — visitors never touch the API or your
-  credits. If a file is missing, the line falls back to browser TTS.
+   [🎙️ Generate voices](#)
+   {: .avatar-voices target="guide" }
+   ````
+
+2. Click **🎙️ Generate voices**. The **first time**, it asks for your
+   ElevenLabs API key — stored **in this browser only** (`lc_11_key`), exactly
+   like the ✏️ editor's GitHub PAT. It generates the missing lines, lets you
+   **hear them immediately**, and **commits the mp3s to the repo** using the
+   editor's PAT + repo (connect the ✏️ editor once if you haven't).
+
+3. That's it — playback finds the files by itself: they're named by a hash of
+   *voice + text*, so the avatar computes each line's filename and plays it,
+   **falling back to TTS** for any line not (yet) generated.
+
+- **Change a line → click again**: only changed lines are regenerated and
+  billed; everything else is cached forever.
+- **Your own voice**: clone it once on elevenlabs.io (included in paid plans) —
+  every new text then speaks as *you*, never recorded again.
+- **Visitors are never involved**: they get plain static mp3 files — no API,
+  no key, none of your credits.
+- Prefer the terminal (bulk pages, CI)? The same generator exists as
+  `ELEVENLABS_API_KEY=sk_… node packages/gen-audio.mjs docs/your-page.md
+  --voice <voice_id> --write` — identical file naming, interchangeable.
 
 ## 🤝 With the demo — ▶ Replay
 

@@ -67,6 +67,20 @@ Attributes on .avatar:
               avatar isn't in step mode; a video cue `step: true` forces a stop
               at that cue.
   size      — pixel size of the character bubble (default: 140)
+  elevenlabs — an ElevenLabs voice id (or { voice, model }): playback then
+              looks for the pre-generated studio file of each line
+              (/assets/audio/lc-<hash-of-voice|model|text>.mp3 — same naming
+              as packages/gen-audio.mjs) and falls back to TTS if absent.
+
+Voices studio (authoring, in the browser — no terminal):
+  [🎙️ Generate voices](#)
+  {: .avatar-voices target="prof" }
+  Generates the missing studio files for that avatar's script: calls the
+  ElevenLabs API from THIS browser (key prompted once, stored in this browser
+  only as lc_11_key — same family as the editor's lc_ed_pat), previews the new
+  audio immediately, and commits each mp3 to the repo via the GitHub contents
+  API using the ✏️ editor's PAT + repo (lc_ed_pat / lc_ed_repo). Unchanged
+  lines are content-addressed → never re-billed.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -651,6 +665,19 @@ Auto-included by docs/_layouts/default.html.
       var voiceTag = cfg.voice || "";
       var mute     = voiceTag === "off";           /* voice: off → silent bubbles */
       if (mute) voiceTag = "";
+      /* elevenlabs: <voice_id> (or { voice, model }) — studio files are
+         content-addressed, so playback can compute each line's URL itself */
+      var gen = cfg.elevenlabs || "";
+      var genVoice = (gen && typeof gen === "object") ? String(gen.voice || "") : String(gen || "");
+      var genModel = (gen && typeof gen === "object" && gen.model) ? String(gen.model) : "eleven_multilingual_v2";
+      if (genVoice && window.crypto && window.crypto.subtle) {
+        script.forEach(function (l) {
+          if (l.audio || l.video || !l.say) return;
+          sha1hex(genVoice + "|" + genModel + "|" + String(l.say).trim()).then(function (h) {
+            l.audio = "/assets/audio/lc-" + h.slice(0, 16) + ".mp3";
+          });
+        });
+      }
       /* lottie: URL, or { url, idle: [from,to], talk: [from,to] } */
       var lottieCfg = cfg.lottie || "";
       var lottieUrl = (lottieCfg && typeof lottieCfg === "object")
@@ -704,7 +731,8 @@ Auto-included by docs/_layouts/default.html.
         video: videoUrl, transparent: transparent,
         size: size, spot: null,
         pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
-        playing: false, idx: 0, lottieDone: false, step: step, mute: mute
+        playing: false, idx: 0, lottieDone: false, step: step, mute: mute,
+        genVoice: genVoice, genModel: genModel
       };
 
       /* init character graphic */
@@ -1185,6 +1213,93 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
+  /* ── voices studio: order studio audio from the page itself ──────────────
+     [🎙️ Generate voices](#) {: .avatar-voices target="prof" }
+     For each script line of the target avatar, computes the content-addressed
+     filename (hash of voice|model|text — identical to packages/gen-audio.mjs),
+     skips files the site already serves, calls the ElevenLabs API from THIS
+     browser for the missing ones (key prompted once, stored in this browser
+     only as lc_11_key), previews them immediately, and commits each mp3 to
+     docs/assets/audio/ through the GitHub contents API with the ✏️ editor's
+     credentials (lc_ed_pat / lc_ed_repo — the .record commit contract). */
+  function sha1hex(s) {
+    return crypto.subtle.digest("SHA-1", new TextEncoder().encode(s)).then(function (b) {
+      return Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+    });
+  }
+  function blobB64(b) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res(String(r.result).split(",")[1]); };
+      r.onerror = rej;
+      r.readAsDataURL(b);
+    });
+  }
+  function upgradeVoices(el) {
+    if (el.dataset.lcAvtVoxDone) return;
+    el.dataset.lcAvtVoxDone = "1";
+    var targetId = el.getAttribute("target") || "";
+    el.classList.add("lc-avatar-trigger");
+    var label0 = el.textContent.trim() || "🎙️ Generate voices";
+    var busy = false;
+    el.addEventListener("click", async function (e) {
+      e.preventDefault();
+      if (busy) return;
+      var av = window._lcAvatars && window._lcAvatars[targetId];
+      if (!av) { el.textContent = "✖ no avatar #" + targetId; return; }
+      if (!av.genVoice) { el.textContent = "✖ add elevenlabs: <voice_id> to the fence first"; return; }
+      var key = localStorage.getItem("lc_11_key") ||
+        window.prompt("ElevenLabs API key (kept in this browser only — like your GitHub PAT):");
+      if (!key) return;
+      key = key.trim();
+      try { localStorage.setItem("lc_11_key", key); } catch (err) {}
+      var pat = localStorage.getItem("lc_ed_pat") || "";
+      var repo = localStorage.getItem("lc_ed_repo") || "";
+      busy = true;
+      var lines = av.script.filter(function (l) { return l.say && !l.video; });
+      var made = 0, cached = 0, committed = 0, failed = 0;
+      for (var i = 0; i < lines.length; i++) {
+        var l = lines[i], text = String(l.say).trim();
+        el.textContent = "🎙️ " + (i + 1) + "/" + lines.length + "…";
+        try {
+          var h = await sha1hex(av.genVoice + "|" + av.genModel + "|" + text);
+          var f = "lc-" + h.slice(0, 16) + ".mp3", url = "/assets/audio/" + f;
+          var head = await fetch(url, { method: "HEAD" }).catch(function () { return { ok: false }; });
+          if (head.ok) { l.audio = url; cached++; continue; }
+          var r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" +
+              encodeURIComponent(av.genVoice) + "?output_format=mp3_44100_128", {
+            method: "POST",
+            headers: { "xi-api-key": key, "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text, model_id: av.genModel })
+          });
+          if (!r.ok) throw new Error("ElevenLabs HTTP " + r.status);
+          var blob = await r.blob();
+          l.audio = URL.createObjectURL(blob);   /* hear it right now, this session */
+          made++;
+          if (pat && repo) {
+            var put = await fetch("https://api.github.com/repos/" + repo + "/contents/docs/assets/audio/" + f, {
+              method: "PUT",
+              headers: { "Authorization": "token " + pat, "Accept": "application/vnd.github+json" },
+              body: JSON.stringify({ message: "voice: " + f + " (ElevenLabs, avatar #" + targetId + ")",
+                                     content: await blobB64(blob) })
+            });
+            /* 422 = the file is already in the repo (content-addressed → same bytes) */
+            if (put.ok || put.status === 422) committed++;
+            else failed++;
+          }
+        } catch (err) {
+          failed++;
+          if (window.console) console.warn("[avatar-voices] “" + text.slice(0, 40) + "…” — " + (err && err.message));
+        }
+      }
+      busy = false;
+      el.textContent = "✔ " + made + " generated · " + cached + " cached" +
+        (committed ? " · " + committed + " committed" : ((pat && repo) ? "" : " · not committed — connect the ✏️ editor (PAT + repo) first")) +
+        (failed ? " · ✖ " + failed + " failed (see console)" : "");
+      setTimeout(function () { el.textContent = label0; }, 8000);
+    });
+  }
+
   /* ── programmatic playback (engine API) ───────────────
      window.lcAvatarPlay(lines, opts) builds a transient built-in-face avatar,
      plays a script, and removes itself when the script ends. It reuses the
@@ -1258,6 +1373,7 @@ Auto-included by docs/_layouts/default.html.
     window.lcRegisterUpgrader(".highlighter-rouge.avatar, pre.avatar", upgradeAvatar);
     window.lcRegisterUpgrader("p.avatar-trigger, a.avatar-trigger", upgradeTrigger);
     window.lcRegisterUpgrader("p.avatar-studio, a.avatar-studio", upgradeStudio);
+    window.lcRegisterUpgrader("p.avatar-voices, a.avatar-voices", upgradeVoices);
   }
 
 })();
