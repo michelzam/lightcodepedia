@@ -62,10 +62,12 @@ async function tts(text, dest) {
 // out so they are never scanned or rewritten.
 const FENCE = /```yaml\r?\n((?:(?!```)[\s\S])*?)```\s*\r?\n\{:\s*\.avatar\b([^}]*)\}/g;
 
-// the page's voice manifest — same file the in-browser 🎙️ studio maintains:
-// { avatarId: { sha1(text)[0:16]: file } } → playback needs no fence config
+// the site's voice manifest — ONE file (seeded in the repo so it always
+// exists; per-page files would 404 and dirty the console), same file the
+// in-browser 🎙️ studio maintains: { pageSlug: { avatarId: { textHash16:
+// file } } } → playback needs no fence config
 const slug = page.replace(/^docs\//, '').replace(/\.md$/, '').replace(/\/+$/, '').replace(/\//g, '-') || 'index';
-const manPath = join(outDir, 'vox-' + slug + '.json');
+const manPath = join(outDir, 'vox.json');
 const textKey = (text) => createHash('sha1').update(text).digest('hex').slice(0, 16);
 let manifest = {};
 try { manifest = JSON.parse(readFileSync(manPath, 'utf8')) || {}; } catch (e) {}
@@ -97,7 +99,7 @@ for (const m of masked.matchAll(FENCE)) {
       made++;
     }
     l.audio = webPath(f);
-    if (avId) (manifest[avId] = manifest[avId] || {})[textKey(text)] = f;
+    if (avId) ((manifest[slug] = manifest[slug] || {})[avId] = manifest[slug][avId] || {})[textKey(text)] = f;
   }
 
   if (write) {

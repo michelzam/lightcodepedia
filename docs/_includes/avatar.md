@@ -682,7 +682,7 @@ Auto-included by docs/_layouts/default.html.
          its committed studio file (missing lines just fall back to TTS) */
       if (window.crypto && window.crypto.subtle) {
         voxManifest().then(function (man) {
-          var map = man && man[elId];
+          var map = man && man[voxSlug()] && man[voxSlug()][elId];
           if (!map) return;
           script.forEach(function (l) {
             if (l.audio || l.video || !l.say) return;
@@ -1242,9 +1242,12 @@ Auto-included by docs/_layouts/default.html.
       return Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
     });
   }
-  /* the page's voice manifest — /assets/audio/vox-<page>.json, committed by
-     the 🎙️ studio (or gen-audio.mjs): { avatarId: { textHash16: file } }.
-     Playback reads it to find each line's studio audio with NO fence config. */
+  /* the site's voice manifest — /assets/audio/vox.json (ONE file, seeded in
+     the repo so it always exists — a per-page file would 404 on every page
+     without audio and dirty the console, which the UX gate rightly rejects).
+     Shape: { pageSlug: { avatarId: { textHash16: file } } }, committed by the
+     🎙️ studio (or gen-audio.mjs). Playback reads it to find each line's
+     studio audio with NO fence config. */
   function voxSlug() {
     var p = location.pathname.replace(/\.html?$/, "").replace(/^\/+|\/+$/g, "");
     return p ? p.replace(/\//g, "-") : "index";
@@ -1252,7 +1255,7 @@ Auto-included by docs/_layouts/default.html.
   var _voxP = null;
   function voxManifest() {
     if (_voxP) return _voxP;
-    _voxP = fetch("/assets/audio/vox-" + voxSlug() + ".json", { cache: "no-cache" })
+    _voxP = fetch("/assets/audio/vox.json", { cache: "no-cache" })
       .then(function (r) { return r.ok ? r.json() : {}; })
       .catch(function () { return {}; });
     return _voxP;
@@ -1336,14 +1339,15 @@ Auto-included by docs/_layouts/default.html.
       var manifestOk = false;
       if (pat && repo && Object.keys(vox).length) {
         try {
-          var api = "https://api.github.com/repos/" + repo + "/contents/docs/assets/audio/vox-" + voxSlug() + ".json";
+          var api = "https://api.github.com/repos/" + repo + "/contents/docs/assets/audio/vox.json";
           var cur = await fetch(api, { headers: HAuth }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
           var man = {};
           if (cur && cur.content) { try { man = JSON.parse(atob(cur.content.replace(/\n/g, ""))) || {}; } catch (e2) {} }
-          man[targetId] = Object.assign(man[targetId] || {}, vox);
+          var pageMan = man[voxSlug()] = man[voxSlug()] || {};
+          pageMan[targetId] = Object.assign(pageMan[targetId] || {}, vox);
           var putM = await fetch(api, {
             method: "PUT", headers: HAuth,
-            body: JSON.stringify({ message: "voice manifest: #" + targetId + " (" + Object.keys(vox).length + " lines)",
+            body: JSON.stringify({ message: "voice manifest: " + voxSlug() + " #" + targetId + " (" + Object.keys(vox).length + " lines)",
                                    content: btoa(unescape(encodeURIComponent(JSON.stringify(man, null, 1)))),
                                    sha: cur && cur.sha ? cur.sha : undefined })
           });
