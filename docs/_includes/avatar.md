@@ -249,9 +249,11 @@ Auto-included by docs/_layouts/default.html.
   function pickVoice(tag) {
     if (!_voices.length) refreshVoices();
     if (!_voices.length) return null;
-    var cand = tag
-      ? _voices.filter(function (v) { return (v.lang || "").toLowerCase().indexOf(tag.toLowerCase()) === 0; })
-      : _voices.slice();
+    /* no explicit voice → key on the page's language. Without this the quality
+       ranking ran over EVERY installed voice, so another language's "enhanced"
+       voice could win and narrate the page with a foreign accent. */
+    if (!tag) tag = document.documentElement.lang || "en";
+    var cand = _voices.filter(function (v) { return (v.lang || "").toLowerCase().indexOf(tag.toLowerCase()) === 0; });
     if (!cand.length) cand = _voices.slice();
     function score(v) {
       var n = (v.name || "").toLowerCase(), s = 0;
@@ -271,6 +273,10 @@ Auto-included by docs/_layouts/default.html.
     var utt = new SpeechSynthesisUtterance(text);
     utt.rate  = (tune && tune.rate)  || 0.95;
     utt.pitch = (tune && tune.pitch) || 1.05;
+    /* also set the utterance language: if the voices list hasn't populated yet
+       (it loads async), the synth then still picks a matching-language default
+       instead of the OS voice */
+    utt.lang = voiceTag || document.documentElement.lang || "en";
     var v = pickVoice(voiceTag);
     if (v) utt.voice = v;
     utt.onboundary = function (e) { if (onBoundary) onBoundary(e); };
