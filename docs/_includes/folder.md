@@ -178,7 +178,15 @@ Auto-included by docs/_layouts/default.html.
     var _folderPat = localStorage.getItem('lc_ed_pat') || '';
     var _folderHdrs = _folderPat ? { Authorization: 'Bearer ' + _folderPat, 'X-GitHub-Api-Version': '2022-11-28' } : {};
     function apiFetch(url) {
-      return fetch(url, { headers: _folderHdrs }).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+      /* Authorization forces a CORS preflight and some networks kill the
+         OPTIONS (see deploys.md — WebKit reports just "Load failed"). The
+         repo is public, so on ANY failure retry bare: no headers → simple
+         request → no preflight. Auth only raises the rate limit. */
+      var bare = function() { return fetch(url).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); };
+      if (!_folderPat) return bare();
+      return fetch(url, { headers: _folderHdrs })
+        .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .catch(bare);
     }
     apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + path)
       .then(function(files) {
@@ -323,6 +331,13 @@ Auto-included by docs/_layouts/default.html.
         bar.innerHTML = chips;
         wrap.parentNode.insertBefore(bar, wrap);
         var timesWrap = bar.querySelector(".lc-card-times");
+        /* honest empty-state: if no card got a date (API unreachable), a time
+           window must not silently hide everything — show all + say why */
+        var dateNote = document.createElement("span");
+        dateNote.className = "lc-card-filter-label";
+        dateNote.style.display = "none";
+        dateNote.textContent = "⚠️ dates unavailable — showing all";
+        timesWrap.appendChild(dateNote);
 
         function cardItem(c) { return urlSet[c.getAttribute("data-url")]; }
         function chipKey(chip) {
@@ -344,10 +359,13 @@ Auto-included by docs/_layouts/default.html.
         }
         function applyFilters() {                     // tag/state (OR) AND time
           var keys = Object.keys(active);
+          var haveDates = !timeSecs || cardsArr.some(function(c) { return (cardItem(c) || {}).date; });
           cardsArr.forEach(function(c) {
             var tagOk = !keys.length || keys.some(function(k) { return cardMatches(c, k); });
-            c.style.display = (tagOk && (!timeSecs || withinAge(c))) ? "" : "none";
+            var timeOk = !timeSecs || !haveDates || withinAge(c);
+            c.style.display = (tagOk && timeOk) ? "" : "none";
           });
+          dateNote.style.display = (timeSecs && !haveDates) ? "" : "none";
           bar.querySelectorAll("[data-tag],[data-state]").forEach(function(chip) {
             var key = chipKey(chip); if (key) chip.classList.toggle("lc-card-filter-on", !!active[key]);
           });
@@ -369,11 +387,21 @@ Auto-included by docs/_layouts/default.html.
         function ensureDates() {
           if (datesLoaded) return Promise.resolve();
           datesLoaded = true;
+          /* one /commits call per card is rate-limit-hungry (anonymous = 60/h)
+             → cache each file's date for 30 min so repeat visits are free */
+          var CK = "lc_fdate.", TTL = 30 * 60 * 1000;
           return Promise.all(cardsArr.map(function(c) {
             var it = cardItem(c);
             if (!it || it.date || !it.path) return Promise.resolve();
+            try {
+              var hit = JSON.parse(localStorage.getItem(CK + it.path) || "null");
+              if (hit && hit.d && Date.now() - hit.t < TTL) { it.date = hit.d; return Promise.resolve(); }
+            } catch (e) {}
             return apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/commits?path=" + encodeURIComponent(it.path) + "&per_page=1")
-              .then(function(cs) { it.date = (cs && cs[0] && cs[0].commit) ? ((cs[0].commit.committer || cs[0].commit.author || {}).date || null) : null; })
+              .then(function(cs) {
+                it.date = (cs && cs[0] && cs[0].commit) ? ((cs[0].commit.committer || cs[0].commit.author || {}).date || null) : null;
+                if (it.date) { try { localStorage.setItem(CK + it.path, JSON.stringify({ t: Date.now(), d: it.date })); } catch (e) {} }
+              })
               .catch(function() {});
           }));
         }
