@@ -96,6 +96,28 @@ YouTube upload — a narrated video of the page, produced by the page itself.
 A `pick` trigger (`{: .avatar-trigger pick target="guide" }`) plays a **local**
 video file as the character — in-memory only, never uploaded or committed.
 
+## 🎙️ Studio voices from text — no recording (ElevenLabs)
+
+Browser TTS is the zero-setup default; for **studio quality that still needs no
+recording**, generate the audio **from the script text** at authoring time:
+
+```sh
+ELEVENLABS_API_KEY=sk_…  node packages/gen-audio.mjs docs/your-page.md \
+  --voice <voice_id> --write
+```
+
+The tool scans the page's `.avatar` fences, sends each line to ElevenLabs
+**once**, saves the mp3s under `/assets/audio/`, and (with `--write`) fills the
+`audio:` keys in. The avatar then plays them with **real waveform lip-sync**.
+
+- **Change a line → re-run**: files are named by a hash of the text, so only
+  the changed lines are regenerated — the rest cost nothing. `--dry` previews.
+- **Your own voice**: clone it once on elevenlabs.io (included in paid plans),
+  pass that voice id — every new text speaks as *you*, never recorded again.
+- **Safe by design**: the API key stays on your machine at generation time;
+  the site serves plain static files — visitors never touch the API or your
+  credits. If a file is missing, the line falls back to browser TTS.
+
 ## 🤝 With the demo — ▶ Replay
 
 The [🎬 demo](/components/demo) records a learner's actions; its **▶ Replay**

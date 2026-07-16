@@ -28,7 +28,9 @@ Script lines are strings (the avatar wanders) or objects:
   at:    CSS selector — scroll there, park beside it, spotlight it
   say:   the line (spoken + shown in the bubble)
   audio: URL of a pre-generated audio file — plays instead of browser TTS,
-         and the mouth follows the actual waveform
+         and the mouth follows the actual waveform. Generate these FROM the
+         script text with packages/gen-audio.mjs (ElevenLabs, content-addressed
+         so unchanged lines are never re-billed); missing files fall back to TTS
   input: drive the Rive character's state machine for this line —
          "bark" fires the trigger named bark, { run: true, speed: 7 }
          sets boolean/number inputs (also available inside cues)
@@ -308,7 +310,7 @@ Auto-included by docs/_layouts/default.html.
     if (av.audioEl) { try { av.audioEl.pause(); } catch (e) {} av.audioEl = null; }
     av.analyser = null;
   }
-  function playAudio(av, url, onEnd) {
+  function playAudio(av, url, onEnd, onErr) {
     stopAudio(av);
     var a = new Audio();
     a.crossOrigin = "anonymous";
@@ -328,9 +330,10 @@ Auto-included by docs/_layouts/default.html.
       }
     } catch (e) { /* no analyser → CSS flap still runs */ }
     var done = function () { stopAudio(av); resetMouth(av); onEnd(); };
+    var fail = function () { stopAudio(av); resetMouth(av); (onErr || onEnd)(); };
     a.onended = done;
-    a.onerror = done;
-    a.play().catch(done);
+    a.onerror = fail;                 /* missing/unreachable file → caller's fallback */
+    a.play().catch(fail);
   }
   function mouthLoop(av) {
     if (!av.analyser || !av.playing) { resetMouth(av); return; }
@@ -1042,9 +1045,17 @@ Auto-included by docs/_layouts/default.html.
     }
 
     if (line.audio) {
-      /* studio voice: bubble shows the full line, mouth follows the waveform */
+      /* studio voice: bubble shows the full line, mouth follows the waveform.
+         If the file is missing/unreachable, fall back to TTS (or a silent
+         dwell in mute mode) so the walk never breaks. */
       av.bubble.textContent = line.say;
-      playAudio(av, line.audio, finish);
+      playAudio(av, line.audio, finish, function () {
+        if (av.mute || !window.speechSynthesis) {
+          setTimeout(finish, Math.min(8000, 900 + line.say.split(" ").length * 260));
+        } else {
+          speak(line.say, av.voice, av.tune, null, finish);
+        }
+      });
       attachCues(av, av.audioEl, line.cues, id);
       return;
     }
