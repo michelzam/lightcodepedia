@@ -44,17 +44,18 @@ Auto-included by docs/_layouts/default.html.
     var spEl  = bar.querySelector("#lc-dep-sp-"  + dsId);
     var btnEl = bar.querySelector("#lc-dep-btn-" + dsId);
 
+    /* public repo → the runs API works without auth; a PAT (when the ✏️
+       editor is connected) just raises the rate limit. Never gate on sign-in. */
     var pat = localStorage.getItem("lc_ed_pat") || "";
-    if (!pat) {
-      spEl.innerHTML = '🔒 <a href="#" style="color:inherit">Sign in</a> to see deployment activity';
-      btnEl.style.display = "none"; return;
-    }
 
+    /* repo: attribute → editor setting → user guess → this very site
+       (GitHub Pages exposes its own repo to Jekyll, so forks self-resolve) */
     var repo = repoAttr || localStorage.getItem("lc_ed_repo") || "";
     if (!repo) {
       var u = null; try { u = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
       if (u && u.login) repo = u.login + "/lightcodepedia";
     }
+    if (!repo) repo = "{{ site.github.repository_nwo | default: '' }}";
     if (!repo || repo.indexOf("/") < 0) { spEl.textContent = "⚠️ No repo configured"; return; }
 
     function timeAgo(iso) {
@@ -90,9 +91,9 @@ Auto-included by docs/_layouts/default.html.
     var pollTimer = null, polls = 0;
     function fetchRuns() {
       spEl.textContent = "Loading…";
-      fetch("https://api.github.com/repos/" + repo + "/actions/runs?per_page=" + count, {
-        headers: { Authorization: "Bearer " + pat, "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json" }
-      })
+      var H = { "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json" };
+      if (pat) H.Authorization = "Bearer " + pat;
+      fetch("https://api.github.com/repos/" + repo + "/actions/runs?per_page=" + count, { headers: H })
       .then(function (r) {
         var rem = parseInt(r.headers.get("X-RateLimit-Remaining") || "-1", 10);
         if (rem >= 0) localStorage.setItem("lc_rate_remaining", String(rem));
@@ -119,7 +120,10 @@ Auto-included by docs/_layouts/default.html.
         else polls = 0;
       })
       .catch(function (e) {
-        spEl.textContent = "⚠️ " + e.message;
+        /* anonymous rate limit exhausted → connecting the editor raises it */
+        spEl.textContent = (!pat && /403/.test(e.message))
+          ? "⚠️ rate-limited — connect the ✏️ editor to raise the limit"
+          : "⚠️ " + e.message;
         if (window.lcSetDataset) window.lcSetDataset(dsId, []);
       });
     }
