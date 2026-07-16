@@ -103,42 +103,39 @@ video file as the character — in-memory only, never uploaded or committed.
 ## 🎙️ Studio voices from text — no recording (ElevenLabs)
 
 Browser TTS is the zero-setup default; for **studio quality that still needs no
-recording**, generate the audio **from the script text**. Straight from the
-page — no terminal:
+recording**, generate the audio **from the script text**, straight from the
+page. Put a generate button next to any avatar (there's a live one at the top
+of this page):
 
-1. Add your ElevenLabs voice to the fence, and a generate button next to it:
+````markdown
+[🎙️ Generate voices](#)
+{: .avatar-voices target="guide" }
+````
 
-   ````markdown
-   ```yaml
-   elevenlabs: <voice_id>        # your (cloned) ElevenLabs voice
-   script:
-     - "Hello! Let's explore this page."
-   ```
-   {: .avatar #guide }
+Click it. It asks (first time only, each remembered **in this browser** — same
+family as the ✏️ editor's PAT): your **ElevenLabs voice id** (`lc_11_voice`)
+and your **API key** (`lc_11_key`). Then, per script line, it:
 
-   [🎙️ Generate voices](#)
-   {: .avatar-voices target="guide" }
-   ````
+1. **generates** the missing audio (ElevenLabs, called from *your* browser),
+2. lets you **hear it immediately**,
+3. **commits** the mp3s *and the page's voice manifest* to the repo via the
+   ✏️ editor's PAT — and the manifest is how playback **wires itself**: no
+   fence config, no `audio:` keys, nothing to edit. Lines without a generated
+   file simply fall back to TTS.
 
-2. Click **🎙️ Generate voices**. The **first time**, it asks for your
-   ElevenLabs API key — stored **in this browser only** (`lc_11_key`), exactly
-   like the ✏️ editor's GitHub PAT. It generates the missing lines, lets you
-   **hear them immediately**, and **commits the mp3s to the repo** using the
-   editor's PAT + repo (connect the ✏️ editor once if you haven't).
-
-3. That's it — playback finds the files by itself: they're named by a hash of
-   *voice + text*, so the avatar computes each line's filename and plays it,
-   **falling back to TTS** for any line not (yet) generated.
-
-- **Change a line → click again**: only changed lines are regenerated and
-  billed; everything else is cached forever.
+- **Change a line → click again**: files are content-addressed (hash of
+  voice + text), so only changed lines are regenerated and billed; everything
+  unchanged is cached forever — and stale audio can never play against new
+  text.
 - **Your own voice**: clone it once on elevenlabs.io (included in paid plans) —
   every new text then speaks as *you*, never recorded again.
 - **Visitors are never involved**: they get plain static mp3 files — no API,
   no key, none of your credits.
-- Prefer the terminal (bulk pages, CI)? The same generator exists as
-  `ELEVENLABS_API_KEY=sk_… node packages/gen-audio.mjs docs/your-page.md
-  --voice <voice_id> --write` — identical file naming, interchangeable.
+- Optional: pin the voice in content with `elevenlabs: <voice_id>` in the
+  fence (playback then computes filenames even without the manifest).
+- Prefer the terminal (bulk pages, CI)? `ELEVENLABS_API_KEY=sk_… node
+  packages/gen-audio.mjs docs/your-page.md --voice <voice_id>` — identical
+  file naming and manifest, interchangeable with the button.
 
 ## 🤝 With the demo — ▶ Replay
 

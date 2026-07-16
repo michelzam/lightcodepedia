@@ -678,6 +678,21 @@ Auto-included by docs/_layouts/default.html.
           });
         });
       }
+      /* no config at all: the page's voice manifest maps each line's text to
+         its committed studio file (missing lines just fall back to TTS) */
+      if (window.crypto && window.crypto.subtle) {
+        voxManifest().then(function (man) {
+          var map = man && man[elId];
+          if (!map) return;
+          script.forEach(function (l) {
+            if (l.audio || l.video || !l.say) return;
+            sha1hex(String(l.say).trim()).then(function (h) {
+              var f = map[h.slice(0, 16)];
+              if (f && !l.audio) l.audio = "/assets/audio/" + f;
+            });
+          });
+        });
+      }
       /* lottie: URL, or { url, idle: [from,to], talk: [from,to] } */
       var lottieCfg = cfg.lottie || "";
       var lottieUrl = (lottieCfg && typeof lottieCfg === "object")
@@ -1227,6 +1242,21 @@ Auto-included by docs/_layouts/default.html.
       return Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
     });
   }
+  /* the page's voice manifest — /assets/audio/vox-<page>.json, committed by
+     the 🎙️ studio (or gen-audio.mjs): { avatarId: { textHash16: file } }.
+     Playback reads it to find each line's studio audio with NO fence config. */
+  function voxSlug() {
+    var p = location.pathname.replace(/\.html?$/, "").replace(/^\/+|\/+$/g, "");
+    return p ? p.replace(/\//g, "-") : "index";
+  }
+  var _voxP = null;
+  function voxManifest() {
+    if (_voxP) return _voxP;
+    _voxP = fetch("/assets/audio/vox-" + voxSlug() + ".json", { cache: "no-cache" })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .catch(function () { return {}; });
+    return _voxP;
+  }
   function blobB64(b) {
     return new Promise(function (res, rej) {
       var r = new FileReader();
@@ -1263,17 +1293,19 @@ Auto-included by docs/_layouts/default.html.
       try { localStorage.setItem("lc_11_key", key); } catch (err) {}
       var pat = localStorage.getItem("lc_ed_pat") || "";
       var repo = localStorage.getItem("lc_ed_repo") || "";
+      var HAuth = { "Authorization": "token " + pat, "Accept": "application/vnd.github+json" };
       busy = true;
       var lines = av.script.filter(function (l) { return l.say && !l.video; });
-      var made = 0, cached = 0, committed = 0, failed = 0;
+      var made = 0, cached = 0, committed = 0, failed = 0, vox = {};
       for (var i = 0; i < lines.length; i++) {
         var l = lines[i], text = String(l.say).trim();
         el.textContent = "🎙️ " + (i + 1) + "/" + lines.length + "…";
         try {
-          var h = await sha1hex(av.genVoice + "|" + av.genModel + "|" + text);
+          var th = (await sha1hex(text)).slice(0, 16);                          /* manifest key: the text */
+          var h = await sha1hex(av.genVoice + "|" + av.genModel + "|" + text);  /* file name: voice+text  */
           var f = "lc-" + h.slice(0, 16) + ".mp3", url = "/assets/audio/" + f;
           var head = await fetch(url, { method: "HEAD" }).catch(function () { return { ok: false }; });
-          if (head.ok) { l.audio = url; cached++; continue; }
+          if (head.ok) { l.audio = url; vox[th] = f; cached++; continue; }
           var r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" +
               encodeURIComponent(av.genVoice) + "?output_format=mp3_44100_128", {
             method: "POST",
@@ -1286,13 +1318,12 @@ Auto-included by docs/_layouts/default.html.
           made++;
           if (pat && repo) {
             var put = await fetch("https://api.github.com/repos/" + repo + "/contents/docs/assets/audio/" + f, {
-              method: "PUT",
-              headers: { "Authorization": "token " + pat, "Accept": "application/vnd.github+json" },
+              method: "PUT", headers: HAuth,
               body: JSON.stringify({ message: "voice: " + f + " (ElevenLabs, avatar #" + targetId + ")",
                                      content: await blobB64(blob) })
             });
             /* 422 = the file is already in the repo (content-addressed → same bytes) */
-            if (put.ok || put.status === 422) committed++;
+            if (put.ok || put.status === 422) { committed++; vox[th] = f; }
             else failed++;
           }
         } catch (err) {
@@ -1300,11 +1331,32 @@ Auto-included by docs/_layouts/default.html.
           if (window.console) console.warn("[avatar-voices] “" + text.slice(0, 40) + "…” — " + (err && err.message));
         }
       }
+      /* commit the page's voice manifest — playback then finds every file by
+         itself (no fence config): { avatarId: { textHash16: file } } */
+      var manifestOk = false;
+      if (pat && repo && Object.keys(vox).length) {
+        try {
+          var api = "https://api.github.com/repos/" + repo + "/contents/docs/assets/audio/vox-" + voxSlug() + ".json";
+          var cur = await fetch(api, { headers: HAuth }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+          var man = {};
+          if (cur && cur.content) { try { man = JSON.parse(atob(cur.content.replace(/\n/g, ""))) || {}; } catch (e2) {} }
+          man[targetId] = Object.assign(man[targetId] || {}, vox);
+          var putM = await fetch(api, {
+            method: "PUT", headers: HAuth,
+            body: JSON.stringify({ message: "voice manifest: #" + targetId + " (" + Object.keys(vox).length + " lines)",
+                                   content: btoa(unescape(encodeURIComponent(JSON.stringify(man, null, 1)))),
+                                   sha: cur && cur.sha ? cur.sha : undefined })
+          });
+          manifestOk = putM.ok;
+          if (manifestOk) _voxP = Promise.resolve(man);   /* this session sees it too */
+        } catch (e3) { if (window.console) console.warn("[avatar-voices] manifest: " + (e3 && e3.message)); }
+      }
       busy = false;
       el.textContent = "✔ " + made + " generated · " + cached + " cached" +
         (committed ? " · " + committed + " committed" : ((pat && repo) ? "" : " · not committed — connect the ✏️ editor (PAT + repo) first")) +
+        (manifestOk ? " · playback wired automatically" : "") +
         (failed ? " · ✖ " + failed + " failed (see console)" : "") +
-        (av._genAdhoc && (made || cached) ? " · add elevenlabs: " + av.genVoice + " to the fence to keep it" : "");
+        (av._genAdhoc && (made || cached) && !manifestOk ? " · add elevenlabs: " + av.genVoice + " to the fence to keep it" : "");
       setTimeout(function () { el.textContent = label0; }, 8000);
     });
   }

@@ -62,6 +62,14 @@ async function tts(text, dest) {
 // out so they are never scanned or rewritten.
 const FENCE = /```yaml\r?\n((?:(?!```)[\s\S])*?)```\s*\r?\n\{:\s*\.avatar\b([^}]*)\}/g;
 
+// the page's voice manifest — same file the in-browser 🎙️ studio maintains:
+// { avatarId: { sha1(text)[0:16]: file } } → playback needs no fence config
+const slug = page.replace(/^docs\//, '').replace(/\.md$/, '').replace(/\/+$/, '').replace(/\//g, '-') || 'index';
+const manPath = join(outDir, 'vox-' + slug + '.json');
+const textKey = (text) => createHash('sha1').update(text).digest('hex').slice(0, 16);
+let manifest = {};
+try { manifest = JSON.parse(readFileSync(manPath, 'utf8')) || {}; } catch (e) {}
+
 const src = readFileSync(page, 'utf8');
 const masked = src.replace(/````[\s\S]*?````/g, (m) => ' '.repeat(m.length));
 let md = src, fences = 0, made = 0, kept = 0, delta = [];
@@ -73,6 +81,7 @@ for (const m of masked.matchAll(FENCE)) {
   if (!Array.isArray(cfg.script) || !cfg.script.length) continue;
   fences++;
 
+  const avId = (/#([A-Za-z0-9_-]+)/.exec(m[2]) || [])[1] || '';
   const lines = cfg.script.map((l) => (typeof l === 'string' ? { say: l } : { ...l }));
   for (const l of lines) {
     const text = String(l.say || '').trim();
@@ -88,6 +97,7 @@ for (const m of masked.matchAll(FENCE)) {
       made++;
     }
     l.audio = webPath(f);
+    if (avId) (manifest[avId] = manifest[avId] || {})[textKey(text)] = f;
   }
 
   if (write) {
@@ -99,6 +109,11 @@ for (const m of masked.matchAll(FENCE)) {
   }
 }
 
+if (!dry && fences && Object.keys(manifest).length) {
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(manPath, JSON.stringify(manifest, null, 1));
+  console.log('manifest → ' + manPath + ' (playback wires itself; no fence config needed)');
+}
 if (write && md !== src) { writeFileSync(page, md); console.log('rewrote ' + page + ' with audio: paths'); }
 if (!write && delta.length) { console.log('\n─ paste back into ' + page + ' ─\n'); console.log(delta.join('\n\n')); }
 console.log('\n' + fences + ' avatar fence(s): ' + made + ' ' + (dry ? 'to generate' : 'generated') + ', ' + kept + ' already cached (no credits spent).');
