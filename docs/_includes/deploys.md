@@ -56,6 +56,7 @@ Auto-included by docs/_layouts/default.html.
       if (u && u.login) repo = u.login + "/lightcodepedia";
     }
     if (!repo) repo = "{{ site.github.repository_nwo | default: '' }}";
+    repo = repo.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "").replace(/^\/+|\/+$/g, "");
     if (!repo || repo.indexOf("/") < 0) { spEl.textContent = "⚠️ No repo configured"; return; }
 
     function timeAgo(iso) {
@@ -89,11 +90,19 @@ Auto-included by docs/_layouts/default.html.
     }
 
     var pollTimer = null, polls = 0;
-    function fetchRuns() {
-      spEl.textContent = "Loading…";
+    /* Requests with Authorization / custom headers need a CORS preflight, and
+       some networks (mobile relays, middleboxes) silently kill the OPTIONS —
+       WebKit then reports only "Load failed". The repo is public, so on any
+       network-level failure retry as a BARE simple GET: no headers at all →
+       no preflight → nothing to kill. Auth only raises the rate limit. */
+    function ghFetch(url) {
       var H = { "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json" };
       if (pat) H.Authorization = "Bearer " + pat;
-      fetch("https://api.github.com/repos/" + repo + "/actions/runs?per_page=" + count, { headers: H })
+      return fetch(url, { headers: H }).catch(function () { return fetch(url); });
+    }
+    function fetchRuns() {
+      spEl.textContent = "Loading…";
+      ghFetch("https://api.github.com/repos/" + repo + "/actions/runs?per_page=" + count + "&exclude_pull_requests=true")
       .then(function (r) {
         var rem = parseInt(r.headers.get("X-RateLimit-Remaining") || "-1", 10);
         if (rem >= 0) localStorage.setItem("lc_rate_remaining", String(rem));
@@ -120,10 +129,13 @@ Auto-included by docs/_layouts/default.html.
         else polls = 0;
       })
       .catch(function (e) {
-        /* anonymous rate limit exhausted → connecting the editor raises it */
-        spEl.textContent = (!pat && /403/.test(e.message))
-          ? "⚠️ rate-limited — connect the ✏️ editor to raise the limit"
-          : "⚠️ " + e.message;
+        /* HTTP errors carry a status; anything else was a network failure
+           that survived even the bare no-preflight retry */
+        spEl.textContent = /403/.test(e.message)
+          ? "⚠️ rate-limited — try again in a few minutes"
+          : /GitHub API/.test(e.message)
+            ? "⚠️ " + e.message
+            : "⚠️ network error — tap ↻ to retry";
         if (window.lcSetDataset) window.lcSetDataset(dsId, []);
       });
     }
