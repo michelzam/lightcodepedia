@@ -25,9 +25,10 @@ face:
   brows: "#4a3b30"
   wear: shirt
   wear_color: "#3b4046"
+  head: oval
   blush: false
 script:
-  - "Hello! I'm Prof. Zam — I narrate pages, line by line."
+  - "Hello! I'm Doc — I narrate pages, line by line."
   - at: avatar_playground
     say: "I walk to the element I'm describing, and spotlight it."
   - at: avatar_go
@@ -113,6 +114,7 @@ face:
   brows: "#4a3b30"      # eyebrow colour
   hair: none            # none · sides · full  (+ hair_color)
   wear: shirt           # bow · shirt · none   (+ wear_color)
+  head: oval            # round · oval
   blush: false
 ```
 
