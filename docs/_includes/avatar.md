@@ -221,7 +221,7 @@ Auto-included by docs/_layouts/default.html.
   opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
 }
 .lc-guide-seed {
-  position: fixed; right: 16px; bottom: 84px; z-index: 940;
+  position: fixed; right: 16px; bottom: 16px; z-index: 940;
   width: 46px; height: 46px; border-radius: 50%;
   border: 1px solid #d8dee6; background: #fff; padding: 2px;
   cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,0.16);
@@ -230,9 +230,9 @@ Auto-included by docs/_layouts/default.html.
 .lc-guide-seed:hover { transform: scale(1.08); }
 .lc-guide-seed:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
 .lc-guide-seed svg { width: 100%; height: 100%; display: block; border-radius: 50%; }
-@media (max-width: 700px) { .lc-guide-seed { bottom: 76px; right: 12px; } }
+@media (max-width: 700px) { .lc-guide-seed { bottom: 12px; right: 12px; } }
 .lc-guide-menu {
-  position: fixed; right: 16px; bottom: 136px; z-index: 941;
+  position: fixed; right: 16px; bottom: 70px; z-index: 941;
   display: none; flex-direction: column; min-width: 150px;
   background: #fff; border: 1px solid #d8dee6; border-radius: 10px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.18); overflow: hidden;
@@ -246,7 +246,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-guide-menu button:last-child { border-bottom: none; }
 .lc-guide-menu button:hover { background: #f0f6ff; }
 .lc-guide-ask {
-  position: fixed; right: 16px; bottom: 136px; z-index: 941;
+  position: fixed; right: 16px; bottom: 70px; z-index: 941;
   display: none; flex-direction: column; gap: 6px; width: min(320px, calc(100vw - 32px));
   background: #fff; border: 1px solid #d8dee6; border-radius: 12px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.18); padding: 10px;
@@ -265,7 +265,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-guide-ask button:hover { background: #0052a3; }
 .lc-guide-ask-hint { font-size: 0.76em; color: #6b7280; margin: 0; }
 .lc-guide-hello {
-  position: fixed; right: 70px; bottom: 90px; z-index: 941;
+  position: fixed; right: 70px; bottom: 22px; z-index: 941;
   background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
   padding: 6px 12px; font-size: 0.85em; color: #1e293b;
   box-shadow: 0 2px 10px rgba(0,0,0,0.10);

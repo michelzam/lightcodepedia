@@ -69,7 +69,7 @@ You need write access to your own forked repo.
 2. Click *Generate new token (classic)*
 3. Give it a name. Check the **`repo`** scope (top-level — covers all sub-scopes).
 4. Click Generate → copy.
-5. Open the ✏️ editor (bottom-right), paste the token and your repo name (`owner/repo`).
+5. Open **✏️ Edit** from the Modes pill (bottom-left) — or press **⌥E** — then paste the token and your repo name (`owner/repo`).
 
 **Route B — Fine-grained PAT:**
 
