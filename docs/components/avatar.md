@@ -191,28 +191,14 @@ to each component his reply mentions, spotlights it, and speaks the step.
   to this page's tour (committed like any edit, the question credited as
   *"You might wonder: …"*), and the new lines are **voiced** with your
   ElevenLabs voice on the spot. Learners' real questions grow the course —
-  and a kept answer never costs anyone credits again. If the page's fence
-  can't be located unambiguously, the keep aborts — it can never corrupt a
-  page.
-
-## 🏫 Guides for a whole section
-
-Presence can be decreed **once, for a section** — encapsulated, no per-page
-config. In `_config.yml`:
-
-```yaml
-defaults:
-  - scope:
-      path: "micro_build_ai"
-    values:
-      guide: doc
-```
-
-Every page under that path auto-docks the guide (author-level: the learner's
-toggle can't remove it). Those pages have no fence — so the **first 📌 Keep**
-on such a page *creates* one, appended at the end of the file: from then on
-the page owns its guide and its accumulated Q&A. Pages stay pure markdown
-until real questions earn them a tour.
+  and a kept answer never costs anyone credits again. Everything stays
+  **encapsulated in the page's own markdown**: on a page with no guide yet
+  (summon one with the pill's 🧑‍🏫 toggle), the first keep *writes the fence
+  into the page* — creation at the end of the file, never surgery. If an
+  existing fence can't be located unambiguously, the keep aborts — it can
+  never corrupt a page. And when *you* ask (editor connected), Doc answers
+  **directly and completely** — the tutor's guiding-questions style is for
+  students.
 
 ## 🤝 With the demo — ▶ Replay
 

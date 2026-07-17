@@ -1480,7 +1480,9 @@ Auto-included by docs/_layouts/default.html.
       document.removeEventListener('lc-avatar-ended', restore);
       if (av._tourScript) { av.script = av._tourScript; av._tourScript = null; av.idx = 0; }
     };
-    window.lcBotAsk.ask(av.botName, question).then(function (result) {
+    var authorMode = false;
+    try { authorMode = !!(localStorage.getItem('lc_ed_pat') && localStorage.getItem('lc_ed_repo')); } catch (e) {}
+    window.lcBotAsk.ask(av.botName, question, authorMode ? { direct: true } : null).then(function (result) {
       if (!result || result.error) {
         guideBubble(av, '⚠ ' + ((result && result.error) || 'No answer.'));
         setTimeout(function () { guideIdle(av); restore(); }, 4000);
@@ -1527,9 +1529,17 @@ Auto-included by docs/_layouts/default.html.
     var HAuth = { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github+json' };
     seedToast('📌 keeping…');
     try {
+      /* index pages: /section/ maps to section/index.md — try both */
       var path = pageMdPathAv();
       var api = 'https://api.github.com/repos/' + repo + '/contents/' + path;
-      var cur = await fetch(api, { headers: HAuth }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status + ' reading the page'); return r.json(); });
+      var res = await fetch(api, { headers: HAuth });
+      if (res.status === 404) {
+        path = path.replace(/\.md$/, '/index.md');
+        api = 'https://api.github.com/repos/' + repo + '/contents/' + path;
+        res = await fetch(api, { headers: HAuth });
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' reading the page');
+      var cur = await res.json();
       var md = decodeURIComponent(escape(atob(String(cur.content || '').replace(/\n/g, ''))));
       /* locate THIS avatar's fence exactly (mask ````-examples first) */
       var masked = md.replace(/````[\s\S]*?````/g, function (m) { return Array(m.length + 1).join(' '); });
@@ -1783,11 +1793,6 @@ Auto-included by docs/_layouts/default.html.
      wired to the site's default bot (knowledge: self → he still knows the
      page). Authored guides always win — summoning is a no-op beside them. */
   var GUIDE_BOT = {{ site.guide_bot | default: "doc" | jsonify }};
-  /* a page (or a whole section, via _config.yml scoped defaults) can decree
-     its guide with a page variable — encapsulated: no fence, no per-page
-     copies. guide: doc → the companion auto-docks, author-level (the
-     learner's toggle cannot remove it). */
-  var PAGE_GUIDE = {{ page.guide | default: "" | jsonify }};
   window.lcGuideOn = function (on) {
     try { on ? localStorage.setItem('lc_guide_on', '1') : localStorage.removeItem('lc_guide_on'); } catch (e) {}
     var seed = document.getElementById('guide_seed');
@@ -1837,10 +1842,9 @@ Auto-included by docs/_layouts/default.html.
     var sd = document.getElementById('guide_seed');
     if (sd && generic) sd.dataset.lcGeneric = '1';
   }
-  /* honor the page/section decree first, then the learner's persisted choice */
+  /* honor the learner's persisted choice on every page (after upgrades settle) */
   setTimeout(function () {
     if (document.getElementById('guide_seed')) return;
-    if (PAGE_GUIDE) { summonGuide(PAGE_GUIDE, false); return; }
     var on = null; try { on = localStorage.getItem('lc_guide_on'); } catch (e) {}
     if (on === '1') window.lcGuideOn(true);
   }, 900);

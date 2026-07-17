@@ -19,14 +19,6 @@ defaults:
       path: "modules"   # only /modules
     values:
       layout: null      # don't wrap them in HTML
-  # Section-wide guide — one declaration, no per-page config: every page
-  # under micro_build_ai/ auto-docks Doc as its guide. The first 📌 Keep on
-  # such a page writes the page's own avatar fence, which then owns the
-  # guide and its accumulated Q&A.
-  - scope:
-      path: "micro_build_ai"
-    values:
-      guide: doc
 
 # Important: tell Jekyll to copy .yaml as-is
 include:

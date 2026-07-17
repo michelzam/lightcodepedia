@@ -251,7 +251,12 @@ Auto-included by docs/_layouts/default.html.
       return Promise.all(know.map(function(k){
         var path = (String(k) === 'self') ? pageMdPath(location.pathname) : pageMdPath(k);
         return fetchText(rawUrl(path)).then(function(t){ return { path: path, text: t }; })
-          .catch(function(){ return null; });
+          .catch(function(){
+            /* index pages: /section/ lives at section/index.md */
+            var alt = path.replace(/\.md$/, '/index.md');
+            return fetchText(rawUrl(alt)).then(function(t){ return { path: alt, text: t }; })
+              .catch(function(){ return null; });
+          });
       })).then(function(parts){
         var used = 0, chunks = [], trimmed = false;
         parts.filter(Boolean).forEach(function(p){
@@ -280,12 +285,19 @@ Auto-included by docs/_layouts/default.html.
     connect: function (pat) { if (pat) setSharedToken(String(pat).trim()); },
     disconnect: function () { setSharedToken(null); },
     onChange: onSharedTokenChange,
-    ask: function (botName, question) {
+    ask: function (botName, question, opts) {
       if (!SHARED.token) return Promise.resolve({ error: 'No token' });
       return loadBot(botName).then(function (botCfg) {
         var cfg = {};
         Object.keys(DEFAULTS).forEach(function (k) { cfg[k] = DEFAULTS[k]; });
         Object.keys(botCfg).forEach(function (k) { cfg[k] = botCfg[k]; });
+        if (opts && opts.direct) {
+          /* the AUTHOR is curating content, not being tutored: no guiding
+             questions — direct, complete, keep-worthy answers */
+          cfg.system += '\n\nThis question comes from the course AUTHOR curating ' +
+            'material, not a student: answer directly and completely, no guiding ' +
+            'questions, no withheld solutions. Keep the step format.';
+        }
         return ask(SHARED.token, cfg, question);
       }, function () {
         return { error: 'bot "' + botName + '" could not be loaded' };
