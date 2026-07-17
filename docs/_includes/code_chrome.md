@@ -198,7 +198,23 @@
   }
   window.lcSourceOf = function (id) { return _srcSnap[id]; };
 
+  /* Includes render inside <main class="markdown-body">. Reel mode turns
+     that element into an iOS touch-scroller, and position:fixed descendants
+     of such a scroller scroll WITH the content on Safari (the "bottom bar
+     rides up" bug). Floating chrome therefore must live directly on <body> —
+     re-home it once, before the first upgrade pass. */
+  var _CHROME = ['.lc-slides-fab', '#lc-bl-popup', '.lc-reel-bar', '.lc-slides-nav',
+                 '.lc-slides-share-overlay', '#ed-fab', '#ed-drawer', '#ed-sidebar'];
+  function _rehomeChrome() {
+    _CHROME.forEach(function (sel) {
+      document.querySelectorAll(sel).forEach(function (el) {
+        if (el.parentNode && el.parentNode !== document.body) document.body.appendChild(el);
+      });
+    });
+  }
+
   function scan() {
+    _rehomeChrome();
     _applyIAL(document);
     _snapshotSources(document);
     _runUpgraders(document);

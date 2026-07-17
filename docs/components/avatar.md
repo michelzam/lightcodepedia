@@ -19,13 +19,7 @@ tours — and the player behind the [🎬 demo](/components/demo)'s **▶ Replay
 ```yaml
 voice: en-US
 face:
-  skin: "#e2a87e"
-  glasses: square
-  beard: "#e8e4de"
-  brows: "#4a3b30"
-  wear: bow
   zoom: 1.2
-  blush: false
 script:
   - "Hello! I'm Doc — I narrate pages, line by line."
   - at: avatar_playground
@@ -102,9 +96,9 @@ its mouth follows the voice. Fully procedural — new text never needs new asset
 
 ## 🪞 Make it you
 
-Every feature of the built-in face is a knob — the avatar on this page uses
-this to look like its author (all keys optional; without `face:` you get the
-classic Prof. LC):
+Every feature of the built-in face is a knob (all keys optional; without
+`face:` you get the classic Prof. LC — which is what this page's Doc wears,
+compact via `zoom`). An author-lookalike example:
 
 ```yaml
 face:
