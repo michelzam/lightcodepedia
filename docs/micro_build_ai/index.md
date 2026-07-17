@@ -161,3 +161,25 @@ Your live Aristotelian guide — chat with it right here once you have a key.
 [Meet Ari](/micro_build_ai/ari)
 ```
 {: .cards cols="3" }
+
+```yaml
+bot: doc
+face:
+  zoom: 1.2
+script:
+  - 'You might wonder: Make an engaging introduction for my students'
+  - 'Sure! Here’s a suggestion for an engaging introduction:'
+  - '---'
+  - >-
+    Welcome to the BUILD-AI course! 🎉 Here, you’ll embark on an exciting journey to transform your
+    ideas into real, working applications — all without needing any prior coding experience.
+  - >-
+    With the help of our furry friend, Lucky, and a sprinkle of AI magic, you’ll learn to build a
+    helpful tool called the Paws Support Navigator.
+  - >-
+    Get ready to dive in, explore, and unleash your creativity as you learn to navigate the world of
+    low-code development!
+  - '---'
+  - Feel free to tweak it to match your style!
+```
+{: .avatar #guide dock="true" size="115" }
