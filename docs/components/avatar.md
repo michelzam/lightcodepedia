@@ -186,6 +186,14 @@ to each component his reply mentions, spotlights it, and speaks the step.
   toggle: it summons the generic companion on any page, remembered on your
   device — no tour there, but 💬 Ask still knows the page it stands on.
   Authored guides always take precedence.
+- **📌 Keep & voice (authors).** When the ✏️ editor is connected, the guide's
+  menu offers to **keep** the answer that just played: its steps are appended
+  to this page's tour (committed like any edit, the question credited as
+  *"You might wonder: …"*), and the new lines are **voiced** with your
+  ElevenLabs voice on the spot. Learners' real questions grow the course —
+  and a kept answer never costs anyone credits again. If the page's fence
+  can't be located unambiguously, the keep aborts — it can never corrupt a
+  page.
 
 ## 🤝 With the demo — ▶ Replay
 

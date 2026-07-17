@@ -1492,11 +1492,129 @@ Auto-included by docs/_layouts/default.html.
         setTimeout(function () { guideIdle(av); restore(); }, 4000);
         return;
       }
+      av._lastAnswer = { question: question, steps: steps };   /* 📌 keepable */
       document.addEventListener('lc-avatar-ended', restore);
       av.script = steps.map(lineSpec);
       av.idx = 0;
       startPlay(elId);
     });
+  }
+
+  /* ── 📌 keep & voice: promote an answer into the authored tour ──────────
+     Author-only (editor PAT + repo present). One click: append the answer's
+     steps to THIS page's avatar fence (script grows — real questions become
+     curriculum), commit via the contents API, voice the new lines with
+     ElevenLabs (same content-addressed files + manifest as the 🎙️ studio),
+     and extend the live tour immediately. Any ambiguity in locating the
+     fence ABORTS — a keep can never corrupt a page. */
+  function pageMdPathAv() {
+    var p = location.pathname.replace(/\.html?$/, '').replace(/\/+$/, '');
+    return (!p || p === '/') ? 'docs/index.md' : 'docs' + (p.charAt(0) === '/' ? p : '/' + p) + '.md';
+  }
+  function seedToast(text) {
+    var n = document.createElement('div');
+    n.className = 'lc-guide-hello';
+    n.textContent = text;
+    document.body.appendChild(n);
+    setTimeout(function () { try { n.remove(); } catch (e) {} }, 5000);
+  }
+  async function keepAnswer(elId, av) {
+    var ans = av._lastAnswer;
+    if (!ans) return;
+    var pat = localStorage.getItem('lc_ed_pat') || '';
+    var repo = localStorage.getItem('lc_ed_repo') || '';
+    if (!pat || !repo) { seedToast('⚠ connect the ✏️ editor first'); return; }
+    var HAuth = { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github+json' };
+    seedToast('📌 keeping…');
+    try {
+      var path = pageMdPathAv();
+      var api = 'https://api.github.com/repos/' + repo + '/contents/' + path;
+      var cur = await fetch(api, { headers: HAuth }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status + ' reading the page'); return r.json(); });
+      var md = decodeURIComponent(escape(atob(String(cur.content || '').replace(/\n/g, ''))));
+      /* locate THIS avatar's fence exactly (mask ````-examples first) */
+      var masked = md.replace(/````[\s\S]*?````/g, function (m) { return Array(m.length + 1).join(' '); });
+      var re = /```yaml\r?\n((?:(?!```)[\s\S])*?)```\s*\r?\n\{:\s*\.avatar\b([^}]*)\}/g, m, hit = null, hits = 0;
+      while ((m = re.exec(masked)) !== null) {
+        if (m[2].indexOf('#' + elId) >= 0) { hits++; hit = { start: m.index, body: m[1], full: m[0], ial: m[2] }; }
+      }
+      if (hits !== 1) throw new Error(hits ? 'ambiguous fence' : 'fence not found');
+      var cfg = window.jsyaml ? window.jsyaml.load(hit.body) : null;
+      if (!cfg || !Array.isArray(cfg.script)) throw new Error('script not parseable');
+      var newLines = [{ say: 'You might wonder: ' + ans.question }];
+      ans.steps.forEach(function (st) {
+        newLines.push(st.at ? { at: st.at, say: st.say } : { say: st.say });
+      });
+      cfg.script = cfg.script.concat(newLines);
+      var newBody = window.jsyaml.dump(cfg, { lineWidth: 100 });
+      /* masking preserves length, so the match span maps 1:1 onto the real md */
+      var newFence = '```yaml\n' + newBody + '```\n{: .avatar' + hit.ial + '}';
+      var newMd = md.substring(0, hit.start) + newFence + md.substring(hit.start + hit.full.length);
+      var put = await fetch(api, {
+        method: 'PUT', headers: HAuth,
+        body: JSON.stringify({
+          message: 'keep: "' + ans.question.slice(0, 60) + '" — Doc\'s answer joins the tour',
+          content: btoa(unescape(encodeURIComponent(newMd))),
+          sha: cur.sha
+        })
+      });
+      if (!put.ok) throw new Error('HTTP ' + put.status + ' committing');
+      /* extend the live tour this session */
+      var specd = newLines.map(lineSpec);
+      if (av._tourScript) av._tourScript = av._tourScript.concat(specd);
+      else av.script = av.script.concat(specd);
+      av._lastAnswer = null;
+      /* voice the new lines (same files + manifest the 🎙️ studio uses) */
+      var key = localStorage.getItem('lc_11_key') || '';
+      var voice = av.genVoice || localStorage.getItem('lc_11_voice') || '';
+      if (!key || !voice) { seedToast('📌 kept — tour updated (no voice key: 🎙️ later)'); return; }
+      var model = av.genModel || 'eleven_multilingual_v2';
+      var made = 0, failed = 0, vox = {};
+      for (var i = 0; i < newLines.length; i++) {
+        var text = String(newLines[i].say).trim();
+        try {
+          var th = (await sha1hex(text)).slice(0, 16);
+          var h = await sha1hex(voice + '|' + model + '|' + text);
+          var f = 'lc-' + h.slice(0, 16) + '.mp3';
+          var head = await fetch('/assets/audio/' + f, { method: 'HEAD' }).catch(function () { return { ok: false }; });
+          if (!head.ok) {
+            var r = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + encodeURIComponent(voice) + '?output_format=mp3_44100_128', {
+              method: 'POST', headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: text, model_id: model })
+            });
+            if (!r.ok) throw new Error('11labs ' + r.status);
+            var blob = await r.blob();
+            var b64 = await blobB64(blob);
+            var pm = await fetch('https://api.github.com/repos/' + repo + '/contents/docs/assets/audio/' + f, {
+              method: 'PUT', headers: HAuth,
+              body: JSON.stringify({ message: 'voice: ' + f + ' (kept answer)', content: b64 })
+            });
+            if (!(pm.ok || pm.status === 422)) throw new Error('mp3 commit ' + pm.status);
+            made++;
+          }
+          vox[th] = f;
+        } catch (e) { failed++; }
+      }
+      if (Object.keys(vox).length) {
+        try {
+          var mApi = 'https://api.github.com/repos/' + repo + '/contents/docs/assets/audio/vox.json';
+          var mc = await fetch(mApi, { headers: HAuth }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+          var man = {};
+          if (mc && mc.content) { try { man = JSON.parse(atob(mc.content.replace(/\n/g, ''))) || {}; } catch (e2) {} }
+          var pg = man[voxSlug()] = man[voxSlug()] || {};
+          pg[elId] = Object.assign(pg[elId] || {}, vox);
+          await fetch(mApi, {
+            method: 'PUT', headers: HAuth,
+            body: JSON.stringify({ message: 'voice manifest: kept answer (' + Object.keys(vox).length + ' lines)',
+                                   content: btoa(unescape(encodeURIComponent(JSON.stringify(man, null, 1)))),
+                                   sha: mc && mc.sha ? mc.sha : undefined })
+          });
+          _voxP = Promise.resolve(man);   /* this session's playback sees it too */
+        } catch (e3) {}
+      }
+      seedToast('📌 kept · ' + (newLines.length) + ' lines in the tour · ' + made + ' voiced' + (failed ? ' · ' + failed + ' voice failed' : ''));
+    } catch (err) {
+      seedToast('⚠ could not keep automatically (' + (err && err.message) + ') — add it by hand');
+    }
   }
 
   /* the ask panel: question box when connected, PAT paste when not */
@@ -1608,6 +1726,11 @@ Auto-included by docs/_layouts/default.html.
         }
         if (av.botName && window.lcBotAsk) {
           menu.appendChild(item('💬 Ask', function () { menu.classList.remove('open'); openAskPanel(elId, av); }));
+        }
+        var _pat0 = null, _repo0 = null;
+        try { _pat0 = localStorage.getItem('lc_ed_pat'); _repo0 = localStorage.getItem('lc_ed_repo'); } catch (e) {}
+        if (av._lastAnswer && _pat0 && _repo0) {
+          menu.appendChild(item('📌 Keep & voice', function () { menu.classList.remove('open'); keepAnswer(elId, av); }));
         }
       } else if (av._waiting || av._curStep || av.step) {
         menu.appendChild(item('Next →', function () { togglePlay(elId); }));
