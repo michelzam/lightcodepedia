@@ -1537,18 +1537,33 @@ Auto-included by docs/_layouts/default.html.
       while ((m = re.exec(masked)) !== null) {
         if (m[2].indexOf('#' + elId) >= 0) { hits++; hit = { start: m.index, body: m[1], full: m[0], ial: m[2] }; }
       }
-      if (hits !== 1) throw new Error(hits ? 'ambiguous fence' : 'fence not found');
-      var cfg = window.jsyaml ? window.jsyaml.load(hit.body) : null;
-      if (!cfg || !Array.isArray(cfg.script)) throw new Error('script not parseable');
+      if (hits > 1) throw new Error('ambiguous fence');
       var newLines = [{ say: 'You might wonder: ' + ans.question }];
       ans.steps.forEach(function (st) {
         newLines.push(st.at ? { at: st.at, say: st.say } : { say: st.say });
       });
-      cfg.script = cfg.script.concat(newLines);
-      var newBody = window.jsyaml.dump(cfg, { lineWidth: 100 });
-      /* masking preserves length, so the match span maps 1:1 onto the real md */
-      var newFence = '```yaml\n' + newBody + '```\n{: .avatar' + hit.ial + '}';
-      var newMd = md.substring(0, hit.start) + newFence + md.substring(hit.start + hit.full.length);
+      var newMd, keptId = elId;
+      if (hits === 1) {
+        var cfg = window.jsyaml ? window.jsyaml.load(hit.body) : null;
+        if (!cfg || !Array.isArray(cfg.script)) throw new Error('script not parseable');
+        cfg.script = cfg.script.concat(newLines);
+        var newBody = window.jsyaml.dump(cfg, { lineWidth: 100 });
+        /* masking preserves length, so the match span maps 1:1 onto the real md */
+        var newFence = '```yaml\n' + newBody + '```\n{: .avatar' + hit.ial + '}';
+        newMd = md.substring(0, hit.start) + newFence + md.substring(hit.start + hit.full.length);
+      } else if (elId === 'site_guide') {
+        /* a config-docked page has no fence yet: the FIRST keep creates it —
+           appended at end-of-file (creation, never surgery). The page owns
+           its guide and its Q&A from now on. */
+        keptId = 'guide';
+        var born = { bot: av.botName || 'doc', face: { zoom: 1.2 },
+                     script: newLines.map(function (l) { return l.at ? l : l.say; }) };
+        newMd = md.replace(/\s*$/, '\n\n') +
+          '```yaml\n' + window.jsyaml.dump(born, { lineWidth: 100 }) + '```\n' +
+          '{: .avatar #guide dock="true" size="115" }\n';
+      } else {
+        throw new Error('fence not found');
+      }
       var put = await fetch(api, {
         method: 'PUT', headers: HAuth,
         body: JSON.stringify({
@@ -1601,7 +1616,7 @@ Auto-included by docs/_layouts/default.html.
           var man = {};
           if (mc && mc.content) { try { man = JSON.parse(atob(mc.content.replace(/\n/g, ''))) || {}; } catch (e2) {} }
           var pg = man[voxSlug()] = man[voxSlug()] || {};
-          pg[elId] = Object.assign(pg[elId] || {}, vox);
+          pg[keptId] = Object.assign(pg[keptId] || {}, vox);
           await fetch(mApi, {
             method: 'PUT', headers: HAuth,
             body: JSON.stringify({ message: 'voice manifest: kept answer (' + Object.keys(vox).length + ' lines)',
@@ -1768,6 +1783,11 @@ Auto-included by docs/_layouts/default.html.
      wired to the site's default bot (knowledge: self → he still knows the
      page). Authored guides always win — summoning is a no-op beside them. */
   var GUIDE_BOT = {{ site.guide_bot | default: "doc" | jsonify }};
+  /* a page (or a whole section, via _config.yml scoped defaults) can decree
+     its guide with a page variable — encapsulated: no fence, no per-page
+     copies. guide: doc → the companion auto-docks, author-level (the
+     learner's toggle cannot remove it). */
+  var PAGE_GUIDE = {{ page.guide | default: "" | jsonify }};
   window.lcGuideOn = function (on) {
     try { on ? localStorage.setItem('lc_guide_on', '1') : localStorage.removeItem('lc_guide_on'); } catch (e) {}
     var seed = document.getElementById('guide_seed');
@@ -1779,6 +1799,10 @@ Auto-included by docs/_layouts/default.html.
       return;
     }
     if (seed) return;                       /* authored (or already summoned) guide wins */
+    summonGuide(GUIDE_BOT, true);
+  };
+  function summonGuide(botName, generic) {
+    if (document.getElementById('guide_seed')) return;
     var elId = 'site_guide';
     if (window._lcAvatars && window._lcAvatars[elId]) return;
     var host = document.createElement('div');
@@ -1803,7 +1827,7 @@ Auto-included by docs/_layouts/default.html.
       pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
       playing: false, idx: 0, lottieDone: false, step: false, mute: false,
       genVoice: '', genModel: 'eleven_multilingual_v2',
-      botName: GUIDE_BOT
+      botName: botName
     };
     initChar(elId, char, 115);
     av._idleT = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
@@ -1811,12 +1835,14 @@ Auto-included by docs/_layouts/default.html.
     char.addEventListener('contextmenu', function (e) { e.preventDefault(); openVerbMenu(elId, av); });
     buildSeed(elId, av);
     var sd = document.getElementById('guide_seed');
-    if (sd) sd.dataset.lcGeneric = '1';
-  };
-  /* honor the persisted choice on every page (after upgrades settle) */
+    if (sd && generic) sd.dataset.lcGeneric = '1';
+  }
+  /* honor the page/section decree first, then the learner's persisted choice */
   setTimeout(function () {
+    if (document.getElementById('guide_seed')) return;
+    if (PAGE_GUIDE) { summonGuide(PAGE_GUIDE, false); return; }
     var on = null; try { on = localStorage.getItem('lc_guide_on'); } catch (e) {}
-    if (on === '1' && !document.getElementById('guide_seed')) window.lcGuideOn(true);
+    if (on === '1') window.lcGuideOn(true);
   }, 900);
 
   /* ── voices studio: order studio audio from the page itself ──────────────
