@@ -269,6 +269,35 @@
   window.lcApplyIAL   = _applyIAL;
   window.lcRegisterUpgrader = lcRegisterUpgrader;
 
+  // ── exclusive page-mode manager ──────────────────────────────────────────
+  // ONE way of experiencing the page at a time: read (default) · present ·
+  // reel · xray · edit. Engines register {enter, exit, isActive}; every entry
+  // point (pill, FABs, URLs) routes through set(), which exits the current
+  // mode first — conflicting combinations (reel while editing…) become
+  // structurally impossible. An exit may veto (e.g. unsaved edit confirm):
+  // if the old mode is still active after exit(), the switch is aborted.
+  var _lcModes = {};
+  window.lcMode = {
+    register: function (name, api) { _lcModes[name] = api || {}; },
+    current: function () {
+      for (var k in _lcModes) {
+        try { if (_lcModes[k].isActive && _lcModes[k].isActive()) return k; } catch (e) {}
+      }
+      return "read";
+    },
+    set: function (name) {
+      var cur = window.lcMode.current();
+      if (name === cur) name = "read";              // re-selecting the active mode exits it
+      if (cur !== "read" && _lcModes[cur]) {
+        try { _lcModes[cur].exit(); } catch (e) {}
+        try { if (_lcModes[cur].isActive && _lcModes[cur].isActive()) return false; } catch (e) {}
+      }
+      if (name !== "read" && _lcModes[name]) { try { _lcModes[name].enter(); } catch (e) {} }
+      try { document.dispatchEvent(new CustomEvent("lc-mode-changed", { detail: { mode: window.lcMode.current() } })); } catch (e) {}
+      return true;
+    }
+  };
+
   function _applyIAL(root) {
     root.querySelectorAll("p").forEach(function(p) {
       var t = (p.textContent || "").trim();

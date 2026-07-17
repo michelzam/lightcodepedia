@@ -575,6 +575,17 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     setTimeout(function() { document.body.style.overflow = ""; }, 260);
   }
 
+  /* edit is an exclusive page mode: entering it exits present/reel/x-ray and
+     vice versa; closeDrawer's own unsaved-changes confirm acts as the veto */
+  if (window.lcMode) window.lcMode.register("edit", {
+    enter: openDrawer,
+    exit: closeDrawer,
+    isActive: function () {
+      var d = document.getElementById("ed-drawer");
+      return !!(d && d.classList.contains("open"));
+    }
+  });
+
   /* ── File list — AG Grid (recursive via Git Trees API) ─ */
   var _edAgApi = null;
   function loadFiles() {
@@ -943,8 +954,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var zoom   = e.target.closest("#ed-zoom-btn");
     var chip   = e.target.closest(".ed-chip");
     var view   = e.target.closest(".ed-view");
-    if (fab)   { e.preventDefault(); openDrawer(); return; }
-    if (close) { e.preventDefault(); closeDrawer(); return; }
+    if (fab)   { e.preventDefault(); if (window.lcMode) window.lcMode.set("edit"); else openDrawer(); return; }
+    if (close) { e.preventDefault(); if (window.lcMode) window.lcMode.set("read"); else closeDrawer(); return; }
     if (conn)  { e.preventDefault(); connect(); return; }
     if (disc)  { e.preventDefault(); disconnect(); return; }
     if (save)  { e.preventDefault(); saveFile(); return; }

@@ -71,6 +71,9 @@ Attributes on .avatar:
               avatar isn't in step mode; a video cue `step: true` forces a stop
               at that cue.
   size      — pixel size of the character bubble (default: 140)
+  dock      — "true": dock this avatar as the page's GUIDE — a small face in
+              the bottom-right corner; tap → ▶ play tour · next · ⏹ stop.
+              One silent "need a tour?" bubble on a visitor's first page, ever.
   face      — make the built-in character look like its author (all optional):
                 face:
                   skin: "#e2a87e"       # head colour (default: LC yellow)
@@ -201,6 +204,38 @@ Auto-included by docs/_layouts/default.html.
   border-top-color: #fff;
 }
 .lc-avatar-speech.visible { opacity: 1; }
+/* ── guide seed: the docked companion (dock="true") ──── */
+.lc-guide-seed {
+  position: fixed; right: 16px; bottom: 84px; z-index: 940;
+  width: 46px; height: 46px; border-radius: 50%;
+  border: 1px solid #d8dee6; background: #fff; padding: 2px;
+  cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,0.16);
+  transition: transform 0.15s ease;
+}
+.lc-guide-seed:hover { transform: scale(1.08); }
+.lc-guide-seed:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
+.lc-guide-seed svg { width: 100%; height: 100%; display: block; border-radius: 50%; }
+@media (max-width: 700px) { .lc-guide-seed { bottom: 76px; right: 12px; } }
+.lc-guide-menu {
+  position: fixed; right: 16px; bottom: 136px; z-index: 941;
+  display: none; flex-direction: column; min-width: 150px;
+  background: #fff; border: 1px solid #d8dee6; border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18); overflow: hidden;
+}
+.lc-guide-menu.open { display: flex; }
+.lc-guide-menu button {
+  border: none; background: none; text-align: left; cursor: pointer;
+  padding: 0.55em 0.9em; font: inherit; font-size: 0.9em; color: #1f2937;
+  border-bottom: 1px solid #f1f3f6;
+}
+.lc-guide-menu button:last-child { border-bottom: none; }
+.lc-guide-menu button:hover { background: #f0f6ff; }
+.lc-guide-hello {
+  position: fixed; right: 70px; bottom: 90px; z-index: 941;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+  padding: 6px 12px; font-size: 0.85em; color: #1e293b;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+}
 /* ── trigger button ──────────────────────────────────── */
 .lc-avatar-trigger {
   display: inline-flex; align-items: center; gap: 0.4em;
@@ -830,6 +865,10 @@ Auto-included by docs/_layouts/default.html.
       /* init character graphic */
       initChar(elId, char, size);
 
+      /* dock="true" (or face knob dock: true): the page declares its guide —
+         a small seed in the bottom-right, zero moves from the learner */
+      if (el.getAttribute('dock') === 'true' || cfg.dock === true) buildSeed(elId, av);
+
       /* idle saccades keep the built-in face alive */
       av._idleT = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
 
@@ -941,9 +980,8 @@ Auto-included by docs/_layouts/default.html.
     r = Math.round(r + (t - r) * p); gg = Math.round(gg + (t - gg) * p); b = Math.round(b + (t - b) * p);
     return "#" + ((1 << 24) + (r << 16) + (gg << 8) + b).toString(16).slice(1);
   }
-  function addFace(id, char) {
-    var av0 = window._lcAvatars[id] || {};
-    var cfg = av0.faceCfg || {};
+  function buildFaceSvg(cfg) {
+    cfg = cfg || {};
     var skin = cfg.skin || "#ffd166", custom = !!cfg.skin;
     var brows = cfg.brows || (custom ? shade(skin, -0.55) : "#8a6428");
     var glasses = cfg.glasses || "round";                 /* round | square | none */
@@ -1000,10 +1038,13 @@ Auto-included by docs/_layouts/default.html.
         + '<path d="M50 90 L63 83.5 L63 96.5 Z" fill="' + wearC + '" stroke="' + shade(wearC, -0.22) + '" stroke-width="1.2"/>'
         + '<circle cx="50" cy="90" r="3.4" fill="' + shade(wearC, -0.22) + '"/>';
     }
-    svg += '</svg>';
+    return svg + '</svg>';
+  }
+  function addFace(id, char) {
+    var av0 = window._lcAvatars[id] || {};
     var face = document.createElement("div");
     face.className = "lc-avatar-face";
-    face.innerHTML = svg;
+    face.innerHTML = buildFaceSvg(av0.faceCfg || {});
     char.appendChild(face);
     var av = window._lcAvatars[id];
     if (av) {
@@ -1349,6 +1390,66 @@ Auto-included by docs/_layouts/default.html.
       btn.textContent = txt;
       btn.classList.toggle("playing", !!playing);
     });
+  }
+
+  /* ── guide seed: the docked companion ─────────────────────────────────────
+     dock="true" on an avatar fence puts a small face in the bottom-right
+     corner — the guide is zero moves away, as the page designer decided.
+     Tap → a tiny menu of the avatar's verbs (play / continue / stop). The
+     seed never speaks first: one silent "need a tour?" bubble, once ever. */
+  function buildSeed(elId, av) {
+    if (document.getElementById('guide_seed')) return;
+    var seed = document.createElement('button');
+    seed.id = 'guide_seed'; seed.type = 'button';
+    seed.className = 'lc-guide-seed';
+    seed.setAttribute('aria-label', 'Guide — tour and help');
+    seed.setAttribute('aria-haspopup', 'menu');
+    seed.innerHTML = buildFaceSvg(av.faceCfg || {});
+    var menu = document.createElement('div');
+    menu.className = 'lc-guide-menu';
+    menu.setAttribute('role', 'menu');
+    document.body.appendChild(seed);
+    document.body.appendChild(menu);
+
+    function item(label, fn) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.setAttribute('role', 'menuitem');
+      b.textContent = label;
+      b.addEventListener('click', function (e) { e.stopPropagation(); fn(); render(); });
+      return b;
+    }
+    function render() {
+      menu.innerHTML = '';
+      if (!av.playing) {
+        menu.appendChild(item(av.idx > 0 ? '↺ Replay tour' : '▶ Play tour', function () { togglePlay(elId); menu.classList.remove('open'); }));
+      } else if (av._waiting || av._curStep || av.step) {
+        menu.appendChild(item('Next →', function () { togglePlay(elId); }));
+        menu.appendChild(item('⏹ Stop', function () { stopPlay(elId); menu.classList.remove('open'); }));
+      } else {
+        menu.appendChild(item('⏹ Stop', function () { stopPlay(elId); menu.classList.remove('open'); }));
+      }
+    }
+    seed.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (menu.classList.contains('open')) { menu.classList.remove('open'); return; }
+      render(); menu.classList.add('open');
+    });
+    document.addEventListener('click', function (e) {
+      if (!menu.contains(e.target) && e.target !== seed) menu.classList.remove('open');
+    });
+    document.addEventListener('lc-avatar-ended', render);
+
+    /* the whisper: once ever, silent, self-dismissing */
+    var seen = null;
+    try { seen = localStorage.getItem('lc_guide_hello'); } catch (e) {}
+    if (!seen) {
+      var hello = document.createElement('div');
+      hello.className = 'lc-guide-hello';
+      hello.textContent = '👋 Need a tour?';
+      document.body.appendChild(hello);
+      setTimeout(function () { try { hello.remove(); } catch (e) {} }, 6000);
+      try { localStorage.setItem('lc_guide_hello', '1'); } catch (e) {}
+    }
   }
 
   /* ── voices studio: order studio audio from the page itself ──────────────

@@ -109,6 +109,9 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
 .lc-bl-popup-item:active { background: #f0f6ff; }
 .lc-bl-popup-item.lc-xray-on { color: #0088aa; font-weight: 600; }
 @media (max-width: 700px) { .lc-bl-popup { bottom: calc(0.8em + 52px); left: 0.8em; } }
+/* the popup is an exclusive mode selector: the active mode carries a ✓ */
+.lc-bl-popup-item { display: flex; align-items: center; gap: 6px; }
+.lc-bl-popup-item.lc-mode-on::after { content: "✓"; margin-left: auto; color: #0066cc; font-weight: 700; }
 /* FAB active state while x-ray is on */
 .lc-slides-fab.lc-xray-active { color: #0088aa; border-color: #0088aa;
   background: #f0fbff; box-shadow: 0 0 0 3px rgba(0,136,170,.18); }
@@ -186,10 +189,12 @@ body.lc-reel-active .lc-reel-bar {
 <a class="lc-slides-fab" href="#" title="Present as slides" aria-label="Present as slides">
   <span class="lc-slides-fab-icon" aria-hidden="true">📽️</span><span class="lc-slides-fab-label">Present</span>
 </a>
-<div class="lc-bl-popup" id="lc-bl-popup" role="menu" aria-label="Actions">
+<div class="lc-bl-popup" id="lc-bl-popup" role="menu" aria-label="Page mode">
+  <button class="lc-bl-popup-item" id="lc-bl-read-btn"    type="button">📖 Read</button>
   <button class="lc-bl-popup-item" id="lc-bl-present-btn" type="button">📽️ Present</button>
   <button class="lc-bl-popup-item" id="lc-bl-reel-btn"    type="button">📲 Reel</button>
   <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    type="button">🔬 X-ray</button>
+  <button class="lc-bl-popup-item" id="lc-bl-edit-btn"    type="button" hidden>✏️ Edit</button>
 </div>
 <div class="lc-reel-bar">
   <button class="lc-reel-back" type="button" aria-label="Back to previous page" title="Back">‹</button>
@@ -601,6 +606,18 @@ body.lc-reel-active .lc-reel-bar {
       isActive: function () { return body.classList.contains('lc-reel-active'); }
     };
 
+    /* exclusive page modes — every entry point routes through window.lcMode,
+       so present/reel/x-ray/edit can never overlap (the old bug class) */
+    if (window.lcMode) {
+      window.lcMode.register('present', { enter: enter, exit: exit, isActive: window.lcSlides.isActive });
+      window.lcMode.register('reel',    { enter: enterReel, exit: exitReel, isActive: window.lcReel.isActive });
+      window.lcMode.register('xray', {
+        enter: function () { if (window.lcxTouchOn) window.lcxTouchOn(); },
+        exit:  function () { if (window.lcxTouchOff) window.lcxTouchOff(); },
+        isActive: function () { return !!(window.lcxIsActive && window.lcxIsActive()); }
+      });
+    }
+
     partition();
     if (!hasDeck()) {
       fab.setAttribute('data-no-slides', 'true');
@@ -614,9 +631,26 @@ body.lc-reel-active .lc-reel-bar {
     var xrayBtn    = document.getElementById('lc-bl-xray-btn');
 
     function closePopup() { if (popup) popup.classList.remove('open'); }
-    function openPopup()  { if (popup) popup.classList.add('open'); }
+    function openPopup()  { if (popup) { refreshMarks(); popup.classList.add('open'); } }
+
+    /* pill state: ✓ on the active mode; the FAB icon mirrors it */
+    var MODE_ICONS = { read: '📽️', present: '📽️', reel: '📲', xray: '🔬', edit: '✏️' };
+    function refreshMarks() {
+      if (!popup || !window.lcMode) return;
+      var m = window.lcMode.current();
+      [['read', 'lc-bl-read-btn'], ['present', 'lc-bl-present-btn'], ['reel', 'lc-bl-reel-btn'],
+       ['xray', 'lc-bl-xray-btn'], ['edit', 'lc-bl-edit-btn']].forEach(function (pair) {
+        var b = document.getElementById(pair[1]);
+        if (b) b.classList.toggle('lc-mode-on', m === pair[0]);
+      });
+      var ic = fab.querySelector('.lc-slides-fab-icon');
+      if (ic) ic.textContent = MODE_ICONS[m] || '📽️';
+      fab.classList.toggle('lc-xray-active', m === 'xray');
+    }
+    document.addEventListener('lc-mode-changed', refreshMarks);
 
     function xrayOff() {
+      if (window.lcMode) { window.lcMode.set('read'); return; }
       if (window.lcxTouchOff) window.lcxTouchOff();
       fab.classList.remove('lc-xray-active');
       fab.querySelector('.lc-slides-fab-icon').textContent = '📽️';
@@ -633,29 +667,42 @@ body.lc-reel-active .lc-reel-bar {
     fab.addEventListener('click', function(e) {
       e.preventDefault();
       if (window.lcxIsActive && window.lcxIsActive()) { xrayOff(); return; }
-      if (body.classList.contains('lc-reel-active')) { exitReel(); return; }
+      if (body.classList.contains('lc-reel-active')) { window.lcMode ? window.lcMode.set('read') : exitReel(); return; }
       if (touchOnly && !body.classList.contains('lc-slides-active')) {
         popup.classList.contains('open') ? closePopup() : openPopup();
         return;
       }
-      toggle();
+      window.lcMode ? window.lcMode.set(body.classList.contains('lc-slides-active') ? 'read' : 'present') : toggle();
     });
 
+    function setMode(m) {
+      if (window.lcMode) { window.lcMode.set(m); return; }
+      if (m === 'present') toggle();
+      else if (m === 'reel') toggleReel();
+      else if (m === 'xray' && window.lcxTouchOn) window.lcxTouchOn();
+    }
+    var readBtn = document.getElementById('lc-bl-read-btn');
+    if (readBtn) readBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); closePopup(); if (window.lcMode) window.lcMode.set('read');
+    });
     if (presentBtn) presentBtn.addEventListener('click', function(e) {
-      e.stopPropagation(); closePopup(); toggle();
+      e.stopPropagation(); closePopup(); setMode('present');
     });
     if (xrayBtn) xrayBtn.addEventListener('click', function(e) {
-      e.stopPropagation(); closePopup();
-      if (window.lcxTouchOn) {
-        window.lcxTouchOn();
-        fab.classList.add('lc-xray-active');
-        fab.querySelector('.lc-slides-fab-icon').textContent = '🔬';
-      }
+      e.stopPropagation(); closePopup(); setMode('xray');
     });
     var reelBtn = document.getElementById('lc-bl-reel-btn');
     if (reelBtn) reelBtn.addEventListener('click', function(e) {
-      e.stopPropagation(); closePopup(); toggleReel();
+      e.stopPropagation(); closePopup(); setMode('reel');
     });
+    /* Edit joins the pill only where the editor exists on the page */
+    var editBtn = document.getElementById('lc-bl-edit-btn');
+    if (editBtn && document.getElementById('ed-fab')) {
+      editBtn.hidden = false;
+      editBtn.addEventListener('click', function(e) {
+        e.stopPropagation(); closePopup(); if (window.lcMode) window.lcMode.set('edit');
+      });
+    }
 
     document.addEventListener('click', function(e) {
       if (popup && !fab.contains(e.target) && !popup.contains(e.target)) closePopup();
