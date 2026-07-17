@@ -1,5 +1,7 @@
 {%- comment -%}
-Floating ✏️ FAB (bottom-right). Clicking opens an in-page editor drawer that
+Edit mode lives in the Modes pill (bottom-left) and on ⌥E / Alt-E; the old
+✏️ FAB element remains in the DOM (hidden) as the editor's presence marker
+and pagePath carrier. Opening shows an in-page editor drawer that
 reads/writes the current page via GitHub Contents API. PAT + repo stored in
 localStorage. Falls back gracefully: if no PAT, shows the connect form first.
 
@@ -15,7 +17,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 {% if page.path and page.permalink != "/404.html" and page.no_edit != true %}
 <style>
 /* ── FAB ───────────────────────────────────────────────── */
-.lc-edit-fab {
+.lc-edit-fab { display: none !important; }   /* retired: Edit is in the pill + ⌥E */
+.lc-edit-fab-legacy {
   position: fixed; bottom: 1.2em; right: 1.2em;
   height: 44px; min-width: 44px; padding: 0 14px;
   border-radius: 22px; background: white; color: #0066cc;
@@ -577,6 +580,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   /* edit is an exclusive page mode: entering it exits present/reel/x-ray and
      vice versa; closeDrawer's own unsaved-changes confirm acts as the veto */
+  /* ⌥E / Alt-E toggles edit mode — layout-independent, ignored while typing */
+  document.addEventListener("keydown", function (e) {
+    if (!e.altKey || e.code !== "KeyE" || e.ctrlKey || e.metaKey) return;
+    var t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    e.preventDefault();
+    if (window.lcMode) window.lcMode.set("edit");
+  });
+
   if (window.lcMode) window.lcMode.register("edit", {
     enter: openDrawer,
     exit: closeDrawer,

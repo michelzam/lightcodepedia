@@ -6,9 +6,14 @@ from playwright.sync_api import expect
 
 @when("I open the page editor")
 def step_open_editor(context):
-    fab = context.page.locator("#ed-fab")
+    # Edit lives in the Modes pill now (the ✏️ FAB is retired chrome):
+    # hover the pill, click the Edit entry.
+    fab = context.page.locator(".lc-slides-fab")
     fab.wait_for(state="visible", timeout=15_000)
-    fab.click()
+    fab.hover()
+    btn = context.page.locator("#lc-bl-edit-btn")
+    btn.wait_for(state="visible", timeout=5_000)
+    btn.click()
     expect(context.page.locator("#ed-drawer")).to_have_class(
         re.compile(r"\bopen\b"), timeout=10_000
     )

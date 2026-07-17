@@ -197,7 +197,7 @@ body.lc-reel-active .lc-reel-bar {
   <button class="lc-bl-popup-item" id="lc-bl-present-btn" type="button">📽️ Present</button>
   <button class="lc-bl-popup-item" id="lc-bl-reel-btn"    type="button">📲 Reel</button>
   <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    type="button">🔬 X-ray</button>
-  <button class="lc-bl-popup-item" id="lc-bl-edit-btn"    type="button" hidden>✏️ Edit</button>
+  <button class="lc-bl-popup-item" id="lc-bl-edit-btn"    type="button" hidden title="⌥E">✏️ Edit</button>
   <button class="lc-bl-popup-item" id="lc-bl-guide-btn"   type="button" style="border-top:2px solid #e5e7eb">🧑‍🏫 Guide</button>
 </div>
 <div class="lc-reel-bar">
