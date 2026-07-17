@@ -18,6 +18,14 @@ tours — and the player behind the [🎬 demo](/components/demo)'s **▶ Replay
 
 ```yaml
 voice: en-US
+face:
+  skin: "#e2a87e"
+  glasses: square
+  beard: "#e8e4de"
+  brows: "#4a3b30"
+  wear: shirt
+  wear_color: "#3b4046"
+  blush: false
 script:
   - "Hello! I'm Prof. Zam — I narrate pages, line by line."
   - at: avatar_playground
@@ -84,11 +92,33 @@ In the YAML (or as attributes on the block):
 | `video` | A recorded clip URL (or `[webm-alpha, mp4]` fallbacks) — the character *is* the video |
 | `transparent` | `true` + an alpha WebM: the face floats free, no round crop |
 | `elevenlabs` | An ElevenLabs voice id (or `{ voice, model }`) — playback auto-finds each line's pre-generated studio file and falls back to TTS; see 🎙️ below |
+| `face` | Make the built-in character look like **you** — see 🪞 below |
 
 Without `lottie`/`rive`/`video`, the built-in **Prof. LC** face is used — round
 professor glasses, expressive brows (they lift while speaking), a bow tie; it
 blinks, breathes, its eyes *and head* turn toward the spotlighted element, and
 its mouth follows the voice. Fully procedural — new text never needs new assets.
+
+## 🪞 Make it you
+
+Every feature of the built-in face is a knob — the avatar on this page uses
+this to look like its author (all keys optional; without `face:` you get the
+classic Prof. LC):
+
+```yaml
+face:
+  skin: "#e2a87e"       # head colour
+  glasses: square       # round · square · none
+  beard: "#e8e4de"      # goatee + mustache colour, or none
+  brows: "#4a3b30"      # eyebrow colour
+  hair: none            # none · sides · full  (+ hair_color)
+  wear: shirt           # bow · shirt · none   (+ wear_color)
+  blush: false
+```
+
+It stays a friendly caricature, not a photo — the animations (blink, brow
+lift, head turn, lip sync) work identically on every combination. For a real
+face, use `video:` (a recorded clip) or a `rive:` character.
 
 ## 🎬 Studio — record the narrated walk
 

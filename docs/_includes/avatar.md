@@ -71,6 +71,17 @@ Attributes on .avatar:
               avatar isn't in step mode; a video cue `step: true` forces a stop
               at that cue.
   size      — pixel size of the character bubble (default: 140)
+  face      — make the built-in character look like its author (all optional):
+                face:
+                  skin: "#e2a87e"       # head colour (default: LC yellow)
+                  glasses: square       # round (default) | square | none
+                  beard: "#e8e4de"      # goatee+mustache colour, or none
+                  brows: "#4a3b30"      # eyebrow colour
+                  hair: none            # none (default) | sides | full
+                  hair_color: "#c9c9c9"
+                  wear: shirt           # bow (default) | shirt | none
+                  wear_color: "#3b4046"
+                  blush: false          # default true
   elevenlabs — an ElevenLabs voice id (or { voice, model }): playback then
               looks for the pre-generated studio file of each line
               (/assets/audio/lc-<hash-of-voice|model|text>.mp3 — same naming
@@ -808,6 +819,7 @@ Auto-included by docs/_layouts/default.html.
         riveAnim: null, riveTalk: null, riveMouth: null,
         riveTriggers: [], riveInputs: null,
         video: videoUrl, transparent: transparent,
+        faceCfg: (cfg.face && typeof cfg.face === "object") ? cfg.face : null,
         size: size, spot: null,
         pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
         playing: false, idx: 0, lottieDone: false, step: step, mute: mute,
@@ -915,42 +927,79 @@ Auto-included by docs/_layouts/default.html.
     }
   }
 
-  /* built-in face — "Prof. LC": warm gradient skin, round professor glasses,
-     expressive brows (raise while talking), sparkle eyes that track the
-     spotlight, a bow tie, and a head that tilts toward what it describes.
-     Blinks, breathes; the mouth flaps for TTS and follows the waveform for
-     audio lines. Fully procedural: new text never needs new assets. */
+  /* built-in face — a parametric "Prof." character: every feature is a fence
+     knob (face: skin / glasses / beard / brows / hair / wear) so the guide can
+     look like its author. Defaults reproduce Prof. LC. Blinks, breathes, brows
+     lift while speaking, eyes and head track the spotlight, mouth follows the
+     voice. Fully procedural: no assets, any new text forever. */
   var FACE_ID = 0;
+  function shade(hex, f) {   /* f in -1..1 → darken..lighten */
+    var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "")); if (!m) return hex;
+    var n = parseInt(m[1], 16), r = n >> 16, gg = (n >> 8) & 255, b = n & 255;
+    var t = f < 0 ? 0 : 255, p = Math.abs(f);
+    r = Math.round(r + (t - r) * p); gg = Math.round(gg + (t - gg) * p); b = Math.round(b + (t - b) * p);
+    return "#" + ((1 << 24) + (r << 16) + (gg << 8) + b).toString(16).slice(1);
+  }
   function addFace(id, char) {
+    var av0 = window._lcAvatars[id] || {};
+    var cfg = av0.faceCfg || {};
+    var skin = cfg.skin || "#ffd166", custom = !!cfg.skin;
+    var brows = cfg.brows || (custom ? shade(skin, -0.55) : "#8a6428");
+    var glasses = cfg.glasses || "round";                 /* round | square | none */
+    var beard = (cfg.beard && cfg.beard !== "none") ? cfg.beard : "";
+    var hair = cfg.hair || "none", hairC = cfg.hair_color || "#c9c9c9";
+    var wear = cfg.wear || "bow";                         /* bow | shirt | none */
+    var wearC = cfg.wear_color || (wear === "shirt" ? "#3a3f45" : "#0066cc");
+    var g = "lcFaceG" + (++FACE_ID);   /* unique gradient id per instance */
+    var s0 = custom ? shade(skin, 0.22) : "#ffe4a3";
+    var s2 = custom ? shade(skin, -0.12) : "#f0b445";
+    var nose = custom ? shade(skin, -0.3) : "#d9a441";
+    var svg = '<svg viewBox="0 0 100 100" aria-hidden="true">'
+      + '<defs><radialGradient id="' + g + '" cx="38%" cy="30%" r="80%">'
+      + '<stop offset="0%" stop-color="' + s0 + '"/><stop offset="55%" stop-color="' + skin + '"/>'
+      + '<stop offset="100%" stop-color="' + s2 + '"/></radialGradient></defs>'
+      + '<circle cx="50" cy="50" r="50" fill="url(#' + g + ')"/>'
+      + '<ellipse cx="50" cy="93" rx="42" ry="15" fill="rgba(60,40,20,0.06)"/>';
+    if (hair === "full") svg += '<path d="M8 40 Q10 12 50 10 Q90 12 92 40 Q70 20 50 20 Q30 20 8 40 Z" fill="' + hairC + '"/>';
+    if (hair === "sides") svg += '<path d="M4 46 Q2 72 22 86 Q10 66 14 47 Z" fill="' + hairC + '"/>'
+      + '<path d="M96 46 Q98 72 78 86 Q90 66 86 47 Z" fill="' + hairC + '"/>';
+    if (cfg.blush !== false) svg += '<circle cx="26" cy="62" r="6.5" fill="#f4978e" opacity="0.4"/>'
+      + '<circle cx="74" cy="62" r="6.5" fill="#f4978e" opacity="0.4"/>';
+    svg += '<path class="brow" d="M25 31 Q33 26 42 30" stroke="' + brows + '" stroke-width="2.8" fill="none" stroke-linecap="round"/>'
+      + '<path class="brow" d="M58 30 Q67 26 75 31" stroke="' + brows + '" stroke-width="2.8" fill="none" stroke-linecap="round"/>';
+    var frame = "#2e3947";
+    if (glasses === "square") {
+      svg += '<rect x="21.5" y="34" width="24" height="19" rx="4.5" fill="rgba(255,255,255,0.72)" stroke="' + frame + '" stroke-width="2.6"/>'
+        + '<rect x="54.5" y="34" width="24" height="19" rx="4.5" fill="rgba(255,255,255,0.72)" stroke="' + frame + '" stroke-width="2.6"/>'
+        + '<path d="M45.5 40 Q50 38.5 54.5 40" stroke="' + frame + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+    } else if (glasses === "round") {
+      svg += '<circle cx="34" cy="44" r="11" fill="rgba(255,255,255,0.75)" stroke="#334155" stroke-width="2.4"/>'
+        + '<circle cx="66" cy="44" r="11" fill="rgba(255,255,255,0.75)" stroke="#334155" stroke-width="2.4"/>'
+        + '<path d="M45 43 Q50 40 55 43" stroke="#334155" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+    } else {
+      svg += '<circle cx="34" cy="44" r="8" fill="#fff" stroke="' + shade(skin, -0.18) + '" stroke-width="1"/>'
+        + '<circle cx="66" cy="44" r="8" fill="#fff" stroke="' + shade(skin, -0.18) + '" stroke-width="1"/>';
+    }
+    svg += '<g class="eye-g"><g class="pupil"><circle cx="34" cy="45" r="4.6" fill="#4a3120"/><circle cx="35.6" cy="43.2" r="1.5" fill="#fff"/></g></g>'
+      + '<g class="eye-g"><g class="pupil"><circle cx="66" cy="45" r="4.6" fill="#4a3120"/><circle cx="67.6" cy="43.2" r="1.5" fill="#fff"/></g></g>'
+      + '<path d="M47 56 Q50 59 53 56" stroke="' + nose + '" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+    if (beard) {
+      svg += '<path d="M30 66 Q31 88 50 92 Q69 88 70 66 Q62 79 50 79 Q38 79 30 66 Z" fill="' + beard + '"/>'
+        + '<path d="M36 63.5 Q50 57.5 64 63.5 Q50 67.5 36 63.5 Z" fill="' + beard + '"/>';
+    }
+    svg += '<path class="mouth" d="M38 66 Q50 75 62 66 Q50 70.5 38 66 Z" fill="#7c2d12"/>';
+    if (wear === "shirt") {
+      svg += '<path d="M6 86 Q50 104 94 86 L94 101 L6 101 Z" fill="' + wearC + '"/>'
+        + '<path d="M6 86 Q50 104 94 86" stroke="' + shade(wearC, 0.18) + '" stroke-width="1.6" fill="none"/>';
+    } else if (wear === "bow") {
+      svg += '<path d="M50 90 L37 83.5 L37 96.5 Z" fill="' + wearC + '" stroke="' + shade(wearC, -0.22) + '" stroke-width="1.2"/>'
+        + '<path d="M50 90 L63 83.5 L63 96.5 Z" fill="' + wearC + '" stroke="' + shade(wearC, -0.22) + '" stroke-width="1.2"/>'
+        + '<circle cx="50" cy="90" r="3.4" fill="' + shade(wearC, -0.22) + '"/>';
+    }
+    svg += '</svg>';
     var face = document.createElement("div");
     face.className = "lc-avatar-face";
-    var g = "lcFaceG" + (++FACE_ID);   /* unique gradient id per instance */
-    face.innerHTML =
-      '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-      '<defs><radialGradient id="' + g + '" cx="38%" cy="30%" r="80%">' +
-      '<stop offset="0%" stop-color="#ffe4a3"/><stop offset="55%" stop-color="#ffd166"/>' +
-      '<stop offset="100%" stop-color="#f0b445"/></radialGradient></defs>' +
-      '<circle cx="50" cy="50" r="50" fill="url(#' + g + ')"/>' +
-      '<ellipse cx="50" cy="93" rx="42" ry="15" fill="rgba(140,90,20,0.06)"/>' +
-      '<circle cx="26" cy="62" r="6.5" fill="#f4978e" opacity="0.4"/>' +
-      '<circle cx="74" cy="62" r="6.5" fill="#f4978e" opacity="0.4"/>' +
-      '<path class="brow" d="M25 31 Q33 26 42 30" stroke="#8a6428" stroke-width="2.8" fill="none" stroke-linecap="round"/>' +
-      '<path class="brow" d="M58 30 Q67 26 75 31" stroke="#8a6428" stroke-width="2.8" fill="none" stroke-linecap="round"/>' +
-      '<circle cx="34" cy="44" r="11" fill="rgba(255,255,255,0.75)" stroke="#334155" stroke-width="2.4"/>' +
-      '<circle cx="66" cy="44" r="11" fill="rgba(255,255,255,0.75)" stroke="#334155" stroke-width="2.4"/>' +
-      '<path d="M45 43 Q50 40 55 43" stroke="#334155" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
-      '<g class="eye-g"><g class="pupil">' +
-      '<circle cx="34" cy="45" r="4.6" fill="#4a3120"/>' +
-      '<circle cx="35.6" cy="43.2" r="1.5" fill="#fff"/></g></g>' +
-      '<g class="eye-g"><g class="pupil">' +
-      '<circle cx="66" cy="45" r="4.6" fill="#4a3120"/>' +
-      '<circle cx="67.6" cy="43.2" r="1.5" fill="#fff"/></g></g>' +
-      '<path d="M47 56 Q50 59 53 56" stroke="#d9a441" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
-      '<path class="mouth" d="M38 66 Q50 75 62 66 Q50 70.5 38 66 Z" fill="#7c2d12"/>' +
-      '<path d="M50 90 L37 83.5 L37 96.5 Z" fill="#0066cc" stroke="#0a55a6" stroke-width="1.2"/>' +
-      '<path d="M50 90 L63 83.5 L63 96.5 Z" fill="#0066cc" stroke="#0a55a6" stroke-width="1.2"/>' +
-      '<circle cx="50" cy="90" r="3.4" fill="#0a55a6"/>' +
-      '</svg>';
+    face.innerHTML = svg;
     char.appendChild(face);
     var av = window._lcAvatars[id];
     if (av) {
@@ -959,6 +1008,7 @@ Auto-included by docs/_layouts/default.html.
       av.faceEl = face;   /* tilted toward the spotlighted element */
     }
   }
+
 
   /* discover the loaded Rive state machine's inputs: a boolean named like
      "talk" follows the speaking state, a number named like "mouth" follows
