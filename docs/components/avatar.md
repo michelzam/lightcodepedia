@@ -18,6 +18,7 @@ tours — and the player behind the [🎬 demo](/components/demo)'s **▶ Replay
 
 ```yaml
 voice: en-US
+bot: doc
 face:
   zoom: 1.2
 script:
@@ -86,6 +87,7 @@ In the YAML (or as attributes on the block):
 | `video` | A recorded clip URL (or `[webm-alpha, mp4]` fallbacks) — the character *is* the video |
 | `transparent` | `true` + an alpha WebM: the face floats free, no round crop |
 | `elevenlabs` | An ElevenLabs voice id (or `{ voice, model }`) — playback auto-finds each line's pre-generated studio file and falls back to TTS; see 🎙️ below |
+| `bot` | A bot name (`docs/bots/…`) — the docked guide gains **💬 Ask**: questions answered by that bot on the learner's own PAT, and the answer is *performed* — the guide walks to the components it mentions while speaking. It only ever walks, points and talks — never acts |
 | `dock="true"` | Dock this avatar as the page's **guide**: a small face in the bottom-right corner, zero moves away — tap it for ▶ play tour · next · ⏹ stop. The full character stays hidden until it performs; right-click (long-press) on it opens the same verbs beside it (this page docks Doc) |
 | `face` | Make the built-in character look like **you** — see 🪞 below |
 
@@ -164,6 +166,20 @@ like your ✏️ editor connection, and reused silently after that;
 - Prefer the terminal (bulk pages, CI)? `ELEVENLABS_API_KEY=sk_… node
   packages/gen-audio.mjs docs/your-page.md --voice <voice_id>` — identical
   file naming and manifest, interchangeable with the button.
+
+## 💬 Ask — questions, answered in place
+
+With `bot: doc` on the fence, the docked guide's menu gains **💬 Ask**. Type a
+question; it goes to [the bot](/components/agent) — Doc's persona plus this
+page's own material — on **your PAT and your free credits** (first ask pastes
+it once, kept in memory only). The answer comes back **performed**: Doc walks
+to each component his reply mentions, spotlights it, and speaks the step.
+
+- The guide **never acts** — he walks, points and talks. Changing things stays
+  yours (and will always ask first, when that day comes).
+- One question at a time for now — conversation memory is a later stage.
+- A component the reply names wrongly is simply spoken, not walked — a wrong
+  answer can never break the page.
 
 ## 🤝 With the demo — ▶ Replay
 

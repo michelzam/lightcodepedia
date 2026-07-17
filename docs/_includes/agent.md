@@ -267,6 +267,30 @@ Auto-included by docs/_layouts/default.html.
     return _botCache[key];
   }
 
+  // ===== lcBotAsk — the brain as a service for other components ==========
+  // The docked guide (avatar.md) asks questions through here: same bot files,
+  // same knowledge stuffing, same in-memory PAT, no second auth system.
+  window.lcBotAsk = {
+    ready: function () { return !!SHARED.token; },
+    connect: function (pat) { if (pat) setSharedToken(String(pat).trim()); },
+    disconnect: function () { setSharedToken(null); },
+    onChange: onSharedTokenChange,
+    ask: function (botName, question) {
+      if (!SHARED.token) return Promise.resolve({ error: 'No token' });
+      return loadBot(botName).then(function (botCfg) {
+        var cfg = {};
+        Object.keys(DEFAULTS).forEach(function (k) { cfg[k] = DEFAULTS[k]; });
+        Object.keys(botCfg).forEach(function (k) { cfg[k] = botCfg[k]; });
+        return ask(SHARED.token, cfg, question);
+      }, function () {
+        return { error: 'bot "' + botName + '" could not be loaded' };
+      }).then(function (result) {
+        if (result && result.unauthorized) setSharedToken(null);
+        return result;
+      });
+    }
+  };
+
   // ===== panel structure =====
   function buildPanel(id, cfg, rows, boundId) {
     var div = document.createElement('div');

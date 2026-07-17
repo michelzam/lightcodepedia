@@ -71,6 +71,11 @@ Attributes on .avatar:
               avatar isn't in step mode; a video cue `step: true` forces a stop
               at that cue.
   size      — pixel size of the character bubble (default: 140)
+  bot       — a bot name (docs/bots/<name>.md): the docked guide gains 💬 Ask —
+              questions go to that bot (agent brain, learner's own PAT, page
+              knowledge) and the ANSWER is played as guided steps: a reply
+              line "[form_id] Change the treats." walks there while speaking.
+              The guide only ever walks, points and talks — never acts.
   dock      — "true": dock this avatar as the page's GUIDE — a small face in
               the bottom-right corner; tap → ▶ play tour · next · ⏹ stop.
               The full character hides while idle (the seed represents it) and
@@ -240,6 +245,25 @@ Auto-included by docs/_layouts/default.html.
 }
 .lc-guide-menu button:last-child { border-bottom: none; }
 .lc-guide-menu button:hover { background: #f0f6ff; }
+.lc-guide-ask {
+  position: fixed; right: 16px; bottom: 136px; z-index: 941;
+  display: none; flex-direction: column; gap: 6px; width: min(320px, calc(100vw - 32px));
+  background: #fff; border: 1px solid #d8dee6; border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18); padding: 10px;
+}
+.lc-guide-ask.open { display: flex; }
+.lc-guide-ask textarea, .lc-guide-ask input[type=password] {
+  width: 100%; box-sizing: border-box; padding: 0.5em 0.6em;
+  border: 1px solid #ccc; border-radius: 6px; font: inherit; font-size: 0.9em;
+}
+.lc-guide-ask input[type=text] { position: absolute; left: -9999px; }
+.lc-guide-ask-row { display: flex; gap: 6px; justify-content: flex-end; }
+.lc-guide-ask button {
+  border: none; border-radius: 6px; padding: 0.45em 0.9em; cursor: pointer;
+  font: inherit; font-size: 0.88em; font-weight: 600; background: #0066cc; color: #fff;
+}
+.lc-guide-ask button:hover { background: #0052a3; }
+.lc-guide-ask-hint { font-size: 0.76em; color: #6b7280; margin: 0; }
 .lc-guide-hello {
   position: fixed; right: 70px; bottom: 90px; z-index: 941;
   background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
@@ -869,7 +893,8 @@ Auto-included by docs/_layouts/default.html.
         size: size, spot: null,
         pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
         playing: false, idx: 0, lottieDone: false, step: step, mute: mute,
-        genVoice: genVoice, genModel: genModel
+        genVoice: genVoice, genModel: genModel,
+        botName: (cfg.bot ? String(cfg.bot) : "")
       };
 
       /* init character graphic */
@@ -1412,6 +1437,112 @@ Auto-included by docs/_layouts/default.html.
      corner — the guide is zero moves away, as the page designer decided.
      Tap → a tiny menu of the avatar's verbs (play / continue / stop). The
      seed never speaks first: one silent "need a tour?" bubble, once ever. */
+  /* ── 💬 ask: the guide answers through its own body ────────────────────
+     The bot (agent brain via lcBotAsk) replies; the answer is played as
+     guided steps. Protocol: a line may start with a component id in square
+     brackets — "[demo_form] Change the treats." — Doc walks there while
+     saying it. Unresolvable ids degrade to plain speech; a malformed answer
+     degrades to bubble lines. Never actions, only walk-point-talk. */
+  function parseAnswerSteps(text) {
+    var out = [];
+    String(text || '').split(/\n+/).forEach(function (raw) {
+      var t = raw.trim().replace(/[*`]+/g, '');
+      if (!t) return;
+      var m = /^\[([A-Za-z_][\w-]*)\]\s*(.+)$/.exec(t);
+      var at = '', say = t;
+      if (m) { at = m[1]; say = m[2]; }
+      if (at && !(window.lcAvatarResolve && window.lcAvatarResolve(at))) at = '';
+      while (say.length > 220) {                     /* bubble-sized chunks */
+        var cut = say.lastIndexOf('. ', 200);
+        if (cut < 60) cut = 200;
+        out.push({ at: at, say: say.slice(0, cut + 1).trim(), pause: 0.6 });
+        at = ''; say = say.slice(cut + 1).trim();
+      }
+      if (say) out.push({ at: at, say: say, pause: 0.8 });
+    });
+    return out.slice(0, 12);
+  }
+  function guideBubble(av, text) {   /* show the character with a message, engine-off */
+    av.host.setAttribute('data-state', 'speaking');
+    av.bubble.textContent = text;
+    av.bubble.classList.add('visible');
+  }
+  function guideIdle(av) {
+    av.bubble.classList.remove('visible');
+    av.host.setAttribute('data-state', 'idle');
+  }
+  function askDoc(elId, av, question) {
+    if (av.playing) stopPlay(elId);
+    if (!av._tourScript) av._tourScript = av.script;   /* stash the authored tour */
+    guideBubble(av, '🤔 …');
+    var restore = function (ev) {
+      if (ev && ev.detail && ev.detail.id !== elId) return;
+      document.removeEventListener('lc-avatar-ended', restore);
+      if (av._tourScript) { av.script = av._tourScript; av._tourScript = null; av.idx = 0; }
+    };
+    window.lcBotAsk.ask(av.botName, question).then(function (result) {
+      if (!result || result.error) {
+        guideBubble(av, '⚠ ' + ((result && result.error) || 'No answer.'));
+        setTimeout(function () { guideIdle(av); restore(); }, 4000);
+        return;
+      }
+      var steps = parseAnswerSteps(result.text);
+      if (!steps.length) {
+        guideBubble(av, 'I have no answer for that — try rephrasing?');
+        setTimeout(function () { guideIdle(av); restore(); }, 4000);
+        return;
+      }
+      document.addEventListener('lc-avatar-ended', restore);
+      av.script = steps.map(lineSpec);
+      av.idx = 0;
+      startPlay(elId);
+    });
+  }
+
+  /* the ask panel: question box when connected, PAT paste when not */
+  function openAskPanel(elId, av) {
+    var panel = document.querySelector('.lc-guide-ask');
+    if (panel) panel.remove();
+    panel = document.createElement('div');
+    panel.className = 'lc-guide-ask open';
+    var ready = window.lcBotAsk && window.lcBotAsk.ready();
+    if (ready) {
+      panel.innerHTML =
+        '<textarea rows="2" placeholder="Ask about this page…"></textarea>' +
+        '<div class="lc-guide-ask-row"><button type="button">▶ Ask</button></div>';
+      var ta = panel.querySelector('textarea');
+      panel.querySelector('button').addEventListener('click', function () {
+        var q = (ta.value || '').trim();
+        if (!q) return;
+        panel.remove();
+        askDoc(elId, av, q);
+      });
+      setTimeout(function () { ta.focus(); }, 50);
+    } else {
+      panel.innerHTML =
+        '<p class="lc-guide-ask-hint">Asking uses your own free credits — paste your GitHub PAT once (kept in memory only, like the agents on this page).</p>' +
+        '<form autocomplete="on">' +
+        '<input type="text" name="username" value="github-models" autocomplete="username" tabindex="-1" readonly>' +
+        '<input type="password" name="password" autocomplete="current-password" placeholder="ghp_…" required>' +
+        '<div class="lc-guide-ask-row" style="margin-top:6px"><button type="submit">Save &amp; ask</button></div>' +
+        '</form>';
+      panel.querySelector('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = (panel.querySelector('input[type=password]').value || '').trim();
+        if (!v) return;
+        window.lcBotAsk.connect(v);
+        panel.remove();
+        openAskPanel(elId, av);   /* reopen in question state */
+      });
+    }
+    document.body.appendChild(panel);
+    setTimeout(function () {
+      document.addEventListener('click', function onDoc(e) {
+        if (!panel.contains(e.target)) { panel.remove(); document.removeEventListener('click', onDoc); }
+      });
+    }, 0);
+  }
+
   /* local verb menu on the character itself: ▶ start / ↺ replay · next →
      · ⏹ stop · ✖ close — anchored beside the avatar, one at a time */
   function openVerbMenu(elId, av) {
@@ -1473,6 +1604,9 @@ Auto-included by docs/_layouts/default.html.
       menu.innerHTML = '';
       if (!av.playing) {
         menu.appendChild(item(av.idx > 0 ? '↺ Replay tour' : '▶ Play tour', function () { togglePlay(elId); menu.classList.remove('open'); }));
+        if (av.botName && window.lcBotAsk) {
+          menu.appendChild(item('💬 Ask', function () { menu.classList.remove('open'); openAskPanel(elId, av); }));
+        }
       } else if (av._waiting || av._curStep || av.step) {
         menu.appendChild(item('Next →', function () { togglePlay(elId); }));
         menu.appendChild(item('⏹ Stop', function () { stopPlay(elId); menu.classList.remove('open'); }));
