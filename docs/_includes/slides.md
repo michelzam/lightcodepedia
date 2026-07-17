@@ -162,7 +162,9 @@ body.lc-reel-active .markdown-body {
 body.lc-reel-active .lc-slide {
   min-height: 100vh; min-height: 100dvh;
   scroll-snap-align: start; scroll-snap-stop: always;
-  box-sizing: border-box; padding: 3.2em 1.4em 3.2em;
+  /* top clearance = the fixed context bar (~48px) + breathing room — the
+     old 3.2em only tied with the bar and lost on phones (clipped titles) */
+  box-sizing: border-box; padding: calc(48px + 1.6em) 1.4em 3.2em;
   display: flex; flex-direction: column; justify-content: flex-start;
   max-width: 900px; margin: 0 auto;
 }
