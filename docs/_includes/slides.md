@@ -195,6 +195,7 @@ body.lc-reel-active .lc-reel-bar {
   <button class="lc-bl-popup-item" id="lc-bl-reel-btn"    type="button">📲 Reel</button>
   <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    type="button">🔬 X-ray</button>
   <button class="lc-bl-popup-item" id="lc-bl-edit-btn"    type="button" hidden>✏️ Edit</button>
+  <button class="lc-bl-popup-item" id="lc-bl-guide-btn"   type="button" style="border-top:2px solid #e5e7eb">🧑‍🏫 Guide</button>
 </div>
 <div class="lc-reel-bar">
   <button class="lc-reel-back" type="button" aria-label="Back to previous page" title="Back">‹</button>
@@ -631,7 +632,7 @@ body.lc-reel-active .lc-reel-bar {
     var xrayBtn    = document.getElementById('lc-bl-xray-btn');
 
     function closePopup() { if (popup) popup.classList.remove('open'); }
-    function openPopup()  { if (popup) { refreshMarks(); popup.classList.add('open'); } }
+    function openPopup()  { if (popup) { refreshMarks(); refreshGuideMark(); popup.classList.add('open'); } }
 
     /* pill state: ✓ on the active mode; the FAB icon mirrors it */
     var MODE_ICONS = { read: '📽️', present: '📽️', reel: '📲', xray: '🔬', edit: '✏️' };
@@ -695,6 +696,24 @@ body.lc-reel-active .lc-reel-bar {
     if (reelBtn) reelBtn.addEventListener('click', function(e) {
       e.stopPropagation(); closePopup(); setMode('reel');
     });
+    /* 🧑‍🏫 Guide: a companion TOGGLE (not a mode — he can join any mode).
+       Persisted per device: learners summon the generic guide on any page
+       the author left bare; authored guides are unaffected. */
+    var guideBtn = document.getElementById('lc-bl-guide-btn');
+    function refreshGuideMark() {
+      if (!guideBtn) return;
+      var on = null; try { on = localStorage.getItem('lc_guide_on'); } catch (e) {}
+      guideBtn.classList.toggle('lc-mode-on', on === '1' || !!document.getElementById('guide_seed'));
+    }
+    if (guideBtn) guideBtn.addEventListener('click', function (e) {
+      e.stopPropagation(); closePopup();
+      var on = null; try { on = localStorage.getItem('lc_guide_on'); } catch (e2) {}
+      if (window.lcGuideOn) window.lcGuideOn(on !== '1');
+      refreshGuideMark();
+    });
+    document.addEventListener('lc-mode-changed', refreshGuideMark);
+    refreshGuideMark();
+
     /* Edit joins the pill only where the editor exists on the page */
     var editBtn = document.getElementById('lc-bl-edit-btn');
     if (editBtn && document.getElementById('ed-fab')) {

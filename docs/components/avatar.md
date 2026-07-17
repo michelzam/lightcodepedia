@@ -180,6 +180,12 @@ to each component his reply mentions, spotlights it, and speaks the step.
 - One question at a time for now — conversation memory is a later stage.
 - A component the reply names wrongly is simply spoken, not walked — a wrong
   answer can never break the page.
+- **Connected to the ✏️ editor?** Your PAT is reused silently — no re-pasting;
+  agents and the guide share one token per page.
+- **No guide on a page?** The mode pill (bottom-left) has a **🧑‍🏫 Guide**
+  toggle: it summons the generic companion on any page, remembered on your
+  device — no tour there, but 💬 Ask still knows the page it stands on.
+  Authored guides always take precedence.
 
 ## 🤝 With the demo — ▶ Replay
 

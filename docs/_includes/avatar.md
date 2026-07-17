@@ -1603,7 +1603,9 @@ Auto-included by docs/_layouts/default.html.
     function render() {
       menu.innerHTML = '';
       if (!av.playing) {
-        menu.appendChild(item(av.idx > 0 ? '↺ Replay tour' : '▶ Play tour', function () { togglePlay(elId); menu.classList.remove('open'); }));
+        if (av.script.length) {
+          menu.appendChild(item(av.idx > 0 ? '↺ Replay tour' : '▶ Play tour', function () { togglePlay(elId); menu.classList.remove('open'); }));
+        }
         if (av.botName && window.lcBotAsk) {
           menu.appendChild(item('💬 Ask', function () { menu.classList.remove('open'); openAskPanel(elId, av); }));
         }
@@ -1636,6 +1638,63 @@ Auto-included by docs/_layouts/default.html.
       try { localStorage.setItem('lc_guide_hello', '1'); } catch (e) {}
     }
   }
+
+  /* ── learner-summoned guide ───────────────────────────────────────────────
+     The pill's 🧑‍🏫 Guide toggle (persisted per device) brings the generic
+     companion to ANY page the author left bare: classic face, no tour, 💬 Ask
+     wired to the site's default bot (knowledge: self → he still knows the
+     page). Authored guides always win — summoning is a no-op beside them. */
+  var GUIDE_BOT = {{ site.guide_bot | default: "doc" | jsonify }};
+  window.lcGuideOn = function (on) {
+    try { on ? localStorage.setItem('lc_guide_on', '1') : localStorage.removeItem('lc_guide_on'); } catch (e) {}
+    var seed = document.getElementById('guide_seed');
+    if (!on) {
+      if (seed && seed.dataset.lcGeneric) {
+        seed.remove();
+        var m = document.querySelector('.lc-guide-menu'); if (m) m.remove();
+      }
+      return;
+    }
+    if (seed) return;                       /* authored (or already summoned) guide wins */
+    var elId = 'site_guide';
+    if (window._lcAvatars && window._lcAvatars[elId]) return;
+    var host = document.createElement('div');
+    host.className = 'lc-avatar-host lc-avatar-docked';
+    host.id = 'lc-avatar-' + elId;
+    host.setAttribute('data-lc-id', elId);
+    host.style.left = '70vw';
+    var pose = document.createElement('div'); pose.className = 'lc-avatar-pose'; host.appendChild(pose);
+    var char = document.createElement('div'); char.className = 'lc-avatar-char';
+    char.style.width = '115px'; char.style.height = '115px'; pose.appendChild(char);
+    var bubble = document.createElement('div'); bubble.className = 'lc-avatar-speech'; pose.appendChild(bubble);
+    document.body.appendChild(host);
+    var av = (window._lcAvatars = window._lcAvatars || {})[elId] = {
+      host: host, bubble: bubble, char: char,
+      script: [], path: 'right', voice: '',
+      tune: { rate: 0, pitch: 0 },
+      lottie: '', lottieSeg: null, rive: '', riveSm: '',
+      riveAnim: null, riveTalk: null, riveMouth: null, riveTriggers: [], riveInputs: null,
+      video: '', transparent: false,
+      faceCfg: { zoom: 1.2 },
+      size: 115, spot: null,
+      pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
+      playing: false, idx: 0, lottieDone: false, step: false, mute: false,
+      genVoice: '', genModel: 'eleven_multilingual_v2',
+      botName: GUIDE_BOT
+    };
+    initChar(elId, char, 115);
+    av._idleT = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
+    char.addEventListener('click', function () { togglePlay(elId); });
+    char.addEventListener('contextmenu', function (e) { e.preventDefault(); openVerbMenu(elId, av); });
+    buildSeed(elId, av);
+    var sd = document.getElementById('guide_seed');
+    if (sd) sd.dataset.lcGeneric = '1';
+  };
+  /* honor the persisted choice on every page (after upgrades settle) */
+  setTimeout(function () {
+    var on = null; try { on = localStorage.getItem('lc_guide_on'); } catch (e) {}
+    if (on === '1' && !document.getElementById('guide_seed')) window.lcGuideOn(true);
+  }, 900);
 
   /* ── voices studio: order studio audio from the page itself ──────────────
      [🎙️ Generate voices](#) {: .avatar-voices target="prof" }

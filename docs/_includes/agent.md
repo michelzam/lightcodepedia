@@ -95,7 +95,12 @@ Auto-included by docs/_layouts/default.html.
   var AGENT_SEQ = 0;
 
   // ===== shared token state — one token per page, all agents observe =====
+  // If the ✏️ editor is connected on this device, borrow its PAT silently —
+  // same token, same GitHub, no re-pasting ceremony ("one token for
+  // everything", as the docs teach). A 401 clears it and the normal
+  // paste-once flow takes over. Nothing new is stored.
   var SHARED = { token: null, listeners: [] };
+  try { SHARED.token = localStorage.getItem('lc_ed_pat') || null; } catch (e) {}
   function setSharedToken(v) {
     SHARED.token = v;
     SHARED.listeners.forEach(function(cb){ try { cb(v); } catch (e) {} });
