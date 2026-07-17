@@ -27,7 +27,8 @@ on load.
 .lc-slides-fab.lc-fab-expanded { background: #f5f9ff; border-color: #0066cc; box-shadow: 0 4px 14px rgba(0,102,204,0.18); transform: translateY(-1px); gap: 0.45em; padding-right: 16px; }
 .lc-slides-fab.lc-fab-expanded .lc-slides-fab-label { max-width: 140px; opacity: 1; }
 .lc-slides-fab:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
-.lc-slides-fab[data-no-slides="true"] { display: none; }
+/* even without a deck the FAB stays: it is the page-mode pill
+   (Present/Reel hide themselves; X-ray, Edit and Guide remain) */
 .lc-embed-mode .lc-slides-fab { display: none !important; }
 @media (max-width: 700px) { .lc-slides-fab { bottom: 0.8em; left: 0.8em; } }
 
@@ -622,11 +623,15 @@ body.lc-reel-active .lc-reel-bar {
     }
 
     partition();
-    if (!hasDeck()) {
+    var deckless = !hasDeck();
+    if (deckless) {
       fab.setAttribute('data-no-slides', 'true');
-      return;
+      var lb = fab.querySelector('.lc-slides-fab-label');
+      if (lb) lb.textContent = 'Modes';
+      fab.title = 'Page mode';
+    } else {
+      buildJumpOptions();
     }
-    buildJumpOptions();
 
     var touchOnly = window.matchMedia('(hover: none)').matches;
     var popup = document.getElementById('lc-bl-popup');
@@ -671,12 +676,22 @@ body.lc-reel-active .lc-reel-bar {
       e.preventDefault();
       if (window.lcxIsActive && window.lcxIsActive()) { xrayOff(); return; }
       if (body.classList.contains('lc-reel-active')) { window.lcMode ? window.lcMode.set('read') : exitReel(); return; }
-      if (touchOnly && !body.classList.contains('lc-slides-active')) {
+      if ((touchOnly || deckless) && !body.classList.contains('lc-slides-active')) {
         popup.classList.contains('open') ? closePopup() : openPopup();
         return;
       }
       window.lcMode ? window.lcMode.set(body.classList.contains('lc-slides-active') ? 'read' : 'present') : toggle();
     });
+
+    /* desktop affordance: hovering the pill reveals the modes (click keeps
+       its direct meaning — Present on deck pages); leaving closes it */
+    if (window.matchMedia('(hover: hover)').matches && popup) {
+      var hoverT = null;
+      fab.addEventListener('mouseenter', function () { clearTimeout(hoverT); openPopup(); });
+      fab.addEventListener('mouseleave', function () { hoverT = setTimeout(closePopup, 350); });
+      popup.addEventListener('mouseenter', function () { clearTimeout(hoverT); });
+      popup.addEventListener('mouseleave', function () { hoverT = setTimeout(closePopup, 350); });
+    }
 
     function setMode(m) {
       if (window.lcMode) { window.lcMode.set(m); return; }
@@ -688,6 +703,11 @@ body.lc-reel-active .lc-reel-bar {
     if (readBtn) readBtn.addEventListener('click', function(e) {
       e.stopPropagation(); closePopup(); if (window.lcMode) window.lcMode.set('read');
     });
+    if (deckless) {
+      if (presentBtn) presentBtn.hidden = true;
+      var rb0 = document.getElementById('lc-bl-reel-btn');
+      if (rb0) rb0.hidden = true;
+    }
     if (presentBtn) presentBtn.addEventListener('click', function(e) {
       e.stopPropagation(); closePopup(); setMode('present');
     });
