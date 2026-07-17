@@ -81,6 +81,7 @@ Attributes on .avatar:
                   hair_color: "#c9c9c9"
                   wear: shirt           # bow (default) | shirt | none
                   wear_color: "#3b4046"
+                  head: oval            # round (default) | oval
                   blush: false          # default true
   elevenlabs — an ElevenLabs voice id (or { voice, model }): playback then
               looks for the pre-generated studio file of each line
@@ -950,6 +951,7 @@ Auto-included by docs/_layouts/default.html.
     var hair = cfg.hair || "none", hairC = cfg.hair_color || "#c9c9c9";
     var wear = cfg.wear || "bow";                         /* bow | shirt | none */
     var wearC = cfg.wear_color || (wear === "shirt" ? "#3a3f45" : "#0066cc");
+    var head = cfg.head || "round";                       /* round | oval */
     var g = "lcFaceG" + (++FACE_ID);   /* unique gradient id per instance */
     var s0 = custom ? shade(skin, 0.22) : "#ffe4a3";
     var s2 = custom ? shade(skin, -0.12) : "#f0b445";
@@ -958,7 +960,9 @@ Auto-included by docs/_layouts/default.html.
       + '<defs><radialGradient id="' + g + '" cx="38%" cy="30%" r="80%">'
       + '<stop offset="0%" stop-color="' + s0 + '"/><stop offset="55%" stop-color="' + skin + '"/>'
       + '<stop offset="100%" stop-color="' + s2 + '"/></radialGradient></defs>'
-      + '<circle cx="50" cy="50" r="50" fill="url(#' + g + ')"/>'
+      + (head === "oval"
+          ? '<ellipse cx="50" cy="50" rx="43" ry="50" fill="url(#' + g + ')"/>'
+          : '<circle cx="50" cy="50" r="50" fill="url(#' + g + ')"/>')
       + '<ellipse cx="50" cy="93" rx="42" ry="15" fill="rgba(60,40,20,0.06)"/>';
     if (hair === "full") svg += '<path d="M8 40 Q10 12 50 10 Q90 12 92 40 Q70 20 50 20 Q30 20 8 40 Z" fill="' + hairC + '"/>';
     if (hair === "sides") svg += '<path d="M4 46 Q2 72 22 86 Q10 66 14 47 Z" fill="' + hairC + '"/>'
@@ -984,7 +988,7 @@ Auto-included by docs/_layouts/default.html.
       + '<g class="eye-g"><g class="pupil"><circle cx="66" cy="45" r="4.6" fill="#4a3120"/><circle cx="67.6" cy="43.2" r="1.5" fill="#fff"/></g></g>'
       + '<path d="M47 56 Q50 59 53 56" stroke="' + nose + '" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
     if (beard) {
-      svg += '<path d="M30 66 Q31 88 50 92 Q69 88 70 66 Q62 79 50 79 Q38 79 30 66 Z" fill="' + beard + '"/>'
+      svg += '<path d="M39 73 L61 73 Q61 85 50 88 Q39 85 39 73 Z" fill="' + beard + '"/>'
         + '<path d="M36 63.5 Q50 57.5 64 63.5 Q50 67.5 36 63.5 Z" fill="' + beard + '"/>';
     }
     svg += '<path class="mouth" d="M38 66 Q50 75 62 66 Q50 70.5 38 66 Z" fill="#7c2d12"/>';
