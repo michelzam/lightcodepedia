@@ -73,7 +73,12 @@ Attributes on .avatar:
   size      — pixel size of the character bubble (default: 140)
   dock      — "true": dock this avatar as the page's GUIDE — a small face in
               the bottom-right corner; tap → ▶ play tour · next · ⏹ stop.
-              One silent "need a tour?" bubble on a visitor's first page, ever.
+              The full character hides while idle (the seed represents it) and
+              appears only while performing. One silent "need a tour?" bubble
+              on a visitor's first page, ever. Right-click (long-press) on the
+              performing character opens the same verbs beside it.
+  face.zoom — enlarge the facial features only (eyes, mouth…) — pair with a
+              smaller size for a compact character with same-size features.
   face      — make the built-in character look like its author (all optional):
                 face:
                   skin: "#e2a87e"       # head colour (default: LC yellow)
@@ -205,6 +210,11 @@ Auto-included by docs/_layouts/default.html.
 }
 .lc-avatar-speech.visible { opacity: 1; }
 /* ── guide seed: the docked companion (dock="true") ──── */
+/* when a page docks its guide, the SEED is the idle presence — the full
+   character appears only while performing (and melts away after) */
+.lc-avatar-host.lc-avatar-docked:not([data-state="speaking"]) {
+  opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+}
 .lc-guide-seed {
   position: fixed; right: 16px; bottom: 84px; z-index: 940;
   width: 46px; height: 46px; border-radius: 50%;
@@ -872,8 +882,9 @@ Auto-included by docs/_layouts/default.html.
       /* idle saccades keep the built-in face alive */
       av._idleT = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
 
-      /* click to play/stop */
+      /* click to play/stop; right-click (or long-press) → local verb menu */
       char.addEventListener("click", function () { togglePlay(elId); });
+      char.addEventListener("contextmenu", function (e) { e.preventDefault(); openVerbMenu(elId, av); });
 
       if (autoplay) {
         /* slight delay so voices list populates */
@@ -990,6 +1001,7 @@ Auto-included by docs/_layouts/default.html.
     var wear = cfg.wear || "bow";                         /* bow | shirt | none */
     var wearC = cfg.wear_color || (wear === "shirt" ? "#3a3f45" : "#0066cc");
     var head = cfg.head || "round";                       /* round | oval */
+    var zoom = parseFloat(cfg.zoom) || 1;                 /* enlarge features only (head/wear stay) */
     var g = "lcFaceG" + (++FACE_ID);   /* unique gradient id per instance */
     var s0 = custom ? shade(skin, 0.22) : "#ffe4a3";
     var s2 = custom ? shade(skin, -0.12) : "#f0b445";
@@ -1001,7 +1013,8 @@ Auto-included by docs/_layouts/default.html.
       + (head === "oval"
           ? '<ellipse cx="50" cy="50" rx="43" ry="50" fill="url(#' + g + ')"/>'
           : '<circle cx="50" cy="50" r="50" fill="url(#' + g + ')"/>')
-      + '<ellipse cx="50" cy="93" rx="42" ry="15" fill="rgba(60,40,20,0.06)"/>';
+      + '<ellipse cx="50" cy="93" rx="42" ry="15" fill="rgba(60,40,20,0.06)"/>'
+      + (zoom !== 1 ? '<g transform="translate(50 52) scale(' + zoom + ') translate(-50 -52)">' : '');
     if (hair === "full") svg += '<path d="M8 40 Q10 12 50 10 Q90 12 92 40 Q70 20 50 20 Q30 20 8 40 Z" fill="' + hairC + '"/>';
     if (hair === "sides") svg += '<path d="M4 46 Q2 72 22 86 Q10 66 14 47 Z" fill="' + hairC + '"/>'
       + '<path d="M96 46 Q98 72 78 86 Q90 66 86 47 Z" fill="' + hairC + '"/>';
@@ -1030,6 +1043,7 @@ Auto-included by docs/_layouts/default.html.
         + '<path d="M36 63.5 Q50 57.5 64 63.5 Q50 67.5 36 63.5 Z" fill="' + beard + '"/>';
     }
     svg += '<path class="mouth" d="M38 66 Q50 75 62 66 Q50 70.5 38 66 Z" fill="#7c2d12"/>';
+    if (zoom !== 1) svg += '</g>';
     if (wear === "shirt") {
       svg += '<path d="M6 86 Q50 104 94 86 L94 101 L6 101 Z" fill="' + wearC + '"/>'
         + '<path d="M6 86 Q50 104 94 86" stroke="' + shade(wearC, 0.18) + '" stroke-width="1.6" fill="none"/>';
@@ -1253,6 +1267,7 @@ Auto-included by docs/_layouts/default.html.
          dwell in mute mode) so the walk never breaks. */
       av.bubble.textContent = line.say;
       playAudio(av, line.audio, finish, function () {
+        if (!av.playing) return;   /* the user stopped: play() rejection is not a missing file */
         if (av.mute || !window.speechSynthesis) {
           setTimeout(finish, Math.min(8000, 900 + line.say.split(" ").length * 260));
         } else {
@@ -1397,8 +1412,44 @@ Auto-included by docs/_layouts/default.html.
      corner — the guide is zero moves away, as the page designer decided.
      Tap → a tiny menu of the avatar's verbs (play / continue / stop). The
      seed never speaks first: one silent "need a tour?" bubble, once ever. */
+  /* local verb menu on the character itself: ▶ start / ↺ replay · next →
+     · ⏹ stop · ✖ close — anchored beside the avatar, one at a time */
+  function openVerbMenu(elId, av) {
+    var old = document.querySelector('.lc-avatar-verbmenu');
+    if (old) { old.remove(); if (old._for === elId) return; }
+    var menu = document.createElement('div');
+    menu.className = 'lc-guide-menu lc-avatar-verbmenu open';
+    menu.setAttribute('role', 'menu');
+    menu._for = elId;
+    function item(label, fn) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.setAttribute('role', 'menuitem'); b.textContent = label;
+      b.addEventListener('click', function (e) { e.stopPropagation(); menu.remove(); fn(); });
+      menu.appendChild(b);
+    }
+    if (!av.playing) {
+      item(av.idx > 0 ? '↺ Replay' : '▶ Start', function () { togglePlay(elId); });
+    } else {
+      if (av._waiting || av._curStep || av.step) item('Next →', function () { togglePlay(elId); });
+      item('⏹ Stop', function () { stopPlay(elId); });
+    }
+    item('✖ Close', function () { stopPlay(elId); });
+    var r = av.char.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.left = Math.max(8, Math.min(window.innerWidth - 160, r.left)) + 'px';
+    menu.style.top = Math.max(8, r.top - 8 - 140) + 'px';
+    menu.style.right = 'auto'; menu.style.bottom = 'auto';
+    document.body.appendChild(menu);
+    setTimeout(function () {
+      document.addEventListener('click', function onDoc(e) {
+        if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', onDoc); }
+      });
+    }, 0);
+  }
+
   function buildSeed(elId, av) {
     if (document.getElementById('guide_seed')) return;
+    av.host.classList.add('lc-avatar-docked');   /* idle big face hides; the seed represents */
     var seed = document.createElement('button');
     seed.id = 'guide_seed'; seed.type = 'button';
     seed.className = 'lc-guide-seed';
