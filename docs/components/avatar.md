@@ -112,9 +112,10 @@ of this page):
 {: .avatar_voices target="guide" }
 ````
 
-Click it. It asks (first time only, each remembered **on this device** — like
-your ✏️ editor connection): your **ElevenLabs voice id** and your **API key**.
-Then, per script line, it:
+Click it. It asks (**first time only** — both are remembered on this device,
+like your ✏️ editor connection, and reused silently after that;
+**Shift-click** the button whenever you want to change them): your
+**ElevenLabs voice id** and your **API key**. Then, per script line, it:
 
 1. **generates** the missing audio (ElevenLabs, called from *your* browser),
 2. lets you **hear it immediately**,

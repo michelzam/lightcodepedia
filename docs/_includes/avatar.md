@@ -323,30 +323,60 @@ Auto-included by docs/_layouts/default.html.
     window.speechSynthesis.speak(utt);
   }
 
-  /* ── audio lines: real lip-sync from the waveform ───── */
+  /* ── audio lines: real lip-sync from the waveform ─────
+     ONE persistent element per avatar, "blessed" inside the user's tap:
+     iOS only allows sound that starts in a gesture (or on an element that
+     already played in one). A fresh Audio() per line therefore worked only
+     while line 1 happened to carry audio — one TTS first line and every
+     later play() was silently blocked. Priming a reusable element with
+     40ms of silence during the tap makes every later line legal — and the
+     analyser wires once (re-attaching to new elements is forbidden anyway). */
+  var SILENCE = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+  function voiceEl(av) {
+    if (av.voiceAudio) return av.voiceAudio;
+    var a = new Audio();
+    a.setAttribute("playsinline", "");
+    a.crossOrigin = "anonymous";
+    av.voiceAudio = a;
+    return a;
+  }
+  function primeVoice(av) {   /* call synchronously from a click handler */
+    if (av._voicePrimed) return;
+    av._voicePrimed = true;
+    try {
+      var a = voiceEl(av);
+      a.muted = true; a.src = SILENCE;
+      a.play().catch(function () { av._voicePrimed = false; });
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC && !av.actx) av.actx = new AC();
+      if (av.actx && av.actx.state === "suspended") av.actx.resume();
+    } catch (e) { av._voicePrimed = false; }
+  }
   function stopAudio(av) {
-    if (av.audioEl) { try { av.audioEl.pause(); } catch (e) {} av.audioEl = null; }
+    if (av.audioEl) { try { av.audioEl.pause(); } catch (e) {} }
     av.analyser = null;
   }
   function playAudio(av, url, onEnd, onErr) {
     stopAudio(av);
-    var a = new Audio();
-    a.crossOrigin = "anonymous";
-    a.src = url;
+    var a = voiceEl(av);
     av.audioEl = a;
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) {
+      if (AC && !av.analyser0) {
         var ctx = av.actx || (av.actx = new AC());
-        if (ctx.state === "suspended") ctx.resume();
-        var src = ctx.createMediaElementSource(a);
+        var src = ctx.createMediaElementSource(a);   /* once per element */
         var an = ctx.createAnalyser();
         an.fftSize = 256;
         src.connect(an); an.connect(ctx.destination);
-        av.analyser = an;
-        mouthLoop(av);
+        av.analyser0 = an;
       }
+      if (av.actx && av.actx.state === "suspended") av.actx.resume();
+      av.analyser = av.analyser0 || null;
+      if (av.analyser) mouthLoop(av);
     } catch (e) { /* no analyser → CSS flap still runs */ }
+    a.muted = false;
+    if (a.getAttribute("src") !== url) a.src = url;
+    try { a.currentTime = 0; } catch (e) {}
     var done = function () { stopAudio(av); resetMouth(av); onEnd(); };
     var fail = function () { stopAudio(av); resetMouth(av); (onErr || onEnd)(); };
     a.onended = done;
@@ -999,6 +1029,7 @@ Auto-included by docs/_layouts/default.html.
   function togglePlay(id) {
     var av = window._lcAvatars && window._lcAvatars[id];
     if (!av) return;
+    primeVoice(av);   /* we're inside the user's tap — bless the audio element */
     if (!av.playing) {
       startPlay(id);
     } else if (av._waiting) {
@@ -1200,6 +1231,8 @@ Auto-included by docs/_layouts/default.html.
     el.classList.add("lc-avatar-trigger");
     el.addEventListener("click", function (e) {
       e.preventDefault();
+      var av0 = window._lcAvatars && window._lcAvatars[targetId];
+      if (av0) primeVoice(av0);   /* the recorder flow starts playback async — bless now */
       if (!window.lcOpenRecorder) return;
       /* the avatar is the face and the voice: no camera, no mic —
          and screen/tab audio ON so the narration lands in the video */
@@ -1301,16 +1334,20 @@ Auto-included by docs/_layouts/default.html.
       var av = window._lcAvatars && window._lcAvatars[targetId];
       if (!av) { el.textContent = "✖ no avatar #" + targetId; return; }
       if (!av.genVoice) {
-        /* no elevenlabs: in the fence yet — ask, remember as a convenience
-           default, and remind at the end to add it for permanent playback */
-        var vid = window.prompt("ElevenLabs voice id (from elevenlabs.io — your cloned voice works):",
-                                localStorage.getItem("lc_11_voice") || "");
+        /* no elevenlabs: in the fence — use the remembered voice id silently;
+           ask only when nothing is stored yet (Shift-click to change it) */
+        var vid = localStorage.getItem("lc_11_voice") || "";
+        if (!vid || e.shiftKey) {
+          vid = window.prompt("ElevenLabs voice id (from elevenlabs.io — your cloned voice works):", vid) || "";
+        }
         if (!vid) return;
         av.genVoice = vid.trim(); av._genAdhoc = true;
         try { localStorage.setItem("lc_11_voice", av.genVoice); } catch (err) {}
       }
-      var key = localStorage.getItem("lc_11_key") ||
-        window.prompt("ElevenLabs API key (kept in this browser only — like your GitHub PAT):");
+      var key = localStorage.getItem("lc_11_key") || "";
+      if (!key || e.shiftKey) {
+        key = window.prompt("ElevenLabs API key (kept in this browser only — like your GitHub PAT):", key) || "";
+      }
       if (!key) return;
       key = key.trim();
       try { localStorage.setItem("lc_11_key", key); } catch (err) {}
@@ -1351,6 +1388,9 @@ Auto-included by docs/_layouts/default.html.
           }
         } catch (err) {
           failed++;
+          /* a rejected key would fail every line — forget it so the next
+             click asks again instead of failing silently forever */
+          if (/HTTP 401/.test((err && err.message) || "")) { try { localStorage.removeItem("lc_11_key"); } catch (e4) {} }
           if (window.console) console.warn("[avatar-voices] “" + text.slice(0, 40) + "…” — " + (err && err.message));
         }
       }
