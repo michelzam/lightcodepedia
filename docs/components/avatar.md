@@ -19,7 +19,7 @@ tours — and the player behind the [🎬 demo](/components/demo)'s **▶ Replay
 ```yaml
 voice: en-US
 script:
-  - "Hello! I'm Prof. LC — I narrate pages, line by line."
+  - "Hello! I'm Prof. Zam — I narrate pages, line by line."
   - at: avatar_playground
     say: "I walk to the element I'm describing, and spotlight it."
   - at: avatar_go
