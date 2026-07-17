@@ -183,3 +183,29 @@ script:
   - Feel free to tweak it to match your style!
 ```
 {: .avatar #guide dock="true" size="115" }
+
+```yaml
+bot: doc
+face:
+  zoom: 1.2
+script:
+  - 'You might wonder: Explain the main parts'
+  - 'Sure! Here are the main parts of the course:'
+  - >-
+    1. Introduction: It sets the stage for what you'll do, emphasizing that you can build useful
+    apps without prior coding experience.
+  - >-
+    2. Chapters: There are three main chapters, each with a specific focus: making something exist,
+    making it right for users, and making it last. Each chapter builds on the previous one.
+  - >-
+    3. Spiral Learning: The course uses a spiral approach, revisiting concepts with increasing
+    complexity to reinforce learning.
+  - >-
+    4. Key and Token: You need a GitHub account and a key to access the tools and features necessary
+    for building.
+  - >-
+    5. Ari and Lucky: Ari is your live assistant for guidance, while Lucky is the dog you help
+    throughout the course.
+  - If you want to dive deeper into any specific part, let me know!
+```
+{: .avatar #guide dock="true" size="115" }
