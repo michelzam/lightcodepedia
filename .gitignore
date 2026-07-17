@@ -8,4 +8,4 @@ lib/*
 .devcontainer/*
 HANDOFF.md
 docs/_site/
-.jekyll-cache/
+.jekyll-cache/_site/
