@@ -201,6 +201,32 @@ temperature: 0.3
 - [ ] `42` — works great, trust the universe.
 {: .quiz }
 
+## 🧑‍⚕️ Bots — one persona, many pages
+
+A **bot** is a markdown file in `docs/bots/` — the file's text *is* the
+superprompt (readable by anyone, like every LC page), and one small fence
+inside it sets the model, the name, and its **knowledge**: a list of course
+pages whose own markdown is folded into every answer. `self` means *the page
+the student is on*. One line summons it anywhere:
+
+````markdown
+Ask Doc — he knows this page.
+{: .agent bot="doc" }
+````
+
+Try the live one (it runs on **your** PAT, like every agent):
+
+Ask Doc — he knows this page.
+{: .agent bot="doc" #doc_demo }
+
+- The page can still override any knob (`model:`, `temperature:`…) in a fence
+  next to `bot=` — the page wins, the bot provides the defaults.
+- Improve `docs/bots/doc.md` once and every lesson using `bot="doc"` levels up.
+- Knowledge is honest **context-stuffing**, not embeddings: listed pages ride
+  along with every question (trimmed to a budget — `knowledge_budget:` chars,
+  default 16000 — with a visible "(trimmed)" note). Keep a bot's list to a few
+  focused pages.
+
 ## 🐍 Bound to a runner
 
 Add `bound="run-id"` to tie an agent to a Python editor. Every question automatically carries the editor's **current code** and **last output**. The agent can write code straight back into the editor.

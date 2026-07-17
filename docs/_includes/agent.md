@@ -23,6 +23,13 @@ YAML knobs (optional):
 IAL knobs:
   id="..."    required when there are multiple agents on a page
   rows="3"    prompt input height
+  bot="doc"   load persona + settings from docs/bots/doc.md — the file's
+              markdown IS the system prompt; its yaml fence sets model/name/
+              intro/placeholder and knowledge: [self, /page, …] (those pages'
+              raw markdown is stuffed into the system prompt, trimmed to
+              knowledge_budget chars, default 16000). Works on a paragraph
+              too: "Ask Doc. {: .agent bot=doc }" — the text becomes the
+              intro. Page fence knobs override the bot's.
   bound="X"   ties this agent to the .run widget with id="X" —
               the editor's current code + last output are
               auto-appended to every prompt, and the first python
@@ -199,6 +206,67 @@ Auto-included by docs/_layouts/default.html.
     max_tokens: 500
   };
 
+  // ===== bots: superprompt + knowledge as repo markdown (SSOT) =====
+  // A bot is a file: docs/bots/<name>.md — the markdown body IS the system
+  // prompt; one yaml fence inside it carries settings (model, temperature,
+  // name, intro, placeholder, knowledge: [...pages or self], knowledge_budget).
+  // Knowledge is honest context-stuffing: the listed pages' own markdown,
+  // fetched raw and folded into the system prompt, trimmed to the budget.
+  var _lcSiteRepo = {{ site.github.repository_nwo | default: "" | jsonify }};
+  var _botCache = {};
+  function rawUrl(mdPath) {
+    return 'https://raw.githubusercontent.com/' + _lcSiteRepo + '/main/' + mdPath;
+  }
+  function pageMdPath(urlPath) {   /* /components/quiz → docs/components/quiz.md */
+    var p = String(urlPath || '').replace(/\.html?$/, '').replace(/\/+$/, '');
+    if (!p || p === '/') return 'docs/index.md';
+    if (p.charAt(0) !== '/') p = '/' + p;
+    return 'docs' + p + '.md';
+  }
+  function fetchText(url) {
+    return fetch(url).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status + ' for ' + url); return r.text(); });
+  }
+  function parseBot(md) {
+    var m = /```yaml\r?\n([\s\S]*?)```/.exec(md);
+    var cfg = {};
+    if (m && window.jsyaml) { try { cfg = window.jsyaml.load(m[1]) || {}; } catch (e) {} }
+    var system = md.replace(m ? m[0] : '', '').replace(/\{:[^}]*\}/g, '').trim();
+    return { system: system, cfg: (typeof cfg === 'object' && !Array.isArray(cfg)) ? cfg : {} };
+  }
+  function loadBot(name) {
+    var key = String(name || '').replace(/[^\w-]/g, '');
+    if (_botCache[key]) return _botCache[key];
+    _botCache[key] = fetchText(rawUrl('docs/bots/' + key + '.md')).then(function(md){
+      var bot = parseBot(md);
+      var cfg = { system: bot.system || DEFAULTS.system };
+      Object.keys(bot.cfg).forEach(function(k){ if (k !== 'knowledge' && k !== 'knowledge_budget') cfg[k] = bot.cfg[k]; });
+      var know = bot.cfg.knowledge;
+      var budget = parseInt(bot.cfg.knowledge_budget, 10) || 16000;
+      if (!Array.isArray(know) || !know.length) return cfg;
+      return Promise.all(know.map(function(k){
+        var path = (String(k) === 'self') ? pageMdPath(location.pathname) : pageMdPath(k);
+        return fetchText(rawUrl(path)).then(function(t){ return { path: path, text: t }; })
+          .catch(function(){ return null; });
+      })).then(function(parts){
+        var used = 0, chunks = [], trimmed = false;
+        parts.filter(Boolean).forEach(function(p){
+          if (used >= budget) { trimmed = true; return; }
+          var t = p.text.length > (budget - used) ? p.text.slice(0, budget - used) : p.text;
+          if (t.length < p.text.length) trimmed = true;
+          used += t.length;
+          chunks.push('--- Course material: ' + p.path + ' ---\n' + t);
+        });
+        if (chunks.length) {
+          cfg.system += '\n\nUse the following course material when answering.' +
+            (trimmed ? ' (Material was trimmed to fit.)' : '') + '\n\n' + chunks.join('\n\n');
+          cfg._knowledge = { pages: chunks.length, chars: used, trimmed: trimmed };
+        }
+        return cfg;
+      });
+    });
+    return _botCache[key];
+  }
+
   // ===== panel structure =====
   function buildPanel(id, cfg, rows, boundId) {
     var div = document.createElement('div');
@@ -209,7 +277,7 @@ Auto-included by docs/_layouts/default.html.
     div.innerHTML =
       '<div class="lc-agent-head">' +
         '<span class="lc-agent-icon" aria-hidden="true">🤖</span>' +
-        '<span class="lc-agent-title">Agent</span>' +
+        '<span class="lc-agent-title">' + escapeHtml(cfg.name || 'Agent') + '</span>' +
         boundLabel +
         '<button type="button" class="lc-agent-key" title="Change token" aria-label="Change token">🔑</button>' +
       '</div>' +
@@ -398,17 +466,29 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcAgentUpgraded = '1';
     var codeNode = el.querySelector('code');
     var raw = codeNode ? codeNode.textContent.replace(/\n+$/, '') : '';
-    var cfg = {};
-    if (window.jsyaml) {
-      try { cfg = window.jsyaml.load(raw) || {}; } catch (e) {}
+    var pageCfg = {};
+    if (window.jsyaml && raw) {
+      try { pageCfg = window.jsyaml.load(raw) || {}; } catch (e) {}
     }
-    if (typeof cfg !== 'object' || Array.isArray(cfg)) cfg = {};
-    Object.keys(DEFAULTS).forEach(function(k){
-      if (cfg[k] === undefined) cfg[k] = DEFAULTS[k];
-    });
+    if (typeof pageCfg !== 'object' || Array.isArray(pageCfg)) pageCfg = {};
     var id = el.getAttribute('id') || ('agent-' + (++AGENT_SEQ));
     var rows = parseInt(el.getAttribute('rows'), 10) || 3;
     var boundId = el.getAttribute('bound') || null;
+    var botName = el.getAttribute('bot') || pageCfg.bot || null;
+    /* a paragraph form — Ask Doc. {: .agent bot="doc" } — uses its text as intro */
+    if (!codeNode && el.tagName === 'P' && !pageCfg.intro) {
+      var pTxt = (el.textContent || '').trim();
+      if (pTxt) pageCfg.intro = pTxt;
+      pageCfg = Object.assign({}, pageCfg);
+    }
+    var botP = botName ? loadBot(botName) : Promise.resolve(null);
+    botP.catch(function(){ return null; }).then(function(){ /* keep errors soft */ });
+    return botP.then(function(botCfg){ return botCfg; }, function(){ return null; }).then(function(botCfg){
+    var cfg = {};
+    Object.keys(DEFAULTS).forEach(function(k){ cfg[k] = DEFAULTS[k]; });
+    if (botCfg) Object.keys(botCfg).forEach(function(k){ cfg[k] = botCfg[k]; });
+    Object.keys(pageCfg).forEach(function(k){ if (k !== 'bot') cfg[k] = pageCfg[k]; });
+    if (botName && !botCfg) cfg.intro = '⚠ bot "' + botName + '" could not be loaded — answering with defaults. ' + (cfg.intro || '');
     var panel = buildPanel(id, cfg, rows, boundId);
     // Slides partition runs before agent upgrade (it has to wait for js-yaml).
     // Carry the fragment marking from the original code-block to the new panel
@@ -420,10 +500,17 @@ Auto-included by docs/_layouts/default.html.
     }
     el.parentNode.replaceChild(panel, el);
     wirePanel(panel, cfg, boundId);
+    if (cfg._knowledge) {
+      var u = panel.querySelector('.lc-agent-usage');
+      if (u) u.textContent = '📚 ' + (cfg.name || botName) + ' knows ' + cfg._knowledge.pages +
+        ' page(s), ' + Math.round(cfg._knowledge.chars / 1000) + 'k chars' +
+        (cfg._knowledge.trimmed ? ' (trimmed)' : '') + '.';
+    }
+    });
   }
 
   function init() {
-    var els = document.querySelectorAll('.highlighter-rouge.agent, pre.agent, div.agent[class*="language-"]');
+    var els = document.querySelectorAll('.highlighter-rouge.agent, pre.agent, div.agent[class*="language-"], p.agent');
     Array.prototype.forEach.call(els, upgradeAgent);
   }
 
