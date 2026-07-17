@@ -696,8 +696,13 @@ Auto-included by docs/_layouts/default.html.
 
   /* ── upgrade .avatar code block ───────────────────── */
   var AVT_ID = 0, AVT_SLOT = 0;
+  /* the ✏️ editor's live preview runs the upgrade pipeline on its own copy of
+     the page — an overlay character spawned from THERE would duplicate the
+     real one (ghost avatar, overwritten registry, two voices at once) */
+  function inEditorPreview(el) { return !!(el.closest && el.closest("#ed-preview")); }
   function upgradeAvatar(el) {
     if (el.dataset.lcAvatarDone) return;
+    if (inEditorPreview(el)) return;
     el.dataset.lcAvatarDone = "1";
 
     var raw  = (el.querySelector("code") || el).textContent.trim();
@@ -784,6 +789,15 @@ Auto-included by docs/_layouts/default.html.
 
       document.body.appendChild(host);
 
+      /* safety net: an avatar id is unique — if any stray re-upgrade already
+         registered it, retire the older host and its timers first (no ghosts,
+         no two-voice overlap, one instance owns the id) */
+      var prevAv = (window._lcAvatars || {})[elId];
+      if (prevAv) {
+        try { clearInterval(prevAv._idleT); } catch (e) {}
+        if (prevAv.host && prevAv.host.parentNode) { try { prevAv.host.parentNode.removeChild(prevAv.host); } catch (e) {} }
+      }
+
       /* register for trigger lookup */
       var av = (window._lcAvatars = window._lcAvatars || {})[elId] = {
         host: host, bubble: bubble, char: char,
@@ -804,7 +818,7 @@ Auto-included by docs/_layouts/default.html.
       initChar(elId, char, size);
 
       /* idle saccades keep the built-in face alive */
-      setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
+      av._idleT = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
 
       /* click to play/stop */
       char.addEventListener("click", function () { togglePlay(elId); });
@@ -1189,6 +1203,7 @@ Auto-included by docs/_layouts/default.html.
      (a button on_click runs async and the browser would block it). */
   function upgradeTrigger(el) {
     if (el.dataset.lcAvtTrigDone) return;
+    if (inEditorPreview(el)) return;
     el.dataset.lcAvtTrigDone = "1";
     var targetId = el.getAttribute("target") || "";
     el.classList.add("lc-avatar-trigger");
@@ -1226,6 +1241,7 @@ Auto-included by docs/_layouts/default.html.
      the YouTube upload. */
   function upgradeStudio(el) {
     if (el.dataset.lcAvtStudioDone) return;
+    if (inEditorPreview(el)) return;
     el.dataset.lcAvtStudioDone = "1";
     var targetId = el.getAttribute("target") || "";
     el.classList.add("lc-avatar-trigger");
@@ -1323,6 +1339,7 @@ Auto-included by docs/_layouts/default.html.
   }
   function upgradeVoices(el) {
     if (el.dataset.lcAvtVoxDone) return;
+    if (inEditorPreview(el)) return;
     el.dataset.lcAvtVoxDone = "1";
     var targetId = el.getAttribute("target") || "";
     el.classList.add("lc-avatar-trigger");
