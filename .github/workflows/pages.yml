@@ -19,6 +19,9 @@ concurrency:
 
 jobs:
   build:
+    # Public repo only — the lab serves its unlisted site via the plain
+    # branch build (main /docs), so this job skips there at zero cost.
+    if: github.repository == 'michelzam/lightcodepedia'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

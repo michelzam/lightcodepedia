@@ -9,6 +9,8 @@ on:
 
 jobs:
   build:
+    # Public repo only — Docker Hub secrets live there, not in the lab.
+    if: github.repository == 'michelzam/lightcodepedia'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

@@ -61,7 +61,7 @@ Browse the library of interactive widgets you can use in your pages.
 ```
 {: .cards cols="3" }
 
-## 🗒️ More
+## 🗒️ Advanced
 
 ```
 ### 🗒️ Pages

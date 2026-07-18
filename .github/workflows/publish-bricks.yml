@@ -25,6 +25,9 @@ concurrency:
 
 jobs:
   test-and-publish:
+    # Public repo only — npm provenance requires a public repo, and the
+    # NPM_TOKEN secret lives there.
+    if: github.repository == 'michelzam/lightcodepedia'
     runs-on: ubuntu-latest
     defaults:
       run:

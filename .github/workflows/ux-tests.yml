@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: "Base URL to test against"
+        description: "Base URL to test against (empty = this repo's own live site)"
         required: false
-        default: "https://lightcodepedia.org"
+        default: ""
 
 jobs:
   ux-tests:
@@ -23,9 +23,13 @@ jobs:
       actions: write
     # Only run if triggered manually, or if the pages deployment succeeded
     # AND was not triggered by the bot's own results commit (loop guard).
+    # Auto-runs only in the public repo (free minutes); in the lab the suite
+    # is manual-dispatch only, so private Actions minutes are never burned
+    # by a push. The bot-author clause is the results-commit loop guard.
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
+      (github.repository == 'michelzam/lightcodepedia' &&
+       github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_commit.author.email != '41898282+github-actions[bot]@users.noreply.github.com')
 
     steps:
@@ -47,7 +51,9 @@ jobs:
         id: behave
         continue-on-error: true
         env:
-          BASE_URL: ${{ github.event.inputs.base_url || 'https://lightcodepedia.org' }}
+          # Empty input → the repo's own site: unlisted lab Pages in the lab,
+          # the canonical domain in the public repo.
+          BASE_URL: ${{ github.event.inputs.base_url || (github.repository == 'michelzam/lightcodelab' && 'https://michelzam.github.io/lightcodelab' || 'https://lightcodepedia.org') }}
         run: >
           behave tests/features/ --no-capture
           -f json -o ux-report.json
