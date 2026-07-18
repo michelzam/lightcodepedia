@@ -381,8 +381,10 @@ body {
           }
         })
         .catch(function(){});
-      var _repoSlug = (repo || (u.login + '/lightcodepedia')).split('/')[1] || 'lightcodepedia';
-      var _repoBase = 'https://api.github.com/repos/' + u.login + '/' + _repoSlug;
+      /* karma measures your PUBLIC LightNode (login/lightcodepedia) — never
+         the node you happen to be browsing. On the lab this integrates the
+         pedia numbers; on a student's fork it is their fork by the same rule. */
+      var _repoBase = 'https://api.github.com/repos/' + u.login + '/lightcodepedia';
       var _karma = 0;
       var _rc = { forks: 0, stars: 0, visitors: 0, pages: 0, quizzes: 0, bio: false, site: false };
 

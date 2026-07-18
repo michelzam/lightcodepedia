@@ -150,8 +150,12 @@ Auto-included by docs/_layouts/default.html.
     var a = el.querySelector("a");
     if (!a) return;
     var h = el.getAttribute("height") || "400";
-    var src = a.getAttribute("href");
+    var src = (window.lcHref || String)(a.getAttribute("href"));
     if (src && src.indexOf("?") === -1) src += "?embed=true"; else src += "&embed=true";
+    /* fresh="true" — for bot-regenerated pages (the behave report): Pages
+       caches HTML ~10 min, so an embedded report could contradict the
+       cache-busted JSON grids beside it. A per-load stamp keeps them honest. */
+    if (el.getAttribute("fresh") === "true") src += "&v=" + Date.now();
     var f = _iframeEl(src, h, "lc-embed-page");
     if (el.id) { f.id = el.id; f.setAttribute("data-lc-id", el.id); }   /* so self.page.<id>.load() works */
     el.parentNode.replaceChild(f, el);

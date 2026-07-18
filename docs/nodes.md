@@ -88,6 +88,6 @@ Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightco
 Every step of every scenario from the latest run, with timings. Also available [in its own tab](/assets/ux-report.html).
 
 [Behave report](/assets/ux-report.html)
-{: .embed-page height="700" }
+{: .embed-page height="700" fresh="true" }
 ```
 {: .accordion }
