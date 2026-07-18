@@ -20,12 +20,17 @@ the 404 page (Liquid guard), so every other page carries zero extra script.
   if (!/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(cand)) return;
 
   var main = document.querySelector('main') || document.body;
+  /* a plausible name means this is (probably) a router hit, not a dead end —
+     don't flash the 404 while the lookup runs; reveal it only on a miss */
+  var hidden = [];
+  Array.prototype.forEach.call(main.children, function (el) {
+    hidden.push([el, el.style.display]); el.style.display = 'none';
+  });
+  function reveal() { hidden.forEach(function (p) { p[0].style.display = p[1]; }); }
   var note = document.createElement('p');
   note.style.cssText = 'padding:0.8em 1em;background:#f0f6ff;border:1px solid #c7ddf7;border-radius:8px;font-size:0.95em';
   note.textContent = '🔭 Looking for @' + cand + '’s LightNode…';
-  var h1 = main.querySelector('h1');
-  if (h1 && h1.insertAdjacentElement) h1.insertAdjacentElement('afterend', note);
-  else main.insertBefore(note, main.firstChild);
+  main.insertBefore(note, main.firstChild);
 
   if (CANON && cand.toLowerCase() === CANON.toLowerCase()) { location.replace('/'); return; }
   var dest = 'https://' + cand + '.github.io/lightcodepedia/';
@@ -37,6 +42,7 @@ the 404 page (Liquid guard), so every other page carries zero extra script.
       } else if (r.status === 403) {
         location.replace(dest);   /* rate-limited: go optimistically */
       } else {
+        reveal();   /* a genuine miss — now the 404 content has something to say */
         note.innerHTML = '🪐 No LightNode for <b>@' + cand + '</b> yet — ' +
           '<a href="/start">start yours</a>?';
       }

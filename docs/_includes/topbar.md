@@ -99,10 +99,15 @@ if (location.search.indexOf('embed=true') >= 0) {
 #lc-topbar .lc-links a:hover { color: #0066cc; }
 #lc-topbar .lc-link-icon { margin-right: 0.35em; }
 @media (max-width: 700px) {
-  #lc-topbar { padding: 0 0.7rem; gap: 0.8rem; }
+  #lc-topbar { padding: 0 0.7rem; gap: 0.8rem; flex-wrap: nowrap; }
   #lc-topbar .lc-link-label { display: none; }
   #lc-topbar .lc-link-icon { margin-right: 0; font-size: 1.15em; }
   #lc-topbar .lc-links a { margin-right: 0.5rem; }
+  /* phones: icons stay in ONE row (menu line breaks otherwise stack them),
+     and the fork chip shrinks to its ⑂ glyph — the tooltip keeps the story */
+  #lc-topbar .lc-links { gap: 0.6rem; flex-wrap: nowrap; }
+  #lc-topbar .lc-links br { display: none; }
+  #lc-fork-hint .lc-fork-label { display: none; }
 }
 body {
   padding-top: 56px;
@@ -288,7 +293,10 @@ body {
       chip.target = "_blank"; chip.rel = "noopener";
       chip.title = "You're viewing " + hostOwner + "'s fork of Lightcodepedia — "
                  + "links stay on this fork, not the original site.";
-      chip.textContent = "⑂ " + hostOwner + "’s fork";
+      var glyph = document.createElement("span"); glyph.textContent = "⑂";
+      var lbl = document.createElement("span"); lbl.className = "lc-fork-label";
+      lbl.textContent = " " + hostOwner + "’s fork";
+      chip.appendChild(glyph); chip.appendChild(lbl);
       var brand = bar.querySelector(".lc-brand");
       if (brand && brand.nextSibling) bar.insertBefore(chip, brand.nextSibling);
       else bar.appendChild(chip);
