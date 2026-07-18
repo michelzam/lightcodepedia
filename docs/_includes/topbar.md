@@ -311,10 +311,15 @@ body {
   });
 
   // ── User pill ──────────────────────────────────────────────────────────────
-  (function() {
+  // Named + exposed so onboarding can wake it the moment a key is accepted —
+  // without this the avatar only appeared on the NEXT page load ("had to
+  // onboard twice"). Signed-out runs attach no listeners, so one re-run
+  // after connect initializes everything exactly once.
+  function lcInitUserPill() {
     var pat  = localStorage.getItem('lc_ed_pat');
     var repo = localStorage.getItem('lc_ed_repo');
     if (!pat) { document.getElementById('lc-start-pill').style.display = 'block'; return; }
+    document.getElementById('lc-start-pill').style.display = 'none';
 
     function showUser(u) {
       var pill = document.getElementById('lc-user-pill');
@@ -598,7 +603,9 @@ body {
       ['lc_ed_pat','lc_ed_repo','lc_gh_user','lc_gh_user_for'].forEach(function(k){ localStorage.removeItem(k); });
       location.reload();
     });
-  })();
+  }
+  window.lcUserPillRefresh = lcInitUserPill;
+  lcInitUserPill();
 
   // ── Recorder launchers (work in every auth state) ──────────────────────────
   function openRec(e) {

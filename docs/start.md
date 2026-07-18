@@ -518,6 +518,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
         res.textContent = '✅ Key is valid — logged in as @' + d.user.login +
           (fineGrained ? '. Fine-grained key: be sure it has Contents read & write on your site.' : ' with repo access.');
         populateUserCard();
+        if (window.lcUserPillRefresh) window.lcUserPillRefresh();   // avatar appears NOW, not next load
         setTimeout(function(){ lcwNext(2); }, 800);
       })
       .catch(function() {

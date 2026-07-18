@@ -821,7 +821,7 @@ Auto-included by docs/_layouts/default.html.
         script.forEach(function (l) {
           if (l.audio || l.video || !l.say) return;
           sha1hex(genVoice + "|" + genModel + "|" + String(l.say).trim()).then(function (h) {
-            l.audio = "/assets/audio/lc-" + h.slice(0, 16) + ".mp3";
+            l.audio = (window.lcHref || String)("/assets/audio/lc-" + h.slice(0, 16) + ".mp3");
           });
         });
       }
@@ -835,7 +835,7 @@ Auto-included by docs/_layouts/default.html.
             if (l.audio || l.video || !l.say) return;
             sha1hex(String(l.say).trim()).then(function (h) {
               var f = map[h.slice(0, 16)];
-              if (f && !l.audio) l.audio = "/assets/audio/" + f;
+              if (f && !l.audio) l.audio = (window.lcHref || String)("/assets/audio/" + f);
             });
           });
         });
@@ -1641,7 +1641,7 @@ Auto-included by docs/_layouts/default.html.
           var th = (await sha1hex(text)).slice(0, 16);
           var h = await sha1hex(voice + '|' + model + '|' + text);
           var f = 'lc-' + h.slice(0, 16) + '.mp3';
-          var head = await fetch('/assets/audio/' + f, { method: 'HEAD' }).catch(function () { return { ok: false }; });
+          var head = await fetch((window.lcHref || String)('/assets/audio/' + f), { method: 'HEAD' }).catch(function () { return { ok: false }; });
           if (!head.ok) {
             var r = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + encodeURIComponent(voice) + '?output_format=mp3_44100_128', {
               method: 'POST', headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
@@ -1938,7 +1938,9 @@ Auto-included by docs/_layouts/default.html.
   var _voxP = null;
   function voxManifest() {
     if (_voxP) return _voxP;
-    _voxP = fetch("/assets/audio/vox.json", { cache: "no-cache" })
+    /* under a project base path (forks, the lab) root-absolute would 404 —
+       silently downgrading every recorded voice to TTS */
+    _voxP = fetch((window.lcHref || String)("/assets/audio/vox.json"), { cache: "no-cache" })
       .then(function (r) { return r.ok ? r.json() : {}; })
       .catch(function () { return {}; });
     return _voxP;
@@ -1984,7 +1986,7 @@ Auto-included by docs/_layouts/default.html.
       try {
         var th = (await sha1hex(text)).slice(0, 16);                          /* manifest key: the text */
         var h = await sha1hex(av.genVoice + "|" + av.genModel + "|" + text);  /* file name: voice+text  */
-        var f = "lc-" + h.slice(0, 16) + ".mp3", url = "/assets/audio/" + f;
+        var f = "lc-" + h.slice(0, 16) + ".mp3", url = (window.lcHref || String)("/assets/audio/" + f);
         var head = await fetch(url, { method: "HEAD" }).catch(function () { return { ok: false }; });
         if (head.ok) { l.audio = url; vox[th] = f; cached++; continue; }
         var r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" +
