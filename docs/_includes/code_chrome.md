@@ -4,6 +4,36 @@
   window._lcCoreReady = true;
   var _lcSiteRepo = {{ site.github.repository_nwo | default: "" | jsonify }};
 
+  /* ── Base path (project Pages) ──────────────────────────────────────
+     pedia lives at a domain root; the lab and every fork live under
+     /<repo>/ on github.io, where root-absolute URLs in content
+     ("/assets/lab.jpg", "/_dog") silently 404. lcBase is "" at a root
+     and "/<repo>" under a project path; lcHref() resolves one path;
+     lcRebase() heals media and links in a subtree. */
+  var _lcRepoName = {{ site.github.repository_name | default: "" | jsonify }};
+  var _lcSeg = "/" + _lcRepoName + "/";
+  window.lcBase = (_lcRepoName &&
+    (location.pathname === _lcSeg.slice(0, -1) || location.pathname.indexOf(_lcSeg) === 0))
+    ? _lcSeg.slice(0, -1) : "";
+  window.lcHref = function (p) {
+    return (window.lcBase && p && p.charAt(0) === "/" && p.indexOf("//") !== 0 &&
+            p.indexOf(window.lcBase + "/") !== 0) ? window.lcBase + p : p;
+  };
+  window.lcRebase = function (root) {
+    if (!window.lcBase) return;
+    (root || document).querySelectorAll(
+      'img[src^="/"], video[src^="/"], audio[src^="/"], source[src^="/"]'
+    ).forEach(function (el) {
+      var v = el.getAttribute("src"), w = window.lcHref(v);
+      if (w !== v) el.setAttribute("src", w);
+    });
+    (root || document).querySelectorAll('a[href^="/"]').forEach(function (el) {
+      var v = el.getAttribute("href"), w = window.lcHref(v);
+      if (w !== v) el.setAttribute("href", w);
+    });
+  };
+  document.addEventListener("DOMContentLoaded", function () { window.lcRebase(document); });
+
   // Instance registry — destroy heavy components before live-preview re-render.
   var _lcReg = [];
   function _lcRegister(el, fn) { _lcReg.push({ el: el, fn: fn }); }

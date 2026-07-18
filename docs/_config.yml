@@ -1,5 +1,6 @@
 title: Lightcodepedia
 description: A GitHub Pages site
+timezone: America/Chicago   # CT — all build-time dates (site.time, date filters) render in Central Time
 lc_canonical_host: lightcodepedia.org
 lc_canonical_owner: michelzam   # the root repo owner; forks compare against this to flag themselves
 

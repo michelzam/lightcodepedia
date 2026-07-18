@@ -78,8 +78,18 @@ Auto-included by docs/_layouts/default.html.
     return { title: title, snippet: snippet, date: fmDate };
   }
 
-  /* ISO / front-matter date → YYYY-MM-DD for the card's date tag */
-  function fmtDate(d) { var s = String(d || ""); return s.length >= 10 ? s.slice(0, 10) : s; }
+  /* date → human bucket for the card's tag: today / this week / this month /
+     this year / "" (older pages carry no tag). Sorting and the Modified
+     filters keep the raw data-date — only the label is humanized. */
+  function fmtDate(d) {
+    var t = new Date(String(d || "")); if (isNaN(t)) return "";
+    var now = new Date();
+    if (t.toDateString() === now.toDateString()) return "today";
+    if (now - t >= 0 && now - t < 7 * 86400000) return "this week";
+    if (t.getFullYear() === now.getFullYear() && t.getMonth() === now.getMonth()) return "this month";
+    if (t.getFullYear() === now.getFullYear()) return "this year";
+    return "";
+  }
 
   /* ── shared card pipeline (also used by related.md) ─────────────── */
   /* scan a page's markdown for its hidden .feature blocks → [{status, tags}] */
@@ -129,7 +139,8 @@ Auto-included by docs/_layouts/default.html.
     var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
     var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + (item.date ? ' data-date="' + escapeHtml(item.date) + '"' : '') + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
     if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
-    if (item.date) card += '<div class="lc-card-date">📅 ' + escapeHtml(fmtDate(item.date)) + '</div>';
+    var dateLbl = fmtDate(item.date);
+    if (dateLbl) card += '<div class="lc-card-date">📅 ' + escapeHtml(dateLbl) + '</div>';
     if (item.features && item.features.length) {
       var counts = {};
       item.features.forEach(function(f) { var s = (f && f.status) || "none"; counts[s] = (counts[s] || 0) + 1; });
@@ -381,8 +392,10 @@ Auto-included by docs/_layouts/default.html.
           var it = cardItem(c); if (!it || !it.date) return;
           c.setAttribute("data-date", it.date);
           var tag = c.querySelector(".lc-card-date");
+          var lbl = fmtDate(it.date);
+          if (!lbl) { if (tag) tag.remove(); return; }
           if (!tag) { tag = document.createElement("div"); tag.className = "lc-card-date"; c.appendChild(tag); }
-          tag.textContent = "📅 " + fmtDate(it.date);
+          tag.textContent = "📅 " + lbl;
         }
         function ensureDates() {
           if (datesLoaded) return Promise.resolve();

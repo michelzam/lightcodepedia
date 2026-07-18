@@ -32,7 +32,8 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 <li>Click <strong>Generate new token (classic)</strong>.</li>
 <li>Give it any name, e.g. <em>lightcodepedia</em>.</li>
 <li>Check the <strong><code>repo</code></strong> box (top of the list).</li>
-<li>Scroll down → <strong>Generate token</strong> → copy the key (starts with <code>ghp_</code>).</li>
+<li>Scroll down → <strong>Generate token</strong> → copy the key (starts with <code>ghp_</code>).<br>
+<em>Already using a fine-grained key (<code>github_pat_…</code>)? It works too — give it <strong>Contents: read and write</strong> on your site.</em></li>
 <li>Come back here and paste it below.</li>
 </ol>
 <div class="lcw-actions">
@@ -310,7 +311,10 @@ _Karma measures your contribution to the network: your site, your bio, the frien
       })
       .then(function(d) {
         if (!d.ok) return; // bad PAT — let user re-enter on step 2
-        var hasRepo = d.scopes.split(',').map(function(s){ return s.trim(); }).indexOf('repo') >= 0;
+        /* classic keys announce their scopes; fine-grained ones announce
+           nothing — authenticated is the best pre-check they offer */
+        var hasRepo = d.scopes.split(',').map(function(s){ return s.trim(); }).indexOf('repo') >= 0
+                   || stored.indexOf('github_pat_') === 0;
         if (!hasRepo) return;
         _user = d.user;
         localStorage.setItem('lc_gh_user', JSON.stringify(d.user));
@@ -496,7 +500,11 @@ _Karma measures your contribution to the network: your site, your bio, the frien
           res.textContent = '❌ Key not recognised — please generate a new one and try again.';
           return;
         }
-        var hasRepo = d.scopes.split(',').map(function(s){return s.trim();}).indexOf('repo') >= 0;
+        /* classic keys announce scopes; fine-grained (github_pat_…) don't —
+           accept them authenticated and let first use prove the rest */
+        var fineGrained = pat.indexOf('github_pat_') === 0;
+        var hasRepo = fineGrained ||
+          d.scopes.split(',').map(function(s){return s.trim();}).indexOf('repo') >= 0;
         if (!hasRepo) {
           res.className = 'lcw-result err';
           res.textContent = '⚠️ Key is valid but missing the repo permission. Please regenerate with the repo box checked.';
@@ -507,7 +515,8 @@ _Karma measures your contribution to the network: your site, your bio, the frien
         localStorage.setItem('lc_gh_user', JSON.stringify(d.user));
         localStorage.setItem('lc_gh_user_for', pat);
         res.className = 'lcw-result ok';
-        res.textContent = '✅ Key is valid — logged in as @' + d.user.login + ' with repo access.';
+        res.textContent = '✅ Key is valid — logged in as @' + d.user.login +
+          (fineGrained ? '. Fine-grained key: be sure it has Contents read & write on your site.' : ' with repo access.');
         populateUserCard();
         setTimeout(function(){ lcwNext(2); }, 800);
       })

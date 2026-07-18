@@ -189,8 +189,8 @@ body.lc-reel-active .lc-reel-bar {
 .lc-reel-bar-progress { flex: none; color: #6b7280; font-size: 0.82em;
   font-variant-numeric: tabular-nums; }
 </style>
-<a class="lc-slides-fab" href="#" title="Present as slides" aria-label="Present as slides">
-  <span class="lc-slides-fab-icon" aria-hidden="true">📽️</span><span class="lc-slides-fab-label">Present</span>
+<a class="lc-slides-fab" href="#" title="Page modes" aria-label="Page modes">
+  <span class="lc-slides-fab-icon" aria-hidden="true">⚙️</span><span class="lc-slides-fab-label">Modes</span>
 </a>
 <div class="lc-bl-popup" id="lc-bl-popup" role="menu" aria-label="Page mode">
   <button class="lc-bl-popup-item" id="lc-bl-read-btn"    type="button">📖 Read</button>
@@ -438,9 +438,9 @@ body.lc-reel-active .lc-reel-bar {
     function syncFab(active) {
       var icon = fab.querySelector('.lc-slides-fab-icon');
       var label = fab.querySelector('.lc-slides-fab-label');
-      if (icon) icon.textContent = active ? '✕' : '📽️';
-      if (label) label.textContent = active ? 'Exit' : 'Present';
-      fab.setAttribute('title', active ? 'Exit slides (Esc)' : 'Present as slides');
+      if (icon) icon.textContent = active ? '✕' : '⚙️';
+      if (label) label.textContent = active ? 'Exit' : 'Modes';
+      fab.setAttribute('title', active ? 'Exit slides (Esc)' : 'Page modes');
       fab.setAttribute('aria-label', fab.getAttribute('title'));
     }
 
@@ -571,9 +571,9 @@ body.lc-reel-active .lc-reel-bar {
     function syncReelFab(active) {
       var icon = fab.querySelector('.lc-slides-fab-icon');
       var label = fab.querySelector('.lc-slides-fab-label');
-      if (icon) icon.textContent = active ? '✕' : '📽️';
-      if (label) label.textContent = active ? 'Exit reel' : 'Present';
-      fab.setAttribute('title', active ? 'Exit reel (Esc)' : 'Present as slides');
+      if (icon) icon.textContent = active ? '✕' : '⚙️';
+      if (label) label.textContent = active ? 'Exit reel' : 'Modes';
+      fab.setAttribute('title', active ? 'Exit reel (Esc)' : 'Page modes');
       fab.setAttribute('aria-label', fab.getAttribute('title'));
     }
     function syncReelUrl(active) {
@@ -641,8 +641,8 @@ body.lc-reel-active .lc-reel-bar {
     function closePopup() { if (popup) popup.classList.remove('open'); }
     function openPopup()  { if (popup) { refreshMarks(); refreshGuideMark(); popup.classList.add('open'); } }
 
-    /* pill state: ✓ on the active mode; the FAB icon mirrors it */
-    var MODE_ICONS = { read: '📽️', present: '📽️', reel: '📲', xray: '🔬', edit: '✏️' };
+    /* pill state: ✓ on the active mode inside the popup; the FAB face is a
+       constant ⚙️ — it's an options gear, not a mode shortcut */
     function refreshMarks() {
       if (!popup || !window.lcMode) return;
       var m = window.lcMode.current();
@@ -652,7 +652,7 @@ body.lc-reel-active .lc-reel-bar {
         if (b) b.classList.toggle('lc-mode-on', m === pair[0]);
       });
       var ic = fab.querySelector('.lc-slides-fab-icon');
-      if (ic) ic.textContent = MODE_ICONS[m] || '📽️';
+      if (ic) ic.textContent = '⚙️';
       fab.classList.toggle('lc-xray-active', m === 'xray');
     }
     document.addEventListener('lc-mode-changed', refreshMarks);
@@ -676,11 +676,13 @@ body.lc-reel-active .lc-reel-bar {
       e.preventDefault();
       if (window.lcxIsActive && window.lcxIsActive()) { xrayOff(); return; }
       if (body.classList.contains('lc-reel-active')) { window.lcMode ? window.lcMode.set('read') : exitReel(); return; }
-      if ((touchOnly || deckless) && !body.classList.contains('lc-slides-active')) {
-        popup.classList.contains('open') ? closePopup() : openPopup();
+      if (body.classList.contains('lc-slides-active')) {
+        window.lcMode ? window.lcMode.set('read') : toggle();
         return;
       }
-      window.lcMode ? window.lcMode.set(body.classList.contains('lc-slides-active') ? 'read' : 'present') : toggle();
+      /* the gear has no default action — it only reveals the mode menu
+         (while a mode is active the face is ✕ and the click exits, above) */
+      popup.classList.contains('open') ? closePopup() : openPopup();
     });
 
     /* desktop affordance: hovering the pill reveals the modes (click keeps

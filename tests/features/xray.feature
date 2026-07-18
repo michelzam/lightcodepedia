@@ -24,6 +24,22 @@ Feature: X-ray inspector
     Then an x-ray panel is visible
     And the x-ray panel mentions "Map"
 
+  Scenario: Keep commits the edited block when the builder is connected
+    When I navigate to "/tutorial101"
+    And I am connected as a builder with a stubbed repo
+    And I wait for the page to be interactive
+    And I open the x-ray editor on the local dog block
+    And I change the block content to "Cute, huh — this committed dog?"
+    And I keep the changes
+    Then the stubbed repo received a commit containing "committed dog"
+
+  Scenario: Keep invites anonymous learners to create an account
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the x-ray editor on the local dog block
+    And I change the block content to "Cute, huh — a fleeting dog?"
+    Then keeping the changes invites me to create an account
+
   Scenario: X-ray scene fits within viewport
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive

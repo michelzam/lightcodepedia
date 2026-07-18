@@ -173,10 +173,17 @@ Auto-included by docs/_layouts/default.html.
     el.parentNode.replaceChild(container, el);
     var rel = href.replace(/^\/+|\/+$/g, "");
     if (!/\.md$/i.test(rel)) rel += ".md";
-    var srcUrl = _lcSiteRepo
-      ? "https://raw.githubusercontent.com/" + _lcSiteRepo + "/HEAD/docs/" + rel
-      : "/" + rel;
-    fetch(srcUrl)
+    /* private nodes (the lab) aren't on raw.githubusercontent — the builder's
+       PAT reaches the source through the API instead; public nodes keep the
+       tokenless raw path so visitors never touch a rate limit */
+    var pat = localStorage.getItem("lc_ed_pat") || "";
+    var req = (pat && _lcSiteRepo)
+      ? fetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/docs/" + rel,
+              { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.raw" } })
+      : fetch(_lcSiteRepo
+          ? "https://raw.githubusercontent.com/" + _lcSiteRepo + "/HEAD/docs/" + rel
+          : (window.lcHref ? window.lcHref("/" + rel) : "/" + rel));
+    req
       .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
       .then(function(text) {
         // strip optional YAML front matter
@@ -184,7 +191,10 @@ Auto-included by docs/_layouts/default.html.
           var end = text.indexOf("\n---", 3);
           if (end >= 0) { var nl = text.indexOf("\n", end + 1); text = nl >= 0 ? text.slice(nl + 1) : ""; }
         }
-        loadMarked(function() { container.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(text.trim())); });
+        loadMarked(function() {
+          container.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(text.trim()));
+          if (window.lcRebase) window.lcRebase(container); // heal root-absolute paths under a project base
+        });
       })
       .catch(function(err) {
         container.innerHTML = "<div style='color:#c00'>⚠️ Could not load " + escapeHtml(href) + ": " + escapeHtml(err.message) + "</div>";

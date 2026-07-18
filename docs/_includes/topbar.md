@@ -143,8 +143,15 @@ body {
 }
 #lc-fork-hint:hover { background: #ffeab0; }
 </style>
+{% comment %} The brand names the node you're on — dynamic, never static text.
+   Rule: repo name minus the "lightcode" prefix, capitalized. The emoji marks
+   the node kind: 🧪 for the lab (HQ), 💡 everywhere else (pedia + forks). {% endcomment %}
+{% assign _repo = site.github.repository_name | default: "lightcodepedia" %}
+{% assign _brand = _repo | remove_first: "lightcode" | capitalize %}
+{% if _brand == "" %}{% assign _brand = _repo | capitalize %}{% endif %}
+{% if _repo == "lightcodelab" %}{% assign _brandmoji = "🧪" %}{% else %}{% assign _brandmoji = "💡" %}{% endif %}
 <div id="lc-topbar">
-  <a class="lc-brand" href="/">💡 Lightcodepedia</a>
+  <a class="lc-brand" href="/">{{ _brandmoji }} {{ _brand }}</a>
   {% comment %} A folder's menu.md becomes the menu for that whole branch, but it
      must opt in with `menu: true` in its front matter — so pages that merely
      happen to be named menu.md (e.g. the .menu component's own doc page) are not
@@ -176,7 +183,7 @@ body {
           <div class="lc-ud-login" id="lc-ud-login"></div>
         </div>
       </div>
-      <a class="lc-ud-row" href="/"><span>💡</span><span>Lightcodepedia</span></a>
+      <a class="lc-ud-row" href="/"><span>{{ _brandmoji }}</span><span>{{ _brand }}</span></a>
       <a class="lc-ud-row" id="lc-ud-repo-link" href="#" target="_blank">
         <span>📁</span><span class="lc-ud-repo" id="lc-ud-repo-label"></span>
       </a>
@@ -189,6 +196,11 @@ body {
       </a>
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
       <div class="lc-ud-row" id="lc-ud-sync" style="display:none"><span>🔄</span><span id="lc-ud-sync-label">Update from Lightcodepedia</span></div>
+      {% if site.github.repository_name == "lightcodelab" %}
+      {% comment %} HQ only: fire the publish gate without leaving the node.
+         The row is compiled out of pedia and fork builds entirely. {% endcomment %}
+      <div class="lc-ud-row" id="lc-ud-publish"><span>🚀</span><span id="lc-ud-publish-label">Publish to pedia</span></div>
+      {% endif %}
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
       <div id="lc-ud-rate" style="display:none;padding:6px 16px;font-size:0.75em;border-bottom:1px solid #f0f0f0"></div>
       <div class="lc-ud-row" id="lc-ud-record"><span>🎬</span><span>Record screen</span></div>
@@ -495,6 +507,35 @@ body {
     var _syncRow = document.getElementById('lc-ud-sync');
     var _syncLabel = document.getElementById('lc-ud-sync-label');
     var _syncHdrs = { Authorization: 'Bearer ' + pat, 'X-GitHub-Api-Version': '2022-11-28' };
+    // ── Publish gate trigger — the row only exists on lab builds ──────────
+    var _pubRow = document.getElementById('lc-ud-publish');
+    if (_pubRow) {
+      var _pubLabel = document.getElementById('lc-ud-publish-label');
+      var _pubRepo = {{ site.github.repository_nwo | default: "" | jsonify }};
+      var _pubBusy = false;
+      _pubRow.addEventListener('click', function () {
+        if (_pubBusy || !pat || !_pubRepo) return;
+        if (!window.confirm('Publish the lab to pedia now?\n\nThe gate copies docs (minus lab/), packages, tests and workflows; pedia then deploys and runs the full suite.')) return;
+        _pubBusy = true;
+        _pubLabel.textContent = '🚀 launching…';
+        fetch('https://api.github.com/repos/' + _pubRepo + '/actions/workflows/publish.yml/dispatches', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + pat, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ref: 'main' })
+        }).then(function (r) {
+          _pubLabel.textContent = (r.status === 204)
+            ? '✔ Publishing — follow 🚀 Deploys on /nodes'
+            : (r.status === 403 || r.status === 404)
+              ? '❌ PAT lacks Actions read/write on the lab'
+              : '❌ Failed (HTTP ' + r.status + ')';
+        }).catch(function () {
+          _pubLabel.textContent = '❌ network error — try again';
+        }).finally(function () {
+          setTimeout(function () { _pubLabel.textContent = 'Publish to pedia'; _pubBusy = false; }, 6000);
+        });
+      });
+    }
+
     var _syncMeta = null, _syncBusy = false, _syncChecked = false;
     function checkSync() {
       if (_syncChecked || !pat || !repo) return;

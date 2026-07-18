@@ -559,9 +559,25 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (_pat && _repo) {
       loadFiles();
       if (!_curFile) {
-        var pagePath = (document.getElementById("ed-fab") || {}).dataset.pagePath;
+        var fabEl = document.getElementById("ed-fab");
+        var pagePath = fabEl && fabEl.dataset ? fabEl.dataset.pagePath : "";
         if (pagePath) loadFile("docs/" + pagePath);
       }
+    } else {
+      /* never fail silently: say WHY there's no file instead of the
+         ambiguous "No file selected" */
+      var fnEl0 = document.getElementById("ed-filename");
+      if (fnEl0) fnEl0.textContent = "Not connected — open ⚙️ Connect";
+      var setup0 = document.getElementById("ed-setup");
+      if (setup0) setup0.open = true;
+      /* the Connect pane lives in the filename dropdown — actually open it,
+         a tick later so the drawer-opening click can't immediately close it */
+      setTimeout(function () {
+        var sb0 = document.getElementById("ed-sidebar");
+        var fb0 = document.getElementById("ed-files-btn");
+        if (sb0) sb0.classList.add("ed-open");
+        if (fb0) fb0.classList.add("ed-open");
+      }, 0);
     }
   }
   function closeDrawer() {
@@ -672,7 +688,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       c.classList.toggle("active", c.dataset.path === path);
     });
     gh("GET", "/contents/" + path, null, function (data) {
-      if (!data.content) { toast("Load failed: " + esc(data.message || ""), false); return; }
+      if (!data.content) {
+        toast("Load failed: " + esc(data.message || ""), false);
+        /* the toast fades — leave the reason where the filename goes */
+        _curFile = null;
+        var fnErr = document.getElementById("ed-filename");
+        if (fnErr) fnErr.textContent = "⚠️ " + path + " — " + (data.message || data.error || "load failed");
+        return;
+      }
       _curSha = data.sha;
       var content = b64d(data.content.replace(/\n/g, ""));
       _savedContent = content;
@@ -2740,10 +2763,20 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   document.addEventListener("DOMContentLoaded", function () {
     _pat  = localStorage.getItem(LS_PAT);
     _repo = localStorage.getItem(LS_REPO);
+    /* one credential per device, borrowed everywhere (T10): if the platform
+       knows the builder (topbar sign-in shares this PAT) but the repo entry
+       is gone, it is this very site's repo — never ask twice */
+    if (_pat && !_repo) {
+      _repo = "{{ site.github.repository_nwo | default: '' }}";
+      if (_repo) localStorage.setItem(LS_REPO, _repo); else _repo = null;
+    }
     var patEl = document.getElementById("ed-pat");
     var repoEl = document.getElementById("ed-repo");
     if (patEl && _pat)   patEl.value  = _pat;
     if (repoEl && _repo) repoEl.value = _repo;
+    /* the node knows its own repo at build time — never make the builder
+       type (or wrongly guess) it: prefill lab/pedia/fork alike */
+    else if (repoEl) repoEl.value = "{{ site.github.repository_nwo | default: '' }}";
     if (_pat && _repo) {
       setStatus("✓ " + _repo, true);
       toggleConnected(true);

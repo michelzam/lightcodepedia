@@ -61,7 +61,7 @@ Browse the library of interactive widgets you can use in your pages.
 ```
 {: .cards cols="3" }
 
-## 🗒️ Advanced
+## 🗒️ More
 
 ```
 ### 🗒️ Pages
@@ -99,7 +99,7 @@ Learn how to build apps with AI.
 
 _— Anonymous peer feedback, ACM SIGCSE TS 2026_
 
-_Published: {{ site.time | date: "%Y-%m-%d %H:%M" }}_
+_Published: {{ site.time | date: "%Y-%m-%d %H:%M %Z" }}_
 
 Made with ❤️ by KarmicSoft
 

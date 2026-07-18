@@ -48,14 +48,16 @@ Auto-included by docs/_layouts/default.html.
        editor is connected) just raises the rate limit. Never gate on sign-in. */
     var pat = localStorage.getItem("lc_ed_pat") || "";
 
-    /* repo: attribute → editor setting → user guess → this very site
-       (GitHub Pages exposes its own repo to Jekyll, so forks self-resolve) */
-    var repo = repoAttr || localStorage.getItem("lc_ed_repo") || "";
+    /* repo: attribute → this very site → editor setting → user guess.
+       This is the node's OWN deploy log, and GitHub Pages exposes its repo
+       to Jekyll — so lab, pedia and every fork self-resolve. Guesses come
+       last: they once shadowed the lab with pedia's runs. */
+    var repo = repoAttr || "{{ site.github.repository_nwo | default: '' }}";
+    if (!repo) repo = localStorage.getItem("lc_ed_repo") || "";
     if (!repo) {
       var u = null; try { u = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
       if (u && u.login) repo = u.login + "/lightcodepedia";
     }
-    if (!repo) repo = "{{ site.github.repository_nwo | default: '' }}";
     repo = repo.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "").replace(/^\/+|\/+$/g, "");
     if (!repo || repo.indexOf("/") < 0) { spEl.textContent = "⚠️ No repo configured"; return; }
 

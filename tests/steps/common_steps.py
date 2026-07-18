@@ -55,3 +55,14 @@ def step_no_js_errors(context):
     assert not context.js_errors, (
         f"JS errors found:\n" + "\n".join(context.js_errors)
     )
+
+
+@then("the topbar brand shows this node's emoji and name")
+def step_brand_names_node(context):
+    # The brand is dynamic (repo-derived), never static text: an emoji marking
+    # the node kind (🧪 lab, 💡 pedia/forks) + the repo's short name. Assert the
+    # shape, not a hardcoded site name, so the same scenario passes on every node.
+    brand = context.page.locator(".lc-brand")
+    expect(brand).to_be_visible()
+    text = brand.inner_text().strip()
+    assert re.match(r"^(🧪|💡)\s\S+$", text), f"brand looks wrong: {text!r}"

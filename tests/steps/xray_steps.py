@@ -214,3 +214,88 @@ def step_scene_mentions(context, keyword):
 @when('I shift-hover over the avatar overlay "{avatar_id}"')
 def step_shift_hover_avatar(context, avatar_id):
     _shift_alt_hover(context.page, context.page.locator("#lc-avatar-" + avatar_id))
+
+
+# ── X-ray inline editing: Keep's two honest paths ──────────────────────
+
+def _alt_move_on(page, locator):
+    """pointermove with altKey dispatched ON the element (xray_edit reads
+    e.target, so the window-level dispatch used for panels won't do)."""
+    locator.wait_for(state="visible", timeout=15_000)
+    locator.scroll_into_view_if_needed()
+    page.wait_for_timeout(300)
+    locator.evaluate(
+        "el => el.dispatchEvent(new PointerEvent('pointermove',"
+        " {altKey: true, bubbles: true, cancelable: true}))"
+    )
+    page.wait_for_timeout(600)
+
+
+@when("I am connected as a builder with a stubbed repo")
+def step_connected_stub(context):
+    import base64
+    import json
+
+    context.gh_commits = []
+    with open("docs/tutorial101.md", encoding="utf-8") as f:
+        src = f.read()
+
+    def gh_stub(route, req):
+        if req.method == "GET" and "/contents/docs/" in req.url:
+            route.fulfill(json={
+                "content": base64.b64encode(src.encode()).decode(),
+                "sha": "stub-sha",
+            })
+        elif req.method == "PUT" and "/contents/docs/" in req.url:
+            context.gh_commits.append(json.loads(req.post_data))
+            route.fulfill(json={"content": {"sha": "stub-sha-2"}})
+        else:
+            route.continue_()
+
+    context.page.route("https://api.github.com/**", gh_stub)
+    context.page.evaluate(
+        "() => { localStorage.setItem('lc_ed_pat', 'ghp_stub');"
+        " localStorage.setItem('lc_ed_repo', 'stub/lightcodelab'); }"
+    )
+
+
+@when("I open the x-ray editor on the local dog block")
+def step_open_xray_editor(context):
+    para = context.page.locator("main p", has_text="Cute, huh").first
+    _alt_move_on(context.page, para)
+    gear = context.page.locator("#lcx-gear")
+    gear.wait_for(state="visible", timeout=5_000)
+    gear.click(force=True)
+    expect(context.page.locator("#lcx-content")).to_be_visible(timeout=5_000)
+
+
+@when('I change the block content to "{text}"')
+def step_change_block_content(context, text):
+    context.page.fill("#lcx-content", text)
+
+
+@when("I keep the changes")
+def step_keep_changes(context):
+    context.page.click("#lcx-keep")
+    context.page.wait_for_timeout(1_000)
+
+
+@then('the stubbed repo received a commit containing "{text}"')
+def step_commit_received(context, text):
+    import base64
+
+    assert context.gh_commits, "no commit reached the stubbed repo"
+    body = context.gh_commits[-1]
+    content = base64.b64decode(body["content"]).decode("utf-8")
+    assert text in content, "committed content lacks the edit"
+    assert "Cute, huh — this local dog?" not in content, "original text was not replaced"
+    assert body["message"].startswith("Inline edit:"), body["message"]
+
+
+@then("keeping the changes invites me to create an account")
+def step_keep_invites(context):
+    messages = []
+    context.page.once("dialog", lambda d: (messages.append(d.message), d.dismiss()))
+    context.page.click("#lcx-keep")
+    context.page.wait_for_timeout(500)
+    assert messages and "account" in messages[0].lower(), messages

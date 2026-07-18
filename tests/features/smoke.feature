@@ -32,3 +32,8 @@ Feature: Core pages load without errors
     And I wait for the page to be interactive
     Then the LC platform is loaded
     And there are no JS console errors
+
+  Scenario: The brand names the node I'm on
+    When I navigate to "/"
+    And I wait for the page to be interactive
+    Then the topbar brand shows this node's emoji and name

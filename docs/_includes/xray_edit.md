@@ -40,7 +40,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
   <div class="lcx-bar">
     <button type="button" class="lcx-apply" id="lcx-apply">Apply</button>
     <button type="button" id="lcx-close">Close</button>
-    <button type="button" class="lcx-keep" id="lcx-keep" title="Create an account to keep changes">💾 Keep changes</button>
+    <button type="button" class="lcx-keep" id="lcx-keep" title="Keep changes — commits to your repo when connected">💾 Keep changes</button>
   </div>
 </dialog>
 
@@ -69,6 +69,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
       inp = document.createElement("input"); inp.type = "text"; inp.value = value;
     }
     inp.setAttribute("data-knob", name);
+    inp.dataset.orig = v;   // remembered so Keep knows whether knobs changed
     return inp;
   }
   function openDlg() { if (dlg.open) return; if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); }
@@ -157,6 +158,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
       ta.value = (block.textContent || "").trim();   // plain text — never raw HTML
     }
     body.appendChild(clab); body.appendChild(ta);
+    _origVal = ta.value;   // Keep's exact-match anchor into the page source
 
     var name = isComponent
       ? "." + ((srcEl.className || "").split(" ").filter(function (c) { return c && c !== "highlighter-rouge" && c.indexOf("language-") !== 0; })[0] || curId)
@@ -190,8 +192,55 @@ loses everything. A component's editable source comes from window.lcSourceOf
     } catch (e) { if (window.console) console.warn("[lcx-edit]", e); }
   }
 
+  var _origVal = null;
+
+  /* Connected builders commit inline edits for real — fence surgery on the
+     page's own source, exact-match-or-abort so it can never corrupt a page.
+     The account invitation is only for anonymous learners (losing work is
+     their incentive to sign up). */
+  function commitInline(pat, repo, path, before, after, label) {
+    var api = "https://api.github.com/repos/" + repo + "/contents/" + path;
+    var H = { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json" };
+    fetch(api, { headers: H }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.content) throw new Error(d.message || "load failed");
+      var src = decodeURIComponent(escape(atob(d.content.replace(/\n/g, ""))));
+      var i = src.indexOf(before);
+      if (i < 0 || src.indexOf(before, i + 1) >= 0) {  // zero or many — never guess
+        alert("Couldn't safely locate this block in the page source — keep it via the ✏️ page editor.");
+        return;
+      }
+      var next = src.slice(0, i) + after + src.slice(i + before.length);
+      return fetch(api, {
+        method: "PUT", headers: H,
+        body: JSON.stringify({ message: "Inline edit: " + label,
+                               content: btoa(unescape(encodeURIComponent(next))), sha: d.sha })
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        if (!res.content) throw new Error(res.message || "unknown");
+      });
+    }).catch(function (e) { alert("Save failed: " + e.message); });
+  }
+
   function keepChanges() {
     apply();
+    var pat = localStorage.getItem("lc_ed_pat"), repo = localStorage.getItem("lc_ed_repo");
+    var fabEl = document.getElementById("ed-fab");
+    var pagePath = fabEl && fabEl.dataset ? fabEl.dataset.pagePath : "";
+    var ta = document.getElementById("lcx-content");
+    if (pat && repo && pagePath && ta && _origVal) {
+      var knobsChanged = Array.prototype.some.call(
+        document.querySelectorAll("#lcx-edit-body input[data-knob]"),
+        function (inp) {
+          var cur = inp.type === "checkbox" ? (inp.checked ? "true" : "false") : (inp.value || "").trim();
+          return cur !== (inp.dataset.orig || "");
+        });
+      if (ta.value !== _origVal) {
+        var label = ((document.getElementById("lcx-edit-title") || {}).textContent || "block").replace(/^✏️\s*/, "");
+        commitInline(pat, repo, "docs/" + pagePath, _origVal, ta.value, label);
+      }
+      if (knobsChanged) alert("Knob changes aren't committed inline yet — keep them via the ✏️ page editor.");
+      closeDlg();
+      return;
+    }
     var go = window.confirm("Your changes live only in this browser — reload and they're gone.\n\nCreate an account to keep them?");
     if (go) location.href = window.lcResolveUrl ? window.lcResolveUrl("/micro_build_ai/onboarding") : "/micro_build_ai/onboarding";
   }
