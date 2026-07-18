@@ -188,6 +188,7 @@ body {
         <div id="lc-ud-karma-detail" style="font-size:0.75em;color:#c47900;opacity:0.75"></div>
       </a>
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
+      <div class="lc-ud-row" id="lc-ud-sync" style="display:none"><span>🔄</span><span id="lc-ud-sync-label">Update from Lightcodepedia</span></div>
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
       <div id="lc-ud-rate" style="display:none;padding:6px 16px;font-size:0.75em;border-bottom:1px solid #f0f0f0"></div>
       <div class="lc-ud-row" id="lc-ud-record"><span>🎬</span><span>Record screen</span></div>
@@ -485,10 +486,69 @@ body {
         .catch(function(){ document.getElementById('lc-start-pill').style.display = 'block'; });
     }
 
+    /* ── 🔄 fork sync: one tap to receive the mother site's improvements ──
+       Uses GitHub's own sync-fork endpoint (merge-upstream) with the PAT the
+       editor already holds. Outcomes are honest: clean merge (student edits
+       preserved), 409 = conflicting edits → manual merge link, or up to date.
+       The row appears only when the connected repo is a fork that is BEHIND
+       its parent (checked with a read-only compare when the menu opens). */
+    var _syncRow = document.getElementById('lc-ud-sync');
+    var _syncLabel = document.getElementById('lc-ud-sync-label');
+    var _syncHdrs = { Authorization: 'Bearer ' + pat, 'X-GitHub-Api-Version': '2022-11-28' };
+    var _syncMeta = null, _syncBusy = false, _syncChecked = false;
+    function checkSync() {
+      if (_syncChecked || !pat || !repo) return;
+      _syncChecked = true;
+      fetch('https://api.github.com/repos/' + repo, { headers: _syncHdrs })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (meta) {
+          if (!meta || !meta.fork || !meta.parent) return;
+          var parent = meta.parent.full_name;
+          var branch = meta.default_branch || 'main';
+          var pbranch = meta.parent.default_branch || 'main';
+          _syncMeta = { parent: parent, branch: branch };
+          return fetch('https://api.github.com/repos/' + parent + '/compare/' +
+              encodeURIComponent(pbranch) + '...' + encodeURIComponent(repo.split('/')[0] + ':' + branch),
+              { headers: _syncHdrs })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (cmp) {
+              if (!cmp || !cmp.behind_by) return;
+              _syncLabel.textContent = 'Update from Lightcodepedia — ' + cmp.behind_by +
+                ' new improvement' + (cmp.behind_by > 1 ? 's' : '');
+              _syncRow.style.display = '';
+            });
+        })
+        .catch(function () {});
+    }
+    _syncRow.addEventListener('click', function () {
+      if (_syncBusy || !_syncMeta) return;
+      _syncBusy = true;
+      _syncLabel.textContent = '🔄 updating…';
+      fetch('https://api.github.com/repos/' + repo + '/merge-upstream', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, _syncHdrs),
+        body: JSON.stringify({ branch: _syncMeta.branch })
+      }).then(function (r) {
+        if (r.ok) {
+          _syncLabel.textContent = '✔ Updated — your site is rebuilding';
+          setTimeout(function () { _syncRow.style.display = 'none'; }, 6000);
+        } else if (r.status === 409) {
+          _syncLabel.innerHTML = '⚠ Your copy has clashing edits — ' +
+            '<a href="https://github.com/' + repo + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">merge on GitHub</a>';
+        } else {
+          _syncLabel.textContent = '⚠ Update failed (HTTP ' + r.status + ') — try again';
+          _syncBusy = false;
+        }
+      }).catch(function () {
+        _syncLabel.textContent = '⚠ Network error — try again';
+        _syncBusy = false;
+      });
+    });
+
     // dropdown toggle
     var btn = document.getElementById('lc-user-btn');
     var drop = document.getElementById('lc-user-drop');
-    btn.addEventListener('click', function(e){ e.stopPropagation(); drop.classList.toggle('open'); });
+    btn.addEventListener('click', function(e){ e.stopPropagation(); drop.classList.toggle('open'); checkSync(); });
     document.addEventListener('click', function(){ drop.classList.remove('open'); });
     drop.addEventListener('click', function(e){ e.stopPropagation(); });
 
