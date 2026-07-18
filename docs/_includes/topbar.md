@@ -149,11 +149,10 @@ body {
 #lc-fork-hint:hover { background: #ffeab0; }
 </style>
 {% comment %} The brand names the node you're on — dynamic, never static text.
-   Rule: repo name minus the "lightcode" prefix, capitalized. The emoji marks
-   the node kind: 🧪 for the lab (HQ), 💡 everywhere else (pedia + forks). {% endcomment %}
+   Rule: the repo's name, capitalized — no shortcuts. The emoji marks the
+   node kind: 🧪 for the lab (HQ), 💡 everywhere else (pedia + forks). {% endcomment %}
 {% assign _repo = site.github.repository_name | default: "lightcodepedia" %}
-{% assign _brand = _repo | remove_first: "lightcode" | capitalize %}
-{% if _brand == "" %}{% assign _brand = _repo | capitalize %}{% endif %}
+{% assign _brand = _repo | capitalize %}
 {% if _repo == "lightcodelab" %}{% assign _brandmoji = "🧪" %}{% else %}{% assign _brandmoji = "💡" %}{% endif %}
 <div id="lc-topbar">
   <a class="lc-brand" href="/">{{ _brandmoji }} {{ _brand }}</a>

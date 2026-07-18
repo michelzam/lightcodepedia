@@ -399,9 +399,26 @@ Auto-included by docs/_layouts/default.html.
     utt.lang = voiceTag || document.documentElement.lang || "en";
     var v = pickVoice(voiceTag);
     if (v) utt.voice = v;
+    /* iOS Safari routinely never fires onend (silent switch, its pause bug
+       on longer speech) — the avatar then mimes forever on a mute line.
+       One finish, whoever reports first: the utterance, an error, the
+       synth going idle, or a duration-scaled watchdog. */
+    var ended = false, kick = null, dog = null;
+    function finish() {
+      if (ended) return;
+      ended = true;
+      clearInterval(kick); clearTimeout(dog);
+      if (onEnd) onEnd();
+    }
     utt.onboundary = function (e) { if (onBoundary) onBoundary(e); };
-    utt.onend = function () { if (onEnd) onEnd(); };
+    utt.onend = finish;
+    utt.onerror = finish;
     window.speechSynthesis.speak(utt);
+    kick = setInterval(function () {
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();  /* Safari's stall */
+      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) finish();
+    }, 3000);
+    dog = setTimeout(finish, 4000 + text.length * 90);
   }
 
   /* ── audio lines: real lip-sync from the waveform ─────
