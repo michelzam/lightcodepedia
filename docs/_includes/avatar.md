@@ -801,6 +801,17 @@ Auto-included by docs/_layouts/default.html.
       var voiceTag = cfg.voice || "";
       var mute     = voiceTag === "off";           /* voice: off → silent bubbles */
       if (mute) voiceTag = "";
+      /* stories: — kept Q&As, one playable story per question (the menu
+         lists them; the tour stays pristine) */
+      var storiesCfg = null;
+      if (cfg.stories && typeof cfg.stories === 'object' && !Array.isArray(cfg.stories)) {
+        storiesCfg = {};
+        Object.keys(cfg.stories).forEach(function (t) {
+          if (Array.isArray(cfg.stories[t])) storiesCfg[t] = cfg.stories[t].map(lineSpec);
+        });
+        if (!Object.keys(storiesCfg).length) storiesCfg = null;
+      }
+
       /* elevenlabs: <voice_id> (or { voice, model }) — studio files are
          content-addressed, so playback can compute each line's URL itself */
       var gen = cfg.elevenlabs || "";
@@ -894,7 +905,8 @@ Auto-included by docs/_layouts/default.html.
         pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
         playing: false, idx: 0, lottieDone: false, step: step, mute: mute,
         genVoice: genVoice, genModel: genModel,
-        botName: (cfg.bot ? String(cfg.bot) : "")
+        botName: (cfg.bot ? String(cfg.bot) : ""),
+        stories: storiesCfg
       };
 
       /* init character graphic */
@@ -1462,6 +1474,29 @@ Auto-included by docs/_layouts/default.html.
     });
     return out.slice(0, 12);
   }
+  /* play a transient set of lines through the avatar, then restore its tour */
+  function performLines(elId, av, specLines) {
+    if (av.playing) stopPlay(elId);
+    if (!av._tourScript) av._tourScript = av.script;
+    var restore = function (ev) {
+      if (ev && ev.detail && ev.detail.id !== elId) return;
+      document.removeEventListener('lc-avatar-ended', restore);
+      if (av._tourScript) { av.script = av._tourScript; av._tourScript = null; av.idx = 0; }
+    };
+    document.addEventListener('lc-avatar-ended', restore);
+    av.script = specLines;
+    av.idx = 0;
+    startPlay(elId);
+  }
+  function storyItems(elId, av, menu, item) {
+    if (!av.stories) return;
+    Object.keys(av.stories).forEach(function (tt) {
+      menu.appendChild(item('❓ ' + (tt.length > 44 ? tt.slice(0, 43) + '…' : tt), function () {
+        menu.classList.remove('open');
+        performLines(elId, av, av.stories[tt]);
+      }));
+    });
+  }
   function guideBubble(av, text) {   /* show the character with a message, engine-off */
     av.host.setAttribute('data-state', 'speaking');
     av.bubble.textContent = text;
@@ -1495,10 +1530,7 @@ Auto-included by docs/_layouts/default.html.
         return;
       }
       av._lastAnswer = { question: question, steps: steps };   /* 📌 keepable */
-      document.addEventListener('lc-avatar-ended', restore);
-      av.script = steps.map(lineSpec);
-      av.idx = 0;
-      startPlay(elId);
+      performLines(elId, av, steps.map(lineSpec));
     });
   }
 
@@ -1543,31 +1575,41 @@ Auto-included by docs/_layouts/default.html.
       var md = decodeURIComponent(escape(atob(String(cur.content || '').replace(/\n/g, ''))));
       /* locate THIS avatar's fence exactly (mask ````-examples first) */
       var masked = md.replace(/````[\s\S]*?````/g, function (m) { return Array(m.length + 1).join(' '); });
-      var re = /```yaml\r?\n((?:(?!```)[\s\S])*?)```\s*\r?\n\{:\s*\.avatar\b([^}]*)\}/g, m, hit = null, hits = 0;
-      while ((m = re.exec(masked)) !== null) {
-        if (m[2].indexOf('#' + elId) >= 0) { hits++; hit = { start: m.index, body: m[1], full: m[0], ial: m[2] }; }
+      /* the summoned guide's keeps land in the #guide fence it creates —
+         search for it too, so a second keep APPENDS instead of duplicating */
+      var wantIds = ['#' + elId];
+      if (elId === 'site_guide') wantIds.push('#guide');
+      var hit = null, hits = 0, keptId = elId;
+      for (var w = 0; w < wantIds.length && !hit; w++) {
+        var re = /```yaml\r?\n((?:(?!```)[\s\S])*?)```\s*\r?\n\{:\s*\.avatar\b([^}]*)\}/g, m;
+        hits = 0;
+        while ((m = re.exec(masked)) !== null) {
+          if (m[2].indexOf(wantIds[w]) >= 0) { hits++; hit = { start: m.index, body: m[1], full: m[0], ial: m[2] }; }
+        }
+        if (hits > 1) throw new Error('ambiguous fence');
+        if (hit) keptId = wantIds[w].slice(1);
       }
-      if (hits > 1) throw new Error('ambiguous fence');
-      var newLines = [{ say: 'You might wonder: ' + ans.question }];
+      /* the question is the story's title; the lines are its narration */
+      var newLines = ['You might wonder: ' + ans.question];
       ans.steps.forEach(function (st) {
-        newLines.push(st.at ? { at: st.at, say: st.say } : { say: st.say });
+        newLines.push(st.at ? { at: st.at, say: st.say } : st.say);
       });
-      var newMd, keptId = elId;
-      if (hits === 1) {
+      var newMd;
+      if (hit) {
         var cfg = window.jsyaml ? window.jsyaml.load(hit.body) : null;
-        if (!cfg || !Array.isArray(cfg.script)) throw new Error('script not parseable');
-        cfg.script = cfg.script.concat(newLines);
+        if (!cfg || typeof cfg !== 'object') throw new Error('fence not parseable');
+        if (!cfg.stories || typeof cfg.stories !== 'object') cfg.stories = {};
+        cfg.stories[ans.question] = newLines;         /* the tour stays pristine */
         var newBody = window.jsyaml.dump(cfg, { lineWidth: 100 });
         /* masking preserves length, so the match span maps 1:1 onto the real md */
         var newFence = '```yaml\n' + newBody + '```\n{: .avatar' + hit.ial + '}';
         newMd = md.substring(0, hit.start) + newFence + md.substring(hit.start + hit.full.length);
       } else if (elId === 'site_guide') {
-        /* a config-docked page has no fence yet: the FIRST keep creates it —
-           appended at end-of-file (creation, never surgery). The page owns
-           its guide and its Q&A from now on. */
+        /* first keep on a bare page CREATES the fence — appended at end-of-
+           file (creation, never surgery); the page owns its Q&A from now on */
         keptId = 'guide';
-        var born = { bot: av.botName || 'doc', face: { zoom: 1.2 },
-                     script: newLines.map(function (l) { return l.at ? l : l.say; }) };
+        var born = { bot: av.botName || 'doc', face: { zoom: 1.2 }, script: [], stories: {} };
+        born.stories[ans.question] = newLines;
         newMd = md.replace(/\s*$/, '\n\n') +
           '```yaml\n' + window.jsyaml.dump(born, { lineWidth: 100 }) + '```\n' +
           '{: .avatar #guide dock="true" size="115" }\n';
@@ -1583,10 +1625,9 @@ Auto-included by docs/_layouts/default.html.
         })
       });
       if (!put.ok) throw new Error('HTTP ' + put.status + ' committing');
-      /* extend the live tour this session */
-      var specd = newLines.map(lineSpec);
-      if (av._tourScript) av._tourScript = av._tourScript.concat(specd);
-      else av.script = av.script.concat(specd);
+      /* the story is playable this session immediately */
+      av.stories = av.stories || {};
+      av.stories[ans.question] = newLines.map(lineSpec);
       av._lastAnswer = null;
       /* voice the new lines (same files + manifest the 🎙️ studio uses) */
       var key = localStorage.getItem('lc_11_key') || '';
@@ -1595,7 +1636,7 @@ Auto-included by docs/_layouts/default.html.
       var model = av.genModel || 'eleven_multilingual_v2';
       var made = 0, failed = 0, vox = {};
       for (var i = 0; i < newLines.length; i++) {
-        var text = String(newLines[i].say).trim();
+        var text = String(newLines[i].say !== undefined ? newLines[i].say : newLines[i]).trim();
         try {
           var th = (await sha1hex(text)).slice(0, 16);
           var h = await sha1hex(voice + '|' + model + '|' + text);
@@ -1636,7 +1677,7 @@ Auto-included by docs/_layouts/default.html.
           _voxP = Promise.resolve(man);   /* this session's playback sees it too */
         } catch (e3) {}
       }
-      seedToast('📌 kept · ' + (newLines.length) + ' lines in the tour · ' + made + ' voiced' + (failed ? ' · ' + failed + ' voice failed' : ''));
+      seedToast('📌 story added (' + newLines.length + ' lines) · ' + made + ' voiced' + (failed ? ' · ' + failed + ' voice failed' : ''));
     } catch (err) {
       seedToast('⚠ could not keep automatically (' + (err && err.message) + ') — add it by hand');
     }
@@ -1702,7 +1743,13 @@ Auto-included by docs/_layouts/default.html.
       menu.appendChild(b);
     }
     if (!av.playing) {
-      item(av.idx > 0 ? '↺ Replay' : '▶ Start', function () { togglePlay(elId); });
+      if (av.script.length) item(av.idx > 0 ? '↺ Replay' : '▶ Start', function () { togglePlay(elId); });
+      storyItems(elId, av, menu, function (label, fn) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.setAttribute('role', 'menuitem'); b.textContent = label;
+        b.addEventListener('click', function (e) { e.stopPropagation(); menu.remove(); fn(); });
+        return b;
+      });
     } else {
       if (av._waiting || av._curStep || av.step) item('Next →', function () { togglePlay(elId); });
       item('⏹ Stop', function () { stopPlay(elId); });
@@ -1748,6 +1795,13 @@ Auto-included by docs/_layouts/default.html.
       if (!av.playing) {
         if (av.script.length) {
           menu.appendChild(item(av.idx > 0 ? '↺ Replay tour' : '▶ Play tour', function () { togglePlay(elId); menu.classList.remove('open'); }));
+        }
+        storyItems(elId, av, menu, item);
+        if (!av.script.length && (!av.stories || !Object.keys(av.stories).length)) {
+          var note = document.createElement('div');
+          note.style.cssText = 'padding:0.5em 0.9em;font-size:0.8em;color:#9ca3af;white-space:nowrap';
+          note.textContent = '— no story on this page yet —';
+          menu.appendChild(note);
         }
         if (av.botName && window.lcBotAsk) {
           menu.appendChild(item('💬 Ask', function () { menu.classList.remove('open'); openAskPanel(elId, av); }));
@@ -1832,7 +1886,7 @@ Auto-included by docs/_layouts/default.html.
       pupils: null, mouth: null, audioEl: null, videoEl: null, analyser: null,
       playing: false, idx: 0, lottieDone: false, step: false, mute: false,
       genVoice: '', genModel: 'eleven_multilingual_v2',
-      botName: botName
+      botName: botName, stories: null
     };
     initChar(elId, char, 115);
     av._idleT = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);

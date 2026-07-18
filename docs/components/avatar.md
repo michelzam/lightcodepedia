@@ -88,6 +88,7 @@ In the YAML (or as attributes on the block):
 | `transparent` | `true` + an alpha WebM: the face floats free, no round crop |
 | `elevenlabs` | An ElevenLabs voice id (or `{ voice, model }`) — playback auto-finds each line's pre-generated studio file and falls back to TTS; see 🎙️ below |
 | `bot` | A bot name (`docs/bots/…`) — the docked guide gains **💬 Ask**: questions answered by that bot on the learner's own PAT, and the answer is *performed* — the guide walks to the components it mentions while speaking. It only ever walks, points and talks — never acts |
+| `stories` | A map of **kept Q&As** — `"Question?": [lines…]` — each listed in the guide's menu as ❓ its own playable story; 📌 Keep writes here |
 | `dock="true"` | Dock this avatar as the page's **guide**: a small face in the bottom-right corner, zero moves away — tap it for ▶ play tour · next · ⏹ stop. The full character stays hidden until it performs; right-click (long-press) on it opens the same verbs beside it (this page docks Doc) |
 | `face` | Make the built-in character look like **you** — see 🪞 below |
 
@@ -190,15 +191,17 @@ to each component his reply mentions, spotlights it, and speaks the step.
   menu offers to **keep** the answer that just played: its steps are appended
   to this page's tour (committed like any edit, the question credited as
   *"You might wonder: …"*), and the new lines are **voiced** with your
-  ElevenLabs voice on the spot. Learners' real questions grow the course —
-  and a kept answer never costs anyone credits again. Everything stays
-  **encapsulated in the page's own markdown**: on a page with no guide yet
-  (summon one with the pill's 🧑‍🏫 toggle), the first keep *writes the fence
-  into the page* — creation at the end of the file, never surgery. If an
-  existing fence can't be located unambiguously, the keep aborts — it can
-  never corrupt a page. And when *you* ask (editor connected), Doc answers
-  **directly and completely** — the tutor's guiding-questions style is for
-  students.
+  ElevenLabs voice on the spot. Kept answers land in the fence's **`stories:`**
+  map — one playable story per question, listed in the guide's menu as
+  **❓ its own title** — so the learner *picks* what to listen to and your
+  tour stays pristine. A kept answer never costs anyone credits again.
+  Everything stays **encapsulated in the page's own markdown**: on a page
+  with no guide yet (summon one with the pill's 🧑‍🏫 toggle), the first keep
+  *writes the fence into the page* — creation at the end of the file, never
+  surgery — and later keeps append to it. If an existing fence can't be
+  located unambiguously, the keep aborts — it can never corrupt a page. And
+  when *you* ask (editor connected), Doc answers **directly and
+  completely** — the tutor's guiding-questions style is for students.
 
 ## 🤝 With the demo — ▶ Replay
 
