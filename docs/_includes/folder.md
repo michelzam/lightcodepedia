@@ -170,7 +170,13 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcUpgraded = "1";
     var a = el.querySelector("a");
     if (!a) return;
-    var path = a.getAttribute("href").replace(/^\/+|\/+$/g, "");
+    /* Repo path to enumerate: prefer an explicit path="…" (a repo path, never
+       base-healed); else the link href with any project base ("/lightcodelab")
+       stripped — lcRebase heals the href for navigation, so the raw href is not
+       a repo path under a project base. */
+    var _rawPath = el.getAttribute("path") || a.getAttribute("href") || "";
+    if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
+    var path = _rawPath.replace(/^\/+|\/+$/g, "");
     var cols = el.getAttribute("cols") || "auto";
     var showPrivate = el.getAttribute("show-private") === "true";
     var sortMode = (el.getAttribute("sort") || "name").toLowerCase();   // "name" (default) | "recent"
@@ -182,10 +188,9 @@ Auto-included by docs/_layouts/default.html.
     wrap.style.gridTemplateColumns = colStyle;
     wrap.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading…</div>";
     el.parentNode.replaceChild(wrap, el);
-    if (!_lcSiteRepo) {
-      wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ site.github.repository_nwo not set.</div>";
-      return;
-    }
+    /* No hard requirement on _lcSiteRepo any more: the manifest path lists a
+       folder with no API. _lcSiteRepo is only needed for the API fallback and
+       the lazy git-date enrichment (ensureDates); both degrade gracefully. */
     var _folderPat = localStorage.getItem('lc_ed_pat') || '';
     var _folderHdrs = _folderPat ? { Authorization: 'Bearer ' + _folderPat, 'X-GitHub-Api-Version': '2022-11-28' } : {};
     function apiFetch(url) {
@@ -199,7 +204,62 @@ Auto-included by docs/_layouts/default.html.
         .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .catch(bare);
     }
-    apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + path)
+    /* ── enumerate from the build-time manifest, not the GitHub API ──────
+       The lab repo is private, so api.github.com/contents 404s for anonymous
+       visitors. The manifest (assets/pages_index.json) and every page's raw
+       .md are served from the public Pages site, so the listing works with no
+       API and no PAT. The API stays as a PAT-only enrichment (git dates, in
+       ensureDates). If a build has no manifest, fall back to the old API path
+       so nothing regresses (pedia keeps working during a transition). */
+    var mdUrl   = function (rp) { return "/" + rp.replace(/^docs\//, ""); };      // static .md on Pages
+    var cardUrl = function (rp) { return mdUrl(rp).replace(/\.md$/i, ""); };
+    var titleCase = function (s) { return s.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); };
+    function fetchText(url) {
+      return fetch(window.lcHref ? window.lcHref(url) : url).then(function (r) { return r.ok ? r.text() : null; });
+    }
+    function pageItem(rp) {
+      return fetchText(mdUrl(rp)).then(function (text) {
+        var name = rp.split("/").pop();
+        if (!text) return { title: titleCase(name), snippet: "", url: cardUrl(rp), path: rp };
+        var meta = extractPageMeta(text);
+        var cleanLinks = text.replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "").replace(/`[^`\n]+`/g, "");
+        var pageSlug = rp.replace(/^docs\//, "").replace(/\.md$/i, "");
+        var rawHrefs = [], lRe = /\]\(([^)#\s]+)/g, lm;
+        while ((lm = lRe.exec(cleanLinks)) !== null) { var h = lm[1]; if (/^https?:|^mailto:/.test(h)) continue; rawHrefs.push({ h: h, base: pageSlug }); }
+        return { title: meta.title || titleCase(name), snippet: meta.snippet, url: cardUrl(rp), features: scanFeatures(text), quizzes: countQuizzes(text), rawHrefs: rawHrefs, date: meta.date || null, path: rp };
+      });
+    }
+    function subdirItem(slug) {   // slug like "components/examples"
+      var pretty = titleCase(slug.split("/").pop());
+      var fallback = { title: "📁 " + pretty, snippet: "", url: "/" + slug, isSubdir: true };
+      return fetchText("/" + slug + "/index.md").then(function (text) {
+        if (!text) return fallback;
+        var meta = extractPageMeta(text);
+        return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug, isSubdir: true, date: meta.date };
+      }).catch(function () { return fallback; });
+    }
+    function buildFromManifest(all) {
+      if (!Array.isArray(all)) throw new Error("bad manifest");
+      var prefix = path + "/", slugBase = path.replace(/^docs\//, "");
+      var pagePaths = [], subSet = {};
+      all.forEach(function (rp) {
+        if (rp.indexOf(prefix) !== 0) return;
+        var rest = rp.slice(prefix.length);
+        if (rest.indexOf("/") >= 0) { subSet[rest.split("/")[0]] = 1; return; }   // nested → a subdir
+        if (!/\.md$/i.test(rest) || rest === "index.md") return;
+        if (!showPrivate && rest.charAt(0) === "_") return;
+        pagePaths.push(rp);
+      });
+      pagePaths.sort();
+      var subdirSlugs = Object.keys(subSet).sort().map(function (s) { return slugBase + "/" + s; });
+      return Promise.all(pagePaths.map(pageItem)).then(function (pageItems) {
+        return Promise.all(subdirSlugs.map(subdirItem)).then(function (subItems) {
+          return pageItems.concat(subItems.filter(Boolean));
+        });
+      });
+    }
+    function apiListing() {
+      return apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + path)
       .then(function(files) {
         if (!Array.isArray(files)) throw new Error("Not a directory: " + escapeHtml(path));
         var pages = files.filter(function(f) {
@@ -263,7 +323,11 @@ Auto-included by docs/_layouts/default.html.
           var pageItems   = results.slice(subdirs.length);
           return pageItems.concat(subdirItems);
         });
-      })
+      });
+    }
+    fetchText("/assets/pages_index.json")
+      .then(function (t) { return buildFromManifest(JSON.parse(t)); })
+      .catch(function () { return apiListing(); })   // no/invalid manifest → legacy API path
       .then(function(items) {
         if (!items || !items.length) {
           wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
@@ -292,6 +356,10 @@ Auto-included by docs/_layouts/default.html.
           cardTagList(item.features).forEach(function(t) { allTags[t] = (allTags[t] || 0) + 1; });
           return buildCardHtml(item, { clickableTags: true });
         }).join("");
+        /* cards land AFTER the page-level rebase — heal their root-absolute
+           links now or every card 404s under /lightcodelab (data-url attrs
+           stay canonical: filtering and ribbons key on them) */
+        if (window.lcRebase) window.lcRebase(wrap);
 
         /* ── tag filter bar: clickable chips that show/hide cards by tag ── */
         var tagNames = Object.keys(allTags).sort();

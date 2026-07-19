@@ -114,6 +114,7 @@ Auto-included by docs/_layouts/default.html (after folder.md).
       wrap.innerHTML = items.map(function (it) {
         return window.lcBuildCardHtml(it, { clickableTags: false });
       }).join("");
+      if (window.lcRebase) window.lcRebase(wrap);   // async injection — heal card links
     }).catch(function (e) {
       wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
     });

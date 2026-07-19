@@ -71,7 +71,7 @@ Write a bullet list with `[x]` on the correct answer and `[ ]` on the wrong ones
 
 Renders to:
 
-**Q:** Which IAL activates the Python runner?
+**Q:** Which IAL[^ial] activates the Python runner?
 
 - [ ] `{: .run-python }`
 - [x] `{: .run }`

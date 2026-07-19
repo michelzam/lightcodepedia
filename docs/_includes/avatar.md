@@ -473,6 +473,9 @@ Auto-included by docs/_layouts/default.html.
       if (av.analyser) mouthLoop(av);
     } catch (e) { /* no analyser → CSS flap still runs */ }
     a.muted = false;
+    /* heal a root-absolute /assets path under a project base (lab, forks);
+       full URLs and data: URIs pass through untouched */
+    if (window.lcHref) url = window.lcHref(url);
     if (a.getAttribute("src") !== url) a.src = url;
     try { a.currentTime = 0; } catch (e) {}
     var done = function () { stopAudio(av); resetMouth(av); onEnd(); };
@@ -547,6 +550,7 @@ Auto-included by docs/_layouts/default.html.
       av.videoEl = v;
     }
     av.videoEl.style.display = "";
+    if (window.lcHref) url = window.lcHref(url);   // heal /assets under a project base
     if (av.videoEl.getAttribute("src") !== url) av.videoEl.src = url;
   };
 
@@ -618,6 +622,7 @@ Auto-included by docs/_layouts/default.html.
     if (!v) { onEnd(); return null; }
     /* runtime URL wins; else per-line url override; else the <source> list */
     var src = rt || ((url && url !== "true") ? url : "");
+    if (src && window.lcHref) src = window.lcHref(src);   // heal /assets under a project base
     if (src && v.getAttribute("src") !== src) v.src = src;
     v.style.display = "";
     v.muted = false;
@@ -963,7 +968,9 @@ Auto-included by docs/_layouts/default.html.
       var list = Array.isArray(videoUrl) ? videoUrl : [videoUrl];
       list.forEach(function (u) {
         var so = document.createElement("source");
-        so.src = String(u);
+        /* character sources build eagerly on load — heal /assets under a
+           project base (lab, forks) or every one 404s; full URLs pass through */
+        so.src = window.lcHref ? window.lcHref(String(u)) : String(u);
         if (/\.webm(\?|$)/i.test(String(u))) so.type = 'video/webm; codecs="vp9"';
         v.appendChild(so);
       });

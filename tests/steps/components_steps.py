@@ -138,3 +138,71 @@ def step_mdpad_italic_not_red(context):
     assert color and color.replace(" ", "") != "rgb(192,57,43)", (
         "italic text wrongly coloured red: %r" % (color,)
     )
+
+
+@then("a scanned subtree's root-absolute image resolves under the base path")
+def step_base_path_heal(context):
+    # scanElement() is the choke point every component's injected HTML passes
+    # through. Force a project base (the suite serves at a domain root, where
+    # lcBase is "") and confirm a freshly-injected root-absolute image gains the
+    # base prefix — while a full URL would be left alone. Scoped to the subtree.
+    src = context.page.evaluate(
+        """() => {
+          window.lcBase = "/lightcodelab";
+          const box = document.createElement("div");
+          document.body.appendChild(box);
+          box.innerHTML = '<img id="_lc_heal" src="/assets/lab.jpg">';
+          window.lcScanElement(box);
+          return document.getElementById("_lc_heal").getAttribute("src");
+        }"""
+    )
+    assert src == "/lightcodelab/assets/lab.jpg", "media not healed by scanElement: " + str(src)
+
+
+@then("the block component's image is loaded, not broken")
+def step_block_image_loaded(context):
+    # the .block upgrader injects <img src="/assets/lab.jpg"> client-side; under
+    # the base-path harness it must heal + download. naturalWidth stays 0 on a
+    # 404, so this is the end-to-end guard the domain-root suite could not give.
+    img = context.page.locator(".lc-block img").first
+    img.wait_for(state="visible", timeout=20_000)
+    context.page.wait_for_function(
+        "el => el.complete && el.naturalWidth > 0",
+        arg=img.element_handle(),
+        timeout=20_000,
+    )
+
+
+@then("the folder gallery shows at least {n:d} cards")
+def step_gallery_cards(context, n):
+    # .folder enumerates from the build-time manifest (no GitHub API); on the
+    # private lab the old API path 404'd for anonymous visitors. Cards proving.
+    context.page.wait_for_selector(".lc-card h3 a", timeout=20_000)
+    count = context.page.locator(".lc-cards .lc-card").count()
+    assert count >= n, "only %d cards" % count
+
+
+@then("the folder gallery shows no error card")
+def step_gallery_no_error(context):
+    txt = context.page.locator(".lc-cards").first.inner_text()
+    assert "HTTP 4" not in txt and "not set" not in txt, txt[:200]
+
+
+@then("the sitemap graph shows at least {n:d} nodes")
+def step_sitemap_nodes(context, n):
+    # .sitemap enumerates from the same build-time manifest (no GitHub API).
+    context.page.wait_for_selector(".lc-sitemap .lc-sm-node", timeout=20_000)
+    count = context.page.locator(".lc-sitemap .lc-sm-node").count()
+    assert count >= n, "only %d nodes" % count
+    assert context.page.locator(".lc-sm-msg", has_text="⚠").count() == 0, "sitemap error message shown"
+
+
+@then("clicking a sitemap node opens its page")
+def step_sitemap_node_click(context):
+    # graph nodes are injected after every healing pass — their navigation must
+    # still resolve under a project base (was a plain 404 on the deployed lab)
+    context.page.locator(".lc-sitemap .lc-sm-node circle").first.click()
+    context.page.wait_for_load_state()
+    context.page.wait_for_timeout(500)
+    assert "404" not in (context.page.title() or ""), context.page.url
+    expect(context.page.locator("main h1").first).to_be_visible()

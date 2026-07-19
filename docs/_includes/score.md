@@ -61,11 +61,28 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
   function normPath(p){
     try { p = new URL(p || location.href, location.origin).pathname; }
     catch (e) { p = location.pathname; }
+    /* keys are SITE-canonical: strip the project base (/lightcodelab, forks)
+       so the same page scores identically at a domain root and under a base,
+       and card hrefs (healed to the base) match pages (scored at the base) */
+    if (window.lcBase && p.indexOf(window.lcBase + "/") === 0) p = p.slice(window.lcBase.length);
     p = p.replace(/index\.html?$/i, "").replace(/\.html?$/i, "");
     if (p.length > 1) p = p.replace(/\/+$/, "");
     return p || "/";
   }
-  function loadScores(){ try { return JSON.parse(localStorage.getItem("lc_scores") || "{}"); } catch (e) { return {}; } }
+  function loadScores(){
+    try {
+      var o = JSON.parse(localStorage.getItem("lc_scores") || "{}");
+      /* migrate: scores saved under base-prefixed keys before canonicalisation
+         are merged (copy, never delete — scores are sacred) */
+      if (window.lcBase) Object.keys(o).forEach(function(k){
+        if (k.indexOf(window.lcBase + "/") === 0) {
+          var c = k.slice(window.lcBase.length);
+          if (!o[c]) o[c] = o[k];
+        }
+      });
+      return o;
+    } catch (e) { return {}; }
+  }
   function saveScores(o){ try { localStorage.setItem("lc_scores", JSON.stringify(o)); } catch (e) {} }
   window.lcPageScores = { get: function(p){ return loadScores()[normPath(p)]; }, all: loadScores, norm: normPath };
 

@@ -58,3 +58,37 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then the mdpad preview shows a red word
     And the mdpad italic text is not coloured
+
+  # The lab and every fork serve under /<repo>/, where a component that injects
+  # a root-absolute path ("/assets/lab.jpg") 404s unless the scan pipeline heals
+  # it. The suite serves at a domain root, so this drives the real pipeline with
+  # a project base forced on. Guards the block/runner base-path regression.
+  Scenario: A scanned component's root-absolute media heals under a project base
+    When I navigate to "/components/block"
+    And I wait for the page to be interactive
+    Then a scanned subtree's root-absolute image resolves under the base path
+
+  # End-to-end counterpart: under the base-path harness (BASE_URL .../lightcodelab)
+  # the block's injected image must actually download — an unhealed /assets path
+  # 404s and this fails. At a domain root it passes trivially (nothing to heal).
+  Scenario: The block component's injected image actually loads
+    When I navigate to "/components/block"
+    And I wait for the page to be interactive
+    Then the block component's image is loaded, not broken
+
+  # The lab repo is private, so the GitHub Contents API 404s for anonymous
+  # visitors. The gallery must enumerate from the build-time manifest
+  # (assets/pages_index.json) with no API call — guards the .folder private-repo
+  # regression (the red "HTTP 404" the API path produced on the lab).
+  Scenario: The component gallery lists cards without the GitHub API
+    When I navigate to "/components"
+    And I wait for the page to be interactive
+    Then the folder gallery shows at least 20 cards
+    And the folder gallery shows no error card
+
+  # Same private-repo fix for the sibling .sitemap graph (the "Component Map").
+  Scenario: The sitemap graph builds without the GitHub API
+    When I navigate to "/components/sitemap"
+    And I wait for the page to be interactive
+    Then the sitemap graph shows at least 20 nodes
+    And clicking a sitemap node opens its page

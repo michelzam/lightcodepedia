@@ -158,18 +158,27 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcUpgraded = "1";
     var a = el.querySelector("a");
     if (!a) return;
-    var filePath = a.getAttribute("href").replace(/^\/+|\/+$/g, "");
+    /* repo path: strip any healed project base (lcRebase rewrites root-absolute
+       hrefs for navigation — they are not repo paths under /lightcodelab) */
+    var _tfRaw = el.getAttribute("path") || a.getAttribute("href") || "";
+    if (window.lcBase && _tfRaw.indexOf(window.lcBase + "/") === 0) _tfRaw = _tfRaw.slice(window.lcBase.length);
+    var filePath = _tfRaw.replace(/^\/+|\/+$/g, "");
     var gid = el.getAttribute("id") || ("lc-tf-" + Math.random().toString(36).slice(2, 7));
     var placeholder = document.createElement("div");
     placeholder.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading tabs…</div>";
     el.parentNode.replaceChild(placeholder, el);
-    if (!_lcSiteRepo) {
-      placeholder.innerHTML = "<div class='lc-tabs' style='padding:1em;color:#c00'>⚠️ site.github.repository_nwo not set.</div>";
-      return;
-    }
+    /* The Pages site serves every page's raw .md — works anonymously on the
+       private lab, where raw.githubusercontent 404s without auth. Same-origin
+       first; raw stays as a freshness fallback for public repos. */
+    var localUrl = "/" + filePath + ".md";
+    if (window.lcHref) localUrl = window.lcHref(localUrl);
     var rawUrl = "https://raw.githubusercontent.com/" + _lcSiteRepo + "/main/docs/" + filePath + ".md";
-    fetch(rawUrl)
-      .then(function(r) { if (!r.ok) throw new Error("File not found: " + filePath + ".md"); return r.text(); })
+    fetch(localUrl)
+      .then(function(r) {
+        if (r.ok) return r.text();
+        if (!_lcSiteRepo) throw new Error("File not found: " + filePath + ".md");
+        return fetch(rawUrl).then(function(r2) { if (!r2.ok) throw new Error("File not found: " + filePath + ".md"); return r2.text(); });
+      })
       .then(function(text) {
         var lines = text.split("\n");
         var i = 0;

@@ -231,7 +231,7 @@ Attributes:
       });
       c.addEventListener("mousemove", posTip);
       c.addEventListener("mouseleave", function () { tip.classList.remove("on"); });
-      c.addEventListener("click", function () { window.location.href = n.url; });
+      c.addEventListener("click", function () { window.location.href = window.lcHref ? window.lcHref(n.url) : n.url; });
       return g;
     });
 
@@ -282,9 +282,13 @@ Attributes:
   function upgradeSitemap(el) {
     if (el.dataset.lcSmDone) return; el.dataset.lcSmDone = "1";
     var a = el.querySelector("a");
-    var path = a ? a.getAttribute("href").replace(/^\/+|\/+$/g, "") : "";
+    /* prefer path="…" (a repo path, never base-healed); else the href with any
+       project base stripped — lcRebase heals the href for navigation. */
+    var _rawPath = el.getAttribute("path") || (a ? a.getAttribute("href") : "") || "";
+    if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
+    var path = _rawPath.replace(/^\/+|\/+$/g, "");
     var H = parseInt(el.getAttribute("height") || "420", 10);
-    if (!_repo || !path) { el.innerHTML = "<div class='lc-sm-msg'>⚠ set path</div>"; return; }
+    if (!path) { el.innerHTML = "<div class='lc-sm-msg'>⚠ set path</div>"; return; }
     el.style.height = H + "px";
     el.classList.add("lc-sitemap");   /* style + make the widget selectable now,
                                           not only after the async graph builds */
@@ -294,7 +298,33 @@ Attributes:
     var hdrs = pat ? { Authorization: "Bearer " + pat, "X-GitHub-Api-Version": "2022-11-28" } : {};
     function apiFetch(url) { return fetch(url, { headers: hdrs }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); }
 
-    apiFetch("https://api.github.com/repos/" + _repo + "/contents/" + path)
+    /* Enumerate from the build-time manifest, not the GitHub API — the lab repo
+       is private, so api.github.com/contents 404s for anonymous visitors. The
+       manifest + each page's raw .md are served from the public Pages site.
+       API stays as a fallback for builds without a manifest. (Mirrors folder.md.) */
+    var _smMd = function (rp) { return "/" + rp.replace(/^docs\//, ""); };
+    function smFetchText(url) { return fetch(window.lcHref ? window.lcHref(url) : url).then(function (r) { return r.ok ? r.text() : null; }); }
+    function smPage(rp) {
+      return smFetchText(_smMd(rp)).then(function (text) {
+        var slug = rp.replace(/^docs\//, "").replace(/\.md$/i, "");
+        var base = rp.split("/").pop().replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+        if (!text) return { id: slug, url: "/" + slug, title: base, snippet: "", rawLinks: [], fc: {} };
+        var meta = smExtractMeta(text);
+        return { id: slug, url: "/" + slug, title: meta.title || base, snippet: meta.snippet, rawLinks: smExtractLinks(text), fc: smFeatureCounts(text) };
+      });
+    }
+    function smFromManifest(all) {
+      if (!Array.isArray(all)) throw new Error("bad manifest");
+      var prefix = path + "/";
+      var paths = all.filter(function (rp) {
+        if (rp.indexOf(prefix) !== 0) return false;
+        var rest = rp.slice(prefix.length);
+        return rest.indexOf("/") < 0 && /\.md$/i.test(rest);   // direct .md children only
+      }).sort();
+      return Promise.all(paths.map(smPage));
+    }
+    function apiListing() {
+      return apiFetch("https://api.github.com/repos/" + _repo + "/contents/" + path)
       .then(function (files) {
         if (!Array.isArray(files)) throw new Error("Not a directory");
         var pages = files.filter(function (f) { return f.type === "file" && /\.md$/i.test(f.name); });
@@ -311,7 +341,11 @@ Attributes:
             };
           });
         }));
-      })
+      });
+    }
+    smFetchText("/assets/pages_index.json")
+      .then(function (t) { return smFromManifest(JSON.parse(t)); })
+      .catch(function () { return apiListing(); })
       .then(function (pages) { renderGraph(el, pages, H); })
       .catch(function (e) { el.innerHTML = "<div class='lc-sm-msg'>⚠ " + e.message + "</div>"; });
   }

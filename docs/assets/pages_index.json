@@ -1,0 +1,18 @@
+---
+layout: null
+sitemap: false
+---
+{%- comment -%}
+Build-time page manifest — the repo path of every markdown page, as a flat JSON
+array. The lab repo is private, so the GitHub Contents API 404s for anonymous
+visitors; .folder / .sitemap read this static file (served from the public Pages
+site) to enumerate a folder with no API call. One SSOT: Jekyll already knows
+every page at build, so this is generated, never hand-kept. layout:null so the
+default HTML layout does not wrap the JSON.
+{%- endcomment -%}
+[
+{%- assign mds = site.pages | where_exp: "p", "p.name contains '.md'" -%}
+{%- for p in mds -%}
+"docs/{{ p.path }}"{%- unless forloop.last -%},{%- endunless -%}
+{%- endfor -%}
+]

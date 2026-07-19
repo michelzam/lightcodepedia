@@ -177,16 +177,27 @@ Auto-included by docs/_layouts/default.html.
     el.parentNode.replaceChild(container, el);
     var rel = href.replace(/^\/+|\/+$/g, "");
     if (!/\.md$/i.test(rel)) rel += ".md";
-    /* private nodes (the lab) aren't on raw.githubusercontent — the builder's
-       PAT reaches the source through the API instead; public nodes keep the
-       tokenless raw path so visitors never touch a rate limit */
     var pat = localStorage.getItem("lc_ed_pat") || "";
-    var req = (pat && _lcSiteRepo)
-      ? fetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/docs/" + rel,
-              { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.raw" } })
-      : fetch(_lcSiteRepo
-          ? "https://raw.githubusercontent.com/" + _lcSiteRepo + "/HEAD/docs/" + rel
-          : (window.lcHref ? window.lcHref("/" + rel) : "/" + rel));
+    var unpublished = /(^|\/)_[^\/]*$/.test(rel);   // _-prefixed: repo tree only, never in the Pages build
+    var req;
+    if (pat && _lcSiteRepo) {
+      /* builder: the API + PAT reaches every node, published or not */
+      req = fetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/docs/" + rel,
+                  { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.raw" } });
+    } else if (unpublished) {
+      /* only raw serves an unpublished node. On a PRIVATE repo raw 404s for
+         anonymous visitors — don't fetch a URL we know will 404 (console error,
+         nothing to show); invite a PAT. Public repos still preview it via raw. */
+      if (window.lcRepoPrivate) {
+        container.innerHTML = "<div style='color:#6b7280;font-style:italic;padding:0.5em 0'>🔑 Private node — connect a GitHub PAT (topbar “Get started”) to preview it.</div>";
+        return;
+      }
+      req = fetch("https://raw.githubusercontent.com/" + _lcSiteRepo + "/HEAD/docs/" + rel);
+    } else {
+      /* published node: the Pages site serves its .md same-origin — works on the
+         private lab too (raw would 404 there), no rate limit, no CORS */
+      req = fetch(window.lcHref ? window.lcHref("/" + rel) : "/" + rel);
+    }
     req
       .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
       .then(function(text) {

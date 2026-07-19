@@ -1,6 +1,6 @@
 # 🧱 Block
 
-Wrap content in a bordered card. Use `cols` to place multiple blocks side by side.
+Wrap content in a bordered card. Use `cols` to place multiple blocks side by side.🧪
 
 **The rule:** one fenced block, one IAL tag. `### Headings` inside divide it into multiple blocks.
 
@@ -48,7 +48,7 @@ Content on the right.
 ### 🐕 Meet Lucky
 ![Lucky](/assets/lab.jpg)
 
-This is **Lucky** — a three-year-old Beagle who loves parks, tennis balls, and long naps.
+This is **Lucky** — a three-year-old Lab who loves parks, tennis balls, and long naps.💤
 ```
 {: .block }
 

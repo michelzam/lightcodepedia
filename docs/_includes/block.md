@@ -96,6 +96,7 @@ Auto-included by docs/_layouts/default.html.
       var summaryText = titles.length ? titles.join(" · ") : "Section";
       var details = document.createElement("details");
       details.className = "lc-lazy-block";
+      if (el.id) details.setAttribute("data-lc-id", el.id);
       var sumEl = document.createElement("summary");
       sumEl.textContent = summaryText;
       var content = document.createElement("div");
@@ -118,6 +119,9 @@ Auto-included by docs/_layouts/default.html.
     var wrap = document.createElement("div");
     wrap.className = "lc-blocks";
     wrap.style.gridTemplateColumns = colStyle;
+    /* carry the source id so xray finds the pre-upgrade fence snapshot
+       (lcSourceOf) and edits the verbatim source, not the rendered text */
+    if (el.id) wrap.setAttribute("data-lc-id", el.id);
     el.parentNode.replaceChild(wrap, el);
     loadMarked(function() { _renderAndScanBlock(wrap, sections); });
   }

@@ -8,6 +8,39 @@ from playwright.sync_api import sync_playwright
 BASE_URL = os.environ.get("BASE_URL", "https://lightcodepedia.org").rstrip("/")
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "docs", "assets")
 KEEP_RUNS = 30  # bound the committed history
+# LOCAL HARNESS ONLY: pin the chromium binary when the pip playwright build
+# and the pre-provisioned browser build differ (e.g. driver wants 1148 but
+# /opt/pw-browsers has 1194). No effect in CI where the versions match.
+PW_EXECUTABLE = os.environ.get("PW_CHROMIUM_EXECUTABLE") or None
+_LAUNCH = dict(headless=True, args=["--js-flags=--expose-gc"])
+if PW_EXECUTABLE:
+    _LAUNCH["executable_path"] = PW_EXECUTABLE
+
+# LOCAL HARNESS ONLY: the runner (and editor preview) load marked.js from
+# https://cdn.jsdelivr.net/npm/marked@9/marked.min.js. In CI that CDN is
+# reachable; in this sandbox jsdelivr is blocked (ERR_TUNNEL_CONNECTION_FAILED)
+# so the render pipeline never runs. When MARKED_JS points at a local copy of
+# marked.min.js, fulfil that one CDN request from disk. No effect when the env
+# var is unset (CI), and it only ever intercepts the marked script URL.
+MARKED_JS = os.environ.get("MARKED_JS") or None
+_MARKED_BODY = None
+if MARKED_JS and os.path.isfile(MARKED_JS):
+    with open(MARKED_JS, "rb") as _f:
+        _MARKED_BODY = _f.read()
+
+
+def _stub_marked(page):
+    if _MARKED_BODY is None:
+        return
+    page.route(
+        "https://cdn.jsdelivr.net/npm/marked@*/marked.min.js",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/javascript; charset=utf-8",
+            body=_MARKED_BODY,
+        ),
+    )
+
 
 _pw = None
 _browser = None
@@ -19,9 +52,7 @@ def before_all(context):
     # --expose-gc lets the metrics capture force a collection first, so
     # heap_mb measures THIS page, not residue from earlier scenarios in the
     # shared renderer process
-    _browser = _pw.chromium.launch(
-        headless=True, args=["--js-flags=--expose-gc"]
-    )
+    _browser = _pw.chromium.launch(**_LAUNCH)
     context.base_url = BASE_URL
     # fleet metrics: one row per page per run, captured after each scenario
     context.lc_metrics = {}          # path -> metrics row (measured cold, at suite end)
@@ -61,6 +92,7 @@ def before_scenario(context, scenario):
         )
     else:
         context.page = _browser.new_page(viewport={"width": 1280, "height": 800})
+    _stub_marked(context.page)  # LOCAL HARNESS ONLY (no-op when MARKED_JS unset)
     context.page.set_default_timeout(15_000)
     context.lc_console_errors = 0
     context.page.on(
@@ -124,9 +156,7 @@ def _measure_cold(context):
     performance.memory is process-wide, so isolation is the only honest way."""
     if not context.lc_pages:
         return
-    browser = _pw.chromium.launch(
-        headless=True, args=["--js-flags=--expose-gc"]
-    )
+    browser = _pw.chromium.launch(**_LAUNCH)
     for path in sorted(context.lc_pages):
         try:
             page = browser.new_page(viewport={"width": 1280, "height": 800})

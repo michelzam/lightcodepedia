@@ -198,7 +198,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
      page's own source, exact-match-or-abort so it can never corrupt a page.
      The account invitation is only for anonymous learners (losing work is
      their incentive to sign up). */
-  function commitInline(pat, repo, path, before, after, label) {
+  function commitInline(pat, repo, path, before, after, label, onOk) {
     var api = "https://api.github.com/repos/" + repo + "/contents/" + path;
     var H = { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json" };
     fetch(api, { headers: H }).then(function (r) { return r.json(); }).then(function (d) {
@@ -216,17 +216,25 @@ loses everything. A component's editable source comes from window.lcSourceOf
                                content: btoa(unescape(encodeURIComponent(next))), sha: d.sha })
       }).then(function (r) { return r.json(); }).then(function (res) {
         if (!res.content) throw new Error(res.message || "unknown");
+        if (onOk) onOk();
       });
     }).catch(function (e) { alert("Save failed: " + e.message); });
   }
 
   function keepChanges() {
+    /* Inside a runner render the true source is the RENDERED file (the /run
+       page itself has no_edit and knows nothing) — the runner stamps it on
+       its root. Resolve BEFORE apply(): re-rendering a component detaches
+       curEl, and closest() on a detached node finds no ancestors. */
+    var runRoot = curEl && curEl.closest ? curEl.closest(".lc-run[data-lc-src-path]") : null;
     apply();
     var pat = localStorage.getItem("lc_ed_pat"), repo = localStorage.getItem("lc_ed_repo");
     var fabEl = document.getElementById("ed-fab");
     var pagePath = fabEl && fabEl.dataset ? fabEl.dataset.pagePath : "";
     var ta = document.getElementById("lcx-content");
-    if (pat && repo && pagePath && ta && _origVal) {
+    var commitRepo = (runRoot && runRoot.dataset.lcSrcRepo) || repo;
+    var commitPath = runRoot ? runRoot.dataset.lcSrcPath : (pagePath ? "docs/" + pagePath : "");
+    if (pat && commitRepo && commitPath && ta && _origVal) {
       var knobsChanged = Array.prototype.some.call(
         document.querySelectorAll("#lcx-edit-body input[data-knob]"),
         function (inp) {
@@ -235,7 +243,17 @@ loses everything. A component's editable source comes from window.lcSourceOf
         });
       if (ta.value !== _origVal) {
         var label = ((document.getElementById("lcx-edit-title") || {}).textContent || "block").replace(/^✏️\s*/, "");
-        commitInline(pat, repo, "docs/" + pagePath, _origVal, ta.value, label);
+        /* on confirmed commit, refresh the fence snapshot so the NEXT edit
+           anchors on the committed content — without this a second Keep after
+           a successful one can't match the file until a reload (stale anchor) */
+        var okId = curId, okSnap = curSnap, okVal = ta.value;
+        commitInline(pat, commitRepo, commitPath, _origVal, ta.value, label, function () {
+          if (!okId || !window.lcSetSourceOf) return;
+          var s = parseSrc(okSnap); if (!s) return;
+          var c = s.querySelector("code");
+          if (c) c.textContent = okVal + "\n"; else s.textContent = okVal;
+          window.lcSetSourceOf(okId, s.outerHTML);
+        });
       }
       if (knobsChanged) alert("Knob changes aren't committed inline yet — keep them via the ✏️ page editor.");
       closeDlg();

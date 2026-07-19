@@ -11,6 +11,9 @@
      and "/<repo>" under a project path; lcHref() resolves one path;
      lcRebase() heals media and links in a subtree. */
   var _lcRepoName = {{ site.github.repository_name | default: "" | jsonify }};
+  /* private repo? unpublished (_-prefixed) nodes 404 on raw for anonymous
+     visitors here, so components skip fetching them and invite a PAT instead. */
+  window.lcRepoPrivate = {{ site.github.private | default: false | jsonify }};
   var _lcSeg = "/" + _lcRepoName + "/";
   window.lcBase = (_lcRepoName &&
     (location.pathname === _lcSeg.slice(0, -1) || location.pathname.indexOf(_lcSeg) === 0))
@@ -227,6 +230,51 @@
     });
   }
   window.lcSourceOf = function (id) { return _srcSnap[id]; };
+  window.lcSnapshotSources = _snapshotSources;   // runner: snapshot RT fences pre-upgrade
+  window.lcSetSourceOf = function (id, html) { _srcSnap[id] = html; };   // xray: refresh after a kept edit
+
+  /* ── kramdown footnotes for the client pipeline ─────────────────────
+     marked has no footnote syntax, so [^x] refs and [^x]: defs stay raw in
+     any client render (runner, previews). Transform the markdown to the same
+     DOM kramdown emits (<sup id="fnref:x"><a class="footnote">, div.footnotes)
+     so the page CSS and tips keep working. Fenced code is shielded — a doc
+     SHOWING footnote syntax must not have its examples eaten. Call with
+     marked loaded (note bodies render through marked.parseInline). */
+  window.lcClientFootnotes = function (md) {
+    if (md.indexOf("[^") < 0) return md;
+    var fences = [];
+    md = md.replace(/(`{3,})[^\n]*\n[\s\S]*?\1|`[^`\n]+`/g, function (m) {
+      fences.push(m); return " LCFN" + (fences.length - 1) + " ";
+    });
+    var defs = {}, order = [];
+    md = md.replace(/^\[\^([^\]\s]+)\]:[ \t]?(.*(?:\n[ \t]+.*)*)/gm, function (_, id, body) {
+      defs[id] = body.replace(/\n[ \t]+/g, " ").trim(); return "";
+    });
+    function replaceRefs(text) {
+      return text.replace(/\[\^([^\]\s]+)\]/g, function (m, id) {
+        if (!(id in defs)) return m;                     // undefined ref: leave raw
+        if (order.indexOf(id) < 0) order.push(id);
+        var n = order.indexOf(id) + 1;
+        return '<sup id="fnref:' + id + '"><a href="#fn:' + id + '" class="footnote">' + n + "</a></sup>";
+      });
+    }
+    md = replaceRefs(md);
+    if (order.length) {
+      var inline = (window.marked && window.marked.parseInline)
+        ? function (s) { try { return window.marked.parseInline(s); } catch (e) { return s; } }
+        : function (s) { return s; };
+      /* a def body may itself reference a footnote (kramdown allows it) —
+         replace inside bodies too; order grows as nested defs are pulled in */
+      var items = [];
+      for (var i = 0; i < order.length; i++) {
+        var id = order[i];
+        items.push('<li id="fn:' + id + '"><p>' + inline(replaceRefs(defs[id])) +
+                   ' <a href="#fnref:' + id + '" class="reversefootnote">&#8617;</a></p></li>');
+      }
+      md += '\n\n<div class="footnotes"><ol>' + items.join("") + "</ol></div>\n";
+    }
+    return md.replace(/ LCFN(\d+) /g, function (_, i) { return fences[+i]; });
+  };
 
   /* Includes render inside <main class="markdown-body">. Reel mode turns
      that element into an iOS touch-scroller, and position:fixed descendants
@@ -258,6 +306,11 @@
     _runUpgraders(root);
     if (window.lcUpgradeQuiz)  root.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
     if (window.lcUpgradeAgent) root.querySelectorAll(".highlighter-rouge.agent, pre.agent").forEach(window.lcUpgradeAgent);
+    // Component-injected media/links carry root-absolute paths ("/assets/…")
+    // that 404 under a project base (/lightcodelab, forks). Page-level lcRebase
+    // ran at DOMContentLoaded, before this subtree existed — heal it now, at the
+    // one place every component's HTML lands. Idempotent; a no-op at a domain root.
+    if (window.lcRebase) window.lcRebase(root);
   }
 
   // --- shared helpers for section-based widgets ---

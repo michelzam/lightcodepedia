@@ -5,9 +5,13 @@ on:
   workflow_run:
     workflows: ["Deploy Jekyll to GitHub Pages"]
     types: [completed]
-  # Run manually against any URL (default: live site)
+  # Run manually from the Actions tab → "Run workflow" (no terminal needed)
   workflow_dispatch:
     inputs:
+      only:
+        description: "Run ONE feature only (e.g. runner, avatar, classroom) — empty = full suite. Scoped runs burn far fewer private-repo minutes and don't overwrite the published results."
+        required: false
+        default: ""
       base_url:
         description: "Base URL to test against (empty = this repo's own live site)"
         required: false
@@ -32,6 +36,15 @@ jobs:
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_commit.author.email != '41898282+github-actions[bot]@users.noreply.github.com')
 
+    env:
+      # Empty input → the repo's own site: unlisted lab Pages in the lab,
+      # the canonical domain in the public repo.
+      BASE_URL: ${{ github.event.inputs.base_url || (github.repository == 'michelzam/lightcodelab' && 'https://michelzam.github.io/lightcodelab' || 'https://lightcodepedia.org') }}
+      # One feature name to scope the run; empty = whole suite. Used to build the
+      # behave target and to gate publishing (a scoped run is a quick check, not
+      # the canonical result set — it must not overwrite the full ux-results).
+      ONLY: ${{ github.event.inputs.only }}
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,40 +57,54 @@ jobs:
       - name: Install test dependencies
         run: pip install -r tests/requirements.txt
 
+      # Cache the browser build so repeat runs skip the download (saves minutes).
+      - name: Cache Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests/requirements.txt') }}
+
       - name: Install Playwright browsers
         run: playwright install chromium --with-deps
 
       - name: Run BDD UX tests
         id: behave
         continue-on-error: true
-        env:
-          # Empty input → the repo's own site: unlisted lab Pages in the lab,
-          # the canonical domain in the public repo.
-          BASE_URL: ${{ github.event.inputs.base_url || (github.repository == 'michelzam/lightcodelab' && 'https://michelzam.github.io/lightcodelab' || 'https://lightcodepedia.org') }}
-        run: >
-          behave tests/features/ --no-capture
-          -f json -o ux-report.json
-          -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html
-          -f progress2
+        run: |
+          TARGET="tests/features/"
+          if [ -n "$ONLY" ]; then TARGET="tests/features/${ONLY}.feature"; fi
+          echo "::notice::Running $TARGET against $BASE_URL"
+          behave "$TARGET" --no-capture \
+            -f json -o ux-report.json \
+            -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html \
+            -f progress2
 
+      # Retry only helps the AUTO path (a red is usually a deploy race, tests
+      # newer than the served Pages build). A manual run is intentional and the
+      # owner can re-dispatch, so we skip the retry there — it would double the
+      # private-repo minutes for no benefit.
       - name: Retry once after the dust settles
         id: behave2
-        if: steps.behave.outcome == 'failure'
+        if: steps.behave.outcome == 'failure' && github.event_name != 'workflow_dispatch'
         continue-on-error: true
-        env:
-          BASE_URL: ${{ github.event.inputs.base_url || 'https://lightcodepedia.org' }}
         run: |
-          # transient reds are usually a deploy race (tests newer than the
-          # served Pages build) — give the queue time, then try once more
           sleep 120
-          behave tests/features/ --no-capture             -f json -o ux-report.json             -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html             -f progress2
+          TARGET="tests/features/"
+          if [ -n "$ONLY" ]; then TARGET="tests/features/${ONLY}.feature"; fi
+          behave "$TARGET" --no-capture \
+            -f json -o ux-report.json \
+            -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html \
+            -f progress2
 
+      # A scoped run only exercised one feature — publishing its report would
+      # wipe the other 130+ scenarios from ux-results.json. Only the full suite
+      # updates the canonical results shown on /nodes.
       - name: Build per-scenario results JSON
-        if: always()
+        if: always() && env.ONLY == ''
         run: python tests/report_to_results.py ux-report.json docs/assets/ux-results.json
 
       - name: Publish results to main
-        if: always()
+        if: always() && env.ONLY == ''
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
