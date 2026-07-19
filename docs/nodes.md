@@ -62,6 +62,9 @@ Most recent forks first — click a row to visit.
 
 ### !🧪 UX test results
 
+[run the suite](#)
+{: .test_runner }
+
 [ux stat](#)
 {: .stat bind="fleet_trend" format="{passed}/{scenarios} scenarios" requires="scenarios" ok-when="passed==scenarios" }
 

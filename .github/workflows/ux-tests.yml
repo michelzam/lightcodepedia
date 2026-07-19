@@ -12,6 +12,10 @@ on:
         description: "Run ONE feature only (e.g. runner, avatar, classroom) — empty = full suite. Scoped runs burn far fewer private-repo minutes and don't overwrite the published results."
         required: false
         default: ""
+      scenarios:
+        description: "Run only scenarios whose name matches this regex (behave -n), e.g. the failing ones. Empty = no name filter. Scoped, so it doesn't overwrite the published results."
+        required: false
+        default: ""
       base_url:
         description: "Base URL to test against (empty = this repo's own live site)"
         required: false
@@ -44,6 +48,8 @@ jobs:
       # behave target and to gate publishing (a scoped run is a quick check, not
       # the canonical result set — it must not overwrite the full ux-results).
       ONLY: ${{ github.event.inputs.only }}
+      # Optional behave -n name regex (e.g. run only the scenarios that failed).
+      SCENARIOS: ${{ github.event.inputs.scenarios }}
 
     steps:
       - uses: actions/checkout@v4
@@ -73,8 +79,9 @@ jobs:
         run: |
           TARGET="tests/features/"
           if [ -n "$ONLY" ]; then TARGET="tests/features/${ONLY}.feature"; fi
-          echo "::notice::Running $TARGET against $BASE_URL"
-          behave "$TARGET" --no-capture \
+          NAME=(); [ -n "$SCENARIOS" ] && NAME=(-n "$SCENARIOS")
+          echo "::notice::Running $TARGET ${NAME[*]} against $BASE_URL"
+          behave "$TARGET" "${NAME[@]}" --no-capture \
             -f json -o ux-report.json \
             -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html \
             -f progress2
@@ -91,7 +98,8 @@ jobs:
           sleep 120
           TARGET="tests/features/"
           if [ -n "$ONLY" ]; then TARGET="tests/features/${ONLY}.feature"; fi
-          behave "$TARGET" --no-capture \
+          NAME=(); [ -n "$SCENARIOS" ] && NAME=(-n "$SCENARIOS")
+          behave "$TARGET" "${NAME[@]}" --no-capture \
             -f json -o ux-report.json \
             -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html \
             -f progress2
@@ -100,11 +108,11 @@ jobs:
       # wipe the other 130+ scenarios from ux-results.json. Only the full suite
       # updates the canonical results shown on /nodes.
       - name: Build per-scenario results JSON
-        if: always() && env.ONLY == ''
+        if: always() && env.ONLY == '' && env.SCENARIOS == ''
         run: python tests/report_to_results.py ux-report.json docs/assets/ux-results.json
 
       - name: Publish results to main
-        if: always() && env.ONLY == ''
+        if: always() && env.ONLY == '' && env.SCENARIOS == ''
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
