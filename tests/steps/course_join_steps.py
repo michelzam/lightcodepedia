@@ -28,6 +28,13 @@ def _stub(context):
             else:
                 route.fulfill(status=404, json={"message": "Not Found"})
             return
+        if re.search(r"/repos/[^/]+/[^/]+$", url) and method == "GET":
+            # repo metadata: visible exactly when the student has vault access
+            if st.get("vault_ok"):
+                route.fulfill(status=200, json={"name": "uwm-build-ai-vault"})
+            else:
+                route.fulfill(status=404, json={"message": "Not Found"})
+            return
         route.fulfill(status=404, json={"message": "stub"})
 
     context.page.route("https://api.github.com/**", handler)

@@ -101,16 +101,26 @@ The check is live truth against the API, never cached. Done steps reopen via
     function checkAccess(auto) {
       var p = pat(); if (!p) { setState("3", "on"); msg(3, "Connect your key first (step 2).", "err"); return; }
       msg(3, "Checking…", "");
-      fetch("https://api.github.com/repos/" + vault + "/contents/" + entry,
-            { headers: { Authorization: "Bearer " + p, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } })
+      var H = { Authorization: "Bearer " + p, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+      /* two stages so the message names the REAL blocker: repo visibility
+         (enrollment/key) vs a missing lesson path (teacher-side publish) */
+      fetch("https://api.github.com/repos/" + vault, { headers: H })
+        .then(function (r0) {
+          if (!r0.ok) {
+            setState("3", "on");
+            msg(3, auto ? "" : "⏳ Not yet: your key can’t see the course library. Click ✅ Accept my invitation above (or ask your teacher to enroll you), then check again.", auto ? "" : "err");
+            return null;
+          }
+          return fetch("https://api.github.com/repos/" + vault + "/contents/" + entry, { headers: H });
+        })
         .then(function (r) {
+          if (!r) return;
+          setState("3", "on");              // stays open — it hosts the door
           if (r.ok) {
-            setState("3", "on");            // stays open — it hosts the door
             msg(3, "✅ You’re in — enjoy the course!", "ok");
             wrap.querySelector("[data-open]").style.display = "";
           } else {
-            setState("3", "on");
-            msg(3, auto ? "" : "⏳ Not yet: your key is valid but can’t reach the course. Click ✅ Accept my invitation above (or ask your teacher to enroll you), then check again.", auto ? "" : "err");
+            msg(3, "🎓 You HAVE access to the course library, but this lesson isn’t there (yet) — tell your teacher: “" + entry + " is missing from the vault”.", "err");
           }
         })
         .catch(function () { if (!auto) msg(3, "❌ Could not reach GitHub — try again.", "err"); });
