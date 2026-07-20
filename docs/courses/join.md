@@ -1,6 +1,6 @@
 # 🎓 Join your course
 
-Three steps and you're reading your private lessons — right here, nothing to install.
+Four steps and you're working: read your private lessons and fork your own bench — right here, nothing to install.
 
 [join](#)
 {: .course_join vault="uwm-build-ai/uwm-build-ai-vault" entry="courses/micro_build_ai/index.md" }
