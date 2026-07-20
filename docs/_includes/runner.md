@@ -88,6 +88,10 @@ pure md + IAL (P1); all logic lives here in the engine.
         var hasPat = false; try { hasPat = !!localStorage.getItem("lc_ed_pat"); } catch (e) {}
         if (err && err.gh && (st === 404 || st === 401) && !hasPat)
           status.innerHTML = "🔑 This source is private. Connect a GitHub PAT (topbar “Get started”), then reload.";
+        else if (err && err.gh && st === 404 && hasPat)
+          /* fine-grained tokens answer 404 (not 403) for repos outside their
+             grant — the most common cause when a key IS connected */
+          status.innerHTML = "🔑 Your connected key can’t see this source. A fine-grained key must include this repo (or its org); a classic key needs the <code>repo</code> scope — and you need read access (your session’s team).";
         else
           status.textContent = "⚠️ Could not load: " + (st ? "HTTP " + st : (err && err.message) || err);
       });
