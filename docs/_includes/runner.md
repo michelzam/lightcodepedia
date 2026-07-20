@@ -29,7 +29,7 @@ pure md + IAL (P1); all logic lives here in the engine.
      raw.githubusercontent it accepts the PAT in-browser (CORS-friendly). */
   function resolveSrc(src) {
     var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
-    var auth = pat ? { Authorization: "Bearer " + pat, Accept: "application/vnd.github.raw", "X-GitHub-Api-Version": "2022-11-28" } : { Accept: "application/vnd.github.raw" };
+    var auth = pat ? { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw", "X-GitHub-Api-Version": "2022-11-28" } : { Accept: "application/vnd.github.v3.raw" };
     var api = function (o, r, p, ref) { return "https://api.github.com/repos/" + o + "/" + r + "/contents/" + p + (ref ? "?ref=" + encodeURIComponent(ref) : ""); };
     var m = /^gh:([^\/]+)\/([^\/]+)\/(.+?)(?:@([^@]+))?$/.exec(src);
     if (m) return { url: api(m[1], m[2], m[3], m[4]), headers: auth, gh: true };
@@ -56,6 +56,15 @@ pure md + IAL (P1); all logic lives here in the engine.
     fetch(spec.url, spec.headers ? { headers: spec.headers } : undefined)
       .then(function (r) { if (!r.ok) throw { status: r.status, gh: spec.gh }; return r.text(); })
       .then(function (md) {
+        /* some proxies/media-type quirks return the JSON envelope despite
+           Accept raw — unwrap it (base64, UTF-8 safe) so the lesson renders */
+        if (spec.gh && md.charAt(0) === "{") {
+          try {
+            var env = JSON.parse(md);
+            if (env && env.content && env.encoding === "base64")
+              md = decodeURIComponent(escape(atob(env.content.replace(/\n/g, ""))));
+          } catch (e) {}
+        }
         /* strip optional YAML front matter */
         if (md.indexOf("---") === 0) {
           var e = md.indexOf("\n---", 3);

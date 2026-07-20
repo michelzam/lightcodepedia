@@ -183,7 +183,7 @@ Auto-included by docs/_layouts/default.html.
     if (pat && _lcSiteRepo) {
       /* builder: the API + PAT reaches every node, published or not */
       req = fetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/docs/" + rel,
-                  { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.raw" } });
+                  { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw" } });
     } else if (unpublished) {
       /* only raw serves an unpublished node. On a PRIVATE repo raw 404s for
          anonymous visitors — don't fetch a URL we know will 404 (console error,

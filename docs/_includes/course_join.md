@@ -28,7 +28,9 @@ The check is live truth against the API, never cached. Done steps reopen via
 .lc-join .lcj-change { margin-left: auto; font-size: 0.8em; color: #0066cc; cursor: pointer; font-weight: 500; }
 .lc-join .lcj-body { padding: 1em; }
 .lc-join .lcj-btn { display: inline-block; padding: 0.45em 1em; border-radius: 8px; border: 1px solid #0066cc; background: #0066cc; color: #fff; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.92em; }
-.lc-join .lcj-btn.alt { background: #fff; color: #0066cc; border-color: #d0e3f5; }
+/* anchors-as-buttons: outrank the site's link color or the label is blue-on-blue */
+.lc-join a.lcj-btn, .lc-join a.lcj-btn:visited { color: #fff; text-decoration: none; }
+.lc-join .lcj-btn.alt, .lc-join a.lcj-btn.alt, .lc-join a.lcj-btn.alt:visited { background: #fff; color: #0066cc; border-color: #d0e3f5; }
 .lc-join .lcj-btn:disabled { opacity: 0.5; cursor: default; }
 .lc-join .lcj-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 0.7em; }
 .lc-join .lcj-key { flex: 1; min-width: 220px; padding: 0.45em 0.7em; border: 1px solid #ccc; border-radius: 8px; font-family: monospace; }
