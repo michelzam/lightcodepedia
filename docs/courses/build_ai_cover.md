@@ -42,6 +42,11 @@ Learn how to:
 [🎟️ Enroll →](/courses/enroll)
 {: .button }
 
+Already enrolled? Sign in with your key (top right), then:
+
+[📖 Open the course →](/run.html#src=gh:uwm-build-ai/uwm-build-ai-vault/courses/micro_build_ai/index.md)
+{: .button }
+
 [^md]: `Markdown` is a lightweigh text-based note convention, perfect for smart humans and AI
 [^python]: `Python` is the most popular and friendly programming language, made even more friendly in this class. Nothing to install, no tech prerequisites. 
 [^git]: `git` is ...  
