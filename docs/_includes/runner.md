@@ -89,9 +89,14 @@ pure md + IAL (P1); all logic lives here in the engine.
         if (err && err.gh && (st === 404 || st === 401) && !hasPat)
           status.innerHTML = "🔑 This source is private. Connect a GitHub PAT (topbar “Get started”), then reload.";
         else if (err && err.gh && st === 404 && hasPat)
-          /* fine-grained tokens answer 404 (not 403) for repos outside their
-             grant — the most common cause when a key IS connected */
-          status.innerHTML = "🔑 Your connected key can’t see this source. A fine-grained key must include this repo (or its org); a classic key needs the <code>repo</code> scope — and you need read access (your session’s team).";
+          /* fine-grained tokens and out-of-scope classics answer 404 (not 403).
+             Guide, don't strand: the deep link opens GitHub with the repo scope
+             ALREADY ticked — generate, copy, paste back in Get started. */
+          status.innerHTML = "🔑 Your key can’t open this course yet — course reading needs a key with the <code>repo</code> scope (and your enrollment accepted).<br>" +
+            "<a href=\"https://github.com/settings/tokens/new?scopes=repo&description=Lightcode+course+key\" target=\"_blank\" rel=\"noopener\" " +
+            "style=\"display:inline-block;margin:0.5em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">" +
+            "🪜 Create your course key</a> — the right scope is pre-selected: scroll down, <b>Generate token</b>, copy it, " +
+            "then paste it in <b>Get started</b> (top right) and reload this page.";
         else
           status.textContent = "⚠️ Could not load: " + (st ? "HTTP " + st : (err && err.message) || err);
       });
