@@ -283,49 +283,6 @@ _Karma measures your contribution to the network: your site, your bio, the frien
       .catch(function(e) { if (e !== 'no-repo') restoreProgress(); });
   }
 
-  if (stored) {
-    _pat = stored;
-    var cached = null;
-    try { cached = JSON.parse(localStorage.getItem('lc_gh_user') || 'null'); } catch(e){}
-
-    if (cached && localStorage.getItem('lc_gh_user_for') === stored) {
-      // valid cache — show progress immediately from localStorage, then refine from GitHub
-      _user = cached;
-      _restored = true;
-      document.getElementById('lcw-pat').value = '••••••••••••';
-      populateUserCard();
-      restoreProgress();       // immediate: no gray steps while API loads
-      syncKarmaAndRestore();   // async: validates + refines
-    } else {
-      // PAT exists but cache is stale — skip step 1, re-validate async on step 2
-      _restored = true;
-      lcwDone(1);
-      document.getElementById('lcw-pat').value = '••••••••••••';
-      lcwActivate(2);
-      fetch('https://api.github.com/user', {
-        headers: { Authorization: 'Bearer ' + stored, 'X-GitHub-Api-Version': '2022-11-28' }
-      })
-      .then(function(r) {
-        var scopes = r.headers.get('X-OAuth-Scopes') || '';
-        return r.json().then(function(u) { return { user: u, ok: r.ok, scopes: scopes }; });
-      })
-      .then(function(d) {
-        if (!d.ok) return; // bad PAT — let user re-enter on step 2
-        /* classic keys announce their scopes; fine-grained ones announce
-           nothing — authenticated is the best pre-check they offer */
-        var hasRepo = d.scopes.split(',').map(function(s){ return s.trim(); }).indexOf('repo') >= 0
-                   || stored.indexOf('github_pat_') === 0;
-        if (!hasRepo) return;
-        _user = d.user;
-        localStorage.setItem('lc_gh_user', JSON.stringify(d.user));
-        localStorage.setItem('lc_gh_user_for', stored);
-        populateUserCard();
-        syncKarmaAndRestore();
-      })
-      .catch(function() { /* network error — stay on step 2 so user can retry */ });
-    }
-  }
-
   // store referrer from ?from= param
   var urlFrom = new URLSearchParams(location.search).get('from');
   if (urlFrom) localStorage.setItem('lc_referrer', urlFrom);
@@ -459,6 +416,8 @@ _Karma measures your contribution to the network: your site, your bio, the frien
     if (!el) return;
     el.classList.remove('lcw-locked');
     el.classList.add('lcw-active');
+    var body = el.querySelector('.lcw-body');
+    if (body) body.style.display = '';   // a done step collapsed it — re-expand or the step looks dead
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
@@ -472,6 +431,33 @@ _Karma measures your contribution to the network: your site, your bio, the frien
     // collapse body
     var body = el.querySelector('.lcw-body');
     if (body) body.style.display = 'none';
+    /* a done step must be reopenable (cockpit rule): steps 1-2 get a "change"
+       link — the key one matters most, so a student can paste a NEW key
+       (course key, renewed key) without hunting or clearing storage */
+    if (n <= 2 && !el.querySelector('.lcw-change')) {
+      var chg = document.createElement('a');
+      chg.className = 'lcw-change'; chg.href = '#'; chg.textContent = 'change';
+      chg.style.cssText = 'margin-left:auto;margin-right:8px;font-size:0.8em;color:#0066cc;cursor:pointer';
+      chg.addEventListener('click', function (e) { e.preventDefault(); lcwReopen(n); });
+      var head = el.querySelector('.lcw-head');
+      var check = document.getElementById('lcw-c' + n);
+      if (head) head.insertBefore(chg, check || null);
+    }
+  }
+
+  function lcwReopen(n) {
+    var el = document.getElementById('lcw-s' + n);
+    if (!el) return;
+    el.classList.remove('lcw-done', 'lcw-locked');
+    var c = document.getElementById('lcw-c' + n);
+    if (c) c.textContent = '';
+    if (n === 2) {
+      var inp = document.getElementById('lcw-pat');
+      if (inp) { inp.value = ''; inp.focus && setTimeout(function(){ inp.focus(); }, 300); }
+      var res = document.getElementById('lcw-pat-result');
+      if (res) { res.className = 'lcw-result'; res.textContent = ''; }
+    }
+    lcwActivate(n);
   }
 
   window.lcwNext = function(n) {
@@ -631,5 +617,52 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 
   // activate step 1 only if nothing was restored
   if (!_restored) lcwActivate(1);
+  /* restore runs LAST — it calls functions and vars defined through the whole
+     script (populateUserCard -> KARMA), and running it early crashed the wizard
+     for every RETURNING visitor (undefined KARMA), leaving all buttons dead */
+  if (stored) {
+    _pat = stored;
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('lc_gh_user') || 'null'); } catch(e){}
+
+    if (cached && localStorage.getItem('lc_gh_user_for') === stored) {
+      // valid cache — show progress immediately from localStorage, then refine from GitHub
+      _user = cached;
+      _restored = true;
+      document.getElementById('lcw-pat').value = '••••••••••••';
+      populateUserCard();
+      restoreProgress();       // immediate: no gray steps while API loads
+      syncKarmaAndRestore();   // async: validates + refines
+    } else {
+      // PAT exists but cache is stale — skip step 1, re-validate async on step 2
+      _restored = true;
+      lcwDone(1);
+      document.getElementById('lcw-pat').value = '••••••••••••';
+      lcwActivate(2);
+      fetch('https://api.github.com/user', {
+        headers: { Authorization: 'Bearer ' + stored, 'X-GitHub-Api-Version': '2022-11-28' }
+      })
+      .then(function(r) {
+        var scopes = r.headers.get('X-OAuth-Scopes') || '';
+        return r.json().then(function(u) { return { user: u, ok: r.ok, scopes: scopes }; });
+      })
+      .then(function(d) {
+        if (!d.ok) return; // bad PAT — let user re-enter on step 2
+        /* classic keys announce their scopes; fine-grained ones announce
+           nothing — authenticated is the best pre-check they offer */
+        var hasRepo = d.scopes.split(',').map(function(s){ return s.trim(); }).indexOf('repo') >= 0
+                   || stored.indexOf('github_pat_') === 0;
+        if (!hasRepo) return;
+        _user = d.user;
+        localStorage.setItem('lc_gh_user', JSON.stringify(d.user));
+        localStorage.setItem('lc_gh_user_for', stored);
+        populateUserCard();
+        syncKarmaAndRestore();
+      })
+      .catch(function() { /* network error — stay on step 2 so user can retry */ });
+    }
+  }
+
+
 })();
 </script>

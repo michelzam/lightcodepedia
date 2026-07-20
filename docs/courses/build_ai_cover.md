@@ -42,9 +42,9 @@ Learn how to:
 [🎟️ Enroll →](/courses/enroll)
 {: .button }
 
-Already enrolled? Sign in with your key (top right), then:
+Enrolled (or enrolling)? The student wizard gets you reading in three steps:
 
-[📖 Open the course →](/run.html#src=gh:uwm-build-ai/uwm-build-ai-vault/courses/micro_build_ai/index.md)
+[📖 Join & open the course →](/courses/join)
 {: .button }
 
 [^md]: `Markdown` is a lightweigh text-based note convention, perfect for smart humans and AI
