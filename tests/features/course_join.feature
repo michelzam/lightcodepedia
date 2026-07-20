@@ -29,3 +29,10 @@ Feature: The student course wizard (/courses/join)
     When I open the course wizard with a stored key
     And I check my access
     Then the wizard guides to the invitation, not an error dump
+
+  Scenario: Accepting the invitation in-app opens the course
+    Given a stubbed GitHub that accepts the key with repo scope
+    When I open the course wizard with a stored key
+    And I accept my invitation in the wizard
+    Then the wizard says the student is in
+    And the open-course door points at the vault entry

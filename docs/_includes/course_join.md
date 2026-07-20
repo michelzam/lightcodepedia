@@ -48,7 +48,11 @@ The check is live truth against the API, never cached. Done steps reopen via
     if (!vault || !entry) return;
     var org = vault.split("/")[0];
     var keyNote = encodeURIComponent("Lightcode course key — " + org);
-    var keyUrl = "https://github.com/settings/tokens/new?scopes=repo&description=" + keyNote;
+    /* write:org lets the wizard ACCEPT the class invitation in-app (a student
+       is admin of no org, so the scope is inert beyond that) — one click here
+       instead of a trip through GitHub's UI */
+    var keyUrl = "https://github.com/settings/tokens/new?scopes=repo,write:org&description=" + keyNote;
+    var inviteUrl = "https://github.com/orgs/" + org + "/invitation";
     var openUrl = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + vault + "/" + entry;
 
     var wrap = document.createElement("div");
@@ -67,9 +71,9 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-msg" data-m="2"></div></div></div>' +
 
       '<div class="lcj-step off" data-n="3"><div class="lcj-head"><span class="lcj-num">3</span>Your enrollment</div>' +
-      '<div class="lcj-body"><p style="margin-top:0">Your teacher enrolls you; GitHub emails you an <b>invitation</b> — accept it, then check:</p>' +
-      '<div class="lcj-row"><a class="lcj-btn alt" href="https://github.com/notifications" target="_blank" rel="noopener">📬 My invitations →</a>' +
-      '<button type="button" class="lcj-btn" data-a="checkaccess">Check my access ✓</button></div>' +
+      '<div class="lcj-body"><p style="margin-top:0">Your teacher enrolls you — that sends you a class <b>invitation</b>. Accept it right here:</p>' +
+      '<div class="lcj-row"><button type="button" class="lcj-btn" data-a="accept">✅ Accept my invitation</button>' +
+      '<button type="button" class="lcj-btn alt" data-a="checkaccess">Check my access ✓</button></div>' +
       '<div class="lcj-msg" data-m="3"></div>' +
       '<div class="lcj-row" style="display:none" data-open><a class="lcj-btn" href="' + openUrl + '">📖 Open the course →</a></div></div></div>';
     el.parentNode.replaceChild(wrap, el);
@@ -106,7 +110,7 @@ The check is live truth against the API, never cached. Done steps reopen via
             wrap.querySelector("[data-open]").style.display = "";
           } else {
             setState("3", "on");
-            msg(3, auto ? "" : "⏳ Not yet: your key is valid but can’t reach the course. Accept your invitation (📬 above), or ask your teacher to enroll you — then check again.", auto ? "" : "err");
+            msg(3, auto ? "" : "⏳ Not yet: your key is valid but can’t reach the course. Click ✅ Accept my invitation above (or ask your teacher to enroll you), then check again.", auto ? "" : "err");
           }
         })
         .catch(function () { if (!auto) msg(3, "❌ Could not reach GitHub — try again.", "err"); });
@@ -117,6 +121,30 @@ The check is live truth against the API, never cached. Done steps reopen via
       var a = b.getAttribute("data-a");
       if (a === "have") { setState("1", "ok"); setState("2", "on"); }
       if (a === "checkaccess") checkAccess(false);
+      if (a === "accept") {
+        var p0 = pat(); if (!p0) { msg(3, "Connect your key first (step 2).", "err"); return; }
+        b.disabled = true; msg(3, "Accepting…", "");
+        /* accept the org invitation in-app; needs the write:org scope the key
+           link pre-selects. Any failure falls back to GitHub's focused
+           invitation page — one green button, not the notifications jungle. */
+        fetch("https://api.github.com/user/memberships/orgs/" + org,
+              { method: "PATCH",
+                headers: { Authorization: "Bearer " + p0, Accept: "application/vnd.github+json",
+                           "Content-Type": "application/json", "X-GitHub-Api-Version": "2022-11-28" },
+                body: JSON.stringify({ state: "active" }) })
+          .then(function (r) {
+            b.disabled = false;
+            if (r.ok) { msg(3, "✅ Invitation accepted — checking your access…", "ok"); checkAccess(false); }
+            else {
+              msg(3, "", "");
+              var m = wrap.querySelector('[data-m="3"]');
+              m.className = "lcj-msg err";
+              m.innerHTML = "Couldn’t accept from here (no pending invitation, or the key lacks the org permission). " +
+                "<a href=\"" + inviteUrl + "\" target=\"_blank\" rel=\"noopener\">Open your invitation →</a> — one green button — then come back and Check my access.";
+            }
+          })
+          .catch(function () { b.disabled = false; msg(3, "❌ Could not reach GitHub — try again.", "err"); });
+      }
       if (a === "checkkey") {
         var val = wrap.querySelector(".lcj-key").value.trim();
         if (!val) { msg(2, "Paste your key first.", "err"); return; }

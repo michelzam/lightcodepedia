@@ -18,6 +18,10 @@ def _stub(context):
                           headers={"X-OAuth-Scopes": "repo",
                                    "Access-Control-Expose-Headers": "X-OAuth-Scopes"})
             return
+        if re.search(r"/user/memberships/orgs/", url) and method == "PATCH":
+            st["vault_ok"] = True          # accepting the invite grants the team read
+            route.fulfill(status=200, json={"state": "active"})
+            return
         if re.search(r"/repos/[^/]+/[^/]+/contents/", url) and method == "GET":
             if st.get("vault_ok"):
                 route.fulfill(status=200, json={"name": "index.md", "sha": "s"})
@@ -114,3 +118,9 @@ def step_guided(context):
     txt = context.page.locator('.lc-join [data-m="3"]').inner_text()
     assert "invitation" in txt.lower(), txt
     assert "404" not in txt and "HTTP" not in txt, txt
+
+
+@when("I accept my invitation in the wizard")
+def step_accept_invite(context):
+    context.page.click('.lc-join [data-a="accept"]')
+    context.page.wait_for_timeout(900)
