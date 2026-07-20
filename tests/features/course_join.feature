@@ -36,3 +36,33 @@ Feature: The student course wizard (/courses/join)
     And I accept my invitation in the wizard
     Then the wizard says the student is in
     And the open-course door points at the vault entry
+
+  Scenario: An enrolled student with no bench is offered the fork
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    When I open the course wizard with a stored key
+    Then the bench step offers the fork
+
+  Scenario: Forking creates the org bench, explicitly up to date
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    When I open the course wizard with a stored key
+    And I fork my bench
+    Then my bench shows up to date with the hub
+
+  Scenario: A bench behind the hub shows the gap and syncs
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And my bench exists and is 2 updates behind the hub
+    When I open the course wizard with a stored key
+    Then the bench shows 2 updates to sync
+    When I sync my bench
+    Then my bench shows up to date with the hub
+
+  Scenario: Submitting freezes a snapshot tag on the bench
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And my bench exists and is 0 updates behind the hub
+    When I open the course wizard with a stored key
+    And I submit my work
+    Then the wizard confirms a frozen submission snapshot

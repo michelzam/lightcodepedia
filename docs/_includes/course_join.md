@@ -5,9 +5,13 @@ builder/LightNode journey). Activated by IAL on a link paragraph:
   [join](#)
   {: .course_join vault="uwm-build-ai/uwm-build-ai-vault" entry="courses/micro_build_ai/index.md" }
 
-Three steps: ① GitHub account → ② course key (classic, repo scope — deep link
+Four steps: ① GitHub account → ② course key (classic, repo scope — deep link
 pre-fills scope + an org-named note) → ③ access check (tries the actual course
-entry with the student's key; green = enrolled + key right → 📖 Open button).
+entry with the student's key; green = enrolled + key right → 📖 Open button)
+→ ④ the bench: the student's private fork of the session hub, forked INTO the
+org (org-owned, named <hub>-<login>) so teachers see the work at any time and
+classmates never do. Status is explicit — no bench → 🍴 fork; behind the hub →
+🔄 sync (merge-upstream); 📤 submit freezes an immutable git tag for grading.
 The check is live truth against the API, never cached. Done steps reopen via
 "change" (cockpit rule). Shares the app's identity storage (lc_ed_pat).
 {%- endcomment -%}
@@ -77,11 +81,18 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-row"><button type="button" class="lcj-btn" data-a="accept">✅ Accept my invitation</button>' +
       '<button type="button" class="lcj-btn alt" data-a="checkaccess">Check my access ✓</button></div>' +
       '<div class="lcj-msg" data-m="3"></div>' +
-      '<div class="lcj-row" style="display:none" data-open><a class="lcj-btn" href="' + openUrl + '">📖 Open the course →</a></div></div></div>';
+      '<div class="lcj-row" style="display:none" data-open><a class="lcj-btn" href="' + openUrl + '">📖 Open the course →</a></div></div></div>' +
+
+      '<div class="lcj-step off" data-n="4"><div class="lcj-head"><span class="lcj-num">4</span>Your bench</div>' +
+      '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Fork it once, keep it in sync, work, submit as often as you like.</p>' +
+      '<div class="lcj-msg" data-m="4"></div>' +
+      '<div class="lcj-row" data-bench></div>' +
+      '<div class="lcj-msg" data-m="4s"></div></div></div>';
     el.parentNode.replaceChild(wrap, el);
 
     var steps = {}; wrap.querySelectorAll(".lcj-step").forEach(function (s) { steps[s.getAttribute("data-n")] = s; });
     function msg(n, text, cls) { var m = wrap.querySelector('[data-m="' + n + '"]'); m.textContent = text; m.className = "lcj-msg " + (cls || ""); }
+    function msgH(n, html, cls) { var m = wrap.querySelector('[data-m="' + n + '"]'); m.innerHTML = html; m.className = "lcj-msg " + (cls || ""); }
     function setState(n, state) {           // state: on | ok | off
       var s = steps[n]; s.classList.remove("on", "ok", "off");
       if (state !== "open") s.classList.add(state);
@@ -124,8 +135,80 @@ The check is live truth against the API, never cached. Done steps reopen via
           } else {
             msg(3, "🎓 You HAVE access to the course library, but this lesson isn’t there (yet) — tell your teacher: “" + entry + " is missing from the vault”.", "err");
           }
+          benchStart();                   // vault visible = enrolled → light the bench
         })
         .catch(function () { if (!auto) msg(3, "❌ Could not reach GitHub — try again.", "err"); });
+    }
+
+    /* ── step 4: the bench — a fork of the session hub INTO the org, named
+       <hub>-<login>. Org-owned means the teacher reads the work at any time
+       (owners see every org repo) and classmates never do (base permission
+       none). The hub is discovered, not configured: with the student's key,
+       the only template repo they can see in the org IS their session. */
+    function sgh(path, opts) {
+      opts = opts || {};
+      opts.headers = { Authorization: "Bearer " + pat(), Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+      if (opts.body) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(opts.body); }
+      return fetch("https://api.github.com" + path, opts);
+    }
+    var B = { hub: null, login: "", name: "", branch: "main" };
+    function benchRow() { return wrap.querySelector("[data-bench]"); }
+
+    function benchStart() {
+      setState("4", "on");
+      msg(4, "Looking for your session…", ""); benchRow().innerHTML = ""; msg("4s", "", "");
+      var u = null; try { u = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
+      (u && u.login ? Promise.resolve(u.login)
+                    : sgh("/user").then(function (r) { return r.json(); }).then(function (d) { return d.login; }))
+        .then(function (login) {
+          B.login = login;
+          return sgh("/orgs/" + org + "/repos?per_page=100").then(function (r) { return r.ok ? r.json() : []; });
+        })
+        .then(function (repos) {
+          var hubs = (repos || []).filter(function (x) { return x.is_template && !x.fork; });
+          if (!hubs.length) { msg(4, "🧑‍🏫 No session is visible to you yet — your teacher adds you to one, then this step lights up.", ""); return; }
+          hubs.sort(function (a, b) { return new Date(b.updated_at || 0) - new Date(a.updated_at || 0); });
+          B.hub = hubs[0]; B.name = B.hub.name + "-" + B.login;
+          benchStatus();
+        })
+        .catch(function () { msg(4, "❌ Could not reach GitHub — reload to retry.", "err"); });
+    }
+
+    function benchStatus() {
+      sgh("/repos/" + org + "/" + B.name)
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (repo) {
+          if (!repo) { benchOffer(); return; }
+          B.branch = repo.default_branch || "main";
+          /* explicit status: how many hub commits the bench is missing */
+          return sgh("/repos/" + org + "/" + B.name + "/compare/" + B.branch + "..." + org + ":" + B.hub.name + ":" + (B.hub.default_branch || "main"))
+            .then(function (r) { return r.ok ? r.json() : { ahead_by: 0 }; })
+            .then(function (cmp) { benchShow(cmp.ahead_by || 0); });
+        })
+        .catch(function () { msg(4, "❌ Could not reach GitHub — reload to retry.", "err"); });
+    }
+
+    function benchOffer() {
+      msg(4, "🧰 No bench yet for session “" + B.hub.name + "” — fork yours to start working:", "");
+      benchRow().innerHTML = '<button type="button" class="lcj-btn" data-a="fork">🍴 Fork my bench</button>';
+    }
+
+    function benchShow(behind) {
+      msgH(4, "🛠 Your bench: <b>" + org + "/" + B.name + "</b> — " +
+        (behind ? "⬆️ the hub has <b>" + behind + " update" + (behind > 1 ? "s" : "") + "</b> you don’t have yet."
+                : "✅ up to date with the hub."), behind ? "" : "ok");
+      benchRow().innerHTML =
+        (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Sync from hub</button>' : "") +
+        '<button type="button" class="lcj-btn' + (behind ? " alt" : "") + '" data-a="submitwork">📤 Submit my work</button>' +
+        '<a class="lcj-btn alt" href="https://github.com/' + org + "/" + B.name + '" target="_blank" rel="noopener">Open my bench →</a>';
+      sgh("/repos/" + org + "/" + B.name + "/tags?per_page=100")
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (tags) {
+          var subs = (tags || []).map(function (t) { return t.name; })
+            .filter(function (n) { return n.indexOf("submit-") === 0; }).sort();
+          if (subs.length) msg("4s", "📤 Submitted " + subs.length + "× — latest snapshot: " + subs[subs.length - 1], "ok");
+        })
+        .catch(function () {});
     }
 
     wrap.addEventListener("click", function (e) {
@@ -133,6 +216,57 @@ The check is live truth against the API, never cached. Done steps reopen via
       var a = b.getAttribute("data-a");
       if (a === "have") { setState("1", "ok"); setState("2", "on"); }
       if (a === "checkaccess") checkAccess(false);
+      if (a === "fork") {
+        b.disabled = true; msg(4, "🍴 Forking… GitHub is copying the hub into your bench.", "");
+        sgh("/repos/" + org + "/" + B.hub.name + "/forks",
+            { method: "POST", body: { organization: org, name: B.name, default_branch_only: true } })
+          .then(function (r) {
+            if (r.status === 202 || r.ok) {
+              /* forking is async server-side — poll until the bench answers */
+              var tries = 0;
+              (function poll() {
+                sgh("/repos/" + org + "/" + B.name).then(function (r2) {
+                  if (r2.ok) benchStatus();
+                  else if (++tries < 10) setTimeout(poll, 900);
+                  else msg(4, "⏳ Still forking — reload this page in a minute.", "");
+                });
+              })();
+            }
+            else return r.json().then(function (d) {
+              b.disabled = false;
+              msg(4, "❌ Fork refused: " + (d.message || "HTTP " + r.status) + " — your teacher may need to allow members to create private repositories (cockpit, step 3).", "err");
+            });
+          })
+          .catch(function () { b.disabled = false; msg(4, "❌ Could not reach GitHub — try again.", "err"); });
+      }
+      if (a === "sync") {
+        b.disabled = true; msg(4, "🔄 Syncing from the hub…", "");
+        sgh("/repos/" + org + "/" + B.name + "/merge-upstream", { method: "POST", body: { branch: B.branch } })
+          .then(function (r) {
+            if (r.ok) { benchStatus(); return; }
+            b.disabled = false;
+            if (r.status === 409) msg(4, "⚠️ Your bench and the hub changed the same lines — tell your teacher (merge conflict).", "err");
+            else msg(4, "❌ Sync failed (HTTP " + r.status + ") — try again.", "err");
+          })
+          .catch(function () { b.disabled = false; msg(4, "❌ Could not reach GitHub — try again.", "err"); });
+      }
+      if (a === "submitwork") {
+        b.disabled = true; msg("4s", "📤 Freezing a snapshot…", "");
+        sgh("/repos/" + org + "/" + B.name + "/commits/" + B.branch)
+          .then(function (r) { return r.json(); })
+          .then(function (c) {
+            var d = new Date(); function p2(x) { return (x < 10 ? "0" : "") + x; }
+            var tag = "submit-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + "-" + p2(d.getHours()) + p2(d.getMinutes());
+            return sgh("/repos/" + org + "/" + B.name + "/git/refs", { method: "POST", body: { ref: "refs/tags/" + tag, sha: c.sha } })
+              .then(function (r) {
+                b.disabled = false;
+                if (r.status === 201) msg("4s", "📤 Submitted — snapshot " + tag + " is frozen for grading. Keep working and resubmit any time.", "ok");
+                else if (r.status === 422) msg("4s", "📤 Already submitted this minute — you’re good.", "ok");
+                else msg("4s", "❌ Submit failed (HTTP " + r.status + ") — try again.", "err");
+              });
+          })
+          .catch(function () { b.disabled = false; msg("4s", "❌ Could not reach GitHub — try again.", "err"); });
+      }
       if (a === "accept") {
         var p0 = pat(); if (!p0) { msg(3, "Connect your key first (step 2).", "err"); return; }
         b.disabled = true; msg(3, "Accepting…", "");

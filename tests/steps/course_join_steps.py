@@ -5,6 +5,11 @@ from behave import given, when, then
 from playwright.sync_api import expect
 
 
+HUB = {"name": "build-ai-fall26", "is_template": True, "fork": False,
+       "default_branch": "main", "updated_at": "2026-07-01T00:00:00Z"}
+BENCH = "build-ai-fall26-zamm-student"
+
+
 def _stub(context):
     st = getattr(context, "join_stub", {"vault_ok": False})
 
@@ -22,11 +27,45 @@ def _stub(context):
             st["vault_ok"] = True          # accepting the invite grants the team read
             route.fulfill(status=200, json={"state": "active"})
             return
+        if re.search(r"/orgs/[^/]+/repos", url) and method == "GET":
+            # hub discovery: the session template is visible once enrolled
+            route.fulfill(status=200, json=[HUB] if st.get("vault_ok") else [])
+            return
         if re.search(r"/repos/[^/]+/[^/]+/contents/", url) and method == "GET":
             if st.get("vault_ok"):
                 route.fulfill(status=200, json={"name": "index.md", "sha": "s"})
             else:
                 route.fulfill(status=404, json={"message": "Not Found"})
+            return
+        # ── the bench (org-owned fork of the hub) ─────────────────────────
+        if BENCH in url:
+            if "/compare/" in url and method == "GET":
+                route.fulfill(status=200, json={"ahead_by": st.get("behind", 0)})
+                return
+            if url.endswith("/merge-upstream") and method == "POST":
+                st["behind"] = 0
+                route.fulfill(status=200, json={"message": "fast-forwarded"})
+                return
+            if "/commits/" in url and method == "GET":
+                route.fulfill(status=200, json={"sha": "abc123"})
+                return
+            if url.endswith("/git/refs") and method == "POST":
+                ref = json.loads(req.post_data or "{}").get("ref", "")
+                st.setdefault("tags", []).append(ref.split("/")[-1])
+                route.fulfill(status=201, json={"ref": ref})
+                return
+            if re.search(r"/tags(\?|$)", url) and method == "GET":
+                route.fulfill(status=200, json=[{"name": t} for t in st.get("tags", [])])
+                return
+            if method == "GET":
+                if st.get("bench"):
+                    route.fulfill(status=200, json={"name": BENCH, "default_branch": "main"})
+                else:
+                    route.fulfill(status=404, json={"message": "Not Found"})
+                return
+        if url.endswith("/forks") and method == "POST":
+            st["bench"] = True             # fork lands in the org as the bench
+            route.fulfill(status=202, json={"name": BENCH})
             return
         if re.search(r"/repos/[^/]+/[^/]+$", url) and method == "GET":
             # repo metadata: visible exactly when the student has vault access
@@ -131,3 +170,51 @@ def step_guided(context):
 def step_accept_invite(context):
     context.page.click('.lc-join [data-a="accept"]')
     context.page.wait_for_timeout(900)
+
+
+# ── step 4: the bench ──────────────────────────────────────────────────
+
+@given("my bench exists and is {n:d} updates behind the hub")
+def step_bench_exists(context, n):
+    context.join_stub["bench"] = True
+    context.join_stub["behind"] = n
+
+
+@then("the bench step offers the fork")
+def step_offers_fork(context):
+    expect(context.page.locator('.lc-join [data-a="fork"]')).to_be_visible(timeout=8000)
+
+
+@when("I fork my bench")
+def step_fork_bench(context):
+    context.page.click('.lc-join [data-a="fork"]')
+    context.page.wait_for_timeout(1500)
+
+
+@then("my bench shows up to date with the hub")
+def step_bench_current(context):
+    expect(context.page.locator('.lc-join [data-m="4"]')).to_contain_text("up to date", timeout=8000)
+
+
+@then("the bench shows {n:d} updates to sync")
+def step_bench_behind(context, n):
+    expect(context.page.locator('.lc-join [data-m="4"]')).to_contain_text("%d update" % n, timeout=8000)
+    expect(context.page.locator('.lc-join [data-a="sync"]')).to_be_visible()
+
+
+@when("I sync my bench")
+def step_sync_bench(context):
+    context.page.click('.lc-join [data-a="sync"]')
+    context.page.wait_for_timeout(800)
+
+
+@when("I submit my work")
+def step_submit_work(context):
+    context.page.wait_for_selector('.lc-join [data-a="submitwork"]', timeout=8000)
+    context.page.click('.lc-join [data-a="submitwork"]')
+    context.page.wait_for_timeout(800)
+
+
+@then("the wizard confirms a frozen submission snapshot")
+def step_submission_frozen(context):
+    expect(context.page.locator('.lc-join [data-m="4s"]')).to_contain_text("frozen", timeout=8000)
