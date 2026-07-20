@@ -21,20 +21,20 @@ meant to build digital skills.
 ```
 {: .accordion }
 
-## 🎓 Tutorials
+## 🏁 Tutorials
 
 ```
-### 🎓 101 — Explore
+### 1️⃣ 101 — Explore
 Explore blocks, video, maps, charts, forms and quizzes — no setup required.
 
 [Start →](/tutorial101)
 
-### ⚙️ 102 — Compose
+### 2️⃣ 102 — Compose
 Fork the repo and edit pages live in your browser with the built-in editor and one-tag components.
 
 [Compose →](/tutorial102)
 
-### 🚀 103 — Deploy
+### 3️⃣ 103 — Deploy
 Configure your LightNode, set a custom domain, and ship it on GitHub Pages in minutes.
 
 [Deploy →](/tutorial103)
@@ -74,10 +74,10 @@ Authors, contributors, status and EU funding.
 
 [About →](/about)
 
-### 🤖 BUILD-AI
-Learn how to build apps with AI.
+### 🎓 Courses
+Learn and earn credits.
 
-[Explore →](/micro_build_ai/)
+[Explore →](/courses/)
 
 ```
 {: .cards cols="3" }

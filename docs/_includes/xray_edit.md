@@ -260,7 +260,9 @@ loses everything. A component's editable source comes from window.lcSourceOf
       return;
     }
     var go = window.confirm("Your changes live only in this browser — reload and they're gone.\n\nCreate an account to keep them?");
-    if (go) location.href = window.lcResolveUrl ? window.lcResolveUrl("/micro_build_ai/onboarding") : "/micro_build_ai/onboarding";
+    /* the onboarding journey moved to the private courses/ tier; the public
+       entry for anonymous learners is now the courses landing */
+    if (go) location.href = window.lcResolveUrl ? window.lcResolveUrl("/courses/") : "/courses/";
   }
 
   function boot() {
