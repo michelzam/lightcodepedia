@@ -88,15 +88,19 @@ pure md + IAL (P1); all logic lives here in the engine.
         var hasPat = false; try { hasPat = !!localStorage.getItem("lc_ed_pat"); } catch (e) {}
         if (err && err.gh && (st === 404 || st === 401) && !hasPat)
           status.innerHTML = "🔑 This source is private. Connect a GitHub PAT (topbar “Get started”), then reload.";
-        else if (err && err.gh && st === 404 && hasPat)
+        else if (err && err.gh && st === 404 && hasPat) {
           /* fine-grained tokens and out-of-scope classics answer 404 (not 403).
              Guide, don't strand: the deep link opens GitHub with the repo scope
-             ALREADY ticked — generate, copy, paste back in Get started. */
+             ALREADY ticked and the note naming THIS course's org, so a student's
+             keys stay identifiable (one per class, revocable per class). */
+          var keyFor = gm ? gm[1] : (rw ? rw[1] : "course");
+          var keyNote = encodeURIComponent("Lightcode course key — " + keyFor);
           status.innerHTML = "🔑 Your key can’t open this course yet — course reading needs a key with the <code>repo</code> scope (and your enrollment accepted).<br>" +
-            "<a href=\"https://github.com/settings/tokens/new?scopes=repo&description=Lightcode+course+key\" target=\"_blank\" rel=\"noopener\" " +
+            "<a href=\"https://github.com/settings/tokens/new?scopes=repo&description=" + keyNote + "\" target=\"_blank\" rel=\"noopener\" " +
             "style=\"display:inline-block;margin:0.5em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">" +
-            "🪜 Create your course key</a> — the right scope is pre-selected: scroll down, <b>Generate token</b>, copy it, " +
-            "then paste it in <b>Get started</b> (top right) and reload this page.";
+            "🪜 Create your course key</a> — the scope and name are pre-filled: set <b>Expiration → Custom</b> to a date past your course’s end " +
+            "(a semester, not 30 days), <b>Generate token</b>, copy it, then paste it in <b>Get started</b> (top right) and reload this page.";
+        }
         else
           status.textContent = "⚠️ Could not load: " + (st ? "HTTP " + st : (err && err.message) || err);
       });
