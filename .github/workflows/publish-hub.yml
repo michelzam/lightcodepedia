@@ -1,0 +1,85 @@
+name: Publish hub to the org
+
+# The hub gate — HQ → a session hub repo, manual only, one session per run.
+# Mirrors hubs/<session>/ from this lab onto uwm-build-ai/<session> (the
+# private hub students fork their bench from). The lab is the SSOT: manual
+# edits made directly on the hub are overwritten, exactly like pedia.
+# Students receive the update through 🔄 Sync on their bench.
+
+on:
+  workflow_dispatch:
+    inputs:
+      session:
+        description: "Session hub repo name (must match a folder under hubs/)"
+        required: true
+
+concurrency:
+  group: "publish-hub-${{ inputs.session }}"
+  cancel-in-progress: false
+
+env:
+  ORG: uwm-build-ai
+
+jobs:
+  publish-hub:
+    # Only ever runs in the lab; belt-and-braces if this file leaks outward.
+    if: github.repository == 'michelzam/lightcodelab'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail loudly if the org token is missing
+        env:
+          TOKEN: ${{ secrets.ORG_VAULT_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::ORG_VAULT_TOKEN is missing — and for hubs its grant must cover the session repos too (Contents read/write), not only the vault. Easiest: set the token's repository access to the sessions + vault, or all org repos."
+            exit 1
+          fi
+
+      - name: Checkout lab
+        uses: actions/checkout@v4
+        with:
+          path: lab
+
+      - name: Guard the session folder exists
+        run: |
+          if [ ! -d "lab/hubs/${{ inputs.session }}" ]; then
+            echo "::error::hubs/${{ inputs.session }}/ does not exist in the lab — author the hub there first (one folder per session)."
+            exit 1
+          fi
+
+      # Clone (not actions/checkout) so a brand-new EMPTY hub works too.
+      - name: Clone the hub (empty-repo safe)
+        env:
+          TOKEN: ${{ secrets.ORG_VAULT_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${TOKEN}@github.com/${ORG}/${{ inputs.session }}.git" hub
+          cd hub
+          git symbolic-ref HEAD refs/heads/main
+
+      - name: Mirror hubs/<session>/ onto the hub root
+        run: |
+          set -e
+          # Full sync: the hub is a published artifact of hubs/<session>/,
+          # like pedia is of docs/ and the vault of courses/.
+          rsync -a --delete --exclude .git lab/hubs/${{ inputs.session }}/ hub/
+
+      - name: Commit & push as KarmicSoft (rebase-and-retry)
+        working-directory: hub
+        run: |
+          git config user.name  "KarmicSoft"
+          git config user.email "67806901+michelzam@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to publish — the hub already matches hubs/${{ inputs.session }}/."
+            exit 0
+          fi
+          git commit -m "Publish hub from Lab"
+          for i in 1 2 3 4; do
+            if git push origin HEAD:main; then exit 0; fi
+            echo "push rejected — rebasing onto fresh main and retrying ($i)"
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; exit 1; }
+            sleep $((2 ** i))
+          done
+          echo "::error::Could not push to the hub after 4 attempts."
+          exit 1
