@@ -32,6 +32,7 @@ Feature: X-ray inspector
     And I change the block content to "Cute, huh — this committed dog?"
     And I keep the changes
     Then the stubbed repo received a commit containing "committed dog"
+    And a green save toast confirms it
 
   Scenario: Keep invites anonymous learners to create an account
     When I navigate to "/tutorial101"

@@ -151,10 +151,12 @@ body {
    engaged by the runner when it renders a bench (gh: source, not the vault):
    dark bar, the brand becomes the bench itself, links from the bench's own
    menu.md when it has one */
-#lc-topbar.lc-bench-mode { background: rgba(55,65,81,0.97); border-bottom-color: #1f2937; }
-#lc-topbar.lc-bench-mode .lc-brand { color: #fff; }
-#lc-topbar.lc-bench-mode .lc-links a { color: #e5e7eb; }
-#lc-topbar.lc-bench-mode .lc-links a:hover { color: #fff; }
+#lc-topbar.lc-bench-mode { background: rgba(223,227,233,0.97); border-bottom-color: #c3c9d3; }
+#lc-topbar.lc-bench-mode .lc-brand { color: #1f2937; margin-right: 0; }
+#lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.85em; color: #4b5563; margin-left: 0.45em; }
+#lc-topbar .lc-bench-chip { margin-right: auto; margin-left: 0.7em; padding: 2px 10px; border-radius: 999px;
+  font-size: 0.75em; background: #eef2f7; border: 1px solid #c9d2de; color: #55627a; white-space: nowrap; }
+@media (max-width: 640px) { #lc-topbar .lc-bench-chip { display: none; } }
 </style>
 {% comment %} The brand names the node you're on — dynamic, never static text.
    Rule: the repo's name, capitalized — no shortcuts. The emoji marks the
@@ -334,14 +336,34 @@ body {
      the site menu — relative hrefs resolve INTO the bench via the runner,
      so students stay in their playground. Same folder-menu convention as
      Jekyll (a menu.md governs its branch), applied at runtime. */
-  window.lcBenchMode = function (repo) {
+  window.lcBenchMode = function (repo, path) {
     var bar = document.getElementById("lc-topbar");
-    if (!bar || bar.dataset.benchMode === repo) return;
+    if (!bar) return;
+    var first = bar.dataset.benchMode !== repo;
     bar.dataset.benchMode = repo;
     bar.classList.add("lc-bench-mode");
     var runHome = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + repo + "/";
     var brand = bar.querySelector(".lc-brand");
-    if (brand) { brand.textContent = "🔬 " + repo.split("/")[1] + "/"; brand.href = runHome + "README.md"; }
+    var file = bar.querySelector(".lc-bench-file");
+    if (!file && brand) {
+      file = document.createElement("span"); file.className = "lc-bench-file";
+      brand.parentNode.insertBefore(file, brand.nextSibling);
+      var chip = document.createElement("span"); chip.className = "lc-bench-chip";
+      file.parentNode.insertBefore(chip, file.nextSibling);
+    }
+    if (brand && first) {
+      /* the brand stays short: my own bench reads as just my login; the full
+         repo name lives in the tinted chip beside it */
+      var name = repo.split("/")[1], login = "";
+      try { login = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; } catch (e) {}
+      var short = login && name.slice(-(login.length + 1)) === "-" + login ? login : name;
+      brand.textContent = "🔬 " + short + "/";
+      brand.href = runHome + "README.md";
+      var c = bar.querySelector(".lc-bench-chip");
+      if (c) { c.textContent = name; c.title = "this bench's repository"; }
+    }
+    if (file) file.textContent = path || "";
+    if (!first) return;                       /* menu + brand set up once per repo */
     var links = bar.querySelector(".lc-links");
     var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
     if (!links) return;

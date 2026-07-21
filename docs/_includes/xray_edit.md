@@ -30,6 +30,9 @@ loses everything. A component's editable source comes from window.lcSourceOf
 #lcx-edit button { font: inherit; padding: .45em .9em; border-radius: 7px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
 #lcx-edit .lcx-apply { background: #0066cc; color: #fff; border-color: #0066cc; }
 #lcx-edit .lcx-keep { color: #166534; background: #dcfce7; border-color: #86efac; margin-left: auto; }
+#lcx-toast { position: fixed; top: 1em; left: 50%; transform: translateX(-50%);
+  padding: 0.55em 1.1em; border-radius: 6px; font-size: 0.88em; font-weight: 500; color: #fff;
+  z-index: 100002; display: none; box-shadow: 0 3px 10px rgba(0,0,0,0.15); pointer-events: none; }
 </style>
 
 <div id="lcx-ghost"></div>
@@ -40,9 +43,10 @@ loses everything. A component's editable source comes from window.lcSourceOf
   <div class="lcx-bar">
     <button type="button" class="lcx-apply" id="lcx-apply">Apply</button>
     <button type="button" id="lcx-close">Close</button>
-    <button type="button" class="lcx-keep" id="lcx-keep" title="Keep changes — commits to your repo when connected">💾 Keep changes</button>
+    <button type="button" class="lcx-keep" id="lcx-keep" title="Save — commits to your repo when connected">💾 Save</button>
   </div>
 </dialog>
+<div id="lcx-toast"></div>
 
 <script>
 (function () {
@@ -208,6 +212,17 @@ loses everything. A component's editable source comes from window.lcSourceOf
     });
   }
 
+  /* same voice as the page editor: green = saved, red = why not */
+  function lcxToast(msg, ok) {
+    var el = document.getElementById("lcx-toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.style.background = ok ? "#28a745" : "#dc3545";
+    el.style.display = "block";
+    clearTimeout(el._t);
+    el._t = setTimeout(function () { el.style.display = "none"; }, 3000);
+  }
+
   function commitInline(pat, repo, path, before, after, label, onOk) {
     var api = "https://api.github.com/repos/" + repo + "/contents/" + path;
     var H = { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json" };
@@ -220,7 +235,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
       var src = decodeURIComponent(escape(atob(d.content.replace(/\n/g, ""))));
       var i = src.indexOf(before);
       if (i < 0 || src.indexOf(before, i + 1) >= 0) {  // zero or many — never guess
-        alert("Couldn't safely locate this block in the page source — keep it via the ✏️ page editor.");
+        lcxToast("Couldn't safely locate this block in the page source — save it via the ✏️ page editor.", false);
         return;
       }
       var next = src.slice(0, i) + after + src.slice(i + before.length);
@@ -230,9 +245,9 @@ loses everything. A component's editable source comes from window.lcSourceOf
                                content: btoa(unescape(encodeURIComponent(next))), sha: d.sha })
       }).then(jsonOf).then(function (res) {
         if (!res.content) throw new Error(res.message || "unknown");
-        if (onOk) onOk();
+        if (onOk) onOk(res.commit && res.commit.sha);
       });
-    }).catch(function (e) { alert("Save failed: " + e.message); });
+    }).catch(function (e) { lcxToast("Save failed: " + e.message, false); });
   }
 
   function keepChanges() {
@@ -261,7 +276,8 @@ loses everything. A component's editable source comes from window.lcSourceOf
            anchors on the committed content — without this a second Keep after
            a successful one can't match the file until a reload (stale anchor) */
         var okId = curId, okSnap = curSnap, okVal = ta.value;
-        commitInline(pat, commitRepo, commitPath, _origVal, ta.value, label, function () {
+        commitInline(pat, commitRepo, commitPath, _origVal, ta.value, label, function (sha) {
+          lcxToast("Saved" + (sha ? " · " + String(sha).slice(0, 7) : "") + " ✓", true);
           if (!okId || !window.lcSetSourceOf) return;
           var s = parseSrc(okSnap); if (!s) return;
           var c = s.querySelector("code");

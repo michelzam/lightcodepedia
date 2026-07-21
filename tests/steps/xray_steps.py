@@ -299,3 +299,8 @@ def step_keep_invites(context):
     context.page.click("#lcx-keep")
     context.page.wait_for_timeout(500)
     assert messages and "account" in messages[0].lower(), messages
+
+
+@then("a green save toast confirms it")
+def step_save_toast(context):
+    expect(context.page.locator("#lcx-toast")).to_contain_text("Saved", timeout=8000)

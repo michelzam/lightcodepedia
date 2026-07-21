@@ -196,6 +196,9 @@ def step_topbar_bench_mode(context):
     expect(context.page.locator("#lc-topbar")).to_have_class(
         __import__("re").compile(r"\blc-bench-mode\b"), timeout=8000)
     expect(context.page.locator("#lc-topbar .lc-brand")).to_contain_text("build-ai-x-stu")
+    # the full repo name sits in the tinted chip; the rendered file in the bar
+    expect(context.page.locator("#lc-topbar .lc-bench-chip")).to_have_text("build-ai-x-stu")
+    expect(context.page.locator("#lc-topbar .lc-bench-file")).to_contain_text("ex1.md")
 
 
 @then("the topbar menu comes from the bench")

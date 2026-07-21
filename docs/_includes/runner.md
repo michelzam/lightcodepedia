@@ -68,20 +68,25 @@ synced) links its original and flags when that original moved on.
   function paintBar(bar, st) {
     if (!bar) return;
     bar._lcState = st;
-    /* in bench mode the topbar brand already names the repo — the chip
-       carries just the path, no echo */
-    var tb = document.getElementById("lc-topbar");
-    var merged = tb && st.repo && tb.dataset.benchMode === st.repo;
-    var chip = '<span class="lc-run-chip">🔬 ' + (st.repo && !merged ? st.repo + "/" : "") + (st.path || st.src) + '</span>' +
-               (st.loading ? " ⏳ rendering…" : "");
     var own = "";
     if (!st.loading && st.repo && st.path) {
       if (st.path.indexOf("course/") === 0)
-        own = ' · 📦 Course page — updates arrive via Sync · <a href="#" data-lcr="mine">✍️ Make it mine</a>';
+        own = '📦 Course page — updates arrive via Sync · <a href="#" data-lcr="mine">✍️ Make it mine</a>';
       else if (st.path.indexOf("my/") === 0)
-        own = ' · ✍️ Your page · <a href="#" data-lcr="orig">📦 View original</a><span data-lcr="upd"></span>';
+        own = '✍️ Your page · <a href="#" data-lcr="orig">📦 View original</a><span data-lcr="upd"></span>';
     }
-    bar.innerHTML = chip + own;
+    /* merged with the topbar (bench mode): repo + filename live up there, so
+       this bar carries ONLY ownership — and vanishes when there is none */
+    var tb = document.getElementById("lc-topbar");
+    if (tb && st.repo && tb.dataset.benchMode === st.repo) {
+      if (st.loading) { bar.innerHTML = "⏳ rendering…"; bar.style.display = ""; return; }
+      if (!own) { bar.style.display = "none"; return; }
+      bar.innerHTML = own;
+      bar.style.display = "";
+      return;
+    }
+    bar.innerHTML = '<span class="lc-run-chip">🔬 ' + (st.repo ? st.repo + "/" : "") + (st.path || st.src) + '</span>' +
+                    (st.loading ? " ⏳ rendering…" : "") + (own ? " · " + own : "");
     bar.style.display = "";
   }
 
@@ -151,7 +156,10 @@ synced) links its original and flags when that original moved on.
     var barSt = { repo: root.dataset.lcSrcRepo, path: root.dataset.lcSrcPath, src: src, loading: true };
     if (bar) { pageTitle(bar.parentNode, true); paintBar(bar, barSt); }
     function fetchMd(headers) {
-      return fetch(spec.url, headers ? { headers: headers } : undefined)
+      /* no-store: api.github.com answers carry max-age=60 — after a Keep, a
+         reload within the minute would render the STALE cached body ("my
+         edit had no effect"). Course pages are small; always read fresh. */
+      return fetch(spec.url, headers ? { headers: headers, cache: "no-store" } : { cache: "no-store" })
         .then(function (r) { if (!r.ok) throw { status: r.status, gh: spec.gh }; return r.text(); });
     }
     fetchMd(spec.headers)
@@ -202,7 +210,7 @@ synced) links its original and flags when that original moved on.
             /* a bench (any gh: source that isn't the course vault) flips the
                topbar into the student's safe playground */
             if (spec.gh && barSt.repo && !/-vault$/.test(barSt.repo) && window.lcBenchMode)
-              window.lcBenchMode(barSt.repo);
+              window.lcBenchMode(barSt.repo, barSt.path);
             barSt.loading = false; paintBar(bar, barSt);
             if (barSt.path && barSt.path.indexOf("my/") === 0) checkOrig(bar, barSt);
           }
