@@ -55,3 +55,15 @@ Feature: The instant runner (RT) — Phase A parity
     And my copy exists from an older original
     When I open the bench page "my/ex1.md"
     Then the runner bar flags the changed original
+
+  Scenario: A bench flips the topbar into bench mode
+    Given a stubbed bench with a course page
+    When I open the bench page "course/ex1.md"
+    Then the topbar switches to bench mode
+
+  Scenario: A bench menu takes over the topbar links
+    Given a stubbed bench with a course page
+    And the bench ships a menu
+    When I open the bench page "course/ex1.md"
+    Then the topbar switches to bench mode
+    And the topbar menu comes from the bench

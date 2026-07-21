@@ -68,7 +68,11 @@ synced) links its original and flags when that original moved on.
   function paintBar(bar, st) {
     if (!bar) return;
     bar._lcState = st;
-    var chip = '<span class="lc-run-chip">🔬 ' + (st.repo ? st.repo + "/" : "") + (st.path || st.src) + '</span>' +
+    /* in bench mode the topbar brand already names the repo — the chip
+       carries just the path, no echo */
+    var tb = document.getElementById("lc-topbar");
+    var merged = tb && st.repo && tb.dataset.benchMode === st.repo;
+    var chip = '<span class="lc-run-chip">🔬 ' + (st.repo && !merged ? st.repo + "/" : "") + (st.path || st.src) + '</span>' +
                (st.loading ? " ⏳ rendering…" : "");
     var own = "";
     if (!st.loading && st.repo && st.path) {
@@ -195,6 +199,10 @@ synced) links its original and flags when that original moved on.
           if (window.lcRebase)      window.lcRebase(root);
           status.style.display = "none";
           if (bar) {
+            /* a bench (any gh: source that isn't the course vault) flips the
+               topbar into the student's safe playground */
+            if (spec.gh && barSt.repo && !/-vault$/.test(barSt.repo) && window.lcBenchMode)
+              window.lcBenchMode(barSt.repo);
             barSt.loading = false; paintBar(bar, barSt);
             if (barSt.path && barSt.path.indexOf("my/") === 0) checkOrig(bar, barSt);
           }

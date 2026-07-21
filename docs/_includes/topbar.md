@@ -147,6 +147,14 @@ body {
   text-decoration: none; white-space: nowrap;
 }
 #lc-fork-hint:hover { background: #ffeab0; }
+/* ── bench mode: the student's safe playground gets its own sky ──
+   engaged by the runner when it renders a bench (gh: source, not the vault):
+   dark bar, the brand becomes the bench itself, links from the bench's own
+   menu.md when it has one */
+#lc-topbar.lc-bench-mode { background: rgba(55,65,81,0.97); border-bottom-color: #1f2937; }
+#lc-topbar.lc-bench-mode .lc-brand { color: #fff; }
+#lc-topbar.lc-bench-mode .lc-links a { color: #e5e7eb; }
+#lc-topbar.lc-bench-mode .lc-links a:hover { color: #fff; }
 </style>
 {% comment %} The brand names the node you're on — dynamic, never static text.
    Rule: the repo's name, capitalized — no shortcuts. The emoji marks the
@@ -308,14 +316,59 @@ body {
 {% include code_chrome.md %}
 <script>
 (function(){
-  var links = document.querySelectorAll('#lc-topbar .lc-links a');
-  links.forEach(function(a){
-    var t = a.textContent.trim();
-    var i = t.indexOf(' ');
-    if (i > 0) {
-      a.innerHTML = '<span class="lc-link-icon">' + t.substring(0, i) + '</span><span class="lc-link-label">' + t.substring(i + 1) + '</span>';
-    }
-  });
+  function splitIcons(scope) {
+    (scope || document).querySelectorAll('#lc-topbar .lc-links a').forEach(function(a){
+      var t = a.textContent.trim();
+      var i = t.indexOf(' ');
+      if (i > 0) {
+        a.innerHTML = '<span class="lc-link-icon">' + t.substring(0, i) + '</span><span class="lc-link-label">' + t.substring(i + 1) + '</span>';
+      }
+    });
+  }
+  splitIcons();
+
+  /* ── Bench mode ──────────────────────────────────────────────────────────
+     Called by the runner when it renders a bench (gh: source outside the
+     vault). The bar goes dark, the brand becomes 🔬 <bench>/ pointing home
+     (the bench README), and if the bench ships a menu.md its links replace
+     the site menu — relative hrefs resolve INTO the bench via the runner,
+     so students stay in their playground. Same folder-menu convention as
+     Jekyll (a menu.md governs its branch), applied at runtime. */
+  window.lcBenchMode = function (repo) {
+    var bar = document.getElementById("lc-topbar");
+    if (!bar || bar.dataset.benchMode === repo) return;
+    bar.dataset.benchMode = repo;
+    bar.classList.add("lc-bench-mode");
+    var runHome = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + repo + "/";
+    var brand = bar.querySelector(".lc-brand");
+    if (brand) { brand.textContent = "🔬 " + repo.split("/")[1] + "/"; brand.href = runHome + "README.md"; }
+    var links = bar.querySelector(".lc-links");
+    var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+    if (!links) return;
+    fetch("https://api.github.com/repos/" + repo + "/contents/menu.md",
+          { headers: pat ? { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw" }
+                         : { Accept: "application/vnd.github.v3.raw" }, cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw 0; return r.text(); })
+      .then(function (md) {
+        if (md.indexOf("---") === 0) {          /* strip front matter */
+          var e = md.indexOf("\n---", 3);
+          if (e >= 0) { var nl = md.indexOf("\n", e + 1); md = nl >= 0 ? md.slice(nl + 1) : ""; }
+        }
+        if (!window.lcLoadMarked) return;
+        window.lcLoadMarked(function () {
+          links.innerHTML = marked.parse(md.trim());
+          links.querySelectorAll("a").forEach(function (a) {
+            var href = a.getAttribute("href") || "";
+            if (href && !/^(https?:)?\/\//.test(href) && href.charAt(0) !== "/" && href.charAt(0) !== "#")
+              a.href = runHome + href;          /* bench-relative → runner */
+            else if (href.charAt(0) === "/" && window.lcHref)
+              a.href = window.lcHref(href);     /* site-absolute → healed */
+          });
+          splitIcons();
+        });
+      })
+      .catch(function () {});                    /* no menu.md → keep site links */
+  };
 
   // ── User pill ──────────────────────────────────────────────────────────────
   // Named + exposed so onboarding can wake it the moment a key is accepted —

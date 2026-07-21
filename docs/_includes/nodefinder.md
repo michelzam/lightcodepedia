@@ -58,7 +58,20 @@ the 404 page (Liquid guard), so every other page carries zero extra script.
   }
   fetch('https://api.github.com/repos/' + cand + '/lightcodepedia')
     .then(function (r) {
-      if (r.ok) siteProbe(go, forkNotLive);
+      if (r.ok) {
+        /* The fork exists — but is its site ON? Pages deployments are public
+           on public repos: any github-pages deployment = the site has built.
+           Asset-independent, unlike the img probe (an old fork's live site
+           may predate the probe asset); the img stays as rate-limit fallback. */
+        fetch('https://api.github.com/repos/' + cand + '/lightcodepedia/deployments?environment=github-pages&per_page=1')
+          .then(function (r2) { return r2.ok ? r2.json() : null; })
+          .then(function (deps) {
+            if (deps === null) siteProbe(go, forkNotLive);   /* rate-limited: let the img decide */
+            else if (deps.length) go();
+            else forkNotLive();
+          })
+          .catch(function () { siteProbe(go, go); });
+      }
       else if (r.status === 403) siteProbe(go, go);   /* rate-limited: only the probe knows */
       else {
         reveal();   /* a genuine miss — now the 404 content has something to say */

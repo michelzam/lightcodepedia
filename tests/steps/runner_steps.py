@@ -114,6 +114,13 @@ def _bench_route(context):
             else:
                 route.fulfill(status=200, json=envelope())
             return
+        if "/contents/menu.md" in url and method == "GET":
+            if st.get("menu"):
+                route.fulfill(status=200, content_type="text/plain",
+                              body="[🛠 My bench](README.md) [🎓 Course](/courses/join)")
+            else:
+                route.fulfill(status=404, json={"message": "Not Found"})
+            return
         route.fulfill(status=404, json={"message": "stub"})
 
     context.page.route("https://api.github.com/**", handler)
@@ -177,3 +184,23 @@ def step_bar_mine(context):
 @then("the runner bar flags the changed original")
 def step_bar_flags_update(context):
     expect(context.page.locator(".lc-run-bar")).to_contain_text("original changed", timeout=8000)
+
+
+@given("the bench ships a menu")
+def step_bench_has_menu(context):
+    context.bench_stub["menu"] = True
+
+
+@then("the topbar switches to bench mode")
+def step_topbar_bench_mode(context):
+    expect(context.page.locator("#lc-topbar")).to_have_class(
+        __import__("re").compile(r"\blc-bench-mode\b"), timeout=8000)
+    expect(context.page.locator("#lc-topbar .lc-brand")).to_contain_text("build-ai-x-stu")
+
+
+@then("the topbar menu comes from the bench")
+def step_topbar_bench_menu(context):
+    link = context.page.locator("#lc-topbar .lc-links a", has_text="My bench")
+    expect(link).to_be_visible(timeout=8000)
+    href = link.get_attribute("href") or ""
+    assert "run.html#src=gh:" + BENCH_REPO + "/README.md" in href, href

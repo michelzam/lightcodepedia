@@ -34,6 +34,13 @@ def _routes(context):
 
     context.page.route("https://api.github.com/repos/%s/lightcodepedia" % u, repo_route)
 
+    def deploy_route(route):
+        # a live site has github-pages deployments; a dark fork has none
+        route.fulfill(status=200, json=[{"id": 1}] if st["site"] else [])
+
+    context.page.route(
+        "https://api.github.com/repos/%s/lightcodepedia/deployments*" % u, deploy_route)
+
     def img_route(route):
         if st["site"]:
             route.fulfill(status=200, content_type="image/png", body=PNG)
