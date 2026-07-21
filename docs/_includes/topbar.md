@@ -151,12 +151,19 @@ body {
    engaged by the runner when it renders a bench (gh: source, not the vault):
    dark bar, the brand becomes the bench itself, links from the bench's own
    menu.md when it has one */
-#lc-topbar.lc-bench-mode { background: rgba(223,227,233,0.97); border-bottom-color: #c3c9d3; }
-#lc-topbar.lc-bench-mode .lc-brand { color: #1f2937; margin-right: 0; }
-#lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.85em; color: #4b5563; margin-left: 0.45em; }
-#lc-topbar .lc-bench-chip { margin-right: auto; margin-left: 0.7em; padding: 2px 10px; border-radius: 999px;
-  font-size: 0.75em; background: #eef2f7; border: 1px solid #c9d2de; color: #55627a; white-space: nowrap; }
-@media (max-width: 640px) { #lc-topbar .lc-bench-chip { display: none; } }
+#lc-topbar.lc-bench-mode { background: rgba(223,227,233,0.97); border-bottom-color: #c3c9d3; flex-wrap: nowrap; }
+#lc-topbar.lc-bench-mode .lc-brand { color: #1f2937; margin-right: 0; white-space: nowrap; }
+#lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.85em; color: #4b5563; margin-left: 0.45em;
+  margin-right: auto; white-space: nowrap; }
+/* bench mode fills more of the left side — the menu goes icon-only well
+   before it would wrap into a second (ugly) line; tooltips carry the labels */
+@media (max-width: 1100px) {
+  #lc-topbar.lc-bench-mode .lc-link-label { display: none; }
+  #lc-topbar.lc-bench-mode .lc-link-icon { margin-right: 0; font-size: 1.15em; }
+  #lc-topbar.lc-bench-mode .lc-links { gap: 0.6rem; flex-wrap: nowrap; }
+  #lc-topbar.lc-bench-mode .lc-links a { margin-right: 0.5rem; }
+}
+@media (max-width: 480px) { #lc-topbar.lc-bench-mode .lc-bench-file { display: none; } }
 </style>
 {% comment %} The brand names the node you're on — dynamic, never static text.
    Rule: the repo's name, capitalized — no shortcuts. The emoji marks the
@@ -324,6 +331,7 @@ body {
       var i = t.indexOf(' ');
       if (i > 0) {
         a.innerHTML = '<span class="lc-link-icon">' + t.substring(0, i) + '</span><span class="lc-link-label">' + t.substring(i + 1) + '</span>';
+        a.title = t.substring(i + 1);   // icon-only widths keep the label as a tooltip
       }
     });
   }
@@ -348,21 +356,18 @@ body {
     if (!file && brand) {
       file = document.createElement("span"); file.className = "lc-bench-file";
       brand.parentNode.insertBefore(file, brand.nextSibling);
-      var chip = document.createElement("span"); chip.className = "lc-bench-chip";
-      file.parentNode.insertBefore(chip, file.nextSibling);
     }
     if (brand && first) {
       /* the brand stays short: my own bench reads as just my login; the full
-         repo name lives in the tinted chip beside it */
+         repo name lives in its tooltip, never in precious bar width */
       var name = repo.split("/")[1], login = "";
       try { login = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; } catch (e) {}
       var short = login && name.slice(-(login.length + 1)) === "-" + login ? login : name;
       brand.textContent = "🔬 " + short + "/";
       brand.href = runHome + "README.md";
-      var c = bar.querySelector(".lc-bench-chip");
-      if (c) { c.textContent = name; c.title = "this bench's repository"; }
+      brand.title = repo;
     }
-    if (file) file.textContent = path || "";
+    if (file) { file.textContent = path || ""; file.title = repo + "/" + (path || ""); }
     if (!first) return;                       /* menu + brand set up once per repo */
     var links = bar.querySelector(".lc-links");
     var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
