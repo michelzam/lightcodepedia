@@ -211,7 +211,11 @@ loses everything. A component's editable source comes from window.lcSourceOf
   function commitInline(pat, repo, path, before, after, label, onOk) {
     var api = "https://api.github.com/repos/" + repo + "/contents/" + path;
     var H = { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json" };
-    fetch(api, { headers: H }).then(jsonOf).then(function (d) {
+    /* no-store: the runner fetches this same URL with Accept raw — some
+       browsers (FF desktop) serve that cached raw body to THIS json request
+       (Vary mishandling), which read raw markdown where the envelope should
+       be. A read-before-write must be fresh anyway. */
+    fetch(api, { headers: H, cache: "no-store" }).then(jsonOf).then(function (d) {
       if (!d.content) throw new Error(d.message || "load failed");
       var src = decodeURIComponent(escape(atob(d.content.replace(/\n/g, ""))));
       var i = src.indexOf(before);

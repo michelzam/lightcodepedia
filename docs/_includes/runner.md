@@ -89,7 +89,9 @@ synced) links its original and flags when that original moved on.
     var H = { Authorization: "Bearer " + key, Accept: "application/vnd.github+json",
               "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" };
     var api = "https://api.github.com/repos/" + st.repo + "/contents/";
-    fetch(api + st.path, { headers: H })
+    /* no-store: the render just fetched this URL with Accept raw — don't let
+       a cached raw body answer this json request (FF Vary quirk) */
+    fetch(api + st.path, { headers: H, cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.content) throw new Error(d.message || "could not load the original");
@@ -114,7 +116,7 @@ synced) links its original and flags when that original moved on.
     try { stored = localStorage.getItem("lc_orig_sha:" + st.repo + "/" + st.path) || ""; } catch (e) {}
     if (!stored) return;
     fetch("https://api.github.com/repos/" + st.repo + "/contents/course/" + st.path.slice(3),
-          { headers: { Authorization: "Bearer " + key, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } })
+          { headers: { Authorization: "Bearer " + key, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         var slot = bar.querySelector("[data-lcr='upd']");

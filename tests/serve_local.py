@@ -41,6 +41,25 @@ class BaseHandler(SimpleHTTPRequestHandler):
             return fs + ".html"
         return fs
 
+    def send_error(self, code, message=None, explain=None):
+        # GitHub Pages serves the site's 404.html (status 404) for every miss —
+        # that page doubles as the LightNode router, so mirror it locally or
+        # the router is untestable here
+        page = os.path.join(self.directory, "404.html")
+        if code == 404 and os.path.isfile(page):
+            with open(page, "rb") as f:
+                body = f.read()
+            self.send_response(404)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            try:
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
+        super().send_error(code, message, explain)
+
     def log_message(self, *args):
         pass  # quiet — the suite is the signal, not access logs
 

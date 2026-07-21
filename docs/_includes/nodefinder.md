@@ -34,20 +34,39 @@ the 404 page (Liquid guard), so every other page carries zero extra script.
 
   if (CANON && cand.toLowerCase() === CANON.toLowerCase()) { location.replace('/'); return; }
   var dest = 'https://' + cand + '.github.io/lightcodepedia/';
+  function go() {
+    note.textContent = '🚀 Found — taking you to @' + cand + '’s LightNode…';
+    location.replace(dest);
+  }
+  /* The repo existing is NOT enough: GitHub never auto-enables Pages on a
+     fork, so a fork without a live site redirected blindly lands on a GitHub
+     404. Probe the built site itself with an image every fork ships
+     (cross-origin img load/error is readable where fetch is opaque); a probe
+     TIMEOUT stays optimistic — slow network is not a dead site. */
+  function siteProbe(onUp, onDown) {
+    var img = new Image(), done = false;
+    var t = setTimeout(function () { if (!done) { done = true; onUp(); } }, 6000);
+    img.onload  = function () { if (!done) { done = true; clearTimeout(t); onUp(); } };
+    img.onerror = function () { if (!done) { done = true; clearTimeout(t); onDown(); } };
+    img.src = dest + 'assets/lab.jpg?lcprobe=' + Date.now();
+  }
+  function forkNotLive() {
+    reveal();
+    note.innerHTML = '🌱 <b>@' + cand + '</b> has a LightNode fork, but its site isn’t switched on yet. ' +
+      'The owner flips it on once: repo <b>Settings → Pages → Deploy from a branch → main, /docs</b>. ' +
+      '<a href="' + dest + '">Try anyway →</a>';
+  }
   fetch('https://api.github.com/repos/' + cand + '/lightcodepedia')
     .then(function (r) {
-      if (r.ok) {
-        note.textContent = '🚀 Found — taking you to @' + cand + '’s LightNode…';
-        location.replace(dest);
-      } else if (r.status === 403) {
-        location.replace(dest);   /* rate-limited: go optimistically */
-      } else {
+      if (r.ok) siteProbe(go, forkNotLive);
+      else if (r.status === 403) siteProbe(go, go);   /* rate-limited: only the probe knows */
+      else {
         reveal();   /* a genuine miss — now the 404 content has something to say */
         note.innerHTML = '🪐 No LightNode for <b>@' + cand + '</b> yet — ' +
           '<a href="/start">start yours</a>?';
       }
     })
-    .catch(function () { location.replace(dest); });
+    .catch(function () { siteProbe(go, go); });
 })();
 </script>
 {% endif %}
