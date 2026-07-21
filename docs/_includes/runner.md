@@ -7,7 +7,19 @@ identical DOM. Activated by IAL {: .runner } on the /run page.
 Phase A: #src=<url-to-raw-markdown> (public, no auth). Later phases add
 gh:owner/repo/path (private benches via PAT) and edit/commit. The page stays
 pure md + IAL (P1); all logic lives here in the engine.
+
+The bar replaces the /run page title while a source renders: it names the
+source (the working hint) and, on benches, carries the ownership convention —
+course/… (teacher's, synced) gets ✍️ Make it mine; my/… (student's, never
+synced) links its original and flags when that original moved on.
 {%- endcomment -%}
+<style>
+/* the bar IS the runner's presence: it replaces the page title, names what is
+   rendering (the working hint), and carries ownership + actions on benches */
+.lc-run-bar { font-size: 0.85em; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.45em 0.8em; margin-bottom: 1.1em; }
+.lc-run-bar .lc-run-chip { font-family: monospace; }
+.lc-run-bar a { color: #0066cc; text-decoration: none; font-weight: 600; }
+</style>
 <script>
 (function () {
   if (window._lcRunnerReady) return;
@@ -39,11 +51,88 @@ pure md + IAL (P1); all logic lives here in the engine.
     return { url: window.lcHref ? window.lcHref(src) : src, headers: null, gh: false };
   }
 
+  function edKey() { try { return localStorage.getItem("lc_ed_pat") || ""; } catch (e) { return ""; } }
+
+  /* the /run page's own title gives way to the bar while a source renders */
+  function pageTitle(wrap, hide) {
+    var n = wrap;
+    while (n && n.previousElementSibling) {
+      n = n.previousElementSibling;
+      if (n.tagName === "H1") { n.style.display = hide ? "none" : ""; return; }
+    }
+  }
+
+  /* Ownership convention on benches (never collides with the vault's
+     "courses/"): course/… = the teacher's material, synced from the hub;
+     my/… = the student's space, never touched by a sync. */
+  function paintBar(bar, st) {
+    if (!bar) return;
+    bar._lcState = st;
+    var chip = '<span class="lc-run-chip">🔬 ' + (st.repo ? st.repo + "/" : "") + (st.path || st.src) + '</span>' +
+               (st.loading ? " ⏳ rendering…" : "");
+    var own = "";
+    if (!st.loading && st.repo && st.path) {
+      if (st.path.indexOf("course/") === 0)
+        own = ' · 📦 Course page — updates arrive via Sync · <a href="#" data-lcr="mine">✍️ Make it mine</a>';
+      else if (st.path.indexOf("my/") === 0)
+        own = ' · ✍️ Your page · <a href="#" data-lcr="orig">📦 View original</a><span data-lcr="upd"></span>';
+    }
+    bar.innerHTML = chip + own;
+    bar.style.display = "";
+  }
+
+  /* copy course/x → my/x with the student's own key, then open the copy.
+     A 422 means the copy already exists — never overwrite their work. */
+  function makeMine(st) {
+    var key = edKey(); if (!key) { alert("Connect your course key first (Get started, top right)."); return; }
+    var myPath = "my/" + st.path.slice(7);
+    var H = { Authorization: "Bearer " + key, Accept: "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" };
+    var api = "https://api.github.com/repos/" + st.repo + "/contents/";
+    fetch(api + st.path, { headers: H })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.content) throw new Error(d.message || "could not load the original");
+        try { localStorage.setItem("lc_orig_sha:" + st.repo + "/" + myPath, d.sha); } catch (e) {}
+        return fetch(api + myPath, { method: "PUT", headers: H,
+          body: JSON.stringify({ message: "Make it mine: " + st.path, content: d.content.replace(/\n/g, "") }) })
+          .then(function (r) {
+            if (r.ok || r.status === 422) return;
+            return r.json().then(function (x) { throw new Error(x.message || ("HTTP " + r.status)); });
+          });
+      })
+      .then(function () { location.hash = "src=gh:" + st.repo + "/" + myPath; })
+      .catch(function (e) { alert("Could not copy: " + e.message); });
+  }
+
+  /* on a my/ page: has the original moved since the copy was taken? The sha
+     remembered at copy time is this browser's memory — absent elsewhere, the
+     check stays silent rather than guessing. */
+  function checkOrig(bar, st) {
+    var key = edKey(); if (!key) return;
+    var stored = "";
+    try { stored = localStorage.getItem("lc_orig_sha:" + st.repo + "/" + st.path) || ""; } catch (e) {}
+    if (!stored) return;
+    fetch("https://api.github.com/repos/" + st.repo + "/contents/course/" + st.path.slice(3),
+          { headers: { Authorization: "Bearer " + key, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var slot = bar.querySelector("[data-lcr='upd']");
+        if (d && d.sha && slot && d.sha !== stored)
+          slot.innerHTML = ' · ⬆️ <a href="#" data-lcr="orig">the original changed since your copy</a>';
+      })
+      .catch(function () {});
+  }
+
   /* src comes from the IAL attribute (embedded examples) or the page hash
      (the /run page). Attribute wins, so a component page can host a live demo. */
-  function render(status, root, fixedSrc) {
+  function render(status, root, fixedSrc, bar) {
     var src = fixedSrc || hashSrc();
-    if (!src) { status.style.display = ""; status.textContent = "No source. Open with #src=<url to markdown>."; root.innerHTML = ""; return; }
+    if (!src) {
+      status.style.display = ""; status.textContent = "No source. Open with #src=<url to markdown>."; root.innerHTML = "";
+      if (bar) { bar.style.display = "none"; pageTitle(bar.parentNode, false); }
+      return;
+    }
     status.style.display = ""; status.textContent = "Loading…"; root.innerHTML = "";
     var spec = resolveSrc(src);
     /* Advertise the source on the render root so editors (xray) commit to the
@@ -53,6 +142,8 @@ pure md + IAL (P1); all logic lives here in the engine.
         rw = /^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/[^\/]+\/(.+)$/.exec(src);
     root.dataset.lcSrcRepo = gm ? gm[1] + "/" + gm[2] : (rw ? rw[1] + "/" + rw[2] : "");
     root.dataset.lcSrcPath = gm ? gm[3] : (rw ? rw[3] : (src.charAt(0) === "/" ? "docs" + src : ""));
+    var barSt = { repo: root.dataset.lcSrcRepo, path: root.dataset.lcSrcPath, src: src, loading: true };
+    if (bar) { pageTitle(bar.parentNode, true); paintBar(bar, barSt); }
     function fetchMd(headers) {
       return fetch(spec.url, headers ? { headers: headers } : undefined)
         .then(function (r) { if (!r.ok) throw { status: r.status, gh: spec.gh }; return r.text(); });
@@ -101,10 +192,15 @@ pure md + IAL (P1); all logic lives here in the engine.
           if (window.lcScanElement) window.lcScanElement(root);
           if (window.lcRebase)      window.lcRebase(root);
           status.style.display = "none";
+          if (bar) {
+            barSt.loading = false; paintBar(bar, barSt);
+            if (barSt.path && barSt.path.indexOf("my/") === 0) checkOrig(bar, barSt);
+          }
         });
       })
       .catch(function (err) {
         status.style.display = "";
+        if (bar) { barSt.loading = false; paintBar(bar, barSt); }
         var st = err && err.status;
         var hasPat = false; try { hasPat = !!localStorage.getItem("lc_ed_pat"); } catch (e) {}
         if (err && err.gh && (st === 404 || st === 401) && !hasPat)
@@ -136,13 +232,22 @@ pure md + IAL (P1); all logic lives here in the engine.
     /* one page-level runner (the /run page) publishes canonical ids; embedded
        demos get scoped classes so several can coexist without id clashes */
     var idAttr = fixedSrc ? "" : ' id="lc-run"';
-    wrap.innerHTML = '<div class="lc-run-status" style="color:#6b7280;font-size:0.9em">Loading…</div>' +
+    wrap.innerHTML = (fixedSrc ? "" : '<div class="lc-run-bar" style="display:none"></div>') +
+                     '<div class="lc-run-status" style="color:#6b7280;font-size:0.9em">Loading…</div>' +
                      '<div class="lc-run markdown-body"' + idAttr + '></div>';
     el.parentNode.replaceChild(wrap, el);
     var status = wrap.querySelector(".lc-run-status");
     var root = wrap.querySelector(".lc-run");
-    render(status, root, fixedSrc);
-    if (!fixedSrc) window.addEventListener("hashchange", function () { render(status, root, ""); });
+    var bar = wrap.querySelector(".lc-run-bar");
+    if (bar) bar.addEventListener("click", function (e) {
+      var a = e.target.closest("[data-lcr]"); if (!a) return;
+      e.preventDefault();
+      var st = bar._lcState || {};
+      if (a.getAttribute("data-lcr") === "orig" && st.path) location.hash = "src=gh:" + st.repo + "/course/" + st.path.slice(3);
+      if (a.getAttribute("data-lcr") === "mine" && st.path) makeMine(st);
+    });
+    render(status, root, fixedSrc, bar);
+    if (!fixedSrc) window.addEventListener("hashchange", function () { render(status, root, "", bar); });
   }
 
   if (window.lcRegisterUpgrader) window.lcRegisterUpgrader("p.runner", upgradeRunner);

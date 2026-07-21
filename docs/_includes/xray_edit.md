@@ -198,10 +198,20 @@ loses everything. A component's editable source comes from window.lcSourceOf
      page's own source, exact-match-or-abort so it can never corrupt a page.
      The account invitation is only for anonymous learners (losing work is
      their incentive to sign up). */
+  /* never let a non-JSON body (proxy page, empty response) crash as a bare
+     JSON.parse alert — surface the HTTP status and a snippet instead, so a
+     failure report is diagnosable */
+  function jsonOf(r) {
+    return r.text().then(function (t) {
+      try { return JSON.parse(t); }
+      catch (e) { throw new Error("HTTP " + r.status + (t ? " — " + t.slice(0, 120) : " (empty response)")); }
+    });
+  }
+
   function commitInline(pat, repo, path, before, after, label, onOk) {
     var api = "https://api.github.com/repos/" + repo + "/contents/" + path;
     var H = { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json" };
-    fetch(api, { headers: H }).then(function (r) { return r.json(); }).then(function (d) {
+    fetch(api, { headers: H }).then(jsonOf).then(function (d) {
       if (!d.content) throw new Error(d.message || "load failed");
       var src = decodeURIComponent(escape(atob(d.content.replace(/\n/g, ""))));
       var i = src.indexOf(before);
@@ -214,7 +224,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
         method: "PUT", headers: H,
         body: JSON.stringify({ message: "Inline edit: " + label,
                                content: btoa(unescape(encodeURIComponent(next))), sha: d.sha })
-      }).then(function (r) { return r.json(); }).then(function (res) {
+      }).then(jsonOf).then(function (res) {
         if (!res.content) throw new Error(res.message || "unknown");
         if (onOk) onOk();
       });

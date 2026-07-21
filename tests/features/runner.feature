@@ -31,3 +31,27 @@ Feature: The instant runner (RT) — Phase A parity
     When I open the runner page on "/components/datagrid.md"
     And I wait for the runner to render
     Then footnote refs and their definitions render, none left raw
+
+  Scenario: The bar replaces the page title and names the source
+    When I open the runner page on "/run_samples/probe.txt"
+    And I wait for the runner to render
+    Then the runner bar names the source "probe.txt"
+    And the runner page title is hidden
+
+  Scenario: A course page on a bench offers Make it mine
+    Given a stubbed bench with a course page
+    When I open the bench page "course/ex1.md"
+    Then the runner bar marks it as course material
+
+  Scenario: Make it mine copies the page into my space and opens it
+    Given a stubbed bench with a course page
+    When I open the bench page "course/ex1.md"
+    And I click Make it mine
+    Then the bench received my copy
+    And the runner bar marks it as my page
+
+  Scenario: The bar flags an original that changed since my copy
+    Given a stubbed bench with a course page
+    And my copy exists from an older original
+    When I open the bench page "my/ex1.md"
+    Then the runner bar flags the changed original

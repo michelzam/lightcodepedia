@@ -74,3 +74,106 @@ def step_rt_footnotes(context):
         })"""
     )
     assert got["sups"] >= 3 and got["notes"] >= 3 and not got["raw"], got
+
+
+# ── the ownership bar (course/ ↔ my/ convention on benches) ────────────
+
+import base64
+
+BENCH_REPO = "zam-academy/build-ai-x-stu"
+BENCH_MD = "# Exercise 1\n\nSolve it your way."
+
+
+def _bench_route(context):
+    st = context.bench_stub
+
+    def envelope():
+        return {"content": base64.b64encode(BENCH_MD.encode()).decode(),
+                "encoding": "base64", "sha": st["orig_sha"]}
+
+    def handler(route):
+        req = route.request
+        url, method = req.url, req.method
+        raw = "raw" in (req.headers.get("accept") or "")
+        if "/contents/course/ex1.md" in url and method == "GET":
+            if raw:
+                route.fulfill(status=200, content_type="text/plain", body=BENCH_MD)
+            else:
+                route.fulfill(status=200, json=envelope())
+            return
+        if "/contents/my/ex1.md" in url and method == "PUT":
+            st["puts"].append(url)
+            st["mine"] = True
+            route.fulfill(status=201, json={"content": {"sha": "copy"}})
+            return
+        if "/contents/my/ex1.md" in url and method == "GET":
+            if not st.get("mine"):
+                route.fulfill(status=404, json={"message": "Not Found"})
+            elif raw:
+                route.fulfill(status=200, content_type="text/plain", body=BENCH_MD)
+            else:
+                route.fulfill(status=200, json=envelope())
+            return
+        route.fulfill(status=404, json={"message": "stub"})
+
+    context.page.route("https://api.github.com/**", handler)
+
+
+@given("a stubbed bench with a course page")
+def step_stub_bench(context):
+    context.bench_stub = {"orig_sha": "sha-orig", "puts": []}
+
+
+@given("my copy exists from an older original")
+def step_stub_stale_copy(context):
+    context.bench_stub["mine"] = True
+    context.bench_seed_old_sha = True
+
+
+@when('I open the bench page "{path}"')
+def step_open_bench_page(context, path):
+    _bench_route(context)
+    context.page.add_init_script("localStorage.setItem('lc_ed_pat','ghp_stu');")
+    if getattr(context, "bench_seed_old_sha", False):
+        context.page.add_init_script(
+            "localStorage.setItem('lc_orig_sha:%s/my/ex1.md','sha-old');" % BENCH_REPO)
+    context.page.goto(context.base_url + "/run#src=gh:" + BENCH_REPO + "/" + path,
+                      wait_until="domcontentloaded")
+    context.page.wait_for_selector(".lc-runner .lc-run-status", state="hidden", timeout=20_000)
+
+
+@then('the runner bar names the source "{text}"')
+def step_bar_names(context, text):
+    expect(context.page.locator(".lc-run-bar")).to_contain_text(text, timeout=8000)
+
+
+@then("the runner page title is hidden")
+def step_title_hidden(context):
+    expect(context.page.locator("h1", has_text="Runner").first).to_be_hidden()
+
+
+@then("the runner bar marks it as course material")
+def step_bar_course(context):
+    expect(context.page.locator(".lc-run-bar")).to_contain_text("Course page", timeout=8000)
+    expect(context.page.locator(".lc-run-bar [data-lcr='mine']")).to_be_visible()
+
+
+@when("I click Make it mine")
+def step_click_mine(context):
+    context.page.click(".lc-run-bar [data-lcr='mine']")
+    context.page.wait_for_timeout(1000)
+
+
+@then("the bench received my copy")
+def step_copy_received(context):
+    assert context.bench_stub["puts"], "no PUT to my/ex1.md arrived"
+
+
+@then("the runner bar marks it as my page")
+def step_bar_mine(context):
+    expect(context.page.locator(".lc-run-bar")).to_contain_text("Your page", timeout=8000)
+
+
+@then("the runner bar flags the changed original")
+def step_bar_flags_update(context):
+    expect(context.page.locator(".lc-run-bar")).to_contain_text("original changed", timeout=8000)
