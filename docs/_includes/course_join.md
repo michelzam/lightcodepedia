@@ -11,7 +11,7 @@ entry with the student's key; green = enrolled + key right → 📖 Open button)
 → ④ the bench: the student's private fork of the session hub, forked INTO the
 org (org-owned, named <hub>-<login>) so teachers see the work at any time and
 classmates never do. Status is explicit — no bench → 🍴 fork; behind the hub →
-🔄 sync (merge-upstream); 📤 submit freezes an immutable git tag for grading.
+🔄 sync (merge-upstream); the bench opens IN the runner (never the GitHub UI).
 The check is live truth against the API, never cached. Done steps reopen via
 "change" (cockpit rule). Shares the app's identity storage (lc_ed_pat).
 {%- endcomment -%}
@@ -84,10 +84,9 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-row" style="display:none" data-open><a class="lcj-btn" href="' + openUrl + '">📖 Open the course →</a></div></div></div>' +
 
       '<div class="lcj-step off" data-n="4"><div class="lcj-head"><span class="lcj-num">4</span>Your bench</div>' +
-      '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Fork it once, keep it in sync, work, submit as often as you like.</p>' +
+      '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Fork it once, keep it in sync, and work: your teacher can see your bench at any time.</p>' +
       '<div class="lcj-msg" data-m="4"></div>' +
-      '<div class="lcj-row" data-bench></div>' +
-      '<div class="lcj-msg" data-m="4s"></div></div></div>';
+      '<div class="lcj-row" data-bench></div></div></div>';
     el.parentNode.replaceChild(wrap, el);
 
     var steps = {}; wrap.querySelectorAll(".lcj-step").forEach(function (s) { steps[s.getAttribute("data-n")] = s; });
@@ -156,7 +155,7 @@ The check is live truth against the API, never cached. Done steps reopen via
 
     function benchStart() {
       setState("4", "on");
-      msg(4, "Looking for your session…", ""); benchRow().innerHTML = ""; msg("4s", "", "");
+      msg(4, "Looking for your session…", ""); benchRow().innerHTML = "";
       var u = null; try { u = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
       (u && u.login ? Promise.resolve(u.login)
                     : sgh("/user").then(function (r) { return r.json(); }).then(function (d) { return d.login; }))
@@ -197,18 +196,12 @@ The check is live truth against the API, never cached. Done steps reopen via
       msgH(4, "🛠 Your bench: <b>" + org + "/" + B.name + "</b> — " +
         (behind ? "⬆️ the hub has <b>" + behind + " update" + (behind > 1 ? "s" : "") + "</b> you don’t have yet."
                 : "✅ up to date with the hub."), behind ? "" : "ok");
+      /* the bench opens IN the runner — students never land in the GitHub UI;
+         xray Keep commits their edits straight back to the bench */
+      var benchOpen = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + org + "/" + B.name + "/README.md";
       benchRow().innerHTML =
         (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Sync from hub</button>' : "") +
-        '<button type="button" class="lcj-btn' + (behind ? " alt" : "") + '" data-a="submitwork">📤 Submit my work</button>' +
-        '<a class="lcj-btn alt" href="https://github.com/' + org + "/" + B.name + '" target="_blank" rel="noopener">Open my bench →</a>';
-      sgh("/repos/" + org + "/" + B.name + "/tags?per_page=100")
-        .then(function (r) { return r.ok ? r.json() : []; })
-        .then(function (tags) {
-          var subs = (tags || []).map(function (t) { return t.name; })
-            .filter(function (n) { return n.indexOf("submit-") === 0; }).sort();
-          if (subs.length) msg("4s", "📤 Submitted " + subs.length + "× — latest snapshot: " + subs[subs.length - 1], "ok");
-        })
-        .catch(function () {});
+        '<a class="lcj-btn' + (behind ? " alt" : "") + '" href="' + benchOpen + '">🛠 Open my bench →</a>';
     }
 
     wrap.addEventListener("click", function (e) {
@@ -249,23 +242,6 @@ The check is live truth against the API, never cached. Done steps reopen via
             else msg(4, "❌ Sync failed (HTTP " + r.status + ") — try again.", "err");
           })
           .catch(function () { b.disabled = false; msg(4, "❌ Could not reach GitHub — try again.", "err"); });
-      }
-      if (a === "submitwork") {
-        b.disabled = true; msg("4s", "📤 Freezing a snapshot…", "");
-        sgh("/repos/" + org + "/" + B.name + "/commits/" + B.branch)
-          .then(function (r) { return r.json(); })
-          .then(function (c) {
-            var d = new Date(); function p2(x) { return (x < 10 ? "0" : "") + x; }
-            var tag = "submit-" + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + "-" + p2(d.getHours()) + p2(d.getMinutes());
-            return sgh("/repos/" + org + "/" + B.name + "/git/refs", { method: "POST", body: { ref: "refs/tags/" + tag, sha: c.sha } })
-              .then(function (r) {
-                b.disabled = false;
-                if (r.status === 201) msg("4s", "📤 Submitted — snapshot " + tag + " is frozen for grading. Keep working and resubmit any time.", "ok");
-                else if (r.status === 422) msg("4s", "📤 Already submitted this minute — you’re good.", "ok");
-                else msg("4s", "❌ Submit failed (HTTP " + r.status + ") — try again.", "err");
-              });
-          })
-          .catch(function () { b.disabled = false; msg("4s", "❌ Could not reach GitHub — try again.", "err"); });
       }
       if (a === "accept") {
         var p0 = pat(); if (!p0) { msg(3, "Connect your key first (step 2).", "err"); return; }

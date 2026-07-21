@@ -1,4 +1,4 @@
-# 🎓 Join your course
+# 🎓 Join Build-AI
 
 Four steps and you're working: read your private lessons and fork your own bench — right here, nothing to install.
 

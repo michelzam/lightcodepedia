@@ -53,8 +53,20 @@ pure md + IAL (P1); all logic lives here in the engine.
         rw = /^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/[^\/]+\/(.+)$/.exec(src);
     root.dataset.lcSrcRepo = gm ? gm[1] + "/" + gm[2] : (rw ? rw[1] + "/" + rw[2] : "");
     root.dataset.lcSrcPath = gm ? gm[3] : (rw ? rw[3] : (src.charAt(0) === "/" ? "docs" + src : ""));
-    fetch(spec.url, spec.headers ? { headers: spec.headers } : undefined)
-      .then(function (r) { if (!r.ok) throw { status: r.status, gh: spec.gh }; return r.text(); })
+    function fetchMd(headers) {
+      return fetch(spec.url, headers ? { headers: headers } : undefined)
+        .then(function (r) { if (!r.ok) throw { status: r.status, gh: spec.gh }; return r.text(); });
+    }
+    fetchMd(spec.headers)
+      .catch(function (err) {
+        /* educator fallback: the cockpit's org key may read what the author
+           key can't — a student's bench lives in the org, not under the
+           author's account. Students never have lc_org_pat; no-op for them. */
+        var opat = ""; try { opat = localStorage.getItem("lc_org_pat") || ""; } catch (e) {}
+        if (spec.gh && opat && err && (err.status === 404 || err.status === 401))
+          return fetchMd({ Authorization: "Bearer " + opat, Accept: "application/vnd.github.v3.raw", "X-GitHub-Api-Version": "2022-11-28" });
+        throw err;
+      })
       .then(function (md) {
         /* some proxies/media-type quirks return the JSON envelope despite
            Accept raw — unwrap it (base64, UTF-8 safe) so the lesson renders */

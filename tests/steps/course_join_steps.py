@@ -46,17 +46,6 @@ def _stub(context):
                 st["behind"] = 0
                 route.fulfill(status=200, json={"message": "fast-forwarded"})
                 return
-            if "/commits/" in url and method == "GET":
-                route.fulfill(status=200, json={"sha": "abc123"})
-                return
-            if url.endswith("/git/refs") and method == "POST":
-                ref = json.loads(req.post_data or "{}").get("ref", "")
-                st.setdefault("tags", []).append(ref.split("/")[-1])
-                route.fulfill(status=201, json={"ref": ref})
-                return
-            if re.search(r"/tags(\?|$)", url) and method == "GET":
-                route.fulfill(status=200, json=[{"name": t} for t in st.get("tags", [])])
-                return
             if method == "GET":
                 if st.get("bench"):
                     route.fulfill(status=200, json={"name": BENCH, "default_branch": "main"})
@@ -208,13 +197,10 @@ def step_sync_bench(context):
     context.page.wait_for_timeout(800)
 
 
-@when("I submit my work")
-def step_submit_work(context):
-    context.page.wait_for_selector('.lc-join [data-a="submitwork"]', timeout=8000)
-    context.page.click('.lc-join [data-a="submitwork"]')
-    context.page.wait_for_timeout(800)
-
-
-@then("the wizard confirms a frozen submission snapshot")
-def step_submission_frozen(context):
-    expect(context.page.locator('.lc-join [data-m="4s"]')).to_contain_text("frozen", timeout=8000)
+@then("the bench door opens in the runner")
+def step_bench_door(context):
+    a = context.page.locator(".lc-join [data-bench] a")
+    expect(a).to_be_visible(timeout=6000)
+    href = a.get_attribute("href") or ""
+    assert "run.html#src=gh:uwm-build-ai/" + BENCH + "/README.md" in href, href
+    assert "github.com/" not in href, href

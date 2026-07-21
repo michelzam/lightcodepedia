@@ -11,8 +11,10 @@ The lessons live in the members-only vault, not on this public site.
 
 **To join:**
 
-- 🎓 UWM-L catalog → [enroll here](https://uwm.edu)
-- ✉️ Or email **michel.zam@gmail.com** with your GitHub handle.
+🎓 UWM-L catalog → [enroll here](https://uwm.edu)
+{: .embed }
+
+✉️ Or email you educator with your GitHub handle.
 
 Once you're in the org, you read every lesson through the runner with your PAT —
 no separate site, no downloads.
