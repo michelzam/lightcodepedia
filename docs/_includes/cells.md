@@ -126,7 +126,7 @@ Auto-included by docs/_layouts/default.html.
       "        return _Empty()\n" +
       /* node variables (code_chrome fetches them into store node.*): gentle
          by design — unset never errors, it renders the default */
-      "def get_var(_name, default='\\U0001F331 To be defined'):\n" +
+      "def get_var(_name, default='🌱 To be defined'):\n" +
       "    _s = globals().get('node')\n" +
       "    _v = getattr(_s, _name, None) if _s is not None else None\n" +
       "    return default if (_v is None or _v == '') else _v\n" +
