@@ -183,9 +183,6 @@ body {
   {% if _fm.menu %}{% assign _menu = _fm %}{% else %}{% assign _menu = site.pages | where: "path", "menu.md" | first %}{% endif %}
   <div class="lc-links">
     {{ _menu.content | markdownify }}
-    {%- comment -%} HQ door — compiled ONLY into the lab build; pedia and
-       forks never see (or reference) it. The /lab branch has its own menu. {%- endcomment -%}
-    {% if site.github.repository_name == "lightcodelab" %}<p><a href="/lab/">🎓 HQ</a></p>{% endif %}
   </div>
   <div id="lc-start-pill">
     <button id="lc-start-btn">🔑 Get started ▾</button>
@@ -221,8 +218,10 @@ body {
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
       <div class="lc-ud-row" id="lc-ud-sync" style="display:none"><span>🔄</span><span id="lc-ud-sync-label">Update from Lightcodepedia</span></div>
       {% if site.github.repository_name == "lightcodelab" %}
-      {% comment %} HQ only: fire the publish gate without leaving the node.
-         The row is compiled out of pedia and fork builds entirely. {% endcomment %}
+      {% comment %} HQ only: educator doors live HERE, behind the avatar —
+         connected people only, zero menu pollution for learners. The rows
+         are compiled out of pedia and fork builds entirely. {% endcomment %}
+      <a class="lc-ud-row" href="/lab/"><span>🎓</span><span>HQ — classroom &amp; material</span></a>
       <div class="lc-ud-row" id="lc-ud-publish"><span>🚀</span><span id="lc-ud-publish-label">Publish to pedia</span></div>
       {% endif %}
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
