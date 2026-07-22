@@ -430,3 +430,44 @@
 
 })();
 </script>
+<script>
+/* ── Node variables ────────────────────────────────────────────────────
+   Generic per-node configuration: the connected repo's Actions VARIABLES
+   (Settings → Secrets and variables → Variables), fetched once with the
+   author key. They resolve only for who is connected to THEIR node —
+   visitors get the gentle defaults. Cells read them via get_var(NAME,
+   default); knobs via the "= get_var('NAME','default')" form. Values land
+   in the store under node.* (reactive: cells recompute on arrival). */
+(function () {
+  if (window.lcNodeVars) return;
+  var p = null;
+  window.lcNodeVars = function () {
+    if (p) return p;
+    var pat = "", repo = "";
+    try { pat = localStorage.getItem("lc_ed_pat") || ""; repo = localStorage.getItem("lc_ed_repo") || ""; } catch (e) {}
+    if (!pat || !repo) { window._lcNodeVars = {}; return (p = Promise.resolve({})); }
+    p = fetch("https://api.github.com/repos/" + repo + "/actions/variables?per_page=100",
+        { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var m = {};
+        ((d && d.variables) || []).forEach(function (v) { m[v.name] = v.value; });
+        window._lcNodeVars = m;
+        if (window.lcStore && window.lcStore.set) { try { window.lcStore.set("node", m); } catch (e) {} }
+        return m;
+      })
+      .catch(function () { window._lcNodeVars = {}; return {}; });
+    return p;
+  };
+  /* knob-cell: "= get_var('NAME', 'default')" → the resolved value.
+     Anything else passes through untouched. */
+  window.lcResolveKnob = function (val) {
+    var m = /^=\s*get_var\(\s*['"]([^'"]+)['"]\s*(?:,\s*['"]([^'"]*)['"]\s*)?\)\s*$/.exec((val || "").trim());
+    if (!m) return Promise.resolve(val);
+    return window.lcNodeVars().then(function (vars) {
+      if (vars && vars[m[1]] !== undefined && vars[m[1]] !== "") return vars[m[1]];
+      return m[2] !== undefined ? m[2] : "";
+    });
+  };
+})();
+</script>

@@ -17,6 +17,9 @@ Auto-generate a card grid from all `.md` files in a folder — no manual list to
 |-----------|---------|-------------|
 | `cols` | `auto` | Fixed number of columns. `auto` = responsive grid. |
 | `show-private` | `false` | Include files whose names start with `_`. |
+| `sort` | `name` | Initial order: `name` or `recent` (git dates, lazy). |
+| `open` | | `runner`: scan a repo path *outside* `docs/` (unrendered material like `courses/`) via the API with your key — every card opens in the runner. |
+| `path` | the link href | Folder to scan. Accepts a knob-cell: `path="= get_var('COURSE_PATH', 'courses')"` resolves the node's variable (see [Cells](/components/cells)). |
 
 ## Notes
 

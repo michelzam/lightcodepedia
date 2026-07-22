@@ -183,6 +183,9 @@ body {
   {% if _fm.menu %}{% assign _menu = _fm %}{% else %}{% assign _menu = site.pages | where: "path", "menu.md" | first %}{% endif %}
   <div class="lc-links">
     {{ _menu.content | markdownify }}
+    {%- comment -%} HQ door — compiled ONLY into the lab build; pedia and
+       forks never see (or reference) it. The /lab branch has its own menu. {%- endcomment -%}
+    {% if site.github.repository_name == "lightcodelab" %}<p><a href="/lab/">🎓 HQ</a></p>{% endif %}
   </div>
   <div id="lc-start-pill">
     <button id="lc-start-btn">🔑 Get started ▾</button>

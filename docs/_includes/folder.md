@@ -8,6 +8,9 @@ Knobs:
   cols="auto"       grid columns (default auto-fit) or a fixed number
   sort="name"       initial order: "name" (default, alphabetical) or "recent"
   show-private      include _-prefixed files
+  open="runner"     scan a repo path OUTSIDE docs/ (courses/, hubs/…) via the
+                    API (author key) and open every card in the runner —
+                    the same cards, pointed at unrendered material
 
 One control bar. Sort (Name / 🕒 Recent) only ORDERS. Tag/state chips filter in
 both sorts. The 📅 date tags and "Modified: hour/day/week/month" filters belong to
@@ -174,12 +177,15 @@ Auto-included by docs/_layouts/default.html.
        base-healed); else the link href with any project base ("/lightcodelab")
        stripped — lcRebase heals the href for navigation, so the raw href is not
        a repo path under a project base. */
-    var _rawPath = el.getAttribute("path") || a.getAttribute("href") || "";
-    if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
-    var path = _rawPath.replace(/^\/+|\/+$/g, "");
+    var _rawAttr = el.getAttribute("path") || a.getAttribute("href") || "";
+    var path = "";   // resolved below — the knob may be a "= get_var('NAME','default')" cell
     var cols = el.getAttribute("cols") || "auto";
     var showPrivate = el.getAttribute("show-private") === "true";
     var sortMode = (el.getAttribute("sort") || "name").toLowerCase();   // "name" (default) | "recent"
+    /* open="runner": the folder lives OUTSIDE docs/ (unrendered material —
+       courses/, hubs/…), so cards enumerate via the API and open in the
+       runner. Root-absolute hrefs stay canonical; lcRebase heals them. */
+    var runnerMode = (el.getAttribute("open") || "") === "runner";
     var colStyle = cols === "auto"
       ? "repeat(auto-fit, minmax(200px, 1fr))"
       : "repeat(" + cols + ", 1fr)";
@@ -212,7 +218,8 @@ Auto-included by docs/_layouts/default.html.
        ensureDates). If a build has no manifest, fall back to the old API path
        so nothing regresses (pedia keeps working during a transition). */
     var mdUrl   = function (rp) { return "/" + rp.replace(/^docs\//, ""); };      // static .md on Pages
-    var cardUrl = function (rp) { return mdUrl(rp).replace(/\.md$/i, ""); };
+    var runUrl  = function (rp) { return "/run.html#src=gh:" + _lcSiteRepo + "/" + rp; };
+    var cardUrl = function (rp) { return runnerMode ? runUrl(rp) : mdUrl(rp).replace(/\.md$/i, ""); };
     var titleCase = function (s) { return s.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); };
     function fetchText(url) {
       return fetch(window.lcHref ? window.lcHref(url) : url).then(function (r) { return r.ok ? r.text() : null; });
@@ -274,7 +281,8 @@ Auto-included by docs/_layouts/default.html.
         var subdirFetches = subdirs.map(function(d) {
           var slug   = d.path.replace(/^docs\//, "");
           var pretty = d.name.replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-          var fallback = { title: "📁 " + pretty, snippet: "", url: "/" + slug, isSubdir: true };
+          var subUrl = runnerMode ? runUrl(d.path + "/index.md") : "/" + slug;
+          var fallback = { title: "📁 " + pretty, snippet: "", url: subUrl, isSubdir: true };
           return apiFetch(d.url)
             .then(function(entries) {
               var idx = Array.isArray(entries) && entries.find(function(e) {
@@ -286,7 +294,7 @@ Auto-included by docs/_layouts/default.html.
                 .then(function(text) {
                   if (!text) return fallback;
                   var meta = extractPageMeta(text);
-                  return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug, isSubdir: true, date: meta.date };
+                  return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: subUrl, isSubdir: true, date: meta.date };
                 })
                 .catch(function() { return fallback; });
             })
@@ -310,11 +318,11 @@ Auto-included by docs/_layouts/default.html.
               }
               /* date: front-matter date now (free); git last-commit date fetched
                  lazily only when the viewer sorts/filters by date (path kept). */
-              return { title: title, snippet: meta.snippet, url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), features: features, quizzes: quizzes, rawHrefs: rawHrefs, date: meta.date || null, path: f.path };
+              return { title: title, snippet: meta.snippet, url: cardUrl(f.path), features: features, quizzes: quizzes, rawHrefs: rawHrefs, date: meta.date || null, path: f.path };
             })
             .catch(function() {
               var title = f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-              return { title: title, snippet: "", url: "/" + f.path.replace(/^docs\//, "").replace(/\.md$/i, ""), path: f.path };
+              return { title: title, snippet: "", url: cardUrl(f.path), path: f.path };
             });
         });
 
@@ -325,9 +333,24 @@ Auto-included by docs/_layouts/default.html.
         });
       });
     }
-    fetchText("/assets/pages_index.json")
-      .then(function (t) { return buildFromManifest(JSON.parse(t)); })
-      .catch(function () { return apiListing(); })   // no/invalid manifest → legacy API path
+    /* knob-cells first (node variables), then enumerate. Runner mode scans
+       unrendered material: the manifest only knows site pages, so it goes
+       straight to the API (author key raises private repos). */
+    (window.lcResolveKnob ? window.lcResolveKnob(_rawAttr) : Promise.resolve(_rawAttr))
+      .then(function (_resolved) {
+        if (!_resolved) {                 // an unset node variable, no default — gentle, never an error
+          wrap.innerHTML = "<div class='lc-card' style='color:#6b7280'>🌱 To be defined — set this node's variable (Settings → Secrets and variables → Variables), or give the knob a default: path=\"= get_var('NAME','fallback')\".</div>";
+          throw { _lcHandled: true };
+        }
+        var _rawPath = _resolved;
+        if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
+        path = _rawPath.replace(/^\/+|\/+$/g, "");
+        return runnerMode
+          ? apiListing()
+          : fetchText("/assets/pages_index.json")
+              .then(function (t) { return buildFromManifest(JSON.parse(t)); })
+              .catch(function () { return apiListing(); });   // no/invalid manifest → legacy API path
+      })
       .then(function(items) {
         if (!items || !items.length) {
           wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
@@ -582,7 +605,11 @@ Auto-included by docs/_layouts/default.html.
         applyFilters();
       })
       .catch(function(e) {
-        wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
+        if (e && e._lcHandled) return;    // the gentle to-be-defined card is already up
+        if (runnerMode && !_folderPat)
+          wrap.innerHTML = "<div class='lc-card' style='color:#6b7280'>🔒 Connect your author key (Get started, top right) to browse this private material.</div>";
+        else
+          wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
       });
   }
 

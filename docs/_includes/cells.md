@@ -124,6 +124,12 @@ Auto-included by docs/_layouts/default.html.
       "    def __getattr__(self, _n):\n" +        // unset structural field -> empty, chainable
       "        if _n.startswith('_'): raise AttributeError(_n)\n" +
       "        return _Empty()\n" +
+      /* node variables (code_chrome fetches them into store node.*): gentle
+         by design — unset never errors, it renders the default */
+      "def get_var(_name, default='\\U0001F331 To be defined'):\n" +
+      "    _s = globals().get('node')\n" +
+      "    _v = getattr(_s, _name, None) if _s is not None else None\n" +
+      "    return default if (_v is None or _v == '') else _v\n" +
       "try:\n" +                                 // site-wide persisted state (Store)
       "    _st = json.loads(str(js.window.lcStore.tree()))\n" +
       "except Exception:\n" +
@@ -165,6 +171,9 @@ Auto-included by docs/_layouts/default.html.
     if (!collect()) return;               // no cells on this page — nothing to do
     if (!window.lcPageRuntime) return;    // pyrun provides the shared runtime
     wired = true;
+    /* kick the node-variables fetch: values land in store node.* and fire
+       lc-model-changed, so get_var() cells refine from default to value */
+    if (window.lcNodeVars) window.lcNodeVars();
     window.lcPageRuntime().then(function (m) {
       // Listen first, then paint: if a `.run silent` model seeds the runtime
       // after this eval, its lc-model-changed still triggers a recompute.
