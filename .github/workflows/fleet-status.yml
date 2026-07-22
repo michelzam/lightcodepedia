@@ -57,7 +57,7 @@ jobs:
             --exclude 'classroom.md' --exclude 'classroom_console.md' \
             --exclude 'assets/ux-results.json' --exclude 'assets/ux-report.html' \
             --exclude 'assets/ux-summary.json' --exclude 'assets/metrics.json' \
-            --exclude 'assets/metrics_trend.json' --exclude 'assets/fleet_status.json' \
+            --exclude 'assets/metrics_trend.json' --exclude 'assets/fleet_status.json' --exclude 'assets/backlog.yml' \
             lab/docs/ pedia/docs/) ))
           p=$((p + $(count -a --delete lab/packages/ pedia/packages/) ))
           p=$((p + $(count -a --delete --delete-excluded \
@@ -73,7 +73,7 @@ jobs:
             --exclude 'classroom.md' --exclude 'classroom_console.md' \
             --exclude 'assets/ux-results.json' --exclude 'assets/ux-report.html' \
             --exclude 'assets/ux-summary.json' --exclude 'assets/metrics.json' \
-            --exclude 'assets/metrics_trend.json' --exclude 'assets/fleet_status.json' \
+            --exclude 'assets/metrics_trend.json' --exclude 'assets/fleet_status.json' --exclude 'assets/backlog.yml' \
             lab/docs/ pedia/docs/ 2>/dev/null | grep -v '/$' | head -40
 
       - name: Read pedia's latest suite result

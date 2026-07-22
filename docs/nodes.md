@@ -1,6 +1,8 @@
-# 🌐 LightNode Network
+# 🎛 Dashboard
 
-Every circle is a LightNode — a fork of Lightcodepedia hosted by a community member. The network grows every time someone completes the [onboarding](/start). Open a section below; the headline numbers stay visible up here even when everything is shut.
+This node's instruments, one section each — vitals, deploys, the 🚦 fleet,
+the LightNode map, the UX suite. Open a section below; the headline numbers
+stay visible up here even when everything is shut.
 
 ```
 !📊 Vitals & model check
@@ -71,7 +73,23 @@ downstream targets (yet) shows an empty board.
 {: .dataset #fleet_status }
 
 [status](#)
-{: .datagrid bind="fleet_status" rows="8" hints="target: which node | pending: files a publish would change — 0 means current | tested: latest UX suite result there | when: that run's timestamp" }
+{: .datagrid #fleet_master bind="fleet_status" rows="8" hints="target: which node — click a row to arm the buttons below | pending: files a publish would change — 0 means current | tested: latest UX suite result there | when: that run's timestamp" }
+
+[fleet actions](#)
+{: .classroom_actions scope="fleet" }
+
+### !🗺 Backlog
+
+The private backlog — priorities and states (`refined → planned → drafted →
+shipped`), stored as data so it can one day drive feature flags. Lives only
+on this node; an empty board here means this node keeps no backlog.
+
+[backlog]({{ '/assets/backlog.yml' | relative_url }})
+{: .dataset #backlog }
+
+[items](#)
+{: .datagrid bind="backlog" rows="15" hints="priority: 1 = next up | item: the thing | flag: refined (understood) · planned (next) · drafted (in progress) · shipped (done) | notes: context" }
+
 
 ### !🧪 UX test results
 

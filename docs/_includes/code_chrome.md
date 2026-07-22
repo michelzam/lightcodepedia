@@ -471,3 +471,17 @@
   };
 })();
 </script>
+<script>
+/* Private-tool IALs (HQ engines like the classroom): on builds that don't
+   carry the engine, their trigger paragraphs HIDE instead of rendering dead
+   links — pages stay byte-identical across nodes, no Liquid in content. */
+(function () {
+  function sweep() {
+    document.querySelectorAll("p.classroom_console, p.classroom_actions").forEach(function (el) {
+      if (!el.dataset.lcUpgraded) el.style.display = "none";
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(sweep, 400); });
+  else setTimeout(sweep, 400);
+})();
+</script>
