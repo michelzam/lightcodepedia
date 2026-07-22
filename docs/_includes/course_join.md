@@ -53,6 +53,16 @@ The check is live truth against the API, never cached. Done steps reopen via
     var entry = el.getAttribute("entry") || "";
     if (!vault || !entry) return;
     var org = vault.split("/")[0];
+    /* The LMS door: an iframe carries ONE src for every student, so the
+       wizard resolves per visitor. ?hub=<session> scopes the bench step to
+       THAT class (a student can hold several benches); ?go=bench forwards
+       straight into the bench when everything is green. Plain /courses/join
+       never forwards — the bench menu's 🎓 entry stays a status page. */
+    var q = {};
+    try { location.search.replace(/^\?/, "").split("&").forEach(function (kv) {
+      var p = kv.split("="); if (p[0]) q[p[0]] = decodeURIComponent(p[1] || ""); }); } catch (e) {}
+    var wantHub = q.hub || "";
+    var goBench = q.go === "bench";
     var keyNote = encodeURIComponent("Lightcode course key — " + org);
     /* write:org lets the wizard ACCEPT the class invitation in-app (a student
        is admin of no org, so the scope is inert beyond that) — one click here
@@ -165,7 +175,13 @@ The check is live truth against the API, never cached. Done steps reopen via
         })
         .then(function (repos) {
           var hubs = (repos || []).filter(function (x) { return x.is_template && !x.fork; });
-          if (!hubs.length) { msg(4, "🧑‍🏫 No session is visible to you yet — your teacher adds you to one, then this step lights up.", ""); return; }
+          if (wantHub) hubs = hubs.filter(function (x) { return x.name === wantHub; });
+          if (!hubs.length) {
+            msg(4, wantHub
+              ? "🧑‍🏫 The session “" + wantHub + "” isn’t visible to you yet — your teacher enrolls you, then this step lights up."
+              : "🧑‍🏫 No session is visible to you yet — your teacher adds you to one, then this step lights up.", "");
+            return;
+          }
           hubs.sort(function (a, b) { return new Date(b.updated_at || 0) - new Date(a.updated_at || 0); });
           B.hub = hubs[0]; B.name = B.hub.name + "-" + B.login;
           benchStatus();
@@ -199,6 +215,9 @@ The check is live truth against the API, never cached. Done steps reopen via
       /* the bench opens IN the runner — students never land in the GitHub UI;
          xray Keep commits their edits straight back to the bench */
       var benchOpen = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + org + "/" + B.name + "/README.md";
+      /* the door forwards only when there is nothing left to decide here:
+         a pending sync keeps the student on the wizard, one click away */
+      if (goBench && !behind) { location.replace(benchOpen); return; }
       benchRow().innerHTML =
         (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Sync from hub</button>' : "") +
         '<a class="lcj-btn' + (behind ? " alt" : "") + '" href="' + benchOpen + '">🛠 Open my bench →</a>';

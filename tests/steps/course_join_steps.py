@@ -204,3 +204,27 @@ def step_bench_door(context):
     href = a.get_attribute("href") or ""
     assert "run.html#src=gh:uwm-build-ai/" + BENCH + "/README.md" in href, href
     assert "github.com/" not in href, href
+
+
+@when('I open the course door "{query}" with a stored key')
+def step_open_door(context, query):
+    if not hasattr(context, "join_stub"):
+        context.join_stub = {"vault_ok": False}
+    _stub(context)
+    context.page.add_init_script("localStorage.setItem('lc_ed_pat','ghp_stored');")
+    context.page.goto(context.base_url + "/courses/join" + query, wait_until="domcontentloaded")
+    context.page.wait_for_timeout(600)
+
+
+@then("I am forwarded into my bench")
+def step_forwarded(context):
+    for _ in range(40):
+        if "run.html#src=gh:uwm-build-ai/" + BENCH + "/README.md" in context.page.url:
+            return
+        context.page.wait_for_timeout(250)
+    raise AssertionError("stayed on " + context.page.url)
+
+
+@then("the bench step explains the session is not visible")
+def step_session_not_visible(context):
+    expect(context.page.locator('.lc-join [data-m="4"]')).to_contain_text("isn’t visible", timeout=8000)

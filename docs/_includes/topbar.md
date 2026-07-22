@@ -215,6 +215,7 @@ body {
         </div>
         <div id="lc-ud-karma-detail" style="font-size:0.75em;color:#c47900;opacity:0.75"></div>
       </a>
+      <a class="lc-ud-row" href="/courses/join"><span>🎓</span><span>My course</span></a>
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
       <div class="lc-ud-row" id="lc-ud-sync" style="display:none"><span>🔄</span><span id="lc-ud-sync-label">Update from Lightcodepedia</span></div>
       {% if site.github.repository_name == "lightcodelab" %}

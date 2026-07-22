@@ -68,12 +68,15 @@ Auto-included by docs/_layouts/default.html.
       }
       i++;
     }
+    /* IAL ({: … }) is OPERATIONAL page content — never touched in pages.
+       But a card shows prose, not notation: derived views strip it. */
+    function deIAL(t) { return t.replace(/\{:[^}]*\}/g, "").trim(); }
     var title = null, snippet = "";
     for (; i < lines.length; i++) {
       var line = lines[i].trim();
-      if (!title && /^#{1,2}\s/.test(line)) { title = line.replace(/^#+\s+/, ""); continue; }
+      if (!title && /^#{1,2}\s/.test(line)) { title = deIAL(line.replace(/^#+\s+/, "")); continue; }
       if (title && line && !/^[#{`\->|]/.test(line) && !/^\{:/.test(line) && line !== "---" && !/^[\-*+] /.test(line)) {
-        snippet = line.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*_`!]/g, "").trim().substring(0, 140);
+        snippet = deIAL(line.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*_`!]/g, "")).substring(0, 140);
         if (snippet.length >= 140) snippet += "…";
         break;
       }

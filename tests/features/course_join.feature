@@ -59,3 +59,23 @@ Feature: The student course wizard (/courses/join)
     Then the bench shows 2 updates to sync
     When I sync my bench
     Then my bench shows up to date with the hub
+
+  Scenario: The course door forwards a green student into the bench
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And my bench exists and is 0 updates behind the hub
+    When I open the course door "?go=bench&hub=build-ai-fall26" with a stored key
+    Then I am forwarded into my bench
+
+  Scenario: A pending sync holds the door open on the wizard
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And my bench exists and is 2 updates behind the hub
+    When I open the course door "?go=bench&hub=build-ai-fall26" with a stored key
+    Then the bench shows 2 updates to sync
+
+  Scenario: The door names a session the student cannot see
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    When I open the course door "?go=bench&hub=ghost-session" with a stored key
+    Then the bench step explains the session is not visible
