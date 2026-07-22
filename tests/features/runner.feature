@@ -67,3 +67,13 @@ Feature: The instant runner (RT) — Phase A parity
     When I open the bench page "course/ex1.md"
     Then the topbar switches to bench mode
     And the topbar menu comes from the bench
+
+  Scenario: Relative links in a rendered page stay in the repo
+    Given a stubbed bench with a course page
+    When I open the bench page "README.md"
+    Then the link "Exercise 1" opens gh path "course/ex1.md"
+
+  Scenario: Parent-relative links resolve within the repo
+    Given a stubbed bench with a course page
+    When I open the bench page "course/ex1.md"
+    Then the link "Back to the bench" opens gh path "README.md"

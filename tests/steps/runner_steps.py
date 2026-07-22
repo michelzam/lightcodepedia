@@ -81,7 +81,7 @@ def step_rt_footnotes(context):
 import base64
 
 BENCH_REPO = "zam-academy/build-ai-x-stu"
-BENCH_MD = "# Exercise 1\n\nSolve it your way."
+BENCH_MD = "# Exercise 1\n\nSolve it your way.\n\n[Back to the bench](../README.md)\n"
 
 
 def _bench_route(context):
@@ -95,6 +95,10 @@ def _bench_route(context):
         req = route.request
         url, method = req.url, req.method
         raw = "raw" in (req.headers.get("accept") or "")
+        if "/contents/README.md" in url and method == "GET":
+            route.fulfill(status=200, content_type="text/plain",
+                          body="# Bench\n\n[Exercise 1](course/ex1.md)\n")
+            return
         if "/contents/course/ex1.md" in url and method == "GET":
             if raw:
                 route.fulfill(status=200, content_type="text/plain", body=BENCH_MD)
@@ -207,3 +211,11 @@ def step_topbar_bench_menu(context):
     expect(link).to_be_visible(timeout=8000)
     href = link.get_attribute("href") or ""
     assert "run.html#src=gh:" + BENCH_REPO + "/README.md" in href, href
+
+
+@then('the link "{text}" opens gh path "{path}"')
+def step_link_heals(context, text, path):
+    a = context.page.locator("#lc-run a", has_text=text).first
+    expect(a).to_be_visible(timeout=8000)
+    href = a.get_attribute("href") or ""
+    assert "run.html#src=gh:" + BENCH_REPO + "/" + path in href, href

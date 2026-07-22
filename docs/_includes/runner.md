@@ -135,6 +135,27 @@ synced) links its original and flags when that original moved on.
       .catch(function () {});
   }
 
+  /* Phase B, step 1: RELATIVE links in a rendered page navigate WITHIN the
+     same repo through the runner — a vault module links the next module, a
+     bench README its exercises, and clicking only changes the hash (fast).
+     External, site-absolute (/…) and #fragment links stay untouched. */
+  function healRelLinks(root, repo, path) {
+    var dir = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1).join("/") : "";
+    var runUrl = (window.lcHref ? window.lcHref("/run.html") : "/run.html");
+    root.querySelectorAll("a[href]").forEach(function (a) {
+      var h = a.getAttribute("href") || "";
+      if (!h || /^([a-z][a-z0-9+.-]*:|\/|#)/i.test(h)) return;
+      var clean = h.split("#")[0].split("?")[0];
+      if (!clean) return;
+      var parts = dir ? dir.split("/") : [];
+      clean.split("/").forEach(function (seg) {
+        if (!seg || seg === ".") return;
+        if (seg === "..") parts.pop(); else parts.push(seg);
+      });
+      a.setAttribute("href", runUrl + "#src=gh:" + repo + "/" + parts.join("/"));
+    });
+  }
+
   /* src comes from the IAL attribute (embedded examples) or the page hash
      (the /run page). Attribute wins, so a component page can host a live demo. */
   function render(status, root, fixedSrc, bar) {
@@ -205,6 +226,7 @@ synced) links its original and flags when that original moved on.
           if (window.lcSnapshotSources) window.lcSnapshotSources(root);
           if (window.lcScanElement) window.lcScanElement(root);
           if (window.lcRebase)      window.lcRebase(root);
+          if (spec.gh && barSt.repo) healRelLinks(root, barSt.repo, barSt.path);
           status.style.display = "none";
           if (bar) {
             /* a bench (any gh: source that isn't the course vault) flips the
