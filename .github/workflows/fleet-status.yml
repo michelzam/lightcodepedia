@@ -1,0 +1,134 @@
+name: Fleet status
+
+# The lab's outward-looking eyes — HQ ONLY. Answers, in one JSON the lab
+# owns (docs/assets/fleet_status.json): is pedia current with the lab? did
+# pedia's suite pass? are the vault and each session hub current? So the
+# whole state of the fleet is visible on /lab/ (and to any tool reading the
+# lab repo) without touching the GitHub console.
+#
+# Freshness: after every publish gate and lab suite run, plus a 6-hourly
+# sweep (pedia's own test runs happen in pedia — the cron picks them up).
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_run:
+    workflows: ["Publish to pedia", "Publish courses to the org", "Publish hub to the org", "UX Tests"]
+    types: [completed]
+
+concurrency:
+  group: "fleet-status"
+  cancel-in-progress: true
+
+env:
+  PEDIA: michelzam/lightcodepedia
+  ORG: uwm-build-ai
+
+jobs:
+  fleet-status:
+    if: github.repository == 'michelzam/lightcodelab'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout lab
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: lab
+
+      # ── pedia: pending files (the gate's own rsyncs, in dry-run) ──────
+      # MIRROR of publish.yml's copy step — if the gate's excludes change,
+      # change them here too, or the pending counts lie.
+      - name: Measure pedia
+        env:
+          TOKEN: ${{ secrets.PEDIA_PUSH_TOKEN }}
+        run: |
+          set -e
+          git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/${PEDIA}.git" pedia
+          count() { rsync --dry-run --itemize-changes "$@" 2>/dev/null | grep -cv '/$' || true; }
+          p=0
+          p=$((p + $(count -a --delete \
+            --exclude 'lab/' --exclude 'CNAME' --exclude '_config.lab.yml' \
+            --exclude 'classroom.md' --exclude 'classroom_console.md' \
+            --exclude 'assets/ux-results.json' --exclude 'assets/ux-report.html' \
+            --exclude 'assets/ux-summary.json' --exclude 'assets/metrics.json' \
+            --exclude 'assets/metrics_trend.json' \
+            lab/docs/ pedia/docs/) ))
+          p=$((p + $(count -a --delete lab/packages/ pedia/packages/) ))
+          p=$((p + $(count -a --delete --delete-excluded \
+            --exclude 'parity.html' --exclude 'runner.html' \
+            --exclude 'classroom.feature' --exclude 'classroom_steps.py' \
+            --exclude 'material.feature' --exclude 'material_steps.py' \
+            lab/tests/ pedia/tests/) ))
+          echo "PEDIA_PENDING=$p" >> "$GITHUB_ENV"
+
+      - name: Read pedia's latest suite result
+        run: |
+          curl -sS -m 30 https://lightcodepedia.org/assets/ux-results.json -o pedia-ux.json || echo '[]' > pedia-ux.json
+          python3 - <<'EOF' >> "$GITHUB_ENV"
+          import json
+          try: rows = json.load(open("pedia-ux.json"))
+          except Exception: rows = []
+          ok = sum(1 for r in rows if r.get("status") == "✅")
+          run = max((str(r.get("run","")) for r in rows), default="")
+          print(f"PEDIA_TESTED={ok}/{len(rows)}" if rows else "PEDIA_TESTED=—")
+          print(f"PEDIA_RUN={run or '—'}")
+          EOF
+
+      # ── vault + hubs: pending files (the gates' rsyncs, dry-run) ──────
+      - name: Measure vault and hubs
+        env:
+          TOKEN: ${{ secrets.ORG_VAULT_TOKEN }}
+        run: |
+          set -e
+          count() { rsync --dry-run --itemize-changes "$@" 2>/dev/null | grep -cv '/$' || true; }
+          git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/${ORG}/${ORG}-vault.git" vault || mkdir -p vault
+          mkdir -p vault/courses
+          echo "VAULT_PENDING=$(count -a --delete lab/courses/ vault/courses/)" >> "$GITHUB_ENV"
+          HUBS_JSON="["
+          sep=""
+          for d in lab/hubs/*/; do
+            s=$(basename "$d")
+            if git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/${ORG}/${s}.git" "hub-$s" 2>/dev/null; then
+              n=$(count -a --delete --exclude .git "$d" "hub-$s/")
+              HUBS_JSON="$HUBS_JSON$sep{\"session\": \"$s\", \"pending\": $n}"
+            else
+              HUBS_JSON="$HUBS_JSON$sep{\"session\": \"$s\", \"pending\": -1}"
+            fi
+            sep=", "
+          done
+          echo "HUBS_JSON=$HUBS_JSON]" >> "$GITHUB_ENV"
+
+      - name: Write fleet_status.json and commit if changed
+        working-directory: lab
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          lab_rows = []
+          try: lab_rows = json.load(open("docs/assets/ux-results.json"))
+          except Exception: pass
+          lab_ok = sum(1 for r in lab_rows if r.get("status") == "✅")
+          lab_run = max((str(r.get("run","")) for r in lab_rows), default="")
+          e = os.environ
+          rows = [
+            {"target": "🧪 lab", "pending": 0,
+             "tested": f"{lab_ok}/{len(lab_rows)}" if lab_rows else "—", "when": lab_run or "—"},
+            {"target": "💡 pedia", "pending": int(e.get("PEDIA_PENDING", "0")),
+             "tested": e.get("PEDIA_TESTED", "—"), "when": e.get("PEDIA_RUN", "—")},
+            {"target": "📦 vault", "pending": int(e.get("VAULT_PENDING", "0")),
+             "tested": "—", "when": "—"},
+          ]
+          for h in json.loads(e.get("HUBS_JSON", "[]")):
+            rows.append({"target": "🛠 hub " + h["session"],
+                         "pending": h["pending"] if h["pending"] >= 0 else "no repo",
+                         "tested": "—", "when": "—"})
+          json.dump(rows, open("docs/assets/fleet_status.json", "w"), ensure_ascii=False, indent=1)
+          EOF
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/assets/fleet_status.json
+          if git diff --cached --quiet; then echo "Fleet status unchanged."; exit 0; fi
+          git commit -m "chore: update fleet status"
+          git push origin HEAD:main || { git pull --rebase origin main && git push origin HEAD:main; }

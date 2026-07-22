@@ -60,6 +60,19 @@ Most recent forks first — click a row to visit.
 [Latest runs](#)
 {: .datagrid bind="deploys" rows="10" hints="status: outcome icon — ✅ success, ❌ failure, 🔄 running | commit: first line of the commit message | workflow: which pipeline ran | state: completed conclusion or current phase | when: how long ago it started | author: who pushed" }
 
+### !🚦 Fleet status
+
+Each node watches its own fleet — the downstream targets its content
+publishes to. **pending** = files a publish would change (0 = that target is
+current); **tested** = the latest UX suite verdict there. A node with no
+downstream targets (yet) shows an empty board.
+
+[fleet]({{ '/assets/fleet_status.json' | relative_url }})
+{: .dataset #fleet_status }
+
+[status](#)
+{: .datagrid bind="fleet_status" rows="8" hints="target: which node | pending: files a publish would change — 0 means current | tested: latest UX suite result there | when: that run's timestamp" }
+
 ### !🧪 UX test results
 
 [run the suite](#)
