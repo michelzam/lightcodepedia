@@ -70,7 +70,7 @@ current); **tested** = the latest UX suite verdict there. A node with no
 downstream targets (yet) shows an empty board.
 
 [fleet]({{ '/assets/fleet_status.json' | relative_url }})
-{: .dataset #fleet_status }
+{: .dataset #fleet_status refresh="30" }
 
 [status](#)
 {: .datagrid #fleet_master bind="fleet_status" rows="8" hints="target: which node — click a row to arm the buttons below | pending: files a publish would change — 0 means current | tested: latest UX suite result there | when: that run's timestamp" }
@@ -97,13 +97,13 @@ on this node; an empty board here means this node keeps no backlog.
 {: .test_runner }
 
 [ux stat](#)
-{: .stat bind="fleet_trend" format="{passed}/{scenarios} scenarios" requires="scenarios" ok-when="passed==scenarios" }
+{: .stat bind="fleet_trend" format="{passed}/{scenarios} scenarios · 🕒 {run}" requires="scenarios" ok-when="passed==scenarios" }
 
 Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) written in Gherkin (behave + Playwright). Each row below is one `Scenario` from a `.feature` file, with its result from the latest run against the live site.
 
 
 [ux-results]({{ '/assets/ux-results.json' | relative_url }})
-{: .dataset #uxtests }
+{: .dataset #uxtests refresh="30" }
 
 [Latest scenarios](#)
 {: .datagrid bind="uxtests" rows="25" hints="status: ✅ passed / ❌ failed in the latest run | scenario: the Gherkin scenario name | feature: which .feature file it lives in | tags: @mobile runs on an iPhone viewport | seconds: how long it took | run: when the suite ran — click a row for the full step trace" }
@@ -111,10 +111,10 @@ Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightco
 ### !📋 Full Gherkin report
 
 [summary]({{ '/assets/ux-summary.json' | relative_url }})
-{: .dataset #ux_summary }
+{: .dataset #ux_summary refresh="30" }
 
 [totals](#)
-{: .stat bind="ux_summary" format="{features} features · {scenarios} scenarios · {steps} steps" requires="steps" ok-when="scenarios_failed==0" }
+{: .stat bind="ux_summary" format="{features} features · {scenarios} scenarios · {steps} steps · 🕒 {run}" requires="steps" ok-when="scenarios_failed==0" }
 
 [failures](#)
 {: .stat bind="ux_summary" format="{scenarios_failed} scenarios · {steps_failed} steps failed" requires="scenarios_failed" ok-when="scenarios_failed==0" }

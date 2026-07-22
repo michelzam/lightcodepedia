@@ -156,6 +156,7 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 |---|---|---|---|
 | `.dataset` | `#id` | snake_case | Registers data under this key |
 | `.dataset` | _(applied to a link)_ | `https://…` href | Fetches JSON or CSV from the URL |
+| `.dataset` | `refresh="…"` | seconds (≥10) | Live mode: re-fetch on a timer (cache-busted); every bound grid/stat/chart repaints itself — no page reload |
 | `.datagrid` | `source="…"` | dataset id | Which dataset to display |
 | `.datagrid` | `rows="…"` | number | Rows per page (0 = all) |
 | `.datagrid` | `url` column | URL string | Hidden column; makes rows clickable links |

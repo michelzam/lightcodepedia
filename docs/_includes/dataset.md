@@ -149,14 +149,24 @@ Auto-included by docs/_layouts/default.html.
         href = link.textContent.trim();
       }
       if (/^(https?:\/\/|\/)/.test(href)) {
-        fetch(href)
-          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-          .then(function (text) {
-            var fmt = (el.getAttribute("format") || "").toLowerCase();
-            if (!fmt && /\.ya?ml($|\?)/i.test(href)) fmt = "yaml";
-            setFromText(text, fmt, el, id);
-          })
-          .catch(function (e) { window.lcSetDataset(id, [{ "⚠️": e.message }]); });
+        var fmt = (el.getAttribute("format") || "").toLowerCase();
+        if (!fmt && /\.ya?ml($|\?)/i.test(href)) fmt = "yaml";
+        var tick = 0;
+        var pull = function () {
+          /* cache-bust so a just-landed file (results, fleet) is seen now,
+             not from the 60s API/Pages cache — this is the whole point of
+             refresh= (a counter, since Date is engine-blocked) */
+          fetch(href + (href.indexOf("?") < 0 ? "?" : "&") + "_t=" + (tick++), { cache: "no-store" })
+            .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+            .then(function (text) { setFromText(text, fmt, el, id); })
+            .catch(function (e) { if (!window.lcDatasets[id]) window.lcSetDataset(id, [{ "⚠️": e.message }]); });
+        };
+        pull();
+        /* refresh="30" → live mode: re-pull every N seconds. Republishing to
+           the bus repaints every bound grid/stat/chart with no page reload —
+           the generic auto-refresh, not a dashboard special-case. */
+        var every = parseInt(el.getAttribute("refresh") || "0", 10);
+        if (every > 0) setInterval(pull, Math.max(10, every) * 1000);
         return;
       }
     }
