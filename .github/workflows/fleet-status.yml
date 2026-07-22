@@ -47,14 +47,17 @@ jobs:
         run: |
           set -e
           git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/${PEDIA}.git" pedia
-          count() { rsync --dry-run --itemize-changes "$@" 2>/dev/null | grep -cv '/$' || true; }
+          # --checksum: both sides are fresh clones, so every mtime differs —
+          # count CONTENT differences (what a publish would actually change),
+          # exactly like the gate's git-diff decides.
+          count() { rsync --dry-run --checksum --itemize-changes "$@" 2>/dev/null | grep -v '/$' | grep -Ec '^(>|\*|c)' || true; }
           p=0
           p=$((p + $(count -a --delete \
             --exclude 'lab/' --exclude 'CNAME' --exclude '_config.lab.yml' \
             --exclude 'classroom.md' --exclude 'classroom_console.md' \
             --exclude 'assets/ux-results.json' --exclude 'assets/ux-report.html' \
             --exclude 'assets/ux-summary.json' --exclude 'assets/metrics.json' \
-            --exclude 'assets/metrics_trend.json' \
+            --exclude 'assets/metrics_trend.json' --exclude 'assets/fleet_status.json' \
             lab/docs/ pedia/docs/) ))
           p=$((p + $(count -a --delete lab/packages/ pedia/packages/) ))
           p=$((p + $(count -a --delete --delete-excluded \
@@ -63,6 +66,15 @@ jobs:
             --exclude 'material.feature' --exclude 'material_steps.py' \
             lab/tests/ pedia/tests/) ))
           echo "PEDIA_PENDING=$p" >> "$GITHUB_ENV"
+          # what exactly is pending? (job-log only — first 40 docs/ lines)
+          echo "── pending sample: docs ──"
+          rsync --dry-run --checksum --itemize-changes -a --delete \
+            --exclude 'lab/' --exclude 'CNAME' --exclude '_config.lab.yml' \
+            --exclude 'classroom.md' --exclude 'classroom_console.md' \
+            --exclude 'assets/ux-results.json' --exclude 'assets/ux-report.html' \
+            --exclude 'assets/ux-summary.json' --exclude 'assets/metrics.json' \
+            --exclude 'assets/metrics_trend.json' --exclude 'assets/fleet_status.json' \
+            lab/docs/ pedia/docs/ 2>/dev/null | grep -v '/$' | head -40
 
       - name: Read pedia's latest suite result
         run: |
@@ -83,7 +95,10 @@ jobs:
           TOKEN: ${{ secrets.ORG_VAULT_TOKEN }}
         run: |
           set -e
-          count() { rsync --dry-run --itemize-changes "$@" 2>/dev/null | grep -cv '/$' || true; }
+          # --checksum: both sides are fresh clones, so every mtime differs —
+          # count CONTENT differences (what a publish would actually change),
+          # exactly like the gate's git-diff decides.
+          count() { rsync --dry-run --checksum --itemize-changes "$@" 2>/dev/null | grep -v '/$' | grep -Ec '^(>|\*|c)' || true; }
           git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/${ORG}/${ORG}-vault.git" vault || mkdir -p vault
           mkdir -p vault/courses
           echo "VAULT_PENDING=$(count -a --delete lab/courses/ vault/courses/)" >> "$GITHUB_ENV"
