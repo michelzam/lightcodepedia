@@ -1,9 +1,11 @@
 name: UX Tests
 
 on:
-  # Run automatically after Pages deployment completes
+  # Run automatically after Pages deployment completes — pedia deploys via
+  # the Jekyll workflow; the lab via the built-in branch build (its run is
+  # named "pages build and deployment"), so the suite now auto-runs in BOTH.
   workflow_run:
-    workflows: ["Deploy Jekyll to GitHub Pages"]
+    workflows: ["Deploy Jekyll to GitHub Pages", "pages build and deployment"]
     types: [completed]
   # Run manually from the Actions tab → "Run workflow" (no terminal needed)
   workflow_dispatch:
@@ -31,13 +33,11 @@ jobs:
       actions: write
     # Only run if triggered manually, or if the pages deployment succeeded
     # AND was not triggered by the bot's own results commit (loop guard).
-    # Auto-runs only in the public repo (free minutes); in the lab the suite
-    # is manual-dispatch only, so private Actions minutes are never burned
-    # by a push. The bot-author clause is the results-commit loop guard.
+    # Auto-runs in BOTH repos (Michel, 2026-07-22: lab minutes accepted —
+    # a red deploy should never wait for a manual dispatch to be noticed).
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.repository == 'michelzam/lightcodepedia' &&
-       github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_commit.author.email != '41898282+github-actions[bot]@users.noreply.github.com')
 
     env:
