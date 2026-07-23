@@ -243,5 +243,5 @@ def step_bench_no_index(context):
 
 @then("the bench step invites a refresh")
 def step_invites_refresh(context):
-    expect(context.page.locator('.lc-join [data-m="4"]')).to_contain_text("refresh", timeout=8000)
+    expect(context.page.locator('.lc-join [data-m="4"]')).to_contain_text("Refresh", timeout=8000)
     expect(context.page.locator('.lc-join [data-a="sync"]')).to_be_visible()

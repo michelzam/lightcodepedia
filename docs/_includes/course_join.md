@@ -94,7 +94,7 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-row" style="display:none" data-open><a class="lcj-btn" href="' + openUrl + '">📖 Open the course →</a></div></div></div>' +
 
       '<div class="lcj-step off" data-n="4"><div class="lcj-head"><span class="lcj-num">4</span>Your bench</div>' +
-      '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Fork it once, keep it in sync, and work: your teacher can see your bench at any time.</p>' +
+      '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Fork it once, keep it refreshed, and work: your teacher can see your bench at any time.</p>' +
       '<div class="lcj-msg" data-m="4"></div>' +
       '<div class="lcj-row" data-bench></div></div></div>';
     el.parentNode.replaceChild(wrap, el);
@@ -217,7 +217,7 @@ The check is live truth against the API, never cached. Done steps reopen via
       var benchOpen = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + org + "/" + B.name + "/index.md";
       function paintBenchRow() {
         benchRow().innerHTML =
-          (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Sync from hub</button>' : "") +
+          (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Refresh from hub</button>' : "") +
           '<a class="lcj-btn' + (behind ? " alt" : "") + '" href="' + benchOpen + '">🛠 Open my bench →</a>';
       }
       /* forward only when green AND the root actually exists in the bench —
@@ -227,7 +227,7 @@ The check is live truth against the API, never cached. Done steps reopen via
         sgh("/repos/" + org + "/" + B.name + "/contents/index.md")
           .then(function (r) {
             if (r.ok) { location.replace(benchOpen); return; }
-            msg(4, "🔄 One more step — refresh your bench to get the latest layout, then open it:", "");
+            msg(4, "🔄 One more step — Refresh your bench to get the latest layout, then open it:", "");
             behind = behind || 1; paintBenchRow();
           })
           .catch(function () { paintBenchRow(); });
@@ -265,13 +265,13 @@ The check is live truth against the API, never cached. Done steps reopen via
           .catch(function () { b.disabled = false; msg(4, "❌ Could not reach GitHub — try again.", "err"); });
       }
       if (a === "sync") {
-        b.disabled = true; msg(4, "🔄 Syncing from the hub…", "");
+        b.disabled = true; msg(4, "🔄 Refreshing from the hub…", "");
         sgh("/repos/" + org + "/" + B.name + "/merge-upstream", { method: "POST", body: { branch: B.branch } })
           .then(function (r) {
             if (r.ok) { benchStatus(); return; }
             b.disabled = false;
             if (r.status === 409) msg(4, "⚠️ Your bench and the hub changed the same lines — tell your teacher (merge conflict).", "err");
-            else msg(4, "❌ Sync failed (HTTP " + r.status + ") — try again.", "err");
+            else msg(4, "❌ Refresh failed (HTTP " + r.status + ") — try again.", "err");
           })
           .catch(function () { b.disabled = false; msg(4, "❌ Could not reach GitHub — try again.", "err"); });
       }
