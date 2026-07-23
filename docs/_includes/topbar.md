@@ -151,9 +151,9 @@ body {
    engaged by the runner when it renders a bench (gh: source, not the vault):
    dark bar, the brand becomes the bench itself, links from the bench's own
    menu.md when it has one */
-#lc-topbar.lc-bench-mode { background: rgba(241,243,246,0.97); border-bottom-color: #dfe3e9; flex-wrap: nowrap; align-items: baseline; }
+#lc-topbar.lc-bench-mode { background: rgba(241,243,246,0.97); border-bottom-color: #dfe3e9; flex-wrap: nowrap; align-items: center; }
 #lc-topbar.lc-bench-mode .lc-brand { color: #1f2937; margin-right: 0; margin-left: 0.4em; white-space: nowrap; }
-#lc-topbar .lc-bench-home { text-decoration: none; font-size: 1.1em; line-height: 1; align-self: center; }
+#lc-topbar .lc-bench-home { text-decoration: none; font-size: 1.1em; line-height: 1; }
 #lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.82em; color: #4b5563; margin-left: 0.5em; white-space: nowrap; }
 #lc-topbar .lc-bench-refresh { margin-left: 0.7em; margin-right: auto; align-self: center; font-size: 0.78em;
   padding: 2px 9px; border-radius: 999px; border: 1px solid #c9d2de; background: #fff; color: #37506e; cursor: pointer; white-space: nowrap; }
