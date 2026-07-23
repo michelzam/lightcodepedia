@@ -220,7 +220,20 @@ files a student is already working in.
               } else if (fine) {
                 status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b> with a fine-grained token that can’t reach <code>" + repoName + "</code> (HTTP 404). Fine-grained tokens are limited to selected repos — use a <b>classic</b> key instead:<br>" + ladder + " → paste, reload.";
               } else {
-                status.innerHTML = "⏳ Signed in as <b>@" + (d.login || "?") + "</b> with a valid <code>repo</code> key, but <code>" + repoName + "</code> returns HTTP 404. Either you’re not enrolled in this class yet, or the bench just changed — <b>reload</b>. Still stuck? Tell your teacher which repo this is.";
+                /* valid repo key + 404 on the file: is it the REPO that's
+                   missing (no bench / not enrolled) or just the FILE (bench
+                   behind — needs a Refresh)? Probe the repo to tell them apart. */
+                var doorUrl = (window.lcHref ? window.lcHref("/courses/join") : "/courses/join") + "?go=bench&hub=" + (barSt.repo.split("/")[1] || "").replace(/-[^-]+$/, "");
+                fetch("https://api.github.com/repos/" + barSt.repo, { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
+                  .then(function (r2) {
+                    if (r2.ok)
+                      status.innerHTML = "🔄 Your bench is <b>behind</b> — this page (<code>" + (barSt.path || "") + "</code>) isn’t in it yet. Open your course and <b>Refresh</b> to pull the latest:<br>" +
+                        "<a href=\"" + doorUrl + "\" style=\"display:inline-block;margin:0.4em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">🎓 Open my course → Refresh</a>";
+                    else
+                      status.innerHTML = "🎒 No bench <code>" + repoName.split("/").slice(0, 2).join("/") + "</code> yet for <b>@" + (d.login || "?") + "</b> — open your course to fork one:<br>" +
+                        "<a href=\"" + doorUrl + "\" style=\"display:inline-block;margin:0.4em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">🎓 Open my course → Fork</a>";
+                  })
+                  .catch(function () { status.innerHTML = "⚠️ <code>" + repoName + "</code> returns HTTP 404 — reload, or tell your teacher."; });
               }
             })
             .catch(function () {

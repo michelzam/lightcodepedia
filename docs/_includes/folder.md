@@ -189,6 +189,16 @@ Auto-included by docs/_layouts/default.html.
        courses/, hubs/…), so cards enumerate via the API and open in the
        runner. Root-absolute hrefs stay canonical; lcRebase heals them. */
     var runnerMode = (el.getAttribute("open") || "") === "runner";
+    /* Rendered INSIDE a bench (a runner render stamps its repo/path on the
+       root)? Then scan THAT repo, not the site — a bench's index.md lists its
+       own course/ folder, per viewer, regardless of where the page lives. */
+    var runRoot = el.closest && el.closest(".lc-run[data-lc-src-repo]");
+    var scanRepo = (runRoot && runRoot.dataset.lcSrcRepo) || _lcSiteRepo;
+    var runBaseDir = "";
+    if (runRoot && runRoot.dataset.lcSrcPath) {
+      var sp = runRoot.dataset.lcSrcPath;
+      runBaseDir = sp.indexOf("/") >= 0 ? sp.split("/").slice(0, -1).join("/") : "";
+    }
     var colStyle = cols === "auto"
       ? "repeat(auto-fit, minmax(200px, 1fr))"
       : "repeat(" + cols + ", 1fr)";
@@ -221,7 +231,7 @@ Auto-included by docs/_layouts/default.html.
        ensureDates). If a build has no manifest, fall back to the old API path
        so nothing regresses (pedia keeps working during a transition). */
     var mdUrl   = function (rp) { return "/" + rp.replace(/^docs\//, ""); };      // static .md on Pages
-    var runUrl  = function (rp) { return "/run.html#src=gh:" + _lcSiteRepo + "/" + rp; };
+    var runUrl  = function (rp) { return "/run.html#src=gh:" + scanRepo + "/" + rp; };
     var cardUrl = function (rp) { return runnerMode ? runUrl(rp) : mdUrl(rp).replace(/\.md$/i, ""); };
     var titleCase = function (s) { return s.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); };
     function fetchText(url) {
@@ -269,7 +279,12 @@ Auto-included by docs/_layouts/default.html.
       });
     }
     function apiListing() {
-      return apiFetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/" + path)
+      /* inside a bench, a relative path resolves against the rendered file's
+         dir (index.md at root → "course" scans <bench>/course) */
+      var rel = (path === "." || path === "") ? "" : path;
+      var apiPath = (runBaseDir && (rel === "" || rel.charAt(0) !== "/"))
+        ? (rel ? runBaseDir + "/" + rel : runBaseDir) : rel;
+      return apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" + apiPath)
       .then(function(files) {
         if (!Array.isArray(files)) throw new Error("Not a directory: " + escapeHtml(path));
         var pages = files.filter(function(f) {
