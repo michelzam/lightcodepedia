@@ -485,3 +485,49 @@
   else setTimeout(sweep, 400);
 })();
 </script>
+<script>
+/* Local time, outside-in: GitHub Actions stamps everything UTC (…Z). The
+   viewer thinks in their own zone, so any exact UTC-timestamp text node is
+   rendered local — datagrid cells, stat chips, auto-refreshed or not. The
+   converted text no longer matches the pattern, so re-observation can't loop. */
+(function () {
+  var UTC = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z/g;   // may sit inside a longer string
+  function fmt(iso) {
+    var d = new Date(iso); if (isNaN(d)) return iso;
+    try {
+      return d.toLocaleString(undefined,
+        { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+    } catch (e) { return d.toLocaleString(); }
+  }
+  window.lcLocalTime = function (v) {
+    var s = String(v == null ? "" : v);
+    return UTC.test(s) ? s.replace(UTC, fmt) : v;
+  };
+  function sweep(root) {
+    var main = root || document.querySelector("main") || document.body;
+    if (!main) return;
+    var w = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, null), n;
+    var hits = [];
+    while ((n = w.nextNode())) {
+      UTC.lastIndex = 0;
+      if (!UTC.test(n.nodeValue)) continue;
+      var p = n.parentNode;
+      if (p && p.closest && p.closest("pre, code, script, style, textarea, input, [contenteditable]")) continue;
+      hits.push(n);
+    }
+    hits.forEach(function (t) { t.nodeValue = t.nodeValue.replace(UTC, fmt); });
+  }
+  window.lcLocalizeStamps = sweep;
+  function boot() {
+    sweep();
+    var pending = false, main = document.querySelector("main") || document.body;
+    if (!main || !window.MutationObserver) return;
+    new MutationObserver(function () {
+      if (pending) return; pending = true;
+      setTimeout(function () { pending = false; sweep(); }, 60);
+    }).observe(main, { childList: true, subtree: true, characterData: true });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
