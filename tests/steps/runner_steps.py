@@ -188,6 +188,13 @@ def step_topbar_bench_menu(context):
     assert "run.html#src=gh:" + BENCH_REPO + "/index.md" in href, href
 
 
+@then('the page editor is editing "{path}"')
+def step_editor_targets(context, path):
+    # the rich editor drawer bound to the runner-rendered source: the filename
+    # header names the gh path (no docs/ prefix — it lives outside docs/)
+    expect(context.page.locator("#ed-filename")).to_contain_text(path, timeout=10_000)
+
+
 @then('the link "{text}" opens gh path "{path}"')
 def step_link_heals(context, text, path):
     a = context.page.locator("#lc-run a", has_text=text).first

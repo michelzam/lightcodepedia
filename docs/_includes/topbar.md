@@ -155,11 +155,8 @@ body {
 #lc-topbar.lc-bench-mode .lc-brand { color: #1f2937; margin-right: 0; margin-left: 0.4em; white-space: nowrap; }
 #lc-topbar .lc-bench-home { text-decoration: none; font-size: 1.1em; line-height: 1; }
 #lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.82em; color: #4b5563; margin-left: 0.5em; white-space: nowrap; }
-#lc-topbar .lc-bench-edit,
-#lc-topbar .lc-bench-refresh { margin-left: 0.7em; align-self: center; font-size: 0.78em;
+#lc-topbar .lc-bench-refresh { margin-left: 0.7em; margin-right: auto; align-self: center; font-size: 0.78em;
   padding: 2px 9px; border-radius: 999px; border: 1px solid #c9d2de; background: #fff; color: #37506e; cursor: pointer; white-space: nowrap; }
-#lc-topbar .lc-bench-refresh { margin-right: auto; }   /* the last left-group item → pushes the menu right */
-#lc-topbar .lc-bench-edit:hover:not(:disabled),
 #lc-topbar .lc-bench-refresh:hover:not(:disabled) { background: #eef2f7; }
 #lc-topbar .lc-bench-refresh:disabled { opacity: 0.6; cursor: default; }
 /* bench mode fills more of the left side — the menu goes icon-only well
@@ -397,31 +394,18 @@ body {
       brand.parentNode.insertBefore(home, brand);   // BEFORE the brand → leftmost
       file = document.createElement("span"); file.className = "lc-bench-file";
       brand.parentNode.insertBefore(file, brand.nextSibling);
-      /* ✏️ Edit — open the WHOLE rendered source in the dark editor. The ⚙️
-         x-ray gear edits one block; this edits the file (prose, front matter,
-         new blocks). Author and bench alike — the vault never reaches here. */
-      var edit = document.createElement("button");
-      edit.className = "lc-bench-edit"; edit.type = "button"; edit.textContent = "✏️ Edit";
-      file.parentNode.insertBefore(edit, file.nextSibling);
       /* one slot, decided per render: 📤 Publish when it's the author editing
          their own source (→ the Dashboard's 🚦 Fleet), 🔄 Refresh when it's a
-         student bench (merge-upstream — new hub files arrive, own work stays). */
+         student bench (merge-upstream — new hub files arrive, own work stays).
+         Editing the file itself is the bottom-left page editor, not a bar button. */
       var act = document.createElement("button");
       act.className = "lc-bench-refresh"; act.type = "button";
-      edit.parentNode.insertBefore(act, edit.nextSibling);
+      file.parentNode.insertBefore(act, file.nextSibling);
     }
     if (home) home.href = runIndex;
-    /* the buttons persist across renders (built once) but the repo/path change,
-       so read them from the bar each time — click handlers key off these. */
+    /* the button persists across renders (built once) but the repo/path change,
+       so read them from the bar each time — the click handler keys off these. */
     bar.dataset.lcCurRepo = repo; bar.dataset.lcCurPath = path || "";
-    var editBtn = bar.querySelector(".lc-bench-edit");
-    if (editBtn) {
-      editBtn.title = "Edit this whole file — " + (path || "");
-      editBtn.onclick = function () {
-        if (window.lcxEditWhole) window.lcxEditWhole(bar.dataset.lcCurRepo, bar.dataset.lcCurPath);
-        else alert("The editor isn't ready yet — reload and try again.");
-      };
-    }
     var actBtn = bar.querySelector(".lc-bench-refresh");
     if (actBtn) {
       if (LC_SITE_REPO && repo === LC_SITE_REPO) {

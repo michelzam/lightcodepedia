@@ -475,6 +475,20 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 (function () {
   var LS_PAT = "lc_ed_pat", LS_REPO = "lc_ed_repo";
   var _pat, _repo, _curFile, _curSha, _dirty = false, _previewTimer = null, _savedContent = null;
+  var _runnerEdit = false;   // editing a runner-rendered source (gh:repo/path), not a docs/ page
+
+  /* On the runtime (/run.html) the page itself is only the runner stub — what
+     the author actually edits is the RENDERED source the runner stamped on its
+     root (gh:repo/path). When such a render is present, the SAME rich editor
+     targets that repo+file: course material, a bench, any runner render. The
+     vault/Library is read-only (data-lc-readonly) → never a target. */
+  function runnerTarget() {
+    var r = document.querySelector(".lc-run[data-lc-src-repo][data-lc-src-path]");
+    if (!r || r.dataset.lcReadonly) return null;
+    var repo = r.dataset.lcSrcRepo, path = r.dataset.lcSrcPath;
+    if (!repo || !path) return null;             // a same-origin render carries no repo
+    return { repo: repo, path: path };
+  }
 
   function setDirty(on) {
     _dirty = on;
@@ -556,12 +570,23 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     initRawGutter(); // line-number gutter for the Raw editor
     buildGrid(); // always build — shows placeholder if no file yet
 
-    if (_pat && _repo) {
-      loadFiles();
-      if (!_curFile) {
-        var fabEl = document.getElementById("ed-fab");
-        var pagePath = fabEl && fabEl.dataset ? fabEl.dataset.pagePath : "";
-        if (pagePath) loadFile("docs/" + pagePath);
+    var rt = runnerTarget();
+    if (_pat && (rt || _repo)) {
+      if (rt) {
+        /* target the RENDERED repo+file, not the connected repo or docs/run.md.
+           In-memory only — /run.html edits nothing but renders, so overriding
+           _repo here can't leak into a normal page edit. */
+        _repo = rt.repo; _runnerEdit = true;
+        loadFiles();
+        loadFile(rt.path);                       // the gh path as-is — no docs/ prefix
+      } else {
+        _runnerEdit = false;
+        loadFiles();
+        if (!_curFile) {
+          var fabEl = document.getElementById("ed-fab");
+          var pagePath = fabEl && fabEl.dataset ? fabEl.dataset.pagePath : "";
+          if (pagePath) loadFile("docs/" + pagePath);
+        }
       }
     } else {
       /* never fail silently: say WHY there's no file instead of the
@@ -631,10 +656,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         // include underscore modules (e.g. _dog.md) — they're editable content too,
         // but skip Jekyll/system files that aren't meant to be hand-edited here
         if (name === "_config.yml" || name === "_build_trigger.md") return false;
-        return f.type === "blob" && f.path.startsWith("docs/") && name.endsWith(".md");
+        if (f.type !== "blob" || !name.endsWith(".md")) return false;
+        // runner-edit browses the rendered repo's WHOLE md tree (course material
+        // and benches live outside docs/); a normal page edit stays under docs/.
+        return _runnerEdit ? true : f.path.startsWith("docs/");
       }).sort(function (a, b) { return a.path.localeCompare(b.path); })
       .map(function (f) {
-        var rel = f.path.replace(/^docs\//, "");
+        var rel = _runnerEdit ? f.path : f.path.replace(/^docs\//, "");
         return { path: f.path, file: rel };
       });
       function buildGrid() {
@@ -947,9 +975,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         var setup = document.getElementById("ed-setup");
         if (setup) setup.open = false;
         toggleConnected(true);
-        loadFiles();
-        var fab = document.getElementById("ed-fab");
-        if (fab && fab.dataset.pagePath) loadFile("docs/" + fab.dataset.pagePath);
+        var rt = runnerTarget();
+        if (rt) { _repo = rt.repo; _runnerEdit = true; loadFiles(); loadFile(rt.path); }
+        else {
+          _runnerEdit = false;
+          loadFiles();
+          var fab = document.getElementById("ed-fab");
+          if (fab && fab.dataset.pagePath) loadFile("docs/" + fab.dataset.pagePath);
+        }
       } else {
         setStatus("Failed: " + esc(d.message || "unknown error"), false);
       }

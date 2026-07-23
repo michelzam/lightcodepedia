@@ -59,3 +59,13 @@ Feature: The instant runner (RT) — Phase A parity
     Given a stubbed bench with a course page
     When I open the bench page "course/ex1.md"
     Then the link "Back to the bench" opens gh path "index.md"
+
+  Scenario: The runtime opens the rich page editor bound to the rendered source
+    # /run.html has no page of its own to edit — the same rich editor must
+    # target the RENDERED file (gh:repo/path the runner stamped), so course
+    # material and benches are editable with the full Blocks/Raw/preview drawer.
+    Given a stubbed bench with a course page
+    When I open the bench page "course/ex1.md"
+    And I open the page editor
+    Then the page editor is editing "course/ex1.md"
+    And the raw editor contains "Solve it your way"
