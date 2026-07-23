@@ -196,17 +196,36 @@ files a student is already working in.
         if (err && err.gh && (st === 404 || st === 401) && !hasPat)
           status.innerHTML = "🔑 This source is private. Connect a GitHub PAT (topbar “Get started”), then reload.";
         else if (err && err.gh && st === 404 && hasPat) {
-          /* fine-grained tokens and out-of-scope classics answer 404 (not 403).
-             Guide, don't strand: the deep link opens GitHub with the repo scope
-             ALREADY ticked and the note naming THIS course's org, so a student's
-             keys stay identifiable (one per class, revocable per class). */
           var keyFor = gm ? gm[1] : (rw ? rw[1] : "course");
           var keyNote = encodeURIComponent("Lightcode course key — " + keyFor);
-          status.innerHTML = "🔑 Your key can’t open this course yet — course reading needs a key with the <code>repo</code> scope (and your enrollment accepted).<br>" +
-            "<a href=\"https://github.com/settings/tokens/new?scopes=repo&description=" + keyNote + "\" target=\"_blank\" rel=\"noopener\" " +
-            "style=\"display:inline-block;margin:0.5em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">" +
-            "🪜 Create your course key</a> — the scope and name are pre-filled: set <b>Expiration → Custom</b> to a date past your course’s end " +
-            "(a semester, not 30 days), <b>Generate token</b>, copy it, then paste it in <b>Get started</b> (top right) and reload this page.";
+          var repoName = (barSt.repo || "") + "/" + (barSt.path || "");
+          var ladder = "<a href=\"https://github.com/settings/tokens/new?scopes=repo&description=" + keyNote + "\" target=\"_blank\" rel=\"noopener\" " +
+            "style=\"display:inline-block;margin:0.4em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">🪜 Create a classic course key</a>";
+          /* DIAGNOSE, don't guess: probe the key live. The message then names
+             the ACTUAL cause — bad key / missing scope / fine-grained can't
+             reach this repo / a real 404 — instead of a catch-all. */
+          status.innerHTML = "🔎 Checking your key…";
+          var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+          fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + pat, "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
+            .then(function (r) {
+              var scopes = r.headers.get("X-OAuth-Scopes");
+              return r.json().then(function (u) { return { ok: r.ok, login: u && u.login, scopes: scopes }; });
+            })
+            .then(function (d) {
+              var fine = pat.indexOf("github_pat_") === 0;
+              if (!d.ok) {
+                status.innerHTML = "🔑 Your key isn’t valid anymore — generate a fresh one.<br>" + ladder + " → paste it in <b>Get started</b> (top right), reload.";
+              } else if (!fine && (d.scopes || "").split(",").map(function (s) { return s.trim(); }).indexOf("repo") < 0) {
+                status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b>, but your key is missing the <code>repo</code> scope.<br>" + ladder + " → paste, reload.";
+              } else if (fine) {
+                status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b> with a fine-grained token that can’t reach <code>" + repoName + "</code> (HTTP 404). Fine-grained tokens are limited to selected repos — use a <b>classic</b> key instead:<br>" + ladder + " → paste, reload.";
+              } else {
+                status.innerHTML = "⏳ Signed in as <b>@" + (d.login || "?") + "</b> with a valid <code>repo</code> key, but <code>" + repoName + "</code> returns HTTP 404. Either you’re not enrolled in this class yet, or the bench just changed — <b>reload</b>. Still stuck? Tell your teacher which repo this is.";
+              }
+            })
+            .catch(function () {
+              status.innerHTML = "🔑 Your key can’t open <code>" + repoName + "</code> (HTTP 404).<br>" + ladder + " → paste, reload.";
+            });
         }
         else
           status.textContent = "⚠️ Could not load: " + (st ? "HTTP " + st : (err && err.message) || err);
