@@ -470,7 +470,11 @@ Auto-included by docs/_layouts/default.html.
           var filePath = (apiPath ? apiPath + "/" : "") + slug + (isFolder ? "/index.md" : ".md");
           var title = raw.replace(/\/+$/, "").trim();
           npBtn.disabled = true; npBtn.textContent = "➕ Creating…";
-          var body = "# " + title + "\n\nStart writing here.\n" + (isFolder ? "\n[pages](#)\n{: .folder path=\"" + slug + "\" open=\"runner\" }\n" : "");
+          /* every new node ships a .folder so you can see what's around it —
+             a folder lists its (new, empty) contents; a module lists the
+             siblings in its folder. path="." resolves to the render's own dir. */
+          var body = "# " + title + "\n\nStart writing here.\n\n[" +
+            (isFolder ? "in this folder" : "in this module") + "](#)\n{: .folder path=\".\" open=\"runner\" }\n";
           fetch("https://api.github.com/repos/" + scanRepo + "/contents/" + filePath,
             { method: "PUT", headers: { Authorization: "Bearer " + _folderPat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
               body: JSON.stringify({ message: "New: " + filePath, content: btoa(unescape(encodeURIComponent(body))) }) })

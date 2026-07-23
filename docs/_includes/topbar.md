@@ -155,8 +155,11 @@ body {
 #lc-topbar.lc-bench-mode .lc-brand { color: #1f2937; margin-right: 0; margin-left: 0.4em; white-space: nowrap; }
 #lc-topbar .lc-bench-home { text-decoration: none; font-size: 1.1em; line-height: 1; }
 #lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.82em; color: #4b5563; margin-left: 0.5em; white-space: nowrap; }
-#lc-topbar .lc-bench-refresh { margin-left: 0.7em; margin-right: auto; align-self: center; font-size: 0.78em;
+#lc-topbar .lc-bench-edit,
+#lc-topbar .lc-bench-refresh { margin-left: 0.7em; align-self: center; font-size: 0.78em;
   padding: 2px 9px; border-radius: 999px; border: 1px solid #c9d2de; background: #fff; color: #37506e; cursor: pointer; white-space: nowrap; }
+#lc-topbar .lc-bench-refresh { margin-right: auto; }   /* the last left-group item → pushes the menu right */
+#lc-topbar .lc-bench-edit:hover:not(:disabled),
 #lc-topbar .lc-bench-refresh:hover:not(:disabled) { background: #eef2f7; }
 #lc-topbar .lc-bench-refresh:disabled { opacity: 0.6; cursor: default; }
 /* bench mode fills more of the left side — the menu goes icon-only well
@@ -332,6 +335,9 @@ body {
 {% include code_chrome.md %}
 <script>
 (function(){
+  /* the site's own repo — a runner render OF THIS repo is the author editing
+     their own source (→ 📤 Publish), not a student bench (→ 🔄 Refresh). */
+  var LC_SITE_REPO = {{ site.github.repository_nwo | default: "" | jsonify }};
   function splitIcons(scope) {
     (scope || document).querySelectorAll('#lc-topbar .lc-links a').forEach(function(a){
       var t = a.textContent.trim();
@@ -391,16 +397,41 @@ body {
       brand.parentNode.insertBefore(home, brand);   // BEFORE the brand → leftmost
       file = document.createElement("span"); file.className = "lc-bench-file";
       brand.parentNode.insertBefore(file, brand.nextSibling);
-      /* 🔄 Refresh — pull the latest hub material into this bench
-         (merge-upstream keeps the student's own work; new files arrive,
-         existing untouched). Placed after the filename, before the menu. */
-      var refresh = document.createElement("button");
-      refresh.className = "lc-bench-refresh"; refresh.type = "button";
-      refresh.textContent = "🔄 Refresh"; refresh.title = "Get the latest course material — keeps your work";
-      refresh.addEventListener("click", function () { lcBenchRefresh(repo, refresh); });
-      file.parentNode.insertBefore(refresh, file.nextSibling);
+      /* ✏️ Edit — open the WHOLE rendered source in the dark editor. The ⚙️
+         x-ray gear edits one block; this edits the file (prose, front matter,
+         new blocks). Author and bench alike — the vault never reaches here. */
+      var edit = document.createElement("button");
+      edit.className = "lc-bench-edit"; edit.type = "button"; edit.textContent = "✏️ Edit";
+      file.parentNode.insertBefore(edit, file.nextSibling);
+      /* one slot, decided per render: 📤 Publish when it's the author editing
+         their own source (→ the Dashboard's 🚦 Fleet), 🔄 Refresh when it's a
+         student bench (merge-upstream — new hub files arrive, own work stays). */
+      var act = document.createElement("button");
+      act.className = "lc-bench-refresh"; act.type = "button";
+      edit.parentNode.insertBefore(act, edit.nextSibling);
     }
     if (home) home.href = runIndex;
+    /* the buttons persist across renders (built once) but the repo/path change,
+       so read them from the bar each time — click handlers key off these. */
+    bar.dataset.lcCurRepo = repo; bar.dataset.lcCurPath = path || "";
+    var editBtn = bar.querySelector(".lc-bench-edit");
+    if (editBtn) {
+      editBtn.title = "Edit this whole file — " + (path || "");
+      editBtn.onclick = function () {
+        if (window.lcxEditWhole) window.lcxEditWhole(bar.dataset.lcCurRepo, bar.dataset.lcCurPath);
+        else alert("The editor isn't ready yet — reload and try again.");
+      };
+    }
+    var actBtn = bar.querySelector(".lc-bench-refresh");
+    if (actBtn) {
+      if (LC_SITE_REPO && repo === LC_SITE_REPO) {
+        actBtn.textContent = "📤 Publish"; actBtn.title = "Publish your changes — the Dashboard's 🚦 Fleet";
+        actBtn.onclick = function () { location.href = (window.lcHref ? window.lcHref("/nodes") : "/nodes"); };
+      } else {
+        actBtn.textContent = "🔄 Refresh"; actBtn.title = "Get the latest course material — keeps your work";
+        actBtn.onclick = function () { lcBenchRefresh(bar.dataset.lcCurRepo, actBtn); };
+      }
+    }
     if (brand && first) {
       /* the brand IS the class: <hub>-<login> → "Build Ai Summer26" (drop the
          student's own id, dashes→spaces, title case). It shares the home

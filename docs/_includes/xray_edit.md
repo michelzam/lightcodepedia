@@ -15,8 +15,10 @@ loses everything. A component's editable source comes from window.lcSourceOf
   border-radius: 50%; border: 1px solid #0066cc; background: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,.22); cursor: pointer; font-size: 14px; line-height: 24px; text-align: center; }
 #lcx-gear:hover { background: #eef4ff; }
-#lcx-edit { width: min(560px, 92vw); max-height: 82vh; overflow: auto; padding: 0;
-  border: none; border-radius: 12px; box-shadow: 0 18px 60px rgba(0,0,0,.32); }
+/* resizable: drag the corner to fit a long edit — width AND height */
+#lcx-edit { width: min(560px, 92vw); max-height: 90vh; overflow: auto; padding: 0;
+  border: none; border-radius: 12px; box-shadow: 0 18px 60px rgba(0,0,0,.32);
+  resize: both; min-width: 320px; min-height: 240px; }
 #lcx-edit::backdrop { background: rgba(15,23,42,.35); }
 #lcx-edit h4 { margin: 0; padding: .7em 1em; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;
   font-family: ui-monospace, Menlo, monospace; font-size: .9em; }
@@ -57,6 +59,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
   if (window._lcxEditReady) return; window._lcxEditReady = true;
   var MAIN, ghost, gear, dlg, hideT = null, ghostEl = null;
   var curEl = null, curId = "", curSnap = "", isComponent = false;
+  var wholeCtx = null;   // {repo, path, sha} while editing a whole file (runner bar ✏️ Edit)
 
   var FRIENDLY = { P: "text", H1: "heading", H2: "heading", H3: "heading", H4: "heading", H5: "heading", H6: "heading",
     LI: "list item", PRE: "code", BLOCKQUOTE: "quote", FIGURE: "figure", TABLE: "table", DT: "term", DD: "definition" };
@@ -144,6 +147,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
 
   function open(block) {
     if (!block) return;
+    wholeCtx = null;                               // a block edit is not a whole-file edit
     curEl = block;
     curId = (block.getAttribute && (block.getAttribute("data-lc-id") || block.id)) || "";
     curSnap = (curId && window.lcSourceOf && window.lcSourceOf(curId)) || "";
@@ -174,6 +178,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
       ? "." + ((srcEl.className || "").split(" ").filter(function (c) { return c && c !== "highlighter-rouge" && c.indexOf("language-") !== 0; })[0] || curId)
       : (FRIENDLY[block.tagName] || block.tagName.toLowerCase());
     document.getElementById("lcx-edit-title").textContent = "✏️ " + name + (isComponent && curId ? "  #" + curId : "");
+    var apB = document.getElementById("lcx-apply"); if (apB) apB.style.display = "";   // block edits can Apply live
 
     hideGhost();
     openDlg();                                     // modal top-layer → focus works, page handlers can't interfere
@@ -256,7 +261,55 @@ loses everything. A component's editable source comes from window.lcSourceOf
     }).catch(function (e) { lcxToast("Save failed: " + e.message, false); });
   }
 
+  /* ✏️ Edit — open the WHOLE rendered source in this same dark editor. The gear
+     edits one block; the runner bar's ✏️ Edit opens the file entire (prose,
+     front matter, structure). Save PUTs the whole file — no fence surgery. */
+  window.lcxEditWhole = function (repo, path) {
+    if (!repo || !path) return;
+    var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+    if (!pat) { lcxToast("Connect your author key first (Get started, top right).", false); return; }
+    wholeCtx = { repo: repo, path: path, sha: null };
+    curEl = null; curId = ""; curSnap = ""; isComponent = false;
+    var body = document.getElementById("lcx-edit-body"); body.innerHTML = "";
+    var clab = document.createElement("label"); clab.textContent = repo + "/" + path;
+    var ta = document.createElement("textarea"); ta.id = "lcx-content";
+    ta.value = "Loading…"; ta.disabled = true; ta.style.minHeight = "60vh";
+    body.appendChild(clab); body.appendChild(ta);
+    document.getElementById("lcx-edit-title").textContent = "✏️ " + path.split("/").pop();
+    var ap0 = document.getElementById("lcx-apply"); if (ap0) ap0.style.display = "none";  // no live block to Apply
+    hideGhost(); openDlg();
+    var api = "https://api.github.com/repos/" + repo + "/contents/" + path;
+    fetch(api, { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json" }, cache: "no-store" })
+      .then(jsonOf).then(function (d) {
+        if (!d.content) throw new Error(d.message || "load failed");
+        wholeCtx.sha = d.sha;
+        ta.value = decodeURIComponent(escape(atob(d.content.replace(/\n/g, ""))));
+        _origVal = ta.value; ta.disabled = false; ta.focus();
+      })
+      .catch(function (e) { ta.value = ""; ta.disabled = false; lcxToast("Couldn't open: " + e.message, false); });
+  };
+
   function keepChanges() {
+    /* whole-file edit (runner bar ✏️): PUT the entire file, then reload the
+       render. Captured locally so closeDlg's async can't null it mid-flight. */
+    if (wholeCtx) {
+      var wc = wholeCtx, ta0 = document.getElementById("lcx-content");
+      var pat0 = localStorage.getItem("lc_ed_pat");
+      if (!pat0 || !ta0 || ta0.value === _origVal) { wholeCtx = null; closeDlg(); return; }
+      var api0 = "https://api.github.com/repos/" + wc.repo + "/contents/" + wc.path;
+      var H0 = { Authorization: "Bearer " + pat0, Accept: "application/vnd.github+json" };
+      fetch(api0, { method: "PUT", headers: H0, body: JSON.stringify({
+        message: "Edit " + wc.path.split("/").pop(),
+        content: btoa(unescape(encodeURIComponent(ta0.value))), sha: wc.sha }) })
+        .then(jsonOf).then(function (res) {
+          if (!res.content) throw new Error(res.message || "unknown");
+          lcxToast("Saved" + (res.commit && res.commit.sha ? " · " + res.commit.sha.slice(0, 7) : "") + " ✓", true);
+          wholeCtx = null; closeDlg();
+          setTimeout(function () { location.reload(); }, 700);
+        })
+        .catch(function (e) { lcxToast("Save failed: " + e.message, false); });
+      return;
+    }
     /* Inside a runner render the true source is the RENDERED file (the /run
        page itself has no_edit and knows nothing) — the runner stamps it on
        its root. Resolve BEFORE apply(): re-rendering a component detaches
