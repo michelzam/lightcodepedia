@@ -61,6 +61,14 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   font-family: monospace; font-size: 0.85em; color: #555;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;
 }
+/* narrow / portrait: the top bar can't hold every control — drop the optional
+   ones (build status, 50% zoom, + New) so the ESSENTIALS stay on-screen:
+   filename · ✨ Ask · 💾 Save · ✕ Close. Save you can always reach. */
+@media (max-width: 600px) {
+  #ed-top { gap: 0.35em; padding: 0.55em 0.6em; }
+  #ed-filename { max-width: 34vw; }
+  #ed-build, #ed-zoom-btn, #ed-new-btn { display: none; }
+}
 /* ── Files dropdown trigger ──────────────────────── */
 #ed-files-btn {
   position: relative; display: flex; align-items: center; gap: 0.35em;
@@ -2469,6 +2477,27 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       "rename its class or break its attributes unless explicitly asked.";
   }
 
+  /* The vocabulary hint: a Lightcode page is built from COMPONENTS declared with
+     an IAL line, not raw HTML/code fences. When the ask is unscoped ("add a
+     block"), tell the model which components exist (snake_case IAL classes from
+     the component model) so it proposes a real one, not a generic ``` fence. */
+  function componentCatalog() {
+    if (!_compModel) return "";
+    var SKIP = { Object: 1, Block: 1, Blocks: 1, Page: 1, Dataset: 1, Query: 1, Bar: 1 };
+    var names = Object.keys(_compModel)
+      .filter(function (k) { return !SKIP[k]; })
+      .map(function (k) { return k.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase(); })
+      .sort();
+    if (!names.length) return "";
+    return "\n\nThis is a Lightcode page: interactive blocks are COMPONENTS, each " +
+      "declared with an IAL line under a paragraph or heading — e.g.\n" +
+      "`[my quiz](#)`\n`{: .quiz }`  or  `{: .chart source=\"data\" }`.\n" +
+      "Available components (use the exact snake_case class): " + names.join(", ") + ".\n" +
+      "When the instruction asks to add a block, component, widget or interactive " +
+      "element, prefer a real component with its `{: .name }` IAL over a plain " +
+      "markdown code fence; pick the most fitting one and name your choice.";
+  }
+
   function openAgentDialog() {
     var drawer = document.getElementById("ed-drawer");
     if (!drawer || !drawer.classList.contains("open")) return;
@@ -2556,6 +2585,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
             "Instruction: " + instruction +
             "\n\nApply it within this section:\n```\n" + scope.text + "\n```" +
             componentNote(scope) +
+            (scope.type ? "" : componentCatalog()) +
             "\n\nFull page for context:\n```markdown\n" + page + "\n```" }
         ]
       })

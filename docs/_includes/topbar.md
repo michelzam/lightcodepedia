@@ -159,6 +159,7 @@ body {
   padding: 2px 9px; border-radius: 999px; border: 1px solid #c9d2de; background: #fff; color: #37506e; cursor: pointer; white-space: nowrap; }
 #lc-topbar .lc-bench-refresh:hover:not(:disabled) { background: #eef2f7; }
 #lc-topbar .lc-bench-refresh:disabled { opacity: 0.6; cursor: default; }
+#lc-topbar .lc-bench-act-lbl { margin-left: 0.28em; }
 /* bench mode fills more of the left side — the menu goes icon-only well
    before it would wrap into a second (ugly) line; tooltips carry the labels */
 @media (max-width: 1100px) {
@@ -166,6 +167,12 @@ body {
   #lc-topbar.lc-bench-mode .lc-link-icon { margin-right: 0; font-size: 1.15em; }
   #lc-topbar.lc-bench-mode .lc-links { gap: 0.6rem; flex-wrap: nowrap; }
   #lc-topbar.lc-bench-mode .lc-links a { margin-right: 0.5rem; }
+}
+/* on a phone the 📤/🔄 label collapses too — icon-only keeps the action but
+   frees the row so the menu icons stay on ONE line (no 2×2 wrap) */
+@media (max-width: 640px) {
+  #lc-topbar .lc-bench-act-lbl { display: none; }
+  #lc-topbar.lc-bench-mode .lc-links { flex-wrap: nowrap; }
 }
 @media (max-width: 480px) { #lc-topbar.lc-bench-mode .lc-bench-file { display: none; } }
 </style>
@@ -408,11 +415,15 @@ body {
     bar.dataset.lcCurRepo = repo; bar.dataset.lcCurPath = path || "";
     var actBtn = bar.querySelector(".lc-bench-refresh");
     if (actBtn) {
+      /* icon + label in spans so the label can collapse on a narrow phone
+         (the icon alone keeps the action reachable without wrapping the menu) */
       if (LC_SITE_REPO && repo === LC_SITE_REPO) {
-        actBtn.textContent = "📤 Publish"; actBtn.title = "Publish your changes — the Dashboard's 🚦 Fleet";
+        actBtn.innerHTML = "<span class='lc-bench-act-ico'>📤</span><span class='lc-bench-act-lbl'>Publish</span>";
+        actBtn.title = "Publish your changes — the Dashboard's 🚦 Fleet";
         actBtn.onclick = function () { location.href = (window.lcHref ? window.lcHref("/nodes") : "/nodes"); };
       } else {
-        actBtn.textContent = "🔄 Refresh"; actBtn.title = "Get the latest course material — keeps your work";
+        actBtn.innerHTML = "<span class='lc-bench-act-ico'>🔄</span><span class='lc-bench-act-lbl'>Refresh</span>";
+        actBtn.title = "Get the latest course material — keeps your work";
         actBtn.onclick = function () { lcBenchRefresh(bar.dataset.lcCurRepo, actBtn); };
       }
     }

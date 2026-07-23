@@ -176,23 +176,28 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcUpgraded = "1";
     var a = el.querySelector("a");
     if (!a) return;
-    /* Repo path to enumerate: prefer an explicit path="…" (a repo path, never
-       base-healed); else the link href with any project base ("/lightcodelab")
-       stripped — lcRebase heals the href for navigation, so the raw href is not
-       a repo path under a project base. */
-    var _rawAttr = el.getAttribute("path") || a.getAttribute("href") || "";
-    var path = "";   // resolved below — the knob may be a "= get_var('NAME','default')" cell
     var cols = el.getAttribute("cols") || "auto";
     var showPrivate = el.getAttribute("show-private") === "true";
     var sortMode = (el.getAttribute("sort") || "name").toLowerCase();   // "name" (default) | "recent"
-    /* open="runner": the folder lives OUTSIDE docs/ (unrendered material —
-       courses/, hubs/…), so cards enumerate via the API and open in the
-       runner. Root-absolute hrefs stay canonical; lcRebase heals them. */
-    var runnerMode = (el.getAttribute("open") || "") === "runner";
     /* Rendered INSIDE a bench (a runner render stamps its repo/path on the
        root)? Then scan THAT repo, not the site — a bench's index.md lists its
        own course/ folder, per viewer, regardless of where the page lives. */
     var runRoot = el.closest && el.closest(".lc-run[data-lc-src-repo]");
+    /* open="runner" OR simply rendered inside a runner render: the folder lives
+       OUTSIDE docs/ (course material, benches), so cards enumerate via the API
+       and open in the runner. Inside a render the mode is implied — a bare
+       `{: .folder }` "just shows what's here", no knob needed. */
+    var runnerMode = (el.getAttribute("open") || "") === "runner" || !!runRoot;
+    /* Repo path to enumerate: prefer an explicit path="…" (a repo path, never
+       base-healed). With no path, default to the CURRENT folder (".") — a bare
+       `{: .folder }` lists the folder it lives in; a placeholder href ("#") is
+       not a path. Otherwise the link href with any project base stripped. */
+    var _pathAttr = el.getAttribute("path");
+    var _href = a.getAttribute("href") || "";
+    var _rawAttr = (_pathAttr != null && _pathAttr !== "") ? _pathAttr
+                 : (_href && _href !== "#") ? _href
+                 : ".";
+    var path = "";   // resolved below — the knob may be a "= get_var('NAME','default')" cell
     var scanRepo = (runRoot && runRoot.dataset.lcSrcRepo) || _lcSiteRepo;
     var runBaseDir = "";
     if (runRoot && runRoot.dataset.lcSrcPath) {
@@ -470,11 +475,11 @@ Auto-included by docs/_layouts/default.html.
           var filePath = (apiPath ? apiPath + "/" : "") + slug + (isFolder ? "/index.md" : ".md");
           var title = raw.replace(/\/+$/, "").trim();
           npBtn.disabled = true; npBtn.textContent = "➕ Creating…";
-          /* every new node ships a .folder so you can see what's around it —
-             a folder lists its (new, empty) contents; a module lists the
-             siblings in its folder. path="." resolves to the render's own dir. */
+          /* every new node ships a bare .folder so you can see what's around it —
+             no path (defaults to the current folder) and no open knob (runner
+             mode is implied inside a render). It just shows what's here. */
           var body = "# " + title + "\n\nStart writing here.\n\n[" +
-            (isFolder ? "in this folder" : "in this module") + "](#)\n{: .folder path=\".\" open=\"runner\" }\n";
+            (isFolder ? "in this folder" : "in this module") + "](#)\n{: .folder }\n";
           fetch("https://api.github.com/repos/" + scanRepo + "/contents/" + filePath,
             { method: "PUT", headers: { Authorization: "Bearer " + _folderPat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
               body: JSON.stringify({ message: "New: " + filePath, content: btoa(unescape(encodeURIComponent(body))) }) })

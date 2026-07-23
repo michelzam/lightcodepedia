@@ -60,6 +60,13 @@ Feature: The instant runner (RT) — Phase A parity
     When I open the bench page "course/ex1.md"
     Then the link "Back to the bench" opens gh path "index.md"
 
+  Scenario: A bare .folder inside a render lists the current folder
+    # {: .folder } with no path knob defaults to the folder it lives in, and
+    # runner mode is implied inside a render — "just show what's here".
+    Given a stubbed bench with a course page
+    When I open the bench page "shelf.md"
+    Then the shelf lists a card opening gh path "lesson_a.md"
+
   Scenario: The runtime opens the rich page editor bound to the rendered source
     # /run.html has no page of its own to edit — the same rich editor must
     # target the RENDERED file (gh:repo/path the runner stamped), so course

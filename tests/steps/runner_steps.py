@@ -118,6 +118,18 @@ def _bench_route(context):
             else:
                 route.fulfill(status=200, json=envelope())
             return
+        # a bench page carrying a BARE {: .folder } — no path, no open knob
+        if "/contents/shelf.md" in url and method == "GET":
+            route.fulfill(status=200, content_type="text/plain",
+                          body="# Shelf\n\n[in this folder](#)\n{: .folder }\n")
+            return
+        # the current-folder listing a bare {: .folder } enumerates (bench root)
+        if url.split("?")[0].endswith("/contents/") and method == "GET":
+            route.fulfill(status=200, json=[
+                {"name": "lesson_a.md", "path": "lesson_a.md", "type": "file"},
+                {"name": "index.md", "path": "index.md", "type": "file"},
+            ])
+            return
         if "/contents/menu.md" in url and method == "GET":
             if st.get("menu"):
                 route.fulfill(status=200, content_type="text/plain",
@@ -186,6 +198,15 @@ def step_topbar_bench_menu(context):
     expect(link).to_be_visible(timeout=8000)
     href = link.get_attribute("href") or ""
     assert "run.html#src=gh:" + BENCH_REPO + "/index.md" in href, href
+
+
+@then('the shelf lists a card opening gh path "{path}"')
+def step_shelf_card(context, path):
+    # a bare {: .folder } inside a render defaults to the CURRENT folder and
+    # auto-uses runner mode — so a card links into the runner for that repo file
+    a = context.page.locator(
+        '#lc-run .lc-cards a[href*="run.html#src=gh:%s/%s"]' % (BENCH_REPO, path))
+    expect(a.first).to_be_visible(timeout=10_000)
 
 
 @then('the page editor is editing "{path}"')
