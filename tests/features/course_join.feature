@@ -79,3 +79,11 @@ Feature: The student course wizard (/courses/join)
     And the student can read the vault
     When I open the course door "?go=bench&hub=ghost-session" with a stored key
     Then the bench step explains the session is not visible
+
+  Scenario: The door holds for refresh when the bench lacks the new root
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And my bench exists and is 0 updates behind the hub
+    And my bench has no index yet
+    When I open the course door "?go=bench&hub=build-ai-fall26" with a stored key
+    Then the bench step invites a refresh

@@ -215,12 +215,25 @@ The check is live truth against the API, never cached. Done steps reopen via
       /* the bench opens IN the runner — students never land in the GitHub UI;
          xray Keep commits their edits straight back to the bench */
       var benchOpen = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + org + "/" + B.name + "/index.md";
-      /* the door forwards only when there is nothing left to decide here:
-         a pending sync keeps the student on the wizard, one click away */
-      if (goBench && !behind) { location.replace(benchOpen); return; }
-      benchRow().innerHTML =
-        (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Sync from hub</button>' : "") +
-        '<a class="lcj-btn' + (behind ? " alt" : "") + '" href="' + benchOpen + '">🛠 Open my bench →</a>';
+      function paintBenchRow() {
+        benchRow().innerHTML =
+          (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Sync from hub</button>' : "") +
+          '<a class="lcj-btn' + (behind ? " alt" : "") + '" href="' + benchOpen + '">🛠 Open my bench →</a>';
+      }
+      /* forward only when green AND the root actually exists in the bench —
+         a bench that hasn't synced the index.md rename must NOT be flung at a
+         404 (which the runner mis-reads as a key wall). */
+      if (goBench && !behind) {
+        sgh("/repos/" + org + "/" + B.name + "/contents/index.md")
+          .then(function (r) {
+            if (r.ok) { location.replace(benchOpen); return; }
+            msg(4, "🔄 One more step — refresh your bench to get the latest layout, then open it:", "");
+            behind = behind || 1; paintBenchRow();
+          })
+          .catch(function () { paintBenchRow(); });
+        return;
+      }
+      paintBenchRow();
     }
 
     wrap.addEventListener("click", function (e) {

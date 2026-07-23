@@ -154,8 +154,11 @@ body {
 #lc-topbar.lc-bench-mode { background: rgba(241,243,246,0.97); border-bottom-color: #dfe3e9; flex-wrap: nowrap; align-items: baseline; }
 #lc-topbar.lc-bench-mode .lc-brand { color: #1f2937; margin-right: 0; margin-left: 0.4em; white-space: nowrap; }
 #lc-topbar .lc-bench-home { text-decoration: none; font-size: 1.1em; line-height: 1; align-self: center; }
-#lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.82em; color: #4b5563; margin-left: 0.5em;
-  margin-right: auto; white-space: nowrap; }
+#lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.82em; color: #4b5563; margin-left: 0.5em; white-space: nowrap; }
+#lc-topbar .lc-bench-refresh { margin-left: 0.7em; margin-right: auto; align-self: center; font-size: 0.78em;
+  padding: 2px 9px; border-radius: 999px; border: 1px solid #c9d2de; background: #fff; color: #37506e; cursor: pointer; white-space: nowrap; }
+#lc-topbar .lc-bench-refresh:hover:not(:disabled) { background: #eef2f7; }
+#lc-topbar .lc-bench-refresh:disabled { opacity: 0.6; cursor: default; }
 /* bench mode fills more of the left side — the menu goes icon-only well
    before it would wrap into a second (ugly) line; tooltips carry the labels */
 @media (max-width: 1100px) {
@@ -348,6 +351,29 @@ body {
      the site menu — relative hrefs resolve INTO the bench via the runner,
      so students stay in their playground. Same folder-menu convention as
      Jekyll (a menu.md governs its branch), applied at runtime. */
+  /* Refresh a bench: merge-upstream syncs a fork with its parent hub. New
+     hub files arrive, the student's own files stay; only a file edited on
+     BOTH sides conflicts (409) — hence weekly modules are new files. */
+  window.lcBenchRefresh = function (repo, btn) {
+    var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+    if (!pat) { alert("Connect your course key first (Get started, top right)."); return; }
+    var was = btn ? btn.textContent : ""; if (btn) { btn.disabled = true; btn.textContent = "🔄 Refreshing…"; }
+    var H = { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+    fetch("https://api.github.com/repos/" + repo, { headers: H, cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        return fetch("https://api.github.com/repos/" + repo + "/merge-upstream",
+          { method: "POST", headers: H, body: JSON.stringify({ branch: d.default_branch || "main" }) });
+      })
+      .then(function (r) {
+        if (r.ok) { if (btn) btn.textContent = "✅ Up to date"; setTimeout(function () { location.reload(); }, 700); return; }
+        if (btn) { btn.disabled = false; btn.textContent = was; }
+        if (r.status === 409) alert("⚠️ A file you changed also changed in the course — ask your teacher (a sync conflict). Your work is safe.");
+        else r.json().then(function (x) { alert("Couldn't refresh: " + (x.message || ("HTTP " + r.status))); });
+      })
+      .catch(function () { if (btn) { btn.disabled = false; btn.textContent = was; } alert("Couldn't reach GitHub — try again."); });
+  };
+
   window.lcBenchMode = function (repo, path) {
     var bar = document.getElementById("lc-topbar");
     if (!bar) return;
@@ -365,6 +391,14 @@ body {
       brand.parentNode.insertBefore(home, brand);   // BEFORE the brand → leftmost
       file = document.createElement("span"); file.className = "lc-bench-file";
       brand.parentNode.insertBefore(file, brand.nextSibling);
+      /* 🔄 Refresh — pull the latest hub material into this bench
+         (merge-upstream keeps the student's own work; new files arrive,
+         existing untouched). Placed after the filename, before the menu. */
+      var refresh = document.createElement("button");
+      refresh.className = "lc-bench-refresh"; refresh.type = "button";
+      refresh.textContent = "🔄 Refresh"; refresh.title = "Get the latest course material — keeps your work";
+      refresh.addEventListener("click", function () { lcBenchRefresh(repo, refresh); });
+      file.parentNode.insertBefore(refresh, file.nextSibling);
     }
     if (home) home.href = runIndex;
     if (brand && first) {

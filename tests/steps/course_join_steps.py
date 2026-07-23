@@ -31,7 +31,7 @@ def _stub(context):
             # hub discovery: the session template is visible once enrolled
             route.fulfill(status=200, json=[HUB] if st.get("vault_ok") else [])
             return
-        if re.search(r"/repos/[^/]+/[^/]+/contents/", url) and method == "GET":
+        if re.search(r"/repos/[^/]+/[^/]+/contents/", url) and method == "GET" and BENCH not in url:
             if st.get("vault_ok"):
                 route.fulfill(status=200, json={"name": "index.md", "sha": "s"})
             else:
@@ -45,6 +45,12 @@ def _stub(context):
             if url.endswith("/merge-upstream") and method == "POST":
                 st["behind"] = 0
                 route.fulfill(status=200, json={"message": "fast-forwarded"})
+                return
+            if "/contents/index.md" in url and method == "GET":
+                if st.get("bench") and not st.get("no_index"):
+                    route.fulfill(status=200, json={"name": "index.md", "sha": "s"})
+                else:
+                    route.fulfill(status=404, json={"message": "Not Found"})
                 return
             if method == "GET":
                 if st.get("bench"):
@@ -228,3 +234,14 @@ def step_forwarded(context):
 @then("the bench step explains the session is not visible")
 def step_session_not_visible(context):
     expect(context.page.locator('.lc-join [data-m="4"]')).to_contain_text("isn’t visible", timeout=8000)
+
+
+@given("my bench has no index yet")
+def step_bench_no_index(context):
+    context.join_stub["no_index"] = True
+
+
+@then("the bench step invites a refresh")
+def step_invites_refresh(context):
+    expect(context.page.locator('.lc-join [data-m="4"]')).to_contain_text("refresh", timeout=8000)
+    expect(context.page.locator('.lc-join [data-a="sync"]')).to_be_visible()
