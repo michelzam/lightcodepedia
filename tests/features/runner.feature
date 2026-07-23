@@ -38,24 +38,6 @@ Feature: The instant runner (RT) — Phase A parity
     Then the runner bar names the source "probe.txt"
     And the runner page title is hidden
 
-  Scenario: A course page on a bench offers Make it mine
-    Given a stubbed bench with a course page
-    When I open the bench page "course/ex1.md"
-    Then the runner bar marks it as course material
-
-  Scenario: Make it mine copies the page into my space and opens it
-    Given a stubbed bench with a course page
-    When I open the bench page "course/ex1.md"
-    And I click Make it mine
-    Then the bench received my copy
-    And the runner bar marks it as my page
-
-  Scenario: The bar flags an original that changed since my copy
-    Given a stubbed bench with a course page
-    And my copy exists from an older original
-    When I open the bench page "my/ex1.md"
-    Then the runner bar flags the changed original
-
   Scenario: A bench flips the topbar into bench mode
     Given a stubbed bench with a course page
     When I open the bench page "course/ex1.md"
@@ -70,10 +52,10 @@ Feature: The instant runner (RT) — Phase A parity
 
   Scenario: Relative links in a rendered page stay in the repo
     Given a stubbed bench with a course page
-    When I open the bench page "README.md"
+    When I open the bench page "index.md"
     Then the link "Exercise 1" opens gh path "course/ex1.md"
 
   Scenario: Parent-relative links resolve within the repo
     Given a stubbed bench with a course page
     When I open the bench page "course/ex1.md"
-    Then the link "Back to the bench" opens gh path "README.md"
+    Then the link "Back to the bench" opens gh path "index.md"

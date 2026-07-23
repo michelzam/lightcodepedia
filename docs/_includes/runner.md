@@ -8,10 +8,11 @@ Phase A: #src=<url-to-raw-markdown> (public, no auth). Later phases add
 gh:owner/repo/path (private benches via PAT) and edit/commit. The page stays
 pure md + IAL (P1); all logic lives here in the engine.
 
-The bar replaces the /run page title while a source renders: it names the
-source (the working hint) and, on benches, carries the ownership convention —
-course/… (teacher's, synced) gets ✍️ Make it mine; my/… (student's, never
-synced) links its original and flags when that original moved on.
+The bar replaces the /run page title while a source renders and names the
+source (the working hint). Two zones, by repo: the VAULT is read-only
+(repo privacy); a BENCH is the student's own repo, edited directly. New
+weekly modules arrive as NEW files via Sync, so they never conflict with
+files a student is already working in.
 {%- endcomment -%}
 <style>
 /* the bar IS the runner's presence: it replaces the page title, names what is
@@ -19,6 +20,8 @@ synced) links its original and flags when that original moved on.
 .lc-run-bar { font-size: 0.85em; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.45em 0.8em; margin-bottom: 1.1em; }
 .lc-run-bar .lc-run-chip { font-family: monospace; }
 .lc-run-bar a { color: #0066cc; text-decoration: none; font-weight: 600; }
+.lc-run-bar.lc-run-vault { background: #fff8e6; border-color: #f0d98a; }
+.lc-run-bar .lc-run-badge { font-weight: 700; color: #8a6d00; }
 </style>
 <script>
 (function () {
@@ -62,77 +65,25 @@ synced) links its original and flags when that original moved on.
     }
   }
 
-  /* Ownership convention on benches (never collides with the vault's
-     "courses/"): course/… = the teacher's material, synced from the hub;
-     my/… = the student's space, never touched by a sync. */
+  /* The bar names what is rendering. On a bench (topbar bench mode) the repo
+     + filename already live up there, so the bar just shows the path; a
+     plain gh: render shows the full chip. No ownership dance: the vault is
+     R/O by repo privacy, the bench is the student's to edit directly. */
   function paintBar(bar, st) {
     if (!bar) return;
     bar._lcState = st;
-    var own = "";
-    if (!st.loading && st.repo && st.path) {
-      if (st.path.indexOf("course/") === 0)
-        own = '📦 Course page — updates arrive via Sync · <a href="#" data-lcr="mine">✍️ Make it mine</a>';
-      else if (st.path.indexOf("my/") === 0)
-        own = '✍️ Your page · <a href="#" data-lcr="orig">📦 View original</a><span data-lcr="upd"></span>';
-    }
-    /* merged with the topbar (bench mode): repo + filename live up there, so
-       this bar carries ONLY ownership — and vanishes when there is none */
     var tb = document.getElementById("lc-topbar");
     if (tb && st.repo && tb.dataset.benchMode === st.repo) {
-      if (st.loading) { bar.innerHTML = "⏳ rendering…"; bar.style.display = ""; return; }
-      if (!own) { bar.style.display = "none"; return; }
-      bar.innerHTML = own;
-      bar.style.display = "";
+      bar.style.display = "none";           // topbar carries it in bench mode
       return;
     }
-    bar.innerHTML = '<span class="lc-run-chip">🔬 ' + (st.repo ? st.repo + "/" : "") + (st.path || st.src) + '</span>' +
-                    (st.loading ? " ⏳ rendering…" : "") + (own ? " · " + own : "");
+    /* the vault reads as a LIBRARY: read-only, by repo privacy */
+    var vault = st.repo && /-vault$/.test(st.repo);
+    bar.className = "lc-run-bar" + (vault ? " lc-run-vault" : "");
+    bar.innerHTML = (vault ? '<span class="lc-run-badge">📚 Library · read-only</span> ' : "") +
+                    '<span class="lc-run-chip">🔬 ' + (st.repo ? st.repo + "/" : "") + (st.path || st.src) + '</span>' +
+                    (st.loading ? " ⏳ rendering…" : "");
     bar.style.display = "";
-  }
-
-  /* copy course/x → my/x with the student's own key, then open the copy.
-     A 422 means the copy already exists — never overwrite their work. */
-  function makeMine(st) {
-    var key = edKey(); if (!key) { alert("Connect your course key first (Get started, top right)."); return; }
-    var myPath = "my/" + st.path.slice(7);
-    var H = { Authorization: "Bearer " + key, Accept: "application/vnd.github+json",
-              "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" };
-    var api = "https://api.github.com/repos/" + st.repo + "/contents/";
-    /* no-store: the render just fetched this URL with Accept raw — don't let
-       a cached raw body answer this json request (FF Vary quirk) */
-    fetch(api + st.path, { headers: H, cache: "no-store" })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (!d.content) throw new Error(d.message || "could not load the original");
-        try { localStorage.setItem("lc_orig_sha:" + st.repo + "/" + myPath, d.sha); } catch (e) {}
-        return fetch(api + myPath, { method: "PUT", headers: H,
-          body: JSON.stringify({ message: "Make it mine: " + st.path, content: d.content.replace(/\n/g, "") }) })
-          .then(function (r) {
-            if (r.ok || r.status === 422) return;
-            return r.json().then(function (x) { throw new Error(x.message || ("HTTP " + r.status)); });
-          });
-      })
-      .then(function () { location.hash = "src=gh:" + st.repo + "/" + myPath; })
-      .catch(function (e) { alert("Could not copy: " + e.message); });
-  }
-
-  /* on a my/ page: has the original moved since the copy was taken? The sha
-     remembered at copy time is this browser's memory — absent elsewhere, the
-     check stays silent rather than guessing. */
-  function checkOrig(bar, st) {
-    var key = edKey(); if (!key) return;
-    var stored = "";
-    try { stored = localStorage.getItem("lc_orig_sha:" + st.repo + "/" + st.path) || ""; } catch (e) {}
-    if (!stored) return;
-    fetch("https://api.github.com/repos/" + st.repo + "/contents/course/" + st.path.slice(3),
-          { headers: { Authorization: "Bearer " + key, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        var slot = bar.querySelector("[data-lcr='upd']");
-        if (d && d.sha && slot && d.sha !== stored)
-          slot.innerHTML = ' · ⬆️ <a href="#" data-lcr="orig">the original changed since your copy</a>';
-      })
-      .catch(function () {});
   }
 
   /* Phase B, step 1: RELATIVE links in a rendered page navigate WITHIN the
@@ -234,7 +185,6 @@ synced) links its original and flags when that original moved on.
             if (spec.gh && barSt.repo && !/-vault$/.test(barSt.repo) && window.lcBenchMode)
               window.lcBenchMode(barSt.repo, barSt.path);
             barSt.loading = false; paintBar(bar, barSt);
-            if (barSt.path && barSt.path.indexOf("my/") === 0) checkOrig(bar, barSt);
           }
         });
       })
@@ -279,13 +229,6 @@ synced) links its original and flags when that original moved on.
     var status = wrap.querySelector(".lc-run-status");
     var root = wrap.querySelector(".lc-run");
     var bar = wrap.querySelector(".lc-run-bar");
-    if (bar) bar.addEventListener("click", function (e) {
-      var a = e.target.closest("[data-lcr]"); if (!a) return;
-      e.preventDefault();
-      var st = bar._lcState || {};
-      if (a.getAttribute("data-lcr") === "orig" && st.path) location.hash = "src=gh:" + st.repo + "/course/" + st.path.slice(3);
-      if (a.getAttribute("data-lcr") === "mine" && st.path) makeMine(st);
-    });
     render(status, root, fixedSrc, bar);
     if (!fixedSrc) window.addEventListener("hashchange", function () { render(status, root, "", bar); });
   }

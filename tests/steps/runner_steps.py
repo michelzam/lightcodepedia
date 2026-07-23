@@ -81,7 +81,7 @@ def step_rt_footnotes(context):
 import base64
 
 BENCH_REPO = "zam-academy/build-ai-x-stu"
-BENCH_MD = "# Exercise 1\n\nSolve it your way.\n\n[Back to the bench](../README.md)\n"
+BENCH_MD = "# Exercise 1\n\nSolve it your way.\n\n[Back to the bench](../index.md)\n"
 
 
 def _bench_route(context):
@@ -95,7 +95,7 @@ def _bench_route(context):
         req = route.request
         url, method = req.url, req.method
         raw = "raw" in (req.headers.get("accept") or "")
-        if "/contents/README.md" in url and method == "GET":
+        if "/contents/index.md" in url and method == "GET":
             route.fulfill(status=200, content_type="text/plain",
                           body="# Bench\n\n[Exercise 1](course/ex1.md)\n")
             return
@@ -121,7 +121,7 @@ def _bench_route(context):
         if "/contents/menu.md" in url and method == "GET":
             if st.get("menu"):
                 route.fulfill(status=200, content_type="text/plain",
-                              body="[🛠 My bench](README.md) [🎓 Course](/courses/join)")
+                              body="[🛠 My bench](index.md) [🎓 Course](/courses/join)")
             else:
                 route.fulfill(status=404, json={"message": "Not Found"})
             return
@@ -163,33 +163,6 @@ def step_title_hidden(context):
     expect(context.page.locator("h1", has_text="Runner").first).to_be_hidden()
 
 
-@then("the runner bar marks it as course material")
-def step_bar_course(context):
-    expect(context.page.locator(".lc-run-bar")).to_contain_text("Course page", timeout=8000)
-    expect(context.page.locator(".lc-run-bar [data-lcr='mine']")).to_be_visible()
-
-
-@when("I click Make it mine")
-def step_click_mine(context):
-    context.page.click(".lc-run-bar [data-lcr='mine']")
-    context.page.wait_for_timeout(1000)
-
-
-@then("the bench received my copy")
-def step_copy_received(context):
-    assert context.bench_stub["puts"], "no PUT to my/ex1.md arrived"
-
-
-@then("the runner bar marks it as my page")
-def step_bar_mine(context):
-    expect(context.page.locator(".lc-run-bar")).to_contain_text("Your page", timeout=8000)
-
-
-@then("the runner bar flags the changed original")
-def step_bar_flags_update(context):
-    expect(context.page.locator(".lc-run-bar")).to_contain_text("original changed", timeout=8000)
-
-
 @given("the bench ships a menu")
 def step_bench_has_menu(context):
     context.bench_stub["menu"] = True
@@ -199,9 +172,11 @@ def step_bench_has_menu(context):
 def step_topbar_bench_mode(context):
     expect(context.page.locator("#lc-topbar")).to_have_class(
         __import__("re").compile(r"\blc-bench-mode\b"), timeout=8000)
-    expect(context.page.locator("#lc-topbar .lc-brand")).to_contain_text("build-ai-x-stu")
+    expect(context.page.locator("#lc-topbar .lc-brand")).to_contain_text("Build Ai X Stu")
     # the full repo name lives in the brand tooltip; the rendered file in the bar
     assert BENCH_REPO in (context.page.locator("#lc-topbar .lc-brand").get_attribute("title") or "")
+    # 🏠 home is always in reach, pointing at the bench README
+    expect(context.page.locator("#lc-topbar .lc-bench-home")).to_be_visible()
     expect(context.page.locator("#lc-topbar .lc-bench-file")).to_contain_text("ex1.md")
 
 
@@ -210,7 +185,7 @@ def step_topbar_bench_menu(context):
     link = context.page.locator("#lc-topbar .lc-links a", has_text="My bench")
     expect(link).to_be_visible(timeout=8000)
     href = link.get_attribute("href") or ""
-    assert "run.html#src=gh:" + BENCH_REPO + "/README.md" in href, href
+    assert "run.html#src=gh:" + BENCH_REPO + "/index.md" in href, href
 
 
 @then('the link "{text}" opens gh path "{path}"')

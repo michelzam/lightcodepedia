@@ -214,7 +214,7 @@ The check is live truth against the API, never cached. Done steps reopen via
                 : "✅ up to date with the hub."), behind ? "" : "ok");
       /* the bench opens IN the runner — students never land in the GitHub UI;
          xray Keep commits their edits straight back to the bench */
-      var benchOpen = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + org + "/" + B.name + "/README.md";
+      var benchOpen = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + org + "/" + B.name + "/index.md";
       /* the door forwards only when there is nothing left to decide here:
          a pending sync keeps the student on the wizard, one click away */
       if (goBench && !behind) { location.replace(benchOpen); return; }

@@ -202,7 +202,7 @@ def step_bench_door(context):
     a = context.page.locator(".lc-join [data-bench] a")
     expect(a).to_be_visible(timeout=6000)
     href = a.get_attribute("href") or ""
-    assert "run.html#src=gh:uwm-build-ai/" + BENCH + "/README.md" in href, href
+    assert "run.html#src=gh:uwm-build-ai/" + BENCH + "/index.md" in href, href
     assert "github.com/" not in href, href
 
 
@@ -219,7 +219,7 @@ def step_open_door(context, query):
 @then("I am forwarded into my bench")
 def step_forwarded(context):
     for _ in range(40):
-        if "run.html#src=gh:uwm-build-ai/" + BENCH + "/README.md" in context.page.url:
+        if "run.html#src=gh:uwm-build-ai/" + BENCH + "/index.md" in context.page.url:
             return
         context.page.wait_for_timeout(250)
     raise AssertionError("stayed on " + context.page.url)

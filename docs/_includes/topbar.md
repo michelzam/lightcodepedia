@@ -151,9 +151,10 @@ body {
    engaged by the runner when it renders a bench (gh: source, not the vault):
    dark bar, the brand becomes the bench itself, links from the bench's own
    menu.md when it has one */
-#lc-topbar.lc-bench-mode { background: rgba(223,227,233,0.97); border-bottom-color: #c3c9d3; flex-wrap: nowrap; }
-#lc-topbar.lc-bench-mode .lc-brand { color: #1f2937; margin-right: 0; white-space: nowrap; }
-#lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.85em; color: #4b5563; margin-left: 0.45em;
+#lc-topbar.lc-bench-mode { background: rgba(241,243,246,0.97); border-bottom-color: #dfe3e9; flex-wrap: nowrap; align-items: baseline; }
+#lc-topbar.lc-bench-mode .lc-brand { color: #1f2937; margin-right: 0; margin-left: 0.4em; white-space: nowrap; }
+#lc-topbar .lc-bench-home { text-decoration: none; font-size: 1.1em; line-height: 1; align-self: center; }
+#lc-topbar .lc-bench-file { font-family: monospace; font-size: 0.82em; color: #4b5563; margin-left: 0.5em;
   margin-right: auto; white-space: nowrap; }
 /* bench mode fills more of the left side — the menu goes icon-only well
    before it would wrap into a second (ugly) line; tooltips carry the labels */
@@ -355,19 +356,29 @@ body {
     bar.classList.add("lc-bench-mode");
     var runHome = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + repo + "/";
     var brand = bar.querySelector(".lc-brand");
+    var home = bar.querySelector(".lc-bench-home");
     var file = bar.querySelector(".lc-bench-file");
-    if (!file && brand) {
+    var runIndex = runHome + "index.md";         // the session root (index.md + .folder)
+    if (!home && brand) {                        // 🏠 top-left, always → the root
+      home = document.createElement("a"); home.className = "lc-bench-home"; home.textContent = "🏠";
+      home.title = "Home — the session root";
+      brand.parentNode.insertBefore(home, brand);   // BEFORE the brand → leftmost
       file = document.createElement("span"); file.className = "lc-bench-file";
       brand.parentNode.insertBefore(file, brand.nextSibling);
     }
+    if (home) home.href = runIndex;
     if (brand && first) {
-      /* the brand stays short: my own bench reads as just my login; the full
-         repo name lives in its tooltip, never in precious bar width */
+      /* the brand IS the class: <hub>-<login> → "Build Ai Summer26" (drop the
+         student's own id, dashes→spaces, title case). It shares the home
+         destination — one place, no surprise. */
       var name = repo.split("/")[1], login = "";
       try { login = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; } catch (e) {}
-      var short = login && name.slice(-(login.length + 1)) === "-" + login ? login : name;
-      brand.textContent = "🔬 " + short + "/";
-      brand.href = runHome + "README.md";
+      var session = login && name.slice(-(login.length + 1)) === "-" + login
+        ? name.slice(0, -(login.length + 1)) : name;
+      var title = session.split(/[-_]/).map(function (w) {
+        return w ? w.charAt(0).toUpperCase() + w.slice(1) : w; }).join(" ");
+      brand.textContent = "🔬 " + title;
+      brand.href = runIndex;
       brand.title = repo;
     }
     if (file) { file.textContent = path || ""; file.title = repo + "/" + (path || ""); }
