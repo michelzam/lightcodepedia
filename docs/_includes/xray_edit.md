@@ -25,7 +25,11 @@ loses everything. A component's editable source comes from window.lcSourceOf
 #lcx-edit input, #lcx-edit textarea { width: 100%; box-sizing: border-box; padding: .45em .6em;
   border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
 #lcx-edit input[type=checkbox] { width: auto; height: 1.35em; margin: .2em 0; }
-#lcx-edit textarea { font-family: ui-monospace, Menlo, monospace; min-height: 120px; resize: vertical; }
+/* the editable content is a dark "workshop" surface — same as the page
+   editor's Content/Raw field, so every text editor reads consistently */
+#lcx-edit textarea { font-family: ui-monospace, Menlo, monospace; min-height: 120px; resize: vertical;
+  background: #1e1e2e; color: #cdd6f4; caret-color: #89b4fa; border-color: #45475a; }
+#lcx-edit textarea::placeholder { color: #6c7086; }
 #lcx-edit .lcx-bar { display: flex; gap: .55em; padding: .7em 1em; border-top: 1px solid #e5e7eb; background: #fafafa; }
 #lcx-edit button { font: inherit; padding: .45em .9em; border-radius: 7px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
 #lcx-edit .lcx-apply { background: #0066cc; color: #fff; border-color: #0066cc; }
@@ -97,6 +101,8 @@ loses everything. A component's editable source comes from window.lcSourceOf
     if (node === gear || node === ghost || (dlg && dlg.contains(node))) return null;
     var el = node.nodeType === 1 ? node : node.parentElement;
     if (!el || !el.closest) return null;
+    /* read-only render (the Library / vault): no gear, no editing at all */
+    if (el.closest(".lc-run[data-lc-readonly]")) return null;
     var comp = el.closest("[data-lc-id]");
     if (comp && MAIN.contains(comp)) return comp;
     var blk = el.closest(BLOCK_SEL);

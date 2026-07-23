@@ -166,6 +166,7 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
+  var _runtime = null;
   function start() {
     if (wired) return;
     if (!collect()) return;               // no cells on this page — nothing to do
@@ -175,12 +176,24 @@ Auto-included by docs/_layouts/default.html.
        lc-model-changed, so get_var() cells refine from default to value */
     if (window.lcNodeVars) window.lcNodeVars();
     window.lcPageRuntime().then(function (m) {
+      _runtime = m;
       // Listen first, then paint: if a `.run silent` model seeds the runtime
       // after this eval, its lc-model-changed still triggers a recompute.
       document.addEventListener("lc-model-changed", function () { evalAll(m); });
       evalAll(m);
     });
   }
+
+  /* Re-scan after content is injected AFTER load (the runner renders a page
+     into #lc-run) — collect the new {= } cells and evaluate them. Idempotent:
+     collect() rebuilds from the whole document each call. */
+  window.lcCellsRescan = function () {
+    if (!collect()) return;
+    if (!window.lcPageRuntime) return;
+    if (_runtime) { evalAll(_runtime); return; }
+    if (wired) return;                    // start() is already resolving the runtime
+    start();
+  };
 
   if (document.readyState !== "loading") start();
   else document.addEventListener("DOMContentLoaded", start);

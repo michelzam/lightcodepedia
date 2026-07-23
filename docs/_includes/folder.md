@@ -448,8 +448,39 @@ Auto-included by docs/_layouts/default.html.
           + "<button type='button' class='lc-card-filter-chip' data-age='2592000'>month</button>"
           + "</span>";
         chips += "<button type='button' class='lc-card-filter-chip lc-card-filter-clear' data-clear='1' hidden>✕ clear</button>";
+        /* ➕ New page — author new material without leaving the shelf. Runner
+           mode only (it edits repo files), and only with a connected key.
+           Creates <path>/<name>.md and opens it in the runner to edit+Save. */
+        if (runnerMode && _folderPat)
+          chips += "<button type='button' class='lc-card-filter-chip' data-newpage='1' style='margin-left:auto;background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20'>➕ New</button>";
         bar.innerHTML = chips;
         wrap.parentNode.insertBefore(bar, wrap);
+        var npBtn = bar.querySelector("[data-newpage]");
+        if (npBtn) npBtn.addEventListener("click", function () {
+          var raw = window.prompt("New page or folder?\n• a name → a page (module_03)\n• end with / → a folder (week4/)");
+          if (!raw) return;
+          raw = raw.trim();
+          var isFolder = /\/\s*$/.test(raw);
+          var slug = raw.replace(/\/+$/, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+          if (!slug) return;
+          var rel = (path === "." || path === "") ? "" : path;
+          var apiPath = (runBaseDir && (rel === "" || rel.charAt(0) !== "/")) ? (rel ? runBaseDir + "/" + rel : runBaseDir) : rel;
+          /* git has no empty folders — a new folder is created as its index.md,
+             which is also its landing page (same convention as the vault) */
+          var filePath = (apiPath ? apiPath + "/" : "") + slug + (isFolder ? "/index.md" : ".md");
+          var title = raw.replace(/\/+$/, "").trim();
+          npBtn.disabled = true; npBtn.textContent = "➕ Creating…";
+          var body = "# " + title + "\n\nStart writing here.\n" + (isFolder ? "\n[pages](#)\n{: .folder path=\"" + slug + "\" open=\"runner\" }\n" : "");
+          fetch("https://api.github.com/repos/" + scanRepo + "/contents/" + filePath,
+            { method: "PUT", headers: { Authorization: "Bearer " + _folderPat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
+              body: JSON.stringify({ message: "New: " + filePath, content: btoa(unescape(encodeURIComponent(body))) }) })
+            .then(function (r) {
+              if (r.status === 201) location.href = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + scanRepo + "/" + filePath;
+              else if (r.status === 422) { npBtn.disabled = false; npBtn.textContent = "➕ New"; alert("“" + slug + "” already exists here."); }
+              else r.json().then(function (d) { npBtn.disabled = false; npBtn.textContent = "➕ New"; alert("Couldn't create: " + (d.message || ("HTTP " + r.status))); });
+            })
+            .catch(function () { npBtn.disabled = false; npBtn.textContent = "➕ New"; alert("Couldn't reach GitHub — try again."); });
+        });
         var timesWrap = bar.querySelector(".lc-card-times");
         /* honest empty-state: if no card got a date (API unreachable), a time
            window must not silently hide everything — show all + say why */

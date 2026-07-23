@@ -125,6 +125,11 @@ files a student is already working in.
         rw = /^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/[^\/]+\/(.+)$/.exec(src);
     root.dataset.lcSrcRepo = gm ? gm[1] + "/" + gm[2] : (rw ? rw[1] + "/" + rw[2] : "");
     root.dataset.lcSrcPath = gm ? gm[3] : (rw ? rw[3] : (src.charAt(0) === "/" ? "docs" + src : ""));
+    /* the vault is the LIBRARY — read-only for everyone. Mark the render so
+       xray refuses to edit it (a student has no write access anyway, but the
+       editor must not even offer it). */
+    if (/-vault$/.test(root.dataset.lcSrcRepo)) root.dataset.lcReadonly = "1";
+    else delete root.dataset.lcReadonly;
     var barSt = { repo: root.dataset.lcSrcRepo, path: root.dataset.lcSrcPath, src: src, loading: true };
     if (bar) { pageTitle(bar.parentNode, true); paintBar(bar, barSt); }
     function fetchMd(headers) {
@@ -177,6 +182,7 @@ files a student is already working in.
           if (window.lcSnapshotSources) window.lcSnapshotSources(root);
           if (window.lcScanElement) window.lcScanElement(root);
           if (window.lcRebase)      window.lcRebase(root);
+          if (window.lcCellsRescan) window.lcCellsRescan();   // {= } cells in the rendered page
           if (spec.gh && barSt.repo) healRelLinks(root, barSt.repo, barSt.path);
           status.style.display = "none";
           if (bar) {
