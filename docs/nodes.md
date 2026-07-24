@@ -97,7 +97,7 @@ on this node; an empty board here means this node keeps no backlog.
 {: .test_runner }
 
 [ux stat](#)
-{: .stat bind="fleet_trend" format="{passed}/{scenarios} scenarios · 🕒 {run}" requires="scenarios" ok-when="passed==scenarios" }
+{: .stat bind="fleet_trend" format="{passed}/{scenarios} scenarios · 🕒 {run}" requires="scenarios" ok-when="passed==scenarios" stale-after="3600" }
 
 Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) written in Gherkin (behave + Playwright). Each row below is one `Scenario` from a `.feature` file, with its result from the latest run against the live site.
 
@@ -114,7 +114,7 @@ Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightco
 {: .dataset #ux_summary refresh="30" }
 
 [totals](#)
-{: .stat bind="ux_summary" format="{features} features · {scenarios} scenarios · {steps} steps · 🕒 {run}" requires="steps" ok-when="scenarios_failed==0" }
+{: .stat bind="ux_summary" format="{features} features · {scenarios} scenarios · {steps} steps · 🕒 {run}" requires="steps" ok-when="scenarios_failed==0" stale-after="3600" }
 
 [failures](#)
 {: .stat bind="ux_summary" format="{scenarios_failed} scenarios · {steps_failed} steps failed" requires="scenarios_failed" ok-when="scenarios_failed==0" }

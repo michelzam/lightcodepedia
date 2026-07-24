@@ -11,6 +11,11 @@ Usage:
   format  template; {col} placeholders come from the picked row,
           {count} is the row count
   pick    which row feeds the template: "last" (default) or "first"
+  stale-after="3600"  seconds. CI-published data goes STALE when a run dies
+          before its publish step — the board then silently shows yesterday's
+          numbers. If this site was built more than N seconds after the row's
+          timestamp, the deployed code was never measured: say ⚠️ stale.
+  stale-field="run"   which column carries that timestamp (default "run")
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -22,12 +27,22 @@ Auto-included by docs/_layouts/default.html.
   padding: 0.15em 0.7em; margin: 0.2em 0;
 }
 .lc-stat.lc-stat-bad { border-color: #fecaca; background: #fef2f2; }
+/* stale wins the eye over pass/fail: the numbers themselves are not to be trusted */
+.lc-stat.lc-stat-stale { border-color: #fcd34d; background: #fffbeb; color: #92400e; }
 </style>
 
 <script>
 (function () {
   if (window._lcStatReady) return;
   window._lcStatReady = true;
+
+  /* When THIS site was built. CI publishes its results, then the site rebuilds,
+     so fresh data is always a few minutes older than the build. A run that dies
+     before publishing (an infra 429 on the action download killed one on
+     2026-07-24 — the job aborted before any step, so even `if: always()` steps
+     never ran) leaves the OLD file in place while the site keeps rebuilding:
+     the gap grows, and that gap is the honest staleness signal. No API, no key. */
+  var SITE_BUILT = {{ site.time | date_to_xmlschema | jsonify }};
 
   function upgradeStat(el) {
     if (el.dataset.lcStatDone) return;
@@ -41,7 +56,21 @@ Auto-included by docs/_layouts/default.html.
     /* ok-when="passed==scenarios": traffic light — ✅ when true, 🔴 when
        false; right side may be another column or a number */
     var okWhen = el.getAttribute("ok-when") || "";
+    /* freshness guard — 0 (default) = never check */
+    var staleAfter = parseInt(el.getAttribute("stale-after") || "0", 10) || 0;
+    var staleField = el.getAttribute("stale-field") || "run";
     if (!bindId) return;
+
+    /* how far this build postdates the data, once past the tolerance */
+    function staleness(row) {
+      if (!staleAfter) return null;
+      var t = Date.parse(String(row[staleField] || "")), built = Date.parse(SITE_BUILT);
+      if (isNaN(t) || isNaN(built)) return null;
+      var gap = built - t;
+      if (gap <= staleAfter * 1000) return null;
+      var h = Math.floor(gap / 3600000);
+      return h >= 24 ? Math.floor(h / 24) + "d" : (h >= 1 ? h + "h" : Math.round(gap / 60000) + "m");
+    }
 
     function evalOk(row) {
       var m = okWhen.match(/^(\w+)\s*(==|>=|<=|>|<)\s*(\w+)$/);
@@ -81,7 +110,16 @@ Auto-included by docs/_layouts/default.html.
       });
       var ok = okWhen ? evalOk(row) : null;
       if (ok !== null) out = (ok ? "✅ " : "🔴 ") + out;
-      chip.classList.toggle("lc-stat-bad", ok === false);
+      /* stale beats the traffic light: a green ✅ from data that predates this
+         build is the lie we are fixing — lead with the warning, keep the numbers */
+      var stale = staleness(row);
+      if (stale) {
+        out = "⚠️ stale " + stale + " · " + out;
+        chip.title = "These results predate this build by " + stale +
+          " — the last run never published (check Actions). The numbers describe older code.";
+      } else if (chip.title) { chip.removeAttribute("title"); }
+      chip.classList.toggle("lc-stat-bad", ok === false && !stale);
+      chip.classList.toggle("lc-stat-stale", !!stale);
       chip.textContent = out;
       chip.setAttribute("data-acc-summary", out);
     }
