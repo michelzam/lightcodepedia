@@ -94,7 +94,7 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-row" style="display:none" data-open><a class="lcj-btn" href="' + openUrl + '">📖 Open the course →</a></div></div></div>' +
 
       '<div class="lcj-step off" data-n="4"><div class="lcj-head"><span class="lcj-num">4</span>Your bench</div>' +
-      '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Fork it once, keep it refreshed, and work: your teacher can see your bench at any time.</p>' +
+      '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Create it once, keep it refreshed, and work: your teacher can see your bench at any time.</p>' +
       '<div class="lcj-msg" data-m="4"></div>' +
       '<div class="lcj-row" data-bench></div></div></div>';
     el.parentNode.replaceChild(wrap, el);
@@ -204,8 +204,8 @@ The check is live truth against the API, never cached. Done steps reopen via
     }
 
     function benchOffer() {
-      msg(4, "🧰 No bench yet for session “" + B.hub.name + "” — fork yours to start working:", "");
-      benchRow().innerHTML = '<button type="button" class="lcj-btn" data-a="fork">🍴 Fork my bench</button>';
+      msg(4, "🧰 No bench yet for session “" + B.hub.name + "” — create yours to start working:", "");
+      benchRow().innerHTML = '<button type="button" class="lcj-btn" data-a="fork">🛠 Create my bench</button>';
     }
 
     function benchShow(behind) {
@@ -242,7 +242,7 @@ The check is live truth against the API, never cached. Done steps reopen via
       if (a === "have") { setState("1", "ok"); setState("2", "on"); }
       if (a === "checkaccess") checkAccess(false);
       if (a === "fork") {
-        b.disabled = true; msg(4, "🍴 Forking… GitHub is copying the hub into your bench.", "");
+        b.disabled = true; msg(4, "🛠 Creating your bench… GitHub is copying the hub in.", "");
         sgh("/repos/" + org + "/" + B.hub.name + "/forks",
             { method: "POST", body: { organization: org, name: B.name, default_branch_only: true } })
           .then(function (r) {
@@ -253,13 +253,13 @@ The check is live truth against the API, never cached. Done steps reopen via
                 sgh("/repos/" + org + "/" + B.name).then(function (r2) {
                   if (r2.ok) benchStatus();
                   else if (++tries < 10) setTimeout(poll, 900);
-                  else msg(4, "⏳ Still forking — reload this page in a minute.", "");
+                  else msg(4, "⏳ Still setting up your bench — reload this page in a minute.", "");
                 });
               })();
             }
             else return r.json().then(function (d) {
               b.disabled = false;
-              msg(4, "❌ Fork refused: " + (d.message || "HTTP " + r.status) + " — your teacher may need to allow members to create private repositories (cockpit, step 3).", "err");
+              msg(4, "❌ Couldn't create your bench: " + (d.message || "HTTP " + r.status) + " — your teacher may need to allow members to create private repositories (cockpit, step 3).", "err");
             });
           })
           .catch(function () { b.disabled = false; msg(4, "❌ Could not reach GitHub — try again.", "err"); });

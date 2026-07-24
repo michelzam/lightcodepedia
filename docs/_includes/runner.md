@@ -236,8 +236,8 @@ files a student is already working in.
                       status.innerHTML = "🔄 Your bench is <b>behind</b> — this page (<code>" + (barSt.path || "") + "</code>) isn’t in it yet. Open your course and <b>Refresh</b> to pull the latest:<br>" +
                         "<a href=\"" + doorUrl + "\" style=\"display:inline-block;margin:0.4em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">🎓 Open my course → Refresh</a>";
                     else
-                      status.innerHTML = "🎒 No bench <code>" + repoName.split("/").slice(0, 2).join("/") + "</code> yet for <b>@" + (d.login || "?") + "</b> — open your course to fork one:<br>" +
-                        "<a href=\"" + doorUrl + "\" style=\"display:inline-block;margin:0.4em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">🎓 Open my course → Fork</a>";
+                      status.innerHTML = "🎒 No bench <code>" + repoName.split("/").slice(0, 2).join("/") + "</code> yet for <b>@" + (d.login || "?") + "</b> — open your course to create one:<br>" +
+                        "<a href=\"" + doorUrl + "\" style=\"display:inline-block;margin:0.4em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">🎓 Open my course → Create bench</a>";
                   })
                   .catch(function () { status.innerHTML = "⚠️ <code>" + repoName + "</code> returns HTTP 404 — reload, or tell your teacher."; });
               }
