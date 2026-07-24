@@ -57,7 +57,13 @@ def step_hover_scene3d(context):
 
 @when('I hover over the avatar overlay "{avatar_id}"')
 def step_hover_avatar(context, avatar_id):
-    _alt_hover(context.page, context.page.locator("#lc-avatar-" + avatar_id))
+    host = context.page.locator("#lc-avatar-" + avatar_id)
+    # the avatar registers itself async (Rive/Lottie from the CDN) — hovering
+    # before it upgrades makes x-ray read a not-yet-identified node. Wait for
+    # the overlay to exist first, the same way the scene3d hover waits for its
+    # canvas; without it the identify races and flakes on slow CDN runs.
+    host.wait_for(state="visible", timeout=25_000)
+    _alt_hover(context.page, host)
 
 
 @then("an x-ray panel is visible")
@@ -213,7 +219,9 @@ def step_scene_mentions(context, keyword):
 
 @when('I shift-hover over the avatar overlay "{avatar_id}"')
 def step_shift_hover_avatar(context, avatar_id):
-    _shift_alt_hover(context.page, context.page.locator("#lc-avatar-" + avatar_id))
+    host = context.page.locator("#lc-avatar-" + avatar_id)
+    host.wait_for(state="visible", timeout=25_000)   # same async-upgrade wait as the plain hover
+    _shift_alt_hover(context.page, host)
 
 
 # ── X-ray inline editing: Keep's two honest paths ──────────────────────
