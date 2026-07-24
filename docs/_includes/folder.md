@@ -376,7 +376,8 @@ Auto-included by docs/_layouts/default.html.
       })
       .then(function(items) {
         if (!items || !items.length) {
-          wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages found in " + escapeHtml(path) + "</div>";
+          var _where = (path === "." || path === "") ? "this folder yet — add a page with ➕ New" : escapeHtml(path);
+          wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages in " + _where + "</div>";
           return;
         }
         /* resolve internal links between items */

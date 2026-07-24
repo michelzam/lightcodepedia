@@ -229,7 +229,19 @@ Auto-included by docs/_layouts/default.html.
     return 'docs' + p + '.md';
   }
   function fetchText(url) {
-    return fetch(url).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status + ' for ' + url); return r.text(); });
+    return fetch(url).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status + ' for ' + url); return r.text(); })
+      .catch(function(err){
+        /* A PRIVATE repo (the lab, a bench) 404s on raw.githubusercontent with
+           no auth — so a bot file / knowledge page can't be read there. Retry
+           through the Contents API with the connected key (raw media type),
+           the same fallback the runner uses. Public repos never reach here. */
+        var m = /^https:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/[^\/]+\/(.+)$/.exec(url);
+        var pat = ''; try { pat = localStorage.getItem('lc_ed_pat') || localStorage.getItem('lc_org_pat') || ''; } catch (e) {}
+        if (!m || !pat) throw err;
+        return fetch('https://api.github.com/repos/' + m[1] + '/' + m[2] + '/contents/' + m[3],
+          { headers: { Authorization: 'Bearer ' + pat, Accept: 'application/vnd.github.v3.raw', 'X-GitHub-Api-Version': '2022-11-28' }, cache: 'no-store' })
+          .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status + ' (contents) for ' + m[3]); return r.text(); });
+      });
   }
   function parseBot(md) {
     var m = /```yaml\r?\n([\s\S]*?)```/.exec(md);
