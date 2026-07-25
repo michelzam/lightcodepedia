@@ -7,7 +7,9 @@
   "workspaces": [
     "lc-serialize",
     "lc-schema",
-    "lc-record"
+    "lc-record",
+    "lc-map",
+    "lc-suggest"
   ],
   "scripts": {
     "test": "npm test --workspaces && node gen-includes.mjs --check",

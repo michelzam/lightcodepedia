@@ -1,0 +1,49 @@
+{
+  "name": "@karmicsoft/lc-suggest",
+  "version": "0.1.0",
+  "description": "Headless suggestion engine — it suggests, you decide. Local generators + a normalized AI-endpoint contract. A LightCode brick.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "license": "MIT",
+  "author": "KarmicSoft",
+  "homepage": "https://lightcodepedia.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/michelzam/lightcodepedia.git",
+    "directory": "packages/lc-suggest"
+  },
+  "dependencies": {
+    "@karmicsoft/lc-record": "^0.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "headless",
+    "suggestions",
+    "ai",
+    "record",
+    "editor",
+    "lightcode",
+    "karmicsoft"
+  ]
+}

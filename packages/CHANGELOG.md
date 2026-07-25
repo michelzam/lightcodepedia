@@ -21,6 +21,32 @@ passed CI (both BDD suites + the SSOT drift guard) before release.
 - Corpus checker `bin` (`lc-serialize-check`) — CI gate over a whole tree.
 - TypeScript types; 17-scenario BDD suite.
 
+## @karmicsoft/lc-map
+
+### 0.1.0
+- **First release — headless map view model.** `markers` / `bounds` / `center` /
+  `view` give a map island where to look, with no map library and no DOM.
+  Web-Mercator zoom, so the number means the same to MapLibre and Leaflet.
+- Points without finite, in-range coordinates are **dropped, not plotted**; the
+  centre is the **box** centre (an outlier can't drag the view); a single point
+  gets `pointZoom` because a zero-size box implies no zoom.
+- 14 BDD scenarios, 0 failed.
+
+## @karmicsoft/lc-suggest
+
+### 0.1.0
+- **First release — "it suggests, you decide".** Proposes edits and never
+  performs one: nothing mutates until the host calls `apply()` on an accepted
+  suggestion.
+- **A suggestion is DATA, not a closure** — the same shape survives JSON, so a
+  local generator and a remote AI endpoint are indistinguishable to the host.
+- Local generators: `stub` (empty required/prose field) and `relate` (the
+  record's text names an indexed entry that isn't linked yet — accent- and
+  case-insensitive, keeps existing links, never re-proposes one).
+- `payload()` / `normalize()` fix the endpoint contract; a junk answer degrades
+  to `[]` instead of throwing into the render loop.
+- 21 BDD scenarios, 0 failed.
+
 ## @karmicsoft/lc-record
 
 ### 0.1.0
