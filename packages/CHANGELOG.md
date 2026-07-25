@@ -21,6 +21,23 @@ passed CI (both BDD suites + the SSOT drift guard) before release.
 - Corpus checker `bin` (`lc-serialize-check`) — CI gate over a whole tree.
 - TypeScript types; 17-scenario BDD suite.
 
+## @karmicsoft/lc-record
+
+### 0.1.0
+- **First release — the headless record engine.** Schema + record + relation
+  index → field controls, relation display/type-ahead, geo extraction,
+  mutations, round-trip. No DOM, no framework: pedia renders the answers as
+  `.record`, another host renders them its way.
+- **IR reconciled in-flight.** Accepts an lc-schema IR, a single IR collection,
+  or a flat field array; an unknown collection throws instead of compiling to an
+  empty form.
+- **Write path = full-file re-emit.** `emit()` replays key order + the leading
+  provenance block, so an untouched record saves byte-identically. Chosen over
+  surgical patching on the ≈1% measured drift.
+- **Mutations report `structural`** — value edits keep the host's form DOM (the
+  caret survives typing); add/remove rebuild it.
+- 35 BDD scenarios, 0 failed.
+
 ## @karmicsoft/lc-schema
 
 ### 0.1.3

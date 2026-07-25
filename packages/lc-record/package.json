@@ -1,0 +1,50 @@
+{
+  "name": "@karmicsoft/lc-record",
+  "version": "0.1.0",
+  "description": "Headless record engine — schema + record + index → controls, relations, geo, mutations, full-file re-emit. A LightCode brick.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "license": "MIT",
+  "author": "KarmicSoft",
+  "homepage": "https://lightcodepedia.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/michelzam/lightcodepedia.git",
+    "directory": "packages/lc-record"
+  },
+  "dependencies": {
+    "@karmicsoft/lc-serialize": "^0.1.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "headless",
+    "record",
+    "editor",
+    "schema",
+    "yaml",
+    "low-code",
+    "lightcode",
+    "karmicsoft"
+  ]
+}

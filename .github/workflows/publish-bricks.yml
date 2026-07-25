@@ -9,8 +9,7 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "packages/lc-serialize/**"
-      - "packages/lc-schema/**"
+      - "packages/lc-*/**"
       - "packages/package.json"
       - ".github/workflows/publish-bricks.yml"
   workflow_dispatch:
@@ -54,7 +53,9 @@ jobs:
         run: |
           set -e
           published=""
-          for pkg in lc-serialize lc-schema; do
+          # the package list IS the workspace list — a new brick (lc-record,
+          # lc-map…) publishes as soon as it is a workspace, never forgotten here
+          for pkg in $(node -p "require('./package.json').workspaces.join(' ')"); do
             name=$(node -p "require('./$pkg/package.json').name")
             ver=$(node -p "require('./$pkg/package.json').version")
             onnpm=$(npm view "$name@$ver" version 2>/dev/null || true)
