@@ -23,14 +23,21 @@ const WIDGET = {
   datetime: 'string', code: 'text',
 };
 
-/** Parse a Sveltia/Decap config.yml (string or object) into the neutral IR. */
-export function fromSveltiaConfig(config) {
+/**
+ * Parse a Sveltia/Decap config.yml (string or object) into the neutral IR.
+ * `opts.labels` — same dotted-path per-collection map as fromZod (see there):
+ * an i18n overlay that wins over the config's own `label:`, so translations
+ * live per locale instead of forking config.yml. Omit it and nothing changes.
+ */
+export function fromSveltiaConfig(config, opts = {}) {
   const cfg = typeof config === 'string' ? yaml.load(config, { schema: yaml.CORE_SCHEMA }) : config;
   if (!cfg || !Array.isArray(cfg.collections)) throw new Error('lc-schema: not a Sveltia/Decap config (missing collections[])');
-  return { irVersion: IR_VERSION, source: 'sveltia', collections: cfg.collections.map(mapCollection) };
+  const labels = opts.labels || {};
+  return { irVersion: IR_VERSION, source: 'sveltia',
+           collections: cfg.collections.map((c) => mapCollection(c, labels[c && c.name] || {})) };
 }
 
-function mapCollection(c) {
+function mapCollection(c, labels) {
   return {
     name: c.name,
     label: c.label || c.name,
@@ -38,13 +45,15 @@ function mapCollection(c) {
     extension: c.extension || 'yaml',
     identifier: c.identifier_field || 'title',
     slug: c.slug,
-    fields: (c.fields || []).map(mapField),
+    fields: (c.fields || []).map((f) => mapField(f, labels, '')),
   };
 }
 
-function mapField(f) {
+function mapField(f, fieldLabels, prefix) {
+  const labs = fieldLabels || {}, p = joinPath(prefix, f.name);
   let w = WIDGET[f.widget] || 'string';
-  const out = { name: f.name, label: f.label || prettify(f.name), widget: w };
+  /* i18n overlay wins over the config's own label, which wins over auto */
+  const out = { name: f.name, label: labs[p] || f.label || prettify(f.name), widget: w };
   out.required = f.required !== false;
   if (f.hint) out.hint = f.hint;
   if (f.default !== undefined) out.default = f.default;
@@ -61,10 +70,12 @@ function mapField(f) {
     out.displayField = firstOf(f.display_fields) || firstOf(f.search_fields) || 'title';
     out.searchFields = asArray(f.search_fields);
   } else if (w === 'list') {
-    if (Array.isArray(f.fields)) { out.widget = 'objectlist'; out.fields = f.fields.map(mapField); }
-    else out.item = f.field ? mapField(f.field) : { name: 'value', widget: 'string' };
+    /* children address off THIS field's path — no index, so one key labels the
+       field in every item ("addresses.role") */
+    if (Array.isArray(f.fields)) { out.widget = 'objectlist'; out.fields = f.fields.map((x) => mapField(x, labs, p)); }
+    else out.item = f.field ? mapField(f.field, labs, p) : { name: 'value', widget: 'string' };
   } else if (w === 'object') {
-    out.fields = (f.fields || []).map(mapField);
+    out.fields = (f.fields || []).map((x) => mapField(x, labs, p));
   }
   return out;
 }
@@ -94,8 +105,17 @@ export function collections(ir) { return ir.collections.map((c) => c.name); }
 
 /**
  * Compile a map (or array) of Zod object schemas into the neutral IR.
- * `opts.labels` = { collection: { field: 'Display label' } } — i18n display labels
+ * `opts.labels` = { collection: { path: 'Display label' } } — i18n display labels
  * (load per active locale; keeps translations out of the schema).
+ *
+ * Paths are DOTTED on the same flat per-collection map — no nesting to mirror:
+ *   { periods: {
+ *       title: 'Titre',                  // top-level field
+ *       daterange: 'Période',            // the container keeps its own key
+ *       'daterange.startDay': 'Début',   // a field inside that object
+ *       'addresses.role': 'Rôle',        // objectlist child — NO index, labels every item
+ *   } }
+ * Anything unlisted falls back to the auto-label (prettify).
  */
 export function fromZod(schemas, opts = {}) {
   const labels = opts.labels || {};
@@ -108,10 +128,15 @@ export function fromZod(schemas, opts = {}) {
     collections: entries.map(([name, raw]) => ({
       name,
       label: prettify(name),
-      fields: zShapeFields(raw, name, labels[name] || {}),
+      fields: zShapeFields(raw, name, labels[name] || {}, ''),
     })),
   };
 }
+
+/* dotted label path: "" + "title" → "title"; "daterange" + "startDay" →
+   "daterange.startDay". List/objectlist children never carry an index, so one
+   key labels the field in every item. */
+function joinPath(prefix, name) { return prefix ? prefix + '.' + name : String(name); }
 
 function zCtor(s) { return (s && s.constructor && s.constructor.name) || ''; }
 function zDesc(s) { return (s && (s.description || (s._def && s._def.description))) || ''; }
@@ -139,13 +164,13 @@ function zResolveObject(raw, collName) {
   if (zCtor(o) !== 'ZodObject') throw new Error(`lc-schema.fromZod: ${where}expected a z.object at the root, got ${zCtor(o) || typeof o} — unwrap z.preprocess/effects first`);
   return o;
 }
-function zShapeFields(raw, collName, fieldLabels) {
+function zShapeFields(raw, collName, fieldLabels, prefix) {
   const o = zResolveObject(raw, collName);
   let sh = o.shape !== undefined ? o.shape : o._def.shape;
   if (typeof sh === 'function') sh = sh();
   if (!sh) return [];
   const labs = fieldLabels || {};
-  return Object.keys(sh).map((n) => zField(n, sh[n], labs[n]));
+  return Object.keys(sh).map((n) => zField(n, sh[n], labs, joinPath(prefix, n)));
 }
 
 // Peel Optional / Nullable / Default / Effects|Pipe, tracking required + default.
@@ -175,9 +200,10 @@ function zEnumOptions(s) {
 }
 function zArrayElement(s) { return s._def && (s._def.element || s._def.type); }
 
-function zField(name, schema, forcedLabel) {
+function zField(name, schema, fieldLabels, path) {
+  const labs = fieldLabels || {}, p = path || String(name);
   const u = zUnwrap(schema), s = u.base, kind = zCtor(s), dir = zParseDesc(u.desc);
-  const out = { name, label: forcedLabel || dir.label || prettify(name), widget: 'string', required: u.required };
+  const out = { name, label: labs[p] || dir.label || prettify(name), widget: 'string', required: u.required };
   if (u.def !== undefined) out.default = u.def;
 
   if (dir.relation) { out.widget = 'relation'; out.collection = dir.relation; if (kind === 'ZodArray') out.multiple = true; return out; }
@@ -187,12 +213,14 @@ function zField(name, schema, forcedLabel) {
   else if (kind === 'ZodNumber' || kind === 'ZodBigInt') out.widget = 'number';
   else if (kind === 'ZodBoolean') out.widget = 'boolean';
   else if (kind === 'ZodEnum' || kind === 'ZodNativeEnum') { out.widget = 'select'; out.options = zEnumOptions(s).map((v) => ({ label: String(v), value: v })); }
-  else if (kind === 'ZodObject') { out.widget = 'object'; out.fields = zShapeFields(s); }
+  /* children inherit the SAME flat map, addressed by their dotted path — the
+     container keeps its own key, and an objectlist child skips the index */
+  else if (kind === 'ZodObject') { out.widget = 'object'; out.fields = zShapeFields(s, undefined, labs, p); }
   else if (kind === 'ZodArray') {
     const elem = zArrayElement(s), eu = zUnwrap(elem), edir = zParseDesc(eu.desc);
     if (edir.relation) { out.widget = 'relation'; out.collection = edir.relation; out.multiple = true; }
-    else if (zCtor(eu.base) === 'ZodObject') { out.widget = 'objectlist'; out.fields = zShapeFields(eu.base); }
-    else { out.widget = 'list'; out.item = zField('value', elem); out.multiple = true; }
+    else if (zCtor(eu.base) === 'ZodObject') { out.widget = 'objectlist'; out.fields = zShapeFields(eu.base, undefined, labs, p); }
+    else { out.widget = 'list'; out.item = zField('value', elem, labs, joinPath(p, 'value')); out.multiple = true; }
   }
   return out;
 }

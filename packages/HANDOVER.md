@@ -36,6 +36,21 @@ Pin the version either way. Michel does the `npm publish` to `@karmicsoft`; noth
    import { fromSveltiaConfig, widgets } from '@karmicsoft/lc-schema';
    const ir = fromSveltiaConfig(readFileSync('poc/public/admin/config.yml', 'utf8'));
    ```
+   Display labels are an **i18n overlay**, not a schema fork — the same map works
+   for both readers, keyed by **dotted path** on one flat per-collection map:
+   ```js
+   const ir = fromSveltiaConfig(cfg, { labels: { periods: {
+     daterange: 'Période',              // the container keeps its own key
+     'daterange.startDay': 'Début',     // a field inside that object
+     'addresses.role': 'Rôle',          // objectlist child — NO index, every item
+   } } });                              // unlisted → auto-label
+   ```
+
+   > ⚠️ **Astro (`fromZod`): mark relations inline, never through a wrapper.**
+   > A generic helper around `reference()` makes Astro's content types
+   > **circular** and type inference collapses — that alone produced **231
+   > errors** here. Use it at each use site:
+   > `periods: reference('periods').describe('relation:periods')`.
 2. **Corpus safety net (CI)** — round-trip all ~56 000 files. Assert **`isLossless`** (must be 0
    failures); treat byte-drift as advisory (see `lc-serialize/README.md` § Scope). Recipe is in that README.
 3. **Visible bricks** — `lc-map` + `lc-suggest` as islands on fiches (next deliverables).

@@ -46,8 +46,32 @@ export interface IR {
   collections: IRCollection[];
 }
 
-/** Compile a Sveltia/Decap config.yml (string or parsed object) into the neutral IR. */
-export function fromSveltiaConfig(config: string | object): IR;
+/**
+ * Compile a Sveltia/Decap config.yml (string or parsed object) into the neutral IR.
+ * `opts.labels` is the same dotted-path i18n overlay `fromZod` takes (see there);
+ * it wins over the config's own `label:`. Omit it and nothing changes.
+ */
+export function fromSveltiaConfig(
+  config: string | object,
+  opts?: { labels?: LabelMap }
+): IR;
+
+/**
+ * Display labels, per collection, as a FLAT map keyed by DOTTED PATH — the
+ * structure is addressed, not mirrored:
+ *
+ *     { periods: {
+ *         title: 'Titre',                   // top-level field
+ *         daterange: 'Période',             // the container keeps its own key
+ *         'daterange.startDay': 'Début',    // a field inside that object
+ *         'addresses.role': 'Rôle',         // objectlist child — NO index
+ *         'tags.value': 'Étiquette',        // the item of a scalar list
+ *     } }
+ *
+ * An objectlist child is labelled once and applies to every item. Anything
+ * unlisted falls back to the auto-label.
+ */
+export type LabelMap = Record<string, Record<string, string>>;
 
 /**
  * Compile runtime Zod object schemas (Astro content collections) into the same IR.
@@ -64,11 +88,14 @@ export function fromSveltiaConfig(config: string | object): IR;
  *
  * Display labels resolve by precedence: `opts.labels` (i18n, per active locale) →
  * a `label:` directive → the prettified field name (`startDay` → "Start Day").
- * `opts.labels` is keyed `{ collectionName: { fieldName: 'Label' } }`.
+ * `opts.labels` is a per-collection FLAT map keyed by dotted path — see LabelMap.
+ *
+ * Astro note: a generic wrapper around `reference()` breaks type inference
+ * (circularity). Use it inline: `reference('periods').describe('relation:periods')`.
  */
 export function fromZod(
   schemas: Record<string, any> | Array<{ name: string; schema?: any }>,
-  opts?: { labels?: Record<string, Record<string, string>> }
+  opts?: { labels?: LabelMap }
 ): IR;
 
 /** The flat field list for one collection (throws if the collection is unknown). */

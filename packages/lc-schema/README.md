@@ -45,6 +45,18 @@ doesn't expose its target collection at runtime, so mark relations with
 `.describe('markdown' | 'image' | 'text')` pick those widgets. A schema that is a
 **function** (`({ image }) => z.object(...)`) must be resolved before passing it in.
 
+> ⚠️ **Astro integrators — mark relations inline, never through a wrapper.**
+> A generic helper around `reference()` (e.g. `const rel = (c) => reference(c).describe(...)`)
+> makes Astro's content types **circular** and type inference collapses — one
+> integrator saw **231 errors** from that alone. The supported pattern is inline,
+> at each use site:
+>
+> ```ts
+> periods: reference('periods').describe('relation:periods'),
+> ```
+>
+> It costs one repetition per field and keeps inference intact.
+
 A collection whose root is wrapped in `z.preprocess(fn, z.object(...))` / effects /
 `.default()` is **unwrapped to the object** before its fields are read. A root that
 is *not* an object (e.g. a bare `z.string()`) throws a clear error instead of
@@ -59,8 +71,26 @@ const ir = fromZod(astro, {
 });
 ```
 
-- `opts.labels` is keyed `{ collection: { field: 'Label' } }` — load it per locale
+- `opts.labels` is keyed `{ collection: { path: 'Label' } }` — load it per locale
   so translations live **outside** the schema (one schema, N locales).
+- **Nested fields are dotted paths on the same flat map** — you address the
+  structure, you don't mirror it:
+
+  ```js
+  labels: { periods: {
+    title: 'Titre',                    // top-level field
+    daterange: 'Période',              // the container keeps its own key
+    'daterange.startDay': 'Début',     // a field inside that object
+    'addresses.role': 'Rôle',          // objectlist child — NO index
+    'tags.value': 'Étiquette',         // the item of a scalar list
+  } }
+  ```
+
+  An objectlist child is labelled **once** and applies to **every item** (there is
+  no `addresses.0.role`). Anything unlisted falls back to the auto-label.
+- `fromSveltiaConfig(config, { labels })` takes the **same** map — there it is an
+  i18n overlay that wins over the config's own `label:`, so you translate without
+  forking `config.yml`.
 - Or bake a default label into the schema alongside a widget:
   `.describe('label:Époque | text')` (the `label:` runs up to the next `|`).
 - With neither, the field name is prettified: `startDay` → **"Start Day"**,

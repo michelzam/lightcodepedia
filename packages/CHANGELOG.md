@@ -23,6 +23,21 @@ passed CI (both BDD suites + the SSOT drift guard) before release.
 
 ## @karmicsoft/lc-schema
 
+### 0.1.3
+- **Nested display labels — dotted paths on the same flat map.** `opts.labels`
+  keys now address the structure instead of mirroring it: `'daterange.startDay'`
+  labels a field inside an object, the container keeps its own key (`daterange`),
+  and an **objectlist child skips the index** (`'addresses.role'` labels that
+  field in *every* item). A scalar list item is `'<list>.value'`. Anything
+  unlisted falls back to the auto-label, as before.
+- **`fromSveltiaConfig(config, { labels })`** takes the same map — an i18n
+  overlay that wins over the config's own `label:`, so translations live per
+  locale instead of forking `config.yml`. Additive: called with one argument it
+  behaves exactly as 0.1.2 (guarded by a scenario).
+- **Astro doc warning.** A generic wrapper around `reference()` makes content
+  types circular and collapses inference (231 errors at an integrator's). The
+  supported pattern is inline: `reference('periods').describe('relation:periods')`.
+
 ### 0.1.2
 - **`fromZod` unwraps a wrapped collection root.** A collection whose root is
   `z.preprocess(fn, z.object(...))` / effects / `.default()` (the Sveltia-null

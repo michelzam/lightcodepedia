@@ -145,5 +145,59 @@ feature('fromZod display labels resolve by precedence (opts.labels → label: �
   scenario('the prettified name splits camelCase as a last resort (aiText → "Ai Text")', () => eq(lby('aiText').label, 'Ai Text'));
 }
 
+feature('Nested display labels are DOTTED PATHS on the same flat per-collection map');
+{
+  const schema = z.object({
+    daterange: z.object({ startDay: z.number(), endDay: z.number() }),
+    addresses: z.array(z.object({ role: z.string(), city: z.string() })),
+    tags: z.array(z.string()),
+  });
+  const zir = fromZod({ periods: { schema } }, { labels: { periods: {
+    daterange: 'Période',                 // the container keeps its own key
+    'daterange.startDay': 'Jour de début', // a field INSIDE that object
+    'addresses.role': 'Rôle',              // objectlist child — no index
+    'tags.value': 'Étiquette',             // the item of a scalar list
+  } } });
+  const nw = widgets(zir, 'periods');
+  const nby = (n) => nw.find((f) => f.name === n);
+  const child = (n, c) => nby(n).fields.find((f) => f.name === c);
+
+  scenario('the container keeps its own key ("daterange")', () => {
+    eq(nby('daterange').label, 'Période'); eq(nby('daterange').widget, 'object');
+  });
+  scenario('a nested child is addressed "daterange.startDay"', () => eq(child('daterange', 'startDay').label, 'Jour de début'));
+  scenario('an objectlist child skips the index — "addresses.role" labels it in every item', () => {
+    eq(nby('addresses').widget, 'objectlist');
+    eq(child('addresses', 'role').label, 'Rôle');
+  });
+  scenario('a scalar list item is addressed "<list>.value"', () => eq(nby('tags').item.label, 'Étiquette'));
+  scenario('anything unlisted falls back to the auto-label', () => {
+    eq(child('daterange', 'endDay').label, 'End Day');   // nested sibling
+    eq(child('addresses', 'city').label, 'City');        // objectlist sibling
+  });
+}
+
+feature('fromSveltiaConfig takes the same dotted labels (i18n overlay over config.yml)');
+{
+  const cfg = { collections: [{ name: 'places', fields: [
+    { name: 'daterange', widget: 'object', fields: [{ name: 'startDay', widget: 'number' }, { name: 'endDay', widget: 'number' }] },
+    { name: 'addresses', widget: 'list', fields: [{ name: 'role', widget: 'string', label: 'Role (config)' }] },
+  ] }] };
+  const sir = fromSveltiaConfig(cfg, { labels: { places: {
+    'daterange.startDay': 'Jour de début', 'addresses.role': 'Rôle',
+  } } });
+  const sw = widgets(sir, 'places');
+  const sby = (n) => sw.find((f) => f.name === n);
+  const schild = (n, c) => sby(n).fields.find((f) => f.name === c);
+
+  scenario('a nested child resolves by dotted path', () => eq(schild('daterange', 'startDay').label, 'Jour de début'));
+  scenario('an objectlist child resolves without an index, overriding the config label', () => eq(schild('addresses', 'role').label, 'Rôle'));
+  scenario('unlisted children keep the auto-label', () => eq(schild('daterange', 'endDay').label, 'End Day'));
+  scenario('WITHOUT opts the config label still wins (no behaviour change for existing callers)', () => {
+    const plain = fromSveltiaConfig(cfg);
+    eq(widgets(plain, 'places').find((f) => f.name === 'addresses').fields[0].label, 'Role (config)');
+  });
+}
+
 console.log(`\n${scen} scenarios, ${fail} failed.`);
 process.exit(fail ? 1 : 0);
