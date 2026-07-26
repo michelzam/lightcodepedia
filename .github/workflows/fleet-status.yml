@@ -39,8 +39,10 @@ jobs:
           path: lab
 
       # ── pedia: pending files (the gate's own rsyncs, in dry-run) ──────
-      # MIRROR of publish.yml's copy step — if the gate's excludes change,
-      # change them here too, or the pending counts lie.
+      # The exclude lists are SHARED with publish.yml (.github/rsync-excludes/).
+      # They used to be hand-copied here and drifted twice — the board then
+      # counted files no publish would ever send, so "pending" never reached 0
+      # and Publish looked broken. Same file, same answer, by construction.
       - name: Measure pedia
         env:
           TOKEN: ${{ secrets.PEDIA_PUSH_TOKEN }}
@@ -51,30 +53,16 @@ jobs:
           # count CONTENT differences (what a publish would actually change),
           # exactly like the gate's git-diff decides.
           count() { rsync --dry-run --checksum --itemize-changes "$@" 2>/dev/null | grep -v '/$' | grep -Ec '^(>|\*|c)' || true; }
+          X=lab/.github/rsync-excludes
           p=0
-          p=$((p + $(count -a --delete \
-            --exclude 'lab/' --exclude 'CNAME' --exclude '_config.lab.yml' \
-            --exclude 'classroom.md' --exclude 'classroom_console.md' \
-            --exclude 'assets/ux-results.json' --exclude 'assets/ux-report.html' \
-            --exclude 'assets/ux-summary.json' --exclude 'assets/metrics.json' \
-            --exclude 'assets/metrics_trend.json' --exclude 'assets/fleet_status.json' --exclude 'assets/backlog.yml' \
-            lab/docs/ pedia/docs/) ))
-          p=$((p + $(count -a --delete lab/packages/ pedia/packages/) ))
-          p=$((p + $(count -a --delete --delete-excluded \
-            --exclude 'parity.html' --exclude 'runner.html' \
-            --exclude 'classroom.feature' --exclude 'classroom_steps.py' \
-            --exclude 'material.feature' --exclude 'material_steps.py' \
-            lab/tests/ pedia/tests/) ))
+          p=$((p + $(count -a --delete --exclude-from=$X/docs.txt lab/docs/ pedia/docs/) ))
+          p=$((p + $(count -a --delete --delete-excluded --exclude-from=$X/packages.txt lab/packages/ pedia/packages/) ))
+          p=$((p + $(count -a --delete --delete-excluded --exclude-from=$X/tests.txt lab/tests/ pedia/tests/) ))
           echo "PEDIA_PENDING=$p" >> "$GITHUB_ENV"
           # what exactly is pending? (job-log only — first 40 docs/ lines)
           echo "── pending sample: docs ──"
           rsync --dry-run --checksum --itemize-changes -a --delete \
-            --exclude 'lab/' --exclude 'CNAME' --exclude '_config.lab.yml' \
-            --exclude 'classroom.md' --exclude 'classroom_console.md' \
-            --exclude 'assets/ux-results.json' --exclude 'assets/ux-report.html' \
-            --exclude 'assets/ux-summary.json' --exclude 'assets/metrics.json' \
-            --exclude 'assets/metrics_trend.json' --exclude 'assets/fleet_status.json' --exclude 'assets/backlog.yml' \
-            lab/docs/ pedia/docs/ 2>/dev/null | grep -v '/$' | head -40
+            --exclude-from=$X/docs.txt lab/docs/ pedia/docs/ 2>/dev/null | grep -v '/$' | head -40
 
       - name: Read pedia's latest suite result
         run: |
@@ -100,8 +88,31 @@ jobs:
           # exactly like the gate's git-diff decides.
           count() { rsync --dry-run --checksum --itemize-changes "$@" 2>/dev/null | grep -v '/$' | grep -Ec '^(>|\*|c)' || true; }
           git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/${ORG}/${ORG}-vault.git" vault || mkdir -p vault
-          mkdir -p vault/courses
-          echo "VAULT_PENDING=$(count -a --delete lab/courses/ vault/courses/)" >> "$GITHUB_ENV"
+          # MIRROR of publish-courses.yml's staging: the gate publishes only
+          # courses/<name>/ folders that carry a course.yml, drops course.yml
+          # itself (it names a secret), and mirrors them into vault/<path>/.
+          # Comparing raw lab/courses/ instead counted courses/README.md,
+          # courses/index.md and course.yml as forever-pending — three files no
+          # publish would ever send, so the row could never reach 0.
+          : > paths.txt
+          for d in lab/courses/*/; do
+            cfg="$d/course.yml"; [ -f "$cfg" ] || continue
+            # strip the trailing "# comment" before trimming, like the gate's parser
+            get() { sed -n "s/^ *$1: *//p" "$cfg" | head -1 | sed 's/#.*//' | tr -d '"'"'"' '; }
+            v=$(get vault); t=$(get token); p=$(get path); p=${p:-courses}
+            # only groups this job holds a token for; another org's vault needs
+            # its own secret and is not measurable from here
+            [ "$t" = "ORG_VAULT_TOKEN" ] && [ "$v" = "${ORG}/${ORG}-vault" ] || continue
+            mkdir -p "stage/$p/$(basename "$d")"
+            rsync -a --exclude 'course.yml' "$d" "stage/$p/$(basename "$d")/"
+            echo "$p" >> paths.txt
+          done
+          v=0
+          for p in $(sort -u paths.txt); do
+            mkdir -p "vault/$p"
+            v=$((v + $(count -a --delete "stage/$p/" "vault/$p/") ))
+          done
+          echo "VAULT_PENDING=$v" >> "$GITHUB_ENV"
           HUBS_JSON="["
           sep=""
           for d in lab/hubs/*/; do

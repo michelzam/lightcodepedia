@@ -26,6 +26,17 @@ on:
         required: false
         default: ""
 
+# One authoritative suite per ref. Three runs raced on 2026-07-26 (two pushes
+# + a manual relaunch) and the board ended up showing the OLDEST commit's
+# verdict with a fresh timestamp — last to FINISH won, not last to start. All
+# three were green so it cost nothing, but on a red run that is a wrong number
+# that looks current. A newer run now cancels the older one.
+# Scoped runs (only= / scenarios=) never publish results, so they get their own
+# group: a debug run must not cancel the full suite, nor be cancelled by it.
+concurrency:
+  group: ux-${{ github.ref }}-${{ github.event.inputs.only || github.event.inputs.scenarios || 'full' }}
+  cancel-in-progress: true
+
 jobs:
   ux-tests:
     runs-on: ubuntu-latest
