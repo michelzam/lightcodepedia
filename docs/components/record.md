@@ -93,6 +93,33 @@ the schema still round-trip losslessly:
 
 [Open the Paris fiche examples →](/components/examples/record)
 
+```gherkin
+Feature: One engine edits any record
+  As a contributor
+  I want a typed form over a record whose file survives my edits untouched
+  So that I can maintain structured content without learning its file format
+
+  Scenario: The form is built from the schema alone
+    Given two record types sharing one engine and one relation index
+    When each is opened
+    Then each shows the fields its own schema declares, with the right widget
+    And no field was laid out by hand
+
+  Scenario: The file round-trips losslessly
+    Given a record whose file has a key order, block scalars and dates
+    When I change one field
+    Then only that field changes
+    And key order, chomping and date strings survive
+    And fields absent from the schema survive too
+
+  Scenario: AI proposes, the contributor disposes
+    Given a record and an AI endpoint
+    When I ask for suggestions
+    Then each suggestion is offered against a field, for me to accept or refuse
+    And nothing is written until I accept it
+```
+{: .feature tags="data,ai" status="pending" }
+
 ## ⚠️ Limits worth knowing
 
 - **In-place WYSIWYG** covers scalar fields flagged `wysiwyg` (name/bio); rich

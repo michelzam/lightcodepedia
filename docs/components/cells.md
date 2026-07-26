@@ -16,6 +16,24 @@ Any knob can be a cell too — the convention is a leading `=`:
 {: .block visible="= score > 3" }
 ```
 
+```gherkin
+Feature: Values that follow the page's data
+  As an author
+  I want to drop a live expression into a sentence or a knob
+  So that my prose stays true when the learner changes something
+
+  Scenario: A cell recomputes when its data changes
+    Given a paragraph holding a cell over a form's field
+    When the learner edits that field
+    Then the sentence shows the new value, with no reload
+
+  Scenario: A knob written as a cell drives visibility
+    Given a block whose visible knob is an expression over the score
+    When the score crosses the threshold
+    Then the block appears, and disappears again when it drops back
+```
+{: .feature tags="data,code" status="pending" }
+
 ## Node variables — `get_var`
 
 A node (this site's repository) can carry **variables** — generic per-node

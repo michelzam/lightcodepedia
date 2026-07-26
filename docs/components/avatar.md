@@ -37,6 +37,25 @@ treats: 3
 ```
 {: .form #avatar_playground editable="true" title="A widget to visit" }
 
+```gherkin
+Feature: A narrating character guides the page
+  As a learner
+  I want a character that walks the page and speaks each line
+  So that I am guided through a lesson instead of reading it alone
+
+  Scenario: The block upgrades into a mounted overlay character
+    Given the docked Prof. LC above
+    :::python
+    self.prof = Object._all("#lc-avatar-prof")[0]
+    :::
+    When the page has upgraded it
+    Then the character is on screen, ready to be played
+    :::python
+    assert self.prof.visible
+    :::
+```
+{: .feature tags="ai,learn" status="passing" }
+
 ## 🛠️ How to make one
 
 A YAML fence holds the config + script; a trigger link plays/stops it:

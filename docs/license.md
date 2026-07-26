@@ -3,6 +3,9 @@ sitemap: false
 ---
 
 > This page mirrors the repository’s [`LICENSE.md`](https://github.com/michelzam/lightcodepedia/blob/main/LICENSE.md). The `LICENSE.md` at the repo root is the authoritative copy.
+>
+> It covers the **platform** only. The `@karmicsoft/lc-*` engine bricks are
+> **MIT** — see [⚖️ Licensing — open core](/open_core).
 
 # LightCode Platform License – Community, Educational, and Partnership Use  
 **Version 1.0 – 2021**

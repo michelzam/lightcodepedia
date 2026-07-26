@@ -1,6 +1,6 @@
 import re
 
-from behave import when, then
+from behave import given, when, then
 from playwright.sync_api import expect
 
 
@@ -128,3 +128,24 @@ def step_toolbar_bold(context):
 def step_raw_contains(context, snippet):
     val = context.page.evaluate("() => document.getElementById('ed-input').value")
     assert snippet in val, "expected %r in the raw editor, got %r" % (snippet, val)
+
+
+@given("a stored key that GitHub refuses")
+def step_bad_key(context):
+    # a key the API rejects: every GitHub call 401s, exactly like an expired PAT
+    context.page.route(
+        "https://api.github.com/**",
+        lambda route: route.fulfill(status=401, json={"message": "Bad credentials"}),
+    )
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat','ghp_revoked');"
+        "localStorage.setItem('lc_ed_repo','michelzam/lightcodelab');"
+    )
+
+
+@then("the sign-in panel is offered")
+def step_signin_offered(context):
+    expect(context.page.locator("#ed-sidebar")).to_have_class(
+        re.compile(r"\bed-open\b"), timeout=8_000
+    )
+    expect(context.page.locator("#ed-pat")).to_be_visible(timeout=8_000)

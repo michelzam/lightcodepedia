@@ -206,3 +206,17 @@ def step_sitemap_node_click(context):
     context.page.wait_for_timeout(500)
     assert "404" not in (context.page.title() or ""), context.page.url
     expect(context.page.locator("main h1").first).to_be_visible()
+
+
+@then("every footnote on the page resolves")
+def step_footnotes_resolve(context):
+    got = context.page.evaluate(
+        """() => ({
+             refs: document.querySelectorAll('sup[id^=fnref] a.footnote').length,
+             defs: document.querySelectorAll('div.footnotes li[id^=fn]').length,
+             raw: (document.body.innerText.match(/\\[\\^\\w+\\]/g) || []),
+           })"""
+    )
+    assert got["refs"] >= 4, "expected the page's footnote refs to render: %r" % got
+    assert got["defs"] >= 4, "expected their definitions to survive: %r" % got
+    assert not got["raw"], "raw footnote markup left on the page: %r" % got["raw"]

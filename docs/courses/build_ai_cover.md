@@ -3,7 +3,7 @@
 ![AI is reshaping the world. Builders wanted. — UWM School of Information Studies](AI-Builders.png){: .lc-banner }
 
 **AI is reshaping the world — builders wanted.** Build-AI is a private cohort
-course where you build a **real AI[^ai] app**, versioned in your own private
+course where you build a **real `AI`[^ai] app**, versioned in your own private
 bench: graded challenges, answer keys, live sessions, and a teacher who sees
 your progress at every step.
 
@@ -15,10 +15,10 @@ your progress at every step.
 - 🪪 Earn your AI builder licence?
 
 ### 🥇 This course offers
-- a gentle, yet engaging and efficient introduction
-- to building apps
-- to AI basics
-- to best software practices
+- A gentle, yet engaging and efficient introduction to:
+- Building apps
+- AI basics
+- Best software practices
 
 ### 🗺️ The format
 - Cohort — onsite or online
@@ -51,13 +51,11 @@ your progress at every step.
 ```
 {: .blocks cols="2" }
 
-```
+
 ### 😀 Friendly foundations
 Everything rides on friendly foundations — `Python`[^python], `Markdown`[^md]
 and `git`[^git], tamed for beginners — so you can focus on what matters:
 building things that work, and making the world a better place, *your style*.
-```
-{: .block}
 
 ## 🚀 Ready?
 
@@ -77,7 +75,8 @@ Join & open the course
 ```
 {: .blocks cols="2"}
 
-[^md]: `Markdown` is a lightweight text-based note convention, perfect for smart humans and AI.
+[^ai]: `Artificial Intelligence` is a software domain assisting people to deliver value in a way similar to what humans would do.
 [^python]: `Python` is the most popular and friendly programming language, made even more friendly in this class. Nothing to install, no tech prerequisites.
-[^git]: `git` is how builders version, share and prove their work — you'll use it from afar, no command line needed.
-[^ai]: Artificial Intelligence is a software domain assisting people to deliver value in a way similar to what humans would do.
+[^md]: `Markdown` is a lightweight text-based note convention, perfect for smart humans and AI.
+[^git]: `git` is a software tool helping builders manage versions of their work, share and collaborate — you'll use it from afar, no command line needed.
+

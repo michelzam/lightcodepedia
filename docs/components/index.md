@@ -67,7 +67,7 @@ Feature: Component palette
     When in preview or run it
     Then I can see easily join other related components and examples
 ```
-{: .feature visible="false" tags="learning" }
+{: .feature visible="false" tags="learn" }
 ## 🧠 Quick check
 
 **Q:** Every component on this site activates the same way. How?

@@ -28,7 +28,7 @@ Feature: A fenced block becomes a step-through visualizer
     assert self.viz.visible
     :::
 ```
-{: .feature tags="lifecycle,learn" status="passing" }
+{: .feature tags="code,learn" status="passing" }
 
 ## Recursive function
 

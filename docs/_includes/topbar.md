@@ -200,7 +200,7 @@ body {
     <div id="lc-start-drop">
       <a class="lc-sd-row" href="/start"><span>🚀</span><span>Start here</span></a>
       <div class="lc-sd-row" id="lc-sd-record"><span>🎬</span><span>Record</span></div>
-      <a class="lc-sd-row lc-sd-legal" href="/license"><span>⚖️</span><span>License</span></a>
+      <a class="lc-sd-row lc-sd-legal" href="/open_core"><span>⚖️</span><span>License</span></a>
     </div>
   </div>
   <div id="lc-user-pill" style="display:none">
@@ -241,7 +241,7 @@ body {
       <div class="lc-ud-row" id="lc-ud-record"><span>🎬</span><span>Record screen</span></div>
       <div class="lc-ud-row" id="lc-ud-yt-upload"><span>📹</span><span>Upload to YouTube</span></div>
       <div class="lc-ud-row danger" id="lc-ud-disconnect"><span>🔓</span><span>Disconnect</span></div>
-      <a class="lc-ud-row lc-ud-legal" href="/license"><span>⚖️</span><span>License</span></a>
+      <a class="lc-ud-row lc-ud-legal" href="/open_core"><span>⚖️</span><span>License</span></a>
     </div>
   </div>
 </div>

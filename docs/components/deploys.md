@@ -12,6 +12,30 @@ Requires a GitHub Personal Access Token saved via the **Sign in** button (top-ri
 [Latest runs](#)
 {: .datagrid bind="deploys" rows="8" }
 
+```gherkin
+Feature: The node's own build history, on the page
+  As a node owner
+  I want my recent Actions runs as a live dataset
+  So that I can see whether my site is actually deploying, without leaving it
+
+  Scenario: Runs arrive as a dataset any widget can bind to
+    Given I am signed in with a key that can read this node
+    When the page loads
+    Then the latest runs are registered as a dataset
+    And a grid bound to it lists them, newest first
+
+  Scenario: Each row leads to the run that produced it
+    Given the grid above
+    When I open a row
+    Then GitHub shows me that exact run
+
+  Scenario: An unreadable node says so
+    Given a key that cannot read this node's runs
+    When the page loads
+    Then the widget asks me to reconnect instead of showing an empty table
+```
+{: .feature tags="data,lifecycle" status="pending" }
+
 ## 🥸 How to write one
 
 ```markdown

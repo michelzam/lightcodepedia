@@ -358,6 +358,11 @@
   function markdownBody(s) {
     /* ensure IAL tags land on their own paragraph so _applyIAL can process them */
     var norm = s.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+    /* kramdown never sees inside a fence, so [^x] refs written in a .block /
+       .blocks stayed raw AND their page-level definitions were dropped as
+       "unreferenced". Run the same footnote pass the runner uses, so a block
+       carries its own footnotes — refs and defs together, in the fence. */
+    if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
     return window.marked ? inlineIAL(marked.parse(norm)) : "<pre>" + s + "</pre>";
   }
   window.lcLoadMarked = loadMarked;

@@ -37,6 +37,31 @@ The `docs/components` folder contains many `.md` files **and** a subfolder `exam
 [Browse →](docs/components)
 {: .folder cols="3" }
 
+```gherkin
+Feature: A directory that presents itself
+  As an author
+  I want a folder to become a grid of cards on its own
+  So that adding a page is the only thing I ever have to do
+
+  Scenario: Every page in the folder gets a card
+    Given a folder holding several pages and a subfolder with an index
+    When the page renders
+    Then each page is a card, and the subfolder is a card too
+    And no card was written by hand
+
+  Scenario: The cards carry what the pages declare
+    Given pages that declare features and quizzes
+    When the cards are built
+    Then each card shows that page's tags and its feature status
+    And the tags become filters above the grid
+
+  Scenario: A bare folder means "where I am"
+    Given a folder tag with no path
+    When the page renders
+    Then it lists the folder the current page lives in
+```
+{: .feature tags="ui,lifecycle" status="pending" }
+
 ---
 
 ## Example — play folder

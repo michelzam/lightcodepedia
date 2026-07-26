@@ -15,6 +15,17 @@ Feature: Page editor — ✨ AI edit dialog
     And I click the editor "ed-agent-btn" button
     Then the editor agent pane shows a prompt box
 
+  Scenario: A key GitHub refuses surfaces the sign-in instead of a dead picker
+    # A stored key that GitHub no longer accepts (expired, revoked, rescoped)
+    # made the file list error and the filename show ⚠️ — the picker "looked
+    # broken" — while ⚙️ Connect stayed COLLAPSED (we only auto-expanded it when
+    # no key was stored), so the way back in was invisible.
+    Given a stored key that GitHub refuses
+    When I navigate to "/nodes"
+    And I wait for the page to be interactive
+    And I open the page editor
+    Then the sign-in panel is offered
+
   Scenario: The editor has a Log tab
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive

@@ -12,9 +12,11 @@ and **`@karmicsoft/lc-schema`**. This is the *socle* your parcours (§5.1) start
 | `@karmicsoft/lc-serialize` | Faithful YAML round-trip (key order, dates-as-strings, `\|`/`\|-`/`\|+`, null) | **verified** (byte-identical on canonical block YAML) |
 | `@karmicsoft/lc-schema` | Schema → neutral IR → widgets (schema compiler) | v0.1 (Sveltia `config.yml` reader) |
 
-Both infra bricks are **MIT** (© 2026 KarmicSoft) — permissive, fork-if-unmaintained;
-the higher bricks (`lc-editor` / `lc-record` / `lc-suggest` / `lc-roles`) keep the
-**LightCode Platform License**. Each ships its `LICENSE` + an example, and declares the
+All five published bricks — `lc-serialize`, `lc-schema`, `lc-record`, `lc-map`,
+`lc-suggest` — are **MIT** (© 2026 KarmicSoft): permissive, fork-if-unmaintained.
+That is the open core. The **platform** around them (page editor UI, runtime
+includes, classroom, roles, publishing gates) keeps the **LightCode Platform
+License**. Each package ships its `LICENSE` + an example, and declares the
 license in `package.json`. Full API in each package's `README.md`.
 
 ## 2. How to install

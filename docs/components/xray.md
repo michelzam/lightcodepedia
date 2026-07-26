@@ -39,7 +39,7 @@ Feature: X-ray inline editing keeps changes honestly
     assert len(self.keeps) == 1, len(self.keeps)
     :::
 ```
-{: .feature visible="true" #xray_keep_feature tags="ui" status="passing" }
+{: .feature visible="true" #xray_keep_feature tags="ui,lifecycle" status="passing" }
 
 The commit path itself is proven by the UX suite (`tests/features/xray.feature`):
 a stubbed repository receives the block's new content — exactly once, or not at all.

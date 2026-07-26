@@ -85,7 +85,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-sidebar {
   position: absolute; top: calc(100% + 2px); left: 0; z-index: 300;
   width: 280px; max-height: 72vh; overflow-y: auto;
-  background: #fff; border: 1px solid #d8d8d8; border-radius: 0 6px 6px 6px;
+  background: #fff; color: #333; border: 1px solid #d8d8d8; border-radius: 0 6px 6px 6px;
   box-shadow: 0 6px 24px rgba(0,0,0,0.13); padding: 0.8em 0.7em; font-size: 0.85em;
   opacity: 0; visibility: hidden; transform: translateY(-6px);
   transition: opacity 0.15s ease, visibility 0.15s, transform 0.18s ease;
@@ -489,9 +489,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
      the author actually edits is the RENDERED source the runner stamped on its
      root (gh:repo/path). When such a render is present, the SAME rich editor
      targets that repo+file: course material, a bench, any runner render. The
-     vault/Library is read-only (data-lc-readonly) → never a target. */
+     vault/Library is read-only (data-lc-readonly) → never a target.
+
+     Scoped to #lc-run — the STANDALONE runner only. Component pages and /paris
+     embed demo renders (.lc-run WITHOUT an id, see runner.md), and a loose
+     `.lc-run[...]` selector matched those too: opening the editor there
+     retargeted it at the demo's repo, and connecting overwrote the repo the
+     author had just verified — i.e. "the file picker is broken and I can't
+     sign in". An embedded demo must never hijack the page's own editor. */
   function runnerTarget() {
-    var r = document.querySelector(".lc-run[data-lc-src-repo][data-lc-src-path]");
+    var r = document.querySelector("#lc-run[data-lc-src-repo][data-lc-src-path]");
     if (!r || r.dataset.lcReadonly) return null;
     var repo = r.dataset.lcSrcRepo, path = r.dataset.lcSrcPath;
     if (!repo || !path) return null;             // a same-origin render carries no repo
@@ -605,12 +612,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (setup0) setup0.open = true;
       /* the Connect pane lives in the filename dropdown — actually open it,
          a tick later so the drawer-opening click can't immediately close it */
-      setTimeout(function () {
-        var sb0 = document.getElementById("ed-sidebar");
-        var fb0 = document.getElementById("ed-files-btn");
-        if (sb0) sb0.classList.add("ed-open");
-        if (fb0) fb0.classList.add("ed-open");
-      }, 0);
+      setTimeout(openFilePanel, 0);
     }
   }
   function closeDrawer() {
@@ -621,6 +623,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       _blocks = []; _selIdx = -1; buildGrid();
     }
     setDirty(false);
+    closeFilePanel();   /* it lives on <body> now — it would outlive the drawer */
     var d = document.getElementById("ed-drawer");
     if (d) d.classList.remove("open");
     document.body.classList.remove("ed-drawer-open");
@@ -647,6 +650,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     }
   });
 
+  /* A stored key that GitHub no longer accepts (expired, revoked, rescoped) is
+     the worst state to be in silently: the file list errors and the filename
+     shows ⚠️, so the picker "looks broken" — and because ⚙️ Connect is a
+     COLLAPSED <details>, and we only auto-expand it when no key is stored, the
+     way back in is invisible. When a load fails, surface the sign-in. */
+  function promptReconnect(why) {
+    var setup = document.getElementById("ed-setup");
+    if (setup) setup.open = true;
+    openFilePanel();
+    setStatus(why || "GitHub refused this key — reconnect below.", false);
+  }
+
   /* ── File list — AG Grid (recursive via Git Trees API) ─ */
   var _edAgApi = null;
   function loadFiles() {
@@ -657,7 +672,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       headers: { Authorization: "Bearer " + _pat, Accept: "application/vnd.github+json" }
     }).then(function (r) { return r.json(); }).then(function (data) {
       if (!data.tree) {
-        el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>" + esc(data.message || "Error") + "</span>"; return;
+        el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>" + esc(data.message || "Error") + "</span>";
+        promptReconnect("GitHub refused this key for " + esc(_repo) + " (" + esc(data.message || "error") + ") — reconnect below.");
+        return;
       }
       var rows = data.tree.filter(function (f) {
         var name = f.path.split("/").pop();
@@ -694,21 +711,57 @@ Auto-included by docs/_layouts/default.html. Skipped for:
             return p.data.path === _curFile
               ? { background: "#e8f2ff", color: "#004fa0", fontWeight: "600" } : {};
           },
-          onRowClicked: function (e) { loadFile(e.data.path); }
+          onRowClicked: function (e) { loadFile(e.data.path); closeFilePanel(); }
         });
       }
+      /* Picking another file must never depend on a CDN. AG Grid is a nicety
+         here — a few hundred filenames are a list, not a data grid — but when
+         jsdelivr is blocked (corporate net, a content blocker, an offline
+         iPad) its onload never fired and the panel sat at "Loading…" forever,
+         indistinguishable from broken. So: use the grid when it is actually
+         there, otherwise render a plain list that always works. */
+      function buildPlainList(why) {
+        el.innerHTML = "";
+        if (why) {
+          var note = document.createElement("div");
+          note.style.cssText = "color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:5px;padding:.3em .5em;margin-bottom:.4em;font-size:.82em";
+          note.textContent = why;
+          el.appendChild(note);
+        }
+        var list = document.createElement("div");
+        list.style.cssText = "max-height:320px;overflow:auto";
+        rows.forEach(function (r) {
+          var a = document.createElement("a");
+          a.href = "#"; a.className = "ed-chip"; a.dataset.path = r.path; a.textContent = r.file;
+          if (r.path === _curFile) a.classList.add("active");
+          list.appendChild(a);            // the delegated .ed-chip handler loads it
+        });
+        el.appendChild(list);
+      }
       if (window.agGrid && window.agGrid.createGrid) { buildGrid(); return; }
-      if (window.lcLoadAgGrid) { window.lcLoadAgGrid(buildGrid); return; }
-      /* standalone fallback */
+      /* give the shared loader a bounded chance, then fall back — a hang is
+         worse than a plain list */
+      var settled = false, giveUp = setTimeout(function () {
+        if (settled || (window.agGrid && window.agGrid.createGrid)) return;
+        settled = true;
+        buildPlainList("Couldn't load the file browser — showing a simple list.");
+      }, 4000);
+      function grid() { if (settled) return; settled = true; clearTimeout(giveUp); buildGrid(); }
+      if (window.lcLoadAgGrid) { window.lcLoadAgGrid(grid); return; }
       function addCss(h) { var l=document.createElement("link"); l.rel="stylesheet"; l.href=h; document.head.appendChild(l); }
       addCss("https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-grid.css");
       addCss("https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-theme-alpine.css");
       var s = document.createElement("script");
       s.src = "https://cdn.jsdelivr.net/npm/ag-grid-community@31/dist/ag-grid-community.min.js";
-      s.onload = buildGrid;
+      s.onload = grid;
+      s.onerror = function () {
+        if (settled) return; settled = true; clearTimeout(giveUp);
+        buildPlainList("Couldn't load the file browser — showing a simple list.");
+      };
       document.head.appendChild(s);
     }).catch(function () {
       if (el) el.innerHTML = "<span style='color:#dc3545;font-size:0.85em'>Network error</span>";
+      promptReconnect("Couldn't reach GitHub with this key — check the connection, or reconnect below.");
     });
   }
 
@@ -950,8 +1003,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         if (run.status === "completed") {
           clearInterval(timer);
           var ok = run.conclusion === "success";
-          el.innerHTML = (ok ? "✅ Built · " : "❌ " + esc(run.conclusion) + " · ")
-            + "<a href='" + run.html_url + "' target='_blank' style='color:#0066cc'>view run</a>";
+          /* A green build needs no forensics: show the status, keep the builder
+             here. Only a FAILURE earns a way out to the CI logs — otherwise we
+             invite everyone to go read YAML for no reason. */
+          el.innerHTML = ok ? "✅ Built"
+            : "❌ " + esc(run.conclusion) + " · <a href='" + run.html_url +
+              "' target='_blank' rel='noopener' style='color:#0066cc'>see why</a>";
         } else {
           var icon = run.status === "in_progress" ? "🔄" : "⏳";
           el.innerHTML = "<span style='color:#888'>" + icon + " " + esc(run.status) + "…</span>";
@@ -983,6 +1040,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         var setup = document.getElementById("ed-setup");
         if (setup) setup.open = false;
         toggleConnected(true);
+        /* Only the STANDALONE runtime retargets the repo just verified (there the
+           page has no file of its own). runnerTarget() is scoped to #lc-run, so a
+           page merely hosting a runner demo can no longer hijack the sign-in. */
         var rt = runnerTarget();
         if (rt) { _repo = rt.repo; _runnerEdit = true; loadFiles(); loadFile(rt.path); }
         else {
@@ -1042,7 +1102,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       if (prev) { var on = prev.classList.toggle("lc-zoom"); zoom.textContent = on ? "100%" : "50%"; }
       return;
     }
-    if (chip)  { e.preventDefault(); loadFile(chip.dataset.path); return; }
+    if (chip)  { e.preventDefault(); loadFile(chip.dataset.path); closeFilePanel(); return; }
     if (view)  { e.preventDefault(); viewDiff(view.dataset.sha); return; }
   });
   document.addEventListener("input", function (e) {
@@ -1087,20 +1147,52 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   })();
 
   /* ── Files dropdown toggle ──────────────────────────── */
+  /* Authored inside the filename button, the panel was at the mercy of every
+     ancestor between it and the viewport: `top:100%` resolved against <body>
+     (menu below the fold), and WebKit clips a fixed descendant of the drawer's
+     `overflow:hidden` anyway — so on iPad the arrow flipped and nothing showed.
+     Portal it to <body> on first open: no transformed ancestor, no clipping
+     box, nothing left to resolve against but the viewport. Every open path
+     goes through openFilePanel so none of them can skip the anchoring. */
+  function anchorFilePanel() {
+    var sb = document.getElementById("ed-sidebar"),
+        fbtn = document.getElementById("ed-files-btn");
+    if (!sb || !fbtn || !sb.classList.contains("ed-open")) return;
+    var r = fbtn.getBoundingClientRect();
+    sb.style.position = "fixed";
+    sb.style.zIndex = "10000";
+    sb.style.top = Math.round(r.bottom + 2) + "px";
+    sb.style.left = Math.round(Math.min(r.left, Math.max(8, innerWidth - 300))) + "px";
+    sb.style.maxHeight = Math.round(innerHeight - r.bottom - 16) + "px";
+  }
+  function openFilePanel() {
+    var sb = document.getElementById("ed-sidebar"),
+        fbtn = document.getElementById("ed-files-btn");
+    if (!sb) return;
+    if (sb.parentNode !== document.body) document.body.appendChild(sb);
+    sb.classList.add("ed-open");
+    if (fbtn) fbtn.classList.add("ed-open");
+    anchorFilePanel();
+  }
+  function closeFilePanel() {
+    var sb = document.getElementById("ed-sidebar"),
+        fbtn = document.getElementById("ed-files-btn");
+    if (sb) sb.classList.remove("ed-open");
+    if (fbtn) fbtn.classList.remove("ed-open");
+  }
+  window.addEventListener("resize", anchorFilePanel);
+  window.addEventListener("orientationchange", function () { setTimeout(anchorFilePanel, 250); });
+
   document.addEventListener("click", function(e) {
-    var btn = e.target.closest("#ed-files-btn");
-    var sb  = document.getElementById("ed-sidebar");
-    var fbtn = document.getElementById("ed-files-btn");
-    if (btn && sb) {
-      // Ignore clicks that landed inside the dropdown panel itself
-      if (e.target.closest("#ed-sidebar")) return;
-      var nowOpen = sb.classList.toggle("ed-open");
-      if (fbtn) fbtn.classList.toggle("ed-open", nowOpen);
-    } else if (sb && sb.classList.contains("ed-open")) {
-      if (!e.target.closest("#ed-sidebar")) {
-        sb.classList.remove("ed-open");
-        if (fbtn) fbtn.classList.remove("ed-open");
-      }
+    var sb = document.getElementById("ed-sidebar");
+    if (!sb) return;
+    /* the panel now lives on <body>, so a click inside it never looks like a
+       click on the button — check it first and leave the panel alone */
+    if (e.target.closest("#ed-sidebar")) return;
+    if (e.target.closest("#ed-files-btn")) {
+      if (sb.classList.contains("ed-open")) closeFilePanel(); else openFilePanel();
+    } else if (sb.classList.contains("ed-open")) {
+      closeFilePanel();
     }
   });
 

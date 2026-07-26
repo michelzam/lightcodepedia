@@ -36,6 +36,30 @@ treats: 3
 > carries a **sha-256** so casual edits show.
 {: .speaker-note }
 
+```gherkin
+Feature: A demonstration recorded as evidence
+  As an educator
+  I want the learner's actual path through a page captured in one file
+  So that I grade what they did, not what they say they did
+
+  Scenario: The session is logged from Start to Finish
+    Given a demo widget and the widgets it watches
+    When the learner starts, answers the quiz, edits the form and finishes
+    Then the summary counts their actions, active time, pauses, quiz and karma
+
+  Scenario: The path can be re-performed
+    Given a finished demo
+    When the learner hits Replay
+    Then Prof. LC walks the same widgets in the same order
+    And re-applies the edits they made, narrating each one
+
+  Scenario: The export is tamper-evident
+    Given a finished demo
+    When the learner exports it
+    Then the file carries a checksum, so a casual edit shows
+```
+{: .feature tags="learn" status="pending" }
+
 ## ▶ Replay — the path, re-performed
 
 After **Finish**, **▶ Replay** hands the trace to the [avatar](/components/avatar)

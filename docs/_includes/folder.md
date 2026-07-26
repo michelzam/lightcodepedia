@@ -219,14 +219,18 @@ Auto-included by docs/_layouts/default.html.
     var _folderHdrs = _folderPat ? { Authorization: 'Bearer ' + _folderPat, 'X-GitHub-Api-Version': '2022-11-28' } : {};
     function apiFetch(url) {
       /* Authorization forces a CORS preflight and some networks kill the
-         OPTIONS (see deploys.md — WebKit reports just "Load failed"). The
-         repo is public, so on ANY failure retry bare: no headers → simple
-         request → no preflight. Auth only raises the rate limit. */
-      var bare = function() { return fetch(url).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); };
-      if (!_folderPat) return bare();
-      return fetch(url, { headers: _folderHdrs })
-        .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-        .catch(bare);
+         OPTIONS (see deploys.md — WebKit reports just "Load failed"). On a
+         PUBLIC repo we retry bare: no headers → simple request → no preflight.
+         NOT on a private one: there the bare retry is unauthenticated → 404, so
+         a network hiccup reads as "folder not found" and the shelf empties
+         (that is what killed panels on iPad/cellular). With a key, retry the
+         AUTHORIZED request and let a real failure report itself. */
+      var go = function (h) {
+        return fetch(url, h ? { headers: h } : undefined)
+          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+      };
+      if (!_folderPat) return go(null);
+      return go(_folderHdrs).catch(function () { return go(_folderHdrs); });
     }
     /* ── enumerate from the build-time manifest, not the GitHub API ──────
        The lab repo is private, so api.github.com/contents 404s for anonymous

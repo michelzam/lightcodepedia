@@ -52,8 +52,8 @@ div.footnotes ol { font-size: 0.9em; color: #555; }
 <script>
 (function(){
   function init() {
-    var refs = document.querySelectorAll('a[href^="#fn:"]');
-    if (!refs.length) return;
+    var FN_SEL = 'a[href^="#fn:"]';
+    /* no early return on an empty page: a block can create the first ref later */
 
     var popover = document.createElement('div');
     popover.className = 'lc-fn-popover';
@@ -122,25 +122,35 @@ div.footnotes ol { font-size: 0.9em; color: #555; }
       current = null;
     }
 
-    Array.prototype.forEach.call(refs, function(ref){
-      ref.addEventListener('click', function(e){
-        e.preventDefault();
-        if (current === ref) hide();
-        else show(ref);
-      });
-      if (!touchOnly) {
-        ref.addEventListener('mouseenter', function(){
-          clearTimeout(leaveTimer);
-          hoverTimer = setTimeout(function(){ show(ref); }, 200);
-        });
-        ref.addEventListener('mouseleave', function(){
-          clearTimeout(hoverTimer);
-          leaveTimer = setTimeout(function(){
-            if (!popover.matches(':hover')) hide();
-          }, 200);
-        });
-      }
+    /* DELEGATED, not per-ref: blocks are the movable unit, so footnote refs are
+       created AFTER load when a .block / .blocks (or the runner) upgrades its
+       markdown. A static NodeList captured at DOMContentLoaded never sees them,
+       and tapping the exponent inside a block did nothing. Listening on the
+       document means any ref — present at load or injected later — gets the
+       bubble, with no re-scan and no bookkeeping. */
+    document.addEventListener('click', function(e){
+      var ref = e.target.closest && e.target.closest(FN_SEL);
+      if (!ref) return;
+      e.preventDefault();
+      if (current === ref) hide(); else show(ref);
     });
+
+    if (!touchOnly) {
+      document.addEventListener('mouseover', function(e){
+        var ref = e.target.closest && e.target.closest(FN_SEL);
+        if (!ref || ref === current) return;
+        clearTimeout(leaveTimer);
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(function(){ show(ref); }, 200);
+      });
+      document.addEventListener('mouseout', function(e){
+        if (!(e.target.closest && e.target.closest(FN_SEL))) return;
+        clearTimeout(hoverTimer);
+        leaveTimer = setTimeout(function(){
+          if (!popover.matches(':hover')) hide();
+        }, 200);
+      });
+    }
 
     if (!touchOnly) {
       popover.addEventListener('mouseenter', function(){ clearTimeout(leaveTimer); });

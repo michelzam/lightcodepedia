@@ -94,13 +94,20 @@ Auto-included by docs/_layouts/default.html.
     var pollTimer = null, polls = 0;
     /* Requests with Authorization / custom headers need a CORS preflight, and
        some networks (mobile relays, middleboxes) silently kill the OPTIONS —
-       WebKit then reports only "Load failed". The repo is public, so on any
-       network-level failure retry as a BARE simple GET: no headers at all →
-       no preflight → nothing to kill. Auth only raises the rate limit. */
+       WebKit then reports only "Load failed". On a PUBLIC repo we can retry as
+       a BARE simple GET: no headers → no preflight → nothing to kill, and auth
+       only raised the rate limit anyway.
+       NOT on a private one. There the bare retry is unauthenticated, so GitHub
+       answers 404 and a transient network hiccup turns into a hard "not found"
+       — the deploys panel simply vanished on iPad/cellular while working on a
+       desktop. With a key present, retry the AUTHORIZED request instead and let
+       a real failure report itself. */
     function ghFetch(url) {
       var H = { "X-GitHub-Api-Version": "2022-11-28", Accept: "application/vnd.github+json" };
       if (pat) H.Authorization = "Bearer " + pat;
-      return fetch(url, { headers: H }).catch(function () { return fetch(url); });
+      return fetch(url, { headers: H }).catch(function () {
+        return pat ? fetch(url, { headers: H }) : fetch(url);
+      });
     }
     function fetchRuns() {
       spEl.textContent = "Loading…";
@@ -135,9 +142,12 @@ Auto-included by docs/_layouts/default.html.
            that survived even the bare no-preflight retry */
         spEl.textContent = /403/.test(e.message)
           ? "⚠️ rate-limited — try again in a few minutes"
-          : /GitHub API/.test(e.message)
-            ? "⚠️ " + e.message
-            : "⚠️ network error — tap ↻ to retry";
+          /* on a private node a 404/401 means the key, not a missing repo */
+          : /40[14]/.test(e.message) && pat
+            ? "⚠️ your key can't read this node's runs — reconnect (Get started)"
+            : /GitHub API/.test(e.message)
+              ? "⚠️ " + e.message
+              : "⚠️ network error — tap ↻ to retry";
         if (window.lcSetDataset) window.lcSetDataset(dsId, []);
       });
     }

@@ -18,6 +18,30 @@ If the gate above is open, you've earned points on Tutorial 101 in this
 browser. If it's closed — that *is* the demo: follow the link, answer a quiz,
 come back.
 
+```gherkin
+Feature: A page that knows what must come first
+  As an author
+  I want to declare what a learner should master before this page
+  So that nobody lands here lost, and everybody knows where to go next
+
+  Scenario: An unmet prerequisite gates the page
+    Given a page requiring a lesson the learner has not scored on
+    When they open it
+    Then a gate sends them to that lesson and folds the rest away
+    And an honest "show anyway" escape stays available
+
+  Scenario: A met prerequisite gets out of the way
+    Given a learner who has earned points on every required lesson
+    When they open the page
+    Then the gate is a slim green line, and the page reads normally
+
+  Scenario: The link points both ways
+    Given a lesson that another page requires
+    When the learner finishes it
+    Then that lesson shows where they can go next
+```
+{: .feature tags="learn" status="pending" }
+
 ## ✍️ How to write it
 
 A list of links with the `{: .prerequisite }` IAL:

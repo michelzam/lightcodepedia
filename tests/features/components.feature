@@ -9,6 +9,16 @@ Feature: Component gallery behaviors
     And I click the grid row containing "Wanda"
     Then a form titled "Wanda" is visible
 
+  Scenario: Footnotes inside a fenced component block render
+    # kramdown never looks inside a fence, so [^x] refs written in a .block
+    # stayed raw AND their page-level definitions were dropped as unreferenced
+    # (three of four footnotes vanished from the Build-AI cover). The client
+    # pipeline now runs the same footnote pass the runner does, so a block
+    # carries its own footnotes — refs and defs together, inside the fence.
+    When I navigate to "/courses/build_ai_cover"
+    And I wait for the page to be interactive
+    Then every footnote on the page resolves
+
   Scenario: Accordion sections open on click
     When I navigate to "/components/accordion"
     And I wait for the page to be interactive

@@ -36,7 +36,7 @@ Feature: A CSV block becomes an interactive map
     assert self.map.visible
     :::
 ```
-{: .feature tags="media" status="passing" }
+{: .feature tags="data,media" status="passing" }
 
 > This is the Paris dog-walking map from `tutorial101.yaml` — same dataset, now interactive in the browser.
 > Ask yourself: "Which park is closest to the centre of Paris?"
