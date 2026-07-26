@@ -82,6 +82,21 @@ Auto-included by docs/_layouts/default.html.
     document.head.appendChild(st);
   }
 
+  /* Screen capture is gated by Permissions-Policy: a cross-origin iframe gets it
+     only if the PARENT sets allow="display-capture". When it's missing the
+     browser never prompts — getDisplayMedia just rejects — so check up front and
+     say so, instead of offering a button that silently does nothing. Top-level
+     pages are always allowed; if the browser exposes no way to ask, assume yes
+     and let the real call decide. */
+  function screenCaptureAllowed() {
+    try {
+      if (window.self === window.top) return true;
+      var pp = document.permissionsPolicy || document.featurePolicy;
+      if (pp && pp.allowsFeature) return pp.allowsFeature("display-capture");
+    } catch (e) { /* cross-origin probe blocked — fall through */ }
+    return true;
+  }
+
   function upgradeRecorder(el, hooks) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
@@ -140,6 +155,9 @@ Auto-included by docs/_layouts/default.html.
         '<div class="lc-rec-ios" style="background:#eef4ff;border-color:#cdddff;color:#234">',
         '<strong>💡 Add your face with Presenter Overlay</strong>',
         '<div>After you share your screen, a green 🟢 <strong>camera/screen icon</strong> appears in the macOS menu bar (top-right). Click it → <strong>Presenter Overlay → Small</strong>, then press <strong>▶ Start</strong> on the floating panel. macOS composites your camera in higher quality than any in-page overlay. <em>(The menu only shows while we hold the camera.)</em></div>',
+        // Say why the 📷 Camera chip is missing here — it silently disappeared
+        // and left people hunting for an option that was never rendered.
+        '<div style="margin-top:.5em"><strong>No 📷 Camera option in Safari:</strong> opening the camera in-page crashes Safari mid-recording, so the face comes from Presenter Overlay above. Want the face inside the panel instead? Record in <strong>Chrome</strong>.</div>',
         '</div>'
       ].join("") : '',
       isIOS ? [
@@ -381,6 +399,7 @@ Auto-included by docs/_layouts/default.html.
       if (hudStop)  hudStop.textContent = "⏹ Stop";
       btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Stop";
       clearInterval(timerInterval);
+      if (hudTimer) hudTimer.style.display = "";   // hidden while Ready — it has a time to show now
       timerInterval = setInterval(function(){
         if (!hudTimer) return;
         var elapsed = Date.now() - startTs - pausedAccum - (isPaused ? Date.now() - pauseStart : 0);
@@ -782,8 +801,13 @@ Auto-included by docs/_layouts/default.html.
               isPaused = false; pausedAccum = 0;
               if (hudStop)  { hudStop.style.display  = ""; hudStop.textContent = "⏹ Cancel"; }
               if (hudPause) { hudPause.style.display = ""; hudPause.className = "lc-rec-hud-pause paused"; hudPause.textContent = "▶ Start"; hudPause.title = "Start recording"; }
-              if (hudTimer) hudTimer.textContent = "Ready";
-              if (hudLabel) hudLabel.textContent = "🎬 Ready";
+              /* One state, one pill. On macOS the HUD already carries a label
+                 (there's no pip there — the system Presenter Overlay draws the
+                 face), so writing "Ready" into the timer too showed the word
+                 twice, stacked. The label owns the state; the timer stays empty
+                 until it has a time to show. */
+              if (hudLabel) { hudLabel.textContent = "🎬 Ready"; if (hudTimer) hudTimer.style.display = "none"; }
+              else if (hudTimer) hudTimer.textContent = "Ready";
               btnEl.disabled = false; btnEl.className = "lc-rec-btn stop"; btnEl.textContent = "⏹ Cancel";
               setStatus(isMacSafari
                 ? "Ready — turn on Presenter Overlay (green icon in the menu bar), then press ▶ Start."
@@ -794,6 +818,17 @@ Auto-included by docs/_layouts/default.html.
           .catch(function(e) {
             destroyHUD();
             btnEl.disabled = false;
+            if (el && el._lcHidden) { el.style.display = ""; el._lcHidden = false; }
+            /* Inside an iframe, screen capture needs the PARENT to grant it via
+               allow="display-capture". Without that, getDisplayMedia rejects
+               NotAllowedError instantly and the browser never asks — the button
+               looks dead. We can add the attribute to our own embeds, but not to
+               someone else's frame, so say what happened and offer the way out. */
+            if (e.name === "NotAllowedError" && !screenCaptureAllowed()) {
+              setStatus("❌ This page is embedded in a frame that doesn't allow screen capture. "
+                      + "Open it in its own tab to record.", "err");
+              return;
+            }
             setStatus("❌ " + (e.name === "NotAllowedError" ? "Screen share was cancelled." : e.message), "err");
           });
     }

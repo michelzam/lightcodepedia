@@ -143,6 +143,9 @@ Auto-included by docs/_layouts/default.html.
     if (cls) f.className = cls;
     f.src = src; f.width = "100%"; f.height = h || "400";
     f.setAttribute("loading", "lazy"); f.setAttribute("allowfullscreen", "");
+    // Delegate screen capture / camera / mic, or a recorder inside the frame
+    // can never prompt — Permissions-Policy denies it with no dialog at all.
+    f.setAttribute("allow", "display-capture; camera; microphone");
     f.style.border = "none";
     return f;
   }

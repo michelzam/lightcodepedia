@@ -64,12 +64,17 @@ jobs:
           rsync --dry-run --checksum --itemize-changes -a --delete \
             --exclude-from=$X/docs.txt lab/docs/ pedia/docs/ 2>/dev/null | grep -v '/$' | head -40
 
+      # Read the verdict from the CLONE, not the live site. Fetching
+      # lightcodepedia.org/assets/ux-results.json goes through the Pages CDN,
+      # which can hand back a cached older copy while pedia's repo already
+      # carries newer results — the board then shows a stale verdict with no
+      # sign that it is stale. The clone above is pedia main at HEAD, the same
+      # source of truth the lab row reads for itself.
       - name: Read pedia's latest suite result
         run: |
-          curl -sS -m 30 https://lightcodepedia.org/assets/ux-results.json -o pedia-ux.json || echo '[]' > pedia-ux.json
           python3 - <<'EOF' >> "$GITHUB_ENV"
           import json
-          try: rows = json.load(open("pedia-ux.json"))
+          try: rows = json.load(open("pedia/docs/assets/ux-results.json"))
           except Exception: rows = []
           ok = sum(1 for r in rows if r.get("status") == "✅")
           run = max((str(r.get("run","")) for r in rows), default="")

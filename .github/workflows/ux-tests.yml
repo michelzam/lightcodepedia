@@ -34,7 +34,13 @@ on:
 # Scoped runs (only= / scenarios=) never publish results, so they get their own
 # group: a debug run must not cancel the full suite, nor be cancelled by it.
 concurrency:
-  group: ux-${{ github.ref }}-${{ github.event.inputs.only || github.event.inputs.scenarios || 'full' }}
+  # event_name is IN the key on purpose. Each repo runs on one trigger and
+  # skips the others (lab: push; pedia: workflow_run) — but concurrency is
+  # evaluated BEFORE the job-level if, so without this the workflow_run run
+  # that was about to skip cancelled the push run that was about to work.
+  # Nothing ran for three hours and the board went stale (2026-07-26).
+  # A run may only cancel its own kind.
+  group: ux-${{ github.ref }}-${{ github.event_name }}-${{ github.event.inputs.only || github.event.inputs.scenarios || 'full' }}
   cancel-in-progress: true
 
 jobs:

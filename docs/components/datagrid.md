@@ -71,6 +71,7 @@ Each object becomes a row; its keys become the column headers. Header labels are
 | `editable="true"` | Double-click a cell to edit in place — see below |
 | `master="<id>"` | Filter this grid by the selected row in another grid — see below |
 | `filter="<local>=<master>"` | Required with `master`: which field to match |
+| `empty="…"` | What to show when the data is empty. Say it plainly when the grid is *waiting* on a choice made elsewhere — the default reads like a fault |
 
 **Q:** You have two grids on the same page and they're interfering with each other. What's missing?
 

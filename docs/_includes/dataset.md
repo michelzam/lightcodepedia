@@ -195,6 +195,10 @@ Auto-included by docs/_layouts/default.html.
       if (i > 0) hints[h.slice(0, i).trim()] = h.slice(i + 1).trim();
     });
 
+    /* empty="…" — what to say when the dataset is legitimately empty. The
+       default reads like a fault, which is wrong for a grid that is simply
+       waiting on a choice made elsewhere (pick a course → see its pages). */
+    var emptyMsg = el.getAttribute("empty") || "";
     var lcId = el.getAttribute("id") || "";
     var wrap = document.createElement("div");
     wrap.className = "lc-datagrid";
@@ -207,7 +211,10 @@ Auto-included by docs/_layouts/default.html.
 
     function render(data) {
       if (!data || !data.length) {
-        el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ No data: <code>" + bindId + "</code></p>"; return;
+        el.innerHTML = emptyMsg
+          ? "<p style='color:#888;font-size:.85em;padding:.5em 0'>" + emptyMsg + "</p>"
+          : "<p style='color:#888;font-size:.85em'>⚠ No data: <code>" + bindId + "</code></p>";
+        return;
       }
       var allCols = Object.keys(data[0]);
       var urlCol  = allCols.indexOf("url") >= 0 ? "url" : null;

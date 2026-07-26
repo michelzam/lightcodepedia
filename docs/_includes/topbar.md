@@ -1,7 +1,36 @@
 <script>
-if (location.search.indexOf('embed=true') >= 0) {
-  document.documentElement.classList.add('lc-embed-mode');
-}
+/* ── Frame flags — the host (Canvas, an LMS, any page that iframes us) decides
+   how much of the platform a learner gets, per URL. Orthogonal on purpose:
+     ?focus=1       menu bar stays for CONTEXT but goes read-only; nothing that
+                    navigates away survives (no home, no related, no pager)
+     ?editable=0|1  the page editor, independent of focus
+     ?navigable=0|1 internal links live in-frame, or neutralised
+     ?open=a,b      glob allowlist — matching links open in a NEW TAB instead
+                    (course in one, exercise in the other, side by side)
+   Defaults are today's behaviour: everything on, nothing suppressed. Under
+   focus, navigable defaults OFF — a focused page that still lets you click
+   away is not focused. ?embed=true keeps its old meaning (hide the bar too). */
+(function () {
+  var q = new URLSearchParams(location.search);
+  var flag = function (name, dflt) {
+    var v = q.get(name);
+    if (v === null) return dflt;
+    return v !== "0" && v !== "false" && v !== "off";
+  };
+  var root = document.documentElement;
+  if (q.get("embed") === "true") root.classList.add("lc-embed-mode");
+  var focus = flag("focus", false);
+  if (focus) root.classList.add("lc-focus-mode");
+  /* editable: explicit wins everywhere — that is how a focused page keeps its
+     editor while an embedded one hides it. */
+  if (q.has("editable")) root.classList.add(flag("editable", true) ? "lc-editable" : "lc-not-editable");
+  window.lcFrame = {
+    focus: focus,
+    editable: q.has("editable") ? flag("editable", true) : !root.classList.contains("lc-embed-mode"),
+    navigable: flag("navigable", !focus),
+    open: (q.get("open") || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean)
+  };
+})();
 </script>
 <style>
 #lc-topbar {
@@ -139,6 +168,21 @@ body {
 .lc-embed-mode #lc-topbar { display: none !important; }
 .lc-embed-mode body { padding-top: 0 !important; }
 .lc-embed-mode .markdown-body > h1:first-of-type { display: none !important; }
+/* ── focus mode: the bar STAYS (a learner needs to know where they are) but
+   nothing in it can be pressed — read-only context, not a way out. The bench
+   bar and its 🏠 live inside #lc-topbar, so one rule covers both. */
+.lc-focus-mode #lc-topbar { pointer-events: none; opacity: 0.85; }
+.lc-focus-mode #lc-topbar a { cursor: default; }
+/* .related is nothing BUT a way out — it has no job left here */
+.lc-focus-mode .lc-related { display: none !important; }
+/* a neutralised link still reads as text, so the page doesn't look broken —
+   it just isn't a door any more */
+.lc-focus-mode a.lc-inert { color: inherit; text-decoration: none; cursor: default; }
+/* explicit editable= wins over embed mode's blanket hiding, both ways. The
+   html. prefix outranks .lc-embed-mode .lc-edit-fab whatever order the two
+   include styles land in. */
+html.lc-editable .lc-edit-fab { display: inline-flex !important; }
+html.lc-not-editable .lc-edit-fab { display: none !important; }
 /* fork awareness — shown only when the site is served from a fork's Pages URL */
 #lc-fork-hint {
   display: inline-flex; align-items: center; gap: 4px; margin-left: 10px;
@@ -798,6 +842,55 @@ body {
     sBtn.addEventListener('click', function(e){ e.stopPropagation(); sDrop.classList.toggle('open'); });
     document.addEventListener('click', function(){ sDrop.classList.remove('open'); });
     sDrop.addEventListener('click', function(e){ e.stopPropagation(); });
+  }
+
+  /* ── Link guard (navigable=0) ────────────────────────────────────────────
+     Hiding the bar is not enough: .related cards, .folder cards, a menu, and
+     plain prose links all navigate. One delegated listener, so it covers
+     everything the runtime renders later too. External links are left alone —
+     they were never a way OUT of the module, and an allowlist (?open=) turns
+     chosen internal ones into new tabs instead of dead ends. */
+  var F = window.lcFrame || {};
+  if (!F.navigable) {
+    var globToRe = function (g) {
+      return new RegExp("^" + g.replace(/[.+^${}()|[\]\\]/g, "\\$&")
+                                .replace(/\*/g, ".*").replace(/\?/g, ".") + "$");
+    };
+    var allow = (F.open || []).map(globToRe);
+    /* What page does this URL actually mean? On the runtime everything is
+       /run.html and the real destination rides in #src= — comparing pathnames
+       there would call every course link "the same page" and wave it through.
+       So the logical path is the src ref when there is one, the pathname
+       otherwise, and both the same-page test and ?open= use it. */
+    var logical = function (u) {
+      var h = u.hash || "";
+      if (h.indexOf("#src=") === 0) {
+        try { return decodeURIComponent(h.slice(5)); } catch (err) { return h.slice(5); }
+      }
+      var path = u.pathname;
+      if (window.lcBaseUrl && path.indexOf(window.lcBaseUrl) === 0)
+        path = path.slice(window.lcBaseUrl.length) || "/";
+      return path;
+    };
+    var here = logical(new URL(location.href));
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest && e.target.closest("a[href]");
+      if (!a) return;
+      var href = a.getAttribute("href") || "";
+      if (!href || href.charAt(0) === "#") return;          // in-page anchor: fine
+      var u;
+      try { u = new URL(a.href, location.href); } catch (err) { return; }
+      if (u.origin !== location.origin) return;             // someone else's site
+      var path = logical(u);
+      if (path === here) return;                            // same page
+      if (allow.some(function (re) { return re.test(path); })) {
+        e.preventDefault();
+        window.open(a.href, "_blank", "noopener");          // course beside the bench
+        return;
+      }
+      e.preventDefault();
+      a.classList.add("lc-inert");
+    }, true);
   }
 })();
 </script>
