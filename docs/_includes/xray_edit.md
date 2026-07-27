@@ -258,6 +258,24 @@ loses everything. A component's editable source comes from window.lcSourceOf
     }).catch(function (e) { lcxToast("Save failed: " + e.message, false); });
   }
 
+  /* Shared so other components can write a block back without growing a
+     second, subtly different commit path. lcSourceTarget resolves what a page
+     actually IS: inside a runner render the true source is the RENDERED file,
+     not the /run page, which knows nothing about itself. */
+  window.lcCommitInline = commitInline;
+  window.lcSourceTarget = function (fromEl) {
+    var runRoot = fromEl && fromEl.closest ? fromEl.closest(".lc-run[data-lc-src-path]") : null;
+    if (!runRoot) runRoot = document.querySelector(".lc-run[data-lc-src-path]");
+    var fabEl = document.getElementById("ed-fab");
+    var pagePath = fabEl && fabEl.dataset ? fabEl.dataset.pagePath : "";
+    var repo = (runRoot && runRoot.dataset.lcSrcRepo) || localStorage.getItem("lc_ed_repo") || "";
+    var path = runRoot ? runRoot.dataset.lcSrcPath : (pagePath ? "docs/" + pagePath : "");
+    var readonly = !!(runRoot && runRoot.dataset.lcReadonly);
+    return { repo: repo, path: path, readonly: readonly,
+             pat: localStorage.getItem("lc_ed_pat") || "" };
+  };
+  window.lcxToast = lcxToast;
+
   function keepChanges() {
     /* Inside a runner render the true source is the RENDERED file (the /run
        page itself has no_edit and knows nothing) — the runner stamps it on

@@ -242,8 +242,14 @@ def step_tab_to_quiz_answer(context, answer):
     context.page.evaluate("() => (document.body.focus(), document.activeElement.blur())")
     for _ in range(120):
         context.page.keyboard.press("Tab")
+        # It must BE a quiz option, not merely contain the words: tutorial101
+        # has "breed: Labrador Retriever" in a form above the quiz, so a text
+        # match alone stopped on that input and pressed Enter into a textbox.
         if context.page.evaluate(
-            "t => (document.activeElement.textContent || '').includes(t)", answer
+            """t => { const a = document.activeElement;
+                      return !!a && a.matches('.lc-quiz li')
+                             && (a.textContent || '').includes(t); }""",
+            answer,
         ):
             context._quiz_answer = answer
             return

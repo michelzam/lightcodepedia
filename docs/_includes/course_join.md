@@ -214,7 +214,15 @@ The check is live truth against the API, never cached. Done steps reopen via
                 : "✅ up to date with the hub."), behind ? "" : "ok");
       /* the bench opens IN the runner — students never land in the GitHub UI;
          xray Keep commits their edits straight back to the bench */
-      var benchOpen = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + org + "/" + B.name + "/index.md";
+      /* Carry the frame flags through. An LMS frames ONE url for every
+         student and the wizard resolves the bench per visitor — so the flags
+         have to survive the hop, or the bench opens with the full platform
+         inside a page that is supposed to be focused. */
+      var pass = ["focus", "editable", "navigable", "open"]
+        .filter(function (k) { return q[k] !== undefined; })
+        .map(function (k) { return k + "=" + encodeURIComponent(q[k]); }).join("&");
+      var benchOpen = (window.lcHref ? window.lcHref("/run.html") : "/run.html")
+        + (pass ? "?" + pass : "") + "#src=gh:" + org + "/" + B.name + "/index.md";
       function paintBenchRow() {
         benchRow().innerHTML =
           (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Refresh from hub</button>' : "") +

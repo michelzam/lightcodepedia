@@ -70,16 +70,26 @@ jobs:
       # carries newer results — the board then shows a stale verdict with no
       # sign that it is stale. The clone above is pedia main at HEAD, the same
       # source of truth the lab row reads for itself.
+      # When pedia last CHANGED — the only thing its verdict can be late against.
+      # "Old" is not a fault: a verdict from last week is perfectly current if
+      # nothing shipped since. Late means the site moved and the suite has not
+      # caught up yet, which is the one case where the number on the board
+      # describes content that is no longer there.
       - name: Read pedia's latest suite result
         run: |
-          python3 - <<'EOF' >> "$GITHUB_ENV"
+          HEAD_TS=$(cd pedia && git log -1 --format=%cI -- docs/ | sed 's/+00:00/Z/')
+          python3 - <<EOF >> "\$GITHUB_ENV"
           import json
+          head = "${HEAD_TS}"
           try: rows = json.load(open("pedia/docs/assets/ux-results.json"))
           except Exception: rows = []
           ok = sum(1 for r in rows if r.get("status") == "✅")
           run = max((str(r.get("run","")) for r in rows), default="")
+          # both are UTC ISO; the run stamp is minute precision, so compare on
+          # the minute and let a tie count as caught-up
+          late = bool(run and head and head[:16] > run[:16])
           print(f"PEDIA_TESTED={ok}/{len(rows)}" if rows else "PEDIA_TESTED=—")
-          print(f"PEDIA_RUN={run or '—'}")
+          print(f"PEDIA_RUN={('⚠️ ' if late else '') + run if run else '—'}")
           EOF
 
       # ── vault + hubs: pending files (the gates' rsyncs, dry-run) ──────

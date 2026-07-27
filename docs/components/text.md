@@ -8,7 +8,7 @@ There's one lightcodepedia twist: any `[^footnote]` reference becomes a hover/ta
 
 ## ✏️ Try it live — edit and see
 
-Type markdown on the left. See the rendered result on the right — instantly, as you type.
+Read the result on the **left**, type the markdown on the **right** — instantly, as you type. The rendered page is what you are making, so it takes the reading position; the source sits beside it.
 
 ````markdown
 ## Hello, Markdown!
@@ -42,6 +42,16 @@ def greet(name):
 {: .mdpad rows="16" }
 
 Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The preview updates on every keystroke — no server, just JavaScript[^marked] in the browser.
+
+### 🔧 Knobs
+
+| Attribute | What it does |
+|---|---|
+| `rows="14"` | Editor height in text rows (default 12) |
+| `save="true"` | Adds a 💾 **Save** button that commits the block straight back to the page source — no x-ray, no page editor |
+| `#id` | Optional — names the pad for X-ray |
+
+**About `save="true"`:** the button appears only when a save could actually work — you are connected, the page has a source file, and that source is not read-only. Otherwise it is disabled and says which of the three is missing, rather than failing after the click. It writes through the same path the x-ray **Keep** uses, so a block is committed one way, not two.
 
 ```gherkin
 Feature: A markdown block becomes a live editor and preview
