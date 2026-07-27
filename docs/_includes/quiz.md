@@ -40,6 +40,10 @@ ul.lc-quiz, ol.lc-quiz { background: white; border: 1px solid #e5e7eb; border-ra
 .lc-quiz li { display: block; padding: 0.55em 0.85em 0.55em 2.2em; margin: 0.15em 0; border-radius: 6px; border: 1px solid transparent; cursor: pointer; position: relative; transition: background 0.15s, border-color 0.15s; line-height: 1.5; }
 .lc-quiz li::before { content: "○"; position: absolute; left: 0.75em; top: 0.5em; color: #b0b6bf; font-weight: 600; font-size: 1.15em; line-height: 1.4; }
 .lc-quiz li:hover { background: #f5f9ff; border-color: #d0e3f5; }
+/* Keyboard users must SEE where they are — an option you can reach but cannot
+   locate is only half operable (WCAG 2.4.7). Offset so it reads as a ring
+   around the whole option, not a hairline on the border. */
+.lc-quiz li:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; background: #f5f9ff; }
 .lc-quiz li > p:first-child { margin: 0; }
 .lc-quiz li > p:not(:first-child) { margin: 0.3em 0 0; }
 
@@ -148,6 +152,44 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
       reportScore(quizId, allCorrect);
     }
 
+    /* ── Keyboard ────────────────────────────────────────────────────────────
+       These options were <li> with a click listener: a keyboard user could not
+       answer a quiz at all — the platform's core learning interaction, failing
+       WCAG 2.1.1 at Level A. Each option becomes a real radio/checkbox in the
+       accessibility tree, reachable by Tab, answered with Enter or Space, and
+       arrow keys walk the list. The grading path is untouched: keyboard calls
+       exactly the same function the mouse does, so scores cannot diverge. */
+    el.setAttribute('role', multi ? 'group' : 'radiogroup');
+    function keyable(li, i, activate) {
+      li.setAttribute('role', multi ? 'checkbox' : 'radio');
+      li.setAttribute('tabindex', '0');
+      li.setAttribute('aria-checked', 'false');
+      /* An answer is ONE control. Authors put links inside them — a footnote
+         ref, a doc link — and a radio containing its own tab stop is
+         ambiguous for assistive tech (axe: nested-interactive). Demote the
+         descendants: still clickable, no longer a separate tab stop, so Tab
+         moves answer to answer the way a learner expects. Footnotes stay
+         reachable from the list at the foot of the page. */
+      li.querySelectorAll('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        .forEach(function (n) { n.setAttribute('tabindex', '-1'); });
+      li.addEventListener('keydown', function (e) {
+        var k = e.key;
+        if (k === ' ' || k === 'Spacebar' || k === 'Enter') { e.preventDefault(); activate(); return; }
+        var fwd = (k === 'ArrowDown' || k === 'ArrowRight');
+        var back = (k === 'ArrowUp' || k === 'ArrowLeft');
+        if (!fwd && !back) return;
+        e.preventDefault();
+        var n = items.length;
+        var next = items[(i + (fwd ? 1 : n - 1)) % n];
+        if (next) next.focus();
+      });
+    }
+    function markChecked() {
+      items.forEach(function (o, j) {
+        o.setAttribute('aria-checked', selected[j] ? 'true' : 'false');
+      });
+    }
+
     if (multi) {
       var bar = document.createElement('div');
       bar.className = 'lc-quiz-bar';
@@ -162,8 +204,7 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
       el.parentNode.insertBefore(bar, el.nextSibling);
 
       items.forEach(function(li, i){
-        li.addEventListener('click', function(e){
-          e.stopPropagation();
+        var toggle = function () {
           if (li.classList.contains('lc-quiz-correct') || li.classList.contains('lc-quiz-wrong')) {
             items.forEach(function(o){ o.classList.remove('lc-quiz-correct', 'lc-quiz-wrong'); });
           }
@@ -174,9 +215,12 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
             selected[i] = true;
             li.classList.add('lc-quiz-selected');
           }
+          markChecked();
           status.textContent = '';
           status.className = 'lc-quiz-status';
-        });
+        };
+        li.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
+        keyable(li, i, toggle);
       });
 
       checkBtn.addEventListener('click', function(){
@@ -207,21 +251,23 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
       });
     } else {
       items.forEach(function(li, i){
-        li.addEventListener('click', function(e){
-          e.stopPropagation();
+        var pick = function () {
           items.forEach(function(o){
             o.classList.remove('lc-quiz-correct', 'lc-quiz-wrong', 'lc-quiz-selected');
           });
+          selected = {}; selected[i] = true; markChecked();
           var hit = !!correctSet[i];
           if (hit) {
             li.classList.add('lc-quiz-correct');
           } else {
-            // Treasure-hunt: only the clicked wrong answer is revealed;
+            // Treasure-hunt: only the chosen wrong answer is revealed;
             // the correct one stays hidden until the student finds it.
             li.classList.add('lc-quiz-wrong');
           }
           gradeAndReport(hit);
-        });
+        };
+        li.addEventListener('click', function(e){ e.stopPropagation(); pick(); });
+        keyable(li, i, pick);
       });
     }
   }

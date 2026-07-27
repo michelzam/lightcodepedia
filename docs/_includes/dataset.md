@@ -157,8 +157,18 @@ Auto-included by docs/_layouts/default.html.
              not from the 60s API/Pages cache — this is the whole point of
              refresh= (a counter, since Date is engine-blocked) */
           fetch(href + (href.indexOf("?") < 0 ? "?" : "&") + "_t=" + (tick++), { cache: "no-store" })
-            .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-            .then(function (text) { setFromText(text, fmt, el, id); })
+            .then(function (r) {
+              /* 404 is not a fault — it means this node carries no such data.
+                 The fleet board and the backlog are lab-only instruments the
+                 gate never publishes, so on pedia they are simply absent, and
+                 the page already promises "an empty board". Showing ⚠️ HTTP 404
+                 turned a by-design absence into what looks like a broken site.
+                 Every other status stays an error, because those ARE faults. */
+              if (r.status === 404) { window.lcSetDataset(id, []); return null; }
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              return r.text();
+            })
+            .then(function (text) { if (text !== null) setFromText(text, fmt, el, id); })
             .catch(function (e) { if (!window.lcDatasets[id]) window.lcSetDataset(id, [{ "⚠️": e.message }]); });
         };
         pull();

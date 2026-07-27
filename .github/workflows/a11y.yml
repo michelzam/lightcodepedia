@@ -1,0 +1,131 @@
+name: Accessibility scan
+
+# WCAG 2.1 A/AA count over the live lab, kept PRIVATE — and RATCHETED.
+#
+# Results land in hq/, never docs/, never pedia: a public list of our own
+# accessibility defects is a map for someone else's complaint, and docs/ is
+# "a stranger could read it tomorrow" tier.
+#
+# It does not ask us to be compliant today. It fails the moment we get WORSE
+# than yesterday, per rule and per page — existing debt is free, new debt is
+# not. When a run improves, the baseline tightens itself, so the floor can only
+# ever move down. That is what makes a nine-month burn-down safe: nothing we
+# ship between now and April can quietly undo it.
+
+on:
+  # After the UX suite, which has already waited for the Pages build — so the
+  # scan always measures the commit that was actually deployed. Running it on
+  # push directly would race the deploy and blame the wrong commit.
+  workflow_run:
+    workflows: ["UX Tests"]
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: "41 6 * * 1"
+
+concurrency:
+  group: a11y-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    # Lab only. This file is copied to pedia with the rest; pedia has no hq/ to
+    # write to, and the numbers are not pedia's to publish. And only after a UX
+    # run that actually PASSED — a cancelled or skipped one proves nothing about
+    # what is deployed, and scanning behind it would blame the wrong commit.
+    if: >
+      github.repository == 'michelzam/lightcodelab' &&
+      (github.event_name != 'workflow_run' ||
+       github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read      # the deploys widget lists workflow runs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-a11y-${{ runner.os }}
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+
+      # continue-on-error so the numbers are still recorded and pushed when the
+      # scan fails — a regression must leave evidence, not just a red cross.
+      # The key is not for US — it goes into the browser's localStorage so the
+      # widgets fetch real data instead of rendering "connect your key". Every
+      # run already carries a token that can do exactly that, scoped to this
+      # repo and read-only by the permissions above, so no secret is required.
+      # A11Y_SCAN_PAT only OVERRIDES it: a real PAT additionally renders the
+      # user menu, because GITHUB_TOKEN is not a user and /user returns nothing.
+      # Worth having; never worth blocking on.
+      # Length only, never the value.
+      - name: Confirm the scan key reaches this job
+        env:
+          A11Y_SCAN_PAT: ${{ secrets.A11Y_SCAN_PAT || github.token }}
+          HAVE_PAT: ${{ secrets.A11Y_SCAN_PAT != '' }}
+        run: |
+          if [ -z "${A11Y_SCAN_PAT}" ]; then
+            echo "::error::No key at all — not even the built-in token. Should be impossible."
+          elif [ "$HAVE_PAT" = "true" ]; then
+            echo "Using A11Y_SCAN_PAT (${#A11Y_SCAN_PAT} chars) — user menu will render."
+          else
+            echo "::notice::A11Y_SCAN_PAT not visible; falling back to the built-in job token."
+            echo "  Data widgets will render; the user menu will not (the token is not a user)."
+            echo "  If you meant to add the secret: Settings → Secrets and variables → *Actions* tab"
+            echo "  (Codespaces and Dependabot are separate tabs) → Repository secrets, not Variables."
+          fi
+
+      - name: Scan and ratchet
+        id: scan
+        continue-on-error: true
+        env:
+          A11Y_SCAN_PAT: ${{ secrets.A11Y_SCAN_PAT || github.token }}
+        run: python hq/a11y/scan.py "https://michelzam.github.io/lightcodelab"
+
+      - name: Summarise into the run (not into the site)
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          p = pathlib.Path("hq/a11y/latest.json")
+          if not p.exists():
+              print("Scan produced no results."); raise SystemExit
+          d = json.loads(p.read_text())
+          t = d["totals"]
+          print("## Accessibility — WCAG 2.1 A/AA\n")
+          print(f"**{sum(t.values())} violations** across {len(d['pages'])} pages\n")
+          print("| Impact | Count |\n|---|---|")
+          for k in ("critical", "serious", "moderate", "minor"):
+              print(f"| {k} | {t.get(k, 0)} |")
+          print("\n### Worst rules\n\n| Rule | Nodes |\n|---|---|")
+          for rule, n in sorted(d["by_rule"].items(), key=lambda kv: -kv[1])[:10]:
+              print(f"| `{rule}` | {n} |")
+          PY
+
+      - name: Keep the numbers in hq/ (private)
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hq/a11y/latest.json hq/a11y/trend.jsonl hq/a11y/baseline.json
+          if git diff --cached --quiet; then echo "No change."; exit 0; fi
+          git commit -m "chore: a11y scan"
+          git push origin HEAD:main || { git pull --rebase origin main && git push origin HEAD:main; }
+
+      - name: Fail if accessibility regressed
+        if: steps.scan.outcome == 'failure'
+        run: |
+          echo "::error::Accessibility regressed against hq/a11y/baseline.json — see the Scan step."
+          exit 1

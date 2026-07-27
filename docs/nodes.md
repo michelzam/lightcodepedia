@@ -73,7 +73,7 @@ downstream targets (yet) shows an empty board.
 {: .dataset #fleet_status refresh="30" }
 
 [status](#)
-{: .datagrid #fleet_master bind="fleet_status" rows="8" hints="target: which node — click a row to arm the buttons below | pending: files a publish would change — 0 means current | tested: latest UX suite result there | when: that run's timestamp" }
+{: .datagrid #fleet_master bind="fleet_status" rows="8" empty="This node publishes to nothing downstream — no fleet to watch." hints="target: which node — click a row to arm the buttons below | pending: files a publish would change — 0 means current | tested: latest UX suite result there | when: that run's timestamp" }
 
 [fleet actions](#)
 {: .classroom_actions scope="fleet" }
@@ -88,7 +88,7 @@ on this node; an empty board here means this node keeps no backlog.
 {: .dataset #backlog }
 
 [items](#)
-{: .datagrid bind="backlog" rows="15" hints="priority: 1 = next up | item: the thing | flag: refined (understood) · planned (next) · drafted (in progress) · shipped (done) | notes: context" }
+{: .datagrid bind="backlog" rows="15" empty="This node keeps no backlog." hints="priority: 1 = next up | item: the thing | flag: refined (understood) · planned (next) · drafted (in progress) · shipped (done) | notes: context" }
 
 
 ### !🧪 UX test results

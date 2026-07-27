@@ -220,3 +220,79 @@ def step_footnotes_resolve(context):
     assert got["refs"] >= 4, "expected the page's footnote refs to render: %r" % got
     assert got["defs"] >= 4, "expected their definitions to survive: %r" % got
     assert not got["raw"], "raw footnote markup left on the page: %r" % got["raw"]
+
+
+# ── Accessibility: keyboard operability ──────────────────────────────────────
+# axe cannot see these. It reports zero keyboard violations on a page whose
+# quiz answers are <li> with a click listener, because "this element has a
+# handler and no keyboard path" is not statically decidable. So the keyboard
+# dimension is covered here, in the suite that already gates every push.
+
+
+@when('I tab to the quiz answer "{answer}"')
+def step_tab_to_quiz_answer(context, answer):
+    """Press Tab until it lands there — never .focus().
+
+    .focus() moves focus programmatically and succeeds on an element no Tab
+    could ever reach, so the first version of this step passed against a
+    keyboard-dead quiz. Only walking the real tab order proves anything.
+    """
+    li = context.page.locator(".lc-quiz li", has_text=answer).first
+    li.wait_for(state="visible", timeout=15_000)
+    context.page.evaluate("() => (document.body.focus(), document.activeElement.blur())")
+    for _ in range(120):
+        context.page.keyboard.press("Tab")
+        if context.page.evaluate(
+            "t => (document.activeElement.textContent || '').includes(t)", answer
+        ):
+            context._quiz_answer = answer
+            return
+    raise AssertionError("Tab never reached the answer %r — it is not in the tab order" % answer)
+
+
+@then("that quiz answer is the focused element")
+def step_quiz_focused(context):
+    focused = context.page.evaluate(
+        "() => (document.activeElement && document.activeElement.textContent || '').trim()"
+    )
+    assert context._quiz_answer in focused, (
+        "expected the answer to hold focus, got: " + focused[:80]
+    )
+
+
+@when('I press "{key}"')
+def step_press_key(context, key):
+    context.page.keyboard.press(key)
+    context.page.wait_for_timeout(300)
+
+
+@then('the quiz answer "{answer}" exposes the role "{role}"')
+def step_quiz_role(context, answer, role):
+    li = context.page.locator(".lc-quiz li", has_text=answer).first
+    expect(li).to_have_attribute("role", role, timeout=5_000)
+
+
+@then('the quiz answer "{answer}" is announced as checked')
+def step_quiz_checked(context, answer):
+    li = context.page.locator(".lc-quiz li", has_text=answer).first
+    expect(li).to_have_attribute("aria-checked", "true", timeout=5_000)
+
+
+@then("every quiz answer is reachable by keyboard")
+def step_quiz_all_reachable(context):
+    missing = context.page.evaluate(
+        """() => Array.from(document.querySelectorAll('.lc-quiz li'))
+                 .filter(li => li.getAttribute('tabindex') === null)
+                 .map(li => (li.textContent || '').trim().slice(0, 40))"""
+    )
+    assert not missing, "answers with no tab stop: " + repr(missing)
+
+
+@then("that quiz answer is not the focused element")
+def step_quiz_not_focused(context):
+    focused = context.page.evaluate(
+        "() => (document.activeElement && document.activeElement.textContent || '').trim()"
+    )
+    assert context._quiz_answer not in focused, (
+        "focus should have moved off the answer, still on: " + focused[:80]
+    )

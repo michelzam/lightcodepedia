@@ -173,6 +173,13 @@ body {
    bar and its 🏠 live inside #lc-topbar, so one rule covers both. */
 .lc-focus-mode #lc-topbar { pointer-events: none; opacity: 0.85; }
 .lc-focus-mode #lc-topbar a { cursor: default; }
+/* …except the sign-in door. A private course page tells the learner to connect
+   a key via "Get started" — and focus mode had disabled the one control that
+   does it, so the instruction was impossible to follow. Signing in is not a way
+   OUT of the module, so it stays live. */
+.lc-focus-mode #lc-topbar #lc-start-pill,
+.lc-focus-mode #lc-topbar #lc-start-pill * { pointer-events: auto; opacity: 1; }
+.lc-focus-mode #lc-topbar #lc-start-pill a { cursor: pointer; }
 /* .related is nothing BUT a way out — it has no job left here */
 .lc-focus-mode .lc-related { display: none !important; }
 /* a neutralised link still reads as text, so the page doesn't look broken —
@@ -851,6 +858,34 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
      they were never a way OUT of the module, and an allowlist (?open=) turns
      chosen internal ones into new tabs instead of dead ends. */
   var F = window.lcFrame || {};
+  /* ── Focus mode is not a mouse trick ─────────────────────────────────────
+     pointer-events:none stops the pointer and NOTHING else: a keyboard user
+     tabs straight into the bar and activates every link we called inert. So
+     take the bar out of the tab order too — but keep it in the accessibility
+     tree, because the whole point is that it still says where you are. Not
+     `inert`, which would also hide it from a screen reader; tabindex="-1" +
+     aria-disabled says unreachable, not absent. The bench bar is built async,
+     so re-apply when the bar changes. */
+  if (F.focus) {
+    var deaden = function () {
+      var bar = document.getElementById("lc-topbar");
+      if (!bar) return;
+      bar.querySelectorAll('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        .forEach(function (n) {
+          /* the sign-in control keeps both its pointer AND its tab stop —
+             a learner who cannot connect a key cannot read the lesson */
+          if (n.closest("#lc-start-pill")) return;
+          n.setAttribute("tabindex", "-1"); n.setAttribute("aria-disabled", "true");
+        });
+    };
+    var onReady = function () {
+      deaden();
+      var bar = document.getElementById("lc-topbar");
+      if (bar && window.MutationObserver) new MutationObserver(deaden).observe(bar, { childList: true, subtree: true });
+    };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", onReady);
+    else onReady();
+  }
   if (!F.navigable) {
     var globToRe = function (g) {
       return new RegExp("^" + g.replace(/[.+^${}()|[\]\\]/g, "\\$&")
