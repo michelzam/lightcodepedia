@@ -231,7 +231,25 @@ loses everything. A component's editable source comes from window.lcSourceOf
     el._t = setTimeout(function () { el.style.display = "none"; }, 3000);
   }
 
-  function commitInline(pat, repo, path, before, after, label, onOk) {
+  /* Un-heal the project base before touching the FILE.
+
+     Under a project base — the lab, any fork — root-relative URLs are healed
+     in the DOM: /assets/lab.jpg becomes /lightcodelab/assets/lab.jpg. The
+     x-ray captures the block FROM the DOM, so its anchor described a string
+     that never existed in the source: zero hits, refuse, red. Pedia never saw
+     it, because its base is empty — which is why this hid for hours.
+
+     Both directions matter. Un-heal the anchor, or nothing is ever found; and
+     un-heal what we WRITE, or the lab's base is committed into the markdown
+     and pedia then serves /lightcodelab/assets/... to the world. */
+  function unhealBase(text) {
+    var b = window.lcBaseUrl;
+    if (!b || !text) return text;
+    var esc = b.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return String(text).replace(new RegExp("([(\"'\\s])" + esc + "/", "g"), "$1/");
+  }
+
+  function commitInline(pat, repo, path, before, after, label, onOk, ordinal) {
     var api = "https://api.github.com/repos/" + repo + "/contents/" + path;
     var H = { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json" };
     /* no-store: the runner fetches this same URL with Accept raw — some
@@ -241,8 +259,31 @@ loses everything. A component's editable source comes from window.lcSourceOf
     fetch(api, { headers: H, cache: "no-store" }).then(jsonOf).then(function (d) {
       if (!d.content) throw new Error(d.message || "load failed");
       var src = decodeURIComponent(escape(atob(d.content.replace(/\n/g, ""))));
-      var i = src.indexOf(before);
-      if (i < 0 || src.indexOf(before, i + 1) >= 0) {  // zero or many — never guess
+      /* POSITION is the identity, not the text. Markdown without a fence has
+         no unique delimiter, so "the text appears twice" is ordinary, not an
+         edge case — and refusing there made Keep unusable on plain prose.
+         When the same text occurs more than once, the caller says WHICH one
+         by ordinal (the block's rank among identical blocks on the page), and
+         we splice that range. Zero occurrences still refuses: that means the
+         rendered text is not what the file holds, and no position can be
+         inferred from it. */
+      before = unhealBase(before);
+      after = unhealBase(after);
+      var hits = [], from = 0, at;
+      while ((at = src.indexOf(before, from)) >= 0) { hits.push(at); from = at + 1; }
+      var i = hits.length === 1 ? hits[0]
+            : (hits.length > 1 && ordinal != null && hits[ordinal] != null) ? hits[ordinal]
+            : -1;
+      if (i < 0) {
+        /* Leave the anchor behind. "Couldn't locate" fits a dozen causes and
+           the one fact that separates them — what we actually searched for —
+           was being discarded, which cost three rounds of guessing. */
+        var tEl = document.getElementById("lcx-toast");
+        if (tEl) {
+          tEl.dataset.lcAnchor = JSON.stringify(before.slice(0, 200));
+          tEl.dataset.lcHits = String(hits.length);
+          tEl.dataset.lcOrdinal = String(ordinal);
+        }
         lcxToast("Couldn't safely locate this block in the page source — save it via the ✏️ page editor.", false);
         return;
       }
@@ -302,6 +343,17 @@ loses everything. A component's editable source comes from window.lcSourceOf
            anchors on the committed content — without this a second Keep after
            a successful one can't match the file until a reload (stale anchor) */
         var okId = curId, okSnap = curSnap, okVal = ta.value;
+        /* Which one of the identical blocks is this? Rank it among the page's
+           blocks whose source text matches, so an ambiguous file position is
+           resolved by WHERE the learner clicked, not by hoping for uniqueness. */
+        var ordinal = null;
+        try {
+          var same = Array.prototype.filter.call(
+            (MAIN || document).querySelectorAll(curEl ? curEl.tagName : "p"),
+            function (n) { return (n.textContent || "").trim() === _origVal; });
+          var k = same.indexOf(curEl);
+          if (k >= 0) ordinal = k;
+        } catch (e) {}
         commitInline(pat, commitRepo, commitPath, _origVal, ta.value, label, function (sha) {
           lcxToast("Saved" + (sha ? " · " + String(sha).slice(0, 7) : "") + " ✓", true);
           if (!okId || !window.lcSetSourceOf) return;
@@ -309,7 +361,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
           var c = s.querySelector("code");
           if (c) c.textContent = okVal + "\n"; else s.textContent = okVal;
           window.lcSetSourceOf(okId, s.outerHTML);
-        });
+        }, ordinal);
       }
       if (knobsChanged) alert("Knob changes aren't committed inline yet — keep them via the ✏️ page editor.");
       closeDlg();

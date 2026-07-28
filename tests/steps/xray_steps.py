@@ -284,15 +284,50 @@ def step_change_block_content(context, text):
 
 @when("I keep the changes")
 def step_keep_changes(context):
+    """Click Keep, then WAIT FOR THE COMMIT — never a fixed sleep.
+
+    Keeping is a GET of the page source followed by a PUT, both through the
+    route stub. A one-second sleep passed for months and then went red the day
+    the page under test got slightly busier, which says nothing about the
+    feature and everything about the assertion. Poll for the outcome instead.
+    """
+    import time
+
     context.page.click("#lcx-keep")
-    context.page.wait_for_timeout(1_000)
+    deadline = time.time() + 10
+    while time.time() < deadline and not getattr(context, "gh_commits", None):
+        context.page.wait_for_timeout(200)
 
 
 @then('the stubbed repo received a commit containing "{text}"')
 def step_commit_received(context, text):
     import base64
 
-    assert context.gh_commits, "no commit reached the stubbed repo"
+    # The engine ALWAYS says why it declined — "couldn't safely locate this
+    # block", "Save failed: …" — and this step used to discard it, leaving a
+    # bare "no commit" that fits a dozen causes. Report what the page said.
+    if not context.gh_commits:
+        toast = context.page.evaluate(
+            """() => { const t = document.getElementById('lcx-toast');
+                       return t ? (t.textContent || '').trim() : '(no toast element)'; }"""
+        )
+        state = context.page.evaluate(
+            """() => { const f = document.getElementById('ed-fab');
+                       const r = document.querySelector('.lc-run[data-lc-src-path]');
+                       return JSON.stringify({
+                         pagePath: f && f.dataset ? f.dataset.pagePath : null,
+                         runSrc: r ? r.dataset.lcSrcPath : null,
+                         repo: localStorage.getItem('lc_ed_repo'),
+                         hasPat: !!localStorage.getItem('lc_ed_pat'),
+                         origLen: (document.getElementById('lcx-content') || {}).value?.length ?? null,
+                         anchor: (document.getElementById('lcx-toast') || {}).dataset?.lcAnchor ?? null,
+                         hits: (document.getElementById('lcx-toast') || {}).dataset?.lcHits ?? null,
+                         ordinal: (document.getElementById('lcx-toast') || {}).dataset?.lcOrdinal ?? null,
+                       }); }"""
+        )
+        raise AssertionError(
+            "no commit reached the stubbed repo — toast said: %r · state: %s" % (toast, state)
+        )
     body = context.gh_commits[-1]
     content = base64.b64decode(body["content"]).decode("utf-8")
     assert text in content, "committed content lacks the edit"

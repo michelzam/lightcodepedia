@@ -44,6 +44,25 @@ def scenario_status(el):
     return "skipped"
 
 
+def scenario_why(el):
+    """The first failing step's error, carried into the published results.
+
+    The HTML report is the only place a failure reason lived, and it came back
+    EMPTY from one run — so a red scenario said nothing at all and diagnosis
+    needed another CI round. A failure that cannot explain itself costs a whole
+    cycle every time; the reason belongs beside the verdict.
+    """
+    for s in el.get("steps", []):
+        res = s.get("result") or {}
+        if res.get("status") in ("failed", "error"):
+            msg = res.get("error_message") or ""
+            if isinstance(msg, list):
+                msg = "\n".join(msg)
+            step = (s.get("keyword", "") + " " + s.get("name", "")).strip()
+            return (step + " — " + " ".join(str(msg).split()))[:600]
+    return ""
+
+
 def scenario_seconds(el):
     total = 0.0
     for s in el.get("steps", []):
@@ -92,6 +111,7 @@ def main():
                 "seconds": scenario_seconds(el),
                 "run": stamp,
                 "url": f"{html_base}#scenario_{idx}",
+                **({"why": scenario_why(el)} if st in ("failed", "error") else {}),
             })
             idx += 1
         if feat_failed:
