@@ -28,7 +28,7 @@ A `text` block is a simple block that displays formatted text.
 
 Lightcode relies on **nothing** on the server side. It runs **markdown** files with tiny custom kramdown decorations to bring blocks alive.
 ````
-{: .blocks cols="2" }
+{: .blocks #welcome cols="2" }
 
 ````
 ### 🐕 This text block has an image [Blocks can also show images]
@@ -61,7 +61,7 @@ and also be quite long and boring …
 
 Read more about [markdown](https://www.markdownguide.org/cheat-sheet/).
 ````
-{: .blocks cols="2" }
+{: .blocks #lucky_image cols="2" }
 
 ## 🎬 Video
 
@@ -72,7 +72,7 @@ Read more about [markdown](https://www.markdownguide.org/cheat-sheet/).
 
 [▶️ Led Zeppelin — Black Dog](https://youtu.be/6tlSx0jkuLM?si=OHbXv8Vp9NKidh9e)
 
-{: .video height="380" }
+{: .video #ledzep height="380" }
 ````
 {: .block }
 
@@ -116,7 +116,7 @@ This `map` is interactive. You can zoom in and out to spot parcs in Paris if you
 ```
 {: .map height="340" zoom="12" }
 ````
-{: .block }
+{: .block #map }
 
 ## 📊 Dataset, Grid & Chart
 
@@ -180,7 +180,7 @@ vet:
   phone: "555-0142"
 notes: Afraid of vacuum cleaners. Excellent at looking innocent.
 ```
-{: .form editable="true" }
+{: .form #lucky_form  editable="true" }
 
 ### 🐠 Wanda [Editable — Wanda is a fish, not a dog!]
 
@@ -235,7 +235,7 @@ notes: A fish, not a dog! Best friends with Lucky through the bowl glass.
 - [x] Bois de Boulogne — over 800 hectares
 - [ ] Jardin du Luxembourg
 
-{: .quiz }
+{: .quiz #tuto_quiz }
 
 **Q:** Wanda is not a dog. What kind of animal is she?
 
@@ -264,4 +264,36 @@ Every block, with live examples and full documentation.
 ```
 {: .cards cols="3" }
 
-
+```yaml
+bot: doc
+face:
+  zoom: 1.2
+script: []
+stories:
+  What's on this page?:
+    - at: welcome
+      say: "Hi, I'm Doc. You might wonder: What's on this page?"
+    - >-
+      The page contains a tutorial that demonstrates basic building blocks. It
+      includes formatted text, images, maps, data components, and quizzes.
+    - at: lucky_image
+      say: "Each section showcases different components. By the way, here's Lucky, my dear lab."
+    - at: ledzep
+      say: "For instance, a video of Lucky's favorite song,"
+      pause: 1
+    - at: map
+      say: "interactive maps,"
+      pause: 1
+    - at: dog_grid_tuto
+      say: "a dataset of dog breeds,"
+      pause: 1
+    - at: lucky_form 
+      say: "and editable forms for pets."
+      pause: 1
+    - at: tuto_quiz 
+      say: "There's also a quiz section with questions related to the content."
+      pause: 2
+    - at: welcome
+      say: "So welcome again, and happy discovery."
+```
+{: .avatar #guide dock="true" size="115" }

@@ -315,6 +315,19 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
     LC_BASE = "/" + LC_REPO_NAME;
   window.lcBaseUrl = LC_BASE;
 
+  /* The page's path AS THE SITE SEES IT — location.pathname minus the project
+     base. Anything deriving a source file or a storage key from the raw
+     pathname breaks on the lab and on forks, where the site lives under
+     /<repo>/: the avatar asked GitHub for docs/lightcodelab/tutorial101.md
+     (404, "could not keep"), and its voice manifest looked up the slug
+     "lightcodelab-tutorial101", which matches nothing — so the studio audio
+     was silently never found and the tour played mute. */
+  window.lcPagePath = function () {
+    var p = location.pathname;
+    if (LC_BASE && p.indexOf(LC_BASE) === 0) p = p.slice(LC_BASE.length) || "/";
+    return p || "/";
+  };
+
   // prepend the base to an internal, root-relative path — external links,
   // protocol-relative ("//host"), anchors and already-based paths pass through
   window.lcResolveUrl = function (href) {

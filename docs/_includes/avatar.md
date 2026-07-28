@@ -834,13 +834,23 @@ Auto-included by docs/_layouts/default.html.
         if (!Object.keys(storiesCfg).length) storiesCfg = null;
       }
 
+      /* Every line this avatar can ever speak — the tour AND each kept story.
+         Voice resolution used to walk `script` alone, so a fence written as
+         `script: []` with the recordings under `stories:` (exactly what the
+         ask/keep flow produces) got no audio at all and the story played in
+         the robot voice, with the mp3s sitting in the repo. */
+      var voiceable = script.slice();
+      if (storiesCfg) Object.keys(storiesCfg).forEach(function (t) {
+        voiceable = voiceable.concat(storiesCfg[t]);
+      });
+
       /* elevenlabs: <voice_id> (or { voice, model }) — studio files are
          content-addressed, so playback can compute each line's URL itself */
       var gen = cfg.elevenlabs || "";
       var genVoice = (gen && typeof gen === "object") ? String(gen.voice || "") : String(gen || "");
       var genModel = (gen && typeof gen === "object" && gen.model) ? String(gen.model) : "eleven_multilingual_v2";
       if (genVoice && window.crypto && window.crypto.subtle) {
-        script.forEach(function (l) {
+        voiceable.forEach(function (l) {
           if (l.audio || l.video || !l.say) return;
           sha1hex(genVoice + "|" + genModel + "|" + String(l.say).trim()).then(function (h) {
             l.audio = (window.lcHref || String)("/assets/audio/lc-" + h.slice(0, 16) + ".mp3");
@@ -849,18 +859,24 @@ Auto-included by docs/_layouts/default.html.
       }
       /* no config at all: the page's voice manifest maps each line's text to
          its committed studio file (missing lines just fall back to TTS) */
+      /* Resolving studio audio is asynchronous — a manifest fetch plus a SHA-1
+         per line — but nextLine reads line.audio synchronously. On a desktop
+         those promises settle long before anyone presses ▶; on a phone they do
+         not, so the opening lines fell back to TTS and the tour spoke in the
+         robot voice with the real recordings sitting right there. Publish the
+         work as a promise and let playback wait for it. */
       if (window.crypto && window.crypto.subtle) {
-        voxManifest().then(function (man) {
+        _voxReady[elId] = voxManifest().then(function (man) {
           var map = man && man[voxSlug()] && man[voxSlug()][elId];
-          if (!map) return;
-          script.forEach(function (l) {
-            if (l.audio || l.video || !l.say) return;
-            sha1hex(String(l.say).trim()).then(function (h) {
+          if (!map) return null;
+          return Promise.all(voiceable.map(function (l) {
+            if (l.audio || l.video || !l.say) return null;
+            return sha1hex(String(l.say).trim()).then(function (h) {
               var f = map[h.slice(0, 16)];
               if (f && !l.audio) l.audio = (window.lcHref || String)("/assets/audio/" + f);
             });
-          });
-        });
+          }));
+        }).catch(function () { return null; });
       }
       /* lottie: URL, or { url, idle: [from,to], talk: [from,to] } */
       var lottieCfg = cfg.lottie || "";
@@ -1243,7 +1259,18 @@ Auto-included by docs/_layouts/default.html.
       if (av.lottieSeg) av.lottieAnim.playSegments(av.lottieSeg.idle, true);
       else { av.lottieAnim.play(); av.lottieAnim.setSpeed(1); }
     }
-    nextLine(id);
+    /* Wait for studio audio to be resolved before the first line — but never
+       hold the tour hostage to a slow network: after a moment we start anyway
+       and the later lines pick up their recordings as they resolve. */
+    var ready = _voxReady[id];
+    if (ready) {
+      var started = false;
+      var go = function () { if (!started) { started = true; nextLine(id); } };
+      ready.then(go);
+      setTimeout(go, 1500);
+    } else {
+      nextLine(id);
+    }
     updateTriggers(id);
   }
 
@@ -1566,7 +1593,7 @@ Auto-included by docs/_layouts/default.html.
      and extend the live tour immediately. Any ambiguity in locating the
      fence ABORTS — a keep can never corrupt a page. */
   function pageMdPathAv() {
-    var p = location.pathname.replace(/\.html?$/, '').replace(/\/+$/, '');
+    var p = (window.lcPagePath ? window.lcPagePath() : location.pathname).replace(/\.html?$/, '').replace(/\/+$/, '');
     return (!p || p === '/') ? 'docs/index.md' : 'docs' + (p.charAt(0) === '/' ? p : '/' + p) + '.md';
   }
   function seedToast(text) {
@@ -1956,10 +1983,11 @@ Auto-included by docs/_layouts/default.html.
      🎙️ studio (or gen-audio.mjs). Playback reads it to find each line's
      studio audio with NO fence config. */
   function voxSlug() {
-    var p = location.pathname.replace(/\.html?$/, "").replace(/^\/+|\/+$/g, "");
+    var p = (window.lcPagePath ? window.lcPagePath() : location.pathname).replace(/\.html?$/, "").replace(/^\/+|\/+$/g, "");
     return p ? p.replace(/\//g, "-") : "index";
   }
   var _voxP = null;
+  var _voxReady = {};   /* elId → promise: studio audio resolved for that avatar */
   function voxManifest() {
     if (_voxP) return _voxP;
     /* under a project base path (forks, the lab) root-absolute would 404 —

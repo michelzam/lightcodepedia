@@ -261,7 +261,7 @@ Auto-included by docs/_layouts/default.html.
       var budget = parseInt(bot.cfg.knowledge_budget, 10) || 16000;
       if (!Array.isArray(know) || !know.length) return cfg;
       return Promise.all(know.map(function(k){
-        var path = (String(k) === 'self') ? pageMdPath(location.pathname) : pageMdPath(k);
+        var path = (String(k) === 'self') ? pageMdPath(window.lcPagePath ? window.lcPagePath() : location.pathname) : pageMdPath(k);
         return fetchText(rawUrl(path)).then(function(t){ return { path: path, text: t }; })
           .catch(function(){
             /* index pages: /section/ lives at section/index.md */
