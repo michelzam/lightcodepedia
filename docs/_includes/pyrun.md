@@ -18,7 +18,7 @@ Auto-included by docs/_layouts/default.html.
 <style>
 .lc-pyrun { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: white; }
 .lc-pyrun-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
-.lc-pyrun-title .lc-pyrun-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.05em; }
+.lc-pyrun-title .lc-pyrun-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute, #616161); letter-spacing: 0.05em; }
 .lc-pyrun textarea { display: block; width: 100%; box-sizing: border-box; border: none; outline: none; padding: 0.9em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; resize: vertical; background: #fafafa; color: #111; }
 .lc-pyrun-editor { display: flex; background: #fafafa; align-items: stretch; }
 .lc-pyrun-codewrap { position: relative; flex: 1; min-width: 0; }
@@ -34,15 +34,15 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun .token.function, .lc-pyrun .token.class-name, .lc-pyrun .token.builtin, .lc-pyrun .token.decorator { color: #8250df; }
 .lc-pyrun .token.operator, .lc-pyrun .token.punctuation { color: #24292f; }
 .lc-pyrun-gutter { position: relative; overflow: hidden; background: #f3f4f6; border-right: 1px solid #e8e8e8; user-select: none; min-width: 2.5em; }
-.lc-pyrun-gutter-inner { padding: 0.9em 0.5em 0.9em 0.6em; color: #aaa; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; text-align: right; white-space: pre; pointer-events: none; will-change: transform; }
+.lc-pyrun-gutter-inner { padding: 0.9em 0.5em 0.9em 0.6em; color: var(--lc-ink-mute, #616161); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; text-align: right; white-space: pre; pointer-events: none; will-change: transform; }
 .lc-pyrun-bar { display: flex; align-items: center; gap: 0.6em; padding: 0.5em 0.9em; background: #f3f4f6; border-top: 1px solid #e0e0e0; }
 .lc-pyrun-bar button { background: #0066cc; color: white; border: none; border-radius: 4px; padding: 0.35em 0.9em; cursor: pointer; font-size: 0.85em; font-weight: 500; }
 .lc-pyrun-bar button:hover:not(:disabled) { background: #0052a3; }
 .lc-pyrun-bar button:disabled { background: #888; cursor: progress; }
 .lc-pyrun-bar .lc-pyrun-clear { background: #e5e5e5; color: #333; }
 .lc-pyrun-bar .lc-pyrun-clear:hover:not(:disabled) { background: #d0d0d0; }
-.lc-pyrun-bar .lc-pyrun-test { background: #4a8a3d; }
-.lc-pyrun-bar .lc-pyrun-test:hover:not(:disabled) { background: #3d7330; }
+.lc-pyrun-bar .lc-pyrun-test { background: #3d7330; }
+.lc-pyrun-bar .lc-pyrun-test:hover:not(:disabled) { background: #33641f; }
 .lc-pyrun-bar .lc-pyrun-status { margin-left: auto; font-size: 0.78em; color: #666; }
 .lc-pyrun-out { margin: 0; padding: 0.9em 1em; background: #1e1e1e; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; min-height: 2em; max-height: 300px; overflow-y: auto; }
 .lc-pyrun-out.lc-empty { color: #888; font-style: italic; }
@@ -75,7 +75,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-tests .lc-pyrun-test-row:last-child { border-bottom: none; }
 .lc-pyrun-tests .lc-pyrun-test-pass { color: #2a7a2a; }
 .lc-pyrun-tests .lc-pyrun-test-fail { color: #b00; background: #fff5f5; }
-.lc-pyrun-tests .lc-pyrun-test-empty { color: #888; font-style: italic; }
+.lc-pyrun-tests .lc-pyrun-test-empty { color: var(--lc-ink-mute, #616161); font-style: italic; }
 
 .lc-pyrepl { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #1e1e1e; }
 .lc-pyrepl-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }

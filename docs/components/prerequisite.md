@@ -12,7 +12,7 @@ always know where they came from and where they can go next.
 This very page requires Tutorial 101:
 
 - [🎓 Tutorial 101 — Explore](/tutorial101)
-{: .prerequisite }
+{: .prerequisite pass="100"}
 
 If the gate above is open, you've earned points on Tutorial 101 in this
 browser. If it's closed — that *is* the demo: follow the link, answer a quiz,

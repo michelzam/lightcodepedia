@@ -4,7 +4,7 @@
 <style>
 .lc-code { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #fafafa; }
 .lc-code-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
-.lc-code-title .lc-code-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.05em; }
+.lc-code-title .lc-code-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute,#616161); letter-spacing: 0.05em; }
 .lc-code .highlight, .lc-code pre { margin: 0 !important; background: transparent !important; }
 .lc-code .highlight pre, .lc-code > pre { padding: 0.9em 1em !important; overflow-x: auto; font-size: 0.85em; line-height: 1.5; }
 </style>

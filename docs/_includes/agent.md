@@ -49,7 +49,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-head { background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%); padding: 0.55em 1em; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 0.5em; font-weight: 600; color: #444; font-size: 0.92em; }
 .lc-agent-icon { font-size: 1.2em; }
 .lc-agent-title { flex: 1; }
-.lc-agent-bound { font-size: 0.78em; color: #888; font-weight: 400; }
+.lc-agent-bound { font-size: 0.78em; color: var(--lc-ink-mute, #616161); font-weight: 400; }
 .lc-agent-bound code { background: #eef; padding: 0.05em 0.4em; border-radius: 3px; font-size: 0.95em; }
 .lc-agent-key { background: white; border: 1px solid #ddd; color: #777; padding: 0.2em 0.5em; cursor: pointer; border-radius: 4px; font-size: 0.95em; line-height: 1; }
 .lc-agent-key:hover { background: #f0f0f0; color: #444; }
@@ -88,7 +88,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-revert { background: white; color: #2e7d32; border: 1px solid #2e7d32; padding: 0.3em 0.7em; border-radius: 4px; cursor: pointer; font-size: 0.82em; }
 .lc-agent-revert:hover { background: #f1f8e9; }
 .lc-agent-usage { font-size: 0.78em; color: #888; text-align: right; padding-top: 0.5em; border-top: 1px solid #eee; }
-.lc-agent-warn { font-size: 0.78em; color: #888; padding: 0 1em 0.7em; }
+.lc-agent-warn { font-size: 0.78em; color: var(--lc-ink-mute, #616161); padding: 0 1em 0.7em; }
 </style>
 <script>
 (function(){

@@ -53,7 +53,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 <p>One click forks the Lightcodepedia template into your GitHub account and turns on your free website.</p>
 <div id="lcw-user-card" style="display:none" class="lcw-user-card">
 <img id="lcw-uc-avatar" src="" alt="" style="width:48px;height:48px;border-radius:50%;margin-right:12px">
-<div><div id="lcw-uc-name" style="font-weight:600"></div><div id="lcw-uc-login" style="color:#888;font-size:0.85em"></div></div>
+<div><div id="lcw-uc-name" style="font-weight:600"></div><div id="lcw-uc-login" style="color:var(--lc-ink-mute,#616161);font-size:0.85em"></div></div>
 </div>
 <div id="lcw-fork-status" class="lcw-result"></div>
 <div class="lcw-actions" id="lcw-fork-actions">
@@ -62,7 +62,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 <div id="lcw-launch-result" style="display:none">
 <p>✅ <strong>Your site is being built.</strong> It will be live at:</p>
 <p><a id="lcw-site-url" href="#" target="_blank" style="font-size:1.1em;font-weight:600"></a></p>
-<p style="color:#888;font-size:0.9em">The first build takes about 60 seconds. Reload the link above until it appears.</p>
+<p style="color:var(--lc-ink-mute,#616161);font-size:0.9em">The first build takes about 60 seconds. Reload the link above until it appears.</p>
 <button class="lcw-btn" onclick="lcwNext(3)">Continue ✓</button>
 </div>
 </div>
@@ -89,7 +89,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 <button class="lcw-btn" onclick="lcwCopyInvite()" id="lcw-copy-btn">📋 Copy</button>
 </div>
 <div class="lcw-share-row" id="lcw-share-row"></div>
-<p style="font-size:0.85em;color:#888;margin-top:0.8em">Share this link with anyone. When they finish the onboarding, your karma goes up automatically.</p>
+<p style="font-size:0.85em;color:var(--lc-ink-mute,#616161);margin-top:0.8em">Share this link with anyone. When they finish the onboarding, your karma goes up automatically.</p>
 <div class="lcw-actions" style="margin-top:1em">
 <button class="lcw-btn lcw-btn-outline" onclick="lcwNext(5)">Skip for now →</button>
 <button class="lcw-btn" onclick="lcwNext(5)">Done, continue ✓</button>
@@ -140,8 +140,13 @@ _Karma measures your contribution to the network: your site, your bio, the frien
   transition: border-color 0.2s;
 }
 .lcw-step.lcw-active { border-color: #0066cc; box-shadow: 0 0 0 3px #e8f0fe; }
-.lcw-step.lcw-done { border-color: #2a9d2a; opacity: 0.7; }
-.lcw-step.lcw-locked { opacity: 0.45; pointer-events: none; }
+/* State is carried by border + number colour + the ✓ check, so the step
+   never needs an opacity dim — dimming a whole step drops its text below
+   WCAG AA (a #0066cc button in a locked step composites to #8cbae8, a 2:1
+   white-on-blue). Locked stays de-emphasised via its grey border/number and
+   is inert via pointer-events; its text stays legible to everyone. */
+.lcw-step.lcw-done { border-color: #2a9d2a; }
+.lcw-step.lcw-locked { pointer-events: none; }
 .lcw-head {
   display: flex; align-items: center; gap: 12px;
   padding: 14px 18px; background: #f8f8f8; border-bottom: 1px solid #eee;
@@ -190,7 +195,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
   color: #c47900; background: #fff8e1; border: 1px solid #ffe082;
   border-radius: 10px; padding: 2px 9px; white-space: nowrap; flex-shrink: 0;
 }
-.lcw-karma-badge:not([data-pts]) { color: #888; background: #f3f4f6; border-color: #e0e0e0; }
+.lcw-karma-badge:not([data-pts]) { color: var(--lc-ink-mute, #616161); background: #f3f4f6; border-color: #e0e0e0; }
 .lcw-bio-wrap { margin-top: 0.8em; }
 .lcw-bio-wrap textarea {
   width: 100%; box-sizing: border-box; padding: 0.6em 0.8em;
@@ -199,7 +204,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 }
 .lcw-bio-wrap textarea:focus { outline: none; border-color: #0066cc; box-shadow: 0 0 0 2px #e8f0fe; }
 .lcw-bio-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
-.lcw-bio-footer span { font-size: 0.8em; color: #aaa; }
+.lcw-bio-footer span { font-size: 0.8em; color: var(--lc-ink-mute, #616161); }
 .lcw-invite-box { display: flex; gap: 8px; margin-top: 0.8em; flex-wrap: wrap; }
 .lcw-invite-box input {
   flex: 1; min-width: 200px; padding: 0.45em 0.8em; border: 1px solid #ccc;

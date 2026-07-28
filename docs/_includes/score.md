@@ -43,9 +43,9 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
 .lc-card-score.full { background: #dcfce7; color: #166534; }
 .lc-card-score.lc-card-unstarted { background: #f1f5f9; color: #94a3b8; }
 /* gray "remaining" = quizzes on the page you have not answered yet */
-.lc-score-fab-remaining { color: #9ca3af; font-weight: 600; }
+.lc-score-fab-remaining { color: var(--lc-ink-mute, #616161); font-weight: 600; }
 .lc-score-fab-remaining:empty { display: none; }
-.lc-card-rem { color: #9ca3af; font-weight: 600; margin-left: 0.15em; }
+.lc-card-rem { color: var(--lc-ink-mute, #616161); font-weight: 600; margin-left: 0.15em; }
 /* the chip is pointer-events:none so it never blocks the card; re-enable it on
    the two numbers so their explaining tooltips appear on hover */
 .lc-card-won, .lc-card-rem { pointer-events: auto; cursor: help; }

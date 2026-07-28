@@ -25,7 +25,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-form { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: white; }
 .lc-form-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
 .lc-form-title .lc-form-name { color: #222; font-weight: 600; }
-.lc-form-title .lc-form-meta { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.05em; }
+.lc-form-title .lc-form-meta { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute, #616161); letter-spacing: 0.05em; }
 .lc-form-grid { width: 100%; }
 .lc-form-grid .ag-cell.lc-form-label-cell { color: #0066cc; font-weight: 600; background: #fafbfc; }
 .lc-form-grid .ag-cell.lc-form-label-cell:hover { background: #fafbfc !important; }
@@ -43,7 +43,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-form-selectbox { display: inline-flex; align-items: center; gap: 0.4em; padding: 0 8px 0 10px; border: 1px solid #c5dcf5; background: #f5f9ff; border-radius: 4px; color: #1756a9; font-size: 0.88em; line-height: 1.7; max-width: 100%; box-sizing: border-box; }
 .lc-form-selectbox-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lc-form-selectbox-arrow { color: #6892c4; font-size: 0.85em; }
-.lc-form-empty { padding: 0.9em 1em; color: #888; font-style: italic; font-size: 0.9em; }
+.lc-form-empty { padding: 0.9em 1em; color: var(--lc-ink-mute, #616161); font-style: italic; font-size: 0.9em; }
 .lc-form-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 </style>
 

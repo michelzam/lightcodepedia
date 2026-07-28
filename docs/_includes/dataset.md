@@ -222,8 +222,8 @@ Auto-included by docs/_layouts/default.html.
     function render(data) {
       if (!data || !data.length) {
         el.innerHTML = emptyMsg
-          ? "<p style='color:#888;font-size:.85em;padding:.5em 0'>" + emptyMsg + "</p>"
-          : "<p style='color:#888;font-size:.85em'>⚠ No data: <code>" + bindId + "</code></p>";
+          ? "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>" + emptyMsg + "</p>"
+          : "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ No data: <code>" + bindId + "</code></p>";
         return;
       }
       var allCols = Object.keys(data[0]);
@@ -303,14 +303,14 @@ Auto-included by docs/_layouts/default.html.
 
     /* repo-file source: fetch once and render (no dataset listener) */
     if (fileRef) {
-      el.innerHTML = "<p style='color:#888;font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
+      el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
       var useCdn = window.lcUseCdn ? window.lcUseCdn() : false;
       var srcs = window.lcFileSrc(fileRef);
       fetch(useCdn ? srcs.cdn : srcs.raw)
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + fileRef); return r.text(); })
         .then(function (text) { return window.lcParseDataText(text, fileFmt); })
         .then(function (data) { render(Array.isArray(data) ? data : [data]); })
-        .catch(function (e) { el.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ " + e.message + "</p>"; });
+        .catch(function (e) { el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ " + e.message + "</p>"; });
       return;
     }
 
@@ -319,7 +319,7 @@ Auto-included by docs/_layouts/default.html.
     window.lcDatasetListeners[bindId].push(render);
 
     if (window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);
-    else el.innerHTML = "<p style='color:#888;font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
+    else el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
   }
 
   /* NOTE: .button upgrade (incl. optional Python on_click handler) lives in

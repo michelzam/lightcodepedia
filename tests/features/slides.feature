@@ -37,3 +37,19 @@ Feature: Slides FAB and presentation mode
     And I wait for the page to be interactive
     And I tap the slides FAB button
     Then the FAB popup is visible
+
+  @mobile
+  Scenario: High contrast theme toggles from the pill and persists
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I tap the slides FAB button
+    Then the popup contains a "High contrast" option
+    When I click the High contrast option in the popup
+    Then the page uses the high-contrast theme
+    And the High contrast option is marked active
+    When I reload the page
+    And I wait for the page to be interactive
+    Then the page uses the high-contrast theme
+    When I tap the slides FAB button
+    And I click the High contrast option in the popup
+    Then the page uses the default theme

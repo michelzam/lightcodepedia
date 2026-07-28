@@ -81,7 +81,7 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
 .lc-slides-share-close:hover { color: #222; background: #f0f0f0; }
 .lc-slides-share-qr { width: min(60vh, 360px); height: min(60vh, 360px); display: flex; align-items: center; justify-content: center; padding: 0.5em; background: white; }
 .lc-slides-share-qr svg, .lc-slides-share-qr img { width: 100%; height: 100%; }
-.lc-slides-share-qr-fallback { font-size: 0.9em; color: #888; padding: 2em; }
+.lc-slides-share-qr-fallback { font-size: 0.9em; color: var(--lc-ink-mute, #616161); padding: 2em; }
 .lc-slides-share-url { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78em; color: #666; word-break: break-all; max-width: 90%; padding: 0.5em 0.8em; background: #f5f5f5; border-radius: 4px; line-height: 1.4; }
 .lc-slides-share-copy { padding: 0.55em 1.6em; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95em; font-weight: 500; }
 .lc-slides-share-copy:hover { background: #0052a3; }
@@ -199,6 +199,7 @@ body.lc-reel-active .lc-reel-bar {
   <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    type="button">🔬 X-ray</button>
   <button class="lc-bl-popup-item" id="lc-bl-edit-btn"    type="button" hidden title="⌥E">✏️ Edit</button>
   <button class="lc-bl-popup-item" id="lc-bl-guide-btn"   type="button" style="border-top:2px solid #e5e7eb">🧑‍🏫 Guide</button>
+  <button class="lc-bl-popup-item" id="lc-bl-contrast-btn" type="button" role="menuitemcheckbox" aria-checked="false" style="border-top:2px solid #e5e7eb">👁️ High contrast</button>
 </div>
 <div class="lc-reel-bar">
   <button class="lc-reel-back" type="button" aria-label="Back to previous page" title="Back">‹</button>
@@ -737,6 +738,28 @@ body.lc-reel-active .lc-reel-bar {
     });
     document.addEventListener('lc-mode-changed', refreshGuideMark);
     refreshGuideMark();
+
+    /* Display: high-contrast theme. One flip of data-theme on <html> re-tints
+       every rule that paints through the colour tokens (colors.md). Persisted
+       per device; restored in <head> before first paint (default.html), so the
+       pill only has to toggle and mark. A display preference, not a page mode,
+       so it sits in its own group under the separator. */
+    var contrastBtn = document.getElementById('lc-bl-contrast-btn');
+    function contrastOn() { return document.documentElement.getAttribute('data-theme') === 'contrast'; }
+    function refreshContrastMark() {
+      if (!contrastBtn) return;
+      contrastBtn.classList.toggle('lc-mode-on', contrastOn());
+      contrastBtn.setAttribute('aria-checked', contrastOn() ? 'true' : 'false');
+    }
+    if (contrastBtn) contrastBtn.addEventListener('click', function (e) {
+      e.stopPropagation(); closePopup();
+      var next = contrastOn() ? 'default' : 'contrast';
+      if (next === 'contrast') document.documentElement.setAttribute('data-theme', 'contrast');
+      else document.documentElement.removeAttribute('data-theme');
+      try { localStorage.setItem('lc_theme', next); } catch (e2) {}
+      refreshContrastMark();
+    });
+    refreshContrastMark();
 
     /* Edit joins the pill only where the editor exists on the page */
     var editBtn = document.getElementById('lc-bl-edit-btn');

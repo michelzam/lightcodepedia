@@ -105,7 +105,7 @@ Auto-included by docs/_layouts/default.html (after folder.md).
     el.parentNode.replaceChild(wrap, el);
 
     if (!_repo || !links.length) {
-      wrap.innerHTML = "<div style='padding:1em;color:#888'>No related pages.</div>";
+      wrap.innerHTML = "<div style='padding:1em;color:var(--lc-ink-mute,#616161)'>No related pages.</div>";
       return;
     }
     wrap.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading…</div>";

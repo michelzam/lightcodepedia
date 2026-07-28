@@ -178,7 +178,7 @@ Auto-included by docs/_layouts/default.html.
     function render(data) {
       wrap.innerHTML = "";
       if (!data || !data.length || !xCol || !yCol) {
-        wrap.innerHTML = "<p style='color:#888;font-size:.85em'>⚠ Chart needs bind, x, y</p>"; return;
+        wrap.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ Chart needs bind, x, y</p>"; return;
       }
       if (title) { var h = document.createElement("div"); h.className = "lc-chart-title"; h.textContent = title; wrap.appendChild(h); }
       if (type === "line") renderLine(wrap, data, xCol, yCol);
@@ -189,7 +189,7 @@ Auto-included by docs/_layouts/default.html.
     window.lcDatasetListeners[bindId].push(render);
 
     if (window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);
-    else wrap.innerHTML = "<p style='color:#888;font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
+    else wrap.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
   }
 
   /* tick labels: integers collide when the axis range is narrow

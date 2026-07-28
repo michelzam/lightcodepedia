@@ -99,7 +99,7 @@ Feature: A button runs Python on click
     assert ("ON" in self.before) != ("ON" in self.eb.text), (self.before, self.eb.text)
     :::
 ```
-{: .feature tags="events, code" status="passing" }
+{: .feature tags="events" status="passing" }
 
 ## 🏁 Final exam
 

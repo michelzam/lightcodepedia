@@ -497,12 +497,34 @@ Auto-included by docs/_layouts/default.html. Skipped for:
      retargeted it at the demo's repo, and connecting overwrote the repo the
      author had just verified — i.e. "the file picker is broken and I can't
      sign in". An embedded demo must never hijack the page's own editor. */
+  /* Null means "this page is not a runner render". A READ-ONLY render is still
+     a render — conflating the two made the editor fall through to the page
+     underneath and open docs/run.md, the runtime's own source, while the
+     learner thought they were editing the library page in front of them. The
+     readonly flag is carried, not swallowed. */
   function runnerTarget() {
     var r = document.querySelector("#lc-run[data-lc-src-repo][data-lc-src-path]");
-    if (!r || r.dataset.lcReadonly) return null;
+    if (!r) return null;
     var repo = r.dataset.lcSrcRepo, path = r.dataset.lcSrcPath;
     if (!repo || !path) return null;             // a same-origin render carries no repo
-    return { repo: repo, path: path };
+    return { repo: repo, path: path, readonly: !!r.dataset.lcReadonly };
+  }
+
+  /* A read-only source has nothing to open and nothing to save. Say which file
+     it is and why, rather than quietly editing something else. */
+  function lockReadOnly(rt) {
+    _runnerEdit = true;
+    _curFile = null;
+    var fn = document.getElementById("ed-filename");
+    if (fn) fn.textContent = "🔒 " + rt.path;
+    var save = document.getElementById("ed-save-btn");
+    if (save) { save.style.display = "none"; }
+    var inp = document.getElementById("ed-input");
+    if (inp) { inp.value = ""; inp.readOnly = true; }
+    var files = document.getElementById("ed-files");
+    if (files) files.innerHTML = "<span style='color:#bbb'>Read-only source — nothing to edit here.</span>";
+    setStatus("🔒 " + rt.repo + " is read-only for you — this page is the Library. "
+            + "Edit it in the lab, then publish.", false);
   }
 
   function setDirty(on) {
@@ -586,7 +608,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     buildGrid(); // always build — shows placeholder if no file yet
 
     var rt = runnerTarget();
-    if (_pat && (rt || _repo)) {
+    if (rt && rt.readonly) { lockReadOnly(rt); }
+    else if (_pat && (rt || _repo)) {
       if (rt) {
         /* target the RENDERED repo+file, not the connected repo or docs/run.md.
            In-memory only — /run.html edits nothing but renders, so overriding
@@ -1044,7 +1067,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
            page has no file of its own). runnerTarget() is scoped to #lc-run, so a
            page merely hosting a runner demo can no longer hijack the sign-in. */
         var rt = runnerTarget();
-        if (rt) { _repo = rt.repo; _runnerEdit = true; loadFiles(); loadFile(rt.path); }
+        if (rt && rt.readonly) { lockReadOnly(rt); }
+        else if (rt) { _repo = rt.repo; _runnerEdit = true; loadFiles(); loadFile(rt.path); }
         else {
           _runnerEdit = false;
           loadFiles();

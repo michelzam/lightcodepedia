@@ -19,6 +19,15 @@
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
   } }
   </script>
+  <!-- Display-theme boot: apply the reader's saved "High contrast" choice
+       before the stylesheets paint, so a high-contrast reader never sees a
+       flash of the default palette. The switch itself lives in the bottom-left
+       pill (slides.md); this only restores the choice. Must be inline in
+       <head> — a body include runs too late to beat the first paint. -->
+  <script>
+    try { if (localStorage.getItem('lc_theme') === 'contrast')
+            document.documentElement.setAttribute('data-theme', 'contrast'); } catch (e) {}
+  </script>
 </head>
 <body>
 {% include topbar.md %}

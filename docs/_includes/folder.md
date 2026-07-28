@@ -36,9 +36,9 @@ Auto-included by docs/_layouts/default.html.
    blue when active. Meaning is carried by the group label + icons, not by colour. */
 .lc-card-filter-chip { font-size: 0.72em; font-weight: 600; padding: 0.2em 0.7em; border-radius: 99px; border: 1px solid #d1d5db; background: #f3f4f6; color: #374151; cursor: pointer; line-height: 1.6; }
 .lc-card-filter-chip:hover { background: #e5e7eb; }
-.lc-card-filter-on { background: #0284c7; color: #fff; border-color: #0284c7; }
-.lc-card-filter-on:hover { background: #0369a1; }
-.lc-card-filter-n { opacity: 0.65; font-weight: 500; }
+.lc-card-filter-on { background: #0369a1; color: #fff; border-color: #0369a1; }
+.lc-card-filter-on:hover { background: #075985; }
+.lc-card-filter-n { color: var(--lc-ink-mute, #616161); font-weight: 500; }
 .lc-card-filter-on .lc-card-filter-n { color: #e0f2fe; opacity: 0.9; }
 .lc-card-filter-clear { background: #fff; border-color: #e5e7eb; color: #6b7280; }
 .lc-feat-dot { display: inline-flex; align-items: center; gap: 0.2em; font-size: 0.72em; font-weight: 600; padding: 0.1em 0.45em; border-radius: 99px; line-height: 1.6; }
