@@ -118,7 +118,7 @@ Feature: One engine edits any record
     Then each suggestion is offered against a field, for me to accept or refuse
     And nothing is written until I accept it
 ```
-{: .feature tags="data,ai" status="pending" }
+{: .feature tags="data" status="pending" }
 
 ## ⚠️ Limits worth knowing
 
