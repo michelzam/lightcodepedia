@@ -386,3 +386,81 @@ def step_modes_hidden(context):
         }""",
         timeout=10_000,
     )
+
+
+@then('the verb "close" folds every accordion section')
+def step_verb_close(context):
+    n = context.page.evaluate(
+        "() => { window.lcVerbs.act('close');"
+        " return document.querySelectorAll('.markdown-body details[open]').length; }"
+    )
+    assert n == 0, f"{n} section(s) still open after close"
+
+
+@then('the verb "open" with "{title}" unfolds the matching section only')
+def step_verb_open_arg(context, title):
+    opened = context.page.evaluate(
+        """(t) => { window.lcVerbs.act('open', null, t);
+             return Array.from(document.querySelectorAll('.markdown-body details[open] summary'))
+                         .map(s => s.textContent.trim()); }""",
+        title,
+    )
+    assert opened and all(title.lower() in s.lower() for s in opened), \
+        f"opened sections: {opened!r}"
+
+
+@then('the verb "present" enters present mode')
+def step_verb_present(context):
+    context.page.evaluate("window.lcVerbs.act('present')")
+    context.page.wait_for_function(
+        "() => document.body.classList.contains('lc-slides-active')", timeout=5_000)
+
+
+@then('the verb "open" targets the "{title}" section title as its subject')
+def step_verb_subject(context, title):
+    got = context.page.evaluate(
+        """(t) => { const el = window.lcVerbs.target('open', null, t);
+             return el ? { tag: el.tagName, text: el.textContent.trim() } : null; }""",
+        title,
+    )
+    assert got and got["tag"] == "SUMMARY" and title.lower() in got["text"].lower(), \
+        f"subject: {got!r}"
+
+
+@when('a stub datagrid holds rows for "{a}" and "{b}"')
+def step_stub_grid(context, a, b):
+    # hermetic: ag-grid's CDN is blocked here — the verb talks to the grid's
+    # registered API and to rendered rows, both of which this stub provides;
+    # the real grid rides the same contract in CI's full suite
+    context.page.evaluate(
+        """([a, b]) => {
+            const g = document.createElement('div');
+            g.className = 'lc-datagrid'; g.id = 'lc-datagrid-bdd';
+            g.innerHTML = '<div class="ag-row">' + a + '</div>' +
+                          '<div class="ag-row">' + b + '</div>';
+            document.querySelector('.markdown-body').appendChild(g);
+            const nodes = [
+              { data: { name: a }, selected: false,
+                setSelected(v) { this.selected = v; window._bddSel = a; } },
+              { data: { name: b }, selected: false,
+                setSelected(v) { this.selected = v; window._bddSel = b; } },
+            ];
+            window.lcMasterDetail._apis['bdd'] =
+              { forEachNode(cb) { nodes.forEach(cb); } };
+            g.setAttribute('data-lc-id', 'bdd');
+        }""",
+        [a, b],
+    )
+
+
+@then('the verb "select" with "{name}" selects that row and stands at it')
+def step_verb_select(context, name):
+    got = context.page.evaluate(
+        """(n) => {
+            const ok = window.lcVerbs.act('select', document.getElementById('lc-datagrid-bdd'), n);
+            const subj = window.lcVerbs.target('select', document.getElementById('lc-datagrid-bdd'), n);
+            return { ok, selected: window._bddSel, subject: subj ? subj.textContent.trim() : null };
+        }""",
+        name,
+    )
+    assert got["ok"] and got["selected"] == name and got["subject"] == name, f"{got!r}"

@@ -84,6 +84,99 @@ Auto-included by docs/_layouts/default.html.
     return out;
   };
 
+  /* ── Component verbs — the page's PRESENTATION vocabulary ──────────────
+     Components expose what can be DONE to them; avatar stories and demo
+     replay call verbs by name instead of poking the DOM. Only presentation
+     verbs live here — view state, never content, edits or scores — so the
+     "tutor never acts" ruling is structural: a consequential action simply
+     has no verb to call. Names stay snake_case (doctrine 2).
+       open / close [title]   fold or unfold accordion sections
+       present / reel / read  page modes (same engine as the pill) */
+  window.lcVerbs = (function () {
+    var map = {};
+    return {
+      /* a verb may declare WHERE it happens (targetFn → its subject element);
+         the avatar refines the at: walk onto that subject — open("Why") walks
+         to that section's own title, not the whole accordion */
+      register: function (verb, fn, targetFn) { map[verb] = { fn: fn, target: targetFn || null }; },
+      act: function (verb, el, arg) {
+        var v = map[verb];
+        if (!v) return false;
+        try { return v.fn(el || null, arg) !== false; } catch (e) { return false; }
+      },
+      target: function (verb, el, arg) {
+        var v = map[verb];
+        if (!v || !v.target) return null;
+        try { return v.target(el || null, arg) || null; } catch (e) { return null; }
+      },
+      list: function () { return Object.keys(map).sort(); }
+    };
+  })();
+  function _lcDetails(el, arg) {
+    var all = el
+      ? (el.tagName === "DETAILS" ? [el] : Array.prototype.slice.call(el.querySelectorAll("details")))
+      : Array.prototype.slice.call(document.querySelectorAll(".markdown-body details"));
+    if (arg) {
+      var t = String(arg).toLowerCase();
+      all = all.filter(function (d) {
+        var sm = d.querySelector("summary");
+        return sm && sm.textContent.toLowerCase().indexOf(t) >= 0;
+      });
+    }
+    return all;
+  }
+  function _lcDetailsSubject(el, arg) {
+    var d = _lcDetails(el, arg);
+    return d.length ? (d[0].querySelector("summary") || d[0]) : null;
+  }
+  window.lcVerbs.register("open", function (el, arg) {
+    var d = _lcDetails(el, arg); d.forEach(function (x) { x.open = true; }); return d.length > 0;
+  }, _lcDetailsSubject);
+  window.lcVerbs.register("close", function (el, arg) {
+    var d = _lcDetails(el, arg); d.forEach(function (x) { x.open = false; }); return d.length > 0;
+  }, _lcDetailsSubject);
+  /* select: a datagrid row by matching text — through the grid's own
+     selection API, the same path a human click takes (bound forms update,
+     nothing is edited). el scopes to one grid; default: the page's first. */
+  function _lcGridOf(el) {
+    if (el && el.closest) {
+      var g = el.closest(".lc-datagrid") || (el.querySelector && el.querySelector(".lc-datagrid"));
+      if (g) return g;
+    }
+    return document.querySelector(".lc-datagrid");
+  }
+  function _lcGridApi(g) {
+    if (!g || !window.lcMasterDetail || !window.lcMasterDetail._apis) return null;
+    var apis = window.lcMasterDetail._apis;
+    var keys = [g.id, (g.id || "").replace(/^lc-datagrid-/, ""), g.getAttribute("data-lc-id")];
+    for (var i = 0; i < keys.length; i++) if (keys[i] && apis[keys[i]]) return apis[keys[i]];
+    return null;
+  }
+  window.lcVerbs.register("select", function (el, arg) {
+    var g = _lcGridOf(el), api = _lcGridApi(g);
+    if (!api || !arg) return false;
+    var t = String(arg).toLowerCase(), hit = null;
+    api.forEachNode(function (n) {
+      if (!hit && n.data && JSON.stringify(n.data).toLowerCase().indexOf(t) >= 0) hit = n;
+    });
+    if (!hit) return false;
+    hit.setSelected(true);
+    if (api.ensureNodeVisible) { try { api.ensureNodeVisible(hit); } catch (e) {} }
+    return true;
+  }, function (el, arg) {
+    var g = _lcGridOf(el);
+    if (!g || !arg) return null;
+    var t = String(arg).toLowerCase(), rows = g.querySelectorAll(".ag-row");
+    for (var i = 0; i < rows.length; i++)
+      if (rows[i].textContent.toLowerCase().indexOf(t) >= 0) return rows[i];
+    return g;   /* row virtualised out of the DOM: stand at the grid itself */
+  });
+  ["present", "reel", "read"].forEach(function (m) {
+    window.lcVerbs.register(m, function () {
+      if (window.lcMode) { window.lcMode.set(m); return true; } return false;
+    });
+  });
+
   function upgradeCarousel(el) {
     var items = Array.from(el.querySelectorAll("li")).map(function(li){ return li.innerHTML; });
     if (!items.length) return;

@@ -271,8 +271,8 @@ face:
 script: []
 stories:
   What's on this page?:
+    - say: "Hi, I'm Doc. You might wonder: What's on this page?"
     - at: welcome
-      say: "Hi, I'm Doc. You might wonder: What's on this page?"
     - >-
       The page contains a tutorial that demonstrates basic building blocks. It
       includes formatted text, images, maps, data components, and quizzes.
@@ -285,8 +285,13 @@ stories:
       say: "interactive maps,"
       pause: 1
     - at: dog_grid_tuto
+      pause: 2
       say: "a dataset of dog breeds,"
-      pause: 1
+    - at: dog_grid_tuto
+      do: select
+      with: "Labrador"
+      say: "a chart,"
+      pause: 2
     - at: lucky_form 
       say: "and editable forms for pets."
       pause: 1

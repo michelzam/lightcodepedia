@@ -89,6 +89,24 @@ A line is a plain string (the character wanders) or an object:
 | `pause:` | Seconds to hold after the line (default 0.5) |
 | `step:` | `true` forces a stop at this line; `false` chains on even in step mode |
 
+**Acting on the page** — a line can carry a presentation verb: `do:` names
+it, `with:` narrows it, `at:` targets the component. The avatar unfolds the
+section it is talking about, or flips the page into reel:
+
+```yaml
+- { at: faq, do: open, with: "get started", say: "Let's unfold this one." }
+- { do: reel, say: "Now swipe through it like a reel." }
+```
+
+The walk follows the verb's **subject**: with `do: open, with: "Why"` the
+avatar stands at that section's own title — not the whole accordion.
+
+Verbs are **presentation only** — fold/unfold (`open`/`close`), page modes
+(`present`/`reel`/`read`), and `select` (a datagrid row matching `with:` —
+the grid's own selection, so bound forms follow; the avatar stands at the
+row). Form *fields* need no verb: `at:` already reaches them by id. Content, edits and
+quiz answers have no verb, by doctrine: the tutor shows, never does.
+
 ## 🔧 Knobs
 
 In the YAML (or as attributes on the block):

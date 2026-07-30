@@ -25,3 +25,19 @@ Feature: The authored guide owns its page — the generic one yields
     And I wait for the page to be interactive
     Then the authored guide holds the only seed
     And no avatar face floats undocked
+
+  Scenario: The page's presentation verbs fold accordions and drive modes
+    Given I have a clean browser page
+    When I navigate to "/components/accordion"
+    And I wait for the page to be interactive
+    Then the verb "close" folds every accordion section
+    And the verb "open" with "started" unfolds the matching section only
+    And the verb "open" targets the "started" section title as its subject
+    And the verb "present" enters present mode
+
+  Scenario: The select verb picks a datagrid row through the grid's own API
+    Given I have a clean browser page
+    When I navigate to "/components/accordion"
+    And I wait for the page to be interactive
+    And a stub datagrid holds rows for "Lucky" and "Wanda"
+    Then the verb "select" with "Wanda" selects that row and stands at it

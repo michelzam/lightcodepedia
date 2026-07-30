@@ -690,10 +690,12 @@ Auto-included by docs/_layouts/default.html.
                input: x.input || null,
                cues: Array.isArray(x.cues) ? x.cues : [],
                fn: (typeof x.fn === "function" ? x.fn : null),  /* action hook run as the line starts (lcAvatarPlay callers — e.g. demo replay re-applying a recorded edit) */
+               do: String(x.do || ""),                             /* presentation verb from the page's registry (open/close/present/reel/…) */
+               arg: (x.with !== undefined ? x.with : (x.arg !== undefined ? x.arg : null)),
                step: (x.step === undefined ? null : x.step),   /* per-line override of the avatar's step */
                pause: (x.pause === undefined ? null : Number(x.pause)) };   /* seconds to hold after this line */
     }
-    return { at: "", say: String(x), audio: "", video: "", input: null, cues: [], fn: null, step: null, pause: null };
+    return { at: "", say: String(x), audio: "", video: "", input: null, cues: [], fn: null, do: "", arg: null, step: null, pause: null };
   }
 
   /* resolve an at:/target reference the pythonistic way: a bare component id
@@ -715,7 +717,7 @@ Auto-included by docs/_layouts/default.html.
 
   /* park the character beside the element it describes; eyes follow it */
   function anchorTo(av, sel) {
-    var t = resolveRef(sel);
+    var t = (sel && sel.nodeType === 1) ? sel : resolveRef(sel);
     if (!t) return false;
     var S = window.lcSlides;
     if (S && S.isActive && S.isActive() && S.slideOf) {
@@ -1312,8 +1314,12 @@ Auto-included by docs/_layouts/default.html.
     av._videoStep = false;     /* set while a recorded take is the step unit */
     if (!line.video) _ytTeardown(av);   /* leaving a video take → drop any YT player */
 
-    /* move the character: to the element it describes, or along the path */
-    var anchored = line.at && anchorTo(av, line.at);
+    /* move the character: to the verb's SUBJECT when the line acts (the
+       matched section title, a future grid row…), else the at: element,
+       else along the path */
+    var _subj = (line.do && window.lcVerbs && window.lcVerbs.target)
+      ? window.lcVerbs.target(line.do, line.at ? resolveRef(line.at) : null, line.arg) : null;
+    var anchored = (_subj && anchorTo(av, _subj)) || (line.at && anchorTo(av, line.at));
     if (!anchored) {
       clearSpot(av);
       moveHost(av, "", null);
@@ -1326,6 +1332,10 @@ Auto-included by docs/_layouts/default.html.
     charTalk(av, true, !!line.input);
     if (line.input) setRiveInputs(av, line.input);
     if (line.fn) { try { line.fn(); } catch (e) {} }   /* per-line action (demo replay re-applies the recorded value here) */
+    if (line.do && window.lcVerbs) {
+      /* presentation verbs only — the registry holds nothing consequential */
+      window.lcVerbs.act(line.do, line.at ? resolveRef(line.at) : null, line.arg);
+    }
 
     var finish = function () {
       if (av._cueOff) av._cueOff();
