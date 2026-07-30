@@ -28,5 +28,16 @@ stories:
     - >-
       Ultimately, it aims to equip learners with the confidence and skills needed to thrive in the
       evolving AI ecosystem.
+  What's new?:
+    - 'You might wonder: What''s new?'
+    - >-
+      The course emphasizes a business-oriented, incremental, and low-code approach to building
+      applications with AI.
+    - >-
+      It encourages rapid experimentation and iteration, helping learners become creators rather
+      than just consumers of AI.
+    - >-
+      Additionally, it highlights the importance of understanding AI's impact on the digital
+      landscape and equips students with the skills needed to thrive in the evolving AI ecosystem.
 ```
 {: .avatar #guide dock="true" size="115" }
