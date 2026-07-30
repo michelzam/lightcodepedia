@@ -41,3 +41,23 @@ Feature: The authored guide owns its page — the generic one yields
     And I wait for the page to be interactive
     And a stub datagrid holds rows for "Lucky" and "Wanda"
     Then the verb "select" with "Wanda" selects that row and stands at it
+
+  Scenario: An action-only story line is a quick stage direction, not a dead beat
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a tour yaml shim with a stage direction is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Staged page
+
+      <details><summary>Alpha section</summary>Hidden content.</details>
+
+      ```yaml
+      script: []
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    And I play the guide's tour
+    Then the section unfolds and the narration reaches "After the beat"

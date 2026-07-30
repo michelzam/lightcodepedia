@@ -1,6 +1,13 @@
 [
  {
-  "commit": "a583c6f",
+  "run": "2026-07-30T17:09Z",
+  "features": 2,
+  "features_failed": 0,
+  "scenarios": 36,
+  "scenarios_failed": 0,
+  "steps": 205,
+  "steps_failed": 0,
+  "commit": "8cee759",
   "subset": "smoke + component specs"
  }
 ]

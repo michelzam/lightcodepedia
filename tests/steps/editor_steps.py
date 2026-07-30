@@ -165,6 +165,7 @@ def step_stub_model(context):
     context.page.route("**/models.github.ai/**", fulfill)
 
 
+@when("the editor content is")
 @when("the editor content is:")
 def step_set_editor_content(context):
     context.page.evaluate(

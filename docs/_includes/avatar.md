@@ -1336,6 +1336,17 @@ Auto-included by docs/_layouts/default.html.
       /* presentation verbs only — the registry holds nothing consequential */
       window.lcVerbs.act(line.do, line.at ? resolveRef(line.at) : null, line.arg);
     }
+    /* an action-only line is a stage direction, not narration: no empty
+       bubble hanging for a fake sentence — a short beat for the animation,
+       then straight on (authors write bare do: open/close lines) */
+    if (!line.say && !line.audio && !line.video && (line.do || line.fn)) {
+      av.bubble.classList.remove("visible");
+      av.host.classList.remove("lc-avatar-talking");
+      charTalk(av, false, false);
+      var _beat = (line.pause != null && !isNaN(line.pause)) ? line.pause * 1000 : 600;
+      setTimeout(function () { nextLine(id); }, _beat);
+      return;
+    }
 
     var finish = function () {
       if (av._cueOff) av._cueOff();

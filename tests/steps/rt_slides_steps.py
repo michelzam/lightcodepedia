@@ -19,12 +19,18 @@ def step_marked_shim(context):
         """window.marked = { parse: function (s) {
              return s.split(/\\n\\n+/).map(function (b) {
                b = b.trim();
+               if (b.indexOf('<') === 0) return b;
                if (b.indexOf('```') === 0) {
                  var inner = b.split('\\n').slice(1, -1).join('\\n');
                  return '<pre><code>' + inner + '</code></pre>';
                }
                if (b.indexOf('## ') === 0) return '<h2>' + b.slice(3) + '</h2>';
                if (b.indexOf('# ')  === 0) return '<h1>' + b.slice(2) + '</h1>';
+               if (b.indexOf('- ') === 0) {
+                 return '<ul>' + b.split('\\n').map(function (l) {
+                   return '<li>' + l.replace(/^- /, '') + '</li>';
+                 }).join('') + '</ul>';
+               }
                var im = b.match(/^!\\[([^\\]]*)\\]\\(([^)]+)\\)$/);
                if (im) return '<img alt="' + im[1] + '" src="' + im[2] + '">';
                b = b.replace(/\\[([^\\]]*)\\]\\(([^)]+)\\)/g,
@@ -35,6 +41,7 @@ def step_marked_shim(context):
     )
 
 
+@given('the GitHub contents API serves "{path}" with the document')
 @given('the GitHub contents API serves "{path}" with the document:')
 def step_stub_contents_doc(context, path):
     body = context.text
@@ -173,6 +180,7 @@ def step_key_and_repo(context):
     )
 
 
+@given('the committable GitHub page "{path}" serves')
 @given('the committable GitHub page "{path}" serves:')
 def step_committable_page(context, path):
     import base64 as _b64
@@ -276,6 +284,7 @@ def step_generic_guide_on(context):
     )
 
 
+@given('the GitHub contents API slowly serves "{path}" with the document')
 @given('the GitHub contents API slowly serves "{path}" with the document:')
 def step_stub_contents_slow(context, path):
     import time as _time
@@ -464,3 +473,31 @@ def step_verb_select(context, name):
         name,
     )
     assert got["ok"] and got["selected"] == name and got["subject"] == name, f"{got!r}"
+
+
+@given("a tour yaml shim with a stage direction is preinstalled")
+def step_tour_yaml_shim(context):
+    # a bare do: line (no say) followed by narration — the dead-beat case
+    context.page.add_init_script(
+        "window.jsyaml = { load: function () { return"
+        " { script: [ { do: 'open' }, { say: 'After the beat' } ] }; },"
+        " dump: function (o) { return JSON.stringify(o) + '\\n'; } };"
+    )
+
+
+@when("I play the guide's tour")
+def step_play_tour(context):
+    context.page.wait_for_selector("#guide_seed", timeout=10_000)
+    context.page.click("#guide_seed")
+    tour = context.page.get_by_text("Play tour")
+    expect(tour).to_be_visible(timeout=5_000)
+    tour.click()
+
+
+@then('the section unfolds and the narration reaches "{text}"')
+def step_tour_advances(context, text):
+    # the action line must open the section AND hand over quickly — an empty
+    # bubble hanging on a fake sentence was the dead beat
+    context.page.wait_for_function(
+        "() => document.querySelector('.lc-run details[open]') !== null", timeout=10_000)
+    expect(context.page.locator(".lc-avatar-speech")).to_contain_text(text, timeout=10_000)

@@ -63,3 +63,19 @@ Feature: Folder-relative embeds — a course page composes from its siblings
     And I wait for the page to be interactive
     And I inject a sized embed of "/courses/AI-Builders.png" height "400" rendered from "courses/demo/module_00/index.md"
     Then the injected embed shows the site image 400px tall
+
+  Scenario: A quiz inside an embedded fragment becomes a live component
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/_deal.md" with the document:
+      """
+      **Q:** Ready?
+
+      - [x] Yes
+      - [ ] No
+      {: .quiz }
+      """
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    And I inject an embed of "/_deal" rendered from "courses/demo/mod/index.md"
+    Then the injected embed upgrades the quiz component

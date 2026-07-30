@@ -413,7 +413,16 @@ Auto-included by docs/_layouts/default.html.
           if (end >= 0) { var nl = text.indexOf("\n", end + 1); text = nl >= 0 ? text.slice(nl + 1) : ""; }
         }
         loadMarked(function() {
-          container.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(text.trim()));
+          /* full component parity, like the runner and the editor preview: an
+             embedded fragment is PART of the page — its quizzes, grids and
+             blocks must upgrade too. Without normalise+apply+scan, a
+             {: .quiz } marker rendered as literal text and the checkboxes
+             stayed dead (module_00's settling quiz, 2026-07-30). */
+          var norm = text.trim().replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+          if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
+          container.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
+          if (window.lcApplyIAL)    window.lcApplyIAL(container);
+          if (window.lcScanElement) window.lcScanElement(container);
           if (window.lcRebase) window.lcRebase(container); // heal root-absolute paths under a project base
         });
       })

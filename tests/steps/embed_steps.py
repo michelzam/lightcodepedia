@@ -138,3 +138,15 @@ def step_embed_site_image_h(context):
         "        return i && i.naturalWidth > 0 && i.offsetHeight === 400; }",
         timeout=10_000,
     )
+
+
+@then("the injected embed upgrades the quiz component")
+def step_embed_quiz_upgraded(context):
+    # the regression: {: .quiz } stayed literal text and checkboxes dead
+    expect(context.page.locator("#lc-embed-bdd .lc-quiz")).to_have_count(
+        1, timeout=10_000
+    )
+    literal = context.page.evaluate(
+        "document.getElementById('lc-embed-bdd').textContent.includes('{: .quiz')"
+    )
+    assert not literal, "the IAL marker still renders as literal text"
