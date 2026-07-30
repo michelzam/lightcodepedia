@@ -58,6 +58,32 @@ Auto-included by docs/_layouts/default.html.
   var escapeHtml = window.lcEscapeHtml;
   var loadMarked = window.lcLoadMarked;
 
+  /* SSOT for "which {: .embed } fragments does this markdown compose from" —
+     the tutor's knowledge (agent.md) and the editor's ✨ context both use it,
+     so an AI asked about "the page" reads the same composition the reader
+     sees. Returns repo paths. Images and external targets are skipped
+     (pictures aren't prose). dir = the md file's folder for course/hub
+     files; docs files ('' or docs/…) use the site convention (docs/<x>.md,
+     matching how the embed widget itself fetches on built pages). */
+  window.lcEmbedRefs = function (md, dir) {
+    var docsMode = !dir || /^docs(\/|$)/.test(dir);
+    var out = [], re = /\]\(([^)#?\s]+)\)\s*\r?\n\{:[^}]*\.embed/g, m;
+    while ((m = re.exec(md)) && out.length < 12) {
+      var rel = m[1];
+      if (/^[a-z][a-z0-9+.-]*:/i.test(rel)) continue;                 // external
+      if (/\.(png|jpe?g|gif|webp|svg|avif)$/i.test(rel)) continue;    // pictures aren't prose
+      rel = rel.replace(/^\/+/, "");
+      if (!/\.md$/i.test(rel)) rel += ".md";
+      if (docsMode) { out.push("docs/" + rel); continue; }
+      var stack = [];
+      (dir + "/" + rel).split("/").forEach(function (s) {
+        if (s === "..") stack.pop(); else if (s && s !== ".") stack.push(s);
+      });
+      out.push(stack.join("/"));
+    }
+    return out;
+  };
+
   function upgradeCarousel(el) {
     var items = Array.from(el.querySelectorAll("li")).map(function(li){ return li.innerHTML; });
     if (!items.length) return;

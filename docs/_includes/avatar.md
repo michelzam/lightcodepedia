@@ -1612,8 +1612,18 @@ Auto-included by docs/_layouts/default.html.
     var HAuth = { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github+json' };
     seedToast('📌 keeping…');
     try {
+      /* a runner render's keep belongs to the RENDERED page — the same
+         data-lc-src contract embeds, scores, knowledge and voices follow.
+         Before this, a keep on /run committed the story into docs/run.md
+         (module_00, 2026-07-30): the audio played but the dialogue was
+         filed in the vehicle, invisible in the page the author edits. */
+      var rtK = document.querySelector('#lc-run[data-lc-src-path]');
+      var rtDirK = rtK ? (rtK.dataset.lcSrcPath || '').split('/').slice(0, -1).join('/') : '';
+      var rtKeep = (rtK && rtK.dataset.lcSrcRepo && rtDirK && !/^docs(\/|$)/.test(rtDirK))
+        ? { repo: rtK.dataset.lcSrcRepo, path: rtK.dataset.lcSrcPath } : null;
+      if (rtKeep) repo = rtKeep.repo;
       /* index pages: /section/ maps to section/index.md — try both */
-      var path = pageMdPathAv();
+      var path = rtKeep ? rtKeep.path : pageMdPathAv();
       var api = 'https://api.github.com/repos/' + repo + '/contents/' + path;
       var res = await fetch(api, { headers: HAuth });
       if (res.status === 404) {
@@ -1820,7 +1830,30 @@ Auto-included by docs/_layouts/default.html.
   }
 
   function buildSeed(elId, av) {
-    if (document.getElementById('guide_seed')) return;
+    var existing = document.getElementById('guide_seed');
+    if (existing) {
+      /* the generic guide summons on a 900ms timer and a runner render
+         arrives later — first-come-first-served let the generic squat the
+         seed while the AUTHORED avatar built its big face seedless and
+         undocked: a stale char that ignores clicks, and a menu without the
+         page's kept stories (Canvas vault render, 2026-07-30). The authored
+         page owns its guide — evict the generic, then build normally. */
+      if (existing.dataset.lcGeneric && elId !== 'site_guide') {
+        existing.remove();
+        var om = document.querySelector('.lc-guide-menu'); if (om) om.remove();
+        var g = window._lcAvatars && window._lcAvatars.site_guide;
+        if (g) {
+          if (g._idleT) clearInterval(g._idleT);
+          if (g.host) g.host.remove();
+          delete window._lcAvatars.site_guide;
+        }
+      } else {
+        /* someone legitimate already represents this page — still never
+           leave THIS avatar's big face floating undocked while idle */
+        av.host.classList.add('lc-avatar-docked');
+        return;
+      }
+    }
     av.host.classList.add('lc-avatar-docked');   /* idle big face hides; the seed represents */
     var seed = document.createElement('button');
     seed.id = 'guide_seed'; seed.type = 'button';
@@ -1983,6 +2016,16 @@ Auto-included by docs/_layouts/default.html.
      🎙️ studio (or gen-audio.mjs). Playback reads it to find each line's
      studio audio with NO fence config. */
   function voxSlug() {
+    /* a runner render's recordings belong to the RENDERED file, not /run —
+       the same data-lc-src contract embeds, scores and knowledge follow.
+       Studio (writes) and playback (reads) both come through here, so a
+       scenario recorded on the bench resolves on every later render. */
+    var r = document.querySelector('#lc-run[data-lc-src-path]');
+    if (r && r.dataset.lcSrcRepo && r.dataset.lcSrcPath) {
+      var d = r.dataset.lcSrcPath.split('/').slice(0, -1).join('/');
+      if (!/^docs(\/|$)/.test(d))
+        return r.dataset.lcSrcPath.replace(/\.md$/i, "").replace(/\//g, "-");
+    }
     var p = (window.lcPagePath ? window.lcPagePath() : location.pathname).replace(/\.html?$/, "").replace(/^\/+|\/+$/g, "");
     return p ? p.replace(/\//g, "-") : "index";
   }

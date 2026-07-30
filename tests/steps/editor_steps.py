@@ -149,3 +149,47 @@ def step_signin_offered(context):
         re.compile(r"\bed-open\b"), timeout=8_000
     )
     expect(context.page.locator("#ed-pat")).to_be_visible(timeout=8_000)
+
+
+@given("the AI model endpoint is stubbed")
+def step_stub_model(context):
+    context.ai_bodies = []
+
+    def fulfill(route):
+        context.ai_bodies.append(route.request.post_data or "")
+        route.fulfill(
+            status=200, content_type="application/json",
+            body='{"choices":[{"message":{"content":'
+                 '"{\\"explanation\\":\\"noop\\",\\"edits\\":[]}"}}]}',
+        )
+    context.page.route("**/models.github.ai/**", fulfill)
+
+
+@when("the editor content is:")
+def step_set_editor_content(context):
+    context.page.evaluate(
+        "(text) => { const i = document.getElementById('ed-input'); "
+        "i.value = text; i.dispatchEvent(new Event('input', {bubbles: true})); }",
+        context.text,
+    )
+
+
+@when('I ask the editor AI to "{ask}"')
+def step_ask_editor_ai(context, ask):
+    context.page.fill("#ed-agent-prompt", ask)
+    context.page.click("#ed-agent-ask")
+
+
+@then("the AI request carried the embedded fragment")
+def step_ai_request_has_fragment(context):
+    # the fragment's TEXT must ride along — the reference line alone is what
+    # the model saw before this feature
+    for _ in range(40):
+        if any("Embedded fragment: docs/_frag.md" in b and
+               "building beats watching" in b for b in context.ai_bodies):
+            return
+        context.page.wait_for_timeout(250)
+    raise AssertionError(
+        f"AI bodies did not carry the fragment; got {len(context.ai_bodies)} request(s)"
+        + (": " + context.ai_bodies[-1][:400] if context.ai_bodies else "")
+    )

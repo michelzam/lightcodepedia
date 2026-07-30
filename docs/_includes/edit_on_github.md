@@ -2681,7 +2681,21 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var scope = _agentScope || captureScope();
 
     agentStatus(temp ? "✨ Rethinking…" : "✨ Planning…", false);
-    fetch("https://models.github.ai/inference/chat/completions", {
+    /* the page composes from {: .embed } fragments living in OTHER files —
+       fold them in so "make a quiz from this page" sees what the reader
+       sees, not just the reference lines (lcEmbedRefs = the same SSOT the
+       embed widget and the tutor's knowledge use) */
+    var _fragDir = (_curFile || "").split("/").slice(0, -1).join("/");
+    var _fragRefs = window.lcEmbedRefs ? window.lcEmbedRefs(page, _fragDir) : [];
+    Promise.all(_fragRefs.map(function (fp) {
+      return fetch("https://api.github.com/repos/" + _repo + "/contents/" + fp,
+        { headers: { Authorization: "Bearer " + _pat, Accept: "application/vnd.github.v3.raw" } })
+        .then(function (r) { return r.ok ? r.text() : ""; })
+        .then(function (t) { return t ? "\n\n--- Embedded fragment: " + fp + " ---\n" + t.slice(0, 4000) : ""; })
+        .catch(function () { return ""; });
+    })).then(function (frags) {
+    var fragNote = frags.join("");
+    return fetch("https://models.github.ai/inference/chat/completions", {
       method: "POST",
       headers: { "Authorization": "Bearer " + _pat, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2711,9 +2725,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
             "\n\nApply it within this section:\n```\n" + scope.text + "\n```" +
             componentNote(scope) +
             (scope.type ? "" : componentCatalog()) +
-            "\n\nFull page for context:\n```markdown\n" + page + "\n```" }
+            "\n\nFull page for context:\n```markdown\n" + page + "\n```" +
+            (fragNote ? "\n\nContent of fragments the page embeds ({: .embed }) — part of the page as the reader sees it:" + fragNote : "") }
         ]
       })
+    });
     }).then(function (r) {
       return r.json().then(function (data) { return { status: r.status, data: data }; });
     }).then(function (res) {
