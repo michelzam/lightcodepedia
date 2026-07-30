@@ -575,6 +575,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   /* ── Drawer open / close ─────────────────────────────── */
   function openDrawer() {
+    /* the frame contract is the last gate: whatever door was used, an
+       embedding page that said editable=0 gets no editor */
+    if (window.lcFrame && window.lcFrame.editable === false) return;
     var d = document.getElementById("ed-drawer");
     if (!d) return;
 
@@ -658,6 +661,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   /* ⌥E / Alt-E toggles edit mode — layout-independent, ignored while typing */
   document.addEventListener("keydown", function (e) {
     if (!e.altKey || e.code !== "KeyE" || e.ctrlKey || e.metaKey) return;
+    /* an embedding page said editable=0 — the hotkey honours it like the
+       pill and the drawer itself (Canvas vault iframe, 2026-07-30) */
+    if (window.lcFrame && window.lcFrame.editable === false) return;
     var t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
     e.preventDefault();

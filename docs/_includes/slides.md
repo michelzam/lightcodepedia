@@ -757,13 +757,19 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       }
       var decked = hasDeck();
       body.classList.toggle('lc-rt-deck', decked);
+      /* BOTH directions: un-hiding on a decked render but never re-hiding
+         left Present/Reel visible-but-dead after navigating from a decked
+         module to one without ## sections (module_00 bench, 2026-07-30) —
+         a button that silently no-ops reads as broken, not as "no deck". */
+      if (presentBtn) presentBtn.hidden = !decked;
+      var rb1 = document.getElementById('lc-bl-reel-btn');
+      if (rb1) rb1.hidden = !decked;
       if (decked) {
         fab.removeAttribute('data-no-slides');
         fab.title = 'Page modes';
-        if (presentBtn) presentBtn.hidden = false;
-        var rb1 = document.getElementById('lc-bl-reel-btn');
-        if (rb1) rb1.hidden = false;
         buildJumpOptions();
+      } else {
+        fab.setAttribute('data-no-slides', 'true');
       }
     };
     if (presentBtn) presentBtn.addEventListener('click', function(e) {
@@ -818,7 +824,8 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
 
     /* Edit joins the pill only where the editor exists on the page */
     var editBtn = document.getElementById('lc-bl-edit-btn');
-    if (editBtn && document.getElementById('ed-fab')) {
+    if (editBtn && document.getElementById('ed-fab') &&
+        !(window.lcFrame && window.lcFrame.editable === false)) {
       editBtn.hidden = false;
       editBtn.addEventListener('click', function(e) {
         e.stopPropagation(); closePopup(); if (window.lcMode) window.lcMode.set('edit');

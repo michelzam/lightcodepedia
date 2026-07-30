@@ -311,7 +311,8 @@ loses everything. A component's editable source comes from window.lcSourceOf
     var pagePath = fabEl && fabEl.dataset ? fabEl.dataset.pagePath : "";
     var repo = (runRoot && runRoot.dataset.lcSrcRepo) || localStorage.getItem("lc_ed_repo") || "";
     var path = runRoot ? runRoot.dataset.lcSrcPath : (pagePath ? "docs/" + pagePath : "");
-    var readonly = !!(runRoot && runRoot.dataset.lcReadonly);
+    var readonly = !!(runRoot && runRoot.dataset.lcReadonly) ||
+                   !!(window.lcFrame && window.lcFrame.editable === false);
     return { repo: repo, path: path, readonly: readonly,
              pat: localStorage.getItem("lc_ed_pat") || "" };
   };

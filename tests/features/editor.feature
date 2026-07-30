@@ -97,3 +97,10 @@ Feature: Page editor — ✨ AI edit dialog
     And I click the editor "ed-agent-btn" button
     And I ask the editor AI to "generate a quiz from this page"
     Then the AI request carried the embedded fragment
+
+  Scenario: editable=0 closes every editing door
+    When I navigate to "/tutorial101?editable=0"
+    And I wait for the page to be interactive
+    And I press the edit hotkey
+    Then the editor drawer stays closed
+    And the pill offers no Edit item

@@ -185,8 +185,10 @@ def step_committable_page(context, path):
         req = route.request
         if req.method == "PUT":
             context.keep_puts.append((path, req.post_data or ""))
+            # shape matters: the editor's save reads content.sha AND commit.sha
             route.fulfill(status=200, content_type="application/json",
-                          body='{"content":{}}')
+                          body='{"content":{"sha":"new-sha"},'
+                               '"commit":{"sha":"abc1234def"}}')
             return
         if "raw" in (req.headers.get("accept") or ""):
             route.fulfill(status=200, content_type="text/plain; charset=utf-8",
@@ -309,3 +311,78 @@ def step_no_undocked_face(context):
         "document.querySelectorAll('.lc-avatar-host:not(.lc-avatar-docked)').length"
     )
     assert undocked == 0, f"{undocked} avatar host(s) undocked"
+
+
+@then('the editor is editing "{path}"')
+def step_editor_file(context, path):
+    # the original bug class: an editor opened on /run must edit the RENDERED
+    # file, never docs/run.md (the vehicle)
+    expect(context.page.locator("#ed-filename")).to_contain_text(path, timeout=10_000)
+
+
+@then('the editor preview shows "{text}"')
+def step_editor_preview_shows(context, text):
+    # the preview body is stamped with the rendered file's folder, so the
+    # {: .embed } fragment resolves folder-relative INSIDE edit mode too
+    expect(context.page.locator("#ed-preview")).to_contain_text(text, timeout=10_000)
+
+
+@given('the editor repo "{repo}" grants push')
+def step_repo_grants_push(context, repo):
+    def fulfill(route):
+        route.fulfill(status=200, content_type="application/json",
+                      body='{"full_name":"%s","permissions":{"push":true}}' % repo)
+    # exact repo root only — /contents/ routes are registered separately
+    context.page.route("**/api.github.com/repos/" + repo, fulfill)
+
+
+@when('I append "{text}" to the editor and save')
+def step_append_and_save(context, text):
+    context.page.evaluate(
+        "(t) => { const i = document.getElementById('ed-input');"
+        " i.value = i.value + '\\n\\n' + t;"
+        " i.dispatchEvent(new Event('input', {bubbles: true})); }",
+        text,
+    )
+    # saveFile asks for a commit message via a native prompt(); Playwright
+    # DISMISSES dialogs by default, which silently aborts the save
+    context.page.once("dialog", lambda d: d.accept("bdd: save round-trip"))
+    context.page.click("#ed-save-btn")
+
+
+@then('the rendered file\'s commit carries "{text}"')
+def step_commit_carries(context, text):
+    import base64 as _b64
+    import json as _json
+    for _ in range(40):
+        for p, body in context.keep_puts:
+            if not body:
+                continue
+            try:
+                content = _b64.b64decode(_json.loads(body).get("content", "")).decode("utf-8")
+            except Exception:
+                continue
+            if text in content:
+                return
+        context.page.wait_for_timeout(250)
+    raise AssertionError(
+        f"no PUT carried {text!r}; PUTs to: {[p for p, _ in context.keep_puts]}")
+
+
+@when('the runner hash-navigates to "{src}"')
+def step_hash_navigate(context, src):
+    context.page.evaluate("(s) => { location.hash = '#src=' + s; }", src)
+    context.page.wait_for_timeout(800)
+
+
+@then("the Present and Reel options are hidden again")
+def step_modes_hidden(context):
+    # visible-but-dead is the bug: a no-deck render must RE-hide the modes
+    context.page.wait_for_function(
+        """() => {
+            const p = document.getElementById('lc-bl-present-btn');
+            const r = document.getElementById('lc-bl-reel-btn');
+            return p && p.hidden && r && r.hidden;
+        }""",
+        timeout=10_000,
+    )

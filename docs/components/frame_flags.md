@@ -17,6 +17,10 @@ https://lightcodepedia.org/courses/build_ai/m1?focus=1&editable=1&open=/courses/
 |---|---|---|
 | `focus=1` | off | menu bar **stays, read-only** — context, not a door. `.related` goes |
 | `editable=0` / `=1` | on (off when embedded) | the page editor, independent of focus |
+
+`editable=0` closes **every** editing door: the pill's ✏️ Edit item, the
+⌥E hotkey, x-ray's Keep — and the drawer itself as the final gate, whatever
+route was tried.
 | `navigable=0` / `=1` | **off under focus**, on otherwise | internal links live in-frame, or neutralised |
 | `open=a,b` | — | glob allowlist: matching internal links open in a **new tab** |
 | `embed=true` | off | the older, blunter mode — hides the bar and the page title entirely |

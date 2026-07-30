@@ -54,3 +54,30 @@ Feature: RT slides parity — Present and Reel work on a runner render
     And I click the Reel option in the popup
     Then the page is in reel mode
     And the first rendered slide is visible
+
+  Scenario: Present and Reel retire when the next render has no deck
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Demo course
+
+      ## First section
+
+      Alpha content.
+
+      ## Second section
+
+      Beta content.
+      """
+    And the GitHub contents API serves "courses/demo/flat.md" with the document:
+      """
+      # Flat page
+
+      No sections here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    Then the runner render partitions into 3 slides
+    When the runner hash-navigates to "gh:acme/demo/courses/demo/flat.md"
+    Then the Present and Reel options are hidden again

@@ -6,13 +6,13 @@ name: Fleet status
 # whole state of the fleet is visible on /lab/ (and to any tool reading the
 # lab repo) without touching the GitHub console.
 #
-# Freshness: after every publish gate and lab suite run, plus a 6-hourly
+# Freshness: after every publish gate and lab suite run, plus a 12-hourly
 # sweep (pedia's own test runs happen in pedia — the cron picks them up).
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "23 */6 * * *"
+    - cron: "23 */12 * * *"   # 12-hourly: the per-push and post-publish runs carry freshness
   workflow_run:
     workflows: ["Publish to pedia", "Publish courses to the org", "Publish hub to the org", "UX Tests"]
     types: [completed]

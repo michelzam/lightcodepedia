@@ -193,3 +193,24 @@ def step_ai_request_has_fragment(context):
         f"AI bodies did not carry the fragment; got {len(context.ai_bodies)} request(s)"
         + (": " + context.ai_bodies[-1][:400] if context.ai_bodies else "")
     )
+
+
+@when("I press the edit hotkey")
+def step_press_edit_hotkey(context):
+    context.page.keyboard.press("Alt+KeyE")
+    context.page.wait_for_timeout(600)
+
+
+@then("the editor drawer stays closed")
+def step_drawer_closed(context):
+    import re as _re
+    body_class = context.page.evaluate("document.body.className")
+    assert "ed-drawer-open" not in body_class, f"drawer opened: {body_class!r}"
+
+
+@then("the pill offers no Edit item")
+def step_no_edit_item(context):
+    hidden = context.page.evaluate(
+        "(document.getElementById('lc-bl-edit-btn') || {hidden: true}).hidden"
+    )
+    assert hidden, "the pill's Edit item is visible despite editable=0"

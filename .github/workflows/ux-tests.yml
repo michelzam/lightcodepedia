@@ -10,6 +10,20 @@ on:
   # waits for its Pages build below.
   push:
     branches: ["main"]
+    # Private-repo minutes go where the verdict can change. The suite and the
+    # a11y scan measure the SITE — a push touching only unrendered content
+    # (courses/, hubs/, hq/…, authored daily from the bench) cannot move
+    # their result, yet each one billed a full UX→a11y→fleet cycle (90% of
+    # the monthly Actions quota by Jul 30). Skipped only when EVERY changed
+    # file matches; any docs/packages/tests/workflow change still runs.
+    paths-ignore:
+      - "courses/**"
+      - "hubs/**"
+      - "hq/**"
+      - "pdfs/**"
+      - "pages/**"
+      - "CLAUDE.md"
+      - "README.md"
   # Run manually from the Actions tab → "Run workflow" (no terminal needed)
   workflow_dispatch:
     inputs:
