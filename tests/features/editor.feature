@@ -79,3 +79,21 @@ Feature: Page editor — ✨ AI edit dialog
     And I switch to the editor "blocks" tab
     And I select the first block
     Then the block content editor is dark themed
+
+  Scenario: Ask AI reads the page's embedded fragments too
+    Given a builder key is connected
+    And the counting GitHub contents API serves "docs/_frag.md" as "frag"
+    And the AI model endpoint is stubbed
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And the editor content is:
+      """
+      # Lesson
+
+      [Why](/_frag)
+      {: .embed }
+      """
+    And I click the editor "ed-agent-btn" button
+    And I ask the editor AI to "generate a quiz from this page"
+    Then the AI request carried the embedded fragment

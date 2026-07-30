@@ -284,17 +284,9 @@ Auto-included by docs/_layouts/default.html.
           var base = 'https://raw.githubusercontent.com/' + rt.repo + '/HEAD/';
           return fetchText(base + rt.path).then(function(t){
             var dir = rt.path.split('/').slice(0, -1).join('/');
-            var targets = [], re = /\]\(([^)#?\s]+)\)\s*\r?\n\{:[^}]*\.embed/g, em;
-            while ((em = re.exec(t)) && targets.length < 12) {
-              var rel = em[1];
-              if (/^[a-z][a-z0-9+.-]*:/i.test(rel)) continue;                    // external
-              if (/\.(png|jpe?g|gif|webp|svg|avif)$/i.test(rel)) continue;       // pictures aren't prose
-              rel = rel.replace(/^\/+/, '');
-              if (!/\.md$/i.test(rel)) rel += '.md';
-              var stack = [];
-              (dir + '/' + rel).split('/').forEach(function(s){ if (s === '..') stack.pop(); else if (s && s !== '.') stack.push(s); });
-              targets.push(stack.join('/'));
-            }
+            /* lcEmbedRefs (widgets.md) is the SSOT for embed references —
+               same resolution the widget itself uses to render them */
+            var targets = window.lcEmbedRefs ? window.lcEmbedRefs(t, dir) : [];
             return Promise.all(targets.map(function(fp){
               return fetchText(base + fp)
                 .then(function(x){ return '\n\n--- Embedded: ' + fp + ' ---\n' + x; })
