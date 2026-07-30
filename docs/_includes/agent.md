@@ -250,10 +250,26 @@ Auto-included by docs/_layouts/default.html.
     var system = md.replace(m ? m[0] : '', '').replace(/\{:[^}]*\}/g, '').trim();
     return { system: system, cfg: (typeof cfg === 'object' && !Array.isArray(cfg)) ? cfg : {} };
   }
+  /* A page-level runner render advertises the file it shows (the same
+     data-lc-src contract embeds, xray and .folder follow). There, "self"
+     must mean THAT file — a tutor on /run answering about docs/run.md was
+     reading the vehicle, not the course (module_00, 2026-07-30). */
+  function rtSrc() {
+    var r = document.querySelector('#lc-run[data-lc-src-path]');
+    if (!r || !r.dataset.lcSrcRepo || !r.dataset.lcSrcPath) return null;
+    var dir = r.dataset.lcSrcPath.split('/').slice(0, -1).join('/');
+    if (/^docs(\/|$)/.test(dir)) return null;   // a docs render keys as the site page
+    return { repo: r.dataset.lcSrcRepo, path: r.dataset.lcSrcPath };
+  }
   function loadBot(name) {
     var key = String(name || '').replace(/[^\w-]/g, '');
+    var rt = rtSrc();
+    /* one knowledge set per rendered course — /run swaps courses on
+       hashchange without a reload, and a cached bot must not answer the
+       next module with the previous module's material */
+    if (rt) key += '|' + rt.repo + '/' + rt.path;
     if (_botCache[key]) return _botCache[key];
-    _botCache[key] = fetchText(rawUrl('docs/bots/' + key + '.md')).then(function(md){
+    _botCache[key] = fetchText(rawUrl('docs/bots/' + String(name || '').replace(/[^\w-]/g, '') + '.md')).then(function(md){
       var bot = parseBot(md);
       var cfg = { system: bot.system || DEFAULTS.system };
       Object.keys(bot.cfg).forEach(function(k){ if (k !== 'knowledge' && k !== 'knowledge_budget') cfg[k] = bot.cfg[k]; });
@@ -261,6 +277,33 @@ Auto-included by docs/_layouts/default.html.
       var budget = parseInt(bot.cfg.knowledge_budget, 10) || 16000;
       if (!Array.isArray(know) || !know.length) return cfg;
       return Promise.all(know.map(function(k){
+        if (String(k) === 'self' && rt) {
+          /* self = the RENDERED course file — and the fragments it embeds:
+             a module composes from {: .embed } siblings, and a tutor focused
+             on "the content" must read what the learner is reading */
+          var base = 'https://raw.githubusercontent.com/' + rt.repo + '/HEAD/';
+          return fetchText(base + rt.path).then(function(t){
+            var dir = rt.path.split('/').slice(0, -1).join('/');
+            var targets = [], re = /\]\(([^)#?\s]+)\)\s*\r?\n\{:[^}]*\.embed/g, em;
+            while ((em = re.exec(t)) && targets.length < 12) {
+              var rel = em[1];
+              if (/^[a-z][a-z0-9+.-]*:/i.test(rel)) continue;                    // external
+              if (/\.(png|jpe?g|gif|webp|svg|avif)$/i.test(rel)) continue;       // pictures aren't prose
+              rel = rel.replace(/^\/+/, '');
+              if (!/\.md$/i.test(rel)) rel += '.md';
+              var stack = [];
+              (dir + '/' + rel).split('/').forEach(function(s){ if (s === '..') stack.pop(); else if (s && s !== '.') stack.push(s); });
+              targets.push(stack.join('/'));
+            }
+            return Promise.all(targets.map(function(fp){
+              return fetchText(base + fp)
+                .then(function(x){ return '\n\n--- Embedded: ' + fp + ' ---\n' + x; })
+                .catch(function(){ return ''; });
+            })).then(function(embeds){
+              return { path: rt.repo + '/' + rt.path, text: t + embeds.join('') };
+            });
+          }).catch(function(){ return null; });
+        }
         var path = (String(k) === 'self') ? pageMdPath(window.lcPagePath ? window.lcPagePath() : location.pathname) : pageMdPath(k);
         return fetchText(rawUrl(path)).then(function(t){ return { path: path, text: t }; })
           .catch(function(){

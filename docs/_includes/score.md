@@ -59,8 +59,20 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
   /* ── persisted per-page scores (localStorage) ──────────────────────────
      Keyed by a normalised path so /foo, /foo.html and /foo/ all match. */
   function normPath(p){
-    try { p = new URL(p || location.href, location.origin).pathname; }
-    catch (e) { p = location.pathname; }
+    var u;
+    try { u = new URL(p || location.href, location.origin); }
+    catch (e) { u = location; }
+    /* RT renders: /run#src=gh:owner/repo/path scores as the RENDERED file,
+       never as /run — one bucket per course page instead of every course
+       commingling in the runner's. Same key whether it comes from the fab
+       (location) or a folder card's href, so shelf cards decorate correctly.
+       Scores are sacred: the key names the content, not the vehicle. */
+    var gm = /[#&]src=gh:([^&]+)/.exec(u.hash || "");
+    if (gm && /\/run(\.html)?$/i.test(u.pathname)) {
+      var k = decodeURIComponent(gm[1]).replace(/@[^@]*$/, "");
+      return "gh:" + k.replace(/\/index\.md$/i, "").replace(/\.md$/i, "");
+    }
+    p = u.pathname;
     /* keys are SITE-canonical: strip the project base (/lightcodelab, forks)
        so the same page scores identically at a domain root and under a base,
        and card hrefs (healed to the base) match pages (scored at the base) */
@@ -199,6 +211,17 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       p.innerHTML = body +
         (hasScore ? '<button class="lc-score-reset" type="button">🗑 Reset this page’s score</button>' : '');
     }
+
+    /* the /run page swaps courses on hashchange without a reload — the
+       session must re-key to the new render's bucket or answers would
+       persist into the WRONG page's score */
+    window.addEventListener('hashchange', function(){
+      var k = normPath();
+      if (k === PATH) return;
+      PATH = k; quizzes = {}; order = [];
+      seed = loadScores()[PATH] || null;
+      render(); renderPopover();
+    });
 
     return {
       update: function(quizId, correct) {

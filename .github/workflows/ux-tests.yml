@@ -75,6 +75,13 @@ jobs:
       ONLY: ${{ github.event.inputs.only }}
       # Optional behave -n name regex (e.g. run only the scenarios that failed).
       SCENARIOS: ${{ github.event.inputs.scenarios }}
+      # FAST path (Michel, B): a lab push runs only the smoke + component-spec
+      # subset, not the whole flow suite. Safe because the authoritative full
+      # suite runs free in pedia on every Publish — a push only needs early
+      # warning. event_name==push is the lab (pedia auto-runs via workflow_run;
+      # push is job-guarded to the lab repo). A fast run never publishes the
+      # board — the canonical verdict comes from the full run.
+      FAST: ${{ github.event_name == 'push' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -117,11 +124,15 @@ jobs:
         id: behave
         continue-on-error: true
         run: |
-          TARGET="tests/features/"
-          if [ -n "$ONLY" ]; then TARGET="tests/features/${ONLY}.feature"; fi
+          TARGETS=(tests/features/)
+          if [ -n "$ONLY" ]; then
+            TARGETS=("tests/features/${ONLY}.feature")
+          elif [ "$FAST" = "true" ]; then
+            TARGETS=(tests/features/smoke.feature tests/features/component_specs.feature)
+          fi
           NAME=(); [ -n "$SCENARIOS" ] && NAME=(-n "$SCENARIOS")
-          echo "::notice::Running $TARGET ${NAME[*]} against $BASE_URL"
-          behave "$TARGET" "${NAME[@]}" --no-capture \
+          echo "::notice::Running ${TARGETS[*]} ${NAME[*]} against $BASE_URL"
+          behave "${TARGETS[@]}" "${NAME[@]}" --no-capture \
             -f json -o ux-report.json \
             -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html \
             -f progress2
@@ -136,23 +147,28 @@ jobs:
         continue-on-error: true
         run: |
           sleep 120
-          TARGET="tests/features/"
-          if [ -n "$ONLY" ]; then TARGET="tests/features/${ONLY}.feature"; fi
+          TARGETS=(tests/features/)
+          if [ -n "$ONLY" ]; then
+            TARGETS=("tests/features/${ONLY}.feature")
+          elif [ "$FAST" = "true" ]; then
+            TARGETS=(tests/features/smoke.feature tests/features/component_specs.feature)
+          fi
           NAME=(); [ -n "$SCENARIOS" ] && NAME=(-n "$SCENARIOS")
-          behave "$TARGET" "${NAME[@]}" --no-capture \
+          behave "${TARGETS[@]}" "${NAME[@]}" --no-capture \
             -f json -o ux-report.json \
             -f behave_html_formatter:HTMLFormatter -o docs/assets/ux-report.html \
             -f progress2
 
-      # A scoped run only exercised one feature — publishing its report would
-      # wipe the other 130+ scenarios from ux-results.json. Only the full suite
-      # updates the canonical results shown on /nodes.
+      # A scoped run (ONLY/SCENARIOS) or a FAST lab-push run only exercised a
+      # slice — publishing its report would wipe the other 130+ scenarios from
+      # ux-results.json. Only the full suite (pedia deploy, or a manual full
+      # dispatch) updates the canonical results shown on /nodes.
       - name: Build per-scenario results JSON
-        if: always() && env.ONLY == '' && env.SCENARIOS == ''
+        if: always() && env.ONLY == '' && env.SCENARIOS == '' && env.FAST != 'true'
         run: python tests/report_to_results.py ux-report.json docs/assets/ux-results.json
 
       - name: Publish results to main
-        if: always() && env.ONLY == '' && env.SCENARIOS == ''
+        if: always() && env.ONLY == '' && env.SCENARIOS == '' && env.FAST != 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -169,6 +185,41 @@ jobs:
             # GITHUB_TOKEN pushes don't trigger workflows implicitly, so
             # dispatch the Pages build explicitly to deploy the new report.
             # The bot-author loop guard stops ux-tests re-running after it.
+            gh workflow run pages.yml --ref main
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # FAST path only: stamp a tiny "this commit passed the quick check" marker
+      # so the board never LOOKS stale between full runs. It carries its own
+      # fresh run timestamp + the commit, and lives in ux-fast.json — never
+      # ux-summary.json — so it can't overwrite the canonical full-suite verdict.
+      # Reuses the full board's counter, run into a temp dir so it can't touch
+      # docs/assets/ux-summary.json.
+      - name: Stamp the fast check
+        if: always() && env.FAST == 'true'
+        run: |
+          mkdir -p /tmp/fast
+          python tests/report_to_results.py ux-report.json /tmp/fast/results.json || true
+          python - <<'PY'
+          import json, os
+          src = "/tmp/fast/ux-summary.json"
+          row = (json.load(open(src)) or [{}])[0] if os.path.exists(src) else {}
+          row["commit"] = os.environ.get("GITHUB_SHA", "")[:7]
+          row["subset"] = "smoke + component specs"
+          json.dump([row], open("docs/assets/ux-fast.json", "w"), indent=1)
+          PY
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/assets/ux-fast.json
+          if git diff --cached --quiet; then
+            echo "No change in fast stamp."
+          else
+            git commit -m "chore: fast check stamp"
+            # Same loop guard + conflict-proof merge as the full publish above.
+            git fetch origin main
+            git merge origin/main -X ours --no-edit
+            git push origin HEAD:main
             gh workflow run pages.yml --ref main
           fi
         env:

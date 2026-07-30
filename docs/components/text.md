@@ -141,6 +141,12 @@ A whole phrase works too: `**the entire thing**{: .green}` → **the entire thin
 > Keep colour *meaningful*{: .blue} — red for caution, green for good — rather than decorative. A class is themeable and consistent; a hand-typed HTML colour is neither.
 {: .speaker-note }
 
+"Themeable" is literal: the site's text, link and border colours are named
+**tokens** defined once, and the **👁️ High contrast** toggle (bottom-left
+pill → Display) swaps that one palette site-wide — every page, every
+component, your colour classes included. Author with classes and the theme
+does the rest; hardcode a hex and you've opted that word out of it.
+
 **Q:** How do you colour a word green without writing any HTML?
 
 - [ ] `<span style="color:green">word</span>` in the markdown.

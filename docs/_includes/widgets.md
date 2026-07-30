@@ -179,11 +179,95 @@ Auto-included by docs/_layouts/default.html.
     container.innerHTML = "<div style='color:#aaa;font-style:italic;padding:0.5em 0'>⏳ Loading…</div>";
     el.parentNode.replaceChild(container, el);
     var rel = href.replace(/^\/+|\/+$/g, "");
-    if (!/\.md$/i.test(rel)) rel += ".md";
+    /* an image target is a picture, not a markdown module — embedding one
+       used to append .md and 404 (module_00, 2026-07-29). Do what the author
+       meant: render an <img>, resolved exactly like the module would be. */
+    var isImg = /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(rel);
+    if (!isImg && !/\.md$/i.test(rel)) rel += ".md";
     var pat = localStorage.getItem("lc_ed_pat") || "";
     var unpublished = /(^|\/)_[^\/]*$/.test(rel);   // _-prefixed: repo tree only, never in the Pages build
+    /* Folder-relative embeds. A surface that renders a file from OUTSIDE the
+       Pages tree — the runner's bench/vault render, the editor preview of a
+       course page — advertises that file on an ancestor via data-lc-src-path,
+       the same contract xray and .folder already follow. Under it, "/x" and
+       "x" both mean "my sibling": courses/ and hubs/ never exist under docs/,
+       so the site-root reading is guaranteed dead there. docs/ renders keep
+       the site-root meaning untouched. */
+    var srcEl  = container.closest ? container.closest("[data-lc-src-path]") : null;
+    var srcDir = srcEl ? (srcEl.getAttribute("data-lc-src-path") || "").split("/").slice(0, -1).join("/") : "";
+    var based  = !!(srcDir && !/^docs(\/|$)/.test(srcDir));
+    /* height="400" knob (same as embed-page): sizes the image; width follows */
+    var embH = parseInt(el.getAttribute("height") || "", 10) || 0;
+    var imgStyle = "max-width:100%" + (embH ? ";height:" + embH + "px;width:auto" : "");
+    if (isImg && (href.charAt(0) === "/" || !based)) {
+      /* IMAGES follow the platform's link rule, unlike md fragments: a
+         site-absolute src is a SITE asset everywhere — including inside a
+         course render (module_00 hit this: /courses/AI-Builders.png must
+         not become a sibling lookup). Relative image srcs under a based
+         render stay folder-relative below. */
+      container.innerHTML = "<img src='" + escapeHtml(window.lcHref ? window.lcHref("/" + rel) : "/" + rel) + "' alt='" + escapeHtml((a.textContent || "").trim()) + "' style='" + imgStyle + "'>";
+      return;
+    }
     var req;
-    if (pat && _lcSiteRepo) {
+    if (based) {
+      var srcRepo = srcEl.getAttribute("data-lc-src-repo") || _lcSiteRepo;
+      /* normalise ../ so a module can embed a fragment shared one level up */
+      var stack = [];
+      (srcDir + "/" + rel).split("/").forEach(function (s) {
+        if (s === "..") stack.pop(); else if (s && s !== ".") stack.push(s);
+      });
+      var full = stack.join("/");
+      if (isImg) {
+        var alt = escapeHtml((a.textContent || "").trim());
+        if (!pat) {   // public repo: raw serves images anonymously
+          container.innerHTML = "<img src='https://raw.githubusercontent.com/" + srcRepo + "/HEAD/" + full + "' alt='" + alt + "' style='" + imgStyle + "'>";
+          return;
+        }
+        fetch("https://api.github.com/repos/" + srcRepo + "/contents/" + full,
+              { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw" } })
+          .then(function (r) {
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            /* media-type quirk: some proxies return the JSON envelope despite
+               Accept raw — unwrap the base64 into bytes */
+            if ((r.headers.get("content-type") || "").indexOf("json") >= 0)
+              return r.json().then(function (env) {
+                var bin = atob((env.content || "").replace(/\n/g, ""));
+                var u8 = new Uint8Array(bin.length);
+                for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+                return new Blob([u8]);
+              });
+            return r.blob();
+          })
+          .then(function (b) {
+            /* GitHub types raw answers vnd.github.v3.raw — retype from the
+               extension so stricter engines (Safari) decode the blob too */
+            var ext = (full.match(/\.(\w+)$/) || [])[1];
+            var mime = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml", avif: "image/avif" }[(ext || "").toLowerCase()];
+            if (mime && b.type !== mime) b = new Blob([b], { type: mime });
+            var img = document.createElement("img");
+            img.src = URL.createObjectURL(b);
+            img.alt = (a.textContent || "").trim();
+            img.style.maxWidth = "100%";
+            if (embH) { img.style.height = embH + "px"; img.style.width = "auto"; }
+            container.innerHTML = "";
+            container.appendChild(img);
+          })
+          .catch(function (err) {
+            container.innerHTML = "<div style='color:#c00'>⚠️ Could not load " + escapeHtml(href) + ": " + escapeHtml(err.message) + "</div>";
+          });
+        return;
+      }
+      if (pat) {
+        /* builder key reads course material wherever the render came from */
+        req = fetch("https://api.github.com/repos/" + srcRepo + "/contents/" + full,
+                    { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw" } });
+      } else if (window.lcRepoPrivate && srcRepo === _lcSiteRepo) {
+        container.innerHTML = "<div style='color:#6b7280;font-style:italic;padding:0.5em 0'>🔑 Private node — connect a GitHub PAT (topbar “Get started”) to preview it.</div>";
+        return;
+      } else {
+        req = fetch("https://raw.githubusercontent.com/" + srcRepo + "/HEAD/" + full);
+      }
+    } else if (pat && _lcSiteRepo) {
       /* builder: the API + PAT reaches every node, published or not */
       req = fetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/docs/" + rel,
                   { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw" } });

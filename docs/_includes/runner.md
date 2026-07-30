@@ -107,6 +107,60 @@ files a student is already working in.
     });
   }
 
+  /* Phase B, step 2: IMAGES in a rendered page. An <img> cannot send the PAT
+     header, and a private repo's raw URLs 404 anonymously — so RELATIVE image
+     paths (the only kind that can mean "file in this repo") resolve against
+     the rendered file's folder and are fetched through the contents API, then
+     swapped to blob: URLs. Root-absolute and external srcs stay untouched
+     (site assets, CDNs). Without a key, srcs rewrite to raw URLs — right for
+     public repos, and no worse than today's 404 for private ones. */
+  function healImages(root, repo, path) {
+    var dir = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1).join("/") : "";
+    (root._lcImgUrls || []).forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} });
+    root._lcImgUrls = [];
+    var pat = edKey();
+    root.querySelectorAll("img[src]").forEach(function (img) {
+      var s = img.getAttribute("src") || "";
+      if (!s || /^([a-z][a-z0-9+.-]*:|\/)/i.test(s)) return;   // external, data:, site-absolute
+      var parts = dir ? dir.split("/") : [];
+      s.split("#")[0].split("?")[0].split("/").forEach(function (seg) {
+        if (!seg || seg === ".") return;
+        if (seg === "..") parts.pop(); else parts.push(seg);
+      });
+      var full = parts.join("/");
+      if (!pat) {
+        img.src = "https://raw.githubusercontent.com/" + repo + "/HEAD/" + full;
+        return;
+      }
+      fetch("https://api.github.com/repos/" + repo + "/contents/" + full,
+            { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
+        .then(function (r) {
+          if (!r.ok) throw 0;
+          /* same media-type quirk as fetchMd: some proxies return the JSON
+             envelope despite Accept raw — unwrap the base64 into bytes */
+          if ((r.headers.get("content-type") || "").indexOf("json") >= 0)
+            return r.json().then(function (env) {
+              var bin = atob((env.content || "").replace(/\n/g, ""));
+              var u8 = new Uint8Array(bin.length);
+              for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+              return new Blob([u8]);
+            });
+          return r.blob();
+        })
+        .then(function (b) {
+          /* GitHub types raw answers vnd.github.v3.raw — retype from the
+             extension so stricter engines (Safari) decode the blob too */
+          var ext = (full.match(/\.(\w+)$/) || [])[1];
+          var mime = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml", avif: "image/avif" }[(ext || "").toLowerCase()];
+          if (mime && b.type !== mime) b = new Blob([b], { type: mime });
+          var u = URL.createObjectURL(b);
+          root._lcImgUrls.push(u);
+          img.src = u;
+        })
+        .catch(function () {});   // leave the broken image; the alt text speaks
+    });
+  }
+
   /* src comes from the IAL attribute (embedded examples) or the page hash
      (the /run page). Attribute wins, so a component page can host a live demo. */
   function render(status, root, fixedSrc, bar) {
@@ -183,7 +237,15 @@ files a student is already working in.
           if (window.lcScanElement) window.lcScanElement(root);
           if (window.lcRebase)      window.lcRebase(root);
           if (window.lcCellsRescan) window.lcCellsRescan();   // {= } cells in the rendered page
-          if (spec.gh && barSt.repo) healRelLinks(root, barSt.repo, barSt.path);
+          if (spec.gh && barSt.repo) {
+            healRelLinks(root, barSt.repo, barSt.path);
+            healImages(root, barSt.repo, barSt.path);
+          }
+          /* RT slides parity: the deck census ran at page load, before this
+             render existed — rebuild it around the rendered sections. Page-
+             level runner only: an embedded demo must not hijack its host
+             page's deck. */
+          if (!fixedSrc && window.lcSlidesRebuild) window.lcSlidesRebuild(root);
           status.style.display = "none";
           if (bar) {
             /* a bench (any gh: source that isn't the course vault) flips the

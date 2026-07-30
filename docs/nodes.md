@@ -96,10 +96,16 @@ on this node; an empty board here means this node keeps no backlog.
 [run the suite](#)
 {: .test_runner }
 
-[ux stat](#)
-{: .stat bind="ux_summary" format="{scenarios} scenarios · 🕒 {run}" requires="scenarios" ok-when="scenarios_failed==0" stale-after="3600" }
+[fast]({{ '/assets/ux-fast.json' | relative_url }})
+{: .dataset #ux_fast refresh="30" }
 
-Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) written in Gherkin (behave + Playwright). Each row below is one `Scenario` from a `.feature` file, with its result from the latest run against the live site.
+[fast check](#)
+{: .stat bind="ux_fast" format="⚡ fast check · {scenarios} scenarios · {commit} · 🕒 {run}" requires="scenarios" ok-when="scenarios_failed==0" stale-after="3600" }
+
+[full suite](#)
+{: .stat bind="ux_summary" format="✅ full suite · {scenarios} scenarios · 🕒 {run}" requires="scenarios" ok-when="scenarios_failed==0" stale-after="1209600" }
+
+Every **push** runs a fast **smoke + component-spec** check against the live site (the ⚡ line — page loads plus every component's embedded `.feature`). The full [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) — every `Scenario` from every `.feature` — runs **at publish and on demand** (the ✅ line), so it's the authoritative verdict and updates less often by design. Each row below is one `Scenario` from the latest **full** run against the live site.
 
 
 [ux-results]({{ '/assets/ux-results.json' | relative_url }})
@@ -114,7 +120,7 @@ Every deploy is checked by a [BDD UX suite](https://github.com/michelzam/lightco
 {: .dataset #ux_summary refresh="30" }
 
 [totals](#)
-{: .stat bind="ux_summary" format="{features} features · {scenarios} scenarios · {steps} steps · 🕒 {run}" requires="steps" ok-when="scenarios_failed==0" stale-after="3600" }
+{: .stat bind="ux_summary" format="{features} features · {scenarios} scenarios · {steps} steps · 🕒 {run}" requires="steps" ok-when="scenarios_failed==0" stale-after="1209600" }
 
 [failures](#)
 {: .stat bind="ux_summary" format="{scenarios_failed} scenarios · {steps_failed} steps failed" requires="scenarios_failed" ok-when="scenarios_failed==0" }

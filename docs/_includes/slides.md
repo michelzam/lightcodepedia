@@ -188,6 +188,23 @@ body.lc-reel-active .lc-reel-bar {
   font-size: 1.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lc-reel-bar-progress { flex: none; color: #6b7280; font-size: 0.82em;
   font-variant-numeric: tabular-nums; }
+
+/* ── RT deck: a runner render's slides live NESTED inside the render root
+   (main > [page-level section] > .lc-runner > .lc-run), not as main's direct
+   children. lcSlidesRebuild() tags every ancestor from the render root up to
+   main with .lc-deck-chain (and strips the page-load .lc-slide wrapper from
+   that chain). While a mode is active: everything off the chain hides (the
+   /run H1, status line, run bar), the chain itself becomes a transparent
+   flex column, and the existing .lc-slide rules then apply unchanged at the
+   deeper depth. body.lc-rt-deck is set only when a render produced a deck. */
+body.lc-rt-deck.lc-slides-active main.markdown-body > :not(.lc-deck-chain),
+body.lc-rt-deck.lc-slides-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-slide) { display: none; }
+body.lc-rt-deck.lc-slides-active .lc-deck-chain {
+  display: flex; flex-direction: column; flex: 1; min-height: 0;
+  overflow: hidden; max-width: none; margin: 0; padding: 0; border: none;
+}
+body.lc-rt-deck.lc-reel-active main.markdown-body > :not(.lc-deck-chain),
+body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-slide) { display: none; }
 </style>
 <a class="lc-slides-fab" href="#" title="Page modes" aria-label="Page modes">
   <span class="lc-slides-fab-icon" aria-hidden="true">⚙️</span><span class="lc-slides-fab-label">Modes</span>
@@ -239,8 +256,11 @@ body.lc-reel-active .lc-reel-bar {
     var revealed = [];
     var WIDGET_SEL = '.lc-pyrun, .lc-pyrepl, .lc-datagrid, .lc-form, .ag-root-wrapper, .lc-tabs, .lc-quiz, .lc-quiz-bar, .lc-agent, .lc-scene3d, .lc-carousel, .lc-accordion';
 
-    function partition() {
-      var children = Array.prototype.slice.call(main.children);
+    function partition(container) {
+      /* default: the page's own body. A runner render passes ITS root so an
+         RT-rendered course partitions in place (lcSlidesRebuild below). */
+      var host = container || main;
+      var children = Array.prototype.slice.call(host.children);
       var groups = [];
       var cur = [];
       groups.push(cur);
@@ -252,14 +272,14 @@ body.lc-reel-active .lc-reel-bar {
           cur.push(el);
         }
       });
-      main.innerHTML = '';
+      host.innerHTML = '';
       groups.forEach(function(group, i){
         if (!group.length) return;
         var section = document.createElement('section');
         section.className = 'lc-slide';
         section.setAttribute('data-slide-index', i);
         group.forEach(function(el){ section.appendChild(el); });
-        main.appendChild(section);
+        host.appendChild(section);
         slides.push(section);
         // Quiz lists reveal as a single fragment — all options visible together
         Array.prototype.forEach.call(section.querySelectorAll('ul.quiz, ol.quiz'), function(quiz){
@@ -541,7 +561,10 @@ body.lc-reel-active .lc-reel-bar {
       var titleEl = bar.querySelector('.lc-reel-bar-title');
       var progEl = bar.querySelector('.lc-reel-bar-progress');
       if (titleEl) {
-        var h1 = main.querySelector('h1');
+        /* prefer the deck's own H1: on an RT render the first h1 in main is
+           /run's hidden "🔬 Runner" heading, not the course title. On built
+           pages both selectors find the same node (h1 lives in slide 0). */
+        var h1 = main.querySelector('.lc-slide h1') || main.querySelector('h1');
         titleEl.textContent = (h1 && h1.textContent.trim()) || document.title || 'Reel';
       }
       if (progEl) progEl.textContent = (currentReelIndex() + 1) + ' / ' + slides.length;
@@ -711,6 +734,38 @@ body.lc-reel-active .lc-reel-bar {
       var rb0 = document.getElementById('lc-bl-reel-btn');
       if (rb0) rb0.hidden = true;
     }
+
+    /* ── RT parity: a runner render arrives AFTER init and NESTED inside its
+       .lc-run root, so the load-time deck census above never saw it — /run
+       was flagged deckless and Present/Reel went dead. The runner calls this
+       with its render root after each render: re-partition inside that root,
+       re-open the modes deckless closed, and scope the mode layout to the
+       nested chain via body.lc-rt-deck. Idempotent — a hashchange re-render
+       just rebuilds the deck around the new content. */
+    window.lcSlidesRebuild = function (root) {
+      if (!root || !main.contains(root)) return;
+      if (window.lcMode && window.lcMode.current && window.lcMode.current() !== 'read')
+        window.lcMode.set('read');          // never rebuild under an active mode
+      slides = []; current = 0;
+      partition(root);                       // resets revealed[] itself
+      /* tag the ancestor chain root→main for the mode CSS above — and strip
+         the .lc-slide the page-load partition wrapped around the runner, so
+         the outer wrapper can never shadow the inner deck's visibility */
+      for (var n = root; n && n !== main; n = n.parentElement) {
+        n.classList.add('lc-deck-chain');
+        if (n !== root) n.classList.remove('lc-slide');
+      }
+      var decked = hasDeck();
+      body.classList.toggle('lc-rt-deck', decked);
+      if (decked) {
+        fab.removeAttribute('data-no-slides');
+        fab.title = 'Page modes';
+        if (presentBtn) presentBtn.hidden = false;
+        var rb1 = document.getElementById('lc-bl-reel-btn');
+        if (rb1) rb1.hidden = false;
+        buildJumpOptions();
+      }
+    };
     if (presentBtn) presentBtn.addEventListener('click', function(e) {
       e.stopPropagation(); closePopup(); setMode('present');
     });

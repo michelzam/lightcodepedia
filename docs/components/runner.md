@@ -9,6 +9,16 @@ instant benches: a private repo's markdown, fetched and run on the spot.
 - **The `/run` page** takes its source from the URL hash: `/run#src=<url>`.
 - **Embedded** anywhere with a `src` attribute — the live demo below is one.
 
+**Modes** work on a rendered page like on a built one: after each `/run`
+render the deck re-partitions around the rendered sections (one slide per
+`##`), so 📽️ **Present** and 📲 **Reel** in the bottom-left pill drive the
+rendered course. Embedded runner demos never affect their host page's deck.
+
+**Images**: a relative `![…](pic.png)` in a rendered page resolves against
+the rendered file's folder and is fetched with your key — so pictures in a
+private course render like anywhere else. Site-absolute and external image
+URLs pass through untouched.
+
 ```
 [demo](#)
 {: .runner src="/run_samples/probe.txt" }

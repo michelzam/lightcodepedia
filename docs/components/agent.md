@@ -226,6 +226,10 @@ Ask Doc — he knows this page.
   along with every question (trimmed to a budget — `knowledge_budget:` chars,
   default 16000 — with a visible "(trimmed)" note). Keep a bot's list to a few
   focused pages.
+- On a **runner render** (a course opened through `/run`), `self` means the
+  **rendered course file** — plus the `{: .embed }` fragments it composes
+  from — never the runner shell. Each rendered module gets its own knowledge,
+  fetched from the render's own repo with your key.
 
 ## 🐍 Bound to a runner
 

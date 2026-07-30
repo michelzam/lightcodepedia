@@ -925,6 +925,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         out.appendChild(bar);
         // Render markdown into a child container
         var body = document.createElement("div");
+        /* A file outside the Pages tree (courses/, hubs/…) declares itself on
+           the preview via the data-lc-src contract the runner's render root
+           already carries — so folder-aware components (embed) resolve
+           against ITS folder, not docs/. docs/ files stay unstamped: their
+           embeds keep the site-root meaning, exactly as before. */
+        if (_curFile && !/^docs(\/|$)/.test(_curFile)) {
+          body.setAttribute("data-lc-src-path", _curFile);
+          if (_repo) body.setAttribute("data-lc-src-repo", _repo);
+        }
         body.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(normIAL(src)));
         out.appendChild(body);
         // Apply IAL markers then run the full component upgrade pipeline

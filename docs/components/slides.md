@@ -23,6 +23,26 @@ Three ways in.
 
 Press **Esc** to exit back to scrolly view. The URL drops `?slides` automatically.
 
+It works on **runner renders** too: a course opened through `/run` re-partitions
+after it renders, so Present and Reel drive the rendered module exactly like a
+built page (see the [runner](/components/runner) page).
+
+## 👁️ High contrast — same pill, different job
+
+Below the page modes, the bottom-left pill carries a **Display** toggle:
+**👁️ High contrast** re-tints the whole site with a darker, stronger palette
+(links, text, borders) for low-vision comfort — WCAG-stronger than the
+default, which already passes AA. It's a *preference*, not a mode:
+
+- it applies in every mode — read, Present, Reel;
+- it **persists per device** and is restored before the first paint, so a
+  high-contrast reader never sees a flash of the default palette;
+- toggling it back off is the same pill item (the ✓ shows the state).
+
+Under the hood the entire palette lives in named tokens in one place, and the
+toggle swaps just those values — the reason it can re-tint every page with a
+single switch.
+
 ## ✂️ What becomes a slide?
 
 The split is purely structural — no special marker required.

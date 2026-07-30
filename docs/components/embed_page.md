@@ -62,6 +62,20 @@ This embeds `_dog.md` (a small reusable module defined once, used anywhere):
 [Lucky](/_dog)
 {: .embed }
 
+On a **site page** the path is site-rooted: `/_dog` means `docs/_dog.md`.
+Inside a **course or hub render** (the runner's bench, or the editor preview of
+a file outside `docs/`) the same embed resolves against **that file's own
+folder** instead — `/x` and `x` both mean "my sibling `x.md`", and `../shared`
+reaches a fragment one level up. So a module page composes from the fragments
+sitting next to it, and the whole folder moves as one piece.
+
+An **image** target (`.png`, `.jpg`, `.gif`, `.webp`, `.svg`…) embeds as the
+image itself, and takes the same `height="400"` knob as `embed-page`. Unlike
+md fragments, images follow the platform's **link rule**: a site-absolute
+path (`/courses/banner.png`) is a site asset everywhere — including inside a
+course render — while a *relative* path (`banner.png`, `../shared.png`) comes
+from the course folder, fetched with your key (private repos included).
+
 The map below comes from the same `{: .map }` component used in Tutorial 101 — Paris parks for walking your dog:
 
 ````
