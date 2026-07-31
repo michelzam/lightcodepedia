@@ -103,10 +103,31 @@ Auto-included by docs/_layouts/default.html.
     } catch (e) { return String(o); }
   }
 
+  /* a URL that IS a picture: an image extension, or an image-ish field name
+     (photo/image/pic/avatar) — URL APIs like placedog carry no extension */
+  function isImageValue(key, v) {
+    return typeof v === "string" && /^https?:\/\//i.test(v) &&
+      (/\.(png|jpe?g|gif|webp|svg|avif)([?#]|$)/i.test(v) ||
+       /photo|image|pic|avatar/i.test(key || ""));
+  }
+
   function makeFormCellRenderer(opts) {
     return function(params) {
       var t = params.data._type;
       var v = params.value;
+
+      /* photo: an image URL shows the picture itself, not the string —
+         a detail view earns its name (Adoption Day, 2026-07-31) */
+      if (isImageValue(params.data._key, v)) {
+        var im = document.createElement("img");
+        im.src = v;
+        im.alt = params.data._key || "photo";
+        im.style.maxHeight = "96px";
+        im.style.maxWidth = "100%";
+        im.style.borderRadius = "6px";
+        im.style.margin = "4px 0";
+        return im;
+      }
 
       /* gauge: a numeric field named in sliders="…" renders as a range input */
       var slid = opts.sliders && opts.sliders[params.data._key];
@@ -388,6 +409,7 @@ Auto-included by docs/_layouts/default.html.
         defaultColDef: { sortable: false, filter: false, suppressHeaderMenuButton: true, resizable: true },
         getRowHeight: function(params) {
           var t = params.data._type;
+          if (isImageValue(params.data._key, params.data.value)) return 110;
           if (t === "array") {
             var n = (params.data.value || []).length;
             if (n <= 4) return null; // default

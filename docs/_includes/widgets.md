@@ -46,6 +46,25 @@ Auto-included by docs/_layouts/default.html.
 .lc-menu .lc-menu-ic { font-size: 1.1em; line-height: 1; }
 
 .lc-embed { margin: 0.5em 0; }
+/* image embeds with align="left|right": the text that follows wraps around
+   the picture, so the amount of text decides the shape; floats drop on
+   small screens where wrapping has no room to breathe */
+.lc-embed-left  { float: left;  margin: 0.2em 1.2em 0.8em 0; max-width: 60%; }
+.lc-embed-right { float: right; margin: 0.2em 0 0.8em 1.2em; max-width: 60%; }
+@media (max-width: 700px) {
+  .lc-embed-left, .lc-embed-right { float: none; margin: 0.5em 0; max-width: 100%; }
+}
+/* effect="ambient": the still breathes — a slow Ken-Burns zoom with a soft
+   light pulse, locked camera, no assets. Clipped by the container so the
+   zoom never spills into the page. Honors reduced-motion preferences. */
+.lc-embed-ambient { overflow: hidden; display: inline-block; max-width: 100%; border-radius: 8px; }
+.lc-embed-ambient img { display: block; transform-origin: center;
+  animation: lc-ambient 9s ease-in-out infinite alternate; }
+@keyframes lc-ambient {
+  from { transform: scale(1);     filter: brightness(1); }
+  to   { transform: scale(1.045); filter: brightness(1.07) saturate(1.08); }
+}
+@media (prefers-reduced-motion: reduce) { .lc-embed-ambient img { animation: none; } }
 </style>
 
 <script>
@@ -286,8 +305,12 @@ Auto-included by docs/_layouts/default.html.
     var a = el.querySelector("a");
     if (!a) return;
     var href = a.getAttribute("href");
-    // External URLs → iframe
-    if (/^https?:\/\//i.test(href)) {
+    // External URLs → iframe — EXCEPT images: a photo is a picture, not a
+    // page, and hotlinks as an <img> further down (all sizing knobs apply).
+    // URL-API images carry no extension (placedog, unsplash source…) —
+    // image="true" declares the intent explicitly.
+    var forceImg = el.getAttribute("image") === "true";
+    if (/^https?:\/\//i.test(href) && !forceImg && !/\.(png|jpe?g|gif|webp|svg|avif)$/i.test(href)) {
       el.parentNode.replaceChild(_iframeEl(href, el.getAttribute("height") || "600", "lc-embed-page"), el);
       return;
     }
@@ -301,7 +324,7 @@ Auto-included by docs/_layouts/default.html.
     /* an image target is a picture, not a markdown module — embedding one
        used to append .md and 404 (module_00, 2026-07-29). Do what the author
        meant: render an <img>, resolved exactly like the module would be. */
-    var isImg = /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(rel);
+    var isImg = /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(rel) || forceImg;
     if (!isImg && !/\.md$/i.test(rel)) rel += ".md";
     var pat = localStorage.getItem("lc_ed_pat") || "";
     var unpublished = /(^|\/)_[^\/]*$/.test(rel);   // _-prefixed: repo tree only, never in the Pages build
@@ -315,9 +338,28 @@ Auto-included by docs/_layouts/default.html.
     var srcEl  = container.closest ? container.closest("[data-lc-src-path]") : null;
     var srcDir = srcEl ? (srcEl.getAttribute("data-lc-src-path") || "").split("/").slice(0, -1).join("/") : "";
     var based  = !!(srcDir && !/^docs(\/|$)/.test(srcDir));
-    /* height="400" knob (same as embed-page): sizes the image; width follows */
+    /* height="400" knob (same as embed-page): sizes the image; width follows.
+       width="40%" sizes relative to the container (or px) so the picture
+       scales with the page; align="left|right" floats it so text wraps. */
     var embH = parseInt(el.getAttribute("height") || "", 10) || 0;
-    var imgStyle = "max-width:100%" + (embH ? ";height:" + embH + "px;width:auto" : "");
+    var embW = (el.getAttribute("width") || "").trim();
+    if (/^\d+$/.test(embW)) embW += "px";
+    if (!/^\d+(\.\d+)?(px|%|em|rem|vw)$/.test(embW)) embW = "";
+    var imgStyle = "max-width:100%" +
+      (embW ? ";width:" + embW : "") +
+      (embH ? ";height:" + embH + "px" + (embW ? "" : ";width:auto") : "");
+    var embAlign = (el.getAttribute("align") || "").toLowerCase();
+    if (isImg && (embAlign === "left" || embAlign === "right"))
+      container.classList.add("lc-embed-" + embAlign);
+    if (isImg && (el.getAttribute("effect") || "").toLowerCase() === "ambient")
+      container.classList.add("lc-embed-ambient");
+    if (isImg && /^https?:\/\//i.test(href)) {
+      /* EXTERNAL image: hotlink as-is — a partner site's photo, a public
+         image API. Never rebased, never treated as a sibling; every sizing
+         knob (height/width/align/effect) applies like any other image. */
+      container.innerHTML = "<img src='" + escapeHtml(href) + "' alt='" + escapeHtml((a.textContent || "").trim()) + "' style='" + imgStyle + "'>";
+      return;
+    }
     if (isImg && (href.charAt(0) === "/" || !based)) {
       /* IMAGES follow the platform's link rule, unlike md fragments: a
          site-absolute src is a SITE asset everywhere — including inside a
@@ -366,8 +408,7 @@ Auto-included by docs/_layouts/default.html.
             var img = document.createElement("img");
             img.src = URL.createObjectURL(b);
             img.alt = (a.textContent || "").trim();
-            img.style.maxWidth = "100%";
-            if (embH) { img.style.height = embH + "px"; img.style.width = "auto"; }
+            img.setAttribute("style", imgStyle);
             container.innerHTML = "";
             container.appendChild(img);
           })

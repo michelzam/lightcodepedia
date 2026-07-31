@@ -59,6 +59,9 @@ A list of links with the `{: .prerequisite }` IAL:
 
 - Scores come from the same store as the 🏅 score chip (quizzes and features,
   per browser, resettable from the chip's menu).
+- **Works in courses too**: on a runner render (bench, vault), a relative
+  link means "my sibling page" and the gate checks that page's own score —
+  the key names the content, never the runner.
 - The gate hides everything **after** it — put it near the top of the page.
 - **🚀 This page unlocks** appears automatically at the bottom of any page that
   other pages declare as *their* prerequisite. Nothing to write — the learning

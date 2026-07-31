@@ -1308,6 +1308,10 @@ Auto-included by docs/_layouts/default.html.
 
     var line = av.script[av.idx];
     av.idx++;
+    /* voice-cue tags (<break time="0.4s"/>) direct the voice synth only:
+       never shown in the bubble, never read aloud by browser TTS. The RAW
+       say (tags included) stays the line's identity for studio recordings. */
+    var shown = String(line.say || "").replace(/<break\b[^>]*\/?>/gi, " ").replace(/  +/g, " ").trim();
     /* effective step for THIS line: the line's own step overrides the avatar's */
     av._curStep = (line.step != null) ? !!line.step : !!av.step;
     av._waiting = false;       /* set when paused at a step boundary, click advances */
@@ -1338,8 +1342,9 @@ Auto-included by docs/_layouts/default.html.
     }
     /* an action-only line is a stage direction, not narration: no empty
        bubble hanging for a fake sentence — a short beat for the animation,
-       then straight on (authors write bare do: open/close lines) */
-    if (!line.say && !line.audio && !line.video && (line.do || line.fn)) {
+       then straight on (authors write bare do: open/close lines, and bare
+       at: lines that just walk the guide somewhere) */
+    if (!line.say && !line.audio && !line.video && (line.do || line.fn || line.at)) {
       av.bubble.classList.remove("visible");
       av.host.classList.remove("lc-avatar-talking");
       charTalk(av, false, false);
@@ -1363,7 +1368,7 @@ Auto-included by docs/_layouts/default.html.
       /* recorded narration: real face, real voice — the bubble is a caption.
          When this line is a step, a click pauses/resumes the take at the current
          time index (see togglePlay); the cues just overlay their funny comments. */
-      av.bubble.textContent = line.say;
+      av.bubble.textContent = shown;
       av._videoStep = av._curStep;
       var media = playVideoLine(av, line.video, finish);
       attachCues(av, media || av.videoEl, line.cues, id);
@@ -1374,13 +1379,13 @@ Auto-included by docs/_layouts/default.html.
       /* studio voice: bubble shows the full line, mouth follows the waveform.
          If the file is missing/unreachable, fall back to TTS (or a silent
          dwell in mute mode) so the walk never breaks. */
-      av.bubble.textContent = line.say;
+      av.bubble.textContent = shown;
       playAudio(av, line.audio, finish, function () {
         if (!av.playing) return;   /* the user stopped: play() rejection is not a missing file */
         if (av.mute || !window.speechSynthesis) {
-          setTimeout(finish, Math.min(8000, 900 + line.say.split(" ").length * 260));
+          setTimeout(finish, Math.min(8000, 900 + shown.split(" ").length * 260));
         } else {
-          speak(line.say, av.voice, av.tune, null, finish);
+          speak(shown, av.voice, av.tune, null, finish);
         }
       });
       attachCues(av, av.audioEl, line.cues, id);
@@ -1388,11 +1393,11 @@ Auto-included by docs/_layouts/default.html.
     }
 
     /* TTS: reveal the bubble word by word as boundaries fire */
-    var words = line.say.split(" ");
+    var words = shown.split(" ");
     /* voice: "off" (or no TTS at all) — silent walkthrough: show the whole
        line and dwell long enough to read it, then move on */
     if (av.mute || !window.speechSynthesis) {
-      av.bubble.textContent = line.say;
+      av.bubble.textContent = shown;
       setTimeout(finish, Math.min(8000, 900 + words.length * 260));
       return;
     }
@@ -1400,16 +1405,16 @@ Auto-included by docs/_layouts/default.html.
     var revealed = 0;
     var revealT = setTimeout(function () {
       /* no boundary events (some browsers) → show the whole line */
-      if (!av.bubble.textContent) av.bubble.textContent = line.say;
+      if (!av.bubble.textContent) av.bubble.textContent = shown;
     }, 400);
-    speak(line.say, av.voice, av.tune, function (e) {
+    speak(shown, av.voice, av.tune, function (e) {
       if (e && e.name === "word" && revealed < words.length) {
         revealed += 1;
         av.bubble.textContent = words.slice(0, revealed).join(" ");
       }
     }, function () {
       clearTimeout(revealT);
-      av.bubble.textContent = line.say;
+      av.bubble.textContent = shown;
       finish();
     });
   }

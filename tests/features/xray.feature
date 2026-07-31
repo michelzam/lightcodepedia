@@ -57,6 +57,14 @@ Feature: X-ray inspector
     And the popup contains an X-ray option
 
   @mobile
+  Scenario: Touch X-ray teaches its gestures on entry
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I tap the slides FAB button
+    And I tap the X-ray option in the popup
+    Then the touch gesture hint appears
+
+  @mobile
   Scenario: X-ray activates on tap after enabling via FAB popup
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive

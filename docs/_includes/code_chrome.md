@@ -252,28 +252,95 @@
     });
     function replaceRefs(text) {
       return text.replace(/\[\^([^\]\s]+)\]/g, function (m, id) {
-        if (!(id in defs)) return m;                     // undefined ref: leave raw
+        /* refs transform even WITHOUT a local def: the definition may live at
+           page level (defs collected at the end of the file) while the ref
+           sits inside a block fence — lcFootnotesSettle merges every chunk's
+           notes into one page list and numbers globally, in reading order */
         if (order.indexOf(id) < 0) order.push(id);
         var n = order.indexOf(id) + 1;
-        return '<sup id="fnref:' + id + '"><a href="#fn:' + id + '" class="footnote">' + n + "</a></sup>";
+        return '<sup data-lcfn="' + id + '"><a href="#fn:' + id + '" class="footnote">' + (id in defs ? n : "?") + "</a></sup>";
       });
     }
     md = replaceRefs(md);
-    if (order.length) {
+    /* emit EVERY definition — referenced locally or not: an end-of-file
+       def's readers usually live in other chunks (blocks); settle wires up */
+    var ids = order.filter(function (id) { return id in defs; });
+    Object.keys(defs).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
+    if (ids.length) {
       var inline = (window.marked && window.marked.parseInline)
         ? function (s) { try { return window.marked.parseInline(s); } catch (e) { return s; } }
         : function (s) { return s; };
       /* a def body may itself reference a footnote (kramdown allows it) —
          replace inside bodies too; order grows as nested defs are pulled in */
       var items = [];
-      for (var i = 0; i < order.length; i++) {
-        var id = order[i];
-        items.push('<li id="fn:' + id + '"><p>' + inline(replaceRefs(defs[id])) +
+      for (var i = 0; i < ids.length; i++) {
+        var id = ids[i];
+        items.push('<li id="fn:' + id + '" data-lcfn-def="' + id + '"><p>' + inline(replaceRefs(defs[id])) +
                    ' <a href="#fnref:' + id + '" class="reversefootnote">&#8617;</a></p></li>');
       }
-      md += '\n\n<div class="footnotes"><ol>' + items.join("") + "</ol></div>\n";
+      md += '\n\n<div class="footnotes" data-lcfn-src="1"><ol>' + items.join("") + "</ol></div>\n";
     }
     return md.replace(/ LCFN(\d+) /g, function (_, i) { return fences[+i]; });
+  };
+
+  /* ── page-level footnote settlement ──
+     Chunks (the page render, each block fence, each embedded fragment) emit
+     their notes independently; this pass merges them into ONE list — the
+     LAST emitted list on the page, which is exactly where end-of-file defs
+     land — numbers references globally in reading order, deduplicates slugs
+     (first definition wins), and marks unresolved refs "?". No title is
+     injected: the author brings a heading if they want one. Idempotent;
+     re-run after every scan so async chunks settle as they arrive. */
+  function _lcSettleFootnotes() {
+    var scope = document.querySelector("main.markdown-body") || document.querySelector(".markdown-body") || document.body;
+    if (!scope) return;
+    var srcs = Array.prototype.slice.call(scope.querySelectorAll("div.footnotes[data-lcfn-src]"));
+    if (!srcs.length) return;
+    var master = srcs[srcs.length - 1];
+    var masterOl = master.querySelector("ol");
+    if (!masterOl) return;
+    var defLi = {};
+    srcs.forEach(function (div) {
+      Array.prototype.slice.call(div.querySelectorAll("li[data-lcfn-def]")).forEach(function (li) {
+        var id = li.getAttribute("data-lcfn-def");
+        if (defLi[id]) { if (li !== defLi[id] && li.parentNode) li.parentNode.removeChild(li); }
+        else defLi[id] = li;
+      });
+      if (div !== master && !div.querySelector("li") && div.parentNode) div.parentNode.removeChild(div);
+    });
+    var refs = Array.prototype.slice.call(scope.querySelectorAll("sup[data-lcfn]"));
+    var order = [], firstSup = {};
+    refs.forEach(function (sup) {
+      var id = sup.getAttribute("data-lcfn");
+      var a = sup.querySelector("a");
+      if (!defLi[id]) {
+        if (a && a.textContent !== "?") a.textContent = "?";
+        if (sup.id) sup.removeAttribute("id");
+        return;
+      }
+      if (order.indexOf(id) < 0) { order.push(id); firstSup[id] = sup; }
+      var n = String(order.indexOf(id) + 1);
+      if (a && a.textContent !== n) a.textContent = n;
+      /* the backref targets the FIRST reference only — ids stay unique */
+      var wantId = firstSup[id] === sup ? "fnref:" + id : "";
+      if ((sup.id || "") !== wantId) { if (wantId) sup.id = wantId; else sup.removeAttribute("id"); }
+    });
+    order.forEach(function (id) {
+      var li = defLi[id];
+      if (li.style.display) li.style.display = "";
+      masterOl.appendChild(li);                    /* in-order append = global sort */
+    });
+    Object.keys(defLi).forEach(function (id) {
+      if (order.indexOf(id) >= 0) return;
+      var li = defLi[id];                          /* defined, never referenced (yet) */
+      if (li.style.display !== "none") li.style.display = "none";
+      if (li.parentNode !== masterOl) masterOl.appendChild(li);
+    });
+  }
+  var _fnTick = false;
+  window.lcFootnotesSettle = function () {
+    if (_fnTick) return; _fnTick = true;
+    requestAnimationFrame(function () { _fnTick = false; try { _lcSettleFootnotes(); } catch (e) {} });
   };
 
   /* Includes render inside <main class="markdown-body">. Reel mode turns
@@ -311,6 +378,9 @@
     // ran at DOMContentLoaded, before this subtree existed — heal it now, at the
     // one place every component's HTML lands. Idempotent; a no-op at a domain root.
     if (window.lcRebase) window.lcRebase(root);
+    /* async chunks (blocks, embeds) bring footnote refs and defs at
+       different moments — re-settle the page's single list after each */
+    if (window.lcFootnotesSettle) window.lcFootnotesSettle();
   }
 
   // --- shared helpers for section-based widgets ---

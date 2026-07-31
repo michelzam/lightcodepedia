@@ -5,25 +5,14 @@ on:
   workflow_run:
     workflows: ["Deploy Jekyll to GitHub Pages"]
     types: [completed]
-  # lab: the built-in branch build emits NO workflow_run event (verified
-  # 2026-07-22 — the hook never fired), so the lab triggers on push and
-  # waits for its Pages build below.
-  push:
-    branches: ["main"]
-    # Private-repo minutes go where the verdict can change. The suite and the
-    # a11y scan measure the SITE — a push touching only unrendered content
-    # (courses/, hubs/, hq/…, authored daily from the bench) cannot move
-    # their result, yet each one billed a full UX→a11y→fleet cycle (90% of
-    # the monthly Actions quota by Jul 30). Skipped only when EVERY changed
-    # file matches; any docs/packages/tests/workflow change still runs.
-    paths-ignore:
-      - "courses/**"
-      - "hubs/**"
-      - "hq/**"
-      - "pdfs/**"
-      - "pages/**"
-      - "CLAUDE.md"
-      - "README.md"
+  # lab: ONE nightly fast pass instead of one per push — 42 push runs in five
+  # days spent the month's private-repo minutes (100% on Jul 31, budgets $0
+  # with stop-usage). The local rig verifies before every push and pedia's
+  # free full suite stays the authority at publish; the nightly stamp only
+  # keeps the board honest. (Michel, 2026-07-31 — supersedes the per-push
+  # policy of 2026-07-22.)
+  schedule:
+    - cron: "47 6 * * *"
   # Run manually from the Actions tab → "Run workflow" (no terminal needed)
   workflow_dispatch:
     inputs:
@@ -66,15 +55,13 @@ jobs:
       contents: write
       actions: write
       pages: read
-    # Only run if triggered manually; on a lab push (not the bot's own
-    # results commit — loop guard); or after pedia's deploy succeeded (same
-    # bot guard). Auto-runs in BOTH repos (Michel, 2026-07-22: lab minutes
-    # accepted — a red deploy should announce itself, not wait for a click).
+    # Only run if triggered manually; on the lab's nightly schedule (not in
+    # pedia — its own full run follows every deploy); or after pedia's deploy
+    # succeeded (bot guard against result-commit loops).
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' &&
-       github.repository == 'michelzam/lightcodelab' &&
-       github.actor != 'github-actions[bot]') ||
+      (github.event_name == 'schedule' &&
+       github.repository == 'michelzam/lightcodelab') ||
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_commit.author.email != '41898282+github-actions[bot]@users.noreply.github.com')
@@ -89,13 +76,12 @@ jobs:
       ONLY: ${{ github.event.inputs.only }}
       # Optional behave -n name regex (e.g. run only the scenarios that failed).
       SCENARIOS: ${{ github.event.inputs.scenarios }}
-      # FAST path (Michel, B): a lab push runs only the smoke + component-spec
-      # subset, not the whole flow suite. Safe because the authoritative full
-      # suite runs free in pedia on every Publish — a push only needs early
-      # warning. event_name==push is the lab (pedia auto-runs via workflow_run;
-      # push is job-guarded to the lab repo). A fast run never publishes the
+      # FAST path (Michel, B): the lab's nightly run covers only the smoke +
+      # component-spec subset, not the whole flow suite. Safe because the
+      # authoritative full suite runs free in pedia on every Publish — the
+      # nightly only needs early warning. A fast run never publishes the
       # board — the canonical verdict comes from the full run.
-      FAST: ${{ github.event_name == 'push' }}
+      FAST: ${{ github.event_name == 'schedule' }}
 
     steps:
       - uses: actions/checkout@v4

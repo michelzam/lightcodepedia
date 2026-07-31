@@ -70,11 +70,29 @@ reaches a fragment one level up. So a module page composes from the fragments
 sitting next to it, and the whole folder moves as one piece.
 
 An **image** target (`.png`, `.jpg`, `.gif`, `.webp`, `.svg`…) embeds as the
-image itself, and takes the same `height="400"` knob as `embed-page`. Unlike
+image itself, with three sizing knobs:
+
+| Knob | Meaning |
+|---|---|
+| `height="400"` | fixed height in px, width follows the aspect ratio |
+| `width="40%"` | relative width — the image **scales with the page** (px also accepted) |
+| `align="left"` / `align="right"` | the image floats and the text after it **wraps around** — the amount of text decides the shape; on small screens the float drops and it stacks |
+| `image="true"` | force image mode for **extension-less URL APIs** (`https://placedog.net/900/400?id=1`) that would otherwise embed as a page |
+| `effect="ambient"` | the still **breathes**: a slow, locked-camera zoom with a soft light pulse — a living banner from a plain image, no video needed; disabled automatically for reduced-motion users |
+
+```markdown
+[Our team](/courses/banner.png)
+{: .embed width="40%" align="right" }
+```
+
+Unlike
 md fragments, images follow the platform's **link rule**: a site-absolute
 path (`/courses/banner.png`) is a site asset everywhere — including inside a
 course render — while a *relative* path (`banner.png`, `../shared.png`) comes
-from the course folder, fetched with your key (private repos included).
+from the course folder, fetched with your key (private repos included). A
+full **external URL** (`https://…/photo.jpg`) hotlinks the image exactly as
+written — a partner site's photo or a public image API, with all the same
+sizing knobs.
 
 The map below comes from the same `{: .map }` component used in Tutorial 101 — Paris parks for walking your dog:
 

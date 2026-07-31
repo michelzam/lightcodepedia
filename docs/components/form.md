@@ -187,6 +187,41 @@ Combine `editable="true"` AND `master="<id>"`: edits in the form flow back to th
 
 Click a dog, change a field in the form — the grid cell updates in place. If the grid is also `editable="true"`, double-clicking a grid cell repaints the form too.
 
+## 📷 Photo fields — a URL becomes the picture
+
+A value that *is* an image — an image-extension URL, or any URL in a field
+named `photo` / `image` / `pic` / `avatar` — renders as the picture itself,
+not the string. A detail view earns its name:
+
+```yaml
+name: Scout
+breed: Husky mix
+photo: https://placedog.net/400/240?id=17
+```
+{: .form #photo_form }
+
+Combined with `master="<grid-id>"` and a ƒ computed column building the URL
+(see [📊 Datagrid](/components/datagrid)), clicking a row shows that row's
+photo — the Adoption Day pattern.
+
+```gherkin
+Feature: A photo field shows the photo
+  As a reader
+  I want an image URL rendered as the image
+  So that the detail view shows a face, not a string
+
+  Scenario: The photo row renders an img
+    Given the photo form above
+    :::python
+    self.form = Object._all("#photo_form, [data-lc-id='photo_form']")[0]
+    :::
+    Then the photo field holds a real image element
+    :::python
+    assert self.form._q("img")._el is not None
+    :::
+```
+{: .feature tags="ui" status="pending" }
+
 ## 📂 Loading from a repo file
 
 Point `source` at a repo file with the `file:` prefix — an empty `{: .form }` block loads and renders it live, always showing the current file content:

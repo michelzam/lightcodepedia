@@ -100,12 +100,12 @@ on this node; an empty board here means this node keeps no backlog.
 {: .dataset #ux_fast refresh="30" }
 
 [fast check](#)
-{: .stat bind="ux_fast" format="⚡ fast check · {scenarios} scenarios · {commit} · 🕒 {run}" requires="scenarios" ok-when="scenarios_failed==0" stale-after="3600" }
+{: .stat bind="ux_fast" format="⚡ fast check · {scenarios} scenarios · {commit} · 🕒 {run}" requires="scenarios" ok-when="scenarios_failed==0" stale-after="129600" }
 
 [full suite](#)
 {: .stat bind="ux_summary" format="✅ full suite · {scenarios} scenarios · 🕒 {run}" requires="scenarios" ok-when="scenarios_failed==0" stale-after="1209600" }
 
-Every **push** runs a fast **smoke + component-spec** check against the live site (the ⚡ line — page loads plus every component's embedded `.feature`). The full [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) — every `Scenario` from every `.feature` — runs **at publish and on demand** (the ✅ line), so it's the authoritative verdict and updates less often by design. Each row below is one `Scenario` from the latest **full** run against the live site.
+A **nightly** run gives the lab a fast **smoke + component-spec** check against the live site (the ⚡ line — page loads plus every component's embedded `.feature`); it can also be dispatched by hand anytime. The full [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) — every `Scenario` from every `.feature` — runs **at publish and on demand** (the ✅ line), so it's the authoritative verdict and updates less often by design. Each row below is one `Scenario` from the latest **full** run against the live site.
 
 
 [ux-results]({{ '/assets/ux-results.json' | relative_url }})

@@ -20,3 +20,24 @@ Feature: RT scores key to the rendered page, not the runner
     And I wait for the page to be interactive
     Then the page score key is "gh:acme/demo/courses/demo/mod"
     And a card href to that render produces the same score key
+
+  Scenario: The trophy's reset truly forgets the page's score
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Scored page
+
+      **Q:** Ready?
+
+      - [x] Yes
+      - [ ] No
+      {: .quiz }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    And I answer the quiz correctly
+    And I open the trophy and reset the score
+    Then the score store is empty
+    When the runner page reloads
+    Then the score store is empty

@@ -418,7 +418,26 @@ Auto-included by docs/_layouts/default.html.
     // ── Touch x-ray mode (toggled from the slides FAB popup on touch devices) ──
     let _touchOn = false;
     window.lcxIsActive  = () => _touchOn;
-    window.lcxTouchOn   = () => { _touchOn = true;  loadMP(); };
+    /* the two-finger pipelines gesture is invisible — teach it on entry,
+       every time (a toast, not a modal: it fades on its own) */
+    let _touchToast = null, _touchToastT = null;
+    function touchHint() {
+      if (!_touchToast) {
+        _touchToast = document.createElement("div");
+        _touchToast.id = "lcx-touch-hint";
+        _touchToast.setAttribute("role", "status");
+        _touchToast.style.cssText = "position:fixed;left:50%;bottom:76px;transform:translateX(-50%);" +
+          "background:#111827;color:#fff;padding:0.6em 1.1em;border-radius:999px;font-size:0.85em;" +
+          "z-index:10010;box-shadow:0 4px 16px rgba(0,0,0,0.25);transition:opacity 0.4s;white-space:nowrap";
+        document.body.appendChild(_touchToast);
+      }
+      _touchToast.textContent = "🔬 Touch a part: one finger = lens · two fingers = pipelines";
+      _touchToast.style.opacity = "1";
+      _touchToast.style.display = "";
+      clearTimeout(_touchToastT);
+      _touchToastT = setTimeout(() => { if (_touchToast) _touchToast.style.opacity = "0"; }, 4500);
+    }
+    window.lcxTouchOn   = () => { _touchOn = true;  loadMP(); touchHint(); };
     window.lcxTouchOff  = () => { _touchOn = false; hideAll(); };
 
     // Let taps on the FAB, the popup, and the inline editor (dialog + gear)

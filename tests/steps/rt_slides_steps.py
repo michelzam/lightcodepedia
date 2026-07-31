@@ -501,3 +501,27 @@ def step_tour_advances(context, text):
     context.page.wait_for_function(
         "() => document.querySelector('.lc-run details[open]') !== null", timeout=10_000)
     expect(context.page.locator(".lc-avatar-speech")).to_contain_text(text, timeout=10_000)
+
+
+@given("a tour yaml shim with a voice cue is preinstalled")
+def step_tour_yaml_shim_cue(context):
+    # a bare at: line (walk only, no say) then a line carrying a <break>
+    # voice-cue tag: the tour must advance past the walk without a dead
+    # beat, and the tag must never reach the bubble
+    context.page.add_init_script(
+        "window.jsyaml = { load: function () { return"
+        " { script: [ { at: 'h1' },"
+        "             { say: 'Take <break time=\"0.3s\" /> a breath' } ] }; },"
+        " dump: function (o) { return JSON.stringify(o) + '\\n'; } };"
+    )
+
+
+@then('the bubble narrates "{text}" without the cue tag')
+def step_bubble_no_cue(context, text):
+    expect(context.page.locator(".lc-avatar-speech")).to_contain_text(
+        text, timeout=10_000
+    )
+    leaked = context.page.evaluate(
+        "document.querySelector('.lc-avatar-speech').textContent.includes('<break')"
+    )
+    assert not leaked, "the voice-cue tag leaked into the bubble"

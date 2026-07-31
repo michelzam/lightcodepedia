@@ -5,6 +5,17 @@ X-ray is the platform's inspection mode: switch it on from the ⚙️ pill (or h
 Each block gets a ghost; the ⚙️ gear on a ghost opens the inline editor — one
 dialog for a component's knobs and its content, reachable before any account.
 
+## 📱 On a phone or tablet
+
+Everything works by touch — ⚙️ pill → **🔬 X-ray**, then:
+
+- **one finger** on a part — the lens: what this component is;
+- **two fingers** — the **pipelines**: the wiring lights up (grid ← query ←
+  dataset), the same view **Shift** gives on a computer.
+
+A toast reminds you of both gestures every time you enter X-ray by touch.
+Tap the pill again to leave.
+
 ## Keep, honestly
 
 **💾 Keep changes** has two paths, decided by who you are:

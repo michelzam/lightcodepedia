@@ -61,3 +61,23 @@ Feature: The authored guide owns its page — the generic one yields
     And I wait for the page to be interactive
     And I play the guide's tour
     Then the section unfolds and the narration reaches "After the beat"
+
+  Scenario: Voice-cue tags speak but never display, and a bare at: line just walks
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a tour yaml shim with a voice cue is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Cue page
+
+      Some content to walk to.
+
+      ```yaml
+      script: []
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    And I play the guide's tour
+    Then the bubble narrates "Take a breath" without the cue tag

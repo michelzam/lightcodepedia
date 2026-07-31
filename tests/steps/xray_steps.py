@@ -347,3 +347,11 @@ def step_keep_invites(context):
 @then("a green save toast confirms it")
 def step_save_toast(context):
     expect(context.page.locator("#lcx-toast")).to_contain_text("Saved", timeout=8000)
+
+
+@then("the touch gesture hint appears")
+def step_touch_hint(context):
+    # the two-finger pipelines gesture is invisible without this toast
+    hint = context.page.locator("#lcx-touch-hint")
+    expect(hint).to_be_visible(timeout=5_000)
+    expect(hint).to_contain_text("two fingers", timeout=2_000)

@@ -189,6 +189,7 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       if (!f.classList.contains('lc-score-visible')) f.classList.add('lc-score-visible');
     }
 
+    var _popHtml = "";
     function renderPopover() {
       var p = pop(); if (!p) return;
       var won = order.filter(function(id){ return quizzes[id].correct; }).length;
@@ -208,8 +209,15 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
         body = '<h4>Quiz score</h4><div class="lc-score-line"><span>No quizzes answered yet</span><span></span></div>';
       }
       var hasScore = order.length || (seed && seed.total);
-      p.innerHTML = body +
+      var html = body +
         (hasScore ? '<button class="lc-score-reset" type="button">🗑 Reset this page’s score</button>' : '');
+      /* rebuild ONLY on change: an unconditional innerHTML write re-fires the
+         MutationObserver → refresh → write… forever, replacing the reset
+         button every frame — a click could land on a detached button and fall
+         through (the popover just closed, nothing reset) */
+      if (html === _popHtml) return;
+      _popHtml = html;
+      p.innerHTML = html;
     }
 
     /* the /run page swaps courses on hashchange without a reload — the
@@ -240,10 +248,21 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       reset: function() {
         quizzes = {};
         order = [];
-        /* also forget the score remembered from previous visits (localStorage) */
+        /* also forget the score remembered from previous visits (localStorage),
+           including a pre-canonicalisation twin under the project base — the
+           loader migrates old keys by COPY, so leaving the twin would quietly
+           resurrect the score on the next load */
         var all = loadScores();
-        if (all[PATH]) { delete all[PATH]; saveScores(all); }
+        if (all[PATH]) delete all[PATH];
+        if (window.lcBase && all[window.lcBase + PATH]) delete all[window.lcBase + PATH];
+        saveScores(all);
         seed = null;
+        /* card chips re-decorate from scratch so shelf pages reset visibly */
+        document.querySelectorAll(".lc-card").forEach(function(card){
+          delete card.dataset.lcScored;
+          var t = card.querySelector(".lc-card-score");
+          if (t) t.remove();
+        });
         render();
         renderPopover();
         decorateCards();

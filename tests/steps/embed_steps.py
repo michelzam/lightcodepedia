@@ -126,6 +126,84 @@ def step_inject_based_embed_h(context, href, h, src_path):
     )
 
 
+@when('I inject an image embed of "{href}" width "{w}" align "{al}" rendered from "{src_path}"')
+def step_inject_floated_embed(context, href, w, al, src_path):
+    context.page.evaluate(
+        """([href, w, al, srcPath]) => {
+            const host = document.createElement('div');
+            host.id = 'lc-embed-bdd';
+            host.setAttribute('data-lc-src-path', srcPath);
+            host.setAttribute('data-lc-src-repo', 'acme/demo-course');
+            host.innerHTML = '<p class="embed" width="' + w + '" align="' + al
+              + '"><a href="' + href + '">pic</a></p>'
+              + '<p>Wrapping text follows the picture.</p>';
+            document.querySelector('.markdown-body').appendChild(host);
+            window.lcScanElement(host);
+        }""",
+        [href, w, al, src_path],
+    )
+
+
+@then("the injected embed floats right at 40% width")
+def step_embed_floats(context):
+    img = context.page.locator("#lc-embed-bdd .lc-embed img")
+    expect(img).to_be_visible(timeout=10_000)
+    # the container floats (text wraps), the image takes the relative width
+    context.page.wait_for_function(
+        "() => { var c = document.querySelector('#lc-embed-bdd .lc-embed');"
+        "        var i = c && c.querySelector('img');"
+        "        return c && getComputedStyle(c).float === 'right'"
+        "            && i && i.style.width === '40%'; }",
+        timeout=10_000,
+    )
+
+
+@given('the external image "{url}" is served')
+def step_stub_external_image(context, url):
+    context.page.route(url, lambda r: r.fulfill(
+        status=200, content_type="image/jpeg", body=PNG_1PX))
+
+
+@then("the injected embed hotlinks the external image")
+def step_embed_external_image(context):
+    img = context.page.locator("#lc-embed-bdd .lc-embed img")
+    # the URL must survive untouched — no rebase, no sibling lookup, no blob
+    expect(img).to_have_attribute(
+        "src", re.compile(r"^https://pics\.example\.org/hero\.jpg$"),
+        timeout=10_000,
+    )
+    expect(img).to_be_visible(timeout=5_000)
+
+
+@when('I inject an ambient image embed of "{href}" rendered from "{src_path}"')
+def step_inject_ambient_embed(context, href, src_path):
+    context.page.evaluate(
+        """([href, srcPath]) => {
+            const host = document.createElement('div');
+            host.id = 'lc-embed-bdd';
+            host.setAttribute('data-lc-src-path', srcPath);
+            host.setAttribute('data-lc-src-repo', 'acme/demo-course');
+            host.innerHTML = '<p class="embed" effect="ambient"><a href="'
+              + href + '">banner</a></p>';
+            document.querySelector('.markdown-body').appendChild(host);
+            window.lcScanElement(host);
+        }""",
+        [href, src_path],
+    )
+
+
+@then("the injected embed animates ambiently")
+def step_embed_ambient(context):
+    img = context.page.locator("#lc-embed-bdd .lc-embed-ambient img")
+    expect(img).to_be_visible(timeout=10_000)
+    # a REAL animation, not just a class: the computed name must resolve
+    context.page.wait_for_function(
+        "() => { var i = document.querySelector('#lc-embed-bdd .lc-embed-ambient img');"
+        "        return i && getComputedStyle(i).animationName === 'lc-ambient'; }",
+        timeout=10_000,
+    )
+
+
 @then("the injected embed shows the site image 400px tall")
 def step_embed_site_image_h(context):
     img = context.page.locator("#lc-embed-bdd .lc-embed img")
@@ -140,6 +218,15 @@ def step_embed_site_image_h(context):
     )
 
 
+@then('the injected embed shows a block card with "{text}"')
+def step_embed_block_card(context, text):
+    # the fence + {: .block } must become a rendered card, not a literal
+    # code listing — module_00's packaged sections depend on it
+    card = context.page.locator("#lc-embed-bdd .lc-block")
+    expect(card).to_be_visible(timeout=10_000)
+    expect(card).to_contain_text(text, timeout=5_000)
+
+
 @then("the injected embed upgrades the quiz component")
 def step_embed_quiz_upgraded(context):
     # the regression: {: .quiz } stayed literal text and checkboxes dead
@@ -150,3 +237,28 @@ def step_embed_quiz_upgraded(context):
         "document.getElementById('lc-embed-bdd').textContent.includes('{: .quiz')"
     )
     assert not literal, "the IAL marker still renders as literal text"
+
+@when('I inject a forced image embed of "{href}" rendered from "{src_path}"')
+def step_inject_forced_image_embed(context, href, src_path):
+    context.page.evaluate(
+        """([href, srcPath]) => {
+            const host = document.createElement('div');
+            host.id = 'lc-embed-bdd';
+            host.setAttribute('data-lc-src-path', srcPath);
+            host.setAttribute('data-lc-src-repo', 'acme/demo-course');
+            host.innerHTML = '<p class="embed" image="true"><a href="' + href
+              + '">api pic</a></p>';
+            document.querySelector('.markdown-body').appendChild(host);
+            window.lcScanElement(host);
+        }""",
+        [href, src_path],
+    )
+
+
+@then("the injected embed shows an image, not an iframe")
+def step_embed_forced_image(context):
+    img = context.page.locator("#lc-embed-bdd img")
+    expect(img).to_be_visible(timeout=10_000)
+    assert context.page.locator("#lc-embed-bdd iframe").count() == 0, \
+        "the URL-API image was iframed"
+

@@ -6,6 +6,14 @@ Every page on this site is a plain text file written in Markdown[^md] — the li
 
 There's one lightcodepedia twist: any `[^footnote]` reference becomes a hover/tap popover[^pop]. Try hovering the blue numbers above.
 
+**Where definitions live:** anywhere on the page — the natural home is
+**collected at the end of the file**, even when the references sit inside
+block fences or embedded fragments. The page settles everything into ONE
+list with a single, reading-order numbering (no restarting at 1 per block),
+rendered where the definitions were authored, with no injected title — add
+your own heading if you want one. The same concept slug defined twice
+collapses into one entry (first definition wins).
+
 ## ✏️ Try it live — edit and see
 
 Read the result on the **left**, type the markdown on the **right** — instantly, as you type. The rendered page is what you are making, so it takes the reading position; the source sits beside it.

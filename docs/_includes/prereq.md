@@ -56,6 +56,26 @@ null]</script>
   function scores() {
     try { return JSON.parse(localStorage.getItem("lc_scores") || "{}"); } catch (e) { return {}; }
   }
+  /* Scores are sacred: the key names the CONTENT, not the vehicle. Inside a
+     runner render (data-lc-src contract) a relative link means "my sibling
+     file in the rendered repo" and must look up the gh: score bucket that
+     page actually earns into — never /run. Site pages keep pathname keys. */
+  function scoreKey(el, href) {
+    var host = el.closest && el.closest("[data-lc-src-repo]");
+    if (host && !/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) {
+      var path = host.getAttribute("data-lc-src-path") || "";
+      var parts = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1) : [];
+      href.split("#")[0].split("?")[0].split("/").forEach(function (seg) {
+        if (!seg || seg === ".") return;
+        if (seg === "..") parts.pop(); else parts.push(seg);
+      });
+      return ("gh:" + host.getAttribute("data-lc-src-repo") + "/" + parts.join("/"))
+        .replace(/\/index\.md$/i, "").replace(/\.md$/i, "");
+    }
+    /* healed links (/run#src=gh:…) and site links share score.md's canon */
+    if (window.lcPageScores) return window.lcPageScores.norm(href);
+    return norm(href);
+  }
   function met(s, passPct) {
     if (!s || !s.total) return false;
     if (passPct) return (s.won / s.total) * 100 >= passPct;
@@ -82,7 +102,7 @@ null]</script>
     if (!links.length) { el.style.display = "none"; return; }
     var sc = scores(), missing = [];
     var items = links.map(function (l) {
-      var ok = met(sc[norm(l.href)], passPct);
+      var ok = met(sc[scoreKey(el, l.href)], passPct);
       if (!ok) missing.push(l);
       return "<li class='" + (ok ? "ok" : "todo") + "'>" + (ok ? "✅ " + esc(l.title)
         : "➜ <a href='" + esc(l.href) + "'>" + esc(l.title) + "</a>") + "</li>";
