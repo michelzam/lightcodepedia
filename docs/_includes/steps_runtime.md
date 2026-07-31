@@ -784,17 +784,36 @@ class Bar(Object):
                   {"n": "headers", "t": "str", "list": True},
                   {"n": "rows", "t": "ref", "list": True}],
            assoc=[{"n": "source", "target": "Dataset"}],
-           methods=["header"])
+           methods=["header", "select"])
 class Datagrid(Block):
     @property
     def source(self):
         return Dataset(self._attr("data-bind") or "")
 
+    def _api(self):
+        # AG-backed grids register their api under their id — the honest
+        # source inside a synchronous step run, where the DOM's rows only
+        # repaint after the run ends.
+        md = getattr(js.window, "lcMasterDetail", None)
+        if md is None:
+            return None
+        try:
+            return getattr(md._apis, self.id, None)
+        except Exception:
+            return None
+
     @property
     def row_count(self):
-        # two renderers back a datagrid: the custom HTML table (.lc-dg-table →
-        # tbody tr, used by source-bound grids) and AG Grid (.ag-row in the body
-        # viewport, used by code-block grids). Count whichever this grid uses.
+        # three renderers back a datagrid: the AG api (code-block grids —
+        # its row model updates synchronously, the painted rows do not),
+        # the custom HTML table (source-bound grids), and painted AG rows
+        # as the last resort.
+        api = self._api()
+        if api is not None:
+            try:
+                return int(api.getDisplayedRowCount())
+            except Exception:
+                pass
         n = len(self._qq("tbody tr"))
         if n:
             return n
@@ -823,6 +842,26 @@ class Datagrid(Block):
             if th.text.rstrip(" ↑↓") == name:
                 return th
         return Block(None)
+
+    def select(self, n=1):
+        """Select row n (1-based) — what a reader's click does: master-bound
+        forms and detail grids receive the row, inside the same step."""
+        api = self._api()
+        if api is not None:
+            node = api.getDisplayedRowAtIndex(n - 1)
+            if node is not None:
+                node.setSelected(True, True)
+                # AG batches its selection event to a later tick — after a
+                # synchronous step run has already ended. Publish the row
+                # now; the batched event re-publishes the same row, harmless.
+                md = getattr(js.window, "lcMasterDetail", None)
+                if md is not None:
+                    md.publish(self.id, node.data)
+                return self
+        rows = self._qq("tbody tr") or self._qq(".ag-row")
+        if rows and 1 <= n <= len(rows):
+            rows[n - 1]._el.click()
+        return self
 
 
 @component(icon="📈",
@@ -1473,12 +1512,68 @@ class Vitals(Block):
         return int(self._attr("data-dom") or 0)
 
 
-@component(icon="✍️", attrs=[{"n": "rows", "t": "int", "data": True}])
+@component(icon="✍️", attrs=[{"n": "rows", "t": "int", "data": True},
+                             {"n": "rendered", "t": "str"},
+                             {"n": "titles", "t": "list"},
+                             {"n": "sections", "t": "list"},
+                             {"n": "bolds", "t": "list"},
+                             {"n": "italics", "t": "list"},
+                             {"n": "bullets", "t": "list"},
+                             {"n": "numbered", "t": "list"},
+                             {"n": "links", "t": "list"},
+                             {"n": "images", "t": "int"}])
 class Mdpad(Block):
+    # The preview half IS the document being made — every property reads it,
+    # so a rubric feature can grade what the learner typed without any js.
+    def _preview_texts(self, css):
+        o = self._el.querySelector(".lc-mdpad-out") if self._el is not None else None
+        if o is None:
+            return []
+        nl = o.querySelectorAll(css)
+        return [str(nl.item(i).textContent or "").strip()
+                for i in range(int(nl.length))]
+
     @property
     def rendered(self):
         o = self._el.querySelector(".lc-mdpad-out") if self._el is not None else None
         return str(o.textContent or "").strip() if o is not None else ""
+
+    @property
+    def titles(self):
+        """The # lines — a page opens with exactly one."""
+        return self._preview_texts("h1")
+
+    @property
+    def sections(self):
+        """The ## lines — the document's real structure."""
+        return self._preview_texts("h2")
+
+    @property
+    def bolds(self):
+        return self._preview_texts("strong, b")
+
+    @property
+    def italics(self):
+        return self._preview_texts("em, i")
+
+    @property
+    def bullets(self):
+        """Unordered list items — the • kind."""
+        return self._preview_texts("ul li")
+
+    @property
+    def numbered(self):
+        """Ordered list items — the 1. 2. 3. kind, where rank matters."""
+        return self._preview_texts("ol li")
+
+    @property
+    def links(self):
+        return self._preview_texts("a")
+
+    @property
+    def images(self):
+        o = self._el.querySelector(".lc-mdpad-out") if self._el is not None else None
+        return int(o.querySelectorAll("img").length) if o is not None else 0
 
 
 @component(icon="🏷️", attrs=[{"n": "value", "t": "str"}])
@@ -1683,6 +1778,20 @@ class Page(Object):
 
     def features(self):
         return Feature._all(".lc-feature")
+
+
+def this_year():
+    """The year on the reader's own clock — so a story can ask for a date
+    from the future without any js in the page. 0 when the clock is
+    unreadable, which no honest year ever is."""
+    try:
+        s = str(js.window.Date())
+    except Exception:
+        return 0
+    for w in s.replace(",", " ").split():
+        if len(w) == 4 and w.isdigit():
+            return int(w)
+    return 0
 
 
 # ════════════════════════ inspector widget bridge ════════════════════════════

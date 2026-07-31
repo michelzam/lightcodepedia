@@ -354,7 +354,18 @@ Registers with window.lcScanElement so the editor preview also renders cards.
           icon.className = "lc-feature-step-icon fail"; icon.textContent = "✗";
           var errDiv = document.createElement("div");
           errDiv.className = "lc-feature-step-err";
-          errDiv.textContent = (r.error || "failed").replace(/^.*Error:\s*/, "");
+          /* Two audiences, two failures (same rule as the legacy runner
+             below): an AssertionError is the page talking to the LEARNER —
+             show its message alone. Anything else is the ENGINE falling
+             short of the page — a site serving an older runtime than the
+             content expects. Never hand a learner that traceback. */
+          var rawErr = (r.error || "failed").trim();
+          if (rawErr.indexOf("AssertionError") >= 0) {
+            errDiv.textContent = rawErr.replace(/^.*AssertionError:?\s*/, "") || "assertion failed";
+          } else {
+            errDiv.textContent = "⚙️ Not you — this page speaks a newer engine than this site is running. " +
+              "After the next publish, reload and run again. (" + rawErr + ")";
+          }
           s.querySelector(".lc-feature-step-row").insertAdjacentElement("afterend", errDiv);
         }
       });
@@ -417,7 +428,21 @@ Registers with window.lcScanElement so the editor preview also renders cards.
             timeEl.textContent = (Date.now() - t0) + "ms";
             var errDiv = document.createElement("div");
             errDiv.className = "lc-feature-step-err";
-            errDiv.textContent = (e.message || String(e)).replace(/^.*Error:\s*/, "");
+            /* Two audiences, two failures. An AssertionError is the page
+               talking to the LEARNER — show its message, nothing else.
+               Anything else (AttributeError, NameError…) is the ENGINE
+               falling short of the page — usually a site serving an older
+               runtime than the content expects. A learner must never face
+               that as a traceback. */
+            var raw = (e.message || String(e)).trim();
+            var lines = raw.split("\n").filter(function(l){ return l.trim(); });
+            var last = lines.length ? lines[lines.length - 1] : raw;
+            if (last.indexOf("AssertionError") >= 0) {
+              errDiv.textContent = last.replace(/^.*AssertionError:?\s*/, "") || "assertion failed";
+            } else {
+              errDiv.textContent = "⚙️ Not you — this page speaks a newer engine than this site is running. " +
+                "After the next publish, reload and run again. (" + last + ")";
+            }
             s.querySelector(".lc-feature-step-row").insertAdjacentElement("afterend", errDiv);
           }
         });

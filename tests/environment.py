@@ -42,6 +42,94 @@ def _stub_marked(page):
     )
 
 
+# LOCAL HARNESS ONLY: datagrids and forms load AG Grid from
+# https://cdn.jsdelivr.net/npm/ag-grid-community@31/… (one script, two
+# stylesheets). Same sandbox story as marked. When AG_GRID_DIR points at an
+# unpacked copy of the npm package, fulfil those three from disk.
+AG_GRID_DIR = os.environ.get("AG_GRID_DIR") or None
+if AG_GRID_DIR and not os.path.isfile(
+        os.path.join(AG_GRID_DIR, "dist", "ag-grid-community.min.js")):
+    AG_GRID_DIR = None
+
+
+def _stub_ag_grid(page):
+    if AG_GRID_DIR is None:
+        return
+
+    def serve(rel, ctype):
+        with open(os.path.join(AG_GRID_DIR, rel), "rb") as f:
+            body = f.read()
+        return lambda route: route.fulfill(
+            status=200, content_type=ctype, body=body)
+
+    page.route(
+        "https://cdn.jsdelivr.net/npm/ag-grid-community@*/dist/ag-grid-community.min.js",
+        serve(os.path.join("dist", "ag-grid-community.min.js"),
+              "application/javascript; charset=utf-8"),
+    )
+    page.route(
+        "https://cdn.jsdelivr.net/npm/ag-grid-community@*/styles/ag-grid.css",
+        serve(os.path.join("styles", "ag-grid.css"), "text/css; charset=utf-8"),
+    )
+    page.route(
+        "https://cdn.jsdelivr.net/npm/ag-grid-community@*/styles/ag-theme-alpine.css",
+        serve(os.path.join("styles", "ag-theme-alpine.css"),
+              "text/css; charset=utf-8"),
+    )
+
+
+# LOCAL HARNESS ONLY: YAML-format data blocks parse through js-yaml, also
+# from jsdelivr. When JS_YAML points at a local js-yaml.min.js, serve it.
+JS_YAML = os.environ.get("JS_YAML") or None
+_JS_YAML_BODY = None
+if JS_YAML and os.path.isfile(JS_YAML):
+    with open(JS_YAML, "rb") as _f:
+        _JS_YAML_BODY = _f.read()
+
+
+def _stub_js_yaml(page):
+    if _JS_YAML_BODY is None:
+        return
+    page.route(
+        "https://cdn.jsdelivr.net/npm/js-yaml@*/dist/js-yaml.min.js",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/javascript; charset=utf-8",
+            body=_JS_YAML_BODY,
+        ),
+    )
+
+
+# LOCAL HARNESS ONLY: the .feature step runner imports MicroPython from
+# https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@…
+# (an ES module that then fetches its sibling .wasm). Same sandbox story as
+# marked: blocked here, reachable in CI. When MPY_DIR points at an unpacked
+# copy of that npm package, fulfil both requests from disk. No effect unset.
+MPY_DIR = os.environ.get("MPY_DIR") or None
+if MPY_DIR and not os.path.isfile(os.path.join(MPY_DIR, "micropython.mjs")):
+    MPY_DIR = None
+
+
+def _stub_micropython(page):
+    if MPY_DIR is None:
+        return
+
+    def serve(name, ctype):
+        with open(os.path.join(MPY_DIR, name), "rb") as f:
+            body = f.read()
+        return lambda route: route.fulfill(
+            status=200, content_type=ctype, body=body)
+
+    page.route(
+        "https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@*/micropython.mjs",
+        serve("micropython.mjs", "application/javascript; charset=utf-8"),
+    )
+    page.route(
+        "https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@*/micropython.wasm",
+        serve("micropython.wasm", "application/wasm"),
+    )
+
+
 _pw = None
 _browser = None
 
@@ -93,6 +181,9 @@ def before_scenario(context, scenario):
     else:
         context.page = _browser.new_page(viewport={"width": 1280, "height": 800})
     _stub_marked(context.page)  # LOCAL HARNESS ONLY (no-op when MARKED_JS unset)
+    _stub_micropython(context.page)  # LOCAL HARNESS ONLY (no-op when MPY_DIR unset)
+    _stub_ag_grid(context.page)  # LOCAL HARNESS ONLY (no-op when AG_GRID_DIR unset)
+    _stub_js_yaml(context.page)  # LOCAL HARNESS ONLY (no-op when JS_YAML unset)
     context.page.set_default_timeout(15_000)
     context.lc_console_errors = 0
     context.page.on(

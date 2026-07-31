@@ -152,6 +152,23 @@ Feature: A data block becomes an interactive grid
     :::python
     assert len(self.grid.headers) >= 3, self.grid.headers
     :::
+
+  Scenario: Selecting a master row is a verb, and the detail follows
+    Given the cities grid and its dogs detail below
+    :::python
+    self.cities = self.page.md_cities
+    self.dogs = self.page.md_dogs
+    assert self.dogs.row_count == 9, self.dogs.row_count
+    :::
+    When row one is selected — Tokyo
+    :::python
+    self.cities.select(1)
+    :::
+    Then only Tokyo's two dogs remain in the detail
+    :::python
+    n = self.dogs.row_count
+    assert n == 2, f"detail shows {n} row(s) after select"
+    :::
 ```
 {: .feature tags="data" status="passing"}
 
@@ -186,6 +203,10 @@ Feature: A data block becomes an interactive grid
 {: .datagrid #md_dogs format="json" master="md_cities" filter="city=city" height="240" }
 
 Deselect a city row (click again) and the full dog list returns.
+
+In a `.feature`, that same click is a **verb**: `self.page.md_cities.select(1)`
+selects row one, and every master-bound form and detail grid receives it —
+the diagram shows `select()` on the grid for exactly this reason.
 
 **Filter syntax:** `filter="<local>=<master>"` — `filter="city=city"` means "show rows where *this* grid's `city` equals the *selected* row's `city`." Foreign key pattern: `filter="city_id=id"`.
 

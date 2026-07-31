@@ -47,7 +47,7 @@ def greet(name):
     print(f"Hello, {name}!")
 ```
 ````
-{: .mdpad rows="16" }
+{: .mdpad #playground rows="16" }
 
 Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The preview updates on every keystroke — no server, just JavaScript[^marked] in the browser.
 
@@ -61,6 +61,28 @@ Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The 
 
 **About `save="true"`:** the button appears only when a save could actually work — you are connected, the page has a source file, and that source is not read-only. Otherwise it is disabled and says which of the three is missing, rather than failing after the click. It writes through the same path the x-ray **Keep** uses, so a block is committed one way, not two.
 
+### 📏 Ask the pad questions
+
+Give the pad an `#id` and a `.feature` on the same page can **grade what the
+learner typed** — the preview is the document being made, and these read it:
+
+| Property | What it answers |
+|---|---|
+| `rendered` | all the preview's text, one string |
+| `titles` | the `#` lines (a page opens with exactly one) |
+| `sections` | the `##` lines — the real structure |
+| `bolds` | every **bold** phrase |
+| `italics` | every *italic* phrase |
+| `bullets` | every bulleted (unordered) list item |
+| `numbered` | every numbered (ordered) list item — where rank matters |
+| `links` | every link's text |
+| `images` | how many images made it in |
+
+Plus `this_year()` — the year on the reader's own clock, so a rubric can
+demand a date *from the future* without any code in the page. Together they
+turn acceptance criteria into a self-grading rubric: seed the pad red,
+let the learner type it green.
+
 ```gherkin
 Feature: A markdown block becomes a live editor and preview
   As a lowcoder
@@ -70,12 +92,30 @@ Feature: A markdown block becomes a live editor and preview
   Scenario: The block upgrades into a live preview pad
     Given the live editor above
     :::python
-    self.pad = Object._all(".lc-mdpad")[0]
+    self.pad = self.page.playground
     :::
     When the page has upgraded it
     Then it is a visible editor and preview
     :::python
     assert self.pad.visible
+    :::
+
+  Scenario: The pad answers questions about the document being made
+    Given the same live editor
+    :::python
+    self.pad = self.page.playground
+    :::
+    When a rubric reads its preview
+    Then structure, emphasis, lists and links are all countable
+    :::python
+    assert "Hello, Markdown!" in self.pad.sections, self.pad.sections
+    assert any("Bold" in b for b in self.pad.bolds), self.pad.bolds
+    assert any("italic" in i for i in self.pad.italics), self.pad.italics
+    assert len(self.pad.bullets) >= 3, len(self.pad.bullets)
+    assert len(self.pad.numbered) >= 3, len(self.pad.numbered)
+    assert len(self.pad.links) >= 1, self.pad.links
+    assert self.pad.images == 0, self.pad.images
+    assert this_year() >= 2026, this_year()
     :::
 ```
 {: .feature tags="code" status="passing" }
