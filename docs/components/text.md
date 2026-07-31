@@ -69,6 +69,7 @@ learner typed** — the preview is the document being made, and these read it:
 | Property | What it answers |
 |---|---|
 | `rendered` | all the preview's text, one string |
+| `source` | what the learner actually typed — for criteria about *how* the markdown is written |
 | `titles` | the `#` lines (a page opens with exactly one) |
 | `sections` | the `##` lines — the real structure |
 | `bolds` | every **bold** phrase |
@@ -113,6 +114,7 @@ Feature: A markdown block becomes a live editor and preview
     assert any("italic" in i for i in self.pad.italics), self.pad.italics
     assert len(self.pad.bullets) >= 3, len(self.pad.bullets)
     assert len(self.pad.numbered) >= 3, len(self.pad.numbered)
+    assert self.pad.source.count("1. Step") >= 3, "the demo numbers lazily - all 1."
     assert len(self.pad.links) >= 1, self.pad.links
     assert self.pad.images == 0, self.pad.images
     assert this_year() >= 2026, this_year()

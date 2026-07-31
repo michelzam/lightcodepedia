@@ -23,7 +23,8 @@ Feature: The résumé rubric — acceptance criteria grade what the learner type
           :::python
           self.cv = self.page.cv
           :::
-          Then all ten criteria hold
+          When I check it
+          Then all eleven criteria hold
           :::python
           assert len(self.cv.titles) == 1, self.cv.titles
           assert len(self.cv.sections) >= 3, self.cv.sections
@@ -31,6 +32,8 @@ Feature: The résumé rubric — acceptance criteria grade what the learner type
           assert len(self.cv.italics) >= 1, self.cv.italics
           assert len(self.cv.bullets) >= 4, self.cv.bullets
           assert len(self.cv.numbered) >= 2, self.cv.numbered
+          heads = [l.strip().split(".", 1)[0] for l in self.cv.source.split("\n")]
+          assert "2" not in heads, "lazy-number every rank as 1."
           words = self.cv.rendered.replace(",", " ").replace(".", " ").split()
           years = [int(w) for w in words if len(w) == 4 and w.isdigit()]
           assert years and max(years) > this_year(), years
@@ -65,7 +68,7 @@ Feature: The résumé rubric — acceptance criteria grade what the learner type
       ## Preferred pets
 
       1. Dogs, obviously
-      2. Cats, when they allow it
+      1. Cats, when they allow it
 
       ## Reach me
 

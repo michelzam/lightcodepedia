@@ -1514,6 +1514,7 @@ class Vitals(Block):
 
 @component(icon="✍️", attrs=[{"n": "rows", "t": "int", "data": True},
                              {"n": "rendered", "t": "str"},
+                             {"n": "source", "t": "str"},
                              {"n": "titles", "t": "list"},
                              {"n": "sections", "t": "list"},
                              {"n": "bolds", "t": "list"},
@@ -1537,6 +1538,13 @@ class Mdpad(Block):
     def rendered(self):
         o = self._el.querySelector(".lc-mdpad-out") if self._el is not None else None
         return str(o.textContent or "").strip() if o is not None else ""
+
+    @property
+    def source(self):
+        """What the learner actually typed — for criteria about HOW the
+        markdown is written, not just what it renders to."""
+        ta = self._el.querySelector(".lc-mdpad-in") if self._el is not None else None
+        return str(ta.value) if ta is not None else ""
 
     @property
     def titles(self):

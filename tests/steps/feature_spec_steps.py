@@ -18,6 +18,11 @@ def step_wait_count(context, n, css):
 
 @when("I run the page's embedded features")
 def step_run_features(context):
+    # cards upgrade after the render settles — on a cold load the fence is
+    # still plain text for a beat, and counting buttons then is a race
+    context.page.locator(".lc-feature").first.wait_for(
+        state="attached", timeout=30_000
+    )
     # Hidden features (visible=false) render display:none. Un-hide so their
     # ▶ Run buttons are interactable, then click each one.
     context.page.evaluate(
@@ -25,6 +30,7 @@ def step_run_features(context):
         ".forEach(function(c){ c.classList.remove('lc-feature-hidden'); });"
     )
     btns = context.page.locator(".lc-feature .lc-feature-run")
+    btns.first.wait_for(state="visible", timeout=20_000)
     n = btns.count()
     assert n > 0, "no runnable embedded features found on page"
     for i in range(n):
