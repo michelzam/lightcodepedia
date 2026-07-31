@@ -640,10 +640,32 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       window.lcMode.register('present', { enter: enter, exit: exit, isActive: window.lcSlides.isActive });
       window.lcMode.register('reel',    { enter: enterReel, exit: exitReel, isActive: window.lcReel.isActive });
       window.lcMode.register('xray', {
-        enter: function () { if (window.lcxTouchOn) window.lcxTouchOn(); },
-        exit:  function () { if (window.lcxTouchOff) window.lcxTouchOff(); },
+        /* ?xray=1 in the URL, like reel's ?reel=1: the mode SURVIVES a
+           refresh — without it, refreshing to see a fresh listing dropped
+           the author back to read and the _files vanished (2026-07-31) */
+        enter: function () {
+          if (window.lcxTouchOn) window.lcxTouchOn();
+          try { var u = new URL(location.href); u.searchParams.set('xray', '1');
+                history.replaceState(null, '', u.toString()); } catch (e) {}
+        },
+        exit:  function () {
+          if (window.lcxTouchOff) window.lcxTouchOff();
+          try { var u = new URL(location.href); u.searchParams.delete('xray');
+                history.replaceState(null, '', u.toString().replace(/\?$/, '')); } catch (e) {}
+        },
         isActive: function () { return !!(window.lcxIsActive && window.lcxIsActive()); }
       });
+      /* restore once the x-ray engine actually exists — it initialises in a
+         LATER include's own boot, so entering too early is a silent no-op;
+         a short poll makes the restore ordering-proof */
+      try {
+        if (new URL(location.href).searchParams.get('xray') === '1') {
+          (function _bootXray(n) {
+            if (window.lcxTouchOn) { window.lcMode.set('xray'); return; }
+            if (n > 0) setTimeout(function () { _bootXray(n - 1); }, 100);
+          })(30);
+        }
+      } catch (e) {}
     }
 
     partition();
@@ -744,8 +766,11 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
        just rebuilds the deck around the new content. */
     window.lcSlidesRebuild = function (root) {
       if (!root || !main.contains(root)) return;
-      if (window.lcMode && window.lcMode.current && window.lcMode.current() !== 'read')
-        window.lcMode.set('read');          // never rebuild under an active mode
+      var _m = window.lcMode && window.lcMode.current && window.lcMode.current();
+      /* never rebuild under an active DECK mode — but X-ray is not one:
+         it inspects whatever renders, and the workbench's 🔬 Open verb
+         hash-navigates counting on the mode to survive (2026-07-31) */
+      if (_m && _m !== 'read' && _m !== 'xray') window.lcMode.set('read');
       slides = []; current = 0;
       partition(root);                       // resets revealed[] itself
       /* tag the ancestor chain root→main for the mode CSS above — and strip

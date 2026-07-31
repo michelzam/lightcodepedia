@@ -105,6 +105,10 @@ loses everything. A component's editable source comes from window.lcSourceOf
     if (!el || !el.closest) return null;
     /* read-only render (the Library / vault): no gear, no editing at all */
     if (el.closest(".lc-run[data-lc-readonly]")) return null;
+    /* DERIVED content (folder cards, unlocks…) is generated from other
+       files — there is nothing here to edit. The gear offers the SLOT
+       (the .folder line in the page source), never its derivatives. */
+    if (el.closest("[data-lc-derived]")) return null;
     var comp = el.closest("[data-lc-id]");
     if (comp && MAIN.contains(comp)) return comp;
     var blk = el.closest(BLOCK_SEL);

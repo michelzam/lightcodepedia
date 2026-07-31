@@ -29,6 +29,18 @@ Auto-included by docs/_layouts/default.html.
 .lc-card-tag[data-tag] { cursor: pointer; }
 .lc-card-tag[data-tag]:hover { background: #bae6fd; }
 .lc-card-date { font-size: 0.72em; color: #6b7280; margin-top: 0.3em; }
+/* ⚙️ workbench affordances — X-ray mode only */
+.lc-card:has(> .lc-card-workrow) { display: flex; flex-direction: column; }
+.lc-card-workrow { display: flex; align-items: center; justify-content: space-between; gap: 0.5em; margin-top: auto; padding-top: 0.5em; border-top: 1px dashed #e5e7eb; }
+.lc-card-fname { font: 500 0.72em ui-monospace, SFMono-Regular, Menlo, monospace; color: #6b7280; background: #f3f4f6; border-radius: 6px; padding: 0.15em 0.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-card-gear { border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 0.1em 0.4em; cursor: pointer; font-size: 0.85em; flex: none; }
+.lc-card-gear:hover { border-color: #0066cc; background: #eef4ff; }
+.lc-folder-menu { position: absolute; bottom: 34px; right: 6px; z-index: 1000; background: #fff; border: 1px solid #d1d5db; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; min-width: 150px; overflow: hidden; }
+.lc-folder-menu button { border: 0; background: none; text-align: left; padding: 0.55em 0.9em; cursor: pointer; font-size: 0.9em; }
+.lc-folder-menu button:hover { background: #f3f4f6; }
+.lc-folder-move { display: flex; gap: 0.35em; align-items: center; padding: 0.5em; }
+.lc-folder-move input { flex: 1; min-width: 180px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.35em 0.5em; font: 0.85em ui-monospace, SFMono-Regular, Menlo, monospace; }
+.lc-folder-move button { border: 1px solid #d1d5db; border-radius: 6px; background: #fff; padding: 0.3em 0.6em; cursor: pointer; font-size: 0.85em; }
 /* ── tag filter bar (clickable chips above the grid) ── */
 .lc-card-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4em; margin: 0 0 0.9em; }
 .lc-card-filter-label { font-size: 0.75em; font-weight: 600; color: #6b7280; margin-right: 0.1em; }
@@ -143,7 +155,7 @@ Auto-included by docs/_layouts/default.html.
     var nonpassing = feats.filter(function(f) { return ((f && f.status) || "none") !== "passing"; }).length;
     var tagsAttr = tagList.length ? ' data-tags="' + escapeHtml(tagList.join(" ")) + '"' : '';
     var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
-    var card = '<div class="lc-card" data-url="' + item.url + '"' + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + (item.date ? ' data-date="' + escapeHtml(item.date) + '"' : '') + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+    var card = '<div class="lc-card" data-url="' + item.url + '"' + (item.path ? (item.isSubdir ? ' data-dirpath="' : ' data-path="') + escapeHtml(item.path) + '"' : '') + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + (item.date ? ' data-date="' + escapeHtml(item.date) + '"' : '') + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
     if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
     var dateLbl = fmtDate(item.date);
     if (dateLbl) card += '<div class="lc-card-date">📅 ' + escapeHtml(dateLbl) + '</div>';
@@ -209,6 +221,7 @@ Auto-included by docs/_layouts/default.html.
       : "repeat(" + cols + ", 1fr)";
     var wrap = document.createElement("div");
     wrap.className = "lc-cards";
+    wrap.setAttribute("data-lc-derived", "1");   /* generated, not authored: no text-edit gears */
     wrap.style.gridTemplateColumns = colStyle;
     wrap.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading…</div>";
     el.parentNode.replaceChild(wrap, el);
@@ -264,7 +277,9 @@ Auto-included by docs/_layouts/default.html.
       return fetchText("/" + slug + "/index.md").then(function (text) {
         if (!text) return fallback;
         var meta = extractPageMeta(text);
-        return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug, isSubdir: true, date: meta.date };
+        /* a folder card IS its index.md — it wears that page's quiz census
+           and score chip like any page card (Michel, 2026-07-31) */
+        return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug, isSubdir: true, date: meta.date, quizzes: countQuizzes(text) };
       }).catch(function () { return fallback; });
     }
     function buildFromManifest(all) {
@@ -274,9 +289,15 @@ Auto-included by docs/_layouts/default.html.
       all.forEach(function (rp) {
         if (rp.indexOf(prefix) !== 0) return;
         var rest = rp.slice(prefix.length);
-        if (rest.indexOf("/") >= 0) { subSet[rest.split("/")[0]] = 1; return; }   // nested → a subdir
+        if (rest.indexOf("/") >= 0) {
+          var _seg = rest.split("/")[0];
+          /* underscore folders (_trash, _archive…) are private like
+             underscore files — readers never see them, the workbench does */
+          if (showPrivate || _lastXray || _seg.charAt(0) !== "_") subSet[_seg] = 1;
+          return;
+        }
         if (!/\.md$/i.test(rest) || rest === "index.md") return;
-        if (!showPrivate && rest.charAt(0) === "_") return;
+        if (!showPrivate && !_lastXray && rest.charAt(0) === "_") return;
         pagePaths.push(rp);
       });
       pagePaths.sort();
@@ -298,10 +319,12 @@ Auto-included by docs/_layouts/default.html.
         if (!Array.isArray(files)) throw new Error("Not a directory: " + escapeHtml(path));
         var pages = files.filter(function(f) {
           if (f.type !== "file" || !/\.md$/i.test(f.name) || f.name === "index.md") return false;
-          if (!showPrivate && f.name.startsWith("_")) return false;
+          if (!showPrivate && !_lastXray && f.name.startsWith("_")) return false;
           return true;
         }).sort(function(a, b) { return a.name.localeCompare(b.name); });
-        var subdirs = files.filter(function(f) { return f.type === "dir"; })
+        var subdirs = files.filter(function(f) {
+            return f.type === "dir" && (showPrivate || _lastXray || !f.name.startsWith("_"));
+          })
           .sort(function(a, b) { return a.name.localeCompare(b.name); });
 
         // fetch index.md for each subdir; always emit a card (fallback to dir name on any error)
@@ -309,7 +332,7 @@ Auto-included by docs/_layouts/default.html.
           var slug   = d.path.replace(/^docs\//, "");
           var pretty = d.name.replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
           var subUrl = runnerMode ? runUrl(d.path + "/index.md") : "/" + slug;
-          var fallback = { title: "📁 " + pretty, snippet: "", url: subUrl, isSubdir: true };
+          var fallback = { title: "📁 " + pretty, snippet: "", url: subUrl, isSubdir: true, path: d.path };
           return apiFetch(d.url)
             .then(function(entries) {
               var idx = Array.isArray(entries) && entries.find(function(e) {
@@ -321,7 +344,7 @@ Auto-included by docs/_layouts/default.html.
                 .then(function(text) {
                   if (!text) return fallback;
                   var meta = extractPageMeta(text);
-                  return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: subUrl, isSubdir: true, date: meta.date };
+                  return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: subUrl, isSubdir: true, date: meta.date, path: d.path, quizzes: countQuizzes(text) };
                 })
                 .catch(function() { return fallback; });
             })
@@ -363,25 +386,205 @@ Auto-included by docs/_layouts/default.html.
     /* knob-cells first (node variables), then enumerate. Runner mode scans
        unrendered material: the manifest only knows site pages, so it goes
        straight to the API (author key raises private repos). */
-    (window.lcResolveKnob ? window.lcResolveKnob(_rawAttr) : Promise.resolve(_rawAttr))
-      .then(function (_resolved) {
-        if (!_resolved) {                 // an unset node variable, no default — gentle, never an error
-          wrap.innerHTML = "<div class='lc-card' style='color:#6b7280'>🌱 To be defined — set this node's variable (Settings → Secrets and variables → Variables), or give the knob a default: path=\"= get_var('NAME','fallback')\".</div>";
-          throw { _lcHandled: true };
+    /* ── two postures, one component (Michel, 2026-07-31) ─────────────
+       READ (default): the listing as always, minus every writing affordance.
+       X-RAY (the mode, and not editable=0): the shelf becomes a workbench —
+       ➕ New returns, EVERY file shows (underscore ones included), and each
+       file card grows a ⚙️ menu: rename / move to… / trash. Trash is a move
+       into _trash/ with a _deleted_<timestamp> suffix — recoverable. */
+    var _lastXray = null, _lastModeX = null, _bar = null, _menuEl = null;
+    function _xrayRW() {
+      return !!(window.lcMode && window.lcMode.current() === "xray") &&
+             !(window.lcFrame && window.lcFrame.editable === false);
+    }
+    /* pedagogical access is not ownership: a learner inspecting someone
+       else's material gets X-ray's LENS, never its tools. The workbench
+       (New, gears, private files) opens only on a repo the viewer can
+       PUSH to (Michel, 2026-07-31). */
+    var _permP = null;
+    function repoWritable() {
+      if (!_folderPat) return Promise.resolve(false);
+      if (!_permP) _permP = apiFetch("https://api.github.com/repos/" + scanRepo)
+        .then(function (d) { return !!(d && d.permissions && d.permissions.push); })
+        .catch(function () { return false; });
+      return _permP;
+    }
+    var _treeP = null;
+    function repoTree() {
+      /* ONE recursive tree call answers every subfolder's census — walking
+         directory by directory would cost a request per nesting level */
+      if (!_treeP) _treeP = apiFetch("https://api.github.com/repos/" + scanRepo + "/git/trees/HEAD?recursive=1")
+        .then(function (d) { return (d && d.tree) || []; })
+        .catch(function () { return []; });
+      return _treeP;
+    }
+    function enumerate() {
+      return runnerMode
+        ? apiListing()
+        : fetchText("/assets/pages_index.json")
+            .then(function (t) { return buildFromManifest(JSON.parse(t)); })
+            .catch(function () { return apiListing(); });   // no/invalid manifest → legacy API path
+    }
+    function refresh() {
+      _lastModeX = _xrayRW();
+      closeCardMenu();
+      if (_bar && _bar.parentNode) _bar.parentNode.removeChild(_bar);
+      _bar = null;
+      wrap.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading…</div>";
+      (_lastModeX ? repoWritable() : Promise.resolve(false)).then(function (w) {
+        _lastXray = _lastModeX && w;
+        enumerate().then(renderItems).catch(_renderFail);
+      });
+    }
+    function closeCardMenu() {
+      if (_menuEl && _menuEl.parentNode) _menuEl.parentNode.removeChild(_menuEl);
+      _menuEl = null;
+    }
+    /* git has no rename: a move is copy + delete, two commits, honest and
+       recoverable at every step (the copy lands before the original goes) */
+    function ghMoveQuiet(from, to, msg) {
+      var H = { Authorization: "Bearer " + _folderPat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+      var API = "https://api.github.com/repos/" + scanRepo + "/contents/";
+      return fetch(API + from, { headers: H, cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("read HTTP " + r.status); return r.json(); })
+        .then(function (f) {
+          return fetch(API + to, { method: "PUT", headers: Object.assign({ "Content-Type": "application/json" }, H),
+              body: JSON.stringify({ message: msg, content: (f.content || "").replace(/\n/g, "") }) })
+            .then(function (r) {
+              if (r.status !== 201 && r.status !== 200) {
+                if (r.status === 422) throw new Error("destination already exists");
+                throw new Error("write HTTP " + r.status);
+              }
+              return fetch(API + from, { method: "DELETE", headers: Object.assign({ "Content-Type": "application/json" }, H),
+                body: JSON.stringify({ message: msg, sha: f.sha }) });
+            })
+            .then(function (r) { if (!r.ok) throw new Error("delete HTTP " + r.status); });
+        });
+    }
+    function ghMove(from, to, msg) {
+      return ghMoveQuiet(from, to, msg)
+        .then(function () { _treeP = null; refresh(); })
+        .catch(function (e) { alert("Couldn't complete: " + e.message); });
+    }
+    /* a folder IS its files: moving one moves every blob beneath it,
+       sequentially — kind to rate limits, recoverable mid-way */
+    function ghMoveDir(fromDir, toDir, msg) {
+      return repoTree().then(function (tree) {
+        var files = tree.filter(function (t) { return t.type === "blob" && String(t.path).indexOf(fromDir + "/") === 0; });
+        if (!files.length) { alert("Empty folder — nothing to move."); return; }
+        var chain = Promise.resolve();
+        files.forEach(function (t) {
+          var rest = String(t.path).slice(fromDir.length + 1);
+          chain = chain.then(function () { return ghMoveQuiet(t.path, toDir + "/" + rest, msg); });
+        });
+        return chain
+          .then(function () { _treeP = null; refresh(); })
+          .catch(function (e) { alert("Couldn't complete (folder partly moved — refresh and retry): " + e.message); _treeP = null; refresh(); });
+      });
+    }
+    function slugName(raw) {
+      return raw.trim().toLowerCase().replace(/\.md$/i, "").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    }
+    function showMovePicker(m, p, dir, name, isDir) {
+      /* an input with a datalist: the repo's own folders autocomplete the
+         destination — type a few letters, pick, Move */
+      m.innerHTML = "<div class='lc-folder-move'>" +
+        "<input type='text' list='lc-move-dirs' placeholder='destination folder' value='" + escapeHtml(dir) + "'>" +
+        "<datalist id='lc-move-dirs'></datalist>" +
+        "<button type='button' data-go='1'>📦 Move</button>" +
+        "<button type='button' data-cancel='1'>✕</button></div>";
+      var inp = m.querySelector("input");
+      repoTree().then(function (tree) {
+        var dl = m.querySelector("datalist");
+        if (!dl) return;
+        tree.forEach(function (t) {
+          if (t.type !== "tree") return;
+          var tp = String(t.path);
+          if (isDir && (tp === p || tp.indexOf(p + "/") === 0)) return;   /* not into itself */
+          var o = document.createElement("option");
+          o.value = tp;
+          dl.appendChild(o);
+        });
+      });
+      function go() {
+        var dest = (inp.value || "").trim().replace(/^\/+|\/+$/g, "");
+        closeCardMenu();
+        if (dest === dir) return;
+        var to = (dest ? dest + "/" : "") + name;
+        var msg = "Move: " + p + " → " + to;
+        if (isDir) ghMoveDir(p, to, msg); else ghMove(p, to, msg);
+      }
+      m.addEventListener("click", function (e) {
+        if (e.target.getAttribute && e.target.getAttribute("data-go")) { e.stopPropagation(); go(); }
+        else if (e.target.getAttribute && e.target.getAttribute("data-cancel")) { e.stopPropagation(); closeCardMenu(); }
+      });
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
+      inp.focus();
+    }
+    function openCardMenu(card, anchor) {
+      closeCardMenu();
+      var isDir = card.hasAttribute("data-dirpath");
+      var p = card.getAttribute(isDir ? "data-dirpath" : "data-path");
+      var dir = p.indexOf("/") >= 0 ? p.split("/").slice(0, -1).join("/") : "";
+      var name = p.split("/").pop();
+      var m = document.createElement("div");
+      m.className = "lc-folder-menu";
+      m.innerHTML = "<button type='button' data-act='open'>🔬 Open</button>" +
+                    "<button type='button' data-act='rename'>✏️ Rename</button>" +
+                    "<button type='button' data-act='move'>📦 Move to…</button>" +
+                    "<button type='button' data-act='trash'>🗑 Trash</button>";
+      m.addEventListener("click", function (e) {
+        var act = e.target.getAttribute && e.target.getAttribute("data-act");
+        if (!act) return;
+        e.preventDefault(); e.stopPropagation();
+        if (act === "open") {
+          /* stay in the workbench: the target opens straight in X-ray
+             (?xray=1 rides the URL, same door that survives refresh) */
+          closeCardMenu();
+          var target = isDir ? p + "/index.md" : p;
+          location.href = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "?xray=1#src=gh:" + scanRepo + "/" + target;
+          return;
         }
-        var _rawPath = _resolved;
-        if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
-        path = _rawPath.replace(/^\/+|\/+$/g, "");
-        return runnerMode
-          ? apiListing()
-          : fetchText("/assets/pages_index.json")
-              .then(function (t) { return buildFromManifest(JSON.parse(t)); })
-              .catch(function () { return apiListing(); });   // no/invalid manifest → legacy API path
-      })
-      .then(function(items) {
+        if (act === "move") { showMovePicker(m, p, dir, name, isDir); return; }
+        closeCardMenu();
+        if (act === "rename") {
+          var nn = window.prompt("New name for " + name + ":", name.replace(/\.md$/i, ""));
+          if (!nn) return;
+          var slug = slugName(nn); if (!slug) return;
+          if (isDir) ghMoveDir(p, (dir ? dir + "/" : "") + slug, "Rename: " + name + " → " + slug);
+          else ghMove(p, (dir ? dir + "/" : "") + slug + ".md", "Rename: " + name + " → " + slug + ".md");
+        } else if (act === "trash") {
+          if (!window.confirm("Trash " + name + "? It moves to _trash/ (recoverable).")) return;
+          var ts = new Date().toISOString().replace(/[-:TZ]/g, "").slice(0, 14);
+          if (isDir) ghMoveDir(p, (dir ? dir + "/" : "") + "_trash/" + name + "_deleted_" + ts, "Trash: " + name + "/");
+          else ghMove(p, (dir ? dir + "/" : "") + "_trash/" + name.replace(/\.md$/i, "") + "_deleted_" + ts + ".md", "Trash: " + name);
+        }
+      });
+      card.appendChild(m);
+      _menuEl = m;
+    }
+    document.addEventListener("click", function (e) {
+      if (_menuEl && !_menuEl.contains(e.target)) closeCardMenu();
+    });
+    document.addEventListener("lc-mode-changed", function () {
+      /* the shelf re-lists when X-ray opens or closes — hidden files and
+         write affordances appear and retire with the mode */
+      if (document.body.contains(wrap) && _xrayRW() !== _lastModeX) refresh();
+    });
+    function renderItems(items) {
         if (!items || !items.length) {
-          var _where = (path === "." || path === "") ? "this folder yet — add a page with ➕ New" : escapeHtml(path);
-          wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages in " + _where + "</div>";
+          var _where = (path === "." || path === "") ? "this folder yet" : escapeHtml(path);
+          /* the hint matches the posture: read mode has no ➕ New to point at */
+          wrap.innerHTML = "<div style='padding:1em;color:#888'>No pages in " + _where + ".&nbsp;</div>";
+          if (_lastXray && runnerMode && _folderPat) {
+            var mk = document.createElement("button");
+            mk.type = "button"; mk.className = "lc-card-filter-chip";
+            mk.setAttribute("data-newpage", "1");
+            mk.style.cssText = "background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20";
+            mk.textContent = "➕ New";
+            mk.addEventListener("click", function () { newPagePrompt(mk); });
+            wrap.firstChild.appendChild(mk);
+          }
           return;
         }
         /* resolve internal links between items */
@@ -411,6 +614,62 @@ Auto-included by docs/_layouts/default.html.
            links now or every card 404s under /lightcodelab (data-url attrs
            stay canonical: filtering and ribbons key on them) */
         if (window.lcRebase) window.lcRebase(wrap);
+
+        /* X-ray workbench: each FILE card gets its ⚙️ (subfolders keep
+           their card clean — moving whole trees is not a card gesture) */
+        if (_lastXray && runnerMode && _folderPat) {
+          wrap.querySelectorAll(".lc-card[data-path]").forEach(function (c) {
+            /* an APPENDED workbench row — the card's own preview, tags,
+               feature dots and score chip stay exactly as in read mode;
+               X-ray only ADDS. The real filename sits before the gear so
+               rename/move/trash hold no surprises. */
+            var row = document.createElement("div");
+            row.className = "lc-card-workrow";
+            var fn = document.createElement("span");
+            fn.className = "lc-card-fname";
+            fn.textContent = (c.getAttribute("data-path") || "").split("/").pop();
+            fn.title = c.getAttribute("data-path") || "";
+            var g = document.createElement("button");
+            g.type = "button"; g.className = "lc-card-gear"; g.textContent = "⚙️";
+            g.title = "Rename · Move · Trash";
+            g.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); openCardMenu(c, g); });
+            row.appendChild(fn); row.appendChild(g);
+            c.appendChild(row);
+          });
+          /* subfolder census: how much lives below — public/total files,
+             sub-sub-folders included (an underscore anywhere on the path
+             means private). The author sees the weight of every branch. */
+          var _dirCards = wrap.querySelectorAll(".lc-card[data-dirpath]");
+          if (_dirCards.length) repoTree().then(function (tree) {
+            _dirCards.forEach(function (c) {
+              if (c.querySelector(".lc-card-workrow")) return;
+              var dp = c.getAttribute("data-dirpath") + "/";
+              var tot = 0, pub = 0;
+              tree.forEach(function (t) {
+                if (t.type !== "blob" || String(t.path).indexOf(dp) !== 0) return;
+                tot++;
+                var hidden = String(t.path).slice(dp.length).split("/").some(function (sg) { return sg.charAt(0) === "_"; });
+                if (!hidden) pub++;
+              });
+              var row = document.createElement("div");
+              row.className = "lc-card-workrow";
+              var fn = document.createElement("span");
+              fn.className = "lc-card-fname";
+              fn.textContent = dp.split("/").filter(Boolean).pop() + "/";
+              fn.title = c.getAttribute("data-dirpath");
+              var ct = document.createElement("span");
+              ct.className = "lc-card-fname lc-card-fcount";
+              ct.textContent = "📄 " + pub + "/" + tot;
+              ct.title = pub + " public of " + tot + " files, subfolders included";
+              var g = document.createElement("button");
+              g.type = "button"; g.className = "lc-card-gear"; g.textContent = "⚙️";
+              g.title = "Open · Rename · Move · Trash";
+              g.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); openCardMenu(c, g); });
+              row.appendChild(fn); row.appendChild(ct); row.appendChild(g);
+              c.appendChild(row);
+            });
+          });
+        }
 
         /* ── tag filter bar: clickable chips that show/hide cards by tag ── */
         var tagNames = Object.keys(allTags).sort();
@@ -461,17 +720,22 @@ Auto-included by docs/_layouts/default.html.
         /* ➕ New page — author new material without leaving the shelf. Runner
            mode only (it edits repo files), and only with a connected key.
            Creates <path>/<name>.md and opens it in the runner to edit+Save. */
-        if (runnerMode && _folderPat)
+        if (runnerMode && _folderPat && _lastXray)
           chips += "<button type='button' class='lc-card-filter-chip' data-newpage='1' style='margin-left:auto;background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20'>➕ New</button>";
         bar.innerHTML = chips;
         wrap.parentNode.insertBefore(bar, wrap);
+        _bar = bar;
         var npBtn = bar.querySelector("[data-newpage]");
-        if (npBtn) npBtn.addEventListener("click", function () {
+        if (npBtn) npBtn.addEventListener("click", function () { newPagePrompt(npBtn); });
+        function newPagePrompt(npBtn) {
           var raw = window.prompt("New page or folder?\n• a name → a page (module_03)\n• end with / → a folder (week4/)");
           if (!raw) return;
           raw = raw.trim();
           var isFolder = /\/\s*$/.test(raw);
-          var slug = raw.replace(/\/+$/, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+          /* ".md" is the default AND the only extension: typing it is fine
+             (stripped before slugifying — "notes.md" must not become
+             notes_md.md), omitting it is fine too */
+          var slug = raw.replace(/\/+$/, "").trim().toLowerCase().replace(/\.md$/i, "").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
           if (!slug) return;
           var rel = (path === "." || path === "") ? "" : path;
           var apiPath = (runBaseDir && (rel === "" || rel.charAt(0) !== "/")) ? (rel ? runBaseDir + "/" + rel : runBaseDir) : rel;
@@ -494,7 +758,7 @@ Auto-included by docs/_layouts/default.html.
               else r.json().then(function (d) { npBtn.disabled = false; npBtn.textContent = "➕ New"; alert("Couldn't create: " + (d.message || ("HTTP " + r.status))); });
             })
             .catch(function () { npBtn.disabled = false; npBtn.textContent = "➕ New"; alert("Couldn't reach GitHub — try again."); });
-        });
+        }
         var timesWrap = bar.querySelector(".lc-card-times");
         /* honest empty-state: if no card got a date (API unreachable), a time
            window must not silently hide everything — show all + say why */
@@ -666,13 +930,24 @@ Auto-included by docs/_layouts/default.html.
 
         setSort(sortMode === "recent" ? "recent" : "name");   // honor the author's default; viewer can switch
         applyFilters();
-      })
-      .catch(function(e) {
+    }
+    function _renderFail(e) {
         if (e && e._lcHandled) return;    // the gentle to-be-defined card is already up
         if (runnerMode && !_folderPat)
           wrap.innerHTML = "<div class='lc-card' style='color:#6b7280'>🔒 Connect your author key (Get started, top right) to browse this private material.</div>";
         else
           wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
+    }
+    (window.lcResolveKnob ? window.lcResolveKnob(_rawAttr) : Promise.resolve(_rawAttr))
+      .then(function (_resolved) {
+        if (!_resolved) {                 // an unset node variable, no default — gentle, never an error
+          wrap.innerHTML = "<div class='lc-card' style='color:#6b7280'>🌱 To be defined — set this node's variable (Settings → Secrets and variables → Variables), or give the knob a default: path=\"= get_var('NAME','fallback')\".</div>";
+          return;
+        }
+        var _rawPath = _resolved;
+        if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
+        path = _rawPath.replace(/^\/+|\/+$/g, "");
+        refresh();
       });
   }
 

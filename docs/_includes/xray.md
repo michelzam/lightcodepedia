@@ -443,7 +443,12 @@ Auto-included by docs/_layouts/default.html.
     // Let taps on the FAB, the popup, and the inline editor (dialog + gear)
     // through untouched — preventDefault here would block the editor's fields
     // from taking focus, and the FAB/gear from firing their own taps.
-    const isFAB = e => e.target.closest && e.target.closest('.lc-slides-fab, #lc-bl-popup, #lcx-edit, #lcx-gear');
+    /* interactive chrome the lens must NEVER swallow: the FAB, the mode
+       popup, the inline editor — and the folder workbench's own controls
+       (⚙️ gears, the card menu, ➕ New and the filter bar). A tap on a tool
+       is a command, not an inspection (tablet gear bug, 2026-07-31). */
+    const isFAB = e => e.target.closest && e.target.closest(
+      '.lc-slides-fab, #lc-bl-popup, #lcx-edit, #lcx-gear, .lc-card-gear, .lc-folder-menu, .lc-card-filter, .lc-card-filter-chip');
     function showTouch(e) {
       if (!_touchOn || isFAB(e)) return;   // let FAB / editor taps through so focus + click fire
       e.preventDefault();

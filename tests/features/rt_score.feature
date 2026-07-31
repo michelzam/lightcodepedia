@@ -41,3 +41,23 @@ Feature: RT scores key to the rendered page, not the runner
     Then the score store is empty
     When the runner page reloads
     Then the score store is empty
+
+  Scenario: Two right answers make a quiz multi-select by themselves
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Multi page
+
+      **Q:** Pick all that apply.
+
+      - [x] Alpha
+      - [x] Beta
+      - [ ] Gamma
+      {: .quiz }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    Then the quiz grades with a Check button
+    When I select "Alpha" and "Beta" and check
+    Then the trophy shows "1/1"

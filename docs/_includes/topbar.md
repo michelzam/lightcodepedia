@@ -510,10 +510,18 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
     var links = bar.querySelector(".lc-links");
     var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
     if (!links) return;
-    fetch("https://api.github.com/repos/" + repo + "/contents/menu.md",
-          { headers: pat ? { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw" }
-                         : { Accept: "application/vnd.github.v3.raw" }, cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw 0; return r.text(); })
+    /* the branch menu is _menu.md — underscore so .folder never lists it as
+       a card. Old benches may still ship menu.md: fall back, don't break. */
+    var _menuHdrs = pat ? { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw" }
+                        : { Accept: "application/vnd.github.v3.raw" };
+    fetch("https://api.github.com/repos/" + repo + "/contents/_menu.md",
+          { headers: _menuHdrs, cache: "no-store" })
+      .then(function (r) {
+        if (r.ok) return r.text();
+        return fetch("https://api.github.com/repos/" + repo + "/contents/menu.md",
+                     { headers: _menuHdrs, cache: "no-store" })
+          .then(function (r2) { if (!r2.ok) throw 0; return r2.text(); });
+      })
       .then(function (md) {
         if (md.indexOf("---") === 0) {          /* strip front matter */
           var e = md.indexOf("\n---", 3);

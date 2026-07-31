@@ -188,7 +188,7 @@ The runner above is graded. Edit it to print something else — the score badge 
 | `[x]` / `[ ]` | Marks correct / wrong answers inline — recommended |
 | `correct="N"` | Equivalent to `[x]` — 1-indexed position of the correct answer |
 | `correct="N,M,…"` | Multi-select correct answers (1-indexed, comma-separated) |
-| `multi="true"` | Enables multi-select mode: checkboxes + Check button |
+| `multi="true"` | Multi-select mode: checkboxes + Check button. **Automatic** whenever more than one option is marked `[x]` — the knob is only needed to force it with a single right answer |
 | nested `>` blockquote | Per-option explanation, shown after grading |
 | `id="…"` | Label in the 🏆 score popover; auto-generated if omitted |
 

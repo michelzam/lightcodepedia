@@ -21,6 +21,37 @@ Auto-generate a card grid from all `.md` files in a folder — no manual list to
 | `open` | | `runner`: scan a repo path *outside* `docs/` (unrendered material like `courses/`) via the API with your key — every card opens in the runner. |
 | `path` | the link href | Folder to scan. Accepts a knob-cell: `path="= get_var('COURSE_PATH', 'courses')"` resolves the node's variable (see [Cells](/components/cells)). |
 
+## Two postures — read and workbench
+
+- **Read** (default): the listing you see everywhere — underscore-prefixed
+  files (`_menu.md`, fragments, `_trash/`…) stay hidden, and there are no
+  writing affordances at all.
+- **Workbench** (🔬 **X-ray mode**, on a runner render, with a connected
+  key that can **push to this repo** — never under `editable=0`): the shelf
+  turns writable. Pedagogical access is not ownership: X-raying someone
+  else's material gives the lens, never the tools. In the workbench,
+  **➕ New** appears, **every** file shows (underscore ones included), each
+  card keeps its full read-mode preview and decorations and gains an
+  **appended row**: the real **file name** and a **⚙️** menu:
+  - **✏️ Rename** — same folder, new name;
+  - **📦 Move to…** — type the destination folder;
+  - **🗑 Trash** — moves the file to a `_trash/` subfolder with a
+    `_deleted_<timestamp>` suffix. Recoverable, never destructive.
+
+  Subfolder cards get the same **⚙️** (a folder is its files: rename, move
+  and trash walk every file beneath it, `_trash` keeps the inner structure)
+  plus a **census**: `📄 public/total` files, sub-sub-folders included —
+  the weight of every branch at a glance. The menu's first entry, **🔬
+  Open**, jumps to the file (or the folder's `index.md`) straight in X-ray,
+  and **Move to…** autocompletes from the repo's own folders. One boundary
+  holds everywhere: gears change **slots** — the folder's generated cards
+  are derivatives, so the text-edit ghost never lands on them.
+
+  The shelf re-lists live when X-ray opens or closes, and X-ray survives a
+  refresh (`?xray=1` rides in the URL, like reel's `?reel=1`). A new
+  **folder** is always born as its `index.md` with a bare `{: .folder }`
+  inside — every node lists its own children from day one.
+
 ## Notes
 
 - `index.md` is excluded from the file list (it's the listing page itself).

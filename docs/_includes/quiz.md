@@ -144,6 +144,10 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
         correctSet[i] = true;
       });
     }
+    /* several right answers IS a multi quiz — the author shouldn't have to
+       say multi="true" on top of marking two [x] (Michel, 2026-07-31): a
+       forgotten knob silently turned pick-all-that-apply into radio grading */
+    if (Object.keys(correctSet).length > 1) multi = true;
     el.classList.remove('task-list');
 
     var selected = {};

@@ -34,3 +34,23 @@ def step_score_store_empty(context):
 def step_runner_reload(context):
     context.page.reload()
     expect(context.page.locator(".lc-quiz").first).to_be_visible(timeout=15_000)
+
+
+@then("the quiz grades with a Check button")
+def step_quiz_has_check(context):
+    # the auto-multi tell: single-answer quizzes grade on click, no button
+    expect(context.page.locator(".lc-quiz-check")).to_be_visible(timeout=10_000)
+
+
+@when('I select "{a}" and "{b}" and check')
+def step_select_two_and_check(context, a, b):
+    quiz = context.page.locator(".lc-quiz").first
+    quiz.locator("li", has_text=a).first.click()
+    quiz.locator("li", has_text=b).first.click()
+    context.page.locator(".lc-quiz-check").click()
+
+
+@then('the trophy shows "{score}"')
+def step_trophy_shows(context, score):
+    expect(context.page.locator(".lc-score-fab-label")).to_have_text(
+        score, timeout=10_000)

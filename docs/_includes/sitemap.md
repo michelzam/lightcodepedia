@@ -286,9 +286,28 @@ Attributes:
        project base stripped — lcRebase heals the href for navigation. */
     var _rawPath = el.getAttribute("path") || (a ? a.getAttribute("href") : "") || "";
     if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
-    var path = _rawPath.replace(/^\/+|\/+$/g, "");
+    /* runner render (data-lc-src contract): the map charts the COURSE, and a
+       relative path — "." for "this folder" — resolves against the rendered
+       file's own directory, ../ included. Same reading as {: .embed }. */
+    var runRoot = el.closest && el.closest(".lc-run[data-lc-src-repo]");
+    var scanRepo = (runRoot && runRoot.dataset.lcSrcRepo) || _repo;
+    var runBaseDir = "";
+    if (runRoot && runRoot.dataset.lcSrcPath) {
+      var _sp = runRoot.dataset.lcSrcPath;
+      runBaseDir = _sp.indexOf("/") >= 0 ? _sp.split("/").slice(0, -1).join("/") : "";
+    }
+    var path;
+    if (runRoot && !/^\//.test(_rawPath)) {
+      var _stack = runBaseDir ? runBaseDir.split("/") : [];
+      _rawPath.split("/").forEach(function (seg) {
+        if (seg === "..") _stack.pop(); else if (seg && seg !== ".") _stack.push(seg);
+      });
+      path = _stack.join("/");
+    } else {
+      path = _rawPath.replace(/^\/+|\/+$/g, "");
+    }
     var H = parseInt(el.getAttribute("height") || "420", 10);
-    if (!path) { el.innerHTML = "<div class='lc-sm-msg'>⚠ set path</div>"; return; }
+    if (!path && !runRoot) { el.innerHTML = "<div class='lc-sm-msg'>⚠ set path</div>"; return; }
     el.style.height = H + "px";
     el.classList.add("lc-sitemap");   /* style + make the widget selectable now,
                                           not only after the async graph builds */
@@ -343,9 +362,39 @@ Attributes:
         }));
       });
     }
-    smFetchText("/assets/pages_index.json")
-      .then(function (t) { return smFromManifest(JSON.parse(t)); })
-      .catch(function () { return apiListing(); })
+    /* course map: ONE recursive tree call finds every public .md under the
+       path — modules and their subfolders included; underscore segments
+       stay private. Nodes open through the runner. */
+    function rtListing() {
+      return apiFetch("https://api.github.com/repos/" + scanRepo + "/git/trees/HEAD?recursive=1")
+        .then(function (d) {
+          var prefix = path ? path + "/" : "";
+          var mds = (d.tree || []).filter(function (t) {
+            if (t.type !== "blob" || !/\.md$/i.test(t.path)) return false;
+            if (prefix && String(t.path).indexOf(prefix) !== 0) return false;
+            return !String(t.path).slice(prefix.length).split("/").some(function (sg) { return sg.charAt(0) === "_"; });
+          });
+          if (!mds.length) throw new Error("No pages under " + (path || "this folder"));
+          return Promise.all(mds.map(function (t) {
+            return fetch("https://api.github.com/repos/" + scanRepo + "/contents/" + t.path,
+                         { headers: Object.assign({ Accept: "application/vnd.github.v3.raw" }, hdrs) })
+              .then(function (r) { return r.ok ? r.text() : null; })
+              .then(function (text) {
+                var slug = t.path.replace(/\.md$/i, "");
+                var base = t.path.split("/").pop().replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+                var url = "/run.html#src=gh:" + scanRepo + "/" + t.path;
+                if (!text) return { id: slug, url: url, title: base, snippet: "", rawLinks: [], fc: {} };
+                var meta = smExtractMeta(text);
+                return { id: slug, url: url, title: meta.title || base, snippet: meta.snippet, rawLinks: smExtractLinks(text), fc: smFeatureCounts(text) };
+              });
+          }));
+        });
+    }
+    (runRoot
+      ? rtListing()
+      : smFetchText("/assets/pages_index.json")
+          .then(function (t) { return smFromManifest(JSON.parse(t)); })
+          .catch(function () { return apiListing(); }))
       .then(function (pages) { renderGraph(el, pages, H); })
       .catch(function (e) { el.innerHTML = "<div class='lc-sm-msg'>⚠ " + e.message + "</div>"; });
   }
