@@ -5,7 +5,7 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
   reinforcement quiz after each act hides until its check passes. The AI
   is stubbed; the deterministic audit arithmetic is what's under test.
 
-  Scenario: Red everywhere, then act by act to three greens
+  Scenario: Red everywhere, then rung by rung to four greens
     Given I have a clean browser page
     And a builder key is connected
     And the model desk answers with verdicts "2/8" then "7/8"
@@ -34,20 +34,33 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
       {: .agent #desk_two bound="{=cv2.source}" rows="3" }
 
       ```gherkin
-      Feature: The briefings are yours
-        Scenario: Both rewritten, both demand the line
-          Given the two desks
+      Feature: You can run an agent
+        Scenario: The desk has answered you
+          Given the desk by the door
           :::python
-          self.a = self.page.desk_one
-          self.b = self.page.desk_two
+          self.desk = self.page.desk_one
           :::
-          When I check their briefings
-          Then neither is the leftover and both demand a verdict
+          When I look at what it said
+          Then it has answered at least once
           :::python
-          assert self.a.system.strip() != "Review this resume.", "seed one"
-          assert self.b.system.strip() != "Review this resume.", "seed two"
-          assert len(self.a.system) >= 60 and len(self.b.system) >= 60, "short"
-          assert "VERDICT" in self.a.system.upper() and "VERDICT" in self.b.system.upper(), "no line"
+          assert len(self.desk.replies) >= 1, "the desk hasn't spoken yet"
+          :::
+      ```
+      {: .feature #run_check visible="true" status="pending" celebration="true" }
+
+      ```gherkin
+      Feature: The desk's sheet is yours now
+        Scenario: You replaced the three-word sheet
+          Given the desk by the door
+          :::python
+          self.desk = self.page.desk_one
+          :::
+          When I read its instruction sheet
+          Then it is no longer three words, and it demands the line
+          :::python
+          assert self.desk.system.strip() != "Review this resume.", "old sheet"
+          assert len(self.desk.system) >= 60, "too short"
+          assert "VERDICT" in self.desk.system.upper(), "no format"
           :::
       ```
       {: .feature #brief_check visible="true" status="pending" celebration="true" }
@@ -111,7 +124,8 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
     Then the text "Reward one unlocked" is hidden
     When I run the page's embedded features
     Then the embedded feature ends red
-    When I brief the "desk_one" desk with "You are the shelter's volunteer coordinator. Judge against our eight criteria, be direct and specific, and end with one line: VERDICT: n/8."
+    When I ask the "desk_one" agent "review it"
+    And I brief the "desk_one" desk with "You are the shelter's volunteer coordinator. Judge against our eight criteria, be direct and specific, and end with one line: VERDICT: n/8."
     And I brief the "desk_two" desk with "You are the shelter's volunteer coordinator. Judge against our eight criteria, be direct and specific, and end with one line: VERDICT: n/8."
     And I retype the pad "cv2" with:
       """
@@ -119,7 +133,6 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
 
       Better in every bold and bullet.
       """
-    And I ask the "desk_one" agent "review it"
     And I ask the "desk_two" agent "review it"
     And I run the page's embedded features
     Then every embedded feature passes

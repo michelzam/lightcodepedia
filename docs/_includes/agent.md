@@ -249,7 +249,10 @@ Auto-included by docs/_layouts/default.html.
     intro: '',
     placeholder: 'Ask anything...',
     temperature: 0.7,
-    max_tokens: 500
+    /* today's models THINK before they answer, and the thinking spends
+       this same allowance — 500 left a 19-token fragment on the screen.
+       Budget for reasoning + reply, or learners read truncated answers. */
+    max_tokens: 2000
   };
 
   /* resolve provider preset + per-fence overrides into {base, model, …} */
@@ -490,10 +493,14 @@ Auto-included by docs/_layouts/default.html.
       }
       var choice = result.data.choices && result.data.choices[0];
       if (!choice) return { error: 'Empty response from API.' };
-      return {
-        text: (choice.message && choice.message.content) || '',
-        usage: result.data.usage || null
-      };
+      var text = (choice.message && choice.message.content) || '';
+      /* ran out of allowance mid-thought: say so rather than pass a
+         fragment off as the answer */
+      if (choice.finish_reason === 'length') {
+        text = (text ? text + '\n\n' : '') +
+          '⚠️ *(cut off — the answer outgrew this agent\'s max_tokens. Ask for something shorter, or raise the knob.)*';
+      }
+      return { text: text, usage: result.data.usage || null };
     }).catch(function(err){
       /* fetch rejected → no HTTP answer reached the page. Usually the ROAD
          (ad-blocker, VPN, firewall) — but some providers answer errors
