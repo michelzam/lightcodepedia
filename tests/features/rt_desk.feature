@@ -107,6 +107,7 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
       """
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/north.md"
     And I wait for the page to be interactive
+    And I connect the "desk_one" agent with key "test-key"
     Then the text "Reward one unlocked" is hidden
     When I run the page's embedded features
     Then the embedded feature ends red
@@ -145,6 +146,6 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
       """
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/road.md"
     And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
     And I ask the desk agent into the void "hello desk"
     Then the desk blames the road, not the badge
-    And the desk admits it borrowed the builder key

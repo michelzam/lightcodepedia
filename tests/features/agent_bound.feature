@@ -12,6 +12,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And the recording model endpoint replies with a python fix "print('fixed')"
     When I navigate to "/components/agent"
     And I wait for the page to be interactive
+    And I connect the "tutor" agent with key "test-key"
     And I ask the "tutor" agent "help me fix it"
     Then the model request carried the editor code "print('hello'"
     When I apply the agent's fix
@@ -37,5 +38,6 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
       """
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/bind.md"
     And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
     And I ask the "desk" agent "review it"
     Then the model request carried the editor code "my resume draft, version one"

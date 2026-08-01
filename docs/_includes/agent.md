@@ -20,6 +20,10 @@ Bound to a runner (writes code back to a .run editor):
 
 YAML knobs (optional):
   system, model, temperature, max_tokens, intro, placeholder
+  provider: gemini | openrouter | custom   (default gemini)
+  base_url: https://…   override the endpoint (OpenAI-compatible dialect) —
+            THE portability valve: a dead provider costs one yaml line.
+            (GitHub Models died 2026-07-30 with a 410; never again.)
 IAL knobs:
   id="..."    required when there are multiple agents on a page
   rows="3"    prompt input height
@@ -103,15 +107,15 @@ Auto-included by docs/_layouts/default.html.
   // same token, same GitHub, no re-pasting ceremony ("one token for
   // everything", as the docs teach). A 401 clears it and the normal
   // paste-once flow takes over. Nothing new is stored.
-  var SHARED = { token: null, borrowed: false, listeners: [] };
-  try {
-    SHARED.token = localStorage.getItem('lc_ed_pat') || null;
-    SHARED.borrowed = !!SHARED.token;   // silently borrowed from the editor
-  } catch (e) {}
-  function setSharedToken(v) {
-    SHARED.token = v;
-    SHARED.borrowed = false;            // pasted on purpose — not borrowed
-    SHARED.listeners.forEach(function(cb){ try { cb(v); } catch (e) {} });
+  /* one key per PROVIDER per page (kept in memory + the browser's password
+     manager, keyed by provider so keychain entries never collide). The old
+     silent borrow of the editor's GitHub PAT died with GitHub Models —
+     a repo key is not a model key. */
+  var SHARED = { tokens: {}, listeners: [] };
+  function getSharedToken(pid) { return SHARED.tokens[pid] || null; }
+  function setSharedToken(pid, v) {
+    SHARED.tokens[pid] = v;
+    SHARED.listeners.forEach(function(cb){ try { cb(pid, v); } catch (e) {} });
   }
   function onSharedTokenChange(cb) { SHARED.listeners.push(cb); }
 
@@ -210,14 +214,53 @@ Auto-included by docs/_layouts/default.html.
   }
 
   // ===== config defaults =====
+  /* One dialect, any engine: every provider below speaks OpenAI-compatible
+     chat/completions with a Bearer key. GitHub Models spoke it too — and
+     retired on 2026-07-30 with a 410 on the preflight. The lesson is
+     permanent: the provider is CONFIGURATION, never architecture. A dead
+     provider costs a yaml line (provider: / base_url:), not a course. */
+  var PROVIDERS = {
+    gemini: {
+      base: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      model: 'gemini-2.5-flash',
+      key_name: 'Google AI Studio key',
+      key_url: 'https://aistudio.google.com/apikey',
+      key_hint: 'AIza...'
+    },
+    openrouter: {
+      base: 'https://openrouter.ai/api/v1',
+      model: 'meta-llama/llama-3.3-70b-instruct:free',
+      key_name: 'OpenRouter key',
+      key_url: 'https://openrouter.ai/keys',
+      key_hint: 'sk-or-...'
+    },
+    custom: { base: '', model: '', key_name: 'API key', key_url: '', key_hint: 'sk-...' }
+  };
+  var DEFAULT_PROVIDER = 'gemini';
+
   var DEFAULTS = {
     system: 'You are a helpful assistant.',
-    model: 'openai/gpt-4o-mini',
+    provider: DEFAULT_PROVIDER,
+    base_url: '',
+    model: '',
     intro: '',
     placeholder: 'Ask anything...',
     temperature: 0.7,
     max_tokens: 500
   };
+
+  /* resolve provider preset + per-fence overrides into {base, model, …} */
+  function resolveEngine(cfg) {
+    var pv = PROVIDERS[cfg.provider] || PROVIDERS[DEFAULT_PROVIDER];
+    var base = (cfg.base_url || pv.base || '').replace(/\/+$/, '');
+    return {
+      base: base,
+      host: (base.match(/^https?:\/\/([^\/]+)/) || [])[1] || 'the model service',
+      model: cfg.model || pv.model,
+      key_name: pv.key_name, key_url: pv.key_url, key_hint: pv.key_hint,
+      id: cfg.provider || DEFAULT_PROVIDER
+    };
+  }
 
   // ===== bots: superprompt + knowledge as repo markdown (SSOT) =====
   // A bot is a file: docs/bots/<name>.md — the markdown body IS the system
@@ -336,12 +379,12 @@ Auto-included by docs/_layouts/default.html.
   // The docked guide (avatar.md) asks questions through here: same bot files,
   // same knowledge stuffing, same in-memory PAT, no second auth system.
   window.lcBotAsk = {
-    ready: function () { return !!SHARED.token; },
-    connect: function (pat) { if (pat) setSharedToken(String(pat).trim()); },
-    disconnect: function () { setSharedToken(null); },
+    ready: function () { return !!getSharedToken(DEFAULT_PROVIDER); },
+    connect: function (key) { if (key) setSharedToken(DEFAULT_PROVIDER, String(key).trim()); },
+    disconnect: function () { setSharedToken(DEFAULT_PROVIDER, null); },
     onChange: onSharedTokenChange,
     ask: function (botName, question, opts) {
-      if (!SHARED.token) return Promise.resolve({ error: 'No token' });
+      if (!getSharedToken(DEFAULT_PROVIDER)) return Promise.resolve({ error: 'No key' });
       return loadBot(botName).then(function (botCfg) {
         var cfg = {};
         Object.keys(DEFAULTS).forEach(function (k) { cfg[k] = DEFAULTS[k]; });
@@ -353,11 +396,11 @@ Auto-included by docs/_layouts/default.html.
             'material, not a student: answer directly and completely, no guiding ' +
             'questions, no withheld solutions. Keep the step format.';
         }
-        return ask(SHARED.token, cfg, question);
+        return ask(getSharedToken(DEFAULT_PROVIDER), cfg, question);
       }, function () {
         return { error: 'bot "' + botName + '" could not be loaded' };
       }).then(function (result) {
-        if (result && result.unauthorized) setSharedToken(null);
+        if (result && result.unauthorized) setSharedToken(DEFAULT_PROVIDER, null);
         return result;
       });
     }
@@ -365,6 +408,7 @@ Auto-included by docs/_layouts/default.html.
 
   // ===== panel structure =====
   function buildPanel(id, cfg, rows, boundId, boundExpr) {
+    var eng = resolveEngine(cfg);
     var div = document.createElement('div');
     div.className = 'lc-agent';
     div.id = 'lc-agent-' + id;
@@ -379,13 +423,13 @@ Auto-included by docs/_layouts/default.html.
         '<button type="button" class="lc-agent-key" title="Change token" aria-label="Change token">🔑</button>' +
       '</div>' +
       '<form class="lc-agent-auth" autocomplete="on">' +
-        '<p>Paste your GitHub PAT. Your browser may offer to save it (encrypted in the OS keychain). One token covers every agent on this page.</p>' +
-        '<input type="text" name="username" value="github-models" autocomplete="username" tabindex="-1" readonly>' +
+        '<p>Paste your ' + escapeHtml(eng.key_name) + '. Your browser may offer to save it (encrypted in the OS keychain). One key covers every ' + escapeHtml(eng.id) + ' agent on this page.</p>' +
+        '<input type="text" name="username" value="lc-' + escapeHtml(eng.id) + '" autocomplete="username" tabindex="-1" readonly>' +
         '<div class="lc-agent-pw-row">' +
-          '<input type="password" name="password" class="lc-agent-token" autocomplete="current-password" placeholder="ghp_..." required>' +
+          '<input type="password" name="password" class="lc-agent-token" autocomplete="current-password" placeholder="' + escapeHtml(eng.key_hint) + '" required>' +
           '<button type="submit">Save &amp; start</button>' +
         '</div>' +
-        '<a class="lc-agent-help" href="https://github.com/settings/tokens" target="_blank" rel="noopener">How do I get one?</a>' +
+        (eng.key_url ? '<a class="lc-agent-help" href="' + eng.key_url + '" target="_blank" rel="noopener">How do I get one?</a>' : '') +
       '</form>' +
       '<div class="lc-agent-body" hidden>' +
         introHtml +
@@ -398,15 +442,17 @@ Auto-included by docs/_layouts/default.html.
         '<div class="lc-agent-log" hidden></div>' +
         '<div class="lc-agent-usage">Used 0 tokens this session.</div>' +
       '</div>' +
-      '<div class="lc-agent-warn">⚠ Calls models.github.ai directly with your PAT. Don\'t use a PAT with broad scopes here.</div>';
+      '<div class="lc-agent-warn">⚠ Calls ' + escapeHtml(eng.host) + ' directly with your key. Use a key made for this, nothing broader.</div>';
     return div;
   }
 
   // ===== API call =====
   function ask(token, cfg, userText) {
-    var url = 'https://models.github.ai/inference/chat/completions';
+    var eng = resolveEngine(cfg);
+    if (!eng.base) return Promise.resolve({ error: 'No engine configured — set provider: or base_url: on this agent.' });
+    var url = eng.base + '/chat/completions';
     var body = {
-      model: cfg.model,
+      model: eng.model,
       messages: [
         { role: 'system', content: String(cfg.system) },
         { role: 'user', content: userText }
@@ -426,7 +472,7 @@ Auto-included by docs/_layouts/default.html.
         .catch(function(){ return { status: r.status, data: {} }; });
     }).then(function(result){
       if (result.status === 401 || result.status === 403) {
-        return { error: 'Token rejected (' + result.status + '). Try a fresh PAT.', unauthorized: true };
+        return { error: 'Key rejected (' + result.status + ') by ' + eng.host + '. 🔑 paste a fresh ' + eng.key_name + '.', unauthorized: true };
       }
       if (result.status === 429) {
         return { error: 'Rate limited (429). Wait a moment and retry.' };
@@ -443,17 +489,13 @@ Auto-included by docs/_layouts/default.html.
       };
     }).catch(function(err){
       /* fetch rejected → no HTTP answer reached the page. Usually the ROAD
-         (ad-blocker, VPN, firewall) — but not always: GitHub's error
-         responses can arrive without CORS headers, so a key that LACKS the
-         Models permission also lands here, dressed as a network failure.
-         When the key was silently borrowed from the editor, say so. */
-      var hint = SHARED.borrowed
-        ? " Note: this desk borrowed your builder key — if your network is fine, " +
-          "that key may lack the 'Models: Read' permission (add it to the PAT, or 🔑 paste a Models-enabled one)."
-        : "";
-      return { error: "Couldn't reach models.github.ai — no answer got through. " +
-        "Often an ad-blocker, VPN or firewall on the road." + hint +
-        " (" + (err.message || String(err)) + ")" };
+         (ad-blocker, VPN, firewall) — but some providers answer errors
+         without CORS headers, so a rejected key can also land here dressed
+         as a network failure. Name both faces. */
+      return { error: "Couldn't reach " + eng.host + " — no answer got through. " +
+        "Often an ad-blocker, VPN or firewall on the road; if your network is fine, " +
+        "the key itself may be stale or wrong (🔑 paste a fresh " + eng.key_name + "). " +
+        "(" + (err.message || String(err)) + ")" };
     });
   }
 
@@ -471,14 +513,17 @@ Auto-included by docs/_layouts/default.html.
     var keyBtn = panel.querySelector('.lc-agent-key');
     var tokenInput = panel.querySelector('.lc-agent-token');
 
+    var engineId = resolveEngine(cfg).id;
+    function myToken() { return getSharedToken(engineId); }
     function showChat() { authForm.hidden = true; body.hidden = false; }
     function showAuth() { authForm.hidden = false; body.hidden = true; }
 
-    // Initial state from shared token
-    if (SHARED.token) showChat(); else showAuth();
+    // Initial state from this provider's shared key
+    if (myToken()) showChat(); else showAuth();
 
-    // React to other panels changing the token
-    onSharedTokenChange(function(v){
+    // React to other panels changing THIS provider's key
+    onSharedTokenChange(function(pid, v){
+      if (pid !== engineId) return;
       if (v) showChat(); else { response.innerHTML = ''; status.innerHTML = ''; showAuth(); }
     });
 
@@ -486,17 +531,17 @@ Auto-included by docs/_layouts/default.html.
       e.preventDefault();
       var v = (tokenInput.value || '').trim();
       if (!v) return;
-      setSharedToken(v);  // all other panels switch to chat
+      setSharedToken(engineId, v);  // sibling panels of the same provider switch too
     });
 
     keyBtn.addEventListener('click', function(){
-      setSharedToken(null);  // all panels switch to auth
+      setSharedToken(engineId, null);
     });
 
     askForm.addEventListener('submit', function(e){
       e.preventDefault();
       var question = (prompt.value || '').trim();
-      if (!SHARED.token || !question) return;
+      if (!myToken() || !question) return;
       sendBtn.disabled = true;
       sendBtn.textContent = '… thinking';
       status.innerHTML = '';
@@ -511,13 +556,13 @@ Auto-included by docs/_layouts/default.html.
         : Promise.resolve(buildAugmentedPrompt(boundId, question));
 
       promptP.then(function (fullPrompt) {
-        return ask(SHARED.token, cfg, fullPrompt);
+        return ask(myToken(), cfg, fullPrompt);
       }).then(function(result){
         sendBtn.disabled = false;
         sendBtn.textContent = '▶ Ask';
         if (result.error) {
           status.innerHTML = '<span class="lc-agent-err">⚠ ' + escapeHtml(result.error) + '</span>';
-          if (result.unauthorized) setSharedToken(null);
+          if (result.unauthorized) setSharedToken(engineId, null);
           return;
         }
         response.innerHTML =
@@ -644,7 +689,9 @@ Auto-included by docs/_layouts/default.html.
        the page model (auto ids aren't python names). */
     if (givenId) panel.setAttribute('data-lc-id', givenId);
     panel.setAttribute('data-system', cfg.system || '');
-    panel.setAttribute('data-model', cfg.model || '');
+    var _eng = resolveEngine(cfg);
+    panel.setAttribute('data-model', _eng.model || '');
+    panel.setAttribute('data-provider', _eng.id || '');
     el.parentNode.replaceChild(panel, el);
     wirePanel(panel, cfg, boundId, boundExpr);
     if (cfg._knowledge) {

@@ -27,38 +27,33 @@ This site has no server-side code, no shared API key, and no request log. Zero.
 - [ ] The NSA has it. (And all those emojis you've been sending.)
 {: .quiz }
 
-## 🔑 Getting your PAT
+## 🔑 Getting your keys
 
-Two use cases, two different permission sets. Pick the one you need:
+Two badges, two jobs — and they are different keys on purpose:
 
-| Use case | What needs the PAT | Required scope |
+| Use case | What it calls | The key |
 |---|---|---|
-| 🤖 **Agent chat** | Calls GitHub Models API | None (classic) _or_ Models → Read-only (fine-grained) |
-| ✏️ **Page editor** (✏️ FAB) | Reads and writes repo files via Contents API | `repo` (classic) _or_ Contents → Read + Write (fine-grained) |
+| 🤖 **Agent chat** | An AI provider (OpenAI-compatible dialect) | the provider's own key — default **Google AI Studio** (free tier, [aistudio.google.com/apikey](https://aistudio.google.com/apikey)) |
+| ✏️ **Page editor** (✏️ FAB) | GitHub Contents API (your repo files) | a GitHub PAT — `repo` (classic) or Contents → Read + Write (fine-grained) |
+
+> **History note (2026-07-30):** the agent used to ride GitHub Models with a
+> plain PAT — GitHub retired that service overnight (HTTP 410). The desk
+> survived because the provider is *configuration*: `provider:` picks a
+> preset (gemini, openrouter), `base_url:` points anywhere that speaks the
+> OpenAI-compatible dialect — including a future class gateway. A dead
+> provider costs one yaml line, never a course.
 
 ```
-### 🤖 Agent only
-Two routes. Both free. Both under a minute.
+### 🤖 Agent only — the energy key
 
-**Route A — Classic PAT (fastest):**
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+   (any Google account; the free tier is plenty for a course).
+2. *Create API key* → copy it.
+3. Paste it into any agent's key form — one key covers every agent of that
+   provider on the page, and your browser offers to remember it.
 
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Click *Generate new token (classic)*
-3. Give it a name. **Leave every scope unchecked.**
-4. Click Generate → copy the token.
-
-**Route B — Fine-grained PAT:**
-
-1. Go to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens)
-2. Create a new token.
-3. Under *Permissions → Account permissions*, enable **GitHub Models → Read-only**.
-4. Click Generate → copy.
-
-Either works for the agent. Route A is faster; Route B makes the permission explicit.
-
-> Most common stumble: students take Route B but forget the Models → Read-only checkbox.
-> They paste the token, get a 401, and assume the site is broken.
-> Start the class on Route A — one less thing to go wrong.
+The free quota IS the energy lesson: every question spends a little —
+fewer, better questions.
 
 ### ✏️ Editor only (fork + edit pages)
 You need write access to your own forked repo.
@@ -82,29 +77,27 @@ You need write access to your own forked repo.
 > verifies this on connect and before every save. A read-only PAT will be rejected
 > with a clear error message.
 
-### 🤖 + ✏️ Both (one token for everything)
-A single classic PAT with `repo` scope covers both the editor AND the agent.
-The `repo` scope implicitly grants API access to GitHub Models as well.
-
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Click *Generate new token (classic)*
-3. Check **`repo`** (and optionally **`workflow`** if you want to trigger Actions).
-4. Click Generate → copy the token.
-
-Use this token in both the Agent panel and the Editor connection form.
+### 🤖 + ✏️ Both — two badges, and that's the point
+Since GitHub retired its model service, no single key covers both jobs:
+the **work badge** (GitHub PAT) stores what you build, the **energy badge**
+(provider key) pays the AI's way. They fail differently, they rotate
+independently, and neither can leak the other's power — least privilege
+by construction.
 ```
 {: .radio }
 
 > Walk students through the table first — "which row is yours?" —
-> then send them to the matching tab. Mixing up the scopes is the #1 support question.
+> then send them to the matching tab. The two-badges framing prevents the
+> #1 support question (pasting the GitHub key into the agent).
 {: .speaker-note }
 
-**Q:** You want to chat with the Agent AND edit pages in your fork. What's the most efficient PAT to create?
+**Q:** You want to chat with the Agent AND edit pages in your fork. What do you need?
 
-- [ ] Two separate PATs — one per use case, least privilege.
-- [x] One classic PAT with `repo` scope — covers both agent and editor.
-- [ ] A fine-grained PAT with Models → Read-only. (Editor won't work.)
-- [ ] No PAT needed — the site uses a shared server-side key.
+- [ ] One GitHub PAT with every scope — the master key approach.
+- [x] Two keys: a GitHub PAT for the editor, a provider key (e.g. AI Studio)
+  for the agent — each does one job.
+- [ ] A fine-grained PAT with Models → Read-only. (That service is retired.)
+- [ ] No key needed — the site uses a shared server-side key.
 {: .quiz }
 
 ## 🛠️ Tiniest agent

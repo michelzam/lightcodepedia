@@ -91,7 +91,6 @@ system: |
   You only answer questions about the topics in this course.
   Keep answers short. When someone seems stuck, ask what they tried first.
   If a question is off-topic, gently redirect: "That's outside this course — try asking on Stack Overflow."
-model: openai/gpt-4o-mini
 intro: "Ask me anything about Python — I'm here to help!"
 ```
 {: .agent }

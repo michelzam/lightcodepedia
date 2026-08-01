@@ -25,8 +25,7 @@ def step_recording_model(context, code):
         })
         route.fulfill(status=200, content_type="application/json", body=body)
 
-    context.page.route(
-        "**/models.github.ai/inference/chat/completions", fulfill)
+    context.page.route("**/chat/completions*", fulfill)
 
 
 @when('I ask the "{agent_id}" agent "{prompt}"')

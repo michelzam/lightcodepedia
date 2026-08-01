@@ -2,7 +2,7 @@
 
 ```yaml
 name: Doc
-model: openai/gpt-4o-mini
+# model: (from the provider preset — pin only to override)
 temperature: 0.4
 max_tokens: 700
 placeholder: Ask Doc about this page…

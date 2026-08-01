@@ -22,8 +22,7 @@ def step_stub_model_desk(context, v1, v2):
         })
         route.fulfill(status=200, content_type="application/json", body=body)
 
-    context.page.route(
-        "**/models.github.ai/inference/chat/completions", fulfill)
+    context.page.route("**/chat/completions*", fulfill)
 
 
 @when('I brief the "{desk_id}" desk with "{text}"')
@@ -43,9 +42,7 @@ def step_brief_named_desk(context, desk_id, text):
 @given("the model desk is unreachable")
 def step_model_desk_down(context):
     # abort = the fetch never gets an HTTP answer — an ad-blocker's view
-    context.page.route(
-        "**/models.github.ai/inference/chat/completions",
-        lambda route: route.abort())
+    context.page.route("**/chat/completions*", lambda route: route.abort())
 
 
 @when('I ask the desk agent into the void "{prompt}"')
@@ -59,7 +56,7 @@ def step_ask_desk_void(context, prompt):
 def step_desk_blames_road(context):
     status = context.page.locator(
         '[data-lc-id="desk"] .lc-agent-status')
-    expect(status).to_contain_text("models.github.ai", timeout=20_000)
+    expect(status).to_contain_text("Couldn't reach", timeout=20_000)
     expect(status).to_contain_text("ad-blocker", timeout=5_000)
 
 
@@ -72,11 +69,12 @@ def step_retype_named_pad(context, pad_id):
     ta.fill(context.text)
 
 
-@then("the desk admits it borrowed the builder key")
-def step_desk_admits_borrowed(context):
-    # a Models-less key fails CORS-naked and mimics a network error — the
-    # desk must volunteer the borrowed-key possibility, not hide behind
-    # "check your ad-blocker"
-    status = context.page.locator('[data-lc-id="desk"] .lc-agent-status')
-    expect(status).to_contain_text("builder key", timeout=5_000)
-    expect(status).to_contain_text("Models", timeout=5_000)
+@when('I connect the "{agent_id}" agent with key "{key}"')
+def step_connect_agent_key(context, agent_id, key):
+    # the auth form is the only door now — the old silent PAT borrow died
+    # with GitHub Models; sibling panels of the same provider follow along
+    panel = context.page.locator('[data-lc-id="' + agent_id + '"]')
+    panel.wait_for(state="attached", timeout=20_000)
+    panel.locator(".lc-agent-token").fill(key)
+    panel.locator(".lc-agent-auth button[type=submit]").click()
+    expect(panel.locator(".lc-agent-prompt")).to_be_visible(timeout=10_000)
