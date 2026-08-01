@@ -207,11 +207,18 @@ Attributes:
       edgeKeys[key] = true;
       edges.push({ s: nodeMap[par], t: nodeMap[p.id], bi: false, kind: "tree" });
     });
-    /* then the authored links draped over it */
+    /* Containment is symmetric information: once the tree says an index
+       owns a page, a plain link back UP to that index adds nothing but a
+       second arrow (and a bidirectional curve). Suppress plain links on a
+       pair the tree already joins, in either direction. A PREREQUISITE is
+       kept: "must come first" is a constraint the tree doesn't express. */
+    var treePair = {};
+    edges.forEach(function (e) { treePair[[e.s.id, e.t.id].sort().join("|")] = true; });
     pages.forEach(function (p) {
       p.links.forEach(function (lnk) {
         var tid = lnk.id, key = p.id + ">" + tid;
         if (edgeKeys[key] || !nodeMap[tid]) return;
+        if (!lnk.prereq && treePair[[p.id, tid].sort().join("|")]) return;
         edgeKeys[key] = true;
         edges.push({ s: nodeMap[p.id], t: nodeMap[tid], bi: false,
                      kind: lnk.prereq ? "prereq" : "link" });

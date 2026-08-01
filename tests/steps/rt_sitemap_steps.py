@@ -93,3 +93,9 @@ def step_here_bigger(context):
         }"""
     )
     assert sizes["here"] > sizes["max"], sizes
+
+
+@given('"{path}" links back to "{target}"')
+def step_page_links_back(context, path, target):
+    context.lc_extra = getattr(context, "lc_extra", {})
+    context.lc_extra[path] = "\n[Back to the module](%s)\n" % target
