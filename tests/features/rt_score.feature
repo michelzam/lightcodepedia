@@ -59,6 +59,7 @@ Feature: RT scores key to the rendered page, not the runner
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
     And I wait for the page to be interactive
     Then the quiz grades with a Check button
+    And the options wear checkboxes, not radio circles
     When I select "Alpha" and "Beta" and check
     Then the trophy shows "1/1"
 

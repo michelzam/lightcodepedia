@@ -73,3 +73,13 @@ def step_stub_array_error(context, message):
 def step_desk_relays(context, message):
     status = context.page.locator('[data-lc-id="desk"] .lc-agent-status')
     expect(status).to_contain_text(message, timeout=15_000)
+
+
+@given('the model endpoint answers 429 saying "{message}"')
+def step_stub_429(context, message):
+    body = json.dumps([{"error": {"code": 429, "message": message,
+                                  "status": "RESOURCE_EXHAUSTED"}}])
+    context.page.route(
+        "**/chat/completions*",
+        lambda r: r.fulfill(status=429, content_type="application/json",
+                            body=body))

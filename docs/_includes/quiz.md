@@ -148,6 +148,11 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
        say multi="true" on top of marking two [x] (Michel, 2026-07-31): a
        forgotten knob silently turned pick-all-that-apply into radio grading */
     if (Object.keys(correctSet).length > 1) multi = true;
+    /* …and the EYE must learn it too: the checkbox look hangs off the
+       multi="true" attribute, so an implicitly-multi quiz that never sets
+       it grades as multi while showing radio circles — the widget lying
+       about its own rules (Michel, 2026-08-01). */
+    if (multi) el.setAttribute('multi', 'true');
     el.classList.remove('task-list');
 
     var selected = {};

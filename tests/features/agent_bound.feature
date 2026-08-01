@@ -62,3 +62,24 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I connect the "desk" agent with key "test-key"
     And I ask the desk agent into the void "hello"
     Then the desk relays "models/ghost is not found"
+
+  Scenario: The two 429 walls are told apart
+    A per-minute limit refills by itself; the day's free allowance does not.
+    A learner must know which wall they hit.
+
+    Given I have a clean browser page
+    And the model endpoint answers 429 saying "Quota exceeded for quota metric 'Generate requests per day'"
+    And the GitHub contents API serves "courses/demo/module_01/quota.md" with the document:
+      """
+      # Quota page
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/quota.md"
+    And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
+    And I ask the desk agent into the void "hello"
+    Then the desk relays "today"

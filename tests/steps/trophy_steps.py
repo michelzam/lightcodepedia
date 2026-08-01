@@ -64,3 +64,15 @@ def step_trophy_bar_fills(context):
         "        return b && parseInt(b.style.width || '0') > 0; }",
         timeout=10_000,
     )
+
+
+@then("the options wear checkboxes, not radio circles")
+def step_multi_looks_multi(context):
+    # the ☐/☑ look is CSS keyed on multi="true"; an implicitly-multi quiz
+    # that grades as multi but shows ○ is the widget lying about its rules
+    quiz = context.page.locator(".lc-quiz").first
+    expect(quiz).to_have_attribute("multi", "true", timeout=10_000)
+    mark = context.page.evaluate(
+        "() => getComputedStyle(document.querySelector('.lc-quiz li'), '::before').content"
+    )
+    assert "☐" in mark, "options still show %s" % mark

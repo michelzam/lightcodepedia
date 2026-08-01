@@ -5,8 +5,12 @@
                     navigates away survives (no home, no related, no pager)
      ?editable=0|1  the page editor, independent of focus
      ?navigable=0|1 internal links live in-frame, or neutralised
-     ?open=a,b      glob allowlist — matching links open in a NEW TAB instead
-                    (course in one, exercise in the other, side by side)
+     ?open=a,b      glob allowlist — links a focused page may still follow
+                    (they open IN-FRAME by default, carrying the flags)
+     ?open_in=tab   send those allowlisted links to a new tab instead
+   Flags are a SCOPE, not a page setting: every same-origin hop carries them
+   forward, so a course framed by an LMS stays inside the frame the teacher
+   set up instead of arriving as the full platform in a new tab.
    Defaults are today's behaviour: everything on, nothing suppressed. Under
    focus, navigable defaults OFF — a focused page that still lets you click
    away is not focused. ?embed=true keeps its old meaning (hide the bar too). */
@@ -28,7 +32,8 @@
     focus: focus,
     editable: q.has("editable") ? flag("editable", true) : !root.classList.contains("lc-embed-mode"),
     navigable: flag("navigable", !focus),
-    open: (q.get("open") || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean)
+    open: (q.get("open") || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean),
+    open_in: (q.get("open_in") || "frame").toLowerCase()
   };
 })();
 </script>
@@ -941,12 +946,55 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       if (path === here) return;                            // same page
       if (allow.some(function (re) { return re.test(path); })) {
         e.preventDefault();
-        window.open(a.href, "_blank", "noopener");          // course beside the bench
+        /* stay inside the teacher's frame: an allowlisted link is a place
+           the learner MAY go, not a reason to eject them from the scope.
+           ?open_in=tab restores the old side-by-side behaviour. */
+        var dest = window.lcFrameUrl ? window.lcFrameUrl(a.href) : a.href;
+        if (F.open_in === "tab") window.open(dest, "_blank", "noopener");
+        else location.href = dest;
         return;
       }
       e.preventDefault();
       a.classList.add("lc-inert");
     }, true);
+  }
+
+  /* ── The scope survives the hop ──────────────────────────────────────────
+     A teacher frames ONE url and the learner clicks a card. Until now the
+     next page arrived with no flags at all — the full platform, outside the
+     frame, in whatever tab the browser felt like. Now every same-origin
+     navigation carries the flags forward. Registered after the guard and
+     respectful of its verdict: a link it already neutralised stays dead. */
+  var FRAME_KEYS = ["focus", "editable", "navigable", "open", "open_in", "embed"];
+  var fq = new URLSearchParams(location.search);
+  var carried = FRAME_KEYS.filter(function (k) { return fq.has(k); });
+  window.lcFrameUrl = function (href) {
+    if (!carried.length) return href;
+    try {
+      var u = new URL(href, location.href);
+      if (u.origin !== location.origin) return href;
+      carried.forEach(function (k) {
+        if (!u.searchParams.has(k)) u.searchParams.set(k, fq.get(k));
+      });
+      return u.href;
+    } catch (err) { return href; }
+  };
+  if (carried.length) {
+    document.addEventListener("click", function (e) {
+      if (e.defaultPrevented) return;                       // the guard spoke first
+      if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest && e.target.closest("a[href]");
+      if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+      var href = a.getAttribute("href") || "";
+      if (!href || href.charAt(0) === "#" || /^[a-z]+:/i.test(href) && !/^https?:/i.test(href)) return;
+      var u;
+      try { u = new URL(a.href, location.href); } catch (err) { return; }
+      if (u.origin !== location.origin) return;             // someone else's site
+      var dest = window.lcFrameUrl(a.href);
+      if (dest === a.href) return;                          // nothing to add
+      e.preventDefault();
+      location.href = dest;
+    }, false);
   }
 })();
 </script>

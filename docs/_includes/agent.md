@@ -481,7 +481,16 @@ Auto-included by docs/_layouts/default.html.
         return { error: 'Key rejected (' + result.status + ') by ' + eng.host + '. 🔑 paste a fresh ' + eng.key_name + '.', unauthorized: true };
       }
       if (result.status === 429) {
-        return { error: 'Rate limited (429). Wait a moment and retry.' };
+        /* TWO different walls answer 429 and the difference matters to a
+           learner: per-minute (wait 60s, keep working) vs the DAY's free
+           allowance (gone until it resets — no amount of retrying helps).
+           The provider says which in its own message; relay it. */
+        var e429 = Array.isArray(result.data) ? result.data[0] : result.data;
+        var m429 = (e429 && e429.error && e429.error.message) || '';
+        var daily = /per\s*day|daily|PerDay|quota exceeded/i.test(m429);
+        return { error: daily
+          ? '🔋 Out of free energy for today — the day\'s allowance is spent and refills on its own (around midnight US Pacific). Nothing is broken; come back tomorrow, or use a key with a paid plan.'
+          : '⏳ Too many questions too fast (per-minute limit). Wait about a minute and ask again — this one refills by itself.' };
       }
       if (result.status >= 400) {
         /* Google wraps errors in an ARRAY ([{error:{…}}]); OpenAI-style
