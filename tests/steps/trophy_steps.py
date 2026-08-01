@@ -64,6 +64,18 @@ def step_trophy_bar_fills(context):
         "        return b && parseInt(b.style.width || '0') > 0; }",
         timeout=10_000,
     )
+    # …and it must be big enough to SEE: a 3px sliver in a white pill is
+    # technically a progress bar and practically invisible. Measure AFTER
+    # the fill lands — it grows over 1.4s on purpose, so an early
+    # measurement catches a legitimately narrow bar mid-travel.
+    context.page.wait_for_timeout(1800)
+    size = context.page.evaluate(
+        """() => { const r = document.querySelector('.lc-score-fab-bar i')
+                     .getBoundingClientRect();
+                   return { h: r.height, w: r.width }; }"""
+    )
+    assert size["h"] >= 4.5, "bar is only %spx tall" % size["h"]
+    assert size["w"] >= 10, "bar is only %spx wide" % size["w"]
 
 
 @then("the options wear checkboxes, not radio circles")
