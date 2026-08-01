@@ -201,6 +201,16 @@ temperature: 0.3
 - [ ] `42` — works great, trust the universe.
 {: .quiz }
 
+### 📏 Ask the agent questions — from a `.feature`
+
+Give the agent an `#id` and a page's feature can audit it: `system` reads
+the briefing it currently runs under, `model` names the engine, and
+`replies` returns **every answer of the sitting** — the visible panel shows
+one exchange at a time, but a hidden ledger keeps them all. That's how a
+rubric can, say, compare the `VERDICT:` lines two versions of a document
+earned, deterministically, out of stochastic text: force the format in the
+briefing, then parse it in the proof.
+
 ## 🧑‍⚕️ Bots — one persona, many pages
 
 A **bot** is a markdown file in `docs/bots/` — the file's text *is* the

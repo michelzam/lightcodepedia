@@ -386,6 +386,7 @@ Auto-included by docs/_layouts/default.html.
         '</form>' +
         '<div class="lc-agent-status" role="status" aria-live="polite"></div>' +
         '<div class="lc-agent-response"></div>' +
+        '<div class="lc-agent-log" hidden></div>' +
         '<div class="lc-agent-usage">Used 0 tokens this session.</div>' +
       '</div>' +
       '<div class="lc-agent-warn">⚠ Calls models.github.ai directly with your PAT. Don\'t use a PAT with broad scopes here.</div>';
@@ -495,6 +496,18 @@ Auto-included by docs/_layouts/default.html.
           '<div class="lc-agent-msg-user">' + escapeHtml(question) + '</div>' +
           '<div class="lc-agent-msg-bot">' + renderMarkdown(result.text) + '</div>';
 
+        // The panel shows one exchange at a time, but the SITTING has a
+        // memory: every raw answer joins a hidden ledger, so a page's
+        // .feature can audit the whole conversation (e.g. compare the
+        // VERDICT lines two résumé versions earned).
+        var logEl = panel.querySelector('.lc-agent-log');
+        if (logEl) {
+          var entry = document.createElement('div');
+          entry.className = 'lc-agent-log-entry';
+          entry.textContent = result.text;
+          logEl.appendChild(entry);
+        }
+
         // If bound: add an Apply button to the first python code block in the response.
         if (boundId) {
           var bot = response.querySelector('.lc-agent-msg-bot');
@@ -559,7 +572,8 @@ Auto-included by docs/_layouts/default.html.
       try { pageCfg = window.jsyaml.load(raw) || {}; } catch (e) {}
     }
     if (typeof pageCfg !== 'object' || Array.isArray(pageCfg)) pageCfg = {};
-    var id = el.getAttribute('id') || ('agent-' + (++AGENT_SEQ));
+    var givenId = el.getAttribute('id') || null;
+    var id = givenId || ('agent-' + (++AGENT_SEQ));
     var rows = parseInt(el.getAttribute('rows'), 10) || 3;
     var boundId = el.getAttribute('bound') || null;
     var botName = el.getAttribute('bot') || pageCfg.bot || null;
@@ -586,6 +600,13 @@ Auto-included by docs/_layouts/default.html.
       var rev = el.getAttribute('data-revealed');
       if (rev != null) panel.setAttribute('data-revealed', rev);
     }
+    /* the panel is the component: name it for the step runtime and expose
+       its configuration, so a page's .feature can audit the agent — which
+       briefing it runs under, which model. Only an author-given id joins
+       the page model (auto ids aren't python names). */
+    if (givenId) panel.setAttribute('data-lc-id', givenId);
+    panel.setAttribute('data-system', cfg.system || '');
+    panel.setAttribute('data-model', cfg.model || '');
     el.parentNode.replaceChild(panel, el);
     wirePanel(panel, cfg, boundId);
     if (cfg._knowledge) {

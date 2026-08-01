@@ -1274,9 +1274,18 @@ class Code(Block):
                   {"n": "max_tokens", "t": "int", "data": True, "d": 500,
                    "attr": "data-max-tokens"},
                   {"n": "intro", "t": "str", "data": True, "d": ""},
-                  {"n": "placeholder", "t": "str", "data": True, "d": "Ask anything..."}],
+                  {"n": "placeholder", "t": "str", "data": True, "d": "Ask anything..."},
+                  {"n": "replies", "t": "list"}],
            methods=["ask"])
 class Agent(Block):
+    @property
+    def replies(self):
+        """Every answer the agent has given this sitting — the panel shows
+        one exchange, the ledger keeps them all, so a rubric can read
+        verdict lines out of the whole conversation."""
+        out = [m.text for m in self._qq(".lc-agent-log-entry")]
+        return out if out else [m.text for m in self._qq(".lc-agent-msg-bot")]
+
     def ask(self, prompt):
         if self._el is not None:
             box = self._el.querySelector("textarea, input")
