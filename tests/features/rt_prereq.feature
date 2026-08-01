@@ -49,3 +49,89 @@ Feature: RT prerequisite gate — the key names the content, not the runner
     And I wait for the page to be interactive
     Then the prerequisites are met
     And the gated content "Secret wisdom here." is visible
+
+  Scenario: A prerequisite in the PARENT folder opens from ../
+    A module's index often requires the course-level setup page one folder
+    up. "../join.md" must name the parent's file, not a site path — the
+    exact line an author writes at the top of module_00/index.md.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned points on "gh:acme/demo/courses/demo/join"
+    And the GitHub contents API serves "courses/demo/module_00/index.md" with the document:
+      """
+      # Module 00
+
+      - [⚙️ Setup](../join.md)
+      {: .prerequisite }
+
+      ## The lesson
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_00/index.md"
+    And I wait for the page to be interactive
+    Then the prerequisites are met
+    And the gated content "Secret wisdom here." is visible
+
+  Scenario: The same parent link stays shut without the points
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/module_00/index.md" with the document:
+      """
+      # Module 00
+
+      - [⚙️ Setup](../join.md)
+      {: .prerequisite }
+
+      ## The lesson
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_00/index.md"
+    And I wait for the page to be interactive
+    Then a prerequisite gate offers "Setup"
+    And the gated content "Secret wisdom here." is hidden
+
+  Scenario: Components that upgrade after the gate stay hidden
+    A gate that tags the blocks it can see loses them the moment a component
+    replaces its block with a rendered one — the page leaks its whole body
+    back into view. Everything after a locked gate must stay gone.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/locked.md" with the document:
+      """
+      # Locked module
+
+      - [Basics](basics.md)
+      {: .prerequisite }
+
+      ```csv
+      name,breed
+      Lucky,Beagle
+      Nova,Lab
+      ```
+      {: .dataset #dogs_l }
+
+      [Dogs](#)
+      {: .datagrid source="dogs_l" #grid_l }
+
+      ```
+      ### The worry
+      Secret wisdom here.
+      ```
+      {: .block }
+
+      **Q:** Ready?
+
+      - [x] Yes
+      - [ ] No
+      {: .quiz }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/locked.md"
+    And I wait for the page to be interactive
+    Then a prerequisite gate offers "Basics"
+    And nothing below the gate is visible
+    When I show the page anyway
+    Then the gated content "Secret wisdom here." is visible

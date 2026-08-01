@@ -24,6 +24,9 @@ learner is self-directed in both directions.
 .lc-prereq-note a { color: #92600a; text-decoration: underline; cursor: pointer; }
 .lc-prereq-met { margin: 1em 0; font-size: 0.85em; color: #2e7d32; }
 .lc-prereq-hidden { display: none !important; }
+/* (the lock itself is applied in JS — see lockAfter: a locked page has to
+   stay locked while components replace their blocks AND while slides
+   re-parent the whole body into sections) */
 .lc-unlocks { margin: 2.5em 0 1em; border-top: 1px solid #e5e7eb; padding-top: 1em; }
 .lc-unlocks h4 { margin: 0 0 6px; font-size: 0.95em; color: #334155; }
 .lc-unlocks a { display: inline-block; margin: 2px 10px 2px 0; padding: 4px 12px; border: 1px solid #d0e3f5; border-radius: 16px; background: #f5f9ff; color: #0066cc; text-decoration: none; font-size: 0.9em; }
@@ -119,13 +122,36 @@ null]</script>
       + "<div class='lc-prereq-note'>Earn points on the pages above and this page unlocks itself. "
       + "<a data-show>Show it anyway →</a></div>";
     el.parentNode.replaceChild(card, el);
-    /* hide everything after the gate (the page body), until earned or overridden */
-    var hidden = [];
-    var n = card.nextElementSibling;
-    while (n) { n.classList.add("lc-prereq-hidden"); hidden.push(n); n = n.nextElementSibling; }
+    /* Hide the page body until earned or overridden. Two things fight this:
+       components upgrade LATE and REPLACE their block (a csv fence becomes a
+       grid), and slides re-parent everything into sections — so neither a
+       one-shot walk nor a sibling CSS rule survives. Hide by DOCUMENT ORDER
+       at every level up to the render root, and re-apply whenever the tree
+       changes. */
+    var root = (card.closest && (card.closest(".lc-run") || card.closest("main"))) || document.body;
+    var locked = true;
+    function lockAfter() {
+      if (!locked) return;
+      var node = card;
+      while (node && node !== root && node.parentNode) {
+        var n = node.nextElementSibling;
+        while (n) { n.classList.add("lc-prereq-hidden"); n = n.nextElementSibling; }
+        node = node.parentNode;
+      }
+    }
+    lockAfter();
+    var obs = null;
+    if (window.MutationObserver) {
+      obs = new MutationObserver(lockAfter);
+      obs.observe(root, { childList: true, subtree: true });
+    }
     var show = card.querySelector("[data-show]");
     if (show) show.addEventListener("click", function () {
-      hidden.forEach(function (h) { h.classList.remove("lc-prereq-hidden"); });
+      locked = false;
+      if (obs) obs.disconnect();
+      root.querySelectorAll(".lc-prereq-hidden").forEach(function (h) {
+        h.classList.remove("lc-prereq-hidden");
+      });
       show.remove();
     });
   }
