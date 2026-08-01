@@ -147,3 +147,4 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
     And I wait for the page to be interactive
     And I ask the desk agent into the void "hello desk"
     Then the desk blames the road, not the badge
+    And the desk admits it borrowed the builder key

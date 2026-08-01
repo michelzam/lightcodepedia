@@ -70,3 +70,13 @@ def step_retype_named_pad(context, pad_id):
         '[data-lc-id="' + pad_id + '"] .lc-mdpad-in')
     ta.wait_for(state="visible", timeout=15_000)
     ta.fill(context.text)
+
+
+@then("the desk admits it borrowed the builder key")
+def step_desk_admits_borrowed(context):
+    # a Models-less key fails CORS-naked and mimics a network error — the
+    # desk must volunteer the borrowed-key possibility, not hide behind
+    # "check your ad-blocker"
+    status = context.page.locator('[data-lc-id="desk"] .lc-agent-status')
+    expect(status).to_contain_text("builder key", timeout=5_000)
+    expect(status).to_contain_text("Models", timeout=5_000)

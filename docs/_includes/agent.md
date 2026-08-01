@@ -103,10 +103,14 @@ Auto-included by docs/_layouts/default.html.
   // same token, same GitHub, no re-pasting ceremony ("one token for
   // everything", as the docs teach). A 401 clears it and the normal
   // paste-once flow takes over. Nothing new is stored.
-  var SHARED = { token: null, listeners: [] };
-  try { SHARED.token = localStorage.getItem('lc_ed_pat') || null; } catch (e) {}
+  var SHARED = { token: null, borrowed: false, listeners: [] };
+  try {
+    SHARED.token = localStorage.getItem('lc_ed_pat') || null;
+    SHARED.borrowed = !!SHARED.token;   // silently borrowed from the editor
+  } catch (e) {}
   function setSharedToken(v) {
     SHARED.token = v;
+    SHARED.borrowed = false;            // pasted on purpose — not borrowed
     SHARED.listeners.forEach(function(cb){ try { cb(v); } catch (e) {} });
   }
   function onSharedTokenChange(cb) { SHARED.listeners.push(cb); }
@@ -438,12 +442,18 @@ Auto-included by docs/_layouts/default.html.
         usage: result.data.usage || null
       };
     }).catch(function(err){
-      /* fetch rejected → no HTTP answer at all. That's the ROAD, not the
-         token: a rejected PAT arrives as a 401/403 above. Say so, or every
-         ad-blocker looks like a broken key to a learner. */
-      return { error: "Couldn't reach models.github.ai — no answer at all. " +
-        "Usually an ad-blocker, VPN or firewall on the road (a bad token would say 'rejected'). " +
-        "(" + (err.message || String(err)) + ")" };
+      /* fetch rejected → no HTTP answer reached the page. Usually the ROAD
+         (ad-blocker, VPN, firewall) — but not always: GitHub's error
+         responses can arrive without CORS headers, so a key that LACKS the
+         Models permission also lands here, dressed as a network failure.
+         When the key was silently borrowed from the editor, say so. */
+      var hint = SHARED.borrowed
+        ? " Note: this desk borrowed your builder key — if your network is fine, " +
+          "that key may lack the 'Models: Read' permission (add it to the PAT, or 🔑 paste a Models-enabled one)."
+        : "";
+      return { error: "Couldn't reach models.github.ai — no answer got through. " +
+        "Often an ad-blocker, VPN or firewall on the road." + hint +
+        " (" + (err.message || String(err)) + ")" };
     });
   }
 
