@@ -35,6 +35,10 @@ IAL knobs:
               auto-appended to every prompt, and the first python
               code block in the response gets an "⬇ Apply to #X"
               button.
+  bound="{=expr}"  the second grammar (told apart by syntax — the legacy
+              editor binding is untouched): evaluate a CELL expression at
+              Ask time and hand the value to the model. {=cv1.source}
+              reads a pad, {=inputs.field} a form — anything cells see.
 
 The learner's PAT is asked once per page. All agents share it.
 The token is held in a JS closure (in-memory) + the browser's
@@ -356,12 +360,13 @@ Auto-included by docs/_layouts/default.html.
   };
 
   // ===== panel structure =====
-  function buildPanel(id, cfg, rows, boundId) {
+  function buildPanel(id, cfg, rows, boundId, boundExpr) {
     var div = document.createElement('div');
     div.className = 'lc-agent';
     div.id = 'lc-agent-' + id;
     var introHtml = cfg.intro ? '<p class="lc-agent-intro">' + escapeHtml(cfg.intro) + '</p>' : '';
-    var boundLabel = boundId ? '<span class="lc-agent-bound">linked to <code>#' + escapeHtml(boundId) + '</code></span>' : '';
+    var boundLabel = boundId ? '<span class="lc-agent-bound">linked to <code>#' + escapeHtml(boundId) + '</code></span>'
+      : boundExpr ? '<span class="lc-agent-bound">reads <code>{=' + escapeHtml(boundExpr) + '}</code></span>' : '';
     div.innerHTML =
       '<div class="lc-agent-head">' +
         '<span class="lc-agent-icon" aria-hidden="true">🤖</span>' +
@@ -443,7 +448,7 @@ Auto-included by docs/_layouts/default.html.
   }
 
   // ===== wire one panel =====
-  function wirePanel(panel, cfg, boundId) {
+  function wirePanel(panel, cfg, boundId, boundExpr) {
     var totalTokens = 0;
     var authForm = panel.querySelector('.lc-agent-auth');
     var body = panel.querySelector('.lc-agent-body');
@@ -487,9 +492,17 @@ Auto-included by docs/_layouts/default.html.
       status.innerHTML = '';
       response.innerHTML = '';
 
-      var fullPrompt = buildAugmentedPrompt(boundId, question);
+      /* expression binding evaluates NOW — the model reads the document
+         as it stands at Ask time, not as it was on page load */
+      var promptP = (boundExpr && window.lcCellEval)
+        ? window.lcCellEval(boundExpr).then(function (v) {
+            return 'The document under review:\n\n```\n' + String(v) + '\n```\n\nThe request:\n\n' + question;
+          }).catch(function () { return question; })
+        : Promise.resolve(buildAugmentedPrompt(boundId, question));
 
-      ask(SHARED.token, cfg, fullPrompt).then(function(result){
+      promptP.then(function (fullPrompt) {
+        return ask(SHARED.token, cfg, fullPrompt);
+      }).then(function(result){
         sendBtn.disabled = false;
         sendBtn.textContent = '▶ Ask';
         if (result.error) {
@@ -580,7 +593,17 @@ Auto-included by docs/_layouts/default.html.
     var givenId = el.getAttribute('id') || null;
     var id = givenId || ('agent-' + (++AGENT_SEQ));
     var rows = parseInt(el.getAttribute('rows'), 10) || 3;
-    var boundId = el.getAttribute('bound') || null;
+    /* bound= has two grammars, told apart by syntax so the legacy meaning
+       is never touched: a plain id ties to a .run editor (code + output
+       ride every prompt, Apply writes back); "{=expr}" evaluates a cell
+       expression at Ask time and hands the VALUE to the model — any
+       component property the page's cells can see. */
+    var boundRaw = el.getAttribute('bound') || null;
+    var boundId = boundRaw, boundExpr = null;
+    if (boundRaw && /^\{=/.test(boundRaw.trim())) {
+      boundExpr = boundRaw.trim().replace(/^\{=\s*/, '').replace(/\}\s*$/, '');
+      boundId = null;
+    }
     var botName = el.getAttribute('bot') || pageCfg.bot || null;
     /* a paragraph form — Ask Doc. {: .agent bot="doc" } — uses its text as intro */
     if (!codeNode && el.tagName === 'P' && !pageCfg.intro) {
@@ -596,7 +619,7 @@ Auto-included by docs/_layouts/default.html.
     if (botCfg) Object.keys(botCfg).forEach(function(k){ cfg[k] = botCfg[k]; });
     Object.keys(pageCfg).forEach(function(k){ if (k !== 'bot') cfg[k] = pageCfg[k]; });
     if (botName && !botCfg) cfg.intro = '⚠ bot "' + botName + '" could not be loaded — answering with defaults. ' + (cfg.intro || '');
-    var panel = buildPanel(id, cfg, rows, boundId);
+    var panel = buildPanel(id, cfg, rows, boundId, boundExpr);
     // Slides partition runs before agent upgrade (it has to wait for js-yaml).
     // Carry the fragment marking from the original code-block to the new panel
     // so it stays in the slide reveal sequence.
@@ -613,7 +636,7 @@ Auto-included by docs/_layouts/default.html.
     panel.setAttribute('data-system', cfg.system || '');
     panel.setAttribute('data-model', cfg.model || '');
     el.parentNode.replaceChild(panel, el);
-    wirePanel(panel, cfg, boundId);
+    wirePanel(panel, cfg, boundId, boundExpr);
     if (cfg._knowledge) {
       var u = panel.querySelector('.lc-agent-usage');
       if (u) u.textContent = '📚 ' + (cfg.name || botName) + ' knows ' + cfg._knowledge.pages +

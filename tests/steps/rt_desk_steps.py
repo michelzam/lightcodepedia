@@ -26,28 +26,18 @@ def step_stub_model_desk(context, v1, v2):
         "**/models.github.ai/inference/chat/completions", fulfill)
 
 
-@when('I brief the desk agent with "{text}"')
-def step_brief_desk(context, text):
+@when('I brief the "{desk_id}" desk with "{text}"')
+def step_brief_named_desk(context, desk_id, text):
     # the real flow is x-ray Keep → the block re-renders with the new yaml
     # and the panel republishes data-system; the step reproduces that final
     # state directly, which is exactly what the audit reads
-    panel = context.page.locator('[data-lc-id="desk"]')
+    sel = '[data-lc-id="' + desk_id + '"]'
+    panel = context.page.locator(sel)
     panel.wait_for(state="attached", timeout=15_000)
     context.page.evaluate(
         """([sel, t]) => document.querySelector(sel).setAttribute('data-system', t)""",
-        ['[data-lc-id="desk"]', text],
+        [sel, text],
     )
-
-
-@when('I ask the desk agent "{prompt}"')
-def step_ask_desk(context, prompt):
-    panel = context.page.locator('[data-lc-id="desk"]')
-    before = panel.locator(".lc-agent-log-entry").count()
-    panel.locator(".lc-agent-prompt").fill(prompt)
-    panel.locator(".lc-agent-send").click()
-    # the visible panel is single-shot; the sitting's ledger appends
-    expect(panel.locator(".lc-agent-log-entry")).to_have_count(
-        before + 1, timeout=20_000)
 
 
 @given("the model desk is unreachable")

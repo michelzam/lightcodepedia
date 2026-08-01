@@ -65,6 +65,28 @@ they resolve for the connected owner, and content privacy still comes from
 repository privacy alone. Use them on owner-facing pages; visitor-facing
 pages keep literal values.
 
+## Feature state — pages that open as you earn them
+
+Every `.feature` card with an `#id` publishes its live status as a scope:
+`audit.passing` (bool) and `audit.status` (`passing` / `failing` / `pending`).
+The moment a run finishes, every cell recomputes — so a block can gate
+itself on proof:
+
+```markdown
+**Q:** Now that it's green — why did it work?
+{: visible="= audit.passing" }
+
+- [x] Because…
+{: .quiz visible="= audit.passing" }
+```
+
+The reinforcement quiz appears exactly when the learner has just *lived*
+the answer. Any block gates on any state — quizzes on features, hints on
+`not audit.passing`, a conclusion on three greens combined with `and`.
+
+Named `.mdpad` pads publish too: `{=cv1.source}` is whatever the learner
+has typed (debounced). One scope model — forms, pads, features, the store.
+
 ## Notes
 
 - Cells are eval'd, never exec'd — statements can't be typed into one, and a

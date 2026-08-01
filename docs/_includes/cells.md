@@ -70,8 +70,9 @@ Auto-included by docs/_layouts/default.html.
       t.parentNode.replaceChild(frag, t);
     });
     document.querySelectorAll("[visible]").forEach(function (el) {
+      if (el._lcVisWired) return;   // rescan is idempotent — no duplicate rows
       var v = (el.getAttribute("visible") || "").trim();
-      if (v.charAt(0) === "=") vis.push({ el: el, expr: v.slice(1) });
+      if (v.charAt(0) === "=") { el._lcVisWired = true; vis.push({ el: el, expr: v.slice(1) }); }
     });
     return cells.length + vis.length;
   }
@@ -84,7 +85,7 @@ Auto-included by docs/_layouts/default.html.
      it: flat when safe, scoped when needed. */
   function readInputs() {
     var scopes = {}, counts = {}, vals = {};
-    document.querySelectorAll(".lc-form[data-lc-value]").forEach(function (f) {
+    document.querySelectorAll(".lc-form[data-lc-value], .lc-mdpad[data-lc-value]").forEach(function (f) {
       var id = f.getAttribute("data-lc-id") || "";
       var o;
       try { o = JSON.parse(f.getAttribute("data-lc-value")); } catch (e) { return; }
@@ -95,19 +96,24 @@ Auto-included by docs/_layouts/default.html.
         vals[k] = o[k];
       }
     });
+    /* features are state too: a card with an id publishes its status, so a
+       block can gate itself with visible="= audit.passing" and open the
+       moment the run turns green. Forms win a (never-legal) id collision. */
+    document.querySelectorAll(".lc-feature[data-lc-id]").forEach(function (f) {
+      var id = f.getAttribute("data-lc-id");
+      if (!id || scopes[id]) return;
+      var st = f.getAttribute("data-status") || "";
+      scopes[id] = { status: st, passing: st === "passing" };
+    });
     var bare = {};
     for (var k in counts) if (counts[k] === 1) bare[k] = vals[k];
     return { scopes: scopes, bare: bare };
   }
 
-  function evalAll(m) {
-    var inp = readInputs();
-    window._lcCellScopes = JSON.stringify(inp.scopes);
-    window._lcCellBare = JSON.stringify(inp.bare);
-    var exprs = cells.map(function (c) { return deSmart(c.getAttribute("data-expr")); })
-      .concat(vis.map(function (v) { return "bool(" + deSmart(v.expr) + ")"; }));
-    window._lcCellExprs = JSON.stringify(exprs);
-    run(m,
+  /* one script, two callers: the page-wide recompute AND single-expression
+     evaluation for knobs (an agent's bound="{=…}" reads a document through
+     the same scopes a cell would). */
+  var EVAL_SCRIPT =
       "import js, json\n" +
       "class _Empty:\n" +                        // null-object: chains, prints '', falsy for `or`
       "    def __getattr__(self, _n):\n" +
@@ -154,9 +160,35 @@ Auto-included by docs/_layouts/default.html.
       "                _out.append('\\u26a0 ' + str(_ne)); break\n" +
       "        except Exception as _err:\n" +
       "            _out.append('\\u26a0 ' + str(_err)); break\n" +
-      "js.window._lcCellOut = json.dumps(_out)\n");
+      "js.window._lcCellOut = json.dumps(_out)\n";
+
+  function evalExprs(m, exprs) {
+    var inp = readInputs();
+    window._lcCellScopes = JSON.stringify(inp.scopes);
+    window._lcCellBare = JSON.stringify(inp.bare);
+    window._lcCellExprs = JSON.stringify(exprs);
+    run(m, EVAL_SCRIPT);
+    return JSON.parse(window._lcCellOut);
+  }
+
+  function evalAll(m) {
+    var exprs = cells.map(function (c) { return deSmart(c.getAttribute("data-expr")); })
+      .concat(vis.map(function (v) { return "bool(" + deSmart(v.expr) + ")"; }));
     var out;
-    try { out = JSON.parse(window._lcCellOut); } catch (e) { return; }
+    try {
+      out = evalExprs(m, exprs);
+    } catch (e) {
+      /* the runtime refused the whole script (re-entrancy, load hiccup…):
+         remember why and try once more on the next tick — a transient
+         failure must not freeze visibility at a stale answer */
+      window._lcCellErr = String(e && e.message || e);
+      if (!evalAll._retry) {
+        evalAll._retry = true;
+        setTimeout(function () { evalAll._retry = false; evalAll(m); }, 60);
+      }
+      return;
+    }
+    if (!out || out.length !== cells.length + vis.length) { window._lcCellStale = 1; return; }
     cells.forEach(function (c, i) {
       c.textContent = out[i];
       c.classList.toggle("lc-cell-err", (out[i] || "").charAt(0) === "⚠");
@@ -187,6 +219,18 @@ Auto-included by docs/_layouts/default.html.
   /* Re-scan after content is injected AFTER load (the runner renders a page
      into #lc-run) — collect the new {= } cells and evaluate them. Idempotent:
      collect() rebuilds from the whole document each call. */
+  /* Evaluate ONE cell expression, returning its string value — the knob
+     API. An agent with bound="{=cv1.source}" hands the model whatever the
+     expression sees, through the exact scopes the page's cells use. */
+  window.lcCellEval = function (expr) {
+    var p = window.lcPageRuntime ? window.lcPageRuntime() : null;
+    if (!p) return Promise.reject(new Error("no page runtime"));
+    return p.then(function (m) {
+      var out = evalExprs(m, [deSmart(String(expr))]);
+      return out && out.length ? out[0] : "";
+    });
+  };
+
   window.lcCellsRescan = function () {
     if (!collect()) return;
     if (!window.lcPageRuntime) return;

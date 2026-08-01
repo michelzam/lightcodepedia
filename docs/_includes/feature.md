@@ -230,8 +230,23 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 
   /* ── Update badge + notify suite row ────────────────────────────────────────── */
   function setCardStatus(card, status) {
+    var was = card.getAttribute("data-status") || "";
     card.classList.remove("lc-feature-passing", "lc-feature-failing", "lc-feature-pending");
     if (status) card.classList.add("lc-feature-" + status);
+    /* the card IS page state: expose it, and let the cells recompute — a
+       block gated with visible="= audit.passing" opens the moment the run
+       turns green. Same event the forms fire; one recompute path. */
+    card.setAttribute("data-status", status || "");
+    if (was !== (status || "")) {
+      try { document.dispatchEvent(new CustomEvent("lc-model-changed")); } catch (e) {}
+      /* celebration="true": the FIRST honest red→green earns a burst —
+         re-running an already-green card celebrates nothing */
+      if (status === "passing" && !card._lcCelebrated &&
+          (card.getAttribute("data-celebration") || "") === "true" && was) {
+        card._lcCelebrated = true;
+        if (window.lcConfetti) window.lcConfetti(card);
+      }
+    }
     var badge = card.querySelector("[data-lc-badge]");
     if (badge) {
       badge.className = "lc-feature-badge" + (status ? " lc-feature-badge-" + status : "");
@@ -324,7 +339,9 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     var fullCode = preamble + "\n" + scenarioParts.join("\n\n") + "\n_run_all()";
 
     if (!window._lcMpReady) {
-      window._lcMpReady = getMpModule()
+      /* ONE interpreter per page (see pyrun's lcMpy): loading our own here
+         would silently kill the cells/editor runtime — the wasm is a singleton */
+      window._lcMpReady = window.lcMpy ? window.lcMpy() : getMpModule()
         .then(function(mjs) { return mjs.loadMicroPython({ stdout: function(){}, stderr: function(){} }); });
     }
     var mpP = window._lcMpReady;
@@ -406,10 +423,10 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     setCardStatus(card, "pending");
     if (runBtn) { runBtn.disabled = true; runBtn.textContent = "…"; }
 
-    return getMpModule()
+    return (window.lcMpy ? window.lcMpy() : getMpModule()
       .then(function(mjs) {
         return mjs.loadMicroPython({ stdout: function(){}, stderr: function(){} });
-      })
+      }))
       .then(function(mp) {
         var allPass = true, stopped = false;
         stepEls.forEach(function(s) {
@@ -513,6 +530,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     card.className = "lc-feature" + (status ? " lc-feature-" + status : "") + (isVisible ? "" : " lc-feature-hidden");
     card._lcHidden = !isVisible;
     if (lcId) card.setAttribute("data-lc-id", lcId);
+    var celebration = el.getAttribute("celebration");
+    if (celebration) card.setAttribute("data-celebration", celebration);
     card._lcFeatureName = featureName;
     card._lcFeatureTags = tagsRaw ? tagsRaw.split(",").map(function(t){ return t.trim(); }) : [];
 

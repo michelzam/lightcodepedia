@@ -159,6 +159,28 @@ Auto-included by docs/_layouts/default.html.
     return tests;
   }
 
+  /* ONE MicroPython per page. The wasm build is a singleton: a second
+     loadMicroPython silently kills the first (every later call throws
+     "NULL object"). Features, editors, cells, buttons, diagrams and the
+     x-ray all share THIS interpreter; stdout/stderr route through a
+     swappable hook — runPython is synchronous, so a consumer sets the
+     hook, runs, and clears it, atomically. */
+  function lcMpy() {
+    if (window._lcMpyP) return window._lcMpyP;
+    window._lcMpyP = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
+      .then(function (mjs) {
+        return mjs.loadMicroPython({
+          stdout: function (t) { if (window._lcMpyOut) window._lcMpyOut(t); },
+          stderr: function (t) {
+            if (window._lcMpyOut) window._lcMpyOut(t);
+            else if (window.console) console.warn("[lc mpy stderr]", t);
+          }
+        });
+      });
+    return window._lcMpyP;
+  }
+  window.lcMpy = lcMpy;
+
   var BOOTSTRAP_TPL = [
     "from js import document",
     "class _Showable:",
@@ -359,16 +381,8 @@ Auto-included by docs/_layouts/default.html.
       runBtn.disabled = true;
       if (testBtn) testBtn.disabled = true;
       status.textContent = "loading runtime…";
-      loading = Promise.all([
-        import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs"),
-        loadJsYaml()
-      ])
-        .then(function(results){
-          return results[0].loadMicroPython({
-            stdout: function(t){ buf += t; },
-            stderr: function(t){ buf += t; }
-          });
-        })
+      loading = Promise.all([lcMpy(), loadJsYaml()])
+        .then(function(results){ return results[0]; })
         .then(function(instance){
           mp = instance;
           try { mp.runPython(BOOTSTRAP); } catch (e) { }
@@ -394,6 +408,10 @@ Auto-included by docs/_layouts/default.html.
     function runUserCode(m) {
       buf = "";
       view.innerHTML = "";
+      /* shared interpreter: point `show` (and print) at THIS editor for
+         the duration of the run — runPython is synchronous */
+      window._lcMpyOut = function (t) { buf += t; };
+      try { m.runPython(BOOTSTRAP); } catch (e) { }
       try {
         m.runPython(codeEl.value);
         setOut(buf || "(no print output)", false);
@@ -401,6 +419,8 @@ Auto-included by docs/_layouts/default.html.
       } catch (e) {
         setOut(buf + (buf ? "\n" : "") + (e.message || String(e)), true);
         return false;
+      } finally {
+        window._lcMpyOut = null;
       }
     }
 
@@ -493,7 +513,11 @@ Auto-included by docs/_layouts/default.html.
           }).join("\n");
           var finish = "_summary.textContent = str(_pass) + ' passed, ' + str(_fail) + ' failed'";
           try {
+            window._lcMpyOut = function (t) { buf += t; };
+            try { m.runPython(BOOTSTRAP); } catch (e2) { }
+            try {
             m.runPython(driver + "\n" + calls + "\n" + finish);
+            } finally { window._lcMpyOut = null; }
             status.textContent = "tests done";
           } catch (e) {
             var row = document.createElement("div");
@@ -609,13 +633,7 @@ Auto-included by docs/_layouts/default.html.
       if (loading) return loading;
       input.disabled = true;
       status.textContent = "loading runtime…";
-      loading = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
-        .then(function(mod){
-          return mod.loadMicroPython({
-            stdout: function(t){ buf += t; },
-            stderr: function(t){ buf += t; }
-          });
-        })
+      loading = lcMpy()
         .then(function(instance){
           mp = instance;
           try { mp.runPython(REPL_BOOTSTRAP); } catch (e) { }
@@ -637,6 +655,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     function submit(line) {
+      window._lcMpyOut = null;
       if (!line) {
         append(">>> \n", "lc-pyrepl-prompt-line");
         return;
@@ -646,6 +665,8 @@ Auto-included by docs/_layouts/default.html.
       loadMp().then(function(m){
         append(">>> " + line + "\n", "lc-pyrepl-prompt-line");
         buf = "";
+        window._lcMpyOut = function (t) { buf += t; };
+        try { m.runPython(REPL_BOOTSTRAP); } catch (e0) { }
         try {
           m.runPython("_repl_eval(" + JSON.stringify(line) + ")");
           if (buf) {
@@ -658,6 +679,7 @@ Auto-included by docs/_layouts/default.html.
           append(msg + "\n", "lc-pyrepl-err");
           append("(runtime crashed — state lost, reloading on next command)\n", "lc-pyrepl-err");
           mp = null;
+          window._lcMpyOut = null;
           loading = null;
         }
       }).catch(function(e){
@@ -767,16 +789,8 @@ Auto-included by docs/_layouts/default.html.
     bound.id = "lc-pyrun-page-bound"; bound.style.display = "none";
     document.body.appendChild(view);
     document.body.appendChild(bound);
-    window._lcPageRuntime = Promise.all([
-      import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs"),
-      loadJsYaml()
-    ])
-      .then(function(results){
-        return results[0].loadMicroPython({
-          stdout: function(){},
-          stderr: function(t){ if (window.console) console.warn("[lc page-rt stderr]", t); }
-        });
-      })
+    window._lcPageRuntime = Promise.all([lcMpy(), loadJsYaml()])
+      .then(function(results){ return results[0]; })
       .then(function(mp){
         try { mp.runPython(BOOTSTRAP_TPL.replace(/__ID__/g, "page")); }
         catch (e) { if (window.console) console.warn("[lc page-rt bootstrap]", e.message || e); }
@@ -850,10 +864,7 @@ Auto-included by docs/_layouts/default.html.
     var fullCode = preamble + "\n" + pyCode + "\n"
       + "_btn = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n"
       + "on_click(_btn)\n";
-    if (!window._lcMpReady) {
-      window._lcMpReady = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
-        .then(function (mjs) { return mjs.loadMicroPython({ stdout: function () {}, stderr: function () {} }); });
-    }
+    if (!window._lcMpReady) window._lcMpReady = lcMpy();
     window._lcMpReady.then(function (mp) {
       var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
       try { if (runFn) runFn.call(mp, fullCode); } catch (e) { console.error("[lc-button]", e); }

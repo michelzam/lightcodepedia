@@ -201,6 +201,28 @@ temperature: 0.3
 - [ ] `42` — works great, trust the universe.
 {: .quiz }
 
+### 🔌 `bound="{=expr}"` — wire the agent to any component
+
+`bound=` has a second grammar, told apart by syntax so the editor binding
+above is never touched: give it a **cell expression** and the agent reads
+that VALUE at Ask time — no copy-paste, always current.
+
+```markdown
+```markdown
+(the learner's draft)
+```
+{: .mdpad #cv1 rows="8" }
+
+```yaml
+system: You are the coordinator. End with VERDICT: n/8.
+```
+{: .agent #desk bound="{=cv1.source}" }
+```
+
+The header says `reads {=cv1.source}`; every Ask hands the model the pad's
+current text. Anything the page's [cells](/components/cells) can see works:
+a form field (`{=inputs.pitch}`), a pad, a store node.
+
 ### 📏 Ask the agent questions — from a `.feature`
 
 Give the agent an `#id` and a page's feature can audit it: `system` reads

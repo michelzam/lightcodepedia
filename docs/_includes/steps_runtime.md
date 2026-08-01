@@ -668,7 +668,7 @@ class Object:
                   {"n": "visible", "t": "bool"},
                   {"n": "text", "t": "str"}],
            assoc=[{"n": "page", "target": "Page"}],
-           methods=["click", "has_class"])
+           methods=["click", "has_class", "confetti"])
 class Block(Object):
     def __bool__(self):
         return self._el is not None
@@ -689,6 +689,14 @@ class Block(Object):
     def click(self):
         if self._el:
             self._el.click()
+        return self
+
+    def confetti(self):
+        """Celebrate from this component — a burst the page chose to earn.
+        Put it after the asserts of a final step: it only ever fires when
+        everything above it survived."""
+        if self._el is not None and getattr(js.window, "lcConfetti", None):
+            js.window.lcConfetti(self._el)
         return self
 
 
@@ -2262,7 +2270,8 @@ _inject_store()
 
   function mpReady() {
     if (!window._lcMpReady) {
-      window._lcMpReady = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
+      window._lcMpReady = window.lcMpy ? window.lcMpy()
+        : import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
         .then(function (mjs) { return mjs.loadMicroPython({ stdout: function () {}, stderr: function () {} }); });
     }
     return window._lcMpReady;

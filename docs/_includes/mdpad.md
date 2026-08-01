@@ -59,6 +59,18 @@ Auto-included by docs/_layouts/default.html.
     var wrap = document.createElement("div");
     wrap.className = "lc-mdpad";
     if (id) wrap.setAttribute("data-lc-id", id);
+    /* a named pad is page data: it publishes {source} as a cell scope, so
+       expressions can read what the learner typed — {=cv1.source} in prose,
+       in a visible= gate, or handed to an agent through bound="{=…}".
+       Debounced: cells recompute in MicroPython, not per keystroke. */
+    var _pubT = null;
+    function publish(fire) {
+      if (!id) return;
+      wrap.setAttribute("data-lc-value", JSON.stringify({ source: ta.value }));
+      if (fire) {
+        try { document.dispatchEvent(new CustomEvent("lc-model-changed")); } catch (e) {}
+      }
+    }
 
     var ta = document.createElement("textarea");
     ta.className = "lc-mdpad-in";
@@ -128,6 +140,11 @@ Auto-included by docs/_layouts/default.html.
         : "<pre>" + ta.value.replace(/[&<]/g, function (c) { return c === "&" ? "&amp;" : "&lt;"; }) + "</pre>";
     }
     ta.addEventListener("input", render);
+    ta.addEventListener("input", function () {
+      clearTimeout(_pubT);
+      _pubT = setTimeout(function () { publish(true); }, 400);
+    });
+    publish(false);  /* the seed is data too — no recompute storm on load */
     render();  /* show the seed immediately (escaped) … */
     if (window.lcLoadMarked) window.lcLoadMarked(render);  /* … then with marked */
   }

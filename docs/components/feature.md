@@ -183,6 +183,23 @@ Feature: Button handler
 ```
 {: .feature visible="true" #btn_handler status="pending" tags="events" }
 
+## 🎉 Celebration & state — green that opens doors
+
+Two knobs and a verb make a feature card the page's heartbeat:
+
+- **State**: a card with an `#id` publishes `id.passing` / `id.status` to
+  the page's [cells](/components/cells) — any block can wear
+  `visible="= audit.passing"` and unfold the moment the run turns green.
+- **`celebration="true"`**: the card's **first** honest red→green earns a
+  confetti burst. Re-running an already-green card celebrates nothing, and
+  reduced-motion users get a quiet ✨ instead of the storm.
+- **`confetti()`**: the authored version — any component speaks it from a
+  step (`self.page.audit.confetti()`), a `.button`, anywhere. Put it after
+  the asserts of a final step: it only fires when everything above survived.
+
+The engine never celebrates on its own — like scores, celebrations belong
+to the page.
+
 ## 🥸 How to write one
 
 After each Gherkin step, add a `:::python ... :::` block with the implementation:

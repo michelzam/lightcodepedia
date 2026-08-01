@@ -70,6 +70,8 @@ learner typed** — the preview is the document being made, and these read it:
 |---|---|
 | `rendered` | all the preview's text, one string |
 | `source` | what the learner actually typed — for criteria about *how* the markdown is written |
+
+A named pad also **publishes** `{source}` as a live cell scope: `{=cv1.source}` in prose, in a `visible=` gate, or wired into an agent via `bound="{=cv1.source}"` — always the current text, debounced.
 | `titles` | the `#` lines (a page opens with exactly one) |
 | `sections` | the `##` lines — the real structure |
 | `bolds` | every **bold** phrase |

@@ -54,3 +54,13 @@ def step_select_two_and_check(context, a, b):
 def step_trophy_shows(context, score):
     expect(context.page.locator(".lc-score-fab-label")).to_have_text(
         score, timeout=10_000)
+
+
+@then("the trophy's progression bar is filling")
+def step_trophy_bar_fills(context):
+    # the bar animates slowly ON PURPOSE — wait for a non-zero width target
+    context.page.wait_for_function(
+        "() => { var b = document.querySelector('.lc-score-fab-bar i');"
+        "        return b && parseInt(b.style.width || '0') > 0; }",
+        timeout=10_000,
+    )

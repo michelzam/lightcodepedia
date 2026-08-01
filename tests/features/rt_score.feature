@@ -61,3 +61,21 @@ Feature: RT scores key to the rendered page, not the runner
     Then the quiz grades with a Check button
     When I select "Alpha" and "Beta" and check
     Then the trophy shows "1/1"
+
+  Scenario: The trophy's progression bar fills when a point lands
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Bar page
+
+      **Q:** Ready?
+
+      - [x] Yes
+      - [ ] No
+      {: .quiz }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    And I answer the quiz correctly
+    Then the trophy's progression bar is filling

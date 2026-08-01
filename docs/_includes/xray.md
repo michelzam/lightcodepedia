@@ -198,6 +198,7 @@ Auto-included by docs/_layouts/default.html.
       if (window._lcxMPp) return window._lcxMPp;
       window._lcxMPp = (async () => {
         const m = await (window._lcMpReady || (window._lcMpReady =
+          window.lcMpy ? window.lcMpy() :
           import(MP_URL).then(x => x.loadMicroPython({ stdout(){}, stderr(){} }))));
         const run = m.runPython || m.exec || m.pyexec || m.run;
         run.call(m, (document.getElementById("lc-steps-preamble") || {}).textContent || "");

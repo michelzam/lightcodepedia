@@ -49,9 +49,16 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
 /* the chip is pointer-events:none so it never blocks the card; re-enable it on
    the two numbers so their explaining tooltips appear on hover */
 .lc-card-won, .lc-card-rem { pointer-events: auto; cursor: help; }
+/* progression bar under the trophy: fills slowly on purpose — the learner
+   should FEEL the value land, not blink past it */
+.lc-score-fab { position: relative; }
+.lc-score-fab-bar { position: absolute; left: 10%; right: 10%; bottom: 3px; height: 3px; border-radius: 99px; background: rgba(0,0,0,0.08); overflow: hidden; }
+.lc-score-fab-bar i { display: block; height: 100%; width: 0; background: #f59e0b; border-radius: 99px; transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) { .lc-score-fab-bar i { transition: none; } }
 </style>
 <button class="lc-score-fab" type="button" aria-label="Show quiz score">
   <span class="lc-score-fab-icon" aria-hidden="true">🏆</span><span class="lc-score-fab-label">0/0</span><span class="lc-score-fab-remaining"></span>
+  <span class="lc-score-fab-bar" aria-hidden="true"><i></i></span>
 </button>
 <div class="lc-score-popover" role="status" aria-live="polite"></div>
 <script>
@@ -186,6 +193,11 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
         }
       }
       f.classList.toggle('lc-score-remembered', remembered);
+      var barEl = f.querySelector('.lc-score-fab-bar i');
+      if (barEl) {
+        var denom = total + remaining;
+        barEl.style.width = (denom > 0 ? Math.round(100 * won / denom) : 0) + '%';
+      }
       if (!f.classList.contains('lc-score-visible')) f.classList.add('lc-score-visible');
     }
 

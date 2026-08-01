@@ -31,6 +31,7 @@ Auto-included by docs/_layouts/default.html.
         document.head.appendChild(s);
       }));
       var mpPromise = window._lcMpReady || (window._lcMpReady =
+        window.lcMpy ? window.lcMpy() :
         import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
           .then(function (m) { return m.loadMicroPython({ stdout: function () {}, stderr: function () {} }); }));
 
