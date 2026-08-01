@@ -466,6 +466,18 @@ Auto-included by docs/_layouts/default.html.
         .then(function () { _treeP = null; refresh(); })
         .catch(function (e) { alert("Couldn't complete: " + e.message); });
     }
+    /* every folder is born as its index.md — including _trash, which is
+       born implicitly the first time something lands in it. The quiet PUT
+       is a no-op when the index already exists (422). */
+    function ensureFolderIndex(dirPath, title) {
+      var H = { Authorization: "Bearer " + _folderPat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" };
+      var body = "# " + title + "\n\n[in this folder](#)\n{: .folder }\n";
+      return fetch("https://api.github.com/repos/" + scanRepo + "/contents/" + dirPath + "/index.md",
+        { method: "PUT", headers: H,
+          body: JSON.stringify({ message: "New: " + dirPath + "/index.md", content: btoa(unescape(encodeURIComponent(body))) }) })
+        .catch(function () {})
+        .then(function () {});
+    }
     /* a folder IS its files: moving one moves every blob beneath it,
        sequentially — kind to rate limits, recoverable mid-way */
     function ghMoveDir(fromDir, toDir, msg) {
@@ -556,8 +568,11 @@ Auto-included by docs/_layouts/default.html.
         } else if (act === "trash") {
           if (!window.confirm("Trash " + name + "? It moves to _trash/ (recoverable).")) return;
           var ts = new Date().toISOString().replace(/[-:TZ]/g, "").slice(0, 14);
-          if (isDir) ghMoveDir(p, (dir ? dir + "/" : "") + "_trash/" + name + "_deleted_" + ts, "Trash: " + name + "/");
-          else ghMove(p, (dir ? dir + "/" : "") + "_trash/" + name.replace(/\.md$/i, "") + "_deleted_" + ts + ".md", "Trash: " + name);
+          var trashDir = (dir ? dir + "/" : "") + "_trash";
+          ensureFolderIndex(trashDir, "🗑 Trash").then(function () {
+            if (isDir) ghMoveDir(p, trashDir + "/" + name + "_deleted_" + ts, "Trash: " + name + "/");
+            else ghMove(p, trashDir + "/" + name.replace(/\.md$/i, "") + "_deleted_" + ts + ".md", "Trash: " + name);
+          });
         }
       });
       card.appendChild(m);

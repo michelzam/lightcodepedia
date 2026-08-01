@@ -433,7 +433,12 @@ Auto-included by docs/_layouts/default.html.
         usage: result.data.usage || null
       };
     }).catch(function(err){
-      return { error: 'Network error: ' + (err.message || String(err)) };
+      /* fetch rejected → no HTTP answer at all. That's the ROAD, not the
+         token: a rejected PAT arrives as a 401/403 above. Say so, or every
+         ad-blocker looks like a broken key to a learner. */
+      return { error: "Couldn't reach models.github.ai — no answer at all. " +
+        "Usually an ad-blocker, VPN or firewall on the road (a bad token would say 'rejected'). " +
+        "(" + (err.message || String(err)) + ")" };
     });
   }
 

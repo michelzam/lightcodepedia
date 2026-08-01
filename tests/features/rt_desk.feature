@@ -97,3 +97,26 @@ Feature: The desk audit — tune an agent, prove the tuning with three points
       """
     And I run the page's embedded features
     Then every embedded feature passes
+
+  Scenario: A blocked road names itself — not the learner's token
+    'Network error: Load failed' taught nothing; a learner reads it as a
+    broken key. When the fetch is refused before any HTTP answer, the desk
+    must blame the road (ad-blocker, VPN, firewall) and say a bad token
+    would sound different.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the model desk is unreachable
+    And the GitHub contents API serves "courses/demo/module_01/road.md" with the document:
+      """
+      # Road page
+
+      ```yaml
+      system: Review this resume.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/road.md"
+    And I wait for the page to be interactive
+    And I ask the desk agent into the void "hello desk"
+    Then the desk blames the road, not the badge

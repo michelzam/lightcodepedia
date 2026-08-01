@@ -60,6 +60,7 @@ Feature: Folder shelf — read posture and X-ray workbench
     And the page enters X-ray mode
     And I trash the "Alpha" card
     Then the file was moved to "courses/demo/mod/_trash/alpha_deleted_"
+    And the trash folder was born with its index
 
   Scenario: An empty shelf speaks the language of its posture
     Given I have a clean browser page

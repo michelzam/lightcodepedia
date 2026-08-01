@@ -118,10 +118,20 @@ def step_trash_card(context, title):
 
 @then('the file was moved to "{prefix}"')
 def step_moved_prefix(context, prefix):
+    # the trash flow now writes TWO files (the born _trash/index.md, then
+    # the moved file) — assert on whichever carries the prefix + suffix
     assert context.moved_to, "no move (PUT) request was issued"
-    assert context.moved_to[0].startswith(prefix), context.moved_to[0]
+    hits = [u for u in context.moved_to if u.startswith(prefix)]
+    assert hits, context.moved_to
     if "_trash/" in prefix:
-        assert "_deleted_" in context.moved_to[0], context.moved_to[0]
+        assert any("_deleted_" in u for u in hits), context.moved_to
+
+
+@then("the trash folder was born with its index")
+def step_trash_born_with_index(context):
+    # every folder is its index.md — _trash included, from its first use
+    assert any(u.endswith("_trash/index.md") for u in context.moved_to), \
+        context.moved_to
 
 
 @given("the viewer can push to the repo")

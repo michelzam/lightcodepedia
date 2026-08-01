@@ -1,6 +1,6 @@
 import json
 
-from behave import given, when
+from behave import given, then, when
 from playwright.sync_api import expect
 
 # The fire story (module_01): a learner tunes the desk agent's briefing and
@@ -48,6 +48,29 @@ def step_ask_desk(context, prompt):
     # the visible panel is single-shot; the sitting's ledger appends
     expect(panel.locator(".lc-agent-log-entry")).to_have_count(
         before + 1, timeout=20_000)
+
+
+@given("the model desk is unreachable")
+def step_model_desk_down(context):
+    # abort = the fetch never gets an HTTP answer — an ad-blocker's view
+    context.page.route(
+        "**/models.github.ai/inference/chat/completions",
+        lambda route: route.abort())
+
+
+@when('I ask the desk agent into the void "{prompt}"')
+def step_ask_desk_void(context, prompt):
+    panel = context.page.locator('[data-lc-id="desk"]')
+    panel.locator(".lc-agent-prompt").fill(prompt)
+    panel.locator(".lc-agent-send").click()
+
+
+@then("the desk blames the road, not the badge")
+def step_desk_blames_road(context):
+    status = context.page.locator(
+        '[data-lc-id="desk"] .lc-agent-status')
+    expect(status).to_contain_text("models.github.ai", timeout=20_000)
+    expect(status).to_contain_text("ad-blocker", timeout=5_000)
 
 
 @when('I retype the pad "{pad_id}" with')
