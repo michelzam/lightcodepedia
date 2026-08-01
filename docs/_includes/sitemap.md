@@ -7,8 +7,16 @@ Usage:
   [Browse](/docs/components)
   {: .sitemap path="docs/components" height="460" }
 
+The map draws THREE relations, so a course reads as a tree at a glance:
+  • contains — solid, from the folder structure itself (an index owns its
+    subfolder indexes and its sibling pages). Nothing to declare.
+  • link — a plain cross-reference between two pages.
+  • must come first — a link inside a {: .prerequisite } block: dashed and
+    lighter, because a constraint is not part of the tree's shape.
+
 Attributes:
-  path="…"     GitHub repo path to scan (required, use the link href)
+  path="…"     repo path to scan. Default "." — this page's own folder
+               (under a runner render); on the site, the link's href.
   height="…"   SVG canvas height in px (default: 420)
 {%- endcomment -%}
 
@@ -16,6 +24,16 @@ Attributes:
 .lc-sitemap { position: relative; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #fafafa; }
 .lc-sitemap svg { display: block; width: 100%; }
 .lc-sm-edge { stroke: #d1d5db; stroke-width: 1.5; fill: none; }
+/* Three relations, told apart at a glance. CONTAINS is the map's skeleton
+   (the folder tree) and draws solid and darkest; a plain cross-link is
+   thinner; a PREREQUISITE is a constraint across the tree, not part of its
+   shape, so it hangs back as a dashed, lighter overlay. */
+.lc-sm-edge-tree { stroke: #9ca3af; stroke-width: 2; }
+.lc-sm-edge-link { stroke: #d1d5db; stroke-width: 1.4; }
+.lc-sm-edge-prereq { stroke: #c7b8ea; stroke-width: 1.3; stroke-dasharray: 5 4; opacity: 0.75; }
+.lc-sm-legend { display: flex; gap: 1em; align-items: center; padding: 0.35em 0.7em; border-top: 1px solid #e5e7eb; background: #fff; font-size: 0.72em; color: #6b7280; }
+.lc-sm-legend i { display: inline-block; width: 22px; height: 0; border-top: 2px solid #9ca3af; vertical-align: middle; margin-right: 0.35em; }
+.lc-sm-legend i.pre { border-top: 2px dashed #c7b8ea; }
 .lc-sm-node circle { fill: #fff; stroke: #9ca3af; stroke-width: 1.5; cursor: pointer; }
 .lc-sm-node circle:hover { stroke: #0066cc; stroke-width: 2.5; }
 .lc-sm-label { font: 11px/1.3 ui-sans-serif,system-ui,sans-serif; fill: #374151; text-anchor: middle; pointer-events: none; }
@@ -48,13 +66,39 @@ Attributes:
     return { title: title, snippet: snippet };
   }
 
+  /* Links carry their MEANING, not just their target: a link inside a
+     {: .prerequisite } block says "this must come first", which is a very
+     different arrow from "this page mentions that one". The IAL sits on the
+     line after its list, so a prerequisite marker back-tags the contiguous
+     lines above it. */
   function smExtractLinks(text) {
     var clean = text.replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "").replace(/`[^`\n]+`/g, "");
-    var out = [], re = /\]\(([^)#\s]+)/g, m;
-    while ((m = re.exec(clean)) !== null) {
-      var h = m[1]; if (/^https?:|^mailto:/.test(h)) continue; out.push(h);
+    var lines = clean.split("\n"), isPre = {};
+    for (var i = 0; i < lines.length; i++) {
+      if (!/\{:[^}]*\.prerequisite\b/.test(lines[i])) continue;
+      for (var j = i - 1; j >= 0 && lines[j].trim(); j--) isPre[j] = true;
     }
+    var out = [];
+    lines.forEach(function (ln, idx) {
+      var re = /\]\(([^)#\s]+)/g, m;
+      while ((m = re.exec(ln)) !== null) {
+        var h = m[1]; if (/^https?:|^mailto:/.test(h)) continue;
+        out.push({ href: h, prereq: !!isPre[idx] });
+      }
+    });
     return out;
+  }
+
+  /* Which page CONTAINS this one? A folder's index hangs off its parent
+     folder's index; every other page hangs off its own folder's index.
+     That single rule draws the whole tree from the paths themselves —
+     nothing to declare, nothing to keep in sync. */
+  function smParentIndex(id) {
+    var parts = String(id).split("/");
+    var last = parts.pop();
+    if (last === "index") parts.pop();     // a folder index belongs to its PARENT
+    if (!parts.length) return null;
+    return parts.join("/") + "/index";
   }
 
   function smResolve(href, baseSlug) {
@@ -97,7 +141,11 @@ Attributes:
       }
       edges.forEach(function (e) {
         var dx = e.t.x - e.s.x, dy = e.t.y - e.s.y;
-        var d = Math.sqrt(dx * dx + dy * dy) || 1, f = ATT * (d - REST);
+        /* containment pulls harder and rests closer: the folder tree should
+           read as clusters, with cross-links merely suggesting neighbours */
+        var tree = e.kind === "tree";
+        var d = Math.sqrt(dx * dx + dy * dy) || 1;
+        var f = ATT * (tree ? 1.9 : 0.8) * (d - (tree ? REST * 0.72 : REST));
         var fx = f * dx / d, fy = f * dy / d;
         if (!e.s.pin) { e.s.vx += fx; e.s.vy += fy; }
         if (!e.t.pin) { e.t.vx -= fx; e.t.vy -= fy; }
@@ -130,8 +178,9 @@ Attributes:
     pages.forEach(function (p) {
       p.links = [];
       p.rawLinks.forEach(function (h) {
-        var s = smResolve(h, p.id);
-        if (slugSet[s] && s !== p.id) p.links.push(s);
+        var href = (h && typeof h === "object") ? h.href : h;
+        var s = smResolve(href, p.id);
+        if (slugSet[s] && s !== p.id) p.links.push({ id: s, prereq: !!(h && h.prereq) });
       });
     });
 
@@ -145,10 +194,23 @@ Attributes:
     });
 
     var edgeKeys = {}, edges = [];
+    /* the skeleton first: containment, straight from the paths */
     pages.forEach(function (p) {
-      p.links.forEach(function (tid) {
-        var key = p.id + ">" + tid;
-        if (!edgeKeys[key] && nodeMap[tid]) { edgeKeys[key] = true; edges.push({ s: nodeMap[p.id], t: nodeMap[tid], bi: false }); }
+      var par = smParentIndex(p.id);
+      if (!par || !nodeMap[par] || par === p.id) return;
+      var key = par + ">" + p.id;
+      if (edgeKeys[key]) return;
+      edgeKeys[key] = true;
+      edges.push({ s: nodeMap[par], t: nodeMap[p.id], bi: false, kind: "tree" });
+    });
+    /* then the authored links draped over it */
+    pages.forEach(function (p) {
+      p.links.forEach(function (lnk) {
+        var tid = lnk.id, key = p.id + ">" + tid;
+        if (edgeKeys[key] || !nodeMap[tid]) return;
+        edgeKeys[key] = true;
+        edges.push({ s: nodeMap[p.id], t: nodeMap[tid], bi: false,
+                     kind: lnk.prereq ? "prereq" : "link" });
       });
     });
     /* mark bidirectional pairs */
@@ -182,9 +244,18 @@ Attributes:
 
     var edgeEls = edges.map(function (e) {
       var p = document.createElementNS(NS, "path");
-      p.setAttribute("class", "lc-sm-edge"); p.setAttribute("marker-end", "url(#lc-sm-arr)");
+      p.setAttribute("class", "lc-sm-edge lc-sm-edge-" + (e.kind || "link"));
+      p.setAttribute("marker-end", "url(#lc-sm-arr)");
       eLayer.appendChild(p); return p;
     });
+
+    /* one line of key: nobody should have to guess what a dashed arrow means */
+    if (edges.some(function (e) { return e.kind === "prereq"; })) {
+      var legend = document.createElement("div");
+      legend.className = "lc-sm-legend";
+      legend.innerHTML = "<span><i></i>contains</span><span><i class='pre'></i>must come first</span>";
+      container.appendChild(legend);
+    }
 
     var sim = simulate(nodes, edges, W, H);
     var raf = null;
@@ -284,7 +355,10 @@ Attributes:
     var a = el.querySelector("a");
     /* prefer path="…" (a repo path, never base-healed); else the href with any
        project base stripped — lcRebase heals the href for navigation. */
-    var _rawPath = el.getAttribute("path") || (a ? a.getAttribute("href") : "") || "";
+    /* "." is the default: a map with nothing to say means "chart where I
+       live". Authors were writing path="." on every course page — a knob
+       whose only common value is a constant belongs in the default. */
+    var _rawPath = el.getAttribute("path") || (a ? a.getAttribute("href") : "") || ".";
     if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
     /* runner render (data-lc-src contract): the map charts the COURSE, and a
        relative path — "." for "this folder" — resolves against the rendered
