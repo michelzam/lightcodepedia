@@ -35,3 +35,17 @@ Feature: The course map draws the tree it is given
     And I wait for the selector ".lc-sitemap svg"
     Then exactly one node is marked as here
     And the here node is bigger than the others
+
+  Scenario: A link back up to the parent index draws no second arrow
+    The tree already joins them; a return link would only add clutter (and
+    a bidirectional curve). A prerequisite the same way is still kept.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the course tree contains "courses/demo/index.md, courses/demo/module_01/index.md, courses/demo/module_01/lesson.md"
+    And "courses/demo/module_01/lesson.md" links back to "index.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/index.md"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-sitemap svg"
+    Then the map draws 2 "tree" edges
+    And the map draws 0 "link" edges

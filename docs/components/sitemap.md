@@ -27,6 +27,11 @@ The map draws three different relations, and tells them apart on purpose:
 | solid, thin | **links to** | an ordinary markdown link between two scanned pages |
 | dashed, lighter | **must come first** | a link inside a `{: .prerequisite }` block |
 
+A page that links back up to its own index draws **no second arrow**: the
+containment edge already says those two belong together, and a return link
+adds only clutter. (A *prerequisite* pointing the same way is kept — "must
+come first" is a constraint the tree cannot express.)
+
 Containment is the skeleton, so those edges also pull tighter in the
 layout — folders settle into clusters. A prerequisite is a constraint
 *across* the tree rather than part of its shape, so it hangs back as a
