@@ -78,3 +78,59 @@ Feature: Blocks gate on feature state through cells
     And I run the page's embedded features
     Then every embedded feature passes
     And a confetti burst appears
+
+  Scenario: A second repair celebrates again; a re-run does not
+    Every run dips through "pending", so the question is what the card's
+    last SETTLED state was. Break it, fix it, and the second repair is
+    worth exactly as much as the first — but pressing Run on a card that
+    is already green earned nothing.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/module_01/again.md" with the document:
+      """
+      # Again page
+
+      ```markdown
+      no
+      ```
+      {: .mdpad #pad rows="3" }
+
+      ```gherkin
+      Feature: Say ok
+        Scenario: the pad says ok
+          Given the pad
+          :::python
+          assert self.page.pad.source.strip() == "ok", self.page.pad.source
+          :::
+      ```
+      {: .feature #again visible="true" status="pending" celebration="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/again.md"
+    And I wait for the page to be interactive
+    And I run the page's embedded features
+    Then the embedded feature ends red
+    When I retype the pad "pad" with:
+      """
+      ok
+      """
+    And I run the page's embedded features
+    Then every embedded feature passes
+    And a confetti burst appears
+    When the confetti has cleared
+    And I run the page's embedded features
+    Then every embedded feature passes
+    And no confetti burst appears
+    When I retype the pad "pad" with:
+      """
+      no
+      """
+    And I run the page's embedded features
+    Then the embedded feature ends red
+    When I retype the pad "pad" with:
+      """
+      ok
+      """
+    And I run the page's embedded features
+    Then every embedded feature passes
+    And a confetti burst appears

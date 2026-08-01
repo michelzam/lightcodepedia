@@ -4,6 +4,15 @@ An interactive Leaflet map with optional markers. CSV in a fenced block — one 
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
+## 🔎 It frames its own markers
+
+With **two or more** points the map fits them all on load — a map of three
+shelters shows three shelters, and still does when a fourth arrives. No
+hand-tuned centre-and-zoom to maintain.
+
+`lat` / `lng` / `zoom` remain the fallback for a map with no markers or
+just one, and `fit="false"` keeps a deliberately framed view.
+
 ## 👀 See it in action
 
 ```

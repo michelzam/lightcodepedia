@@ -26,3 +26,21 @@ def step_confetti(context):
         "() => document.querySelectorAll('.lc-confetti, .lc-confetti-quiet').length > 0",
         timeout=10_000,
     )
+
+
+@when("the confetti has cleared")
+def step_confetti_cleared(context):
+    # the burst removes itself after ~2.3s; wait it out so the next
+    # assertion counts a FRESH one
+    context.page.wait_for_function(
+        "() => document.querySelectorAll('.lc-confetti, .lc-confetti-quiet').length === 0",
+        timeout=10_000,
+    )
+
+
+@then("no confetti burst appears")
+def step_no_confetti(context):
+    context.page.wait_for_timeout(1500)
+    n = context.page.evaluate(
+        "() => document.querySelectorAll('.lc-confetti, .lc-confetti-quiet').length")
+    assert n == 0, "a re-run of a green card threw confetti (%d pieces)" % n

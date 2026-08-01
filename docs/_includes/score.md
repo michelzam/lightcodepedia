@@ -55,9 +55,21 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
    for an absolutely-positioned child. Adding position:relative here (as the
    first version of this bar did) silently overrode the fixed pin and dropped
    the trophy out of its corner into the page flow. */
-.lc-score-fab-bar { position: absolute; left: 10%; right: 10%; bottom: 3px; height: 3px; border-radius: 99px; background: rgba(0,0,0,0.08); overflow: hidden; }
-.lc-score-fab-bar i { display: block; height: 100%; width: 0; background: #f59e0b; border-radius: 99px; transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1); }
-@media (prefers-reduced-motion: reduce) { .lc-score-fab-bar i { transition: none; } }
+/* A 3px sliver in a white pill is technically a progress bar and
+   practically invisible — the point is to FEEL the value land. Thicker,
+   warmer track, and the whole trophy gives one gentle pop when it grows. */
+.lc-score-fab-bar { position: absolute; left: 8%; right: 8%; bottom: 4px; height: 5px; border-radius: 99px; background: #fdebc8; overflow: hidden; }
+.lc-score-fab-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f59e0b, #ea8a04); border-radius: 99px; transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1); }
+.lc-score-fab.lc-score-grew { animation: lc-score-pop 1.5s ease-out; }
+@keyframes lc-score-pop {
+  0%   { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  18%  { transform: scale(1.09); box-shadow: 0 6px 18px rgba(234,138,4,0.45); }
+  100% { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-score-fab-bar i { transition: none; }
+  .lc-score-fab.lc-score-grew { animation: none; }
+}
 </style>
 <button class="lc-score-fab" type="button" aria-label="Show quiz score">
   <span class="lc-score-fab-icon" aria-hidden="true">🏆</span><span class="lc-score-fab-label">0/0</span><span class="lc-score-fab-remaining"></span>
@@ -199,7 +211,17 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       var barEl = f.querySelector('.lc-score-fab-bar i');
       if (barEl) {
         var denom = total + remaining;
-        barEl.style.width = (denom > 0 ? Math.round(100 * won / denom) : 0) + '%';
+        var pct = denom > 0 ? Math.round(100 * won / denom) : 0;
+        var before = parseInt(barEl.style.width || '0', 10) || 0;
+        barEl.style.width = pct + '%';
+        /* one pop when the bar actually GROWS — the moment a point lands,
+           not on every repaint */
+        if (pct > before) {
+          f.classList.remove('lc-score-grew');
+          void f.offsetWidth;                 /* restart the animation */
+          f.classList.add('lc-score-grew');
+          setTimeout(function () { f.classList.remove('lc-score-grew'); }, 1600);
+        }
       }
       if (!f.classList.contains('lc-score-visible')) f.classList.add('lc-score-visible');
     }

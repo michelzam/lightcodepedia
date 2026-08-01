@@ -239,13 +239,18 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     card.setAttribute("data-status", status || "");
     if (was !== (status || "")) {
       try { document.dispatchEvent(new CustomEvent("lc-model-changed")); } catch (e) {}
-      /* celebration="true": the FIRST honest red→green earns a burst —
-         re-running an already-green card celebrates nothing */
-      if (status === "passing" && !card._lcCelebrated &&
-          (card.getAttribute("data-celebration") || "") === "true" && was) {
-        card._lcCelebrated = true;
+      /* celebration="true": a burst for work that was EARNED. Every run
+         dips through "pending", so the honest question is what the card's
+         last SETTLED state was: failing → passing is a repair (celebrate),
+         passing → passing is a re-run (nothing earned), and a first-ever
+         pass counts too. Break it and fix it again and it celebrates
+         again — a once-per-page latch would call the second repair
+         worthless. */
+      if (status === "passing" && (card.getAttribute("data-celebration") || "") === "true"
+          && card._lcSettled !== "passing") {
         if (window.lcConfetti) window.lcConfetti(card);
       }
+      if (status === "passing" || status === "failing") card._lcSettled = status;
     }
     var badge = card.querySelector("[data-lc-badge]");
     if (badge) {

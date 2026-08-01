@@ -1,6 +1,8 @@
 {%- comment -%}
 Map — MapLibre map with CSV/JSON markers, activated from md + IAL:
 a code block of label/lat/lon rows + {: .map zoom="12" height="350" }
+With two or more markers the map FITS them by default (all points visible);
+lat/lng/zoom are the fallback for none or one, and fit="false" opts out.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -152,6 +154,21 @@ Auto-included by docs/_layouts/default.html.
         maxPitch: 85
       });
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+
+      /* Frame the markers by default: a map of three shelters should SHOW
+         three shelters, not a hand-tuned centre-and-zoom that drifts the
+         moment a fourth is added. lat/lng/zoom stay the fallback for a map
+         with no markers (or one), and fit="false" opts out. */
+      if (markers.length > 1 && (el.getAttribute("fit") || "") !== "false") {
+        map.once("load", function () {
+          try {
+            var fb = new maplibregl.LngLatBounds(
+              [markers[0].lon, markers[0].lat], [markers[0].lon, markers[0].lat]);
+            markers.forEach(function (m) { fb.extend([m.lon, m.lat]); });
+            map.fitBounds(fb, { padding: 48, maxZoom: 15, duration: 0 });
+          } catch (e) {}
+        });
+      }
       if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function() { try { map.remove(); } catch(e) {} });
 
       // Shift+drag to pivot in 3D (bearing + pitch), like deck.gl / Streamlit.
