@@ -87,3 +87,19 @@ Feature: The student course wizard (/courses/join)
     And my bench has no index yet
     When I open the course door "?go=bench&hub=build-ai-fall26" with a stored key
     Then the bench step invites a refresh
+
+  Scenario: The energy key gets a live check and a save-as-password moment
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And the energy provider accepts the key
+    When I open the course wizard with a stored key
+    And I paste the energy key "AIzaTestKey" and check it
+    Then the energy step confirms the key works and will follow the student
+
+  Scenario: A rejected energy key says rejected, not broken
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And the energy provider rejects the key
+    When I open the course wizard with a stored key
+    And I paste the energy key "AIzaWrong" and check it
+    Then the energy step reports the rejection with the status code

@@ -5,7 +5,7 @@ builder/LightNode journey). Activated by IAL on a link paragraph:
   [join](#)
   {: .course_join vault="uwm-build-ai/uwm-build-ai-vault" entry="courses/micro_build_ai/index.md" }
 
-Four steps: ① GitHub account → ② course key (classic, repo scope — deep link
+Five steps: ① GitHub account → ② course key (classic, repo scope — deep link
 pre-fills scope + an org-named note) → ③ access check (tries the actual course
 entry with the student's key; green = enrolled + key right → 📖 Open button)
 → ④ the bench: the student's private fork of the session hub, forked INTO the
@@ -96,7 +96,17 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-step off" data-n="4"><div class="lcj-head"><span class="lcj-num">4</span>Your bench</div>' +
       '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Create it once, keep it refreshed, and work: your teacher can see your bench at any time.</p>' +
       '<div class="lcj-msg" data-m="4"></div>' +
-      '<div class="lcj-row" data-bench></div></div></div>';
+      '<div class="lcj-row" data-bench></div></div></div>' +
+
+      '<div class="lcj-step off" data-n="5"><div class="lcj-head"><span class="lcj-num">5</span>Your energy key — the AI badge</div>' +
+      '<div class="lcj-body"><p style="margin-top:0">The course’s AI helpers run on a second, free key — separate from your course key on purpose: one badge for your <b>work</b>, one for the AI’s <b>energy</b>. Create it (any Google account), paste it below, and when your browser offers to <b>save it as a password — say yes</b>: it will follow you to your other devices by itself.</p>' +
+      '<div class="lcj-row"><a class="lcj-btn alt" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">⚡ Create the energy key →</a></div>' +
+      '<form class="lcj-energy" autocomplete="on">' +
+      '<input type="text" name="username" value="lc-gemini" autocomplete="username" tabindex="-1" readonly style="position:absolute;left:-9999px">' +
+      '<div class="lcj-row"><input class="lcj-ekey" type="password" name="password" autocomplete="current-password" placeholder="AIza…" spellcheck="false">' +
+      '<button type="submit" class="lcj-btn">Check key ✓</button></div>' +
+      '</form>' +
+      '<div class="lcj-msg" data-m="5"></div></div></div>';
     el.parentNode.replaceChild(wrap, el);
 
     var steps = {}; wrap.querySelectorAll(".lcj-step").forEach(function (s) { steps[s.getAttribute("data-n")] = s; });
@@ -165,6 +175,7 @@ The check is live truth against the API, never cached. Done steps reopen via
 
     function benchStart() {
       setState("4", "on");
+      if (steps["5"] && !steps["5"].classList.contains("ok")) setState("5", "on");
       msg(4, "Looking for your session…", ""); benchRow().innerHTML = "";
       var u = null; try { u = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
       (u && u.login ? Promise.resolve(u.login)
@@ -243,6 +254,31 @@ The check is live truth against the API, never cached. Done steps reopen via
       }
       paintBenchRow();
     }
+
+    /* step 5: a LIVE check against the provider — the same trip a desk
+       makes. Success submits the form so the password manager offers to
+       save (username lc-gemini, the exact identity every agent panel uses:
+       autofill then hands the key to any desk on any page, any device). */
+    var energyForm = wrap.querySelector(".lcj-energy");
+    if (energyForm) energyForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var k = (wrap.querySelector(".lcj-ekey").value || "").trim();
+      if (!k) { msg(5, "Paste the key first — it starts with AIza…", "err"); return; }
+      msg(5, "⏳ Asking the provider…", "");
+      fetch("https://generativelanguage.googleapis.com/v1beta/openai/models",
+            { headers: { Authorization: "Bearer " + k } })
+        .then(function (r) {
+          if (r.ok) {
+            setState("5", "ok");
+            msg(5, "✅ The key works. If your browser just offered to save it — that was the point: saved once, it follows you to every device.", "ok");
+          } else {
+            msg(5, "❌ The provider rejected it (" + r.status + "). Copy the whole key from AI Studio and try again.", "err");
+          }
+        })
+        .catch(function () {
+          msg(5, "❌ No answer from the provider — an ad-blocker, VPN or firewall may be on the road. Fix the road, then check again.", "err");
+        });
+    });
 
     wrap.addEventListener("click", function (e) {
       var b = e.target.closest("[data-a]"); if (!b) return;

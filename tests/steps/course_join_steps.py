@@ -245,3 +245,47 @@ def step_bench_no_index(context):
 def step_invites_refresh(context):
     expect(context.page.locator('.lc-join [data-m="4"]')).to_contain_text("Refresh", timeout=8000)
     expect(context.page.locator('.lc-join [data-a="sync"]')).to_be_visible()
+
+
+@given("the energy provider accepts the key")
+def step_energy_ok(context):
+    context.page.route(
+        "**/generativelanguage.googleapis.com/**/models*",
+        lambda r: r.fulfill(status=200, content_type="application/json",
+                            body='{"data": []}'))
+
+
+@given("the energy provider rejects the key")
+def step_energy_bad(context):
+    context.page.route(
+        "**/generativelanguage.googleapis.com/**/models*",
+        lambda r: r.fulfill(status=401, content_type="application/json",
+                            body='{"error": "invalid key"}'))
+
+
+@when('I paste the energy key "{key}" and check it')
+def step_paste_energy_key(context, key):
+    box = context.page.locator(".lcj-ekey")
+    box.wait_for(state="attached", timeout=15_000)
+    # the step may still be folded if earlier checks are mid-flight — the
+    # form handler is live either way; make it visible the way a student
+    # who reached step 5 sees it
+    context.page.wait_for_function(
+        "() => { var s = document.querySelector('.lcj-step[data-n=\"5\"]');"
+        "        return s && !s.classList.contains('off'); }", timeout=15_000)
+    box.fill(key)
+    context.page.locator(".lcj-energy button[type=submit]").click()
+
+
+@then("the energy step confirms the key works and will follow the student")
+def step_energy_confirmed(context):
+    m = context.page.locator('[data-m="5"]')
+    expect(m).to_contain_text("key works", timeout=10_000)
+    expect(m).to_contain_text("follows you", timeout=5_000)
+
+
+@then("the energy step reports the rejection with the status code")
+def step_energy_rejected(context):
+    m = context.page.locator('[data-m="5"]')
+    expect(m).to_contain_text("rejected", timeout=10_000)
+    expect(m).to_contain_text("401", timeout=5_000)

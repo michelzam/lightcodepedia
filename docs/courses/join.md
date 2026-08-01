@@ -1,6 +1,6 @@
 # 🎓 Join Build-AI
 
-Four steps and you're working: read your private lessons and create your own bench — right here, nothing to install.
+Five steps and you're working: your private lessons, your own bench, and the AI's energy key — right here, nothing to install.
 
 [join](#)
 {: .course_join vault="uwm-build-ai/uwm-build-ai-vault" entry="courses/micro_build_ai/index.md" }
