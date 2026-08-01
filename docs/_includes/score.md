@@ -51,7 +51,10 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
 .lc-card-won, .lc-card-rem { pointer-events: auto; cursor: help; }
 /* progression bar under the trophy: fills slowly on purpose — the learner
    should FEEL the value land, not blink past it */
-.lc-score-fab { position: relative; }
+/* NB: the fab is already position:fixed above — that IS a containing block
+   for an absolutely-positioned child. Adding position:relative here (as the
+   first version of this bar did) silently overrode the fixed pin and dropped
+   the trophy out of its corner into the page flow. */
 .lc-score-fab-bar { position: absolute; left: 10%; right: 10%; bottom: 3px; height: 3px; border-radius: 99px; background: rgba(0,0,0,0.08); overflow: hidden; }
 .lc-score-fab-bar i { display: block; height: 100%; width: 0; background: #f59e0b; border-radius: 99px; transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: reduce) { .lc-score-fab-bar i { transition: none; } }

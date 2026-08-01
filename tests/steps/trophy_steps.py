@@ -76,3 +76,21 @@ def step_multi_looks_multi(context):
         "() => getComputedStyle(document.querySelector('.lc-quiz li'), '::before').content"
     )
     assert "☐" in mark, "options still show %s" % mark
+
+
+@then("the trophy is pinned to the top-right corner")
+def step_trophy_pinned(context):
+    info = context.page.evaluate(
+        """() => {
+            const f = document.querySelector('.lc-score-fab');
+            if (!f) return null;
+            const r = f.getBoundingClientRect();
+            return { pos: getComputedStyle(f).position, top: r.top,
+                     right: window.innerWidth - r.right,
+                     w: window.innerWidth, h: window.innerHeight };
+        }"""
+    )
+    assert info, "no trophy on the page"
+    assert info["pos"] == "fixed", "trophy is %s, not fixed" % info["pos"]
+    assert info["top"] < info["h"] / 2, "trophy sits low (top=%s)" % info["top"]
+    assert info["right"] < info["w"] / 2, "trophy sits left (right=%s)" % info["right"]

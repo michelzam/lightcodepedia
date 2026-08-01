@@ -74,3 +74,22 @@ def step_legend(context):
     legend.wait_for(state="visible", timeout=10_000)
     text = legend.inner_text().lower()
     assert "contains" in text and "first" in text, text
+
+
+@then("exactly one node is marked as here")
+def step_one_here(context):
+    n = context.page.locator(".lc-sm-here").count()
+    assert n == 1, "%d nodes marked here" % n
+
+
+@then("the here node is bigger than the others")
+def step_here_bigger(context):
+    sizes = context.page.evaluate(
+        """() => {
+            const r = el => parseFloat(el.querySelector('circle').getAttribute('r'));
+            const here = r(document.querySelector('.lc-sm-here'));
+            const others = Array.from(document.querySelectorAll('.lc-sm-node:not(.lc-sm-here)')).map(r);
+            return { here, max: Math.max.apply(null, others) };
+        }"""
+    )
+    assert sizes["here"] > sizes["max"], sizes

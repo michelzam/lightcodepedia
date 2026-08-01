@@ -9,6 +9,14 @@ course page that is almost always what you want, so the shortest map is
 just `{: .sitemap }`. Point it elsewhere with `path="courses/x"`, or up a
 level with `path=".."`.
 
+## 📍 You are here
+
+The page you are reading draws as a **landmark**: a larger circle with a
+blue ring and a bolder label. On a course map that single dot answers the
+question every learner has — *where am I in all this?* — before they read
+a word. It works in both worlds: the rendered source file under a runner,
+the pathname on the site.
+
 ## 🌳 What the arrows mean
 
 The map draws three different relations, and tells them apart on purpose:

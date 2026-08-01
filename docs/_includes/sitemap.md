@@ -36,6 +36,9 @@ Attributes:
 .lc-sm-legend i.pre { border-top: 2px dashed #c7b8ea; }
 .lc-sm-node circle { fill: #fff; stroke: #9ca3af; stroke-width: 1.5; cursor: pointer; }
 .lc-sm-node circle:hover { stroke: #0066cc; stroke-width: 2.5; }
+/* you are here: the page you are reading is a landmark, not just a dot */
+.lc-sm-here circle { stroke: #0066cc; stroke-width: 3; fill: #eff6ff; }
+.lc-sm-here .lc-sm-label { fill: #0b4f9e; font-weight: 700; }
 .lc-sm-label { font: 11px/1.3 ui-sans-serif,system-ui,sans-serif; fill: #374151; text-anchor: middle; pointer-events: none; }
 .lc-sm-tip { position: absolute; background: #1e1e2e; color: #cdd6f4; padding: .4em .7em; border-radius: 6px; font-size: .78em; line-height: 1.45; max-width: 200px; pointer-events: none; z-index: 10; opacity: 0; transition: opacity .15s; }
 .lc-sm-tip.on { opacity: 1; }
@@ -165,7 +168,7 @@ Attributes:
   }
 
   /* ── render graph ─────────────────────────────────────── */
-  function renderGraph(container, pages, H) {
+  function renderGraph(container, pages, H, hereId) {
     container.innerHTML = "";
     var tip = document.createElement("div"); tip.className = "lc-sm-tip"; container.appendChild(tip);
 
@@ -189,7 +192,8 @@ Attributes:
       var n = { id: p.id, title: p.title, url: p.url, snippet: p.snippet, fc: p.fc,
         emoji: smFirstEmoji(p.title),
         x: W / 2 + (Math.random() - 0.5) * 180, y: H / 2 + (Math.random() - 0.5) * 180,
-        vx: 0, vy: 0, pin: false, r: 12, gy: 0 };
+        here: !!(hereId && p.id === hereId),
+        vx: 0, vy: 0, pin: false, r: (hereId && p.id === hereId) ? 17 : 12, gy: 0 };
       nodeMap[p.id] = n; return n;
     });
 
@@ -229,6 +233,8 @@ Attributes:
       /* heavy users of others sink (positive gy = below centre);
          nodes used by many others float up (negative gy = above centre) */
       n.gy = (out - inc) * 22;
+      /* the current page keeps its landmark size whatever its degree */
+      if (n.here) n.r = Math.max(n.r, 17);
     });
 
     /* arrowhead marker */
@@ -261,7 +267,8 @@ Attributes:
     var raf = null;
 
     var nodeEls = nodes.map(function (n) {
-      var g = document.createElementNS(NS, "g"); g.setAttribute("class", "lc-sm-node");
+      var g = document.createElementNS(NS, "g");
+      g.setAttribute("class", "lc-sm-node" + (n.here ? " lc-sm-here" : ""));
       var c = document.createElementNS(NS, "circle"); c.setAttribute("r", n.r);
       if (n.fc.passing && !n.fc.failing) c.setAttribute("fill", "#f0fdf4");
       else if (n.fc.failing)              c.setAttribute("fill", "#fef2f2");
@@ -469,7 +476,21 @@ Attributes:
       : smFetchText("/assets/pages_index.json")
           .then(function (t) { return smFromManifest(JSON.parse(t)); })
           .catch(function () { return apiListing(); }))
-      .then(function (pages) { renderGraph(el, pages, H); })
+      .then(function (pages) {
+        /* Which of these dots is the page the reader is on? Under a runner
+           render it is the rendered source file; on the site it is the
+           pathname. Same slug shape as the nodes, so it just matches. */
+        var hereId = "";
+        if (runRoot && runRoot.dataset.lcSrcPath) {
+          hereId = runRoot.dataset.lcSrcPath.replace(/\.md$/i, "");
+        } else {
+          hereId = String(location.pathname || "")
+            .replace(window.lcBase || "", "")
+            .replace(/^\/+/, "").replace(/\.html?$/i, "").replace(/\/$/, "");
+          if (!hereId) hereId = "index";
+        }
+        renderGraph(el, pages, H, hereId);
+      })
       .catch(function (e) { el.innerHTML = "<div class='lc-sm-msg'>⚠ " + e.message + "</div>"; });
   }
 

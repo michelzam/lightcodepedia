@@ -80,3 +80,24 @@ Feature: RT scores key to the rendered page, not the runner
     And I wait for the page to be interactive
     And I answer the quiz correctly
     Then the trophy's progression bar is filling
+
+  Scenario: The trophy stays pinned in its corner
+    A later rule that gives the fab position:relative would silently unpin
+    it — the bar it was meant to host is not worth losing the corner for.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Pinned page
+
+      **Q:** Ready?
+
+      - [x] Yes
+      - [ ] No
+      {: .quiz }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    And I answer the quiz correctly
+    Then the trophy is pinned to the top-right corner

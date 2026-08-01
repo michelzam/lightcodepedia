@@ -25,3 +25,13 @@ Feature: The course map draws the tree it is given
     Then the map draws 1 "prereq" edges
     And the prerequisite edge is dashed and lighter than the tree
     And the map explains its arrows
+
+  Scenario: The page you are on is a landmark on its own map
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the course tree contains "courses/demo/index.md, courses/demo/module_01/index.md, courses/demo/module_01/lesson.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/index.md"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-sitemap svg"
+    Then exactly one node is marked as here
+    And the here node is bigger than the others
