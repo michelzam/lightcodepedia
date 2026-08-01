@@ -57,3 +57,19 @@ def step_apply_fix(context):
 def step_editor_holds(context, run_id, code):
     ta = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code")
     expect(ta).to_have_value(code, timeout=10_000)
+
+
+@given('the model endpoint rejects with an array-wrapped 404 saying "{message}"')
+def step_stub_array_error(context, message):
+    body = json.dumps([{"error": {"code": 404, "message": message,
+                                  "status": "NOT_FOUND"}}])
+    context.page.route(
+        "**/chat/completions*",
+        lambda r: r.fulfill(status=404, content_type="application/json",
+                            body=body))
+
+
+@then('the desk relays "{message}"')
+def step_desk_relays(context, message):
+    status = context.page.locator('[data-lc-id="desk"] .lc-agent-status')
+    expect(status).to_contain_text(message, timeout=15_000)

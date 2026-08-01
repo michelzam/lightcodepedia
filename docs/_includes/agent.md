@@ -222,7 +222,10 @@ Auto-included by docs/_layouts/default.html.
   var PROVIDERS = {
     gemini: {
       base: 'https://generativelanguage.googleapis.com/v1beta/openai',
-      model: 'gemini-2.5-flash',
+      /* the -latest alias rides Google's version churn (2.5 retires
+         2026-10; 3.6 is today's GA) — a pinned version would 404 twice a
+         year, an alias never does */
+      model: 'gemini-flash-latest',
       key_name: 'Google AI Studio key',
       key_url: 'https://aistudio.google.com/apikey',
       key_hint: 'AIza...'
@@ -478,8 +481,12 @@ Auto-included by docs/_layouts/default.html.
         return { error: 'Rate limited (429). Wait a moment and retry.' };
       }
       if (result.status >= 400) {
-        var msg = (result.data && result.data.error && result.data.error.message) || ('HTTP ' + result.status);
-        return { error: msg };
+        /* Google wraps errors in an ARRAY ([{error:{…}}]); OpenAI-style
+           bodies don't — read both, or the learner sees a bare status
+           code instead of the provider's own sentence */
+        var eobj = Array.isArray(result.data) ? result.data[0] : result.data;
+        var msg = (eobj && eobj.error && eobj.error.message) || ('HTTP ' + result.status);
+        return { error: msg + ' (HTTP ' + result.status + ' from ' + eng.host + ')' };
       }
       var choice = result.data.choices && result.data.choices[0];
       if (!choice) return { error: 'Empty response from API.' };

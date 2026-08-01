@@ -41,3 +41,24 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I connect the "desk" agent with key "test-key"
     And I ask the "desk" agent "review it"
     Then the model request carried the editor code "my resume draft, version one"
+
+  Scenario: A provider error speaks its own sentence, even array-wrapped
+    Google wraps error JSON in an array; the panel must surface the
+    provider's message, not a bare status code.
+
+    Given I have a clean browser page
+    And the model endpoint rejects with an array-wrapped 404 saying "models/ghost is not found"
+    And the GitHub contents API serves "courses/demo/module_01/err.md" with the document:
+      """
+      # Err page
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/err.md"
+    And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
+    And I ask the desk agent into the void "hello"
+    Then the desk relays "models/ghost is not found"
