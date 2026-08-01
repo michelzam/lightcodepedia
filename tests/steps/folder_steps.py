@@ -356,3 +356,37 @@ def step_create_named(context, name):
 def step_file_created(context, path):
     assert context.created, "no create request was issued"
     assert context.created[0] == path, context.created[0]
+
+
+@given('the folder "{dirpath}" lists "{name}" whose raw token is stale')
+def step_stub_stale_raw(context, dirpath, name):
+    """The listing is fine; only the download_url token has expired — the
+    exact shape of a cached private-repo listing."""
+    listing = [{
+        "type": "file", "name": name, "path": dirpath + "/" + name,
+        "download_url": "https://raw.githubusercontent.com/acme/demo/main/"
+                        + dirpath + "/" + name + "?token=EXPIRED",
+    }]
+    body = ("# \U0001F43E Adoption Day\n\nA story from the future.\n\n"
+            "```gherkin\nFeature: Proof\n  Scenario: ok\n    Given a thing\n```\n"
+            "{: .feature status=\"pending\" tags=\"data\" }\n")
+
+    context.page.route(
+        "**/api.github.com/repos/**/contents/" + dirpath,
+        lambda r: r.fulfill(status=200, content_type="application/json",
+                            body=json.dumps(listing)))
+    # the authenticated per-file read works…
+    context.page.route(
+        "**/api.github.com/repos/**/contents/" + dirpath + "/" + name,
+        lambda r: r.fulfill(status=200, content_type="text/plain", body=body))
+    # …while the stale raw token does not
+    context.page.route("**/raw.githubusercontent.com/**token=EXPIRED*",
+                       lambda r: r.fulfill(status=404, body="Not Found"))
+    # the page hosting the shelf
+    index_md = "# Module\n\n[Browse](#)\n{: .folder }\n"
+    context.page.route(
+        "**/api.github.com/repos/**/contents/" + dirpath + "/index.md",
+        lambda r: r.fulfill(status=200, content_type="text/plain", body=index_md))
+    context.page.route("**/raw.githubusercontent.com/**/index.md*",
+                       lambda r: r.fulfill(status=200, content_type="text/plain",
+                                           body=index_md))

@@ -230,7 +230,7 @@ Auto-included by docs/_layouts/default.html.
        the lazy git-date enrichment (ensureDates); both degrade gracefully. */
     var _folderPat = localStorage.getItem('lc_ed_pat') || '';
     var _folderHdrs = _folderPat ? { Authorization: 'Bearer ' + _folderPat, 'X-GitHub-Api-Version': '2022-11-28' } : {};
-    function apiFetch(url) {
+    function apiFetch(url, raw) {
       /* Authorization forces a CORS preflight and some networks kill the
          OPTIONS (see deploys.md — WebKit reports just "Load failed"). On a
          PUBLIC repo we retry bare: no headers → simple request → no preflight.
@@ -239,8 +239,15 @@ Auto-included by docs/_layouts/default.html.
          (that is what killed panels on iPad/cellular). With a key, retry the
          AUTHORIZED request and let a real failure report itself. */
       var go = function (h) {
-        return fetch(url, h ? { headers: h } : undefined)
-          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+        /* raw=true reads a FILE's content through the same authenticated
+           door as the listing (Accept is CORS-safelisted, so this adds no
+           preflight of its own) */
+        var hh = raw ? Object.assign({}, h || {}, { Accept: "application/vnd.github.v3.raw" }) : h;
+        return fetch(url, hh ? { headers: hh } : undefined)
+          .then(function (r) {
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            return raw ? r.text() : r.json();
+          });
       };
       if (!_folderPat) return go(null);
       return go(_folderHdrs).catch(function () { return go(_folderHdrs); });
@@ -352,8 +359,21 @@ Auto-included by docs/_layouts/default.html.
         });
 
         var pageFetches = pages.map(function(f) {
-          return fetch(f.download_url)
-            .then(function(r) { return r.text(); })
+          /* NOT f.download_url: on a private repo that is an unauthenticated
+             raw URL carrying a SHORT-LIVED token. A listing served from the
+             browser cache hands out tokens that have already expired, the raw
+             fetch 404s, and every card silently degrades to its filename with
+             no snippet, no tags, no feature dots — the same folder rendering
+             differently from one visit to the next. Read the content through
+             the API we are already authenticated for; keep download_url as
+             the fallback for anonymous/public reads. */
+          return apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" + f.path, true)
+            .then(function (t) { return typeof t === "string" ? t : null; })
+            .catch(function () { return null; })
+            .then(function (t) {
+              if (t != null) return t;
+              return fetch(f.download_url).then(function (r) { return r.text(); });
+            })
             .then(function(text) {
               var meta = extractPageMeta(text);
               var title = meta.title || f.name.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
@@ -425,15 +445,25 @@ Auto-included by docs/_layouts/default.html.
             .then(function (t) { return buildFromManifest(JSON.parse(t)); })
             .catch(function () { return apiListing(); });   // no/invalid manifest → legacy API path
     }
+    /* Every refresh is a RACE against the one before it: entering X-ray (or
+       any mode change) starts a new enumeration while the previous fetches
+       are still in flight, and whichever finishes last also appends its own
+       control bar — two shelves, two ➕ New buttons. Stamp each run and let
+       only the newest paint. */
+    var _renderSeq = 0;
     function refresh() {
+      var mine = ++_renderSeq;
       _lastModeX = _xrayRW();
       closeCardMenu();
       if (_bar && _bar.parentNode) _bar.parentNode.removeChild(_bar);
       _bar = null;
       wrap.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading…</div>";
       (_lastModeX ? repoWritable() : Promise.resolve(false)).then(function (w) {
+        if (mine !== _renderSeq) return;              // a newer refresh owns the shelf
         _lastXray = _lastModeX && w;
-        enumerate().then(renderItems).catch(_renderFail);
+        enumerate()
+          .then(function (items) { if (mine === _renderSeq) renderItems(items); })
+          .catch(function (e) { if (mine === _renderSeq) _renderFail(e); });
       });
     }
     function closeCardMenu() {

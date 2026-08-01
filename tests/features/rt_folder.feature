@@ -246,7 +246,7 @@ Feature: Folder shelf — read posture and X-ray workbench
     And a builder key is connected
     And the folder "courses/demo/mod" lists pages "alpha.md" plus subfolder "week1" with files "index.md"
     And the subfolder "courses/demo/mod/week1" carries an index with one quiz
-    And the learner has earned points on "gh:acme/demo/courses/demo/mod/week1"
+    And the learner has earned some points on "gh:acme/demo/courses/demo/mod/week1"
     And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
       """
       # Shelf page
@@ -297,3 +297,17 @@ Feature: Folder shelf — read posture and X-ray workbench
     And the page enters X-ray mode
     And I create a new page named "notes.md"
     Then the file "courses/demo/mod/notes.md" was created
+
+  Scenario: Cards keep their real titles when a stale raw token 404s
+    On a private repo the listing's download_url carries a SHORT-LIVED
+    token. Served from cache, those tokens have expired — the raw fetch
+    404s and every card silently degrades to its filename with no snippet,
+    no tags, no dots: the same folder rendering differently between visits.
+    The content must come through the door we are authenticated for.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the folder "courses/demo/mod" lists "01_adoption_day.md" whose raw token is stale
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    Then the shelf shows a card for "Adoption Day"
