@@ -7,9 +7,25 @@ from playwright.sync_api import expect
 # content keys (score.md's canon), and the gate must read exactly those.
 
 
+@given('the learner has mastered "{key}"')
+def step_seed_full(context, key):
+    # every point on that page — what the default (pass=100) demands
+    _seed(context, {key: {"won": 3, "total": 3}})
+
+
+@given('the learner has earned some points on "{key}"')
+def step_seed_partial(context, key):
+    # 2/3: enough for a relaxed gate, not for mastery
+    _seed(context, {key: {"won": 2, "total": 3}})
+
+
 @given('the learner has earned points on "{key}"')
 def step_seed_score(context, key):
-    seed = json.dumps({key: {"won": 2, "total": 3}})
+    _seed(context, {key: {"won": 3, "total": 3}})
+
+
+def _seed(context, obj):
+    seed = json.dumps(obj)
     context.page.add_init_script(
         "try { localStorage.setItem('lc_scores', %s); } catch (e) {}"
         % json.dumps(seed)
@@ -64,3 +80,15 @@ def step_nothing_below(context):
 @when("I show the page anyway")
 def step_show_anyway(context):
     context.page.locator(".lc-prereq [data-show]").click()
+
+
+@then("no escape hatch is offered")
+def step_no_escape(context):
+    n = context.page.locator(".lc-prereq [data-show]").count()
+    assert n == 0, "the gate offered a way through when the author gave none"
+
+
+@then('the escape hatch reads "{label}"')
+def step_escape_label(context, label):
+    expect(context.page.locator(".lc-prereq [data-show]")).to_have_text(
+        label, timeout=10_000)

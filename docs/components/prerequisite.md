@@ -12,7 +12,7 @@ always know where they came from and where they can go next.
 This very page requires Tutorial 101:
 
 - [🎓 Tutorial 101 — Explore](/tutorial101)
-{: .prerequisite pass="100"}
+{: .prerequisite pass="100" escape="true"}
 
 If the gate above is open, you've earned points on Tutorial 101 in this
 browser. If it's closed — that *is* the demo: follow the link, answer a quiz,
@@ -28,7 +28,7 @@ Feature: A page that knows what must come first
     Given a page requiring a lesson the learner has not scored on
     When they open it
     Then a gate sends them to that lesson and folds the rest away
-    And an honest "show anyway" escape stays available
+    And an escape is offered only when the author asked for one
 
   Scenario: A met prerequisite gets out of the way
     Given a learner who has earned points on every required lesson
@@ -54,8 +54,17 @@ A list of links with the `{: .prerequisite }` IAL:
 
 | Knob | Meaning |
 |---|---|
-| *(default)* | a page counts as done when the learner has earned **any** point there |
-| `pass="80"` | require at least that percentage of the page's points |
+| *(default)* | **mastery**: every point on each linked page — and **no way through** |
+| `pass="50"` | relax it: that percentage of the page's points is enough |
+| `escape="true"` | offer a *show it anyway* hatch (off by default) |
+| `escape="Peek anyway"` | same hatch, in your own words |
+
+**Why those defaults.** A gate that opens on one lucky point isn't a
+prerequisite, and a gate anyone can wave away teaches that gates are
+decoration. So the platform asks for everything and offers no door —
+and the *author* decides, per page, whether to soften either. Relax the
+bar where the next page only needs a taste of the last one; open a door
+where a curious reader deserves one.
 
 - Scores come from the same store as the 🏅 score chip (quizzes and features,
   per browser, resettable from the chip's menu).

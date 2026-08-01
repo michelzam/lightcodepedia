@@ -105,7 +105,7 @@ Feature: RT prerequisite gate — the key names the content, not the runner
       # Locked module
 
       - [Basics](basics.md)
-      {: .prerequisite }
+      {: .prerequisite escape="true" }
 
       ```csv
       name,breed
@@ -135,3 +135,86 @@ Feature: RT prerequisite gate — the key names the content, not the runner
     And nothing below the gate is visible
     When I show the page anyway
     Then the gated content "Secret wisdom here." is visible
+
+  Scenario: The default gate has no way through
+    A gate anyone can wave away teaches that gates are decoration. The
+    escape hatch is the author's decision, not the platform's.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/strict.md" with the document:
+      """
+      # Strict page
+
+      - [Basics](basics.md)
+      {: .prerequisite }
+
+      ## Body
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/strict.md"
+    And I wait for the page to be interactive
+    Then a prerequisite gate offers "Basics"
+    And no escape hatch is offered
+    And the gated content "Secret wisdom here." is hidden
+
+  Scenario: The author may open a door, in their own words
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/kind.md" with the document:
+      """
+      # Kind page
+
+      - [Basics](basics.md)
+      {: .prerequisite escape="Peek anyway (you'll miss the point)" }
+
+      ## Body
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/kind.md"
+    And I wait for the page to be interactive
+    Then the escape hatch reads "Peek anyway (you'll miss the point)"
+    When I show the page anyway
+    Then the gated content "Secret wisdom here." is visible
+
+  Scenario: Half the points do not open a gate that asks for all of them
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned some points on "gh:acme/demo/courses/demo/mod/basics"
+    And the GitHub contents API serves "courses/demo/mod/mastery.md" with the document:
+      """
+      # Mastery page
+
+      - [Basics](basics.md)
+      {: .prerequisite }
+
+      ## Body
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/mastery.md"
+    And I wait for the page to be interactive
+    Then a prerequisite gate offers "Basics"
+    And the gated content "Secret wisdom here." is hidden
+
+  Scenario: The same half opens a gate that asks for half
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned some points on "gh:acme/demo/courses/demo/mod/basics"
+    And the GitHub contents API serves "courses/demo/mod/relaxed.md" with the document:
+      """
+      # Relaxed page
+
+      - [Basics](basics.md)
+      {: .prerequisite pass="50" }
+
+      ## Body
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/relaxed.md"
+    And I wait for the page to be interactive
+    Then the prerequisites are met
+    And the gated content "Secret wisdom here." is visible

@@ -11,6 +11,14 @@ page's points; default = any recorded point on that page.
 Unlocks: every page automatically recommends, at its end, the pages that list
 IT as a prerequisite — built at Jekyll time by scanning site pages, so the
 learner is self-directed in both directions.
+
+Knobs:
+  pass="100"     percentage required on each linked page. DEFAULT 100 —
+                 mastery, not a lucky point. pass="50" relaxes it.
+  escape="true"  offer the "show it anyway" hatch (DEFAULT: none — the
+                 author decides whether a gate can be waved away). Any
+                 other value becomes the hatch's wording.
+
 {%- endcomment -%}
 
 <style>
@@ -93,7 +101,18 @@ null]</script>
   function upgradePrereq(el) {
     if (el.dataset.lcPrereqDone) return;
     el.dataset.lcPrereqDone = "1";
-    var passPct = parseFloat(el.getAttribute("pass") || "") || 0;
+    /* Default: MASTERY. "You may pass when you have earned everything on
+       the page before" — a prerequisite that opens on a single lucky point
+       is not a prerequisite. pass="50" relaxes it deliberately. */
+    var passPct = parseFloat(el.getAttribute("pass") || "") || 100;
+    /* Default: NO WAY THROUGH. The escape hatch is the author's decision,
+       not the platform's — a gate that anyone can wave away teaches that
+       gates are decoration. escape="true" offers it with the standard
+       wording; any other value IS the wording. */
+    var escRaw = (el.getAttribute("escape") || "").trim();
+    var escOff = !escRaw || /^(false|0|no|off)$/i.test(escRaw);
+    var escLabel = (!escRaw || /^(true|1|yes|on)$/i.test(escRaw))
+      ? "Show it anyway →" : escRaw;
     var links = [];
     var anchors = el.querySelectorAll("a[href]");
     if (anchors.length) {
@@ -119,8 +138,11 @@ null]</script>
     }
     card.className = "lc-prereq";
     card.innerHTML = "<h4>📋 Before this page</h4><ul>" + items.join("") + "</ul>"
-      + "<div class='lc-prereq-note'>Earn points on the pages above and this page unlocks itself. "
-      + "<a data-show>Show it anyway →</a></div>";
+      + "<div class='lc-prereq-note'>"
+      + (passPct >= 100 ? "Finish the pages above — every point — and this page unlocks itself."
+                        : "Earn " + passPct + "% on the pages above and this page unlocks itself.")
+      + (escOff ? "" : " <a data-show>" + esc(escLabel) + "</a>")
+      + "</div>";
     el.parentNode.replaceChild(card, el);
     /* Hide the page body until earned or overridden. Two things fight this:
        components upgrade LATE and REPLACE their block (a csv fence becomes a
@@ -145,7 +167,7 @@ null]</script>
       obs = new MutationObserver(lockAfter);
       obs.observe(root, { childList: true, subtree: true });
     }
-    var show = card.querySelector("[data-show]");
+    var show = escOff ? null : card.querySelector("[data-show]");
     if (show) show.addEventListener("click", function () {
       locked = false;
       if (obs) obs.disconnect();
