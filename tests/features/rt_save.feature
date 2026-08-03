@@ -124,14 +124,13 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the dataset "pets" now reads "Fixed"
     And the grid is marked as the reader's own
 
-  Scenario: Work stays in the bench you are standing in
-    Canvas frames the learner's BENCH copy. The door used to aim every
-    save at the globally connected repo — the author previewing a student
-    bench hit a repo their key does not cover, and GitHub's 404 arrived
-    dressed as a missing file. A page rendered from a writable bench keeps
-    its work in THAT bench, whatever the global connection says.
+  Scenario: The class hub is framed, but the work goes home
+    Canvas gives the whole class ONE url — the session hub. Prefer the repo
+    the page renders from and every student's save aims at a shared repo
+    none of them may write. Work always goes to the learner's OWN connected
+    space: the page is where you stand; my/ is where you live.
 
-    Given a learner standing in bench "stub/bench" while connected to "stub/elsewhere"
+    Given a learner connected to bench "stub/bench" reading the class hub "stub/hub"
     And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
       """
       # Work page
@@ -141,8 +140,8 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       ```
       {: .mdpad #cv save="my/cv.md" rows="6" }
       """
-    When I navigate to "/run.html#src=gh:stub/bench/courses/demo/mod/work.md"
+    When I navigate to "/run.html#src=gh:stub/hub/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     And I type "# Mine now" into the pad and save
     Then the bench received a commit to "my/cv.md" containing "# Mine now"
-    And the repo "stub/elsewhere" received no commit
+    And the repo "stub/hub" received no commit

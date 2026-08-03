@@ -331,18 +331,16 @@ loses everything. A component's editable source comes from window.lcSourceOf
      used by every component with a save= knob, so the contract cannot
      drift: fence = the author's seed, bench file = the learner's truth. */
   window.lcBench = {
-    /* WHICH bench? The one the learner is standing in. A page rendered from
-       their bench (Canvas frames the bench copy) must keep its work in THAT
-       repo — the globally connected repo can be a different one entirely
-       (the author previewing a student bench, a student who joined on
-       another site), and a fine-grained key that doesn't cover it makes
-       GitHub answer 404, dressed as a missing file. Only a READ-ONLY render
-       (the vault Library) falls back to the connected repo: you cannot keep
-       work in a book. */
+    /* WHICH bench? The learner's OWN connected space — ALWAYS, and never the
+       repo the page happens to render from. Canvas gives the whole class ONE
+       url (the session hub); prefer the render root and every student's save
+       aims at a shared repo none of them may write. The page is where you
+       stand; my/ is where you live. (A first version preferred the render
+       root — reverted 2026-08-03 after exactly that Canvas failure.) The
+       repo and key are a PAIR set together at join; if the key does not
+       cover the repo, the write error below says so by name. */
     target: function (fromEl) {
-      var runRoot = fromEl && fromEl.closest ? fromEl.closest(".lc-run[data-lc-src-repo]") : null;
-      var srcRepo = runRoot && !runRoot.dataset.lcReadonly ? runRoot.dataset.lcSrcRepo : "";
-      return { repo: srcRepo || localStorage.getItem("lc_ed_repo") || "",
+      return { repo: localStorage.getItem("lc_ed_repo") || "",
                pat: localStorage.getItem("lc_ed_pat") || "" };
     },
     read: function (path, fromEl) {    /* → {text, sha} | null (no file yet) */

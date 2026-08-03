@@ -195,11 +195,11 @@ def step_dataset_reads(context, name, text):
     assert text in got, "dataset %s does not carry %r: %s" % (name, text, got[:300])
 
 
-@given('a learner standing in bench "{bench}" while connected to "{other}"')
+@given('a learner connected to bench "{bench}" reading the class hub "{other}"')
 def step_bench_vs_connected(context, bench, other):
-    # the Canvas shape: the page renders FROM the bench, but the browser's
-    # connected repo points somewhere else. Both repos record their writes,
-    # so the assertion can say where the work actually landed.
+    # the Canvas shape: ONE hub url framed for the whole class, each
+    # learner connected to their own bench. Both repos record their
+    # writes, so the assertion can say where the work actually landed.
     import base64 as _b64
     import json as _json
     context.bench_commits = []
@@ -227,7 +227,7 @@ def step_bench_vs_connected(context, bench, other):
                        record(context.other_commits))
     context.page.add_init_script(
         "localStorage.setItem('lc_ed_pat', 'ghp_stub');"
-        "localStorage.setItem('lc_ed_repo', '" + other + "');"
+        "localStorage.setItem('lc_ed_repo', '" + bench + "');"
     )
 
 
