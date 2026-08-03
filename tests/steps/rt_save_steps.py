@@ -234,3 +234,25 @@ def step_bench_vs_connected(context, bench, other):
 @then('the repo "{repo}" received no commit')
 def step_other_untouched(context, repo):
     assert not context.other_commits, context.other_commits
+
+
+@when("I open a cell editor in the dogs grid")
+def step_open_cell_editor(context):
+    cell = context.page.locator(".lc-datagrid .ag-cell").first
+    cell.wait_for(state="visible", timeout=20_000)
+    cell.dblclick()
+    context.page.wait_for_selector('.lc-datagrid input[type="text"]', timeout=10_000)
+
+
+@then("the cell editor refuses autofill")
+def step_editor_refuses_autofill(context):
+    attrs = context.page.evaluate(
+        """() => {
+          const i = document.querySelector('.lc-datagrid input[type=\"text\"]');
+          return i && { ac: i.getAttribute('autocomplete'),
+                        name: i.getAttribute('name'),
+                        lp: i.getAttribute('data-lpignore') };
+        }"""
+    )
+    assert attrs, "no editor input found"
+    assert attrs["ac"] == "off" and attrs["name"] == "lc-cell" and attrs["lp"] == "true", attrs

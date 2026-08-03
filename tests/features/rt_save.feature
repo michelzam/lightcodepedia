@@ -182,3 +182,14 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I wait for the page to be interactive
     And I type "# Climbed" into the pad and save
     Then the bench received a commit to "courses/demo/shared/notes.md" containing "# Climbed"
+
+  Scenario: A grid cell edit is data, not a credential
+    The browser pairs a saved key with "the text field it saw" — a campus
+    cell got offered a password-manager username mid-repair. An editor
+    opened by a double-click must carry the opt-outs that keep every
+    password manager away from the lesson's data.
+
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I open a cell editor in the dogs grid
+    Then the cell editor refuses autofill

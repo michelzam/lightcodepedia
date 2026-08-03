@@ -82,8 +82,18 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-step off" data-n="2"><div class="lcj-head"><span class="lcj-num">2</span>Create your course key</div>' +
       '<div class="lcj-body"><p style="margin-top:0">A course key lets this site open your private lessons. The link pre-fills the right scope and name — set <b>Expiration → Custom</b> past your course’s end (a semester), <b>Generate token</b>, copy, paste below.</p>' +
       '<div class="lcj-row"><a class="lcj-btn alt" href="' + keyUrl + '" target="_blank" rel="noopener">🪜 Create the key →</a></div>' +
-      '<div class="lcj-row"><input class="lcj-key" type="password" placeholder="ghp_…" autocomplete="off" spellcheck="false">' +
-      '<button type="button" class="lcj-btn" data-a="checkkey">Check key ✓</button></div>' +
+      /* a REAL form with a named identity, exactly like the energy key below.
+         A bare password field makes the browser hunt for a username to file
+         the key under — and it grabs whatever text it saw last on the page
+         (a grid cell said "Milwaukee" and became a credential). The readonly
+         username gives the keychain its name; the browser then also OFFERS
+         the key back on every device. Say yes to the save prompt — that is
+         the design, under the right name. */
+      '<form class="lcj-course" autocomplete="on">' +
+      '<input type="text" name="username" value="lc-course-key" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager" style="position:absolute;left:-9999px">' +
+      '<div class="lcj-row"><input class="lcj-key" type="password" name="password" autocomplete="current-password" placeholder="ghp_…" spellcheck="false" aria-label="Course key">' +
+      '<button type="submit" class="lcj-btn">Check key ✓</button></div>' +
+      '</form>' +
       '<div class="lcj-msg" data-m="2"></div></div></div>' +
 
       '<div class="lcj-step off" data-n="3"><div class="lcj-head"><span class="lcj-num">3</span>Your enrollment</div>' +
@@ -266,6 +276,16 @@ The check is live truth against the API, never cached. Done steps reopen via
        makes. Success submits the form so the password manager offers to
        save (username lc-gemini, the exact identity every agent panel uses:
        autofill then hands the key to any desk on any page, any device). */
+    /* step 2 submits through its form (Enter or the button) so the browser
+       files the key under the lc-course-key identity instead of stealing a
+       username from the page. The click delegation below skips submit
+       buttons — one path, no double-fire. */
+    var courseForm = wrap.querySelector(".lcj-course");
+    if (courseForm) courseForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      checkKey(wrap.querySelector('.lcj-course button[type="submit"]'));
+    });
+
     var energyForm = wrap.querySelector(".lcj-energy");
     if (energyForm) energyForm.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -350,17 +370,21 @@ The check is live truth against the API, never cached. Done steps reopen via
           })
           .catch(function () { b.disabled = false; msg(3, "❌ Could not reach GitHub — try again.", "err"); });
       }
-      if (a === "checkkey") {
+      if (a === "checkkey") { checkKey(b); }
+    });
+
+    function checkKey(b) {
         var val = wrap.querySelector(".lcj-key").value.trim();
         if (!val) { msg(2, "Paste your key first.", "err"); return; }
-        b.disabled = true; msg(2, "Checking…", "");
+        if (b) b.disabled = true;
+        msg(2, "Checking…", "");
         fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + val, "X-GitHub-Api-Version": "2022-11-28" } })
           .then(function (r) {
             var scopes = r.headers.get("X-OAuth-Scopes") || "";
             return r.json().then(function (u) { return { ok: r.ok, user: u, scopes: scopes }; });
           })
           .then(function (d) {
-            b.disabled = false;
+            if (b) b.disabled = false;
             if (!d.ok) { msg(2, "❌ Key not recognised — generate a new one and try again.", "err"); return; }
             var hasRepo = val.indexOf("github_pat_") === 0 ||
               d.scopes.split(",").map(function (s) { return s.trim(); }).indexOf("repo") >= 0;
@@ -374,9 +398,8 @@ The check is live truth against the API, never cached. Done steps reopen via
             if (window.lcUserPillRefresh) window.lcUserPillRefresh();
             setTimeout(function () { setState("1", "ok"); setState("2", "ok"); setState("3", "on"); checkAccess(true); }, 600);
           })
-          .catch(function () { b.disabled = false; msg(2, "❌ Could not reach GitHub — check your connection.", "err"); });
-      }
-    });
+          .catch(function () { if (b) b.disabled = false; msg(2, "❌ Could not reach GitHub — check your connection.", "err"); });
+    }
 
     /* returning student: key already stored → straight to the door */
     if (pat()) { setState("1", "ok"); setState("2", "ok"); setState("3", "on"); checkAccess(true); }

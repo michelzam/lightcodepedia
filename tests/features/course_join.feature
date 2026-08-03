@@ -118,3 +118,9 @@ Feature: The student course wizard (/courses/join)
     When I open the course wizard with a stored key
     Then my bench shows up to date with the hub
     And the connected repo is my bench
+
+  Scenario: The course key never steals a username from the page
+    Given a stubbed GitHub that accepts the key with repo scope
+    When I open the course wizard
+    And I confirm I have an account
+    Then the course key is asked through a named credential form

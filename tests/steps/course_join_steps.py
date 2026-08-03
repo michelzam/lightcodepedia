@@ -114,7 +114,7 @@ def step_have_account(context):
 @when('I paste the course key "{key}" and check it')
 def step_paste_key(context, key):
     context.page.fill(".lc-join .lcj-key", key)
-    context.page.click('.lc-join [data-a="checkkey"]')
+    context.page.click('.lc-join .lcj-course button[type="submit"]')
     context.page.wait_for_timeout(1200)
 
 
@@ -307,3 +307,19 @@ def step_pair_completed(context):
     repo = context.page.evaluate("() => localStorage.getItem('lc_ed_repo')")
     assert repo and repo.endswith("/" + BENCH), (
         "connection still points at %r — the pair was never completed" % repo)
+
+
+@then("the course key is asked through a named credential form")
+def step_key_form_contract(context):
+    # the browser files a password under the USERNAME next to it; without one
+    # it steals whatever text it saw last on the page ("Milwaukee", a grid
+    # cell, became a credential in the field). The contract: a real form,
+    # autocomplete on, a readonly lc-course-key identity beside the key.
+    form = context.page.locator(".lc-join form.lcj-course")
+    expect(form).to_be_attached(timeout=10_000)
+    assert form.get_attribute("autocomplete") == "on"
+    user = form.locator('input[autocomplete="username"]')
+    expect(user).to_have_value("lc-course-key")
+    assert user.get_attribute("readonly") is not None
+    key = form.locator('input[type="password"]')
+    assert key.get_attribute("autocomplete") == "current-password"

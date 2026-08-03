@@ -215,6 +215,20 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       var api = window.agGrid.createGrid(gridEl, gridOptions);
       window.lcMasterDetail.registerGrid(gridId, api);
 
+      /* Cell editors are DATA, never credentials. The browser pairs a saved
+         key with "the text field it saw" — a campus cell got offered (and
+         once, stolen as) a password-manager username. Editors are created
+         per edit, so mark each one as it takes focus. */
+      if (opts.editable) gridEl.addEventListener("focusin", function (e) {
+        var t = e.target;
+        if (t && t.tagName === "INPUT" && !t.getAttribute("autocomplete")) {
+          t.setAttribute("autocomplete", "off");
+          t.setAttribute("name", "lc-cell");
+          t.setAttribute("data-lpignore", "true");   /* the common managers' opt-outs */
+          t.setAttribute("data-1p-ignore", "true");
+        }
+      });
+
       /* A DERIVED grid must keep listening. It used to take the dataset once
          (the promise that gave it its first paint) and never hear another
          word — so repairing a dog upstream recomputed the query, and the
