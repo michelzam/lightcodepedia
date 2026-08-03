@@ -77,3 +77,28 @@ def step_identity_matches(context):
     user = context.page.get_attribute(".lc-guide-ask input[name=username]", "value")
     assert user and user.startswith("lc-"), \
         "keychain identity is %r — autofill will not find the saved key" % user
+
+
+@when("I click where the hidden avatar face sits")
+def step_click_ghost(context):
+    host = context.page.locator(".lc-avatar-host").first
+    host.wait_for(state="attached", timeout=20_000)
+    # docked idle: the host is opacity 0 but still laid out at fixed
+    # coordinates — a real mouse click at its center is exactly what a
+    # learner aiming at a button underneath delivers
+    box = context.page.evaluate(
+        """() => { const c = document.querySelector('.lc-avatar-char');
+                   const r = c.getBoundingClientRect();
+                   return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }"""
+    )
+    context.page.mouse.click(box["x"], box["y"])
+    context.page.wait_for_timeout(600)
+
+
+@then("the avatar did not start playing")
+def step_avatar_not_playing(context):
+    playing = context.page.evaluate(
+        """() => { const a = window._lcAvatars && window._lcAvatars.guide;
+                   return !!(a && a.playing); }"""
+    )
+    assert not playing, "the ghost face swallowed the click and started the tour"

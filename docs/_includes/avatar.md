@@ -220,6 +220,13 @@ Auto-included by docs/_layouts/default.html.
 .lc-avatar-host.lc-avatar-docked:not([data-state="speaking"]) {
   opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
 }
+/* the face re-enables pointer-events on itself (it must be clickable when
+   visible) — while docked-idle that left an INVISIBLE click-catcher floating
+   over the page: a Next button underneath started the tour instead of
+   navigating. Invisible means untouchable, all the way down. */
+.lc-avatar-host.lc-avatar-docked:not([data-state="speaking"]) .lc-avatar-char {
+  pointer-events: none;
+}
 .lc-guide-seed {
   position: fixed; right: 16px; bottom: 16px; z-index: 940;
   width: 46px; height: 46px; border-radius: 50%;

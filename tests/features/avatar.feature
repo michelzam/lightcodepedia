@@ -74,3 +74,29 @@ Feature: Avatar — speaking overlay instructor
     And I open the guide's ask panel
     Then the key prompt names the AI provider, not GitHub
     And the saved-password identity matches the agents'
+
+  Scenario: A docked idle guide is untouchable, not just invisible
+    The hidden big face kept its click handler while docked — an invisible
+    circle floating over the page, and a Next button underneath started
+    the tour instead of navigating. Invisible means untouchable.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/guide.md" with the document:
+      """
+      # Guided page
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script:
+        - say: "Hello."
+      stories: {}
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide.md"
+    And I wait for the page to be interactive
+    And I click where the hidden avatar face sits
+    Then the avatar did not start playing
