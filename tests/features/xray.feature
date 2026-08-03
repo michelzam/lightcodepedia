@@ -75,6 +75,33 @@ Feature: X-ray inspector
     Then an x-ray panel is visible
 
   @mobile
+  Scenario: In x-ray mode a phone can still reach the rest of the page
+    The lens used to swallow every touch on the page, so a phone in x-ray
+    mode was frozen: you could inspect the part in front of you and never
+    scroll to the next one. A finger that lands on nothing inspectable —
+    a margin, a paragraph, whitespace — is scrolling, not asking.
+
+    When I navigate to "/components/datagrid"
+    And I wait for the page to be interactive
+    And I tap the slides FAB button
+    And I tap the X-ray option in the popup
+    And I swipe up from a plain paragraph
+    Then the page scrolled
+
+  @mobile
+  Scenario: A drag that starts on a part is still an inspection
+    The escape hatch must not become the exit. A gesture beginning on a
+    component belongs to the lens — it tracks the finger and the page stays
+    put — or every inspection would slide out from under the reader.
+
+    When I navigate to "/components/datagrid"
+    And I wait for the page to be interactive
+    And I tap the slides FAB button
+    And I tap the X-ray option in the popup
+    And I swipe up from the first grid component
+    Then the page did not scroll
+
+  @mobile
   Scenario: X-ray deactivates by tapping the FAB again
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive

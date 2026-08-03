@@ -322,6 +322,61 @@ loses everything. A component's editable source comes from window.lcSourceOf
   };
   window.lcxToast = lcxToast;
 
+  /* ── the bench door — the learner's OWN repo, whole files ────────────────
+     lcCommitInline writes a block back into the page it came from; lcBench
+     writes a FILE into the learner's connected repo. Different question:
+     the page is the author's (vault — no student write), the work is the
+     student's. save="my/cv.md" on a block means "this block's content
+     persists HERE, in whoever-is-reading's bench". One reader/writer pair,
+     used by every component with a save= knob, so the contract cannot
+     drift: fence = the author's seed, bench file = the learner's truth. */
+  window.lcBench = {
+    target: function () {
+      return { repo: localStorage.getItem("lc_ed_repo") || "",
+               pat: localStorage.getItem("lc_ed_pat") || "" };
+    },
+    read: function (path) {            /* → {text, sha} | null (no file yet) */
+      var t = this.target();
+      if (!t.repo || !t.pat) return Promise.resolve(null);
+      return fetch("https://api.github.com/repos/" + t.repo + "/contents/" + path,
+        { headers: { Authorization: "Bearer " + t.pat, Accept: "application/vnd.github+json" } })
+        .then(function (r) {
+          if (r.status === 404) return null;
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then(function (j) {
+          if (!j || !j.content) return null;
+          return { text: decodeURIComponent(escape(atob(String(j.content).replace(/\s/g, "")))),
+                   sha: j.sha };
+        });
+    },
+    write: function (path, text, message, sha, _retried) {   /* → new sha */
+      var t = this.target(), self = this;
+      if (!t.repo || !t.pat) return Promise.reject(new Error("no bench connected"));
+      var body = { message: message || ("✍️ " + path),
+                   content: btoa(unescape(encodeURIComponent(text))) };
+      if (sha) body.sha = sha;
+      return fetch("https://api.github.com/repos/" + t.repo + "/contents/" + path,
+        { method: "PUT",
+          headers: { Authorization: "Bearer " + t.pat, Accept: "application/vnd.github+json",
+                     "Content-Type": "application/json" },
+          body: JSON.stringify(body) })
+        .then(function (r) {
+          /* stale sha (saved from another device since we loaded): take the
+             live sha once and lay this text on top — same file, same owner,
+             last write wins is the RIGHT rule for a one-person file */
+          if ((r.status === 409 || r.status === 422) && !_retried) {
+            return self.read(path).then(function (f) {
+              return self.write(path, text, message, f && f.sha, true);
+            });
+          }
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json().then(function (j) { return (j.content && j.content.sha) || ""; });
+        });
+    }
+  };
+
   function keepChanges() {
     /* Inside a runner render the true source is the RENDERED file (the /run
        page itself has no_edit and knows nothing) — the runner stamps it on

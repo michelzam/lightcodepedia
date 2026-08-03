@@ -302,3 +302,32 @@ def step_quiz_not_focused(context):
     assert context._quiz_answer not in focused, (
         "focus should have moved off the answer, still on: " + focused[:80]
     )
+
+
+@then("every agent form field has an accessible name")
+def step_agent_fields_named(context):
+    # axe's `label` rule: a placeholder is not a name, and an off-screen
+    # input is still in the accessibility tree. Mirror the rule's inputs —
+    # aria-label, aria-labelledby, title, or a <label> that points here.
+    unnamed = context.page.evaluate(
+        """() => Array.from(document.querySelectorAll(
+                   '.lc-agent input, .lc-agent textarea, .lc-agent select'))
+                 .filter(el => {
+                   if (el.type === 'hidden') return false;
+                   if (el.getAttribute('aria-label')) return false;
+                   if (el.getAttribute('aria-labelledby')) return false;
+                   if (el.getAttribute('title')) return false;
+                   if (el.id && document.querySelector(
+                         'label[for="' + CSS.escape(el.id) + '"]')) return false;
+                   if (el.closest('label')) return false;
+                   return true;
+                 })
+                 .map(el => el.tagName.toLowerCase() + '[' +
+                            (el.type || '') + '] ' +
+                            (el.className || '') + ' ph=' +
+                            (el.getAttribute('placeholder') || '—'))"""
+    )
+    assert not unnamed, (
+        "%d agent field(s) with no accessible name:\n  %s"
+        % (len(unnamed), "\n  ".join(unnamed))
+    )

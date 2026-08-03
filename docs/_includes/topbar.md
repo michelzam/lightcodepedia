@@ -11,9 +11,12 @@
    Flags are a SCOPE, not a page setting: every same-origin hop carries them
    forward, so a course framed by an LMS stays inside the frame the teacher
    set up instead of arriving as the full platform in a new tab.
-   Defaults are today's behaviour: everything on, nothing suppressed. Under
-   focus, navigable defaults OFF — a focused page that still lets you click
-   away is not focused. ?embed=true keeps its old meaning (hide the bar too). */
+   Defaults are today's behaviour: everything on, nothing suppressed —
+   INCLUDING under focus. Focus once implied navigable=0, and that killed
+   every card link a framed learner tapped: a course you cannot walk is not
+   a course. Staying in the teacher's scope is the flags riding along, not
+   the links dying; ?navigable=0 is still there for the author who really
+   means "this page only". ?embed=true keeps its old meaning (hide the bar). */
 (function () {
   var q = new URLSearchParams(location.search);
   var flag = function (name, dflt) {
@@ -31,7 +34,7 @@
   window.lcFrame = {
     focus: focus,
     editable: q.has("editable") ? flag("editable", true) : !root.classList.contains("lc-embed-mode"),
-    navigable: flag("navigable", !focus),
+    navigable: flag("navigable", true),
     open: (q.get("open") || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean),
     open_in: (q.get("open_in") || "frame").toLowerCase()
   };

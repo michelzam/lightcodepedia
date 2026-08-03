@@ -16,6 +16,15 @@ Usage:
 IAL knobs:
   rows="14"   editor height in text rows (default 12)
   save="true" show a 💾 Save button that commits straight to the source file
+  save="my/cv.md"
+              the two-repo contract: the fence is the AUTHOR's seed, the
+              learner's saved copy lives at this path in their OWN bench
+              (the repo they connected at join). On load the bench copy —
+              when it exists — replaces the seed; 💾 commits back to it;
+              ↺ restores the seed (their file survives until they 💾 over
+              it). The author can republish the page forever: seed and
+              saved copy are different files in different repos, so
+              nothing ever collides.
   id="..."    optional — names the pad for X-ray
 
 Auto-included by docs/_layouts/default.html.
@@ -37,7 +46,11 @@ Auto-included by docs/_layouts/default.html.
 }
 /* phones: preview first, then the source under it — same order as wide */
 @media (max-width: 640px) { .lc-mdpad { flex-direction: column; } }
-.lc-mdpad-bar { margin: -0.4em 0 1em; display: flex; justify-content: flex-end; }
+.lc-mdpad-bar { margin: -0.4em 0 1em; display: flex; justify-content: flex-end; gap: 0.5em; align-items: center; }
+.lc-mdpad-mine { margin-right: auto; font-size: 0.78em; color: #2e7d32; }
+.lc-mdpad-reset { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px;
+  border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
+.lc-mdpad-reset:hover { border-color: #888; color: #222; }
 .lc-mdpad-save { font: inherit; font-size: 0.85em; padding: 0.35em 1em; border-radius: 6px;
   border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
 .lc-mdpad-save:hover:not(:disabled) { background: #0052a3; }
@@ -86,10 +99,30 @@ Auto-included by docs/_layouts/default.html.
        there is one way a block gets written back, not two that drift. The
        button only exists when a save is actually possible: a key, a resolved
        source, and a source that is not read-only. */
-    var saveWrap = null, saveBtn = null;
-    if ((el.getAttribute("save") || "") === "true") {
+    /* save="my/cv.md" — the OTHER save: the page is the author's (vault,
+       no student write), the work is the learner's. The fence seeds; the
+       learner's copy persists at this path in their own bench and, when it
+       exists, replaces the seed on load. Same page, two repos, one writer
+       per file — the author can republish forever without touching it. */
+    var saveKnob = el.getAttribute("save") || "";
+    var benchPath = saveKnob && saveKnob !== "true" ? saveKnob : "";
+    var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null;
+    if (saveKnob) {
       saveWrap = document.createElement("div");
       saveWrap.className = "lc-mdpad-bar";
+      if (benchPath) {
+        mineTag = document.createElement("span");
+        mineTag.className = "lc-mdpad-mine";
+        mineTag.hidden = true;
+        mineTag.textContent = "✓ yours — saved in your space";
+        resetBtn = document.createElement("button");
+        resetBtn.type = "button";
+        resetBtn.className = "lc-mdpad-reset";
+        resetBtn.textContent = "↺ Start over";
+        resetBtn.title = "Bring back the lesson's starter — your saved copy stays until you 💾 again";
+        saveWrap.appendChild(mineTag);
+        saveWrap.appendChild(resetBtn);
+      }
       saveBtn = document.createElement("button");
       saveBtn.type = "button";
       saveBtn.className = "lc-mdpad-save";
@@ -105,7 +138,49 @@ Auto-included by docs/_layouts/default.html.
     el.parentNode.replaceChild(wrap, el);
     if (saveWrap) wrap.parentNode.insertBefore(saveWrap, wrap.nextSibling);
 
-    if (saveBtn) {
+    if (saveBtn && benchPath) {
+      var bOrigin = seed, bSha = null;
+      var refreshBench = function () {
+        var t = window.lcBench ? window.lcBench.target() : {};
+        var why = !window.lcBench ? "Saving needs a newer engine"
+                : !t.pat || !t.repo ? "Join the course (connect your key) to keep your work" : "";
+        saveBtn.disabled = !!why;
+        saveBtn.title = why || "Keep this in your own space (" + benchPath + ")";
+      };
+      refreshBench();
+      if (window.lcBench) {
+        window.lcBench.read(benchPath).then(function (f) {
+          if (!f) return;
+          bOrigin = f.text; bSha = f.sha;
+          ta.value = f.text;
+          wrap.setAttribute("data-lc-mine", "1");
+          if (mineTag) mineTag.hidden = false;
+          render(); publish(true);
+        }).catch(function () {});
+      }
+      saveBtn.addEventListener("click", function () {
+        refreshBench();
+        if (saveBtn.disabled) return;
+        if (ta.value === bOrigin) { window.lcxToast && window.lcxToast("Nothing changed.", true); return; }
+        saveBtn.disabled = true; saveBtn.textContent = "💾 Saving…";
+        window.lcBench.write(benchPath, ta.value, "✍️ " + (id || benchPath), bSha)
+          .then(function (sha) {
+            bOrigin = ta.value; bSha = sha || bSha;
+            wrap.setAttribute("data-lc-mine", "1");
+            if (mineTag) mineTag.hidden = false;
+            window.lcxToast && window.lcxToast("Saved to your space ✓", true);
+          })
+          .catch(function (e) {
+            window.lcxToast && window.lcxToast("Save failed: " + (e.message || e), false);
+          })
+          .finally(function () { saveBtn.textContent = "💾 Save"; refreshBench(); });
+      });
+      resetBtn.addEventListener("click", function () {
+        ta.value = seed;
+        render(); publish(true);
+        window.lcxToast && window.lcxToast("Starter restored — 💾 to make it yours", true);
+      });
+    } else if (saveBtn) {
       var origin = seed;   /* what the file holds right now — the anchor */
       var refresh = function () {
         var t = window.lcSourceTarget ? window.lcSourceTarget(wrap) : null;

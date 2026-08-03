@@ -1779,7 +1779,7 @@ Auto-included by docs/_layouts/default.html.
     var ready = window.lcBotAsk && window.lcBotAsk.ready();
     if (ready) {
       panel.innerHTML =
-        '<textarea rows="2" placeholder="Ask about this page…"></textarea>' +
+        '<textarea rows="2" placeholder="Ask about this page…" aria-label="Ask about this page"></textarea>' +
         '<div class="lc-guide-ask-row"><button type="button">▶ Ask</button></div>';
       var ta = panel.querySelector('textarea');
       panel.querySelector('button').addEventListener('click', function () {
@@ -1790,11 +1790,26 @@ Auto-included by docs/_layouts/default.html.
       });
       setTimeout(function () { ta.focus(); }, 50);
     } else {
+      /* the brain names its own provider: the guide must ask for the SAME
+         key the agents use, under the SAME keychain identity, or the
+         browser cannot autofill the one the learner saved at the door
+         (and they get told to paste a GitHub token at a Google service). */
+      var eng = (window.lcBotAsk && window.lcBotAsk.engine)
+        ? window.lcBotAsk.engine()
+        : { id: 'gemini', key_name: 'AI key', key_hint: 'sk-…', key_url: '' };
+      var esc = window.lcEscapeHtml || function (t) {
+        return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      };
       panel.innerHTML =
-        '<p class="lc-guide-ask-hint">Asking uses your own free credits — paste your GitHub PAT once (kept in memory only, like the agents on this page).</p>' +
+        '<p class="lc-guide-ask-hint">Asking uses your own free credits — paste your ' +
+          esc(eng.key_name) + ' once (kept in memory only, like the agents on this page).' +
+          (eng.key_url ? ' <a href="' + eng.key_url + '" target="_blank" rel="noopener">Get one →</a>' : '') +
+        '</p>' +
         '<form autocomplete="on">' +
-        '<input type="text" name="username" value="github-models" autocomplete="username" tabindex="-1" readonly>' +
-        '<input type="password" name="password" autocomplete="current-password" placeholder="ghp_…" required>' +
+        '<input type="text" name="username" value="lc-' + esc(eng.id) + '" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager">' +
+        '<input type="password" name="password" autocomplete="current-password" placeholder="' + esc(eng.key_hint) + '" required aria-label="' + esc(eng.key_name) + '">' +
         '<div class="lc-guide-ask-row" style="margin-top:6px"><button type="submit">Save &amp; ask</button></div>' +
         '</form>';
       panel.querySelector('form').addEventListener('submit', function (e) {

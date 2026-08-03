@@ -105,7 +105,55 @@
    "dd310d21db287a7a": "lc-4cda455c2378c20a.mp3",
    "646583341193d80e": "lc-79a8ca2cf01bf68f.mp3",
    "a54c0ea78251a285": "lc-38133cd085919422.mp3",
-   "6a07db23cfde2c3f": "lc-74d8e80cada0cd6d.mp3"
+   "6a07db23cfde2c3f": "lc-74d8e80cada0cd6d.mp3",
+   "e05bc6943fa2f8e7": "lc-ae441088c7e322ca.mp3",
+   "e91faca14d2a0f87": "lc-ec3a04611a11c6c6.mp3",
+   "8738b976d205fd30": "lc-b5c201dfd529bdad.mp3",
+   "cbfa8729644001f0": "lc-40b89480d82a0cf4.mp3",
+   "86af5eef5b639ddf": "lc-f2b45821b37f7cb7.mp3",
+   "139827b03b9e35d5": "lc-efafebc4aeed6bfb.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_00-00_welcome": {
+  "guide": {
+   "f5b3e9b41c037ecd": "lc-ae84f54f103b834c.mp3",
+   "100dc7cb60c5a12c": "lc-ad231217abef151c.mp3",
+   "5f54f694465784e7": "lc-2f2c03d025d33f73.mp3",
+   "9e2279e14a826a8a": "lc-822a74a91165bfc5.mp3",
+   "d8b89eefd75e9966": "lc-defe683aa259567d.mp3",
+   "50509dca65e24d0b": "lc-8a43b814e3ba0db0.mp3",
+   "6a07db23cfde2c3f": "lc-74d8e80cada0cd6d.mp3",
+   "d942cdd398fb1a9e": "lc-af797ffc71f4dca9.mp3",
+   "1ed3a7a335fb892d": "lc-2c4088717a76f158.mp3",
+   "6831515efc4a9872": "lc-039b01913c5773e6.mp3",
+   "56e14346733b479d": "lc-e3e9c967ecb31b1f.mp3",
+   "646583341193d80e": "lc-79a8ca2cf01bf68f.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_00-01_adoption_day": {
+  "guide": {
+   "f5b3e9b41c037ecd": "lc-ae84f54f103b834c.mp3",
+   "100dc7cb60c5a12c": "lc-ad231217abef151c.mp3",
+   "5f54f694465784e7": "lc-2f2c03d025d33f73.mp3",
+   "9e2279e14a826a8a": "lc-822a74a91165bfc5.mp3",
+   "d8b89eefd75e9966": "lc-defe683aa259567d.mp3",
+   "50509dca65e24d0b": "lc-8a43b814e3ba0db0.mp3",
+   "6a07db23cfde2c3f": "lc-74d8e80cada0cd6d.mp3",
+   "d942cdd398fb1a9e": "lc-af797ffc71f4dca9.mp3",
+   "1ed3a7a335fb892d": "lc-2c4088717a76f158.mp3",
+   "6831515efc4a9872": "lc-039b01913c5773e6.mp3",
+   "56e14346733b479d": "lc-e3e9c967ecb31b1f.mp3",
+   "646583341193d80e": "lc-79a8ca2cf01bf68f.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_00-02_monday_after": {
+  "guide": {
+   "c3fb4547aa716fe4": "lc-d0e32f1d30cd3f61.mp3",
+   "0319ac994517a4e7": "lc-7ca1ab4dc348d182.mp3",
+   "c3b35ca9fadf2515": "lc-18366670d1a49289.mp3",
+   "6dd881be9d328ce2": "lc-8a53ddb229555adf.mp3",
+   "5128ac73c2979dcf": "lc-2927c6b382964da9.mp3",
+   "44113e8c22875608": "lc-cd17f5be859689b3.mp3"
   }
  }
 }

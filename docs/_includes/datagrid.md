@@ -8,6 +8,13 @@ Inline, data in the code block (YAML/JSON/CSV per format=""):
   ```
   {: .datagrid title="Pets" height="300" }
 
+save="my/dogs.yaml" — the two-repo contract (same as the mdpad's): the
+fence is the AUTHOR's seed; the learner's rows persist at this path in
+their OWN bench and override the seed on the next visit. 💾 keeps, ↺
+restores the seed. ƒ computed columns are stripped on save (derived, the
+author's). The author republishes freely — different files, different
+repos, one writer each.
+
 File-backed (div.lc-datagrid-src emitted by the code include):
   fetches data-raw / data-cdn and renders the same grid.
 
@@ -30,6 +37,15 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
 .lc-datagrid-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 /* ƒ computed columns — derived, read-only, recomputed live from a formula */
 .lc-datagrid-grid .ag-cell.lc-dg-computed { background: #f6f8fa; color: #0a5; font-variant-numeric: tabular-nums; }
+/* save= — the learner's keep bar under the grid */
+.lc-dg-savebar { display: flex; align-items: center; gap: 0.5em; padding: 0.4em 0.9em; border-top: 1px solid #e5e7eb; background: #fafafa; }
+.lc-dg-mine { margin-right: auto; font-size: 0.78em; color: #2e7d32; }
+.lc-dg-save { font: inherit; font-size: 0.85em; padding: 0.3em 0.9em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; margin-left: auto; }
+.lc-dg-save:hover:not(:disabled) { background: #0052a3; }
+.lc-dg-save:disabled { opacity: 0.45; cursor: default; }
+.lc-dg-mine:not([hidden]) ~ .lc-dg-save { margin-left: 0; }
+.lc-dg-reset { font: inherit; font-size: 0.85em; padding: 0.3em 0.6em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
+.lc-dg-reset:hover { border-color: #888; color: #222; }
 </style>
 
 <script>
@@ -244,6 +260,76 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         document.addEventListener("lc-model-changed", recompute);
       }
 
+      /* save="my/dogs.yaml" — the two-repo contract, same as the mdpad's:
+         the fence is the author's seed, the learner's repaired rows persist
+         in their OWN bench and override the seed on the next visit. ƒ columns
+         are derived, so they are stripped before saving — a formula is the
+         author's standing part, not the learner's data. */
+      if (opts.save && window.lcBench) {
+        var bar = document.createElement("div");
+        bar.className = "lc-dg-savebar";
+        var mine = document.createElement("span");
+        mine.className = "lc-dg-mine";
+        mine.hidden = wrapper.getAttribute("data-lc-mine") !== "1";
+        mine.textContent = "✓ yours — saved in your space";
+        var reset = document.createElement("button");
+        reset.type = "button"; reset.className = "lc-dg-reset";
+        reset.textContent = "↺ Start over";
+        reset.title = "Bring back the lesson's data — your saved copy stays until you 💾 again";
+        var keep = document.createElement("button");
+        keep.type = "button"; keep.className = "lc-dg-save";
+        keep.textContent = "💾 Save";
+        bar.appendChild(mine); bar.appendChild(reset); bar.appendChild(keep);
+        wrapper.appendChild(bar);
+        var refreshKeep = function () {
+          var t = window.lcBench.target();
+          var why = !t.pat || !t.repo ? "Join the course (connect your key) to keep your work" : "";
+          keep.disabled = !!why;
+          keep.title = why || "Keep these rows in your own space (" + opts.save + ")";
+        };
+        refreshKeep();
+        var serialize = function (rows) {
+          if (opts.saveFormat === "json") return JSON.stringify(rows, null, 2) + "\n";
+          if (window.jsyaml && window.jsyaml.dump) return window.jsyaml.dump(rows);
+          throw new Error("YAML writer not loaded yet — try again in a moment");
+        };
+        keep.addEventListener("click", function () {
+          refreshKeep();
+          if (keep.disabled) return;
+          var rows = [];
+          api.forEachNode(function (n) {
+            var r = Object.assign({}, n.data);
+            computeSpecs.forEach(function (s) { delete r[s.col]; });
+            rows.push(r);
+          });
+          var text;
+          try { text = serialize(rows); }
+          catch (e) { window.lcxToast && window.lcxToast(String(e.message || e), false); return; }
+          keep.disabled = true; keep.textContent = "💾 Saving…";
+          window.lcBench.write(opts.save, text, "✍️ " + (gridId || opts.save), wrapper._lcBenchSha)
+            .then(function (sha) {
+              wrapper._lcBenchSha = sha || wrapper._lcBenchSha;
+              wrapper.setAttribute("data-lc-mine", "1");
+              mine.hidden = false;
+              window.lcxToast && window.lcxToast("Saved to your space ✓", true);
+            })
+            .catch(function (e) {
+              window.lcxToast && window.lcxToast("Save failed: " + (e.message || e), false);
+            })
+            .finally(function () { keep.textContent = "💾 Save"; refreshKeep(); });
+        });
+        reset.addEventListener("click", function () {
+          if (!opts.saveSeed) return;
+          opts.saveSeed().then(function (rows) {
+            api.setGridOption("rowData", rows);
+            recompute();
+            window.lcxToast && window.lcxToast("Lesson data restored — 💾 to make it yours", true);
+          }).catch(function (e) {
+            window.lcxToast && window.lcxToast("Could not restore: " + (e.message || e), false);
+          });
+        });
+      }
+
       // grid-to-grid master/detail: detail-of="<master-id>" filter="<local>=<master>"
       if (opts.detailOf && opts.filterExpr) {
         var m = opts.filterExpr.match(/^\s*([\w-]+)\s*=\s*([\w-]+)\s*$/);
@@ -273,7 +359,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       editable: el.getAttribute(prefix + "editable") === "true",
       detailOf: el.getAttribute(prefix + "master") || el.getAttribute(prefix + "detail-of") || "",
       filterExpr: el.getAttribute(prefix + "filter") || "",
-      compute: el.getAttribute(prefix + "compute") || ""
+      compute: el.getAttribute(prefix + "compute") || "",
+      save: el.getAttribute(prefix + "save") || ""
     };
   }
 
@@ -308,6 +395,22 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     } else {
       try { dataPromise = parseDatagridText(raw, format); }
       catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
+    }
+    /* save= — before first paint, prefer the learner's saved copy over the
+       fence seed. The seed stays reachable behind ↺, parsed fresh from the
+       fence text, so "start over" needs no network and no author round-trip. */
+    if (opts.save && !bindId && window.lcBench) {
+      /* the saved file's format follows ITS extension, not the fence's — a
+         csv fence still keeps as yaml/json (the two we can write back) */
+      opts.saveFormat = /\.json$/i.test(opts.save) ? "json" : "yaml";
+      opts.saveSeed = function () { return parseDatagridText(raw, format); };
+      var seedPromise = dataPromise;
+      dataPromise = window.lcBench.read(opts.save).then(function (f) {
+        if (!f) return seedPromise;
+        wrapper.setAttribute("data-lc-mine", "1");
+        wrapper._lcBenchSha = f.sha;
+        return parseDatagridText(f.text, opts.saveFormat);
+      }).catch(function () { return seedPromise; });
     }
     renderGridInto(wrapper, dataPromise, id, opts);
   }

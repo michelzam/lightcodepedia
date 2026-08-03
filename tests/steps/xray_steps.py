@@ -355,3 +355,73 @@ def step_touch_hint(context):
     hint = context.page.locator("#lcx-touch-hint")
     expect(hint).to_be_visible(timeout=5_000)
     expect(hint).to_contain_text("two fingers", timeout=2_000)
+
+
+# --- touch scrolling in x-ray mode -------------------------------------------
+# Playwright's touchscreen only taps, and a JS-dispatched touch event is not
+# trusted, so it can never scroll. These drive Chromium's real input pipeline
+# through CDP: preventDefault genuinely blocks the scroll, exactly as on the
+# phone, which is the only way to tell "the lens let go" from "the lens held".
+
+def _swipe_up(context, x, y):
+    cdp = context.page.context.new_cdp_session(context.page)
+    context.lc_scroll_before = context.page.evaluate("() => window.scrollY")
+    cdp.send("Input.dispatchTouchEvent",
+             {"type": "touchStart", "touchPoints": [{"x": x, "y": y}]})
+    for step in range(1, 7):
+        cdp.send("Input.dispatchTouchEvent",
+                 {"type": "touchMove",
+                  "touchPoints": [{"x": x, "y": max(8, y - step * 40)}]})
+        context.page.wait_for_timeout(30)
+    cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+    context.page.wait_for_timeout(700)
+
+
+@when("I swipe up from a plain paragraph")
+def step_swipe_paragraph(context):
+    # prose is not a component: nothing in the x-ray's wrapper list sits above
+    # it, so this is the "margin" case a reader actually has under the thumb
+    box = context.page.evaluate(
+        """() => {
+          /* prose sits directly in a slide section; anything deeper is a
+             component's own text and would be a legitimate inspection */
+          const ps = Array.from(document.querySelectorAll('section.lc-slide > p'));
+          for (const p of ps) {
+            const r = p.getBoundingClientRect();
+            if (r.height < 12 || r.top < 80 || r.bottom > innerHeight - 80) continue;
+            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+          }
+          return null;
+        }"""
+    )
+    assert box, "no plain paragraph in view to swipe from"
+    _swipe_up(context, box["x"], box["y"])
+
+
+@when("I swipe up from the first grid component")
+def step_swipe_grid(context):
+    el = context.page.locator(SEL_GRID).first
+    el.wait_for(state="visible", timeout=15_000)
+    el.scroll_into_view_if_needed()
+    context.page.wait_for_timeout(400)
+    b = el.bounding_box()
+    assert b, "grid has no box"
+    _swipe_up(context, b["x"] + b["width"] / 2, b["y"] + min(b["height"] / 2, 60))
+
+
+@then("the page scrolled")
+def step_page_scrolled(context):
+    now = context.page.evaluate("() => window.scrollY")
+    assert now > context.lc_scroll_before + 20, (
+        "page frozen in x-ray mode: scrollY %s → %s"
+        % (context.lc_scroll_before, now)
+    )
+
+
+@then("the page did not scroll")
+def step_page_not_scrolled(context):
+    now = context.page.evaluate("() => window.scrollY")
+    assert abs(now - context.lc_scroll_before) <= 8, (
+        "the lens let the page slide away under the finger: scrollY %s → %s"
+        % (context.lc_scroll_before, now)
+    )

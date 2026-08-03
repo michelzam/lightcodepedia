@@ -385,6 +385,15 @@ Auto-included by docs/_layouts/default.html.
   // The docked guide (avatar.md) asks questions through here: same bot files,
   // same knowledge stuffing, same in-memory PAT, no second auth system.
   window.lcBotAsk = {
+    /* who the brain speaks to — so every UI that asks for a key (the docked
+       guide, the join wizard) names the SAME provider, with the same key
+       hint and the same keychain identity. One place decides; nobody
+       hard-codes a vendor into a prompt again. */
+    engine: function () {
+      var cfg = {};
+      Object.keys(DEFAULTS).forEach(function (k) { cfg[k] = DEFAULTS[k]; });
+      return resolveEngine(cfg);
+    },
     ready: function () { return !!getSharedToken(DEFAULT_PROVIDER); },
     connect: function (key) { if (key) setSharedToken(DEFAULT_PROVIDER, String(key).trim()); },
     disconnect: function () { setSharedToken(DEFAULT_PROVIDER, null); },
@@ -430,9 +439,9 @@ Auto-included by docs/_layouts/default.html.
       '</div>' +
       '<form class="lc-agent-auth" autocomplete="on">' +
         '<p>Paste your ' + escapeHtml(eng.key_name) + '. Your browser may offer to save it (encrypted in the OS keychain). One key covers every ' + escapeHtml(eng.id) + ' agent on this page.</p>' +
-        '<input type="text" name="username" value="lc-' + escapeHtml(eng.id) + '" autocomplete="username" tabindex="-1" readonly>' +
+        '<input type="text" name="username" value="lc-' + escapeHtml(eng.id) + '" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager">' +
         '<div class="lc-agent-pw-row">' +
-          '<input type="password" name="password" class="lc-agent-token" autocomplete="current-password" placeholder="' + escapeHtml(eng.key_hint) + '" required>' +
+          '<input type="password" name="password" class="lc-agent-token" autocomplete="current-password" placeholder="' + escapeHtml(eng.key_hint) + '" required aria-label="' + escapeHtml(eng.key_name) + '">' +
           '<button type="submit">Save &amp; start</button>' +
         '</div>' +
         (eng.key_url ? '<a class="lc-agent-help" href="' + eng.key_url + '" target="_blank" rel="noopener">How do I get one?</a>' : '') +
@@ -440,7 +449,7 @@ Auto-included by docs/_layouts/default.html.
       '<div class="lc-agent-body" hidden>' +
         introHtml +
         '<form class="lc-agent-ask">' +
-          '<textarea class="lc-agent-prompt" rows="' + rows + '" placeholder="' + escapeHtml(cfg.placeholder) + '"></textarea>' +
+          '<textarea class="lc-agent-prompt" rows="' + rows + '" placeholder="' + escapeHtml(cfg.placeholder) + '" aria-label="Ask ' + escapeHtml(cfg.name || 'Agent') + '"></textarea>' +
           '<button type="submit" class="lc-agent-send">▶ Ask</button>' +
         '</form>' +
         '<div class="lc-agent-status" role="status" aria-live="polite"></div>' +

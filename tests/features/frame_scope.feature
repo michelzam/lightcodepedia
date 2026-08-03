@@ -8,11 +8,19 @@ Feature: Frame flags are a scope, not a page setting
   Background:
     Given I have a clean browser page
 
-  Scenario: An ordinary internal link carries the frame flags forward
-    A framed page that is still navigable (focus=1&navigable=1) keeps its
-    scope on every hop — focus alone deliberately neutralises links, which
-    is a different rule, tested below.
+  Scenario: A focused learner can still walk the course
+    Focus once implied navigable=0, so a framed learner tapping a folder
+    card got nothing at all — every card link neutralised, the course
+    unwalkable. Staying in the teacher's scope is the flags riding along,
+    not the links dying. Only an explicit navigable=0 locks a page now.
 
+    When I navigate to "/components/folder?focus=1"
+    And I wait for the page to be interactive
+    And I follow the first folder card link
+    Then I actually left the page I was on
+    And the page I land on still carries "focus=1"
+
+  Scenario: An ordinary internal link carries the frame flags forward
     When I navigate to "/components/text?focus=1&navigable=1&editable=0"
     And I wait for the page to be interactive
     And I follow the first internal link

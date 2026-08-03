@@ -46,3 +46,31 @@ Feature: Avatar — speaking overlay instructor
     And I hover over the avatar overlay "prof_avatar"
     Then an x-ray panel is visible
     And the x-ray panel mentions "Avatar"
+
+  Scenario: The guide asks for the AI key, not a GitHub token
+    The docked guide shares the agents' brain, so it must ask for the same
+    key under the same keychain identity — otherwise the browser cannot
+    offer the one saved at the join door, and the learner is told to paste
+    a GitHub token at a Google service.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/guide.md" with the document:
+      """
+      # Guided page
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script:
+        - say: "Hello."
+      stories: {}
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide.md"
+    And I wait for the page to be interactive
+    And I open the guide's ask panel
+    Then the key prompt names the AI provider, not GitHub
+    And the saved-password identity matches the agents'

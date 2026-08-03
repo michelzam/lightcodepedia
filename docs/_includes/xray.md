@@ -450,16 +450,33 @@ Auto-included by docs/_layouts/default.html.
        is a command, not an inspection (tablet gear bug, 2026-07-31). */
     const isFAB = e => e.target.closest && e.target.closest(
       '.lc-slides-fab, #lc-bl-popup, #lcx-edit, #lcx-gear, .lc-card-gear, .lc-folder-menu, .lc-card-filter, .lc-card-filter-chip');
+    /* A finger that lands on nothing inspectable is SCROLLING, not asking.
+       The lens used to swallow every touch on the page, so a phone in x-ray
+       mode was frozen: you could inspect the part in front of you and never
+       reach the next one. Margins, prose, whitespace — anywhere WRAP finds no
+       component — stay the browser's to scroll. The verdict is taken once, at
+       touchstart, and held for the whole gesture: a scroll that happens to
+       drag across a datagrid must not turn into an inspection halfway. */
+    let _scrolling = false;
     function showTouch(e) {
       if (!_touchOn || isFAB(e)) return;   // let FAB / editor taps through so focus + click fire
-      e.preventDefault();
       const t = e.touches[0];
+      if (!t) return;
+      if (e.type === "touchstart") {
+        _scrolling = !classAt(t.clientX, t.clientY);
+        if (_scrolling) hideAll();
+      }
+      if (_scrolling) return;              // this gesture belongs to the page
+      e.preventDefault();
       const hit = classAt(t.clientX, t.clientY);
       if (!hit) { hideAll(); return; }
       update(hit, { x: t.clientX, y: t.clientY }, e.touches.length >= 2);
     }
     addEventListener("touchstart", showTouch, { passive: false, capture: true });
     addEventListener("touchmove",  showTouch, { passive: false, capture: true });
-    addEventListener("touchend",   e => { if (_touchOn && !isFAB(e)) e.preventDefault(); }, { passive: false });
+    addEventListener("touchend",   e => {
+      if (_touchOn && !isFAB(e) && !_scrolling) e.preventDefault();
+      _scrolling = false;
+    }, { passive: false });
   }
 </script>

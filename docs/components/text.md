@@ -57,9 +57,20 @@ Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The 
 |---|---|
 | `rows="14"` | Editor height in text rows (default 12) |
 | `save="true"` | Adds a 💾 **Save** button that commits the block straight back to the page source — no x-ray, no page editor |
+| `save="my/cv.md"` | The **two-repo contract**: the fence stays the author's seed; the reader's copy persists at this path in *their own* connected repo — see below |
 | `#id` | Optional — names the pad for X-ray |
 
 **About `save="true"`:** the button appears only when a save could actually work — you are connected, the page has a source file, and that source is not read-only. Otherwise it is disabled and says which of the three is missing, rather than failing after the click. It writes through the same path the x-ray **Keep** uses, so a block is committed one way, not two.
+
+**About `save="<path>"` — same page, two repos:** a course page can carry the author's material *and* a place for the reader's work, stored apart. The fence text is only the **starter**; the first 💾 creates the file at that path in the reader's own repo, and from then on the pad opens with *their* text (marked "✓ yours"). **↺ Start over** brings the starter back on screen — the saved file survives until the next 💾. Because seed and saved copy are different files in different repos, the author can republish the page forever and never touch anyone's work; there is exactly one writer per file, so conflicts cannot exist.
+
+Try it — this pad keeps its text at `my/scratch.md` in *your* connected repo (the button explains itself if you aren't connected yet):
+
+````markdown
+## My scratch space
+Whatever you write here is **yours** — saved in your repo, not this page's.
+````
+{: .mdpad #my_scratch save="my/scratch.md" rows="8" }
 
 ### 📏 Ask the pad questions
 

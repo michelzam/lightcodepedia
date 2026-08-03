@@ -37,6 +37,16 @@ Feature: Everything a mouse can do, a keyboard can do
     And I press " "
     Then that quiz answer is marked wrong
 
+  Scenario: Every field an agent asks for announces what it wants
+    A screen reader gets nothing from a placeholder. The key panel is the
+    one form on this site a learner MUST fill in to go further, and it grew
+    a hidden keychain-identity field when the provider became configurable —
+    six unnamed inputs, straight past the axe ratchet.
+
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    Then every agent form field has an accessible name
+
   Scenario: Arrow keys walk the answers
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive

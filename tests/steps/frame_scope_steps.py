@@ -89,3 +89,15 @@ def step_actually_moved(context):
     # "flags still there" assertion pass without any navigation at all
     assert context.page.url != context.lc_url_before, \
         "still on %s — the link never navigated" % context.page.url
+
+
+@when("I follow the first folder card link")
+def step_follow_card(context):
+    # the learner's actual gesture: a tap on a card, not on whatever link the
+    # page happens to expose first. Cards arrive async — wait for the gallery.
+    card = context.page.locator(".lc-card h3 a").first
+    card.wait_for(state="visible", timeout=20_000)
+    context.lc_url_before = context.page.url
+    context.lc_pages_before = len(context.page.context.pages)
+    card.click()
+    context.page.wait_for_timeout(1500)

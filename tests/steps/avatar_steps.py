@@ -48,3 +48,32 @@ def step_avatar_state(context, avatar_id, state):
     expect(_host(context, avatar_id)).to_have_attribute(
         "data-state", state, timeout=5_000
     )
+
+
+@when("I open the guide's ask panel")
+def step_open_ask_panel(context):
+    # the learner's path: tap the docked guide, then its 💬 Ask item
+    # the menu opens from the guide's own seed button (clicking elsewhere on
+    # the host builds the menu but leaves it closed)
+    seed = context.page.locator(".lc-guide-seed").first
+    seed.wait_for(state="visible", timeout=20_000)
+    seed.click()
+    ask = context.page.get_by_text("💬 Ask", exact=False).first
+    ask.wait_for(state="visible", timeout=10_000)
+    ask.click()
+    context.page.wait_for_selector(".lc-guide-ask", timeout=10_000)
+
+
+@then("the key prompt names the AI provider, not GitHub")
+def step_prompt_names_provider(context):
+    txt = context.page.locator(".lc-guide-ask").inner_text()
+    ph = context.page.get_attribute(".lc-guide-ask input[type=password]", "placeholder") or ""
+    assert "GitHub" not in txt, "the guide still asks for a GitHub token: %s" % txt
+    assert not ph.startswith("ghp_"), "placeholder still a GitHub PAT: %s" % ph
+
+
+@then("the saved-password identity matches the agents'")
+def step_identity_matches(context):
+    user = context.page.get_attribute(".lc-guide-ask input[name=username]", "value")
+    assert user and user.startswith("lc-"), \
+        "keychain identity is %r — autofill will not find the saved key" % user
