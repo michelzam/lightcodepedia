@@ -222,3 +222,30 @@ def step_link_heals(context, text, path):
     expect(a).to_be_visible(timeout=8000)
     href = a.get_attribute("href") or ""
     assert "run.html#src=gh:" + BENCH_REPO + "/" + path in href, href
+
+
+@then("a rendered diagram replaces the dot source")
+def step_dot_rendered(context):
+    from playwright.sync_api import expect
+    svg = context.page.locator(".lc-dot-diagram svg").first
+    expect(svg).to_be_visible(timeout=20_000)
+    assert context.page.locator("code.language-dot").count() == 0, \
+        "the DOT source is still on the page, unrendered"
+
+
+@then("the diagram is no wider than the page")
+def step_diagram_fits(context):
+    m = context.page.evaluate(
+        """() => {
+             const box = document.querySelector('.lc-dot-diagram');
+             const svg = box && box.querySelector('svg');
+             if (!svg) return null;
+             return { svg: svg.getBoundingClientRect().width,
+                      box: box.clientWidth,
+                      scroll: box.scrollWidth };
+           }"""
+    )
+    assert m, "no diagram found"
+    assert m["svg"] <= m["box"] + 1, (
+        "diagram %spx wide inside a %spx column — the reader must scroll"
+        % (round(m["svg"]), round(m["box"])))

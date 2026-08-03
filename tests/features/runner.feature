@@ -76,3 +76,38 @@ Feature: The instant runner (RT) — Phase A parity
     And I open the page editor
     Then the page editor is editing "course/ex1.md"
     And the raw editor contains "Solve it your way"
+
+  Scenario: A dot fence renders as a live diagram inside a runner page
+    The Essentials' mindmap is a ```dot fence. The renderer only walked
+    the static page once, at load — a fence arriving with a runner render
+    stayed a wall of DOT source. The scan registry walks re-scans too.
+
+    Given the GitHub contents API serves "courses/demo/mod/mindmap.md" with the document:
+      """
+      # Map
+
+      ```dot
+      digraph g { a -> b; }
+      ```
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/mindmap.md"
+    And I wait for the page to be interactive
+    Then a rendered diagram replaces the dot source
+
+  Scenario: A dot diagram fits the page instead of scrolling it
+    A concept map wider than the page used to arrive at natural size and
+    make the reader scroll sideways before reading anything. Fences fit by
+    default; zoom= is the author's opt-out.
+
+    Given the GitHub contents API serves "courses/demo/mod/wide.md" with the document:
+      """
+      # Wide
+
+      ```dot
+      digraph g { rankdir=LR; a->b->c->d->e->f->g->h->i->j->k->l->m->n->o; }
+      ```
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/wide.md"
+    And I wait for the page to be interactive
+    Then a rendered diagram replaces the dot source
+    And the diagram is no wider than the page
