@@ -220,6 +220,13 @@ The check is live truth against the API, never cached. Done steps reopen via
     }
 
     function benchShow(behind) {
+      /* the connection is a PAIR: step 2 stored the key, and THIS is the
+         moment its repo half becomes known. Without it, every save="my/…"
+         aimed at whatever repo was lying around from an earlier life (the
+         author's site, or nothing at all) and the student's key answered
+         404 for a repo it was never meant to cover. The bench is resolved
+         per visitor from their own key, so pair them here. */
+      try { localStorage.setItem("lc_ed_repo", org + "/" + B.name); } catch (e) {}
       msgH(4, "🛠 Your bench: <b>" + org + "/" + B.name + "</b> — " +
         (behind ? "⬆️ the hub has <b>" + behind + " update" + (behind > 1 ? "s" : "") + "</b> you don’t have yet."
                 : "✅ up to date with the hub."), behind ? "" : "ok");

@@ -103,3 +103,18 @@ Feature: The student course wizard (/courses/join)
     When I open the course wizard with a stored key
     And I paste the energy key "AIzaWrong" and check it
     Then the energy step reports the rejection with the status code
+
+  Scenario: A resolved bench completes the connection pair
+    Step 2 stores the key; the bench resolving is when its repo half
+    becomes known. Without pairing them, every save="my/…" aimed at
+    whatever repo was lying around from an earlier life — the author's
+    site on a teacher's browser, nothing at all on a student's — and the
+    key answered 404 for a repo it was never meant to cover.
+
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And my bench exists and is 0 updates behind the hub
+    And an old author connection points at "michelzam/lightcodepedia"
+    When I open the course wizard with a stored key
+    Then my bench shows up to date with the hub
+    And the connected repo is my bench

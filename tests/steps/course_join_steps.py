@@ -289,3 +289,21 @@ def step_energy_rejected(context):
     m = context.page.locator('[data-m="5"]')
     expect(m).to_contain_text("rejected", timeout=10_000)
     expect(m).to_contain_text("401", timeout=5_000)
+
+
+@given('an old author connection points at "{repo}"')
+def step_stale_connection(context, repo):
+    # the teacher's browser: a connection left over from an earlier life —
+    # exactly the repo the student's key was never meant to cover
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_repo', '" + repo + "');"
+    )
+
+
+@then("the connected repo is my bench")
+def step_pair_completed(context):
+    # give the wizard's bench resolution a beat to land
+    context.page.wait_for_timeout(600)
+    repo = context.page.evaluate("() => localStorage.getItem('lc_ed_repo')")
+    assert repo and repo.endswith("/" + BENCH), (
+        "connection still points at %r — the pair was never completed" % repo)
