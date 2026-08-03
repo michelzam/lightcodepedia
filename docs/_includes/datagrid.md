@@ -305,7 +305,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         bar.appendChild(mine); bar.appendChild(reset); bar.appendChild(keep);
         wrapper.appendChild(bar);
         var refreshKeep = function () {
-          var t = window.lcBench.target();
+          var t = window.lcBench.target(wrapper);
           var why = !t.pat || !t.repo ? "Join the course (connect your key) to keep your work" : "";
           keep.disabled = !!why;
           keep.title = why || "Keep these rows in your own space (" + opts.save + ")";
@@ -329,7 +329,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
           try { text = serialize(rows); }
           catch (e) { window.lcxToast && window.lcxToast(String(e.message || e), false); return; }
           keep.disabled = true; keep.textContent = "💾 Saving…";
-          window.lcBench.write(opts.save, text, "✍️ " + (gridId || opts.save), wrapper._lcBenchSha)
+          window.lcBench.write(opts.save, text, "✍️ " + (gridId || opts.save), wrapper._lcBenchSha, wrapper)
             .then(function (sha) {
               wrapper._lcBenchSha = sha || wrapper._lcBenchSha;
               wrapper.setAttribute("data-lc-mine", "1");
@@ -443,7 +443,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
           if (window.lcSetDataset) window.lcSetDataset(bindId, rows);
         };
         seedPromise.then(function (rows) { opts._seedRows = (rows || []).slice(); });
-        window.lcBench.read(opts.save).then(function (f) {
+        window.lcBench.read(opts.save, wrapper).then(function (f) {
           if (!f) return;
           return parseDatagridText(f.text, opts.saveFormat).then(function (rows) {
             if (!Array.isArray(rows)) return;
@@ -454,7 +454,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         }).catch(function () {});
       } else {
         opts.saveSeed = function () { return parseDatagridText(raw, format); };
-        dataPromise = window.lcBench.read(opts.save).then(function (f) {
+        dataPromise = window.lcBench.read(opts.save, wrapper).then(function (f) {
           if (!f) return seedPromise;
           wrapper.setAttribute("data-lc-mine", "1");
           wrapper._lcBenchSha = f.sha;

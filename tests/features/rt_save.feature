@@ -25,28 +25,28 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       """
 
   Scenario: Without a key the page still teaches, and says how to join
-    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/work.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     Then the pad shows the author's starter
     And the pad's save button is disabled with a join hint
 
   Scenario: A joined learner with no saved copy starts from the seed
     Given a connected bench whose "my/cv.md" does not exist yet
-    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/work.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     Then the pad shows the author's starter
     And the pad is not marked as the reader's own
 
   Scenario: The saved copy wins over the seed on the next visit
     Given a connected bench whose "my/cv.md" holds "# Alice — WHS volunteer"
-    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/work.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     Then the pad shows "# Alice — WHS volunteer"
     And the pad is marked as the reader's own
 
   Scenario: Saving writes to the learner's repo, never the author's
     Given a connected bench whose "my/cv.md" does not exist yet
-    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/work.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     And I type "# Mine now" into the pad and save
     Then the bench received a commit to "my/cv.md" containing "# Mine now"
@@ -54,7 +54,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
 
   Scenario: Start over restores the seed without touching the saved file
     Given a connected bench whose "my/cv.md" holds "# Alice — WHS volunteer"
-    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/work.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     And I press the pad's start-over button
     Then the pad shows the author's starter
@@ -62,14 +62,14 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
 
   Scenario: The grid loads the reader's repaired rows over the broken seed
     Given a connected bench whose "my/dogs.yaml" holds "- name: Rex\n  campus: Milwaukee"
-    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/work.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     Then the dogs grid shows "Milwaukee"
     And the grid is marked as the reader's own
 
   Scenario: The grid's keep button writes rows to the learner's repo
     Given a connected bench whose "my/dogs.yaml" does not exist yet
-    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/work.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     And I press the grid's keep button
     Then the bench received a commit to "my/dogs.yaml" containing "Milwauke"
@@ -96,7 +96,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       ```
       {: .datagrid source="pets" #pet_grid editable="true" save="my/pets.yaml" height="160" }
       """
-    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/derived.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/derived.md"
     And I wait for the page to be interactive
     And the dataset "pets" is repaired elsewhere
     Then the dogs grid shows "Milwaukee"
@@ -118,8 +118,31 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       ```
       {: .datagrid source="pets" #pet_grid editable="true" save="my/pets.yaml" height="160" }
       """
-    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/derived.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/derived.md"
     And I wait for the page to be interactive
     Then the dogs grid shows "Fixed"
     And the dataset "pets" now reads "Fixed"
     And the grid is marked as the reader's own
+
+  Scenario: Work stays in the bench you are standing in
+    Canvas frames the learner's BENCH copy. The door used to aim every
+    save at the globally connected repo — the author previewing a student
+    bench hit a repo their key does not cover, and GitHub's 404 arrived
+    dressed as a missing file. A page rendered from a writable bench keeps
+    its work in THAT bench, whatever the global connection says.
+
+    Given a learner standing in bench "stub/bench" while connected to "stub/elsewhere"
+    And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
+      """
+      # Work page
+
+      ```markdown
+      # Starter résumé — replace me
+      ```
+      {: .mdpad #cv save="my/cv.md" rows="6" }
+      """
+    When I navigate to "/run.html#src=gh:stub/bench/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I type "# Mine now" into the pad and save
+    Then the bench received a commit to "my/cv.md" containing "# Mine now"
+    And the repo "stub/elsewhere" received no commit

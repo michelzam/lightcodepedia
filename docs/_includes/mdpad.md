@@ -141,7 +141,7 @@ Auto-included by docs/_layouts/default.html.
     if (saveBtn && benchPath) {
       var bOrigin = seed, bSha = null;
       var refreshBench = function () {
-        var t = window.lcBench ? window.lcBench.target() : {};
+        var t = window.lcBench ? window.lcBench.target(wrap) : {};
         var why = !window.lcBench ? "Saving needs a newer engine"
                 : !t.pat || !t.repo ? "Join the course (connect your key) to keep your work" : "";
         saveBtn.disabled = !!why;
@@ -149,7 +149,7 @@ Auto-included by docs/_layouts/default.html.
       };
       refreshBench();
       if (window.lcBench) {
-        window.lcBench.read(benchPath).then(function (f) {
+        window.lcBench.read(benchPath, wrap).then(function (f) {
           if (!f) return;
           bOrigin = f.text; bSha = f.sha;
           ta.value = f.text;
@@ -163,7 +163,7 @@ Auto-included by docs/_layouts/default.html.
         if (saveBtn.disabled) return;
         if (ta.value === bOrigin) { window.lcxToast && window.lcxToast("Nothing changed.", true); return; }
         saveBtn.disabled = true; saveBtn.textContent = "💾 Saving…";
-        window.lcBench.write(benchPath, ta.value, "✍️ " + (id || benchPath), bSha)
+        window.lcBench.write(benchPath, ta.value, "✍️ " + (id || benchPath), bSha, wrap)
           .then(function (sha) {
             bOrigin = ta.value; bSha = sha || bSha;
             wrap.setAttribute("data-lc-mine", "1");

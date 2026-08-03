@@ -49,7 +49,7 @@ def _stub_bench(context, files):
             route.fallback()
 
     context.page.route("https://api.github.com/repos/" + BENCH + "/contents/**", bench)
-    context.page.route("https://api.github.com/repos/acme/demo/contents/**", author_put)
+    context.page.route("https://api.github.com/repos/acme/demo-vault/contents/**", author_put)
     context.page.add_init_script(
         "localStorage.setItem('lc_ed_pat', 'ghp_stub');"
         "localStorage.setItem('lc_ed_repo', '" + BENCH + "');"
@@ -193,3 +193,44 @@ def step_dataset_reads(context, name, text):
         "(id) => JSON.stringify(window.lcDatasets[id] || [])", name
     )
     assert text in got, "dataset %s does not carry %r: %s" % (name, text, got[:300])
+
+
+@given('a learner standing in bench "{bench}" while connected to "{other}"')
+def step_bench_vs_connected(context, bench, other):
+    # the Canvas shape: the page renders FROM the bench, but the browser's
+    # connected repo points somewhere else. Both repos record their writes,
+    # so the assertion can say where the work actually landed.
+    import base64 as _b64
+    import json as _json
+    context.bench_commits = []
+    context.other_commits = []
+
+    def record(bucket):
+        def handler(route, req):
+            path = req.url.split("/contents/", 1)[1].split("?")[0]
+            if req.method == "PUT":
+                body = _json.loads(req.post_data)
+                bucket.append({
+                    "path": path,
+                    "text": _b64.b64decode(body.get("content", "")).decode(),
+                })
+                route.fulfill(json={"content": {"sha": "sha-x"}})
+            elif req.method == "GET" and "/contents/my/" in req.url:
+                route.fulfill(status=404, json={"message": "Not Found"})
+            else:
+                route.fallback()   # the earlier stub serves the document
+        return handler
+
+    context.page.route("https://api.github.com/repos/" + bench + "/contents/**",
+                       record(context.bench_commits))
+    context.page.route("https://api.github.com/repos/" + other + "/contents/**",
+                       record(context.other_commits))
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat', 'ghp_stub');"
+        "localStorage.setItem('lc_ed_repo', '" + other + "');"
+    )
+
+
+@then('the repo "{repo}" received no commit')
+def step_other_untouched(context, repo):
+    assert not context.other_commits, context.other_commits

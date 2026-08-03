@@ -331,12 +331,22 @@ loses everything. A component's editable source comes from window.lcSourceOf
      used by every component with a save= knob, so the contract cannot
      drift: fence = the author's seed, bench file = the learner's truth. */
   window.lcBench = {
-    target: function () {
-      return { repo: localStorage.getItem("lc_ed_repo") || "",
+    /* WHICH bench? The one the learner is standing in. A page rendered from
+       their bench (Canvas frames the bench copy) must keep its work in THAT
+       repo — the globally connected repo can be a different one entirely
+       (the author previewing a student bench, a student who joined on
+       another site), and a fine-grained key that doesn't cover it makes
+       GitHub answer 404, dressed as a missing file. Only a READ-ONLY render
+       (the vault Library) falls back to the connected repo: you cannot keep
+       work in a book. */
+    target: function (fromEl) {
+      var runRoot = fromEl && fromEl.closest ? fromEl.closest(".lc-run[data-lc-src-repo]") : null;
+      var srcRepo = runRoot && !runRoot.dataset.lcReadonly ? runRoot.dataset.lcSrcRepo : "";
+      return { repo: srcRepo || localStorage.getItem("lc_ed_repo") || "",
                pat: localStorage.getItem("lc_ed_pat") || "" };
     },
-    read: function (path) {            /* → {text, sha} | null (no file yet) */
-      var t = this.target();
+    read: function (path, fromEl) {    /* → {text, sha} | null (no file yet) */
+      var t = this.target(fromEl);
       if (!t.repo || !t.pat) return Promise.resolve(null);
       return fetch("https://api.github.com/repos/" + t.repo + "/contents/" + path,
         { headers: { Authorization: "Bearer " + t.pat, Accept: "application/vnd.github+json" } })
@@ -351,8 +361,8 @@ loses everything. A component's editable source comes from window.lcSourceOf
                    sha: j.sha };
         });
     },
-    write: function (path, text, message, sha, _retried) {   /* → new sha */
-      var t = this.target(), self = this;
+    write: function (path, text, message, sha, fromEl, _retried) {   /* → new sha */
+      var t = this.target(fromEl), self = this;
       if (!t.repo || !t.pat) return Promise.reject(new Error("no bench connected"));
       var body = { message: message || ("✍️ " + path),
                    content: btoa(unescape(encodeURIComponent(text))) };
@@ -367,10 +377,14 @@ loses everything. A component's editable source comes from window.lcSourceOf
              live sha once and lay this text on top — same file, same owner,
              last write wins is the RIGHT rule for a one-person file */
           if ((r.status === 409 || r.status === 422) && !_retried) {
-            return self.read(path).then(function (f) {
-              return self.write(path, text, message, f && f.sha, true);
+            return self.read(path, fromEl).then(function (f) {
+              return self.write(path, text, message, f && f.sha, fromEl, true);
             });
           }
+          /* GitHub says 404 for "repo exists but your key can't see it" —
+             to a learner that reads as a missing file. Name the repo, so a
+             key-grant gap is visible instead of mystifying. */
+          if (r.status === 404) throw new Error("your key can't write to " + t.repo + " — reconnect with a key that covers your space");
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json().then(function (j) { return (j.content && j.content.sha) || ""; });
         });
