@@ -12,6 +12,15 @@ def _first_internal_link(page, prefix=""):
         """(prefix) => {
             const here = location.pathname;
             const as = Array.from(document.querySelectorAll('a[href]'));
+            /* SITE-canonical compare: the lab is served under a project base
+               (/lightcodelab), pedia at the domain root. Matching raw
+               pathnames finds a "/components/" link on one and nothing on
+               the other — the same suite, two verdicts. Strip the base, the
+               way the frame guard itself does. */
+            const base = window.lcBase || '';
+            const strip = p => (base && p.indexOf(base + '/') === 0)
+                                 ? p.slice(base.length) : p;
+            const hereP = strip(here);
             for (const a of as) {
               if (a.target === '_blank' || a.hasAttribute('download')) continue;
               const h = a.getAttribute('href') || '';
@@ -19,8 +28,9 @@ def _first_internal_link(page, prefix=""):
               let u;
               try { u = new URL(a.href, location.href); } catch (e) { continue; }
               if (u.origin !== location.origin) continue;
-              if (u.pathname === here) continue;
-              if (prefix && u.pathname.indexOf(prefix) !== 0) continue;
+              const p = strip(u.pathname);
+              if (p === hereP) continue;
+              if (prefix && p.indexOf(prefix) !== 0) continue;
               return a.href;
             }
             return null;

@@ -1,5 +1,6 @@
 import base64
 import json
+import re
 
 from behave import given, when, then
 from playwright.sync_api import expect
@@ -390,3 +391,61 @@ def step_stub_stale_raw(context, dirpath, name):
     context.page.route("**/raw.githubusercontent.com/**/index.md*",
                        lambda r: r.fulfill(status=200, content_type="text/plain",
                                            body=index_md))
+
+
+@given("a stubbed private repo whose raw tokens have expired")
+def step_expired_raw(context):
+    # the failure shape from the field: the API answers fine, but
+    # raw.githubusercontent 404s because the token baked into a cached
+    # listing has aged out
+    INDEX = "# \U0001f44b 00\u00b7Welcome\n\n\U0001f3d7 Skills ready to build.\n"
+    SHELF = "# Shelf\n\n[modules](#)\n{: .folder path=\"courses\" open=\"runner\" }\n"
+
+    def handler(route):
+        url = route.request.url
+        if "/contents/" in url:
+            path = url.split("/contents/", 1)[1].split("?")[0]
+            if path.endswith("shelf.md"):
+                route.fulfill(status=200, content_type="text/plain", body=SHELF)
+            elif path.endswith("index.md"):
+                route.fulfill(status=200, content_type="text/plain", body=INDEX)
+            elif path.endswith(".md"):
+                route.fulfill(status=200, content_type="text/plain", body="# Page\n")
+            else:
+                route.fulfill(status=200, json=[
+                    {"type": "dir", "name": "module_00", "path": path + "/module_00",
+                     "url": "https://api.github.com/repos/acme/private/contents/"
+                            + path + "/module_00"},
+                    {"type": "file", "name": "index.md",
+                     "path": path + "/module_00/index.md",
+                     "download_url": "https://raw.githubusercontent.com/expired/index.md",
+                     "url": "https://api.github.com/repos/acme/private/contents/"
+                            + path + "/module_00/index.md"},
+                ])
+            return
+        if re.search(r"/repos/[^/]+/[^/]+$", url):
+            route.fulfill(status=200, json={"permissions": {"push": False}})
+            return
+        route.fulfill(status=404, json={"message": "stub"})
+
+    context.page.route("https://api.github.com/**", handler)
+    context.page.route("https://raw.githubusercontent.com/**",
+                       lambda r: r.fulfill(status=404, body="Not Found"))
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat','ghp_stub');"
+        "localStorage.setItem('lc_ed_repo','acme/private');")
+
+
+@when("I open a shelf listing that repo")
+def step_open_private_shelf(context):
+    context.page.goto(
+        context.base_url + "/run.html#src=gh:acme/private/courses/shelf.md",
+        wait_until="domcontentloaded")
+    context.page.wait_for_selector(".lc-cards .lc-card", timeout=20_000)
+
+
+@then("the subfolder card shows the index's own title")
+def step_subdir_title(context):
+    card = context.page.locator(".lc-cards .lc-card").first
+    expect(card).to_contain_text("00\u00b7Welcome", timeout=10_000)
+    expect(card).to_contain_text("Skills ready to build", timeout=5_000)

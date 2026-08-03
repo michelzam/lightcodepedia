@@ -345,9 +345,25 @@ Auto-included by docs/_layouts/default.html.
               var idx = Array.isArray(entries) && entries.find(function(e) {
                 return e.type === "file" && e.name.toLowerCase() === "index.md";
               });
-              if (!idx || !idx.download_url) return fallback;
-              return fetch(idx.download_url)
-                .then(function(r) { return r.ok ? r.text() : null; })
+              if (!idx) return fallback;
+              /* Same door as the page cards (c6bf3e5) — this half was missed:
+                 download_url on a PRIVATE repo is an unauthenticated raw URL
+                 carrying a SHORT-LIVED token. A listing served from cache
+                 hands out an expired one, the read 404s, and the folder card
+                 silently degrades to its directory name ("Module 00") with no
+                 title and no snippet — the same shelf rendering differently
+                 from one visit to the next, which is exactly how it looked:
+                 impossible to reproduce on demand. Read through the API we
+                 are already authenticated for; keep download_url as the
+                 anonymous/public fallback. */
+              return apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" + idx.path, true)
+                .then(function (t) { return typeof t === "string" ? t : null; })
+                .catch(function () { return null; })
+                .then(function (t) {
+                  if (t != null) return t;
+                  if (!idx.download_url) return null;
+                  return fetch(idx.download_url).then(function(r) { return r.ok ? r.text() : null; });
+                })
                 .then(function(text) {
                   if (!text) return fallback;
                   var meta = extractPageMeta(text);

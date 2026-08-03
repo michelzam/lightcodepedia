@@ -193,3 +193,49 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I wait for the page to be interactive
     And I open a cell editor in the dogs grid
     Then the cell editor refuses autofill
+
+  Scenario: The pad shows every version it ever saved
+    The bench IS git, so the history already exists — it only lacked a
+    door. Learners watch version control work before anyone says the word.
+    An audit can also see that they iterated: no screenshot can fake that.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
+      """
+      # Work page
+
+      ```markdown
+      # Starter résumé — replace me
+      ```
+      {: .mdpad #cv save="cv.md" rows="6" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I open the pad's version list
+    Then the list shows 2 saved versions
+    When I compare the oldest version
+    Then the difference is shown line by line
+
+  Scenario: Bringing back an old version loads it without losing the new one
+    Restoring is not a rollback. It drops the old text into the editor, so
+    the next save is simply another commit. Nothing is ever lost, which is
+    the lesson underneath.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
+      """
+      # Work page
+
+      ```markdown
+      # Starter résumé — replace me
+      ```
+      {: .mdpad #cv save="cv.md" rows="6" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I open the pad's version list
+    And I bring back the oldest version
+    Then the pad shows "# Draft one"
+    And the bench received no commit

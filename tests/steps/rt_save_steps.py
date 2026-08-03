@@ -75,9 +75,12 @@ def step_pad_starter(context):
 
 @then('the pad shows "{text}"')
 def step_pad_shows(context, text):
-    expect(context.page.locator(".lc-mdpad-in").first).to_have_value(
-        text, timeout=10_000
-    )
+    # trailing newline: a file ends with one, the pad does not add one, and
+    # it is not a difference the learner can see — compare what is readable
+    loc = context.page.locator(".lc-mdpad-in").first
+    expect(loc).not_to_have_value("", timeout=10_000)
+    got = (loc.input_value() or "").strip()
+    assert got == text.strip(), "pad holds %r, expected %r" % (got, text)
 
 
 @then("the pad's save button is disabled with a join hint")
@@ -256,3 +259,65 @@ def step_editor_refuses_autofill(context):
     )
     assert attrs, "no editor input found"
     assert attrs["ac"] == "off" and attrs["name"] == "lc-cell" and attrs["lp"] == "true", attrs
+
+
+@given('the bench remembers two earlier versions of "{path}"')
+def step_bench_history(context, path):
+    # the commit list and the by-ref reads that back it — the shape the
+    # GitHub API answers with, so the panel exercises the real contract
+    VERSIONS = {"sha-old": "# Draft one\n", "sha-mid": "# Draft two\n"}
+
+    def commits(route, req):
+        route.fulfill(json=[
+            {"sha": "sha-mid",
+             "commit": {"author": {"date": "2026-08-02T09:00:00Z"},
+                        "message": "\u270d\ufe0f cv"}},
+            {"sha": "sha-old",
+             "commit": {"author": {"date": "2026-08-01T09:00:00Z"},
+                        "message": "\u270d\ufe0f cv"}},
+        ])
+
+    def at_ref(route, req):
+        for sha, text in VERSIONS.items():
+            if "ref=" + sha in req.url:
+                route.fulfill(status=200, content_type="text/plain", body=text)
+                return
+        route.fallback()
+
+    context.page.route("https://api.github.com/repos/" + BENCH + "/commits*", commits)
+    context.page.route("https://api.github.com/repos/" + BENCH + "/contents/**?ref=*", at_ref)
+
+
+@when("I open the pad's version list")
+def step_open_versions(context):
+    btn = context.page.locator(".lc-mdpad-hist").first
+    expect(btn).to_be_visible(timeout=15_000)
+    btn.click()
+    context.page.wait_for_selector(".lc-mdpad-versions li", timeout=10_000)
+
+
+@then("the list shows {n:d} saved versions")
+def step_version_count(context, n):
+    expect(context.page.locator(".lc-mdpad-versions li")).to_have_count(n, timeout=10_000)
+
+
+@when("I compare the oldest version")
+def step_compare_oldest(context):
+    context.page.locator(".lc-mdpad-versions li").last.locator(
+        "button", has_text="compare").click()
+    context.page.wait_for_timeout(700)
+
+
+@then("the difference is shown line by line")
+def step_diff_shown(context):
+    box = context.page.locator(".lc-mdpad-diff")
+    expect(box).to_be_visible(timeout=10_000)
+    assert box.locator(".del").count() > 0, "no removed line marked"
+    assert box.locator(".add").count() > 0, "no added line marked"
+
+
+@when("I bring back the oldest version")
+def step_bring_back(context):
+    context.page.locator(".lc-mdpad-versions li").last.locator(
+        "button", has_text="bring back").click()
+    context.page.wait_for_timeout(800)

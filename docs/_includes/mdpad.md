@@ -54,6 +54,28 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-reset { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px;
   border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
 .lc-mdpad-reset:hover { border-color: #888; color: #222; }
+/* 🕘 versions — the bench's own git, surfaced */
+.lc-mdpad-hist { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px;
+  border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
+.lc-mdpad-hist:hover { border-color: #888; color: #222; }
+.lc-mdpad-versions { border: 1px solid #d0d0d0; border-radius: 8px; margin: -0.6em 0 1em;
+  background: #fafafa; overflow: hidden; font-size: 0.88em; }
+.lc-mdpad-versions ol { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow: auto; }
+.lc-mdpad-versions li { display: flex; align-items: center; gap: 0.6em; padding: 0.45em 0.9em;
+  border-bottom: 1px solid #eee; }
+.lc-mdpad-versions li:last-child { border-bottom: none; }
+.lc-mdpad-versions li.now { background: #eef6ff; }
+.lc-mdpad-vwhen { flex: 1; color: #444; }
+.lc-mdpad-vsha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #94a3b8; font-size: 0.85em; }
+.lc-mdpad-versions button { font: inherit; font-size: 0.85em; padding: 0.2em 0.6em; border-radius: 5px;
+  border: 1px solid #cbd5e1; background: #fff; color: #334155; cursor: pointer; }
+.lc-mdpad-versions button:hover { border-color: #0066cc; color: #0066cc; }
+.lc-mdpad-diff { margin: 0; padding: 0.7em 0.9em; background: #fff; border-top: 1px solid #eee;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82em;
+  line-height: 1.5; white-space: pre-wrap; overflow-x: auto; max-height: 260px; overflow-y: auto; }
+.lc-mdpad-diff .add { background: #dcfce7; color: #166534; display: block; }
+.lc-mdpad-diff .del { background: #fee2e2; color: #991b1b; display: block; }
+.lc-mdpad-diff .same { color: #64748b; display: block; }
 .lc-mdpad-save { font: inherit; font-size: 0.85em; padding: 0.35em 1em; border-radius: 6px;
   border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
 .lc-mdpad-save:hover:not(:disabled) { background: #0052a3; }
@@ -109,7 +131,7 @@ Auto-included by docs/_layouts/default.html.
        per file — the author can republish forever without touching it. */
     var saveKnob = el.getAttribute("save") || "";
     var benchPath = saveKnob && saveKnob !== "true" ? saveKnob : "";
-    var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null;
+    var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null;
     if (saveKnob) {
       saveWrap = document.createElement("div");
       saveWrap.className = "lc-mdpad-bar";
@@ -118,12 +140,19 @@ Auto-included by docs/_layouts/default.html.
         mineTag.className = "lc-mdpad-mine";
         mineTag.hidden = true;
         mineTag.textContent = "✓ yours — saved in your space";
+        histBtn = document.createElement("button");
+        histBtn.type = "button";
+        histBtn.className = "lc-mdpad-hist";
+        histBtn.hidden = true;          /* nothing to show until a first save */
+        histBtn.textContent = "🕘 Versions";
+        histBtn.title = "Every version you saved — read it, compare it, bring it back";
         resetBtn = document.createElement("button");
         resetBtn.type = "button";
         resetBtn.className = "lc-mdpad-reset";
         resetBtn.textContent = "↺ Start over";
         resetBtn.title = "Bring back the lesson's starter — your saved copy stays until you 💾 again";
         saveWrap.appendChild(mineTag);
+        saveWrap.appendChild(histBtn);
         saveWrap.appendChild(resetBtn);
       }
       saveBtn = document.createElement("button");
@@ -159,6 +188,7 @@ Auto-included by docs/_layouts/default.html.
           ta.value = f.text;
           wrap.setAttribute("data-lc-mine", "1");
           if (mineTag) mineTag.hidden = false;
+          if (histBtn) histBtn.hidden = false;   /* a saved file HAS a history */
           render(); publish(true);
         }).catch(function () {});
       }
@@ -172,6 +202,8 @@ Auto-included by docs/_layouts/default.html.
             bOrigin = ta.value; bSha = sha || bSha;
             wrap.setAttribute("data-lc-mine", "1");
             if (mineTag) mineTag.hidden = false;
+            if (histBtn) histBtn.hidden = false;
+            closeVersions();                     /* the list just grew — re-open it fresh */
             window.lcxToast && window.lcxToast("Saved to your space ✓", true);
           })
           .catch(function (e) {
@@ -183,6 +215,112 @@ Auto-included by docs/_layouts/default.html.
         ta.value = seed;
         render(); publish(true);
         window.lcxToast && window.lcxToast("Starter restored — 💾 to make it yours", true);
+      });
+
+      /* ── 🕘 versions: the bench's own git, made readable ──────────────
+         Every 💾 was a commit; this lists them, shows what a version said,
+         and diffs it against what is in the pad right now. Restoring is
+         not a rollback — it drops the old text into the editor, and the
+         next 💾 is just another commit. Nothing is ever lost, which is
+         the whole point of the lesson underneath. */
+      var vPanel = null;
+      function closeVersions() {
+        if (vPanel && vPanel.parentNode) vPanel.parentNode.removeChild(vPanel);
+        vPanel = null;
+      }
+      function whenLabel(iso) {
+        if (!iso) return "saved";
+        var d = new Date(iso);
+        return isNaN(d) ? iso : d.toLocaleString();
+      }
+      /* line diff, longest-common-subsequence — small enough to keep honest
+         and to read: what the old version said vs what the pad holds now */
+      function diffLines(a, b) {
+        var A = String(a).split("\n"), B = String(b).split("\n");
+        var m = A.length, n = B.length, i, j;
+        var L = [];
+        for (i = 0; i <= m; i++) { L.push(new Array(n + 1).fill(0)); }
+        for (i = m - 1; i >= 0; i--)
+          for (j = n - 1; j >= 0; j--)
+            L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+        var out = [];
+        i = 0; j = 0;
+        while (i < m && j < n) {
+          if (A[i] === B[j]) { out.push(["same", A[i]]); i++; j++; }
+          else if (L[i + 1][j] >= L[i][j + 1]) { out.push(["del", A[i]]); i++; }
+          else { out.push(["add", B[j]]); j++; }
+        }
+        while (i < m) { out.push(["del", A[i]]); i++; }
+        while (j < n) { out.push(["add", B[j]]); j++; }
+        return out;
+      }
+      function showDiff(box, older) {
+        var rows = diffLines(older, ta.value);
+        box.innerHTML = "";
+        rows.forEach(function (r) {
+          var line = document.createElement("span");
+          line.className = r[0];
+          line.textContent = (r[0] === "add" ? "+ " : r[0] === "del" ? "- " : "  ") + r[1];
+          box.appendChild(line);
+        });
+        if (!rows.some(function (r) { return r[0] !== "same"; }))
+          box.textContent = "Identical to what you have now.";
+      }
+      histBtn.addEventListener("click", function () {
+        if (vPanel) { closeVersions(); return; }
+        vPanel = document.createElement("div");
+        vPanel.className = "lc-mdpad-versions";
+        vPanel.innerHTML = "<ol><li>⏳ reading your history…</li></ol>";
+        saveWrap.parentNode.insertBefore(vPanel, saveWrap.nextSibling);
+        window.lcBench.history(benchPath, wrap).then(function (list) {
+          if (!vPanel) return;
+          if (!list.length) {
+            vPanel.innerHTML = "<ol><li>No versions yet — 💾 writes the first one.</li></ol>";
+            return;
+          }
+          var ol = document.createElement("ol");
+          var box = document.createElement("pre");
+          box.className = "lc-mdpad-diff";
+          box.hidden = true;
+          list.forEach(function (c, n) {
+            var li = document.createElement("li");
+            if (n === 0) li.className = "now";
+            var when = document.createElement("span");
+            when.className = "lc-mdpad-vwhen";
+            when.textContent = whenLabel(c.when) + (n === 0 ? " · latest" : "");
+            var sha = document.createElement("span");
+            sha.className = "lc-mdpad-vsha";
+            sha.textContent = String(c.sha).slice(0, 7);
+            var cmp = document.createElement("button");
+            cmp.type = "button"; cmp.textContent = "compare";
+            var use = document.createElement("button");
+            use.type = "button"; use.textContent = "bring back";
+            cmp.addEventListener("click", function () {
+              cmp.textContent = "…";
+              window.lcBench.readAt(benchPath, c.sha, wrap).then(function (t) {
+                cmp.textContent = "compare";
+                if (t == null) { window.lcxToast && window.lcxToast("Could not read that version.", false); return; }
+                box.hidden = false;
+                showDiff(box, t);
+              });
+            });
+            use.addEventListener("click", function () {
+              window.lcBench.readAt(benchPath, c.sha, wrap).then(function (t) {
+                if (t == null) { window.lcxToast && window.lcxToast("Could not read that version.", false); return; }
+                ta.value = t;
+                render(); publish(true);
+                closeVersions();
+                window.lcxToast && window.lcxToast("Older version loaded — 💾 to keep it", true);
+              });
+            });
+            li.appendChild(when); li.appendChild(sha);
+            li.appendChild(cmp); li.appendChild(use);
+            ol.appendChild(li);
+          });
+          vPanel.innerHTML = "";
+          vPanel.appendChild(ol);
+          vPanel.appendChild(box);
+        });
       });
     } else if (saveBtn) {
       var origin = seed;   /* what the file holds right now — the anchor */

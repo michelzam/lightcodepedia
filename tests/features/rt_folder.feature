@@ -311,3 +311,15 @@ Feature: Folder shelf — read posture and X-ray workbench
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
     And I wait for the page to be interactive
     Then the shelf shows a card for "Adoption Day"
+
+  Scenario: A subfolder card keeps its title when the raw token has expired
+    The page cards were fixed for this; the SUBFOLDER half was missed. Its
+    index.md was still read through download_url — an unauthenticated raw
+    URL carrying a SHORT-LIVED token. Served from cache the token has aged
+    out, the read 404s, so a module card degraded to its directory name
+    ("Module 00") with no title, no snippet — differently from one visit to
+    the next, which is why it was impossible to reproduce on demand.
+
+    Given a stubbed private repo whose raw tokens have expired
+    When I open a shelf listing that repo
+    Then the subfolder card shows the index's own title

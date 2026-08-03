@@ -384,6 +384,41 @@ loses everything. A component's editable source comes from window.lcSourceOf
                    sha: j.sha };
         });
     },
+    /* ── versions ────────────────────────────────────────────────────────
+       The learner's bench IS git, so the history already exists — it only
+       lacked a door. Every 💾 is a commit; these two read them back, so a
+       saved block can show what changed and when, and bring an old draft
+       back. Learners watch version control exist before anyone says the
+       word (and an audit can see that they iterated, which no screenshot
+       can fake). */
+    history: function (path, fromEl, limit) {   /* → [{sha, when, message}] */
+      var t = this.target(fromEl);
+      if (!t.repo || !t.pat) return Promise.resolve([]);
+      var p = this.resolve(path, fromEl);
+      return fetch("https://api.github.com/repos/" + t.repo + "/commits?path="
+                   + encodeURIComponent(p) + "&per_page=" + (limit || 20),
+        { headers: { Authorization: "Bearer " + t.pat, Accept: "application/vnd.github+json" } })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (list) {
+          return (Array.isArray(list) ? list : []).map(function (c) {
+            return { sha: c.sha,
+                     when: ((c.commit || {}).author || {}).date || "",
+                     message: ((c.commit || {}).message || "").split("\n")[0] };
+          });
+        })
+        .catch(function () { return []; });
+    },
+    readAt: function (path, sha, fromEl) {      /* → text | null */
+      var t = this.target(fromEl);
+      if (!t.repo || !t.pat) return Promise.resolve(null);
+      var p = this.resolve(path, fromEl);
+      return fetch("https://api.github.com/repos/" + t.repo + "/contents/" + p
+                   + "?ref=" + encodeURIComponent(sha),
+        { headers: { Authorization: "Bearer " + t.pat,
+                     Accept: "application/vnd.github.v3.raw" } })
+        .then(function (r) { return r.ok ? r.text() : null; })
+        .catch(function () { return null; });
+    },
     write: function (path, text, message, sha, fromEl, _retried) {   /* → new sha */
       var t = this.target(fromEl), self = this;
       if (!t.repo || !t.pat) return Promise.reject(new Error("no bench connected"));
