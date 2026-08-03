@@ -16,9 +16,12 @@ Usage:
 IAL knobs:
   rows="14"   editor height in text rows (default 12)
   save="true" show a 💾 Save button that commits straight to the source file
-  save="my/cv.md"
+  save="cv.md"
               the two-repo contract: the fence is the AUTHOR's seed, the
-              learner's saved copy lives at this path in their OWN bench
+              learner's saved copy lives in their OWN bench — relative =
+              beside the lesson (the page's folder, FULL course path, so two
+              courses in one bench never collide), "/my/cv.md" = bench root
+              for files that outlive one lesson
               (the repo they connected at join). On load the bench copy —
               when it exists — replaces the seed; 💾 commits back to it;
               ↺ restores the seed (their file survives until they 💾 over
@@ -145,7 +148,8 @@ Auto-included by docs/_layouts/default.html.
         var why = !window.lcBench ? "Saving needs a newer engine"
                 : !t.pat || !t.repo ? "Join the course (connect your key) to keep your work" : "";
         saveBtn.disabled = !!why;
-        saveBtn.title = why || "Keep this in your own space (" + benchPath + ")";
+        saveBtn.title = why || "Keep this in your own space (" +
+          (window.lcBench ? window.lcBench.resolve(benchPath, wrap) : benchPath) + ")";
       };
       refreshBench();
       if (window.lcBench) {

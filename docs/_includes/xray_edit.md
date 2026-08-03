@@ -343,8 +343,33 @@ loses everything. A component's editable source comes from window.lcSourceOf
       return { repo: localStorage.getItem("lc_ed_repo") || "",
                pat: localStorage.getItem("lc_ed_pat") || "" };
     },
+    /* WHERE in the bench? The author's spelling decides the shelf:
+         save="dogs.yaml"        → beside the lesson — the page's own folder,
+                                   FULL course path (courses/…/module_00/),
+                                   so two courses in one bench never collide
+         save="../shared/x.md"   → climbs the course tree, like prereq hrefs
+         save="/my/cv.md"        → bench root — the personal files that
+                                   outlive one lesson
+       One resolution grammar with the prerequisite links: relative means
+       "against the rendered source". Outside a runner render there is no
+       lesson folder, so relative falls back to the bench root. */
+    resolve: function (path, fromEl) {
+      path = String(path || "").trim();
+      var abs = path.charAt(0) === "/";
+      var runRoot = fromEl && fromEl.closest ? fromEl.closest(".lc-run[data-lc-src-path]") : null;
+      var srcPath = (!abs && runRoot && runRoot.dataset.lcSrcPath) || "";
+      var dir = srcPath.indexOf("/") >= 0 ? srcPath.replace(/\/[^\/]*$/, "") : "";
+      var out = [];
+      ((abs ? path : (dir ? dir + "/" + path : path)).split("/")).forEach(function (p) {
+        if (!p || p === ".") return;
+        if (p === "..") out.pop();
+        else out.push(p);
+      });
+      return out.join("/");
+    },
     read: function (path, fromEl) {    /* → {text, sha} | null (no file yet) */
       var t = this.target(fromEl);
+      path = this.resolve(path, fromEl);
       if (!t.repo || !t.pat) return Promise.resolve(null);
       return fetch("https://api.github.com/repos/" + t.repo + "/contents/" + path,
         { headers: { Authorization: "Bearer " + t.pat, Accept: "application/vnd.github+json" } })
@@ -362,6 +387,7 @@ loses everything. A component's editable source comes from window.lcSourceOf
     write: function (path, text, message, sha, fromEl, _retried) {   /* → new sha */
       var t = this.target(fromEl), self = this;
       if (!t.repo || !t.pat) return Promise.reject(new Error("no bench connected"));
+      path = this.resolve(path, fromEl);
       var body = { message: message || ("✍️ " + path),
                    content: btoa(unescape(encodeURIComponent(text))) };
       if (sha) body.sha = sha;
@@ -375,8 +401,10 @@ loses everything. A component's editable source comes from window.lcSourceOf
              live sha once and lay this text on top — same file, same owner,
              last write wins is the RIGHT rule for a one-person file */
           if ((r.status === 409 || r.status === 422) && !_retried) {
-            return self.read(path, fromEl).then(function (f) {
-              return self.write(path, text, message, f && f.sha, fromEl, true);
+            /* "/"-prefixed: the path is already resolved — re-resolving a
+               relative spelling here would prefix the lesson folder twice */
+            return self.read("/" + path, fromEl).then(function (f) {
+              return self.write("/" + path, text, message, f && f.sha, fromEl, true);
             });
           }
           /* GitHub says 404 for "repo exists but your key can't see it" —

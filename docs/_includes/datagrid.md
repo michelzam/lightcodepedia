@@ -8,9 +8,10 @@ Inline, data in the code block (YAML/JSON/CSV per format=""):
   ```
   {: .datagrid title="Pets" height="300" }
 
-save="my/dogs.yaml" — the two-repo contract (same as the mdpad's): the
-fence is the AUTHOR's seed; the learner's rows persist at this path in
-their OWN bench and override the seed on the next visit. 💾 keeps, ↺
+save="dogs.yaml" — the two-repo contract (same as the mdpad's): the
+fence is the AUTHOR's seed; the learner's rows persist in their OWN bench
+and override the seed on the next visit. Relative = beside the lesson
+(the page's folder, full course path); "/my/…" = bench root. 💾 keeps, ↺
 restores the seed. ƒ computed columns are stripped on save (derived, the
 author's). The author republishes freely — different files, different
 repos, one writer each.
@@ -308,7 +309,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
           var t = window.lcBench.target(wrapper);
           var why = !t.pat || !t.repo ? "Join the course (connect your key) to keep your work" : "";
           keep.disabled = !!why;
-          keep.title = why || "Keep these rows in your own space (" + opts.save + ")";
+          keep.title = why || "Keep these rows in your own space (" +
+            (window.lcBench ? window.lcBench.resolve(opts.save, wrapper) : opts.save) + ")";
         };
         refreshKeep();
         var serialize = function (rows) {

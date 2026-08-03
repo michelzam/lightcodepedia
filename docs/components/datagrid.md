@@ -70,7 +70,7 @@ Each object becomes a row; its keys become the column headers. Header labels are
 | `format="yaml"` | `yaml` (default), `json`, or `csv` |
 | `editable="true"` | Double-click a cell to edit in place — see below |
 | `master="<id>"` | Filter this grid by the selected row in another grid — see below |
-| `save="my/dogs.yaml"` | The reader's edits persist at this path in *their own* connected repo; the fence stays the author's seed — see below |
+| `save="dogs.yaml"` | The reader's edits persist in *their own* connected repo — relative lands beside the lesson, `/my/…` at the bench root; the fence stays the author's seed — see below |
 | `filter="<local>=<master>"` | Required with `master`: which field to match |
 | `empty="…"` | What to show when the data is empty. Say it plainly when the grid is *waiting* on a choice made elsewhere — the default reads like a fault |
 
@@ -135,7 +135,7 @@ When a [📝 Form](/components/form) is bound to this grid (`master="editable_do
 
 ## 💾 Keeping edits — the two-repo contract
 
-Plain `editable="true"` edits are in-memory. Add `save="my/dogs.yaml"` and they become **the reader's**, permanently: 💾 writes the current rows to that path in *their own* connected repo, and on the next visit the saved rows replace the fence's. The fence stays the **author's seed** — a lesson can ship deliberately broken data, let every reader repair it in their own space, and the author republishes the lesson forever without touching anyone's repair. **↺ Start over** re-loads the fence data; the reader's file survives until their next 💾. `ƒ` computed columns are stripped on save — a formula is the author's standing part, and it recomputes over the reader's rows anyway.
+Plain `editable="true"` edits are in-memory. Add `save="dogs.yaml"` and they become **the reader's**, permanently: 💾 writes the current rows to *their own* connected repo — a relative path lands beside the lesson (the page's folder, full course path, so two courses in one bench never collide); `/my/…` means the bench root — and on the next visit the saved rows replace the fence's. The fence stays the **author's seed** — a lesson can ship deliberately broken data, let every reader repair it in their own space, and the author republishes the lesson forever without touching anyone's repair. **↺ Start over** re-loads the fence data; the reader's file survives until their next 💾. `ƒ` computed columns are stripped on save — a formula is the author's standing part, and it recomputes over the reader's rows anyway.
 
 ```yaml
 - name: Rex
@@ -143,7 +143,7 @@ Plain `editable="true"` edits are in-memory. Add `save="my/dogs.yaml"` and they 
 - name: Lucky
   campus: Milwaukee
 ```
-{: .datagrid #repair_me editable="true" save="my/repairs.yaml" height="160" }
+{: .datagrid #repair_me editable="true" save="/my/repairs.yaml" height="160" }
 
 If you're connected, fix `Milwauke`, 💾, refresh — your repair is still there, and this page never changed.
 

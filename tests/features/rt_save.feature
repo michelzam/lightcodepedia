@@ -15,13 +15,13 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       ```markdown
       # Starter résumé — replace me
       ```
-      {: .mdpad #cv save="my/cv.md" rows="6" }
+      {: .mdpad #cv save="cv.md" rows="6" }
 
       ```yaml
       - name: Rex
         campus: Milwauke
       ```
-      {: .datagrid #dogs editable="true" save="my/dogs.yaml" height="160" }
+      {: .datagrid #dogs editable="true" save="dogs.yaml" height="160" }
       """
 
   Scenario: Without a key the page still teaches, and says how to join
@@ -31,29 +31,29 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the pad's save button is disabled with a join hint
 
   Scenario: A joined learner with no saved copy starts from the seed
-    Given a connected bench whose "my/cv.md" does not exist yet
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     Then the pad shows the author's starter
     And the pad is not marked as the reader's own
 
   Scenario: The saved copy wins over the seed on the next visit
-    Given a connected bench whose "my/cv.md" holds "# Alice — WHS volunteer"
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Alice — WHS volunteer"
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     Then the pad shows "# Alice — WHS volunteer"
     And the pad is marked as the reader's own
 
   Scenario: Saving writes to the learner's repo, never the author's
-    Given a connected bench whose "my/cv.md" does not exist yet
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     And I type "# Mine now" into the pad and save
-    Then the bench received a commit to "my/cv.md" containing "# Mine now"
+    Then the bench received a commit to "courses/demo/mod/cv.md" containing "# Mine now"
     And the author's repo received no commit
 
   Scenario: Start over restores the seed without touching the saved file
-    Given a connected bench whose "my/cv.md" holds "# Alice — WHS volunteer"
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Alice — WHS volunteer"
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     And I press the pad's start-over button
@@ -61,18 +61,18 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the bench received no commit
 
   Scenario: The grid loads the reader's repaired rows over the broken seed
-    Given a connected bench whose "my/dogs.yaml" holds "- name: Rex\n  campus: Milwaukee"
+    Given a connected bench whose "courses/demo/mod/dogs.yaml" holds "- name: Rex\n  campus: Milwaukee"
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     Then the dogs grid shows "Milwaukee"
     And the grid is marked as the reader's own
 
   Scenario: The grid's keep button writes rows to the learner's repo
-    Given a connected bench whose "my/dogs.yaml" does not exist yet
+    Given a connected bench whose "courses/demo/mod/dogs.yaml" does not exist yet
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     And I press the grid's keep button
-    Then the bench received a commit to "my/dogs.yaml" containing "Milwauke"
+    Then the bench received a commit to "courses/demo/mod/dogs.yaml" containing "Milwauke"
 
   Scenario: A derived view follows the repair, live
     The lesson shape: one dataset feeding an editable grid AND a query.
@@ -80,7 +80,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     so repairing a row recomputed the query while the view below went on
     showing the old answer — a confident wrong number.
 
-    Given a connected bench whose "my/pets.yaml" does not exist yet
+    Given a connected bench whose "courses/demo/mod/pets.yaml" does not exist yet
     And the GitHub contents API serves "courses/demo/mod/derived.md" with the document:
       """
       # Derived
@@ -94,7 +94,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
 
       ```csv
       ```
-      {: .datagrid source="pets" #pet_grid editable="true" save="my/pets.yaml" height="160" }
+      {: .datagrid source="pets" #pet_grid editable="true" save="pets.yaml" height="160" }
       """
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/derived.md"
     And I wait for the page to be interactive
@@ -103,7 +103,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And no grid cell still shows "Milwauke"
 
   Scenario: A dataset-backed repair keeps to the bench and re-derives the page
-    Given a connected bench whose "my/pets.yaml" holds "- name: Rex\n  campus: Fixed"
+    Given a connected bench whose "courses/demo/mod/pets.yaml" holds "- name: Rex\n  campus: Fixed"
     And the GitHub contents API serves "courses/demo/mod/derived.md" with the document:
       """
       # Derived
@@ -116,7 +116,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
 
       ```csv
       ```
-      {: .datagrid source="pets" #pet_grid editable="true" save="my/pets.yaml" height="160" }
+      {: .datagrid source="pets" #pet_grid editable="true" save="pets.yaml" height="160" }
       """
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/derived.md"
     And I wait for the page to be interactive
@@ -138,10 +138,47 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       ```markdown
       # Starter résumé — replace me
       ```
-      {: .mdpad #cv save="my/cv.md" rows="6" }
+      {: .mdpad #cv save="cv.md" rows="6" }
       """
     When I navigate to "/run.html#src=gh:stub/hub/courses/demo/mod/work.md"
     And I wait for the page to be interactive
     And I type "# Mine now" into the pad and save
-    Then the bench received a commit to "my/cv.md" containing "# Mine now"
+    Then the bench received a commit to "courses/demo/mod/cv.md" containing "# Mine now"
     And the repo "stub/hub" received no commit
+
+  Scenario: The spelling picks the shelf — slash for the root, dots for the tree
+    Relative lands beside the lesson under its FULL course path (two courses
+    in one bench never collide); a leading slash is the bench root, for the
+    personal files that outlive one lesson; ../ climbs the course tree the
+    same way a prerequisite link does.
+
+    Given a connected bench whose "my/scratch.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/spell.md" with the document:
+      """
+      # Spellings
+
+      ```markdown
+      # root starter
+      ```
+      {: .mdpad #scratch save="/my/scratch.md" rows="4" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/spell.md"
+    And I wait for the page to be interactive
+    And I type "# Mine at the root" into the pad and save
+    Then the bench received a commit to "my/scratch.md" containing "# Mine at the root"
+
+  Scenario: A parent-relative path climbs to a shared course folder
+    Given a connected bench whose "courses/demo/shared/notes.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/climb.md" with the document:
+      """
+      # Climb
+
+      ```markdown
+      # shared starter
+      ```
+      {: .mdpad #notes save="../shared/notes.md" rows="4" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/climb.md"
+    And I wait for the page to be interactive
+    And I type "# Climbed" into the pad and save
+    Then the bench received a commit to "courses/demo/shared/notes.md" containing "# Climbed"
