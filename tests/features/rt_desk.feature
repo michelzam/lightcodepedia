@@ -162,3 +162,42 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
     And I connect the "desk" agent with key "test-key"
     And I ask the desk agent into the void "hello desk"
     Then the desk blames the road, not the badge
+
+  Scenario: A key saved at the join door opens every desk connected
+    The energy key persists like the course key — saved once (step five,
+    or any desk), every page after opens straight at the ask box. The old
+    per-page re-pasting was the actual risk: learners give up.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a saved energy key "AIza-stub" for provider "gemini"
+    And the GitHub contents API serves "courses/demo/mod/desk2.md" with the document:
+      """
+      # Desk
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/desk2.md"
+    And I wait for the page to be interactive
+    Then the desk is already connected
+
+  Scenario: Forgetting the key on one desk forgets it on the device
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a saved energy key "AIza-stub" for provider "gemini"
+    And the GitHub contents API serves "courses/demo/mod/desk2.md" with the document:
+      """
+      # Desk
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/desk2.md"
+    And I wait for the page to be interactive
+    And I press the desk's forget-key button
+    Then the saved energy key for "gemini" is gone

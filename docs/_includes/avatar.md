@@ -1804,7 +1804,7 @@ Auto-included by docs/_layouts/default.html.
       };
       panel.innerHTML =
         '<p class="lc-guide-ask-hint">Asking uses your own free credits — paste your ' +
-          esc(eng.key_name) + ' once (kept in memory only, like the agents on this page).' +
+          esc(eng.key_name) + ' once — saved on this device, shared with every helper in the course.' +
           (eng.key_url ? ' <a href="' + eng.key_url + '" target="_blank" rel="noopener">Get one →</a>' : '') +
         '</p>' +
         '<form autocomplete="on">' +

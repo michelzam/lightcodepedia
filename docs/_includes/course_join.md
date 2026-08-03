@@ -296,8 +296,11 @@ The check is live truth against the API, never cached. Done steps reopen via
             { headers: { Authorization: "Bearer " + k } })
         .then(function (r) {
           if (r.ok) {
+            /* saved like the course key — every desk on every page opens
+               connected; the password manager remains the cross-DEVICE copy */
+            try { localStorage.setItem("lc_ai_key_gemini", k); } catch (e) {}
             setState("5", "ok");
-            msg(5, "✅ The key works. If your browser just offered to save it — that was the point: saved once, it follows you to every device.", "ok");
+            msg(5, "✅ The key works — saved. Every AI helper in the course now opens connected on this device; if your browser also offered to save it, that copy follows you to your other devices.", "ok");
           } else {
             msg(5, "❌ The provider rejected it (" + r.status + "). Copy the whole key from AI Studio and try again.", "err");
           }

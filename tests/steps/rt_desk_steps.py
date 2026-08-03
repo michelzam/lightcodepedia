@@ -78,3 +78,34 @@ def step_connect_agent_key(context, agent_id, key):
     panel.locator(".lc-agent-token").fill(key)
     panel.locator(".lc-agent-auth button[type=submit]").click()
     expect(panel.locator(".lc-agent-prompt")).to_be_visible(timeout=10_000)
+
+
+@given('a saved energy key "{key}" for provider "{pid}"')
+def step_saved_energy_key(context, key, pid):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ai_key_" + pid + "', '" + key + "');"
+    )
+
+
+@then("the desk is already connected")
+def step_desk_connected(context):
+    from playwright.sync_api import expect
+    panel = context.page.locator(".lc-agent").first
+    expect(panel.locator(".lc-agent-prompt")).to_be_visible(timeout=15_000)
+    expect(panel.locator(".lc-agent-auth")).to_be_hidden()
+
+
+@when("I press the desk's forget-key button")
+def step_forget_key(context):
+    btn = context.page.locator(".lc-agent .lc-agent-key").first
+    btn.wait_for(state="visible", timeout=15_000)
+    btn.click()
+    context.page.wait_for_timeout(300)
+
+
+@then('the saved energy key for "{pid}" is gone')
+def step_energy_key_gone(context, pid):
+    v = context.page.evaluate(
+        "(k) => localStorage.getItem(k)", "lc_ai_key_" + pid
+    )
+    assert v is None, "key still on the device: %r" % v

@@ -44,10 +44,10 @@ IAL knobs:
               Ask time and hand the value to the model. {=cv1.source}
               reads a pad, {=inputs.field} a form — anything cells see.
 
-The learner's PAT is asked once per page. All agents share it.
-The token is held in a JS closure (in-memory) + the browser's
-password manager via the hidden-username form trick. Nothing is
-written to localStorage or cookies.
+The learner's key is asked ONCE — per device, not per page. It is
+persisted per provider (like the course key) and offered to the
+browser's password manager via the hidden-username form trick, so
+the other devices get it by autofill. 🔑 forgets it everywhere.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -107,14 +107,27 @@ Auto-included by docs/_layouts/default.html.
   // same token, same GitHub, no re-pasting ceremony ("one token for
   // everything", as the docs teach). A 401 clears it and the normal
   // paste-once flow takes over. Nothing new is stored.
-  /* one key per PROVIDER per page (kept in memory + the browser's password
+  /* one key per PROVIDER (persisted on the device + the browser's password
      manager, keyed by provider so keychain entries never collide). The old
      silent borrow of the editor's GitHub PAT died with GitHub Models —
      a repo key is not a model key. */
   var SHARED = { tokens: {}, listeners: [] };
-  function getSharedToken(pid) { return SHARED.tokens[pid] || null; }
+  /* Persisted per provider, like the course key (lc_ed_pat) — the energy
+     key is saved once, at the join door or any desk, and every page after
+     opens connected (Michel 2026-08-03: 'saved automatically as the other
+     keys'). In-memory-only was the GitHub-PAT-era posture; an AI key is
+     scoped to spending its own free quota, and re-pasting it on every page
+     was the actual risk — learners give up. */
+  function getSharedToken(pid) {
+    if (SHARED.tokens[pid]) return SHARED.tokens[pid];
+    try { return localStorage.getItem("lc_ai_key_" + pid) || null; } catch (e) { return null; }
+  }
   function setSharedToken(pid, v) {
     SHARED.tokens[pid] = v;
+    try {
+      if (v) localStorage.setItem("lc_ai_key_" + pid, v);
+      else localStorage.removeItem("lc_ai_key_" + pid);
+    } catch (e) {}
     SHARED.listeners.forEach(function(cb){ try { cb(pid, v); } catch (e) {} });
   }
   function onSharedTokenChange(cb) { SHARED.listeners.push(cb); }
@@ -438,7 +451,7 @@ Auto-included by docs/_layouts/default.html.
         '<button type="button" class="lc-agent-key" title="Change token" aria-label="Change token">🔑</button>' +
       '</div>' +
       '<form class="lc-agent-auth" autocomplete="on">' +
-        '<p>Paste your ' + escapeHtml(eng.key_name) + '. Your browser may offer to save it (encrypted in the OS keychain). One key covers every ' + escapeHtml(eng.id) + ' agent on this page.</p>' +
+        '<p>Paste your ' + escapeHtml(eng.key_name) + ' once — it is saved on this device, and every ' + escapeHtml(eng.id) + ' helper in the course opens connected. Let your browser save it as a password too: that copy follows you to your other devices.</p>' +
         '<input type="text" name="username" value="lc-' + escapeHtml(eng.id) + '" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager">' +
         '<div class="lc-agent-pw-row">' +
           '<input type="password" name="password" class="lc-agent-token" autocomplete="current-password" placeholder="' + escapeHtml(eng.key_hint) + '" required aria-label="' + escapeHtml(eng.key_name) + '">' +

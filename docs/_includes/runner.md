@@ -77,11 +77,13 @@ files a student is already working in.
       bar.style.display = "none";           // topbar carries it in bench mode
       return;
     }
-    /* the vault reads as a LIBRARY: read-only, by repo privacy */
+    /* The vault still IS the library (readonly marking, no editing tools) —
+       but it no longer says so out loud. Since work saves into the learner's
+       own space from ANY page, "read-only" stopped being news the reader
+       needs and became noise over every lesson (Michel 2026-08-03). */
     var vault = st.repo && /-vault$/.test(st.repo);
     bar.className = "lc-run-bar" + (vault ? " lc-run-vault" : "");
-    bar.innerHTML = (vault ? '<span class="lc-run-badge">📚 Library · read-only</span> ' : "") +
-                    '<span class="lc-run-chip">🔬 ' + (st.repo ? st.repo + "/" : "") + (st.path || st.src) + '</span>' +
+    bar.innerHTML = '<span class="lc-run-chip">🔬 ' + (st.repo ? st.repo + "/" : "") + (st.path || st.src) + '</span>' +
                     (st.loading ? " ⏳ rendering…" : "");
     bar.style.display = "";
   }
