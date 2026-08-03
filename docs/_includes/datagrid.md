@@ -214,6 +214,29 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       var api = window.agGrid.createGrid(gridEl, gridOptions);
       window.lcMasterDetail.registerGrid(gridId, api);
 
+      /* A DERIVED grid must keep listening. It used to take the dataset once
+         (the promise that gave it its first paint) and never hear another
+         word — so repairing a dog upstream recomputed the query, and the
+         "invisible dogs" grid below went on showing the old answer. A
+         derived view that does not follow its source is worse than no view:
+         it is a confident wrong number. Skip the echo of our OWN edit (same
+         array back again) so an edit never resets scroll or selection. */
+      if (opts.bindId && window.lcDatasetListeners) {
+        var adopt = function (rows) {
+          if (!Array.isArray(rows) || rows === data) return;
+          data = rows;
+          api.setGridOption("rowData", rows);
+          recompute();
+        };
+        window.lcDatasetListeners[opts.bindId] = window.lcDatasetListeners[opts.bindId] || [];
+        window.lcDatasetListeners[opts.bindId].push(adopt);
+        /* AG Grid loads asynchronously, so the dataset can move between the
+           promise that fed our first paint and this line — the learner's
+           saved copy arriving is exactly that case. Adopt whatever is current
+           before trusting the stream. */
+        if (window.lcDatasets) adopt(window.lcDatasets[opts.bindId]);
+      }
+
       /* Recompute every ƒ column: eval each formula per row with that row's
          fields as locals, in the shared page runtime (so a formula can also
          call a .run silent model). eval, not exec — a bad formula shows ⚠ in
@@ -321,8 +344,10 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         reset.addEventListener("click", function () {
           if (!opts.saveSeed) return;
           opts.saveSeed().then(function (rows) {
-            api.setGridOption("rowData", rows);
-            recompute();
+            /* dataset-backed: put the lesson's rows back UPSTREAM, so the
+               charts and queries return to the author's story too */
+            if (opts.saveApply) opts.saveApply(rows.slice());
+            else { api.setGridOption("rowData", rows); recompute(); }
             window.lcxToast && window.lcxToast("Lesson data restored — 💾 to make it yours", true);
           }).catch(function (e) {
             window.lcxToast && window.lcxToast("Could not restore: " + (e.message || e), false);
@@ -399,18 +424,43 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     /* save= — before first paint, prefer the learner's saved copy over the
        fence seed. The seed stays reachable behind ↺, parsed fresh from the
        fence text, so "start over" needs no network and no author round-trip. */
-    if (opts.save && !bindId && window.lcBench) {
+    if (opts.save && window.lcBench) {
       /* the saved file's format follows ITS extension, not the fence's — a
          csv fence still keeps as yaml/json (the two we can write back) */
       opts.saveFormat = /\.json$/i.test(opts.save) ? "json" : "yaml";
-      opts.saveSeed = function () { return parseDatagridText(raw, format); };
       var seedPromise = dataPromise;
-      dataPromise = window.lcBench.read(opts.save).then(function (f) {
-        if (!f) return seedPromise;
-        wrapper.setAttribute("data-lc-mine", "1");
-        wrapper._lcBenchSha = f.sha;
-        return parseDatagridText(f.text, opts.saveFormat);
-      }).catch(function () { return seedPromise; });
+      if (bindId) {
+        /* DATASET-backed (the real lesson shape: one .dataset feeding a grid,
+           a form, three queries and two charts). The learner's saved rows must
+           replace the DATASET, not just this grid — otherwise their repair
+           shows in the table while every derived view keeps answering from the
+           author's broken seed. Publishing it upstream re-derives the whole
+           page from their work, which is the entire point. */
+        opts.saveSeed = function () {
+          return Promise.resolve(opts._seedRows || window.lcDatasets[bindId] || []);
+        };
+        opts.saveApply = function (rows) {
+          if (window.lcSetDataset) window.lcSetDataset(bindId, rows);
+        };
+        seedPromise.then(function (rows) { opts._seedRows = (rows || []).slice(); });
+        window.lcBench.read(opts.save).then(function (f) {
+          if (!f) return;
+          return parseDatagridText(f.text, opts.saveFormat).then(function (rows) {
+            if (!Array.isArray(rows)) return;
+            wrapper.setAttribute("data-lc-mine", "1");
+            wrapper._lcBenchSha = f.sha;
+            opts.saveApply(rows);       /* the listener above repaints this grid */
+          });
+        }).catch(function () {});
+      } else {
+        opts.saveSeed = function () { return parseDatagridText(raw, format); };
+        dataPromise = window.lcBench.read(opts.save).then(function (f) {
+          if (!f) return seedPromise;
+          wrapper.setAttribute("data-lc-mine", "1");
+          wrapper._lcBenchSha = f.sha;
+          return parseDatagridText(f.text, opts.saveFormat);
+        }).catch(function () { return seedPromise; });
+      }
     }
     renderGridInto(wrapper, dataPromise, id, opts);
   }

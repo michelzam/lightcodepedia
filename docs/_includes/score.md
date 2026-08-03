@@ -121,10 +121,15 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
   window.lcPageScores = { get: function(p){ return loadScores()[normPath(p)]; }, all: loadScores, norm: normPath };
 
   /* tag every card that links to a page you've scored with that score */
+  /* RE-RUNNABLE, deliberately: a shelf can carry a card for the very page
+     you are standing on, so answering a quiz has to move the card's badge
+     too — a number that disagrees with the trophy two inches above it is
+     worse than no number at all. Idempotent by COMPARISON, not by a latch:
+     it writes only when the markup would actually change, so the
+     MutationObserver that calls it cannot feed itself. */
   function decorateCards(){
     var scores = loadScores();
     document.querySelectorAll(".lc-card").forEach(function(card){
-      if (card.dataset.lcScored) return;
       var a = card.querySelector("a[href]"); if (!a) return;
       var s = scores[normPath(a.getAttribute("href"))];
       var answered = (s && s.total) || 0;
@@ -132,20 +137,25 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
          have not visited, falling back to the remembered count. */
       var quizTotal = parseInt(card.getAttribute("data-quizzes") || "0", 10) || (s && s.quizzes) || 0;
       var rem = Math.max(0, quizTotal - answered);
-      if (!answered && rem === 0) return;   // no score and no quizzes — nothing to show
-      card.dataset.lcScored = "1";
-      var tag = document.createElement("span");
+      var tag = card.querySelector(".lc-card-score");
+      if (!answered && rem === 0) {          // nothing to show (a reset lands here)
+        if (tag) tag.remove();
+        return;
+      }
+      var cls, html;
       var remTip = rem + " quiz" + (rem > 1 ? "zes" : "") + " not answered yet";
       if (answered) {
-        tag.className = "lc-card-score" + (s.won >= answered ? " full" : (s.won > 0 ? " partial" : ""));
-        tag.innerHTML = "<span class='lc-card-won' title='Quiz score: " + s.won + " correct of " + answered + " answered'>" + s.won + "/" + answered + "</span>"
+        cls = "lc-card-score" + (s.won >= answered ? " full" : (s.won > 0 ? " partial" : ""));
+        html = "<span class='lc-card-won' title='Quiz score: " + s.won + " correct of " + answered + " answered'>" + s.won + "/" + answered + "</span>"
           + (rem > 0 ? " <span class='lc-card-rem' title='" + remTip + "'>+" + rem + "</span>" : "");
       } else {
         /* never started, but the page has quizzes */
-        tag.className = "lc-card-score lc-card-unstarted";
-        tag.innerHTML = "<span class='lc-card-rem' title='" + remTip + "'>" + rem + "</span>";
+        cls = "lc-card-score lc-card-unstarted";
+        html = "<span class='lc-card-rem' title='" + remTip + "'>" + rem + "</span>";
       }
-      card.appendChild(tag);
+      if (!tag) { tag = document.createElement("span"); card.appendChild(tag); }
+      if (tag.className !== cls) tag.className = cls;      /* the loop-breaker: */
+      if (tag.innerHTML !== html) tag.innerHTML = html;    /* touch only on change */
     });
   }
   var _cardTick = false;
@@ -279,6 +289,9 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
         persist();
         render();
         renderPopover();
+        /* a shelf on THIS page may hold a card for THIS page — the trophy
+           and that card must never show two different truths */
+        decorateCards();
         notify();
       },
       refresh: function(){ render(); renderPopover(); },

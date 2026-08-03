@@ -47,3 +47,27 @@ def step_card_tag(context, score):
     expect(
         context.page.locator(".lc-card-score", has_text=score).first
     ).to_be_visible(timeout=10_000)
+
+
+@when('the score for page "{path}" becomes "{score}"')
+def step_score_changes_live(context, path, score):
+    # a score moving WITHOUT a reload — what answering a quiz actually does:
+    # write the store, then let the page notice. No reload on purpose; that is
+    # exactly the case a write-once badge could not survive.
+    won, total = (int(x) for x in score.split("/"))
+    context.page.evaluate(
+        "([p, w, t]) => {"
+        " var s = JSON.parse(localStorage.getItem('lc_scores') || '{}');"
+        " s[p] = { won: w, total: t, ts: '' };"
+        " localStorage.setItem('lc_scores', JSON.stringify(s));"
+        " window.lcQuizScore.update('live-probe', true);"
+        " }",
+        [path, won, total],
+    )
+    context.page.wait_for_timeout(500)
+
+
+@then('no card still shows "{score}"')
+def step_no_stale_card(context, score):
+    n = context.page.locator(".lc-card-score", has_text=score).count()
+    assert n == 0, "%d card(s) still showing the stale score %s" % (n, score)

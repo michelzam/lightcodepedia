@@ -73,3 +73,53 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I wait for the page to be interactive
     And I press the grid's keep button
     Then the bench received a commit to "my/dogs.yaml" containing "Milwauke"
+
+  Scenario: A derived view follows the repair, live
+    The lesson shape: one dataset feeding an editable grid AND a query.
+    The derived grid used to take the dataset once and never listen again,
+    so repairing a row recomputed the query while the view below went on
+    showing the old answer — a confident wrong number.
+
+    Given a connected bench whose "my/pets.yaml" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/derived.md" with the document:
+      """
+      # Derived
+
+      ```csv
+      name,campus
+      Rex,Milwauke
+      Lucky,Milwaukee
+      ```
+      {: .dataset #pets }
+
+      ```csv
+      ```
+      {: .datagrid source="pets" #pet_grid editable="true" save="my/pets.yaml" height="160" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/derived.md"
+    And I wait for the page to be interactive
+    And the dataset "pets" is repaired elsewhere
+    Then the dogs grid shows "Milwaukee"
+    And no grid cell still shows "Milwauke"
+
+  Scenario: A dataset-backed repair keeps to the bench and re-derives the page
+    Given a connected bench whose "my/pets.yaml" holds "- name: Rex\n  campus: Fixed"
+    And the GitHub contents API serves "courses/demo/mod/derived.md" with the document:
+      """
+      # Derived
+
+      ```csv
+      name,campus
+      Rex,Milwauke
+      ```
+      {: .dataset #pets }
+
+      ```csv
+      ```
+      {: .datagrid source="pets" #pet_grid editable="true" save="my/pets.yaml" height="160" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/derived.md"
+    And I wait for the page to be interactive
+    Then the dogs grid shows "Fixed"
+    And the dataset "pets" now reads "Fixed"
+    And the grid is marked as the reader's own

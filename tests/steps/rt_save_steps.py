@@ -159,3 +159,37 @@ def step_grid_keep(context):
     expect(btn).to_be_enabled(timeout=10_000)
     btn.click()
     context.page.wait_for_timeout(800)
+
+
+@when('the dataset "{name}" is repaired elsewhere')
+def step_repair_dataset(context, name):
+    # a repair arriving from ANYWHERE upstream — an edit, a query recompute,
+    # a saved copy landing. The derived view must follow it either way.
+    context.page.wait_for_selector(".lc-datagrid .ag-cell", timeout=20_000)
+    context.page.evaluate(
+        """(id) => {
+             const rows = (window.lcDatasets[id] || []).map(
+               r => Object.assign({}, r, { campus: 'Milwaukee' }));
+             window.lcSetDataset(id, rows);
+           }""",
+        name,
+    )
+    context.page.wait_for_timeout(700)
+
+
+@then('no grid cell still shows "{text}"')
+def step_no_stale_cell(context, text):
+    stale = context.page.evaluate(
+        """(t) => Array.from(document.querySelectorAll('.lc-datagrid .ag-cell'))
+                   .filter(c => (c.textContent || '').trim() === t).length""",
+        text,
+    )
+    assert stale == 0, "%d cell(s) still showing the stale value %r" % (stale, text)
+
+
+@then('the dataset "{name}" now reads "{text}"')
+def step_dataset_reads(context, name, text):
+    got = context.page.evaluate(
+        "(id) => JSON.stringify(window.lcDatasets[id] || [])", name
+    )
+    assert text in got, "dataset %s does not carry %r: %s" % (name, text, got[:300])

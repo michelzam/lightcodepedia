@@ -19,3 +19,18 @@ Feature: Per-page score memory
     And I store a score "3/5" for page "/tutorial103"
     And I reload the page
     Then a card score tag shows "3/5"
+
+  Scenario: A card follows the score as it changes, with no reload
+    A shelf can carry a card for the very page you are standing on. The
+    badge was written once and latched, so the card kept the old number
+    while the trophy two inches above it showed the new one. Two numbers
+    for one fact is worse than one number.
+
+    When I navigate to "/"
+    And I wait for the page to be interactive
+    And I store a score "1/5" for page "/tutorial103"
+    And I reload the page
+    Then a card score tag shows "1/5"
+    When the score for page "/tutorial103" becomes "4/5"
+    Then a card score tag shows "4/5"
+    And no card still shows "1/5"
