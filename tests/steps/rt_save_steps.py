@@ -411,3 +411,31 @@ def step_values_coloured(context):
     box = context.page.locator(".lc-ver-diff")
     expect(box.locator(".ag-cell.lc-dg-was").first).to_be_visible(timeout=15_000)
     expect(box.locator(".ag-cell.lc-dg-now").first).to_be_visible(timeout=10_000)
+
+
+@then("the slot shows the lesson's seed")
+def step_slot_seed(context):
+    slot = context.page.locator(".lc-bench-slot").first
+    expect(slot).to_contain_text("Wire me", timeout=15_000)
+
+
+@then('the slot shows "{text}"')
+def step_slot_shows(context, text):
+    expect(context.page.locator(".lc-bench-slot").first).to_contain_text(
+        text, timeout=15_000)
+
+
+@then('the slot commits to "{path}"')
+def step_slot_target(context, path):
+    # the whole trick: the region is its OWN source, so the editor's
+    # closest() lands on the bench instead of the read-only lesson
+    slot = context.page.locator(".lc-bench-slot").first
+    expect(slot).to_have_attribute("data-lc-src-path", path, timeout=10_000)
+    repo = slot.get_attribute("data-lc-src-repo")
+    assert repo == BENCH, "the slot points at %r, not the learner's bench" % repo
+
+
+@then("the slot is marked as the reader's own")
+def step_slot_mine(context):
+    expect(context.page.locator(".lc-bench-slot[data-lc-mine='1']").first
+           ).to_be_visible(timeout=15_000)

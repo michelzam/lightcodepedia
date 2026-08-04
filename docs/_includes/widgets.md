@@ -16,6 +16,12 @@ Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
 <style>
+/* a bench slot: a thin frame is the only hint. The ⚙️ shows what can be
+   changed and the lesson's own text does the guiding — a treasure hunt
+   reads better than a label (Michel 2026-08-04). */
+.lc-bench-slot { border: 1px solid #d7e3f4; border-radius: 8px; padding: 0.6em 0.9em; margin: 1em 0; }
+.lc-bench-slot[data-lc-mine="1"] { border-color: #bbf7d0; }
+
 .lc-code { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #fafafa; }
 .lc-code-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
 .lc-code-title .lc-code-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute,#616161); letter-spacing: 0.05em; }
@@ -301,8 +307,54 @@ Auto-included by docs/_layouts/default.html.
     if (el.id) { f.id = el.id; f.setAttribute("data-lc-id", el.id); }   /* so self.page.<id>.load() works */
     el.parentNode.replaceChild(f, el);
   }
+  /* ── a BENCH SLOT inside a read-only lesson ──────────────────────────
+     {: .embed save="wiring.md" } on a fenced block: the fence is the
+     author's seed, the learner's copy lives at that path in their own
+     bench, and the region is stamped as ITS OWN source. That last part is
+     the whole trick — the x-ray editor already resolves its commit target
+     with closest(), so a ⚙️ inside the slot writes to the bench through
+     the path that already exists. The lesson around it stays the vault's.
+     Same seed/override/starter/versions contract as a pad or a grid. */
+  function upgradeBenchSlot(el) {
+    var benchPath = el.getAttribute("save") || "";
+    var code = el.querySelector("code");
+    var seed = (code || el).textContent.replace(/\n+$/, "");
+    var box = document.createElement("div");
+    box.className = "lc-embed lc-bench-slot";
+    var t = window.lcBench ? window.lcBench.target(el) : {};
+    /* stamp BEFORE the seed renders: components inside must upgrade with
+       the slot's source already in place, or the first gear resolves the
+       lesson instead of the bench */
+    if (t.repo) box.setAttribute("data-lc-src-repo", t.repo);
+    box.classList.add("lc-run");            /* the marker closest() looks for */
+    el.parentNode.replaceChild(box, el);
+
+    function paint(text, mine) {
+      var path = window.lcBench ? window.lcBench.resolve(benchPath, box) : benchPath;
+      box.setAttribute("data-lc-src-path", path);
+      if (mine) box.setAttribute("data-lc-mine", "1");
+      var norm = String(text).trim().replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+      loadMarked(function () {
+        if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
+        box.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
+        if (window.lcApplyIAL)    window.lcApplyIAL(box);
+        if (window.lcScanElement) window.lcScanElement(box);
+        if (window.lcRebase)      window.lcRebase(box);
+      });
+    }
+    if (window.lcBench && t.repo && t.pat) {
+      window.lcBench.read(benchPath, box)
+        .then(function (f) { paint(f ? f.text : seed, !!f); })
+        .catch(function () { paint(seed, false); });
+    } else {
+      paint(seed, false);                   /* not joined yet: the lesson's own */
+    }
+  }
+
   function upgradeEmbedExternal(el) {
     var a = el.querySelector("a");
+    /* a fenced .embed with save= is a bench slot, not a media embed */
+    if (!a && el.getAttribute("save")) { upgradeBenchSlot(el); return; }
     if (!a) return;
     var href = a.getAttribute("href");
     // External URLs → iframe — EXCEPT images: a photo is a picture, not a
@@ -518,6 +570,8 @@ Auto-included by docs/_layouts/default.html.
     window.lcRegisterUpgrader("p.menu, ul.menu", upgradeMenu);
     window.lcRegisterUpgrader("p.embed-page", upgradeEmbedPage);
     window.lcRegisterUpgrader("p.embed", upgradeEmbedExternal);
+    /* fenced form: kramdown wraps a fence in .highlighter-rouge / pre */
+    window.lcRegisterUpgrader(".highlighter-rouge.embed, pre.embed", upgradeBenchSlot);
     window.lcRegisterUpgrader("p.video", upgradeVideo);
     window.lcRegisterUpgrader(".highlighter-rouge.code, pre.code", upgradeCode);
   }

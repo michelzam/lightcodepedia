@@ -110,8 +110,14 @@ loses everything. A component's editable source comes from window.lcSourceOf
     if (node === gear || node === ghost || (dlg && dlg.contains(node))) return null;
     var el = node.nodeType === 1 ? node : node.parentElement;
     if (!el || !el.closest) return null;
-    /* read-only render (the Library / vault): no gear, no editing at all */
-    if (el.closest(".lc-run[data-lc-readonly]")) return null;
+    /* Read-only is NEAREST-WINS, not any-ancestor: a vault lesson can hold
+       a bench slot ({: .embed save="…" }), and inside that slot the nearest
+       source is the learner's own repo. "Uneditable" must mean "unless a
+       nearer source says otherwise" — the nearest source is the truth about
+       what you are actually editing. */
+    var near = el.closest(".lc-run[data-lc-src-path], .lc-run[data-lc-readonly]");
+    if (near && near.hasAttribute("data-lc-readonly")) return null;
+    if (!near && el.closest(".lc-run[data-lc-readonly]")) return null;
     /* DERIVED content (folder cards, unlocks…) is generated from other
        files — there is nothing here to edit. The gear offers the SLOT
        (the .folder line in the page source), never its derivatives. */

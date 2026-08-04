@@ -314,3 +314,41 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I open the grid's version list
     And I compare the oldest version
     Then the changed value is marked red where it was and green where it is
+
+  Scenario: A bench slot is editable inside a read-only lesson
+    The lesson stays the vault's; the framed region belongs to the learner.
+    Read-only is nearest-wins now: uneditable unless a nearer source says
+    otherwise, and inside the slot the nearer source is their own bench.
+
+    Given a connected bench whose "courses/demo/mod/wiring.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # Lesson
+
+      The prose here belongs to the course.
+
+      ```markdown
+      Wire me.
+      ```
+      {: .embed save="wiring.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the slot shows the lesson's seed
+    And the slot commits to "courses/demo/mod/wiring.md"
+
+  Scenario: The learner's own copy replaces the seed inside the slot
+    Given a connected bench whose "courses/demo/mod/wiring.md" holds "Wired properly."
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # Lesson
+
+      ```markdown
+      Wire me.
+      ```
+      {: .embed save="wiring.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the slot shows "Wired properly."
+    And the slot is marked as the reader's own
