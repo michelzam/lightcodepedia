@@ -15,21 +15,28 @@ loses everything. A component's editable source comes from window.lcSourceOf
   border-radius: 50%; border: 1px solid #0066cc; background: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,.22); cursor: pointer; font-size: 14px; line-height: 24px; text-align: center; }
 #lcx-gear:hover { background: #eef4ff; }
-/* resizable: drag the corner to fit a long edit — width AND height */
-#lcx-edit { width: min(560px, 92vw); max-height: 90vh; overflow: auto; padding: 0;
+/* resizable, and the CONTENT follows: drag the corner and the text field
+   takes every pixel the header and the button bar do not need — a taller
+   box that still showed a 120px slot was the wrong kind of resizable. */
+#lcx-edit { width: min(560px, 92vw); height: 60vh; max-height: 90vh; max-width: 96vw;
+  overflow: hidden; padding: 0;
   border: none; border-radius: 12px; box-shadow: 0 18px 60px rgba(0,0,0,.32);
   resize: both; min-width: 320px; min-height: 240px; }
+#lcx-edit[open] { display: flex; flex-direction: column; }
+#lcx-edit h4, #lcx-edit .lcx-bar { flex: none; }
 #lcx-edit::backdrop { background: rgba(15,23,42,.35); }
 #lcx-edit h4 { margin: 0; padding: .7em 1em; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;
   font-family: ui-monospace, Menlo, monospace; font-size: .9em; }
-#lcx-edit .lcx-body { padding: .8em 1em; }
+#lcx-edit .lcx-body { padding: .8em 1em; flex: 1 1 auto; overflow: auto;
+  display: flex; flex-direction: column; min-height: 0; }
 #lcx-edit label { display: block; color: #555; font-size: .8em; margin: .7em 0 .18em; }
 #lcx-edit input, #lcx-edit textarea { width: 100%; box-sizing: border-box; padding: .45em .6em;
   border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
 #lcx-edit input[type=checkbox] { width: auto; height: 1.35em; margin: .2em 0; }
 /* the editable content is a dark "workshop" surface — same as the page
    editor's Content/Raw field, so every text editor reads consistently */
-#lcx-edit textarea { font-family: ui-monospace, Menlo, monospace; min-height: 120px; resize: vertical;
+#lcx-edit textarea { font-family: ui-monospace, Menlo, monospace; min-height: 120px;
+  flex: 1 1 auto; resize: none;      /* the DIALOG is the handle now */
   background: #1e1e2e; color: #cdd6f4; caret-color: #89b4fa; border-color: #45475a; }
 #lcx-edit textarea::placeholder { color: #6c7086; }
 #lcx-edit .lcx-bar { display: flex; gap: .55em; padding: .7em 1em; border-top: 1px solid #e5e7eb; background: #fafafa; }
@@ -452,6 +459,124 @@ loses everything. A component's editable source comes from window.lcSourceOf
     }
   };
 
+  /* ── 🕘 versions panel — ONE implementation, attached by a component in
+     a single call. Deliberately isolated and deliberately dull to remove:
+     deleting the lcVersions.attach(...) line takes the feature out of a
+     component entirely, and deleting this block takes it out everywhere.
+     Nothing else in the engine knows it exists (Michel 2026-08-03: low
+     intrusion, easy undo). */
+  window.lcVersions = {
+    attach: function (o) {
+      /* o = { path, el, anchor, current(), apply(text), css, diff? }
+         o.diff(box, olderText) is OPTIONAL: a component that knows its data
+         is not lines (a grid's rows) renders the difference its own way.
+         Without it, the line diff below is used. */
+      var css = o.css || "lc-ver";
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = css + "-btn";
+      btn.hidden = true;                    /* no file yet, no history */
+      btn.textContent = "🕘 Versions";
+      btn.title = "Every version you saved — read it, compare it, bring it back";
+      var panel = null;
+      function close() {
+        if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
+        panel = null;
+      }
+      function whenLabel(iso) {
+        if (!iso) return "saved";
+        var d = new Date(iso);
+        return isNaN(d) ? iso : d.toLocaleString();
+      }
+      /* line diff by longest-common-subsequence — small enough to stay
+         honest, and readable: what that version said vs what you hold now */
+      function diffLines(a, b) {
+        var A = String(a).split("\n"), B = String(b).split("\n");
+        var m = A.length, n = B.length, i, j, L = [];
+        for (i = 0; i <= m; i++) L.push(new Array(n + 1).fill(0));
+        for (i = m - 1; i >= 0; i--)
+          for (j = n - 1; j >= 0; j--)
+            L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+        var out = []; i = 0; j = 0;
+        while (i < m && j < n) {
+          if (A[i] === B[j]) { out.push(["same", A[i]]); i++; j++; }
+          else if (L[i + 1][j] >= L[i][j + 1]) { out.push(["del", A[i]]); i++; }
+          else { out.push(["add", B[j]]); j++; }
+        }
+        while (i < m) { out.push(["del", A[i]]); i++; }
+        while (j < n) { out.push(["add", B[j]]); j++; }
+        return out;
+      }
+      function showDiff(box, older) {
+        var rows = diffLines(older, o.current());
+        box.innerHTML = "";
+        rows.forEach(function (r) {
+          var line = document.createElement("span");
+          line.className = r[0];
+          line.textContent = (r[0] === "add" ? "+ " : r[0] === "del" ? "- " : "  ") + r[1];
+          box.appendChild(line);
+        });
+        if (!rows.some(function (r) { return r[0] !== "same"; }))
+          box.textContent = "Identical to what you have now.";
+      }
+      btn.addEventListener("click", function () {
+        if (panel) { close(); return; }
+        panel = document.createElement("div");
+        panel.className = css + "-panel";
+        panel.innerHTML = "<ol><li>⏳ reading your history…</li></ol>";
+        var at = o.anchor || btn.parentNode;
+        at.parentNode.insertBefore(panel, at.nextSibling);
+        window.lcBench.history(o.path, o.el).then(function (list) {
+          if (!panel) return;
+          if (!list.length) {
+            panel.innerHTML = "<ol><li>No versions yet — 💾 writes the first one.</li></ol>";
+            return;
+          }
+          var ol = document.createElement("ol");
+          var box = document.createElement("div");
+          box.className = css + "-diff"; box.hidden = true;
+          list.forEach(function (c, n) {
+            var li = document.createElement("li");
+            if (n === 0) li.className = "now";
+            var when = document.createElement("span");
+            when.className = css + "-when";
+            when.textContent = whenLabel(c.when) + (n === 0 ? " · latest" : "");
+            var sha = document.createElement("span");
+            sha.className = css + "-sha";
+            sha.textContent = String(c.sha).slice(0, 7);
+            var cmp = document.createElement("button");
+            cmp.type = "button"; cmp.textContent = "compare";
+            var use = document.createElement("button");
+            use.type = "button"; use.textContent = "bring back";
+            cmp.addEventListener("click", function () {
+              cmp.textContent = "…";
+              window.lcBench.readAt(o.path, c.sha, o.el).then(function (t) {
+                cmp.textContent = "compare";
+                if (t == null) { window.lcxToast && window.lcxToast("Could not read that version.", false); return; }
+                box.hidden = false;
+                box.innerHTML = "";
+                (o.diff || showDiff)(box, t);
+              });
+            });
+            use.addEventListener("click", function () {
+              window.lcBench.readAt(o.path, c.sha, o.el).then(function (t) {
+                if (t == null) { window.lcxToast && window.lcxToast("Could not read that version.", false); return; }
+                o.apply(t); close();
+                window.lcxToast && window.lcxToast("Older version loaded — 💾 to keep it", true);
+              });
+            });
+            li.appendChild(when); li.appendChild(sha);
+            li.appendChild(cmp); li.appendChild(use);
+            ol.appendChild(li);
+          });
+          panel.innerHTML = ""; panel.appendChild(ol); panel.appendChild(box);
+        });
+      });
+      return { button: btn, close: close,
+               reveal: function () { btn.hidden = false; } };
+    }
+  };
+
   function keepChanges() {
     /* Inside a runner render the true source is the RENDERED file (the /run
        page itself has no_edit and knows nothing) — the runner stamps it on
@@ -516,7 +641,26 @@ loses everything. A component's editable source comes from window.lcSourceOf
     onTap(document.getElementById("lcx-close"), closeDlg);
     onTap(document.getElementById("lcx-apply"), apply);
     onTap(document.getElementById("lcx-keep"), keepChanges);
-    dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); });   // click backdrop to close
+    /* Click the backdrop to close. The catch: a <dialog>'s own resize corner
+       and its backdrop BOTH report the dialog as the click target, so
+       dragging the corner made the editor vanish the moment you let go.
+       Target alone cannot tell them apart — position can: the backdrop is
+       everything OUTSIDE the dialog's box. */
+    var _outside = function (e) {
+      var r = dlg.getBoundingClientRect();
+      return e.clientX < r.left || e.clientX > r.right ||
+             e.clientY < r.top  || e.clientY > r.bottom;
+    };
+    var _pressedOut = false;
+    dlg.addEventListener("pointerdown", function (e) {
+      _pressedOut = (e.target === dlg) && _outside(e);
+    });
+    dlg.addEventListener("click", function (e) {
+      /* both ends of the gesture on the backdrop — a resize starts on the
+         corner (inside) and so never qualifies */
+      if (e.target === dlg && _pressedOut && _outside(e)) closeDlg();
+      _pressedOut = false;
+    });
 
     document.addEventListener("pointermove", track);
     document.addEventListener("pointerdown", track);   // reveal on tap (touch has no hover)

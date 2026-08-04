@@ -135,7 +135,7 @@ When a [📝 Form](/components/form) is bound to this grid (`master="editable_do
 
 ## 💾 Keeping edits — the two-repo contract
 
-Plain `editable="true"` edits are in-memory. Add `save="dogs.yaml"` and they become **the reader's**, permanently: 💾 writes the current rows to *their own* connected repo — a relative path lands beside the lesson (the page's folder, full course path, so two courses in one bench never collide); `/my/…` means the bench root — and on the next visit the saved rows replace the fence's. The fence stays the **author's seed** — a lesson can ship deliberately broken data, let every reader repair it in their own space, and the author republishes the lesson forever without touching anyone's repair. **↺ Start over** re-loads the fence data; the reader's file survives until their next 💾. `ƒ` computed columns are stripped on save — a formula is the author's standing part, and it recomputes over the reader's rows anyway.
+Plain `editable="true"` edits are in-memory. Add `save="dogs.yaml"` and they become **the reader's**, permanently: 💾 closes whatever cell is still being edited (so the last keystroke is never lost) and writes the current rows to *their own* connected repo — a relative path lands beside the lesson (the page's folder, full course path, so two courses in one bench never collide); `/my/…` means the bench root — and on the next visit the saved rows replace the fence's. The fence stays the **author's seed** — a lesson can ship deliberately broken data, let every reader repair it in their own space, and the author republishes the lesson forever without touching anyone's repair. **↺ Start over** re-loads the fence data; the reader's file survives until their next 💾. `ƒ` computed columns are stripped on save — a formula is the author's standing part, and it recomputes over the reader's rows anyway.
 
 ```yaml
 - name: Rex
@@ -146,6 +146,8 @@ Plain `editable="true"` edits are in-memory. Add `save="dogs.yaml"` and they bec
 {: .datagrid #repair_me editable="true" save="/my/repairs.yaml" height="160" }
 
 If you're connected, fix `Milwauke`, 💾, refresh — your repair is still there, and this page never changed.
+
+**🕘 Versions** appears next to 💾 once a saved file exists: every keep is a commit in the reader's own repo, so the button lists them, **compare** shows the difference *as a grid* — only the rows that moved, as `− was` / `+ now` pairs with the changed fields named — and **bring back** loads an older set. Restoring is not a rollback — the next 💾 is simply another commit. It's the same panel the [✍️ pad](/components/text) uses, attached in one call, so it can be removed from either component without touching the other.
 
 ```gherkin
 Feature: A data block becomes an interactive grid

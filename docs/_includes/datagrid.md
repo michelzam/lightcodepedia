@@ -47,6 +47,27 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
 .lc-dg-mine:not([hidden]) ~ .lc-dg-save { margin-left: 0; }
 .lc-dg-reset { font: inherit; font-size: 0.85em; padding: 0.3em 0.6em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
 .lc-dg-reset:hover { border-color: #888; color: #222; }
+/* 🕘 versions — the shared panel (lcVersions), styled to match the pad's */
+.lc-ver-btn { font: inherit; font-size: 0.85em; padding: 0.3em 0.6em; border-radius: 6px;
+  border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
+.lc-ver-btn:hover { border-color: #888; color: #222; }
+.lc-ver-panel { border-top: 1px solid #e5e7eb; background: #fafafa; font-size: 0.88em; }
+.lc-ver-panel ol { list-style: none; margin: 0; padding: 0; max-height: 200px; overflow: auto; }
+.lc-ver-panel li { display: flex; align-items: center; gap: 0.6em; padding: 0.4em 0.9em;
+  border-bottom: 1px solid #eee; }
+.lc-ver-panel li:last-child { border-bottom: none; }
+.lc-ver-panel li.now { background: #eef6ff; }
+.lc-ver-when { flex: 1; color: #444; }
+.lc-ver-sha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #94a3b8; font-size: 0.85em; }
+.lc-ver-panel button { font: inherit; font-size: 0.85em; padding: 0.2em 0.6em; border-radius: 5px;
+  border: 1px solid #cbd5e1; background: #fff; color: #334155; cursor: pointer; }
+.lc-ver-panel button:hover { border-color: #0066cc; color: #0066cc; }
+.lc-ver-diff { margin: 0; padding: 0.7em 0.9em; background: #fff; border-top: 1px solid #eee;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82em;
+  line-height: 1.5; white-space: pre-wrap; overflow: auto; max-height: 240px; }
+.lc-ver-diff .add { background: #dcfce7; color: #166534; display: block; }
+.lc-ver-diff .del { background: #fee2e2; color: #991b1b; display: block; }
+.lc-ver-diff .same { color: #64748b; display: block; }
 </style>
 
 <script>
@@ -317,7 +338,95 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         var keep = document.createElement("button");
         keep.type = "button"; keep.className = "lc-dg-save";
         keep.textContent = "💾 Save";
-        bar.appendChild(mine); bar.appendChild(reset); bar.appendChild(keep);
+        /* 🕘 versions — ONE call, and the whole feature rides on it. Delete
+           these four lines and the grid is exactly as it was. */
+        /* Rows are not lines: a text diff of YAML is noise to a reader who
+           thinks in dogs and campuses. Show the CHANGED rows only, as a
+           grid — was/now pairs, plus which fields moved. Identity is the
+           first column when its values are unique (a name), position
+           otherwise. */
+        var rowKey = function (rows) {
+          var f = rows.length ? Object.keys(rows[0])[0] : null;
+          if (!f) return null;
+          var seen = {};
+          for (var i = 0; i < rows.length; i++) {
+            var v = String(rows[i][f]);
+            if (seen[v]) return null;
+            seen[v] = 1;
+          }
+          return f;
+        };
+        var rowFields = function (a, b) {
+          var out = [], k;
+          var keys = Object.keys(a || {}).concat(Object.keys(b || {}));
+          keys.forEach(function (k2) { if (out.indexOf(k2) < 0) out.push(k2); });
+          return out.filter(function (f) {
+            return JSON.stringify((a || {})[f]) !== JSON.stringify((b || {})[f]);
+          });
+        };
+        var diffRows = function (older, now) {
+          var key = rowKey(now) && rowKey(older) === rowKey(now) ? rowKey(now) : null;
+          var out = [];
+          var mark = function (sign, fields, row) {
+            var r = { "±": sign, "changed": fields.join(", ") };
+            Object.keys(row).forEach(function (f) { r[f] = row[f]; });
+            return r;
+          };
+          if (key) {
+            var byOld = {}, byNew = {};
+            older.forEach(function (r) { byOld[String(r[key])] = r; });
+            now.forEach(function (r) { byNew[String(r[key])] = r; });
+            now.forEach(function (r) {
+              var o2 = byOld[String(r[key])];
+              if (!o2) { out.push(mark("+ added", [], r)); return; }
+              var f = rowFields(o2, r);
+              if (f.length) { out.push(mark("− was", f, o2)); out.push(mark("+ now", f, r)); }
+            });
+            older.forEach(function (r) {
+              if (!byNew[String(r[key])]) out.push(mark("− removed", [], r));
+            });
+            return out;
+          }
+          var n = Math.max(older.length, now.length);
+          for (var i = 0; i < n; i++) {
+            var a = older[i], b = now[i];
+            if (a && !b) { out.push(mark("− removed", [], a)); continue; }
+            if (!a && b) { out.push(mark("+ added", [], b)); continue; }
+            var fs = rowFields(a, b);
+            if (fs.length) { out.push(mark("− was", fs, a)); out.push(mark("+ now", fs, b)); }
+          }
+          return out;
+        };
+
+        var vers = window.lcVersions ? window.lcVersions.attach({
+          path: opts.save, el: wrapper, anchor: bar,
+          current: function () { return serialize(rowsNow()); },
+          diff: function (box, olderText) {
+            parseDatagridText(olderText, opts.saveFormat).then(function (old) {
+              var rows = diffRows(Array.isArray(old) ? old : [], rowsNow());
+              if (!rows.length) {
+                box.textContent = "Identical to what you have now.";
+                return;
+              }
+              window.lcRenderDatagridFromJson(
+                box, JSON.stringify(rows),
+                rows.length / 2 + " change" + (rows.length > 2 ? "s" : ""),
+                Math.min(60 + rows.length * 42, 260));
+            }).catch(function (e) {
+              box.textContent = "Could not read that version: " + (e.message || e);
+            });
+          },
+          apply: function (text) {
+            parseDatagridText(text, opts.saveFormat).then(function (rows) {
+              if (!Array.isArray(rows)) return;
+              if (opts.saveApply) opts.saveApply(rows);
+              else { data = rows; api.setGridOption("rowData", rows); recompute(); }
+            });
+          }
+        }) : null;
+        bar.appendChild(mine); bar.appendChild(reset);
+        if (vers) bar.appendChild(vers.button);
+        bar.appendChild(keep);
         wrapper.appendChild(bar);
         var refreshKeep = function () {
           var t = window.lcBench.target(wrapper);
@@ -327,6 +436,24 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
             (window.lcBench ? window.lcBench.resolve(opts.save, wrapper) : opts.save) + ")";
         };
         refreshKeep();
+        /* a saved file HAS a history — offer it from the first paint */
+        if (vers && wrapper.getAttribute("data-lc-mine") === "1") vers.reveal();
+        /* the grid's rows as the bench would store them: ƒ columns are the
+           author's derived parts, never the learner's data */
+        var rowsNow = function () {
+          /* An AG Grid cell editor holds its value until it is closed —
+             typing "Milwaukee" and clicking 💾 without pressing Enter saved
+             the OLD value and the learner's last repair was silently lost.
+             Close the editor first, every time anything reads the rows. */
+          try { api.stopEditing(); } catch (e) {}
+          var rows = [];
+          api.forEachNode(function (n) {
+            var r = Object.assign({}, n.data);
+            computeSpecs.forEach(function (s) { delete r[s.col]; });
+            rows.push(r);
+          });
+          return rows;
+        };
         var serialize = function (rows) {
           if (opts.saveFormat === "json") return JSON.stringify(rows, null, 2) + "\n";
           if (window.jsyaml && window.jsyaml.dump) return window.jsyaml.dump(rows);
@@ -335,12 +462,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         keep.addEventListener("click", function () {
           refreshKeep();
           if (keep.disabled) return;
-          var rows = [];
-          api.forEachNode(function (n) {
-            var r = Object.assign({}, n.data);
-            computeSpecs.forEach(function (s) { delete r[s.col]; });
-            rows.push(r);
-          });
+          var rows = rowsNow();
           var text;
           try { text = serialize(rows); }
           catch (e) { window.lcxToast && window.lcxToast(String(e.message || e), false); return; }
@@ -350,6 +472,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
               wrapper._lcBenchSha = sha || wrapper._lcBenchSha;
               wrapper.setAttribute("data-lc-mine", "1");
               mine.hidden = false;
+              if (vers) { vers.reveal(); vers.close(); }
               window.lcxToast && window.lcxToast("Saved to your space ✓", true);
             })
             .catch(function (e) {

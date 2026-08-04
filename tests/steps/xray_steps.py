@@ -425,3 +425,35 @@ def step_page_not_scrolled(context):
         "the lens let the page slide away under the finger: scrollY %s → %s"
         % (context.lc_scroll_before, now)
     )
+
+
+@when("I drag the editor's resize corner")
+def step_drag_resize(context):
+    dlg = context.page.locator("#lcx-edit")
+    box = dlg.bounding_box()
+    context.lc_ta_before = context.page.locator("#lcx-content").bounding_box()
+    # grab the real corner and let go — the gesture that used to end with
+    # the dialog vanishing, taking the edit with it
+    context.page.mouse.move(box["x"] + box["width"] - 3, box["y"] + box["height"] - 3)
+    context.page.mouse.down()
+    context.page.mouse.move(box["x"] + box["width"] + 90,
+                            box["y"] + box["height"] + 140, steps=8)
+    context.page.mouse.up()
+    context.page.wait_for_timeout(500)
+
+
+@then("the editor is still open")
+def step_dialog_open(context):
+    assert context.page.evaluate(
+        "() => { const d = document.getElementById('lcx-edit'); return !!(d && d.open); }"
+    ), "the editor closed when the resize drag ended"
+
+
+@then("the text field grew with the box")
+def step_textarea_grew(context):
+    after = context.page.locator("#lcx-content").bounding_box()
+    before = context.lc_ta_before
+    assert after and before, "no text field measured"
+    assert after["height"] > before["height"] + 40, (
+        "the box grew but the field did not: %s -> %s"
+        % (before["height"], after["height"]))

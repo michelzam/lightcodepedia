@@ -130,3 +130,17 @@ Feature: X-ray inspector
     And I wait for the page to be interactive
     And I shift-hover over the chart component
     Then the x-ray scene mentions "Query"
+
+  Scenario: Resizing the editor keeps it open, and the text field grows with it
+    A dialog's own resize corner and its backdrop both report the dialog as
+    the click target, so letting go of the corner closed the editor, the
+    edit gone with it. Position tells them apart: the backdrop is what lies
+    OUTSIDE the box. The field must also take the new room; a taller box
+    still showing a small slot is the wrong kind of resizable.
+
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the x-ray editor on the local dog block
+    And I drag the editor's resize corner
+    Then the editor is still open
+    And the text field grew with the box

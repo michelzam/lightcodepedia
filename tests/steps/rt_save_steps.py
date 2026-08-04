@@ -265,7 +265,13 @@ def step_editor_refuses_autofill(context):
 def step_bench_history(context, path):
     # the commit list and the by-ref reads that back it — the shape the
     # GitHub API answers with, so the panel exercises the real contract
-    VERSIONS = {"sha-old": "# Draft one\n", "sha-mid": "# Draft two\n"}
+    # a version's content follows the FILE's kind — prose for a pad, rows
+    # for a grid — so each component's diff reads real data of its own shape
+    if path.endswith((".yaml", ".yml", ".json")):
+        VERSIONS = {"sha-old": "- name: Rex\n  campus: Milwauke\n",
+                    "sha-mid": "- name: Rex\n  campus: MKE\n"}
+    else:
+        VERSIONS = {"sha-old": "# Draft one\n", "sha-mid": "# Draft two\n"}
 
     def commits(route, req):
         route.fulfill(json=[
@@ -290,27 +296,27 @@ def step_bench_history(context, path):
 
 @when("I open the pad's version list")
 def step_open_versions(context):
-    btn = context.page.locator(".lc-mdpad-hist").first
+    btn = context.page.locator(".lc-mdpad-bar .lc-ver-btn").first
     expect(btn).to_be_visible(timeout=15_000)
     btn.click()
-    context.page.wait_for_selector(".lc-mdpad-versions li", timeout=10_000)
+    context.page.wait_for_selector(".lc-ver-panel li", timeout=10_000)
 
 
 @then("the list shows {n:d} saved versions")
 def step_version_count(context, n):
-    expect(context.page.locator(".lc-mdpad-versions li")).to_have_count(n, timeout=10_000)
+    expect(context.page.locator(".lc-ver-panel li")).to_have_count(n, timeout=10_000)
 
 
 @when("I compare the oldest version")
 def step_compare_oldest(context):
-    context.page.locator(".lc-mdpad-versions li").last.locator(
+    context.page.locator(".lc-ver-panel li").last.locator(
         "button", has_text="compare").click()
     context.page.wait_for_timeout(700)
 
 
 @then("the difference is shown line by line")
 def step_diff_shown(context):
-    box = context.page.locator(".lc-mdpad-diff")
+    box = context.page.locator(".lc-ver-diff")
     expect(box).to_be_visible(timeout=10_000)
     assert box.locator(".del").count() > 0, "no removed line marked"
     assert box.locator(".add").count() > 0, "no added line marked"
@@ -318,6 +324,38 @@ def step_diff_shown(context):
 
 @when("I bring back the oldest version")
 def step_bring_back(context):
-    context.page.locator(".lc-mdpad-versions li").last.locator(
+    context.page.locator(".lc-ver-panel li").last.locator(
         "button", has_text="bring back").click()
     context.page.wait_for_timeout(800)
+
+
+@when("I open the grid's version list")
+def step_open_grid_versions(context):
+    btn = context.page.locator(".lc-dg-savebar .lc-ver-btn").first
+    expect(btn).to_be_visible(timeout=20_000)
+    btn.click()
+    context.page.wait_for_selector(".lc-ver-panel li", timeout=10_000)
+
+
+@when('I type "{text}" into a grid cell without leaving it')
+def step_type_cell_open(context, text):
+    # deliberately NO Enter, NO Tab, no click elsewhere — the editor stays
+    # open, which is the state that used to lose the change
+    cell = context.page.locator(".lc-datagrid .ag-cell").nth(1)
+    cell.wait_for(state="visible", timeout=20_000)
+    cell.dblclick()
+    inp = context.page.locator('.lc-datagrid input[type="text"]').first
+    inp.wait_for(state="visible", timeout=10_000)
+    inp.fill(text)
+
+
+@then("the difference is a grid showing only the changed rows")
+def step_diff_is_grid(context):
+    box = context.page.locator(".lc-ver-diff")
+    expect(box).to_be_visible(timeout=15_000)
+    grid = box.locator(".lc-datagrid")
+    expect(grid).to_be_visible(timeout=15_000)
+    cells = box.locator(".ag-cell")
+    expect(cells.first).to_be_visible(timeout=15_000)
+    txt = box.inner_text()
+    assert "was" in txt and "now" in txt, "no was/now pair in the difference: %s" % txt[:200]

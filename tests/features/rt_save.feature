@@ -239,3 +239,40 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I bring back the oldest version
     Then the pad shows "# Draft one"
     And the bench received no commit
+
+  Scenario: The grid offers the same versions panel as the pad
+    One implementation, two call sites — the grid's repaired rows get the
+    same history the résumé does. Removing the single attach call takes
+    the feature out of the grid and leaves everything else untouched.
+
+    Given a connected bench whose "courses/demo/mod/dogs.yaml" holds "- name: Rex\n  campus: Fixed"
+    And the bench remembers two earlier versions of "courses/demo/mod/dogs.yaml"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I open the grid's version list
+    Then the list shows 2 saved versions
+
+  Scenario: Saving commits the cell you are still typing in
+    A grid cell editor holds its value until it closes. Typing a repair and
+    reaching straight for 💾 saved the OLD value, so the learner's last
+    change vanished with no sign it had. The editor closes before anything
+    reads the rows.
+
+    Given a connected bench whose "courses/demo/mod/dogs.yaml" does not exist yet
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I type "Milwaukee" into a grid cell without leaving it
+    And I press the grid's keep button
+    Then the bench received a commit to "courses/demo/mod/dogs.yaml" containing "Milwaukee"
+
+  Scenario: The grid's difference is a grid of what actually moved
+    Rows are not lines: a text diff of YAML is noise to a reader who thinks
+    in dogs and campuses. Only the changed rows appear, as was/now pairs.
+
+    Given a connected bench whose "courses/demo/mod/dogs.yaml" holds "- name: Rex\n  campus: Fixed"
+    And the bench remembers two earlier versions of "courses/demo/mod/dogs.yaml"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I open the grid's version list
+    And I compare the oldest version
+    Then the difference is a grid showing only the changed rows
