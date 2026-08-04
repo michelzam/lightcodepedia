@@ -1,3 +1,4 @@
+import re
 import base64
 import json
 
@@ -292,7 +293,21 @@ def step_bench_history(context, path):
         route.fallback()
 
     context.page.route("https://api.github.com/repos/" + BENCH + "/commits*", commits)
-    context.page.route("https://api.github.com/repos/" + BENCH + "/contents/**?ref=*", at_ref)
+    # REGEX, not a glob. Playwright compiles "contents/**?ref=*" down to
+    # "contents/([^/]*).ref=([^/]*)" — the ** collapses to single-star,
+    # no-slash semantics once a ? follows it, so it could never match a path
+    # with a folder in it. This route silently never fired: the plain
+    # contents/** stub answered instead, with the CURRENT file's JSON
+    # envelope, and three scenarios have been failing on that ever since —
+    # the pad "restored" a version by displaying {"content": "…"} verbatim,
+    # and the grid diffed its live rows against that same envelope, so every
+    # row read as added and no was/now pair could exist. The engine was
+    # right throughout: readAt asks for ?ref= with Accept: raw, which is
+    # exactly what GitHub answers with.
+    context.page.route(
+        re.compile(r"https://api\.github\.com/repos/" + re.escape(BENCH)
+                   + r"/contents/.*[?&]ref="),
+        at_ref)
 
 
 @when("I open the pad's version list")
