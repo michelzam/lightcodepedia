@@ -228,6 +228,52 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     return chunks.filter(function(c) { return c.length > 0; });
   }
 
+  /* ── the learner's OWN results, remembered like karma ─────────────────
+     status="…" in the page is the AUTHOR's declaration — one value for
+     everyone, and never machine-set. What a LEARNER's run produced is
+     theirs, and it used to evaporate on reload while their quiz score
+     survived: the same page said "you scored 3/3" and "nothing has run
+     here". Keyed by page + feature id, in the same store karma uses, so
+     both halves of a page's evidence live or die together. */
+  function cardName(card) {
+    /* a named card keys on its name; an unnamed one on its position among
+       the page's cards — the same "Nth .feature" convention the editor's
+       write-back uses, so an author owes nothing extra for the memory */
+    var id = card.getAttribute("data-lc-id") || card.id;
+    if (id) return id;
+    var all = document.querySelectorAll(".lc-feature");
+    var i = Array.prototype.indexOf.call(all, card);
+    return i >= 0 ? "n" + i : "";
+  }
+  function resultKey(card) {
+    var page = window.lcPageScores ? window.lcPageScores.norm() : location.pathname;
+    return page + "#" + cardName(card);
+  }
+  function loadResults() {
+    try { return JSON.parse(localStorage.getItem("lc_features") || "{}"); }
+    catch (e) { return {}; }
+  }
+  function rememberResult(card, status) {
+    if (!status || status === "pending") return;   /* mid-run is not a result */
+    if (!cardName(card)) return;
+    try {
+      var all = loadResults();
+      all[resultKey(card)] = { status: status, ts: new Date().toISOString() };
+      localStorage.setItem("lc_features", JSON.stringify(all));
+    } catch (e) {}
+  }
+  /* on load, a card shows what the reader's last run made of it — the
+     author's status is the starting point, their evidence outranks it */
+  function restoreResult(card) {
+    if (!cardName(card)) return;
+    var rec = loadResults()[resultKey(card)];
+    if (rec && rec.status) {
+      card.setAttribute("data-lc-remembered", "1");
+      setCardStatus(card, rec.status);
+    }
+  }
+  window.lcFeatureResults = { all: loadResults, restore: restoreResult };
+
   /* ── Update badge + notify suite row ────────────────────────────────────────── */
   function setCardStatus(card, status) {
     var was = card.getAttribute("data-status") || "";
@@ -237,6 +283,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
        block gated with visible="= audit.passing" opens the moment the run
        turns green. Same event the forms fire; one recompute path. */
     card.setAttribute("data-status", status || "");
+    rememberResult(card, status);
     if (was !== (status || "")) {
       try { document.dispatchEvent(new CustomEvent("lc-model-changed")); } catch (e) {}
       /* celebration="true": a burst for work that was EARNED. Every run
@@ -625,6 +672,9 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     }
 
     el.parentNode.replaceChild(card, el);
+    /* the reader's own last run outranks the author's declaration — restore
+       it once the card is in the document, so the position key is stable */
+    restoreResult(card);
   }
 
   /* ── Upgrade a .steps element — attach to preceding card ────────────────────────── */
@@ -716,6 +766,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
                      : card.classList.contains("lc-feature-failing")  ? "failing"
                      : card.classList.contains("lc-feature-pending")  ? "pending" : "";
       if (initStatus) setCardStatus(card, initStatus);
+      /* …then the reader's own last run, which outranks the declaration */
+      restoreResult(card);
     });
 
     /* Run All */

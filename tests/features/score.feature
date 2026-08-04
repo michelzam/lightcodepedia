@@ -34,3 +34,16 @@ Feature: Per-page score memory
     When the score for page "/tutorial103" becomes "4/5"
     Then a card score tag shows "4/5"
     And no card still shows "1/5"
+
+  Scenario: A run's result is remembered like the score beside it
+    status="…" in the page is the AUTHOR's declaration, one value for
+    everyone. What a reader's own run produced is theirs — and it used to
+    evaporate on reload while their quiz score survived, so the same page
+    said "you scored 3/3" and "nothing has run here".
+
+    When I navigate to "/components/quiz"
+    And I wait for the page to be interactive
+    And I run the page's embedded features
+    Then every embedded feature passes
+    When I reload the page
+    Then a feature card is remembered as passing

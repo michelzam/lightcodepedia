@@ -71,3 +71,13 @@ def step_score_changes_live(context, path, score):
 def step_no_stale_card(context, score):
     n = context.page.locator(".lc-card-score", has_text=score).count()
     assert n == 0, "%d card(s) still showing the stale score %s" % (n, score)
+
+
+@then("a feature card is remembered as passing")
+def step_feature_remembered(context):
+    # the store is the fact; the card reflecting it is what the reader sees
+    context.page.wait_for_timeout(1500)
+    kept = context.page.evaluate("() => localStorage.getItem('lc_features')")
+    assert kept and "passing" in kept, "no run result was remembered: %r" % kept
+    marked = context.page.locator(".lc-feature[data-lc-remembered]").count()
+    assert marked > 0, "the remembered result never reached a card"
