@@ -110,7 +110,7 @@ Auto-included by docs/_layouts/default.html.
   }
 
   /* ── shared card pipeline (also used by related.md) ─────────────── */
-  /* scan a page's markdown for its hidden .feature blocks → [{status, tags}] */
+  /* scan a page's markdown for its hidden .feature blocks → [{status, tags, id}] */
   function scanFeatures(text) {
     var scanText = text
       .replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "")
@@ -119,9 +119,39 @@ Auto-included by docs/_layouts/default.html.
     while ((fm = fRe.exec(scanText)) !== null) {
       var sm = fm[1].match(/\bstatus="(\w+)"/);
       var tm = fm[1].match(/\btags="([^"]*)"/);
-      features.push({ status: sm ? sm[1] : "", tags: tm ? tm[1] : "" });
+      /* the #id too — it is half of the key a remembered run is filed under.
+         Blank the quoted values first: the # in title="Step #1" names
+         nothing. */
+      var im = fm[1].replace(/"[^"]*"/g, '""').match(/#([A-Za-z][\w-]*)/);
+      features.push({ status: sm ? sm[1] : "", tags: tm ? tm[1] : "",
+                      id: im ? im[1] : "" });
     }
     return features;
+  }
+
+  /* ── the reader's own run outranks the author's declaration ──────────────
+     lc_features remembers what a run actually made of a .feature, and the
+     PAGE has always shown it. The CARD did not: its dots and its
+     data-nonpassing came from the status= parsed out of the markdown, so a
+     learner's green run showed on the page while the card that leads there
+     still said pending. Overlay it here rather than in score.md's
+     decorateCards, because folder.md and related.md share this one card
+     pipeline — do it downstream and only half the site agrees.
+     The author's declaration stays the base; evidence beats a claim. */
+  function rememberedFeatures(url, features) {
+    if (!features || !features.length) return features;
+    var all;
+    try { all = JSON.parse(localStorage.getItem("lc_features") || "{}"); }
+    catch (e) { return features; }
+    var page = window.lcPageScores ? window.lcPageScores.norm(url) : url;
+    return features.map(function (f, i) {
+      /* the same "Nth .feature" convention cardName() uses, so an author who
+         never wrote an id still gets a stable key */
+      var rec = all[page + "#" + ((f && f.id) || ("n" + i))];
+      if (!rec || !rec.status) return f;
+      return { status: rec.status, tags: (f && f.tags) || "",
+               id: (f && f.id) || "", remembered: true };
+    });
   }
 
   /* count the .quiz widgets on a page (skip code fences / inline code) so a
@@ -150,18 +180,19 @@ Auto-included by docs/_layouts/default.html.
      opts.clickableTags=false renders plain (non-filtering) tag chips. */
   function buildCardHtml(item, opts) {
     opts = opts || {};
-    var tagList = cardTagList(item.features);
-    var feats = item.features || [];
+    var feats = rememberedFeatures(item.url, item.features) || [];
+    var tagList = cardTagList(feats);
     var nonpassing = feats.filter(function(f) { return ((f && f.status) || "none") !== "passing"; }).length;
+    var mine = feats.some(function(f) { return f && f.remembered; }) ? ' data-lc-remembered="1"' : '';
     var tagsAttr = tagList.length ? ' data-tags="' + escapeHtml(tagList.join(" ")) + '"' : '';
     var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
-    var card = '<div class="lc-card" data-url="' + item.url + '"' + (item.path ? (item.isSubdir ? ' data-dirpath="' : ' data-path="') + escapeHtml(item.path) + '"' : '') + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + (item.date ? ' data-date="' + escapeHtml(item.date) + '"' : '') + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+    var card = '<div class="lc-card" data-url="' + item.url + '"' + (item.path ? (item.isSubdir ? ' data-dirpath="' : ' data-path="') + escapeHtml(item.path) + '"' : '') + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + (item.date ? ' data-date="' + escapeHtml(item.date) + '"' : '') + mine + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
     if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
     var dateLbl = fmtDate(item.date);
     if (dateLbl) card += '<div class="lc-card-date">📅 ' + escapeHtml(dateLbl) + '</div>';
-    if (item.features && item.features.length) {
+    if (feats.length) {
       var counts = {};
-      item.features.forEach(function(f) { var s = (f && f.status) || "none"; counts[s] = (counts[s] || 0) + 1; });
+      feats.forEach(function(f) { var s = (f && f.status) || "none"; counts[s] = (counts[s] || 0) + 1; });
       var dots = "";
       if (counts.passing) dots += "<span class='lc-feat-dot lc-feat-passing' title='" + counts.passing + " passing feature" + (counts.passing > 1 ? "s" : "") + "'>● " + counts.passing + "</span>";
       if (counts.failing)  dots += "<span class='lc-feat-dot lc-feat-failing'  title='" + counts.failing  + " failing feature"  + (counts.failing  > 1 ? "s" : "") + "'>✗ " + counts.failing  + "</span>";

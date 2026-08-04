@@ -102,3 +102,30 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then the sitemap graph shows at least 20 nodes
     And clicking a sitemap node opens its page
+
+  Scenario: A table wired to a name nothing answers to says so, and stops waiting
+    An unresolved source= used to wait forever: the bind promise settles on
+    the dataset's arrival alone, and nothing timed it out. So the page read
+    as still loading rather than as the wiring mistake it is, and the sliver
+    of "loading grid…" left almost nothing to aim a thumb at.
+
+    Given a table gives its dataset 800ms to arrive
+    And the GitHub contents API serves "courses/demo/wire.md" with the document:
+      """
+      # Her screen
+
+      ```csv
+      campus,dogs_adopted
+      Milwaukee,12
+      Ozaukee,5
+      ```
+      {: .dataset #adoptions }
+
+      ```csv
+      ```
+      {: .datagrid #wired source="ozaukee" height="160" empty="Nothing arrives here yet." }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/wire.md"
+    And I wait for the page to be interactive
+    Then the waiting table comes to rest on "Nothing arrives here yet."
+    And that message is a tappable target

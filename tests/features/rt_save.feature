@@ -352,3 +352,26 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I wait for the page to be interactive
     Then the slot shows "Wired properly."
     And the slot is marked as the reader's own
+
+  Scenario: A dataset reads the file the learner repaired in an earlier lesson
+    The fence is the author's seed; the learner's file is the truth — the
+    same contract the pad, the grid and the slot already follow. A dataset
+    could not read a bench at all, so a lesson had no way to feed today's
+    screen from the file its reader repaired yesterday. Watching your own
+    earlier fix arrive somewhere new is the reason the next lesson is worth
+    sitting through.
+
+    Given a connected bench whose "courses/demo/mod/dogs.yaml" holds "- name: Rex\n  campus: Milwaukee"
+    And the GitHub contents API serves "courses/demo/mod/feed.md" with the document:
+      """
+      # Feed
+
+      ```yaml
+      - name: Rex
+        campus: Milwauke
+      ```
+      {: .dataset #dogs save="dogs.yaml" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/feed.md"
+    And I wait for the page to be interactive
+    Then the dataset "dogs" holds "Milwaukee"

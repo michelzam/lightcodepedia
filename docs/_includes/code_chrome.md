@@ -224,9 +224,14 @@
   // Stash each id'd source block's markup BEFORE it is upgraded, so a later
   // inline editor (X-ray edit) can read its knobs/content and re-render it.
   var _srcSnap = {};
-  function _snapshotSources(root) {
+  /* fresh=true re-takes a snapshot that already exists: a region rendered
+     more than once (a bench slot repainted from a saved version) must not
+     keep offering the FIRST render's knobs — the editor would then hand the
+     learner back the value they just changed. */
+  function _snapshotSources(root, fresh) {
     root.querySelectorAll("[id]").forEach(function (el) {
-      if (el.id && _srcSnap[el.id] === undefined && !el.dataset.lcUpgraded) _srcSnap[el.id] = el.outerHTML;
+      if (!el.id || el.dataset.lcUpgraded) return;
+      if (_srcSnap[el.id] === undefined || fresh) _srcSnap[el.id] = el.outerHTML;
     });
   }
   window.lcSourceOf = function (id) { return _srcSnap[id]; };
@@ -370,6 +375,11 @@
   // Used by the live editor preview so the page-level scan() is not needed.
   function scanElement(root) {
     _applyIAL(root);
+    /* Same order as scan(): snapshot BEFORE upgrading, or a component that
+       arrives later — a bench slot's grid, an embedded fragment — has no
+       source for the ⚙️ to open, and the editor falls back to showing its
+       rendered text as a plain block (no knobs, nothing to wire). */
+    _snapshotSources(root);
     _runUpgraders(root);
     if (window.lcUpgradeQuiz)  root.querySelectorAll("ul.quiz, ol.quiz").forEach(window.lcUpgradeQuiz);
     if (window.lcUpgradeAgent) root.querySelectorAll(".highlighter-rouge.agent, pre.agent").forEach(window.lcUpgradeAgent);

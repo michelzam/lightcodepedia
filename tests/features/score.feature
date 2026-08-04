@@ -47,3 +47,17 @@ Feature: Per-page score memory
     Then every embedded feature passes
     When I reload the page
     Then a feature card is remembered as passing
+
+  Scenario: A card shows the reader's own run, not the author's declaration
+    lc_features already remembered what a run made of a .feature, and the
+    PAGE showed it. The card did not: its dots came from the status= parsed
+    out of the markdown, so a learner's run showed on the page while the
+    card that leads there still carried the author's claim. One fact, two
+    answers — the same inconsistency scores had, one level up.
+
+    When I navigate to "/components/"
+    And I wait for the page to be interactive
+    And the run on page "/components/quiz" is remembered as "failing"
+    And I reload the page
+    Then a card shows a "failing" feature dot
+    And that card is marked as remembering my run

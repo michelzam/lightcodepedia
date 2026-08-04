@@ -183,7 +183,30 @@ Auto-included by docs/_layouts/default.html.
 
     /* inline code block variant */
     var code = el.querySelector("code") || el;
-    setFromText(code.textContent.trim(), (el.getAttribute("format") || "").toLowerCase(), el, id);
+    var seed = code.textContent.trim();
+    var fmt = (el.getAttribute("format") || "").toLowerCase();
+
+    /* save="…" — the same contract every other component with a save= knob
+       already follows: the fence is the AUTHOR'S seed, the learner's file is
+       the truth. A dataset could not read a bench until now, so a lesson had
+       no way to feed today's screen from the file the reader repaired
+       yesterday — and "watch your own fix land somewhere new" is the whole
+       reason the second lesson is worth sitting through.
+       Seed FIRST, then replace: a bench read is a network round trip and a
+       page that starts blank teaches nothing while it waits. lcSetDataset
+       notifies every listener, so the swap re-derives each bound view. */
+    var savePath = el.getAttribute("save") || "";
+    if (savePath && window.lcBench) {
+      setFromText(seed, fmt, el, id);
+      window.lcBench.read(savePath, el).then(function (f) {
+        if (!f) return;
+        el.setAttribute("data-lc-mine", "1");
+        setFromText(f.text, window.lcInferFormat
+          ? window.lcInferFormat(savePath, fmt) : fmt, el, id);
+      }).catch(function () {});
+      return;
+    }
+    setFromText(seed, fmt, el, id);
   }
 
   /* ── .datagrid upgrade ──────────────────────────── */

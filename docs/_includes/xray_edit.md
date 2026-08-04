@@ -266,7 +266,90 @@ loses everything. A component's editable source comes from window.lcSourceOf
     return String(text).replace(new RegExp("([(\"'\\s])" + esc + "/", "g"), "$1/");
   }
 
-  function commitInline(pat, repo, path, before, after, label, onOk, ordinal) {
+  /* ── the two source transforms ───────────────────────────────────────
+     What the editor can change in a markdown file: the TEXT of a block,
+     and the KNOBS on its IAL line. Both are pure string→string, so the
+     same rewrite serves the page's own file and a learner's bench file
+     without a second, subtly different code path. null = refuse. */
+  function replaceBlockIn(src, before, after, ordinal) {
+    /* POSITION is the identity, not the text. Markdown without a fence has
+       no unique delimiter, so "the text appears twice" is ordinary, not an
+       edge case — and refusing there made Keep unusable on plain prose.
+       When the same text occurs more than once, the caller says WHICH one
+       by ordinal (the block's rank among identical blocks on the page), and
+       we splice that range. Zero occurrences still refuses: that means the
+       rendered text is not what the file holds, and no position can be
+       inferred from it. */
+    var hits = [], from = 0, at;
+    while ((at = src.indexOf(before, from)) >= 0) { hits.push(at); from = at + 1; }
+    var i = hits.length === 1 ? hits[0]
+          : (hits.length > 1 && ordinal != null && hits[ordinal] != null) ? hits[ordinal]
+          : -1;
+    replaceBlockIn.hits = hits.length;
+    if (i < 0) return null;
+    return src.slice(0, i) + after + src.slice(i + before.length);
+  }
+
+  /* A knob lives on the IAL line that names the component:
+       {: .datagrid #wired source="ozaukee" height="180" }
+     Find the line carrying #id and rewrite the values that moved (adding a
+     knob the author never wrote, if the learner filled an empty one). This
+     is the wiring itself — the one thing a "connect the parts" lesson asks
+     a learner to change, and until now the only edit Keep refused. */
+  function setKnobsIn(src, id, knobs) {
+    if (!id) return null;
+    var lines = String(src).split("\n");
+    var idRe = new RegExp("#" + id.replace(/[^\w-]/g, "") + "(?![\\w-])");
+    var hit = -1;
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf("{:") < 0 || !idRe.test(lines[i])) continue;
+      hit = i; break;
+    }
+    if (hit < 0) return null;
+    var line = lines[hit];
+    Object.keys(knobs).forEach(function (k) {
+      var val = String(knobs[k]);
+      var re = new RegExp("(\\b" + k + '=")[^"]*(")');
+      if (re.test(line)) line = line.replace(re, function (m, a, b) { return a + val + b; });
+      else line = line.replace(/\s*\}\s*$/, " " + k + '="' + val + '" }');
+    });
+    lines[hit] = line;
+    return lines.join("\n");
+  }
+
+  /* ONE edit, ONE transform. Text and knobs are both string→string rewrites,
+     so a single function describes the whole edit and can then be pointed at
+     either file that might hold it — the page's own source or a learner's
+     bench. It also makes "retitled the block AND rewired it" one commit
+     instead of two that race for the same sha. */
+  function editTransform(opts) {
+    /* The diagnostics ride ON the transform. commitTransform cannot know what
+       a refusal was looking for, and discarding that fact — "couldn't locate"
+       fits a dozen causes — cost three rounds of guessing once already. */
+    var xf = function (src) {
+      var out = String(src);
+      if (opts.text) {
+        var before = unhealBase(opts.text.before), after = unhealBase(opts.text.after);
+        out = replaceBlockIn(out, before, after, opts.text.ordinal);
+        xf.diag = { anchor: before.slice(0, 200), hits: replaceBlockIn.hits,
+                    ordinal: opts.text.ordinal };
+        if (out == null) return null;
+      }
+      if (opts.knobs) {
+        var wired = setKnobsIn(out, opts.id, opts.knobs);
+        if (wired == null) {
+          /* no IAL line carries this #id — the knobs have nowhere to land */
+          xf.diag = { anchor: "{: #" + (opts.id || "") + " }", hits: 0, ordinal: null };
+          return null;
+        }
+        out = wired;
+      }
+      return out;
+    };
+    return xf;
+  }
+
+  function commitTransform(pat, repo, path, transform, label, onOk) {
     var api = "https://api.github.com/repos/" + repo + "/contents/" + path;
     var H = { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json" };
     /* no-store: the runner fetches this same URL with Accept raw — some
@@ -276,35 +359,18 @@ loses everything. A component's editable source comes from window.lcSourceOf
     fetch(api, { headers: H, cache: "no-store" }).then(jsonOf).then(function (d) {
       if (!d.content) throw new Error(d.message || "load failed");
       var src = decodeURIComponent(escape(atob(d.content.replace(/\n/g, ""))));
-      /* POSITION is the identity, not the text. Markdown without a fence has
-         no unique delimiter, so "the text appears twice" is ordinary, not an
-         edge case — and refusing there made Keep unusable on plain prose.
-         When the same text occurs more than once, the caller says WHICH one
-         by ordinal (the block's rank among identical blocks on the page), and
-         we splice that range. Zero occurrences still refuses: that means the
-         rendered text is not what the file holds, and no position can be
-         inferred from it. */
-      before = unhealBase(before);
-      after = unhealBase(after);
-      var hits = [], from = 0, at;
-      while ((at = src.indexOf(before, from)) >= 0) { hits.push(at); from = at + 1; }
-      var i = hits.length === 1 ? hits[0]
-            : (hits.length > 1 && ordinal != null && hits[ordinal] != null) ? hits[ordinal]
-            : -1;
-      if (i < 0) {
-        /* Leave the anchor behind. "Couldn't locate" fits a dozen causes and
-           the one fact that separates them — what we actually searched for —
-           was being discarded, which cost three rounds of guessing. */
-        var tEl = document.getElementById("lcx-toast");
+      var next;
+      try { next = transform(src); } catch (e) { next = null; }
+      if (next == null) {
+        var tEl = document.getElementById("lcx-toast"), dg = transform.diag || {};
         if (tEl) {
-          tEl.dataset.lcAnchor = JSON.stringify(before.slice(0, 200));
-          tEl.dataset.lcHits = String(hits.length);
-          tEl.dataset.lcOrdinal = String(ordinal);
+          tEl.dataset.lcAnchor = JSON.stringify(dg.anchor == null ? "" : dg.anchor);
+          tEl.dataset.lcHits = String(dg.hits);
+          tEl.dataset.lcOrdinal = String(dg.ordinal);
         }
         lcxToast("Couldn't safely locate this block in the page source — save it via the ✏️ page editor.", false);
         return;
       }
-      var next = src.slice(0, i) + after + src.slice(i + before.length);
       return fetch(api, {
         method: "PUT", headers: H,
         body: JSON.stringify({ message: "Inline edit: " + label,
@@ -314,6 +380,13 @@ loses everything. A component's editable source comes from window.lcSourceOf
         if (onOk) onOk(res.commit && res.commit.sha);
       });
     }).catch(function (e) { lcxToast("Save failed: " + e.message, false); });
+  }
+
+  /* the text-only door, kept thin so every existing caller is unaffected */
+  function commitInline(pat, repo, path, before, after, label, onOk, ordinal) {
+    commitTransform(pat, repo, path,
+      editTransform({ text: { before: before, after: after, ordinal: ordinal } }),
+      label, onOk);
   }
 
   /* Shared so other components can write a block back without growing a
@@ -593,12 +666,31 @@ loses everything. A component's editable source comes from window.lcSourceOf
     }
   };
 
+  /* The knobs the learner actually moved, as {name: value}. This is the same
+     walk that used to answer only "did anything change?" — the map is what a
+     commit needs, and the boolean threw it away. */
+  function changedKnobs() {
+    var out = {}, any = false;
+    Array.prototype.forEach.call(
+      document.querySelectorAll("#lcx-edit-body input[data-knob]"),
+      function (inp) {
+        var cur = inp.type === "checkbox" ? (inp.checked ? "true" : "false") : (inp.value || "").trim();
+        if (cur === (inp.dataset.orig || "")) return;
+        out[inp.getAttribute("data-knob")] = cur; any = true;
+      });
+    return any ? out : null;
+  }
+
   function keepChanges() {
     /* Inside a runner render the true source is the RENDERED file (the /run
        page itself has no_edit and knows nothing) — the runner stamps it on
        its root. Resolve BEFORE apply(): re-rendering a component detaches
        curEl, and closest() on a detached node finds no ancestors. */
     var runRoot = curEl && curEl.closest ? curEl.closest(".lc-run[data-lc-src-path]") : null;
+    /* Same trap, same reason, one question later: which file owns this block?
+       Inside a bench slot the answer is the learner's own, and after apply()
+       the detached curEl can no longer be asked. */
+    var slot = (window.lcBenchSlotOf && curEl) ? window.lcBenchSlotOf(curEl) : null;
     apply();
     var pat = localStorage.getItem("lc_ed_pat"), repo = localStorage.getItem("lc_ed_repo");
     var fabEl = document.getElementById("ed-fab");
@@ -606,40 +698,65 @@ loses everything. A component's editable source comes from window.lcSourceOf
     var ta = document.getElementById("lcx-content");
     var commitRepo = (runRoot && runRoot.dataset.lcSrcRepo) || repo;
     var commitPath = runRoot ? runRoot.dataset.lcSrcPath : (pagePath ? "docs/" + pagePath : "");
-    if (pat && commitRepo && commitPath && ta && _origVal) {
-      var knobsChanged = Array.prototype.some.call(
-        document.querySelectorAll("#lcx-edit-body input[data-knob]"),
-        function (inp) {
-          var cur = inp.type === "checkbox" ? (inp.checked ? "true" : "false") : (inp.value || "").trim();
-          return cur !== (inp.dataset.orig || "");
-        });
-      if (ta.value !== _origVal) {
-        var label = ((document.getElementById("lcx-edit-title") || {}).textContent || "block").replace(/^✏️\s*/, "");
-        /* on confirmed commit, refresh the fence snapshot so the NEXT edit
-           anchors on the committed content — without this a second Keep after
-           a successful one can't match the file until a reload (stale anchor) */
-        var okId = curId, okSnap = curSnap, okVal = ta.value;
-        /* Which one of the identical blocks is this? Rank it among the page's
-           blocks whose source text matches, so an ambiguous file position is
-           resolved by WHERE the learner clicked, not by hoping for uniqueness. */
-        var ordinal = null;
-        try {
-          var same = Array.prototype.filter.call(
-            (MAIN || document).querySelectorAll(curEl ? curEl.tagName : "p"),
-            function (n) { return (n.textContent || "").trim() === _origVal; });
-          var k = same.indexOf(curEl);
-          if (k >= 0) ordinal = k;
-        } catch (e) {}
-        commitInline(pat, commitRepo, commitPath, _origVal, ta.value, label, function (sha) {
-          lcxToast("Saved" + (sha ? " · " + String(sha).slice(0, 7) : "") + " ✓", true);
-          if (!okId || !window.lcSetSourceOf) return;
-          var s = parseSrc(okSnap); if (!s) return;
+
+    var knobs = changedKnobs();
+    /* _origVal must be non-empty to anchor on: an empty needle matches at
+       every offset, which is not a position at all. */
+    var textChanged = !!(ta && _origVal && ta.value !== _origVal);
+    if (!knobs && !textChanged) { closeDlg(); return; }   // nothing moved
+
+    /* Which one of the identical blocks is this? Rank it among the page's
+       blocks whose source text matches, so an ambiguous file position is
+       resolved by WHERE the learner clicked, not by hoping for uniqueness. */
+    var ordinal = null;
+    if (textChanged) {
+      try {
+        var same = Array.prototype.filter.call(
+          (MAIN || document).querySelectorAll(curEl ? curEl.tagName : "p"),
+          function (n) { return (n.textContent || "").trim() === _origVal; });
+        var k = same.indexOf(curEl);
+        if (k >= 0) ordinal = k;
+      } catch (e) {}
+    }
+    var label = ((document.getElementById("lcx-edit-title") || {}).textContent || "block").replace(/^✏️\s*/, "");
+    var xf = editTransform({
+      id: curId,
+      knobs: knobs,
+      text: textChanged ? { before: _origVal, after: ta.value, ordinal: ordinal } : null
+    });
+
+    /* A bench slot OWNS its file, so it does the writing: it creates the file
+       the learner has never had, lays the author's starter down first so the
+       first change is readable in 🕘, and repaints from what was saved.
+       Routing this through commitTransform instead 404s on that first save. */
+    if (slot) {
+      slot.save(xf, "Inline edit: " + label).then(function (sha) {
+        lcxToast("Saved" + (sha ? " · " + String(sha).slice(0, 7) : "") + " ✓", true);
+      }).catch(function (e) {
+        lcxToast("Save failed: " + (e && e.message ? e.message : e), false);
+      });
+      closeDlg();
+      return;
+    }
+
+    if (pat && commitRepo && commitPath) {
+      /* on confirmed commit, refresh the fence snapshot so the NEXT edit
+         anchors on the committed content — without this a second Keep after
+         a successful one can't match the file until a reload (stale anchor),
+         and a second ⚙️ hands back the wire the learner already replaced */
+      var okId = curId, okSnap = curSnap, okVal = ta ? ta.value : "";
+      var okKnobs = knobs, okText = textChanged;
+      commitTransform(pat, commitRepo, commitPath, xf, label, function (sha) {
+        lcxToast("Saved" + (sha ? " · " + String(sha).slice(0, 7) : "") + " ✓", true);
+        if (!okId || !window.lcSetSourceOf) return;
+        var s = parseSrc(okSnap); if (!s) return;
+        if (okKnobs) Object.keys(okKnobs).forEach(function (n) { s.setAttribute(n, okKnobs[n]); });
+        if (okText) {
           var c = s.querySelector("code");
           if (c) c.textContent = okVal + "\n"; else s.textContent = okVal;
-          window.lcSetSourceOf(okId, s.outerHTML);
-        }, ordinal);
-      }
-      if (knobsChanged) alert("Knob changes aren't committed inline yet — keep them via the ✏️ page editor.");
+        }
+        window.lcSetSourceOf(okId, s.outerHTML);
+      });
       closeDlg();
       return;
     }

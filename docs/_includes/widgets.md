@@ -329,27 +329,72 @@ Auto-included by docs/_layouts/default.html.
     box.classList.add("lc-run");            /* the marker closest() looks for */
     el.parentNode.replaceChild(box, el);
 
-    function paint(text, mine) {
+    var md = seed;        /* the markdown this slot currently holds */
+    var sha = null;       /* the bench file's sha — null while nothing is saved */
+    var mine = false;
+
+    function paint(text, isMine) {
+      md = String(text);
+      mine = !!isMine || mine;
       var path = window.lcBench ? window.lcBench.resolve(benchPath, box) : benchPath;
       box.setAttribute("data-lc-src-path", path);
-      if (mine) box.setAttribute("data-lc-mine", "1");
-      var norm = String(text).trim().replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+      if (isMine) box.setAttribute("data-lc-mine", "1");
+      var norm = md.trim().replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
       loadMarked(function () {
         if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
         box.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
         if (window.lcApplyIAL)    window.lcApplyIAL(box);
+        /* re-render = new knobs: forget the previous render's snapshot, or
+           the ⚙️ would offer the value the learner has already replaced */
+        if (window.lcSnapshotSources) window.lcSnapshotSources(box, true);
         if (window.lcScanElement) window.lcScanElement(box);
         if (window.lcRebase)      window.lcRebase(box);
       });
     }
+
+    /* The slot OWNS its file, so it is the one that writes it. An editor
+       inside the frame hands over a transform of the markdown rather than a
+       finished commit: the file may not exist yet (the learner has only ever
+       seen the seed), and the first save must lay the author's starter down
+       first so the very first change is readable in 🕘 — the same contract
+       the pad and the grid follow. */
+    box._lcSlot = {
+      path: benchPath,
+      text: function () { return md; },
+      save: function (transform, label) {
+        var next;
+        try { next = transform(md); } catch (e) { next = null; }
+        if (next == null) return Promise.reject(new Error("couldn't locate that part in your file"));
+        if (!window.lcBench) return Promise.reject(new Error("no bench connected"));
+        var first = !mine;
+        return (first
+          ? window.lcBench.write(benchPath, md, window.lcStarterMsg, sha, box)
+              .then(function (s) { sha = s || sha; }).catch(function () {})
+          : Promise.resolve()
+        ).then(function () {
+          return window.lcBench.write(benchPath, next, label || ("✍️ " + benchPath), sha, box);
+        }).then(function (s) {
+          sha = s || sha;
+          paint(next, true);
+          return s;
+        });
+      }
+    };
+
     if (window.lcBench && t.repo && t.pat) {
       window.lcBench.read(benchPath, box)
-        .then(function (f) { paint(f ? f.text : seed, !!f); })
+        .then(function (f) { if (f) sha = f.sha; paint(f ? f.text : seed, !!f); })
         .catch(function () { paint(seed, false); });
     } else {
       paint(seed, false);                   /* not joined yet: the lesson's own */
     }
   }
+  /* the door the x-ray editor knocks on: "am I standing inside someone's
+     own file, and if so, who writes it?" */
+  window.lcBenchSlotOf = function (el) {
+    var b = el && el.closest ? el.closest(".lc-bench-slot") : null;
+    return (b && b._lcSlot) || null;
+  };
 
   function upgradeEmbedExternal(el) {
     var a = el.querySelector("a");

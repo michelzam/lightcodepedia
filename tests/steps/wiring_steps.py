@@ -1,0 +1,256 @@
+"""The Broken Wire — steps for the three defects that exercise it.
+
+The lesson asks a learner to change ONE NAME: a table declares
+source="ozaukee", nothing answers to that name, and the repair is made
+through the ⚙️ on the table itself, inside a bench slot. Three separate
+pieces of engine have to hold for that gesture to work end to end, and
+each of these steps pins one of them:
+
+  * the gear must open a component INSIDE a slot as a component (knobs),
+    not as the div its rendered grid looks like from outside;
+  * saving a knob must rewrite the IAL line in the LEARNER'S file, laying
+    the author's starter down first;
+  * a source= that resolves to nothing must come to rest on a visible,
+    tappable message instead of waiting forever;
+  * and a card must show the reader's own run, not the author's status=.
+"""
+
+from behave import given, when, then
+from playwright.sync_api import expect
+
+
+def _alt_move_on(page, locator):
+    """Reveal the gear: xray_edit reads e.target, so the pointermove has to
+    be dispatched ON the element, with altKey for x-ray mode."""
+    locator.wait_for(state="visible", timeout=15_000)
+    locator.scroll_into_view_if_needed()
+    page.wait_for_timeout(300)
+    locator.evaluate(
+        "el => el.dispatchEvent(new PointerEvent('pointermove',"
+        " {altKey: true, bubbles: true, cancelable: true}))"
+    )
+    page.wait_for_timeout(600)
+
+
+# ── the gear, on a part that lives in the learner's own slot ───────────────
+
+@when("I open the x-ray editor on the wired table")
+def step_open_editor_on_wired(context):
+    grid = context.page.locator(".lc-bench-slot .lc-datagrid").first
+    _alt_move_on(context.page, grid)
+    gear = context.page.locator("#lcx-gear")
+    gear.wait_for(state="visible", timeout=10_000)
+    gear.click(force=True)
+    expect(context.page.locator("#lcx-content")).to_be_visible(timeout=5_000)
+
+
+@then("the editor opened a component, not a plain block")
+def step_editor_is_component(context):
+    # A component editor is titled by its CLASS (".datagrid #wired"); a plain
+    # block is titled by its tag ("text", "code", "div"). The knobs are the
+    # other half: a block has none, and a grid rendered past the page scan
+    # used to arrive here as exactly that — a div with no knobs.
+    title = context.page.locator("#lcx-edit-title").inner_text()
+    knobs = context.page.locator("#lcx-edit-body input[data-knob]").count()
+    assert knobs > 0, (
+        "the editor offered no knobs — it opened this as a plain block. "
+        "Title was %r" % title)
+    assert ".datagrid" in title, (
+        "the editor titled this %r, not as the component it is" % title)
+
+
+@then('the editor offers a "{knob}" knob')
+def step_editor_offers_knob(context, knob):
+    got = context.page.eval_on_selector_all(
+        "#lcx-edit-body input[data-knob]",
+        "els => els.map(e => e.getAttribute('data-knob'))")
+    assert knob in got, "knobs offered were %r — no %r among them" % (got, knob)
+
+
+@when('I set the "{knob}" knob to "{value}"')
+def step_set_knob(context, knob, value):
+    context.page.fill("#lcx-edit-body input[data-knob='" + knob + "']", value)
+
+
+@when("I save, and the bench receives it")
+def step_save_to_bench(context):
+    """Press 💾 and WAIT FOR THE WRITES — never a fixed sleep.
+
+    A first slot save is TWO commits: the author's starter, then the
+    learner's change. Waiting for "a commit" returns on the starter and the
+    real one is still in flight, so wait for the writing to STOP instead —
+    the count holding still across two samples — which needs no scenario to
+    say in advance how many it expects.
+    """
+    import time
+
+    context.page.click("#lcx-keep")
+    deadline, seen, stable = time.time() + 15, -1, 0
+    while time.time() < deadline:
+        now = len(getattr(context, "bench_commits", None) or [])
+        stable = stable + 1 if now == seen and now > 0 else 0
+        if stable >= 2:
+            return
+        seen = now
+        context.page.wait_for_timeout(300)
+
+
+@then("the first of them is the lesson's seed")
+def step_first_is_seed(context):
+    first = context.lc_hits[0]
+    assert first.get("message", "").startswith("\U0001f4c4 starter"), (
+        "the first commit is not labelled as the starter: %r"
+        % first.get("message"))
+    assert 'source="ozaukee"' in first["text"], (
+        "the starter does not hold the author's broken wire: %r"
+        % first["text"][:120])
+
+
+@then("the last of them wires {knob} to {value}")
+def step_last_wires(context, knob, value):
+    want = knob + '="' + value + '"'
+    text = context.lc_hits[-1]["text"]
+    assert want in text, "committed file has no %s — %r" % (want, text[:200])
+
+
+@then("the repaired table is the reader's own")
+def step_slot_is_mine(context):
+    expect(context.page.locator(".lc-bench-slot[data-lc-mine='1']").first
+           ).to_be_visible(timeout=15_000)
+
+
+# ── a source= that names nothing ──────────────────────────────────────────
+
+@given("a table gives its dataset {ms:d}ms to arrive")
+def step_bind_grace(context, ms):
+    # add_init_script lands before any page script, so the grid reads this
+    # instead of its four-second default.
+    context.page.add_init_script(
+        "window.lcDatagridBindGrace = " + str(ms) + ";")
+
+
+@then('the waiting table comes to rest on "{text}"')
+def step_waiting_table_rests(context, text):
+    err = context.page.locator(".lc-datagrid-err", has_text=text).first
+    expect(err).to_be_visible(timeout=15_000)
+    # and it is no longer claiming to be loading: two messages about one
+    # fact is how "stuck page" reads in the first place
+    assert context.page.locator(".lc-datagrid-status").count() == 0, \
+        "the grid still shows 'loading grid…' beside its empty message"
+
+
+@then("that message is a tappable target")
+def step_message_is_tappable(context):
+    # the ⚙️ that repairs the wire is aimed with a thumb; the sliver of
+    # "loading grid…" it replaces was ~20px and nearly unhittable.
+    box = context.page.locator(".lc-datagrid-err").first.bounding_box()
+    assert box and box["height"] >= 44, \
+        "the empty message is only %spx tall" % (box and box["height"])
+
+
+# ── a card that shows the reader's run, not the author's claim ────────────
+
+@given('the run on page "{path}" is remembered as "{status}"')
+@when('the run on page "{path}" is remembered as "{status}"')
+def step_remember_run(context, path, status):
+    # Keyed exactly as feature.md files it: the page's normalised path plus
+    # the Nth-.feature name. normPath is the engine's own, so the test
+    # cannot drift from the key the page writes.
+    context.page.evaluate(
+        "([p, s]) => {"
+        " var k = (window.lcPageScores ? window.lcPageScores.norm(p) : p) + '#n0';"
+        " var all = JSON.parse(localStorage.getItem('lc_features') || '{}');"
+        " all[k] = { status: s, ts: '' };"
+        " localStorage.setItem('lc_features', JSON.stringify(all));"
+        " }",
+        [path, status],
+    )
+
+
+@then('a card shows a "{status}" feature dot')
+def step_card_dot(context, status):
+    expect(context.page.locator(".lc-card .lc-feat-" + status).first
+           ).to_be_visible(timeout=15_000)
+
+
+@then("that card is marked as remembering my run")
+def step_card_remembered(context):
+    expect(context.page.locator(".lc-card[data-lc-remembered]").first
+           ).to_be_visible(timeout=15_000)
+
+
+@then('no card claims "{status}" for that page any more')
+def step_card_not_status(context, status):
+    n = context.page.locator(
+        ".lc-card[data-lc-remembered] .lc-feat-" + status).count()
+    assert n == 0, \
+        "%d remembered card(s) still showing the author's %s" % (n, status)
+
+
+# ── a name that answers to nothing: a bomb, never a ghost ─────────────────
+
+def _shift_alt_hover(page, locator):
+    locator.wait_for(state="visible", timeout=20_000)
+    locator.scroll_into_view_if_needed()
+    page.wait_for_timeout(300)
+    locator.evaluate(
+        "el => { const r = el.getBoundingClientRect();"
+        " el.dispatchEvent(new PointerEvent('pointermove', {altKey: true,"
+        " shiftKey: true, bubbles: true, cancelable: true,"
+        " clientX: r.left + r.width / 2, clientY: r.top + r.height / 2})); }"
+    )
+    page.wait_for_timeout(1200)
+
+
+@when("I sweep the lens over the wired table")
+def step_lens_wired(context):
+    _shift_alt_hover(context.page, context.page.locator(".lc-datagrid").first)
+
+
+@then('the lens marks "{role}" as naming nothing')
+def step_lens_bomb(context, role):
+    row = context.page.locator("#lcx-scene .lcx-xray .bad", has_text=role).first
+    expect(row).to_be_visible(timeout=30_000)
+    expect(row).to_contain_text("nothing answers to this name")
+
+
+@then('the lens draws no part called "{ident}"')
+def step_no_ghost(context, ident):
+    # The whole point: an absent target must not be MATERIALISED. A panel
+    # reading "id = ozaukee / loaded = false" tells the reader the part
+    # exists and is merely empty — the exact opposite of the truth.
+    ghost = context.page.evaluate(
+        """(id) => [...document.querySelectorAll('#lcx-scene .lcx-xray')]
+             .filter(p => p.style.display !== 'none')
+             .map(p => (p.textContent || '').replace(/\\s+/g, ' '))
+             .filter(t => t.includes('id = ' + id))""",
+        ident,
+    )
+    assert not ghost, "the lens fabricated a part for %r: %r" % (ident, ghost)
+
+
+@then("the lens draws no wire from it")
+def step_no_wire(context):
+    n = context.page.locator("#lcx-scene svg .lcx-edge").count()
+    assert n == 0, "%d wire(s) drawn to a part that does not exist" % n
+
+
+# ── a dataset that reads the learner's own file ───────────────────────────
+
+@then('the dataset "{name}" holds "{text}"')
+def step_dataset_holds(context, name, text):
+    got = context.page.evaluate(
+        "(n) => JSON.stringify((window.lcDatasets || {})[n] || null)", name)
+    assert got and text in got, \
+        "dataset %r does not hold %r — it holds %s" % (name, text, got)
+
+
+@when("I sweep the lens over the chart")
+def step_lens_chart(context):
+    _shift_alt_hover(context.page, context.page.locator(".lc-chart, canvas").first)
+
+
+@then('the table is showing "{text}"')
+def step_table_shows(context, text):
+    expect(context.page.locator(".lc-datagrid").first
+           ).to_contain_text(text, timeout=20_000)

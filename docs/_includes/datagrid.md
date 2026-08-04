@@ -35,7 +35,9 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
 .lc-datagrid-title .lc-datagrid-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute, #616161); letter-spacing: 0.05em; }
 .lc-datagrid-grid { width: 100%; }
 .lc-datagrid-status { padding: 0.7em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #666; font-style: italic; }
-.lc-datagrid-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
+/* min-height: this is where an unwired grid comes to rest, and the ⚙️ that
+   repairs it is aimed with a thumb — a one-line notice is not a target. */
+.lc-datagrid-err { padding: 0.9em 1em; min-height: 44px; box-sizing: border-box; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 /* ƒ computed columns — derived, read-only, recomputed live from a formula */
 .lc-datagrid-grid .ag-cell.lc-dg-computed { background: #f6f8fa; color: #0a5; font-variant-numeric: tabular-nums; }
 /* save= — the learner's keep bar under the grid */
@@ -157,6 +159,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   }
 
 
+  var EMPTY_MSG = "Empty dataset — nothing to show.";
+
   function renderGridInto(wrapper, dataPromise, gridId, opts) {
     opts = opts || {};
     var gridEl = wrapper.querySelector(".lc-datagrid-grid");
@@ -167,14 +171,29 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       }
       gridEl.style.display = "none";
     }
+    /* An unresolved source= NEVER settles: it names a dataset that will never
+       register, so this promise waits forever and the grid sits at "loading
+       grid…" — a sliver that is nearly unhittable on a phone, and that reads
+       as a stuck page rather than the wiring mistake it is. After a grace
+       period (long enough for a .dataset further down the page, or a fetch
+       still in flight) fall to the empty state: a solid, tappable target that
+       says what is actually wrong. The promise is deliberately left pending —
+       a dataset that does arrive late still paints straight over this. */
+    var painted = false;
+    if (opts.bindId) {
+      var grace = window.lcDatagridBindGrace;
+      if (grace == null) grace = 4000;
+      setTimeout(function () { if (!painted) showError(opts.empty || EMPTY_MSG); }, grace);
+    }
     Promise.all([dataPromise, loadAgGrid()]).then(function(results){
+      painted = true;
       var data = results[0];
       if (!Array.isArray(data)) {
         showError("Expected an array of objects; got: " + (data === null ? "null" : typeof data));
         return;
       }
       if (data.length === 0) {
-        showError("Empty dataset — nothing to show.");
+        showError(opts.empty || EMPTY_MSG);
         return;
       }
       /* computed columns: seed them so they appear as (read-only) columns; a
@@ -203,6 +222,10 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         });
       }
       if (statusEl && statusEl.parentNode) statusEl.remove();
+      /* a grace-period empty notice can be standing here — the dataset came
+         late, which is the one case that notice must not outlive */
+      var staleErr = wrapper.querySelector(".lc-datagrid-err");
+      if (staleErr) staleErr.remove();
       gridEl.style.display = "";
       var gridOptions = {
         columnDefs: cols,
@@ -540,6 +563,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         }
       }
     }).catch(function(e){
+      painted = true;
       showError("Datagrid error: " + (e.message || String(e)));
     });
   }
@@ -550,7 +574,12 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       detailOf: el.getAttribute(prefix + "master") || el.getAttribute(prefix + "detail-of") || "",
       filterExpr: el.getAttribute(prefix + "filter") || "",
       compute: el.getAttribute(prefix + "compute") || "",
-      save: el.getAttribute(prefix + "save") || ""
+      save: el.getAttribute(prefix + "save") || "",
+      /* what this grid says when nothing arrives. The author knows why it
+         might be empty ("Nothing arrives here yet.") far better than a
+         generic line does — and in a wiring lesson that sentence IS the
+         hint. */
+      empty: el.getAttribute(prefix + "empty") || ""
     };
   }
 

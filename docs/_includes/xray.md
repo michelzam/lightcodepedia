@@ -33,6 +33,9 @@ Auto-included by docs/_layouts/default.html.
   .lcx-xray .r .ic { display: inline-block; width: 1.6em; }
   .lcx-xray .v { color: #8effa6; }
   .lcx-xray .as { color: #ffd479; }
+  /* a reference that names nothing — red, and it stays ON the referrer */
+  .lcx-xray .bad { color: #ff7b7b; }
+  .lcx-xray .bad .v { color: #ffb3b3; }
   .lcx-xray .st { margin-top: 4px; padding-top: 3px; color: #9fd0ff;
                   border-top: 1px solid rgba(120,200,255,.25); }
   .lcx-xray .st b { color: #fff; }
@@ -143,7 +146,27 @@ Auto-included by docs/_layouts/default.html.
     }
     const rrow = (ic, html, cls) =>
       '<div class="r ' + (cls || "") + '"><span class="ic">' + ic + "</span>" + html + "</div>";
-    function schematic(name, live) {
+    /* Does anything on this page actually answer to this name? An element
+       carrying the id, or a dataset registered without one — a real hidden
+       Dataset is legitimate and must keep resolving. */
+    function resolves(id) {
+      if (!id) return false;
+      try { if (document.querySelector("[data-lc-id='" + id + "']")) return true; }
+      catch (e) { return false; }                 // not even a usable name
+      return !!(window.lcDatasets &&
+                Object.prototype.hasOwnProperty.call(window.lcDatasets, id));
+    }
+    /* A reference that names nothing must NOT be drawn as a thing. Giving it
+       a panel of its own — a Dataset reading loaded = false — tells the
+       reader the part exists and is merely empty, which is the opposite of
+       the truth and the exact misreading a wiring lesson cannot afford. The
+       REFERENCE is what is broken, so it stays on the referrer and no wire
+       leaves it, the same way a language does not materialise a variable
+       just because something mentioned its name. */
+    const badLinks = dump =>
+      ((dump && dump.links) || []).filter(lk => !resolves(lk.id));
+
+    function schematic(name, live, bad) {
       const sp = MODEL[name]; if (!sp) return esc(name);
       const L = lineage(name), vals = (live && live.vals) || {},
             evts = (live && live.events) || {};
@@ -152,6 +175,11 @@ Auto-included by docs/_layouts/default.html.
         const has = Object.prototype.hasOwnProperty.call(vals, a.n);
         h += rrow(attrIcon(a), esc(disp(a.n)) +
           (has ? '<span class="v"> = ' + esc(vals[a.n]) + "</span>" : ""));
+      });
+      (bad || []).forEach(lk => {
+        h += rrow("💣", esc(disp(lk.role)) +
+          '<span class="v"> = ' + esc(lk.id) + "</span> — nothing answers to this name",
+          "bad");
       });
       L.events.forEach(e => {
         h += rrow(IC.event || "⚡", esc(disp(e)));
@@ -289,7 +317,9 @@ Auto-included by docs/_layouts/default.html.
       scene.style.display = "block";
       const rect = hit.el.getBoundingClientRect();
       const p0 = panel(0);
-      p0.innerHTML = schematic(hit.name, data);
+      /* the bomb shows in plain lens mode too — sweeping the lens is the
+         first thing a wiring lesson asks for, and it must not need ⇧ */
+      p0.innerHTML = schematic(hit.name, data, badLinks(data));
       p0.classList.toggle("see", shift);
       place(p0, rect.left + OFF, rect.top + OFF);
       if (!shift) { svg.style.display = "none"; return; }   // lens mode: clip applied later
@@ -321,6 +351,9 @@ Auto-included by docs/_layouts/default.html.
       while (queue.length && nodes.length < 24) {
         const n = queue.shift();
         ((n.dump && n.dump.links) || []).forEach(lk => {
+          /* names nothing → no node, no wire. The referrer's 💣 row says it,
+             and a pipe to a fabricated panel would say the opposite. */
+          if (!resolves(lk.id)) return;
           const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
           // the live element's actual class wins over the declared association
           // target — a bind says "Dataset", but the element may be a Query
@@ -343,7 +376,7 @@ Auto-included by docs/_layouts/default.html.
       nodes.forEach(n => {
         if (n === root) { n.panel = p0; return; }
         const p = panel(++pi);
-        p.innerHTML = schematic(n.name, n.dump);
+        p.innerHTML = schematic(n.name, n.dump, badLinks(n.dump));
         p.classList.add("see");
         if (n.el && visible(n.el)) {
           const tr = n.el.getBoundingClientRect();
