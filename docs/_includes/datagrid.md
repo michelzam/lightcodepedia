@@ -57,6 +57,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   border-bottom: 1px solid #eee; }
 .lc-ver-panel li:last-child { border-bottom: none; }
 .lc-ver-panel li.now { background: #eef6ff; }
+.lc-ver-panel li.starter { background: #fffbeb; }
+.lc-ver-panel li.starter .lc-ver-when { color: #92400e; font-style: italic; }
 .lc-ver-when { flex: 1; color: #444; }
 .lc-ver-sha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #94a3b8; font-size: 0.85em; }
 .lc-ver-panel button { font: inherit; font-size: 0.85em; padding: 0.2em 0.6em; border-radius: 5px;
@@ -68,6 +70,9 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
 .lc-ver-diff .add { background: #dcfce7; color: #166534; display: block; }
 .lc-ver-diff .del { background: #fee2e2; color: #991b1b; display: block; }
 .lc-ver-diff .same { color: #64748b; display: block; }
+/* a changed VALUE, not a changed row: red where it was, green where it is */
+.lc-datagrid-grid .ag-cell.lc-dg-was { background: #fee2e2; color: #991b1b; font-weight: 600; }
+.lc-datagrid-grid .ag-cell.lc-dg-now { background: #dcfce7; color: #166534; font-weight: 600; }
 </style>
 
 <script>
@@ -205,6 +210,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         defaultColDef: {
           sortable: true, filter: true, resizable: true, flex: 1, minWidth: 80,
           editable: !!opts.editable,
+          cellClass: opts.cellClass || null,
           valueFormatter: function(params){
             if (typeof params.value === "boolean") return params.value ? "True" : "False";
             return params.value;
@@ -411,7 +417,14 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
               window.lcRenderDatagridFromJson(
                 box, JSON.stringify(rows),
                 rows.length / 2 + " change" + (rows.length > 2 ? "s" : ""),
-                Math.min(60 + rows.length * 42, 260));
+                Math.min(60 + rows.length * 42, 260),
+                { cellClass: function (pm) {
+                    var r = pm.data || {}, f = pm.colDef.field;
+                    if (f === "±" || f === "changed") return null;
+                    var moved = String(r.changed || "").split(", ");
+                    if (moved.indexOf(f) < 0) return null;
+                    return String(r["±"]).charAt(0) === "−" ? "lc-dg-was" : "lc-dg-now";
+                  } });
             }).catch(function (e) {
               box.textContent = "Could not read that version: " + (e.message || e);
             });
@@ -467,7 +480,19 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
           try { text = serialize(rows); }
           catch (e) { window.lcxToast && window.lcxToast(String(e.message || e), false); return; }
           keep.disabled = true; keep.textContent = "💾 Saving…";
-          window.lcBench.write(opts.save, text, "✍️ " + (gridId || opts.save), wrapper._lcBenchSha, wrapper)
+          /* FIRST save writes the lesson's own rows first — the repair has
+             to have a "before" or the very change the lesson is about
+             cannot be shown. Never on load, never blocking. */
+          var firstKeep = !wrapper._lcBenchSha;
+          (firstKeep && opts.saveSeed
+            ? opts.saveSeed().then(function (seedRows) {
+                return window.lcBench.write(opts.save, serialize(seedRows),
+                                            window.lcStarterMsg, null, wrapper);
+              }).then(function (sha) { wrapper._lcBenchSha = sha || wrapper._lcBenchSha; })
+                .catch(function () {})
+            : Promise.resolve()
+          ).then(function () {
+          return window.lcBench.write(opts.save, text, "✍️ " + (gridId || opts.save), wrapper._lcBenchSha, wrapper)
             .then(function (sha) {
               wrapper._lcBenchSha = sha || wrapper._lcBenchSha;
               wrapper.setAttribute("data-lc-mine", "1");
@@ -479,6 +504,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
               window.lcxToast && window.lcxToast("Save failed: " + (e.message || e), false);
             })
             .finally(function () { keep.textContent = "💾 Save"; refreshKeep(); });
+          });
         });
         reset.addEventListener("click", function () {
           if (!opts.saveSeed) return;
@@ -626,7 +652,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   }
 
   // Called from Python runners: show.grid(rows)
-  window.lcRenderDatagridFromJson = function(viewEl, rowsJson, title, height) {
+  window.lcRenderDatagridFromJson = function(viewEl, rowsJson, title, height, opts) {
     var rows;
     try { rows = JSON.parse(rowsJson); }
     catch (e) {
@@ -646,7 +672,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     });
     wrapper.style.gridColumn = "1 / -1";
     viewEl.appendChild(wrapper);
-    renderGridInto(wrapper, Promise.resolve(rows), rtId);
+    renderGridInto(wrapper, Promise.resolve(rows), rtId, opts || {});
   };
 
   /* ── boot ────────────────────────────────────────────── */

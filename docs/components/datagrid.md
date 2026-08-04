@@ -147,7 +147,7 @@ Plain `editable="true"` edits are in-memory. Add `save="dogs.yaml"` and they bec
 
 If you're connected, fix `Milwauke`, 💾, refresh — your repair is still there, and this page never changed.
 
-**🕘 Versions** appears next to 💾 once a saved file exists: every keep is a commit in the reader's own repo, so the button lists them, **compare** shows the difference *as a grid* — only the rows that moved, as `− was` / `+ now` pairs with the changed fields named — and **bring back** loads an older set. Restoring is not a rollback — the next 💾 is simply another commit. It's the same panel the [✍️ pad](/components/text) uses, attached in one call, so it can be removed from either component without touching the other.
+**🕘 Versions** appears next to 💾 once a saved file exists: every keep is a commit in the reader's own repo, so the button lists them, **compare** shows the difference *as a grid* — only the rows that moved, as `− was` / `+ now` pairs with the changed **values** tinted red where they were and green where they are — and **bring back** loads an older set. The **first** 💾 keeps the lesson's own rows as a version first (labelled *the lesson's starter*), so your opening repair has a before to compare against. Restoring is not a rollback — the next 💾 is simply another commit. It's the same panel the [✍️ pad](/components/text) uses, attached in one call, so it can be removed from either component without touching the other.
 
 ```gherkin
 Feature: A data block becomes an interactive grid

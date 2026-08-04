@@ -33,6 +33,7 @@ def _stub_bench(context, files):
             context.bench_commits.append({
                 "path": path,
                 "text": base64.b64decode(body.get("content", "")).decode(),
+                "message": body.get("message", ""),
             })
             route.fulfill(json={"content": {"sha": "bench-sha-2"}})
         else:
@@ -359,3 +360,54 @@ def step_diff_is_grid(context):
     expect(cells.first).to_be_visible(timeout=15_000)
     txt = box.inner_text()
     assert "was" in txt and "now" in txt, "no was/now pair in the difference: %s" % txt[:200]
+
+
+@then('the bench received {n:d} commits to "{path}"')
+def step_commit_count(context, n, path):
+    hits = [c for c in context.bench_commits if c["path"] == path]
+    assert len(hits) == n, "expected %d commit(s) to %s, saw %d: %r" % (
+        n, path, len(hits), [c["text"][:30] for c in hits])
+    context.lc_hits = hits
+
+
+@then("the first of them is the lesson's starter")
+def step_first_is_starter(context):
+    first = context.lc_hits[0]
+    assert "Starter" in first["text"] or "starter" in first["text"], \
+        "the first commit is not the author's seed: %r" % first["text"][:80]
+    assert first.get("message", "").startswith("\U0001f4c4 starter"), \
+        "the starter commit is not labelled as one: %r" % first.get("message")
+
+
+@then('the last of them holds "{text}"')
+def step_last_holds(context, text):
+    assert text in context.lc_hits[-1]["text"], context.lc_hits[-1]["text"][:120]
+
+
+@given('the bench remembers a starter and a change for "{path}"')
+def step_history_with_starter(context, path):
+    def commits(route, req):
+        route.fulfill(json=[
+            {"sha": "sha-mine",
+             "commit": {"author": {"date": "2026-08-02T09:00:00Z"},
+                        "message": "\u270d\ufe0f cv"}},
+            {"sha": "sha-seed",
+             "commit": {"author": {"date": "2026-08-01T09:00:00Z"},
+                        "message": "\U0001f4c4 starter — before my first change"}},
+        ])
+    context.page.route("https://api.github.com/repos/" + BENCH + "/commits*", commits)
+
+
+@then("the oldest version is labelled as the lesson's starter")
+def step_starter_labelled(context):
+    last = context.page.locator(".lc-ver-panel li").last
+    expect(last).to_contain_text("starter", timeout=10_000)
+    assert "starter" in (last.get_attribute("class") or ""), \
+        "the starter row is not marked apart from the learner's own versions"
+
+
+@then("the changed value is marked red where it was and green where it is")
+def step_values_coloured(context):
+    box = context.page.locator(".lc-ver-diff")
+    expect(box.locator(".ag-cell.lc-dg-was").first).to_be_visible(timeout=15_000)
+    expect(box.locator(".ag-cell.lc-dg-now").first).to_be_visible(timeout=10_000)

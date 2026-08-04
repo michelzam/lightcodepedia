@@ -65,6 +65,8 @@ Auto-included by docs/_layouts/default.html.
   border-bottom: 1px solid #eee; }
 .lc-ver-panel li:last-child { border-bottom: none; }
 .lc-ver-panel li.now { background: #eef6ff; }
+.lc-ver-panel li.starter { background: #fffbeb; }
+.lc-ver-panel li.starter .lc-ver-when { color: #92400e; font-style: italic; }
 .lc-ver-when { flex: 1; color: #444; }
 .lc-ver-sha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #94a3b8; font-size: 0.85em; }
 .lc-ver-panel button { font: inherit; font-size: 0.85em; padding: 0.2em 0.6em; border-radius: 5px;
@@ -197,7 +199,20 @@ Auto-included by docs/_layouts/default.html.
         if (saveBtn.disabled) return;
         if (ta.value === bOrigin) { window.lcxToast && window.lcxToast("Nothing changed.", true); return; }
         saveBtn.disabled = true; saveBtn.textContent = "💾 Saving…";
-        window.lcBench.write(benchPath, ta.value, "✍️ " + (id || benchPath), bSha, wrap)
+        /* FIRST save writes the author's starter first, so the learner's
+           opening change has something to compare against — otherwise
+           version one IS their text and 🕘 shows a single row that differs
+           from nothing. Written on the first save, never on load: a reader
+           who never edits leaves no commits at all. Never allowed to block
+           the real save. */
+        var first = !bSha;
+        (first
+          ? window.lcBench.write(benchPath, seed, window.lcStarterMsg, null, wrap)
+              .then(function (sha) { bSha = sha || bSha; })
+              .catch(function () {})
+          : Promise.resolve()
+        ).then(function () {
+        return window.lcBench.write(benchPath, ta.value, "✍️ " + (id || benchPath), bSha, wrap)
           .then(function (sha) {
             bOrigin = ta.value; bSha = sha || bSha;
             wrap.setAttribute("data-lc-mine", "1");
@@ -210,6 +225,7 @@ Auto-included by docs/_layouts/default.html.
             window.lcxToast && window.lcxToast("Save failed: " + (e.message || e), false);
           })
           .finally(function () { saveBtn.textContent = "💾 Save"; refreshBench(); });
+        });
       });
       resetBtn.addEventListener("click", function () {
         ta.value = seed;

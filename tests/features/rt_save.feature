@@ -276,3 +276,41 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I open the grid's version list
     And I compare the oldest version
     Then the difference is a grid showing only the changed rows
+
+  Scenario: The first save keeps the starter, so the first change can be read
+    Otherwise version one IS the learner's text and the panel shows a single
+    row that differs from nothing — the very change the lesson is about
+    cannot be shown. Written on the first save only: a reader who never
+    edits leaves no commits at all.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I type "# Mine now" into the pad and save
+    Then the bench received 2 commits to "courses/demo/mod/cv.md"
+    And the first of them is the lesson's starter
+    And the last of them holds "# Mine now"
+
+  Scenario: A second save adds one version, not another starter
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I type "# Draft four" into the pad and save
+    Then the bench received 1 commits to "courses/demo/mod/cv.md"
+
+  Scenario: The starter is named in the version list, not passed off as the learner's
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers a starter and a change for "courses/demo/mod/cv.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I open the pad's version list
+    Then the oldest version is labelled as the lesson's starter
+
+  Scenario: Changed values are coloured in the grid's difference
+    Given a connected bench whose "courses/demo/mod/dogs.yaml" holds "- name: Rex\n  campus: Fixed"
+    And the bench remembers two earlier versions of "courses/demo/mod/dogs.yaml"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I open the grid's version list
+    And I compare the oldest version
+    Then the changed value is marked red where it was and green where it is

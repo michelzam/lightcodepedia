@@ -465,6 +465,11 @@ loses everything. A component's editable source comes from window.lcSourceOf
      component entirely, and deleting this block takes it out everywhere.
      Nothing else in the engine knows it exists (Michel 2026-08-03: low
      intrusion, easy undo). */
+  /* the message a first save writes for the author's untouched starter —
+     shared so the panel can recognise it, and so it reads correctly on
+     GitHub too, not only in our list */
+  window.lcStarterMsg = "📄 starter — before my first change";
+
   window.lcVersions = {
     attach: function (o) {
       /* o = { path, el, anchor, current(), apply(text), css, diff? }
@@ -537,10 +542,15 @@ loses everything. A component's editable source comes from window.lcSourceOf
           box.className = css + "-diff"; box.hidden = true;
           list.forEach(function (c, n) {
             var li = document.createElement("li");
-            if (n === 0) li.className = "now";
+            /* the starter is the AUTHOR's text, not the learner's first
+               draft — say so, or the oldest row misattributes the lesson */
+            var isStarter = String(c.message || "").indexOf(window.lcStarterMsg) === 0;
+            li.className = isStarter ? "starter" : (n === 0 ? "now" : "");
             var when = document.createElement("span");
             when.className = css + "-when";
-            when.textContent = whenLabel(c.when) + (n === 0 ? " · latest" : "");
+            when.textContent = isStarter
+              ? "the lesson's starter · " + whenLabel(c.when)
+              : whenLabel(c.when) + (n === 0 ? " · latest" : "");
             var sha = document.createElement("span");
             sha.className = css + "-sha";
             sha.textContent = String(c.sha).slice(0, 7);
