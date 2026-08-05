@@ -54,8 +54,14 @@ loses everything. A component's editable source comes from window.lcSourceOf
 #lcx-edit .lcx-tab-on { background: #fff; font-weight: 600; }
 #lcx-pane-notes textarea { background: #fffbeb; color: #1f2937; caret-color: #92400e; border-color: #fcd34d; }
 /* a block the reader has annotated wears its mark — but only while the
-   x-ray is looking; the page reads clean otherwise */
-body.lc-xray-deco .lc-noted::after { content: " 💬"; font-size: .85em; opacity: .75; }
+   x-ray is looking; the page reads clean otherwise. Top-right corner, a
+   margin bubble where a margin belongs — not trailing the last line. */
+body.lc-xray-deco .lc-noted { position: relative; }
+/* in the MARGIN, not on the block: the ⚙️/💬 badge lands on the block's
+   own top-right corner, and the bubble must never sit under it */
+body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
+  top: 0; left: 100%; margin-left: .35em; font-size: .85em; opacity: .8;
+  pointer-events: none; }
 #lcx-toast { position: fixed; top: 1em; left: 50%; transform: translateX(-50%);
   padding: 0.55em 1.1em; border-radius: 6px; font-size: 0.88em; font-weight: 500; color: #fff;
   z-index: 100002; display: none; box-shadow: 0 3px 10px rgba(0,0,0,0.15); pointer-events: none; }
