@@ -63,6 +63,9 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-key:hover { background: #f0f0f0; color: #444; }
 .lc-agent-auth, .lc-agent-body { padding: 0.9em 1em; }
 .lc-agent-auth p { margin: 0 0 0.6em; color: #555; font-size: 0.92em; }
+/* why the key went away — on the form that is asking for another one, because
+   the chat body's status line is hidden the moment the key is dropped */
+.lc-agent-authmsg { margin: 0 0 0.7em; padding: 0.5em 0.7em; border-left: 3px solid #e65100; background: #fff8e1; color: #5d4037; font-size: 0.88em; border-radius: 0 4px 4px 0; }
 .lc-agent-auth input[type="text"] { position: absolute; left: -9999px; }
 .lc-agent-pw-row { display: flex; gap: 0.5em; margin-bottom: 0.5em; flex-wrap: wrap; }
 .lc-agent-token { flex: 1; min-width: 200px; padding: 0.5em 0.7em; border: 1px solid #ccc; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; box-sizing: border-box; }
@@ -122,13 +125,19 @@ Auto-included by docs/_layouts/default.html.
     if (SHARED.tokens[pid]) return SHARED.tokens[pid];
     try { return localStorage.getItem("lc_ai_key_" + pid) || null; } catch (e) { return null; }
   }
-  function setSharedToken(pid, v) {
+  /* `why` travels with a CLEARED key: the panel that discovers a dead key
+     writes its explanation into .lc-agent-status, which lives inside the chat
+     body — and clearing the key hides that body and blanks it. The reason
+     reached the DOM and was erased in the same tick, so a learner was sent
+     back to the paste box with no idea why. Hand the reason to the listeners
+     and they can put it on the form that is actually asking. */
+  function setSharedToken(pid, v, why) {
     SHARED.tokens[pid] = v;
     try {
       if (v) localStorage.setItem("lc_ai_key_" + pid, v);
       else localStorage.removeItem("lc_ai_key_" + pid);
     } catch (e) {}
-    SHARED.listeners.forEach(function(cb){ try { cb(pid, v); } catch (e) {} });
+    SHARED.listeners.forEach(function(cb){ try { cb(pid, v, why); } catch (e) {} });
   }
   function onSharedTokenChange(cb) { SHARED.listeners.push(cb); }
 
@@ -428,7 +437,7 @@ Auto-included by docs/_layouts/default.html.
       }, function () {
         return { error: 'bot "' + botName + '" could not be loaded' };
       }).then(function (result) {
-        if (result && result.unauthorized) setSharedToken(DEFAULT_PROVIDER, null);
+        if (result && result.unauthorized) setSharedToken(DEFAULT_PROVIDER, null, result.error);
         return result;
       });
     }
@@ -451,6 +460,7 @@ Auto-included by docs/_layouts/default.html.
         '<button type="button" class="lc-agent-key" title="Change token" aria-label="Change token">🔑</button>' +
       '</div>' +
       '<form class="lc-agent-auth" autocomplete="on">' +
+        '<div class="lc-agent-authmsg" role="status" aria-live="polite" hidden></div>' +
         '<p>Paste your ' + escapeHtml(eng.key_name) + ' once — it is saved on this device, and every ' + escapeHtml(eng.id) + ' helper in the course opens connected. Let your browser save it as a password too: that copy follows you to your other devices.</p>' +
         '<input type="text" name="username" value="lc-' + escapeHtml(eng.id) + '" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager">' +
         '<div class="lc-agent-pw-row">' +
@@ -499,8 +509,28 @@ Auto-included by docs/_layouts/default.html.
       return r.json().then(function(data){ return { status: r.status, data: data }; })
         .catch(function(){ return { status: r.status, data: {} }; });
     }).then(function(result){
-      if (result.status === 401 || result.status === 403) {
-        return { error: 'Key rejected (' + result.status + ') by ' + eng.host + '. 🔑 paste a fresh ' + eng.key_name + '.', unauthorized: true };
+      /* 401 and 403 are NOT the same answer, and treating them alike used to
+         DELETE a perfectly good key.
+           401 — this credential is not valid. Pasting a fresh one IS the fix,
+                 so drop the stored key and ask for another.
+           403 — the credential is valid but not allowed to make THIS call: a
+                 key restricted to certain websites, an API not switched on for
+                 the project, a region block, a proxy answering for the host.
+                 Re-pasting the same key changes nothing, so keeping it is the
+                 only useful move — and the provider's own sentence says far
+                 more than "rejected" ever could.
+         Michel, 2026-08-05: "it asks every time after a refresh". This was it —
+         one 403 at any desk wiped the key the join door had just saved. */
+      if (result.status === 401) {
+        return { error: 'Key rejected (401) by ' + eng.host + '. 🔑 paste a fresh ' + eng.key_name + '.', unauthorized: true };
+      }
+      if (result.status === 403) {
+        var e403 = Array.isArray(result.data) ? result.data[0] : result.data;
+        var m403 = (e403 && e403.error && e403.error.message) || '';
+        return { error: '🚧 ' + eng.host + ' will not take this call — your key is kept, ' +
+          'because pasting it again would not help. Usually the key is limited to ' +
+          'certain websites, or the service is not switched on for it yet.' +
+          (m403 ? ' The provider says: “' + m403 + '”' : '') };
       }
       if (result.status === 429) {
         /* TWO different walls answer 429 and the difference matters to a
@@ -557,19 +587,26 @@ Auto-included by docs/_layouts/default.html.
     var usage = panel.querySelector('.lc-agent-usage');
     var keyBtn = panel.querySelector('.lc-agent-key');
     var tokenInput = panel.querySelector('.lc-agent-token');
+    var authMsg = panel.querySelector('.lc-agent-authmsg');
 
     var engineId = resolveEngine(cfg).id;
     function myToken() { return getSharedToken(engineId); }
-    function showChat() { authForm.hidden = true; body.hidden = false; }
-    function showAuth() { authForm.hidden = false; body.hidden = true; }
+    function sayOnForm(why) {
+      if (!authMsg) return;
+      authMsg.textContent = why || '';
+      authMsg.hidden = !why;
+    }
+    function showChat() { authForm.hidden = true; body.hidden = false; sayOnForm(''); }
+    function showAuth(why) { authForm.hidden = false; body.hidden = true; sayOnForm(why); }
 
     // Initial state from this provider's shared key
     if (myToken()) showChat(); else showAuth();
 
     // React to other panels changing THIS provider's key
-    onSharedTokenChange(function(pid, v){
+    onSharedTokenChange(function(pid, v, why){
       if (pid !== engineId) return;
-      if (v) showChat(); else { response.innerHTML = ''; status.innerHTML = ''; showAuth(); }
+      /* the reason rides along, because this repaint is what used to erase it */
+      if (v) showChat(); else { response.innerHTML = ''; status.innerHTML = ''; showAuth(why); }
     });
 
     authForm.addEventListener('submit', function(e){
@@ -607,7 +644,9 @@ Auto-included by docs/_layouts/default.html.
         sendBtn.textContent = '▶ Ask';
         if (result.error) {
           status.innerHTML = '<span class="lc-agent-err">⚠ ' + escapeHtml(result.error) + '</span>';
-          if (result.unauthorized) setSharedToken(engineId, null);
+          /* carry the reason INTO the clear — the auth wall this triggers
+             hides the status line we just wrote */
+          if (result.unauthorized) setSharedToken(engineId, null, result.error);
           return;
         }
         response.innerHTML =

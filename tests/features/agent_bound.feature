@@ -83,3 +83,80 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I connect the "desk" agent with key "test-key"
     And I ask the desk agent into the void "hello"
     Then the desk relays "today"
+
+  Scenario: A 403 keeps the key — pasting the same one again would not help
+    Michel, 2026-08-05: "it asks every time after a refresh". A 403 means the
+    key is valid but not allowed to make THIS call (limited to certain
+    websites, service not switched on, a proxy in the way). The old code
+    treated it like 401 and DELETED the key, so one 403 at any desk threw
+    away what the join door had just saved.
+
+    Given I have a clean browser page
+    And an energy key "AIzaKeepMe" is already saved on this device
+    And the model endpoint answers with status 403 saying "Requests from referer are blocked."
+    And the GitHub contents API serves "courses/demo/module_01/ref.md" with the document:
+      """
+      # Ref page
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/ref.md"
+    And I wait for the page to be interactive
+    And I ask the desk agent into the void "hello"
+    Then the desk relays "Requests from referer are blocked."
+    And the energy key is still saved on this device
+    And the desk is still connected
+
+  Scenario: A 401 does drop the key, and says why on the form that asks again
+    401 is the one answer that means "paste a different key". Dropping it is
+    right — but the explanation used to be written into the chat status line,
+    which the auth wall hides in the same tick, so the learner was left with
+    a paste box carrying no reason at all.
+
+    Given I have a clean browser page
+    And an energy key "AIzaStale" is already saved on this device
+    And the model endpoint answers with status 401 saying "API key not valid"
+    And the GitHub contents API serves "courses/demo/module_01/dead.md" with the document:
+      """
+      # Dead page
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/dead.md"
+    And I wait for the page to be interactive
+    And I ask the desk agent into the void "hello"
+    Then the energy key is gone from this device
+    And the desk asks for a key and explains "401"
+
+  Scenario: A saved key opens every desk connected, refresh after refresh
+    The whole point of saving it: no paste ceremony on any page, any reload.
+
+    Given I have a clean browser page
+    And an energy key "AIzaSaved" is already saved on this device
+    And the GitHub contents API serves "courses/demo/module_01/two.md" with the document:
+      """
+      # Two desks
+
+      ```yaml
+      system: One.
+      ```
+      {: .agent #desk rows="3" }
+
+      ```yaml
+      system: Two.
+      ```
+      {: .agent #desk2 rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/two.md"
+    And I wait for the page to be interactive
+    Then the desk is still connected
+    And every desk on the page is connected
+    When I reload the page
+    And I wait for the page to be interactive
+    Then every desk on the page is connected

@@ -124,3 +124,51 @@ Feature: The student course wizard (/courses/join)
     When I open the course wizard
     And I confirm I have an account
     Then the course key is asked through a named credential form
+
+  Scenario: A key the provider will not let us test is still saved
+    A 403 on the check says the key is not allowed to make THAT call — it
+    says nothing about whether the key is good. Discarding it meant a
+    learner behind a website-restricted key or a corporate proxy could
+    never get through the door at all, and pasted it again every refresh.
+
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And the energy provider will not let us test the key
+    When I open the course wizard with a stored key
+    And I paste the energy key "AIzaRestricted" and check it
+    Then the energy step says the key is saved but untested
+    And the energy key is on this device
+
+  Scenario: A key is kept when the road is blocked, not thrown away
+    An ad-blocker, VPN or firewall eating the request is not evidence
+    against the key. Keep it — that is the whole point of saving it once.
+
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And the energy provider cannot be reached at all
+    When I open the course wizard with a stored key
+    And I paste the energy key "AIzaBlockedRoad" and check it
+    Then the energy step says the key is saved but untested
+    And the energy key is on this device
+
+  Scenario: A rejected key is NOT saved
+    401 is the one answer that means the key itself is wrong. Saving it
+    would send the learner to every desk in the course with a dud.
+
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And the energy provider rejects the key
+    When I open the course wizard with a stored key
+    And I paste the energy key "AIzaWrong" and check it
+    Then the energy step reports the rejection with the status code
+    And no energy key is on this device
+
+  Scenario: A returning student is not asked for a key they already have
+    The wizard reopened step 5 on every visit, whether or not the key was
+    still on the device. From the student's chair that IS being asked again.
+
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the student can read the vault
+    And an energy key "AIzaAlreadyMine" is on this device
+    When I open the course wizard with a stored key
+    Then the energy step is already done

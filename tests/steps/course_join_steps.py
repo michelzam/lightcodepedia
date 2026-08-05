@@ -323,3 +323,69 @@ def step_key_form_contract(context):
     assert user.get_attribute("readonly") is not None
     key = form.locator('input[type="password"]')
     assert key.get_attribute("autocomplete") == "current-password"
+
+
+# ── the energy key survives everything except a real rejection ───────────
+# Michel, 2026-08-05: the key had to be pasted again after every refresh.
+# The door saved it ONLY on a clean 200, so a website-restricted key (403)
+# or a blocked road (fetch rejected) discarded a key that was perfectly
+# good. Only 400/401 — the provider saying the key itself is wrong — may
+# throw one away.
+
+ENERGY_SLOT = "lc_ai_key_gemini"
+
+
+@given("the energy provider will not let us test the key")
+def step_energy_forbidden(context):
+    context.page.route(
+        "**/generativelanguage.googleapis.com/**/models*",
+        lambda r: r.fulfill(
+            status=403, content_type="application/json",
+            body='{"error": {"message": "Requests from referer are blocked."}}'))
+
+
+@given("the energy provider cannot be reached at all")
+def step_energy_unreachable(context):
+    # abort = no HTTP answer ever arrives, an ad-blocker's view of the world
+    context.page.route(
+        "**/generativelanguage.googleapis.com/**/models*",
+        lambda r: r.abort())
+
+
+@then("the energy step says the key is saved but untested")
+def step_energy_saved_untested(context):
+    m = context.page.locator('[data-m="5"]')
+    expect(m).to_contain_text("Key saved", timeout=10_000)
+    # VISIBLE, not merely present: marking the step done folds its body away,
+    # and this is the one message a learner actually has to read
+    expect(m).to_be_visible(timeout=5_000)
+
+
+@then("the energy key is on this device")
+def step_energy_key_present(context):
+    context.page.wait_for_function(
+        "k => !!localStorage.getItem(k)", arg=ENERGY_SLOT, timeout=10_000)
+
+
+@then("no energy key is on this device")
+def step_energy_key_absent(context):
+    # settle first: a save would land inside the check's promise chain, so
+    # reading straight away could pass by being early rather than by being right
+    context.page.wait_for_timeout(1200)
+    got = context.page.evaluate("k => localStorage.getItem(k)", ENERGY_SLOT)
+    assert not got, "a rejected key was saved: " + str(got)
+
+
+@given('an energy key "{key}" is on this device')
+def step_energy_key_seeded(context, key):
+    context.page.add_init_script(
+        "localStorage.setItem(%s, %s);" % (json.dumps(ENERGY_SLOT), json.dumps(key))
+    )
+
+
+@then("the energy step is already done")
+def step_energy_step_done(context):
+    step = context.page.locator('.lcj-step[data-n="5"]')
+    expect(step).to_have_class(re.compile(r"\bok\b"), timeout=15_000)
+    expect(context.page.locator('[data-m="5"]')).to_contain_text(
+        "already saved", timeout=10_000)

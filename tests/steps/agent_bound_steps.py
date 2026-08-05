@@ -83,3 +83,71 @@ def step_stub_429(context, message):
         "**/chat/completions*",
         lambda r: r.fulfill(status=429, content_type="application/json",
                             body=body))
+
+
+# ── the energy key's life on a device ────────────────────────────────────
+# Michel, 2026-08-05: the key had to be pasted again after every refresh.
+# Storage was never the problem — three paths THREW A VALID KEY AWAY:
+# a 403 at any desk, a 403 at the join door, and the door's network catch.
+# These pin the survival rules, because a discarded key is invisible until
+# a learner is asked for it again.
+
+KEY_SLOT = "lc_ai_key_gemini"
+
+
+@given('an energy key "{key}" is already saved on this device')
+def step_key_preinstalled(context, key):
+    context.page.add_init_script(
+        "localStorage.setItem(%s, %s);" % (json.dumps(KEY_SLOT), json.dumps(key))
+    )
+
+
+@given('the model endpoint answers with status {status:d} saying "{message}"')
+def step_stub_status(context, status, message):
+    body = json.dumps([{"error": {"code": status, "message": message}}])
+    context.page.route(
+        "**/chat/completions*",
+        lambda r: r.fulfill(status=status, content_type="application/json",
+                            body=body))
+
+
+@then("the energy key is still saved on this device")
+def step_key_kept(context):
+    # poll: the wipe happened inside the ask's promise chain, so a bare read
+    # could pass simply by looking too early
+    context.page.wait_for_timeout(700)
+    got = context.page.evaluate("k => localStorage.getItem(k)", KEY_SLOT)
+    assert got, "the key was thrown away — a 403 says nothing about the key itself"
+
+
+@then("the energy key is gone from this device")
+def step_key_dropped(context):
+    context.page.wait_for_function(
+        "k => localStorage.getItem(k) === null", arg=KEY_SLOT, timeout=15_000)
+
+
+@then("the desk is still connected")
+def step_desk_connected(context):
+    panel = context.page.locator('[data-lc-id="desk"]')
+    expect(panel.locator(".lc-agent-body")).to_be_visible(timeout=15_000)
+    expect(panel.locator(".lc-agent-auth")).to_be_hidden(timeout=5_000)
+
+
+@then("every desk on the page is connected")
+def step_all_desks_connected(context):
+    panels = context.page.locator(".lc-agent")
+    n = panels.count()
+    assert n, "no agent panel rendered"
+    for i in range(n):
+        expect(panels.nth(i).locator(".lc-agent-body")).to_be_visible(timeout=15_000)
+
+
+@then('the desk asks for a key and explains "{needle}"')
+def step_desk_asks_with_reason(context, needle):
+    panel = context.page.locator('[data-lc-id="desk"]')
+    expect(panel.locator(".lc-agent-auth")).to_be_visible(timeout=15_000)
+    # the reason must be ON THE FORM: the chat status line it used to be
+    # written to is hidden the moment the key is dropped
+    msg = panel.locator(".lc-agent-authmsg")
+    expect(msg).to_be_visible(timeout=10_000)
+    expect(msg).to_contain_text(needle, timeout=5_000)

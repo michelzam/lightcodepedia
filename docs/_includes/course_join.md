@@ -183,9 +183,24 @@ The check is live truth against the API, never cached. Done steps reopen via
     var B = { hub: null, login: "", name: "", branch: "main" };
     function benchRow() { return wrap.querySelector("[data-bench]"); }
 
+    /* the energy key as the DEVICE already holds it — agent.md owns the slot,
+       so ask it; the raw read is the fallback when the engine isn't on the page */
+    function haveEnergyKey() {
+      if (window.lcBotAsk && window.lcBotAsk.ready) { try { return !!window.lcBotAsk.ready(); } catch (e) {} }
+      try { return !!localStorage.getItem("lc_ai_key_gemini"); } catch (e) { return false; }
+    }
+
     function benchStart() {
       setState("4", "on");
-      if (steps["5"] && !steps["5"].classList.contains("ok")) setState("5", "on");
+      /* A key already on this device means step 5 is DONE. The wizard used to
+         reopen it on every visit — its own way of "asking every time after a
+         refresh", even when nothing had been lost (Michel, 2026-08-05). */
+      if (steps["5"] && !steps["5"].classList.contains("ok")) {
+        if (haveEnergyKey()) {
+          setState("5", "ok");
+          msg(5, "✅ Your energy key is already saved on this device. Use “change” if you ever need a different one.", "ok");
+        } else setState("5", "on");
+      }
       msg(4, "Looking for your session…", ""); benchRow().innerHTML = "";
       var u = null; try { u = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
       (u && u.login ? Promise.resolve(u.login)
@@ -292,21 +307,43 @@ The check is live truth against the API, never cached. Done steps reopen via
       var k = (wrap.querySelector(".lcj-ekey").value || "").trim();
       if (!k) { msg(5, "Paste the key first — it starts with AIza…", "err"); return; }
       msg(5, "⏳ Asking the provider…", "");
+      /* One code path for saving the energy key: agent.md owns the storage and
+         the provider id, and it tells every open desk on the page. The door
+         used to write "lc_ai_key_gemini" by hand — a second place to keep in
+         step, and open panels never heard about it. The raw write stays as the
+         fallback for a door rendered without the agent engine on the page. */
+      var keep = function () {
+        if (window.lcBotAsk && window.lcBotAsk.connect) { window.lcBotAsk.connect(k); return; }
+        try { localStorage.setItem("lc_ai_key_gemini", k); } catch (e) {}
+      };
+      /* SAVE FIRST, then report. A key is only proven WRONG by the provider
+         saying so (400/401); every other outcome — a 403 for a website-limited
+         key, an ad-blocker eating the request, a VPN, a firewall — says nothing
+         about the key and everything about the road. Throwing it away on those
+         is what made a learner paste it again after every refresh (Michel,
+         2026-08-05). Keep it, say plainly what we could and could not check. */
       fetch("https://generativelanguage.googleapis.com/v1beta/openai/models",
             { headers: { Authorization: "Bearer " + k } })
         .then(function (r) {
           if (r.ok) {
             /* saved like the course key — every desk on every page opens
                connected; the password manager remains the cross-DEVICE copy */
-            try { localStorage.setItem("lc_ai_key_gemini", k); } catch (e) {}
+            keep();
             setState("5", "ok");
             msg(5, "✅ The key works — saved. Every AI helper in the course now opens connected on this device; if your browser also offered to save it, that copy follows you to your other devices.", "ok");
+          } else if (r.status === 400 || r.status === 401) {
+            msg(5, "❌ The provider rejected this key (" + r.status + ") — it is not a valid key. Copy the whole key from AI Studio and try again.", "err");
           } else {
-            msg(5, "❌ The provider rejected it (" + r.status + "). Copy the whole key from AI Studio and try again.", "err");
+            /* NOT setState ok: a done step folds its body away, and this
+               message is the one a learner most needs to read. The key is
+               saved either way — that is the part that matters. */
+            keep();
+            msg(5, "🔑 Key saved — but the provider would not let us test it (" + r.status + "). Your key is probably fine; it may be limited to certain websites, or the service is not switched on for it yet. Try an AI helper in a lesson: if it answers, you are set.", "");
           }
         })
         .catch(function () {
-          msg(5, "❌ No answer from the provider — an ad-blocker, VPN or firewall may be on the road. Fix the road, then check again.", "err");
+          keep();
+          msg(5, "🔑 Key saved — but we could not reach the provider to test it. An ad-blocker, VPN or firewall may be on the road. Your key is kept, so you will not have to paste it again; clear the road and try an AI helper in a lesson.", "");
         });
     });
 
