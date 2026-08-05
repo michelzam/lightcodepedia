@@ -254,3 +254,128 @@ def step_lens_chart(context):
 def step_table_shows(context, text):
     expect(context.page.locator(".lc-datagrid").first
            ).to_contain_text(text, timeout=20_000)
+
+
+# ── 💬 the reader's margin ────────────────────────────────────────────────
+
+@when("I open the note composer on the lesson prose")
+def step_open_composer(context):
+    para = context.page.locator(".lc-run p", has_text="prose here belongs").first
+    _alt_move_on(context.page, para)
+    gear = context.page.locator("#lcx-gear")
+    gear.wait_for(state="visible", timeout=10_000)
+    # the badge IS the promise: on a vault block the tap opens the margin,
+    # it does not edit — a reader must know which before touching it
+    assert gear.text_content() == "💬", \
+        "the badge on a read-only block reads %r, not 💬" % gear.text_content()
+    gear.click(force=True)
+    expect(context.page.locator("#lcx-note-text")).to_be_visible(timeout=5_000)
+
+
+def _keep_note(context):
+    import time
+
+    context.page.click("#lcx-note-send")
+    deadline = time.time() + 10
+    while time.time() < deadline and not getattr(context, "bench_commits", None):
+        context.page.wait_for_timeout(200)
+
+
+@when('I write the note "{text}" and keep it')
+def step_write_note(context, text):
+    context.page.fill("#lcx-note-text", text)
+    _keep_note(context)
+
+
+@when("I clear the note and keep it")
+def step_clear_note(context):
+    # clearing is how a note is deleted — the section goes, git remembers
+    ta = context.page.locator("#lcx-note-text")
+    expect(ta).not_to_have_value("", timeout=10_000)   # the prefill must land first
+    ta.fill("")
+    _keep_note(context)
+
+
+ANCHOR = "## «The prose here belongs to the course.»"
+
+
+@then("the margin holds {n:d} section for the block's own words")
+@then("the margin holds {n:d} sections for the block's own words")
+def step_margin_sections(context, n):
+    last = context.bench_commits[-1]["text"]
+    got = last.count(ANCHOR)
+    assert got == n, "expected %d section(s) anchored to the block, found %d: %r" % (
+        n, got, last[:300])
+
+
+@then('the committed margin no longer contains "{text}"')
+def step_margin_lacks(context, text):
+    last = context.bench_commits[-1]["text"]
+    assert text not in last, "the margin still holds %r: %r" % (text, last[:300])
+
+
+@then('the note area already holds "{text}"')
+def step_note_prefilled(context, text):
+    # the prefill is an async bench read — expect polls until it lands
+    expect(context.page.locator("#lcx-note-text")).to_have_value(text, timeout=10_000)
+
+
+@when("I sweep the x-ray over the lesson prose")
+def step_sweep_prose(context):
+    para = context.page.locator(".lc-run p", has_text="prose here belongs").first
+    _alt_move_on(context.page, para)
+
+
+@then("the noted block wears the margin mark")
+def step_noted_mark(context):
+    # the class is the testable truth; the 💬 glyph itself is CSS, shown
+    # only while body.lc-xray-deco says the x-ray is looking
+    context.page.wait_for_selector("p.lc-noted", timeout=10_000)
+    assert context.page.evaluate(
+        "() => document.body.classList.contains('lc-xray-deco')"), \
+        "the x-ray is looking but the decoration layer is off"
+
+
+@then("the composer offers no editor controls")
+def step_composer_pure(context):
+    page = context.page
+    assert page.locator("#lcx-edit-body input[data-knob]").count() == 0, \
+        "the composer leaked knobs onto a read-only block"
+    assert page.locator("#lcx-edit-body #lcx-content").count() == 0, \
+        "the composer leaked the content editor onto a read-only block"
+    assert page.locator("#lcx-apply").is_hidden(), "Apply visible on a vault block"
+    assert page.locator("#lcx-keep").is_hidden(), "Save visible on a vault block"
+    assert page.locator("#lcx-tabs").is_hidden(), \
+        "the tab back to the editor is visible on a vault block"
+
+
+@when("I open the x-ray editor on the slot's text")
+def step_open_editor_slot_text(context):
+    para = context.page.locator(".lc-bench-slot p", has_text="Wire me").first
+    _alt_move_on(context.page, para)
+    gear = context.page.locator("#lcx-gear")
+    gear.wait_for(state="visible", timeout=10_000)
+    assert gear.text_content() == "⚙️", \
+        "inside their own slot the reader OWNS the block — expected ⚙️, got %r" \
+        % gear.text_content()
+    gear.click(force=True)
+    expect(context.page.locator("#lcx-content")).to_be_visible(timeout=5_000)
+
+
+@then("the editor offers an edit tab and a notes tab")
+def step_tabs_offered(context):
+    expect(context.page.locator("#lcx-tabs")).to_be_visible(timeout=5_000)
+    expect(context.page.locator("#lcx-tab-edit")).to_be_visible()
+    expect(context.page.locator("#lcx-tab-notes")).to_be_visible()
+
+
+@when("I switch to the notes tab")
+def step_switch_notes_tab(context):
+    context.page.click("#lcx-tab-notes")
+
+
+@then("the note area is ready to write")
+def step_note_area_ready(context):
+    ta = context.page.locator("#lcx-note-text")
+    expect(ta).to_be_visible(timeout=5_000)
+    expect(ta).to_be_editable()

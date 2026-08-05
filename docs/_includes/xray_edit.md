@@ -43,6 +43,19 @@ loses everything. A component's editable source comes from window.lcSourceOf
 #lcx-edit button { font: inherit; padding: .45em .9em; border-radius: 7px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
 #lcx-edit .lcx-apply { background: #0066cc; color: #fff; border-color: #0066cc; }
 #lcx-edit .lcx-keep { color: #166534; background: #dcfce7; border-color: #86efac; margin-left: auto; }
+#lcx-edit .lcx-tabs { display: flex; gap: .4em; padding: .55em 1em 0; background: #f3f4f6; }
+#lcx-edit .lcx-tabs[hidden] { display: none; }  /* display:flex must not out-rank hidden */
+/* the panes must pass the body's flex column straight through, or the
+   resize-corner contract breaks: a taller box must grow the text field */
+#lcx-pane-edit, #lcx-pane-notes { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+#lcx-pane-edit[hidden], #lcx-pane-notes[hidden] { display: none; }
+#lcx-edit .lcx-tab { border: 1px solid #cbd5e1; border-bottom: none; border-radius: 7px 7px 0 0;
+  background: #e5e7eb; padding: .35em .85em; font: inherit; cursor: pointer; }
+#lcx-edit .lcx-tab-on { background: #fff; font-weight: 600; }
+#lcx-pane-notes textarea { background: #fffbeb; color: #1f2937; caret-color: #92400e; border-color: #fcd34d; }
+/* a block the reader has annotated wears its mark — but only while the
+   x-ray is looking; the page reads clean otherwise */
+body.lc-xray-deco .lc-noted::after { content: " 💬"; font-size: .85em; opacity: .75; }
 #lcx-toast { position: fixed; top: 1em; left: 50%; transform: translateX(-50%);
   padding: 0.55em 1.1em; border-radius: 6px; font-size: 0.88em; font-weight: 500; color: #fff;
   z-index: 100002; display: none; box-shadow: 0 3px 10px rgba(0,0,0,0.15); pointer-events: none; }
@@ -52,11 +65,16 @@ loses everything. A component's editable source comes from window.lcSourceOf
 <button id="lcx-gear" title="Edit this ✎" aria-label="Edit this block">⚙️</button>
 <dialog id="lcx-edit">
   <h4 id="lcx-edit-title">Edit</h4>
+  <div class="lcx-tabs" id="lcx-tabs" hidden>
+    <button type="button" class="lcx-tab lcx-tab-on" id="lcx-tab-edit">✏️ block</button>
+    <button type="button" class="lcx-tab" id="lcx-tab-notes">💬 my notes</button>
+  </div>
   <div class="lcx-body" id="lcx-edit-body"></div>
   <div class="lcx-bar">
     <button type="button" class="lcx-apply" id="lcx-apply">Apply</button>
     <button type="button" id="lcx-close">Close</button>
     <button type="button" class="lcx-keep" id="lcx-keep" title="Save — commits to your repo when connected">💾 Save</button>
+    <button type="button" class="lcx-keep" id="lcx-note-send" hidden title="Keep this note in your bench">💾 Keep note</button>
   </div>
 </dialog>
 <div id="lcx-toast"></div>
@@ -110,14 +128,11 @@ loses everything. A component's editable source comes from window.lcSourceOf
     if (node === gear || node === ghost || (dlg && dlg.contains(node))) return null;
     var el = node.nodeType === 1 ? node : node.parentElement;
     if (!el || !el.closest) return null;
-    /* Read-only is NEAREST-WINS, not any-ancestor: a vault lesson can hold
-       a bench slot ({: .embed save="…" }), and inside that slot the nearest
-       source is the learner's own repo. "Uneditable" must mean "unless a
-       nearer source says otherwise" — the nearest source is the truth about
-       what you are actually editing. */
-    var near = el.closest(".lc-run[data-lc-src-path], .lc-run[data-lc-readonly]");
-    if (near && near.hasAttribute("data-lc-readonly")) return null;
-    if (!near && el.closest(".lc-run[data-lc-readonly]")) return null;
+    /* Read-only no longer means NO gear — it means the gear is a 💬.
+       The lesson is the vault's, but the margin is the reader's: a note or
+       a question lands in THEIR bench and touches nothing here. The editor
+       stays refused (open() branches on the same test); only the doorway
+       changed. */
     /* DERIVED content (folder cards, unlocks…) is generated from other
        files — there is nothing here to edit. The gear offers the SLOT
        (the .folder line in the page source), never its derivatives. */
@@ -131,8 +146,23 @@ loses everything. A component's editable source comes from window.lcSourceOf
     return blk;
   }
 
+  /* Read-only is NEAREST-WINS, not any-ancestor: a vault lesson can hold
+     a bench slot ({: .embed save="…" }), and inside that slot the nearest
+     source is the learner's own repo. "Uneditable" must mean "unless a
+     nearer source says otherwise" — the nearest source is the truth about
+     what you are actually editing. */
+  function readonlyAt(el) {
+    if (!el || !el.closest) return false;
+    var near = el.closest(".lc-run[data-lc-src-path], .lc-run[data-lc-readonly]");
+    if (near) return near.hasAttribute("data-lc-readonly");
+    return !!el.closest(".lc-run[data-lc-readonly]");
+  }
+
   function showGhost(el) {
     ghostEl = el;
+    /* the badge says what the tap will do: repair a part you own, or leave
+       a note in your margin about one you don't */
+    gear.textContent = readonlyAt(el) ? "💬" : "⚙️";
     var r = el.getBoundingClientRect();
     ghost.style.left = (r.left - 3) + "px";
     ghost.style.top = (r.top - 3) + "px";
@@ -155,7 +185,15 @@ loses everything. A component's editable source comes from window.lcSourceOf
   }
   function track(e) {
     if (dlg && dlg.open) return;
-    if (!xrayActive(e)) { if (e.target !== gear) hideGhost(); return; }   // stay if the pointer is on the gear
+    var on = xrayActive(e);
+    /* annotated blocks show their 💬 only while the x-ray is looking */
+    document.body.classList.toggle("lc-xray-deco", on);
+    if (!on) { if (e.target !== gear) hideGhost(); return; }   // stay if the pointer is on the gear
+    if (!track._notesTried) {
+      track._notesTried = true;
+      loadNotes(e.target && e.target.nodeType === 1 ? e.target : MAIN)
+        .then(function (n) { if (n) decorate(); });
+    }
     if (e.target === gear || e.target === ghost) { keep(); return; }
     var b = blockAt(e.target);
     if (b) { keep(); showGhost(b); } else scheduleHide();
@@ -169,34 +207,63 @@ loses everything. A component's editable source comes from window.lcSourceOf
     isComponent = !!curSnap;
     var srcEl = isComponent ? parseSrc(curSnap) : block;
     if (!srcEl) return;
-
-    var body = document.getElementById("lcx-edit-body"); body.innerHTML = "";
-    if (isComponent) {
-      Array.prototype.forEach.call(srcEl.attributes, function (a) {
-        if (a.name === "id" || a.name === "class" || a.name.indexOf("data-") === 0) return;
-        var lab = document.createElement("label"); lab.textContent = a.name;
-        body.appendChild(lab); body.appendChild(knobInput(a.name, a.value));
-      });
-    }
-    var clab = document.createElement("label"); clab.textContent = "content";
-    var ta = document.createElement("textarea"); ta.id = "lcx-content"; ta.setAttribute("autofocus", "");
-    if (isComponent) {
-      var codeEl = srcEl.querySelector("code") || srcEl;
-      ta.value = (codeEl.textContent || "").replace(/\n$/, "");
-    } else {
-      ta.value = (block.textContent || "").trim();   // plain text — never raw HTML
-    }
-    body.appendChild(clab); body.appendChild(ta);
-    _origVal = ta.value;   // Keep's exact-match anchor into the page source
-
-    var name = isComponent
+    curName = isComponent
       ? "." + ((srcEl.className || "").split(" ").filter(function (c) { return c && c !== "highlighter-rouge" && c.indexOf("language-") !== 0; })[0] || curId)
       : (FRIENDLY[block.tagName] || block.tagName.toLowerCase());
-    document.getElementById("lcx-edit-title").textContent = "✏️ " + name + (isComponent && curId ? "  #" + curId : "");
+    if (isComponent && curId) curName += "  #" + curId;
+
+    curReadonly = readonlyAt(block);
+
+    /* two panes, both built now, toggled by the tabs — switching must not
+       lose a half-typed edit or a half-typed note */
+    var host = document.getElementById("lcx-edit-body"); host.innerHTML = "";
+    var paneEdit = document.createElement("div"); paneEdit.id = "lcx-pane-edit";
+    var paneNotes = document.createElement("div"); paneNotes.id = "lcx-pane-notes";
+    host.appendChild(paneEdit); host.appendChild(paneNotes);
+
+    /* 💬 the margin — prefilled with what the reader wrote last time, so a
+       note is a place they return to, not a message that vanished */
+    var nlab = document.createElement("label");
+    nlab.textContent = "my note on this block — kept in my bench, versioned";
+    var nta = document.createElement("textarea"); nta.id = "lcx-note-text";
+    paneNotes.appendChild(nlab); paneNotes.appendChild(nta);
+    var myAnchor = anchorOf(block, curId);
+    loadNotes(block).then(function (n) {
+      if (n && n.map[myAnchor] != null) nta.value = n.map[myAnchor];
+    });
+
+    var ta = null;
+    if (!curReadonly) {
+      var body = paneEdit;
+      if (isComponent) {
+        Array.prototype.forEach.call(srcEl.attributes, function (a) {
+          if (a.name === "id" || a.name === "class" || a.name.indexOf("data-") === 0) return;
+          var lab = document.createElement("label"); lab.textContent = a.name;
+          body.appendChild(lab); body.appendChild(knobInput(a.name, a.value));
+        });
+      }
+      var clab = document.createElement("label"); clab.textContent = "content";
+      ta = document.createElement("textarea"); ta.id = "lcx-content"; ta.setAttribute("autofocus", "");
+      if (isComponent) {
+        var codeEl = srcEl.querySelector("code") || srcEl;
+        ta.value = (codeEl.textContent || "").replace(/\n$/, "");
+      } else {
+        ta.value = (block.textContent || "").trim();   // plain text — never raw HTML
+      }
+      body.appendChild(clab); body.appendChild(ta);
+      _origVal = ta.value;   // Keep's exact-match anchor into the page source
+    } else {
+      _origVal = null;       /* the vault's blocks open as a margin, never as an editor */
+    }
+
+    document.getElementById("lcx-tabs").hidden = curReadonly;
+    document.getElementById("lcx-edit-title").textContent =
+      (curReadonly ? "💬 " : "✏️ ") + curName;
+    showTab(curReadonly ? "notes" : "edit");
 
     hideGhost();
     openDlg();                                     // modal top-layer → focus works, page handlers can't interfere
-    setTimeout(function () { ta.focus(); }, 0);
+    setTimeout(function () { (curReadonly ? nta : ta).focus(); }, 0);
   }
 
   function apply() {
@@ -221,7 +288,114 @@ loses everything. A component's editable source comes from window.lcSourceOf
     } catch (e) { if (window.console) console.warn("[lcx-edit]", e); }
   }
 
-  var _origVal = null;
+  var _origVal = null, curName = "", curReadonly = false, _notes = null;
+
+  /* ── 💬 the reader's margin ──────────────────────────────────────────────
+     One markdown file per lesson, in the LEARNER'S bench, next to the work
+     they already keep there: _03_broken_wire.notes.md. The underscore keeps
+     it off the folder's cards (show-private already owns that convention).
+     Inside, ONE `## <anchor>` section per block — the anchor is #id when
+     the block has one, otherwise the block's first words in «guillemets».
+     The margin is a PLACE, not a chute: reopening a block shows the note,
+     editing rewrites its section, clearing deletes it — and git keeps the
+     whole story, so nothing is ever really lost. The file itself stays a
+     readable page for whoever opens it later (the learner, or the teacher
+     through the roster, which already names every student's bench). */
+  function anchorOf(el, id) {
+    return id ? "#" + id
+      : "«" + ((((el && el.textContent) || "").trim().replace(/\s+/g, " ").slice(0, 60)) || "page") + "»";
+  }
+  function notesPathFor(fromEl) {
+    var runRoot = fromEl && fromEl.closest ? fromEl.closest(".lc-run[data-lc-src-path]") : null;
+    var fabEl = document.getElementById("ed-fab");
+    var lessonPath = runRoot ? runRoot.dataset.lcSrcPath
+      : ((fabEl && fabEl.dataset && fabEl.dataset.pagePath) ? "docs/" + fabEl.dataset.pagePath : "page");
+    var base = lessonPath.split("/").pop().replace(/\.[^.]*$/, "");
+    return { file: "_" + base + ".notes.md", lesson: lessonPath };
+  }
+  function parseNotes(text) {
+    var parts = String(text || "").split(/^## +/m);
+    var head = (parts.shift() || "").replace(/\s+$/, "");
+    var map = {}, order = [];
+    parts.forEach(function (p) {
+      var nl = p.indexOf("\n");
+      var key = (nl < 0 ? p : p.slice(0, nl)).trim();
+      if (!key) return;
+      map[key] = (nl < 0 ? "" : p.slice(nl + 1)).replace(/^\s+|\s+$/g, "");
+      order.push(key);
+    });
+    return { head: head, map: map, order: order };
+  }
+  function buildNotes(n) {
+    var out = n.head ? n.head + "\n" : "";
+    n.order.forEach(function (k) {
+      if (n.map[k] == null) return;              /* cleared — the section goes */
+      out += "\n## " + k + "\n\n" + n.map[k] + "\n";
+    });
+    return out;
+  }
+  function loadNotes(fromEl) {
+    if (_notes) return Promise.resolve(_notes);
+    var t = window.lcBench && window.lcBench.target ? window.lcBench.target(fromEl) : null;
+    if (!t || !t.repo || !t.pat) return Promise.resolve(null);
+    var p = notesPathFor(fromEl);
+    return window.lcBench.read(p.file, fromEl).then(function (f) {
+      var parsed = parseNotes(f ? f.text : "");
+      if (!parsed.head) parsed.head = "# 💬 " + p.lesson + " — notes";
+      _notes = { file: p.file, sha: f ? f.sha : null, head: parsed.head,
+                 map: parsed.map, order: parsed.order };
+      return _notes;
+    }).catch(function () { return null; });
+  }
+  function saveNote(anchor, text, fromEl) {
+    return loadNotes(fromEl).then(function (n) {
+      if (!n) throw new Error("no bench connected");
+      text = String(text || "").trim();
+      if (text) { if (n.order.indexOf(anchor) < 0) n.order.push(anchor); n.map[anchor] = text; }
+      else n.map[anchor] = null;
+      return window.lcBench.write(n.file, buildNotes(n), "💬 " + n.file, n.sha, fromEl)
+        .then(function (s) { n.sha = s || n.sha; return n; });
+    });
+  }
+  /* the at-a-glance layer: every block whose anchor has a note carries
+     .lc-noted; the CSS shows the mark only while the x-ray is looking */
+  function decorate() {
+    if (!_notes || !MAIN) return;
+    var blocks = MAIN.querySelectorAll("[data-lc-id]," + BLOCK_SEL);
+    Array.prototype.forEach.call(blocks, function (b) {
+      var id = (b.getAttribute && (b.getAttribute("data-lc-id") || b.id)) || "";
+      var v = _notes.map[anchorOf(b, id)];
+      b.classList.toggle("lc-noted", v != null && v !== "");
+    });
+  }
+  function showTab(which) {
+    var edit = which === "edit";
+    document.getElementById("lcx-pane-edit").hidden = !edit;
+    document.getElementById("lcx-pane-notes").hidden = edit;
+    document.getElementById("lcx-tab-edit").classList.toggle("lcx-tab-on", edit);
+    document.getElementById("lcx-tab-notes").classList.toggle("lcx-tab-on", !edit);
+    document.getElementById("lcx-apply").hidden = !edit;
+    document.getElementById("lcx-keep").hidden = !edit;
+    document.getElementById("lcx-note-send").hidden = edit;
+    if (!edit) { var ta = document.getElementById("lcx-note-text");
+                 if (ta) setTimeout(function () { ta.focus(); }, 0); }
+  }
+  function keepNote() {
+    var ta = document.getElementById("lcx-note-text");
+    if (!ta) { closeDlg(); return; }
+    var t = window.lcBench && window.lcBench.target ? window.lcBench.target(curEl) : null;
+    if (!t || !t.repo || !t.pat) {
+      lcxToast("Connect your bench to keep notes — they live in your own space.", false);
+      closeDlg(); return;
+    }
+    saveNote(anchorOf(curEl, curId), ta.value, curEl).then(function () {
+      lcxToast("Kept in your bench ✓", true);
+      decorate();
+    }).catch(function (e) {
+      lcxToast("Couldn't save the note: " + ((e && e.message) || e), false);
+    });
+    closeDlg();
+  }
 
   /* Connected builders commit inline edits for real — fence surgery on the
      page's own source, exact-match-or-abort so it can never corrupt a page.
@@ -774,6 +948,9 @@ loses everything. A component's editable source comes from window.lcSourceOf
     onTap(document.getElementById("lcx-close"), closeDlg);
     onTap(document.getElementById("lcx-apply"), apply);
     onTap(document.getElementById("lcx-keep"), keepChanges);
+    onTap(document.getElementById("lcx-note-send"), keepNote);
+    onTap(document.getElementById("lcx-tab-edit"), function () { showTab("edit"); });
+    onTap(document.getElementById("lcx-tab-notes"), function () { showTab("notes"); });
     /* Click the backdrop to close. The catch: a <dialog>'s own resize corner
        and its backdrop BOTH report the dialog as the click target, so
        dragging the corner made the editor vanish the moment you let go.
