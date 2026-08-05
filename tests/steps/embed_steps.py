@@ -262,3 +262,111 @@ def step_embed_forced_image(context):
     assert context.page.locator("#lc-embed-bdd iframe").count() == 0, \
         "the URL-API image was iframed"
 
+
+
+# ── {: .video }: addressable, privacy-first, and drivable by an avatar ────
+# The manim recaps are SILENT on purpose so the avatar is the only soundtrack.
+# That only works if the page can reach the player, which needs three things
+# the component did not do: keep the author's id, ask for the command channel
+# (enablejsapi), and be delegated autoplay. A postMessage cannot be tested
+# against real YouTube from here — what IS tested is that the exact documented
+# command leaves the page aimed at the right frame.
+
+def _video(context, vid):
+    el = context.page.locator(f'iframe[data-lc-id="{vid}"]')
+    el.wait_for(state="attached", timeout=15_000)
+    return el
+
+
+@then('the video "{vid}" is an addressable frame')
+def step_video_addressable(context, vid):
+    el = _video(context, vid)
+    assert el.get_attribute("id") == vid, "the id did not survive the upgrade"
+    assert "lc-video" in (el.get_attribute("class") or "")
+
+
+@then('the video "{vid}" is served from the nocookie host')
+def step_video_nocookie(context, vid):
+    src = _video(context, vid).get_attribute("src") or ""
+    assert "youtube-nocookie.com/embed/" in src, src
+    assert "rel=0" in src, "a lesson clip must not offer strangers' videos: " + src
+
+
+@then('the video "{vid}" can be commanded and may autoplay')
+def step_video_commandable(context, vid):
+    el = _video(context, vid)
+    src = el.get_attribute("src") or ""
+    allow = el.get_attribute("allow") or ""
+    assert "enablejsapi=1" in src, "no command channel: " + src
+    assert "autoplay" in allow, (
+        "autoplay is not delegated, so a play command reaches a player that "
+        "cannot obey it: allow=" + allow)
+
+
+@when("I record what the video frame is told")
+def step_record_postmessages(context):
+    # stand in front of the frame's contentWindow.postMessage so the command
+    # is captured instead of vanishing across the origin boundary
+    context.page.evaluate("""() => {
+        window.__lcSent = [];
+        document.querySelectorAll('iframe.lc-video').forEach(function (f) {
+          var cw = f.contentWindow;
+          if (!cw) return;
+          try {
+            Object.defineProperty(f, 'contentWindow', {
+              configurable: true,
+              get: function () {
+                return { postMessage: function (msg) { window.__lcSent.push(String(msg)); } };
+              }
+            });
+          } catch (e) { window.__lcSentError = String(e); }
+        });
+      }""")
+
+
+@given('the avatar verb "{verb:w}" fires at "{vid:w}"')
+@when('the avatar verb "{verb:w}" fires at "{vid:w}"')
+def step_verb_fires(context, verb, vid):
+    context.page.evaluate(
+        """([v, id]) => window.lcVerbs.act(v, document.querySelector('[data-lc-id="' + id + '"]'))""",
+        [verb, vid])
+    context.page.wait_for_timeout(300)
+
+
+@given('the avatar verb "{verb:w}" fires at "{vid:w}" with "{arg}"')
+@when('the avatar verb "{verb:w}" fires at "{vid:w}" with "{arg}"')
+def step_verb_fires_arg(context, verb, vid, arg):
+    context.page.evaluate(
+        """([v, id, a]) => window.lcVerbs.act(v, document.querySelector('[data-lc-id="' + id + '"]'), a)""",
+        [verb, vid, arg])
+    context.page.wait_for_timeout(300)
+
+
+def _sent(context):
+    return context.page.evaluate("() => window.__lcSent || []")
+
+
+@then('the player was told to "{func:w}"')
+def step_player_told(context, func):
+    sent = _sent(context)
+    assert any(func in s for s in sent), f"{func} not among {sent}"
+
+
+@then('the player was told to "{first:w}" and then "{second:w}"')
+def step_player_told_order(context, first, second):
+    sent = _sent(context)
+    idx = [i for i, s in enumerate(sent) if first in s]
+    jdx = [i for i, s in enumerate(sent) if second in s]
+    assert idx and jdx, f"expected both {first} and {second}, got {sent}"
+    assert min(idx) < min(jdx), f"{first} must come before {second}: {sent}"
+
+
+@then('the verb "{verb:w}" points at the video "{vid:w}"')
+def step_verb_subject(context, verb, vid):
+    got = context.page.evaluate(
+        """([v, id]) => {
+             var el = document.querySelector('[data-lc-id="' + id + '"]');
+             var s = window.lcVerbs.target(v, el);
+             return s ? (s.getAttribute('data-lc-id') || s.tagName) : null;
+           }""", [verb, vid])
+    assert got == vid, f"the avatar would stand at {got!r}, not the video"

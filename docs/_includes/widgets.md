@@ -568,17 +568,97 @@ Auto-included by docs/_layouts/default.html.
         container.innerHTML = "<div style='color:#c00'>⚠️ Could not load " + escapeHtml(href) + ": " + escapeHtml(err.message) + "</div>";
       });
   }
+  /* YouTube host for embeds. -nocookie serves the same player without the
+     tracking cookie until someone actually presses play — the right default
+     for a classroom, where the audience did not choose to be measured. It
+     supports enablejsapi exactly like the main host, so nothing is given up. */
+  var YT_HOST = "https://www.youtube-nocookie.com";
   function upgradeVideo(el) {
     var a = el.querySelector("a");
     if (!a) return;
     var href = a.getAttribute("href");
-    var src = href;
+    var src = href, isYt = false;
     var gdrive = href.match(/^gdrive:(.+)/);
     if (gdrive) src = "https://drive.google.com/file/d/" + gdrive[1] + "/preview";
-    var yt = href.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
-    if (yt) src = "https://www.youtube.com/embed/" + yt[1];
-    el.parentNode.replaceChild(_iframeEl(src, el.getAttribute("height") || "400", "lc-video"), el);
+    var yt = href.match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&?\/]+)/);
+    if (yt) {
+      isYt = true;
+      /* enablejsapi is what lets the page TALK to the player (the play/pause
+         verbs below postMessage to it); rel=0 keeps YouTube from offering
+         strangers' videos when a lesson clip ends. */
+      src = YT_HOST + "/embed/" + yt[1] + "?enablejsapi=1&rel=0&modestbranding=1"
+          + (location.origin && location.origin.indexOf("http") === 0
+             ? "&origin=" + encodeURIComponent(location.origin) : "");
+    }
+    var f = _iframeEl(src, el.getAttribute("height") || "400", "lc-video");
+    /* carry the author's id onto the frame — same move upgradeEmbedPage makes,
+       and for the same reason: without it nothing on the page can address this
+       video, so an avatar cannot play it and a proof cannot check it. */
+    if (el.id) { f.id = el.id; f.setAttribute("data-lc-id", el.id); }
+    if (isYt) {
+      f.setAttribute("data-lc-yt", yt[1]);
+      /* a cross-origin frame cannot start playing unless the PARENT delegates
+         autoplay to it — without this the play verb postMessages into a player
+         that is not allowed to obey */
+      f.setAttribute("allow", (f.getAttribute("allow") || "") + "; autoplay; encrypted-media");
+    }
+    f.setAttribute("title", a.textContent || "video");
+    el.parentNode.replaceChild(f, el);
   }
+
+  /* ── play / pause / seek, so an avatar can narrate over a clip ─────────
+     An avatar script says   - do: play / at: recap   and then keeps talking
+     while the clip runs; the manim recaps are SILENT on purpose, so the
+     avatar is the only soundtrack and nothing has to be mixed.
+
+     A YouTube frame is driven by postMessage (the documented command channel
+     that enablejsapi opens) rather than by loading YouTube's iframe_api
+     script: one less third-party script on every course page, and the command
+     is the same either way. A native <video> just gets .play(). */
+  function _lcMedia(el) {
+    if (el) {
+      if (el.tagName === "IFRAME" || el.tagName === "VIDEO") return el;
+      var inner = el.querySelector && el.querySelector("iframe.lc-video, video");
+      if (inner) return inner;
+    }
+    return document.querySelector("iframe.lc-video, video");
+  }
+  function _lcYtCmd(frame, func, args) {
+    if (!frame.contentWindow) return false;
+    try {
+      frame.contentWindow.postMessage(JSON.stringify(
+        { event: "command", func: func, args: args || [] }), "*");
+      return true;
+    } catch (e) { return false; }
+  }
+  function _lcMediaCmd(el, func, args) {
+    var m = _lcMedia(el);
+    if (!m) return false;
+    if (m.tagName === "VIDEO") {
+      try {
+        if (func === "playVideo") { m.play(); return true; }
+        if (func === "pauseVideo") { m.pause(); return true; }
+        if (func === "seekTo") { m.currentTime = Number(args[0]) || 0; return true; }
+      } catch (e) { return false; }
+      return false;
+    }
+    if (!m.getAttribute("data-lc-yt")) return false;
+    return _lcYtCmd(m, func, args);
+  }
+  window.lcVerbs.register("play", function (el, arg) {
+    /* with: 12 → start from twelve seconds in, so a script can narrate one
+       beat of a clip without replaying the whole thing */
+    if (arg !== null && arg !== undefined && arg !== "") {
+      _lcMediaCmd(el, "seekTo", [Number(arg) || 0, true]);
+    }
+    return _lcMediaCmd(el, "playVideo");
+  }, _lcMedia);
+  window.lcVerbs.register("pause", function (el) {
+    return _lcMediaCmd(el, "pauseVideo");
+  }, _lcMedia);
+  window.lcVerbs.register("seek", function (el, arg) {
+    return _lcMediaCmd(el, "seekTo", [Number(arg) || 0, true]);
+  }, _lcMedia);
 
   function upgradeCode(el) {
     if (el.dataset.lcUpgraded) return;

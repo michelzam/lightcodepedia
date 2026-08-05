@@ -128,3 +128,56 @@ Feature: Folder-relative embeds — a course page composes from its siblings
     And I inject an embed of "/_deal" rendered from "courses/demo/mod/index.md"
     Then the injected embed upgrades the quiz component
     And the injected embed shows "opens your next step"
+
+  Scenario: A video keeps its id, so something on the page can address it
+    Without the id on the frame, nothing can reach the player — no avatar can
+    play it and no proof can check it. upgradeEmbedPage has always carried the
+    id across; upgradeVideo dropped it.
+
+    Given I have a clean browser page
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    Then the video "recap_demo" is an addressable frame
+
+  Scenario: A YouTube embed uses the nocookie host and opens the command channel
+    A classroom audience did not choose to be measured, so the default host is
+    the nocookie one. enablejsapi is what lets the page talk to the player at
+    all, and autoplay must be delegated or a play command reaches a player that
+    is not allowed to obey it.
+
+    Given I have a clean browser page
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    Then the video "recap_demo" is served from the nocookie host
+    And the video "recap_demo" can be commanded and may autoplay
+
+  Scenario: The play, pause and seek verbs reach the player
+    Given I have a clean browser page
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    And I record what the video frame is told
+    And the avatar verb "play" fires at "recap_demo"
+    Then the player was told to "playVideo"
+    When the avatar verb "pause" fires at "recap_demo"
+    Then the player was told to "pauseVideo"
+    When the avatar verb "seek" fires at "recap_demo" with "12"
+    Then the player was told to "seekTo"
+
+  Scenario: play with a time seeks first, then starts
+    A script that narrates one beat of a clip must not replay the whole thing.
+
+    Given I have a clean browser page
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    And I record what the video frame is told
+    And the avatar verb "play" fires at "recap_demo" with "12"
+    Then the player was told to "seekTo" and then "playVideo"
+
+  Scenario: The avatar walks to the video it is about to play
+    A verb that declares its subject makes the avatar stand at the right thing
+    instead of the middle of the page.
+
+    Given I have a clean browser page
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    Then the verb "play" points at the video "recap_demo"

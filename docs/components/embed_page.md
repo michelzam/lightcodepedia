@@ -151,7 +151,42 @@ The map below comes from the same `{: .map }` component used in Tutorial 101 —
 ```
 
 `gdrive:ID` → `https://drive.google.com/file/d/ID/preview` automatically.
-YouTube watch URLs → `/embed/VIDEO_ID` automatically.
+YouTube links → `/embed/VIDEO_ID` automatically, on the **nocookie** host: the
+same player, without the tracking cookie until someone actually presses play.
+A classroom audience did not choose to be measured.
+
+## 🗣️ Let an avatar narrate a clip
+
+Give the video an `#id` and an avatar can drive it. A silent clip with a
+talking guide beats a clip with the audio baked in: the words can be
+rewritten, re-timed and translated without re-rendering a single frame.
+
+```markdown
+[▶ The wiring, in twenty-six seconds](https://youtu.be/4u2nocwYY28)
+{: .video #recap height="420" }
+```
+
+```yaml
+script:
+  - at: recap
+    do: play
+    say: "That table of dogs. You have used one of those."
+    pause: 3
+  - say: "Those arrows are the wires."
+```
+
+| verb | `with:` | what it does |
+|---|---|---|
+| `play` | seconds (optional) | starts the clip; `with: 12` jumps there first |
+| `pause` | — | stops it where it is |
+| `seek` | seconds | moves without starting |
+
+Sync is **by beat, not by frame**. How long a line takes to speak depends on
+the voice, so `pause:` should hold a little longer than the words need. Do not
+try to write a subtitle track.
+
+[▶ A narrated clip](https://youtu.be/4u2nocwYY28)
+{: .video #recap_demo height="360" }
 
 ## 🔧 Knobs
 
