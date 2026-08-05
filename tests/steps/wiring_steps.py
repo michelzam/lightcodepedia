@@ -328,12 +328,36 @@ def step_sweep_prose(context):
 
 @then("the noted block wears the margin mark")
 def step_noted_mark(context):
-    # the class is the testable truth; the 💬 glyph itself is CSS, shown
-    # only while body.lc-xray-deco says the x-ray is looking
+    """Assert the mark is VISIBLE — not merely that a class was set.
+
+    The first version of this step checked only .lc-noted and the body
+    class, and passed happily through a release where the bubble was
+    positioned outside the block's box and therefore clipped away to
+    nothing. A decoration nobody can see is not a decoration, so measure
+    the pseudo-element: it must have a box, and that box must sit inside
+    both the block and the viewport.
+    """
     context.page.wait_for_selector("p.lc-noted", timeout=10_000)
     assert context.page.evaluate(
         "() => document.body.classList.contains('lc-xray-deco')"), \
         "the x-ray is looking but the decoration layer is off"
+    geo = context.page.evaluate(
+        """() => {
+             const el = document.querySelector('p.lc-noted');
+             const cs = getComputedStyle(el, '::after');
+             const r = el.getBoundingClientRect();
+             return { content: cs.content, right: cs.right,
+                      blockRight: r.right, blockTop: r.top,
+                      vw: window.innerWidth };
+           }"""
+    )
+    assert "💬" in (geo["content"] or ""), \
+        "no 💬 in the ::after content: %r" % geo["content"]
+    off = float((geo["right"] or "0px").replace("px", ""))
+    assert off > 0, "the mark is flush with the edge — the gear will cover it"
+    # its own box must land inside the block, and so inside the viewport
+    assert geo["blockRight"] - off < geo["vw"], \
+        "the mark is pushed off the right of the viewport (%r)" % geo
 
 
 @then("the composer offers no editor controls")
@@ -379,3 +403,26 @@ def step_note_area_ready(context):
     ta = context.page.locator("#lcx-note-text")
     expect(ta).to_be_visible(timeout=5_000)
     expect(ta).to_be_editable()
+
+
+# ── folder parent="true": the way out ─────────────────────────────────────
+
+@then("a way up to the folder above is offered")
+def step_way_up(context):
+    up = context.page.locator(".lc-folder-up a").first
+    expect(up).to_be_visible(timeout=20_000)
+    # it must climb ONE level: the lesson is in courses/demo/mod, so up is
+    # courses/demo — never the folder the reader is already standing in
+    href = up.get_attribute("href") or ""
+    assert "courses/demo/index.md" in href, \
+        "the way up points at %r, not the folder above" % href
+    assert "/mod/" not in href.split("courses/demo")[-1], \
+        "the way up leads back into the same folder: %r" % href
+
+
+@then("the way up is not a card in the grid")
+def step_way_up_not_a_card(context):
+    # it is navigation, not a sibling — it must sit outside .lc-cards
+    n = context.page.locator(".lc-cards .lc-folder-up").count()
+    assert n == 0, "the way up was rendered inside the card grid"
+    expect(context.page.locator(".lc-folder-up")).to_have_count(1)

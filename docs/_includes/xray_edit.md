@@ -57,10 +57,14 @@ loses everything. A component's editable source comes from window.lcSourceOf
    x-ray is looking; the page reads clean otherwise. Top-right corner, a
    margin bubble where a margin belongs — not trailing the last line. */
 body.lc-xray-deco .lc-noted { position: relative; }
-/* in the MARGIN, not on the block: the ⚙️/💬 badge lands on the block's
-   own top-right corner, and the bubble must never sit under it */
+/* INSIDE the block's own box, top-right — offset left far enough to clear
+   the ⚙️/💬 badge, which is 26px wide and centred on the right edge.
+   It sat OUTSIDE the box (left:100%) for one release and vanished: a
+   pseudo-element past the edge is clipped by any ancestor that scrolls
+   (.markdown-body pre has overflow-x:auto) and runs off a narrow column
+   entirely. Never place it outside the box again. */
 body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
-  top: 0; left: 100%; margin-left: .35em; font-size: .85em; opacity: .8;
+  top: 0; right: 1.9em; font-size: .85em; opacity: .8;
   pointer-events: none; }
 #lcx-toast { position: fixed; top: 1em; left: 50%; transform: translateX(-50%);
   padding: 0.55em 1.1em; border-radius: 6px; font-size: 0.88em; font-weight: 500; color: #fff;

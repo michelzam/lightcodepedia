@@ -46,7 +46,11 @@ a.footnote:hover, sup.footnote a:hover, sup[id^="fnref"] a:hover {
 sup.footnote, sup[id^="fnref"] { font-size: inherit; }
 
 /* Tweak the footnotes section heading */
-div.footnotes::before { content: "Definitions"; display: block; font-weight: 600; color: #444; margin: 2em 0 0.4em; padding-top: 1em; border-top: 1px solid #eee; }
+/* No heading. Footnotes are a NOTATION, not a section: authors use them
+   for definitions, for asides, for sources. Naming them "Definitions"
+   was wrong for every other use. The rule above the list is the whole
+   signal a reader needs. */
+div.footnotes { margin-top: 2em; padding-top: 1em; border-top: 1px solid #eee; }
 div.footnotes ol { font-size: 0.9em; color: #555; }
 </style>
 <script>

@@ -8,6 +8,10 @@ Knobs:
   cols="auto"       grid columns (default auto-fit) or a fixed number
   sort="name"       initial order: "name" (default, alphabetical) or "recent"
   show-private      include _-prefixed files
+  parent="true"     add a "go up" line under the cards, pointing at the
+                    PARENT folder's index — so a reader who finished a
+                    module can climb one level and pick the next. Silently
+                    absent at the repo root, where up means nothing.
   open="runner"     scan a repo path OUTSIDE docs/ (courses/, hubs/…) via the
                     API (author key) and open every card in the runner —
                     the same cards, pointed at unrendered material
@@ -29,6 +33,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-card-tag[data-tag] { cursor: pointer; }
 .lc-card-tag[data-tag]:hover { background: #bae6fd; }
 .lc-card-date { font-size: 0.72em; color: #6b7280; margin-top: 0.3em; }
+/* the way out of a folder — its own line, under the siblings */
+.lc-folder-up { margin: 0.9em 0 0; font-size: 0.9em; }
+.lc-folder-up a { text-decoration: none; }
+.lc-folder-up a:hover { text-decoration: underline; }
 /* ⚙️ workbench affordances — X-ray mode only */
 .lc-card:has(> .lc-card-workrow) { display: flex; flex-direction: column; }
 .lc-card-workrow { display: flex; align-items: center; justify-content: space-between; gap: 0.5em; margin-top: auto; padding-top: 0.5em; border-top: 1px dashed #e5e7eb; }
@@ -221,6 +229,7 @@ Auto-included by docs/_layouts/default.html.
     if (!a) return;
     var cols = el.getAttribute("cols") || "auto";
     var showPrivate = el.getAttribute("show-private") === "true";
+    var wantParent = el.getAttribute("parent") === "true";
     var sortMode = (el.getAttribute("sort") || "name").toLowerCase();   // "name" (default) | "recent"
     /* Rendered INSIDE a bench (a runner render stamps its repo/path on the
        root)? Then scan THAT repo, not the site — a bench's index.md lists its
@@ -293,6 +302,37 @@ Auto-included by docs/_layouts/default.html.
     var mdUrl   = function (rp) { return "/" + rp.replace(/^docs\//, ""); };      // static .md on Pages
     var runUrl  = function (rp) { return "/run.html#src=gh:" + scanRepo + "/" + rp; };
     var cardUrl = function (rp) { return runnerMode ? runUrl(rp) : mdUrl(rp).replace(/\.md$/i, ""); };
+    /* parent="true" — one line under the cards, climbing to the folder that
+       CONTAINS this one. A reader who just finished a module needs a way up
+       before they can pick the next one, and a sibling list cannot offer it.
+       Deliberately silent at the root: "up" from the top is nowhere, and an
+       author gets to decide where climbing helps (hence the knob, not a
+       default). Placed AFTER the cards — the siblings are the main road, up
+       is the way out. */
+    function addParentLine(resolvedPath) {
+      if (!wantParent || addParentLine.done) return;
+      addParentLine.done = true;
+      /* A bare `{: .folder }` resolves to "." — "the folder I live in" —
+         which has no parent to compute. The render root knows the real
+         directory, so fall back to it; without either there is no up. */
+      var here = String(resolvedPath || "").replace(/\/+$/, "");
+      if (!here || here === "." || here === "./") here = runBaseDir || "";
+      if (!here) return;
+      var parts = here.split("/");
+      parts.pop();                                  /* drop this folder */
+      if (!parts.length) return;                    /* at the root: no up */
+      var pPath = parts.join("/");
+      var name = parts[parts.length - 1] || "";
+      var line = document.createElement("p");
+      line.className = "lc-folder-up";
+      line.setAttribute("data-lc-derived", "1");    /* generated: no gear */
+      var a2 = document.createElement("a");
+      a2.href = cardUrl(pPath + "/index.md");
+      a2.textContent = "⬆️ up to " + (name || "the folder above");
+      line.appendChild(a2);
+      if (wrap.parentNode) wrap.parentNode.insertBefore(line, wrap.nextSibling);
+      if (window.lcRebase) window.lcRebase(line);
+    }
     var titleCase = function (s) { return s.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); };
     function fetchText(url) {
       return fetch(window.lcHref ? window.lcHref(url) : url).then(function (r) { return r.ok ? r.text() : null; });
@@ -1039,6 +1079,12 @@ Auto-included by docs/_layouts/default.html.
         var _rawPath = _resolved;
         if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
         path = _rawPath.replace(/^\/+|\/+$/g, "");
+        /* BEFORE refresh(): the way up must survive a folder that cannot
+           list anything — no key, empty directory, API error. Those are the
+           moments a reader is most stuck, and the first version of this only
+           ran on the happy paint path, so the exit vanished precisely when
+           it was needed. */
+        addParentLine(path);
         refresh();
       });
   }
