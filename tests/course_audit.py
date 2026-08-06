@@ -5,6 +5,11 @@ Every check here exists because something slipped through once:
 
   TAG-NO-DEF / TAG-NO-PROSE   a feature tag with no footnote, or one a reader
                               never meets in prose, teaches nothing
+  FN-NOT-A-TAG                the other direction, and the stricter half of the
+                              same rule: the footnote list is the page's TAGS
+                              and nothing else. With no heading above it a
+                              reader cannot tell a definition from an aside,
+                              so the list stops being where you look a tag up
   ORPHAN-DEF / DANGLING-REF   footnotes that define nothing anyone reads, and
                               refs pointing at definitions that were deleted
                               (a `[^karma]` once silently repointed at [^quiz])
@@ -69,6 +74,16 @@ def check_page(path, text):
             continue
         refs.setdefault(m.group(1), []).append(m.start())
 
+    # THE RULE (Michel, 2026-08-05): the footnote list IS the page's tags and
+    # nothing else. There is no heading above it — footnotes are a notation,
+    # not a section — so a reader cannot tell a tag definition from an aside,
+    # and the list stops being the place you look a tag up. Expert sources are
+    # not deleted, they stop being footnotes: an inline link in the prose is
+    # where a curious reader wants Fowler or Adzic anyway.
+    for k in sorted(defs - tags):
+        problems.append(f'FN-NOT-A-TAG  [^{k}] is not a tag on this page. '
+                        f"Footnotes are for tags only — make it prose, or an "
+                        f"inline link if it is a source.")
     for k in sorted(defs - set(refs)):
         problems.append(f"ORPHAN-DEF    [^{k}] defined, never referenced")
     for k in sorted(set(refs) - defs):

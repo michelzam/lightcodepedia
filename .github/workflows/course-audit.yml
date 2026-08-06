@@ -1,0 +1,79 @@
+name: Course audit
+
+# The author-side integrity pass, run BY GITHUB — because that is where the
+# author works. Michel, 2026-08-05: "I only work in GH using LC lab!" A check
+# that lives in a script somebody has to remember to run is a check that does
+# not exist. This one fires on every push that touches a course, including the
+# one-line edits made straight in GitHub's web editor.
+#
+# What it catches (see tests/course_audit.py for the why of each): a feature tag
+# with no footnote or no use in prose; a footnote that is NOT a tag (the list is
+# the page's tags and nothing else); footnotes nobody references and refs whose
+# definition was deleted; a ref used only inside a fence, where the page-level
+# footnote pass shields it and it renders as "?"; a graphviz block that will not
+# render; avatar YAML that will not parse; an avatar at: pointing at an id that
+# no longer exists; and a BENCH file — anything a lesson's save="…" names, which
+# is the author's own work and must never publish to students.
+#
+# No browser and no Jekyll: seconds, not minutes. It is a gate on the content,
+# not on the engine.
+
+on:
+  push:
+    paths:
+      - "courses/**"
+      - "tests/course_audit.py"
+      - ".github/workflows/course-audit.yml"
+  pull_request:
+    paths:
+      - "courses/**"
+      - "tests/course_audit.py"
+  workflow_dispatch:
+
+concurrency:
+  group: course-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # graphviz for the dot blocks, pyyaml for the avatar scripts. Both are
+      # the difference between "the page looks fine" and "the page renders".
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq graphviz
+          python3 -m pip install --quiet pyyaml
+
+      - name: Audit every course
+        run: |
+          rc=0
+          for course in courses/*/; do
+            [ -f "$course/course.yml" ] || continue
+            echo "── ${course%/}"
+            python3 tests/course_audit.py "${course%/}" || rc=1
+          done
+          exit $rc
+
+      - name: What to do when this fails
+        if: failure()
+        run: |
+          cat <<'EOF'
+          Each line names the page and the rule. The two that catch people:
+
+            FN-NOT-A-TAG   the footnote list is the page's TAGS and nothing
+                           else. A source (Fowler, Adzic) belongs in the prose
+                           as an inline link, not down there — with no heading
+                           above the list, a reader cannot tell a tag
+                           definition from an aside.
+
+            BENCH-FILE     a lesson's save="…" names this file, so the copy in
+                           the repo is YOUR bench output from testing the
+                           lesson — not lesson content. It publishes to
+                           students and shows as a card in their folder.
+                           Delete it (git history keeps it) or rename it with
+                           a leading underscore.
+          EOF

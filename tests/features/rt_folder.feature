@@ -346,3 +346,30 @@ Feature: Folder shelf — read posture and X-ray workbench
     Then the shelf shows a card for "Alpha"
     And a way up to the folder above is offered
     And the way up is not a card in the grid
+
+  Scenario: The way up is a pill in the bar, labelled just "Up"
+    It used to be a line under the cards reading "⬆️ up to micro_build_ai" —
+    a whole row spent naming a folder the reader is about to see anyway. It is
+    now a pill in the chip bar, in the same far-right slot ➕ New takes when
+    the shelf is writable: one place for "the thing you do here that is not
+    picking a card", whichever mode you are in.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the folder "courses/demo/mod" serves pages "alpha.md"
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Shelf page
+
+      [Browse](#)
+      {: .folder parent="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    Then the shelf shows a card for "Alpha"
+    And the way up is a pill labelled "⬆️ Up"
+    And the way up sits in the shelf's chip bar
+    And the way up is pushed to the far end of the bar
+    And a way up to the folder above is offered
+    And the way up is not a card in the grid

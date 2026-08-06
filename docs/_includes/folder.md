@@ -37,6 +37,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-folder-up { margin: 0.9em 0 0; font-size: 0.9em; }
 .lc-folder-up a { text-decoration: none; }
 .lc-folder-up a:hover { text-decoration: underline; }
+/* "⬆️ Up" wears the chip look of the bar it sits in, but it is an <a>: a real
+   link, so long-press/middle-click/open-in-new-tab all behave. */
+a.lc-folder-up-pill, a.lc-folder-up-pill:visited { text-decoration: none; color: #374151; }
+a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #0066cc; }
 /* ⚙️ workbench affordances — X-ray mode only */
 .lc-card:has(> .lc-card-workrow) { display: flex; flex-direction: column; }
 .lc-card-workrow { display: flex; align-items: center; justify-content: space-between; gap: 0.5em; margin-top: auto; padding-top: 0.5em; border-top: 1px dashed #e5e7eb; }
@@ -322,17 +326,52 @@ Auto-included by docs/_layouts/default.html.
       parts.pop();                                  /* drop this folder */
       if (!parts.length) return;                    /* at the root: no up */
       var pPath = parts.join("/");
-      var name = parts[parts.length - 1] || "";
-      var line = document.createElement("p");
-      line.className = "lc-folder-up";
-      line.setAttribute("data-lc-derived", "1");    /* generated: no gear */
-      var a2 = document.createElement("a");
-      a2.href = cardUrl(pPath + "/index.md");
-      a2.textContent = "⬆️ up to " + (name || "the folder above");
-      line.appendChild(a2);
-      if (wrap.parentNode) wrap.parentNode.insertBefore(line, wrap.nextSibling);
-      if (window.lcRebase) window.lcRebase(line);
+      /* "Up" — the label, and nothing else. It used to read "⬆️ up to
+         micro_build_ai", which spends a whole line naming a folder the reader
+         is about to see anyway (Michel, 2026-08-05).
+         And it is a PILL in the filter bar, in the same far-right slot "➕ New"
+         takes when the shelf is writable — one place for "the thing you do
+         here that is not picking a card", whichever mode you are in. It falls
+         back to a line under the cards only when there is no bar to sit in. */
+      var href = cardUrl(pPath + "/index.md");
+      var pill = document.createElement("a");
+      pill.className = "lc-card-filter-chip lc-folder-up-pill";
+      pill.setAttribute("data-lc-derived", "1");     /* generated: no gear */
+      pill.href = href;
+      pill.textContent = "⬆️ Up";
+      pill.title = "The folder above";
+      _upPill = pill;
+      placeUpPill();
+      if (window.lcRebase) window.lcRebase(pill);
     }
+    /* the bar is built asynchronously (it needs the cards' tags), so the pill
+       may be ready first or last — this runs on both paths and is idempotent */
+    function placeUpPill() {
+      if (!_upPill) return;
+      if (_bar && !_bar.contains(_upPill)) {
+        /* moving a node into the bar leaves the fallback <p> behind empty —
+           take it with us */
+        var old = _upPill.parentNode;
+        /* right-aligned like ➕ New; when both are present New keeps the edge
+           and Up sits just inside it, so the writable affordance stays put */
+        var np = _bar.querySelector("[data-newpage]");
+        _upPill.style.marginLeft = "auto";
+        if (np) { _bar.insertBefore(_upPill, np); np.style.marginLeft = "0.4em"; }
+        else { _bar.appendChild(_upPill); }
+        if (old && old !== _bar && old.parentNode && !old.children.length) {
+          old.parentNode.removeChild(old);
+        }
+        return;
+      }
+      if (!_bar && !_upPill.parentNode && wrap.parentNode) {
+        /* no filter bar on this shelf: keep the old line under the cards */
+        var line = document.createElement("p");
+        line.className = "lc-folder-up";
+        wrap.parentNode.insertBefore(line, wrap.nextSibling);
+        line.appendChild(_upPill);
+      }
+    }
+    var _upPill = null;
     var titleCase = function (s) { return s.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); };
     function fetchText(url) {
       return fetch(window.lcHref ? window.lcHref(url) : url).then(function (r) { return r.ok ? r.text() : null; });
@@ -857,6 +896,10 @@ Auto-included by docs/_layouts/default.html.
         bar.innerHTML = chips;
         wrap.parentNode.insertBefore(bar, wrap);
         _bar = bar;
+        /* the bar is built from the cards' tags, so it can appear after the up
+           pill was made (or be rebuilt when the mode changes) — claim its slot
+           on every build; placeUpPill is idempotent and a no-op with no pill */
+        placeUpPill();
         var npBtn = bar.querySelector("[data-newpage]");
         if (npBtn) npBtn.addEventListener("click", function () { newPagePrompt(npBtn); });
         function newPagePrompt(npBtn) {

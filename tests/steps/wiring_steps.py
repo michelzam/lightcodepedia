@@ -409,7 +409,10 @@ def step_note_area_ready(context):
 
 @then("a way up to the folder above is offered")
 def step_way_up(context):
-    up = context.page.locator(".lc-folder-up a").first
+    # the pill lives in the filter bar when there is one, and falls back to a
+    # line under the cards when there is not — find it by its own class, not by
+    # where it happens to sit
+    up = context.page.locator("a.lc-folder-up-pill").first
     expect(up).to_be_visible(timeout=20_000)
     # it must climb ONE level: the lesson is in courses/demo/mod, so up is
     # courses/demo — never the folder the reader is already standing in
@@ -422,10 +425,13 @@ def step_way_up(context):
 
 @then("the way up is not a card in the grid")
 def step_way_up_not_a_card(context):
-    # it is navigation, not a sibling — it must sit outside .lc-cards
-    n = context.page.locator(".lc-cards .lc-folder-up").count()
-    assert n == 0, "the way up was rendered inside the card grid"
-    expect(context.page.locator(".lc-folder-up")).to_have_count(1)
+    # it is navigation, not a sibling — it must sit outside .lc-cards. The
+    # wrapper <p class="lc-folder-up"> is now only the FALLBACK for a shelf
+    # with no chip bar, so assert on the pill itself: exactly one, never
+    # inside the grid.
+    inside = context.page.locator(".lc-cards a.lc-folder-up-pill").count()
+    assert inside == 0, "the way up was rendered inside the card grid"
+    expect(context.page.locator("a.lc-folder-up-pill")).to_have_count(1)
 
 
 # ── a chart with a broken wire must not look like a slow one ──────────────
@@ -455,3 +461,46 @@ def step_chart_drew(context, cid):
     expect(bars.first).to_be_visible(timeout=20_000)
     n = bars.count()
     assert n >= 2, f"only {n} bar(s) drawn"
+
+
+# ── the way up is a PILL, labelled "Up", in the slot ➕ New uses ────────────
+# Michel, 2026-08-05: "should be just 'Up'. Not either a link but a pill when
+# r/o, where 'new +' used to be when r/w." The old line read "⬆️ up to
+# micro_build_ai" and spent a whole row naming a folder the reader is about to
+# see anyway. One slot, far right of the bar, for "the thing you do here that
+# is not picking a card" — whichever mode the shelf is in.
+
+@then('the way up is a pill labelled "{label}"')
+def step_up_is_pill(context, label):
+    up = context.page.locator("a.lc-folder-up-pill").first
+    expect(up).to_be_visible(timeout=20_000)
+    txt = up.inner_text().strip()
+    assert txt == label, f"the pill reads {txt!r}, not {label!r}"
+    cls = up.get_attribute("class") or ""
+    assert "lc-card-filter-chip" in cls, "it is not wearing the chip look: " + cls
+    # a pill, but still a real link: long-press, middle-click, open-in-new-tab
+    assert (up.get_attribute("href") or ""), "the pill has no href"
+    radius = context.page.evaluate(
+        "el => getComputedStyle(el).borderRadius", up.element_handle())
+    assert radius and radius != "0px", "a pill needs a rounded border: " + str(radius)
+
+
+@then("the way up sits in the shelf's chip bar")
+def step_up_in_bar(context):
+    inside = context.page.evaluate(
+        """() => { var p = document.querySelector('a.lc-folder-up-pill');
+                   return !!(p && p.closest('.lc-card-filter')); }""")
+    assert inside, "the up pill is not in the filter bar"
+
+
+@then("the way up is pushed to the far end of the bar")
+def step_up_far_end(context):
+    pushed = context.page.evaluate(
+        """() => { var p = document.querySelector('a.lc-folder-up-pill');
+                   if (!p) return false;
+                   var bar = p.closest('.lc-card-filter');
+                   if (!bar) return false;
+                   var pr = p.getBoundingClientRect(), br = bar.getBoundingClientRect();
+                   /* within a chip's width of the bar's right edge */
+                   return (br.right - pr.right) < 90; }""")
+    assert pushed, "the up pill is not right-aligned in the bar"
