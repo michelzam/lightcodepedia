@@ -163,6 +163,12 @@ Auto-included by docs/_layouts/default.html.
     var xCol  = el.getAttribute("x");
     var yCol  = el.getAttribute("y");
     var title = el.getAttribute("title") || "";
+    /* empty=: what to say when the bind never resolves. Without it a chart
+       whose source names a part that does not exist sits on "⏳ Loading…"
+       for ever — which reads as "the page is slow" rather than "this wire is
+       broken", and for a lesson about wiring that is exactly backwards
+       (Michel, 2026-08-05). Same knob and same grace as the datagrid. */
+    var emptyMsg = el.getAttribute("empty") || "";
 
     var lcId2 = el.getAttribute("id") || "";
     var wrap = document.createElement("div");
@@ -175,12 +181,38 @@ Auto-included by docs/_layouts/default.html.
     if (lcId2) wrap.setAttribute("data-lc-id", lcId2);
     el.parentNode.replaceChild(wrap, el);
 
+    /* the TITLE belongs to the frame, not to the data: an author who wrote
+       one is telling the reader what should appear here, and that promise is
+       most useful precisely when nothing has appeared yet */
+    function paintTitle() {
+      if (!title) return;
+      var h = document.createElement("div");
+      h.className = "lc-chart-title";
+      h.textContent = title;
+      wrap.appendChild(h);
+    }
+    function note(text) {
+      wrap.innerHTML = "";
+      paintTitle();
+      var p = document.createElement("p");
+      p.style.cssText = "color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0";
+      p.textContent = text;
+      wrap.appendChild(p);
+    }
+
+    var painted = false;
     function render(data) {
       wrap.innerHTML = "";
       if (!data || !data.length || !xCol || !yCol) {
-        wrap.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ Chart needs bind, x, y</p>"; return;
+        paintTitle();
+        var w = document.createElement("p");
+        w.style.cssText = "color:var(--lc-ink-mute,#616161);font-size:.85em";
+        w.textContent = "⚠ Chart needs bind, x, y";
+        wrap.appendChild(w);
+        return;
       }
-      if (title) { var h = document.createElement("div"); h.className = "lc-chart-title"; h.textContent = title; wrap.appendChild(h); }
+      painted = true;
+      paintTitle();
       if (type === "line") renderLine(wrap, data, xCol, yCol);
       else                 renderBar(wrap, data, xCol, yCol);
     }
@@ -189,7 +221,17 @@ Auto-included by docs/_layouts/default.html.
     window.lcDatasetListeners[bindId].push(render);
 
     if (window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);
-    else wrap.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
+    else {
+      note("⏳ Loading…");
+      /* a dataset that is merely slow arrives inside the grace; one that will
+         never arrive stops pretending to load. Shared knob with the datagrid
+         so a test can shorten both. */
+      var grace = window.lcDatagridBindGrace;
+      if (grace == null) grace = 4000;
+      setTimeout(function () {
+        if (!painted) note(emptyMsg || "Nothing arrives here yet.");
+      }, grace);
+    }
   }
 
   /* tick labels: integers collide when the axis range is narrow

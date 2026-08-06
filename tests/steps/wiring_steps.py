@@ -426,3 +426,32 @@ def step_way_up_not_a_card(context):
     n = context.page.locator(".lc-cards .lc-folder-up").count()
     assert n == 0, "the way up was rendered inside the card grid"
     expect(context.page.locator(".lc-folder-up")).to_have_count(1)
+
+
+# ── a chart with a broken wire must not look like a slow one ──────────────
+# The datagrid learned this first (empty= plus a grace period). The chart kept
+# "⏳ Loading…" for ever, which on the wiring lesson tells the learner the
+# opposite of the truth.
+
+@then('the waiting chart comes to rest on "{message}"')
+def step_chart_rests(context, message):
+    chart = context.page.locator('[data-lc-id="fees"]')
+    chart.wait_for(state="attached", timeout=20_000)
+    expect(chart).to_contain_text(message, timeout=20_000)
+    txt = chart.inner_text()
+    assert "Loading" not in txt, "the chart is still claiming to load: " + txt[:120]
+
+
+@then("the waiting chart still shows its title")
+def step_chart_keeps_title(context):
+    title = context.page.locator('[data-lc-id="fees"] .lc-chart-title')
+    expect(title).to_be_visible(timeout=15_000)
+    assert title.inner_text().strip(), "the title is empty"
+
+
+@then('the chart "{cid}" has drawn its bars')
+def step_chart_drew(context, cid):
+    bars = context.page.locator(f'[data-lc-id="{cid}"] svg rect')
+    expect(bars.first).to_be_visible(timeout=20_000)
+    n = bars.count()
+    assert n >= 2, f"only {n} bar(s) drawn"
