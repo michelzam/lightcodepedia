@@ -22,6 +22,13 @@ Every check here exists because something slipped through once:
                               walk to a missing target just stands still,
                               which is why `at: next` survived its own
                               anchor's deletion
+  LATE-VERB / NO-VERB         "Yoda mode": a clause whose verb arrives last,
+                              or never arrives. Michel's standing rule, and the
+                              one that keeps coming back because a fluent adult
+                              reader does not feel it.
+  LEGACY-MARGIN               a margin still on the pre-dunder name. `_x` only
+                              hides a file from the folder's cards; `__x` is
+                              what never travels.
   BENCH-FILE                  an .md that some page's save="…" names, so the
                               copy in the repo is the author's own work, not
                               lesson content. This is how `cv.md` — written by
@@ -101,6 +108,8 @@ def check_page(path, text):
         if f"`{t}`" not in body:
             problems.append(f'TAG-NO-PROSE  tag "{t}" is never used in backticked prose')
 
+    problems.extend(verb_problems(body))
+
     for i, m in enumerate(re.finditer(r"^```dot\n(.*?)^```", text, re.S | re.M)):
         p = subprocess.run(["dot", "-Tsvg"], input=m.group(1),
                            capture_output=True, text=True)
@@ -121,6 +130,93 @@ def check_page(path, text):
             if missing:
                 problems.append(f'AVATAR-ANCHOR at: {a} resolves to nothing')
     return problems
+
+
+# ── the verb rule (Michel, standing) ─────────────────────────────────────
+# "Yoda mode": the verb arrives at the very END of a clause. "the facts an app
+# holds" makes a reader carry two nouns with nothing to do until a verb turns
+# up. Kids and non-native readers stall on it; fluent adults do not feel it at
+# all, which is why it keeps coming back.
+#
+# ONE pattern, and it is deliberately narrow: a REDUCED RELATIVE CLAUSE — a
+# noun, then another noun phrase, then the verb, then the clause ends. That is
+# the shape Michel has flagged twice, and it is the shape a regex can actually
+# recognise.
+#
+# What is NOT here, on purpose: "no verb at all" ("Families arriving all
+# morning"). A first attempt flagged "Families arrive all morning", "A promise
+# and its app stop matching" and "A builder decides" — all correct English.
+# Telling those apart needs to know which words are verbs, which needs a POS
+# tagger, not a pattern. A rule that cries wolf gets ignored, and an ignored
+# rule is worse than none, so that half stays a human job.
+_LATE_VERBS = (r"holds|keeps|needs|shows|makes|brings|gives|takes|wants|sees|"
+               r"reads|writes|uses|means|carries|guards|answers|owns|hides|"
+               r"serves|counts|feeds|names|covers|drives")
+
+# <noun> <det> <noun> <verb-s> <clause end> — the second noun phrase is what
+# makes it a reduced relative rather than an ordinary subject + verb, so
+# "A builder decides." (no noun before the determiner) never matches.
+_REDUCED = re.compile(
+    r"\b[a-z]{3,}\s+(?:a|an|the|its|their|your|our|his|her)\s+[a-z]+\s+"
+    r"(?:" + _LATE_VERBS + r")\b\s*[.,;:]")
+
+
+def verb_problems(body):
+    flat = re.sub(r"\s+", " ", body)
+    return ["LATE-VERB     '" + m.group(0).strip() + "' — the verb lands last. "
+            "Keep the pronoun (\"software THAT copes\") or split it into two "
+            "plain sentences." for m in _REDUCED.finditer(flat)]
+
+
+# ── the author's margin as a work queue (Michel, 2026-08-06) ─────────────
+# "I will use notes in lab for you to improve the content." So a __*.notes.md
+# written in the lab is not just private — it is a TO-DO list addressed to
+# whoever works on the course next. This pass reads them and prints the open
+# items, so they appear in the Course audit log on every push and nobody has to
+# run a script to see them.
+#
+# Notes never FAIL the audit. They are requests, not defects: failing on them
+# would make the gate red for the whole time a request is open, and a gate
+# that is permanently red stops meaning anything.
+def read_notes(course_dir):
+    open_items, done, files = [], 0, []
+    for path in sorted(glob.glob(os.path.join(course_dir, "**", "__*.md"),
+                                 recursive=True)):
+        rel = os.path.relpath(path, course_dir)
+        text = open(path).read()
+        hits = re.findall(r"^\s*[-*]\s+\[( |x|X)\]\s+(.+)$", text, re.M)
+        if not hits:
+            # a note with prose but no checkboxes still deserves to be seen
+            body = [l.strip() for l in text.split("\n")
+                    if l.strip() and not l.lstrip().startswith("#")]
+            if body:
+                files.append((rel, None))
+                open_items.append((rel, body[0][:100]))
+            continue
+        files.append((rel, len(hits)))
+        for mark, item in hits:
+            if mark == " ":
+                open_items.append((rel, item.strip()[:100]))
+            else:
+                done += 1
+    return open_items, done, files
+
+
+def print_notes(course_dir):
+    open_items, done, files = read_notes(course_dir)
+    if not files:
+        return
+    print("\n── the author's margin ──")
+    for rel, n in files:
+        print(f"   {rel}" + (f"  ({n} item{'s' if n != 1 else ''})" if n else ""))
+    if open_items:
+        print(f"\n   {len(open_items)} OPEN for whoever works on this next:")
+        for rel, item in open_items:
+            print(f"     [ ] {item}   ({rel})")
+    if done:
+        print(f"\n   {done} already ticked.")
+    if not open_items:
+        print("\n   nothing open.")
 
 
 def bench_targets(course_dir):
@@ -156,6 +252,14 @@ def main():
         text = open(path).read()
         problems = check_page(path, text)
 
+        if base.endswith(".notes.md"):
+            problems.append(
+                "LEGACY-MARGIN a margin must be DUNDER-prefixed now "
+                "(__x.notes.md, not _x.notes.md): a single underscore only "
+                "hides it from the folder's cards, it never stopped a publish. "
+                "Rename it or delete it — the engine reads the old name as a "
+                "fallback, so nothing is lost either way.")
+
         if os.path.normpath(path) in bench:
             problems.append(
                 "BENCH-FILE    a lesson SAVES this path, so this copy is the "
@@ -172,6 +276,7 @@ def main():
             print(f"{rel}  ok")
 
     print(f"\n{bad} page(s) with problems")
+    print_notes(course)
     return 1 if bad else 0
 
 

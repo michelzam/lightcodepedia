@@ -54,18 +54,41 @@ loses everything. A component's editable source comes from window.lcSourceOf
 #lcx-edit .lcx-tab-on { background: #fff; font-weight: 600; }
 #lcx-pane-notes textarea { background: #fffbeb; color: #1f2937; caret-color: #92400e; border-color: #fcd34d; }
 /* a block the reader has annotated wears its mark — but only while the
-   x-ray is looking; the page reads clean otherwise. Top-right corner, a
-   margin bubble where a margin belongs — not trailing the last line. */
-body.lc-xray-deco .lc-noted { position: relative; }
-/* INSIDE the block's own box, top-right — offset left far enough to clear
-   the ⚙️/💬 badge, which is 26px wide and centred on the right edge.
-   It sat OUTSIDE the box (left:100%) for one release and vanished: a
+   x-ray is looking; the page reads clean otherwise.
+   IN THE LEFT MARGIN (Michel, 2026-08-06): prose is left-justified, so the
+   left edge is the one a reader's eye already follows down the page, and a
+   mark there reads as a margin mark instead of decoration on the text.
+   And the mark is 👁️‍🗨️ — "there is something to see here" — not a speech
+   bubble, which suggested somebody had said something.
+
+   HOW, without breaking the older rule. The mark must stay INSIDE the
+   block's own box: at left:100% it vanished for a whole release, because a
    pseudo-element past the edge is clipped by any ancestor that scrolls
-   (.markdown-body pre has overflow-x:auto) and runs off a narrow column
-   entirely. Never place it outside the box again. */
-body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
-  top: 0; right: 1.9em; font-size: .85em; opacity: .8;
+   (.markdown-body pre has overflow-x:auto) and runs off a narrow column.
+   So the x-ray RESERVES a gutter on every top-level block while the deco is
+   on, and the mark sits at left:0 inside that gutter — visually in the
+   margin, structurally inside the box.
+   The gutter goes on the ANNOTATED block, not on every block: a render wraps
+   its content in slide sections, so "> *" reached the sections and padded
+   nothing a reader sees. Only noted blocks shift, only in x-ray mode, and the
+   shift is what makes room for the mark. */
+body.lc-xray-deco .lc-noted { position: relative; padding-left: 1.5em; }
+body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: absolute;
+  top: 0.05em; left: 0; font-size: .85em; opacity: .85;
   pointer-events: none; }
+/* the margin's lost property office: notes whose block is gone — the anchor
+   is the block's first words, so rewriting the prose orphans its note. They
+   would otherwise be invisible AND unreachable, with the text still sitting
+   in the file (Michel, 2026-08-06). */
+#lcx-lost { margin: 0 0 1.2em; border: 1px solid #fcd34d; background: #fffbeb;
+  border-radius: 8px; padding: 0.7em 0.9em; font-size: 0.9em; }
+#lcx-lost h4 { margin: 0 0 0.5em; font-size: 0.95em; color: #92400e; }
+#lcx-lost details { margin: 0.35em 0; }
+#lcx-lost summary { cursor: pointer; color: #92400e; }
+#lcx-lost pre { white-space: pre-wrap; background: #fff; border: 1px solid #fde68a;
+  border-radius: 6px; padding: 0.5em 0.7em; margin: 0.4em 0 0; font-size: 0.9em; }
+#lcx-build { font: 500 0.72em ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--lc-ink-mute, #6b7280); margin: -0.4em 0 0.6em; user-select: all; }
 #lcx-toast { position: fixed; top: 1em; left: 50%; transform: translateX(-50%);
   padding: 0.55em 1.1em; border-radius: 6px; font-size: 0.88em; font-weight: 500; color: #fff;
   z-index: 100002; display: none; box-shadow: 0 3px 10px rgba(0,0,0,0.15); pointer-events: none; }
@@ -75,9 +98,20 @@ body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
 <button id="lcx-gear" title="Edit this ✎" aria-label="Edit this block">⚙️</button>
 <dialog id="lcx-edit">
   <h4 id="lcx-edit-title">Edit</h4>
+  {%- comment -%}
+  The engine's build, where an AUTHOR can read it. Michel, 2026-08-06: "I never
+  check the javascript!!!! Only md with IAL, python, yaml, csv" — and he was
+  right to object. Twice now we have argued about whether a fix was live, and
+  the only answer I had was "look in the page source", which is not an author's
+  job and not an author's language. Now the panel he opens every day says which
+  build he is looking at: if it does not match what was pushed, the site has not
+  published yet or the browser is holding an old page, and nobody has to guess.
+  build_revision is set by GitHub Pages; empty locally, hence "dev".
+  {%- endcomment -%}
+  <div id="lcx-build" title="Which engine build this page is running">⚙️ engine {{ site.github.build_revision | default: "dev" | slice: 0, 7 }}</div>
   <div class="lcx-tabs" id="lcx-tabs" hidden>
     <button type="button" class="lcx-tab lcx-tab-on" id="lcx-tab-edit">✏️ block</button>
-    <button type="button" class="lcx-tab" id="lcx-tab-notes">💬 my notes</button>
+    <button type="button" class="lcx-tab" id="lcx-tab-notes">👁️‍🗨️ my notes</button>
   </div>
   <div class="lcx-body" id="lcx-edit-body"></div>
   <div class="lcx-bar">
@@ -193,16 +227,53 @@ body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
     if (e && e.altKey) return true;
     return !!(window.lcxIsActive && window.lcxIsActive());
   }
+  /* ── the marks must not wait for a mouse ──────────────────────────────────
+     decorate() used to be reachable ONLY from track(), an alt-pointermove. So
+     turning the x-ray on with the ⚙️ pill loaded no notes and marked nothing:
+     every mark appeared one at a time as the pointer swept over its paragraph,
+     and on a touch screen it never appeared at all (Michel, 2026-08-06: "the
+     old icon only appears when I hoven the mouse over the paragraph").
+     The moment the mode changes, load the margin and mark the WHOLE page. */
+  function syncDeco() {
+    var on = !!(window.lcxIsActive && window.lcxIsActive());
+    document.body.classList.toggle("lc-xray-deco", on);
+    if (!on) return;
+    loadNotes(notesRoot(MAIN)).then(function (n) { if (n) decorate(); });
+  }
+  document.addEventListener("lc-mode-changed", syncDeco);
+  /* A RENDER IS A NEW PAGE. The runner calls this before it renders, so the
+     margin is re-read for the file now on screen instead of the one before it,
+     and the marks arrive with the page rather than waiting for a hover. */
+  window.lcForgetNotes = function () {
+    _notes = null;
+    track._notesTried = null;
+    var box = document.getElementById("lcx-lost");
+    if (box) box.remove();
+    if (window.lcxIsActive && window.lcxIsActive()) setTimeout(syncDeco, 300);
+  };
+  /* and once at boot, for a page that opens already in x-ray */
+  if (document.readyState !== "loading") setTimeout(syncDeco, 300);
+  else document.addEventListener("DOMContentLoaded", function () { setTimeout(syncDeco, 300); });
+
   function track(e) {
     if (dlg && dlg.open) return;
     var on = xrayActive(e);
     /* annotated blocks show their 💬 only while the x-ray is looking */
     document.body.classList.toggle("lc-xray-deco", on);
     if (!on) { if (e.target !== gear) hideGhost(); return; }   // stay if the pointer is on the gear
-    if (!track._notesTried) {
-      track._notesTried = true;
-      loadNotes(e.target && e.target.nodeType === 1 ? e.target : MAIN)
-        .then(function (n) { if (n) decorate(); });
+    /* latch only on SUCCESS, and PER LESSON. The old code latched before the
+       attempt, so a bench that was not connected on the first hover meant
+       "this page has no notes" for the rest of the visit. A plain boolean also
+       outlived the page: walking from a module's index into a lesson kept the
+       latch closed, so the new page never read its own margin. */
+    var _root = notesRoot(e.target && e.target.nodeType === 1 ? e.target : MAIN);
+    var _p = notesPathFor(_root);
+    if (_p && track._notesTried !== _p.lesson) {
+      track._notesTried = _p.lesson;
+      loadNotes(_root).then(function (n) {
+        if (n) decorate();
+        else track._notesTried = null;      /* try again on the next hover */
+      }, function () { track._notesTried = null; });
     }
     if (e.target === gear || e.target === ghost) { keep(); return; }
     var b = blockAt(e.target);
@@ -239,7 +310,12 @@ body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
     paneNotes.appendChild(nlab); paneNotes.appendChild(nta);
     var myAnchor = anchorOf(block, curId);
     loadNotes(block).then(function (n) {
-      if (n && n.map[myAnchor] != null) nta.value = n.map[myAnchor];
+      if (!n) return;
+      /* decorate() is what re-keys a note whose prose has since been edited,
+         so run it FIRST or the composer opens blank on a block that visibly
+         wears a 👁️‍🗨️ — and saving over that blank would file a second copy */
+      decorate();
+      if (n.map[myAnchor] != null) nta.value = n.map[myAnchor];
     });
 
     var ta = null;
@@ -302,8 +378,16 @@ body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
 
   /* ── 💬 the reader's margin ──────────────────────────────────────────────
      One markdown file per lesson, in the LEARNER'S bench, next to the work
-     they already keep there: _03_broken_wire.notes.md. The underscore keeps
-     it off the folder's cards (show-private already owns that convention).
+     they already keep there: __03_broken_wire.notes.md.
+
+     DUNDER, not a single underscore (Michel, 2026-08-06). The two prefixes
+     mean different things and the difference matters:
+       _x   hidden from the folder's cards — a READER'S view
+       __x  never travels — lab only, never to a vault, never to pedia
+     A margin is private in BOTH senses, so it takes the stronger prefix; and
+     because "__x" also starts with "_", the shelf keeps hiding it for free.
+     A single underscore never stopped anything from being published — the old
+     name only escaped because one workflow happened to glob "*.notes.md".
      Inside, ONE `## <anchor>` section per block — the anchor is #id when
      the block has one, otherwise the block's first words in «guillemets».
      The margin is a PLACE, not a chute: reopening a block shows the note,
@@ -315,13 +399,42 @@ body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
     return id ? "#" + id
       : "«" + ((((el && el.textContent) || "").trim().replace(/\s+/g, " ").slice(0, 60)) || "page") + "»";
   }
+  /* WHICH element decides the margin's path? Not the one under the pointer.
+     notesPathFor and lcBench.resolve both walk up with .closest() to find the
+     render root, so an element OUTSIDE it — the topbar, a FAB, a chip bar the
+     folder inserts beside the render — resolves to a different file entirely.
+     The first hover after the x-ray came on decided which, and _notesTried
+     latched, so one unlucky pointer position hid a page's notes for the whole
+     visit and left no 💬 anywhere (Michel, 2026-08-06).
+     The page has exactly one render root; ask IT, every time. */
+  function notesRoot(fromEl) {
+    var own = fromEl && fromEl.closest ? fromEl.closest(".lc-run[data-lc-src-path]") : null;
+    return own || document.querySelector(".lc-run[data-lc-src-path]") || MAIN || fromEl || null;
+  }
+  /* THE RUNNER PAGE IS NEVER A LESSON. /run.html is the engine's shell; the
+     page a reader is annotating is the file rendered INSIDE it. This asked the
+     element for a render root and, finding none, fell through to the shell's
+     own path — so a note typed on "🚶 A Long Walk" was filed in a margin named
+     __run.notes.md, headed "docs/run.md — notes", dropped in the lesson's own
+     folder. Nothing on the page could ever find it again (Michel,
+     2026-08-06). With no render and no real page there is nothing to annotate,
+     so this returns null and the margin stays shut rather than inventing a
+     file. */
   function notesPathFor(fromEl) {
-    var runRoot = fromEl && fromEl.closest ? fromEl.closest(".lc-run[data-lc-src-path]") : null;
-    var fabEl = document.getElementById("ed-fab");
-    var lessonPath = runRoot ? runRoot.dataset.lcSrcPath
-      : ((fabEl && fabEl.dataset && fabEl.dataset.pagePath) ? "docs/" + fabEl.dataset.pagePath : "page");
+    var root = notesRoot(fromEl);
+    var lessonPath = (root && root.dataset && root.dataset.lcSrcPath) || "";
+    if (!lessonPath) {
+      var fabEl = document.getElementById("ed-fab");
+      var pp = (fabEl && fabEl.dataset && fabEl.dataset.pagePath) || "";
+      if (pp && !/^run\.(md|html)$/i.test(pp)) lessonPath = "docs/" + pp;
+    }
+    if (!lessonPath) return null;
     var base = lessonPath.split("/").pop().replace(/\.[^.]*$/, "");
-    return { file: "_" + base + ".notes.md", lesson: lessonPath };
+    /* legacy: notes written before the dunder rule. Read as a fallback so a
+       margin somebody already wrote is never orphaned — see loadNotes. */
+    return { file: "__" + base + ".notes.md",
+             legacy: "_" + base + ".notes.md",
+             lesson: lessonPath };
   }
   function parseNotes(text) {
     var parts = String(text || "").split(/^## +/m);
@@ -345,14 +458,34 @@ body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
     return out;
   }
   function loadNotes(fromEl) {
-    if (_notes) return Promise.resolve(_notes);
+    fromEl = notesRoot(fromEl);          /* never the element under the pointer */
+    var p = notesPathFor(fromEl);
+    if (!p) return Promise.resolve(null);          /* nothing here to annotate */
+    /* ONE MARGIN PER LESSON. This was a plain cache that had no idea which
+       page it came from, so the FIRST page read in a session named the file
+       for every page after it — and saveNote reuses that name. Same shape as
+       the block-source registry, same consequence: notes filed under a
+       stranger's name and no mark anywhere, because decorate() was reading
+       another page's map (Michel, 2026-08-06). */
+    if (_notes && _notes.lesson === p.lesson) return Promise.resolve(_notes);
+    _notes = null;
     var t = window.lcBench && window.lcBench.target ? window.lcBench.target(fromEl) : null;
     if (!t || !t.repo || !t.pat) return Promise.resolve(null);
-    var p = notesPathFor(fromEl);
     return window.lcBench.read(p.file, fromEl).then(function (f) {
-      var parsed = parseNotes(f ? f.text : "");
+      if (f && f.text) return { text: f.text, sha: f.sha };
+      /* nothing under the dunder name: adopt a pre-dunder margin's content so
+         renaming the convention never loses a note somebody wrote. The sha
+         stays the DUNDER file's (null when absent) — handing GitHub the old
+         file's sha for a new path is rejected, and the first save must CREATE
+         the new file. The old one is left where it is: git keeps it, and the
+         publish gate excludes both names. */
+      return window.lcBench.read(p.legacy, fromEl).then(function (old) {
+        return { text: old ? old.text : "", sha: f ? f.sha : null };
+      }, function () { return { text: "", sha: f ? f.sha : null }; });
+    }).then(function (r) {
+      var parsed = parseNotes(r.text);
       if (!parsed.head) parsed.head = "# 💬 " + p.lesson + " — notes";
-      _notes = { file: p.file, sha: f ? f.sha : null, head: parsed.head,
+      _notes = { file: p.file, lesson: p.lesson, sha: r.sha, head: parsed.head,
                  map: parsed.map, order: parsed.order };
       return _notes;
     }).catch(function () { return null; });
@@ -367,15 +500,121 @@ body.lc-xray-deco .lc-noted::after { content: "💬"; position: absolute;
         .then(function (s) { n.sha = s || n.sha; return n; });
     });
   }
+  /* ── an anchor has to survive an ordinary edit ────────────────────────────
+     A block with no #id is filed under its own first sixty characters, so the
+     anchor is only as stable as the prose. Michel shortened a title from "The
+     Long Walk" to "A Long Walk" and his note on it went out of reach — a
+     perfectly normal edit, and exactly the edit a note ASKS FOR. An author who
+     loses a note for taking its advice will stop writing notes.
+     So an unmatched note gets one more chance: the closest block still without
+     one. Dice similarity over letter pairs — cheap, no library, and it reads
+     the two strings as the same block when only a word changed. The threshold
+     is high enough that two different paragraphs never trade notes.
+     A re-match RENAMES THE KEY in memory, so the composer, the save and the
+     lost list all agree, and the next save writes the file with the anchor
+     that matches what is on the page now. The margin heals itself. */
+  function normAnchor(s) {
+    return String(s || "").toLowerCase()
+      .replace(/[«»]/g, "")
+      .replace(/[^a-z0-9 ]+/g, " ")            /* emoji, punctuation, quotes */
+      .replace(/\s+/g, " ").trim();
+  }
+  function anchorLike(a, b) {
+    a = normAnchor(a); b = normAnchor(b);
+    if (!a || !b) return 0;
+    if (a === b) return 1;
+    if (a.length < 2 || b.length < 2) return 0;
+    var pairs = {}, hits = 0, i;
+    for (i = 0; i < a.length - 1; i++) {
+      var g = a.substr(i, 2); pairs[g] = (pairs[g] || 0) + 1;
+    }
+    for (i = 0; i < b.length - 1; i++) {
+      var h = b.substr(i, 2);
+      if (pairs[h] > 0) { pairs[h]--; hits++; }
+    }
+    return (2 * hits) / ((a.length - 1) + (b.length - 1));
+  }
+  var _ANCHOR_LIKE = 0.75;
+  function rematchNotes(anchors) {
+    var taken = {}, moved = 0;
+    anchors.forEach(function (a) { if (_notes.map[a] != null) taken[a] = true; });
+    _notes.order.slice().forEach(function (a) {
+      if (a.charAt(0) !== "«") return;      /* an #id anchor never drifts */
+      if (taken[a] || _notes.map[a] == null || _notes.map[a] === "") return;
+      var best = "", score = 0;
+      anchors.forEach(function (c) {
+        if (taken[c] || c.charAt(0) !== "«") return;
+        var s = anchorLike(a, c);
+        if (s > score) { score = s; best = c; }
+      });
+      if (!best || score < _ANCHOR_LIKE) return;
+      _notes.map[best] = _notes.map[a];
+      _notes.map[a] = null;                      /* buildNotes drops a null */
+      if (_notes.order.indexOf(best) < 0) {
+        _notes.order.splice(_notes.order.indexOf(a) + 1, 0, best);
+      }
+      taken[best] = true;
+      moved++;
+    });
+    return moved;
+  }
   /* the at-a-glance layer: every block whose anchor has a note carries
      .lc-noted; the CSS shows the mark only while the x-ray is looking */
   function decorate() {
     if (!_notes || !MAIN) return;
     var blocks = MAIN.querySelectorAll("[data-lc-id]," + BLOCK_SEL);
+    var anchors = [], seen = {};
     Array.prototype.forEach.call(blocks, function (b) {
       var id = (b.getAttribute && (b.getAttribute("data-lc-id") || b.id)) || "";
-      var v = _notes.map[anchorOf(b, id)];
+      var a = anchorOf(b, id);
+      seen[a] = true;
+      anchors.push(a);
+      b._lcAnchor = a;
+    });
+    rematchNotes(anchors);
+    Array.prototype.forEach.call(blocks, function (b) {
+      var v = _notes.map[b._lcAnchor];
       b.classList.toggle("lc-noted", v != null && v !== "");
+    });
+    showLost(seen);
+  }
+
+  /* ── the margin's lost property office ───────────────────────────────────
+     A note is filed under its block's ANCHOR, and for a block with no #id the
+     anchor is its first sixty characters. Rewrite the prose and the anchor no
+     longer matches anything: the note is still in the file, and there is
+     nothing on the page that can reach it. That is exactly what happened when
+     the module 02 index was rewritten (Michel, 2026-08-06: "if the id does not
+     work, then it should still be listed on top (as lost?) so I can have
+     access to it again").
+     So: whatever the page could not place, it shows — at the top, in full,
+     with the anchor it was filed under. Nothing is silently dropped. */
+  function showLost(seen) {
+    var host = MAIN.querySelector(".lc-run") || MAIN;
+    var box = document.getElementById("lcx-lost");
+    var lost = _notes.order.filter(function (a) {
+      return !seen[a] && _notes.map[a] != null && _notes.map[a] !== "";
+    });
+    if (!lost.length) { if (box) box.remove(); return; }
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "lcx-lost";
+      box.setAttribute("data-lc-derived", "1");   /* generated: no gear on it */
+      host.insertBefore(box, host.firstChild);
+    }
+    box.textContent = "";
+    var h = document.createElement("h4");
+    h.textContent = "👁️‍🗨️ " + lost.length + " note" + (lost.length > 1 ? "s" : "")
+      + " whose block is gone — the page was edited after they were written";
+    box.appendChild(h);
+    lost.forEach(function (a) {
+      var d = document.createElement("details");
+      var sm = document.createElement("summary");
+      sm.textContent = a;
+      var pre = document.createElement("pre");
+      pre.textContent = _notes.map[a];
+      d.appendChild(sm); d.appendChild(pre);
+      box.appendChild(d);
     });
   }
   function showTab(which) {

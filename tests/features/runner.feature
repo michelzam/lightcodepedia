@@ -111,3 +111,38 @@ Feature: The instant runner (RT) — Phase A parity
     And I wait for the page to be interactive
     Then a rendered diagram replaces the dot source
     And the diagram is no wider than the page
+
+  Scenario: A second page's block opens its OWN source, not the last page's
+    Michel opened the ⚙️ on a two-column .blocks in a lesson and got an
+    .accordion from a completely different file (2026-08-06). The runner names
+    id-less fences run_1, run_2 … with a counter that restarts at 1 on every
+    render, and the source registry is keyed by that name and was never
+    cleared. So the module's index claimed run_1 first, and the lesson's first
+    fence inherited the index's markup for the rest of the session. A
+    positional name is only unique inside one render, so the registry has to be
+    emptied at the start of one too.
+
+    Given the GitHub contents API serves "courses/demo/mod/first.md" with the document:
+      """
+      # First
+
+      ```
+      ### From the FIRST file
+      ```
+      {: .accordion }
+      """
+    And the GitHub contents API serves "courses/demo/mod/second.md" with the document:
+      """
+      # Second
+
+      ```
+      ### From the SECOND file
+      ```
+      {: .blocks cols="2" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/first.md"
+    And I wait for the page to be interactive
+    And I move to the runner source "gh:acme/demo/courses/demo/mod/second.md"
+    And I wait for the page to be interactive
+    Then the block editor on the rendered fence shows "From the SECOND file"
+    And no snapshot still carries "From the FIRST file"

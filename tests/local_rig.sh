@@ -13,6 +13,8 @@ cd "$LIBS"
 [ -f marked.min.js ] || { npm pack marked@9 >/dev/null 2>&1 && tar xzf marked-9*.tgz package/marked.min.js -O > marked.min.js && rm -f marked-9*.tgz; }
 [ -f js-yaml.min.js ] || { npm pack js-yaml@4 >/dev/null 2>&1 && tar xzf js-yaml-4*.tgz package/dist/js-yaml.min.js -O > js-yaml.min.js && rm -f js-yaml-4*.tgz; }
 [ -d mpy ] || { npm pack @micropython/micropython-webassembly-pyscript@latest >/dev/null 2>&1 && tar xzf micropython-*.tgz && mv package mpy && rm -f micropython-*.tgz; }
+[ -f chart.umd.min.js ] || { npm pack chart.js@4 >/dev/null 2>&1 && tar xzf chart.js-4*.tgz package/dist/chart.umd.min.js -O > chart.umd.min.js && rm -f chart.js-4*.tgz; }
+[ -f alasql.min.js ] || { npm pack alasql@4 >/dev/null 2>&1 && tar xzf alasql-4*.tgz package/dist/alasql.min.js -O > alasql.min.js && rm -f alasql-4*.tgz; }
 [ -d ag ] || { npm pack ag-grid-community@31 >/dev/null 2>&1 && tar xzf ag-grid-community-31*.tgz && mv package ag && rm -f ag-grid-community-31*.tgz; }
 cat > serve.py <<'PYEOF'
 import http.server, os, socketserver
@@ -41,4 +43,4 @@ sleep 1
 setsid python3 "$LIBS/serve.py" < /dev/null > /dev/null 2>&1 &
 for i in $(seq 1 10); do curl -s -o /dev/null http://127.0.0.1:8899/run.html && break; sleep 1; done
 echo "rig up: $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8899/run.html)"
-echo "env: MARKED_JS=$LIBS/marked.min.js JS_YAML=$LIBS/js-yaml.min.js MPY_DIR=$LIBS/mpy AG_GRID_DIR=$LIBS/ag"
+echo "env: MARKED_JS=$LIBS/marked.min.js JS_YAML=$LIBS/js-yaml.min.js MPY_DIR=$LIBS/mpy AG_GRID_DIR=$LIBS/ag CHART_JS=$LIBS/chart.umd.min.js ALASQL_JS=$LIBS/alasql.min.js"

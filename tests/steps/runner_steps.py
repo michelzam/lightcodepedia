@@ -249,3 +249,57 @@ def step_diagram_fits(context):
     assert m["svg"] <= m["box"] + 1, (
         "diagram %spx wide inside a %spx column — the reader must scroll"
         % (round(m["svg"]), round(m["box"])))
+
+
+# ── one render, one set of positional names ────────────────────────────────
+# run_1 on this page is a DIFFERENT block from run_1 on the last one. The
+# registry that feeds the ⚙️ editor is keyed by that name, so it has to be
+# emptied when a render starts or the editor opens the previous page's markup.
+
+@when('I move to the runner source "{src}"')
+def step_move_runner_source(context, src):
+    """Change the hash — NO reload. That is the whole point: a reload would
+    give the page a fresh JS context and hide the bug. The runner re-renders on
+    hashchange, in the same context, which is exactly how a reader walks from a
+    module's index into its first lesson."""
+    context.page.evaluate("s => { location.hash = '#src=' + s; }", src)
+    context.page.wait_for_timeout(600)
+
+
+@then('the block editor on the rendered fence shows "{text}"')
+def step_editor_shows(context, text):
+    from playwright.sync_api import expect as _expect
+
+    block = context.page.locator("#lc-run [data-lc-id]").first
+    block.wait_for(state="visible", timeout=20_000)
+    block.scroll_into_view_if_needed()
+    block.evaluate(
+        "el => el.dispatchEvent(new PointerEvent('pointermove',"
+        " {altKey: true, bubbles: true, cancelable: true}))"
+    )
+    gear = context.page.locator("#lcx-gear")
+    gear.wait_for(state="visible", timeout=5_000)
+    gear.click(force=True)
+    content = context.page.locator("#lcx-content")
+    _expect(content).to_be_visible(timeout=5_000)
+    got = content.input_value()
+    assert text in got, (
+        "the ⚙️ opened on %r — it is showing another block's source, "
+        "not this page's" % got[:160]
+    )
+
+
+@then('no snapshot still carries "{text}"')
+def step_no_stale_snapshot(context, text):
+    stale = context.page.evaluate(
+        """(needle) => {
+          var out = [];
+          document.querySelectorAll('#lc-run [id]').forEach(function (el) {
+            var s = window.lcSourceOf && window.lcSourceOf(el.id);
+            if (s && s.indexOf(needle) >= 0) out.push(el.id);
+          });
+          return out;
+        }""",
+        text,
+    )
+    assert not stale, "ids still holding the previous page's source: %r" % stale

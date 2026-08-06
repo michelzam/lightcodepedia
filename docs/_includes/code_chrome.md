@@ -234,6 +234,15 @@
       if (_srcSnap[el.id] === undefined || fresh) _srcSnap[el.id] = el.outerHTML;
     });
   }
+  /* A NEW PAGE MUST NOT INHERIT THE OLD PAGE'S SOURCES. The runner names
+     id-less fences run_1, run_2 … with a counter that restarts at 1 for every
+     render, and this registry is keyed by that string and never expired. So
+     after reading one page and opening another, run_1 already existed and the
+     second page's first fence kept the FIRST page's markup: Michel opened the
+     ⚙️ on a .blocks and got an .accordion from a different file
+     (2026-08-06). Positional ids are only unique within one render, so the
+     registry has to be scoped to one render too. */
+  window.lcForgetSources = function () { _srcSnap = {}; };
   window.lcSourceOf = function (id) { return _srcSnap[id]; };
   window.lcSnapshotSources = _snapshotSources;   // runner: snapshot RT fences pre-upgrade
   window.lcSetSourceOf = function (id, html) { _srcSnap[id] = html; };   // xray: refresh after a kept edit

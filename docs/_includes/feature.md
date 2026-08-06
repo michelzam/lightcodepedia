@@ -432,14 +432,37 @@ Registers with window.lcScanElement so the editor preview also renders cards.
           if (rawErr.indexOf("AssertionError") >= 0) {
             errDiv.textContent = rawErr.replace(/^.*AssertionError:?\s*/, "") || "assertion failed";
           } else {
-            errDiv.textContent = "⚙️ Not you — this page speaks a newer engine than this site is running. " +
-              "After the next publish, reload and run again. (" + rawErr + ")";
+            errDiv.textContent = engineErrText(rawErr);
           }
           s.querySelector(".lc-feature-step-row").insertAdjacentElement("afterend", errDiv);
         }
       });
 
-      /* show built-in check results as a footer — always, pass or fail */
+      /* A non-assertion failure is the page's CHECK falling over, not the learner
+     failing. There are two reasons for that and they need different words:
+
+       · the page asks the runtime for something it does not have — usually an
+         author's slip (Datagrid has row_count, not count), sometimes a page
+         genuinely newer than the deployed engine
+       · anything else — a real error inside the check
+
+     The old text asserted the first cause AND prescribed a cure: "after the
+     next publish, reload and run again". When the cause was a typo, Michel
+     published, nothing changed, and the message had sent him after a fix that
+     could never work (2026-08-06). Never prescribe an action that may not
+     help: name what happened and say whose problem it is. */
+  function engineErrText(raw) {
+    var e = String(raw || "").trim();
+    if (/AttributeError|NameError|has no attribute/.test(e)) {
+      return "\u2699\ufe0f Not you — this page's own check asks for something the engine "
+           + "does not have, so it cannot run. That is the page's bug, not yours. "
+           + "(" + e + ")";
+    }
+    return "\u2699\ufe0f Not you — this page's check could not run. That is the page's "
+         + "bug, not yours. (" + e + ")";
+  }
+
+  /* show built-in check results as a footer — always, pass or fail */
       var body = card.querySelector("[data-lc-body]");
       var oldFooter = card.querySelector(".lc-feature-builtin-footer");
       if (oldFooter) oldFooter.parentNode.removeChild(oldFooter);
@@ -509,8 +532,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
             if (last.indexOf("AssertionError") >= 0) {
               errDiv.textContent = last.replace(/^.*AssertionError:?\s*/, "") || "assertion failed";
             } else {
-              errDiv.textContent = "⚙️ Not you — this page speaks a newer engine than this site is running. " +
-                "After the next publish, reload and run again. (" + last + ")";
+              errDiv.textContent = engineErrText(last);
             }
             s.querySelector(".lc-feature-step-row").insertAdjacentElement("afterend", errDiv);
           }

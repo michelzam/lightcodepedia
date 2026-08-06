@@ -235,7 +235,15 @@ files a student is already working in.
           root.querySelectorAll("pre[class], div[class^='language-']").forEach(function (el) {
             if (!el.id && el.className) el.id = "run_" + (++n);
           });
-          if (window.lcSnapshotSources) window.lcSnapshotSources(root);
+          /* the counter above restarts at 1 for every render, so run_1 on this
+             page is a DIFFERENT block from run_1 on the last one. Drop the old
+             render's snapshots before taking these, or the editor opens the
+             previous page's markup (Michel, 2026-08-06). */
+          if (window.lcForgetSources) window.lcForgetSources();
+          if (window.lcSnapshotSources) window.lcSnapshotSources(root, true);
+          /* the author's margin belongs to the file on screen, not the last one
+             (same story: __run.notes.md, Michel 2026-08-06) */
+          if (window.lcForgetNotes) window.lcForgetNotes();
           if (window.lcScanElement) window.lcScanElement(root);
           if (window.lcRebase)      window.lcRebase(root);
           if (window.lcCellsRescan) window.lcCellsRescan();   // {= } cells in the rendered page

@@ -306,13 +306,11 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
     var mdUrl   = function (rp) { return "/" + rp.replace(/^docs\//, ""); };      // static .md on Pages
     var runUrl  = function (rp) { return "/run.html#src=gh:" + scanRepo + "/" + rp; };
     var cardUrl = function (rp) { return runnerMode ? runUrl(rp) : mdUrl(rp).replace(/\.md$/i, ""); };
-    /* parent="true" — one line under the cards, climbing to the folder that
-       CONTAINS this one. A reader who just finished a module needs a way up
-       before they can pick the next one, and a sibling list cannot offer it.
-       Deliberately silent at the root: "up" from the top is nowhere, and an
-       author gets to decide where climbing helps (hence the knob, not a
-       default). Placed AFTER the cards — the siblings are the main road, up
-       is the way out. */
+    /* parent="true" — a way OUT of the page you are on. A reader who just
+       finished a module needs one step back before they can pick the next
+       thing, and a list of siblings cannot offer it. Deliberately silent at
+       the root: "up" from the top is nowhere, and an author gets to decide
+       where climbing helps (hence the knob, not a default). */
     function addParentLine(resolvedPath) {
       if (!wantParent || addParentLine.done) return;
       addParentLine.done = true;
@@ -322,10 +320,32 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       var here = String(resolvedPath || "").replace(/\/+$/, "");
       if (!here || here === "." || here === "./") here = runBaseDir || "";
       if (!here) return;
-      var parts = here.split("/");
-      parts.pop();                                  /* drop this folder */
-      if (!parts.length) return;                    /* at the root: no up */
-      var pPath = parts.join("/");
+      /* UP IS ONE STEP FROM WHERE THE READER STANDS, not one step from the
+         folder this shelf happens to list (Michel, 2026-08-06). From a lesson
+         page, up is that folder's OWN index — the module's front door, which
+         is where a reader who stops mid-module wants to land. Only from the
+         index itself does up climb to the folder above. The old rule skipped
+         the front door from every page, so finishing a lesson threw you out of
+         the module entirely. */
+      var selfPath = (runRoot && runRoot.dataset.lcSrcPath) || "";
+      var onIndex;
+      if (selfPath) {
+        onIndex = /^index\.[a-z0-9]+$/i.test(selfPath.split("/").pop());
+      } else {
+        /* a static page: "/…/mod/" and "/…/mod/index" are both the front door */
+        onIndex = /(\/|\/index(\.[a-z0-9]+)?)$/i.test(location.pathname);
+      }
+      var base = selfPath ? selfPath.split("/").slice(0, -1).join("/") : here;
+      var pPath;
+      if (!onIndex) {
+        pPath = base;                               /* to this folder's index */
+      } else {
+        var parts = base.split("/");
+        parts.pop();                                /* drop this folder */
+        if (!parts.length) return;                  /* at the root: no up */
+        pPath = parts.join("/");
+      }
+      if (!pPath) return;
       /* "Up" — the label, and nothing else. It used to read "⬆️ up to
          micro_build_ai", which spends a whole line naming a folder the reader
          is about to see anyway (Michel, 2026-08-05).
@@ -339,7 +359,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       pill.setAttribute("data-lc-derived", "1");     /* generated: no gear */
       pill.href = href;
       pill.textContent = "⬆️ Up";
-      pill.title = "The folder above";
+      pill.title = onIndex ? "The folder above" : "This module's front page";
       _upPill = pill;
       placeUpPill();
       if (window.lcRebase) window.lcRebase(pill);

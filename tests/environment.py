@@ -130,6 +130,33 @@ def _stub_micropython(page):
     )
 
 
+# LOCAL HARNESS ONLY: charts load Chart.js and {: .query } loads alasql, both
+# from jsdelivr. Neither had a shim, so every chart-bearing and SQL-bearing
+# scenario was red on this rig whatever the engine did — a blind spot sitting
+# exactly where the wiring lesson lives. Found on 2026-08-06 while checking
+# whether three components.feature failures were a regression: they fail the
+# same way on every engine build. Same shape as the shims above.
+CHART_JS = os.environ.get("CHART_JS") or None
+_CHART_BODY = None
+if CHART_JS and os.path.isfile(CHART_JS):
+    with open(CHART_JS, "rb") as _f:
+        _CHART_BODY = _f.read()
+
+ALASQL_JS = os.environ.get("ALASQL_JS") or None
+_ALASQL_BODY = None
+if ALASQL_JS and os.path.isfile(ALASQL_JS):
+    with open(ALASQL_JS, "rb") as _f:
+        _ALASQL_BODY = _f.read()
+
+
+def _stub_script(page, pattern, body):
+    if body is None:
+        return
+    page.route(pattern, lambda route: route.fulfill(
+        status=200, content_type="application/javascript; charset=utf-8",
+        body=body))
+
+
 _pw = None
 _browser = None
 
@@ -184,6 +211,12 @@ def before_scenario(context, scenario):
     _stub_micropython(context.page)  # LOCAL HARNESS ONLY (no-op when MPY_DIR unset)
     _stub_ag_grid(context.page)  # LOCAL HARNESS ONLY (no-op when AG_GRID_DIR unset)
     _stub_js_yaml(context.page)  # LOCAL HARNESS ONLY (no-op when JS_YAML unset)
+    _stub_script(context.page,  # LOCAL HARNESS ONLY (no-op when CHART_JS unset)
+                 "https://cdn.jsdelivr.net/npm/chart.js@*/dist/chart.umd.min.js",
+                 _CHART_BODY)
+    _stub_script(context.page,  # LOCAL HARNESS ONLY (no-op when ALASQL_JS unset)
+                 "https://cdn.jsdelivr.net/npm/alasql@*/dist/alasql.min.js",
+                 _ALASQL_BODY)
     context.page.set_default_timeout(15_000)
     context.lc_console_errors = 0
     context.page.on(

@@ -373,3 +373,46 @@ Feature: Folder shelf — read posture and X-ray workbench
     And the way up is pushed to the far end of the bar
     And a way up to the folder above is offered
     And the way up is not a card in the grid
+
+  Scenario: From a lesson, Up goes to the module's own front page
+    Michel, 2026-08-06: "'Up' should go to the index of that folder if not
+    already there, otherwise in the parent's index page." The pill used to
+    climb one level from wherever it was placed, so finishing a lesson threw
+    the reader clean out of the module instead of dropping them at its front
+    door — the one page that says what the module is and lists what is left.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the folder "courses/demo/mod" serves pages "alpha.md"
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # A lesson
+
+      [in this module](#)
+      {: .folder parent="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the shelf shows a card for "Alpha"
+    And the way up leads to "courses/demo/mod/index.md"
+
+  Scenario: From the module's front page, Up climbs out of the module
+    The other half of the same rule: on the index there is no front door left
+    to offer, so up is the folder above.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the folder "courses/demo/mod" serves pages "alpha.md"
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Shelf page
+
+      [Browse](#)
+      {: .folder parent="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    Then the shelf shows a card for "Alpha"
+    And the way up leads to "courses/demo/index.md"

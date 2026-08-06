@@ -346,18 +346,23 @@ def step_noted_mark(context):
              const el = document.querySelector('p.lc-noted');
              const cs = getComputedStyle(el, '::after');
              const r = el.getBoundingClientRect();
-             return { content: cs.content, right: cs.right,
-                      blockRight: r.right, blockTop: r.top,
-                      vw: window.innerWidth };
+             return { content: cs.content, left: cs.left,
+                      pad: getComputedStyle(el).paddingLeft,
+                      blockLeft: r.left, vw: window.innerWidth };
            }"""
     )
-    assert "💬" in (geo["content"] or ""), \
-        "no 💬 in the ::after content: %r" % geo["content"]
-    off = float((geo["right"] or "0px").replace("px", ""))
-    assert off > 0, "the mark is flush with the edge — the gear will cover it"
-    # its own box must land inside the block, and so inside the viewport
-    assert geo["blockRight"] - off < geo["vw"], \
-        "the mark is pushed off the right of the viewport (%r)" % geo
+    # the mark moved to the LEFT gutter and became 👁️‍🗨️ (Michel, 2026-08-06):
+    # prose is left-justified, so the left edge is the one the eye follows.
+    assert "\N{EYE}" in (geo["content"] or ""), \
+        "no eye mark in the ::after content: %r" % geo["content"]
+    pad = float((geo["pad"] or "0px").replace("px", ""))
+    left = float((geo["left"] or "0px").replace("px", ""))
+    assert pad > 8, "no gutter reserved for the mark: padding-left=%r" % geo["pad"]
+    # INSIDE the block's box — past the edge it is clipped by any scrolling
+    # ancestor, which cost a whole release once
+    assert 0 <= left < pad, "the mark is outside the gutter: left=%r pad=%r" % (left, pad)
+    assert geo["blockLeft"] + left >= 0, \
+        "the mark is pushed off the left of the viewport (%r)" % geo
 
 
 @then("the composer offers no editor controls")
@@ -504,3 +509,120 @@ def step_up_far_end(context):
                    /* within a chip's width of the bar's right edge */
                    return (br.right - pr.right) < 90; }""")
     assert pushed, "the up pill is not right-aligned in the bar"
+
+
+# ── the margin must not depend on where the pointer happened to be ─────────
+# xray_edit passed e.target straight into notesPathFor, which walks up with
+# .closest() to find the render root. An element OUTSIDE that root — the
+# topbar, a FAB, a chip bar the folder inserts beside the render — resolved to
+# a different file entirely, and _notesTried latched before the attempt. So one
+# unlucky first hover hid a page's notes for the whole visit, with no 💬
+# anywhere (Michel, 2026-08-06: "not visible again in the xray form! NOR the
+# icon 💬").
+
+@when("the x-ray wakes up on the topbar, outside the render")
+def step_wake_outside(context):
+    # exactly the accident: the first alt-hover of the visit lands on chrome
+    # that lives outside .lc-run
+    outside = context.page.locator("#lc-topbar, header, body").first
+    outside.evaluate(
+        "el => el.dispatchEvent(new PointerEvent('pointermove',"
+        " {altKey: true, bubbles: true, cancelable: true}))")
+    context.page.wait_for_timeout(800)
+
+
+@then("the margin still knows the page's notes")
+def step_margin_knows(context):
+    # there is no test hook into which file was chosen, so assert on the
+    # observable: a block only gets .lc-noted once the right notes are loaded
+    noted = context.page.locator(".lc-run .lc-noted")
+    expect(noted.first).to_be_visible(timeout=15_000)
+
+
+@then("the noted block wears its 💬")
+def step_noted_badge(context):
+    shown = context.page.evaluate(
+        """() => { var b = document.querySelector('.lc-run .lc-noted');
+                   if (!b) return 'no noted block';
+                   if (!document.body.classList.contains('lc-xray-deco'))
+                     return 'deco class missing';
+                   var cs = getComputedStyle(b, '::after');
+                   return (cs.content && cs.content !== 'none') ? 'ok' : 'no ::after'; }""")
+    assert shown == "ok", "the 💬 is not painted: " + str(shown)
+
+
+# ── nothing in the margin may become unreachable ───────────────────────────
+# A note is filed under its block's anchor, and for a block with no #id the
+# anchor is its first sixty characters. Rewrite the prose and the note is still
+# in the file with nothing on the page able to reach it — which is exactly what
+# happened to Michel's index note when I rewrote that paragraph.
+
+@then('the lost margin lists "{needle}"')
+def step_lost_lists(context, needle):
+    box = context.page.locator("#lcx-lost")
+    expect(box).to_be_visible(timeout=15_000)
+    expect(box).to_contain_text(needle, timeout=5_000)
+
+
+@then("the lost margin is not shown")
+def step_no_lost(context):
+    context.page.wait_for_timeout(600)
+    assert context.page.locator("#lcx-lost").count() == 0, \
+        "a lost-notes panel appeared with nothing lost"
+
+
+@then("the noted block wears its mark in the left gutter")
+def step_mark_left(context):
+    where = context.page.evaluate(
+        """() => { var b = document.querySelector('.lc-run .lc-noted');
+                   if (!b) return 'no noted block';
+                   if (!document.body.classList.contains('lc-xray-deco'))
+                     return 'deco class missing';
+                   var cs = getComputedStyle(b, '::after');
+                   if (!cs.content || cs.content === 'none') return 'no mark';
+                   /* the mark must be INSIDE the box (the older rule: past the
+                      edge it is clipped by any scrolling ancestor) AND in the
+                      gutter the x-ray reserves on the left */
+                   var pad = parseFloat(getComputedStyle(b).paddingLeft) || 0;
+                   var left = parseFloat(cs.left);
+                   if (!(pad > 8)) return 'no gutter reserved: padding-left=' + pad;
+                   if (!(left >= 0 && left < pad)) return 'mark not in the gutter: left=' + left;
+                   return 'ok'; }""")
+    assert where == "ok", "the mark is misplaced: " + str(where)
+
+
+@then("the note area is reachable without ever hovering")
+def step_reachable_no_hover(context):
+    # no pointermove has been dispatched in this scenario at all — the marks and
+    # the loaded margin must both be a consequence of the MODE, not the mouse
+    state = context.page.evaluate(
+        """() => ({
+             deco: document.body.classList.contains('lc-xray-deco'),
+             marked: document.querySelectorAll('.lc-noted').length
+           })""")
+    assert state["deco"], "the decoration layer is off in x-ray mode"
+    assert state["marked"] >= 1, "no block was marked without a hover"
+
+
+@then('the way up leads to "{path}"')
+def step_way_up_leads_to(context, path):
+    up = context.page.locator("a.lc-folder-up-pill").first
+    expect(up).to_be_visible(timeout=20_000)
+    href = up.get_attribute("href") or ""
+    assert path in href, "the way up points at %r, not %r" % (href, path)
+
+
+@then("no margin was ever written for the runner's own shell")
+def step_no_shell_margin(context):
+    # /run.html is the engine's page. A margin named after it is always a bug:
+    # the note belongs to the file rendered INSIDE it.
+    bad = [c["path"] for c in context.bench_commits
+           if "run.notes.md" in c["path"] or "/run.md" in c["text"][:200]]
+    assert not bad, "a margin was written for the runner itself: %r" % bad
+
+
+@then('the composer shows "{text}"')
+def step_composer_shows(context, text):
+    ta = context.page.locator("#lcx-note-text")
+    expect(ta).to_be_visible(timeout=10_000)
+    expect(ta).to_have_value(text, timeout=10_000)
