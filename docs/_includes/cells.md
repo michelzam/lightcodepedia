@@ -8,6 +8,11 @@ Cells — reactive spreadsheet cells: a knob (or a run of prose) is a cell.
   {: visible="= expr" }   any block shows only while `bool(expr)` is true —
                           `visible` is just another cell.
 
+A formula reads: every editable {: .form } and {: .mdpad } by id (and any field
+name that is unique on the page, bare), every {: .feature } id as .status /
+.passing, every {: .dataset } and {: .query } id as .count / .empty, and the
+site-wide store.
+
 There is no component to declare. Cells evaluate in the page's own Python
 runtime — the same instance a hidden `{: .run silent="true" }` block seeds with
 its model (constants, helper functions). Each editable {: .form } is a scope
@@ -104,6 +109,20 @@ Auto-included by docs/_layouts/default.html.
       if (!id || scopes[id]) return;
       var st = f.getAttribute("data-status") || "";
       scopes[id] = { status: st, passing: st === "passing" };
+    });
+    /* TABLES ARE STATE TOO. A cell could read a form, a mdpad and a feature,
+       but not a table — so counting rows needed a whole separate component
+       (.stat) for a job the cell mechanism already does. Michel, 2026-08-06:
+       "I am totally surprised by stat. Could it be rather done with a cell?"
+       It can now: `{= visited.count }` reads any dataset or query by its id,
+       including one a query publishes. Forms and features keep an id they
+       already own — a lesson's own names win over the data's. */
+    var ds = window.lcDatasets || {};
+    Object.keys(ds).forEach(function (id) {
+      if (!id || scopes[id]) return;
+      var arr = ds[id];
+      var n = (arr && typeof arr.length === "number") ? arr.length : 0;
+      scopes[id] = { count: n, empty: n === 0 };
     });
     var bare = {};
     for (var k in counts) if (counts[k] === 1) bare[k] = vals[k];

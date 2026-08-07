@@ -22,6 +22,12 @@ on:
   push:
     paths:
       - "courses/**"
+      # A DUNDER FILE CANNOT BREAK A LESSON. `__x` never travels — that is the
+      # whole meaning of the prefix — so a margin note has nothing for this
+      # gate to check, and every one of Michel's notes was queueing a job for
+      # nothing. Negations are evaluated in order, so a commit touching a
+      # lesson AND a note still runs; only a notes-only commit is skipped.
+      - "!courses/**/__*"
       - "tests/course_audit.py"
       - ".github/workflows/course-audit.yml"
   pull_request:

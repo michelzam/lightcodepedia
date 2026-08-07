@@ -27,7 +27,19 @@ env:
 
 jobs:
   fleet-status:
-    if: github.repository == 'michelzam/lightcodelab'
+    # A FAILED PUBLISH HAS NOTHING TO REPORT. workflow_run fires on every
+    # completion, success or not, so each failing publish spawned a board
+    # refresh that failed too — two failure emails per click, arriving while
+    # Michel touched nothing (2026-08-06, the day GitHub's Actions control
+    # plane stopped assigning runners: dispatch 500s, cancel 500s, Pages
+    # deployments stuck on "deployment_queued"). The board only means
+    # something after a publish that landed, so measure then. A cron or a hand
+    # dispatch still runs unconditionally — those are the paths for "tell me
+    # where the fleet stands right now".
+    if: >-
+      github.repository == 'michelzam/lightcodelab' &&
+      (github.event_name != 'workflow_run' ||
+       github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write

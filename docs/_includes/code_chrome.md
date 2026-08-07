@@ -184,6 +184,23 @@
   function prettifyKey(k) {
     return String(k).replace(/_/g, " ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
   }
+  /* ── a cell knob must survive its component's upgrade ───────────────────
+     cells.md promises that "any knob can be a cell" and that `visible` is
+     just another cell. But almost every component REBUILDS its element and
+     copies only the knobs it knows about, so an authored
+     `{: .form visible="= ask.dog" }` lost its gate on the way to the DOM and
+     the block showed unconditionally. Found while proving module 02's
+     reservation flow before writing it (2026-08-06): a plain paragraph gated
+     correctly, the form beside it never did.
+     Call this with the authored element and its replacement, right before the
+     swap. Cheap, and it keeps the promise the docs already make. */
+  window.lcCarryCellKnobs = function (from, to) {
+    if (!from || !to || !from.getAttribute) return to;
+    var v = from.getAttribute("visible");
+    if (v != null && !to.hasAttribute("visible")) to.setAttribute("visible", v);
+    return to;
+  };
+
   window.lcEscapeHtml = escapeHtml;
   window.lcPrettifyKey = prettifyKey;
 

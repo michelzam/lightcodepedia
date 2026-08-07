@@ -1215,7 +1215,7 @@ class _Attrs(object):
                   {"n": "format", "t": "str", "data": True, "d": "yaml"},
                   {"n": "editable", "t": "bool", "data": True, "d": False}],
            assoc=[{"n": "master", "target": "Datagrid"}],
-           methods=["submit"])
+           methods=["submit", "set"])
 class Form(Block):
     @property
     def master(self):
@@ -1234,6 +1234,24 @@ class Form(Block):
         except Exception:
             d = {}
         return _Attrs(d)
+
+    def set(self, field, value):
+        """Type one field, the way a person does.
+
+        A SCENARIO HAS TO BE ABLE TO ACT. Every When in this course read
+        "when the page has settled", which changes nothing, so Given/When/Then
+        collapsed into three ways of saying Then (Michel, 2026-08-06). This
+        goes through the grid's own edit path — setDataValue, then
+        onCellValueChanged, the model, data-lc-value and the lc-model-changed
+        bus — so every cell watching this form recomputes exactly as it would
+        for a human keystroke. Returns True when the field was found.
+        """
+        fn = getattr(js.window, "lcFormSet", None)
+        if fn is None:
+            return False
+        # self.id, not self._id — a Form is an element wrapper (Object keeps
+        # _el); only Dataset and its kin carry a bare _id string
+        return bool(fn(self.id, field, value))
 
     def submit(self):
         return self._tap("button[type=submit], .lc-form-submit")
@@ -1796,7 +1814,16 @@ class Page(Object):
         st = _store_tree()
         if name in st and isinstance(st[name], dict):
             return _StoreScope(st[name])
-        raise AttributeError("no component with id='" + name + "' on this page")
+        # AN #id IS THE AUTHOR'S NAME FOR A THING, component or not. Only
+        # upgraded components carry data-lc-id, so a plain `{: .block #tally }`
+        # — a list, a paragraph — was unreachable from a check even though the
+        # author had named it (2026-08-06, writing module 02 page 3: the three
+        # counted lines are prose, and the check has to read them). Last
+        # resort, so nothing above changes meaning.
+        plain = js.window.document.getElementById(name)
+        if plain:
+            return Block(plain)
+        raise AttributeError("no component or #id='" + name + "' on this page")
 
     def feature(self, n=0):
         return Feature.nth(n)

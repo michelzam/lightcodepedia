@@ -492,6 +492,7 @@ Auto-included by docs/_layouts/default.html.
       var fileCdn = window.lcUseCdn();
       var srcs = window.lcFileSrc(fileRef);
       var fwrap = buildFormWrapper({ id: id, title: title || fileRef, format: "", mode: fileCdn ? "cdn" : "live" });
+      if (window.lcCarryCellKnobs) window.lcCarryCellKnobs(el, fwrap);
       el.parentNode.replaceChild(fwrap, el);
       var fbody = fwrap.querySelector(".lc-form-body");
       fetch(fileCdn ? srcs.cdn : srcs.raw)
@@ -504,6 +505,7 @@ Auto-included by docs/_layouts/default.html.
 
     var wrapper = buildFormWrapper({ id: id, title: title || "Form", format: bound ? "" : format });
     if (bound) wrapper.setAttribute("data-bound", bound);
+    if (window.lcCarryCellKnobs) window.lcCarryCellKnobs(el, wrapper);
     el.parentNode.replaceChild(wrapper, el);
     var body = wrapper.querySelector(".lc-form-body");
 
@@ -552,6 +554,7 @@ Auto-included by docs/_layouts/default.html.
     var url = useCdn ? cdn : raw;
     var id = el.id || ("frm" + (++FORM_ID));
     var wrapper = buildFormWrapper({ id: id, title: title || "Form", mode: useCdn ? "cdn" : "live" });
+    if (window.lcCarryCellKnobs) window.lcCarryCellKnobs(el, wrapper);
     el.parentNode.replaceChild(wrapper, el);
     var body = wrapper.querySelector(".lc-form-body");
     body.innerHTML = '<div class="lc-form-empty">loading…</div>';
@@ -582,6 +585,24 @@ Auto-included by docs/_layouts/default.html.
         if (!done && node.data && node.data._key === key) { node.setDataValue("value", value); done = true; }
       });
     } catch (e) { return false; }
+    /* AG GRID DELIVERS onCellValueChanged A TICK LATER, so a caller that acts
+       and then looks saw the old value and a gate that had not moved. That is
+       what stopped a .feature from having a real When: the step set a field,
+       the next step read the page, and nothing had changed yet (Michel,
+       2026-08-06 — "the when step should change something the then would
+       test"). Publish the same edit synchronously here. The grid's own handler
+       repeats it with an identical object a moment later, which is harmless,
+       and cells listen to lc-model-changed synchronously, so a gate has moved
+       by the time this returns. */
+    if (done) {
+      try {
+        var cur = JSON.parse(w.getAttribute("data-lc-value") || "{}");
+        cur[key] = value;
+        w.setAttribute("data-lc-value", JSON.stringify(cur));
+        document.dispatchEvent(new CustomEvent("lc-model-changed",
+                                               { detail: { source: "form" } }));
+      } catch (e) {}
+    }
     return done;
   };
 
