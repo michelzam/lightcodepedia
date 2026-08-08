@@ -876,12 +876,37 @@ Auto-included by docs/_layouts/default.html.
          work as a promise and let playback wait for it. */
       if (window.crypto && window.crypto.subtle) {
         _voxReady[elId] = voxManifest().then(function (man) {
-          var map = man && man[voxSlug()] && man[voxSlug()][elId];
-          if (!map) return null;
+          if (!man || !Object.keys(man).length) return null;
+          var map = man[voxSlug()] && man[voxSlug()][elId];
           return Promise.all(voiceable.map(function (l) {
             if (l.audio || l.video || !l.say) return null;
             return sha1hex(String(l.say).trim()).then(function (h) {
-              var f = map[h.slice(0, 16)];
+              var k = h.slice(0, 16);
+              var f = map && map[k];
+              /* The slug namespace is the file's MOUNT PATH, and the same
+                 course mounts differently everywhere it is rendered: the
+                 lab and the vault serve it under courses/…, a student's
+                 bench under course/…, and older recordings sit in pathname
+                 islands like "micro_build_ai" or "run". A recording made on
+                 one mount was therefore unreachable from every other — the
+                 mp3s sat in the repo while the bench spoke robot TTS
+                 (Michel, 2026-08-08, the volunteer bench). The recordings
+                 are content-addressed by the line's text, so when this
+                 page's own slug misses, find the line anywhere: same
+                 avatar id first, then any. */
+              if (!f) {
+                var slugs = Object.keys(man), i, id2;
+                for (i = 0; i < slugs.length && !f; i++) {
+                  var ids = man[slugs[i]];
+                  if (ids && ids[elId] && ids[elId][k]) f = ids[elId][k];
+                }
+                for (i = 0; i < slugs.length && !f; i++) {
+                  var all = man[slugs[i]];
+                  for (id2 in all) {
+                    if (all[id2] && all[id2][k]) { f = all[id2][k]; break; }
+                  }
+                }
+              }
               if (f && !l.audio) l.audio = (window.lcHref || String)("/assets/audio/" + f);
             });
           }));

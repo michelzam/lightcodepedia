@@ -161,3 +161,64 @@ Feature: Avatar — speaking overlay instructor
     And I wait for the page to be interactive
     And I ask the guide "Summarize this page"
     Then the guide offers to keep the answer
+
+  Scenario: A recording made on one mount plays back on another
+    The voice manifest keys recordings by the rendered file's MOUNT path.
+    One course mounts at courses/… in the lab, at course/… on every student
+    bench, with older pathname islands like "micro_build_ai" alongside. So a
+    voice recorded in the lab was unreachable from every bench: the mp3s sat
+    in the repo while the guide spoke robot TTS (the volunteer bench,
+    2026-08-08). Recordings are content-addressed by the line's text, so a
+    slug miss must fall back to finding the line anywhere in the manifest.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "course/mod/guide.md" with the document:
+      """
+      # Bench page
+
+      Some prose.
+
+      ```yaml
+      script:
+        - say: "Hello builders."
+      ```
+      {: .avatar #guide }
+
+      [▶ Play](#)
+      {: .avatar_trigger target="guide" }
+      """
+    And the voice manifest maps "Hello builders." to "lc-test-voice.mp3" under the mount "courses-demo-mod-guide" for avatar "guide"
+    And the studio file "lc-test-voice.mp3" is served
+    When I navigate to "/run.html#src=gh:acme/demo/course/mod/guide.md"
+    And I wait for the page to be interactive
+    And I click the avatar trigger for "guide"
+    Then the avatar "guide" speaks from the studio file "lc-test-voice.mp3"
+
+  Scenario: A recording under the page's own mount still plays
+    The control for the scenario above: exact-slug resolution must keep
+    winning before any cross-mount fallback.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "course/mod/guide.md" with the document:
+      """
+      # Bench page
+
+      Some prose.
+
+      ```yaml
+      script:
+        - say: "Hello builders."
+      ```
+      {: .avatar #guide }
+
+      [▶ Play](#)
+      {: .avatar_trigger target="guide" }
+      """
+    And the voice manifest maps "Hello builders." to "lc-test-voice.mp3" under the mount "course-mod-guide" for avatar "guide"
+    And the studio file "lc-test-voice.mp3" is served
+    When I navigate to "/run.html#src=gh:acme/demo/course/mod/guide.md"
+    And I wait for the page to be interactive
+    And I click the avatar trigger for "guide"
+    Then the avatar "guide" speaks from the studio file "lc-test-voice.mp3"

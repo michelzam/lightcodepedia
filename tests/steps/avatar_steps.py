@@ -1,5 +1,5 @@
 import re
-from behave import when, then
+from behave import given, when, then
 from playwright.sync_api import expect
 
 
@@ -223,3 +223,51 @@ def step_stub_bot(context, name):
         "**/raw.githubusercontent.com/**/docs/bots/" + name + ".md*", fulfill)
     context.page.route(
         "**/api.github.com/repos/**/contents/docs/bots/" + name + ".md*", fulfill)
+
+
+# ── studio voice resolution across mounts ─────────────────────────────────
+# The manifest namespaces recordings by the page's mount path; benches mount
+# the same course elsewhere. These steps pin that a recording survives the
+# move — and that only URL RESOLUTION is asserted, not decode: the fixture
+# mp3 is a stub, and the src being set is what separates studio from TTS.
+
+import hashlib
+import json as _json
+
+# 12 sync-framed bytes repeated — enough for <audio> to accept a src;
+# playback decode is not part of the contract under test.
+_SILENT_MP3 = (bytes([0xFF, 0xE3, 0x18, 0xC4]) + bytes(20)) * 12
+
+
+@given('the voice manifest maps "{text}" to "{file}" under the mount "{slug}" for avatar "{aid}"')
+def step_vox_manifest(context, text, file, slug, aid):
+    key = hashlib.sha1(text.strip().encode()).hexdigest()[:16]
+    body = _json.dumps({slug: {aid: {key: file}}})
+    context.page.route(
+        "**/assets/audio/vox.json*",
+        lambda r: r.fulfill(status=200, content_type="application/json",
+                            body=body),
+    )
+
+
+@given('the studio file "{file}" is served')
+def step_serve_mp3(context, file):
+    context.page.route(
+        "**/assets/audio/" + file + "*",
+        lambda r: r.fulfill(status=200, content_type="audio/mpeg",
+                            body=_SILENT_MP3),
+    )
+
+
+@then('the avatar "{avatar_id}" speaks from the studio file "{file}"')
+def step_speaks_from_studio(context, avatar_id, file):
+    """The line resolved to the committed mp3 — TTS never sets audioEl.src."""
+    context.page.wait_for_function(
+        """([id, f]) => {
+          const av = window._lcAvatars && window._lcAvatars[id];
+          const a = av && (av.audioEl || av.voiceAudio);
+          return !!(a && a.src && a.src.indexOf(f) >= 0);
+        }""",
+        arg=[avatar_id, file],
+        timeout=15_000,
+    )
