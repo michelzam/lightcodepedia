@@ -4,10 +4,20 @@
 name: Doc
 # model: (from the provider preset — pin only to override)
 temperature: 0.4
-max_tokens: 700
+# A CEILING, not a spend: you pay for tokens generated, not for the cap.
+# Gemini's thinking comes out of this same allowance, so 700 bought ~500
+# tokens of reasoning and cut the reply mid-sentence — and a truncated
+# answer is the most expensive outcome there is: full input paid, nothing
+# usable back, and the student asks again. Length is governed by the prompt
+# below (five short steps at most), not by this number.
+max_tokens: 1200
 placeholder: Ask Doc about this page…
 knowledge:
   - self
+# Course pages are 1–2 KB, so this never bites there. It caps the long docs
+# pages (start.md is 33 KB) that would otherwise ship ~4k tokens of context
+# with every single question.
+knowledge_budget: 8000
 ```
 
 You are **Doc**, the Lightcodepedia tutor — a warm, patient teacher with a dry

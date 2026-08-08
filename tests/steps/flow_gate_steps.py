@@ -82,6 +82,21 @@ def step_dump_fields(context, sid):
 # LESSON, not a copy of it that can drift away from it.
 
 def _serve_course_page(context, path, transform=None):
+    """Serve a REAL lesson file through the gh: stub, so these scenarios test
+    the lesson and not a copy that can drift from it.
+
+    THE SUITE ALSO RUNS IN PEDIA, which publishes the engine and carries no
+    courses/ folder — so the file simply is not there, and four scenarios blew
+    up with FileNotFoundError against a perfectly healthy engine (2026-08-07:
+    326 passed, 4 failed, all of them mine). Content lives in the lab; stand
+    aside anywhere else rather than failing.
+    """
+    import os
+
+    if not os.path.isfile(path):
+        context.scenario.skip("%s is not in this repo — course content lives "
+                              "in the lab, the engine is published here" % path)
+        return
     with open(path, encoding="utf-8") as f:
         body = f.read()
     if transform:

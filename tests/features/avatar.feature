@@ -100,3 +100,64 @@ Feature: Avatar — speaking overlay instructor
     And I wait for the page to be interactive
     And I click where the hidden avatar face sits
     Then the avatar did not start playing
+
+  Scenario: A cut-off answer is spoken but never filed
+    The model stopped at max_tokens, and 📌 kept the fragment anyway — a half
+    sentence ("It outlines a") and the ⚠️ notice itself landed in the page's
+    stories and got voiced (2026-08-07). Showing half an answer and FILING
+    half an answer are different decisions.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And an energy key "gem_stub" is already saved on this device
+    And the "doc" bot is available
+    And the editor is connected as the author
+    And the GitHub contents API serves "courses/demo/mod/guide.md" with the document:
+      """
+      # Guided page
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script:
+        - say: "Hello."
+      stories: {}
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    And the model endpoint stops mid-answer with "The page introduces a course. It outlines a"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide.md"
+    And I wait for the page to be interactive
+    And I ask the guide "Summarize this page"
+    Then the guide does not offer to keep the answer
+    And the guide never says "cut off"
+
+  Scenario: A complete answer is still offered for keeping
+    The control for the scenario above: 📌 must disappear because the answer
+    was truncated, not because keeping quietly broke.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And an energy key "gem_stub" is already saved on this device
+    And the "doc" bot is available
+    And the editor is connected as the author
+    And the GitHub contents API serves "courses/demo/mod/guide.md" with the document:
+      """
+      # Guided page
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script:
+        - say: "Hello."
+      stories: {}
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    And the model endpoint answers in full with "The page introduces a course."
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide.md"
+    And I wait for the page to be interactive
+    And I ask the guide "Summarize this page"
+    Then the guide offers to keep the answer

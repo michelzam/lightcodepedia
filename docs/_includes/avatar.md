@@ -1607,13 +1607,23 @@ Auto-included by docs/_layouts/default.html.
         setTimeout(function () { guideIdle(av); restore(); }, 4000);
         return;
       }
-      var steps = parseAnswerSteps(result.text);
+      /* A cut-off answer stops mid-sentence, so read it from `clean` (the
+         model's words without the ⚠️ notice) and drop the dangling last
+         fragment. It is spoken, because half an answer still helps — but it
+         is NOT keepable: filing half a sentence into the page, and voicing
+         it, is worse than losing it. With _lastAnswer null the 📌 item never
+         enters the dock menu, so there is nothing to click by mistake. */
+      var steps = parseAnswerSteps(result.truncated ? (result.clean || result.text) : result.text);
+      if (result.truncated && steps.length > 1) steps.pop();
       if (!steps.length) {
         guideBubble(av, 'I have no answer for that — try rephrasing?');
         setTimeout(function () { guideIdle(av); restore(); }, 4000);
         return;
       }
-      av._lastAnswer = { question: question, steps: steps };   /* 📌 keepable */
+      av._lastAnswer = result.truncated ? null : { question: question, steps: steps };
+      if (result.truncated) {
+        seedToast('✂️ cut off — not keepable. Ask for something shorter, or raise max_tokens.');
+      }
       performLines(elId, av, steps.map(lineSpec));
     });
   }
@@ -1638,7 +1648,7 @@ Auto-included by docs/_layouts/default.html.
   }
   async function keepAnswer(elId, av) {
     var ans = av._lastAnswer;
-    if (!ans) return;
+    if (!ans) { seedToast('nothing to keep — ask again, and let the answer finish'); return; }
     var pat = localStorage.getItem('lc_ed_pat') || '';
     var repo = localStorage.getItem('lc_ed_repo') || '';
     if (!pat || !repo) { seedToast('⚠ connect the ✏️ editor first'); return; }

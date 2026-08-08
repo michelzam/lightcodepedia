@@ -102,3 +102,124 @@ def step_avatar_not_playing(context):
                    return !!(a && a.playing); }"""
     )
     assert not playing, "the ghost face swallowed the click and started the tour"
+
+
+# ── a cut-off answer must never be filed ──────────────────────────────────
+# The model can stop at max_tokens mid-sentence. Speaking the fragment is
+# fine; committing it into the page (and voicing it) is not.
+
+def _stub_completion(context, text, finish_reason):
+    import json as _json
+
+    body = _json.dumps({
+        "choices": [{
+            "message": {"content": text},
+            "finish_reason": finish_reason,
+        }],
+        "usage": {"total_tokens": 11},
+    })
+    context.page.route(
+        "**/chat/completions*",
+        lambda r: r.fulfill(
+            status=200, content_type="application/json", body=body),
+    )
+
+
+@given('the model endpoint stops mid-answer with "{text}"')
+def step_stub_truncated(context, text):
+    _stub_completion(context, text, "length")
+
+
+@given('the model endpoint answers in full with "{text}"')
+def step_stub_complete(context, text):
+    _stub_completion(context, text, "stop")
+
+
+@given("the editor is connected as the author")
+def step_editor_connected(context):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat','ghp_author');"
+        "localStorage.setItem('lc_ed_repo','acme/demo');"
+    )
+
+
+@when('I ask the guide "{question}"')
+def step_ask_guide(context, question):
+    context.execute_steps("When I open the guide's ask panel")
+    panel = context.page.locator(".lc-guide-ask")
+    panel.locator("textarea").fill(question)
+    panel.locator("button").click()
+    # let the stubbed answer arrive and the guide start speaking
+    context.page.wait_for_timeout(1_200)
+
+
+def _open_dock_menu(context):
+    """The seed TOGGLES the menu, so clicking blind can close one that is
+    already open and read an empty menu as 'the item is absent'."""
+    seed = context.page.locator(".lc-guide-seed").first
+    seed.wait_for(state="visible", timeout=20_000)
+    menu = context.page.locator(".lc-guide-menu.open")
+    for _ in range(3):
+        if menu.count():
+            return
+        seed.click()
+        context.page.wait_for_timeout(400)
+    assert menu.count(), "the guide's dock menu never opened"
+
+
+def _dock_menu_text(context):
+    """The dock menu renders its items as one run of text, so read the menu
+    rather than trying to locate an item by its own label."""
+    _open_dock_menu(context)
+    return context.page.evaluate(
+        "() => Array.from(document.querySelectorAll('.lc-guide-menu'))"
+        ".map(m => m.textContent).join(' ')"
+    ) or ""
+
+
+@then("the guide does not offer to keep the answer")
+def step_no_keep(context):
+    menu = _dock_menu_text(context)
+    assert "Keep & voice" not in menu, (
+        f"a cut-off answer was offered for keeping; menu was {menu!r}")
+
+
+@then("the guide offers to keep the answer")
+def step_offers_keep(context):
+    menu = _dock_menu_text(context)
+    assert "Keep & voice" in menu, (
+        f"a complete answer was not offered for keeping; menu was {menu!r}")
+
+
+@then('the guide never says "{snippet}"')
+def step_never_says(context, snippet):
+    spoken = context.page.evaluate(
+        "() => Array.from(document.querySelectorAll('.lc-avatar-speech'))"
+        ".map(n => n.textContent).join(' ')"
+    )
+    assert snippet.lower() not in (spoken or "").lower(), (
+        f"the guide read the truncation notice aloud: {spoken!r}")
+
+
+@given('the "{name}" bot is available')
+def step_stub_bot(context, name):
+    """loadBot fetches docs/bots/<name>.md from raw.githubusercontent — stub it
+    or the guide answers 'bot could not be loaded' and never reaches the model."""
+    body = (
+        "# Stub bot\n\n"
+        "```yaml\n"
+        f"name: {name}\n"
+        "temperature: 0.2\n"
+        "max_tokens: 700\n"
+        "```\n\n"
+        "You are a stub tutor used by the test suite.\n"
+    )
+
+    def fulfill(route):
+        route.fulfill(status=200, content_type="text/plain; charset=utf-8",
+                      body=body)
+
+    context.page.route(
+        "**/raw.githubusercontent.com/**/docs/bots/" + name + ".md*", fulfill)
+    context.page.route(
+        "**/api.github.com/repos/**/contents/docs/bots/" + name + ".md*", fulfill)

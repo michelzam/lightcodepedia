@@ -403,6 +403,12 @@ Auto-included by docs/_layouts/default.html.
     return _botCache[key];
   }
 
+  /* One wording for "the model stopped mid-thought", so a caller can strip
+     it back off as reliably as it was added. */
+  var TRUNCATED_NOTE =
+    '⚠️ *(cut off — the answer outgrew this agent\'s max_tokens. ' +
+    'Ask for something shorter, or raise the knob.)*';
+
   // ===== lcBotAsk — the brain as a service for other components ==========
   // The docked guide (avatar.md) asks questions through here: same bot files,
   // same knowledge stuffing, same in-memory PAT, no second auth system.
@@ -556,12 +562,18 @@ Auto-included by docs/_layouts/default.html.
       if (!choice) return { error: 'Empty response from API.' };
       var text = (choice.message && choice.message.content) || '';
       /* ran out of allowance mid-thought: say so rather than pass a
-         fragment off as the answer */
-      if (choice.finish_reason === 'length') {
-        text = (text ? text + '\n\n' : '') +
-          '⚠️ *(cut off — the answer outgrew this agent\'s max_tokens. Ask for something shorter, or raise the knob.)*';
-      }
-      return { text: text, usage: result.data.usage || null };
+         fragment off as the answer.
+         Three fields, because showing a half answer and FILING one are
+         different decisions: `text` is what a reader should see (notice
+         included), `clean` is the model's own words without it, and
+         `truncated` lets a caller refuse to persist the fragment. Before
+         this the notice was only prose inside text — so the guide's 📌 kept
+         a half sentence, and the ⚠️ line with it, into the page (2026-08-07). */
+      var truncated = choice.finish_reason === 'length';
+      var clean = text;
+      if (truncated) text = (text ? text + '\n\n' : '') + TRUNCATED_NOTE;
+      return { text: text, clean: clean, truncated: truncated,
+               usage: result.data.usage || null };
     }).catch(function(err){
       /* fetch rejected → no HTTP answer reached the page. Usually the ROAD
          (ad-blocker, VPN, firewall) — but some providers answer errors
