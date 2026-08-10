@@ -466,7 +466,12 @@ Auto-included by docs/_layouts/default.html.
       container.innerHTML = "<img src='" + escapeHtml(window.lcHref ? window.lcHref("/" + rel) : "/" + rel) + "' alt='" + escapeHtml((a.textContent || "").trim()) + "' style='" + imgStyle + "'>";
       return;
     }
-    var req;
+    /* req = the read we try first. anon = the SAME read without the key, kept
+       as a thunk for when a key is refused. A stored key that GitHub no longer
+       accepts must never break a node a keyless visitor can read — pedia's
+       tutorial showed "HTTP 401" on every proxy while anonymous raw answered
+       200 (2026-08-10). null = no keyless route exists (private repo). */
+    var req, anon = null;
     if (based) {
       var srcRepo = srcEl.getAttribute("data-lc-src-repo") || _lcSiteRepo;
       /* normalise ../ so a module can embed a fragment shared one level up */
@@ -510,6 +515,14 @@ Auto-included by docs/_layouts/default.html.
             container.appendChild(img);
           })
           .catch(function (err) {
+            /* Same rule as the markdown proxy: a refused key must not hide a
+               picture anonymous raw serves. Only a private repo has nowhere
+               else to look. */
+            if (/HTTP 40[13]$/.test(err.message || "") &&
+                !(window.lcRepoPrivate && srcRepo === _lcSiteRepo)) {
+              container.innerHTML = "<img src='https://raw.githubusercontent.com/" + srcRepo + "/HEAD/" + full + "' alt='" + alt + "' style='" + imgStyle + "'>";
+              return;
+            }
             container.innerHTML = "<div style='color:#c00'>⚠️ Could not load " + escapeHtml(href) + ": " + escapeHtml(err.message) + "</div>";
           });
         return;
@@ -518,6 +531,8 @@ Auto-included by docs/_layouts/default.html.
         /* builder key reads course material wherever the render came from */
         req = fetch("https://api.github.com/repos/" + srcRepo + "/contents/" + full,
                     { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw" } });
+        if (!(window.lcRepoPrivate && srcRepo === _lcSiteRepo))
+          anon = function () { return fetch("https://raw.githubusercontent.com/" + srcRepo + "/HEAD/" + full); };
       } else if (window.lcRepoPrivate && srcRepo === _lcSiteRepo) {
         container.innerHTML = "<div style='color:#6b7280;font-style:italic;padding:0.5em 0'>🔑 Private node — connect a GitHub PAT (topbar “Get started”) to preview it.</div>";
         return;
@@ -528,6 +543,11 @@ Auto-included by docs/_layouts/default.html.
       /* builder: the API + PAT reaches every node, published or not */
       req = fetch("https://api.github.com/repos/" + _lcSiteRepo + "/contents/docs/" + rel,
                   { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw" } });
+      /* the keyless route this node would have taken with no key at all */
+      if (!unpublished)
+        anon = function () { return fetch(window.lcHref ? window.lcHref("/" + rel) : "/" + rel); };
+      else if (!window.lcRepoPrivate)
+        anon = function () { return fetch("https://raw.githubusercontent.com/" + _lcSiteRepo + "/HEAD/docs/" + rel); };
     } else if (unpublished) {
       /* only raw serves an unpublished node. On a PRIVATE repo raw 404s for
          anonymous visitors — don't fetch a URL we know will 404 (console error,
@@ -542,8 +562,20 @@ Auto-included by docs/_layouts/default.html.
          private lab too (raw would 404 there), no rate limit, no CORS */
       req = fetch(window.lcHref ? window.lcHref("/" + rel) : "/" + rel);
     }
+    function readOr401(r) {
+      if (r.ok) return r.text();
+      /* 401 = the key is bad (expired, revoked, regenerated); 403 = it is out
+         of API quota. Neither says anything about the node — so retry the way
+         a keyless visitor reads it, once. */
+      if ((r.status === 401 || r.status === 403) && anon) {
+        var again = anon();
+        anon = null;
+        return again.then(readOr401);
+      }
+      throw new Error("HTTP " + r.status);
+    }
     req
-      .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(readOr401)
       .then(function(text) {
         // strip optional YAML front matter
         if (text.indexOf("---") === 0) {
@@ -565,7 +597,13 @@ Auto-included by docs/_layouts/default.html.
         });
       })
       .catch(function(err) {
-        container.innerHTML = "<div style='color:#c00'>⚠️ Could not load " + escapeHtml(href) + ": " + escapeHtml(err.message) + "</div>";
+        /* A refused key is a key problem, not a missing node — say so, and say
+           what to do about it. "HTTP 401" sent readers hunting for a broken
+           link that was never broken. */
+        var msg = /HTTP 40[13]$/.test(err.message || "")
+          ? "🔑 Your GitHub key was refused — reconnect it from the topbar (“Get started”)."
+          : "⚠️ Could not load " + escapeHtml(href) + ": " + escapeHtml(err.message);
+        container.innerHTML = "<div style='color:#c00'>" + msg + "</div>";
       });
   }
   /* YouTube host for embeds. -nocookie serves the same player without the

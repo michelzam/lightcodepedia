@@ -13,6 +13,40 @@ Feature: Folder-relative embeds — a course page composes from its siblings
     And I inject an embed of "/_why" rendered from "courses/demo/module_00/index.md"
     Then the injected embed shows "Sibling loaded"
 
+  Scenario: A stale key does not hide a node the public site serves
+    Every proxy in pedia's tutorial showed "HTTP 401" while anonymous raw
+    answered 200 for the very same file. A key GitHub refuses — expired,
+    revoked, regenerated — says nothing about the node, so the read falls
+    back to the way a visitor with no key at all would have made it.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "docs/_dog.md" with "## Best friend"
+    And the GitHub contents API refuses the key
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    And I inject a public-site embed of "/_dog" with a stale key
+    Then the injected embed shows "Best friend"
+
+  Scenario: A refused key falls back on a folder-relative fragment too
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/module_00/_why.md" with "## Sibling loaded"
+    And the GitHub contents API refuses the key
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    And I inject an embed of "/_why" rendered from "courses/demo/module_00/index.md"
+    Then the injected embed shows "Sibling loaded"
+
+  Scenario: With nowhere left to read, the message names the key
+    "HTTP 401" sent readers hunting for a broken link that was never broken.
+
+    Given I have a clean browser page
+    And the GitHub contents API refuses the key
+    And the raw file host refuses the key too
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    And I inject an embed of "/_why" rendered from "courses/demo/module_00/index.md"
+    Then the injected embed shows "GitHub key was refused"
+
   Scenario: A parent-folder fragment resolves through ../
     Given I have a clean browser page
     And the GitHub contents API serves "courses/demo/_shared.md" with "## Shared fragment"

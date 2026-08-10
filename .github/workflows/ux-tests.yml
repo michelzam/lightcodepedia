@@ -5,6 +5,17 @@ on:
   workflow_run:
     workflows: ["Deploy Jekyll to GitHub Pages"]
     types: [completed]
+  # pedia: a tests-only publish deploys NOTHING — the Pages workflow's
+  # docs/** paths filter never fires, so the chain above stays silent and
+  # the board keeps showing the previous verdict. A fixed test looked
+  # forever-red until someone dispatched by hand (2026-08-10). The site is
+  # unchanged in that case, so running straight off the push races nothing.
+  # The job guard keeps this pedia-only; on the lab it lands as a skipped
+  # run (the nightly-budget ruling of 2026-07-31 stands).
+  push:
+    paths:
+      - "tests/**"
+      - "behave.ini"
   # lab: ONE nightly fast pass instead of one per push — 42 push runs in five
   # days spent the month's private-repo minutes (100% on Jul 31, budgets $0
   # with stop-usage). The local rig verifies before every push and pedia's
@@ -62,6 +73,9 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'schedule' &&
        github.repository == 'michelzam/lightcodelab') ||
+      (github.event_name == 'push' &&
+       github.repository == 'michelzam/lightcodepedia' &&
+       github.event.head_commit.author.email != '41898282+github-actions[bot]@users.noreply.github.com') ||
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_commit.author.email != '41898282+github-actions[bot]@users.noreply.github.com')

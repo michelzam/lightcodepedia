@@ -27,6 +27,48 @@ def step_stub_contents(context, path, content):
     context.page.route("**/raw.githubusercontent.com//main/" + path + "*", fulfill)
 
 
+def _refuse(route):
+    """What GitHub answers a key it no longer accepts."""
+    route.fulfill(status=401, content_type="application/json",
+                  body='{"message":"Bad credentials"}')
+
+
+@given("the GitHub contents API refuses the key")
+def step_refuse_api(context):
+    # registered after the serving routes, so it wins for the API only —
+    # raw keeps answering, which is the whole point of the fallback
+    context.page.route("**/api.github.com/repos/**/contents/**", _refuse)
+
+
+@given("the raw file host refuses the key too")
+def step_refuse_raw(context):
+    context.page.route("**/raw.githubusercontent.com/**", _refuse)
+
+
+@when('I inject a public-site embed of "{href}" with a stale key')
+def step_inject_site_embed(context, href):
+    """A plain site node — no data-lc-src-path — read with a refused key.
+
+    The reported bug is a PUBLIC site (pedia): the private lab has no keyless
+    route by design, so the public case is declared explicitly rather than
+    inherited from whichever site the suite runs against.
+    """
+    context.page.evaluate(
+        """(href) => {
+            localStorage.setItem('lc_ed_pat', 'stale-key');
+            window.lcRepoPrivate = false;
+            if (!window.marked) window.marked = { parse: function (s) {
+              return '<p>' + s.replace(/^#+\\s*/gm, '') + '</p>'; } };
+            const host = document.createElement('div');
+            host.id = 'lc-embed-bdd';
+            host.innerHTML = '<p class="embed"><a href="' + href + '">frag</a></p>';
+            document.querySelector('.markdown-body').appendChild(host);
+            window.lcScanElement(host);
+        }""",
+        href,
+    )
+
+
 @when('I inject an embed of "{href}" rendered from "{src_path}"')
 def step_inject_based_embed(context, href, src_path):
     context.page.evaluate(
