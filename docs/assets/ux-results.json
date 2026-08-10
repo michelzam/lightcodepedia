@@ -4,8 +4,8 @@
     "scenario": "Every quiz answer is a tab stop",
     "feature": "Everything a mouse can do, a keyboard can do",
     "tags": "",
-    "seconds": 1.13,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.26,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_0"
   },
   {
@@ -13,8 +13,8 @@
     "scenario": "A quiz answer can be focused and read by assistive tech",
     "feature": "Everything a mouse can do, a keyboard can do",
     "tags": "",
-    "seconds": 2.84,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 3.39,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_1"
   },
   {
@@ -22,8 +22,8 @@
     "scenario": "Enter answers the quiz, exactly as a click does",
     "feature": "Everything a mouse can do, a keyboard can do",
     "tags": "",
-    "seconds": 3.37,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 4.09,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_2"
   },
   {
@@ -31,8 +31,8 @@
     "scenario": "Space answers the quiz too",
     "feature": "Everything a mouse can do, a keyboard can do",
     "tags": "",
-    "seconds": 3.89,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 3.79,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_3"
   },
   {
@@ -40,8 +40,8 @@
     "scenario": "Every field an agent asks for announces what it wants",
     "feature": "Everything a mouse can do, a keyboard can do",
     "tags": "",
-    "seconds": 1.18,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.1,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_4"
   },
   {
@@ -49,8 +49,8 @@
     "scenario": "Arrow keys walk the answers",
     "feature": "Everything a mouse can do, a keyboard can do",
     "tags": "",
-    "seconds": 3.89,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 3.28,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_5"
   },
   {
@@ -58,8 +58,8 @@
     "scenario": "Every code editor tells assistive tech what it is",
     "feature": "Everything a mouse can do, a keyboard can do",
     "tags": "",
-    "seconds": 1.16,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.04,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_6"
   },
   {
@@ -67,8 +67,8 @@
     "scenario": "Form fields carry the name their row shows",
     "feature": "Everything a mouse can do, a keyboard can do",
     "tags": "",
-    "seconds": 1.26,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.07,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_7"
   },
   {
@@ -77,7 +77,7 @@
     "feature": "The agent's bound= knob — legacy pinned, expressions added",
     "tags": "",
     "seconds": 1.23,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_8"
   },
   {
@@ -85,8 +85,8 @@
     "scenario": "Expression — bound reads a pad through a cell expression",
     "feature": "The agent's bound= knob — legacy pinned, expressions added",
     "tags": "",
-    "seconds": 1.24,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.22,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_9"
   },
   {
@@ -94,8 +94,8 @@
     "scenario": "A provider error speaks its own sentence, even array-wrapped",
     "feature": "The agent's bound= knob — legacy pinned, expressions added",
     "tags": "",
-    "seconds": 1.13,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.11,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_10"
   },
   {
@@ -103,8 +103,8 @@
     "scenario": "The two 429 walls are told apart",
     "feature": "The agent's bound= knob — legacy pinned, expressions added",
     "tags": "",
-    "seconds": 1.13,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.11,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_11"
   },
   {
@@ -112,8 +112,8 @@
     "scenario": "A 403 keeps the key — pasting the same one again would not help",
     "feature": "The agent's bound= knob — legacy pinned, expressions added",
     "tags": "",
-    "seconds": 1.79,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.78,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_12"
   },
   {
@@ -121,8 +121,8 @@
     "scenario": "A 401 does drop the key, and says why on the form that asks again",
     "feature": "The agent's bound= knob — legacy pinned, expressions added",
     "tags": "",
-    "seconds": 1.11,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.07,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_13"
   },
   {
@@ -130,8 +130,8 @@
     "scenario": "A saved key opens every desk connected, refresh after refresh",
     "feature": "The agent's bound= knob — legacy pinned, expressions added",
     "tags": "",
-    "seconds": 2.99,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.97,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_14"
   },
   {
@@ -139,8 +139,8 @@
     "scenario": "Avatar examples page loads without errors",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.16,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.09,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_15"
   },
   {
@@ -148,8 +148,8 @@
     "scenario": "The avatar overlay character appears",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_16"
   },
   {
@@ -157,8 +157,8 @@
     "scenario": "The trigger starts the avatar speaking",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.42,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.43,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_17"
   },
   {
@@ -167,7 +167,7 @@
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
     "seconds": 1.75,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_18"
   },
   {
@@ -175,8 +175,8 @@
     "scenario": "A Rive state-machine character renders on canvas",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.05,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_19"
   },
   {
@@ -184,8 +184,8 @@
     "scenario": "A Rive narrator guides the Lucky and Wanda playground",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.18,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.19,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_20"
   },
   {
@@ -193,8 +193,8 @@
     "scenario": "X-ray identifies the Avatar component",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 2.24,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.21,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_21"
   },
   {
@@ -202,8 +202,8 @@
     "scenario": "The guide asks for the AI key, not a GitHub token",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.14,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.12,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_22"
   },
   {
@@ -212,7 +212,7 @@
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
     "seconds": 1.64,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_23"
   },
   {
@@ -220,8 +220,8 @@
     "scenario": "A cut-off answer is spoken but never filed",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 2.84,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.83,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_24"
   },
   {
@@ -230,7 +230,7 @@
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
     "seconds": 2.86,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_25"
   },
   {
@@ -238,8 +238,8 @@
     "scenario": "A recording made on one mount plays back on another",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.39,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.38,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_26"
   },
   {
@@ -247,8 +247,8 @@
     "scenario": "A recording under the page's own mount still plays",
     "feature": "Avatar — speaking overlay instructor",
     "tags": "",
-    "seconds": 1.41,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.36,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_27"
   },
   {
@@ -256,8 +256,8 @@
     "scenario": "The component page loads without errors",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 1.29,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.2,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_28"
   },
   {
@@ -265,8 +265,8 @@
     "scenario": "The loop renders a canvas",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 1.17,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.12,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_29"
   },
   {
@@ -274,8 +274,8 @@
     "scenario": "Every station in the fence becomes a chip",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 1.23,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.18,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_30"
   },
   {
@@ -283,8 +283,8 @@
     "scenario": "A station explains itself on hover",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 2.1,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.14,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_31"
   },
   {
@@ -292,8 +292,8 @@
     "scenario": "A loop folded inside an accordion still builds",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 2.57,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.58,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_32"
   },
   {
@@ -301,8 +301,8 @@
     "scenario": "Clicking a station pins a legend to it",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 2.29,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.32,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_33"
   },
   {
@@ -310,8 +310,8 @@
     "scenario": "The pinned legend rides its station as the hive turns",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 4.56,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 4.59,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_34"
   },
   {
@@ -319,8 +319,8 @@
     "scenario": "Clicking the same station again closes its legend",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 3.43,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 3.4,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_35"
   },
   {
@@ -328,8 +328,8 @@
     "scenario": "Several legends can stay open at once",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 3.34,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 3.45,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_36"
   },
   {
@@ -337,8 +337,8 @@
     "scenario": "A narrator can pin a station through the verb registry",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 1.68,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.69,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_37"
   },
   {
@@ -346,8 +346,8 @@
     "scenario": "A narrator can turn the hive to face a station",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 4.33,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 4.38,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_38"
   },
   {
@@ -355,8 +355,8 @@
     "scenario": "A narrator can clear every pinned legend",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 2.56,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.58,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_39"
   },
   {
@@ -364,8 +364,8 @@
     "scenario": "A narrator can stop and restart the spin",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 1.78,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.69,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_40"
   },
   {
@@ -373,8 +373,8 @@
     "scenario": "An unknown station is refused, not guessed",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 1.25,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.24,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_41"
   },
   {
@@ -382,8 +382,8 @@
     "scenario": "The spin can be paused and resumed",
     "feature": "Build Loop — the turning hex hive",
     "tags": "",
-    "seconds": 2.17,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.23,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_42"
   },
   {
@@ -391,8 +391,8 @@
     "scenario": "Accordion spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.44,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.32,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_43"
   },
   {
@@ -400,8 +400,8 @@
     "scenario": "Tabs spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.46,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.4,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_44"
   },
   {
@@ -409,8 +409,8 @@
     "scenario": "Radio spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.42,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.38,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_45"
   },
   {
@@ -418,8 +418,8 @@
     "scenario": "Dropdown spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.48,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.38,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_46"
   },
   {
@@ -427,8 +427,8 @@
     "scenario": "Cards spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.43,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.37,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_47"
   },
   {
@@ -436,8 +436,8 @@
     "scenario": "Menu spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.47,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.41,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_48"
   },
   {
@@ -445,8 +445,8 @@
     "scenario": "Carousel spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.46,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.4,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_49"
   },
   {
@@ -454,8 +454,8 @@
     "scenario": "Button spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.62,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.57,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_50"
   },
   {
@@ -463,8 +463,8 @@
     "scenario": "Quiz spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.44,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.43,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_51"
   },
   {
@@ -472,8 +472,8 @@
     "scenario": "Slides spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.45,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.39,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_52"
   },
   {
@@ -481,8 +481,8 @@
     "scenario": "Grid spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.42,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.39,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_53"
   },
   {
@@ -490,8 +490,8 @@
     "scenario": "QR spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.43,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.37,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_54"
   },
   {
@@ -499,8 +499,8 @@
     "scenario": "Map spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 2.15,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.59,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_55"
   },
   {
@@ -508,8 +508,8 @@
     "scenario": "Scrollable spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.46,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.4,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_56"
   },
   {
@@ -517,8 +517,8 @@
     "scenario": "Block spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.47,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.54,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_57"
   },
   {
@@ -526,8 +526,8 @@
     "scenario": "Embed spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 2.83,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.67,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_58"
   },
   {
@@ -535,8 +535,8 @@
     "scenario": "Agent spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.42,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.37,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_59"
   },
   {
@@ -544,8 +544,8 @@
     "scenario": "Text spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.54,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.38,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_60"
   },
   {
@@ -553,8 +553,8 @@
     "scenario": "Code spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.44,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.39,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_61"
   },
   {
@@ -562,8 +562,8 @@
     "scenario": "Run spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.33,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.34,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_62"
   },
   {
@@ -571,8 +571,8 @@
     "scenario": "Pytutor spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.42,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.43,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_63"
   },
   {
@@ -580,8 +580,8 @@
     "scenario": "Recorder spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.43,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.39,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_64"
   },
   {
@@ -589,8 +589,8 @@
     "scenario": "Diagram spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.9,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.82,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_65"
   },
   {
@@ -598,8 +598,8 @@
     "scenario": "Model spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.53,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.47,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_66"
   },
   {
@@ -607,8 +607,8 @@
     "scenario": "Sitemap spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.45,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.44,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_67"
   },
   {
@@ -616,8 +616,8 @@
     "scenario": "Dataset spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.47,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.44,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_68"
   },
   {
@@ -625,8 +625,8 @@
     "scenario": "Datagrid spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 2.15,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.45,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_69"
   },
   {
@@ -634,8 +634,8 @@
     "scenario": "Chart spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.52,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.46,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_70"
   },
   {
@@ -643,8 +643,8 @@
     "scenario": "Form spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.61,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.59,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_71"
   },
   {
@@ -652,8 +652,8 @@
     "scenario": "Query spec passes",
     "feature": "Component specs run green",
     "tags": "",
-    "seconds": 1.46,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.41,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_72"
   },
   {
@@ -661,8 +661,8 @@
     "scenario": "Selecting a grid row fills the bound form",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.53,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.51,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_73"
   },
   {
@@ -670,8 +670,8 @@
     "scenario": "Footnotes inside a fenced component block render",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.17,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.09,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_74"
   },
   {
@@ -680,7 +680,7 @@
     "feature": "Component gallery behaviors",
     "tags": "",
     "seconds": 1.68,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_75"
   },
   {
@@ -688,8 +688,8 @@
     "scenario": "Liquid build-time includes render on the help archive",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.12,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.67,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_76"
   },
   {
@@ -697,8 +697,8 @@
     "scenario": "A bound grid drives a bound-to detail chart",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.63,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.62,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_77"
   },
   {
@@ -706,8 +706,8 @@
     "scenario": "The markdown pad renders a live preview",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.04,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.07,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_78"
   },
   {
@@ -715,8 +715,8 @@
     "scenario": "The custom-class example shows a live Python editor",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.27,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.08,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_79"
   },
   {
@@ -724,8 +724,8 @@
     "scenario": "A query aggregates a dataset into a bound grid",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_80"
   },
   {
@@ -733,8 +733,8 @@
     "scenario": "An editable query is a live SQL editor feeding a grid",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_81"
   },
   {
@@ -742,8 +742,8 @@
     "scenario": "Inline IAL colour classes tint text",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.2,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.05,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_82"
   },
   {
@@ -751,8 +751,8 @@
     "scenario": "Colour classes also work in the mdpad live preview",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.05,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.06,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_83"
   },
   {
@@ -761,7 +761,7 @@
     "feature": "Component gallery behaviors",
     "tags": "",
     "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_84"
   },
   {
@@ -769,8 +769,8 @@
     "scenario": "The block component's injected image actually loads",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.04,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_85"
   },
   {
@@ -778,8 +778,8 @@
     "scenario": "The component gallery lists cards without the GitHub API",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.19,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.1,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_86"
   },
   {
@@ -787,8 +787,8 @@
     "scenario": "The sitemap graph builds without the GitHub API",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 6.32,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 6.34,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_87"
   },
   {
@@ -796,8 +796,8 @@
     "scenario": "A table wired to a name nothing answers to says so, and stops waiting",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.14,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.05,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_88"
   },
   {
@@ -805,8 +805,8 @@
     "scenario": "A chart whose source names nothing stops pretending to load",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.04,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_89"
   },
   {
@@ -814,8 +814,8 @@
     "scenario": "A chart whose source does resolve draws, title and all",
     "feature": "Component gallery behaviors",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_90"
   },
   {
@@ -823,8 +823,8 @@
     "scenario": "A fresh student sees step 1 active and the rest waiting",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 0.96,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 0.84,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_91"
   },
   {
@@ -832,8 +832,8 @@
     "scenario": "A valid course key advances to the enrollment check",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 2.29,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.3,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_92"
   },
   {
@@ -841,8 +841,8 @@
     "scenario": "An enrolled student gets the open-course door",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 0.84,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 0.85,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_93"
   },
   {
@@ -851,7 +851,7 @@
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
     "seconds": 1.45,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_94"
   },
   {
@@ -859,8 +859,8 @@
     "scenario": "Accepting the invitation in-app opens the course",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 1.76,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.75,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_95"
   },
   {
@@ -869,7 +869,7 @@
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
     "seconds": 0.84,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_96"
   },
   {
@@ -877,8 +877,8 @@
     "scenario": "Forking creates the org bench, explicitly up to date",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 2.38,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.36,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_97"
   },
   {
@@ -887,7 +887,7 @@
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
     "seconds": 1.67,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_98"
   },
   {
@@ -895,8 +895,8 @@
     "scenario": "The course door forwards a green student into the bench",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 0.79,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 0.81,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_99"
   },
   {
@@ -904,8 +904,8 @@
     "scenario": "A pending sync holds the door open on the wizard",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 0.81,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 0.8,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_100"
   },
   {
@@ -913,8 +913,8 @@
     "scenario": "The door names a session the student cannot see",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 0.81,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 0.8,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_101"
   },
   {
@@ -923,7 +923,7 @@
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
     "seconds": 0.81,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_102"
   },
   {
@@ -931,8 +931,8 @@
     "scenario": "The energy key gets a live check and a save-as-password moment",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 0.89,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 0.9,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_103"
   },
   {
@@ -940,8 +940,8 @@
     "scenario": "A rejected energy key says rejected, not broken",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 0.91,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 0.9,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_104"
   },
   {
@@ -949,8 +949,8 @@
     "scenario": "A resolved bench completes the connection pair",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 1.45,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.44,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_105"
   },
   {
@@ -958,8 +958,8 @@
     "scenario": "The course key never steals a username from the page",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 1.05,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.04,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_106"
   },
   {
@@ -968,7 +968,7 @@
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
     "seconds": 0.9,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_107"
   },
   {
@@ -976,8 +976,8 @@
     "scenario": "A key is kept when the road is blocked, not thrown away",
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
-    "seconds": 0.89,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 0.91,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_108"
   },
   {
@@ -986,7 +986,7 @@
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
     "seconds": 2.1,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_109"
   },
   {
@@ -995,7 +995,7 @@
     "feature": "The student course wizard (/courses/join)",
     "tags": "",
     "seconds": 0.84,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_110"
   },
   {
@@ -1003,8 +1003,8 @@
     "scenario": "The ✨ button opens the AI edit dialog with a prompt",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 2.15,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.18,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_111"
   },
   {
@@ -1012,8 +1012,8 @@
     "scenario": "A key GitHub refuses surfaces the sign-in instead of a dead picker",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 1.28,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.13,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_112"
   },
   {
@@ -1021,8 +1021,8 @@
     "scenario": "The editor has a Log tab",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 2.2,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.84,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_113"
   },
   {
@@ -1030,8 +1030,8 @@
     "scenario": "The editor has a Features tab",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 2.52,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.13,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_114"
   },
   {
@@ -1039,8 +1039,8 @@
     "scenario": "The editor has a Diagram tab",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 2.11,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.17,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_115"
   },
   {
@@ -1048,8 +1048,8 @@
     "scenario": "The Diagram tab renders the page's class graph",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 2.82,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.16,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_116"
   },
   {
@@ -1057,8 +1057,8 @@
     "scenario": "The Raw tab is the dark basement workshop",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 2.46,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.18,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_117"
   },
   {
@@ -1066,8 +1066,8 @@
     "scenario": "The Raw editor has a formatting toolbar",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 2.46,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.35,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_118"
   },
   {
@@ -1075,8 +1075,8 @@
     "scenario": "The Blocks-tab Content editor is dark too",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 2.98,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.58,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_119"
   },
   {
@@ -1084,8 +1084,8 @@
     "scenario": "Ask AI reads the page's embedded fragments too",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
-    "seconds": 2.49,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 2.47,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_120"
   },
   {
@@ -1094,7 +1094,7 @@
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
     "seconds": 1.96,
-    "run": "2026-08-10T15:14Z",
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_121"
   },
   {
@@ -1102,171 +1102,198 @@
     "scenario": "An embed under a course render fetches the sibling fragment",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.6,
-    "run": "2026-08-10T15:14Z",
+    "seconds": 1.52,
+    "run": "2026-08-10T19:16Z",
     "url": "/assets/ux-report.html#scenario_122"
+  },
+  {
+    "status": "✅",
+    "scenario": "A stale key does not hide a node the public site serves",
+    "feature": "Folder-relative embeds — a course page composes from its siblings",
+    "tags": "",
+    "seconds": 1.86,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_123"
+  },
+  {
+    "status": "✅",
+    "scenario": "A refused key falls back on a folder-relative fragment too",
+    "feature": "Folder-relative embeds — a course page composes from its siblings",
+    "tags": "",
+    "seconds": 1.94,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_124"
+  },
+  {
+    "status": "✅",
+    "scenario": "With nowhere left to read, the message names the key",
+    "feature": "Folder-relative embeds — a course page composes from its siblings",
+    "tags": "",
+    "seconds": 1.46,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_125"
   },
   {
     "status": "✅",
     "scenario": "A parent-folder fragment resolves through ../",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.49,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_123"
+    "seconds": 1.53,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_126"
   },
   {
     "status": "✅",
     "scenario": "An image embed under a course render becomes the image itself",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.54,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_124"
+    "seconds": 1.56,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_127"
   },
   {
     "status": "✅",
     "scenario": "A relative image in a runner render resolves through the builder key",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.05,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_125"
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_128"
   },
   {
     "status": "✅",
     "scenario": "A site-absolute image in a runner render loads from the site",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_126"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_129"
   },
   {
     "status": "✅",
     "scenario": "A site-absolute image embed stays a site asset — with the height knob",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 2.16,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_127"
+    "seconds": 1.82,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_130"
   },
   {
     "status": "✅",
     "scenario": "A floated relative-width image embed wraps the text around it",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.79,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_128"
+    "seconds": 1.51,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_131"
   },
   {
     "status": "✅",
     "scenario": "An external image URL embeds as a hotlink, untouched",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.94,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_129"
+    "seconds": 1.47,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_132"
   },
   {
     "status": "✅",
     "scenario": "An extension-less URL API embeds as an image with the image knob",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.57,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_130"
+    "seconds": 1.53,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_133"
   },
   {
     "status": "✅",
     "scenario": "An ambient image embed breathes — and stands still for reduced motion",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.86,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_131"
+    "seconds": 2.11,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_134"
   },
   {
     "status": "✅",
     "scenario": "A block inside an embedded fragment becomes a card",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.85,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_132"
+    "seconds": 1.89,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_135"
   },
   {
     "status": "✅",
     "scenario": "A quiz inside an embedded fragment becomes a live component",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.99,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_133"
+    "seconds": 2.02,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_136"
   },
   {
     "status": "✅",
     "scenario": "A video keeps its id, so something on the page can address it",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.94,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_134"
+    "seconds": 1.92,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_137"
   },
   {
     "status": "✅",
     "scenario": "A YouTube embed uses the nocookie host and opens the command channel",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 2.31,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_135"
+    "seconds": 2.33,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_138"
   },
   {
     "status": "✅",
     "scenario": "The play, pause and seek verbs reach the player",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 2.64,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_136"
+    "seconds": 2.71,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_139"
   },
   {
     "status": "✅",
     "scenario": "play with a time seeks first, then starts",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.95,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_137"
+    "seconds": 1.74,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_140"
   },
   {
     "status": "✅",
     "scenario": "The avatar walks to the video it is about to play",
     "feature": "Folder-relative embeds — a course page composes from its siblings",
     "tags": "",
-    "seconds": 1.29,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_138"
+    "seconds": 1.32,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_141"
   },
   {
     "status": "✅",
     "scenario": "A form can be gated by a condition over another form",
     "feature": "🚦 A workflow ordered by its own values",
     "tags": "",
-    "seconds": 3.52,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_139"
+    "seconds": 3.53,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_142"
   },
   {
     "status": "✅",
     "scenario": "Filling a field opens the next step, and only the next one",
     "feature": "🚦 A workflow ordered by its own values",
     "tags": "",
-    "seconds": 6.09,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_140"
+    "seconds": 6.1,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_143"
   },
   {
     "status": "✅",
@@ -1274,8 +1301,8 @@
     "feature": "🚦 A workflow ordered by its own values",
     "tags": "",
     "seconds": 8.65,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_141"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_144"
   },
   {
     "status": "⏭️",
@@ -1283,8 +1310,8 @@
     "feature": "🚦 A workflow ordered by its own values",
     "tags": "",
     "seconds": 0.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_142"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_145"
   },
   {
     "status": "⏭️",
@@ -1292,8 +1319,8 @@
     "feature": "🚦 A workflow ordered by its own values",
     "tags": "",
     "seconds": 0.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_143"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_146"
   },
   {
     "status": "⏭️",
@@ -1301,8 +1328,8 @@
     "feature": "🚦 A workflow ordered by its own values",
     "tags": "",
     "seconds": 0.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_144"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_147"
   },
   {
     "status": "⏭️",
@@ -1310,8 +1337,8 @@
     "feature": "🚦 A workflow ordered by its own values",
     "tags": "",
     "seconds": 0.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_145"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_148"
   },
   {
     "status": "✅",
@@ -1319,80 +1346,80 @@
     "feature": "🚦 A workflow ordered by its own values",
     "tags": "",
     "seconds": 3.53,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_146"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_149"
   },
   {
     "status": "✅",
     "scenario": "A focused learner can still walk the course",
     "feature": "Frame flags are a scope, not a page setting",
     "tags": "",
-    "seconds": 2.67,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_147"
+    "seconds": 2.61,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_150"
   },
   {
     "status": "✅",
     "scenario": "An ordinary internal link carries the frame flags forward",
     "feature": "Frame flags are a scope, not a page setting",
     "tags": "",
-    "seconds": 2.31,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_148"
+    "seconds": 2.25,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_151"
   },
   {
     "status": "✅",
     "scenario": "An allowlisted link stays in the frame, flags intact",
     "feature": "Frame flags are a scope, not a page setting",
     "tags": "",
-    "seconds": 2.25,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_149"
+    "seconds": 2.24,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_152"
   },
   {
     "status": "✅",
     "scenario": "open_in=tab restores the side-by-side behaviour",
     "feature": "Frame flags are a scope, not a page setting",
     "tags": "",
-    "seconds": 2.24,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_150"
+    "seconds": 2.26,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_153"
   },
   {
     "status": "✅",
     "scenario": "An unframed page is left completely alone",
     "feature": "Frame flags are a scope, not a page setting",
     "tags": "",
-    "seconds": 2.25,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_151"
+    "seconds": 2.24,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_154"
   },
   {
     "status": "✅",
     "scenario": "A homework param chain starts a recorded session",
     "feature": "Homework — record karma and hand it in",
     "tags": "",
-    "seconds": 1.22,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_152"
+    "seconds": 1.1,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_155"
   },
   {
     "status": "✅",
     "scenario": "A graded quiz is recorded into the homework karma",
     "feature": "Homework — record karma and hand it in",
     "tags": "",
-    "seconds": 1.92,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_153"
+    "seconds": 1.97,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_156"
   },
   {
     "status": "✅",
     "scenario": "Several markers are framed together",
     "feature": "A map frames its own markers",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_154"
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_157"
   },
   {
     "status": "✅",
@@ -1400,8 +1427,8 @@
     "feature": "A map frames its own markers",
     "tags": "",
     "seconds": 2.51,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_155"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_158"
   },
   {
     "status": "✅",
@@ -1409,116 +1436,116 @@
     "feature": "A map frames its own markers",
     "tags": "",
     "seconds": 2.52,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_156"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_159"
   },
   {
     "status": "✅",
     "scenario": "A live LightNode redirects",
     "feature": "The LightNode router (404 page)",
     "tags": "",
-    "seconds": 0.23,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_157"
+    "seconds": 0.12,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_160"
   },
   {
     "status": "✅",
     "scenario": "A fork without a live site explains the Pages switch",
     "feature": "The LightNode router (404 page)",
     "tags": "",
-    "seconds": 0.19,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_158"
+    "seconds": 0.18,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_161"
   },
   {
     "status": "✅",
     "scenario": "An unknown name invites to start a LightNode",
     "feature": "The LightNode router (404 page)",
     "tags": "",
-    "seconds": 0.32,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_159"
+    "seconds": 0.19,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_162"
   },
   {
     "status": "✅",
     "scenario": "Nodes page loads",
     "feature": "LightNode network page",
     "tags": "",
-    "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_160"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_163"
   },
   {
     "status": "✅",
     "scenario": "The network map renders",
     "feature": "LightNode network page",
     "tags": "",
-    "seconds": 1.87,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_161"
+    "seconds": 1.88,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_164"
   },
   {
     "status": "✅",
     "scenario": "The UX results dataset renders the scenario grid",
     "feature": "LightNode network page",
     "tags": "",
-    "seconds": 1.88,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_162"
+    "seconds": 1.86,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_165"
   },
   {
     "status": "✅",
     "scenario": "Results that predate this build are called stale, not shown as green",
     "feature": "LightNode network page",
     "tags": "",
-    "seconds": 2.18,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_163"
+    "seconds": 2.16,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_166"
   },
   {
     "status": "✅",
     "scenario": "A note on a vault block lands in the bench, under the block's own words",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 2.04,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_164"
+    "seconds": 2.03,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_167"
   },
   {
     "status": "✅",
     "scenario": "Reopening a noted block shows the note — the margin is a place, not a chute",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 2.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_165"
+    "seconds": 2.0,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_168"
   },
   {
     "status": "✅",
     "scenario": "Editing the note rewrites its section — one block, one note",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 2.05,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_166"
+    "seconds": 2.04,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_169"
   },
   {
     "status": "✅",
     "scenario": "Clearing the note removes it — and git remembers the story anyway",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 2.04,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_167"
+    "seconds": 2.06,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_170"
   },
   {
     "status": "✅",
     "scenario": "Annotated blocks show their 💬 at a glance under the x-ray",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 1.98,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_168"
+    "seconds": 2.0,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_171"
   },
   {
     "status": "✅",
@@ -1526,8 +1553,8 @@
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
     "seconds": 2.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_169"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_172"
   },
   {
     "status": "✅",
@@ -1535,53 +1562,53 @@
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
     "seconds": 2.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_170"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_173"
   },
   {
     "status": "✅",
     "scenario": "A margin written before the dunder rule is adopted, not orphaned",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 2.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_171"
+    "seconds": 2.0,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_174"
   },
   {
     "status": "✅",
     "scenario": "Saving an adopted margin writes the DUNDER name, never the old one",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 2.05,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_172"
+    "seconds": 2.04,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_175"
   },
   {
     "status": "✅",
     "scenario": "The margin loads even when the x-ray wakes outside the render",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 2.82,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_173"
+    "seconds": 2.81,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_176"
   },
   {
     "status": "✅",
     "scenario": "A note whose block was rewritten is listed, not lost",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 1.87,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_174"
+    "seconds": 1.85,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_177"
   },
   {
     "status": "✅",
     "scenario": "A margin that still matches its block shows no lost panel",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 2.46,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_175"
+    "seconds": 2.45,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_178"
   },
   {
     "status": "✅",
@@ -1589,17 +1616,17 @@
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
     "seconds": 1.52,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_176"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_179"
   },
   {
     "status": "✅",
     "scenario": "The margin belongs to the page on screen, not the one before it",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
-    "seconds": 4.28,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_177"
+    "seconds": 4.29,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_180"
   },
   {
     "status": "✅",
@@ -1607,8 +1634,8 @@
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
     "seconds": 3.12,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_178"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_181"
   },
   {
     "status": "✅",
@@ -1616,62 +1643,62 @@
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
     "seconds": 1.54,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_179"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_182"
   },
   {
     "status": "✅",
     "scenario": "Picking the right answer grades it correct",
     "feature": "Quiz grading",
     "tags": "",
-    "seconds": 1.65,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_180"
+    "seconds": 1.99,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_183"
   },
   {
     "status": "✅",
     "scenario": "Picking a wrong answer reveals it as wrong",
     "feature": "Quiz grading",
     "tags": "",
-    "seconds": 1.81,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_181"
+    "seconds": 1.64,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_184"
   },
   {
     "status": "✅",
     "scenario": "?reel=1 enters reel mode with a snap container",
     "feature": "Reel mode — Instagram-style vertical snap between titles",
     "tags": "",
-    "seconds": 1.24,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_182"
+    "seconds": 1.23,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_185"
   },
   {
     "status": "✅",
     "scenario": "Reel mode can be exited",
     "feature": "Reel mode — Instagram-style vertical snap between titles",
     "tags": "",
-    "seconds": 1.6,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_183"
+    "seconds": 1.68,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_186"
   },
   {
     "status": "✅",
     "scenario": "Browser Back exits reel mode",
     "feature": "Reel mode — Instagram-style vertical snap between titles",
     "tags": "",
-    "seconds": 2.47,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_184"
+    "seconds": 2.52,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_187"
   },
   {
     "status": "✅",
     "scenario": "The reel bar has a visible Back control",
     "feature": "Reel mode — Instagram-style vertical snap between titles",
     "tags": "",
-    "seconds": 2.75,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_185"
+    "seconds": 2.88,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_188"
   },
   {
     "status": "✅",
@@ -1679,17 +1706,17 @@
     "feature": "The tutor on a runner render studies the course, not the runner",
     "tags": "",
     "seconds": 1.27,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_186"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_189"
   },
   {
     "status": "✅",
     "scenario": "Red everywhere, then rung by rung to four greens",
     "feature": "The fire page's acts — two wired desks, three points, gated rewards",
     "tags": "",
-    "seconds": 3.22,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_187"
+    "seconds": 3.21,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_190"
   },
   {
     "status": "✅",
@@ -1697,17 +1724,17 @@
     "feature": "The fire page's acts — two wired desks, three points, gated rewards",
     "tags": "",
     "seconds": 1.13,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_188"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_191"
   },
   {
     "status": "✅",
     "scenario": "A key saved at the join door opens every desk connected",
     "feature": "The fire page's acts — two wired desks, three points, gated rewards",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_189"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_192"
   },
   {
     "status": "✅",
@@ -1715,62 +1742,62 @@
     "feature": "The fire page's acts — two wired desks, three points, gated rewards",
     "tags": "",
     "seconds": 1.36,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_190"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_193"
   },
   {
     "status": "✅",
     "scenario": "Read posture lists pages with no writing affordances",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 1.04,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_191"
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_194"
   },
   {
     "status": "✅",
     "scenario": "X-ray turns the shelf into a workbench",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 1.56,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_192"
+    "seconds": 1.55,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_195"
   },
   {
     "status": "✅",
     "scenario": "Trash moves the file into _trash with a deleted-suffix name",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 2.8,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_193"
+    "seconds": 2.83,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_196"
   },
   {
     "status": "✅",
     "scenario": "An empty shelf speaks the language of its posture",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 1.55,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_194"
+    "seconds": 1.54,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_197"
   },
   {
     "status": "✅",
     "scenario": "X-ray survives a refresh through the URL",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_195"
+    "seconds": 1.04,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_198"
   },
   {
     "status": "✅",
     "scenario": "X-ray on someone else's material stays a lens",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 1.56,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_196"
+    "seconds": 1.55,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_199"
   },
   {
     "status": "✅",
@@ -1778,8 +1805,8 @@
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
     "seconds": 1.55,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_197"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_200"
   },
   {
     "status": "✅",
@@ -1787,17 +1814,17 @@
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
     "seconds": 1.95,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_198"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_201"
   },
   {
     "status": "✅",
     "scenario": "On touch, a tap on the gear opens the menu, not the lens",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "@mobile",
-    "seconds": 1.59,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_199"
+    "seconds": 1.58,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_202"
   },
   {
     "status": "✅",
@@ -1805,17 +1832,17 @@
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
     "seconds": 2.45,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_200"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_203"
   },
   {
     "status": "✅",
     "scenario": "Move offers the repo's folders as autocomplete and lands the file",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 2.89,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_201"
+    "seconds": 2.87,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_204"
   },
   {
     "status": "✅",
@@ -1823,8 +1850,8 @@
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
     "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_202"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_205"
   },
   {
     "status": "✅",
@@ -1832,53 +1859,53 @@
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
     "seconds": 1.05,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_203"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_206"
   },
   {
     "status": "✅",
     "scenario": "On touch, the empty shelf's New button beats the lens",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "@mobile",
-    "seconds": 2.19,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_204"
+    "seconds": 2.17,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_207"
   },
   {
     "status": "✅",
     "scenario": "Typing a name with .md creates exactly that file",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 2.78,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_205"
+    "seconds": 2.77,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_208"
   },
   {
     "status": "✅",
     "scenario": "Cards keep their real titles when a stale raw token 404s",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_206"
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_209"
   },
   {
     "status": "✅",
     "scenario": "A subfolder card keeps its title when the raw token has expired",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 0.31,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_207"
+    "seconds": 0.28,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_210"
   },
   {
     "status": "✅",
     "scenario": "parent=\"true\" offers the way up, out of the folder",
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
-    "seconds": 1.04,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_208"
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_211"
   },
   {
     "status": "✅",
@@ -1886,8 +1913,8 @@
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
     "seconds": 1.07,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_209"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_212"
   },
   {
     "status": "✅",
@@ -1895,8 +1922,8 @@
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
     "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_210"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_213"
   },
   {
     "status": "✅",
@@ -1904,17 +1931,17 @@
     "feature": "Folder shelf — read posture and X-ray workbench",
     "tags": "",
     "seconds": 1.05,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_211"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_214"
   },
   {
     "status": "✅",
     "scenario": "Defs at the file end serve refs inside blocks, numbered globally",
     "feature": "Page-level footnotes — defs at the file end, one global numbering",
     "tags": "",
-    "seconds": 1.04,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_212"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_215"
   },
   {
     "status": "✅",
@@ -1922,8 +1949,8 @@
     "feature": "Page-level footnotes — defs at the file end, one global numbering",
     "tags": "",
     "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_213"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_216"
   },
   {
     "status": "✅",
@@ -1931,8 +1958,8 @@
     "feature": "Blocks gate on feature state through cells",
     "tags": "",
     "seconds": 1.29,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_214"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_217"
   },
   {
     "status": "✅",
@@ -1940,26 +1967,26 @@
     "feature": "Blocks gate on feature state through cells",
     "tags": "",
     "seconds": 1.33,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_215"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_218"
   },
   {
     "status": "✅",
     "scenario": "confetti is a verb any component can speak from a step",
     "feature": "Blocks gate on feature state through cells",
     "tags": "",
-    "seconds": 1.33,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_216"
+    "seconds": 1.31,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_219"
   },
   {
     "status": "✅",
     "scenario": "A second repair celebrates again; a re-run does not",
     "feature": "Blocks gate on feature state through cells",
     "tags": "",
-    "seconds": 6.15,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_217"
+    "seconds": 6.1,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_220"
   },
   {
     "status": "✅",
@@ -1967,8 +1994,8 @@
     "feature": "The authored guide owns its page — the generic one yields",
     "tags": "",
     "seconds": 2.62,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_218"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_221"
   },
   {
     "status": "✅",
@@ -1976,26 +2003,26 @@
     "feature": "The authored guide owns its page — the generic one yields",
     "tags": "",
     "seconds": 1.04,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_219"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_222"
   },
   {
     "status": "✅",
     "scenario": "The select verb picks a datagrid row through the grid's own API",
     "feature": "The authored guide owns its page — the generic one yields",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_220"
+    "seconds": 1.0,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_223"
   },
   {
     "status": "✅",
     "scenario": "An action-only story line is a quick stage direction, not a dead beat",
     "feature": "The authored guide owns its page — the generic one yields",
     "tags": "",
-    "seconds": 1.98,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_221"
+    "seconds": 1.97,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_224"
   },
   {
     "status": "✅",
@@ -2003,26 +2030,26 @@
     "feature": "The authored guide owns its page — the generic one yields",
     "tags": "",
     "seconds": 1.98,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_222"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_225"
   },
   {
     "status": "✅",
     "scenario": "A keep on a runner render commits to the rendered file",
     "feature": "📌 Keep & voice files the story in the rendered page",
     "tags": "",
-    "seconds": 1.38,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_223"
+    "seconds": 1.37,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_226"
   },
   {
     "status": "✅",
     "scenario": "The editor on a bench render edits the rendered file, preview included",
     "feature": "📌 Keep & voice files the story in the rendered page",
     "tags": "",
-    "seconds": 1.14,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_224"
+    "seconds": 1.12,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_227"
   },
   {
     "status": "✅",
@@ -2030,44 +2057,44 @@
     "feature": "📌 Keep & voice files the story in the rendered page",
     "tags": "",
     "seconds": 2.28,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_225"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_228"
   },
   {
     "status": "✅",
     "scenario": "The component page's own site-side gate still works",
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
-    "seconds": 1.27,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_226"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_229"
   },
   {
     "status": "✅",
     "scenario": "An unmet prerequisite gates a rendered course page",
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
-    "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_227"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_230"
   },
   {
     "status": "✅",
     "scenario": "Points earned on the sibling page open the gate",
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_228"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_231"
   },
   {
     "status": "✅",
     "scenario": "A prerequisite in the PARENT folder opens from ../",
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_229"
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_232"
   },
   {
     "status": "✅",
@@ -2075,44 +2102,44 @@
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
     "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_230"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_233"
   },
   {
     "status": "✅",
     "scenario": "Components that upgrade after the gate stay hidden",
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
-    "seconds": 3.55,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_231"
+    "seconds": 3.56,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_234"
   },
   {
     "status": "✅",
     "scenario": "The default gate has no way through",
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
-    "seconds": 1.09,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_232"
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_235"
   },
   {
     "status": "✅",
     "scenario": "The author may open a door, in their own words",
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
-    "seconds": 1.04,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_233"
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_236"
   },
   {
     "status": "✅",
     "scenario": "Half the points do not open a gate that asks for all of them",
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
-    "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_234"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_237"
   },
   {
     "status": "✅",
@@ -2120,80 +2147,80 @@
     "feature": "RT prerequisite gate — the key names the content, not the runner",
     "tags": "",
     "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_235"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_238"
   },
   {
     "status": "✅",
     "scenario": "Red on the wall of text, green on the crafted page",
     "feature": "The résumé rubric — acceptance criteria grade what the learner types",
     "tags": "",
-    "seconds": 1.6,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_236"
+    "seconds": 1.58,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_239"
   },
   {
     "status": "✅",
     "scenario": "An engine gap speaks like a person, never like a traceback",
     "feature": "The résumé rubric — acceptance criteria grade what the learner types",
     "tags": "",
-    "seconds": 1.32,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_237"
+    "seconds": 1.31,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_240"
   },
   {
     "status": "✅",
     "scenario": "Without a key the page still teaches, and says how to join",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_238"
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_241"
   },
   {
     "status": "✅",
     "scenario": "A joined learner with no saved copy starts from the seed",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.83,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_239"
+    "seconds": 1.82,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_242"
   },
   {
     "status": "✅",
     "scenario": "The saved copy wins over the seed on the next visit",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_240"
+    "seconds": 1.04,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_243"
   },
   {
     "status": "✅",
     "scenario": "Saving writes to the learner's repo, never the author's",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.87,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_241"
+    "seconds": 1.89,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_244"
   },
   {
     "status": "✅",
     "scenario": "Start over restores the seed without touching the saved file",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.46,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_242"
+    "seconds": 1.45,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_245"
   },
   {
     "status": "✅",
     "scenario": "The grid loads the reader's repaired rows over the broken seed",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_243"
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_246"
   },
   {
     "status": "✅",
@@ -2201,8 +2228,8 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.85,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_244"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_247"
   },
   {
     "status": "✅",
@@ -2210,35 +2237,35 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.75,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_245"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_248"
   },
   {
     "status": "✅",
     "scenario": "A dataset-backed repair keeps to the bench and re-derives the page",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_246"
+    "seconds": 1.05,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_249"
   },
   {
     "status": "✅",
     "scenario": "The class hub is framed, but the work goes home",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.88,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_247"
+    "seconds": 1.87,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_250"
   },
   {
     "status": "✅",
     "scenario": "The spelling picks the shelf — slash for the root, dots for the tree",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.89,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_248"
+    "seconds": 1.88,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_251"
   },
   {
     "status": "✅",
@@ -2246,8 +2273,8 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.88,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_249"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_252"
   },
   {
     "status": "✅",
@@ -2255,26 +2282,26 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.05,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_250"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_253"
   },
   {
     "status": "✅",
     "scenario": "The pad shows every version it ever saved",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.81,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_251"
+    "seconds": 1.8,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_254"
   },
   {
     "status": "✅",
     "scenario": "Bringing back an old version loads it without losing the new one",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.93,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_252"
+    "seconds": 1.91,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_255"
   },
   {
     "status": "✅",
@@ -2282,26 +2309,26 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.07,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_253"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_256"
   },
   {
     "status": "✅",
     "scenario": "Saving commits the cell you are still typing in",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.92,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_254"
+    "seconds": 1.93,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_257"
   },
   {
     "status": "✅",
     "scenario": "The grid's difference is a grid of what actually moved",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.81,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_255"
+    "seconds": 1.82,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_258"
   },
   {
     "status": "✅",
@@ -2309,8 +2336,8 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.88,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_256"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_259"
   },
   {
     "status": "✅",
@@ -2318,26 +2345,26 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.88,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_257"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_260"
   },
   {
     "status": "✅",
     "scenario": "The starter is named in the version list, not passed off as the learner's",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.07,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_258"
+    "seconds": 1.13,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_261"
   },
   {
     "status": "✅",
     "scenario": "Changed values are coloured in the grid's difference",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
-    "seconds": 1.8,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_259"
+    "seconds": 1.81,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_262"
   },
   {
     "status": "✅",
@@ -2345,8 +2372,8 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_260"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_263"
   },
   {
     "status": "✅",
@@ -2354,8 +2381,8 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_261"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_264"
   },
   {
     "status": "✅",
@@ -2363,8 +2390,8 @@
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
     "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_262"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_265"
   },
   {
     "status": "✅",
@@ -2372,26 +2399,26 @@
     "feature": "RT scores key to the rendered page, not the runner",
     "tags": "",
     "seconds": 1.0,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_263"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_266"
   },
   {
     "status": "✅",
     "scenario": "The trophy's reset truly forgets the page's score",
     "feature": "RT scores key to the rendered page, not the runner",
     "tags": "",
-    "seconds": 3.18,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_264"
+    "seconds": 3.23,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_267"
   },
   {
     "status": "✅",
     "scenario": "Two right answers make a quiz multi-select by themselves",
     "feature": "RT scores key to the rendered page, not the runner",
     "tags": "",
-    "seconds": 1.11,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_265"
+    "seconds": 1.13,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_268"
   },
   {
     "status": "✅",
@@ -2399,8 +2426,8 @@
     "feature": "RT scores key to the rendered page, not the runner",
     "tags": "",
     "seconds": 2.84,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_266"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_269"
   },
   {
     "status": "✅",
@@ -2408,44 +2435,44 @@
     "feature": "RT scores key to the rendered page, not the runner",
     "tags": "",
     "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_267"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_270"
   },
   {
     "status": "✅",
     "scenario": "Containment edges appear with no links written anywhere",
     "feature": "The course map draws the tree it is given",
     "tags": "",
-    "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_268"
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_271"
   },
   {
     "status": "✅",
     "scenario": "A prerequisite draws dashed, over the tree",
     "feature": "The course map draws the tree it is given",
     "tags": "",
-    "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_269"
+    "seconds": 1.04,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_272"
   },
   {
     "status": "✅",
     "scenario": "The page you are on is a landmark on its own map",
     "feature": "The course map draws the tree it is given",
     "tags": "",
-    "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_270"
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_273"
   },
   {
     "status": "✅",
     "scenario": "A link back up to the parent index draws no second arrow",
     "feature": "The course map draws the tree it is given",
     "tags": "",
-    "seconds": 1.02,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_271"
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_274"
   },
   {
     "status": "✅",
@@ -2453,53 +2480,53 @@
     "feature": "RT slides parity — Present and Reel work on a runner render",
     "tags": "@mobile",
     "seconds": 1.8,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_272"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_275"
   },
   {
     "status": "✅",
     "scenario": "Reel mode snaps through the same rendered deck",
     "feature": "RT slides parity — Present and Reel work on a runner render",
     "tags": "@mobile",
-    "seconds": 1.91,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_273"
+    "seconds": 1.88,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_276"
   },
   {
     "status": "✅",
     "scenario": "Present and Reel retire when the next render has no deck",
     "feature": "RT slides parity — Present and Reel work on a runner render",
     "tags": "",
-    "seconds": 1.83,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_274"
+    "seconds": 1.84,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_277"
   },
   {
     "status": "✅",
     "scenario": "The /run page renders markdown text from a hash source",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 0.73,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_275"
+    "seconds": 0.65,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_278"
   },
   {
     "status": "✅",
     "scenario": "The runner upgrades a component the way Jekyll does",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 0.62,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_276"
+    "seconds": 0.64,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_279"
   },
   {
     "status": "✅",
     "scenario": "A missing source shows a clear message, not a blank page",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 0.29,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_277"
+    "seconds": 0.21,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_280"
   },
   {
     "status": "✅",
@@ -2507,26 +2534,26 @@
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
     "seconds": 0.63,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_278"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_281"
   },
   {
     "status": "✅",
     "scenario": "Kramdown footnotes render in an RT render",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 1.04,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_279"
+    "seconds": 0.99,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_282"
   },
   {
     "status": "✅",
     "scenario": "The bar replaces the page title and names the source",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 0.62,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_280"
+    "seconds": 0.63,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_283"
   },
   {
     "status": "✅",
@@ -2534,35 +2561,35 @@
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
     "seconds": 0.25,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_281"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_284"
   },
   {
     "status": "✅",
     "scenario": "A bench menu takes over the topbar links",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 0.26,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_282"
+    "seconds": 0.27,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_285"
   },
   {
     "status": "✅",
     "scenario": "Relative links in a rendered page stay in the repo",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 0.25,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_283"
+    "seconds": 0.26,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_286"
   },
   {
     "status": "✅",
     "scenario": "Parent-relative links resolve within the repo",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 0.24,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_284"
+    "seconds": 0.29,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_287"
   },
   {
     "status": "✅",
@@ -2570,53 +2597,53 @@
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
     "seconds": 0.34,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_285"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_288"
   },
   {
     "status": "✅",
     "scenario": "The runtime opens the rich page editor bound to the rendered source",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 0.34,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_286"
+    "seconds": 0.36,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_289"
   },
   {
     "status": "✅",
     "scenario": "A dot fence renders as a live diagram inside a runner page",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_287"
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_290"
   },
   {
     "status": "✅",
     "scenario": "A dot diagram fits the page instead of scrolling it",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_288"
+    "seconds": 1.02,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_291"
   },
   {
     "status": "✅",
     "scenario": "A second page's block opens its OWN source, not the last page's",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
-    "seconds": 2.49,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_289"
+    "seconds": 2.51,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_292"
   },
   {
     "status": "✅",
     "scenario": "3D playground page loads without errors",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 1.13,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_290"
+    "seconds": 1.07,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_293"
   },
   {
     "status": "✅",
@@ -2624,143 +2651,143 @@
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
     "seconds": 1.12,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_291"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_294"
   },
   {
     "status": "✅",
     "scenario": "Both objects expose their attribute panels",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 1.11,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_292"
+    "seconds": 1.2,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_295"
   },
   {
     "status": "✅",
     "scenario": "Calling a method logs the call to the scene console",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 1.88,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_293"
+    "seconds": 1.91,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_296"
   },
   {
     "status": "✅",
     "scenario": "Editing an attribute logs the assignment",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 1.67,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_294"
+    "seconds": 1.7,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_297"
   },
   {
     "status": "✅",
     "scenario": "X-ray identifies the Scene3d component",
     "feature": "Scene3D — Lucky & Wanda 3D playground",
     "tags": "",
-    "seconds": 2.9,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_295"
+    "seconds": 2.95,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_298"
   },
   {
     "status": "✅",
     "scenario": "A page remembers your score on revisit",
     "feature": "Per-page score memory",
     "tags": "",
-    "seconds": 2.2,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_296"
+    "seconds": 2.19,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_299"
   },
   {
     "status": "✅",
     "scenario": "A card shows the remembered score for the page it links to",
     "feature": "Per-page score memory",
     "tags": "",
-    "seconds": 2.1,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_297"
+    "seconds": 2.11,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_300"
   },
   {
     "status": "✅",
     "scenario": "A card follows the score as it changes, with no reload",
     "feature": "Per-page score memory",
     "tags": "",
-    "seconds": 2.61,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_298"
+    "seconds": 2.62,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_301"
   },
   {
     "status": "✅",
     "scenario": "A run's result is remembered like the score beside it",
     "feature": "Per-page score memory",
     "tags": "",
-    "seconds": 4.0,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_299"
+    "seconds": 3.96,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_302"
   },
   {
     "status": "✅",
     "scenario": "A card shows the reader's own run, not the author's declaration",
     "feature": "Per-page score memory",
     "tags": "",
-    "seconds": 2.19,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_300"
+    "seconds": 2.11,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_303"
   },
   {
     "status": "✅",
     "scenario": "Slides FAB is present on tutorial101",
     "feature": "Slides FAB and presentation mode",
     "tags": "",
-    "seconds": 1.18,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_301"
+    "seconds": 1.21,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_304"
   },
   {
     "status": "✅",
     "scenario": "Slides FAB popup opens on tap",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.23,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_302"
+    "seconds": 2.27,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_305"
   },
   {
     "status": "✅",
     "scenario": "Tapping Present closes the popup",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.64,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_303"
+    "seconds": 2.59,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_306"
   },
   {
     "status": "✅",
     "scenario": "Slides FAB is present on mobile",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 1.3,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_304"
+    "seconds": 1.32,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_307"
   },
   {
     "status": "✅",
     "scenario": "FAB popup appears on tap on mobile",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 2.17,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_305"
+    "seconds": 2.25,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_308"
   },
   {
     "status": "✅",
     "scenario": "High contrast theme toggles from the pill and persists",
     "feature": "Slides FAB and presentation mode",
     "tags": "@mobile",
-    "seconds": 5.43,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_306"
+    "seconds": 5.38,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_309"
   },
   {
     "status": "✅",
@@ -2768,17 +2795,17 @@
     "feature": "Core pages load without errors",
     "tags": "",
     "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_307"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_310"
   },
   {
     "status": "✅",
     "scenario": "Tutorial 101 loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.16,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_308"
+    "seconds": 1.18,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_311"
   },
   {
     "status": "✅",
@@ -2786,53 +2813,53 @@
     "feature": "Core pages load without errors",
     "tags": "",
     "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_309"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_312"
   },
   {
     "status": "✅",
     "scenario": "Components examples page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.1,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_310"
+    "seconds": 1.03,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_313"
   },
   {
     "status": "✅",
     "scenario": "License page loads",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.09,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_311"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_314"
   },
   {
     "status": "✅",
     "scenario": "The brand names the node I'm on",
     "feature": "Core pages load without errors",
     "tags": "",
-    "seconds": 1.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_312"
+    "seconds": 1.08,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_315"
   },
   {
     "status": "✅",
     "scenario": "Start page loads without errors",
     "feature": "Onboarding wizard",
     "tags": "",
-    "seconds": 1.09,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_313"
+    "seconds": 1.08,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_316"
   },
   {
     "status": "✅",
     "scenario": "The wizard renders six steps with only the first active",
     "feature": "Onboarding wizard",
     "tags": "",
-    "seconds": 1.06,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_314"
+    "seconds": 1.09,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_317"
   },
   {
     "status": "✅",
@@ -2840,8 +2867,8 @@
     "feature": "Onboarding wizard",
     "tags": "",
     "seconds": 1.37,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_315"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_318"
   },
   {
     "status": "✅",
@@ -2849,8 +2876,8 @@
     "feature": "Onboarding wizard",
     "tags": "",
     "seconds": 1.69,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_316"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_319"
   },
   {
     "status": "✅",
@@ -2858,134 +2885,134 @@
     "feature": "Onboarding wizard",
     "tags": "",
     "seconds": 1.03,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_317"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_320"
   },
   {
     "status": "✅",
     "scenario": "Grid renders with data",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.22,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_318"
+    "seconds": 1.29,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_321"
   },
   {
     "status": "✅",
     "scenario": "Chart renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.13,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_319"
+    "seconds": 1.19,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_322"
   },
   {
     "status": "✅",
     "scenario": "Map renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.17,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_320"
+    "seconds": 1.19,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_323"
   },
   {
     "status": "✅",
     "scenario": "Video block renders",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 1.12,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_321"
+    "seconds": 1.21,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_324"
   },
   {
     "status": "✅",
     "scenario": "Grid row selection updates the chart",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 2.0,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_322"
+    "seconds": 2.18,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_325"
   },
   {
     "status": "✅",
     "scenario": "Selecting a tutorial grid row drives the detail chart",
     "feature": "Tutorial 101 interactive components",
     "tags": "",
-    "seconds": 2.06,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_323"
+    "seconds": 1.83,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_326"
   },
   {
     "status": "✅",
     "scenario": "The vitals switch is off by default and samples when turned on",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",
-    "seconds": 3.92,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_324"
+    "seconds": 3.99,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_327"
   },
   {
     "status": "✅",
     "scenario": "The model check card finds no broken references on the nodes page",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",
-    "seconds": 1.85,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_325"
+    "seconds": 1.86,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_328"
   },
   {
     "status": "✅",
     "scenario": "Shut accordion titles carry headline metrics",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",
-    "seconds": 1.0,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_326"
+    "seconds": 1.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_329"
   },
   {
     "status": "✅",
     "scenario": "Fleet metrics from CI render on the nodes page",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",
-    "seconds": 1.86,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_327"
+    "seconds": 1.87,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_330"
   },
   {
     "status": "✅",
     "scenario": "Model integrity holds on the tutorial data chain",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",
-    "seconds": 1.17,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_328"
+    "seconds": 1.18,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_331"
   },
   {
     "status": "✅",
     "scenario": "Model integrity holds on the avatar examples",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",
-    "seconds": 1.07,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_329"
+    "seconds": 1.09,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_332"
   },
   {
     "status": "✅",
     "scenario": "Model integrity holds on the Lucky and Wanda playground",
     "feature": "Vitals and model integrity — the platform measures itself",
     "tags": "",
-    "seconds": 1.13,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_330"
+    "seconds": 1.23,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_333"
   },
   {
     "status": "✅",
     "scenario": "X-ray panel appears on hover over a component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 2.84,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_331"
+    "seconds": 2.88,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_334"
   },
   {
     "status": "✅",
@@ -2993,116 +3020,116 @@
     "feature": "X-ray inspector",
     "tags": "",
     "seconds": 2.87,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_332"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_335"
   },
   {
     "status": "✅",
     "scenario": "X-ray panel identifies the map component",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 2.94,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_333"
+    "seconds": 2.89,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_336"
   },
   {
     "status": "✅",
     "scenario": "Keep commits the edited block when the builder is connected",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 2.92,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_334"
+    "seconds": 3.08,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_337"
   },
   {
     "status": "✅",
     "scenario": "Keep invites anonymous learners to create an account",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.17,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_335"
+    "seconds": 3.14,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_338"
   },
   {
     "status": "✅",
     "scenario": "X-ray scene fits within viewport",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 2.8,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_336"
+    "seconds": 2.86,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_339"
   },
   {
     "status": "✅",
     "scenario": "X-ray is activatable via FAB popup on mobile",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 2.13,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_337"
+    "seconds": 2.12,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_340"
   },
   {
     "status": "✅",
     "scenario": "Touch X-ray teaches its gestures on entry",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 2.73,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_338"
+    "seconds": 2.62,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_341"
   },
   {
     "status": "✅",
     "scenario": "X-ray activates on tap after enabling via FAB popup",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 3.06,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_339"
+    "seconds": 3.1,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_342"
   },
   {
     "status": "✅",
     "scenario": "In x-ray mode a phone can still reach the rest of the page",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 2.92,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_340"
+    "seconds": 2.97,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_343"
   },
   {
     "status": "✅",
     "scenario": "A drag that starts on a part is still an inspection",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 3.48,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_341"
+    "seconds": 3.51,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_344"
   },
   {
     "status": "✅",
     "scenario": "X-ray deactivates by tapping the FAB again",
     "feature": "X-ray inspector",
     "tags": "@mobile",
-    "seconds": 3.09,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_342"
+    "seconds": 3.01,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_345"
   },
   {
     "status": "✅",
     "scenario": "Shift x-ray reveals the whole connected data chain",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 2.93,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_343"
+    "seconds": 2.88,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_346"
   },
   {
     "status": "✅",
     "scenario": "Shift x-ray connects the trigger to its avatar",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 2.22,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_344"
+    "seconds": 2.26,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_347"
   },
   {
     "status": "✅",
@@ -3110,35 +3137,35 @@
     "feature": "X-ray inspector",
     "tags": "",
     "seconds": 2.2,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_345"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_348"
   },
   {
     "status": "✅",
     "scenario": "Resizing the editor keeps it open, and the text field grows with it",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 3.3,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_346"
+    "seconds": 3.37,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_349"
   },
   {
     "status": "✅",
     "scenario": "The gear on a part inside a bench slot opens the part, not a div",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 2.01,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_347"
+    "seconds": 2.06,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_350"
   },
   {
     "status": "✅",
     "scenario": "Changing the wire commits the rewritten line to the learner's file",
     "feature": "X-ray inspector",
     "tags": "",
-    "seconds": 2.7,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_348"
+    "seconds": 3.07,
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_351"
   },
   {
     "status": "✅",
@@ -3146,8 +3173,8 @@
     "feature": "X-ray inspector",
     "tags": "",
     "seconds": 2.57,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_349"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_352"
   },
   {
     "status": "✅",
@@ -3155,7 +3182,7 @@
     "feature": "X-ray inspector",
     "tags": "",
     "seconds": 2.57,
-    "run": "2026-08-10T15:14Z",
-    "url": "/assets/ux-report.html#scenario_350"
+    "run": "2026-08-10T19:16Z",
+    "url": "/assets/ux-report.html#scenario_353"
   }
 ]
