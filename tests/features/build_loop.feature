@@ -80,7 +80,7 @@ Feature: Build Loop — the turning hex hive
     And the narrator calls "pin" with "AI" on the loop
     And the narrator calls "pin" with "Ship" on the loop
     Then 2 legends are pinned to the loop
-    When the narrator calls "unpin" with "" on the loop
+    When the narrator calls "unpin" with nothing on the loop
     Then 0 legends are pinned to the loop
 
   Scenario: A narrator can stop and restart the spin

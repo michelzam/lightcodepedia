@@ -15,6 +15,8 @@ cd "$LIBS"
 [ -d mpy ] || { npm pack @micropython/micropython-webassembly-pyscript@latest >/dev/null 2>&1 && tar xzf micropython-*.tgz && mv package mpy && rm -f micropython-*.tgz; }
 [ -f chart.umd.min.js ] || { npm pack chart.js@4 >/dev/null 2>&1 && tar xzf chart.js-4*.tgz package/dist/chart.umd.min.js -O > chart.umd.min.js && rm -f chart.js-4*.tgz; }
 [ -f alasql.min.js ] || { npm pack alasql@4 >/dev/null 2>&1 && tar xzf alasql-4*.tgz package/dist/alasql.min.js -O > alasql.min.js && rm -f alasql-4*.tgz; }
+[ -d maplibre ] || { npm pack maplibre-gl@4 >/dev/null 2>&1 && tar xzf maplibre-gl-4*.tgz && mkdir -p maplibre && mv package/dist/maplibre-gl.js package/dist/maplibre-gl.css maplibre/ && rm -rf package maplibre-gl-4*.tgz; }
+[ -d three ] || { npm pack three@0.170.0 >/dev/null 2>&1 && tar xzf three-0.170.0.tgz && mkdir -p three/build three/examples && mv package/build/three.module.js three/build/ && mv package/examples/jsm three/examples/jsm && rm -rf package three-0.170.0.tgz; }
 [ -d ag ] || { npm pack ag-grid-community@31 >/dev/null 2>&1 && tar xzf ag-grid-community-31*.tgz && mv package ag && rm -f ag-grid-community-31*.tgz; }
 cat > serve.py <<'PYEOF'
 import http.server, os, socketserver
@@ -43,4 +45,4 @@ sleep 1
 setsid python3 "$LIBS/serve.py" < /dev/null > /dev/null 2>&1 &
 for i in $(seq 1 10); do curl -s -o /dev/null http://127.0.0.1:8899/run.html && break; sleep 1; done
 echo "rig up: $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8899/run.html)"
-echo "env: MARKED_JS=$LIBS/marked.min.js JS_YAML=$LIBS/js-yaml.min.js MPY_DIR=$LIBS/mpy AG_GRID_DIR=$LIBS/ag CHART_JS=$LIBS/chart.umd.min.js ALASQL_JS=$LIBS/alasql.min.js"
+echo "env: MAPLIBRE_DIR=$LIBS/maplibre THREE_DIR=$LIBS/three MARKED_JS=$LIBS/marked.min.js JS_YAML=$LIBS/js-yaml.min.js MPY_DIR=$LIBS/mpy AG_GRID_DIR=$LIBS/ag CHART_JS=$LIBS/chart.umd.min.js ALASQL_JS=$LIBS/alasql.min.js"

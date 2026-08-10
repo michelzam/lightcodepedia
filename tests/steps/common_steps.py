@@ -1,3 +1,4 @@
+import os
 import re
 from behave import given, when, then
 from playwright.sync_api import expect
@@ -13,16 +14,28 @@ JS_ERROR_IGNORE = {
     # Chrome logs the rejected probe as an error, functionality unaffected
     "compute-pressure",
 }
+# LOCAL HARNESS ONLY: a sandbox that cannot reach live services (map tile
+# servers, …) adds their hostnames here via the env, comma-separated. CI
+# never sets it, so a real regression cannot hide behind this.
+JS_ERROR_IGNORE |= set(filter(None, os.environ.get(
+    "JS_ERROR_IGNORE_EXTRA", "").split(",")))
 
 
 @given("I have a clean browser page")
 def step_clean_page(context):
     context.js_errors = []
-    context.page.on("console", lambda msg: (
-        context.js_errors.append(msg.text)
-        if msg.type == "error" and not any(s in msg.text for s in JS_ERROR_IGNORE)
-        else None
-    ))
+    def _console(msg):
+        if msg.type != "error":
+            return
+        # a resource error's text never names the resource — Chrome puts the
+        # URL in location, and without it a 404 is undiagnosable from the
+        # assertion message alone (2026-08-10)
+        url = (msg.location or {}).get("url", "")
+        text = msg.text + (f"  [{url}]" if url else "")
+        if not any(s in text for s in JS_ERROR_IGNORE):
+            context.js_errors.append(text)
+
+    context.page.on("console", _console)
     context.page.on("pageerror", lambda err: context.js_errors.append(str(err)))
 
 

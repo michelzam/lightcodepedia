@@ -149,6 +149,85 @@ if ALASQL_JS and os.path.isfile(ALASQL_JS):
         _ALASQL_BODY = _f.read()
 
 
+# LOCAL HARNESS ONLY: the build_loop diorama imports Three.js as ES modules
+# from https://cdn.jsdelivr.net/npm/three@0.170.0/… (an importmap in the
+# layout's <head>). Same sandbox story as marked. When THREE_DIR points at an
+# unpacked copy of the npm package, fulfil build/ and examples/jsm/ from disk.
+THREE_DIR = os.environ.get("THREE_DIR") or None
+if THREE_DIR and not os.path.isfile(
+        os.path.join(THREE_DIR, "build", "three.module.js")):
+    THREE_DIR = None
+
+
+def _stub_three(page):
+    if THREE_DIR is None:
+        return
+
+    def handler(route):
+        rel = route.request.url.split("three@", 1)[1].split("/", 1)[1]
+        path = os.path.join(THREE_DIR, *rel.split("/"))
+        try:
+            with open(path, "rb") as f:
+                body = f.read()
+        except OSError:
+            route.fulfill(status=404, body=b"")
+            return
+        route.fulfill(status=200,
+                      content_type="application/javascript; charset=utf-8",
+                      body=body)
+
+    page.route("https://cdn.jsdelivr.net/npm/three@*/**", handler)
+
+
+# LOCAL HARNESS ONLY: the map component loads MapLibre from
+# https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/… (one script, one
+# stylesheet). Same sandbox story as marked.
+MAPLIBRE_DIR = os.environ.get("MAPLIBRE_DIR") or None
+if MAPLIBRE_DIR and not os.path.isfile(
+        os.path.join(MAPLIBRE_DIR, "maplibre-gl.js")):
+    MAPLIBRE_DIR = None
+
+
+def _stub_maplibre(page):
+    if MAPLIBRE_DIR is None:
+        return
+
+    def serve(rel, ctype):
+        with open(os.path.join(MAPLIBRE_DIR, rel), "rb") as f:
+            body = f.read()
+        return lambda route: route.fulfill(
+            status=200, content_type=ctype, body=body)
+
+    page.route(
+        "https://cdn.jsdelivr.net/npm/maplibre-gl@*/dist/maplibre-gl.js",
+        serve("maplibre-gl.js", "application/javascript; charset=utf-8"),
+    )
+    page.route(
+        "https://cdn.jsdelivr.net/npm/maplibre-gl@*/dist/maplibre-gl.css",
+        serve("maplibre-gl.css", "text/css; charset=utf-8"),
+    )
+
+
+# LOCAL HARNESS ONLY: mermaid is an ESM bundle that pulls dozens of chunk
+# files — packing it like the other shims is not worth it. In this sandbox a
+# functional stub (initialize/run as no-ops) keeps "loads without console
+# errors" honest about OUR code; CI and pedia load the real CDN bundle.
+MERMAID_STUB = os.environ.get("MERMAID_STUB") == "1"
+
+
+def _stub_mermaid(page):
+    if not MERMAID_STUB:
+        return
+    page.route(
+        "https://cdn.jsdelivr.net/npm/mermaid@*/dist/mermaid.esm.min.mjs",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/javascript; charset=utf-8",
+            body=b"export default {initialize(){}, async run(){}}",
+        ),
+    )
+
+
 def _stub_script(page, pattern, body):
     if body is None:
         return
@@ -211,6 +290,9 @@ def before_scenario(context, scenario):
     _stub_micropython(context.page)  # LOCAL HARNESS ONLY (no-op when MPY_DIR unset)
     _stub_ag_grid(context.page)  # LOCAL HARNESS ONLY (no-op when AG_GRID_DIR unset)
     _stub_js_yaml(context.page)  # LOCAL HARNESS ONLY (no-op when JS_YAML unset)
+    _stub_three(context.page)  # LOCAL HARNESS ONLY (no-op when THREE_DIR unset)
+    _stub_mermaid(context.page)  # LOCAL HARNESS ONLY (no-op when MERMAID_STUB unset)
+    _stub_maplibre(context.page)  # LOCAL HARNESS ONLY (no-op when MAPLIBRE_DIR unset)
     _stub_script(context.page,  # LOCAL HARNESS ONLY (no-op when CHART_JS unset)
                  "https://cdn.jsdelivr.net/npm/chart.js@*/dist/chart.umd.min.js",
                  _CHART_BODY)

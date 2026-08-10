@@ -84,14 +84,26 @@ def step_pin_follows(context):
     assert first != second, f"legend did not follow its station (stuck at {first})"
 
 
-@when('the narrator calls "{verb}" with "{arg}" on the loop')
-def step_verb(context, verb, arg):
+def _call_verb(context, verb, arg):
     """Exactly the path an avatar line takes: window.lcVerbs.act(verb, el, arg)."""
     ok = context.page.evaluate(
-        "([v, a]) => window.lcVerbs.act(v, null, a === '' ? null : a)", [verb, arg]
+        "([v, a]) => window.lcVerbs.act(v, null, a)", [verb, arg]
     )
-    assert ok, f'verb {verb}("{arg}") was refused'
+    assert ok, f'verb {verb}({arg!r}) was refused'
     context.page.wait_for_timeout(400)
+
+
+@when('the narrator calls "{verb}" with "{arg}" on the loop')
+def step_verb(context, verb, arg):
+    _call_verb(context, verb, arg)
+
+
+# behave's {arg} placeholder cannot match an empty quoted string — the
+# bare-unpin step shipped UNDEFINED and pedia's full suite was the first
+# behave parse to say so (2026-08-10). The argless call gets its own words.
+@when('the narrator calls "{verb}" with nothing on the loop')
+def step_verb_bare(context, verb):
+    _call_verb(context, verb, None)
 
 
 @then('the narrator verb "{verb}" with "{arg}" is refused')
