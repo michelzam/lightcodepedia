@@ -331,3 +331,36 @@ def step_agent_fields_named(context):
         "%d agent field(s) with no accessible name:\n  %s"
         % (len(unnamed), "\n  ".join(unnamed))
     )
+
+
+# ── accessible names on inputs (axe rule "label") ─────────────────────────
+# The engine's editors and form fields are visually framed by their chrome
+# but were programmatically nameless. These pin the accessible name at the
+# source components, so the private axe ratchet never goes red on them again.
+
+_NAME_PROBE = """(sel) => {
+  const bad = [];
+  document.querySelectorAll(sel).forEach(el => {
+    const name = el.getAttribute('aria-label')
+      || (el.labels && el.labels.length)
+      || el.getAttribute('aria-labelledby')
+      || el.getAttribute('title');
+    if (!name) bad.push(el.outerHTML.slice(0, 120));
+  });
+  return bad;
+}"""
+
+
+@then("every code editor on the page exposes an accessible name")
+def step_editors_named(context):
+    bad = context.page.evaluate(
+        _NAME_PROBE, ".lc-pyrun-code, .lc-pyrepl-input, .lc-mdpad-in")
+    assert not bad, "nameless editors:\n" + "\n".join(bad)
+
+
+@then("every form control on the page exposes an accessible name")
+def step_form_named(context):
+    bad = context.page.evaluate(
+        _NAME_PROBE,
+        ".lc-form-bool input, .lc-form-select, input[type=range].lc-form-range")
+    assert not bad, "nameless form controls:\n" + "\n".join(bad)

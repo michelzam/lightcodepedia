@@ -138,6 +138,7 @@ Auto-included by docs/_layouts/default.html.
         rng.type = "range";
         rng.min = slid.min; rng.max = slid.max; rng.step = slid.step;
         rng.value = (v === null || v === undefined || isNaN(Number(v))) ? slid.min : v;
+        rng.setAttribute("aria-label", String(params.data._key || "value"));
         rng.disabled = !opts.editable;
         rng.style.flex = "1";
         var rl = document.createElement("span");
@@ -165,6 +166,7 @@ Auto-included by docs/_layouts/default.html.
         pw.className = "lc-form-bool";
         var sel = document.createElement("select");
         sel.className = "lc-form-select";
+        sel.setAttribute("aria-label", String(params.data._key || "value"));
         sel.disabled = !opts.editable;
         sel.style.flex = "1";
         if (picks.indexOf(String(v)) < 0) {
@@ -195,6 +197,7 @@ Auto-included by docs/_layouts/default.html.
         cb.checked = !!v;
         cb.disabled = !opts.editable;
         cb.className = "lc-form-bool-cb";
+        cb.setAttribute("aria-label", String(params.data._key || "value"));
         var lab = document.createElement("span");
         lab.textContent = v ? "True" : "False";
         lab.className = v ? "lc-form-bool-t" : "lc-form-bool-f";

@@ -114,6 +114,7 @@ Auto-included by docs/_layouts/default.html.
 
     var ta = document.createElement("textarea");
     ta.className = "lc-mdpad-in";
+    ta.setAttribute("aria-label", "Markdown editor");
     ta.spellcheck = false;
     ta.rows = rows;
     ta.value = seed;

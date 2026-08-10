@@ -85,7 +85,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 <div class="lcw-body">
 <p>Every friend who joins through your link and launches their LightNode earns you <strong>50 karma points</strong>. The network grows — and so does everyone in it.</p>
 <div class="lcw-invite-box">
-<input id="lcw-invite-url" type="text" readonly>
+<input id="lcw-invite-url" type="text" readonly aria-label="Invite link">
 <button class="lcw-btn" onclick="lcwCopyInvite()" id="lcw-copy-btn">📋 Copy</button>
 </div>
 <div class="lcw-share-row" id="lcw-share-row"></div>

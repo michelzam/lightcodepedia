@@ -53,3 +53,19 @@ Feature: Everything a mouse can do, a keyboard can do
     And I tab to the quiz answer "Beagle"
     And I press "ArrowDown"
     Then that quiz answer is not the focused element
+
+  Scenario: Every code editor tells assistive tech what it is
+    The Python editors, the REPL prompt and the markdown pad rendered as
+    naked textareas — a screen reader announced bare "edit text" with no
+    purpose, 15+ nodes across the site, and the axe ratchet stayed red on
+    rule "label" for days (2026-08-10). The frame names the editor for the
+    eye; it must name it for the reader too.
+
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    Then every code editor on the page exposes an accessible name
+
+  Scenario: Form fields carry the name their row shows
+    When I navigate to "/components/form"
+    And I wait for the page to be interactive
+    Then every form control on the page exposes an accessible name
