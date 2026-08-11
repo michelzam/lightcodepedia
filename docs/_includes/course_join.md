@@ -9,8 +9,15 @@ Five steps: ① GitHub account → ② course key (classic, repo scope — deep 
 pre-fills scope + an org-named note) → ③ access check (tries the actual course
 entry with the student's key; green = enrolled + key right → 📖 Open button)
 → ④ the bench: the student's private fork of the session hub, forked INTO the
-org (org-owned, named <hub>-<login>) so teachers see the work at any time and
-classmates never do. Status is explicit — no bench → 🍴 fork; behind the hub →
+org (org-owned, named <hub>-<login>) so teachers see the work at any time.
+
+CLASSMATES MUST NOT — and that is a permission rule, not a wish. Private forks
+inherit the upstream's TEAM permissions, so while the session team held pull on
+the hub, every student on it could read every other bench. The team is now given
+the VAULT only (nobody forks the vault); read on the hub is granted to each
+student INDIVIDUALLY, because individual permissions are not inherited by forks.
+The console's 🔒 column proves the team still has nothing on the hub. Org owners
+keep seeing everything — ownership outranks both. (2026-08-11) Status is explicit — no bench → 🍴 fork; behind the hub →
 🔄 sync (merge-upstream); the bench opens IN the runner (never the GitHub UI).
 The check is live truth against the API, never cached. Done steps reopen via
 "change" (cockpit rule). Shares the app's identity storage (lc_ed_pat).
