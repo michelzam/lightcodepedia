@@ -21,7 +21,7 @@ Feature: A link becomes a styled button
   Scenario: Every demo button renders with its label
     Given the buttons above
     :::python
-    self.labels = [Button(b._el).text for b in Object._all(".button")]
+    self.labels: list = [Button(b._el).text for b in Object._all(".button")]
     :::
     When they have rendered
     Then each labelled call-to-action is present
@@ -87,8 +87,8 @@ Feature: A button runs Python on click
   Scenario: Clicking the event button toggles ON and OFF
     Given the #event_btn button and its on_click handler
     :::python
-    self.eb = self.page.event_btn
-    self.before = self.eb.text
+    self.eb: Button = self.page.event_btn
+    self.before: str = self.eb.text
     :::
     When its handler runs
     :::python
@@ -122,7 +122,7 @@ Feature: A bare body is a whole handler
   Scenario: One ternary toggles the label
     Given the to-do button
     :::python
-    self.b = self.page.bare_btn
+    self.b: Button = self.page.bare_btn
     :::
     When it is clicked
     :::python

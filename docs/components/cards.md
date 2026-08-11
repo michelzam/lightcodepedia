@@ -30,7 +30,7 @@ Feature: Cards lay content out as a clickable grid
   Scenario: Each section becomes its own card
     Given the cards above
     :::python
-    self.cards = Object._all(".lc-cards")[0]._qq(".lc-card")
+    self.cards: list = Object._all(".lc-cards")[0]._qq(".lc-card")
     :::
     Then there is one card per section
     :::python
@@ -40,7 +40,7 @@ Feature: Cards lay content out as a clickable grid
   Scenario: Every card offers a link to follow
     Given the cards above
     :::python
-    self.cards = Object._all(".lc-cards")[0]._qq(".lc-card")
+    self.cards: list = Object._all(".lc-cards")[0]._qq(".lc-card")
     :::
     Then each card has a link
     :::python

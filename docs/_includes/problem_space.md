@@ -234,6 +234,13 @@ Auto-included by docs/_layouts/default.html.
       })(12);
     }
 
+    /* the stripe every saved block wears (widgets.md): a persona card IS a
+       file in the learner's space, on the page that edits it and on every
+       later page that reads it back */
+    var psFrame = window.lcBenchFrame
+      ? window.lcBenchFrame(node, { path: opts.save, id: node.id || "", mine: false })
+      : null;
+
     var sha = null;
     window.lcBench.read(opts.save, node).then(function (f) {
       if (!f) return;
@@ -241,6 +248,7 @@ Auto-included by docs/_layouts/default.html.
         if (!obj) return;
         sha = f.sha;
         mine.hidden = false;
+        if (psFrame) psFrame.setMine(true);
         if (bar._lcEmpty) bar._lcEmpty.hidden = true;
         node.setAttribute("data-lc-mine", "1");
         if (!(opts.srcId && pushToForm(opts.srcId, obj, 5))) {
@@ -257,6 +265,7 @@ Auto-included by docs/_layouts/default.html.
         .then(function (s) {
           sha = s || sha;
           mine.hidden = false;
+          if (psFrame) psFrame.setMine(true);
           node.setAttribute("data-lc-mine", "1");
         })
         .catch(function (e) { alert("Save failed: " + (e.message || e)); })

@@ -135,6 +135,8 @@ Auto-included by docs/_layouts/default.html.
     var saveKnob = el.getAttribute("save") || "";
     var benchPath = saveKnob && saveKnob !== "true" ? saveKnob : "";
     var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null;
+    /* the stripe every saved block wears — see lcBenchFrame in widgets.md */
+    var frame = null;
     if (saveKnob) {
       saveWrap = document.createElement("div");
       saveWrap.className = "lc-mdpad-bar";
@@ -172,6 +174,12 @@ Auto-included by docs/_layouts/default.html.
     wrap.appendChild(ta);
     el.parentNode.replaceChild(wrap, el);
     if (saveWrap) wrap.parentNode.insertBefore(saveWrap, wrap.nextSibling);
+    /* the stripe goes round BOTH the pad and its keep bar, so the frame
+       reads as one owned thing rather than a box with a bar loose under it */
+    if (benchPath && window.lcBenchFrame) {
+      frame = window.lcBenchFrame(wrap, { path: benchPath, id: id, mine: false });
+      if (frame && saveWrap) frame.el.appendChild(saveWrap);
+    }
 
     if (saveBtn && benchPath) {
       var bOrigin = seed, bSha = null;
@@ -191,6 +199,7 @@ Auto-included by docs/_layouts/default.html.
           ta.value = f.text;
           wrap.setAttribute("data-lc-mine", "1");
           if (mineTag) mineTag.hidden = false;
+          if (frame) frame.setMine(true);
           revealVersions();                      /* a saved file HAS a history */
           render(); publish(true);
         }).catch(function () {});
@@ -218,6 +227,7 @@ Auto-included by docs/_layouts/default.html.
             bOrigin = ta.value; bSha = sha || bSha;
             wrap.setAttribute("data-lc-mine", "1");
             if (mineTag) mineTag.hidden = false;
+            if (frame) frame.setMine(true);
             revealVersions();
             closeVersions();                     /* the list just grew — re-open it fresh */
             window.lcxToast && window.lcxToast("Saved to your space ✓", true);

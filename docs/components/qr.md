@@ -21,7 +21,7 @@ Feature: A fenced block becomes a scannable QR widget
   Scenario: The block upgrades into a QR widget
     Given the QR block above
     :::python
-    self.qr = Object._all(".lc-qr")[0]
+    self.qr: Object = Object._all(".lc-qr")[0]
     :::
     When the page has upgraded it
     Then it is a visible widget with a render target and its caption

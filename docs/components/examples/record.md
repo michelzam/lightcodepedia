@@ -181,7 +181,7 @@ Feature: A record renders a schema-built form and re-emits lossless YAML
   Scenario: The Personnage fiche renders and round-trips with no loss
     Given the first record editor on the page
     :::python
-    self.rec = Object._all(".lc-rec")[0]
+    self.rec: Object = Object._all(".lc-rec")[0]
     :::
     Then it is visible with a form built from the schema
     :::python
@@ -203,7 +203,7 @@ Feature: Relations resolve through the index object
   Scenario: A period slug shows its human title, not the raw slug
     Given the Personnage record's preview
     :::python
-    self.rec = Object._all(".lc-rec")[0]
+    self.rec: Object = Object._all(".lc-rec")[0]
     :::
     Then a relation chip shows the resolved title
     :::python
@@ -218,7 +218,7 @@ Feature: The record maps its geolocated points
   Scenario: Two referenced addresses are plotted
     Given the Personnage record
     :::python
-    self.rec = Object._all(".lc-rec")[0]
+    self.rec: Object = Object._all(".lc-rec")[0]
     :::
     Then the map reports two geolocated points
     :::python
@@ -233,7 +233,7 @@ Feature: One engine renders a second type with nested widgets
   Scenario: The Événement fiche exposes object and objectlist widgets
     Given the second record editor on the page
     :::python
-    self.ev = Object._all(".lc-rec")[1]
+    self.ev: Object = Object._all(".lc-rec")[1]
     :::
     Then its form shows the nested Datation and Point widgets
     :::python

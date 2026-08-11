@@ -60,6 +60,14 @@ def step_ef_glyph(context, kind, fid, glyph):
         assert text.startswith(glyph), f"{kind} note {i + 1} reads {text!r}"
 
 
+@then('in "{fid}" the word "{word}" is painted "{kind}"')
+def step_gwt_paint(context, fid, word, kind):
+    mark = context.page.locator(
+        f".lc-feature[data-lc-id='{fid}'] .lc-feature-step-text mark", has_text=word
+    ).first
+    expect(mark).to_have_attribute("data-kind", kind, timeout=EF_TIMEOUT)
+
+
 @then('the event flow "{fid}" shows its legend')
 def step_ef_legend(context, fid):
     expect(_flow(context, fid).locator(".lc-ef-legend")).to_be_visible(

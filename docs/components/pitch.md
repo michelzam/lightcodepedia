@@ -80,8 +80,8 @@ Feature: The pitch assembles and checks itself
   Scenario: The editor drives the sentences
     Given the wired pair
     :::python
-    self.editor = self.page.pitch_form
-    self.view = self.page.live_pitch
+    self.editor: Form = self.page.pitch_form
+    self.view: Pitch = self.page.live_pitch
     :::
     When the author renames the product
     :::python
@@ -95,8 +95,8 @@ Feature: The pitch assembles and checks itself
   Scenario: A pitch that forgets its persona is warned, not stopped
     Given the two pitches on this page
     :::python
-    self.good = self.page.demo_pitch
-    self.bad = self.page.drifting
+    self.good: Pitch = self.page.demo_pitch
+    self.bad: Pitch = self.page.drifting
     :::
     Then only the drifting one carries the warning
     :::python
@@ -107,7 +107,7 @@ Feature: The pitch assembles and checks itself
   Scenario: The who is calculated, never typed
     Given a pitch that names a persona
     :::python
-    self.p = self.page.demo_pitch
+    self.p: Pitch = self.page.demo_pitch
     :::
     Then it reads the who off that card
     :::python

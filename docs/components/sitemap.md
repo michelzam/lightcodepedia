@@ -51,7 +51,7 @@ Feature: A directory becomes a force-directed sitemap
   Scenario: The block upgrades into a sitemap graph
     Given the sitemap above
     :::python
-    self.sm = Object._all(".lc-sitemap")[0]
+    self.sm: Object = Object._all(".lc-sitemap")[0]
     :::
     When the page has upgraded it
     Then it is a visible sitemap

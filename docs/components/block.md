@@ -61,7 +61,7 @@ Feature: A fenced block becomes a bordered card
   Scenario: Each section becomes a block card
     Given the block examples on this page
     :::python
-    self.cells = Object._all(".lc-block")
+    self.cells: list = Object._all(".lc-block")
     :::
     When they have rendered
     Then there are block cards and one holds Lucky's profile

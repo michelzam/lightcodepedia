@@ -29,6 +29,9 @@ Auto-included by docs/_layouts/default.html.
                  padding: 0 0.9em 0.6em; overflow: hidden; }
 .lc-bench-slot[data-state="draft"] { border-left-color: #3b82f6; background: #fbfdff; }
 .lc-bench-slot[data-state="done"]  { border-left-color: #22c55e; background: #f8fffb; }
+.lc-bench-lite { padding: 0 0 0.6em; }
+.lc-bench-lite > .lc-bench-head { margin: 0 0 0.5em; }
+.lc-bench-lite > :not(.lc-bench-head) { margin-left: 0.9em; margin-right: 0.9em; }
 .lc-bench-head { position: relative; display: flex; align-items: center; gap: 0.5em;
                  margin: 0 -0.9em 0.7em; padding: 0.35em 0.9em;
                  background: rgba(255,255,255,0.72);
@@ -350,6 +353,102 @@ Auto-included by docs/_layouts/default.html.
     if (el.id) { f.id = el.id; f.setAttribute("data-lc-id", el.id); }   /* so self.page.<id>.load() works */
     el.parentNode.replaceChild(f, el);
   }
+  /* ── THE SAME FRAME, ON EVERYTHING THAT SAVES ────────────────────────
+     Michel, 2026-08-11: *"the bench visual indicator should be used all
+     over the place where those local files are used (cv, grids for
+     dogs.yaml, etc)"*. A pad, a grid, a persona card and a page slot all
+     write to the learner's own repo, and until now only the slot said so —
+     so the most important fact about a block (this file is YOURS) was
+     visible in one place out of four.
+
+     lcBenchFrame wraps any element in the slot's stripe: the owner's face,
+     the path, and the state. It deliberately carries NO menu and NO 💾: a
+     pad and a grid already own their keep bar, and two save buttons on one
+     block is worse than none. The page slot keeps its own richer head. */
+  window.lcBenchFrame = function (el, opts) {
+    opts = opts || {};
+    if (!el || el._lcFramed) return null;
+    var path = opts.path || "";
+    if (!path) return null;
+    el._lcFramed = true;
+    /* SOME COMPONENTS WIRE THEMSELVES BEFORE THEY ARE IN THE PAGE — the
+       persona card is built, wired, and only then swapped in. Framing a
+       node with no parent threw and took the whole upgrade with it (the
+       card rendered nothing at all). So wait for the mount instead. */
+    if (!el.parentNode) {
+      var want = !!opts.mine, real = null, tries = 0;
+      (function wait() {
+        if (el.parentNode) {
+          el._lcFramed = false;
+          real = window.lcBenchFrame(el, opts);
+          if (real) real.setMine(want);
+          return;
+        }
+        if (++tries > 40) return;
+        setTimeout(wait, 50);
+      })();
+      return { el: null,
+               repaint: function () { if (real) real.repaint(); },
+               setMine: function (v) { want = !!v; if (real) real.setMine(v); } };
+    }
+    var box = document.createElement("div");
+    box.className = "lc-bench-slot lc-bench-lite";
+    el.parentNode.insertBefore(box, el);
+    var head = document.createElement("div");
+    head.className = "lc-bench-head";
+    box.appendChild(head);
+    box.appendChild(el);
+
+    var mine = !!opts.mine;
+    var gradesId = opts.id || "";
+    function graders() {
+      return gradesId
+        ? [].slice.call(document.querySelectorAll('.lc-feature[data-grades="' + gradesId + '"]'))
+        : [];
+    }
+    function state() {
+      if (!mine) return "starter";
+      var g = graders();
+      if (g.length && g.every(function (c) { return c.getAttribute("data-status") === "passing"; }))
+        return "done";
+      return "draft";
+    }
+    function paint() {
+      var repo = (window.lcBench ? window.lcBench.target(box).repo : "") || "";
+      var me = null;
+      try { me = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
+      var login = (me && me.login) || repo.split("/")[0] || "";
+      var pic = (me && me.avatar_url)
+        ? "<img class='lc-bench-avatar' src='" + escapeHtml(me.avatar_url) + "' alt='' loading='lazy'>"
+        : (login
+            ? "<img class='lc-bench-avatar' src='https://github.com/" + encodeURIComponent(login) +
+              ".png?size=48' alt='' loading='lazy'>"
+            : "<span class='lc-bench-avatar lc-bench-avatar-none'>🎒</span>");
+      var st = state();
+      box.setAttribute("data-state", st);
+      /* the RESOLVED path, not the knob: `cv.md` beside a lesson lives at
+         courses/<course>/<module>/cv.md, and that is the file the learner
+         will look for in their own repo */
+      var full = path;
+      try { full = window.lcBench ? window.lcBench.resolve(path, box) : path; } catch (e) {}
+      head.innerHTML = pic +
+        "<span class='lc-bench-who'>" + (repo ? "@" + escapeHtml(login) : "your space") + "</span>" +
+        "<span class='lc-bench-path'>" + escapeHtml(repo ? full : "not connected yet") + "</span>" +
+        "<span class='lc-bench-state " + STATES[st][1] + "'>" + STATES[st][0] + "</span>";
+    }
+    document.addEventListener("lc-model-changed", function () { if (box.isConnected) paint(); });
+    paint();
+    return { el: box, repaint: paint,
+             setMine: function (v) { mine = !!v; paint(); } };
+  };
+
+  /* one wording for every state, wherever the frame appears */
+  var STATES = {
+    starter: ["the lesson's copy", "lc-bench-seed"],
+    draft:   ["draft — yours", "lc-bench-draft"],
+    done:    ["✓ checked", "lc-bench-yours"]
+  };
+
   /* ── a BENCH SLOT inside a read-only lesson ──────────────────────────
      {: .embed save="wiring.md" } on a fenced block: the fence is the
      author's seed, the learner's copy lives at that path in their own
@@ -408,11 +507,6 @@ Auto-included by docs/_layouts/default.html.
         return "done";
       return "draft";
     }
-    var STATE = {
-      starter: ["the lesson's copy", "lc-bench-seed"],
-      draft:   ["draft — yours", "lc-bench-draft"],
-      done:    ["✓ checked", "lc-bench-yours"]
-    };
 
     function paintHead(path) {
       var repo = (window.lcBench ? window.lcBench.target(box).repo : "") || "";
@@ -438,7 +532,7 @@ Auto-included by docs/_layouts/default.html.
         : "<span class='lc-bench-path'>not connected yet</span>";
       var st = computeState();
       box.setAttribute("data-state", st);
-      var chip = "<span class='lc-bench-state " + STATE[st][1] + "'>" + STATE[st][0] + "</span>";
+      var chip = "<span class='lc-bench-state " + STATES[st][1] + "'>" + STATES[st][0] + "</span>";
       /* THE ONE ACTION A BEGINNER NEEDS IS NOT IN A MENU. On a starter the
          only useful move is "make this mine", and it was hidden behind ⋯ —
          where it also happened to be the row most easily clipped. So it is a

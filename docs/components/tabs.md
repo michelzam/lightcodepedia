@@ -20,7 +20,7 @@ Feature: Tabs show one panel at a time
   Scenario: Selecting a tab makes it the active one
     Given the tabs above
     :::python
-    self.tabs = Tabs._all(".lc-tabs")[0]
+    self.tabs: Object = Tabs._all(".lc-tabs")[0]
     self.tabs.select(0)
     :::
     When I select the second tab
@@ -35,7 +35,7 @@ Feature: Tabs show one panel at a time
   Scenario: Switching back activates the first tab
     Given the second tab is active
     :::python
-    self.tabs = Tabs._all(".lc-tabs")[0]
+    self.tabs: Object = Tabs._all(".lc-tabs")[0]
     self.tabs.select(1)
     :::
     When I select the first tab

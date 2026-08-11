@@ -47,11 +47,11 @@ Feature: One dataset feeds many bound views
   Scenario: A dataset declared once is shared by every bound view
     Given the #monthly dataset declared once above
     :::python
-    self.ds = self.page.monthly
+    self.ds: Dataset = self.page.monthly
     :::
     When a grid binds to it with source="monthly"
     :::python
-    self.grid = self.page.monthly_grid
+    self.grid: Datagrid = self.page.monthly_grid
     :::
     Then the dataset holds all six months
     :::python
@@ -65,7 +65,7 @@ Feature: One dataset feeds many bound views
   Scenario: Any bound grid row is selectable
     Given the #monthly_grid bound grid above
     :::python
-    self.trs = self.page.monthly_grid._qq("tbody tr")
+    self.trs: list = self.page.monthly_grid._qq("tbody tr")
     :::
     When I click its second row
     :::python
@@ -215,8 +215,8 @@ Feature: A check can read the rows, not just count them
   Scenario: The filtered pile holds only families still waiting
     Given the question and its answer
     :::python
-    self.all = self.page.visits
-    self.waiting = self.page.waiting
+    self.all: Dataset = self.page.visits
+    self.waiting: Query = self.page.waiting
     :::
     Then nobody who already met a dog is in the answer
     :::python

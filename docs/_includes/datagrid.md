@@ -464,6 +464,12 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         if (vers) bar.appendChild(vers.button);
         bar.appendChild(keep);
         wrapper.appendChild(bar);
+        /* the same stripe every saved block wears (widgets.md) — a repaired
+           grid is the learner's file, and until now only a page slot said so */
+        var dgFrame = window.lcBenchFrame
+          ? window.lcBenchFrame(wrapper, { path: opts.save, id: gridId,
+                                           mine: wrapper.getAttribute("data-lc-mine") === "1" })
+          : null;
         var refreshKeep = function () {
           var t = window.lcBench.target(wrapper);
           var why = !t.pat || !t.repo ? "Join the course (connect your key) to keep your work" : "";
@@ -520,6 +526,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
               wrapper._lcBenchSha = sha || wrapper._lcBenchSha;
               wrapper.setAttribute("data-lc-mine", "1");
               mine.hidden = false;
+              if (dgFrame) dgFrame.setMine(true);
               if (vers) { vers.reveal(); vers.close(); }
               window.lcxToast && window.lcxToast("Saved to your space ✓", true);
             })

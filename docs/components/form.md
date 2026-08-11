@@ -213,7 +213,7 @@ Feature: A photo field shows the photo
   Scenario: The photo row renders an img
     Given the photo form above
     :::python
-    self.form = Object._all("#photo_form, [data-lc-id='photo_form']")[0]
+    self.form: Object = Object._all("#photo_form, [data-lc-id='photo_form']")[0]
     :::
     Then the photo field holds a real image element
     :::python
@@ -305,7 +305,7 @@ Feature: A single object becomes a labeled form
   Scenario: The dog profile at the top renders as a form
     Given the standalone form at the top of this page
     :::python
-    self.form = Form(Object._all(".lc-form")[0]._el)
+    self.form: Form = Form(Object._all(".lc-form")[0]._el)
     :::
     When it has finished rendering
     Then it is visible

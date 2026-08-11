@@ -77,7 +77,7 @@ Feature: The persona card renders its person
   Scenario: The fence becomes a card
     Given the authored card
     :::python
-    self.card = self.page.maria
+    self.card: Persona = self.page.maria
     :::
     Then it shows her name and her goal
     :::python
@@ -88,8 +88,8 @@ Feature: The persona card renders its person
   Scenario: The editor drives the view
     Given the wired pair
     :::python
-    self.editor = self.page.sam_src
-    self.view = self.page.sam
+    self.editor: Form = self.page.sam_src
+    self.view: Persona = self.page.sam
     :::
     When the author renames the persona
     :::python

@@ -58,7 +58,7 @@ Feature: The week's count stays honest
   Scenario: Counting the reservations
     Given the week's reservations
     :::python
-    self.rows = [1, 2, 3]
+    self.rows: list = [1, 2, 3]
     :::
     Then the count matches
     :::python
@@ -74,7 +74,7 @@ Feature: The map traces features to the goal
   Scenario: Four levels render
     Given the shelter's map
     :::python
-    self.map = self.page.shelter_map
+    self.map: ImpactMap = self.page.shelter_map
     :::
     Then the goal, the person and both behaviours show
     :::python
@@ -86,7 +86,7 @@ Feature: The map traces features to the goal
   Scenario: An empty goal fills itself from the pitch
     Given the pulled map
     :::python
-    self.map = self.page.pulled_map
+    self.map: ImpactMap = self.page.pulled_map
     :::
     Then it carries the pitch's benefit as its goal
     :::python

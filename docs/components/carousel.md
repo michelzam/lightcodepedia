@@ -23,8 +23,8 @@ Feature: A bullet list becomes a rotating carousel
   Scenario: Clicking a dot jumps to that item
     Given the carousel above
     :::python
-    self.car = Carousel(Object._all(".lc-carousel")[0]._el)
-    self.items = self.car._qq(".lc-carousel-item")
+    self.car: Carousel = Carousel(Object._all(".lc-carousel")[0]._el)
+    self.items: list = self.car._qq(".lc-carousel-item")
     :::
     When I jump to the third item
     :::python

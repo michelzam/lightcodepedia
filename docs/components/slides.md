@@ -62,7 +62,7 @@ Feature: Any page splits into a slide deck
   Scenario: The page is split into one slide per section
     Given this page has several ## h2 sections
     :::python
-    self.slides = Object._all(".lc-slide")
+    self.slides: list = Object._all(".lc-slide")
     :::
     When the slide engine has run
     Then it produced several slides (intro + one per ## h2)

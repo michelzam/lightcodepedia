@@ -30,11 +30,11 @@ Feature: Temperature converter
   Scenario: Celsius to Fahrenheit
     Given a temperature of 100 degrees Celsius
     :::python
-    self.celsius = 100
+    self.celsius: int = 100
     :::
     When converted to Fahrenheit using (C × 9/5) + 32
     :::python
-    self.fahrenheit = (self.celsius * 9 / 5) + 32
+    self.fahrenheit: float = (self.celsius * 9 / 5) + 32
     :::
     Then the result should be 212
     :::python
@@ -59,11 +59,11 @@ Feature: List validator
   Scenario: Reject empty lists
     Given an empty list
     :::python
-    self.items = []
+    self.items: list = []
     :::
     When I check if it is valid
     :::python
-    self.result = len(self.items) > 0
+    self.result: int = len(self.items) > 0
     :::
     Then validation should fail
     :::python
@@ -166,7 +166,7 @@ Feature: Button handler
     :::python
     err: str = self.page.highlight_btn._attr("data-lc-err") or ""
     bars: list = self.page.probe_chart.bars
-    self.max_bar = max(bars, key=lambda b: b.value)
+    self.max_bar: Object = max(bars, key=lambda b: b.value)
     assert self.max_bar.color == "orange", f"expected orange, got {self.max_bar.color!r} | click_err={err!r}"
     :::
     And the button label shows the max value
@@ -210,11 +210,11 @@ Feature: My feature
   Scenario: A scenario
     Given some precondition
     :::python
-    self.x = 42
+    self.x: int = 42
     :::
     When an action happens
     :::python
-    self.y = self.x * 2
+    self.y: int = self.x * 2
     :::
     Then the result is correct
     :::python
@@ -229,6 +229,44 @@ Feature: My feature
 - Available without import: `self.page`, `Dataset`, `Block`, `Datagrid`, `Chart`, `Feature`. Inherit from `Block` for custom wrappers.
 - Give the `.feature` card an `id` to make it reachable as `self.page.my_feature` from any feature step.
 - Click a step row to **expand its implementation** inline.
+
+## 🎨 Given/When/Then, in the flow's colours
+
+A step's words carry the same grammar an [event flow](/components/event_flow)
+draws, so they wear the same paint. The **keyword** decides the colour —
+nothing is guessed from the words themselves — and only **marked** words are
+painted, so the author chooses what matters:
+
+| keyword | paints marked words as |
+|---|---|
+| `Given` | 📦 `data` — shown on a 🖥️  **ui**{: .ui }|
+| `When` | 🗣️ `command` — what **someone**{: .user } does |
+| `Then` | ⚡ `event` — what became true |
+
+`And` / `But` inherit the last real keyword. Mark a word with **`**bold**`**
+or `` `backticks` ``, and override the colour with an IAL right after it:
+
+```gherkin
+Feature: A step says what it means
+  Scenario: The colours follow the keyword
+    Given `Biscuit` is shown on the **dog_grid**{: .ui }
+    :::python
+    self.here: bool = True
+    :::
+    When **the family**{: .user } **names a dog**
+    :::python
+    self.named: bool = True
+    :::
+    Then `Biscuit`{: .data } **is open**{: .event } for a visit
+    :::python
+    assert self.here and self.named
+    :::
+```
+{: .feature #paint_demo visible="true" status="pending" tags="feature" }
+
+Unmarked words stay plain; a marked word with no colour in play renders as
+ordinary **bold** or `code`. That is the whole rule — a check is one beat of
+the workflow, written down.
 
 ## 🎛️ Knobs
 

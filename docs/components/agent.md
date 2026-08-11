@@ -128,7 +128,7 @@ Feature: An AI tutor runs right on the page
   Scenario: The block upgrades into an agent panel
     Given the agent above
     :::python
-    self.agent = Object._all(".lc-agent")[0]
+    self.agent: Object = Object._all(".lc-agent")[0]
     :::
     When the page has upgraded it
     Then it is a visible agent panel

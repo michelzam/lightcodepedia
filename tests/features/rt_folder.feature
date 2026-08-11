@@ -22,6 +22,26 @@ Feature: Folder shelf — read posture and X-ray workbench
     Then the shelf shows a card for "Alpha"
     And the shelf hides "Hidden" and every writing affordance
 
+  Scenario: The shelf names its module and marks the page you are on
+    A list of siblings said neither what it was a shelf OF nor which card
+    was the page under the reader's feet (Michel, 2026-08-11).
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the folder "courses/demo/mod" serves pages "alpha.md"
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Shelf page
+
+      [Browse](#)
+      {: .folder }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    Then the shelf is titled "Shelf page"
+    And the card for "Alpha" does not say you are here
+
   Scenario: X-ray turns the shelf into a workbench
     Given I have a clean browser page
     And a marked shim is preinstalled

@@ -72,9 +72,15 @@ loses everything. A component's editable source comes from window.lcSourceOf
    its content in slide sections, so "> *" reached the sections and padded
    nothing a reader sees. Only noted blocks shift, only in x-ray mode, and the
    shift is what makes room for the mark. */
-body.lc-xray-deco .lc-noted { position: relative; padding-left: 1.5em; }
+/* VIOLET, and only in the margin (Michel, 2026-08-11). Amber is the
+   platform's "the lesson's copy" colour and the notes pane already wears
+   it; a violet gutter says "this is the margin, not the page" at a glance,
+   and no other mark on a lesson uses it. */
+body.lc-xray-deco .lc-noted { position: relative; padding-left: 1.5em;
+  box-shadow: inset 2px 0 0 rgba(139, 92, 246, 0.45); border-radius: 2px; }
 body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: absolute;
-  top: 0.05em; left: 0; font-size: .85em; opacity: .85;
+  top: 0.05em; left: 0.25em; font-size: .85em; opacity: .95;
+  filter: drop-shadow(0 0 0.4px #7c3aed);
   pointer-events: none; }
 /* the margin's lost property office: notes whose block is gone — the anchor
    is the block's first words, so rewriting the prose orphans its note. They

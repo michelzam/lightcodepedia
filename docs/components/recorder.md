@@ -18,7 +18,7 @@ Feature: A recorder panel captures the screen
   Scenario: The block upgrades into a recorder panel
     Given the recorder above
     :::python
-    self.rec = Object._all(".lc-recorder")[0]
+    self.rec: Object = Object._all(".lc-recorder")[0]
     :::
     When the page has upgraded it
     Then it is a visible recorder panel

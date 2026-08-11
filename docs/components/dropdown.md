@@ -21,7 +21,7 @@ Feature: Dropdown reveals its links on demand
   Scenario: Opening the dropdown reveals its menu
     Given the dropdown above
     :::python
-    self.dd = Dropdown._all(".lc-dropdown")[0]
+    self.dd: Object = Dropdown._all(".lc-dropdown")[0]
     self.dd.close()
     :::
     When I open it
@@ -36,7 +36,7 @@ Feature: Dropdown reveals its links on demand
   Scenario: Closing the dropdown hides its menu
     Given the dropdown above, opened
     :::python
-    self.dd = Dropdown._all(".lc-dropdown")[0]
+    self.dd: Object = Dropdown._all(".lc-dropdown")[0]
     self.dd.open()
     :::
     When I close it

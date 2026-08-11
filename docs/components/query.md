@@ -82,7 +82,7 @@ Feature: A query is a dataset that computes itself
     Given the #dogs dataset of six dogs above
     And the #by_breed query grouping them by breed
     :::python
-    self.result = self.page.by_breed
+    self.result: Query = self.page.by_breed
     :::
     When the SQL runs in the browser
     Then the result has one row per distinct breed
@@ -91,7 +91,7 @@ Feature: A query is a dataset that computes itself
     :::
     And a grid bound to the query shows those rows
     :::python
-    self.grid = None
+    self.grid: Datagrid | None = None
     for d in Object._all(".lc-datagrid"):
         if d._attr("data-bind") == "by_breed":
             self.grid = Datagrid(d._el)

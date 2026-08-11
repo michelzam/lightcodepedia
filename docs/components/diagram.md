@@ -25,7 +25,7 @@ Feature: The component model renders as a live diagram
   Scenario: The block upgrades into a diagram
     Given the diagram above
     :::python
-    self.dia = Object._all(".lc-diagram")[0]
+    self.dia: Object = Object._all(".lc-diagram")[0]
     :::
     When the page has upgraded it
     Then it is a visible diagram
@@ -152,7 +152,7 @@ Feature: A dot fence is a live diagram, sized to the page
   Scenario: The fence became a drawing, not a wall of source
     Given the loop diagram above
     :::python
-    self.svgs = Object._all(".lc-dot-diagram")
+    self.svgs: list = Object._all(".lc-dot-diagram")
     :::
     When the page has upgraded it
     Then at least two diagrams are drawn

@@ -167,7 +167,7 @@ Feature: Live models validate, gate and reference
         @transition(pre=["fed"])
         def bark(dog):
             dog.adopted = True
-    self.dog = FDog()
+    self.dog: FDog = FDog()
     assert self.dog.mood == "hungry" and self.dog.weight_kg == 30
     :::
     When I push the weight past its max
@@ -229,8 +229,8 @@ Feature: Live models validate, gate and reference
     @component(icon="🐟")
     class FFish(FPet):
         pass
-    self.rex = FPet()
-    self.fish = FFish()
+    self.rex: FPet = FPet()
+    self.fish: FFish = FFish()
     :::
     When the runtime preamble re-runs, as any button click makes it do
     :::python

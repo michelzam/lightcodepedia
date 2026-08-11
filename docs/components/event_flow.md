@@ -92,7 +92,7 @@ Feature: The flow tells the story in color
   Scenario: Every step renders in its kind's color
     Given the demo flow
     :::python
-    self.flow = self.page.demo_flow
+    self.flow: EventFlow = self.page.demo_flow
     :::
     Then every note is there, in the beat's order
     :::python

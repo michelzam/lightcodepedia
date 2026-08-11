@@ -19,6 +19,7 @@ Auto-generate a card grid from all `.md` files in a folder — no manual list to
 | `show-private` | `false` | Include files whose names start with `_`. |
 | `sort` | `name` | Initial order: `name` or `recent` (git dates, lazy). |
 | `open` | | `runner`: scan a repo path *outside* `docs/` (unrendered material like `courses/`) via the API with your key — every card opens in the runner. |
+| `title` | `true` | Name the module above the cards — the folder's own `index.md` title. `title="false"` when the page already carries that heading. |
 | `path` | the link href | Folder to scan. Accepts a knob-cell: `path="= get_var('COURSE_PATH', 'courses')"` resolves the node's variable (see [Cells](/components/cells)). |
 
 ## Two postures — read and workbench
@@ -51,6 +52,19 @@ Auto-generate a card grid from all `.md` files in a folder — no manual list to
   refresh (`?xray=1` rides in the URL, like reel's `?reel=1`). A new
   **folder** is always born as its `index.md` with a bare `{: .folder }`
   inside — every node lists its own children from day one.
+
+## Where am I, and what is this?
+
+A shelf of siblings answers "what else is here" but not the two questions a
+reader arriving mid-course actually has. Both are now answered quietly:
+
+- **The module's name** sits above the cards, in the eyebrow register — read
+  from the folder's own `index.md`, so it is the title an author wrote, not a
+  directory name. On the module's front page it is simply that page's own
+  heading. Turn it off with `title="false"`.
+- **You are here**: the card for the page under the reader's feet carries a
+  soft left edge and a small ◉ beside its title. Enough to find yourself in a
+  list of five; not enough to look like a selection.
 
 ## Notes
 

@@ -116,7 +116,7 @@ Feature: A data block becomes a chart
   Scenario: The first block renders a bar chart canvas
     Given the bar chart at the top of this page
     :::python
-    self.chart = Chart(Object._all(".lc-chart")[0]._el)
+    self.chart: Chart = Chart(Object._all(".lc-chart")[0]._el)
     :::
     When it has finished rendering
     Then it is a visible bar chart

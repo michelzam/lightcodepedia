@@ -503,6 +503,19 @@ def step_slot_save_button(context, label):
     expect(b).to_contain_text(label.replace("💾 ", ""))
 
 
+@then('a bench stripe names "{path}"')
+def step_stripe_path(context, path):
+    stripe = context.page.locator(".lc-bench-lite .lc-bench-path", has_text=path).first
+    expect(stripe).to_be_visible(timeout=15_000)
+    context._lc_stripe = stripe
+
+
+@then('that stripe reads "{label}"')
+def step_stripe_state(context, label):
+    chip = context.page.locator(".lc-bench-lite .lc-bench-state").first
+    expect(chip).to_have_text(label, timeout=15_000)
+
+
 @when("I open the slot's menu")
 def step_open_slot_menu(context):
     btn = context.page.locator(".lc-bench-more").first

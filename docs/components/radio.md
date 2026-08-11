@@ -36,7 +36,7 @@ Feature: Radio shows one panel, chosen by a button
   Scenario: Picking an option makes it the selected one
     Given the radio above
     :::python
-    self.radio = Radio._all(".lc-radio-group")[0]
+    self.radio: Object = Radio._all(".lc-radio-group")[0]
     self.radio.select(0)
     :::
     When I pick the second option
@@ -51,7 +51,7 @@ Feature: Radio shows one panel, chosen by a button
   Scenario: Only one option is selected at a time
     Given the radio above with the third option picked
     :::python
-    self.radio = Radio._all(".lc-radio-group")[0]
+    self.radio: Object = Radio._all(".lc-radio-group")[0]
     self.radio.select(2)
     :::
     When I pick the first option

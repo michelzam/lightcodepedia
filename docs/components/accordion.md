@@ -29,7 +29,7 @@ Feature: Accordion panels toggle independently
   Scenario: A closed panel opens when its header is clicked
     Given the accordion above with every panel closed
     :::python
-    self.panels = Object._all(".lc-accordion")[0]._qq("details")
+    self.panels: list = Object._all(".lc-accordion")[0]._qq("details")
     for p in self.panels: p._el.removeAttribute("open")
     :::
     When I click the first panel's summary
@@ -44,7 +44,7 @@ Feature: Accordion panels toggle independently
   Scenario: An open panel closes when its header is clicked again
     Given the accordion above with the first panel open
     :::python
-    self.panels = Object._all(".lc-accordion")[0]._qq("details")
+    self.panels: list = Object._all(".lc-accordion")[0]._qq("details")
     self.panels[0]._el.setAttribute("open", "")
     :::
     When I click the first panel's summary
@@ -59,7 +59,7 @@ Feature: Accordion panels toggle independently
   Scenario: Two panels can be open at once
     Given the accordion above with every panel closed
     :::python
-    self.panels = Object._all(".lc-accordion")[0]._qq("details")
+    self.panels: list = Object._all(".lc-accordion")[0]._qq("details")
     for p in self.panels: p._el.removeAttribute("open")
     :::
     When I open the first and second panels

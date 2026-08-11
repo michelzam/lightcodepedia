@@ -42,8 +42,8 @@ Feature: The runner renders markdown into live components
   Scenario: The embedded runner mounts and upgrades a component
     Given the runner demo on this page
     :::python
-    self.runner = Object._all(".lc-runner")
-    self.blocks = Object._all(".lc-runner .lc-block")
+    self.runner: list = Object._all(".lc-runner")
+    self.blocks: list = Object._all(".lc-runner .lc-block")
     :::
     When the engine has loaded
     Then the runner mounted and rendered a block card from the source

@@ -158,7 +158,7 @@ Feature: A data block becomes an interactive grid
   Scenario: The editable dogs block renders one row per object
     Given the #editable_dogs grid above (three dogs)
     :::python
-    self.grid = self.page.editable_dogs
+    self.grid: Datagrid = self.page.editable_dogs
     :::
     When the grid has finished rendering
     Then it shows exactly three rows
@@ -173,8 +173,8 @@ Feature: A data block becomes an interactive grid
   Scenario: Selecting a master row is a verb, and the detail follows
     Given the cities grid and its dogs detail below
     :::python
-    self.cities = self.page.md_cities
-    self.dogs = self.page.md_dogs
+    self.cities: Datagrid = self.page.md_cities
+    self.dogs: Datagrid = self.page.md_dogs
     assert self.dogs.row_count == 9, self.dogs.row_count
     :::
     When row one is selected — Tokyo

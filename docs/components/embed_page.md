@@ -25,12 +25,12 @@ Feature: A link becomes an embedded page
   Scenario: The link is replaced by an iframe of that page
     Given the embed-page above (it embeds /components/run)
     :::python
-    self.frame = Object._all("iframe.lc-embed-page")[0]
+    self.frame: Object = Object._all("iframe.lc-embed-page")[0]
     :::
     When it has rendered
     Then it is an iframe of the page in embed mode
     :::python
-    self.src = self.frame._attr("src") or ""
+    self.src: str = self.frame._attr("src") or ""
     assert "/components/run" in self.src, self.src
     assert "embed=true" in self.src, self.src
     :::

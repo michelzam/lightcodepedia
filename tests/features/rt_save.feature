@@ -469,6 +469,26 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I compare the oldest version
     Then the difference is shown line by line
 
+  Scenario: A saved pad wears the same stripe as a page slot
+    Michel, 2026-08-11: the bench indicator belongs everywhere a learner's
+    own file is used — a cv pad, a dogs grid — not only on a page slot.
+    Until now a pad wrote to the very same repo without saying so.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Mine"
+    And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
+      """
+      # Work page
+
+      ```markdown
+      # Starter — replace me
+      ```
+      {: .mdpad #cv save="cv.md" rows="6" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    Then a bench stripe names "courses/demo/mod/cv.md"
+    And that stripe reads "draft — yours"
+
   Scenario: The menu greys the transitions that do not apply
     Given a connected bench whose "courses/demo/mod/wiring.md" does not exist yet
     And the signed-in learner is "ada"

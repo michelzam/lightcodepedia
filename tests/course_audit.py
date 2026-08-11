@@ -157,13 +157,14 @@ def check_page(path, text):
 # question a beginner has. MicroPython parses annotations and ignores them,
 # so this costs nothing at runtime.
 #
-# Only the FIRST binding of a plain local name is checked. A reassignment
-# (`v = int(num)` after `v: int | None = None`) is annotated once, like real
-# Python; `self.x = …` carries its meaning in the scenario's own sentence;
-# and a class body that declares its types inside the call (`Attr(float, …)`)
-# is already saying it.
-_ASSIGN = re.compile(r"^(\s*)([a-z_][a-z_0-9]*)\s*=\s*\S")
-_DECLARED = re.compile(r"^\s*([a-z_][a-z_0-9]*)\s*:\s*[^=]+=")
+# Only the FIRST binding of a name is checked — a reassignment is annotated
+# once, like real Python. `self.x` counts too (Michel, 2026-08-11: *"be sure
+# all variables and attributes have type hints (ex. self.btn: Button = …)"*),
+# because the attribute a later step reads is exactly where a reader wants to
+# know what they are holding. A class body that declares its type inside the
+# call (`Attr(float, …)`) is already saying it.
+_ASSIGN = re.compile(r"^\s*((?:self\.)?[a-z_][a-z_0-9]*)\s*=\s*(\S.*)$")
+_DECLARED = re.compile(r"^\s*((?:self\.)?[a-z_][a-z_0-9]*)\s*:\s*[^=]+=")
 
 
 def hint_problems(text):
@@ -185,7 +186,9 @@ def hint_problems(text):
         m = _ASSIGN.match(line)
         if not m:
             continue
-        name = m.group(2)
+        name = m.group(1)
+        if re.match(r"^(Attr|State)\(", m.group(2)):
+            continue          # the model DSL states its type inside the call
         if name in seen:
             continue
         seen.add(name)

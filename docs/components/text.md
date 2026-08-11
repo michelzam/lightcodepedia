@@ -110,7 +110,7 @@ Feature: A markdown block becomes a live editor and preview
   Scenario: The block upgrades into a live preview pad
     Given the live editor above
     :::python
-    self.pad = self.page.playground
+    self.pad: Mdpad = self.page.playground
     :::
     When the page has upgraded it
     Then it is a visible editor and preview
@@ -121,7 +121,7 @@ Feature: A markdown block becomes a live editor and preview
   Scenario: The pad answers questions about the document being made
     Given the same live editor
     :::python
-    self.pad = self.page.playground
+    self.pad: Mdpad = self.page.playground
     :::
     When a rubric reads its preview
     Then structure, emphasis, lists and links are all countable

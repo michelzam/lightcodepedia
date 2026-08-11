@@ -33,6 +33,17 @@ Auto-included by docs/_layouts/default.html.
 .lc-card-tag[data-tag] { cursor: pointer; }
 .lc-card-tag[data-tag]:hover { background: #bae6fd; }
 .lc-card-date { font-size: 0.72em; color: #6b7280; margin-top: 0.3em; }
+/* WHICH MODULE IS THIS? A shelf of siblings never said what it was a shelf
+   OF. One quiet line above the cards, in the eyebrow register, so it names
+   the module without competing with the page's own heading. */
+.lc-folder-title { font-size: 0.74em; font-weight: 600; letter-spacing: 0.07em;
+  text-transform: uppercase; color: #6b7280; margin: 0.2em 0 0.5em; }
+/* AND WHICH CARD IS ME. A discreet dot beside the title and a soft left
+   edge — enough to find yourself in a list of five, not enough to look
+   like a selection (Michel, 2026-08-11). */
+.lc-card-here { box-shadow: inset 3px 0 0 #93c5fd; }
+.lc-card-here-dot { color: #3b82f6; font-size: 0.7em; margin-left: 0.4em;
+  vertical-align: 0.15em; }
 /* the way out of a folder — its own line, under the siblings */
 .lc-folder-up { margin: 0.9em 0 0; font-size: 0.9em; }
 .lc-folder-up a { text-decoration: none; }
@@ -198,7 +209,8 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
     var mine = feats.some(function(f) { return f && f.remembered; }) ? ' data-lc-remembered="1"' : '';
     var tagsAttr = tagList.length ? ' data-tags="' + escapeHtml(tagList.join(" ")) + '"' : '';
     var style = item.isSubdir ? ' style="background:#f0f2f5"' : '';
-    var card = '<div class="lc-card" data-url="' + item.url + '"' + (item.path ? (item.isSubdir ? ' data-dirpath="' : ' data-path="') + escapeHtml(item.path) + '"' : '') + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + (item.date ? ' data-date="' + escapeHtml(item.date) + '"' : '') + mine + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a></h3>';
+    var card = '<div class="lc-card' + (item.here ? " lc-card-here" : "") + '" data-url="' + item.url + '"' + (item.path ? (item.isSubdir ? ' data-dirpath="' : ' data-path="') + escapeHtml(item.path) + '"' : '') + tagsAttr + ' data-nonpassing="' + nonpassing + '" data-quizzes="' + (item.quizzes || 0) + '"' + (item.date ? ' data-date="' + escapeHtml(item.date) + '"' : '') + mine + style + '><h3><a href="' + item.url + '">' + escapeHtml(item.title) + '</a>' +
+      (item.here ? "<span class='lc-card-here-dot' title='you are here'>◉</span>" : "") + '</h3>';
     if (item.snippet) card += '<p style="font-size:0.85em;color:#555;margin:0.3em 0 0">' + escapeHtml(item.snippet) + '</p>';
     var dateLbl = fmtDate(item.date);
     if (dateLbl) card += '<div class="lc-card-date">📅 ' + escapeHtml(dateLbl) + '</div>';
@@ -234,6 +246,9 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
     var cols = el.getAttribute("cols") || "auto";
     var showPrivate = el.getAttribute("show-private") === "true";
     var wantParent = el.getAttribute("parent") === "true";
+    /* title="false" turns the module name off for a shelf that already
+       sits under its own heading */
+    var wantTitle = el.getAttribute("title") !== "false";
     var sortMode = (el.getAttribute("sort") || "name").toLowerCase();   // "name" (default) | "recent"
     /* Rendered INSIDE a bench (a runner render stamps its repo/path on the
        root)? Then scan THAT repo, not the site — a bench's index.md lists its
@@ -392,6 +407,63 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       }
     }
     var _upPill = null;
+    /* the page the reader is on, as this shelf would have spelled it */
+    function hereUrl() {
+      var selfPath = (runRoot && runRoot.dataset.lcSrcPath) || "";
+      if (selfPath) return cardUrl(selfPath.replace(/^\/+/, ""));
+      return location.pathname.replace(/\/$/, "");
+    }
+    function markHere(items) {
+      var mine = hereUrl();
+      if (!mine) return;
+      var norm = function (u) {
+        return String(u || "").split("?")[0].replace(/\/index(\.md)?$/i, "").replace(/\.md$/i, "").replace(/\/$/, "");
+      };
+      var target = norm(mine);
+      items.forEach(function (it) { it.here = norm(it.url) === target; });
+    }
+    /* the module this shelf belongs to, named once above the cards. The
+       name comes from the listing itself — the index card's title — so it
+       costs no extra fetch and reads the same in both postures; a folder
+       with no index falls back to its directory name. */
+    function showFolderTitle(items, rp) {
+      if (!wantTitle || showFolderTitle.done) return;
+      showFolderTitle.done = true;
+      var dir = String(rp || "").replace(/\/+$/, "");
+      if (!dir || dir === ".") dir = runBaseDir || "";
+      var h = document.createElement("div");
+      h.className = "lc-folder-title";
+      h.setAttribute("data-lc-derived", "1");
+      h.textContent = dir ? titleCase(dir.split("/").pop()) : "";
+      if (!h.textContent) return;
+      wrap.parentNode.insertBefore(h, wrap);
+      /* ON THE MODULE'S OWN PAGE the name is already on screen — the H1 the
+         runner just rendered. No fetch, no flicker, and it is exactly the
+         title the index card would have carried. */
+      var selfPath = (runRoot && runRoot.dataset.lcSrcPath) || "";
+      var onIdx = selfPath
+        ? /^index\.[a-z0-9]+$/i.test(selfPath.split("/").pop())
+        : /(\/|\/index(\.[a-z0-9]+)?)$/i.test(location.pathname);
+      if (onIdx) {
+        var own = (runRoot || document).querySelector("h1");
+        if (own && own.textContent.trim()) { h.textContent = own.textContent.trim(); return; }
+      }
+      /* otherwise the real name lives in the folder's index.md — a listing
+         never shows that card, so read it through whichever door this shelf
+         is using and upgrade the line once it lands. The directory name
+         shows in the meantime, so the shelf is never unlabelled. */
+      var idxRel = (dir ? dir + "/" : "") + "index.md";
+      var got = runnerMode
+        ? apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" +
+                   ((runBaseDir && idxRel.charAt(0) !== "/") ? runBaseDir + "/" + idxRel : idxRel), true)
+        : fetchText(mdUrl(idxRel));
+      Promise.resolve(got).then(function (text) {
+        if (typeof text !== "string") return;
+        var t = extractPageMeta(text).title;
+        if (t) h.textContent = t;
+      }).catch(function () {});
+    }
+
     var titleCase = function (s) { return s.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); };
     function fetchText(url) {
       return fetch(window.lcHref ? window.lcHref(url) : url).then(function (r) { return r.ok ? r.text() : null; });
@@ -796,6 +868,14 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
           });
         });
 
+        /* YOU ARE HERE, AND WHERE IS HERE (Michel, 2026-08-11). A shelf of
+           sibling pages says nothing about which module it belongs to, and
+           nothing about which of its cards is the page the reader is
+           standing on. Both are one line of context and neither should
+           shout: a small folder title above the cards, and a discreet dot
+           on the card that is this page. */
+        markHere(items);
+        showFolderTitle(items, path);
         var allTags = {};
         wrap.innerHTML = items.map(function(item) {
           cardTagList(item.features).forEach(function(t) { allTags[t] = (allTags[t] || 0) + 1; });

@@ -62,24 +62,52 @@ Auto-included by docs/_layouts/default.html.
 .lc-ef-step { padding: 0.45em 0.8em; border-radius: 4px; font-size: 0.88em; line-height: 1.35; max-width: 15em; box-shadow: 1px 2px 4px rgba(0,0,0,0.12); color: #1f2937; }
 .lc-ef-arrow { color: #9ca3af; user-select: none; text-align: center; }
 @media (max-width: 560px) { .lc-ef-beats { margin-left: 0.8em; } }
-/* the classic sticky-note palette — the kind IS the color */
-.lc-ef-user    { background: #fdf3d7; }
-.lc-ef-command  { background: #bfdbfe; }
-.lc-ef-event    { background: #fdba74; }
-.lc-ef-rule   { background: #e9d5ff; }
-.lc-ef-data     { background: #fef08a; }
-.lc-ef-ui       { background: #86efac; }
-.lc-ef-external { background: #fbcfe8; }
-.lc-ef-unknown  { background: #e5e7eb; }
+/* THE PALETTE, ONCE. Three places wear these colours — a flow's notes, a
+   feature step's marked words, and any word a page marks inline with
+   {: .event } — so the hexes are tokens and nobody copies them. */
+:root {
+  --lc-k-user: #fdf3d7; --lc-k-ui: #86efac; --lc-k-data: #fef08a;
+  --lc-k-command: #bfdbfe; --lc-k-rule: #e9d5ff; --lc-k-event: #fdba74;
+  --lc-k-external: #fbcfe8; --lc-k-unknown: #e5e7eb;
+}
+.lc-ef-user     { background: var(--lc-k-user); }
+.lc-ef-command  { background: var(--lc-k-command); }
+.lc-ef-event    { background: var(--lc-k-event); }
+.lc-ef-rule     { background: var(--lc-k-rule); }
+.lc-ef-data     { background: var(--lc-k-data); }
+.lc-ef-ui       { background: var(--lc-k-ui); }
+.lc-ef-external { background: var(--lc-k-external); }
+.lc-ef-unknown  { background: var(--lc-k-unknown); }
+/* A WORD MARKED ANYWHERE WEARS THE SAME PAINT. Michel marked words in a
+   plain markdown table and they came out grey: the colours only existed
+   inside a flow and inside a feature step (2026-08-11). Any inline carrier
+   — **bold**, `code`, *em*, a link — with {: .event } and friends now
+   paints, so a sentence, a table cell and a step all agree. */
+:is(strong, em, code, a, span).user,
+:is(strong, em, code, a, span).ui,
+:is(strong, em, code, a, span).data,
+:is(strong, em, code, a, span).command,
+:is(strong, em, code, a, span).rule,
+:is(strong, em, code, a, span).event,
+:is(strong, em, code, a, span).external {
+  padding: 0.05em 0.35em; border-radius: 3px; color: #1f2937;
+}
+:is(strong, em, code, a, span).user     { background: var(--lc-k-user); }
+:is(strong, em, code, a, span).ui       { background: var(--lc-k-ui); }
+:is(strong, em, code, a, span).data     { background: var(--lc-k-data); }
+:is(strong, em, code, a, span).command  { background: var(--lc-k-command); }
+:is(strong, em, code, a, span).rule     { background: var(--lc-k-rule); }
+:is(strong, em, code, a, span).event    { background: var(--lc-k-event); }
+:is(strong, em, code, a, span).external { background: var(--lc-k-external); }
 .lc-ef-legend { display: flex; flex-wrap: wrap; gap: 0.4em 1em; margin-top: 0.2em; padding-top: 0.55em; border-top: 1px dashed #e5e7eb; font-size: 0.78em; color: #4b5563; }
 .lc-ef-legend span::before { content: "■ "; }
-.lc-ef-legend .lc-ef-l-user::before    { color: #fdf3d7; }
-.lc-ef-legend .lc-ef-l-command::before  { color: #bfdbfe; }
-.lc-ef-legend .lc-ef-l-event::before    { color: #fdba74; }
-.lc-ef-legend .lc-ef-l-rule::before   { color: #e9d5ff; }
-.lc-ef-legend .lc-ef-l-data::before { color: #fef08a; }
-.lc-ef-legend .lc-ef-l-ui::before     { color: #86efac; }
-.lc-ef-legend .lc-ef-l-external::before { color: #fbcfe8; }
+.lc-ef-legend .lc-ef-l-user::before    { color: var(--lc-k-user); }
+.lc-ef-legend .lc-ef-l-command::before  { color: var(--lc-k-command); }
+.lc-ef-legend .lc-ef-l-event::before    { color: var(--lc-k-event); }
+.lc-ef-legend .lc-ef-l-rule::before   { color: var(--lc-k-rule); }
+.lc-ef-legend .lc-ef-l-data::before { color: var(--lc-k-data); }
+.lc-ef-legend .lc-ef-l-ui::before     { color: var(--lc-k-ui); }
+.lc-ef-legend .lc-ef-l-external::before { color: var(--lc-k-external); }
 </style>
 
 <script>
@@ -103,6 +131,16 @@ Auto-included by docs/_layouts/default.html.
      (Michel, 2026-08-11). */
   var ICON = { user: "👤", ui: "🖥️", data: "📦", command: "🗣️",
                rule: "📏", event: "⚡", external: "🌐", unknown: "❔" };
+
+  /* THE PALETTE IS SHARED, NOT COPIED. A feature's Given/When/Then paints
+     its marked words in these same colours, so a learner meets one grammar
+     twice instead of two that happen to rhyme (Michel, 2026-08-11).
+     Returns the canonical kind for any spelling, or "" if it is not one. */
+  window.lcFlowKind = function (name) {
+    var k = ALIAS[name] || name;
+    return KINDS.indexOf(k) >= 0 ? k : "";
+  };
+  window.lcFlowIcon = function (kind) { return ICON[kind] || ""; };
 
   function upgradeEventFlow(el) {
     if (el.dataset.lcUpgraded) return;

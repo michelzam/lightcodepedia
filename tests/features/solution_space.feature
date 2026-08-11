@@ -47,6 +47,22 @@ Feature: Solution space — the event flow
     Then the event flow "demo_flow" shows its legend
     And the event flow legend mentions "rule"
 
+  Scenario: A step's marked words wear the flow's colours
+    The keyword decides — Given paints data, When paints a command, Then
+    paints an event — and only marked words are painted, so nothing is
+    guessed from the words themselves (Michel, 2026-08-11).
+
+    When I navigate to "/components/feature"
+    And I wait for the page to be interactive
+    Then in "paint_demo" the word "Biscuit" is painted "data"
+    And in "paint_demo" the word "names a dog" is painted "command"
+    And in "paint_demo" the word "is open" is painted "event"
+
+  Scenario: An IAL after a marked word overrides the keyword
+    When I navigate to "/components/feature"
+    And I wait for the page to be interactive
+    Then in "paint_demo" the word "dog_grid" is painted "ui"
+
   Scenario: A diagram fence injected after load still becomes a diagram
     Module 04's data page renders through the runner, AFTER the one-shot
     mermaid pass — its flowchart showed as raw text (2026-08-11). The

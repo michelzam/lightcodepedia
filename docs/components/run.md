@@ -28,7 +28,7 @@ Feature: A fenced block becomes a Python runner
   Scenario: The block upgrades into a runner
     Given the runner above
     :::python
-    self.runner = Object._all(".lc-pyrun")[0]
+    self.runner: Object = Object._all(".lc-pyrun")[0]
     :::
     When the page has upgraded it
     Then it is a visible runner

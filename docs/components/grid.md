@@ -29,7 +29,7 @@ Feature: A fenced block becomes a responsive column grid
   Scenario: Each ### section becomes a grid cell
     Given the grid above (Fast, Private, Free)
     :::python
-    self.cells = Object._all(".lc-grid")[0]._qq(".lc-grid-cell")
+    self.cells: list = Object._all(".lc-grid")[0]._qq(".lc-grid-cell")
     :::
     When it has rendered
     Then it has one cell per section

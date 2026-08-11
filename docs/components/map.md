@@ -37,7 +37,7 @@ Feature: A CSV block becomes an interactive map
   Scenario: The block upgrades into a map widget
     Given the map block above
     :::python
-    self.map = Object._all(".lc-map")[0]
+    self.map: Object = Object._all(".lc-map")[0]
     :::
     When the page has upgraded it
     Then it is a visible map widget

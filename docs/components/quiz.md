@@ -29,13 +29,13 @@ Feature: A task list becomes an interactive quiz
   Scenario: Picking an option reveals a verdict on it
     Given a single-select quiz on this page
     :::python
-    self.quiz = None
+    self.quiz: Quiz | None = None
     for q in Object._all(".lc-quiz"):
         if q._attr("multi") != "true":
             self.quiz = Quiz(q._el)
             break
     assert self.quiz is not None, "no single-select quiz found"
-    self.opts = self.quiz._qq("li")
+    self.opts: list = self.quiz._qq("li")
     :::
     When nothing has been clicked yet
     Then the quiz is ungraded
@@ -256,7 +256,7 @@ Feature: A quiz publishes its verdict
   Scenario: Nothing is claimed before the learner answers
     Given the reward quiz
     :::python
-    self.q = self.page.reward_demo
+    self.q: Quiz = self.page.reward_demo
     :::
     Then it reports neither graded nor passed
     :::python
@@ -267,7 +267,7 @@ Feature: A quiz publishes its verdict
   Scenario: The right answer is readable, and only readable
     Given the reward quiz
     :::python
-    self.q = self.page.reward_demo
+    self.q: Quiz = self.page.reward_demo
     :::
     When the learner picks the right option
     :::python

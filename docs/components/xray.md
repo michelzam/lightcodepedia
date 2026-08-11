@@ -38,9 +38,9 @@ Feature: X-ray inline editing keeps changes honestly
   Scenario: The editing machinery is wired on this very page
     Given the x-ray chrome of the page I am reading
     :::python
-    self.gears = Object._all("#lcx-gear")
-    self.dialogs = Object._all("#lcx-edit")
-    self.keeps = Object._all("#lcx-keep")
+    self.gears: list = Object._all("#lcx-gear")
+    self.dialogs: list = Object._all("#lcx-edit")
+    self.keeps: list = Object._all("#lcx-keep")
     :::
     When the engine has loaded
     Then the ghost gear, the dialog and its Keep button exist exactly once

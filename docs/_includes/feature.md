@@ -20,11 +20,11 @@ INLINE STEPS (:::python::: blocks inside the gherkin fence)
     Scenario: A scenario
       Given some precondition
       :::python
-      self.x = 42
+      self.x: int = 42
       :::
       When an action happens
       :::python
-      self.y = self.x * 2
+      self.y: int = self.x * 2
       :::
       Then the result is correct
       :::python
@@ -111,6 +111,10 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-step-icon.skip { color: #d1d5db; }
 .lc-feature-step-keyword { color: #7c3aed; font-weight: 600; min-width: 3.5em; }
 .lc-feature-step-text { color: #111827; }
+/* a painted word wears the event flow's own background (.lc-ef-*), so the
+   palette lives in one place — see event_flow.md */
+.lc-gwt { padding: 0.05em 0.35em; border-radius: 3px; color: #1f2937; }
+.lc-feature-step-text code { background: #f3f4f6; border-radius: 3px; padding: 0.05em 0.3em; font-size: 0.92em; }
 .lc-feature-step-time { margin-left: auto; font-size: 0.75em; color: #9ca3af; }
 
 /* ── expandable Python impl ────────────────────────────────────────────────── */
@@ -549,6 +553,36 @@ Registers with window.lcScanElement so the editor preview also renders cards.
   }
 
   /* ── Build a <pre><code> with Prism highlighting ────────────────────────────────── */
+  /* ── GIVEN / WHEN / THEN, IN THE FLOW'S OWN COLOURS ─────────────────
+     Michel, 2026-08-11: a step's words carry the same grammar the event
+     flow does, so they should wear the same paint. What is NOT done here
+     is guessing which words mean what — that would be confidently wrong
+     in front of a learner. The KEYWORD already says it:
+
+         Given …  📦 data      When …  🗣️ command     Then …  ⚡ event
+
+     and only MARKED words are painted — `backticked` or **bold** — so the
+     author chooses what matters. An IAL after the mark overrides the
+     default: **is open**{: .event } inside a Given. And/But inherit the
+     last real keyword. Everything else renders as ordinary markdown. */
+  var GWT = { given: "data", when: "command", then: "event" };
+  var lastGwt = "";
+  var MARK = /(?:\*\*([^*]+)\*\*|`([^`]+)`)(?:\{:\s*\.([a-z_]+)\s*\})?/g;
+
+  function paintGwt(text, keyword) {
+    var esc = window.lcEscapeHtml || function (x) { return String(x); };
+    var fallback = GWT[String(keyword || "").toLowerCase()] || "";
+    var kindOf = window.lcFlowKind || function () { return ""; };
+    return esc(text).replace(MARK, function (m, bold, code, cls) {
+      var word = bold != null ? bold : code;
+      var kind = cls ? kindOf(cls) : fallback;
+      if (!kind)
+        return bold != null ? "<strong>" + word + "</strong>" : "<code>" + word + "</code>";
+      return "<mark class='lc-gwt lc-ef-" + kind + "' data-kind='" + kind + "'>" +
+             word + "</mark>";
+    });
+  }
+
   function buildPyPre(code) {
     var pre = document.createElement("pre");
     var codeEl = document.createElement("code");
@@ -652,12 +686,13 @@ Registers with window.lcScanElement so the editor preview also renders cards.
           nh.textContent = r.text; stepsDiv.appendChild(nh);
         } else if (r.kind === "step") {
           var isAnd = /^(And|But)$/i.test(r.keyword);
+          if (!isAnd) lastGwt = r.keyword;
           var stepEl = document.createElement("div"); stepEl.className = "lc-feature-step" + (isAnd ? " lc-step-and" : "");
           stepEl.innerHTML =
             "<div class='lc-feature-step-row'>"
               + "<span class='lc-feature-step-icon'>●</span>"
               + "<span class='lc-feature-step-keyword'>" + r.keyword + "</span>"
-              + "<span class='lc-feature-step-text'>" + r.text + "</span>"
+              + "<span class='lc-feature-step-text'>" + paintGwt(r.text, isAnd ? lastGwt : r.keyword) + "</span>"
               + "<span class='lc-feature-step-time'></span>"
             + "</div>";
           if (r.code) {

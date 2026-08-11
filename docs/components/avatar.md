@@ -46,7 +46,7 @@ Feature: A narrating character guides the page
   Scenario: The block upgrades into a mounted overlay character
     Given the docked Prof. LC above
     :::python
-    self.prof = Object._all("#lc-avatar-prof")[0]
+    self.prof: Object = Object._all("#lc-avatar-prof")[0]
     :::
     When the page has upgraded it
     Then the character is on screen, ready to be played

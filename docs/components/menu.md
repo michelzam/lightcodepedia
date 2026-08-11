@@ -16,7 +16,7 @@ Feature: A link list becomes a navigation bar
   Scenario: The bar lists one item per link
     Given the navigation bar above (Home, Tutorial, Components, Start)
     :::python
-    self.labels = None
+    self.labels: list | None = None
     for m in Object._all(".lc-menu"):
         labels: list[str] = Menu(m._el).items()
         if len(labels) >= 4 and any("Home" in x for x in labels):

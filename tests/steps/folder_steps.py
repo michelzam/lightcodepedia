@@ -449,3 +449,25 @@ def step_subdir_title(context):
     card = context.page.locator(".lc-cards .lc-card").first
     expect(card).to_contain_text("00\u00b7Welcome", timeout=10_000)
     expect(card).to_contain_text("Skills ready to build", timeout=5_000)
+
+
+@then('the shelf is titled "{title}"')
+def step_shelf_title(context, title):
+    expect(context.page.locator(".lc-folder-title").first).to_have_text(
+        title, timeout=15_000
+    )
+
+
+@then('the card for "{title}" says you are here')
+def step_card_here(context, title):
+    card = context.page.locator(".lc-card", has_text=title).first
+    expect(card).to_be_visible(timeout=15_000)
+    assert "lc-card-here" in (card.get_attribute("class") or ""), \
+        card.get_attribute("class")
+
+
+@then('the card for "{title}" does not say you are here')
+def step_card_not_here(context, title):
+    card = context.page.locator(".lc-card", has_text=title).first
+    expect(card).to_be_visible(timeout=15_000)
+    assert "lc-card-here" not in (card.get_attribute("class") or "")

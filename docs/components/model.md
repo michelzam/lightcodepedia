@@ -144,8 +144,8 @@ Feature: The model renders from its own source
   Scenario: The page shows the model title and its class diagram
     Given this page generated from steps_runtime.md
     :::python
-    self.heads = Object._all("h1")
-    self.dia = Object._all(".lc-dot-diagram") or Object._all(".language-dot")
+    self.heads: list = Object._all("h1")
+    self.dia: list = Object._all(".lc-dot-diagram") or Object._all(".language-dot")
     :::
     When it has rendered
     Then it carries the model title and a diagram

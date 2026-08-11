@@ -33,7 +33,7 @@ Feature: A fenced block becomes a fixed-height scroll box
   Scenario: The content is wrapped in a scrollable box
     Given the scrollable block above
     :::python
-    self.box = Object._all(".lc-scrollable")[0]
+    self.box: Object = Object._all(".lc-scrollable")[0]
     :::
     When it has rendered
     Then it is a visible box that still holds the content

@@ -27,7 +27,7 @@ Feature: A fenced block becomes a titled code card
   Scenario: The block upgrades into a code card
     Given the code block above
     :::python
-    self.code = Object._all(".lc-code")[0]
+    self.code: Object = Object._all(".lc-code")[0]
     :::
     When the page has upgraded it
     Then it is a visible code card holding the snippet

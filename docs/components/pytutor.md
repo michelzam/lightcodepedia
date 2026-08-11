@@ -20,7 +20,7 @@ Feature: A fenced block becomes a step-through visualizer
   Scenario: The block upgrades into a visualizer frame
     Given the pytutor block above
     :::python
-    self.viz = Object._all(".lc-pytutor")[0]
+    self.viz: Object = Object._all(".lc-pytutor")[0]
     :::
     When the page has upgraded it
     Then it is a visible visualizer
