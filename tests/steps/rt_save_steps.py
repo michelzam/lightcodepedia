@@ -496,6 +496,13 @@ def step_marker_passes(context):
     context.page.wait_for_timeout(400)
 
 
+@then('the slot offers "{label}"')
+def step_slot_save_button(context, label):
+    b = context.page.locator(".lc-bench-save").first
+    expect(b).to_be_visible(timeout=15_000)
+    expect(b).to_contain_text(label.replace("💾 ", ""))
+
+
 @when("I open the slot's menu")
 def step_open_slot_menu(context):
     btn = context.page.locator(".lc-bench-more").first

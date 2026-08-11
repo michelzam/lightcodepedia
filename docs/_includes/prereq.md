@@ -3,7 +3,7 @@ Learning-path widgets.
 
 {: .prerequisite }  on a list of links (or a fence containing links): checks
 the learner's recorded score (localStorage lc_scores, shared with score.md)
-for each linked page. All met → a slim "prerequisites met" line. Any missing →
+for each linked page. All met → a slim "Prerequisites met" line. Any missing →
 a gate card that sends the learner there and hides the rest of the page
 (with a "show anyway" escape). Knob: pass="80" requires that percentage of a
 page's points; default = any recorded point on that page.
@@ -132,7 +132,7 @@ null]</script>
     var card = document.createElement("div");
     if (!missing.length) {
       card.className = "lc-prereq-met";
-      card.textContent = "✅ prerequisites met — " + links.map(function (l) { return l.title; }).join(" · ");
+      card.textContent = "✅ Prerequisites met — " + links.map(function (l) { return l.title; }).join(" · ");
       el.parentNode.replaceChild(card, el);
       return;
     }

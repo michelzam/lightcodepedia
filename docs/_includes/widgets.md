@@ -48,7 +48,13 @@ Auto-included by docs/_layouts/default.html.
 .lc-bench-more { border: none; background: none; cursor: pointer; color: #6b7280;
                  font-size: 1.15em; line-height: 1; padding: 0 0.15em; flex: none; }
 .lc-bench-more:hover { color: #111827; }
-.lc-bench-menu { position: absolute; right: 0.6em; margin-top: 1.7em; z-index: 40;
+.lc-bench-save { flex: none; border: 1px solid #0969da; background: #0969da; color: #fff;
+                 border-radius: 6px; cursor: pointer; font: inherit; font-size: 0.95em;
+                 padding: 0.15em 0.7em; margin-left: 0.4em; }
+.lc-bench-save:hover { background: #0b62c4; }
+/* top:100% pins the sheet under the head — a plain margin let its first row
+   ride up behind the header, where the one action that matters was clipped */
+.lc-bench-menu { position: absolute; right: 0.6em; top: 100%; margin-top: 0.25em; z-index: 40;
                  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
                  box-shadow: 0 6px 20px rgba(0,0,0,0.13); padding: 0.25em; min-width: 15em; }
 .lc-bench-menu button { display: block; width: 100%; text-align: left; border: none;
@@ -433,8 +439,19 @@ Auto-included by docs/_layouts/default.html.
       var st = computeState();
       box.setAttribute("data-state", st);
       var chip = "<span class='lc-bench-state " + STATE[st][1] + "'>" + STATE[st][0] + "</span>";
+      /* THE ONE ACTION A BEGINNER NEEDS IS NOT IN A MENU. On a starter the
+         only useful move is "make this mine", and it was hidden behind ⋯ —
+         where it also happened to be the row most easily clipped. So it is a
+         button, in the header, saying 💾 like every other saved thing on the
+         platform (Michel, 2026-08-11). */
+      var canSave = st === "starter" && !!(window.lcBench && window.lcBench.target(box).repo);
       head.innerHTML = pic + who + where + chip +
+        (canSave ? "<button type='button' class='lc-bench-save'>💾 Save to my space</button>" : "") +
         "<button type='button' class='lc-bench-more' aria-label='what I can do with this file'>⋯</button>";
+      var saveBtn = head.querySelector(".lc-bench-save");
+      if (saveBtn) saveBtn.addEventListener("click", function (ev) {
+        ev.stopPropagation(); act("clone");
+      });
       head.querySelector(".lc-bench-more").addEventListener("click", function (ev) {
         ev.stopPropagation();
         openMenu(st);
@@ -475,7 +492,16 @@ Auto-included by docs/_layouts/default.html.
         var b = ev.target.closest("button[data-a]");
         if (!b || b.disabled) return;
         menu.remove();
-        var a = b.getAttribute("data-a");
+        act(b.getAttribute("data-a"), path, repo);
+      });
+      setTimeout(function () {
+        document.addEventListener("click", function once() {
+          menu.remove(); document.removeEventListener("click", once);
+        });
+      }, 0);
+    }
+
+    function act(a, path, repo) {
         if (a === "clone") {
           window.lcBench.write(benchPath, md, window.lcStarterMsg || "🌱 starter", sha, box)
             .then(function (s) { sha = s || sha; paint(md, true); })
@@ -496,12 +522,6 @@ Auto-included by docs/_layouts/default.html.
             .then(function (s) { sha = s || sha; paint(seed, true); })
             .catch(function (e) { alert("Could not start over: " + (e.message || e)); });
         }
-      });
-      setTimeout(function () {
-        document.addEventListener("click", function once() {
-          menu.remove(); document.removeEventListener("click", once);
-        });
-      }, 0);
     }
 
     var md = seed;        /* the markdown this slot currently holds */

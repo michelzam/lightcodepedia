@@ -32,7 +32,7 @@ def step_open_board(context):
 
     def handler(route, request=None):
         url = route.request.url
-        if "/contents/courses/%s/course.yml" % COURSE in url:
+        if "/contents/courses/%s/__course.yml" % COURSE in url:
             # the board asks for it raw
             route.fulfill(status=200, content_type="text/plain", body=cfg)
         elif "/contents/courses" in url:

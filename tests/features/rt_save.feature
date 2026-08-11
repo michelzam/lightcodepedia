@@ -459,7 +459,9 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       """
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
     And I wait for the page to be interactive
-    And I open the slot's menu
+    # the move that matters is a button, not a menu row (Michel, 2026-08-11)
+    Then the slot offers "💾 Save to my space"
+    When I open the slot's menu
     Then "Copy the starter into my space" is offered
     And "Start over from the lesson's copy" is greyed out
     # a starter has no file at that address yet, so the door would 404 and the

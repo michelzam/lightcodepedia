@@ -202,6 +202,14 @@
   };
 
   window.lcEscapeHtml = escapeHtml;
+
+  /* ONE RULE FOR WHAT LEAVES THE LAB: a dunder never travels. The publish
+     gate rsyncs with --exclude '__*'; the material board and the publish
+     dialog count pending files with this, so the number they show is the
+     number the gate would actually move. It used to be three rules in two
+     places, and they drifted: a synced course reported "3 pending" forever
+     (Michel, 2026-08-11). */
+  window.lcTravels = function (rel) { return !/(^|\/)__/.test(String(rel || "")); };
   window.lcPrettifyKey = prettifyKey;
 
   function parseDatagridText(raw, format) {
