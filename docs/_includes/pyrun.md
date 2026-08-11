@@ -855,13 +855,23 @@ Auto-included by docs/_layouts/default.html.
     el.classList.remove("button");
   }
 
+  /* A handler fence may be JUST the body — ideally one line, `button` in
+     scope. The def line is the ENGINE's (Michel, 2026-08-11: beginners see
+     only the if); it is added here for execution, and the lens shows it
+     dimmed and locked. A full `def on_click…` still works unchanged. */
+  window.lcWrapHandler = function (code) {
+    if (/^\s*def\s+on_click\s*\(/m.test(code)) return code;
+    return "def on_click(button):\n" + String(code).split("\n")
+      .map(function (l) { return "    " + l; }).join("\n");
+  };
+
   // Run a button's Python on_click(handler) via the shared MicroPython instance.
   function runButtonHandler(btn) {
     var pyCode = btn.getAttribute("data-lc-py") || "";
     if (!pyCode) return;
     var lcId = btn.getAttribute("data-lc-id") || "";
     var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
-    var fullCode = preamble + "\n" + pyCode + "\n"
+    var fullCode = preamble + "\n" + window.lcWrapHandler(pyCode) + "\n"
       + "_btn = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n"
       + "on_click(_btn)\n";
     if (!window._lcMpReady) window._lcMpReady = lcMpy();

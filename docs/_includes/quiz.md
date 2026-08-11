@@ -84,7 +84,14 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
     }).filter(function(n){ return !isNaN(n) && n >= 0; });
   }
 
-  function reportScore(quizId, correct) {
+  function reportScore(quizId, correct, el) {
+    /* the answer, on the element, so cells and proofs can see it */
+    if (el) {
+      el.setAttribute('data-graded', '1');
+      el.setAttribute('data-passed', correct ? '1' : '0');
+      try { document.dispatchEvent(new CustomEvent('lc-model-changed',
+                                                  { detail: { source: 'quiz' } })); } catch (e) {}
+    }
     if (window.lcQuizScore && window.lcQuizScore.update) {
       window.lcQuizScore.update(quizId, correct);
     }
@@ -108,6 +115,12 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
 
     var quizId = el.id || ('quiz-' + (++QUIZ_SEQ));
     el.dataset.lcQuizId = quizId;
+    /* An author who writes {: .quiz #why_it_matters } has NAMED this quiz, and
+       a name is how everything else on the platform addresses a thing. Carrying
+       it as data-lc-id lets a cell gate a reward on the answer
+       (visible="= why_it_matters.passed") and lets a proof READ the result —
+       read only: a score is the learner's, never machine-set (doctrine 5). */
+    if (el.id) el.setAttribute('data-lc-id', el.id);
     var multi = el.getAttribute('multi') === 'true';
     var correctSet = {};
 
@@ -158,7 +171,7 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
     var selected = {};
 
     function gradeAndReport(allCorrect) {
-      reportScore(quizId, allCorrect);
+      reportScore(quizId, allCorrect, el);
     }
 
     /* ── Keyboard ────────────────────────────────────────────────────────────

@@ -19,8 +19,45 @@ Auto-included by docs/_layouts/default.html.
 /* a bench slot: a thin frame is the only hint. The ⚙️ shows what can be
    changed and the lesson's own text does the guiding — a treasure hunt
    reads better than a label (Michel 2026-08-04). */
-.lc-bench-slot { border: 1px solid #d7e3f4; border-radius: 8px; padding: 0.6em 0.9em; margin: 1em 0; }
-.lc-bench-slot[data-lc-mine="1"] { border-color: #bbf7d0; }
+/* A: a tinted sheet — the learner's file is a different piece of paper laid
+   on the lesson. B: a left accent bar carrying the save state, the same
+   idiom feature and pitch cards already use. C: a header stripe naming the
+   owner, with their avatar. Amber while it is still the lesson's copy,
+   green once it is theirs. */
+.lc-bench-slot { border: 1px solid #e6ecf5; border-left: 3px solid #f0b429;
+                 border-radius: 8px; background: #fffdf7; margin: 1.1em 0;
+                 padding: 0 0.9em 0.6em; overflow: hidden; }
+.lc-bench-slot[data-state="draft"] { border-left-color: #3b82f6; background: #fbfdff; }
+.lc-bench-slot[data-state="done"]  { border-left-color: #22c55e; background: #f8fffb; }
+.lc-bench-head { position: relative; display: flex; align-items: center; gap: 0.5em;
+                 margin: 0 -0.9em 0.7em; padding: 0.35em 0.9em;
+                 background: rgba(255,255,255,0.72);
+                 border-bottom: 1px solid #eef2f7; font-size: 0.78em; color: #6b7280; }
+.lc-bench-avatar { width: 20px; height: 20px; border-radius: 50%; flex: none;
+                   background: #e5e7eb; object-fit: cover; }
+.lc-bench-avatar-none { display: inline-flex; align-items: center; justify-content: center;
+                        background: transparent; font-size: 15px; }
+.lc-bench-who { font-weight: 600; color: #374151; flex: none; }
+.lc-bench-path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.lc-bench-state { margin-left: auto; flex: none; padding: 0.05em 0.6em;
+                  border-radius: 99px; font-weight: 500; }
+.lc-bench-yours { background: #dcfce7; color: #15803d; }
+.lc-bench-draft { background: #dbeafe; color: #1d4ed8; }
+.lc-bench-seed  { background: #fef3c7; color: #92400e; }
+.lc-bench-more { border: none; background: none; cursor: pointer; color: #6b7280;
+                 font-size: 1.15em; line-height: 1; padding: 0 0.15em; flex: none; }
+.lc-bench-more:hover { color: #111827; }
+.lc-bench-menu { position: absolute; right: 0.6em; margin-top: 1.7em; z-index: 40;
+                 background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+                 box-shadow: 0 6px 20px rgba(0,0,0,0.13); padding: 0.25em; min-width: 15em; }
+.lc-bench-menu button { display: block; width: 100%; text-align: left; border: none;
+                        background: none; padding: 0.45em 0.7em; border-radius: 6px;
+                        font: inherit; font-size: 0.95em; color: #374151; cursor: pointer; }
+.lc-bench-menu button:hover:not(:disabled) { background: #f3f4f6; }
+.lc-bench-menu button:disabled { color: #b6bcc5; cursor: default; }
+/* a phone has no room for the path — the owner and the state are what matter */
+@media (max-width: 560px) { .lc-bench-path { display: none; } }
 
 .lc-code { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #fafafa; }
 .lc-code-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
@@ -329,6 +366,138 @@ Auto-included by docs/_layouts/default.html.
     box.classList.add("lc-run");            /* the marker closest() looks for */
     el.parentNode.replaceChild(box, el);
 
+    /* A THIN FRAME WAS TOO THIN. "Your own space" was carried by a 1px
+       border nobody notices on a phone, so the most important fact about
+       this block — that it is the learner's file and not the lesson's —
+       was the least visible thing on the page. The slot now says whose it
+       is: a tinted sheet, an accent bar that carries the save state, and a
+       header stripe with the bench owner's avatar. (Michel, 2026-08-11 —
+       trial, to be settled after seeing it.) */
+    var slotId = el.getAttribute("id") || "";
+    if (slotId) { box.id = slotId; box.setAttribute("data-lc-id", slotId); }
+    var head = document.createElement("div");
+    head.className = "lc-bench-head";
+    var body = document.createElement("div");
+    body.className = "lc-bench-body";
+    box.appendChild(head);
+    box.appendChild(body);
+
+    /* ── the slot's three states ──────────────────────────────────────
+       starter  the lesson's copy — nothing of the learner's yet
+       draft    they saved; the file is theirs now
+       done     the LESSON's check on this slot passes
+       Green is never self-declared: the card that grades a slot names it
+       with grades="<slot id>" and lives in the vault, where the person
+       being marked cannot reach it. A check the learner writes inside
+       their own file still teaches — it just does not award the colour. */
+    function graders() {
+      return slotId
+        ? [].slice.call(document.querySelectorAll('.lc-feature[data-grades="' + slotId + '"]'))
+        : [];
+    }
+    function computeState() {
+      if (!mine) return "starter";
+      var g = graders();
+      if (g.length && g.every(function (c) { return c.getAttribute("data-status") === "passing"; }))
+        return "done";
+      return "draft";
+    }
+    var STATE = {
+      starter: ["the lesson's copy", "lc-bench-seed"],
+      draft:   ["draft — yours", "lc-bench-draft"],
+      done:    ["✓ checked", "lc-bench-yours"]
+    };
+
+    function paintHead(path) {
+      var repo = (window.lcBench ? window.lcBench.target(box).repo : "") || "";
+      /* WHOSE FACE? Not the repo owner's — a class bench is forked INTO the
+         org, so every student would see the same organisation logo over
+         their own work. The topbar already caches the signed-in account
+         (lc_gh_user); that is the person whose file this is. Fall back to
+         the repo owner for a personal bench. */
+      var me = null;
+      try { me = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
+      var login = (me && me.login) || repo.split("/")[0] || "";
+      var pic = (me && me.avatar_url)
+        ? "<img class='lc-bench-avatar' src='" + escapeHtml(me.avatar_url) + "' alt='' loading='lazy'>"
+        : (login
+            ? "<img class='lc-bench-avatar' src='https://github.com/" + encodeURIComponent(login) +
+              ".png?size=48' alt='' loading='lazy'>"
+            : "<span class='lc-bench-avatar lc-bench-avatar-none'>🎒</span>");
+      var who = repo
+        ? "<span class='lc-bench-who'>@" + escapeHtml(login) + "</span>"
+        : "<span class='lc-bench-who'>your space</span>";
+      var where = repo
+        ? "<span class='lc-bench-path'>" + escapeHtml(path || benchPath) + "</span>"
+        : "<span class='lc-bench-path'>not connected yet</span>";
+      var st = computeState();
+      box.setAttribute("data-state", st);
+      var chip = "<span class='lc-bench-state " + STATE[st][1] + "'>" + STATE[st][0] + "</span>";
+      head.innerHTML = pic + who + where + chip +
+        "<button type='button' class='lc-bench-more' aria-label='what I can do with this file'>⋯</button>";
+      head.querySelector(".lc-bench-more").addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        openMenu(st);
+      });
+    }
+
+    /* ── the transitions, with guards doing the greying ──────────────── */
+    function openMenu(st) {
+      var old = box.querySelector(".lc-bench-menu");
+      if (old) { old.remove(); return; }
+      var repo = (window.lcBench ? window.lcBench.target(box).repo : "") || "";
+      var path = box.getAttribute("data-lc-src-path") || benchPath;
+      var items = [
+        { key: "clone", icon: "📋", label: "Copy the starter into my space",
+          on: st === "starter" && !!repo,
+          why: !repo ? "connect your space first" : "you already have your own copy" },
+        { key: "open", icon: "📄", label: "Open it on its own",
+          on: !!repo, why: "connect your space first" },
+        { key: "versions", icon: "🕘", label: "Every version I saved",
+          on: st !== "starter", why: "nothing saved yet" },
+        { key: "reset", icon: "↺", label: "Start over from the lesson's copy",
+          on: st !== "starter", why: "this IS the lesson's copy" }
+      ];
+      var menu = document.createElement("div");
+      menu.className = "lc-bench-menu";
+      menu.innerHTML = items.map(function (i) {
+        return "<button type='button' data-a='" + i.key + "'" + (i.on ? "" : " disabled title='" +
+          escapeHtml(i.why) + "'") + ">" + i.icon + " " + escapeHtml(i.label) + "</button>";
+      }).join("");
+      head.appendChild(menu);
+      menu.addEventListener("click", function (ev) {
+        var b = ev.target.closest("button[data-a]");
+        if (!b || b.disabled) return;
+        menu.remove();
+        var a = b.getAttribute("data-a");
+        if (a === "clone") {
+          window.lcBench.write(benchPath, md, window.lcStarterMsg || "🌱 starter", sha, box)
+            .then(function (s) { sha = s || sha; paint(md, true); })
+            .catch(function (e) { alert("Could not copy it in: " + (e.message || e)); });
+        } else if (a === "open") {
+          var url = (window.lcHref ? window.lcHref("/run.html") : "/run.html")
+                  + "#src=gh:" + repo + "/" + path;
+          window.location.href = url;
+        } else if (a === "versions") {
+          window.lcBench.history(benchPath, box, 20).then(function (list) {
+            alert(list.length
+              ? list.map(function (c) { return (c.when || "").slice(0, 16).replace("T", " ") + "  " + c.message; }).join("\n")
+              : "No versions yet.");
+          });
+        } else if (a === "reset") {
+          if (!confirm("Replace your copy with the lesson's? Your saved versions stay in 🕘.")) return;
+          window.lcBench.write(benchPath, seed, "↺ start over", sha, box)
+            .then(function (s) { sha = s || sha; paint(seed, true); })
+            .catch(function (e) { alert("Could not start over: " + (e.message || e)); });
+        }
+      });
+      setTimeout(function () {
+        document.addEventListener("click", function once() {
+          menu.remove(); document.removeEventListener("click", once);
+        });
+      }, 0);
+    }
+
     var md = seed;        /* the markdown this slot currently holds */
     var sha = null;       /* the bench file's sha — null while nothing is saved */
     var mine = false;
@@ -339,16 +508,17 @@ Auto-included by docs/_layouts/default.html.
       var path = window.lcBench ? window.lcBench.resolve(benchPath, box) : benchPath;
       box.setAttribute("data-lc-src-path", path);
       if (isMine) box.setAttribute("data-lc-mine", "1");
+      paintHead(path);
       var norm = md.trim().replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
       loadMarked(function () {
         if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
-        box.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
-        if (window.lcApplyIAL)    window.lcApplyIAL(box);
+        body.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
+        if (window.lcApplyIAL)    window.lcApplyIAL(body);
         /* re-render = new knobs: forget the previous render's snapshot, or
            the ⚙️ would offer the value the learner has already replaced */
-        if (window.lcSnapshotSources) window.lcSnapshotSources(box, true);
-        if (window.lcScanElement) window.lcScanElement(box);
-        if (window.lcRebase)      window.lcRebase(box);
+        if (window.lcSnapshotSources) window.lcSnapshotSources(body, true);
+        if (window.lcScanElement) window.lcScanElement(body);
+        if (window.lcRebase)      window.lcRebase(body);
       });
     }
 
@@ -380,6 +550,15 @@ Auto-included by docs/_layouts/default.html.
         });
       }
     };
+
+    /* THE GRADE ARRIVES LATER. A check turns green when the learner presses
+       ▶, long after this slot rendered — and feature.md already announces
+       every settled status on the model bus, so the stripe listens rather
+       than polls. Head only: repainting the body would tear down the very
+       components the check just measured. */
+    document.addEventListener("lc-model-changed", function () {
+      if (box.isConnected) paintHead(box.getAttribute("data-lc-src-path") || benchPath);
+    });
 
     if (window.lcBench && t.repo && t.pat) {
       window.lcBench.read(benchPath, box)
@@ -641,7 +820,12 @@ Auto-included by docs/_layouts/default.html.
       f.setAttribute("allow", (f.getAttribute("allow") || "") + "; autoplay; encrypted-media");
     }
     f.setAttribute("title", a.textContent || "video");
+    /* a gated video is the point of gating one: visible="= quiz.passed" makes
+       the clip the REWARD for answering, and the knob has to survive the swap
+       or the frame renders unconditionally (Michel, 2026-08-10) */
+    if (window.lcCarryCellKnobs) window.lcCarryCellKnobs(el, f);
     el.parentNode.replaceChild(f, el);
+    if (window.lcCellsRescan) window.lcCellsRescan();
   }
 
   /* ── play / pause / seek, so an avatar can narrate over a clip ─────────

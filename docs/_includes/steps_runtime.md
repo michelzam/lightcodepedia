@@ -739,6 +739,25 @@ class Dataset(Object):
         arr = getattr(ds, self._id, None)
         return int(arr.length) if arr else 0
 
+    def values(self, field):
+        """Every row's value for one field, in order, as strings.
+
+        COUNTING IS NOT ENOUGH. A check could say "nine rows" but not
+        "and none of them already went home" — so the first proof a
+        learner writes about their own list had nothing to assert on
+        (module 05, 2026-08-11). A missing field reads as "", so a
+        blank cell and an absent column look the same to a reader,
+        which is what a reader means by empty."""
+        ds = getattr(js.window, "lcDatasets", None)
+        arr = getattr(ds, self._id, None) if ds else None
+        if not arr:
+            return []
+        out = []
+        for i in range(int(arr.length)):
+            v = getattr(arr[i], field, None)
+            out.append("" if v is None else str(v))
+        return out
+
 
 @component(icon="🔎",
            attrs=[{"n": "query", "t": "str"}, {"n": "editable", "t": "bool"},
@@ -970,6 +989,11 @@ class Button(Block):
             if self._el:
                 self._el.click()
             return self
+        # a fence may be just the body — the def line is the engine's,
+        # exactly as lcWrapHandler adds it on the JS side
+        if "def on_click" not in code:
+            code = "def on_click(button):\n" + "\n".join(
+                "    " + l for l in code.split("\n"))
         ns = dict(globals())
         ns["button"] = self
         try:
@@ -1119,6 +1143,12 @@ class Radio(Block):
            methods=["pick", "check"],
            states=["pending", "graded"])
 class Quiz(Block):
+    @property
+    def passed(self):
+        """Did the learner get it right? READ ONLY, on purpose: a proof may
+        ask a quiz how it went, and may never answer it (doctrine 5)."""
+        return self._attr("data-passed") == "1"
+
     @property
     def graded(self):
         # a quiz is graded once any option has been revealed as ✓ or ✗
@@ -1662,6 +1692,82 @@ class AvatarTrigger(Block):
         return _wrap(el)
 
 
+def _lc_doc_data(obj):
+    """The problem-space documents register their data as a dataset under
+    their own id — hand back that JS object so a proof asserts on fields
+    (self.page.<id>.data.name), not markup."""
+    ds = getattr(js.window, "lcDatasets", None)
+    eid = obj._attr("data-lc-id") or ""
+    return getattr(ds, eid, None) if (ds and eid) else None
+
+
+def _lc_ref(obj, attr):
+    gid = obj._attr(attr) or ""
+    el = js.window.document.querySelector("[data-lc-id='" + gid + "']") if gid else None
+    return _wrap(el)
+
+
+@component(icon="👤",
+           assoc=[{"n": "source", "target": "Form"}])
+class Persona(Block):
+    """Empathy-map card (.persona) — who the product serves."""
+    @property
+    def data(self):
+        return _lc_doc_data(self)
+
+    @property
+    def source(self):
+        return _lc_ref(self, "data-bind")
+
+
+@component(icon="✨",
+           assoc=[{"n": "source", "target": "Form"},
+                  {"n": "persona", "target": "Persona"}])
+class Pitch(Block):
+    """Assembled two-sentence pitch (.pitch) — why the product exists."""
+    @property
+    def data(self):
+        return _lc_doc_data(self)
+
+    @property
+    def source(self):
+        return _lc_ref(self, "data-bind")
+
+    @property
+    def persona(self):
+        return _lc_ref(self, "data-persona")
+
+    @property
+    def drifting(self):
+        """True while the who/need stopped echoing the persona this pitch
+        reads — the soft warning a proof can assert on."""
+        w = self._el.querySelector(".lc-pitch-warn") if self._el is not None else None
+        return bool(w is not None and w.hasAttribute("hidden") is False)
+
+
+@component(icon="🎯",
+           assoc=[{"n": "pitch", "target": "Pitch"}])
+class ImpactMap(Block):
+    """Impact map (.impact_map) — goal → who → how → what."""
+    @property
+    def pitch(self):
+        return _lc_ref(self, "data-pitch")
+
+
+@component(icon="🎏", attrs=[{"n": "count", "t": "int"}])
+class EventFlow(Block):
+    """Event-storming sequence (.event_flow) — the page's story as
+    colored sticky notes: actor → command → event → policy → reader."""
+    @property
+    def count(self):
+        return len(self._qq(".lc-ef-step"))
+
+    def kinds(self):
+        """The sequence of note kinds, in order — so a proof can assert
+        the grammar (a command before its event, a policy after one)."""
+        return [str(o._el.getAttribute("data-kind") or "") for o in self._qq(".lc-ef-step")]
+
+
 # ════════════════════════ resolver ══════════════════════════════════════════
 
 _WRAP = [
@@ -1680,6 +1786,8 @@ _WRAP = [
     ("lc-scene3d", Scene3d), ("lc-avatar-host", Avatar),
     ("lc-vitals", Vitals), ("lc-modelcheck", ModelCheck), ("lc-stat", Stat), ("lc-mdpad", Mdpad),
     ("lc-avatar-trigger", AvatarTrigger),
+    ("lc-persona", Persona), ("lc-pitch", Pitch), ("lc-imap", ImpactMap),
+    ("lc-event-flow", EventFlow),
 ]
 
 

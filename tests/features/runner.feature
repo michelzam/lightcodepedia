@@ -146,3 +146,26 @@ Feature: The instant runner (RT) — Phase A parity
     And I wait for the page to be interactive
     Then the block editor on the rendered fence shows "From the SECOND file"
     And no snapshot still carries "From the FIRST file"
+
+  Scenario: A card click lands at the top of the next page
+    Inside the runner a link only changes the hash and the document is
+    re-rendered in place, so the browser never scrolls. A reader who
+    clicked a card near the bottom of a long module arrived half-way
+    down a page they had never seen (2026-08-11).
+
+    When I open the runner page on "/run_samples/tall.txt"
+    And I wait for the runner to render
+    And I scroll the runner to the bottom
+    And the runner navigates to "/run_samples/probe.txt"
+    Then the runner is scrolled to the top
+    And the runner shows a heading "RT probe page"
+
+  Scenario: Re-rendering the same page keeps the reader's place
+    A save, a refresh or a repeated hash must not throw the reader back
+    to the top of what they were already reading.
+
+    When I open the runner page on "/run_samples/tall.txt"
+    And I wait for the runner to render
+    And I scroll the runner to the bottom
+    And the runner navigates to "/run_samples/tall.txt"
+    Then the runner is still scrolled down

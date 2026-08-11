@@ -101,6 +101,40 @@ Feature: A button runs Python on click
 ```
 {: .feature tags="events" status="passing" }
 
+## One line is enough
+
+The `def on_click(button):` line is the engine's — a fence may carry
+just the **body**, with `button` already in hand. Ideally one ternary:
+
+[☐ To do](#)
+{: .button #bare_btn }
+```python
+button.text = "✅ Done" if "☐" in button.text else "☐ To do"
+```
+{: .onclick }
+
+The x-ray lens shows the full picture: the engine's def line dimmed and
+locked (🔒), your line highlighted below it. A beginner reads only the
+`if`.
+
+```gherkin
+Feature: A bare body is a whole handler
+  Scenario: One ternary toggles the label
+    Given the to-do button
+    :::python
+    self.b = self.page.bare_btn
+    :::
+    When it is clicked
+    :::python
+    self.b.click()
+    :::
+    Then the job is done
+    :::python
+    assert "✅" in self.b.text, self.b.text
+    :::
+```
+{: .feature tags="events" status="passing" }
+
 ## 🏁 Final exam
 
 **Q:** Which markdown produces a green button linking to `/submit`?

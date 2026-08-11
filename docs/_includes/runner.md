@@ -340,7 +340,24 @@ files a student is already working in.
     var root = wrap.querySelector(".lc-run");
     var bar = wrap.querySelector(".lc-run-bar");
     render(status, root, fixedSrc, bar);
-    if (!fixedSrc) window.addEventListener("hashchange", function () { render(status, root, "", bar); });
+    /* A CARD CLICK IS A NAVIGATION, so it must land at the top of the new
+       page. Inside the runner a link only changes the hash and the document
+       is re-rendered IN PLACE — the browser has no reason to scroll, so a
+       reader who clicked a card near the bottom of a long module arrived
+       mid-way down a page they had never seen (Michel, 2026-08-11). Jump
+       only when the SOURCE changed: a same-page fragment must keep its
+       landing spot, and a re-render of the same file (a save, a refresh)
+       must not throw the reader back to the top. */
+    if (!fixedSrc) {
+      var lastSrc = hashSrc();
+      window.addEventListener("hashchange", function () {
+        var now = hashSrc();
+        var moved = now && now !== lastSrc;
+        lastSrc = now;
+        render(status, root, "", bar);
+        if (moved) window.scrollTo({ top: 0, behavior: "instant" });
+      });
+    }
   }
 
   if (window.lcRegisterUpgrader) window.lcRegisterUpgrader("p.runner", upgradeRunner);

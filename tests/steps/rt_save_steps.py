@@ -454,3 +454,63 @@ def step_slot_target(context, path):
 def step_slot_mine(context):
     expect(context.page.locator(".lc-bench-slot[data-lc-mine='1']").first
            ).to_be_visible(timeout=15_000)
+
+
+@given('the signed-in learner is "{login}"')
+def step_signed_in(context, login):
+    """The topbar caches the account; the bench stripe reads it from there."""
+    context.page.add_init_script(
+        "localStorage.setItem('lc_gh_user', JSON.stringify(%s))"
+        % json.dumps({"login": login, "avatar_url": ""})
+    )
+
+
+@then('the slot\'s stripe names "{who}"')
+def step_stripe_who(context, who):
+    expect(context.page.locator(".lc-bench-head .lc-bench-who").first).to_have_text(
+        who, timeout=15_000
+    )
+
+
+@then("the slot's stripe says it is still the lesson's copy")
+def step_stripe_seed(context):
+    expect(context.page.locator(".lc-bench-head .lc-bench-seed").first).to_be_visible(
+        timeout=15_000
+    )
+
+
+@then('the slot is in the "{state}" state')
+def step_slot_state(context, state):
+    slot = context.page.locator(".lc-bench-slot").first
+    expect(slot).to_have_attribute("data-state", state, timeout=15_000)
+
+
+@when("the lesson's check on the slot passes")
+def step_marker_passes(context):
+    """The runner's own path: a settled status announces itself on the bus."""
+    context.page.evaluate(
+        """() => { const f = document.querySelector('.lc-feature[data-grades]');
+                   f.setAttribute('data-status', 'passing');
+                   document.dispatchEvent(new CustomEvent('lc-model-changed')); }"""
+    )
+    context.page.wait_for_timeout(400)
+
+
+@when("I open the slot's menu")
+def step_open_slot_menu(context):
+    btn = context.page.locator(".lc-bench-more").first
+    btn.wait_for(state="visible", timeout=15_000)
+    btn.click()
+    context.page.wait_for_selector(".lc-bench-menu", timeout=5_000)
+
+
+@then('"{label}" is offered')
+def step_menu_enabled(context, label):
+    b = context.page.locator(".lc-bench-menu button", has_text=label).first
+    expect(b).to_be_enabled(timeout=5_000)
+
+
+@then('"{label}" is greyed out')
+def step_menu_disabled(context, label):
+    b = context.page.locator(".lc-bench-menu button", has_text=label).first
+    expect(b).to_be_disabled(timeout=5_000)

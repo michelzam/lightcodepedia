@@ -303,3 +303,30 @@ def step_no_stale_snapshot(context, text):
         text,
     )
     assert not stale, "ids still holding the previous page's source: %r" % stale
+
+
+@when("I scroll the runner to the bottom")
+def step_scroll_bottom(context):
+    context.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    context.page.wait_for_timeout(200)
+    context.rt_scroll = context.page.evaluate("window.scrollY")
+    assert context.rt_scroll > 200, f"page is not tall enough to test: {context.rt_scroll}"
+
+
+@when('the runner navigates to "{src}"')
+def step_rt_navigate(context, src):
+    """Exactly what a healed card link does: swap the src in the hash."""
+    context.page.evaluate("s => { location.hash = 'src=' + s; }", src)
+    context.page.wait_for_timeout(1500)
+
+
+@then("the runner is scrolled to the top")
+def step_rt_at_top(context):
+    y = context.page.evaluate("window.scrollY")
+    assert y == 0, f"landed at {y}px down a page the reader has never seen"
+
+
+@then("the runner is still scrolled down")
+def step_rt_kept_place(context):
+    y = context.page.evaluate("window.scrollY")
+    assert y > 0, "a re-render threw the reader back to the top"

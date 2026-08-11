@@ -39,6 +39,8 @@ Auto-included by docs/_layouts/default.html.
   .lcx-xray .st { margin-top: 4px; padding-top: 3px; color: #9fd0ff;
                   border-top: 1px solid rgba(120,200,255,.25); }
   .lcx-xray .st b { color: #fff; }
+  /* the engine's def line: read-only, dimmed — the body below is the code */
+  .lcx-xray .lcx-def { display: block; opacity: .55; font-style: italic; }
   .lcx-xray .code { white-space: pre; margin: 1px 0 4px 1.6em; padding: 4px 7px;
                     color: #d7e7f5; background: rgba(0,0,0,.32);
                     border-left: 2px solid rgba(255,212,121,.5); border-radius: 3px;
@@ -184,7 +186,20 @@ Auto-included by docs/_layouts/default.html.
       L.events.forEach(e => {
         h += rrow(IC.event || "⚡", esc(disp(e)));
         const src = evts[e];                           // live handler body
-        if (src) h += '<div class="code">' + pyHi(src.trim()) + "</div>";
+        if (src) {
+          /* the def line is the ENGINE's, not the author's: show it dimmed
+             and locked, so a beginner reads only the body — which may be a
+             single line (a bare-body fence has no def at all: synthesize
+             the same head the runner adds before executing). */
+          let s = src.trim(), head = "def on_click(button):", body = s;
+          if (/^def\s/.test(s)) {
+            const nl = s.indexOf("\n");
+            head = nl < 0 ? s : s.slice(0, nl);
+            body = nl < 0 ? "" : s.slice(nl + 1);
+          }
+          h += '<div class="code"><span class="lcx-def">🔒 ' + esc(head) + "</span>"
+             + (body ? pyHi(body) : "") + "</div>";
+        }
       });
       L.methods.forEach(m => {
         const lead = (m.pre && m.pre.length) ? (IC.guard || "▹") : (IC.method || "▸");

@@ -90,7 +90,13 @@ Auto-included by docs/_layouts/default.html.
      it: flat when safe, scoped when needed. */
   function readInputs() {
     var scopes = {}, counts = {}, vals = {};
-    document.querySelectorAll(".lc-form[data-lc-value], .lc-mdpad[data-lc-value]").forEach(function (f) {
+    /* A DOCUMENT IS STATE TOO. The problem-space cards publish their object on
+       the same data-lc-value contract forms use, so `{= persona.goal }` and
+       `{= pitch.benefit }` read a saved document exactly as a formula reads a
+       typed field — which is how a later page shows a learner their own words
+       back (Michel, 2026-08-10). */
+    document.querySelectorAll(".lc-form[data-lc-value], .lc-mdpad[data-lc-value], "
+                            + ".lc-persona[data-lc-value], .lc-pitch[data-lc-value]").forEach(function (f) {
       var id = f.getAttribute("data-lc-id") || "";
       var o;
       try { o = JSON.parse(f.getAttribute("data-lc-value")); } catch (e) { return; }
@@ -117,6 +123,16 @@ Auto-included by docs/_layouts/default.html.
        It can now: `{= visited.count }` reads any dataset or query by its id,
        including one a query publishes. Forms and features keep an id they
        already own — a lesson's own names win over the data's. */
+    /* A QUIZ IS STATE TOO — the one the learner produced. A named quiz
+       publishes its verdict so a block can be the reward for answering:
+       visible="= who_is_she.passed". Read-only by construction: nothing here
+       can set a score (doctrine 5). */
+    document.querySelectorAll(".lc-quiz[data-lc-id]").forEach(function (q) {
+      var id = q.getAttribute("data-lc-id");
+      if (!id || scopes[id]) return;
+      scopes[id] = { graded: q.getAttribute("data-graded") === "1",
+                     passed: q.getAttribute("data-passed") === "1" };
+    });
     var ds = window.lcDatasets || {};
     Object.keys(ds).forEach(function (id) {
       if (!id || scopes[id]) return;

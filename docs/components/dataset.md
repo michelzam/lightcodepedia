@@ -188,3 +188,51 @@ Browse the [🧩 component gallery](/components/) and [🔬 live examples](/comp
 - [ ] Hiding behind the chart. It's shy around strangers.
 - [ ] You forgot to feed it. Hungry datasets sulk and hide.
 {: .quiz }
+
+## Reading rows in a check
+
+`count` says how many; `values("field")` says what is in them — so a
+proof can assert on content, not just size. Missing values read as `""`.
+
+```csv
+family,dog,met
+Nguyen,Biscuit,
+Alvarez,Scout,Wed
+Kaur,Scout,
+```
+{: .dataset #visits }
+
+```sql
+SELECT family, met FROM visits WHERE met = ''
+```
+{: .query bind="visits" #waiting }
+
+[Still waiting](#)
+{: .datagrid source="waiting" rows="5" title="Waiting for a visit" }
+
+```gherkin
+Feature: A check can read the rows, not just count them
+  Scenario: The filtered pile holds only families still waiting
+    Given the question and its answer
+    :::python
+    self.all = self.page.visits
+    self.waiting = self.page.waiting
+    :::
+    Then nobody who already met a dog is in the answer
+    :::python
+    assert self.all.count == 3, self.all.count
+    assert self.waiting.count == 2, self.waiting.count
+    mets = self.waiting.values("met")
+    names = self.waiting.values("family")
+    bad = [n for n, m in zip(names, mets) if m]
+    assert not bad, "already met: " + str(bad)
+    assert "Nguyen" in names, names
+    :::
+```
+{: .feature #values_proof tags="dataset,query" visible="true" status="passing" }
+
+[^dataset]: **dataset** — a pile of rows registered under an `#id`. It
+    renders nothing; the faces that name it do.
+
+[^query]: **query** — a question asked of a pile in SQL. Its answer is a
+    pile of its own, re-asked whenever an input changes.

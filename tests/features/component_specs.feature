@@ -239,3 +239,35 @@ Feature: Component specs run green
     And I wait for the selector ".lc-dg-table"
     And I run the page's embedded features
     Then every embedded feature passes
+
+  Scenario: Persona spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/persona"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-form-grid .ag-row"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Pitch spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/pitch"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-form-grid .ag-row"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Impact map spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/impact_map"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-imap"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
+  Scenario: Event flow spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/event_flow"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-event-flow"
+    And I run the page's embedded features
+    Then every embedded feature passes

@@ -231,6 +231,57 @@ Quizzes work inside slides with no extra syntax. The slide engine **does not adv
 - [ ] Unknowable. The quiz keeps the secret forever.
 {: .quiz }
 
+## 🎁 A named quiz can unlock a reward
+
+Give a quiz an `#id` and it publishes its verdict — `graded` and
+`passed` — so anything with a `visible=` knob can wait for the right
+answer. The reward pattern: answer correctly, and the block appears.
+
+**Q:** What unlocks the block below?
+
+- [x] Picking this answer.
+- [ ] Waiting ten seconds.
+- [ ] Nothing — it is already visible.
+{: .quiz #reward_demo }
+
+> 🎉 Unlocked. This block was hidden until `reward_demo.passed` turned true.
+{: visible="= reward_demo.passed" }
+
+Read-only by construction: a cell (or a `.feature` proof, via
+`self.page.reward_demo.passed`) may **ask** a quiz how it went and can
+never answer it — a score belongs to the learner.
+
+```gherkin
+Feature: A quiz publishes its verdict
+  Scenario: Nothing is claimed before the learner answers
+    Given the reward quiz
+    :::python
+    self.q = self.page.reward_demo
+    :::
+    Then it reports neither graded nor passed
+    :::python
+    assert not self.q.graded
+    assert not self.q.passed
+    :::
+
+  Scenario: The right answer is readable, and only readable
+    Given the reward quiz
+    :::python
+    self.q = self.page.reward_demo
+    :::
+    When the learner picks the right option
+    :::python
+    self.q.pick(0)
+    :::
+    Then the quiz says so itself
+    :::python
+    assert self.q.graded
+    assert self.q.passed
+    assert not hasattr(type(self.q).passed, "fset"), "a score must never be settable"
+    :::
+```
+{: .feature #quiz_reward_proof tags="quiz" status="passing" }
+
 ## ⚠️ Limits of v1
 
 - **No per-attempt log.** Re-answering correctly after a wrong pick counts as correct in the score. It's a learning tool, not an exam platform.

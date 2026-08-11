@@ -585,11 +585,18 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       ? "<span class='lc-feature-badge lc-feature-badge-" + status + "' data-lc-badge>" + status + "</span>"
       : "<span class='lc-feature-badge' data-lc-badge style='display:none'></span>";
 
+    /* A tag NAMES a thing — a component, a concern — and the platform's names
+       are snake_case (doctrine 2). "impact_map" is how the author writes it
+       and how a filter matches it; "impact map" is how a reader reads it. The
+       chip shows the reader's version, data-tag keeps the author's. */
+    function tagLabel(t) { return t.replace(/_/g, " "); }
+
     var tagsHtml = "";
     if (tagsRaw) {
       tagsHtml = "<span class='lc-feature-tags'>"
         + tagsRaw.split(",").map(function(t) {
-            return "<span class='lc-feature-tag'>" + t.trim() + "</span>";
+            var v = t.trim();
+            return "<span class='lc-feature-tag' data-tag='" + v + "'>" + tagLabel(v) + "</span>";
           }).join("") + "</span>";
     }
 
@@ -606,6 +613,14 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     if (lcId) card.setAttribute("data-lc-id", lcId);
     var celebration = el.getAttribute("celebration");
     if (celebration) card.setAttribute("data-celebration", celebration);
+    /* grades="<slot id>": this check GRADES a bench slot. The learner owns
+       the file in the slot, so a check living inside it could be weakened
+       or deleted — self-assessment through the back door. The lesson's
+       check is in the vault and cannot be edited by the person it marks,
+       which is why the slot only turns green when THIS card passes
+       (Michel, 2026-08-11). */
+    var grades = el.getAttribute("grades");
+    if (grades) card.setAttribute("data-grades", grades);
     card._lcFeatureName = featureName;
     card._lcFeatureTags = tagsRaw ? tagsRaw.split(",").map(function(t){ return t.trim(); }) : [];
 
@@ -762,7 +777,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     runnable.forEach(function(card) {
       var tags = (card._lcFeatureTags || []);
       var tagsHtml = tags.map(function(t) {
-        return "<span class='lc-suite-row-tag'>" + t + "</span>";
+        return "<span class='lc-suite-row-tag' data-tag='" + t + "'>"
+          + t.replace(/_/g, " ") + "</span>";
       }).join("");
 
       var row = document.createElement("div");

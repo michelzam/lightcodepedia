@@ -375,3 +375,90 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/feed.md"
     And I wait for the page to be interactive
     Then the dataset "dogs" holds "Milwaukee"
+
+  Scenario: The slot says whose file it is, and whether it is saved yet
+    "Your own space" used to be carried by a 1px border nobody notices on
+    a phone — the most important fact about the block was the least
+    visible thing on the page. The stripe names the signed-in learner,
+    not the repo owner: a class bench is forked INTO the org, so every
+    student would otherwise see the same organisation logo over their own
+    work.
+
+    Given a connected bench whose "courses/demo/mod/wiring.md" does not exist yet
+    And the signed-in learner is "ada"
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # Lesson
+
+      ```markdown
+      Wire me.
+      ```
+      {: .embed save="wiring.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the slot's stripe names "@ada"
+    And the slot's stripe says it is still the lesson's copy
+
+  Scenario: The stripe reads draft once the learner has their own copy
+    Given a connected bench whose "courses/demo/mod/wiring.md" holds "Mine now."
+    And the signed-in learner is "ada"
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # Lesson
+
+      ```markdown
+      Wire me.
+      ```
+      {: .embed save="wiring.md" #work }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the slot is in the "draft" state
+
+  Scenario: Only the LESSON's check turns the slot green
+    The learner owns the file, so a check inside it could be weakened or
+    deleted. The card that grades a slot names it with grades= and lives
+    in the vault, where the person being marked cannot reach it.
+
+    Given a connected bench whose "courses/demo/mod/wiring.md" holds "Mine now."
+    And the signed-in learner is "ada"
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # Lesson
+
+      ```markdown
+      Wire me.
+      ```
+      {: .embed save="wiring.md" #work }
+
+      ```gherkin
+      Feature: The marker
+        Scenario: It holds
+          Given nothing
+      ```
+      {: .feature #marker grades="work" visible="true" status="pending" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the slot is in the "draft" state
+    When the lesson's check on the slot passes
+    Then the slot is in the "done" state
+
+  Scenario: The menu greys the transitions that do not apply
+    Given a connected bench whose "courses/demo/mod/wiring.md" does not exist yet
+    And the signed-in learner is "ada"
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # Lesson
+
+      ```markdown
+      Wire me.
+      ```
+      {: .embed save="wiring.md" #work }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    And I open the slot's menu
+    Then "Copy the starter into my space" is offered
+    And "Start over from the lesson's copy" is greyed out

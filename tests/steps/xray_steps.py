@@ -457,3 +457,17 @@ def step_textarea_grew(context):
     assert after["height"] > before["height"] + 40, (
         "the box grew but the field did not: %s -> %s"
         % (before["height"], after["height"]))
+
+
+@when("I hover over the bare to-do button")
+def step_hover_bare_btn(context):
+    btn = context.page.locator('.lc-button[data-lc-id="bare_btn"]')
+    btn.wait_for(state="visible", timeout=15_000)
+    _alt_hover(context.page, btn)
+
+
+@then("the x-ray panel shows a locked def line")
+def step_xray_locked_def(context):
+    head = context.page.locator(".lcx-xray .lcx-def").first
+    expect(head).to_be_visible(timeout=3_000)
+    expect(head).to_contain_text("def on_click(button):")

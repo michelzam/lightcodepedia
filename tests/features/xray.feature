@@ -277,3 +277,15 @@ Feature: X-ray inspector
     When I sweep the lens over the chart
     Then the lens marks "source" as naming nothing
     And the lens draws no part called "adoptions"
+
+  Scenario: A button's lens shows its code behind a locked def line
+    The def line is the engine's; the body is the author's. A bare-body
+    handler still shows the full picture — head dimmed and locked, the
+    single line highlighted below it.
+
+    When I navigate to "/components/button"
+    And I wait for the page to be interactive
+    And I hover over the bare to-do button
+    Then an x-ray panel is visible
+    And the x-ray panel mentions "on_click"
+    And the x-ray panel shows a locked def line
