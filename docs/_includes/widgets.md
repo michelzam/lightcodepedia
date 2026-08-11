@@ -451,8 +451,14 @@ Auto-included by docs/_layouts/default.html.
         { key: "clone", icon: "📋", label: "Copy the starter into my space",
           on: st === "starter" && !!repo,
           why: !repo ? "connect your space first" : "you already have your own copy" },
+        /* A STARTER HAS NO FILE TO OPEN. The frame shows the lesson's copy
+           until the learner saves; opening its bench address then 404s, and
+           the runner — which cannot know this page was never meant to come
+           from the hub — offers a Refresh that can never bring it (Michel,
+           2026-08-11). So the door stays shut until 💾 has made a file. */
         { key: "open", icon: "📄", label: "Open it on its own",
-          on: !!repo, why: "connect your space first" },
+          on: !!repo && st !== "starter",
+          why: !repo ? "connect your space first" : "save it first — there is no file yet" },
         { key: "versions", icon: "🕘", label: "Every version I saved",
           on: st !== "starter", why: "nothing saved yet" },
         { key: "reset", icon: "↺", label: "Start over from the lesson's copy",

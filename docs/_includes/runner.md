@@ -305,7 +305,12 @@ files a student is already working in.
                 fetch("https://api.github.com/repos/" + barSt.repo, { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
                   .then(function (r2) {
                     if (r2.ok)
-                      status.innerHTML = "🔄 Your bench is <b>behind</b> — this page (<code>" + (barSt.path || "") + "</code>) isn’t in it yet. Open your course and <b>Refresh</b> to pull the latest:<br>" +
+                      /* TWO CAUSES, ONE 404, AND THE RUNNER CANNOT TELL THEM
+                         APART: a lesson page the hub has not delivered yet
+                         (Refresh fixes it), or a page the learner builds and
+                         has not saved (only 💾 makes it exist). Naming only
+                         the first sent Michel to Refresh forever. */
+                      status.innerHTML = "📄 Nothing at <code>" + (barSt.path || "") + "</code> in your bench yet — either you haven’t saved this page from its lesson (press 💾 there), or your bench is <b>behind</b> and a Refresh will bring it:<br>" +
                         "<a href=\"" + doorUrl + "\" style=\"display:inline-block;margin:0.4em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">🎓 Open my course → Refresh</a>";
                     else
                       status.innerHTML = "🎒 No bench <code>" + repoName.split("/").slice(0, 2).join("/") + "</code> yet for <b>@" + (d.login || "?") + "</b> — open your course to create one:<br>" +

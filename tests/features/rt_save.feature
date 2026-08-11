@@ -462,3 +462,6 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I open the slot's menu
     Then "Copy the starter into my space" is offered
     And "Start over from the lesson's copy" is greyed out
+    # a starter has no file at that address yet, so the door would 404 and the
+    # runner would offer a Refresh that can never bring it (Michel, 2026-08-11)
+    And "Open it on its own" is greyed out
