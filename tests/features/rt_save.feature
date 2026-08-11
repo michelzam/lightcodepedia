@@ -489,6 +489,23 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     Then a bench stripe names "courses/demo/mod/cv.md"
     And that stripe reads "draft — yours"
 
+  Scenario: Two devices converge, and neither undoes the other
+    The merge is max-per-page, so a phone one lesson behind can never
+    lower a laptop's record — which is why the sync needs no locking and
+    no conflict resolution (Michel, 2026-08-11).
+
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    Then merging a behind device never lowers the record
+
+  Scenario: A hand-edited progress file stops matching its own checksum
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    Then a progress file it wrote reads back intact
+    And the same file with a typed-in line does not
+
   Scenario: The menu greys the transitions that do not apply
     Given a connected bench whose "courses/demo/mod/wiring.md" does not exist yet
     And the signed-in learner is "ada"

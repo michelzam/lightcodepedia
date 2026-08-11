@@ -540,3 +540,39 @@ def step_menu_enabled(context, label):
 def step_menu_disabled(context, label):
     b = context.page.locator(".lc-bench-menu button", has_text=label).first
     expect(b).to_be_disabled(timeout=5_000)
+
+
+@then("merging a behind device never lowers the record")
+def step_merge_monotonic(context):
+    got = context.page.evaluate("""() => {
+      const P = window.lcProgress;
+      const laptop = { "gh:a/b/one": { won: 3, total: 4, green: 2, feats: 2, ts: "2026-08-11T12:00Z" } };
+      const phone  = { "gh:a/b/one": { won: 1, total: 2, green: 0, feats: 2, ts: "2026-08-10T09:00Z" } };
+      const m1 = P.merge(laptop, phone), m2 = P.merge(phone, laptop);
+      return [m1["gh:a/b/one"], m2["gh:a/b/one"]];
+    }""")
+    for side in got:
+        assert side["won"] == 3 and side["total"] == 4 and side["green"] == 2, side
+        assert side["ts"] == "2026-08-11T12:00Z", side
+
+
+@then("a progress file it wrote reads back intact")
+def step_progress_intact(context):
+    ok = context.page.evaluate("""() => {
+      const P = window.lcProgress;
+      const text = P.serialise({ "gh:a/b/one": { won: 2, total: 3, green: 1, feats: 1, ts: "2026-08-11T10:00Z" } });
+      const back = P.parse(text);
+      return back.intact && back.map["gh:a/b/one"].won === 2;
+    }""")
+    assert ok, "a file the engine wrote did not read back intact"
+
+
+@then("the same file with a typed-in line does not")
+def step_progress_tampered(context):
+    flagged = context.page.evaluate("""() => {
+      const P = window.lcProgress;
+      const text = P.serialise({ "gh:a/b/one": { won: 2, total: 3, green: 1, feats: 1, ts: "2026-08-11T10:00Z" } });
+      const hand = text.replace("2/3", "3/3");
+      return !P.parse(hand).intact;
+    }""")
+    assert flagged, "a hand-edited file still matched its checksum"

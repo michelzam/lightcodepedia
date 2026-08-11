@@ -66,6 +66,22 @@ reader arriving mid-course actually has. Both are now answered quietly:
   soft left edge and a small ◉ beside its title. Enough to find yourself in a
   list of five; not enough to look like a selection.
 
+## How far through a module
+
+A **folder card** (a module) carries a hairline on its bottom edge: grey
+track, blue fill, green at 100%. It adds no height — the card never changes
+size — and it stays invisible until the module has something to count.
+
+What it counts is what the module can actually assess: **quizzes answered +
+features turned green**, over every quiz and feature in the module's pages.
+Both come from the reader's own records (`lc_scores`, `lc_features`), keyed
+the same way a card's href is keyed, so the shelf reads them without
+inventing a second convention. The module's census — how many quizzes, how
+many features — is read once and cached for 12 hours.
+
+Progress is **per browser** today. Moving it to the learner's bench, so it
+follows them across devices, is the next step.
+
 ## Notes
 
 - `index.md` is excluded from the file list (it's the listing page itself).

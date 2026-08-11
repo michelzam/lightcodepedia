@@ -44,6 +44,14 @@ Auto-included by docs/_layouts/default.html.
 .lc-card-here { box-shadow: inset 3px 0 0 #93c5fd; }
 .lc-card-here-dot { color: #3b82f6; font-size: 0.7em; margin-left: 0.4em;
   vertical-align: 0.15em; }
+/* HOW FAR THROUGH THIS MODULE — a hairline on the card's bottom edge, so
+   the card never changes size. Nothing at all until there is progress: an
+   untouched module should look untouched, not failed. */
+.lc-card-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: #eef2f7; border-radius: 0 0 8px 8px; overflow: hidden; }
+.lc-card-bar i { display: block; height: 100%; background: #3b82f6;
+  transition: width .4s ease; }
+.lc-card-bar.full i { background: #22c55e; }
 /* the way out of a folder — its own line, under the siblings */
 .lc-folder-up { margin: 0.9em 0 0; font-size: 0.9em; }
 .lc-folder-up a { text-decoration: none; }
@@ -407,6 +415,113 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       }
     }
     var _upPill = null;
+
+    /* ── HOW FAR THROUGH THIS MODULE? (Michel, 2026-08-11) ──────────────
+       A module card says what a module IS and nothing about whether the
+       reader ever finished it. The nudge that works is the one you can see
+       without reading: a hairline at the bottom edge of the card, grey
+       until there is something to show, blue while it fills, green at the
+       end. It adds NO height — it sits on the border, inside the radius.
+
+       What counts is exactly what the module can assess: quizzes answered
+       and features the reader turned green. Both are already recorded, per
+       page, by score.md (lc_scores) and feature.md (lc_features), and both
+       are keyed with lcPageScores.norm(url) — the same spelling a card's
+       own href produces, so a shelf can read another page's record without
+       inventing a second convention.
+
+       The DENOMINATOR needs each page's census (how many quizzes, how many
+       features), which means reading the pages once. That is cached in
+       lc_census against the folder's path, so only the first visit pays. */
+    var CENSUS_TTL = 12 * 3600 * 1000;
+    function censusStore() {
+      try { return JSON.parse(localStorage.getItem("lc_census") || "{}"); }
+      catch (e) { return {}; }
+    }
+    function censusSave(key, val) {
+      try {
+        var all = censusStore();
+        all[key] = { pages: val, ts: Date.now() };
+        localStorage.setItem("lc_census", JSON.stringify(all));
+      } catch (e) {}
+    }
+    /* every .md directly inside a folder, from whichever listing this shelf
+       already holds — the recursive tree in the runner, the manifest on a
+       built site. No call of its own either way. */
+    function pagesUnder(dirPath) {
+      var want = dirPath.replace(/\/+$/, "") + "/";
+      var keep = function (rp) {
+        if (rp.indexOf(want) !== 0) return false;
+        var rest = rp.slice(want.length);
+        return rest.indexOf("/") < 0 && /\.md$/i.test(rest) && !rest.startsWith("_");
+      };
+      return runnerMode
+        ? repoTree().then(function (tree) {
+            return tree.filter(function (t) { return t.type === "blob" && keep(t.path); })
+                       .map(function (t) { return t.path; });
+          })
+        : fetchText("/assets/pages_index.json")
+            .then(function (t) { return (JSON.parse(t) || []).filter(keep); })
+            .catch(function () { return []; });
+    }
+    function censusOf(dirPath) {
+      var key = scanRepo + "|" + dirPath;
+      var hit = censusStore()[key];
+      if (hit && (Date.now() - hit.ts) < CENSUS_TTL) return Promise.resolve(hit.pages);
+      return pagesUnder(dirPath).then(function (paths) {
+        if (!paths.length) return [];
+        return Promise.all(paths.map(function (rp) {
+          var get = runnerMode
+            ? apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" + rp, true)
+            : fetchText(mdUrl(rp));
+          return Promise.resolve(get).then(function (text) {
+            if (typeof text !== "string") return null;
+            return { url: cardUrl(rp), quizzes: countQuizzes(text),
+                     features: scanFeatures(text).length };
+          }).catch(function () { return null; });
+        })).then(function (rows) {
+          var pages = rows.filter(Boolean);
+          if (pages.length) censusSave(key, pages);
+          return pages;
+        });
+      });
+    }
+    /* what the reader has actually done, from their own records */
+    function doneOn(page) {
+      var norm = window.lcPageScores && window.lcPageScores.norm;
+      if (!norm) return 0;
+      var key = norm(page.url);
+      var answered = 0, green = 0;
+      try {
+        var sc = (JSON.parse(localStorage.getItem("lc_scores") || "{}"))[key];
+        answered = Math.min(page.quizzes, (sc && sc.total) || 0);
+      } catch (e) {}
+      try {
+        var fs = JSON.parse(localStorage.getItem("lc_features") || "{}");
+        Object.keys(fs).forEach(function (k) {
+          if (k.indexOf(key + "#") === 0 && fs[k] && fs[k].status === "passing") green++;
+        });
+        green = Math.min(page.features, green);
+      } catch (e) {}
+      return answered + green;
+    }
+    function paintProgress(card) {
+      var dir = card.getAttribute("data-dirpath");
+      if (!dir || card.querySelector(".lc-card-bar")) return;
+      censusOf(dir).then(function (pages) {
+        var total = 0, done = 0;
+        pages.forEach(function (pg) { total += pg.quizzes + pg.features; done += doneOn(pg); });
+        if (!total) return;
+        var pct = Math.max(0, Math.min(100, Math.round(done * 100 / total)));
+        var bar = document.createElement("div");
+        bar.className = "lc-card-bar" + (pct >= 100 ? " full" : "");
+        bar.setAttribute("data-lc-derived", "1");
+        bar.title = done + " of " + total + " done in this module";
+        bar.innerHTML = "<i style='width:" + pct + "%'></i>";
+        card.appendChild(bar);
+      }).catch(function () {});
+    }
+
     /* the page the reader is on, as this shelf would have spelled it */
     function hereUrl() {
       var selfPath = (runRoot && runRoot.dataset.lcSrcPath) || "";
@@ -480,15 +595,20 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         return { title: meta.title || titleCase(name), snippet: meta.snippet, url: cardUrl(rp), features: scanFeatures(text), quizzes: countQuizzes(text), rawHrefs: rawHrefs, date: meta.date || null, path: rp };
       });
     }
+    /* a card's slug is site-relative ("components/examples"); the census
+       reads repo paths, which on a rendered site carry the docs/ prefix */
+    function dirPathOf(slug) {
+      return runnerMode ? slug : ("docs/" + slug).replace(/^docs\/docs\//, "docs/");
+    }
     function subdirItem(slug) {   // slug like "components/examples"
       var pretty = titleCase(slug.split("/").pop());
-      var fallback = { title: "📁 " + pretty, snippet: "", url: "/" + slug, isSubdir: true };
+      var fallback = { title: "📁 " + pretty, snippet: "", url: "/" + slug, isSubdir: true, path: dirPathOf(slug) };
       return fetchText("/" + slug + "/index.md").then(function (text) {
         if (!text) return fallback;
         var meta = extractPageMeta(text);
         /* a folder card IS its index.md — it wears that page's quiz census
            and score chip like any page card (Michel, 2026-07-31) */
-        return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug, isSubdir: true, date: meta.date, quizzes: countQuizzes(text) };
+        return { title: "📁 " + (meta.title || pretty), snippet: meta.snippet, url: "/" + slug, isSubdir: true, path: dirPathOf(slug), date: meta.date, quizzes: countQuizzes(text) };
       }).catch(function () { return fallback; });
     }
     function buildFromManifest(all) {
@@ -885,6 +1005,8 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
            links now or every card 404s under /lightcodelab (data-url attrs
            stay canonical: filtering and ribbons key on them) */
         if (window.lcRebase) window.lcRebase(wrap);
+        /* a module's card carries how far through it the reader is */
+        wrap.querySelectorAll(".lc-card[data-dirpath]").forEach(paintProgress);
 
         /* X-ray workbench: each FILE card gets its ⚙️ (subfolders keep
            their card clean — moving whole trees is not a card gesture) */

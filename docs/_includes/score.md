@@ -182,6 +182,9 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
                     ts: new Date().toISOString() };
       seed = all[PATH];
       saveScores(all);
+      /* the bench copy follows, debounced — progress.md batches a page's
+         work into one commit rather than one per answered quiz (K3) */
+      document.dispatchEvent(new CustomEvent("lc-score-changed"));
     }
 
     function fab(){ return document.querySelector('.lc-score-fab'); }

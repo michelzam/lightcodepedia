@@ -264,6 +264,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       var all = loadResults();
       all[resultKey(card)] = { status: status, ts: new Date().toISOString() };
       localStorage.setItem("lc_features", JSON.stringify(all));
+      /* same debounced write as a quiz: the bench keeps the durable copy */
+      document.dispatchEvent(new CustomEvent("lc-feature-result"));
     } catch (e) {}
   }
   /* on load, a card shows what the reader's last run made of it — the
