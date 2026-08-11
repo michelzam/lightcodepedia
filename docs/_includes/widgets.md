@@ -456,6 +456,33 @@ Auto-included by docs/_layouts/default.html.
         ev.stopPropagation();
         openMenu(st);
       });
+      /* a repaint rewrites the stripe — put the versions handle back, or the
+         second visit to ⋯ opens a panel wired to a button nobody holds */
+      if (versions) head.appendChild(versions.button);
+    }
+
+    /* AN ALERT BOX IS NOT A VERSION LIST. The first cut printed the commit
+       messages into window.alert — no dates you could read, no way to see
+       what a version said, no way to bring it back (Michel, 2026-08-11).
+       The pad and the grid already have the real panel; the slot borrows the
+       same one, opened from ⋯ instead of its own button. "Bring back" here
+       writes a new version rather than staging one: the slot has no separate
+       💾, and nothing is lost — the older text is still in 🕘. */
+    var versions = null;
+    function versionsHandle() {
+      if (versions || !window.lcVersions) return versions;
+      versions = window.lcVersions.attach({
+        path: benchPath, el: box, anchor: head,
+        current: function () { return md; },
+        apply: function (text) {
+          box._lcSlot.save(function () { return text; }, "🕘 back to an earlier version")
+            .catch(function (e) { alert("Could not bring that version back: " + (e.message || e)); });
+        }
+      });
+      versions.button.hidden = false;
+      versions.button.style.display = "none";   /* the ⋯ row is its handle */
+      head.appendChild(versions.button);
+      return versions;
     }
 
     /* ── the transitions, with guards doing the greying ──────────────── */
@@ -511,11 +538,8 @@ Auto-included by docs/_layouts/default.html.
                   + "#src=gh:" + repo + "/" + path;
           window.location.href = url;
         } else if (a === "versions") {
-          window.lcBench.history(benchPath, box, 20).then(function (list) {
-            alert(list.length
-              ? list.map(function (c) { return (c.when || "").slice(0, 16).replace("T", " ") + "  " + c.message; }).join("\n")
-              : "No versions yet.");
-          });
+          var v = versionsHandle();
+          if (v) v.button.click();
         } else if (a === "reset") {
           if (!confirm("Replace your copy with the lesson's? Your saved versions stay in 🕘.")) return;
           window.lcBench.write(benchPath, seed, "↺ start over", sha, box)
