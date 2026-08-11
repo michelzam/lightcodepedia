@@ -511,6 +511,12 @@ def step_open_slot_menu(context):
     context.page.wait_for_selector(".lc-bench-menu", timeout=5_000)
 
 
+@when('I choose "{label}"')
+def step_menu_choose(context, label):
+    context.page.locator(".lc-bench-menu button", has_text=label).first.click()
+    context.page.wait_for_selector(".lc-ver-panel li", timeout=10_000)
+
+
 @then('"{label}" is offered')
 def step_menu_enabled(context, label):
     b = context.page.locator(".lc-bench-menu button", has_text=label).first

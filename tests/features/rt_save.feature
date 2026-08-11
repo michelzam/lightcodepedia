@@ -445,6 +445,30 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When the lesson's check on the slot passes
     Then the slot is in the "done" state
 
+  Scenario: The slot's versions open the real panel, not an alert box
+    The first cut printed commit messages into window.alert — no readable
+    dates, no way to see what a version said, no way to bring it back
+    (Michel, 2026-08-11). It is the same panel the pad and the grid use.
+
+    Given a connected bench whose "courses/demo/mod/wiring.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/wiring.md"
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # Lesson
+
+      ```markdown
+      Wire me.
+      ```
+      {: .embed save="wiring.md" #work }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    And I open the slot's menu
+    And I choose "Every version I saved"
+    Then the list shows 2 saved versions
+    When I compare the oldest version
+    Then the difference is shown line by line
+
   Scenario: The menu greys the transitions that do not apply
     Given a connected bench whose "courses/demo/mod/wiring.md" does not exist yet
     And the signed-in learner is "ada"
