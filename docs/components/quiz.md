@@ -48,7 +48,7 @@ Feature: A task list becomes an interactive quiz
     :::
     Then that option is revealed as right or wrong
     :::python
-    first = self.opts[0]._el
+    first: object = self.opts[0]._el
     assert first.classList.contains("lc-quiz-correct") or first.classList.contains("lc-quiz-wrong")
     assert self.quiz.graded
     :::

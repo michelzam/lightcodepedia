@@ -1757,14 +1757,16 @@ class ImpactMap(Block):
 @component(icon="🎏", attrs=[{"n": "count", "t": "int"}])
 class EventFlow(Block):
     """Event-storming sequence (.event_flow) — the page's story as
-    colored sticky notes: actor → command → event → policy → reader."""
+    colored notes. One beat, under the user who gives it:
+    ui|data → command → [rule] → event."""
     @property
     def count(self):
         return len(self._qq(".lc-ef-step"))
 
     def kinds(self):
         """The sequence of note kinds, in order — so a proof can assert
-        the grammar (a command before its event, a policy after one)."""
+        the grammar (a command before its event, a rule that governs a
+        command rather than issuing one)."""
         return [str(o._el.getAttribute("data-kind") or "") for o in self._qq(".lc-ef-step")]
 
 

@@ -186,13 +186,13 @@ Feature: A record renders a schema-built form and re-emits lossless YAML
     Then it is visible with a form built from the schema
     :::python
     assert self.rec.visible
-    fields = self.rec._qq(".lc-sch-field")
+    fields: list = self.rec._qq(".lc-sch-field")
     assert len(fields) >= 5, "only %d fields" % len(fields)
     assert "Nom affiché" in self.rec.text
     :::
     And the YAML round-trip reports no key loss
     :::python
-    integ = self.rec._q(".lc-rec-integrity").text
+    integ: str = self.rec._q(".lc-rec-integrity").text
     assert "no loss" in integ, integ
     :::
 ```
@@ -207,7 +207,7 @@ Feature: Relations resolve through the index object
     :::
     Then a relation chip shows the resolved title
     :::python
-    chips = [c.text for c in self.rec._qq(".pv-rel")]
+    chips: list[str] = [c.text for c in self.rec._qq(".pv-rel")]
     assert "Révolutions de 1848" in chips, chips
     :::
 ```
@@ -222,7 +222,7 @@ Feature: The record maps its geolocated points
     :::
     Then the map reports two geolocated points
     :::python
-    note = self.rec._q(".lc-rec-map-note").text
+    note: str = self.rec._q(".lc-rec-map-note").text
     assert "2 geolocated" in note, note
     :::
 ```
@@ -237,7 +237,7 @@ Feature: One engine renders a second type with nested widgets
     :::
     Then its form shows the nested Datation and Point widgets
     :::python
-    t = self.ev.text
+    t: str = self.ev.text
     assert "Datation" in t, t
     assert "Point" in t
     :::

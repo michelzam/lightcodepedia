@@ -18,7 +18,7 @@ Feature: A link list becomes a navigation bar
     :::python
     self.labels = None
     for m in Object._all(".lc-menu"):
-        labels = Menu(m._el).items()
+        labels: list[str] = Menu(m._el).items()
         if len(labels) >= 4 and any("Home" in x for x in labels):
             self.labels = labels
     :::

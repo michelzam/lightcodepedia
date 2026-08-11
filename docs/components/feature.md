@@ -115,7 +115,7 @@ Feature: Page component access
     :::
     And bar heights reflect the data order (A < C < B)
     :::python
-    bars = self.page.probe_chart.bars
+    bars: list = self.page.probe_chart.bars
     assert bars[0].value < bars[2].value < bars[1].value, \
         f"expected 3 < 5 < 7, got {[b.value for b in bars]}"
     :::
@@ -164,8 +164,8 @@ Feature: Button handler
     :::
     Then bar B is painted orange
     :::python
-    err = self.page.highlight_btn._attr("data-lc-err") or ""
-    bars = self.page.probe_chart.bars
+    err: str = self.page.highlight_btn._attr("data-lc-err") or ""
+    bars: list = self.page.probe_chart.bars
     self.max_bar = max(bars, key=lambda b: b.value)
     assert self.max_bar.color == "orange", f"expected orange, got {self.max_bar.color!r} | click_err={err!r}"
     :::
@@ -176,7 +176,7 @@ Feature: Button handler
     :::
     And it is bar B not A or C
     :::python
-    bars = self.page.probe_chart.bars
+    bars: list = self.page.probe_chart.bars
     assert self.max_bar.value > bars[0].value
     assert self.max_bar.value > bars[2].value
     :::

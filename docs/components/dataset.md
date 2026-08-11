@@ -222,9 +222,9 @@ Feature: A check can read the rows, not just count them
     :::python
     assert self.all.count == 3, self.all.count
     assert self.waiting.count == 2, self.waiting.count
-    mets = self.waiting.values("met")
-    names = self.waiting.values("family")
-    bad = [n for n, m in zip(names, mets) if m]
+    mets: list[str] = self.waiting.values("met")
+    names: list[str] = self.waiting.values("family")
+    bad: list[str] = [n for n, m in zip(names, mets) if m]
     assert not bad, "already met: " + str(bad)
     assert "Nguyen" in names, names
     :::

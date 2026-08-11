@@ -87,16 +87,28 @@ def check_page(path, text):
     # and the list stops being the place you look a tag up. Expert sources are
     # not deleted, they stop being footnotes: an inline link in the prose is
     # where a curious reader wants Fowler or Adzic anyway.
-    for k in sorted(defs - tags):
-        problems.append(f'FN-NOT-A-TAG  [^{k}] is not a tag on this page. '
+    # ONE NAME, TWO SPELLINGS. A tag is an identifier the engine knows
+    # (`event_flow`) but the chip renders it as words, and a lesson writes
+    # words too — so `tags="event flow"` beside `[^event_flow]:` is the same
+    # tag said twice, not a broken page (Michel, 2026-08-11). Match on the
+    # snake_case form; report whatever the author actually typed.
+    def key(x):
+        return x.replace(" ", "_")
+
+    ktags = {key(t): t for t in tags}
+    kdefs = {key(d): d for d in defs}
+    krefs = {key(r) for r in refs}
+
+    for k in sorted(set(kdefs) - set(ktags)):
+        problems.append(f'FN-NOT-A-TAG  [^{kdefs[k]}] is not a tag on this page. '
                         f"Footnotes are for tags only — make it prose, or an "
                         f"inline link if it is a source.")
-    for k in sorted(defs - set(refs)):
-        problems.append(f"ORPHAN-DEF    [^{k}] defined, never referenced")
-    for k in sorted(set(refs) - defs):
+    for k in sorted(set(kdefs) - krefs):
+        problems.append(f"ORPHAN-DEF    [^{kdefs[k]}] defined, never referenced")
+    for k in sorted(krefs - set(kdefs)):
         problems.append(f"DANGLING-REF  [^{k}] referenced, never defined")
-    for k in sorted(tags - defs):
-        problems.append(f'TAG-NO-DEF    tag "{k}" has no footnote')
+    for k in sorted(set(ktags) - set(kdefs)):
+        problems.append(f'TAG-NO-DEF    tag "{ktags[k]}" has no footnote')
     for k, pos in sorted(refs.items()):
         if all(in_fence(p, spans) for p in pos):
             problems.append(f"REF-IN-FENCE  [^{k}] only referenced inside a fence")
@@ -104,8 +116,11 @@ def check_page(path, text):
     body = text
     for a, b in reversed(spans):
         body = body[:a] + " " * (b - a) + body[b:]
+    # A TAG IS AN IDENTIFIER; PROSE IS FOR PEOPLE. Same rule as above, on
+    # the sentence side: `event flow` and `event_flow` are one word.
+    spoken = {key(m.group(1)) for m in re.finditer(r"`([^`\n]+)`", body)}
     for t in sorted(tags):
-        if f"`{t}`" not in body:
+        if key(t) not in spoken:
             problems.append(f'TAG-NO-PROSE  tag "{t}" is never used in backticked prose')
 
     problems.extend(verb_problems(body))
@@ -115,6 +130,8 @@ def check_page(path, text):
                            capture_output=True, text=True)
         if p.returncode != 0:
             problems.append(f"DOT-FAIL      block {i + 1}: {p.stderr.strip()[:110]}")
+
+    problems.extend(hint_problems(text))
 
     m = re.search(r"^```yaml\n(bot:.*?)^```", text, re.S | re.M)
     if m:
@@ -130,6 +147,51 @@ def check_page(path, text):
             if missing:
                 problems.append(f'AVATAR-ANCHOR at: {a} resolves to nothing')
     return problems
+
+
+# ── step code is documentation (Michel, 2026-08-11) ──────────────────────
+# "python code, even in features, should use hints (for doc reason! at
+# least)." A step block is the first Python most learners read closely, and
+# it is read WITHOUT running it — so `kinds = self.flow.kinds()` says nothing
+# about what comes back, while `kinds: list[str] = ...` answers the only
+# question a beginner has. MicroPython parses annotations and ignores them,
+# so this costs nothing at runtime.
+#
+# Only the FIRST binding of a plain local name is checked. A reassignment
+# (`v = int(num)` after `v: int | None = None`) is annotated once, like real
+# Python; `self.x = …` carries its meaning in the scenario's own sentence;
+# and a class body that declares its types inside the call (`Attr(float, …)`)
+# is already saying it.
+_ASSIGN = re.compile(r"^(\s*)([a-z_][a-z_0-9]*)\s*=\s*\S")
+_DECLARED = re.compile(r"^\s*([a-z_][a-z_0-9]*)\s*:\s*[^=]+=")
+
+
+def hint_problems(text):
+    out, seen, inblk = [], set(), False
+    for line in text.split("\n"):
+        st = line.strip()
+        if st == ":::python":
+            inblk, seen = True, set()
+            continue
+        if st == ":::":
+            inblk = False
+            continue
+        if not inblk:
+            continue
+        d = _DECLARED.match(line)
+        if d:
+            seen.add(d.group(1))
+            continue
+        m = _ASSIGN.match(line)
+        if not m:
+            continue
+        name = m.group(2)
+        if name in seen:
+            continue
+        seen.add(name)
+        out.append(f"STEP-NO-HINT  {name} = … needs a type hint "
+                   f"({name}: list[str] = …) — step code is read, not run.")
+    return out
 
 
 # ── the verb rule (Michel, standing) ─────────────────────────────────────

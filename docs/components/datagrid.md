@@ -183,7 +183,7 @@ Feature: A data block becomes an interactive grid
     :::
     Then only Tokyo's two dogs remain in the detail
     :::python
-    n = self.dogs.row_count
+    n: int = self.dogs.row_count
     assert n == 2, f"detail shows {n} row(s) after select"
     :::
 ```

@@ -21,6 +21,45 @@ def step_ef_kind(context, fid, n, kind):
     expect(chip).to_have_attribute("data-kind", kind, timeout=EF_TIMEOUT)
 
 
+@then('the event flow "{fid}" groups its steps under {n:d} users')
+def step_ef_groups(context, fid, n):
+    expect(_flow(context, fid).locator(".lc-ef-who")).to_have_count(
+        n, timeout=EF_TIMEOUT
+    )
+
+
+@then('the event flow "{fid}" reads in {n:d} lines')
+def step_ef_lines(context, fid, n):
+    expect(_flow(context, fid).locator(".lc-ef-line")).to_have_count(
+        n, timeout=EF_TIMEOUT
+    )
+
+
+@then('line {n:d} of "{fid}" begins with a "{kind}" note')
+def step_ef_line_head(context, n, fid, kind):
+    chip = _flow(context, fid).locator(".lc-ef-line").nth(n - 1).locator(".lc-ef-step").first
+    expect(chip).to_have_attribute("data-kind", kind, timeout=EF_TIMEOUT)
+
+
+@then('no line of "{fid}" begins with a "{kind}" note')
+def step_ef_no_line_head(context, fid, kind):
+    lines = _flow(context, fid).locator(".lc-ef-line")
+    expect(lines.first).to_be_visible(timeout=EF_TIMEOUT)
+    for i in range(lines.count()):
+        first = lines.nth(i).locator(".lc-ef-step").first
+        got = first.get_attribute("data-kind")
+        assert got != kind, f"line {i + 1} opens with a {kind} note"
+
+
+@then('every "{kind}" note in "{fid}" starts with "{glyph}"')
+def step_ef_glyph(context, kind, fid, glyph):
+    notes = _flow(context, fid).locator(f".lc-ef-step[data-kind='{kind}']")
+    expect(notes.first).to_be_visible(timeout=EF_TIMEOUT)
+    for i in range(notes.count()):
+        text = notes.nth(i).inner_text()
+        assert text.startswith(glyph), f"{kind} note {i + 1} reads {text!r}"
+
+
 @then('the event flow "{fid}" shows its legend')
 def step_ef_legend(context, fid):
     expect(_flow(context, fid).locator(".lc-ef-legend")).to_be_visible(
