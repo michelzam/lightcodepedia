@@ -29,6 +29,14 @@ converge with no locking and no conflict resolution. Same rule score.md
 already applies locally (K3: localStorage is the working copy, the bench
 file is the durable record).
 
+WHEN IT WRITES: on a save the learner already asked for. No timer — Michel
+2026-08-11: *"I'm not a big fan of timers, some students can be quick,
+problems can arrive."* Every 💾 fires lc-bench-write and this rides along,
+which works because the file holds EVERY page's counts: a quiz answered on
+a page with no save still travels the next time anything is saved. The one
+implicit write left is the flush on leaving, for the tail case of quizzes
+answered and the tab closed.
+
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
@@ -39,7 +47,6 @@ Auto-included by docs/_layouts/default.html.
 
   var FILE = "/progress.txt";          /* bench root: it outlives one lesson */
   var HEAD = "# lc-progress v1";
-  var WRITE_AFTER = 4000;              /* one commit per page, not per quiz */
 
   /* CRC32 — small, standard, and enough to say "this file was edited by
      something other than the app". Not a signature: it cannot be, since the
@@ -149,7 +156,7 @@ Auto-included by docs/_layouts/default.html.
     return changed;
   }
 
-  var sha = null, loaded = false, timer = null, lastWritten = "";
+  var sha = null, loaded = false, lastWritten = "";
 
   /* ONCE PER SESSION, NOT ONCE PER PAGE. A learner walks five lesson pages
      in a module; re-reading the same file five times is five requests to
@@ -184,9 +191,9 @@ Auto-included by docs/_layouts/default.html.
     if (!t.repo || !t.pat) return Promise.resolve(false);
     var mine = rows();
     if (!Object.keys(mine).length) return Promise.resolve(false);
-    /* NOTHING NEW IS NOT A COMMIT. The timer and the page-leave hook both
-       call this, so a page whose work was already written would commit the
-       same bytes twice — noise in the very history the gradebook reads. */
+    /* NOTHING NEW IS NOT A COMMIT. Several saves on one page each call
+       this, and so does leaving — without a guard the same bytes land
+       twice, which is noise in the very history the gradebook reads. */
     var fingerprint = serialise(mine);
     if (fingerprint === lastWritten) return Promise.resolve(false);
     lastWritten = fingerprint;
@@ -201,24 +208,27 @@ Auto-included by docs/_layouts/default.html.
     }).catch(function () { return false; });
   }
 
-  function schedule() {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(function () { timer = null; flush(); }, WRITE_AFTER);
-  }
+  /* NO TIMER (Michel, 2026-08-11: *"I'm not a big fan of timers, some
+     students can be quick, problems can arrive"*). The record rides on a
+     write the learner already asked for — every 💾 on a pad, a grid or a
+     page slot. It costs no new request pattern and no new gesture, and it
+     lands at the moment they are already thinking "keep this".
 
-  /* a page's worth of work is one commit: quizzes and runs both nudge the
-     same timer, and leaving the page flushes whatever is still pending */
-  document.addEventListener("lc-score-changed", schedule);
-  document.addEventListener("lc-feature-result", schedule);
+     It works because progress.txt carries EVERY page's counts, not just
+     this page's: a quiz answered on a page with no 💾 still travels the
+     next time they save anything, anywhere. */
+  document.addEventListener("lc-bench-write", function (ev) {
+    var path = (ev && ev.detail && ev.detail.path) || "";
+    if (path.indexOf("progress.txt") >= 0) return;   /* our own write */
+    flush();
+  });
   /* LEAVING IS THE OTHER TRIGGER, AND ON A PHONE IT IS NOT `pagehide`.
      iOS backgrounds a tab without firing pagehide reliably —
-     visibilitychange is the hook that always fires there, and losing the
-     last commit of a session is exactly the case this feature exists for.
-     keepalive lets the request outlive the page it started in. */
-  function leaving() {
-    if (timer) { clearTimeout(timer); timer = null; }
-    flush();
-  }
+     visibilitychange is the hook that always fires there. This is the ONLY
+     implicit write left, and it exists for one case: quizzes answered on a
+     page the learner then closes without saving anything. The fingerprint
+     guard makes it a no-op whenever the work already travelled. */
+  function leaving() { flush(); }
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") leaving();
   });

@@ -489,6 +489,19 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     Then a bench stripe names "courses/demo/mod/cv.md"
     And that stripe reads "draft — yours"
 
+  Scenario: The record rides on a save the learner already asked for
+    No timer: a 💾 on a pad is an intentional moment, so the progress
+    record travels with it. It works because progress.txt carries EVERY
+    page's counts, so a quiz answered on a page with no save still leaves
+    on the next save anywhere (Michel, 2026-08-11).
+
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And a quiz on this page is answered
+    And I type "# Mine now" into the pad and save
+    Then the bench received a commit to "progress.txt" containing "gh:"
+
   Scenario: Two devices converge, and neither undoes the other
     The merge is max-per-page, so a phone one lesson behind can never
     lower a laptop's record — which is why the sync needs no locking and

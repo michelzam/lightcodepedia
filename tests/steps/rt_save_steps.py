@@ -576,3 +576,15 @@ def step_progress_tampered(context):
       return !P.parse(hand).intact;
     }""")
     assert flagged, "a hand-edited file still matched its checksum"
+
+
+@when("a quiz on this page is answered")
+def step_fake_quiz(context):
+    """Write the record score.md would write — the page under test has no
+    quiz of its own, and what is being proved is the RIDE, not the quiz."""
+    context.page.evaluate("""() => {
+      const key = window.lcPageScores.norm();
+      const all = JSON.parse(localStorage.getItem("lc_scores") || "{}");
+      all[key] = { won: 1, total: 1, quizzes: 1, ts: "2026-08-11T10:00:00Z" };
+      localStorage.setItem("lc_scores", JSON.stringify(all));
+    }""")

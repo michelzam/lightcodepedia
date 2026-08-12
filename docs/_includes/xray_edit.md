@@ -962,7 +962,14 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
              key-grant gap is visible instead of mystifying. */
           if (r.status === 404) throw new Error("your key can't write to " + t.repo + " — reconnect with a key that covers your space");
           if (!r.ok) throw new Error("HTTP " + r.status);
-          return r.json().then(function (j) { return (j.content && j.content.sha) || ""; });
+          return r.json().then(function (j) {
+            /* A SAVE IS THE MOMENT THE LEARNER MEANT SOMETHING (Michel,
+               2026-08-11). Anything that wants to ride along on an
+               intentional write — the progress record does — listens here,
+               so nothing needs a timer of its own. */
+            try { document.dispatchEvent(new CustomEvent("lc-bench-write", { detail: { path: path } })); } catch (e) {}
+            return (j.content && j.content.sha) || "";
+          });
         });
     }
   };
