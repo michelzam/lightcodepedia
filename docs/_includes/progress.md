@@ -1,7 +1,7 @@
 {%- comment -%}
 Progress — the learner's own record of how far they got, in their bench.
 
-  /progress.txt   at the bench root, one line per page:
+  /__progress.txt   at the bench root, one line per page:
 
     # lc-progress v1
     gh:org/repo/courses/c/mod/page  3/4  2/2  2026-08-11T18:04Z
@@ -45,7 +45,13 @@ Auto-included by docs/_layouts/default.html.
   if (window._lcProgressReady) return;
   window._lcProgressReady = true;
 
-  var FILE = "/progress.txt";          /* bench root: it outlives one lesson */
+  /* DUNDER: PRIVATE, AND IT NEVER TRAVELS (Michel, 2026-08-12). The bench
+     root is also a place people publish from — the lab itself is a bench
+     when he tests. `__` is the one travel rule (code_chrome's lcTravels),
+     so a record named this way is structurally incapable of reaching a
+     course mirror, a hub, or pedia. His own test progression stays his. */
+  var FILE = "/__progress.txt";        /* bench root: it outlives one lesson */
+  var WAS  = "/progress.txt";          /* pre-dunder benches — read, never written */
   var HEAD = "# lc-progress v1";
 
   /* CRC32 — small, standard, and enough to say "this file was edited by
@@ -174,7 +180,13 @@ Auto-included by docs/_layouts/default.html.
     loaded = true;
     var t = window.lcBench.target(document.body) || {};
     if (!t.repo || !t.pat) return Promise.resolve(false);
+    /* one migration, no ceremony: a bench written before the rename still
+       has the old name — read it once, and the next flush lands the dunder */
     return window.lcBench.read(FILE, document.body).then(function (f) {
+      return f ? f : window.lcBench.read(WAS, document.body).then(function (old) {
+        return old ? { text: old.text, sha: null } : null;
+      });
+    }).then(function (f) {
       if (!f) return false;
       sha = f.sha;
       markRead();
@@ -214,12 +226,12 @@ Auto-included by docs/_layouts/default.html.
      page slot. It costs no new request pattern and no new gesture, and it
      lands at the moment they are already thinking "keep this".
 
-     It works because progress.txt carries EVERY page's counts, not just
+     It works because __progress.txt carries EVERY page's counts, not just
      this page's: a quiz answered on a page with no 💾 still travels the
      next time they save anything, anywhere. */
   document.addEventListener("lc-bench-write", function (ev) {
     var path = (ev && ev.detail && ev.detail.path) || "";
-    if (path.indexOf("progress.txt") >= 0) return;   /* our own write */
+    if (path.indexOf("progress.txt") >= 0) return;   /* our own write (either name) */
     flush();
   });
   /* LEAVING IS THE OTHER TRIGGER, AND ON A PHONE IT IS NOT `pagehide`.
