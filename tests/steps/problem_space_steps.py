@@ -143,3 +143,15 @@ def step_calc(context, cid, field):
     expect(_card(context, "pitch", cid).locator(".lc-pitch-calc").first).to_be_visible(
         timeout=PS_TIMEOUT
     )
+
+
+@then('the pitch "{cid}" shows {n:d} lines')
+def step_pitch_lines(context, cid, n):
+    lines = _card(context, "pitch", cid).locator(".lc-pitch-line")
+    expect(lines).to_have_count(n, timeout=15_000)
+
+
+@then('the pitch line "{field}" of "{cid}" reads "{text}"')
+def step_pitch_line_reads(context, cid, field, text):
+    line = _card(context, "pitch", cid).locator(f'.lc-pitch-line[data-field="{field}"]')
+    expect(line).to_contain_text(text, timeout=15_000)

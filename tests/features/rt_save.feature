@@ -486,8 +486,38 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       """
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
-    Then a bench stripe names "courses/demo/mod/cv.md"
+    Then a bench stripe names "mod/cv.md"
+    And that stripe keeps the full path "courses/demo/mod/cv.md" in its tooltip
     And that stripe reads "draft — yours"
+
+  Scenario: A page in my space holds my files without stacking frames
+    Michel, 2026-08-12: *"why having multiple levels?"* — a bench page
+    rendered inside a lesson can hold saving blocks of its own, and each
+    one drew its own stripe inside the first. One frame says "your space";
+    a second one inside it says nothing new.
+
+    Given a connected bench whose "courses/demo/mod/page.md" holds the document:
+      """
+      # My page
+
+      ```yaml
+      role: Shelter coordinator
+      ```
+      {: .persona #who save="../mod/persona.yaml" }
+      """
+    And the GitHub contents API serves "courses/demo/mod/lesson2.md" with the document:
+      """
+      # Lesson
+
+      ```markdown
+      # Starter
+      ```
+      {: .embed save="page.md" #mine }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson2.md"
+    And I wait for the page to be interactive
+    Then the page shows 1 bench stripe
+    And the persona inside it still rendered
 
   Scenario: The record rides on a save the learner already asked for
     No timer: a 💾 on a pad is an intentional moment, so the progress

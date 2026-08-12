@@ -46,8 +46,19 @@ Auto-included by docs/_layouts/default.html.
 @media (max-width: 560px) { .lc-empathy { grid-template-columns: 1fr; } }
 
 .lc-pitch { border: 1px solid #e5e7eb; border-left: 4px solid #7b6cf6; border-radius: 0 10px 10px 0; margin: 1em 0; background: #fff; padding: 0.9em 1.1em; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.lc-pitch-text { font-size: 1.02em; line-height: 1.8; color: #111827; }
+/* ONE BLANK PER LINE (Michel, 2026-08-12: *"the display should show them in
+   different lines to make the reading and checking easy"*). The pitch is a
+   sentence, but it is READ as a form: you check it blank by blank, and a
+   missing one has to be findable at a glance instead of hunted inside a
+   paragraph. The connectives keep the sentence audible top to bottom. */
+.lc-pitch-text { font-size: 1.02em; line-height: 1.5; color: #111827; }
 .lc-pitch-text b { color: #4c3fd4; }
+.lc-pitch-line { display: grid; grid-template-columns: 4.4em 1fr; gap: 0.5em;
+                 align-items: baseline; padding: 0.12em 0; }
+.lc-pitch-lead { color: #6b7280; font-size: 0.86em; text-align: right; }
+@media (max-width: 560px) {
+  .lc-pitch-line { grid-template-columns: 3.2em 1fr; gap: 0.35em; }
+}
 .lc-pitch-blank { color: #9ca3af; letter-spacing: 0.1em; }
 /* a derived blank: filled by a wire, not by typing */
 .lc-pitch-calc { color: #4c3fd4; border-bottom: 2px dotted #a5b4fc; cursor: help; }
@@ -333,9 +344,9 @@ Auto-included by docs/_layouts/default.html.
 
   /* ── .pitch — the assembled two sentences, one emoji per blank ────── */
   var SHAPE = [
-    ["For ", "who", "👥"], [" who ", "need", "🎯"], [", ", "product", "📦"],
-    [" is a ", "category", "🗂️"], [" that ", "benefit", "💎"],
-    [". Unlike ", "alternative", "🆚"], [", it ", "difference", "⚡"], [".", null, ""]
+    ["For", "who", "👥"], ["who", "need", "🎯"], ["our", "product", "📦"],
+    ["is a", "category", "🗂️"], ["that", "benefit", "💎"],
+    ["Unlike", "alternative", "🆚"], ["it", "difference", "⚡"]
   ];
   /* who = the persona this pitch reads. A pitch that names a persona does not
      get to invent its own audience — the knob IS the answer, so who is
@@ -349,14 +360,17 @@ Auto-included by docs/_layouts/default.html.
   function pitchHtml(p, ref) {
     var who = pitchWho(p, ref);
     var text = SHAPE.map(function (part) {
-      var lead = escapeHtml(part[0]);
-      if (!part[1]) return lead;
       var v = part[1] === "who" ? who.v : p[part[1]];
       var calc = part[1] === "who" && who.calc;
+      var body;
       if (v && calc)
-        return lead + part[2] + " <b class='lc-pitch-calc' title='read from #" + escapeHtml(ref) + "'>" + escapeHtml(v) + "</b>";
-      return lead + part[2] + " " + (v ? "<b>" + escapeHtml(v) + "</b>"
-                       : "<span class='lc-pitch-blank' title='" + part[1] + "'>＿＿＿</span>");
+        body = "<b class='lc-pitch-calc' title='read from #" + escapeHtml(ref) + "'>" + escapeHtml(v) + "</b>";
+      else
+        body = v ? "<b>" + escapeHtml(v) + "</b>"
+                 : "<span class='lc-pitch-blank' title='" + part[1] + "'>＿＿＿</span>";
+      return "<div class='lc-pitch-line' data-field='" + part[1] + "'>"
+        + "<span class='lc-pitch-lead'>" + escapeHtml(part[0]) + "</span>"
+        + "<span>" + part[2] + " " + body + "</span></div>";
     }).join("");
     var meta = ref
       ? "<div class='lc-pitch-meta'><a class='lc-pitch-chip' href='#" + escapeHtml(ref) + "'>👤 reads #" + escapeHtml(ref) + "</a></div>"

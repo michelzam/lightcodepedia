@@ -88,11 +88,38 @@ Feature: Problem space — persona, pitch, impact map
     Then the pitch "drifting" reads "Shelter coordinator"
     And the pitch "drifting" shows a drift warning
 
-  Scenario: A tag reads as words, and keeps its name
-    When I navigate to "/components/impact_map"
+  Scenario: The pitch reads as a form — one blank per line
+    Michel, 2026-08-12: *"the display should show them in different lines
+    to make the reading and checking easy."* The pitch is a sentence, but
+    it is checked blank by blank, and a missing one must be findable at a
+    glance instead of hunted inside a paragraph.
+
+    When I navigate to "/components/pitch"
     And I wait for the page to be interactive
-    Then the proof "impact_map_proof" shows the tag "impact map"
-    And the proof "impact_map_proof" carries the tag name "impact_map"
+    Then the pitch "demo_pitch" shows 7 lines
+    And the pitch line "benefit" of "demo_pitch" reads "no family pays before meeting the dog"
+
+  Scenario: A tag reads as words, and keeps its name
+    Names are snake_case (doctrine 2) and readers are not. The chip shows
+    the reader's version; data-tag keeps the author's, so a filter still
+    matches. Served through the runner because the catalog itself now
+    speaks in single words — the rule outlives the vocabulary.
+
+    Given the GitHub contents API serves "courses/demo/tagged.md" with the document:
+      """
+      # Tagged
+
+      ```gherkin
+      Feature: A named thing
+        Scenario: It is named
+          Given nothing
+      ```
+      {: .feature #named_proof visible="true" tags="impact_map" status="pending" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/tagged.md"
+    And I wait for the page to be interactive
+    Then the proof "named_proof" shows the tag "impact map"
+    And the proof "named_proof" carries the tag name "impact_map"
 
   Scenario: The impact map renders all four levels
     When I navigate to "/components/impact_map"

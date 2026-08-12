@@ -68,6 +68,13 @@ def step_bench_with(context, path, text):
     _stub_bench(context, {path: text.replace("\\n", "\n")})
 
 
+@given('a connected bench whose "{path}" holds the document')
+def step_bench_with_doc(context, path):
+    """Same, with the file's body in a docstring — a page in their space can
+    be several lines and carry components of its own."""
+    _stub_bench(context, {path: context.text})
+
+
 @then("the pad shows the author's starter")
 def step_pad_starter(context):
     ta = context.page.locator(".lc-mdpad-in").first
@@ -510,6 +517,14 @@ def step_stripe_path(context, path):
     context._lc_stripe = stripe
 
 
+@then('that stripe keeps the full path "{path}" in its tooltip')
+def step_stripe_title(context, path):
+    """The chip shows the address inside the course; the whole path is one
+    hover away, for the moment a learner needs to find the file in their repo."""
+    got = context._lc_stripe.get_attribute("title")
+    assert got == path, f"tooltip is {got!r}, expected {path!r}"
+
+
 @then('that stripe reads "{label}"')
 def step_stripe_state(context, label):
     chip = context.page.locator(".lc-bench-lite .lc-bench-state").first
@@ -588,3 +603,18 @@ def step_fake_quiz(context):
       all[key] = { won: 1, total: 1, quizzes: 1, ts: "2026-08-11T10:00:00Z" };
       localStorage.setItem("lc_scores", JSON.stringify(all));
     }""")
+
+
+@then("the page shows {n:d} bench stripe")
+@then("the page shows {n:d} bench stripes")
+def step_stripe_count(context, n):
+    """One frame per space, not one per file: a saving block inside a bench
+    slot renders bare — the frame around it already named the owner."""
+    context.page.wait_for_timeout(600)
+    got = context.page.locator(".lc-bench-slot").count()
+    assert got == n, f"expected {n} bench frame(s), found {got}"
+
+
+@then("the persona inside it still rendered")
+def step_nested_persona(context):
+    expect(context.page.locator(".lc-persona").first).to_be_visible(timeout=15_000)

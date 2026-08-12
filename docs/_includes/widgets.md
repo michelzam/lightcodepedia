@@ -391,6 +391,16 @@ Auto-included by docs/_layouts/default.html.
                repaint: function () { if (real) real.repaint(); },
                setMine: function (v) { want = !!v; if (real) real.setMine(v); } };
     }
+    /* ONE FRAME PER SPACE, NOT ONE PER FILE (Michel, 2026-08-12: *"why
+       having multiple levels?"*). A page in the learner's bench, rendered
+       inside a lesson, can hold saving blocks of its own — and each one
+       drew its own stripe inside the first, three headers deep for one
+       idea: this is your space. The outer frame already said it. Inside a
+       slot the blocks render bare, and the checking moves where it belongs:
+       a feature on the lesson page that reads their files. */
+    if (el.closest && el.closest(".lc-bench-slot")) {
+      return { el: el, repaint: function () {}, setMine: function () {} };
+    }
     var box = document.createElement("div");
     box.className = "lc-bench-slot lc-bench-lite";
     el.parentNode.insertBefore(box, el);
@@ -433,7 +443,8 @@ Auto-included by docs/_layouts/default.html.
       try { full = window.lcBench ? window.lcBench.resolve(path, box) : path; } catch (e) {}
       head.innerHTML = pic +
         "<span class='lc-bench-who'>" + (repo ? "@" + escapeHtml(login) : "your space") + "</span>" +
-        "<span class='lc-bench-path'>" + escapeHtml(repo ? full : "not connected yet") + "</span>" +
+        "<span class='lc-bench-path' title='" + escapeHtml(full) + "'>" +
+          escapeHtml(repo ? benchLabel(full) : "not connected yet") + "</span>" +
         "<span class='lc-bench-state " + STATES[st][1] + "'>" + STATES[st][0] + "</span>";
     }
     document.addEventListener("lc-model-changed", function () { if (box.isConnected) paint(); });
@@ -441,6 +452,16 @@ Auto-included by docs/_layouts/default.html.
     return { el: box, repaint: paint,
              setMine: function (v) { mine = !!v; paint(); } };
   };
+
+  /* WHAT A LEARNER NEEDS TO READ IS THE ADDRESS INSIDE THEIR COURSE, not the
+     whole path (Michel, 2026-08-12: *"the file names should be displayed
+     relative to course's root — ex module_03/pitch.md, not the whole path"*).
+     `courses/micro_build_ai/` is the same on every slot on every page, so it
+     is pure noise in a chip that has to fit next to an avatar. The full path
+     stays in the tooltip for the one moment it matters. */
+  function benchLabel(p) {
+    return String(p || "").replace(/^courses\/[^/]+\//, "");
+  }
 
   /* one wording for every state, wherever the frame appears */
   var STATES = {
@@ -527,8 +548,10 @@ Auto-included by docs/_layouts/default.html.
       var who = repo
         ? "<span class='lc-bench-who'>@" + escapeHtml(login) + "</span>"
         : "<span class='lc-bench-who'>your space</span>";
+      var full = path || benchPath;
       var where = repo
-        ? "<span class='lc-bench-path'>" + escapeHtml(path || benchPath) + "</span>"
+        ? "<span class='lc-bench-path' title='" + escapeHtml(full) + "'>" +
+            escapeHtml(benchLabel(full)) + "</span>"
         : "<span class='lc-bench-path'>not connected yet</span>";
       var st = computeState();
       box.setAttribute("data-state", st);
