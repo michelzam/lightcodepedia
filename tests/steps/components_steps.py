@@ -387,11 +387,12 @@ def step_title_tags(context, names):
 
 @then("the tags sit inside the page title")
 def step_title_tags_inline(context):
+    # the chip's OWN h1 — on a runner page the document's first h1 is the
+    # host page's hidden title, not the rendered document's
     inside = context.page.evaluate(
         """() => {
              const chip = document.querySelector('.lc-title-tag');
-             const h1 = document.querySelector('h1');
-             return !!(chip && h1 && h1.contains(chip));
+             return !!(chip && chip.closest('h1'));
            }""")
     assert inside, "the tag chips are not inside the h1 — the title gained a line"
 

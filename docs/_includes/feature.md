@@ -934,6 +934,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
   var _origScan = window.lcScanElement;
   window.lcScanElement = function(root) {
     if (_origScan) _origScan(root);
+    /* A COURSE PAGE IS A PAGE TOO. Lesson pages arrive through the runner, so
+       their h1 does not exist at DOMContentLoaded — they get their tags here
+       instead. Page-level render only (#lc-run): an embedded demo or an
+       editor preview must never stamp its host page's title. */
+    if (root && root.id === "lc-run") paintTitleTags(root);
     root.querySelectorAll(".feature").forEach(upgradeFeature);
     root.querySelectorAll(".steps").forEach(upgradeSteps);
     buildSuite(root);
