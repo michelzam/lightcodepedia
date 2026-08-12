@@ -149,16 +149,28 @@ Auto-included by docs/_layouts/default.html.
     return changed;
   }
 
-  var sha = null, loaded = false, timer = null;
+  var sha = null, loaded = false, timer = null, lastWritten = "";
+
+  /* ONCE PER SESSION, NOT ONCE PER PAGE. A learner walks five lesson pages
+     in a module; re-reading the same file five times is five requests to
+     learn nothing new. sessionStorage forgets on close, which is exactly
+     when a second device may have moved. */
+  function readAlready() {
+    try { return sessionStorage.getItem("lc_progress_read") === "1"; } catch (e) { return false; }
+  }
+  function markRead() {
+    try { sessionStorage.setItem("lc_progress_read", "1"); } catch (e) {}
+  }
 
   function load() {
-    if (loaded || !window.lcBench) return Promise.resolve(false);
+    if (loaded || readAlready() || !window.lcBench) return Promise.resolve(false);
     loaded = true;
     var t = window.lcBench.target(document.body) || {};
     if (!t.repo || !t.pat) return Promise.resolve(false);
     return window.lcBench.read(FILE, document.body).then(function (f) {
       if (!f) return false;
       sha = f.sha;
+      markRead();
       var got = parse(f.text);
       var did = adopt(got.map);
       if (did) document.dispatchEvent(new CustomEvent("lc-progress-loaded"));
@@ -172,6 +184,12 @@ Auto-included by docs/_layouts/default.html.
     if (!t.repo || !t.pat) return Promise.resolve(false);
     var mine = rows();
     if (!Object.keys(mine).length) return Promise.resolve(false);
+    /* NOTHING NEW IS NOT A COMMIT. The timer and the page-leave hook both
+       call this, so a page whose work was already written would commit the
+       same bytes twice — noise in the very history the gradebook reads. */
+    var fingerprint = serialise(mine);
+    if (fingerprint === lastWritten) return Promise.resolve(false);
+    lastWritten = fingerprint;
     /* re-read before writing: the other device may have moved since load,
        and merging what is there is the whole reason this needs no locking */
     return window.lcBench.read(FILE, document.body).then(function (f) {
@@ -192,7 +210,19 @@ Auto-included by docs/_layouts/default.html.
      same timer, and leaving the page flushes whatever is still pending */
   document.addEventListener("lc-score-changed", schedule);
   document.addEventListener("lc-feature-result", schedule);
-  window.addEventListener("pagehide", function () { if (timer) { clearTimeout(timer); timer = null; flush(); } });
+  /* LEAVING IS THE OTHER TRIGGER, AND ON A PHONE IT IS NOT `pagehide`.
+     iOS backgrounds a tab without firing pagehide reliably —
+     visibilitychange is the hook that always fires there, and losing the
+     last commit of a session is exactly the case this feature exists for.
+     keepalive lets the request outlive the page it started in. */
+  function leaving() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    flush();
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") leaving();
+  });
+  window.addEventListener("pagehide", leaving);
 
   window.lcProgress = { load: load, flush: flush, rows: rows,
                         parse: parse, merge: merge, serialise: serialise, crc32: crc32 };
