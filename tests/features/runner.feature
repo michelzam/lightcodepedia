@@ -169,3 +169,13 @@ Feature: The instant runner (RT) — Phase A parity
     And I scroll the runner to the bottom
     And the runner navigates to "/run_samples/tall.txt"
     Then the runner is still scrolled down
+
+  Scenario: A page rendered by the runner wears its own tags
+    Course material arrives through the runner, so at page load its h1 does
+    not exist yet — the tags are painted on the render instead (Michel,
+    2026-08-12: "how to have them on the course material too?").
+
+    When I open the runner page on "/components/code.md"
+    And I wait for the runner to render
+    Then the page title shows the tags "code"
+    And the tags sit inside the page title
