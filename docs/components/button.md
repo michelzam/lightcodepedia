@@ -99,7 +99,7 @@ Feature: A button runs Python on click
     assert ("ON" in self.before) != ("ON" in self.eb.text), (self.before, self.eb.text)
     :::
 ```
-{: .feature tags="events" status="passing" }
+{: .feature tags="code" status="passing" }
 
 ## One line is enough
 
@@ -133,7 +133,7 @@ Feature: A bare body is a whole handler
     assert "✅" in self.b.text, self.b.text
     :::
 ```
-{: .feature tags="events" status="passing" }
+{: .feature tags="code" status="passing" }
 
 ## 🏁 Final exam
 

@@ -229,7 +229,7 @@ Feature: A check can read the rows, not just count them
     assert "Nguyen" in names, names
     :::
 ```
-{: .feature #values_proof tags="dataset,query" visible="true" status="passing" }
+{: .feature #values_proof tags="data" visible="true" status="passing" }
 
 [^dataset]: **dataset** — a pile of rows registered under an `#id`. It
     renders nothing; the faces that name it do.

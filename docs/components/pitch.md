@@ -115,4 +115,4 @@ Feature: The pitch assembles and checks itself
     assert self.p.data.who_calculated
     :::
 ```
-{: .feature #pitch_proof tags="pitch,persona" visible="true" status="passing" }
+{: .feature #pitch_proof tags="spec" visible="true" status="passing" }

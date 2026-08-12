@@ -364,3 +364,39 @@ def step_form_named(context):
         _NAME_PROBE,
         ".lc-form-bool input, .lc-form-select, input[type=range].lc-form-range")
     assert not bad, "nameless form controls:\n" + "\n".join(bad)
+
+
+# ── the page's own tags, beside its title ─────────────────────────────────
+# A page's tags live on its features, which are hidden by default, so the
+# folder card showed them and the page itself showed nothing. The chips ride
+# INSIDE the h1: that is what keeps the title on one line.
+
+def _title_tags(context):
+    return context.page.evaluate(
+        """() => Array.from(document.querySelectorAll('h1 .lc-title-tag'))
+                     .map(el => el.textContent.trim())""")
+
+
+@then('the page title shows the tags "{names}"')
+def step_title_tags(context, names):
+    want = [n.strip() for n in names.split(",") if n.strip()]
+    got = _title_tags(context)
+    for n in want:
+        assert n in got, f"missing tag {n!r} beside the title; got {got}"
+
+
+@then("the tags sit inside the page title")
+def step_title_tags_inline(context):
+    inside = context.page.evaluate(
+        """() => {
+             const chip = document.querySelector('.lc-title-tag');
+             const h1 = document.querySelector('h1');
+             return !!(chip && h1 && h1.contains(chip));
+           }""")
+    assert inside, "the tag chips are not inside the h1 — the title gained a line"
+
+
+@then("the page title shows no tags")
+def step_title_no_tags(context):
+    got = _title_tags(context)
+    assert not got, f"expected a bare title, got {got}"

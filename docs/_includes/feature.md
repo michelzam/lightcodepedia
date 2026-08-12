@@ -87,6 +87,17 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-tags { display: flex; gap: 0.35em; flex-wrap: wrap; }
 .lc-feature-tag { background: #e0f2fe; color: #075985; padding: 0.1em 0.55em; border-radius: 99px; font-size: 0.78em; font-weight: 500; }
 
+/* ── the page's own tags, beside its title ────────────────────────────────
+   A page IS what its features are tagged with; until now that only showed
+   on the folder card, so a reader standing ON the page saw nothing. These
+   ride INSIDE the h1 (no new line, no shifted layout) and stay quiet:
+   small, grey, no fill — decoration, not a control. */
+.lc-title-tags { display: inline; margin-left: 0.5em; white-space: normal; vertical-align: middle; }
+.lc-title-tag { display: inline-block; font-size: 0.42em; font-weight: 600; letter-spacing: 0.02em;
+                color: #64748b; background: #f1f5f9; border-radius: 99px;
+                padding: 0.25em 0.7em; margin-right: 0.25em; vertical-align: middle; }
+@media print { .lc-title-tags { display: none; } }
+
 .lc-feature-run { background: #0066cc; color: #fff; border: none; border-radius: 4px; padding: 0.25em 0.75em; font-size: 0.8em; font-weight: 500; cursor: pointer; flex-shrink: 0; }
 .lc-feature-run:hover:not(:disabled) { background: #0052a3; }
 .lc-feature-run:disabled { background: #9ca3af; cursor: progress; }
@@ -600,6 +611,41 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     return pre;
   }
 
+  /* A tag NAMES a thing — a component, a concern — and the platform's names
+     are snake_case (doctrine 2). "impact_map" is how the author writes it
+     and how a filter matches it; "impact map" is how a reader reads it. The
+     chip shows the reader's version, data-tag keeps the author's. */
+  function tagLabel(t) { return t.replace(/_/g, " "); }
+
+  /* ── The page's tags, beside its title ────────────────────────────────────
+     A page's tags live on its features, which are hidden by default — so the
+     folder card showed them and the page itself showed nothing (Michel,
+     2026-08-12: *"I see no tag there!!!"*). They go INSIDE the h1, so the
+     title keeps its line and the page keeps its shape. Read before the cards
+     upgrade: upgrading replaces the block, taking the attribute with it. */
+  function paintTitleTags(root) {
+    var h1 = root.querySelector("main h1") || root.querySelector("h1");
+    if (!h1 || h1.querySelector(".lc-title-tags")) return;
+    var order = [];
+    root.querySelectorAll(".feature[tags]").forEach(function (el) {
+      (el.getAttribute("tags") || "").split(",").forEach(function (t) {
+        var v = t.trim();
+        if (v && order.indexOf(v) < 0) order.push(v);
+      });
+    });
+    if (!order.length) return;
+    var span = document.createElement("span");
+    span.className = "lc-title-tags";
+    order.forEach(function (v) {
+      var chip = document.createElement("span");
+      chip.className = "lc-title-tag";
+      chip.setAttribute("data-tag", v);
+      chip.textContent = tagLabel(v);
+      span.appendChild(chip);
+    });
+    h1.appendChild(span);
+  }
+
   /* ── Upgrade a .feature element into a card ──────────────────────────────────────────── */
   function upgradeFeature(el) {
     if (el.dataset.lcFeatureUpgraded) return;
@@ -620,12 +666,6 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     var badgeHtml = status
       ? "<span class='lc-feature-badge lc-feature-badge-" + status + "' data-lc-badge>" + status + "</span>"
       : "<span class='lc-feature-badge' data-lc-badge style='display:none'></span>";
-
-    /* A tag NAMES a thing — a component, a concern — and the platform's names
-       are snake_case (doctrine 2). "impact_map" is how the author writes it
-       and how a filter matches it; "impact map" is how a reader reads it. The
-       chip shows the reader's version, data-tag keeps the author's. */
-    function tagLabel(t) { return t.replace(/_/g, " "); }
 
     var tagsHtml = "";
     if (tagsRaw) {
@@ -877,6 +917,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
   /* ── Main init (accepts an optional root for preview) ────────────────────────────── */
   function init(root) {
     root = root || document;
+    if (root === document) paintTitleTags(root);   /* while the blocks still carry tags= */
     root.querySelectorAll(".feature").forEach(upgradeFeature);
     root.querySelectorAll(".steps").forEach(upgradeSteps);
     buildSuite(root);

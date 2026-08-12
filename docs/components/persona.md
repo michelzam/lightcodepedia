@@ -100,4 +100,4 @@ Feature: The persona card renders its person
     assert "Samantha" in self.view.text
     :::
 ```
-{: .feature #persona_proof tags="persona" visible="true" status="passing" }
+{: .feature #persona_proof tags="spec" visible="true" status="passing" }

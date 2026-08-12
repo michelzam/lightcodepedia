@@ -177,3 +177,16 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then the chart "fees" has drawn its bars
     And the waiting chart still shows its title
+
+  Scenario: A page wears its own tags beside its title
+    # The tags were on the folder card only, so a reader standing ON the page
+    # saw nothing. They now ride inside the h1 — decoration, not a new line.
+    When I navigate to "/components/build_loop"
+    And I wait for the page to be interactive
+    Then the page title shows the tags "learn, media, lifecycle"
+    And the tags sit inside the page title
+
+  Scenario: A page with no tagged feature keeps a bare title
+    When I navigate to "/components/examples/spreadsheet"
+    And I wait for the page to be interactive
+    Then the page title shows no tags

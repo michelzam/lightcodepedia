@@ -156,7 +156,7 @@ Feature: Structural state — one address in cells, Python and storage
     assert eval_cell("build_ai.profile.building_for == 'dogs'") is True
     :::
 ```
-{: .feature tags="state,learn" }
+{: .feature tags="learn" }
 
 *(Next: the `.form persist="build_ai"` knob writes these edits for you, and
 `{= welcome.profile.nickname }` reads them inline — the widget wiring on top of

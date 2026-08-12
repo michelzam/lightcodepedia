@@ -280,7 +280,7 @@ Feature: A quiz publishes its verdict
     assert not hasattr(type(self.q).passed, "fset"), "a score must never be settable"
     :::
 ```
-{: .feature #quiz_reward_proof tags="quiz" status="passing" }
+{: .feature #quiz_reward_proof tags="learn" status="passing" }
 
 ## ⚠️ Limits of v1
 

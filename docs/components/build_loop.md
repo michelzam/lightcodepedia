@@ -19,6 +19,32 @@ Learn: what you shipped starts the next loop
 ```
 {: .build_loop height="470" }
 
+```gherkin
+Feature: A fenced list of stations becomes a turning hive
+  As a lowcoder
+  I want the loop drawn and narrated
+  So that learners see the shape of building with AI, not a bullet list
+
+  Scenario: The block upgrades into a scene with a keyboard path
+    Given the build loop above
+    :::python
+    self.loop: Object = Object._all(".lc-build-loop")[0]
+    :::
+    When the page has upgraded it
+    Then it is a visible stage
+    :::python
+    assert self.loop.visible
+    assert len(self.loop._qq(".lc-bl-stage")) == 1
+    :::
+    And every station is reachable without a mouse
+    :::python
+    self.chips: list = self.loop._qq(".lc-bl-legend button")
+    assert len(self.chips) == 6, f"got {len(self.chips)} chips"
+    assert self.chips[0].text.strip() == "Need", self.chips[0].text
+    :::
+```
+{: .feature tags="learn, media, lifecycle" status="passing" }
+
 ## Writing one
 
 One station per line, `Label: what happens there`. Three to eight lines — the

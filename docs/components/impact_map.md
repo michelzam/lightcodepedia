@@ -65,7 +65,7 @@ Feature: The week's count stays honest
     assert len(self.rows) == 3
     :::
 ```
-{: .feature #weekly_proof status="pending" visible="true" }
+{: .feature #weekly_proof status="pending" visible="true" tags="spec" }
 
 ## Proof
 
@@ -93,4 +93,4 @@ Feature: The map traces features to the goal
     assert "no family pays" in self.map.text
     :::
 ```
-{: .feature #impact_map_proof tags="impact_map,pitch" visible="true" status="passing" }
+{: .feature #impact_map_proof tags="lifecycle" visible="true" status="passing" }

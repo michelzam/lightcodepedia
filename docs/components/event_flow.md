@@ -107,4 +107,4 @@ Feature: The flow tells the story in color
         "a rule governs what a person asked for, it never issues it"
     :::
 ```
-{: .feature #event_flow_proof tags="event_flow" visible="true" status="passing" }
+{: .feature #event_flow_proof tags="lifecycle, spec" visible="true" status="passing" }

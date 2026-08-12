@@ -16,7 +16,7 @@ Feature: User login
     When I enter valid credentials
     Then I should see the dashboard
 ```
-{: .feature visible="true" }
+{: .feature visible="true" tags="spec" }
 
 ## 🏃🏻‍♀️ With runnable steps
 
@@ -70,7 +70,7 @@ Feature: List validator
     assert self.result == False, "Expected validation to fail for empty list"
     :::
 ```
-{: .feature visible="true" #list_feature status="pending" }
+{: .feature visible="true" #list_feature status="pending" tags="spec" }
 
 ## 🔬 Page access probe
 
@@ -120,7 +120,7 @@ Feature: Page component access
         f"expected 3 < 5 < 7, got {[b.value for b in bars]}"
     :::
 ```
-{: .feature visible="true" #page_probe status="pending" tags="specs" }
+{: .feature visible="true" #page_probe status="pending" tags="spec" }
 
 ## 🖱️ Button with Python handler
 
@@ -181,7 +181,7 @@ Feature: Button handler
     assert self.max_bar.value > bars[2].value
     :::
 ```
-{: .feature visible="true" #btn_handler status="pending" tags="events" }
+{: .feature visible="true" #btn_handler status="pending" tags="code" }
 
 ## 🎉 Celebration & state — green that opens doors
 
@@ -221,7 +221,7 @@ Feature: My feature
     assert self.y == 84
     :::
 ```
-{: .feature visible="true" #my_feature status="pending" }
+{: .feature visible="true" #my_feature status="pending" tags="spec" }
 ````
 
 - `:::python ... :::` is parsed from the Gherkin block — not rendered as a separate code block.
@@ -262,11 +262,26 @@ Feature: A step says what it means
     assert self.here and self.named
     :::
 ```
-{: .feature #paint_demo visible="true" status="pending" tags="feature" }
+{: .feature #paint_demo visible="true" status="pending" tags="code" }
 
 Unmarked words stay plain; a marked word with no colour in play renders as
 ordinary **bold** or `code`. That is the whole rule — a check is one beat of
 the workflow, written down.
+
+## 🏷️ Where the tags show up
+
+A page's tags come from its feature cards — including the hidden ones. They
+now appear in three places, all from that one source:
+
+| Where | Looks like |
+|---|---|
+| Beside the page title | small grey pills inside the `<h1>`, on the same line |
+| On the folder card | blue chips that also **filter** the folder |
+| In the card header | one chip per tag on a visible card |
+
+Nothing to write for the first two — tag a feature and the page wears it. A
+page with no tagged feature keeps a bare title, which is the honest signal
+that it has nothing claimed about it yet.
 
 ## 🎛️ Knobs
 

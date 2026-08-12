@@ -196,7 +196,7 @@ Feature: A record renders a schema-built form and re-emits lossless YAML
     assert "no loss" in integ, integ
     :::
 ```
-{: .feature status="passing" tags="record,yaml" visible="true" }
+{: .feature status="passing" tags="data" visible="true" }
 
 ```gherkin
 Feature: Relations resolve through the index object
@@ -211,7 +211,7 @@ Feature: Relations resolve through the index object
     assert "Révolutions de 1848" in chips, chips
     :::
 ```
-{: .feature status="passing" tags="record,dataset" visible="true" }
+{: .feature status="passing" tags="data" visible="true" }
 
 ```gherkin
 Feature: The record maps its geolocated points
@@ -226,7 +226,7 @@ Feature: The record maps its geolocated points
     assert "2 geolocated" in note, note
     :::
 ```
-{: .feature status="passing" tags="record,map" visible="true" }
+{: .feature status="passing" tags="data" visible="true" }
 
 ```gherkin
 Feature: One engine renders a second type with nested widgets
@@ -246,7 +246,7 @@ Feature: One engine renders a second type with nested widgets
     assert "no loss" in self.ev._q(".lc-rec-integrity").text
     :::
 ```
-{: .feature status="passing" tags="record,widgets" visible="true" }
+{: .feature status="passing" tags="data,ui" visible="true" }
 
 ```
 /components/record
