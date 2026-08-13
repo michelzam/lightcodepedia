@@ -277,9 +277,29 @@ files a learner is already working in.
         if (bar) { barSt.loading = false; paintBar(bar, barSt); }
         var st = err && err.status;
         var hasPat = false; try { hasPat = !!localStorage.getItem("lc_ed_pat"); } catch (e) {}
-        if (err && err.gh && (st === 404 || st === 401) && !hasPat)
-          status.innerHTML = "🔑 This source is private. Connect a GitHub PAT (topbar “Get started”), then reload.";
-        else if (err && err.gh && st === 404 && hasPat) {
+        if (err && err.gh && (st === 404 || st === 401) && !hasPat) {
+          /* NO KEY IS NOT AN ERROR, IT IS A MISSING STEP — so say the steps
+             (Michel, 2026-08-13: *"if the FF has no key, we should at least
+             have a better message, and some directions"*). One line for what
+             is happening, then the three moves, in order, with the door to
+             make the key. */
+          var mkKey = "<a href=\"https://github.com/settings/tokens/new?scopes=repo&description=" +
+            encodeURIComponent("Lightcode course key") + "\" target=\"_blank\" rel=\"noopener\" " +
+            "style=\"display:inline-block;margin:0.4em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">🪜 Create a course key</a>";
+          status.innerHTML =
+            "🔒 <b>This course is private</b> — it opens with your own GitHub key, and this browser has none yet.<br>" +
+            "<ol style=\"margin:0.5em 0 0.2em 1.2em;padding:0;line-height:1.6\">" +
+            "<li>" + mkKey + " — a <b>classic</b> token with the <code>repo</code> scope.</li>" +
+            "<li>Paste it into <b>🔑 Get started</b>, top right of this bar.</li>" +
+            "<li>Reload this page.</li></ol>" +
+            "<div style=\"font-size:0.9em;color:#6b7280;margin-top:0.4em\">Already have a key on another device? Same steps — the key lives in the browser, not in your account. If it still says this, ask your teacher whether you have access to this course.</div>";
+        }
+        /* 401 IS A KEY THAT NO LONGER WORKS, and it deserves the same
+           diagnosis as a 404 — the probe below names the real cause. Michel,
+           2026-08-13, opening a vault link in a second browser: the bar said
+           "⚠️ Could not load: HTTP 401", which tells a learner nothing and
+           tells a teacher less. (A 401 with no key at all is handled above.) */
+        else if (err && err.gh && (st === 404 || st === 401) && hasPat) {
           var keyFor = gm ? gm[1] : (rw ? rw[1] : "course");
           var keyNote = encodeURIComponent("Lightcode course key — " + keyFor);
           var repoName = (barSt.repo || "") + "/" + (barSt.path || "");
@@ -302,7 +322,7 @@ files a learner is already working in.
               } else if (!fine && (d.scopes || "").split(",").map(function (s) { return s.trim(); }).indexOf("repo") < 0) {
                 status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b>, but your key is missing the <code>repo</code> scope.<br>" + ladder + " → paste, reload.";
               } else if (fine) {
-                status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b> with a fine-grained token that can’t reach <code>" + repoName + "</code> (HTTP 404). Fine-grained tokens are limited to selected repos — use a <b>classic</b> key instead:<br>" + ladder + " → paste, reload.";
+                status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b> with a fine-grained token that can’t reach <code>" + repoName + "</code> (HTTP " + st + "). Fine-grained tokens are limited to selected repos — use a <b>classic</b> key instead:<br>" + ladder + " → paste, reload.";
               } else {
                 /* valid repo key + 404 on the file: is it the REPO that's
                    missing (no bench / not enrolled) or just the FILE (bench
@@ -326,7 +346,7 @@ files a learner is already working in.
               }
             })
             .catch(function () {
-              status.innerHTML = "🔑 Your key can’t open <code>" + repoName + "</code> (HTTP 404).<br>" + ladder + " → paste, reload.";
+              status.innerHTML = "🔑 Your key can’t open <code>" + repoName + "</code> (HTTP " + st + ").<br>" + ladder + " → paste, reload.";
             });
         }
         else

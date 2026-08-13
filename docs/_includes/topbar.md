@@ -256,8 +256,11 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
    link on the brand. What stays is the trail (course › module · page) and
    the account chip, because "am I signed in as me?" is the one question a
    framed learner still needs answered. */
-.lc-crumb-mode #lc-topbar .lc-links,
-.lc-crumb-mode #lc-topbar #lc-start-pill { display: none !important; }
+.lc-crumb-mode #lc-topbar .lc-links { display: none !important; }
+/* THE SIGN-IN DOOR STAYS (the lesson focus mode already learned): a private
+   course tells the learner to connect a key, and hiding the one control that
+   does it makes the instruction impossible to follow. It shows only when
+   there is no key — the pill hides itself the moment one is connected. */
 .lc-crumb-mode #lc-topbar .lc-brand { cursor: default; }
 /* READ-ONLY MEANS THE FACE TOO (Michel, 2026-08-13: *"the avatar drop down
    opens a lot of options, and I prefer not! We said R/O"*). The chip answers

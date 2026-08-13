@@ -332,13 +332,16 @@ Auto-included by docs/_layouts/default.html.
         card.setAttribute("data-lc-value", JSON.stringify(data));
         if (window.lcSetDataset) window.lcSetDataset(id, data);
       }
+      /* IN THE PAGE FIRST, WIRED SECOND. wireDoc resolves save= against the
+         rendered lesson's folder, and a detached card has no ancestors to
+         resolve against (2026-08-13). */
+      render();
+      el.parentNode.replaceChild(card, el);
       wireDoc(card, {
         srcId: srcId, save: save, render: render,
         getData: function () { return data; },
         setData: function (d) { data = d; }
       });
-      render();
-      el.parentNode.replaceChild(card, el);
     }).catch(function (e) { fail(el, "lc-persona", e); });
   }
 
@@ -424,13 +427,13 @@ Auto-included by docs/_layouts/default.html.
         if (window.lcSetDataset) window.lcSetDataset(id, pub);
         check();
       }
-      wireDoc(box, {
+      render();
+      el.parentNode.replaceChild(box, el);
+      wireDoc(box, {                        /* attached first — see .persona */
         srcId: srcId, save: save, render: render,
         getData: function () { return data; },
         setData: function (d) { data = d; }
       });
-      render();
-      el.parentNode.replaceChild(box, el);
       /* RE-RENDER, not just re-check: the persona may register AFTER this
          pitch upgraded (a card further down the page), and the who is derived
          from it — a pitch that only re-checked kept showing the typed value

@@ -175,7 +175,7 @@ def step_two_groups(context):
         if (!el) return null; const r = el.getBoundingClientRect();
         return { left: Math.round(r.left), right: Math.round(r.right), w: Math.round(r.width) }; };
       return { crumb: box('#lc-crumb'), meta: box('#lc-crumb-meta'),
-               pill: box('#lc-user-pill'),
+               pill: box('#lc-user-pill'), door: box('#lc-start-pill'),
                scoreInMeta: !!document.querySelector('#lc-crumb-meta .lc-crumb-score'),
                inner: window.innerWidth };
     }""")
@@ -183,10 +183,12 @@ def step_two_groups(context):
     assert geo["meta"] and geo["meta"]["w"] > 0, "the meters are not shown (%r)" % geo
     assert geo["crumb"]["right"] <= geo["meta"]["left"], \
         "the trail is not left of the meters (%r)" % geo
-    if geo["pill"]["w"]:                      # signed in: the face is last
-        assert geo["meta"]["right"] <= geo["pill"]["left"] + 1, \
-            "the meters are not just before the face (%r)" % geo
-    else:                                     # signed out: still right-justified
+    # last in the row is the face when signed in, the sign-in door when not
+    last = geo["pill"] if geo["pill"]["w"] else geo["door"]
+    if last["w"]:
+        assert geo["meta"]["right"] <= last["left"] + 1, \
+            "the meters are not just before the account chip (%r)" % geo
+    else:
         assert geo["meta"]["right"] >= geo["inner"] - 40, \
             "the meters are not right-justified (%r)" % geo
     # left-justified: the trail starts near the brand, not floated to the middle

@@ -1,5 +1,5 @@
 import re
-from behave import when, then
+from behave import given, when, then
 from playwright.sync_api import expect
 
 
@@ -338,3 +338,62 @@ def step_embedded_heading(context, text):
     the page-level one owns."""
     inner = context.page.locator(".lc-runner .lc-run:not(#lc-run)").first
     expect(inner).to_contain_text(text, timeout=20_000)
+
+
+@given("a course key that GitHub rejects")
+def step_stale_key(context):
+    """An expired or revoked PAT: every GitHub call answers 401."""
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat','ghp_stale');"
+        "localStorage.setItem('lc_ed_repo','acme/demo-vault');")
+    context.page.route(
+        "https://api.github.com/**",
+        lambda r: r.fulfill(status=401, content_type="application/json",
+                            body='{"message": "Bad credentials"}'))
+
+
+@then("the runner says the key itself is the problem")
+def step_key_named(context):
+    status = context.page.locator(".lc-runner .lc-run-status")
+    expect(status).to_contain_text(re.compile("key", re.I), timeout=20_000)
+
+
+@then("the runner never shows a bare HTTP status")
+def step_no_bare_status(context):
+    txt = context.page.locator(".lc-runner .lc-run-status").inner_text()
+    assert "Could not load" not in txt, txt
+
+
+@then("the sign-in door is offered")
+def step_signin_door(context):
+    pill = context.page.locator("#lc-start-pill")
+    expect(pill).to_be_visible(timeout=10_000)
+
+
+@then("the runner says the course is private")
+def step_private_said(context):
+    status = context.page.locator(".lc-runner .lc-run-status")
+    expect(status).to_contain_text(re.compile("private", re.I), timeout=20_000)
+
+
+@then("the runner offers a way to make a key")
+def step_key_ladder(context):
+    link = context.page.locator('.lc-run-status a[href*="github.com/settings/tokens"]')
+    expect(link).to_have_count(1, timeout=10_000)
+
+
+@then("the runner names the Get started door")
+def step_names_door(context):
+    txt = context.page.locator(".lc-runner .lc-run-status").inner_text()
+    assert "Get started" in txt, txt
+
+
+@given("a private vault that answers a stranger with 404")
+def step_private_vault(context):
+    """GitHub hides a private repo from an anonymous caller behind 404 —
+    the same answer as "no such repo", which is why the message has to be
+    about the missing key rather than about the status."""
+    context.page.route(
+        "https://api.github.com/**",
+        lambda r: r.fulfill(status=404, content_type="application/json",
+                            body='{"message": "Not Found"}'))

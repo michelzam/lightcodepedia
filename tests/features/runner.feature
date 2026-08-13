@@ -201,3 +201,35 @@ Feature: The instant runner (RT) — Phase A parity
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/cover.md"
     And I wait for the page to be interactive
     Then the embedded runner shows a heading "Setup"
+
+  Scenario: A stale key names itself, instead of saying HTTP 401
+    Michel opened a vault link in a second browser and read "⚠️ Could not
+    load: HTTP 401" — which tells a learner nothing and a teacher less. 401
+    is a key that no longer works, so it earns the same live diagnosis as a
+    404: probe the key, then say what is actually wrong.
+
+    Given a course key that GitHub rejects
+    When I open the runner page on "gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    Then the runner says the key itself is the problem
+    And the runner never shows a bare HTTP status
+
+  Scenario: A framed learner with no key still has a door in
+    Focus mode learned this once already: a private course tells the learner
+    to connect a key, and hiding the one control that does it makes the
+    instruction impossible to follow.
+
+    When I navigate to "/components/text?crumb=BUILD-AI"
+    And I wait for the page to be interactive
+    Then the sign-in door is offered
+
+  Scenario: With no key at all, the message is three steps, not a status
+    Michel, 2026-08-13: "if the FF has no key, we should at least have a
+    better message, and some directions". A missing key is not an error, it
+    is a missing step — so the page says the steps, in order, with the door
+    to make the key.
+
+    Given a private vault that answers a stranger with 404
+    When I open the runner page on "gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    Then the runner says the course is private
+    And the runner offers a way to make a key
+    And the runner names the Get started door

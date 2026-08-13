@@ -571,3 +571,33 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     # a starter has no file at that address yet, so the door would 404 and the
     # runner would offer a Refresh that can never bring it (Michel, 2026-08-11)
     And "Open it on its own" is greyed out
+
+  Scenario: A saved persona comes back on the next visit
+    A card wires its save= while it is still detached from the page, so
+    closest() found no render root and the relative path collapsed to the
+    bench ROOT. The write happened later, from a card by then attached, and
+    landed in the lesson folder: saved to courses/…/persona.yaml, read back
+    from /persona.yaml, which does not exist (Michel, 2026-08-13, module 3
+    page 1: "the form saves nicely to a file, but it does not read it back
+    after refresh").
+
+    Given the GitHub contents API serves "courses/demo/mod/who.md" with the document:
+      """
+      # Who?
+
+      ```yaml
+      name: ""
+      role: Shelter coordinator
+      ```
+      {: .form #who_src editable="true" title="✏️ Edit — who is she?" }
+
+      ```yaml
+      role: Shelter coordinator
+      ```
+      {: .persona #who source="who_src" save="persona.yaml" }
+      """
+    And a connected bench whose "courses/demo/mod/persona.yaml" holds "name: Ana\nrole: Shelter coordinator\n"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/who.md"
+    And I wait for the page to be interactive
+    Then the persona card "who" shows the name "Ana"
+    And the bench was read at "courses/demo/mod/persona.yaml"

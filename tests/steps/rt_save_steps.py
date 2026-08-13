@@ -18,10 +18,12 @@ def _stub_bench(context, files):
     """Route the bench repo's contents API: GET serves `files`, PUT records."""
     context.bench_commits = []
     context.author_commits = []
+    context.bench_reads = []
 
     def bench(route, req):
         path = req.url.split("/contents/", 1)[1].split("?")[0]
         if req.method == "GET":
+            context.bench_reads.append(path)
             if path in files:
                 route.fulfill(json={
                     "content": base64.b64encode(files[path].encode()).decode(),
@@ -618,3 +620,12 @@ def step_stripe_count(context, n):
 @then("the persona inside it still rendered")
 def step_nested_persona(context):
     expect(context.page.locator(".lc-persona").first).to_be_visible(timeout=15_000)
+
+
+@then('the bench was read at "{path}"')
+def step_bench_read_path(context, path):
+    """WHERE a document is read from is the whole contract: written to the
+    lesson folder and read from the bench root is the same file name and two
+    different files."""
+    reads = getattr(context, "bench_reads", [])
+    assert path in reads, "the bench was read at %r, never at %r" % (reads, path)

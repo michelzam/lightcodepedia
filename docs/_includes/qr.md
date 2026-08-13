@@ -64,6 +64,19 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
+  /* ONE PLACE DRAWS A QR. The classroom console hands out preview links and
+     wants the same square a course page shows — same loader, same options,
+     no second CDN dance (Michel, 2026-08-13). */
+  window.lcQrInto = function (host, text, size) {
+    if (!host || !text) return;
+    host.innerHTML = "";
+    host.setAttribute("data-lc-text", text);
+    loadQRCode(function () {
+      new QRCode(host, { text: text, width: size || 160, height: size || 160,
+                         correctLevel: QRCode.CorrectLevel.M });
+    });
+  };
+
   /* ── boot ────────────────────────────────────────────────────── */
   /* code_chrome.md (loaded first, via topbar) provides the scan registry. */
 

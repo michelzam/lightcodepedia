@@ -872,6 +872,14 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
       path = String(path || "").trim();
       var abs = path.charAt(0) === "/";
       var runRoot = fromEl && fromEl.closest ? fromEl.closest(".lc-run[data-lc-src-path]") : null;
+      /* A NODE NOT YET IN THE PAGE HAS NO ANCESTORS (2026-08-13). Components
+         wire their save= while the card is still detached, so closest() found
+         no render root and every relative path collapsed to the bench ROOT.
+         The write happened later, from an attached node, and landed in the
+         lesson folder — so a persona SAVED to courses/…/module_03/persona.yaml
+         and was READ back from /persona.yaml, which does not exist. Same
+         fallback lcSourceTarget already uses: the page's own render root. */
+      if (!runRoot) runRoot = document.querySelector(".lc-run[data-lc-src-path]");
       var srcPath = (!abs && runRoot && runRoot.dataset.lcSrcPath) || "";
       var dir = srcPath.indexOf("/") >= 0 ? srcPath.replace(/\/[^\/]*$/, "") : "";
       var out = [];
