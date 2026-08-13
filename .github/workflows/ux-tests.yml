@@ -124,6 +124,12 @@ jobs:
       - name: Install test dependencies
         run: pip install -r tests/requirements.txt
 
+      # A published feature leaning on a lab-only step is green here and red in
+      # pedia, with "<unknown>" for a message. One second, before 14 minutes of
+      # browser (2026-08-13).
+      - name: Published features carry their own steps
+        run: python tests/publish_parity.py
+
       # Cache the browser build so repeat runs skip the download (saves minutes).
       - name: Cache Playwright browser
         uses: actions/cache@v4

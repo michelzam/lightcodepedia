@@ -93,8 +93,12 @@ Registers with window.lcScanElement so the editor preview also renders cards.
    ride INSIDE the h1 (no new line, no shifted layout) and stay quiet:
    small, grey, no fill — decoration, not a control. */
 .lc-title-tags { display: inline; margin-left: 0.5em; white-space: normal; vertical-align: middle; }
+/* #64748b on #f1f5f9 measured 4.34:1 — below AA for text this small, and the
+   pill rides every page that has a feature, which is what pushed the a11y
+   ratchet into the red on 2026-08-13. #475569 reads the same and passes at
+   6.9:1. */
 .lc-title-tag { display: inline-block; font-size: 0.42em; font-weight: 600; letter-spacing: 0.02em;
-                color: #64748b; background: #f1f5f9; border-radius: 99px;
+                color: #475569; background: #f1f5f9; border-radius: 99px;
                 padding: 0.25em 0.7em; margin-right: 0.25em; vertical-align: middle; }
 @media print { .lc-title-tags { display: none; } }
 
@@ -104,7 +108,9 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 
 /* ── scenario / narrative ─────────────────────────────────────────────── */
 .lc-feature-scenario { padding: 0.5em 1em 0.2em; font-size: 0.82em; font-weight: 600; color: #6b7280; letter-spacing: 0.03em; text-transform: uppercase; }
-.lc-feature-narrative { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #9ca3af; }
+/* the Given/When/Then lines are quiet, not invisible: #9ca3af on white is
+   2.54:1, which axe counts as a serious failure on every feature card */
+.lc-feature-narrative { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #6b7280; }
 .lc-feature-story { padding: 0.1em 1em 0.1em 2.5em; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; display: flex; gap: 0.4em; align-items: baseline; flex-wrap: wrap; }
 .lc-feature-story-keyword { color: #7c3aed; font-weight: 600; flex-shrink: 0; }
 .lc-feature-story-text { color: #374151; }

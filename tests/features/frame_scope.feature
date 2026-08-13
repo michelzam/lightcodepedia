@@ -71,6 +71,7 @@ Feature: Frame flags are a scope, not a page setting
     Then the crumb reads "BUILD-AI" then "02·A Long Walk" then "Gates"
     And the menu links are gone
     And the runner never names the file
+    And the trail sits left and the meters sit right, before my face
 
 
   Scenario: The crumb survives the hop into a module

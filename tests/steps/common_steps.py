@@ -79,3 +79,20 @@ def step_brand_names_node(context):
     expect(brand).to_be_visible()
     text = brand.inner_text().strip()
     assert re.match(r"^(🧪|💡)\s\S+$", text), f"brand looks wrong: {text!r}"
+
+
+# ── the account chip's normal state ─────────────────────────────────────────
+# A cached face is what every page after sign-in paints from — localStorage,
+# no request at all. It lives HERE, not in material_steps.py: that module is
+# lab-only (.github/rsync-excludes/tests.txt) and frame_scope.feature, which
+# uses this step, ships to pedia.
+@given("I am signed in with my face already cached")
+def step_signed_in_cached(context):
+    import json
+    face = json.dumps({"login": "michelzam", "name": "Michel",
+                       "avatar_url": "https://avatars.githubusercontent.com/u/1?v=4"})
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat','ghp_author');"
+        "localStorage.setItem('lc_ed_repo','michelzam/lightcodelab');"
+        "localStorage.setItem('lc_gh_user'," + json.dumps(face) + ");"
+        "localStorage.setItem('lc_gh_user_for','ghp_author');")

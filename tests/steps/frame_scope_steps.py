@@ -162,3 +162,32 @@ def step_chip_inert(context):
     assert not context.page.evaluate(
         "document.getElementById('lc-user-drop').classList.contains('open')"
     ), "the framed learner got the full account menu"
+
+
+@then("the trail sits left and the meters sit right, before my face")
+def step_two_groups(context):
+    """Michel, 2026-08-13: "justify left module and page names, then justify
+    right the global score and AI/GH PAT credits left"."""
+    context.page.evaluate("window.lcCrumbScore && window.lcCrumbScore('12/20')")
+    context.page.wait_for_timeout(200)
+    geo = context.page.evaluate("""() => {
+      const box = s => { const el = document.querySelector(s);
+        if (!el) return null; const r = el.getBoundingClientRect();
+        return { left: Math.round(r.left), right: Math.round(r.right), w: Math.round(r.width) }; };
+      return { crumb: box('#lc-crumb'), meta: box('#lc-crumb-meta'),
+               pill: box('#lc-user-pill'),
+               scoreInMeta: !!document.querySelector('#lc-crumb-meta .lc-crumb-score'),
+               inner: window.innerWidth };
+    }""")
+    assert geo["scoreInMeta"], "the score is not in the right-hand group (%r)" % geo
+    assert geo["meta"] and geo["meta"]["w"] > 0, "the meters are not shown (%r)" % geo
+    assert geo["crumb"]["right"] <= geo["meta"]["left"], \
+        "the trail is not left of the meters (%r)" % geo
+    if geo["pill"]["w"]:                      # signed in: the face is last
+        assert geo["meta"]["right"] <= geo["pill"]["left"] + 1, \
+            "the meters are not just before the face (%r)" % geo
+    else:                                     # signed out: still right-justified
+        assert geo["meta"]["right"] >= geo["inner"] - 40, \
+            "the meters are not right-justified (%r)" % geo
+    # left-justified: the trail starts near the brand, not floated to the middle
+    assert geo["crumb"]["left"] < geo["inner"] / 2, "the trail drifted right (%r)" % geo

@@ -265,14 +265,32 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
    publish, disconnect, record) is a door out of the module. */
 .lc-crumb-mode #lc-user-drop { display: none !important; }
 .lc-crumb-mode #lc-user-btn { cursor: default; }
+/* TWO GROUPS, TWO EDGES (Michel, 2026-08-13): the trail is left — where am
+   I — and what is LEFT of my allowances is right, next to my face. The
+   brand's auto margin would push the trail away from its own course name,
+   so in crumb mode the gap moves to the end of the trail instead.
+   Bench pages wear the same bar (his *"this is still for the bench"*), so
+   the bench's own file chip steps aside for the trail. */
+.lc-crumb-mode #lc-topbar .lc-brand { margin-right: 0.5em; }
+.lc-crumb-mode #lc-crumb { margin-right: auto; }
+.lc-crumb-mode #lc-topbar .lc-bench-file,
+.lc-crumb-mode #lc-topbar .lc-bench-home { display: none !important; }
 #lc-crumb { display: flex; align-items: center; gap: 0.45em; min-width: 0;
             color: #4b5563; font-size: 0.92em; white-space: nowrap;
             overflow: hidden; text-overflow: ellipsis; }
 #lc-crumb .lc-crumb-sep { color: #9ca3af; }
 #lc-crumb .lc-crumb-page { color: #111827; font-weight: 600;
                            overflow: hidden; text-overflow: ellipsis; }
-#lc-crumb .lc-crumb-score { flex: none; background: #fef3c7; color: #92400e;
-                            border-radius: 99px; padding: 0.05em 0.6em; font-size: 0.9em; }
+/* the meters, in the order they matter to a learner: what I earned, what my
+   AI key spent today, what my GitHub key has left this hour */
+#lc-crumb-meta { display: none; align-items: center; gap: 0.4em; flex: none;
+                 font-size: 0.82em; white-space: nowrap; }
+.lc-crumb-mode #lc-crumb-meta { display: flex; }
+#lc-crumb-meta .lc-meter { border-radius: 99px; padding: 0.1em 0.6em;
+                           background: #f3f4f6; color: #4b5563; }
+#lc-crumb-meta .lc-crumb-score { background: #fef3c7; color: #92400e; }
+#lc-crumb-meta .lc-meter-low { background: #fee2e2; color: #b91c1c; }
+@media (max-width: 700px) { #lc-crumb-meta .lc-meter-gh { display: none; } }
 </style>
 <script>
 /* ── The crumb: where you are, and nothing you can click ─────────────────
@@ -325,17 +343,53 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
     if (pageTitle !== undefined) page = pageTitle || "";
     paint();
   };
-  /* the learner's own score, just before their face — the one number that
-     travels with them (score.md publishes it as the 🏆 FAB's label) */
+  /* ── The meters, right-justified beside the face ──────────────────────
+     Michel, 2026-08-13: *"justify left module and page names, then justify
+     right the global score and AI/GH PAT credits left"*. Three numbers, and
+     each is one the learner can act on: what they earned, what their AI key
+     spent today, and how many GitHub calls their key has left this hour.
+     No dropdown holds them any more (the chip is read-only in a frame), so
+     they have to be readable without a click — the tooltips carry the words. */
+  function meter(cls, text, title, low) {
+    var meta = document.getElementById("lc-crumb-meta");
+    if (!meta || !window.lcFrame || !window.lcFrame.crumb) return;
+    var chip = meta.querySelector("." + cls);
+    if (!text) { if (chip) chip.remove(); return; }
+    if (!chip) { chip = document.createElement("span"); chip.className = "lc-meter " + cls; meta.appendChild(chip); }
+    chip.textContent = text;
+    chip.title = title || "";
+    chip.classList.toggle("lc-meter-low", !!low);
+  }
+  /* the learner's own score — the one number that travels with them
+     (score.md publishes it as the 🏆 FAB's label) */
   window.lcCrumbScore = function (text) {
-    var el = document.getElementById("lc-crumb");
-    if (!el || !window.lcFrame || !window.lcFrame.crumb || !text) return;
-    var chip = el.querySelector(".lc-crumb-score");
-    if (!chip) { chip = document.createElement("span"); chip.className = "lc-crumb-score"; el.appendChild(chip); }
-    chip.textContent = "🏆 " + text;
+    if (!text) return;
+    meter("lc-crumb-score", "🏆 " + text, "Your score across this course");
   };
+  /* today's AI spend, from the same ledger the ask panel shows */
+  function paintTokens() {
+    var t = window.lcTokens && window.lcTokens.today ? window.lcTokens.today() : null;
+    if (!t || !t.asks) return meter("lc-meter-ai", "", "");
+    var k = t.tokens >= 1000 ? (Math.round(t.tokens / 100) / 10) + "k" : String(t.tokens);
+    meter("lc-meter-ai", "📊 " + k, window.lcTokens.line());
+  }
+  document.addEventListener("lc-tokens", paintTokens);
+  /* what the GitHub key has left this hour — written by the account chip's
+     own rate tracking, read here so a framed learner sees it with no menu */
+  function paintRate() {
+    var rem = parseInt(localStorage.getItem("lc_rate_remaining") || "-1", 10);
+    if (!(rem >= 0)) return;
+    var lim = parseInt(localStorage.getItem("lc_rate_limit") || "5000", 10) || 5000;
+    var low = rem / lim < 0.2;
+    meter("lc-meter-gh", (low ? "🪫 " : "🔋 ") + rem,
+          rem + " of " + lim + " GitHub calls left this hour", low);
+  }
+  document.addEventListener("lc-rate", paintRate);
   document.addEventListener("DOMContentLoaded", function () {
-    if (window.lcFrame && window.lcFrame.crumb) window.lcSetCrumb("", document.title || "");
+    if (!window.lcFrame || !window.lcFrame.crumb) return;
+    window.lcSetCrumb("", document.title || "");
+    paintTokens();                 /* both meters have a value before any event */
+    paintRate();
   });
 })();
 </script>
@@ -348,6 +402,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
 <div id="lc-topbar">
   <a class="lc-brand" href="/">{{ _brandmoji }} {{ _brand }}</a>
   <span id="lc-crumb" hidden></span>
+  <span id="lc-crumb-meta"></span>
   {% comment %} A folder's menu.md becomes the menu for that whole branch, but it
      must opt in with `menu: true` in its front matter — so pages that merely
      happen to be named menu.md (e.g. the .menu component's own doc page) are not
@@ -756,6 +811,9 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
           localStorage.setItem('lc_rate_remaining', String(rem));
           if (lim > 0) localStorage.setItem('lc_rate_limit', String(lim));
           showRateLimit(rem, lim);
+          /* a framed learner has no dropdown to open, so the crumb's meter
+             listens for this and repaints itself */
+          document.dispatchEvent(new CustomEvent('lc-rate', { detail: { remaining: rem, limit: lim } }));
         }
         return r;
       }
