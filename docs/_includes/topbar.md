@@ -380,7 +380,6 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
          are compiled out of pedia and fork builds entirely. {% endcomment %}
       <a class="lc-ud-row" href="/lab/"><span>🎓</span><span>HQ — classroom &amp; material</span></a>
       <div class="lc-ud-row" id="lc-ud-publish"><span>🚀</span><span id="lc-ud-publish-label">Publish to pedia</span></div>
-      <div class="lc-ud-row" id="lc-ud-publish-courses"><span>📚</span><span id="lc-ud-publish-courses-label">Publish courses</span></div>
       {% endif %}
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
       <div id="lc-ud-rate" style="display:none;padding:6px 16px;font-size:0.75em;border-bottom:1px solid #f0f0f0"></div>
@@ -871,38 +870,12 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       });
     }
 
-    /* ── The courses gate, beside the engine's ─────────────────────────────
-       The two publishes are one habit — engine first, then the material that
-       leans on it — and until now only the engine had a door here (Michel,
-       2026-08-13: "allow me to publish from there too. I'm not any learner").
-       Same dispatch, same key, same row. */
-    var _crsRow = document.getElementById('lc-ud-publish-courses');
-    if (_crsRow) {
-      var _crsLabel = document.getElementById('lc-ud-publish-courses-label');
-      var _crsRepo = {{ site.github.repository_nwo | default: "" | jsonify }};
-      var _crsBusy = false;
-      _crsRow.addEventListener('click', function () {
-        if (_crsBusy || !pat || !_crsRepo) return;
-        if (!window.confirm('Publish every course to its vault now?\n\nEach course folder goes to the vault its __course.yml names; learners pick it up with 🔄 Sync.')) return;
-        _crsBusy = true;
-        _crsLabel.textContent = '📚 launching…';
-        fetch('https://api.github.com/repos/' + _crsRepo + '/actions/workflows/publish-courses.yml/dispatches', {
-          method: 'POST',
-          headers: { Authorization: 'Bearer ' + pat, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ref: 'main', inputs: { course: '' } })
-        }).then(function (r) {
-          _crsLabel.textContent = (r.status === 204)
-            ? '✔ Publishing courses…'
-            : (r.status === 403 || r.status === 404)
-              ? '❌ PAT lacks Actions read/write on the lab'
-              : '❌ Failed (HTTP ' + r.status + ')';
-        }).catch(function () {
-          _crsLabel.textContent = '❌ network error — try again';
-        }).finally(function () {
-          setTimeout(function () { _crsLabel.textContent = 'Publish courses'; _crsBusy = false; }, 6000);
-        });
-      });
-    }
+    /* NO COURSES GATE HERE (Michel, 2026-08-13: *"there's only one pedia, but
+       many potential courses … I might not need that"*). The engine has ONE
+       destination, so a global row can mean only one thing and belongs in the
+       global chrome. Courses do not: each `__course.yml` names its own vault,
+       so a blanket dispatch from a header row is a decision the header cannot
+       see. The classroom console publishes them — with the diff first. */
 
     var _syncMeta = null, _syncBusy = false, _syncChecked = false;
     function checkSync() {

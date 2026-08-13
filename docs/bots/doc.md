@@ -10,7 +10,11 @@ temperature: 0.4
 # answer is the most expensive outcome there is: full input paid, nothing
 # usable back, and the learner asks again. Length is governed by the prompt
 # below (five short steps at most), not by this number.
-max_tokens: 1200
+# Raised 1200 → 2000 (Michel, 2026-08-13). Redacted page knowledge means Doc
+# now REASONS its way to a hint instead of reading the answer off the page,
+# and that thinking is billed inside this same allowance — the ceiling has to
+# clear it, or the visible reply is what gets cut.
+max_tokens: 2000
 placeholder: Ask Doc about this page…
 knowledge:
   - self
