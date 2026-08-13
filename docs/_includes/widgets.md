@@ -534,7 +534,7 @@ Auto-included by docs/_layouts/default.html.
     function paintHead(path) {
       var repo = (window.lcBench ? window.lcBench.target(box).repo : "") || "";
       /* WHOSE FACE? Not the repo owner's — a class bench is forked INTO the
-         org, so every student would see the same organisation logo over
+         org, so every learner would see the same organisation logo over
          their own work. The topbar already caches the signed-in account
          (lc_gh_user); that is the person whose file this is. Fall back to
          the repo owner for a personal bench. */

@@ -73,7 +73,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 <div class="lcw-body">
 <p>Add a sentence or two about yourself and why you joined. It will appear on the <a href="/nodes">community map</a> next to your LightNode.</p>
 <div class="lcw-bio-wrap">
-<textarea id="lcw-bio" rows="3" maxlength="280" placeholder="e.g. I teach Python to high-school students in Lyon. I joined Lightcodepedia to give my learners interactive pages they can actually run and explore." spellcheck="true"></textarea>
+<textarea id="lcw-bio" rows="3" maxlength="280" placeholder="e.g. I teach Python to high-school learners in Lyon. I joined Lightcodepedia to give my learners interactive pages they can actually run and explore." spellcheck="true"></textarea>
 <div class="lcw-bio-footer"><span id="lcw-bio-count">0 / 280</span><button class="lcw-btn" id="lcw-bio-btn" onclick="lcwSaveBio()">Save bio ✓</button></div>
 </div>
 <div id="lcw-bio-result" class="lcw-result"></div>
@@ -437,7 +437,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
     var body = el.querySelector('.lcw-body');
     if (body) body.style.display = 'none';
     /* a done step must be reopenable (cockpit rule): steps 1-2 get a "change"
-       link — the key one matters most, so a student can paste a NEW key
+       link — the key one matters most, so a learner can paste a NEW key
        (course key, renewed key) without hunting or clearing storage */
     if (n <= 2 && !el.querySelector('.lcw-change')) {
       var chg = document.createElement('a');

@@ -1,8 +1,8 @@
 {%- comment -%}
 LightNode finder — the 404 page doubles as a router. GitHub Pages serves
-/404.html for every unknown path, so lightcodepedia.org/@student (or bare
-/student) lands here with the name in hand: one anonymous API check, then a
-redirect to https://student.github.io/lightcodepedia/. Unknown name → a
+/404.html for every unknown path, so lightcodepedia.org/@learner (or bare
+/learner) lands here with the name in hand: one anonymous API check, then a
+redirect to https://learner.github.io/lightcodepedia/. Unknown name → a
 friendly "start yours" invitation instead of a dead end. Emitted ONLY into
 the 404 page (Liquid guard), so every other page carries zero extra script.
 {%- endcomment -%}

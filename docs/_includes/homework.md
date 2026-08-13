@@ -1,9 +1,9 @@
 {%- comment -%}
 Homework — record karma across a reel/page set and hand it in.
 
-A student opens a page (often the first of a reel) carrying a param chain:
+A learner opens a page (often the first of a reel) carrying a param chain:
 
-  ?homework_number=6a&student_id=93629601&submit_info=<destination>
+  ?homework_number=6a&learner_id=93629601&submit_info=<destination>
 
 This include then:
   • remembers the homework session in localStorage, so the params only need to
@@ -16,7 +16,7 @@ This include then:
   • on Submit, POSTs { the original param chain + the karma } to submit_info.
 
 Trust + reach (be honest about it):
-  • localStorage is student-editable, so scores are HONOUR-SYSTEM unless the
+  • localStorage is learner-editable, so scores are HONOUR-SYSTEM unless the
     destination server re-verifies them. Volume is a non-issue — score records
     are bytes each and localStorage holds ~5–10 MB.
   • submit_info comes from the URL, so in PRODUCTION it should be a fixed /
@@ -68,10 +68,10 @@ body.lc-slides-active .lc-hw-pill { bottom: 4em; }
   var sp = new URLSearchParams(location.search);
   var active = null;
   try { active = JSON.parse(localStorage.getItem('lc_hw_active') || 'null'); } catch (e) {}
-  var hwNum = sp.get('homework_number'), sid = sp.get('student_id');
+  var hwNum = sp.get('homework_number'), sid = sp.get('learner_id');
   if (hwNum && sid) {
     active = {
-      homework_number: hwNum, student_id: sid,
+      homework_number: hwNum, learner_id: sid,
       submit_info: sp.get('submit_info') || (active && active.submit_info) || '',
       param_chain: location.search.replace(/^\?/, ''),
       key: 'hw:' + hwNum + ':' + sid
@@ -84,7 +84,7 @@ body.lc-slides-active .lc-hw-pill { bottom: 4em; }
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} }
   var rec = load() || {
-    homework_number: active.homework_number, student_id: active.student_id,
+    homework_number: active.homework_number, learner_id: active.learner_id,
     submit_info: active.submit_info, param_chain: active.param_chain,
     started: new Date().toISOString(), pages: {}, events: []
   };
@@ -125,7 +125,7 @@ body.lc-slides-active .lc-hw-pill { bottom: 4em; }
 
   function render() {
     if (!pill) return;
-    pill.querySelector('.lc-hw-num').textContent = rec.homework_number + ' · ' + rec.student_id;
+    pill.querySelector('.lc-hw-num').textContent = rec.homework_number + ' · ' + rec.learner_id;
     var t = totals();
     pill.querySelector('.lc-hw-score').textContent = t.won + '/' + t.tot;
     pill.classList.add('lc-hw-on');
@@ -141,7 +141,7 @@ body.lc-slides-active .lc-hw-pill { bottom: 4em; }
       rows += '<div class="lc-hw-row"><span>' + p + '</span><span>' + (pg.score || 0) + '/' + (pg.total || 0) +
         '<span style="color:#9a9a9a"> · ' + String(pg.last || '').slice(0, 16).replace('T', ' ') + '</span></span></div>';
     }
-    pop.innerHTML = '<h4>Homework ' + rec.homework_number + ' — ' + rec.student_id + '</h4>' +
+    pop.innerHTML = '<h4>Homework ' + rec.homework_number + ' — ' + rec.learner_id + '</h4>' +
       (rows || '<div style="color:#999">No graded items yet.</div>') +
       '<div class="lc-hw-row" style="font-weight:600;color:#b45309;border-top:1px solid #eee;margin-top:.4em;padding-top:.4em"><span>Total</span><span>' + t.won + '/' + t.tot + '</span></div>' +
       '<div class="lc-hw-actions"><a data-hw="copy">Copy results</a><a data-hw="download">Download JSON</a><a data-hw="end" style="color:#c62828">End session</a></div>' +
@@ -151,7 +151,7 @@ body.lc-slides-active .lc-hw-pill { bottom: 4em; }
   function payload() {
     var t = totals();
     return {
-      homework_number: rec.homework_number, student_id: rec.student_id,
+      homework_number: rec.homework_number, learner_id: rec.learner_id,
       param_chain: rec.param_chain, started: rec.started, submitted_at: now(),
       score: t.won + '/' + t.tot, pages: rec.pages, events: rec.events
     };
@@ -167,7 +167,7 @@ body.lc-slides-active .lc-hw-pill { bottom: 4em; }
       var blob = new Blob([asText()], { type: 'application/json' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'homework-' + rec.homework_number + '-' + rec.student_id + '.json';
+      a.download = 'homework-' + rec.homework_number + '-' + rec.learner_id + '.json';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
     } catch (e) {}
@@ -177,11 +177,11 @@ body.lc-slides-active .lc-hw-pill { bottom: 4em; }
   function submit() {
     var dest = rec.submit_info, data = payload();
     if (!dest) { openPop(); alert('No submit_info destination set — use Copy or Download to hand in your results.'); return; }
-    if (!confirm('Submit homework ' + rec.homework_number + ' for student ' + rec.student_id + '\nto: ' + dest + ' ?')) return;
+    if (!confirm('Submit homework ' + rec.homework_number + ' for learner ' + rec.learner_id + '\nto: ' + dest + ' ?')) return;
     if (/^mailto:/i.test(dest)) {
       var t = totals();
-      var sub = 'Homework ' + rec.homework_number + ' — ' + rec.student_id + ' (' + t.won + '/' + t.tot + ')';
-      var body = 'Homework: ' + rec.homework_number + '\nStudent: ' + rec.student_id + '\nScore: ' + t.won + '/' + t.tot + '\n\n' + asText().slice(0, 1500);
+      var sub = 'Homework ' + rec.homework_number + ' — ' + rec.learner_id + ' (' + t.won + '/' + t.tot + ')';
+      var body = 'Homework: ' + rec.homework_number + '\nLearner: ' + rec.learner_id + '\nScore: ' + t.won + '/' + t.tot + '\n\n' + asText().slice(0, 1500);
       location.href = dest + (dest.indexOf('?') >= 0 ? '&' : '?') + 'subject=' + encodeURIComponent(sub) + '&body=' + encodeURIComponent(body);
       markSubmitted(); return;
     }

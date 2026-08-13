@@ -128,7 +128,7 @@ Auto-included by docs/_layouts/default.html.
        button only exists when a save is actually possible: a key, a resolved
        source, and a source that is not read-only. */
     /* save="my/cv.md" — the OTHER save: the page is the author's (vault,
-       no student write), the work is the learner's. The fence seeds; the
+       no learner write), the work is the learner's. The fence seeds; the
        learner's copy persists at this path in their own bench and, when it
        exists, replaces the seed on load. Same page, two repos, one writer
        per file — the author can republish forever without touching it. */

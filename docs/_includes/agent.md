@@ -222,7 +222,7 @@ Auto-included by docs/_layouts/default.html.
     var output = getBoundOutput(boundId);
     var trimmedCode = code.length > 4000 ? code.substring(0, 4000) + '\n# ...[truncated]' : code;
     var parts = [
-      'The student is editing this Python code in editor #' + boundId + ':',
+      'The learner is editing this Python code in editor #' + boundId + ':',
       '',
       '```python',
       trimmedCode,
@@ -231,7 +231,7 @@ Auto-included by docs/_layouts/default.html.
     if (output) {
       parts.push('', 'The last run produced this output:', '', '```', output, '```');
     }
-    parts.push('', 'The student asks:', '', userQuestion);
+    parts.push('', 'The learner asks:', '', userQuestion);
     return parts.join('\n');
   }
 
@@ -349,7 +349,7 @@ Auto-included by docs/_layouts/default.html.
      posting the answer sheet with every question. A prompt rule alone is a
      promise; removing the answer from what the tutor can see is a fact.
      The question and its options stay, so a guide can still ask what the
-     student thinks and hint — which is the point. */
+     learner thinks and hint — which is the point. */
   function redactAnswers(text) {
     var lines = String(text || "").split("\n");
     for (var i = 0; i < lines.length; i++) {
@@ -462,7 +462,7 @@ Auto-included by docs/_layouts/default.html.
           /* the AUTHOR is curating content, not being tutored: no guiding
              questions — direct, complete, keep-worthy answers */
           cfg.system += '\n\nThis question comes from the course AUTHOR curating ' +
-            'material, not a student: answer directly and completely, no guiding ' +
+            'material, not a learner: answer directly and completely, no guiding ' +
             'questions, no withheld solutions. Keep the step format.';
         }
         return ask(getSharedToken(DEFAULT_PROVIDER), cfg, question);

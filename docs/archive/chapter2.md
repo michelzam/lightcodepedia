@@ -93,7 +93,7 @@ By the end, you will be able to:
 ## 📚 Case Studies  
 
 **Education** 🎓  
-- Student/faculty portals, streamlined workflows  
+- Learner/faculty portals, streamlined workflows  
 
 **Small Businesses** 🏪  
 - CRM, inventory, e-commerce apps  

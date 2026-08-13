@@ -167,7 +167,7 @@ Three levels you'll actually use:
 ### A sub-point inside that section
 ```
 
-> Common confusion: students use `###` expecting it to create a new slide.
+> Common confusion: learners use `###` expecting it to create a new slide.
 > Only `## h2` breaks slides. Worth repeating before the first presentation.
 {: .speaker-note }
 
@@ -313,7 +313,7 @@ Renders to:
 
 Align columns with `:---` (left), `:---:` (center), `---:` (right) in the separator row.
 
-Use a plain markdown table for ≤10 static rows. Use `{: .datagrid }` when students need to sort, filter, or scroll through many rows — see [📊 Datagrid](/components/datagrid).
+Use a plain markdown table for ≤10 static rows. Use `{: .datagrid }` when learners need to sort, filter, or scroll through many rows — see [📊 Datagrid](/components/datagrid).
 
 ## 💬 Blockquotes
 

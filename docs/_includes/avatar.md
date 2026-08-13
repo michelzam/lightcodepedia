@@ -900,7 +900,7 @@ Auto-included by docs/_layouts/default.html.
               var f = map && map[k];
               /* The slug namespace is the file's MOUNT PATH, and the same
                  course mounts differently everywhere it is rendered: the
-                 lab and the vault serve it under courses/…, a student's
+                 lab and the vault serve it under courses/…, a learner's
                  bench under course/…, and older recordings sit in pathname
                  islands like "micro_build_ai" or "run". A recording made on
                  one mount was therefore unreachable from every other — the
@@ -1663,7 +1663,7 @@ Auto-included by docs/_layouts/default.html.
       av._lastAnswer = result.truncated ? null : { question: question, steps: steps };
       /* TESTING COSTS TOO (Michel, 2026-08-13). The author is the heaviest
          user of every page they write, so in author mode each answer says
-         what it cost and where the day stands. Students see none of this:
+         what it cost and where the day stands. Learners see none of this:
          their number lives quietly in the account chip's tooltip. */
       if (authorMode && result.usage) {
         var t = result.usage.total_tokens || 0;
@@ -1847,14 +1847,14 @@ Auto-included by docs/_layouts/default.html.
       /* WHICH DOC AM I TALKING TO? An editor key in this browser makes the
          guide answer as the AUTHOR's: direct, complete, nothing withheld
          (doctrine 7). Michel hit that on a quiz page and read it as the
-         tutor leaking answers to students — it was his own key. So the
+         tutor leaking answers to learners — it was his own key. So the
          panel says so, every time. */
       var direct = false;
       try { direct = !!(localStorage.getItem('lc_ed_pat') && localStorage.getItem('lc_ed_repo')); } catch (e) {}
       panel.innerHTML =
         '<textarea rows="2" placeholder="Ask about this page…" aria-label="Ask about this page"></textarea>' +
         (direct ? '<p class="lc-guide-ask-hint">✍️ author mode — direct answers, nothing withheld. ' +
-                  'A student without an editor key is guided instead.<br>📊 ' +
+                  'A learner without an editor key is guided instead.<br>📊 ' +
                   ((window.lcEscapeHtml || String)((window.lcTokens && window.lcTokens.line()) || '')) + '</p>' : '') +
         '<div class="lc-guide-ask-row"><button type="button">▶ Ask</button></div>';
       var ta = panel.querySelector('textarea');

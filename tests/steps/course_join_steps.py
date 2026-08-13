@@ -63,7 +63,7 @@ def _stub(context):
             route.fulfill(status=202, json={"name": BENCH})
             return
         if re.search(r"/repos/[^/]+/[^/]+$", url) and method == "GET":
-            # repo metadata: visible exactly when the student has vault access
+            # repo metadata: visible exactly when the learner has vault access
             if st.get("vault_ok"):
                 route.fulfill(status=200, json={"name": "uwm-build-ai-vault"})
             else:
@@ -79,7 +79,7 @@ def step_stub_key(context):
     context.join_stub = {"vault_ok": False}
 
 
-@given("the student can read the vault")
+@given("the learner can read the vault")
 def step_stub_vault_ok(context):
     context.join_stub["vault_ok"] = True
 
@@ -141,7 +141,7 @@ def step_key_done(context):
     assert "ok" in _cls(context, 1).split() and "ok" in _cls(context, 2).split()
 
 
-@then("the wizard says the student is in")
+@then("the wizard says the learner is in")
 def step_is_in(context):
     expect(context.page.locator('.lc-join [data-m="3"]')).to_contain_text("You’re in", timeout=6000)
 
@@ -268,7 +268,7 @@ def step_paste_energy_key(context, key):
     box = context.page.locator(".lcj-ekey")
     box.wait_for(state="attached", timeout=15_000)
     # the step may still be folded if earlier checks are mid-flight — the
-    # form handler is live either way; make it visible the way a student
+    # form handler is live either way; make it visible the way a learner
     # who reached step 5 sees it
     context.page.wait_for_function(
         "() => { var s = document.querySelector('.lcj-step[data-n=\"5\"]');"
@@ -277,7 +277,7 @@ def step_paste_energy_key(context, key):
     context.page.locator(".lcj-energy button[type=submit]").click()
 
 
-@then("the energy step confirms the key works and will follow the student")
+@then("the energy step confirms the key works and will follow the learner")
 def step_energy_confirmed(context):
     m = context.page.locator('[data-m="5"]')
     expect(m).to_contain_text("key works", timeout=10_000)
@@ -294,7 +294,7 @@ def step_energy_rejected(context):
 @given('an old author connection points at "{repo}"')
 def step_stale_connection(context, repo):
     # the teacher's browser: a connection left over from an earlier life —
-    # exactly the repo the student's key was never meant to cover
+    # exactly the repo the learner's key was never meant to cover
     context.page.add_init_script(
         "localStorage.setItem('lc_ed_repo', '" + repo + "');"
     )

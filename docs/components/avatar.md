@@ -238,7 +238,7 @@ to each component his reply mentions, spotlights it, and speaks the step.
   surgery — and later keeps append to it. If an existing fence can't be
   located unambiguously, the keep aborts — it can never corrupt a page. And
   when *you* ask (editor connected), Doc answers **directly and
-  completely** — the tutor's guiding-questions style is for students.
+  completely** — the tutor's guiding-questions style is for learners.
 
 ## 🤝 With the demo — ▶ Replay
 

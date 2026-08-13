@@ -9,7 +9,7 @@ Progress — the learner's own record of how far they got, in their bench.
 
   quizzes won/answered · features green/total · when.
 
-WHY A FILE AND NOT A DATABASE (Michel, 2026-08-11): *"students use
+WHY A FILE AND NOT A DATABASE (Michel, 2026-08-11): *"learners use
 multiple devices … they don't know where they are."* localStorage is per
 browser, so a learner who opens the course on a phone looks like a learner
 who never started. The bench already travels with them.
@@ -21,7 +21,7 @@ for: the teacher can read it, and the learner can see their own history.
 WHY A CRC AND NOT A CIPHER. They own the repo; nothing stops a hand edit
 in the GitHub web console, and nothing should — it is their space. So the
 design DETECTS instead: the crc stops matching, and a web-console commit
-is committed by `GitHub` (web-flow) rather than by the student's own key.
+is committed by `GitHub` (web-flow) rather than by the learner's own key.
 Both are read by the classroom console's gradebook.
 
 MERGE IS MONOTONIC — max per page, latest timestamp — so two devices
@@ -30,7 +30,7 @@ already applies locally (K3: localStorage is the working copy, the bench
 file is the durable record).
 
 WHEN IT WRITES: on a save the learner already asked for. No timer — Michel
-2026-08-11: *"I'm not a big fan of timers, some students can be quick,
+2026-08-11: *"I'm not a big fan of timers, some learners can be quick,
 problems can arrive."* Every 💾 fires lc-bench-write and this rides along,
 which works because the file holds EVERY page's counts: a quiz answered on
 a page with no save still travels the next time anything is saved. The one
@@ -221,7 +221,7 @@ Auto-included by docs/_layouts/default.html.
   }
 
   /* NO TIMER (Michel, 2026-08-11: *"I'm not a big fan of timers, some
-     students can be quick, problems can arrive"*). The record rides on a
+     learners can be quick, problems can arrive"*). The record rides on a
      write the learner already asked for — every 💾 on a pad, a grid or a
      page slot. It costs no new request pattern and no new gesture, and it
      lands at the moment they are already thinking "keep this".

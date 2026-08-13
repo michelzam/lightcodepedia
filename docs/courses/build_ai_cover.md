@@ -59,7 +59,7 @@ building things that work, and making the world a better place, *your style*.
 
 ## 🚀 Ready?
 
-Enrolled (or enrolling)? The student wizard gets you working in four steps:
+Enrolled (or enrolling)? The learner wizard gets you working in four steps:
 ```
 ### 1️⃣ Enroll
 Enroll in your class

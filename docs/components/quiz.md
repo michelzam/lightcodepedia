@@ -1,6 +1,6 @@
 # 🧪 Quiz
 
-Turn any bullet list into an interactive question with one line of markup. Students click to answer; wrong picks show ✗ immediately but the correct answer stays hidden until they find it — a treasure hunt, not an answer key.
+Turn any bullet list into an interactive question with one line of markup. Learners click to answer; wrong picks show ✗ immediately but the correct answer stays hidden until they find it — a treasure hunt, not an answer key.
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
@@ -16,7 +16,7 @@ Turn any bullet list into an interactive question with one line of markup. Stude
 
 Click any option. Wrong answer? You see a red ✗ on that pick. The correct answer stays hidden. Find it yourself — that's the point.
 
-> Before students click, ask them to predict aloud. "What do you think happens when you click a wrong answer?"
+> Before learners click, ask them to predict aloud. "What do you think happens when you click a wrong answer?"
 > The treasure-hunt behavior surprises everyone — most expect the answer to be revealed immediately.
 {: .speaker-note }
 
@@ -156,7 +156,7 @@ Renders to:
 
 Toggle each ☐ to ☑, hit **Check**. Re-toggle and re-check until you've found every correct answer.
 
-**Q:** A student clicks **Check** and only `for` is marked ✓. They haven't found `while` yet. What does the quiz show?
+**Q:** A learner clicks **Check** and only `for` is marked ✓. They haven't found `while` yet. What does the quiz show?
 
 - [x] ✗ on their wrong picks; the missed correct answer (`while`) stays hidden.
 - [ ] All correct answers are revealed so you can learn.
@@ -202,7 +202,7 @@ The runner above is graded. Edit it to print something else — the score badge 
 
 ## 🎭 Inside slides mode
 
-Quizzes work inside slides with no extra syntax. The slide engine **does not advance the deck** when you click a quiz option — so students answer without skipping to the next slide. The slide picker shows a colored dot for each slide with a quiz: 🔵 untried, 🟠 attempted, 🟢 all correct.
+Quizzes work inside slides with no extra syntax. The slide engine **does not advance the deck** when you click a quiz option — so learners answer without skipping to the next slide. The slide picker shows a colored dot for each slide with a quiz: 🔵 untried, 🟠 attempted, 🟢 all correct.
 
 ## 🏁 Final exam — boss level
 
@@ -215,7 +215,7 @@ Quizzes work inside slides with no extra syntax. The slide engine **does not adv
 - [ ] The score is saved to localStorage and persists across reloads.
 {: .quiz multi="true" }
 
-**Q:** A student clicks three wrong answers in a row. What has the quiz revealed so far?
+**Q:** A learner clicks three wrong answers in a row. What has the quiz revealed so far?
 
 - [ ] All wrong answers are revealed — they'd see three red ✗ items.
 - [x] Only the three items they actually clicked get ✗. Unclicked wrong answers stay neutral.
@@ -286,6 +286,6 @@ Feature: A quiz publishes its verdict
 
 - **No per-attempt log.** Re-answering correctly after a wrong pick counts as correct in the score. It's a learning tool, not an exam platform.
 - **No persistence.** Score clears on refresh. Ask if you want localStorage persistence.
-- **No fill-in-the-blank.** Use `.run expected="…"` as the substitute — students write code to produce the expected output.
+- **No fill-in-the-blank.** Use `.run expected="…"` as the substitute — learners write code to produce the expected output.
 
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class key="value" }` syntax, placed on its own line right after a block, attaches HTML attributes to it. See [✍️ Text](/components/text).

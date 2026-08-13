@@ -33,7 +33,7 @@ Every check here exists because something slipped through once:
                               copy in the repo is the author's own work, not
                               lesson content. This is how `cv.md` — written by
                               save="cv.md" while the author tested the lesson
-                              — ended up on the students' folder page as a
+                              — ended up on the learners' folder page as a
                               card called "Cv". Same leak class as the notes
                               margin: an author's bench IS this repo, so
                               anything a lesson saves lands beside it.
@@ -328,7 +328,7 @@ def main():
         if os.path.normpath(path) in bench:
             problems.append(
                 "BENCH-FILE    a lesson SAVES this path, so this copy is the "
-                "AUTHOR's own bench output — it publishes to students and shows "
+                "AUTHOR's own bench output — it publishes to learners and shows "
                 "as a card in the folder. Delete it (git history keeps it), or "
                 "rename it with a leading _.")
 

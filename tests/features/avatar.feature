@@ -164,7 +164,7 @@ Feature: Avatar — speaking overlay instructor
 
   Scenario: A recording made on one mount plays back on another
     The voice manifest keys recordings by the rendered file's MOUNT path.
-    One course mounts at courses/… in the lab, at course/… on every student
+    One course mounts at courses/… in the lab, at course/… on every learner
     bench, with older pathname islands like "micro_build_ai" alongside. So a
     voice recorded in the lab was unreachable from every bench: the mp3s sat
     in the repo while the guide spoke robot TTS (the volunteer bench,
@@ -226,7 +226,7 @@ Feature: Avatar — speaking overlay instructor
   Scenario: The guide says whose Doc is answering
     An editor key in the browser makes the guide answer as the AUTHOR's:
     direct, complete, nothing withheld (doctrine 7). Michel read that on a
-    quiz page as the tutor leaking answers to students — it was his own key.
+    quiz page as the tutor leaking answers to learners — it was his own key.
     So the panel says which one is talking (Michel, 2026-08-13).
 
     Given I have a clean browser page

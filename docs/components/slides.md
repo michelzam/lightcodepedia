@@ -8,7 +8,7 @@ Any page on this site can be presented as a slide deck — no source markup, no 
 
 Two readers, one source.
 
-- Students at home read the page scrolly, at their own pace.
+- Learners at home read the page scrolly, at their own pace.
 - The same page projects cleanly as a deck for an in-class walkthrough.
 - You write the markdown once. The viewer decides scroll vs. deck.
 - No duplicate "presentation" file to keep in sync.
@@ -76,7 +76,7 @@ Feature: Any page splits into a slide deck
 ```
 {: .feature tags="learn" status="passing" }
 
-> If a student asks about `###`, point at the design-tips section.
+> If a learner asks about `###`, point at the design-tips section.
 > Common confusion — they assume more `#` = more breaks.
 {: .speaker-note }
 
@@ -141,7 +141,7 @@ print(f"Hello, {name}!")
 
 Edit the code, hit ▶ Run, see output — all inside slide view. Then click outside the runner to advance.
 
-> Live demo on this slide: ask a student to suggest a value for `name`,
+> Live demo on this slide: ask a learner to suggest a value for `name`,
 > type it, hit Run. Better than any static screenshot.
 {: .speaker-note }
 
@@ -174,9 +174,9 @@ On phone:
 
 ## 📷 Share with QR — classroom-friendly join
 
-Tap **📷** (or press `Q`) and a big QR code fills the screen. Students point their phones at the code; their phones land on the **same slide you're showing**. The QR re-encodes itself on every slide change, so latecomers don't get teleported to slide 1 — they join wherever you actually are.
+Tap **📷** (or press `Q`) and a big QR code fills the screen. Learners point their phones at the code; their phones land on the **same slide you're showing**. The QR re-encodes itself on every slide change, so latecomers don't get teleported to slide 1 — they join wherever you actually are.
 
-The URL the QR encodes is just the current page with `?slides=N` (N = current slide, 0-indexed). Anyone with that URL gets the deck starting at slide N — no backend, no real-time sync needed for a classroom projector setup. Each student then navigates at their own pace from there.
+The URL the QR encodes is just the current page with `?slides=N` (N = current slide, 0-indexed). Anyone with that URL gets the deck starting at slide N — no backend, no real-time sync needed for a classroom projector setup. Each learner then navigates at their own pace from there.
 
 ## 💭 Speaker notes
 
@@ -209,7 +209,7 @@ When notes mode is on in slide mode, a small **💭 NOTES ON** badge appears at 
 
 Try it: load this page with `?notes=1` appended to the URL, or enter slide mode and press **N** — the demo notes sprinkled through the rest of this page will appear.
 
-**Q:** A student walks in late and scans your projected QR at slide 7. Where do they land?
+**Q:** A learner walks in late and scans your projected QR at slide 7. Where do they land?
 
 - [ ] Slide 1. Catching up builds character.
 - [x] Slide 7 — the URL has `?slides=7`.

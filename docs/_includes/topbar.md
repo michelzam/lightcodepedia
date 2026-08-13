@@ -216,7 +216,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
   text-decoration: none; white-space: nowrap;
 }
 #lc-fork-hint:hover { background: #ffeab0; }
-/* ── bench mode: the student's safe playground gets its own sky ──
+/* ── bench mode: the learner's safe playground gets its own sky ──
    engaged by the runner when it renders a bench (gh: source, not the vault):
    dark bar, the brand becomes the bench itself, links from the bench's own
    menu.md when it has one */
@@ -380,6 +380,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
          are compiled out of pedia and fork builds entirely. {% endcomment %}
       <a class="lc-ud-row" href="/lab/"><span>🎓</span><span>HQ — classroom &amp; material</span></a>
       <div class="lc-ud-row" id="lc-ud-publish"><span>🚀</span><span id="lc-ud-publish-label">Publish to pedia</span></div>
+      <div class="lc-ud-row" id="lc-ud-publish-courses"><span>📚</span><span id="lc-ud-publish-courses-label">Publish courses</span></div>
       {% endif %}
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
       <div id="lc-ud-rate" style="display:none;padding:6px 16px;font-size:0.75em;border-bottom:1px solid #f0f0f0"></div>
@@ -498,7 +499,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
 <script>
 (function(){
   /* the site's own repo — a runner render OF THIS repo is the author editing
-     their own source (→ 📤 Publish), not a student bench (→ 🔄 Refresh). */
+     their own source (→ 📤 Publish), not a learner bench (→ 🔄 Refresh). */
   var LC_SITE_REPO = {{ site.github.repository_nwo | default: "" | jsonify }};
   function splitIcons(scope) {
     (scope || document).querySelectorAll('#lc-topbar .lc-links a').forEach(function(a){
@@ -517,10 +518,10 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
      vault). The bar goes dark, the brand becomes 🔬 <bench>/ pointing home
      (the bench README), and if the bench ships a menu.md its links replace
      the site menu — relative hrefs resolve INTO the bench via the runner,
-     so students stay in their playground. Same folder-menu convention as
+     so learners stay in their playground. Same folder-menu convention as
      Jekyll (a menu.md governs its branch), applied at runtime. */
   /* Refresh a bench: merge-upstream syncs a fork with its parent hub. New
-     hub files arrive, the student's own files stay; only a file edited on
+     hub files arrive, the learner's own files stay; only a file edited on
      BOTH sides conflicts (409) — hence weekly modules are new files. */
   window.lcBenchRefresh = function (repo, btn) {
     var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
@@ -561,7 +562,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       brand.parentNode.insertBefore(file, brand.nextSibling);
       /* one slot, decided per render: 📤 Publish when it's the author editing
          their own source (→ the Dashboard's 🚦 Fleet), 🔄 Refresh when it's a
-         student bench (merge-upstream — new hub files arrive, own work stays).
+         learner bench (merge-upstream — new hub files arrive, own work stays).
          Editing the file itself is the bottom-left page editor, not a bar button. */
       var act = document.createElement("button");
       act.className = "lc-bench-refresh"; act.type = "button";
@@ -587,7 +588,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
     }
     if (brand && first) {
       /* the brand IS the class: <hub>-<login> → "Build Ai Summer26" (drop the
-         student's own id, dashes→spaces, title case). It shares the home
+         learner's own id, dashes→spaces, title case). It shares the home
          destination — one place, no surprise. */
       var name = repo.split("/")[1], login = "";
       try { login = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; } catch (e) {}
@@ -703,7 +704,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
         .catch(function(){});
       /* karma measures your PUBLIC LightNode (login/lightcodepedia) — never
          the node you happen to be browsing. On the lab this integrates the
-         pedia numbers; on a student's fork it is their fork by the same rule. */
+         pedia numbers; on a learner's fork it is their fork by the same rule. */
       var _repoBase = 'https://api.github.com/repos/' + u.login + '/lightcodepedia';
       var _karma = 0;
       var _rc = { forks: 0, stars: 0, visitors: 0, pages: 0, quizzes: 0, bio: false, site: false };
@@ -834,7 +835,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
 
     /* ── 🔄 fork sync: one tap to receive the mother site's improvements ──
        Uses GitHub's own sync-fork endpoint (merge-upstream) with the PAT the
-       editor already holds. Outcomes are honest: clean merge (student edits
+       editor already holds. Outcomes are honest: clean merge (learner edits
        preserved), 409 = conflicting edits → manual merge link, or up to date.
        The row appears only when the connected repo is a fork that is BEHIND
        its parent (checked with a read-only compare when the menu opens). */
@@ -866,6 +867,39 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
           _pubLabel.textContent = '❌ network error — try again';
         }).finally(function () {
           setTimeout(function () { _pubLabel.textContent = 'Publish to pedia'; _pubBusy = false; }, 6000);
+        });
+      });
+    }
+
+    /* ── The courses gate, beside the engine's ─────────────────────────────
+       The two publishes are one habit — engine first, then the material that
+       leans on it — and until now only the engine had a door here (Michel,
+       2026-08-13: "allow me to publish from there too. I'm not any learner").
+       Same dispatch, same key, same row. */
+    var _crsRow = document.getElementById('lc-ud-publish-courses');
+    if (_crsRow) {
+      var _crsLabel = document.getElementById('lc-ud-publish-courses-label');
+      var _crsRepo = {{ site.github.repository_nwo | default: "" | jsonify }};
+      var _crsBusy = false;
+      _crsRow.addEventListener('click', function () {
+        if (_crsBusy || !pat || !_crsRepo) return;
+        if (!window.confirm('Publish every course to its vault now?\n\nEach course folder goes to the vault its __course.yml names; learners pick it up with 🔄 Sync.')) return;
+        _crsBusy = true;
+        _crsLabel.textContent = '📚 launching…';
+        fetch('https://api.github.com/repos/' + _crsRepo + '/actions/workflows/publish-courses.yml/dispatches', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + pat, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ref: 'main', inputs: { course: '' } })
+        }).then(function (r) {
+          _crsLabel.textContent = (r.status === 204)
+            ? '✔ Publishing courses…'
+            : (r.status === 403 || r.status === 404)
+              ? '❌ PAT lacks Actions read/write on the lab'
+              : '❌ Failed (HTTP ' + r.status + ')';
+        }).catch(function () {
+          _crsLabel.textContent = '❌ network error — try again';
+        }).finally(function () {
+          setTimeout(function () { _crsLabel.textContent = 'Publish courses'; _crsBusy = false; }, 6000);
         });
       });
     }

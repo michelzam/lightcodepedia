@@ -6,7 +6,7 @@ Feature: 💬 The reader's margin — one note per block, kept and versioned in 
   editing rewrites its section, clearing deletes it, and git keeps the
   whole story. Under the x-ray, annotated blocks wear a 💬 at a glance.
   The teacher reads margins later through the roster, which already names
-  every student's bench. (Questions-as-a-kind are parked — this could grow
+  every learner's bench. (Questions-as-a-kind are parked — this could grow
   differently.)
 
   Background:

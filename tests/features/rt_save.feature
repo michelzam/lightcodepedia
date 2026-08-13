@@ -126,7 +126,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
 
   Scenario: The class hub is framed, but the work goes home
     Canvas gives the whole class ONE url — the session hub. Prefer the repo
-    the page renders from and every student's save aims at a shared repo
+    the page renders from and every learner's save aims at a shared repo
     none of them may write. Work always goes to the learner's OWN connected
     space: the page is where you stand; my/ is where you live.
 
@@ -381,7 +381,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     a phone — the most important fact about the block was the least
     visible thing on the page. The stripe names the signed-in learner,
     not the repo owner: a class bench is forked INTO the org, so every
-    student would otherwise see the same organisation logo over their own
+    learner would otherwise see the same organisation logo over their own
     work.
 
     Given a connected bench whose "courses/demo/mod/wiring.md" does not exist yet

@@ -19,7 +19,7 @@ This license applies to the LightCode Platform software components developed by 
 This license grants the right to **freely access and use the platform** under the following strict conditions:
 
 - For **educational purposes only**, within the framework of Erasmus+ and higher education institutions.  
-- **Primarily for students and faculty members affiliated with recognized LightCode partner universities.**  
+- **Primarily for learners and faculty members affiliated with recognized LightCode partner universities.**  
 - For **non-commercial academic research activities**.
 
 > *Use outside this scope, including access by non-affiliated individuals or organizations, commercial activities, professional services, or proprietary integrations, requires a separate commercial agreement.*
@@ -37,7 +37,7 @@ This license grants the right to **freely access and use the platform** under th
 ## 3. Access Restrictions
 
 - This license **does not grant universal access**.  
-- Access is strictly limited to students, researchers, and faculty members of officially recognized **LightCode partner universities**.  
+- Access is strictly limited to learners, researchers, and faculty members of officially recognized **LightCode partner universities**.  
 - **To inquire about becoming a partner institution, please contact KarmicSoft Sales at [sales@karmicsoft.com](mailto:sales@karmicsoft.com).**
 
 ---

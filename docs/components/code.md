@@ -149,7 +149,7 @@ An example loading a CSV from the repo:
 | Snippet that deserves a title / file-viewer look | `{: .code title="…" }` |
 | Full source file you want to keep in sync | `code_file.md path="…"` |
 | External file from another repo | `code_file.md src="…"` |
-| Python code the student should **run** | `{: .run }` — see [🐍 Run](/components/run) |
+| Python code the learner should **run** | `{: .run }` — see [🐍 Run](/components/run) |
 
 > Rule of thumb: start with Option 1 (plain fenced). Upgrade to Option 2 when you want chrome.
 > Upgrade to Option 3 when the source file already exists and you'd have to maintain two copies otherwise.

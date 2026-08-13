@@ -400,7 +400,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
      editing rewrites its section, clearing deletes it — and git keeps the
      whole story, so nothing is ever really lost. The file itself stays a
      readable page for whoever opens it later (the learner, or the teacher
-     through the roster, which already names every student's bench). */
+     through the roster, which already names every learner's bench). */
   function anchorOf(el, id) {
     return id ? "#" + id
       : "«" + ((((el && el.textContent) || "").trim().replace(/\s+/g, " ").slice(0, 60)) || "page") + "»";
@@ -840,15 +840,15 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
   /* ── the bench door — the learner's OWN repo, whole files ────────────────
      lcCommitInline writes a block back into the page it came from; lcBench
      writes a FILE into the learner's connected repo. Different question:
-     the page is the author's (vault — no student write), the work is the
-     student's. save="my/cv.md" on a block means "this block's content
+     the page is the author's (vault — no learner write), the work is the
+     learner's. save="my/cv.md" on a block means "this block's content
      persists HERE, in whoever-is-reading's bench". One reader/writer pair,
      used by every component with a save= knob, so the contract cannot
      drift: fence = the author's seed, bench file = the learner's truth. */
   window.lcBench = {
     /* WHICH bench? The learner's OWN connected space — ALWAYS, and never the
        repo the page happens to render from. Canvas gives the whole class ONE
-       url (the session hub); prefer the render root and every student's save
+       url (the session hub); prefer the render root and every learner's save
        aims at a shared repo none of them may write. The page is where you
        stand; my/ is where you live. (A first version preferred the render
        root — reverted 2026-08-03 after exactly that Canvas failure.) The

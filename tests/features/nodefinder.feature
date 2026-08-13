@@ -1,6 +1,6 @@
 Feature: The LightNode router (404 page)
 
-  lightcodepedia.org/@student lands on the 404 page, which routes: live fork
+  lightcodepedia.org/@learner lands on the 404 page, which routes: live fork
   site → redirect; fork without Pages → explain the switch, never a GitHub
   404; unknown name → an invitation, not a dead end.
 

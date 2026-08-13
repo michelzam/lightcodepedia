@@ -283,7 +283,7 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
             li.classList.add('lc-quiz-correct');
           } else {
             // Treasure-hunt: only the chosen wrong answer is revealed;
-            // the correct one stays hidden until the student finds it.
+            // the correct one stays hidden until the learner finds it.
             li.classList.add('lc-quiz-wrong');
           }
           gradeAndReport(hit);

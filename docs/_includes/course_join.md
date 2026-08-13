@@ -1,5 +1,5 @@
 {%- comment -%}
-Course join — the dedicated STUDENT wizard (distinct from /start, which is the
+Course join — the dedicated LEARNER wizard (distinct from /start, which is the
 builder/LightNode journey). Activated by IAL on a link paragraph:
 
   [join](#)
@@ -7,15 +7,15 @@ builder/LightNode journey). Activated by IAL on a link paragraph:
 
 Five steps: ① GitHub account → ② course key (classic, repo scope — deep link
 pre-fills scope + an org-named note) → ③ access check (tries the actual course
-entry with the student's key; green = enrolled + key right → 📖 Open button)
-→ ④ the bench: the student's private fork of the session hub, forked INTO the
+entry with the learner's key; green = enrolled + key right → 📖 Open button)
+→ ④ the bench: the learner's private fork of the session hub, forked INTO the
 org (org-owned, named <hub>-<login>) so teachers see the work at any time.
 
 CLASSMATES MUST NOT — and that is a permission rule, not a wish. Private forks
 inherit the upstream's TEAM permissions, so while the session team held pull on
-the hub, every student on it could read every other bench. The team is now given
+the hub, every learner on it could read every other bench. The team is now given
 the VAULT only (nobody forks the vault); read on the hub is granted to each
-student INDIVIDUALLY, because individual permissions are not inherited by forks.
+learner INDIVIDUALLY, because individual permissions are not inherited by forks.
 The console's 🔒 column proves the team still has nothing on the hub. Org owners
 keep seeing everything — ownership outranks both. (2026-08-11) Status is explicit — no bench → 🍴 fork; behind the hub →
 🔄 sync (merge-upstream); the bench opens IN the runner (never the GitHub UI).
@@ -60,9 +60,9 @@ The check is live truth against the API, never cached. Done steps reopen via
     var entry = el.getAttribute("entry") || "";
     if (!vault || !entry) return;
     var org = vault.split("/")[0];
-    /* The LMS door: an iframe carries ONE src for every student, so the
+    /* The LMS door: an iframe carries ONE src for every learner, so the
        wizard resolves per visitor. ?hub=<session> scopes the bench step to
-       THAT class (a student can hold several benches); ?go=bench forwards
+       THAT class (a learner can hold several benches); ?go=bench forwards
        straight into the bench when everything is green. Plain /courses/join
        never forwards — the bench menu's 🎓 entry stays a status page. */
     var q = {};
@@ -71,7 +71,7 @@ The check is live truth against the API, never cached. Done steps reopen via
     var wantHub = q.hub || "";
     var goBench = q.go === "bench";
     var keyNote = encodeURIComponent("Lightcode course key — " + org);
-    /* write:org lets the wizard ACCEPT the class invitation in-app (a student
+    /* write:org lets the wizard ACCEPT the class invitation in-app (a learner
        is admin of no org, so the scope is inert beyond that) — one click here
        instead of a trip through GitHub's UI */
     var keyUrl = "https://github.com/settings/tokens/new?scopes=repo,write:org&description=" + keyNote;
@@ -179,7 +179,7 @@ The check is live truth against the API, never cached. Done steps reopen via
     /* ── step 4: the bench — a fork of the session hub INTO the org, named
        <hub>-<login>. Org-owned means the teacher reads the work at any time
        (owners see every org repo) and classmates never do (base permission
-       none). The hub is discovered, not configured: with the student's key,
+       none). The hub is discovered, not configured: with the learner's key,
        the only template repo they can see in the org IS their session. */
     function sgh(path, opts) {
       opts = opts || {};
@@ -255,17 +255,17 @@ The check is live truth against the API, never cached. Done steps reopen via
       /* the connection is a PAIR: step 2 stored the key, and THIS is the
          moment its repo half becomes known. Without it, every save="my/…"
          aimed at whatever repo was lying around from an earlier life (the
-         author's site, or nothing at all) and the student's key answered
+         author's site, or nothing at all) and the learner's key answered
          404 for a repo it was never meant to cover. The bench is resolved
          per visitor from their own key, so pair them here. */
       try { localStorage.setItem("lc_ed_repo", org + "/" + B.name); } catch (e) {}
       msgH(4, "🛠 Your bench: <b>" + org + "/" + B.name + "</b> — " +
         (behind ? "⬆️ the hub has <b>" + behind + " update" + (behind > 1 ? "s" : "") + "</b> you don’t have yet."
                 : "✅ up to date with the hub."), behind ? "" : "ok");
-      /* the bench opens IN the runner — students never land in the GitHub UI;
+      /* the bench opens IN the runner — learners never land in the GitHub UI;
          xray Keep commits their edits straight back to the bench */
       /* Carry the frame flags through. An LMS frames ONE url for every
-         student and the wizard resolves the bench per visitor — so the flags
+         learner and the wizard resolves the bench per visitor — so the flags
          have to survive the hop, or the bench opens with the full platform
          inside a page that is supposed to be focused. */
       var pass = ["focus", "editable", "navigable", "open"]
@@ -448,7 +448,7 @@ The check is live truth against the API, never cached. Done steps reopen via
           .catch(function () { if (b) b.disabled = false; msg(2, "❌ Could not reach GitHub — check your connection.", "err"); });
     }
 
-    /* returning student: key already stored → straight to the door */
+    /* returning learner: key already stored → straight to the door */
     if (pat()) { setState("1", "ok"); setState("2", "ok"); setState("3", "on"); checkAccess(true); }
     else setState("1", "on");
   }

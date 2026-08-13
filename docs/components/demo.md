@@ -95,7 +95,7 @@ Demonstrate: build a form
 {: .demo #build_a_form title="Build a form" }
 ````
 
-Start prompts for a **name** (and optional student ID) — there are no accounts,
+Start prompts for a **name** (and optional learner ID) — there are no accounts,
 so that's how the export is attributable.
 
 ## 🔧 Knobs

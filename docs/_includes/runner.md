@@ -10,9 +10,9 @@ pure md + IAL (P1); all logic lives here in the engine.
 
 The bar replaces the /run page title while a source renders and names the
 source (the working hint). Two zones, by repo: the VAULT is read-only
-(repo privacy); a BENCH is the student's own repo, edited directly. New
+(repo privacy); a BENCH is the learner's own repo, edited directly. New
 weekly modules arrive as NEW files via Sync, so they never conflict with
-files a student is already working in.
+files a learner is already working in.
 {%- endcomment -%}
 <style>
 /* the bar IS the runner's presence: it replaces the page title, names what is
@@ -68,7 +68,7 @@ files a student is already working in.
   /* The bar names what is rendering. On a bench (topbar bench mode) the repo
      + filename already live up there, so the bar just shows the path; a
      plain gh: render shows the full chip. No ownership dance: the vault is
-     R/O by repo privacy, the bench is the student's to edit directly. */
+     R/O by repo privacy, the bench is the learner's to edit directly. */
   function paintBar(bar, st) {
     if (!bar) return;
     /* IN CRUMB MODE THE PATH IS NOT THE LEARNER'S BUSINESS (Michel,
@@ -187,7 +187,7 @@ files a student is already working in.
     root.dataset.lcSrcRepo = gm ? gm[1] + "/" + gm[2] : (rw ? rw[1] + "/" + rw[2] : "");
     root.dataset.lcSrcPath = gm ? gm[3] : (rw ? rw[3] : (src.charAt(0) === "/" ? "docs" + src : ""));
     /* the vault is the LIBRARY — read-only for everyone. Mark the render so
-       xray refuses to edit it (a student has no write access anyway, but the
+       xray refuses to edit it (a learner has no write access anyway, but the
        editor must not even offer it). */
     if (/-vault$/.test(root.dataset.lcSrcRepo)) root.dataset.lcReadonly = "1";
     else delete root.dataset.lcReadonly;
@@ -203,8 +203,8 @@ files a student is already working in.
     fetchMd(spec.headers)
       .catch(function (err) {
         /* educator fallback: the cockpit's org key may read what the author
-           key can't — a student's bench lives in the org, not under the
-           author's account. Students never have lc_org_pat; no-op for them. */
+           key can't — a learner's bench lives in the org, not under the
+           author's account. Learners never have lc_org_pat; no-op for them. */
         var opat = ""; try { opat = localStorage.getItem("lc_org_pat") || ""; } catch (e) {}
         if (spec.gh && opat && err && (err.status === 404 || err.status === 401))
           return fetchMd({ Authorization: "Bearer " + opat, Accept: "application/vnd.github.v3.raw", "X-GitHub-Api-Version": "2022-11-28" });
@@ -265,7 +265,7 @@ files a student is already working in.
           status.style.display = "none";
           if (bar) {
             /* a bench (any gh: source that isn't the course vault) flips the
-               topbar into the student's safe playground */
+               topbar into the learner's safe playground */
             if (spec.gh && barSt.repo && !/-vault$/.test(barSt.repo) && window.lcBenchMode)
               window.lcBenchMode(barSt.repo, barSt.path);
             barSt.loading = false; paintBar(bar, barSt);
@@ -337,7 +337,7 @@ files a student is already working in.
   /* A COURSE PAGE MUST NOT NAME ITS OWN VAULT (Michel, 2026-08-12: the
      course index embeds `_setup.md`). `src="_setup.md"` means *the file
      beside me* — and "me" is the lab copy while authoring, the org vault
-     for students, a fork tomorrow. So a relative src resolves against the
+     for learners, a fork tomorrow. So a relative src resolves against the
      render this runner sits in, exactly like a link in the same page. */
   function relativeSrc(el, src) {
     if (!src || /^[a-z]+:/i.test(src) || src.charAt(0) === "/") return src;

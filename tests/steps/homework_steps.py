@@ -13,7 +13,7 @@ def step_hw_pill(context, text):
 def step_hw_stored(context):
     active = context.page.evaluate("() => localStorage.getItem('lc_hw_active')")
     assert active and "93629601" in active, (
-        "expected lc_hw_active with the student id, got %r" % (active,)
+        "expected lc_hw_active with the learner id, got %r" % (active,)
     )
 
 

@@ -84,7 +84,7 @@ rex = Dog("Rex")
 ```
 {: .run rows="11" }
 
-> Lovely first lesson after the 3D playground: students *used* Lucky and Wanda as
+> Lovely first lesson after the 3D playground: learners *used* Lucky and Wanda as
 > objects; now they build the blueprint those objects came from. The penny drops:
 > "so a class is just the recipe, and each object is a cake."
 {: .speaker-note }

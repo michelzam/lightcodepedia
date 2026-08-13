@@ -288,7 +288,7 @@ show.form(obj, title=None)
 - [ ] Multiple forms can't bind to the same datagrid.
 {: .quiz multi="true" }
 
-**Q:** A student double-clicks a number cell in an editable form, types `"banana"`, and presses Enter. What happens?
+**Q:** A learner double-clicks a number cell in an editable form, types `"banana"`, and presses Enter. What happens?
 
 - [ ] The cell turns red and shows a validation error.
 - [x] The editor rejects the input and reverts to the previous number.

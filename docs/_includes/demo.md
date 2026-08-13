@@ -1,6 +1,6 @@
 {%- comment -%}
 Demo — record a demonstration session (the "black box" to the recorder's camera).
-The student demonstrates how to use / how to build something; this logs the
+The learner demonstrates how to use / how to build something; this logs the
 learning actions (form/slider edits, clicks, quiz answers, timings, pause gaps),
 not keystrokes or screen. Start / Pause / Resume / Finish, then Export one JSON
 (name/id + event log + summary + sha-256 + optional YouTube link).
@@ -14,7 +14,7 @@ reproducibility first, explainability on top. The trace opens with an `init`
 snapshot of every form's starting state, and all of it is signed by the sha-256.
 
 ▶ Replay hands the trace to the avatar engine (window.lcAvatarPlay): Prof. LC
-walks the student's path, spotlights each widget, narrates the action — and
+walks the learner's path, spotlights each widget, narrates the action — and
 RE-PERFORMS it: the forms are restored to the recorded starting state, then each
 edit is re-applied live through window.lcFormSet (the same code path as a human
 edit, so dependent {= …} cells recompute during the replay). Quiz answers are
@@ -181,14 +181,14 @@ docs/_layouts/default.html.
     var hd = wrap.querySelector(".lc-demo-hd"), dot = wrap.querySelector(".lc-demo-dot"),
         timer = wrap.querySelector(".lc-demo-timer"), body = wrap.querySelector(".lc-demo-body");
 
-    var st = { events: [], startWall: 0, running: false, since: 0, active: 0, student: null, finished: false, tick: null };
+    var st = { events: [], startWall: 0, running: false, since: 0, active: 0, learner: null, finished: false, tick: null };
 
     // ── logging ──────────────────────────────────────────────────────────────
     function tnow() { return st.startWall ? Date.now() - st.startWall : 0; }
     function log(type, detail) {
       if (!st.running) return;
       st.events.push({ t: tnow(), type: type, detail: detail });
-      try { localStorage.setItem("lc_demo_" + id, JSON.stringify({ student: st.student, events: st.events })); } catch (e) {}
+      try { localStorage.setItem("lc_demo_" + id, JSON.stringify({ learner: st.learner, events: st.events })); } catch (e) {}
     }
     function mark(type) { st.events.push({ t: tnow(), type: type }); }
 
@@ -230,14 +230,14 @@ docs/_layouts/default.html.
         '<p class="lc-demo-mut">Demonstrate it, then export your log. Your name is stamped into the file.</p>' +
         '<div class="lc-demo-row">' +
           '<input type="text" class="lc-demo-name" placeholder="Your name" autocomplete="name">' +
-          '<input type="text" class="lc-demo-id" placeholder="Student ID (optional)">' +
+          '<input type="text" class="lc-demo-id" placeholder="Learner ID (optional)">' +
           '<button type="button" class="lc-demo-btn lc-demo-start">▶ Start</button>' +
           (window.lcOpenRecorder ? '<button type="button" class="lc-demo-btn lc-demo-vid">🎥 Record video</button>' : '') +
         '</div>';
       body.querySelector(".lc-demo-start").onclick = function () {
         var name = (body.querySelector(".lc-demo-name").value || "").trim();
         if (!name) { body.querySelector(".lc-demo-name").focus(); return; }
-        st.student = { name: name, id: (body.querySelector(".lc-demo-id").value || "").trim() };
+        st.learner = { name: name, id: (body.querySelector(".lc-demo-id").value || "").trim() };
         start();
       };
       var v = body.querySelector(".lc-demo-vid"); if (v) v.onclick = function () { try { window.lcOpenRecorder(); } catch (e) {} };
@@ -248,7 +248,7 @@ docs/_layouts/default.html.
         '<div class="lc-demo-row">' +
           '<button type="button" class="lc-demo-btn lc-demo-pause">⏸ Pause</button>' +
           '<button type="button" class="lc-demo-btn lc-demo-finish">⏹ Finish</button>' +
-          '<span class="lc-demo-mut">Recording ' + esc(st.student.name) + '’s demo…</span>' +
+          '<span class="lc-demo-mut">Recording ' + esc(st.learner.name) + '’s demo…</span>' +
         '</div>';
       body.querySelector(".lc-demo-pause").onclick = pause;
       body.querySelector(".lc-demo-finish").onclick = finish;
@@ -291,17 +291,17 @@ docs/_layouts/default.html.
       var out = {
         v: 2,                              // trace shape: events carry widget id + value
         demo: id, title: title,
-        student: st.student,
+        learner: st.learner,
         startedAt: new Date(st.startWall).toISOString(),
         durationSec: durationSec,
         summary: { actions: actions, pauses: pauses, quiz: quiz, karma: karma },
         video: "",
         events: st.events
       };
-      out.sha256 = await sha256(JSON.stringify({ student: out.student, startedAt: out.startedAt, events: out.events }));
+      out.sha256 = await sha256(JSON.stringify({ learner: out.learner, startedAt: out.startedAt, events: out.events }));
 
       body.innerHTML =
-        '<div class="lc-demo-sum">✅ <b>' + esc(st.student.name) + '</b> — ' +
+        '<div class="lc-demo-sum">✅ <b>' + esc(st.learner.name) + '</b> — ' +
           actions + ' actions · ' + fmtClock(durationSec * 1000) + ' active · ' + pauses + ' pause(s)' +
           (quiz ? ' · quiz ' + quiz.correct + '/' + quiz.answered : '') +
           ' · <b>karma ' + karma + '</b></div>' +
@@ -317,7 +317,7 @@ docs/_layouts/default.html.
         out.video = (body.querySelector(".lc-demo-yt").value || "").trim();
         return JSON.stringify(out, null, 2);
       }
-      var fname = "demo-" + id + "-" + ((st.student.id || st.student.name).replace(/[^\w-]+/g, "_")) + ".json";
+      var fname = "demo-" + id + "-" + ((st.learner.id || st.learner.name).replace(/[^\w-]+/g, "_")) + ".json";
       var note = body.querySelector(".lc-demo-note");
       var rep = body.querySelector(".lc-demo-replay");
       if (rep) rep.onclick = function () {

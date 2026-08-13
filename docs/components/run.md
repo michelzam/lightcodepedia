@@ -307,11 +307,11 @@ print("math loaded!")
 - [ ] `silent="true"` shows a minimal output pane but suppresses errors.
 {: .quiz multi="true" }
 
-**Q:** A student hits ▶ Run and nothing happens for 3 seconds, then the output appears. What's going on?
+**Q:** A learner hits ▶ Run and nothing happens for 3 seconds, then the output appears. What's going on?
 
 - [ ] The server is slow — try at midnight.
 - [x] Python is loading into the browser for the first time (~300 KB). Subsequent runs are instant.
-- [ ] The student's code has an infinite loop. Always.
+- [ ] The learner's code has an infinite loop. Always.
 - [ ] Chrome blocked it. Always Chrome.
 {: .quiz }
 

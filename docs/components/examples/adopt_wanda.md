@@ -109,7 +109,7 @@ system: |
 💬 _The progression from visual exploration to executable models supports authentic learning while staying accessible for diverse learners._  
 💬 A deeply thoughtful and forward-thinking contribution that bridges professional software practices with approachable computing education.
 
-### 👨‍🎓 UWM Student Feedback
+### 👨‍🎓 UWM Learner Feedback
 💬 _Working on this assignment has shown me how visual and interactive elements make learning and coding clearer. Seeing how pets (Lucky and Wanda) react in real time made methods, states, and relationships more concrete. It also improved my ability to think from a user's perspective and design engaging, user-friendly features. Overall, it enhanced my coding skills and problem-solving approach._
 {: .block #momentum}
 ###
@@ -151,7 +151,7 @@ wanda:
 ## Yet, Does this reflect the learning?
 However, the gap is that, whatever the learning environment is, only the final photo 
 is not reliable enough to confirm learrnerss’ skill match CLO, including in the AI era 
-where a copy/paste gives a shortcut, jeopardising both academic cunduct and student’s 
+where a copy/paste gives a shortcut, jeopardising both academic cunduct and learner’s 
 later biger problems.
 
 If you're an educator you can ask yourself
@@ -313,6 +313,6 @@ def on_click(button):
 - ⏱️ **Real-time** — assess and **guide** as the learner works.
 - 🎨 Mass customisation!
 
-**The activity is live on the open platform today. KARMA fills the Log — so students get the feedback they need.**
+**The activity is live on the open platform today. KARMA fills the Log — so learners get the feedback they need.**
 
 **🎬**{: title="End here. Value only — no engine, no schema, no internals." }

@@ -86,7 +86,7 @@ by construction.
 ```
 {: .radio }
 
-> Walk students through the table first — "which row is yours?" —
+> Walk learners through the table first — "which row is yours?" —
 > then send them to the matching tab. The two-badges framing prevents the
 > #1 support question (pasting the GitHub key into the agent).
 {: .speaker-note }
@@ -232,7 +232,7 @@ A **bot** is a markdown file in `docs/bots/` — the file's text *is* the
 superprompt (readable by anyone, like every LC page), and one small fence
 inside it sets the model, the name, and its **knowledge**: a list of course
 pages whose own markdown is folded into every answer. `self` means *the page
-the student is on*. One line summons it anywhere:
+the learner is on*. One line summons it anywhere:
 
 ````markdown
 Ask Doc — he knows this page.
@@ -306,7 +306,7 @@ system: |
 **What the agent actually receives** (built automatically, you never type this):
 
 ````
-The student is editing this Python code in editor #buggy:
+The learner is editing this Python code in editor #buggy:
 ```python
 <current editor contents>
 ```
@@ -314,7 +314,7 @@ The last run produced this output:
 ```
 <last stdout / stderr>
 ```
-The student asks:
+The learner asks:
 <your typed question>
 ````
 
@@ -373,7 +373,7 @@ Know these before you build a 300-slide AI curriculum on top of it.
 - [ ] The PAT is encrypted server-side and returned to you as a JWT.
 {: .quiz multi="true" }
 
-**Q:** Class starts in 2 minutes and a student says "I get a 401 error". What's the most likely fix?
+**Q:** Class starts in 2 minutes and a learner says "I get a 401 error". What's the most likely fix?
 
 - [ ] Refresh the page fourteen times. Persistence pays.
 - [ ] Switch to Firefox. Edge is the problem.
@@ -384,7 +384,7 @@ Know these before you build a 300-slide AI curriculum on top of it.
 > 401 = authentication failure. A fresh classic PAT (zero scopes) fixes 95 % of these.
 {: .speaker-note }
 
-**Q:** You want the agent to always see what the student is currently coding. Which IAL attribute do you add to `{: .agent }`?
+**Q:** You want the agent to always see what the learner is currently coding. Which IAL attribute do you add to `{: .agent }`?
 
 - [ ] `linked="run-id"`
 - [x] `bound="run-id"`
