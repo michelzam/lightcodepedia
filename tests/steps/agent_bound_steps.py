@@ -151,3 +151,26 @@ def step_desk_asks_with_reason(context, needle):
     msg = panel.locator(".lc-agent-authmsg")
     expect(msg).to_be_visible(timeout=10_000)
     expect(msg).to_contain_text(needle, timeout=5_000)
+
+
+@then("course material for a tutor keeps the question and drops the answer")
+def step_redaction(context):
+    """Every page a tutor reads goes through this rule before it is sent. The
+    options survive stripped of their [x]; the note that explains them does
+    not, because that note IS the answer in prose."""
+    out = context.page.evaluate(
+        """() => window.lcRedactAnswers([
+             '**Q:** Which part decides whether a card shows?',
+             '',
+             '- [ ] A form.',
+             '- [x] A gate.',
+             '- [ ] A query.',
+             '',
+             '  > The gate reads the date and opens the card.',
+             '{: .quiz #which_quiz }'
+           ].join('\\n'))""")
+    assert out is not None, "the redaction rule is not exposed"
+    assert "[x]" not in out and "[X]" not in out, out
+    assert "The gate reads the date" not in out, out
+    assert "Which part decides" in out, out
+    assert "A gate." in out, out

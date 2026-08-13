@@ -343,7 +343,30 @@ Auto-included by docs/_layouts/default.html.
   function loadBot(name) {
     var key = String(name || '').replace(/[^\w-]/g, '');
     var rt = rtSrc();
-    /* one knowledge set per rendered course — /run swaps courses on
+    /* THE TUTOR MUST NOT HOLD THE ANSWER KEY (Michel, 2026-08-13: Doc handed a
+     quiz answer straight over). A page's markdown marks the right option with
+     [x] and often explains it in a note underneath — so "knowledge: self" was
+     posting the answer sheet with every question. A prompt rule alone is a
+     promise; removing the answer from what the tutor can see is a fact.
+     The question and its options stay, so a guide can still ask what the
+     student thinks and hint — which is the point. */
+  function redactAnswers(text) {
+    var lines = String(text || "").split("\n");
+    for (var i = 0; i < lines.length; i++) {
+      if (!/^\{:\s*\.quiz/.test(lines[i].trim())) continue;
+      for (var j = i - 1; j >= 0; j--) {
+        var l = lines[j];
+        if (/^\s*[-*+]\s*\[[ xX]\]/.test(l)) { lines[j] = l.replace(/\[[xX]\]/, "[ ]"); continue; }
+        if (/^\s*>/.test(l)) { lines[j] = ""; continue; }        /* the note that explains it */
+        if (/^\s*$/.test(l)) continue;
+        break;                                                    /* the question itself: keep it */
+      }
+    }
+    return lines.join("\n");
+  }
+  window.lcRedactAnswers = redactAnswers;   /* the rule, readable by a check */
+
+  /* one knowledge set per rendered course — /run swaps courses on
        hashchange without a reload, and a cached bot must not answer the
        next module with the previous module's material */
     if (rt) key += '|' + rt.repo + '/' + rt.path;
@@ -385,6 +408,9 @@ Auto-included by docs/_layouts/default.html.
           });
       })).then(function(parts){
         var used = 0, chunks = [], trimmed = false;
+        parts = parts.map(function (p) {
+          return p ? { path: p.path, text: redactAnswers(p.text) } : p;
+        });
         parts.filter(Boolean).forEach(function(p){
           if (used >= budget) { trimmed = true; return; }
           var t = p.text.length > (budget - used) ? p.text.slice(0, budget - used) : p.text;
