@@ -79,10 +79,25 @@ image itself, with three sizing knobs:
 | `align="left"` / `align="right"` | the image floats and the text after it **wraps around** — the amount of text decides the shape; on small screens the float drops and it stacks |
 | `image="true"` | force image mode for **extension-less URL APIs** (`https://placedog.net/900/400?id=1`) that would otherwise embed as a page |
 | `effect="ambient"` | the still **breathes**: a slow, locked-camera zoom with a soft light pulse — a living banner from a plain image, no video needed; disabled automatically for reduced-motion users |
+| `shape="circle"` | a **portrait, not a poster** — the image is cropped square from its centre-top and rounded, so a face stays a face |
 
 ```markdown
 [Our team](/courses/banner.png)
 {: .embed width="40%" align="right" }
+```
+
+A round portrait beside its text — `align=` floats it, `shape=` rounds it:
+
+[Prof. LC](https://placedog.net/300/300?id=7)
+{: .embed image="true" width="120" shape="circle" align="left" }
+
+Written as two lines, and the paragraph after it wraps around the picture.
+The crop takes the centre-top of the image, which is where a head usually
+is — so a rectangular photo does not get squeezed into a ball.
+
+```markdown
+[Prof. LC](portrait.jpg)
+{: .embed image="true" width="120" shape="circle" align="left" }
 ```
 
 Unlike

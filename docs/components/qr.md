@@ -33,6 +33,20 @@ Feature: A fenced block becomes a scannable QR widget
 ```
 {: .feature tags="media" status="passing" }
 
+## 📍 This page, as a square
+
+With `here="true"` the code carries **the address you are reading right now**
+— the same thing present mode's 📷 share button encodes. The fence then holds
+only the caption.
+
+```
+Scan to open this page on your phone
+```
+{: .qr here="true" }
+
+Useful on a course page: the reader hands out their own page without typing
+a URL, and the code stays right when the page moves.
+
 ## 🛠️ How to make one
 
 Put the URL (or any text) on the first line. An optional second line becomes a caption below the code.
@@ -59,6 +73,7 @@ https://example.com
 | Attribute | Default | What it does |
 |-----------|---------|-------------|
 | `size="N"` | `180` | Width and height in pixels |
+| `here="true"` | — | Encode the page you are on instead of the fence's first line; the fence then holds only the caption |
 
 **Larger code for easier scanning:**
 

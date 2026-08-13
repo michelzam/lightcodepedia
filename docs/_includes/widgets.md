@@ -101,6 +101,8 @@ Auto-included by docs/_layouts/default.html.
 /* image embeds with align="left|right": the text that follows wraps around
    the picture, so the amount of text decides the shape; floats drop on
    small screens where wrapping has no room to breathe */
+.lc-embed-circle img { border-radius: 50%; aspect-ratio: 1 / 1; object-fit: cover;
+                       object-position: center top; }
 .lc-embed-left  { float: left;  margin: 0.2em 1.2em 0.8em 0; max-width: 60%; }
 .lc-embed-right { float: right; margin: 0.2em 0 0.8em 1.2em; max-width: 60%; }
 @media (max-width: 700px) {
@@ -796,6 +798,11 @@ Auto-included by docs/_layouts/default.html.
       container.classList.add("lc-embed-" + embAlign);
     if (isImg && (el.getAttribute("effect") || "").toLowerCase() === "ambient")
       container.classList.add("lc-embed-ambient");
+    /* shape="circle": a portrait, not a poster (Michel, 2026-08-12). The
+       crop is square-from-centre, so a rectangular photo keeps its face
+       instead of squeezing. */
+    if (isImg && (el.getAttribute("shape") || "").toLowerCase() === "circle")
+      container.classList.add("lc-embed-circle");
     if (isImg && /^https?:\/\//i.test(href)) {
       /* EXTERNAL image: hotlink as-is — a partner site's photo, a public
          image API. Never rebased, never treated as a sibling; every sizing

@@ -179,3 +179,25 @@ Feature: The instant runner (RT) — Phase A parity
     And I wait for the runner to render
     Then the page title shows the tags "code"
     And the tags sit inside the page title
+
+  Scenario: An embedded runner reads the file beside the page
+    A course page must not name its own vault: `src="_setup.md"` means the
+    file beside me, and "me" is the lab copy while authoring, the org vault
+    for a student, a fork tomorrow (Michel, 2026-08-12).
+
+    Given the GitHub contents API serves "courses/demo/_setup.md" with the document:
+      """
+      # Setup
+
+      Collect your key.
+      """
+    And the GitHub contents API serves "courses/demo/cover.md" with the document:
+      """
+      # Cover
+
+      [Setup](#)
+      {: .runner src="_setup.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/cover.md"
+    And I wait for the page to be interactive
+    Then the embedded runner shows a heading "Setup"

@@ -33,12 +33,23 @@ Auto-included by docs/_layouts/default.html.
     var code = el.querySelector("code");
     var raw = (code ? code.textContent : el.textContent).trim();
     var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
-    var text = lines[0] || "";
-    var label = lines.length > 1 ? lines.slice(1).join(" ").trim() : "";
+    var here = (el.getAttribute("here") || "") === "true";
+    /* THE PAGE YOU ARE ON, NOT A URL YOU TYPED (Michel, 2026-08-12: *"the
+       qr should be generated from the current page — present mode already
+       does it, reuse it"*). Present mode's 📷 share encodes location.href;
+       so does this. In the runner that href already carries #src=gh:…, so
+       a course page hands out its own address without naming its vault —
+       and it stays right when the course moves. */
+    var text = here ? location.href : (lines[0] || "");
+    var label = here ? lines.join(" ").trim()
+                     : (lines.length > 1 ? lines.slice(1).join(" ").trim() : "");
     var size = parseInt(el.getAttribute("size") || "180", 10);
     if (!text) return;
     var wrap = document.createElement("div");
     wrap.className = "lc-qr";
+    /* what was encoded, in the open: the drawing is a canvas nobody can read
+       back, so the address lives on the element for a check (and for x-ray) */
+    wrap.setAttribute("data-lc-text", text);
     var qrDiv = document.createElement("div");
     wrap.appendChild(qrDiv);
     if (label) {

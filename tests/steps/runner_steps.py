@@ -330,3 +330,11 @@ def step_rt_at_top(context):
 def step_rt_kept_place(context):
     y = context.page.evaluate("window.scrollY")
     assert y > 0, "a re-render threw the reader back to the top"
+
+
+@then('the embedded runner shows a heading "{text}"')
+def step_embedded_heading(context, text):
+    """The nested render lives in its own .lc-runner, without the #lc-run id
+    the page-level one owns."""
+    inner = context.page.locator(".lc-runner .lc-run:not(#lc-run)").first
+    expect(inner).to_contain_text(text, timeout=20_000)

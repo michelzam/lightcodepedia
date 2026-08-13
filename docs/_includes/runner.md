@@ -328,10 +328,32 @@ files a student is already working in.
       });
   }
 
+  /* A COURSE PAGE MUST NOT NAME ITS OWN VAULT (Michel, 2026-08-12: the
+     course index embeds `_setup.md`). `src="_setup.md"` means *the file
+     beside me* — and "me" is the lab copy while authoring, the org vault
+     for students, a fork tomorrow. So a relative src resolves against the
+     render this runner sits in, exactly like a link in the same page. */
+  function relativeSrc(el, src) {
+    if (!src || /^[a-z]+:/i.test(src) || src.charAt(0) === "/") return src;
+    var host = el.closest && el.closest("[data-lc-src-path]");
+    if (!host) return src;
+    var dir = (host.getAttribute("data-lc-src-path") || "").split("/").slice(0, -1).join("/");
+    var repoEl = el.closest("[data-lc-src-repo]");
+    var repo = repoEl ? (repoEl.getAttribute("data-lc-src-repo") || "") : "";
+    var out = [];
+    (dir ? dir + "/" + src : src).split("/").forEach(function (seg) {
+      if (!seg || seg === ".") return;
+      if (seg === "..") { out.pop(); return; }
+      out.push(seg);
+    });
+    var path = out.join("/");
+    return repo ? "gh:" + repo + "/" + path : "/" + path.replace(/^docs\//, "");
+  }
+
   function upgradeRunner(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
-    var fixedSrc = (el.getAttribute && el.getAttribute("src")) || "";
+    var fixedSrc = relativeSrc(el, (el.getAttribute && el.getAttribute("src")) || "");
     var wrap = document.createElement("div");
     wrap.className = "lc-runner";
     /* one page-level runner (the /run page) publishes canonical ids; embedded

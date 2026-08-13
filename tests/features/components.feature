@@ -190,3 +190,20 @@ Feature: Component gallery behaviors
     When I navigate to "/components/examples/spreadsheet"
     And I wait for the page to be interactive
     Then the page title shows no tags
+
+  Scenario: A QR can carry the page you are on
+    Present mode's share button encodes location.href; here="true" gives a
+    fenced .qr the same thing, so a page hands out its own address without
+    anyone typing a URL (Michel, 2026-08-12).
+
+    When I navigate to "/components/qr"
+    And I wait for the page to be interactive
+    Then a QR on the page encodes this page's address
+
+  Scenario: An image embed can be a round portrait
+    A face on a cover is a portrait, not a poster (Michel, 2026-08-12), and
+    a page may not carry CSS of its own — so the roundness is a knob.
+
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    Then a round image embed is on the page

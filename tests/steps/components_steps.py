@@ -401,3 +401,29 @@ def step_title_tags_inline(context):
 def step_title_no_tags(context):
     got = _title_tags(context)
     assert not got, f"expected a bare title, got {got}"
+
+
+@then("a QR on the page encodes this page's address")
+def step_qr_here(context):
+    """The library draws into a table/canvas, so the assertion is on what the
+    upgrader was handed: the here="true" widget must exist and carry a code,
+    and its caption must be the fence's only line."""
+    got = context.page.evaluate(
+        """() => {
+             const w = Array.from(document.querySelectorAll('.lc-qr')).find(
+               el => el.querySelector('.lc-qr-label')
+                  && /this page/i.test(el.querySelector('.lc-qr-label').textContent));
+             return w ? {found: true, text: w.getAttribute('data-lc-text'),
+                         href: location.href} : {found: false};
+           }""")
+    assert got["found"], "no .qr with the here caption rendered"
+    assert got["text"] == got["href"], f"encoded {got['text']!r}, page is {got['href']!r}"
+
+
+@then("a round image embed is on the page")
+def step_round_embed(context):
+    box = context.page.locator(".lc-embed-circle img").first
+    expect(box).to_be_visible(timeout=15_000)
+    radius = context.page.evaluate(
+        """() => getComputedStyle(document.querySelector('.lc-embed-circle img')).borderRadius""")
+    assert "50%" in radius, f"not round: border-radius is {radius!r}"
