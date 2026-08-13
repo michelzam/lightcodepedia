@@ -207,3 +207,24 @@ Feature: Component gallery behaviors
     When I navigate to "/components/embed_page"
     And I wait for the page to be interactive
     Then a round image embed is on the page
+
+  Scenario: An inline chart never claims it drew nothing
+    The bound chart draws SVG, so a proof counts its rects. An inline chart
+    draws the same bars into a canvas — and reported zero, which failed a
+    page's own check on a chart everyone could see (Michel, 2026-08-13).
+
+    Given the GitHub contents API serves "courses/demo/mod/cost.md" with the document:
+      """
+      # Cost
+
+      ```csv
+      way,energy
+      A rule you wrote,1
+      An old prediction,2
+      An AI answer,30
+      ```
+      {: .chart #energy_chart type="bar" x="way" y="energy" height="240" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/cost.md"
+    And I wait for the page to be interactive
+    Then the chart "energy_chart" reports 3 bars

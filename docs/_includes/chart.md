@@ -96,6 +96,7 @@ Auto-included by docs/_layouts/default.html.
           });
           if (!newLabels.length) return;
           var colors = chartColors(newData);
+          wrap.setAttribute("data-lc-bars", newData.length);
           if (!instance) {
             placeholder.style.display = "none";
             var canvas = document.createElement("canvas");
@@ -149,6 +150,12 @@ Auto-included by docs/_layouts/default.html.
           }
         }
       });
+      /* A CANVAS HAS NO RECTS. The bound variant draws SVG, so a proof can
+         count its bars; an inline Chart.js chart drew the same bars into a
+         canvas and reported ZERO — a page's own check then failed on a chart
+         everyone could see (Michel, 2026-08-13, module 06). So the count is
+         recorded where the model can read it either way. */
+      wrap.setAttribute("data-lc-bars", data.length);
       if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function() { try { ch.destroy(); } catch(e) {} });
     });
   }

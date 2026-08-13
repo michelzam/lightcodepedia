@@ -917,7 +917,16 @@ class Chart(Block):
 
     @property
     def bar_count(self):
-        return len(self._qq("rect"))
+        """Rects when the chart drew SVG (a bound chart), otherwise the count
+        the inline canvas recorded. A chart that is visibly drawing bars must
+        never report zero — that turns a page's own proof into a liar."""
+        rects = len(self._qq("rect"))
+        if rects:
+            return rects
+        try:
+            return int(self._attr("data-lc-bars") or 0)
+        except Exception:
+            return 0
 
     @property
     def point_count(self):

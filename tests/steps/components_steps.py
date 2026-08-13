@@ -427,3 +427,18 @@ def step_round_embed(context):
     radius = context.page.evaluate(
         """() => getComputedStyle(document.querySelector('.lc-embed-circle img')).borderRadius""")
     assert "50%" in radius, f"not round: border-radius is {radius!r}"
+
+
+@then('the chart "{cid}" reports {n:d} bars')
+def step_chart_bar_count(context, cid, n):
+    """What the model would read: rects if the chart drew SVG, otherwise the
+    count the canvas recorded."""
+    got = context.page.evaluate(
+        """(id) => {
+             const el = document.querySelector(`[data-lc-id="${id}"]`)
+                     || document.querySelector('.lc-chart');
+             if (!el) return null;
+             const rects = el.querySelectorAll('rect').length;
+             return rects || parseInt(el.getAttribute('data-lc-bars') || '0', 10);
+           }""", cid)
+    assert got == n, f"the chart reports {got} bars, expected {n}"
