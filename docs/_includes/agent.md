@@ -435,6 +435,48 @@ Auto-included by docs/_layouts/default.html.
     '⚠️ *(cut off — the answer outgrew this agent\'s max_tokens. ' +
     'Ask for something shorter, or raise the knob.)*';
 
+  /* ===== Who is asking: the author, or a learner? ========================
+     AUTHOR MODE IS OWNERSHIP, NOT A KEY (Michel, 2026-08-13, reading a course
+     page in Canvas signed in as zamm-student: *"I'm surprised to see I'm
+     author"*). Every onboarded learner holds an editor key — it is how their
+     own bench saves — so "a key is present" made every learner an author and
+     handed them the direct answers.
+
+     The honest question is the one X-ray already asks: can this viewer PUSH
+     to the repo the material comes from? (folder.md, Michel 2026-07-31:
+     *pedagogical access is not ownership*.) A learner reading the org vault
+     cannot; the author reading their own lab can. One request per repo per
+     session, and the answer FAILS CLOSED — unknown means learner. */
+  window.lcAuthorMode = (function () {
+    var SITE = {{ site.github.repository_nwo | default: "" | jsonify }};
+    var inflight = {};
+    function key() { try { return localStorage.getItem('lc_ed_pat') || ''; } catch (e) { return ''; } }
+    /* the material's own repo: a rendered page says where it came from, and a
+       site page IS its own source */
+    function repo() {
+      var root = document.getElementById('lc-run');
+      return (root && root.getAttribute('data-lc-src-repo')) || SITE || '';
+    }
+    function check() {
+      var r = repo(), k = key();
+      if (!r || !k) return Promise.resolve(false);
+      var id = 'lc_author_' + r + '|' + k.slice(-6);
+      try { var seen = sessionStorage.getItem(id);
+            if (seen === '1' || seen === '0') return Promise.resolve(seen === '1'); } catch (e) {}
+      if (!inflight[id]) inflight[id] = fetch('https://api.github.com/repos/' + r, {
+          headers: { Authorization: 'Bearer ' + k, Accept: 'application/vnd.github+json' } })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (d) {
+          var can = !!(d && d.permissions && d.permissions.push);
+          try { sessionStorage.setItem(id, can ? '1' : '0'); } catch (e) {}
+          return can;
+        })
+        .catch(function () { return false; });
+      return inflight[id];
+    }
+    return { check: check, repo: repo };
+  })();
+
   // ===== lcBotAsk — the brain as a service for other components ==========
   // The docked guide (avatar.md) asks questions through here: same bot files,
   // same knowledge stuffing, same in-memory PAT, no second auth system.
