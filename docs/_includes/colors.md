@@ -83,6 +83,31 @@ Auto-included by docs/_layouts/default.html.
   }
 }
 
+/* ── PAPER (Michel, 2026-08-13: "export all the public pages of a module as
+   pdf files"). A page printed is a DOCUMENT, not a screenshot of an app:
+   nothing you could press belongs on it, and nothing may be folded away —
+   a closed accordion prints as a hole. Applies to the browser's own
+   Print → PDF as much as to the export workflow, which is the same engine. */
+@media print {
+  #lc-topbar, .lc-run-bar, .lc-edit-fab, .lc-guide, .lc-guide-ask,
+  .lc-avatar-host, .lc-avatar-char, .lc-guide-seed, .lc-agent-form,
+  .lc-feature-run, .lc-ps-savebar, .lc-bench-more, .lc-bench-save,
+  .lc-mdpad-bar, .lc-ver-panel, .lc-mode-fab, #lc-xray-bar,
+  .lc-prereq-note, .lc-unlocks, .lc-fn-popover { display: none !important; }
+  /* nothing folded, nothing clipped */
+  details { display: block !important; }
+  details > summary { list-style: none; font-weight: 600; }
+  details > *:not(summary) { display: revert !important; }
+  .lc-datagrid, .lc-form-body, .lc-ag, .ag-root-wrapper,
+  .lc-code, .lc-mdpad textarea {
+    height: auto !important; max-height: none !important; overflow: visible !important;
+  }
+  body { padding-top: 0 !important; }
+  a { text-decoration: none; color: inherit; }
+  h1, h2, h3 { break-after: avoid; }
+  .lc-feature, .lc-quiz, .lc-persona, .lc-block { break-inside: avoid; }
+}
+
 /* banner image: centered, rounded, responsive — lets an author drop a hero
    image without inline style:  ![alt](/path.png){: .lc-banner }  */
 :is(.markdown-body, #ed-preview, #ed-feat-preview) .lc-banner {

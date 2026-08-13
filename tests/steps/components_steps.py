@@ -442,3 +442,29 @@ def step_chart_bar_count(context, cid, n):
              return rects || parseInt(el.getAttribute('data-lc-bars') || '0', 10);
            }""", cid)
     assert got == n, f"the chart reports {got} bars, expected {n}"
+
+
+# ── paper ───────────────────────────────────────────────────────────────────
+# The PDF export (tools/export_pdfs.py) prints through this same stylesheet,
+# so what the workflow produces is what these steps assert.
+@when("the page is shown as it would print")
+def step_emulate_print(context):
+    context.page.emulate_media(media="print")
+    context.page.wait_for_timeout(300)
+
+
+@then("no button is offered on paper")
+def step_no_buttons_on_paper(context):
+    left = context.page.evaluate("""() => [...document.querySelectorAll(
+      '#lc-topbar, .lc-edit-fab, .lc-feature-run, .lc-guide-ask, .lc-mode-fab')]
+      .filter(el => el.getBoundingClientRect().height > 0)
+      .map(el => el.id || el.className)""")
+    assert not left, "these would print: %r" % left
+
+
+@then("every accordion is open on paper")
+def step_accordions_open(context):
+    hidden = context.page.evaluate("""() => [...document.querySelectorAll('details')]
+      .filter(d => { const body = [...d.children].find(c => c.tagName !== 'SUMMARY');
+                     return body && body.getBoundingClientRect().height === 0; }).length""")
+    assert hidden == 0, "%d accordion(s) would print as a hole" % hidden

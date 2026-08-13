@@ -1,0 +1,91 @@
+name: Export a module as PDFs
+
+# An author's tool, on demand. One PDF per public page of a module, printed by
+# the same engine a learner reads — so what lands on paper is what the page
+# actually renders (charts drawn, grids wired), minus everything you could
+# press (docs/_includes/colors.md, @media print).
+#
+# Two ways to get them, both safe:
+#   __pdfs/<module-slug>/   committed in the lab — DUNDERED, so it can never
+#                           travel: the publish gates rsync with --exclude '__*'
+#                           and the runtime's one travel rule says the same.
+#   the run's artifact      a zip, for the machine you are sitting at.
+# Never docs/, never a vault: that is "a stranger could read it tomorrow" tier,
+# and a PDF of course material is a copy that escapes the vault's privacy.
+#
+# Manual only — it costs private-repo minutes, and nobody needs paper on
+# every push.
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Module folder, e.g. courses/micro_build_ai/module_06"
+        required: true
+        default: "courses/micro_build_ai/module_06"
+      base_url:
+        description: "Site that renders it (the lab's own Pages by default)"
+        required: false
+        default: "https://michelzam.github.io/lightcodelab"
+
+concurrency:
+  group: "export-pdfs"
+  cancel-in-progress: true
+
+jobs:
+  export:
+    # Lab only: this reads courses/, which never exists in pedia.
+    if: github.repository == 'michelzam/lightcodelab'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # __pdfs/ is committed back into the lab
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+
+      - name: Print the module's public pages
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url }}
+          REPO: ${{ github.repository }}
+          MODULE: ${{ github.event.inputs.module }}
+          # reads this repo's own contents through the runner, nothing wider
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/export_pdfs.py pdf-out
+
+      - name: Name the download after the module
+        id: name
+        run: echo "slug=$(echo '${{ github.event.inputs.module }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+
+      - name: Keep them in the lab, where they cannot travel
+        run: |
+          DEST="__pdfs/${{ steps.name.outputs.slug }}"
+          mkdir -p "$DEST"
+          rm -f "$DEST"/*.pdf
+          cp pdf-out/*.pdf "$DEST"/
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEST"
+          if git diff --cached --quiet; then
+            echo "::notice::same PDFs as last time — nothing to commit"
+          else
+            git commit -m "🖨️ PDFs of ${{ github.event.inputs.module }}"
+            git fetch origin main
+            git merge origin/main -X ours --no-edit
+            git push origin HEAD:main
+            echo "::notice::committed to $DEST"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pdf-${{ steps.name.outputs.slug }}
+          path: pdf-out/*.pdf
+          if-no-files-found: error
+          retention-days: 30

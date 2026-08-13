@@ -228,3 +228,16 @@ Feature: Component gallery behaviors
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/cost.md"
     And I wait for the page to be interactive
     Then the chart "energy_chart" reports 3 bars
+
+  Scenario: On paper a page is a document, not a screenshot of an app
+    A printed page carries the prose and the evidence; nothing you could
+    press belongs on it, and nothing may be folded away — a closed accordion
+    prints as a hole (Michel, 2026-08-13: "export all the public pages of a
+    module as pdf files").
+
+    Given I have a clean browser page
+    When I navigate to "/components/accordion"
+    And I wait for the page to be interactive
+    And the page is shown as it would print
+    Then no button is offered on paper
+    And every accordion is open on paper
