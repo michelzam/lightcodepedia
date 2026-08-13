@@ -222,3 +222,32 @@ Feature: Avatar — speaking overlay instructor
     And I wait for the page to be interactive
     And I click the avatar trigger for "guide"
     Then the avatar "guide" speaks from the studio file "lc-test-voice.mp3"
+
+  Scenario: The guide says whose Doc is answering
+    An editor key in the browser makes the guide answer as the AUTHOR's:
+    direct, complete, nothing withheld (doctrine 7). Michel read that on a
+    quiz page as the tutor leaking answers to students — it was his own key.
+    So the panel says which one is talking (Michel, 2026-08-13).
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the AI provider key is connected
+    And the GitHub contents API serves "courses/demo/mod/guide2.md" with the document:
+      """
+      # Guided page
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script:
+        - say: "Hello."
+      stories: {}
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide2.md"
+    And I wait for the page to be interactive
+    And I open the guide's ask panel
+    Then the ask panel says it is in author mode

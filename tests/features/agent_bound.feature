@@ -160,3 +160,18 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I reload the page
     And I wait for the page to be interactive
     Then every desk on the page is connected
+
+  Scenario: The day's AI spend is counted once, wherever it was asked
+    A free key is a budget, and until now each panel counted only its own
+    session while the docked guide counted nothing — so a learner could burn
+    a day across six pages and never see a number (Michel, 2026-08-13).
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with a python fix "ok"
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "tutor" agent with key "test-key"
+    And I ask the "tutor" agent "help me fix it"
+    Then the day's ledger counted 1 question
+    And the ledger's sentence warns that the free key is limited

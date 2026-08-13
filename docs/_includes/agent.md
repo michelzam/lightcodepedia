@@ -470,10 +470,49 @@ Auto-included by docs/_layouts/default.html.
         return { error: 'bot "' + botName + '" could not be loaded' };
       }).then(function (result) {
         if (result && result.unauthorized) setSharedToken(DEFAULT_PROVIDER, null, result.error);
+        if (result && result.usage && window.lcTokens) window.lcTokens.add(result.usage);
         return result;
       });
     }
   };
+
+  /* ── the day's spend, in one place ───────────────────────────────────
+     Every reply already carries usage; until now each panel counted only
+     its own session, and the docked guide counted nothing — so a learner
+     could burn a free-tier day across six pages and never see a number
+     (Michel, 2026-08-13). This adds them up per DAY (the quota's own
+     rhythm), per browser, and tells anyone who wants to show it.
+     It counts what THIS browser spent — Google does not publish what is
+     left, and inventing a "remaining" would be worse than saying nothing. */
+  window.lcTokens = (function () {
+    var KEY = 'lc_tokens';
+    function today() { return new Date().toISOString().slice(0, 10); }
+    function read() {
+      var d = { day: today(), tokens: 0, asks: 0 };
+      try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (raw && raw.day === d.day) d = raw; } catch (e) {}
+      return d;
+    }
+    function write(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+    return {
+      add: function (usage) {
+        var n = (usage && (usage.total_tokens || usage.totalTokens)) || 0;
+        var d = read();
+        d.tokens += n; d.asks += 1; d.day = today();
+        write(d);
+        try { document.dispatchEvent(new CustomEvent('lc-tokens', { detail: d })); } catch (e) {}
+        return d;
+      },
+      today: read,
+      /* the sentence anyone can show: a chip, a tooltip, a page */
+      line: function () {
+        var d = read();
+        if (!d.asks) return 'No AI questions asked today.';
+        return d.asks + ' AI question' + (d.asks > 1 ? 's' : '') + ' today · about ' +
+               (d.tokens >= 1000 ? Math.round(d.tokens / 100) / 10 + 'k' : d.tokens) + ' tokens. ' +
+               'Your free key is limited — fewer, better questions last longer.';
+      }
+    };
+  })();
 
   // ===== panel structure =====
   function buildPanel(id, cfg, rows, boundId, boundExpr) {
@@ -747,6 +786,7 @@ Auto-included by docs/_layouts/default.html.
         if (result.usage) {
           var t = result.usage.total_tokens || 0;
           totalTokens += t;
+          if (window.lcTokens) window.lcTokens.add(result.usage);
           usage.textContent = 'Session: ' + totalTokens + ' tokens · this ask: ' + t +
             ' (' + (result.usage.prompt_tokens || 0) + ' prompt + ' +
             (result.usage.completion_tokens || 0) + ' reply).';

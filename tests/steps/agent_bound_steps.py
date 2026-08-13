@@ -174,3 +174,18 @@ def step_redaction(context):
     assert "The gate reads the date" not in out, out
     assert "Which part decides" in out, out
     assert "A gate." in out, out
+
+
+@then("the day's ledger counted {n:d} question")
+def step_ledger_count(context, n):
+    got = context.page.evaluate("() => window.lcTokens && window.lcTokens.today()")
+    assert got, "no ledger"
+    assert got["asks"] == n, got
+    assert got["tokens"] > 0, got
+
+
+@then("the ledger's sentence warns that the free key is limited")
+def step_ledger_line(context):
+    line = context.page.evaluate("() => window.lcTokens.line()")
+    assert "token" in line.lower(), line
+    assert "limited" in line.lower(), line

@@ -271,3 +271,19 @@ def step_speaks_from_studio(context, avatar_id, file):
         arg=[avatar_id, file],
         timeout=15_000,
     )
+
+
+@given("the AI provider key is connected")
+def step_provider_key(context):
+    """lcBotAsk keeps the model key under its own keychain identity; the
+    guide only offers a question box once it is there."""
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ai_key_gemini', 'test-key');"
+        "localStorage.setItem('lc_agent_key', 'test-key');"
+    )
+
+
+@then("the ask panel says it is in author mode")
+def step_author_mode_hint(context):
+    txt = context.page.locator(".lc-guide-ask").inner_text()
+    assert "author mode" in txt.lower(), txt

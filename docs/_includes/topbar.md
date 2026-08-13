@@ -285,6 +285,20 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
     el.hidden = !bits.length;
   }
   function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; }
+  /* WHAT THE AI HAS COST TODAY, where the learner already looks (Michel,
+     2026-08-13: "stay vigilant about token consumption"). It hangs off the
+     account chip's tooltip — no new furniture — and it counts what THIS
+     browser spent, because nobody can read what a free key has left. */
+  function tokenLine() {
+    return (window.lcTokens && window.lcTokens.line) ? window.lcTokens.line() : '';
+  }
+  document.addEventListener('lc-tokens', function () {
+    var btn = document.getElementById('lc-user-btn');
+    if (!btn) return;
+    var who = (btn.title || '').split('\n')[0];
+    btn.title = (who ? who + '\n' : '') + tokenLine();
+  });
+
   window.lcSetCrumb = function (moduleTitle, pageTitle) {
     course = (window.lcFrame && window.lcFrame.crumb) || "";
     if (!course) return;
@@ -638,7 +652,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       var pill = document.getElementById('lc-user-pill');
       pill.style.display = 'block';
       document.getElementById('lc-user-avatar').src = u.avatar_url;
-      document.getElementById('lc-user-btn').title = '@' + u.login;
+      document.getElementById('lc-user-btn').title = '@' + u.login + '\n' + tokenLine();
       document.getElementById('lc-ud-avatar').src = u.avatar_url;
       document.getElementById('lc-ud-name').textContent = u.name || u.login;
       document.getElementById('lc-ud-login').textContent = '@' + u.login;

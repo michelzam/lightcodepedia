@@ -421,6 +421,21 @@ Auto-included by docs/_layouts/default.html.
     utt.onend = finish;
     utt.onerror = finish;
     window.speechSynthesis.speak(utt);
+    /* A LONG WAIT CAN SWALLOW THE FIRST LINE (Michel, 2026-08-13: the first
+       answer took a minute and arrived silent, the second spoke). Chrome
+       drops an utterance queued long after the click that started it, and a
+       backgrounded tab suspends the synth entirely — both leave `speaking`
+       false with no error. So look once, and say it again if nothing left
+       the speaker; voices may also have only just finished loading. */
+    setTimeout(function () {
+      if (ended) return;
+      if (window.speechSynthesis.speaking || window.speechSynthesis.pending) return;
+      refreshVoices();
+      var again = pickVoice(voiceTag);
+      if (again) utt.voice = again;
+      try { window.speechSynthesis.resume(); } catch (e) {}
+      try { window.speechSynthesis.speak(utt); } catch (e) {}
+    }, 400);
     kick = setInterval(function () {
       if (window.speechSynthesis.paused) window.speechSynthesis.resume();  /* Safari's stall */
       if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) finish();
@@ -1820,8 +1835,17 @@ Auto-included by docs/_layouts/default.html.
     panel.className = 'lc-guide-ask open';
     var ready = window.lcBotAsk && window.lcBotAsk.ready();
     if (ready) {
+      /* WHICH DOC AM I TALKING TO? An editor key in this browser makes the
+         guide answer as the AUTHOR's: direct, complete, nothing withheld
+         (doctrine 7). Michel hit that on a quiz page and read it as the
+         tutor leaking answers to students — it was his own key. So the
+         panel says so, every time. */
+      var direct = false;
+      try { direct = !!(localStorage.getItem('lc_ed_pat') && localStorage.getItem('lc_ed_repo')); } catch (e) {}
       panel.innerHTML =
         '<textarea rows="2" placeholder="Ask about this page…" aria-label="Ask about this page"></textarea>' +
+        (direct ? '<p class="lc-guide-ask-hint">✍️ author mode — direct answers, nothing withheld. ' +
+                  'A student without an editor key is guided instead.</p>' : '') +
         '<div class="lc-guide-ask-row"><button type="button">▶ Ask</button></div>';
       var ta = panel.querySelector('textarea');
       panel.querySelector('button').addEventListener('click', function () {
