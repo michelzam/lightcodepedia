@@ -31,7 +31,17 @@
   /* editable: explicit wins everywhere — that is how a focused page keeps its
      editor while an embedded one hides it. */
   if (q.has("editable")) root.classList.add(flag("editable", true) ? "lc-editable" : "lc-not-editable");
+  /* ?crumb=<course name> — the LMS view. The bar stops being a menu and
+     becomes one read-only line: the course, the module, the page. A learner
+     inside a Canvas iframe has Canvas's navigation already; ours only has to
+     say WHERE THEY ARE (Michel, 2026-08-13).
+     ?up=0 — the folder's ⬆️ Up pill disappears, so an iframe scoped to one
+     module cannot walk out of it. */
+  var crumb = q.get("crumb");
+  if (crumb) root.classList.add("lc-crumb-mode");
   window.lcFrame = {
+    crumb: crumb || "",
+    up: flag("up", true),
     focus: focus,
     editable: q.has("editable") ? flag("editable", true) : !root.classList.contains("lc-embed-mode"),
     navigable: flag("navigable", true),
@@ -234,7 +244,68 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
   #lc-topbar.lc-bench-mode .lc-links { flex-wrap: nowrap; }
 }
 @media (max-width: 480px) { #lc-topbar.lc-bench-mode .lc-bench-file { display: none; } }
+
+/* ── crumb mode: one read-only line, and the learner's own face ──────────
+   Everything that navigates away is gone — no menu, no start pill, no home
+   link on the brand. What stays is the trail (course › module · page) and
+   the account chip, because "am I signed in as me?" is the one question a
+   framed learner still needs answered. */
+.lc-crumb-mode #lc-topbar .lc-links,
+.lc-crumb-mode #lc-topbar #lc-start-pill { display: none !important; }
+.lc-crumb-mode #lc-topbar .lc-brand { cursor: default; }
+#lc-crumb { display: flex; align-items: center; gap: 0.45em; min-width: 0;
+            color: #4b5563; font-size: 0.92em; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; }
+#lc-crumb .lc-crumb-sep { color: #9ca3af; }
+#lc-crumb .lc-crumb-page { color: #111827; font-weight: 600;
+                           overflow: hidden; text-overflow: ellipsis; }
+#lc-crumb .lc-crumb-score { flex: none; background: #fef3c7; color: #92400e;
+                            border-radius: 99px; padding: 0.05em 0.6em; font-size: 0.9em; }
 </style>
+<script>
+/* ── The crumb: where you are, and nothing you can click ─────────────────
+   Filled by whoever knows: the runner names the module and the page as it
+   renders them. Called more than once (the page title is known immediately,
+   the module's title after one fetch), so it repaints from whatever it has.
+   Silent unless ?crumb= named a course. */
+(function () {
+  var course = "", mod = "", page = "";
+  function paint() {
+    var el = document.getElementById("lc-crumb");
+    if (!el || !course) return;
+    var brand = document.querySelector("#lc-topbar .lc-brand");
+    if (brand) {
+      brand.textContent = "📦 " + course;
+      brand.removeAttribute("href");           /* read-only: it leads nowhere */
+    }
+    var bits = [];
+    if (mod) bits.push("<span class='lc-crumb-mod'>" + esc(mod) + "</span>");
+    if (page) bits.push("<span class='lc-crumb-page'>" + esc(page) + "</span>");
+    el.innerHTML = bits.join("<span class='lc-crumb-sep'>·</span>");
+    el.hidden = !bits.length;
+  }
+  function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; }
+  window.lcSetCrumb = function (moduleTitle, pageTitle) {
+    course = (window.lcFrame && window.lcFrame.crumb) || "";
+    if (!course) return;
+    if (moduleTitle) mod = moduleTitle;
+    if (pageTitle !== undefined) page = pageTitle || "";
+    paint();
+  };
+  /* the learner's own score, just before their face — the one number that
+     travels with them (score.md publishes it as the 🏆 FAB's label) */
+  window.lcCrumbScore = function (text) {
+    var el = document.getElementById("lc-crumb");
+    if (!el || !window.lcFrame || !window.lcFrame.crumb || !text) return;
+    var chip = el.querySelector(".lc-crumb-score");
+    if (!chip) { chip = document.createElement("span"); chip.className = "lc-crumb-score"; el.appendChild(chip); }
+    chip.textContent = "🏆 " + text;
+  };
+  document.addEventListener("DOMContentLoaded", function () {
+    if (window.lcFrame && window.lcFrame.crumb) window.lcSetCrumb("", document.title || "");
+  });
+})();
+</script>
 {% comment %} The brand names the node you're on — dynamic, never static text.
    Rule: the repo's name, capitalized — no shortcuts. The emoji marks the
    node kind: 🧪 for the lab (HQ), 💡 everywhere else (pedia + forks). {% endcomment %}
@@ -243,6 +314,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
 {% if _repo == "lightcodelab" %}{% assign _brandmoji = "🧪" %}{% else %}{% assign _brandmoji = "💡" %}{% endif %}
 <div id="lc-topbar">
   <a class="lc-brand" href="/">{{ _brandmoji }} {{ _brand }}</a>
+  <span id="lc-crumb" hidden></span>
   {% comment %} A folder's menu.md becomes the menu for that whole branch, but it
      must opt in with `menu: true` in its front matter — so pages that merely
      happen to be named menu.md (e.g. the .menu component's own doc page) are not

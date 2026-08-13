@@ -71,6 +71,11 @@ files a student is already working in.
      R/O by repo privacy, the bench is the student's to edit directly. */
   function paintBar(bar, st) {
     if (!bar) return;
+    /* IN CRUMB MODE THE PATH IS NOT THE LEARNER'S BUSINESS (Michel,
+       2026-08-13: *"no need for the file name anymore and other spaces or
+       top margin"*). The topbar already says course · module · page; a
+       second line naming a file in a vault they cannot open says nothing. */
+    if (window.lcFrame && window.lcFrame.crumb) { bar.style.display = "none"; return; }
     bar._lcState = st;
     var tb = document.getElementById("lc-topbar");
     if (tb && st.repo && tb.dataset.benchMode === st.repo) {
@@ -244,6 +249,7 @@ files a student is already working in.
           /* the author's margin belongs to the file on screen, not the last one
              (same story: __run.notes.md, Michel 2026-08-06) */
           if (window.lcForgetNotes) window.lcForgetNotes();
+          if (window.lcSetCrumb) crumbFrom(src, root);
           if (window.lcScanElement) window.lcScanElement(root);
           if (window.lcRebase)      window.lcRebase(root);
           if (window.lcCellsRescan) window.lcCellsRescan();   // {= } cells in the rendered page
@@ -348,6 +354,37 @@ files a student is already working in.
     });
     var path = out.join("/");
     return repo ? "gh:" + repo + "/" + path : "/" + path.replace(/^docs\//, "");
+  }
+
+  /* WHICH MODULE AM I IN? The folder name is not an answer — module_06 is a
+     path, "06·Ask Well" is a title (Michel, 2026-08-13). So the module's own
+     index.md is read once per session and remembered; the page's title comes
+     free from the render that just happened. */
+  function headingOf(text) {
+    var m = /^\s*#{1,2}\s+(.+)$/m.exec(String(text || ""));
+    return m ? m[1].trim() : "";
+  }
+  function moduleTitle(src, dir) {
+    var key = "lc_modtitle:" + dir;
+    try { var hit = sessionStorage.getItem(key); if (hit !== null) return Promise.resolve(hit); } catch (e) {}
+    var sib = src.replace(/[^\/]+$/, "index.md");
+    var spec = resolveSrc(sib);
+    return fetch(spec.url, spec.headers ? { headers: spec.headers } : undefined)
+      .then(function (r) { return r.ok ? r.text() : ""; })
+      .then(function (t) {
+        var title = headingOf(t);
+        try { sessionStorage.setItem(key, title); } catch (e) {}
+        return title;
+      }).catch(function () { return ""; });
+  }
+  function crumbFrom(src, root) {
+    var path = root.dataset.lcSrcPath || "";
+    var h = root.querySelector("h1, h2");
+    var page = h ? h.textContent.trim() : "";
+    var dir = path.split("/").slice(0, -1).join("/");
+    if (/(^|\/)index\.md$/i.test(path)) { window.lcSetCrumb(page, ""); return; }
+    window.lcSetCrumb("", page);
+    moduleTitle(src, dir).then(function (mt) { if (mt) window.lcSetCrumb(mt, page); });
   }
 
   function upgradeRunner(el) {

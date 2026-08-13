@@ -92,3 +92,11 @@ def step_no_escape(context):
 def step_escape_label(context, label):
     expect(context.page.locator(".lc-prereq [data-show]")).to_have_text(
         label, timeout=10_000)
+
+
+@then('"{title}" is still a link I can follow')
+def step_met_is_link(context, title):
+    link = context.page.locator(".lc-prereq-met a, .lc-prereq li.ok a", has_text=title).first
+    expect(link).to_be_visible(timeout=15_000)
+    href = link.get_attribute("href") or ""
+    assert href and href != "#", f"the met prerequisite leads nowhere: {href!r}"

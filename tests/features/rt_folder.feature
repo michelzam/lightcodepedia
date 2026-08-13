@@ -436,3 +436,24 @@ Feature: Folder shelf — read posture and X-ray workbench
     And I wait for the page to be interactive
     Then the shelf shows a card for "Alpha"
     And the way up leads to "courses/demo/index.md"
+
+  Scenario: A module-scoped frame offers no way out
+    A Canvas page framing ONE module must not hand the learner a door out of
+    it. ?up=0 takes the pill away, and the flag rides every hop inside
+    (Michel, 2026-08-13).
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the folder "courses/demo/mod" serves pages "alpha.md"
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Shelf page
+
+      [Browse](#)
+      {: .folder parent="true" }
+      """
+    When I navigate to "/run.html?up=0#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    Then the shelf shows a card for "Alpha"
+    And no Up pill is offered

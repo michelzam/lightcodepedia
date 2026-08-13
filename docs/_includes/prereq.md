@@ -31,6 +31,10 @@ Knobs:
 .lc-prereq-note { font-size: 0.85em; color: #92600a; margin-top: 8px; }
 .lc-prereq-note a { color: #92600a; text-decoration: underline; cursor: pointer; }
 .lc-prereq-met { margin: 1em 0; font-size: 0.85em; color: #2e7d32; }
+.lc-prereq-met a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.lc-prereq-met a:hover { color: #1b5e20; }
+.lc-prereq-sep { color: #9ca3af; }
+.lc-prereq li.ok a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .lc-prereq-hidden { display: none !important; }
 /* (the lock itself is applied in JS — see lockAfter: a locked page has to
    stay locked while components replace their blocks AND while slides
@@ -126,13 +130,18 @@ null]</script>
     var items = links.map(function (l) {
       var ok = met(sc[scoreKey(el, l.href)], passPct);
       if (!ok) missing.push(l);
-      return "<li class='" + (ok ? "ok" : "todo") + "'>" + (ok ? "✅ " + esc(l.title)
-        : "➜ <a href='" + esc(l.href) + "'>" + esc(l.title) + "</a>") + "</li>";
+      /* A MET PAGE IS STILL A PAGE (Michel, 2026-08-13). Green used to turn
+         the title into plain text, so the one list a learner would use to go
+         back and re-read something was the one place they could not click. */
+      return "<li class='" + (ok ? "ok" : "todo") + "'>" + (ok ? "✅ " : "➜ ")
+        + "<a href='" + esc(l.href) + "'>" + esc(l.title) + "</a></li>";
     });
     var card = document.createElement("div");
     if (!missing.length) {
       card.className = "lc-prereq-met";
-      card.textContent = "✅ Prerequisites met — " + links.map(function (l) { return l.title; }).join(" · ");
+      card.innerHTML = "✅ Prerequisites met — " + links.map(function (l) {
+        return "<a href='" + esc(l.href) + "'>" + esc(l.title) + "</a>";
+      }).join(" <span class='lc-prereq-sep'>·</span> ");
       el.parentNode.replaceChild(card, el);
       return;
     }

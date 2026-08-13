@@ -218,3 +218,27 @@ Feature: RT prerequisite gate — the key names the content, not the runner
     And I wait for the page to be interactive
     Then the prerequisites are met
     And the gated content "Secret wisdom here." is visible
+
+  Scenario: A met prerequisite is still a door
+    Green used to turn the title into plain text, so the one list a learner
+    would use to go back and re-read something was the one place they could
+    not click (Michel, 2026-08-13).
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned points on "gh:acme/demo/courses/demo/mod/basics"
+    And the GitHub contents API serves "courses/demo/mod/next.md" with the document:
+      """
+      # Next module
+
+      - [Basics](basics.md)
+      {: .prerequisite }
+
+      ## Deep content
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/next.md"
+    And I wait for the page to be interactive
+    Then the prerequisites are met
+    And "Basics" is still a link I can follow

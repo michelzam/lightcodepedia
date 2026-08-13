@@ -1,4 +1,5 @@
 from behave import then, when
+from playwright.sync_api import expect
 
 # Frame flags define the SCOPE a host (Canvas, any LMS) grants. These steps
 # click a real internal link and inspect where the learner actually lands —
@@ -111,3 +112,38 @@ def step_follow_card(context):
     context.lc_pages_before = len(context.page.context.pages)
     card.click()
     context.page.wait_for_timeout(1500)
+
+
+@then('the crumb reads "{course}" then "{module}" then "{page}"')
+def step_crumb(context, course, module, page):
+    """The trail is filled by whoever knows: the page title comes from the
+    render, the module's title from its own index.md, read once."""
+    crumb = context.page.locator("#lc-crumb")
+    expect(crumb).to_contain_text(module, timeout=20_000)
+    expect(crumb).to_contain_text(page, timeout=20_000)
+    brand = context.page.locator("#lc-topbar .lc-brand")
+    expect(brand).to_contain_text(course, timeout=10_000)
+    assert not brand.get_attribute("href"), "the brand still navigates away"
+
+
+@then("the menu links are gone")
+def step_no_menu(context):
+    links = context.page.locator("#lc-topbar .lc-links")
+    assert links.count() == 0 or not links.first.is_visible(), "the menu is still offered"
+
+
+@then("the runner never names the file")
+def step_no_file_chip(context):
+    bar = context.page.locator(".lc-run-bar")
+    assert bar.count() == 0 or not bar.first.is_visible(), "the source chip is still shown"
+
+
+@then("no Up pill is offered")
+def step_no_up(context):
+    context.page.wait_for_timeout(1200)
+    assert context.page.locator(".lc-folder-up-pill").count() == 0, "Up is still there"
+
+
+@then("an Up pill is offered")
+def step_up(context):
+    expect(context.page.locator(".lc-folder-up-pill").first).to_be_visible(timeout=15_000)

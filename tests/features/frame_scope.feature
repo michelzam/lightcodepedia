@@ -48,3 +48,27 @@ Feature: Frame flags are a scope, not a page setting
     And I wait for the page to be interactive
     And I follow the first internal link
     Then the page I land on carries no frame flags
+
+  Scenario: In crumb mode the bar says where you are, and nothing else
+    A learner inside a Canvas iframe already has Canvas's navigation. Ours
+    only has to answer "where am I?" — course, module, page — and "am I
+    signed in as me?" (Michel, 2026-08-13).
+
+    Given the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # 📦 02·A Long Walk
+
+      🚶 It works. People don't.
+      """
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # 🚦 Gates
+
+      ⛔ They paid. Never met it.
+      """
+    When I navigate to "/run.html?crumb=BUILD-AI#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the crumb reads "BUILD-AI" then "02·A Long Walk" then "Gates"
+    And the menu links are gone
+    And the runner never names the file
+
