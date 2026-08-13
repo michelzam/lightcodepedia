@@ -68,6 +68,21 @@ Auto-included by docs/_layouts/default.html.
 :is(.markdown-body, #ed-preview, #ed-feat-preview) .muted { color: #6b7280; }
 :is(.markdown-body, #ed-preview, #ed-feat-preview) .hl    { background: #fff3a3; border-radius: 3px; padding: 0 0.22em; }
 
+/* a table whose FIRST column names things — a flag, a knob, a file. Kramdown
+   sizes columns by content, so a narrow name wraps mid-token ("?crumb=BUILD-
+   AI") while the prose column takes the room. `{: .wide_first }` under the
+   table gives the first column its own line (Michel, 2026-08-13). */
+:is(.markdown-body, #ed-preview, #ed-feat-preview) table.wide_first th:first-child,
+:is(.markdown-body, #ed-preview, #ed-feat-preview) table.wide_first td:first-child {
+  width: 16em; white-space: nowrap;
+}
+@media (max-width: 640px) {
+  :is(.markdown-body, #ed-preview, #ed-feat-preview) table.wide_first th:first-child,
+  :is(.markdown-body, #ed-preview, #ed-feat-preview) table.wide_first td:first-child {
+    width: auto; white-space: normal;   /* a phone has no room to spare */
+  }
+}
+
 /* banner image: centered, rounded, responsive — lets an author drop a hero
    image without inline style:  ![alt](/path.png){: .lc-banner }  */
 :is(.markdown-body, #ed-preview, #ed-feat-preview) .lc-banner {

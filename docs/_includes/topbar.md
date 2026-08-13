@@ -8,6 +8,9 @@
      ?open=a,b      glob allowlist — links a focused page may still follow
                     (they open IN-FRAME by default, carrying the flags)
      ?open_in=tab   send those allowlisted links to a new tab instead
+     ?strict=1      every prerequisite also requires the pages' PROOFS to be
+                    green, not only their points — a block's own features=
+                    still decides for itself
    Flags are a SCOPE, not a page setting: every same-origin hop carries them
    forward, so a course framed by an LMS stays inside the frame the teacher
    set up instead of arriving as the full platform in a new tab.
@@ -39,8 +42,14 @@
      module cannot walk out of it. */
   var crumb = q.get("crumb");
   if (crumb) root.classList.add("lc-crumb-mode");
+  /* ?strict=1 — every prerequisite on every page of this frame also asks for
+     the PROOFS, not only the points (Michel, 2026-08-13: *"a url param to
+     apply this globally! 2 levels: global by url, local by knob"*). The URL
+     sets the default for the whole scope; a block's own features= still wins,
+     in both directions, so one page can opt out of a strict frame. */
   window.lcFrame = {
     crumb: crumb || "",
+    strict: flag("strict", false),
     up: flag("up", true),
     focus: focus,
     editable: q.has("editable") ? flag("editable", true) : !root.classList.contains("lc-embed-mode"),
@@ -1204,7 +1213,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
      given module, the Lightcodepedia full menu comes back"*) — a scope that
      only holds on the page the teacher pasted is not a scope. */
   var FRAME_KEYS = ["focus", "editable", "navigable", "open", "open_in", "embed",
-                    "crumb", "up"];
+                    "crumb", "up", "strict"];
   var fq = new URLSearchParams(location.search);
   var carried = FRAME_KEYS.filter(function (k) { return fq.has(k); });
   window.lcFrameUrl = function (href) {

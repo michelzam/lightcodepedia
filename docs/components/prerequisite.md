@@ -58,6 +58,14 @@ A list of links with the `{: .prerequisite }` IAL:
 | `pass="50"` | relax it: that percentage of the page's points is enough |
 | `escape="true"` | offer a *show it anyway* hatch (off by default) |
 | `escape="Peek anyway"` | same hatch, in your own words |
+| `features="true"` | the proofs count too: every `.feature` on each page above must be green in this learner's record. A page whose proofs were never run is a page they read, not one they did. Off by default |
+| `features="false"` | the points only — the way to opt one page out of a frame opened with `?strict=1` |
+{: .wide_first }
+
+**Two levels.** `?strict=1` on the frame's URL makes every prerequisite in
+that scope ask for the proofs, with no page edited; the knob above is the
+local word and wins either way. The flag rides every hop, like the other
+frame flags.
 
 **Why those defaults.** A gate that opens on one lucky point isn't a
 prerequisite, and a gate anyone can wave away teaches that gates are

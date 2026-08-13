@@ -242,3 +242,169 @@ Feature: RT prerequisite gate — the key names the content, not the runner
     And I wait for the page to be interactive
     Then the prerequisites are met
     And "Basics" is still a link I can follow
+
+  Scenario: Points alone do not open a strict gate
+    features="true" says the proofs count as well: a page whose .feature
+    cards were never run is a page the learner read, not one they did
+    (Michel, 2026-08-13: "a more strict way to validate a page and a
+    module, and avoid learners to build on brittle knowledge").
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned points on "gh:acme/demo/courses/demo/mod/basics"
+    And the GitHub contents API serves "courses/demo/mod/basics.md" with the document:
+      """
+      # Basics
+
+      ```gherkin
+      Given a page
+      Then it proves itself
+      ```
+      {: .feature #proof }
+      """
+    And the GitHub contents API serves "courses/demo/mod/strict.md" with the document:
+      """
+      # Next module
+
+      - [Basics](basics.md)
+      {: .prerequisite features="true" }
+
+      ## Deep content
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/strict.md"
+    And I wait for the page to be interactive
+    Then a prerequisite gate offers "Basics"
+    And the gated content "Secret wisdom here." is hidden
+
+  Scenario: The same points open it once the proof is green
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned points on "gh:acme/demo/courses/demo/mod/basics"
+    And the learner turned "proof" green on "gh:acme/demo/courses/demo/mod/basics"
+    And the GitHub contents API serves "courses/demo/mod/basics.md" with the document:
+      """
+      # Basics
+
+      ```gherkin
+      Given a page
+      Then it proves itself
+      ```
+      {: .feature #proof }
+      """
+    And the GitHub contents API serves "courses/demo/mod/strict.md" with the document:
+      """
+      # Next module
+
+      - [Basics](basics.md)
+      {: .prerequisite features="true" }
+
+      ## Deep content
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/strict.md"
+    And I wait for the page to be interactive
+    Then the prerequisites are met
+    And the gated content "Secret wisdom here." is visible
+
+  Scenario: By default the proofs are not asked about
+    The knob is opt-in: the same page without features="true" opens on the
+    points alone, exactly as every course page does today.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned points on "gh:acme/demo/courses/demo/mod/basics"
+    And the GitHub contents API serves "courses/demo/mod/basics.md" with the document:
+      """
+      # Basics
+
+      ```gherkin
+      Given a page
+      Then it proves itself
+      ```
+      {: .feature #proof }
+      """
+    And the GitHub contents API serves "courses/demo/mod/open.md" with the document:
+      """
+      # Next module
+
+      - [Basics](basics.md)
+      {: .prerequisite }
+
+      ## Deep content
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/open.md"
+    And I wait for the page to be interactive
+    Then the prerequisites are met
+    And the gated content "Secret wisdom here." is visible
+
+  Scenario: ?strict=1 asks for the proofs on every page of the frame
+    Two levels (Michel, 2026-08-13): the URL sets the scope's default — a
+    whole course walked the strict way, with no page edited — and a block's
+    own features= is the local word.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned points on "gh:acme/demo/courses/demo/mod/basics"
+    And the GitHub contents API serves "courses/demo/mod/basics.md" with the document:
+      """
+      # Basics
+
+      ```gherkin
+      Given a page
+      Then it proves itself
+      ```
+      {: .feature #proof }
+      """
+    And the GitHub contents API serves "courses/demo/mod/plain.md" with the document:
+      """
+      # Next module
+
+      - [Basics](basics.md)
+      {: .prerequisite }
+
+      ## Deep content
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html?strict=1#src=gh:acme/demo/courses/demo/mod/plain.md"
+    And I wait for the page to be interactive
+    Then a prerequisite gate offers "Basics"
+    And the gated content "Secret wisdom here." is hidden
+
+  Scenario: A page may opt out of a strict frame
+    features="false" is the local word against the URL's default — the page
+    that only needs the points, inside a course that asks for the proofs.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned points on "gh:acme/demo/courses/demo/mod/basics"
+    And the GitHub contents API serves "courses/demo/mod/basics.md" with the document:
+      """
+      # Basics
+
+      ```gherkin
+      Given a page
+      Then it proves itself
+      ```
+      {: .feature #proof }
+      """
+    And the GitHub contents API serves "courses/demo/mod/lenient.md" with the document:
+      """
+      # Next module
+
+      - [Basics](basics.md)
+      {: .prerequisite features="false" }
+
+      ## Deep content
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html?strict=1#src=gh:acme/demo/courses/demo/mod/lenient.md"
+    And I wait for the page to be interactive
+    Then the prerequisites are met
+    And the gated content "Secret wisdom here." is visible

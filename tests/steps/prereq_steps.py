@@ -100,3 +100,28 @@ def step_met_is_link(context, title):
     expect(link).to_be_visible(timeout=15_000)
     href = link.get_attribute("href") or ""
     assert href and href != "#", f"the met prerequisite leads nowhere: {href!r}"
+
+
+# ── features="true": the proofs count too ───────────────────────────────────
+@given('the learner turned "{feature}" green on "{key}"')
+def step_seed_feature_green(context, feature, key):
+    _seed_features(context, {key + "#" + feature: {"status": "passing"}})
+
+
+@given('the learner left "{feature}" red on "{key}"')
+def step_seed_feature_red(context, feature, key):
+    _seed_features(context, {key + "#" + feature: {"status": "failing"}})
+
+
+def _seed_features(context, obj):
+    """Merge, so a scenario can seed one green and one red."""
+    try:
+        have = context._feat_seed or {}
+    except (AttributeError, KeyError):
+        have = {}
+    have.update(obj)
+    context._feat_seed = have
+    context.page.add_init_script(
+        "try { localStorage.setItem('lc_features', %s); } catch (e) {}"
+        % json.dumps(json.dumps(have))
+    )
