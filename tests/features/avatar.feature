@@ -251,3 +251,4 @@ Feature: Avatar — speaking overlay instructor
     And I wait for the page to be interactive
     And I open the guide's ask panel
     Then the ask panel says it is in author mode
+    And the ask panel shows the day's AI spend

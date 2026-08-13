@@ -1661,6 +1661,15 @@ Auto-included by docs/_layouts/default.html.
         return;
       }
       av._lastAnswer = result.truncated ? null : { question: question, steps: steps };
+      /* TESTING COSTS TOO (Michel, 2026-08-13). The author is the heaviest
+         user of every page they write, so in author mode each answer says
+         what it cost and where the day stands. Students see none of this:
+         their number lives quietly in the account chip's tooltip. */
+      if (authorMode && result.usage) {
+        var t = result.usage.total_tokens || 0;
+        seedToast('📊 this ask: ' + t + ' tokens · ' +
+                  ((window.lcTokens && window.lcTokens.line()) || ''));
+      }
       if (result.truncated) {
         seedToast('✂️ cut off — not keepable. Ask for something shorter, or raise max_tokens.');
       }
@@ -1845,7 +1854,8 @@ Auto-included by docs/_layouts/default.html.
       panel.innerHTML =
         '<textarea rows="2" placeholder="Ask about this page…" aria-label="Ask about this page"></textarea>' +
         (direct ? '<p class="lc-guide-ask-hint">✍️ author mode — direct answers, nothing withheld. ' +
-                  'A student without an editor key is guided instead.</p>' : '') +
+                  'A student without an editor key is guided instead.<br>📊 ' +
+                  ((window.lcEscapeHtml || String)((window.lcTokens && window.lcTokens.line()) || '')) + '</p>' : '') +
         '<div class="lc-guide-ask-row"><button type="button">▶ Ask</button></div>';
       var ta = panel.querySelector('textarea');
       panel.querySelector('button').addEventListener('click', function () {

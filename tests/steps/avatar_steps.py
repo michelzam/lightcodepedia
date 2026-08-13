@@ -287,3 +287,12 @@ def step_provider_key(context):
 def step_author_mode_hint(context):
     txt = context.page.locator(".lc-guide-ask").inner_text()
     assert "author mode" in txt.lower(), txt
+
+
+@then("the ask panel shows the day's AI spend")
+def step_panel_spend(context):
+    """The author is the heaviest user of every page they write, so the count
+    is in front of them before they ask again."""
+    txt = context.page.locator(".lc-guide-ask").inner_text()
+    assert "📊" in txt, txt
+    assert "question" in txt.lower() or "token" in txt.lower(), txt
