@@ -1850,21 +1850,28 @@ Auto-included by docs/_layouts/default.html.
     panel.className = 'lc-guide-ask open';
     var ready = window.lcBotAsk && window.lcBotAsk.ready();
     if (ready) {
-      /* WHICH DOC AM I TALKING TO? Owning the material makes the guide answer
+      /* THE DAY'S SPEND IS EVERYONE'S (Michel, 2026-08-13: *"no ai counts
+         displayed anymore"* — it used to ride inside the author line, so
+         gating the line hid the number too). It is the learner's OWN key and
+         their own free quota; a tooltip on the account chip cannot be hovered
+         on a phone or inside Canvas, so the count says itself here, in front
+         of the box they are about to spend from.
+
+         WHICH DOC AM I TALKING TO? Owning the material makes the guide answer
          as the AUTHOR's: direct, complete, nothing withheld (doctrine 7).
-         The panel says so — and it says it only once ownership is CONFIRMED,
-         which is a request, so the line lands a moment after the box. */
+         That sentence joins the count once ownership is CONFIRMED, which is a
+         request — so it lands a moment after the box. */
       panel.innerHTML =
         '<textarea rows="2" placeholder="Ask about this page…" aria-label="Ask about this page"></textarea>' +
+        '<p class="lc-guide-ask-hint" data-lc-spend>📊 ' +
+        ((window.lcEscapeHtml || String)((window.lcTokens && window.lcTokens.line()) || '')) + '</p>' +
         '<div class="lc-guide-ask-row"><button type="button">▶ Ask</button></div>';
       if (window.lcAuthorMode) window.lcAuthorMode.check().then(function (isAuthor) {
         if (!isAuthor || !panel.isConnected) return;
-        var hint = document.createElement('p');
-        hint.className = 'lc-guide-ask-hint';
+        var hint = panel.querySelector('[data-lc-spend]');
+        if (!hint) return;
         hint.innerHTML = '✍️ author mode — direct answers, nothing withheld. ' +
-          'Learners reading this material are guided instead.<br>📊 ' +
-          ((window.lcEscapeHtml || String)((window.lcTokens && window.lcTokens.line()) || ''));
-        panel.insertBefore(hint, panel.querySelector('.lc-guide-ask-row'));
+          'Learners reading this material are guided instead.<br>' + hint.innerHTML;
       });
       var ta = panel.querySelector('textarea');
       panel.querySelector('button').addEventListener('click', function () {

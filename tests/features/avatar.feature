@@ -290,5 +290,6 @@ Feature: Avatar — speaking overlay instructor
     And I wait for the page to be interactive
     And I open the guide's ask panel
     Then the ask panel is not in author mode
+    And the ask panel shows the day's AI spend
     When I ask "What is the answer?" in the open panel
     Then the question reached the model without the author's licence
