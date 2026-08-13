@@ -155,6 +155,24 @@ null]</script>
       return tally.green >= declared;
     });
   }
+  /* THE LINK A LEARNER CLICKS MUST BE THE ONE THE RUNNER WOULD HAVE MADE
+     (Michel, 2026-08-13: the met line's "👋 Welcome" landed on a 404). The
+     runner heals every relative href in a rendered page into a #src= address
+     — but this gate BUILDS its anchors afterwards, out of the raw markdown
+     href, so they were never healed. Same resolution as the score key, one
+     line lower: relative means "beside the page that named it". */
+  function linkHref(el, href) {
+    var host = el.closest && el.closest("[data-lc-src-repo]");
+    if (!host || /^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return href;
+    var path = host.getAttribute("data-lc-src-path") || "";
+    var parts = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1) : [];
+    href.split("#")[0].split("?")[0].split("/").forEach(function (seg) {
+      if (!seg || seg === ".") return;
+      if (seg === "..") parts.pop(); else parts.push(seg);
+    });
+    var runUrl = window.lcHref ? window.lcHref("/run.html") : "/run.html";
+    return runUrl + "#src=gh:" + host.getAttribute("data-lc-src-repo") + "/" + parts.join("/");
+  }
   function met(s, passPct) {
     if (!s || !s.total) return false;
     if (passPct) return (s.won / s.total) * 100 >= passPct;
@@ -232,13 +250,13 @@ null]</script>
          the title into plain text, so the one list a learner would use to go
          back and re-read something was the one place they could not click. */
       return "<li class='" + (ok ? "ok" : "todo") + "'>" + (ok ? "✅ " : "➜ ")
-        + "<a href='" + esc(l.href) + "'>" + esc(l.title) + "</a></li>";
+        + "<a href='" + esc(linkHref(el, l.href)) + "'>" + esc(l.title) + "</a></li>";
     });
     var card = document.createElement("div");
     if (!missing.length) {
       card.className = "lc-prereq-met";
       card.innerHTML = "✅ Prerequisites met — " + links.map(function (l) {
-        return "<a href='" + esc(l.href) + "'>" + esc(l.title) + "</a>";
+        return "<a href='" + esc(linkHref(el, l.href)) + "'>" + esc(l.title) + "</a>";
       }).join(" <span class='lc-prereq-sep'>·</span> ");
       el.parentNode.replaceChild(card, el);
       return;

@@ -1,6 +1,6 @@
 # 🤖 Agent
 
-An AI chat panel that lives right on the page — no server, no shared API key, no back-end code. Each learner uses their own GitHub PAT[^pat] to call GitHub Models[^gh-models] directly from the browser.
+An AI chat panel that lives right on the page — no server, no shared API key, no back-end code. Each learner uses their **own provider key**[^key] to call the model directly from the browser. The provider is configuration, not code: **Google AI Studio (Gemini)** by default, and `provider:` / `base_url:` point anywhere that speaks the OpenAI-compatible dialect.
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode, then press → to advance. Live agent panels throughout the page let you chat with the examples as you read.
 
@@ -9,9 +9,9 @@ An AI chat panel that lives right on the page — no server, no shared API key, 
 No magic — just a direct HTTPS call you could paste into `curl`.
 
 - You type a question.
-- The widget sends it (plus a system prompt) straight to `models.github.ai`.
+- The widget sends it (plus a system prompt) straight to the provider's endpoint — `generativelanguage.googleapis.com` for the default Gemini preset.
 - The response comes back as JSON. The widget renders it.
-- Your PAT travels from your browser to GitHub's servers — never to ours.
+- Your key travels from your browser to that provider — never to ours.
 
 This site has no server-side code, no shared API key, and no request log. Zero.
 
@@ -23,7 +23,7 @@ This site has no server-side code, no shared API key, and no request log. Zero.
 
 - [ ] The lightcodepedia server stores it in a session cookie.
 - [ ] It's baked into the page's JavaScript bundle at build time.
-- [x] Only your browser — it goes directly to `models.github.ai`.
+- [x] Only your browser — it goes straight to the AI provider you configured.
 - [ ] The NSA has it. (And all those emojis you've been sending.)
 {: .quiz }
 
@@ -152,7 +152,7 @@ All configuration goes in the YAML block.
 | Key | Default | What it does |
 |---|---|---|
 | `system` | "You are a helpful assistant." | The system prompt — defines the persona |
-| `model` | `openai/gpt-4o-mini` | Any model GitHub Models free tier supports |
+| `model` | the provider preset's own (`gemini-flash-latest`) | Any model that provider serves — pin one only to override the preset |
 | `temperature` | `0.7` | 0 = deterministic oracle, 1 = jazz improvisation |
 | `max_tokens` | `500` | Caps response length (and API cost) |
 | `intro` | (none) | A hint rendered above the input |
@@ -165,7 +165,7 @@ A fully-dressed example:
 system: |
   You are a concise English→French translator.
   Reply with the translation ONLY — no preamble, no explanation.
-model: openai/gpt-4o-mini
+model: gemini-flash-latest
 intro: "Type any English sentence — get French back."
 placeholder: "Hello, how are you?"
 temperature: 0.3
@@ -179,7 +179,7 @@ Renders to:
 system: |
   You are a concise English→French translator.
   Reply with the translation ONLY — no preamble, no explanation.
-model: openai/gpt-4o-mini
+model: gemini-flash-latest
 intro: "Type any English sentence — get French back."
 placeholder: "Hello, how are you?"
 temperature: 0.3
@@ -359,29 +359,29 @@ Know these before you build a 300-slide AI curriculum on top of it.
 - **Stateless single-shot.** Each ▶ Ask is one independent request. No memory across questions — unless `bound=` is set, in which case the editor content IS the persistent state.
 - **No streaming.** The full response arrives at once. Long answers feel slow.
 - **No tool use yet.** The agent can write code back into an editor but can't run it itself. v2 plan: after Apply, auto-run the result and feed stdout into the next turn.
-- **Free-tier rate limits.** GitHub Models caps requests per minute and per day. The panel surfaces the API error if you hit the ceiling.
+- **Free-tier rate limits.** Every free tier caps requests per minute and per day (Gemini's reset around midnight US Pacific). The panel surfaces the API error if you hit the ceiling.
 - **First python block only gets Apply.** Multiple code blocks in one response → only the first gets the ⬇ button. Copy/paste the rest.
 
 ## 🏁 Final exam — boss level
 
 **Q:** Which of these are TRUE about the agent widget? (Pick all that apply.)
 
-- [x] Each learner uses their own PAT — no key is shared server-side.
+- [x] Each learner uses their own provider key — no key is shared server-side.
 - [x] Bound mode attaches the editor's current code to every Ask automatically.
 - [ ] Conversation history accumulates across asks in the same session.
 - [x] The 🔑 button clears the token for all panels on the page at once.
-- [ ] The PAT is encrypted server-side and returned to you as a JWT.
+- [ ] The key is encrypted server-side and returned to you as a JWT.
 {: .quiz multi="true" }
 
 **Q:** Class starts in 2 minutes and a learner says "I get a 401 error". What's the most likely fix?
 
 - [ ] Refresh the page fourteen times. Persistence pays.
 - [ ] Switch to Firefox. Edge is the problem.
-- [x] Generate a new classic PAT — the old one is wrong, expired, or has the wrong scope.
-- [ ] The GitHub Models API is down. Accept your fate and pivot to flashcards.
+- [x] Generate a fresh provider key — the old one is wrong, expired, or was revoked.
+- [ ] The provider is down. Accept your fate and pivot to flashcards.
 {: .quiz }
 
-> 401 = authentication failure. A fresh classic PAT (zero scopes) fixes 95 % of these.
+> 401 = authentication failure. A fresh key from the provider's console fixes 95 % of these.
 {: .speaker-note }
 
 **Q:** You want the agent to always see what the learner is currently coding. Which IAL attribute do you add to `{: .agent }`?
@@ -395,6 +395,6 @@ Know these before you build a 300-slide AI curriculum on top of it.
 > `bound=` is the magic word. Point it at the runner's `id` and every Ask carries the editor state.
 {: .speaker-note }
 
-[^gh-models]: **GitHub Models** is GitHub's hosted inference gateway at `models.github.ai`, offering OpenAI-compatible chat completions for several model families on a free tier.
+[^key]: **Provider key** = the credential the AI provider issues to *you*. The default preset is Google AI Studio (`AIza…`, free tier); `provider: openrouter` or a `base_url:` of your own swaps it. It lives in this browser and is sent to that provider only.
 
-[^pat]: **PAT** = Personal Access Token, the credential GitHub uses for API authentication. Classic PATs work out of the box; fine-grained PATs need the explicit `models:read` permission checkbox.
+[^pat]: **PAT** = Personal Access Token, the credential GitHub uses for API authentication — the ✏️ page editor's key, not the agent's. Classic PATs with `repo` work out of the box; fine-grained ones need Contents → Read + Write.

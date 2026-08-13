@@ -408,3 +408,26 @@ Feature: RT prerequisite gate — the key names the content, not the runner
     And I wait for the page to be interactive
     Then the prerequisites are met
     And the gated content "Secret wisdom here." is visible
+
+  Scenario: A met prerequisite links back through the runner, not into a 404
+    The gate builds its own anchors AFTER the runner healed the page's links,
+    so it was handing out the raw "welcome.md" — which the site has no page
+    for (Michel, 2026-08-13: "prerequisite links fail: example between
+    adoption day and previous (welcome)").
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner has earned points on "gh:acme/demo/courses/demo/mod/welcome"
+    And the GitHub contents API serves "courses/demo/mod/adoption.md" with the document:
+      """
+      # Adoption Day
+
+      - [Welcome](welcome.md)
+      {: .prerequisite }
+
+      A story from the future.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/adoption.md"
+    And I wait for the page to be interactive
+    Then the prerequisites are met
+    And "Welcome" leads back through the runner to "courses/demo/mod/welcome.md"

@@ -125,3 +125,11 @@ def _seed_features(context, obj):
         "try { localStorage.setItem('lc_features', %s); } catch (e) {}"
         % json.dumps(json.dumps(have))
     )
+
+
+@then('"{title}" leads back through the runner to "{path}"')
+def step_prereq_link_healed(context, title, path):
+    link = context.page.locator(".lc-prereq-met a, .lc-prereq a", has_text=title).first
+    href = link.get_attribute("href") or ""
+    assert "#src=gh:" in href, "a raw markdown href cannot be opened by the site: %r" % href
+    assert href.endswith("/" + path), href

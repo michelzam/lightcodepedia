@@ -566,7 +566,13 @@ Auto-included by docs/_layouts/default.html.
       var canSave = st === "starter" && !!(window.lcBench && window.lcBench.target(box).repo);
       head.innerHTML = pic + who + where + chip +
         (canSave ? "<button type='button' class='lc-bench-save'>💾 Save to my space</button>" : "") +
-        "<button type='button' class='lc-bench-more' aria-label='what I can do with this file'>⋯</button>";
+        /* TWO SCOPES, TWO AFFORDANCES, AND THE SMALLER ONE IS THE GEAR
+           (Michel, 2026-08-13: *"there is some confusion between ⋯ and ⚙️"*).
+           ⚙️ belongs to whatever is UNDER THE POINTER — a part, its wiring.
+           ⋯ belongs to the STRIPE it sits in, which is the file. Using the
+           gear for both would say the file is just another part. So the
+           glyph stays and stops being mystery meat: it names its scope. */
+        "<button type='button' class='lc-bench-more' title='This file — copy, open on its own, versions, start over' aria-label='what I can do with this file'>⋯</button>";
       var saveBtn = head.querySelector(".lc-bench-save");
       if (saveBtn) saveBtn.addEventListener("click", function (ev) {
         ev.stopPropagation(); act("clone");
