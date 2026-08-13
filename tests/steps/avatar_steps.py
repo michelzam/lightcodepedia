@@ -118,11 +118,19 @@ def _stub_completion(context, text, finish_reason):
         }],
         "usage": {"total_tokens": 11},
     })
-    context.page.route(
-        "**/chat/completions*",
-        lambda r: r.fulfill(
-            status=200, content_type="application/json", body=body),
-    )
+    # WHAT WAS SENT matters as much as what came back: author mode is a
+    # sentence added to the system prompt, so the request body is where a
+    # learner-turned-author shows up.
+    context.model_calls = []
+
+    def _answer(route):
+        try:
+            context.model_calls.append(route.request.post_data or "")
+        except Exception:
+            pass
+        route.fulfill(status=200, content_type="application/json", body=body)
+
+    context.page.route("**/chat/completions*", _answer)
 
 
 @given('the model endpoint stops mid-answer with "{text}"')
@@ -296,3 +304,65 @@ def step_panel_spend(context):
     txt = context.page.locator(".lc-guide-ask").inner_text()
     assert "📊" in txt, txt
     assert "question" in txt.lower() or "token" in txt.lower(), txt
+
+
+# ── author mode is ownership, not a key ────────────────────────────────────
+# Every onboarded learner holds an editor key — it is how their own bench
+# saves. The question that separates them from the author is the one X-ray
+# already asks: can this viewer PUSH to the repo the material came from?
+
+def _stub_repo_push(context, repo, can_push):
+    context.page.route(
+        "**/api.github.com/repos/" + repo,
+        lambda r: r.fulfill(status=200, content_type="application/json",
+                            body=_json.dumps({"permissions": {"push": can_push}})))
+
+
+@given('the viewer can push to "{repo}"')
+def step_can_push(context, repo):
+    _stub_repo_push(context, repo, True)
+
+
+@given('the viewer cannot push to "{repo}"')
+def step_cannot_push(context, repo):
+    _stub_repo_push(context, repo, False)
+
+
+@given("a learner key is connected to their own bench")
+def step_learner_key(context):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat','ghp_learner');"
+        "localStorage.setItem('lc_ed_repo','zamm-learner/bench');")
+
+
+@then("the ask panel is not in author mode")
+def step_no_author_hint(context):
+    context.page.wait_for_timeout(600)   # the ownership answer is a request
+    txt = context.page.locator(".lc-guide-ask").inner_text()
+    assert "author mode" not in txt.lower(), txt
+
+
+@then("the question reached the model without the author's licence")
+def step_no_direct_licence(context):
+    calls = getattr(context, "model_calls", [])
+    assert calls, "the model was never asked"
+    joined = " ".join(calls)
+    assert "course AUTHOR" not in joined, joined[:400]
+
+
+@then("the question reached the model with the author's licence")
+def step_direct_licence(context):
+    calls = getattr(context, "model_calls", [])
+    assert calls, "the model was never asked"
+    joined = " ".join(calls)
+    assert "course AUTHOR" in joined, joined[:400]
+
+
+@when('I ask "{question}" in the open panel')
+def step_ask_in_open_panel(context, question):
+    """The panel is already open (a hint was just read off it) — opening it
+    again would click a menu the open panel covers."""
+    panel = context.page.locator(".lc-guide-ask")
+    panel.locator("textarea").fill(question)
+    panel.locator("button").first.click()
+    context.page.wait_for_timeout(1_200)

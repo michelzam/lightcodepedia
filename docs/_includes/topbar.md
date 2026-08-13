@@ -155,6 +155,12 @@
   #lc-topbar .lc-links { gap: 0.6rem; flex-wrap: nowrap; }
   #lc-topbar .lc-links br { display: none; }
   #lc-fork-hint .lc-fork-label { display: none; }
+  /* THE FACE IS THE LAST THING TO GO. A flex row that cannot wrap grows past
+     the screen instead, and on a phone the pill went with it — off the right
+     edge, untappable, its menu opening where nobody could see it. The menu
+     gives up width first (icons clip); the account chip never moves. */
+  #lc-topbar .lc-links { min-width: 0; overflow: hidden; }
+  #lc-user-pill, #lc-start-pill { flex-shrink: 0; }
 }
 body {
   padding-top: 56px;
@@ -288,10 +294,17 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
   /* WHAT THE AI HAS COST TODAY, where the learner already looks (Michel,
      2026-08-13: "stay vigilant about token consumption"). It hangs off the
      account chip's tooltip — no new furniture — and it counts what THIS
-     browser spent, because nobody can read what a free key has left. */
+     browser spent, because nobody can read what a free key has left.
+
+     ON WINDOW, NOT IN THIS CLOSURE (2026-08-13). The user pill is a DIFFERENT
+     IIFE further down this file; a bare `tokenLine()` there was a
+     ReferenceError, and on every page after sign-in it fired synchronously —
+     killing the rest of the pill's setup, dropdown wiring included. The
+     tooltip is shared furniture, so it lives where both can see it. */
   function tokenLine() {
     return (window.lcTokens && window.lcTokens.line) ? window.lcTokens.line() : '';
   }
+  window.lcTokenLine = tokenLine;
   document.addEventListener('lc-tokens', function () {
     var btn = document.getElementById('lc-user-btn');
     if (!btn) return;
@@ -652,7 +665,8 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       var pill = document.getElementById('lc-user-pill');
       pill.style.display = 'block';
       document.getElementById('lc-user-avatar').src = u.avatar_url;
-      document.getElementById('lc-user-btn').title = '@' + u.login + '\n' + tokenLine();
+      document.getElementById('lc-user-btn').title = '@' + u.login +
+        (window.lcTokenLine ? '\n' + window.lcTokenLine() : '');
       document.getElementById('lc-ud-avatar').src = u.avatar_url;
       document.getElementById('lc-ud-name').textContent = u.name || u.login;
       document.getElementById('lc-ud-login').textContent = '@' + u.login;
@@ -817,19 +831,32 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       document.getElementById('lc-ud-pages-label').textContent = siteHost + '/' + repoSlug;
     }
 
+    /* PAINTING THE FACE MUST NEVER DISARM THE MENU. The cached path runs
+       synchronously, so one bad line in showUser used to abort this whole
+       function before the dropdown was wired: the avatar appeared (it is set
+       first) and tapping it did nothing, on every page after the first. */
+    function paintUser(u) { try { showUser(u); } catch (e) {} }
+
     var cached = null;
     try { cached = JSON.parse(localStorage.getItem('lc_gh_user') || 'null'); } catch(e){}
     var cachedFor = localStorage.getItem('lc_gh_user_for');
-    if (cached && cachedFor === pat) { showUser(cached); }
+    if (cached && cachedFor === pat) { paintUser(cached); }
     else {
       fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + pat } })
         .then(function(r){ var rem=parseInt(r.headers.get('X-RateLimit-Remaining')||'-1',10); if(rem>=0)localStorage.setItem('lc_rate_remaining',String(rem)); return r.ok ? r.json() : Promise.reject(r.status); })
         .then(function(u){
           localStorage.setItem('lc_gh_user', JSON.stringify(u));
           localStorage.setItem('lc_gh_user_for', pat);
-          showUser(u);
+          paintUser(u);
         })
-        .catch(function(){ document.getElementById('lc-start-pill').style.display = 'block'; });
+        /* NEVER TWO PILLS. "🔑 Get started" beside a face is both wrong and
+           112px wide — on a phone it pushed the avatar clean off the right
+           edge. It comes back only when no face is showing. */
+        .catch(function(){
+          var pill = document.getElementById('lc-user-pill');
+          if (pill && pill.style.display === 'block') return;
+          document.getElementById('lc-start-pill').style.display = 'block';
+        });
     }
 
     /* ── 🔄 fork sync: one tap to receive the mother site's improvements ──

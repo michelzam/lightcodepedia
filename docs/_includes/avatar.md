@@ -1639,9 +1639,15 @@ Auto-included by docs/_layouts/default.html.
       document.removeEventListener('lc-avatar-ended', restore);
       if (av._tourScript) { av.script = av._tourScript; av._tourScript = null; av.idx = 0; }
     };
+    /* OWNERSHIP DECIDES, NOT THE PRESENCE OF A KEY — every learner has one
+       (agent.md, window.lcAuthorMode). Unknown means learner. */
     var authorMode = false;
-    try { authorMode = !!(localStorage.getItem('lc_ed_pat') && localStorage.getItem('lc_ed_repo')); } catch (e) {}
-    window.lcBotAsk.ask(av.botName, question, authorMode ? { direct: true } : null).then(function (result) {
+    var asked = (window.lcAuthorMode ? window.lcAuthorMode.check() : Promise.resolve(false))
+      .then(function (isAuthor) {
+        authorMode = isAuthor;
+        return window.lcBotAsk.ask(av.botName, question, isAuthor ? { direct: true } : null);
+      });
+    asked.then(function (result) {
       if (!result || result.error) {
         guideBubble(av, '⚠ ' + ((result && result.error) || 'No answer.'));
         setTimeout(function () { guideIdle(av); restore(); }, 4000);
@@ -1844,19 +1850,22 @@ Auto-included by docs/_layouts/default.html.
     panel.className = 'lc-guide-ask open';
     var ready = window.lcBotAsk && window.lcBotAsk.ready();
     if (ready) {
-      /* WHICH DOC AM I TALKING TO? An editor key in this browser makes the
-         guide answer as the AUTHOR's: direct, complete, nothing withheld
-         (doctrine 7). Michel hit that on a quiz page and read it as the
-         tutor leaking answers to learners — it was his own key. So the
-         panel says so, every time. */
-      var direct = false;
-      try { direct = !!(localStorage.getItem('lc_ed_pat') && localStorage.getItem('lc_ed_repo')); } catch (e) {}
+      /* WHICH DOC AM I TALKING TO? Owning the material makes the guide answer
+         as the AUTHOR's: direct, complete, nothing withheld (doctrine 7).
+         The panel says so — and it says it only once ownership is CONFIRMED,
+         which is a request, so the line lands a moment after the box. */
       panel.innerHTML =
         '<textarea rows="2" placeholder="Ask about this page…" aria-label="Ask about this page"></textarea>' +
-        (direct ? '<p class="lc-guide-ask-hint">✍️ author mode — direct answers, nothing withheld. ' +
-                  'A learner without an editor key is guided instead.<br>📊 ' +
-                  ((window.lcEscapeHtml || String)((window.lcTokens && window.lcTokens.line()) || '')) + '</p>' : '') +
         '<div class="lc-guide-ask-row"><button type="button">▶ Ask</button></div>';
+      if (window.lcAuthorMode) window.lcAuthorMode.check().then(function (isAuthor) {
+        if (!isAuthor || !panel.isConnected) return;
+        var hint = document.createElement('p');
+        hint.className = 'lc-guide-ask-hint';
+        hint.innerHTML = '✍️ author mode — direct answers, nothing withheld. ' +
+          'Learners reading this material are guided instead.<br>📊 ' +
+          ((window.lcEscapeHtml || String)((window.lcTokens && window.lcTokens.line()) || ''));
+        panel.insertBefore(hint, panel.querySelector('.lc-guide-ask-row'));
+      });
       var ta = panel.querySelector('textarea');
       panel.querySelector('button').addEventListener('click', function () {
         var q = (ta.value || '').trim();

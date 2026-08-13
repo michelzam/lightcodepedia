@@ -233,6 +233,7 @@ Feature: Avatar — speaking overlay instructor
     And a marked shim is preinstalled
     And a builder key is connected
     And the AI provider key is connected
+    And the "doc" bot is available
     And the GitHub contents API serves "courses/demo/mod/guide2.md" with the document:
       """
       # Guided page
@@ -247,8 +248,47 @@ Feature: Avatar — speaking overlay instructor
       ```
       {: .avatar #guide dock="true" size="115" }
       """
+    And the viewer can push to "acme/demo"
+    And the model endpoint answers in full with "1. Here you go."
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide2.md"
     And I wait for the page to be interactive
     And I open the guide's ask panel
     Then the ask panel says it is in author mode
     And the ask panel shows the day's AI spend
+    When I ask "What is the answer?" in the open panel
+    Then the question reached the model with the author's licence
+
+  Scenario: A learner's own key does not make them the author
+    Every learner holds an editor key — it is how their bench saves — so
+    "a key is present" made every learner an author and handed them the
+    direct answers. Michel, reading a course page in Canvas signed in as
+    zamm-student, 2026-08-13: "I'm surprised to see I'm author". Ownership
+    of the material decides, and it fails closed.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a learner key is connected to their own bench
+    And the AI provider key is connected
+    And the "doc" bot is available
+    And the viewer cannot push to "acme/demo"
+    And the model endpoint answers in full with "1. What do you think?"
+    And the GitHub contents API serves "courses/demo/mod/guide3.md" with the document:
+      """
+      # Guided page
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script:
+        - say: "Hello."
+      stories: {}
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide3.md"
+    And I wait for the page to be interactive
+    And I open the guide's ask panel
+    Then the ask panel is not in author mode
+    When I ask "What is the answer?" in the open panel
+    Then the question reached the model without the author's licence
