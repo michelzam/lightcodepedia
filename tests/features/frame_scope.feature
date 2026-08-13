@@ -72,6 +72,9 @@ Feature: Frame flags are a scope, not a page setting
     And the menu links are gone
     And the runner never names the file
     And the trail sits left and the meters sit right, before my face
+    And the module name leads to the module's own cover
+    And the page begins right under the bar
+    And the about bubble credits the content, the platform and the AI
 
 
   Scenario: The crumb survives the hop into a module

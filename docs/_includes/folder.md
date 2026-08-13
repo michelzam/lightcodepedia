@@ -38,6 +38,9 @@ Auto-included by docs/_layouts/default.html.
    the module without competing with the page's own heading. */
 .lc-folder-title { font-size: 0.74em; font-weight: 600; letter-spacing: 0.07em;
   text-transform: uppercase; color: #6b7280; margin: 0.2em 0 0.5em; }
+/* a door, but a quiet one: the eyebrow keeps its register until you aim */
+.lc-folder-title a { color: inherit; text-decoration: none; }
+.lc-folder-title a:hover { color: #0066cc; text-decoration: underline; }
 /* AND WHICH CARD IS ME. A discreet dot beside the title and a soft left
    edge — enough to find yourself in a list of five, not enough to look
    like a selection (Michel, 2026-08-11). */
@@ -553,8 +556,18 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       var h = document.createElement("div");
       h.className = "lc-folder-title";
       h.setAttribute("data-lc-derived", "1");
-      h.textContent = dir ? titleCase(dir.split("/").pop()) : "";
-      if (!h.textContent) return;
+      var name = dir ? titleCase(dir.split("/").pop()) : "";
+      if (!name) return;
+      /* THE MODULE NAME IS A DOOR (Michel, 2026-08-13). The line that names
+         the shelf now leads to the shelf's own cover — its index.md — which
+         is the one page a listing never shows as a card. On that cover it
+         stays plain text: nothing links to itself. */
+      var idxHref = "";
+      try { idxHref = cardUrl((dir ? dir + "/" : "") + "index.md"); } catch (e) {}
+      var label = document.createElement(idxHref ? "a" : "span");
+      if (idxHref) label.href = idxHref;
+      label.textContent = name;
+      h.appendChild(label);
       wrap.parentNode.insertBefore(h, wrap);
       /* ON THE MODULE'S OWN PAGE the name is already on screen — the H1 the
          runner just rendered. No fetch, no flicker, and it is exactly the
@@ -565,7 +578,15 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         : /(\/|\/index(\.[a-z0-9]+)?)$/i.test(location.pathname);
       if (onIdx) {
         var own = (runRoot || document).querySelector("h1");
-        if (own && own.textContent.trim()) { h.textContent = own.textContent.trim(); return; }
+        if (own && own.textContent.trim()) {
+          label.textContent = own.textContent.trim();
+          if (label.tagName === "A") {          /* we ARE the cover: no self-link */
+            var flat = document.createElement("span");
+            flat.textContent = label.textContent;
+            h.replaceChild(flat, label);
+          }
+          return;
+        }
       }
       /* otherwise the real name lives in the folder's index.md — a listing
          never shows that card, so read it through whichever door this shelf
@@ -579,7 +600,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       Promise.resolve(got).then(function (text) {
         if (typeof text !== "string") return;
         var t = extractPageMeta(text).title;
-        if (t) h.textContent = t;
+        if (t) label.textContent = t;
       }).catch(function () {});
     }
 

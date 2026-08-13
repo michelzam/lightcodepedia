@@ -382,9 +382,12 @@ files a learner is already working in.
     var h = root.querySelector("h1, h2");
     var page = h ? h.textContent.trim() : "";
     var dir = path.split("/").slice(0, -1).join("/");
-    if (/(^|\/)index\.md$/i.test(path)) { window.lcSetCrumb(page, ""); return; }
+    if (/(^|\/)index\.md$/i.test(path)) { window.lcSetCrumb(page, "", ""); return; }
+    /* the module's own cover, so the crumb's module name can lead there —
+       same file moduleTitle() already reads for the name */
+    var href = "#src=" + src.replace(/[^\/]+$/, "index.md");
     window.lcSetCrumb("", page);
-    moduleTitle(src, dir).then(function (mt) { if (mt) window.lcSetCrumb(mt, page); });
+    moduleTitle(src, dir).then(function (mt) { if (mt) window.lcSetCrumb(mt, page, href); });
   }
 
   function upgradeRunner(el) {

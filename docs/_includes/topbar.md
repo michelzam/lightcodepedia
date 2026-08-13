@@ -279,6 +279,16 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
             color: #4b5563; font-size: 0.92em; white-space: nowrap;
             overflow: hidden; text-overflow: ellipsis; }
 #lc-crumb .lc-crumb-sep { color: #9ca3af; }
+#lc-crumb a.lc-crumb-mod { color: inherit; text-decoration: none; }
+#lc-crumb a.lc-crumb-mod:hover { color: #0066cc; text-decoration: underline; }
+/* NO CANYON UNDER THE BAR (Michel, 2026-08-13: *"00 welcome is way too low"*).
+   A framed page opens directly under the trail: the site's own breathing room
+   is for a page that starts with a menu, not for one already inside an LMS. */
+.lc-crumb-mode body { padding-top: 50px; }
+.lc-crumb-mode main, .lc-crumb-mode .lc-runner { margin-top: 0 !important; padding-top: 0 !important; }
+.lc-crumb-mode .lc-run > :first-child,
+.lc-crumb-mode main > :first-child,
+.lc-crumb-mode .markdown-body > h1:first-child { margin-top: 0 !important; }
 #lc-crumb .lc-crumb-page { color: #111827; font-weight: 600;
                            overflow: hidden; text-overflow: ellipsis; }
 /* the meters, in the order they matter to a learner: what I earned, what my
@@ -290,6 +300,9 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
                            background: #f3f4f6; color: #4b5563; }
 #lc-crumb-meta .lc-crumb-score { background: #fef3c7; color: #92400e; }
 #lc-crumb-meta .lc-meter-low { background: #fee2e2; color: #b91c1c; }
+/* ABOUT: who made this, what runs it, what it costs — a bubble, not a menu
+   (Michel, 2026-08-13: *"an about little bubble … non clickable for now"*) */
+#lc-crumb-meta .lc-meter-about { cursor: default; }
 @media (max-width: 700px) { #lc-crumb-meta .lc-meter-gh { display: none; } }
 </style>
 <script>
@@ -299,7 +312,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
    the module's title after one fetch), so it repaints from whatever it has.
    Silent unless ?crumb= named a course. */
 (function () {
-  var course = "", mod = "", page = "";
+  var course = "", mod = "", page = "", modHref = "";
   function paint() {
     var el = document.getElementById("lc-crumb");
     if (!el || !course) return;
@@ -309,7 +322,14 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       brand.removeAttribute("href");           /* read-only: it leads nowhere */
     }
     var bits = [];
-    if (mod) bits.push("<span class='lc-crumb-mod'>" + esc(mod) + "</span>");
+    /* THE MODULE NAME IS A DOOR (Michel, 2026-08-13: *"the module name should
+       be clickable to offer access to module's index page"*). Read-only was
+       never about being stuck — it is about not leaving the course. Going UP
+       to the module you are already inside stays inside, so it is the one
+       link the crumb keeps. The page you are on is not a link to itself. */
+    if (mod) bits.push(modHref
+      ? "<a class='lc-crumb-mod' href='" + esc(modHref) + "'>" + esc(mod) + "</a>"
+      : "<span class='lc-crumb-mod'>" + esc(mod) + "</span>");
     if (page) bits.push("<span class='lc-crumb-page'>" + esc(page) + "</span>");
     el.innerHTML = bits.join("<span class='lc-crumb-sep'>·</span>");
     el.hidden = !bits.length;
@@ -336,11 +356,12 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
     btn.title = (who ? who + '\n' : '') + tokenLine();
   });
 
-  window.lcSetCrumb = function (moduleTitle, pageTitle) {
+  window.lcSetCrumb = function (moduleTitle, pageTitle, moduleHref) {
     course = (window.lcFrame && window.lcFrame.crumb) || "";
     if (!course) return;
     if (moduleTitle) mod = moduleTitle;
     if (pageTitle !== undefined) page = pageTitle || "";
+    if (moduleHref !== undefined) modHref = moduleHref || "";
     paint();
   };
   /* ── The meters, right-justified beside the face ──────────────────────
@@ -385,11 +406,30 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
           rem + " of " + lim + " GitHub calls left this hour", low);
   }
   document.addEventListener("lc-rate", paintRate);
+  /* ── ℹ️ About: the credits, in one bubble ─────────────────────────────
+     Who the content belongs to, what platform runs it, whose key answers
+     the questions. Nothing to click yet (Michel, 2026-08-13) — the whole
+     card is the tooltip, which is also what a screen reader reads out. */
+  function paintAbout() {
+    var lines = [];
+    if (course) lines.push("📦 " + course);
+    var root = document.getElementById("lc-run");
+    var repo = root && root.getAttribute("data-lc-src-repo");
+    if (repo) lines.push("📚 content: " + repo);
+    lines.push("⚙️ platform: Lightcodepedia");
+    var eng = null;
+    try { eng = window.lcBotAsk && window.lcBotAsk.engine && window.lcBotAsk.engine(); } catch (e) {}
+    if (eng && eng.host) lines.push("🤖 AI: " + eng.host + " — your own key");
+    if (window.lcTokens && window.lcTokens.line) lines.push("📊 " + window.lcTokens.line());
+    meter("lc-meter-about", "ℹ️", lines.join("\n"));
+  }
+  document.addEventListener("lc-tokens", paintAbout);
   document.addEventListener("DOMContentLoaded", function () {
     if (!window.lcFrame || !window.lcFrame.crumb) return;
     window.lcSetCrumb("", document.title || "");
-    paintTokens();                 /* both meters have a value before any event */
+    paintTokens();                 /* every meter has a value before any event */
     paintRate();
+    setTimeout(paintAbout, 800);   /* after the runner has named its source */
   });
 })();
 </script>

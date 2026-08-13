@@ -191,3 +191,36 @@ def step_two_groups(context):
             "the meters are not right-justified (%r)" % geo
     # left-justified: the trail starts near the brand, not floated to the middle
     assert geo["crumb"]["left"] < geo["inner"] / 2, "the trail drifted right (%r)" % geo
+
+
+@then("the module name leads to the module's own cover")
+def step_module_is_a_door(context):
+    """Read-only was never about being stuck: going UP to the module you are
+    already inside stays inside the course (Michel, 2026-08-13)."""
+    link = context.page.locator("#lc-crumb a.lc-crumb-mod")
+    expect(link).to_have_count(1, timeout=15_000)
+    href = link.get_attribute("href") or ""
+    assert href.endswith("/index.md"), "the module name points at %r" % href
+
+
+@then("the page begins right under the bar")
+def step_no_canyon(context):
+    """Michel, 2026-08-13, on the Canvas view: "00 welcome is way too low"."""
+    gap = context.page.evaluate("""() => {
+      const bar = document.getElementById('lc-topbar').getBoundingClientRect();
+      const h = document.querySelector('#lc-run h1, #lc-run h2, main h1');
+      return h ? Math.round(h.getBoundingClientRect().top - bar.bottom) : null;
+    }""")
+    assert gap is not None, "no heading to measure"
+    assert gap <= 40, "the page starts %dpx below the bar" % gap
+
+
+@then("the about bubble credits the content, the platform and the AI")
+def step_about_bubble(context):
+    chip = context.page.locator("#lc-crumb-meta .lc-meter-about")
+    expect(chip).to_have_count(1, timeout=15_000)
+    tip = chip.get_attribute("title") or ""
+    for want in ("content:", "platform:", "AI:"):
+        assert want in tip, "the about bubble says %r" % tip
+    assert chip.evaluate("el => getComputedStyle(el).cursor") == "default", \
+        "the bubble looks clickable, and it does nothing yet"
