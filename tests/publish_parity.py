@@ -32,6 +32,13 @@ PLACEHOLDER = re.compile(r"\{[^}]*\}")
 
 
 def excluded_names():
+    """The lab's own exclude list. It does NOT travel — publish.yml copies
+    .github/workflows/, not .github/rsync-excludes/ — so in pedia there is
+    no list to read, and nothing to check: the excluded files are already
+    absent there. Missing list = nothing to say, not a failure (2026-08-13:
+    this check red-lit pedia's whole suite before the browser even started)."""
+    if not os.path.isfile(EXCLUDES):
+        return None
     names = set()
     with open(EXCLUDES) as fh:
         for line in fh:
@@ -53,6 +60,9 @@ def as_pattern(phrase):
 
 def main():
     excluded = excluded_names()
+    if excluded is None:
+        print("publish parity: no exclude list here — this check belongs to the lab")
+        return 0
     home_only = {}                       # phrase → module that defines it
     for name in sorted(os.listdir(STEPS)):
         if name.endswith(".py") and name in excluded:

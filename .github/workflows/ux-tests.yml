@@ -128,6 +128,8 @@ jobs:
       # pedia, with "<unknown>" for a message. One second, before 14 minutes of
       # browser (2026-08-13).
       - name: Published features carry their own steps
+        # the lab keeps the list; pedia has nothing to compare against
+        if: github.repository == 'michelzam/lightcodelab'
         run: python tests/publish_parity.py
 
       # Cache the browser build so repeat runs skip the download (saves minutes).
