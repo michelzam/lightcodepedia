@@ -147,3 +147,18 @@ def step_no_up(context):
 @then("an Up pill is offered")
 def step_up(context):
     expect(context.page.locator(".lc-folder-up-pill").first).to_be_visible(timeout=15_000)
+
+
+@then("my face is shown")
+def step_face_shown(context):
+    chip = context.page.locator("#lc-user-btn")
+    chip.wait_for(state="visible", timeout=10_000)
+
+
+@then("tapping it opens nothing")
+def step_chip_inert(context):
+    context.page.locator("#lc-user-btn").click()
+    context.page.wait_for_timeout(300)
+    assert not context.page.evaluate(
+        "document.getElementById('lc-user-drop').classList.contains('open')"
+    ), "the framed learner got the full account menu"

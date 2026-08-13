@@ -259,6 +259,12 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
 .lc-crumb-mode #lc-topbar .lc-links,
 .lc-crumb-mode #lc-topbar #lc-start-pill { display: none !important; }
 .lc-crumb-mode #lc-topbar .lc-brand { cursor: default; }
+/* READ-ONLY MEANS THE FACE TOO (Michel, 2026-08-13: *"the avatar drop down
+   opens a lot of options, and I prefer not! We said R/O"*). The chip answers
+   "am I signed in as me?" and nothing else — every row behind it (HQ,
+   publish, disconnect, record) is a door out of the module. */
+.lc-crumb-mode #lc-user-drop { display: none !important; }
+.lc-crumb-mode #lc-user-btn { cursor: default; }
 #lc-crumb { display: flex; align-items: center; gap: 0.45em; min-width: 0;
             color: #4b5563; font-size: 0.92em; white-space: nowrap;
             overflow: hidden; text-overflow: ellipsis; }
@@ -957,7 +963,12 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
     // dropdown toggle
     var btn = document.getElementById('lc-user-btn');
     var drop = document.getElementById('lc-user-drop');
-    btn.addEventListener('click', function(e){ e.stopPropagation(); drop.classList.toggle('open'); checkSync(); });
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      /* crumb mode: the chip is a statement, not a menu (see the CSS above) */
+      if (document.documentElement.classList.contains('lc-crumb-mode')) return;
+      drop.classList.toggle('open'); checkSync();
+    });
     document.addEventListener('click', function(){ drop.classList.remove('open'); });
     drop.addEventListener('click', function(e){ e.stopPropagation(); });
 
@@ -1088,7 +1099,11 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
      frame, in whatever tab the browser felt like. Now every same-origin
      navigation carries the flags forward. Registered after the guard and
      respectful of its verdict: a link it already neutralised stays dead. */
-  var FRAME_KEYS = ["focus", "editable", "navigable", "open", "open_in", "embed"];
+  /* crumb and up ride along too (Michel, 2026-08-13: *"when I navigate to a
+     given module, the Lightcodepedia full menu comes back"*) — a scope that
+     only holds on the page the teacher pasted is not a scope. */
+  var FRAME_KEYS = ["focus", "editable", "navigable", "open", "open_in", "embed",
+                    "crumb", "up"];
   var fq = new URLSearchParams(location.search);
   var carried = FRAME_KEYS.filter(function (k) { return fq.has(k); });
   window.lcFrameUrl = function (href) {
