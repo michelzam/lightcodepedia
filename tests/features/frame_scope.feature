@@ -72,3 +72,28 @@ Feature: Frame flags are a scope, not a page setting
     And the menu links are gone
     And the runner never names the file
 
+
+  Scenario: The crumb survives the hop into a module
+    Michel, 2026-08-13: "when I navigate to a given module, the
+    'Lightcodepedia' full menu comes back". A scope that only holds on the
+    page the teacher pasted is not a scope — crumb and up ride along like
+    every other flag.
+
+    When I navigate to "/components/folder?crumb=BUILD-AI&up=0"
+    And I wait for the page to be interactive
+    And I follow the first folder card link
+    Then I actually left the page I was on
+    And the page I land on still carries "crumb=BUILD-AI"
+    And the page I land on still carries "up=0"
+    And the menu links are gone
+
+  Scenario: In crumb mode the face is a statement, not a menu
+    Read-only means the account chip too (Michel, 2026-08-13: "the avatar
+    drop down menu opens a lot of options, and I prefer not!"). Every row
+    behind it — HQ, publish, disconnect — is a door out of the module.
+
+    Given I am signed in with my face already cached
+    When I navigate to "/components/text?crumb=BUILD-AI"
+    And I wait for the page to be interactive
+    Then my face is shown
+    And tapping it opens nothing
