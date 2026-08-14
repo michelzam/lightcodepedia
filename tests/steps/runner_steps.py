@@ -397,3 +397,77 @@ def step_private_vault(context):
         "https://api.github.com/**",
         lambda r: r.fulfill(status=404, content_type="application/json",
                             body='{"message": "Not Found"}'))
+
+
+@when('I open the "{title}" accordion')
+def step_open_accordion(context, title):
+    context.page.evaluate(
+        """(t) => { const d = [...document.querySelectorAll('details')]
+             .find(x => ((x.querySelector('summary')||{}).textContent||'').includes(t));
+           if (d) d.open = true; }""", title)
+    # the body renders on FIRST open (marked + a full component scan), so wait
+    # for something to appear rather than guessing a delay
+    try:
+        context.page.wait_for_selector("details .lc-ac-body *", timeout=15_000)
+    except Exception:
+        pass
+    context.page.wait_for_timeout(1500)
+
+
+@then("the accordion holds two blocks side by side")
+def step_two_blocks(context):
+    geo = context.page.evaluate("""() => {
+      const b = document.querySelector('details .lc-blocks');
+      if (!b) return null;
+      const cols = getComputedStyle(b).gridTemplateColumns.split(' ').length;
+      /* the page carries other panels (the runner's own ⚙️ Connect); what must
+         not exist is a panel named after a heading INSIDE the nested fence */
+      const stolen = [...document.querySelectorAll('details > summary')]
+        .filter(s => /Name|In motion/.test(s.textContent || '')).length;
+      return { cards: b.children.length, cols: cols, stolen: stolen };
+    }""")
+    if not geo:
+        dump = context.page.evaluate(
+            """() => ({ details: document.querySelectorAll('details').length,
+                        summaries: [...document.querySelectorAll('summary')].map(s => s.textContent.trim()),
+                        body: (document.querySelector('details .lc-ac-body') || {}).innerHTML,
+                        run: ((document.querySelector('#lc-run') || {}).innerHTML || '').slice(0, 220),
+                        status: ((document.querySelector('.lc-run-status') || {}).textContent || '') })""")
+        raise AssertionError("the nested block never rendered: %r" % dump)
+    assert geo["cards"] == 2 and geo["cols"] == 2, geo
+    assert geo["stolen"] == 0, "the nested headings became panels of their own: %r" % geo
+
+
+@then("the clip is a video element that loops and starts muted")
+def step_native_clip(context):
+    v = context.page.evaluate("""() => { const v = document.querySelector('video.lc-video-file');
+      return v ? { loop: v.loop, muted: v.muted, autoplay: v.autoplay,
+                   iframes: document.querySelectorAll('iframe.lc-video').length } : null; }""")
+    assert v, "the clip became an iframe (or nothing) instead of a video"
+    assert v["loop"] and v["muted"] and v["autoplay"], v
+    assert v["iframes"] == 0, v
+
+
+@given('the GitHub contents API counts every read of "{name}"')
+def step_count_media(context, name):
+    context.media_reads = []
+
+    def serve(route):
+        context.media_reads.append(route.request.url)
+        # a 1×1 gif standing in for a clip: the point is HOW MANY times it is read
+        route.fulfill(status=200, content_type="application/vnd.github.v3.raw",
+                      body=b"\x00\x00\x00\x18ftypmp42")
+
+    # every shape the contents API takes for a file inside a folder
+    context.page.route("**/contents/**" + name + "**", serve)
+
+
+@then("both clips share one download")
+def step_one_download(context):
+    context.page.wait_for_timeout(1500)
+    reads = getattr(context, "media_reads", [])
+    srcs = context.page.evaluate(
+        "() => [...document.querySelectorAll('video.lc-video-file')].map(v => v.src)")
+    assert len(srcs) == 2, "expected two clips, got %r" % srcs
+    assert len(reads) == 1, "the file was downloaded %d times" % len(reads)
+    assert srcs[0] == srcs[1], "each clip made its own blob: %r" % srcs

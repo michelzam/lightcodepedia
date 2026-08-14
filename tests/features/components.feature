@@ -241,3 +241,14 @@ Feature: Component gallery behaviors
     And the page is shown as it would print
     Then no button is offered on paper
     And every accordion is open on paper
+
+  Scenario: Columns may be given proportions, not just a count
+    Michel, 2026-08-13: "cols=2;1 should mean the first column is twice as
+    large as the second". Prose beside a picture or a clip is rarely a
+    fifty-fifty page.
+
+    Given I have a clean browser page
+    When I navigate to "/components/block"
+    And I wait for the page to be interactive
+    Then a weighted block splits its width two to one
+    And a plain "cols" block still splits evenly

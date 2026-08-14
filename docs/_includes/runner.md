@@ -168,6 +168,54 @@ files a learner is already working in.
     });
   }
 
+  /* THE SAME DOOR, FOR ANY MEDIA. healImages reads a page's images through
+     the contents API because a private repo's raw URLs 404 anonymously; a
+     video beside the page has exactly that problem, and no <video src> can
+     carry a key either. Exposed so widgets.md can ask for one file without
+     owning a second copy of this fetch (2026-08-13). */
+  /* ONE FILE, ONE DOWNLOAD (Michel, 2026-08-13: "the videos are slow to
+     load"). The same clip appears in two panels of the cover, and each card
+     was fetching its own copy of the whole thing — twice the megabytes for
+     one video. Memoised by repo+path for the life of the page. */
+  var _mediaBlobs = {};
+  window.lcMediaBlob = function (runRoot, rel) {
+    var repo = runRoot && runRoot.dataset.lcSrcRepo;
+    var path = (runRoot && runRoot.dataset.lcSrcPath) || "";
+    if (!repo) return Promise.resolve("");
+    var parts = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1) : [];
+    rel.split("#")[0].split("?")[0].split("/").forEach(function (seg) {
+      if (!seg || seg === ".") return;
+      if (seg === "..") parts.pop(); else parts.push(seg);
+    });
+    var full = parts.join("/");
+    var pat = edKey();
+    if (!pat) return Promise.resolve("https://raw.githubusercontent.com/" + repo + "/HEAD/" + full);
+    var memo = repo + "/" + full;
+    if (_mediaBlobs[memo]) return _mediaBlobs[memo];
+    return (_mediaBlobs[memo] = fetch("https://api.github.com/repos/" + repo + "/contents/" + full,
+                 { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw",
+                              "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw 0;
+        if ((r.headers.get("content-type") || "").indexOf("json") >= 0)
+          return r.json().then(function (env) {
+            var bin = atob((env.content || "").replace(/\n/g, ""));
+            var u8 = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+            return new Blob([u8]);
+          });
+        return r.blob();
+      })
+      .then(function (b) {
+        var ext = (full.match(/\.(\w+)$/) || [])[1];
+        var mime = { mp4: "video/mp4", m4v: "video/mp4", mov: "video/quicktime",
+                     webm: "video/webm", ogv: "video/ogg", ogg: "video/ogg" }[(ext || "").toLowerCase()];
+        if (mime && b.type !== mime) b = new Blob([b], { type: mime });
+        return URL.createObjectURL(b);
+      })
+      .catch(function () { delete _mediaBlobs[memo]; return ""; }));
+  };
+
   /* src comes from the IAL attribute (embedded examples) or the page hash
      (the /run page). Attribute wins, so a component page can host a live demo. */
   function render(status, root, fixedSrc, bar) {

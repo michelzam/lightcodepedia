@@ -970,10 +970,54 @@ Auto-included by docs/_layouts/default.html.
      for a classroom, where the audience did not choose to be measured. It
      supports enablejsapi exactly like the main host, so nothing is given up. */
   var YT_HOST = "https://www.youtube-nocookie.com";
+  /* A FILE IS NOT A FRAME (Michel, 2026-08-13: an mp4 beside the course
+     index, playing itself in a loop). YouTube and Drive are somebody else's
+     player, so they get an iframe; an .mp4/.webm/.ogv in the material is OUR
+     file and deserves a real <video> — which is also the only way to say
+     loop, muted and autoplay. And when it lives in a private repo beside the
+     page, it is read the way images are: through the contents API with the
+     reader's own key, into a blob. */
+  var NATIVE_MEDIA = /\.(mp4|webm|ogv|ogg|m4v|mov)(\?|#|$)/i;
+  function nativeVideo(el, a, href) {
+    var v = document.createElement("video");
+    v.className = "lc-video lc-video-file";
+    /* the same soft corner the hive and every embedded frame wear, so a clip
+       beside them reads as one family (Michel, 2026-08-13) */
+    v.style.borderRadius = "8px";
+    v.setAttribute("controls", "");
+    v.setAttribute("preload", "metadata");
+    v.style.width = "100%";
+    var h = el.getAttribute("height");
+    if (h) v.style.maxHeight = /^\d+$/.test(h) ? h + "px" : h;
+    if (el.hasAttribute("poster")) v.setAttribute("poster", el.getAttribute("poster"));
+    var on = function (k) { var x = el.getAttribute(k); return x !== null && !/^(false|0|no|off)$/i.test(x); };
+    if (on("loop")) v.setAttribute("loop", "");
+    if (on("playsinline") || on("autoplay")) v.setAttribute("playsinline", "");
+    if (on("autoplay")) {
+      /* every browser refuses to autoplay sound nobody asked for, so an
+         autoplaying clip is a MUTED clip — state it rather than let the
+         browser silently ignore the knob */
+      v.setAttribute("muted", ""); v.muted = true;
+      v.setAttribute("autoplay", "");
+    } else if (on("muted")) { v.setAttribute("muted", ""); v.muted = true; }
+    v.setAttribute("title", a.textContent || "video");
+    if (el.id) { v.id = el.id; v.setAttribute("data-lc-id", el.id); }
+    var relative = !/^([a-z][a-z0-9+.-]*:|\/)/i.test(href);
+    var runRoot = relative && el.closest ? el.closest(".lc-run[data-lc-src-path]") : null;
+    if (!runRoot) { v.src = href; }
+    else if (window.lcMediaBlob) window.lcMediaBlob(runRoot, href).then(function (u) {
+      if (u) v.src = u; else v.src = href;
+    });
+    if (window.lcCarryCellKnobs) window.lcCarryCellKnobs(el, v);
+    el.parentNode.replaceChild(v, el);
+    if (window.lcCellsRescan) window.lcCellsRescan();
+  }
+
   function upgradeVideo(el) {
     var a = el.querySelector("a");
     if (!a) return;
     var href = a.getAttribute("href");
+    if (NATIVE_MEDIA.test(href)) { nativeVideo(el, a, href); return; }
     var src = href, isYt = false;
     var gdrive = href.match(/^gdrive:(.+)/);
     if (gdrive) src = "https://drive.google.com/file/d/" + gdrive[1] + "/preview";

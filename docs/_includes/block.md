@@ -75,12 +75,29 @@ Auto-included by docs/_layouts/default.html.
     window.lcScanElement(wrap);
   }
 
+  /* cols="3"    → three equal columns, as it always was
+     cols="2;1"  → two columns, the first TWICE the second (Michel,
+                   2026-08-13: *"their proportion … 2;1 should mean the first
+                   column is twice as large"*). Any separator a keyboard
+                   offers works — ; : , or a space — because the knob should
+                   not be a spelling test. Zero, junk or a single number keeps
+                   the old meaning, so nothing written before this changes. */
+  function colTemplate(cols) {
+    var raw = String(cols || "1").trim();
+    if (/^\d+$/.test(raw)) return raw === "1" ? "1fr" : "repeat(" + raw + ", 1fr)";
+    var parts = raw.split(/[;:,\s]+/).filter(Boolean)
+      .map(function (n) { return parseFloat(n); })
+      .filter(function (n) { return isFinite(n) && n > 0; });
+    if (!parts.length) return "1fr";
+    return parts.map(function (n) { return n + "fr"; }).join(" ");
+  }
+
   function upgradeBlock(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
     var lazy = el.classList.contains("lazy");
     var cols = el.getAttribute("cols") || "1";
-    var colStyle = cols === "1" ? "1fr" : "repeat(" + cols + ", 1fr)";
+    var colStyle = colTemplate(cols);
     var sections = parseSections(el);
     if (!sections.length) {
       var code = el.querySelector("code");

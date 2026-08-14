@@ -438,10 +438,31 @@
     s.onload = function() { var q = _markedQ; _markedQ = null; q.forEach(function(f){ try { f(); } catch(e) { if (window.console) console.warn("[lc]", e); } }); };
     document.head.appendChild(s);
   }
+  /* A ### INSIDE A NESTED FENCE IS CONTENT, NOT A SECTION (2026-08-13). An
+     accordion holding a two-column .blocks fence saw the inner block's own
+     headings and turned each into a section of ITS own — the outer body came
+     out empty and two phantom panels appeared. Every section widget shares
+     this splitter, so teaching it about fences fixes accordion, tabs,
+     carousel and blocks at once. */
+  function splitSections(raw) {
+    var out = [], cur = [], fence = null;
+    String(raw).split("\n").forEach(function (line) {
+      var m = line.match(/^\s*(`{3,}|~{3,})/);
+      if (m) {
+        if (!fence) fence = m[1];                       /* a nested block opens */
+        else if (m[1].charAt(0) === fence.charAt(0) &&
+                 m[1].length >= fence.length) fence = null;   /* and closes */
+      }
+      if (!fence && /^### /.test(line) && cur.length) { out.push(cur.join("\n")); cur = []; }
+      cur.push(line);
+    });
+    if (cur.length) out.push(cur.join("\n"));
+    return out;
+  }
   function parseSections(el) {
     var code = el.querySelector("code");
     var raw = code ? code.textContent : el.textContent;
-    return raw.split(/\n(?=### )/).map(function(s) {
+    return splitSections(raw).map(function(s) {
       var lines = s.split("\n");
       var label = lines[0].replace(/^###\s*/, "").trim();
       var body = lines.slice(1).join("\n").trim();

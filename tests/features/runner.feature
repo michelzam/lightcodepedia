@@ -233,3 +233,37 @@ Feature: The instant runner (RT) — Phase A parity
     Then the runner says the course is private
     And the runner offers a way to make a key
     And the runner names the Get started door
+
+  Scenario: An accordion may hold a two-column block, and a local clip plays itself
+    Two fixes in one page (Michel, 2026-08-13: "2 blocks inside the author
+    accordion … inject the video in the second with self play in a loop, all
+    this side by side"). A ### inside a NESTED fence is content, not a new
+    section — the outer accordion used to eat those headings and come out
+    empty. And an .mp4 that lives beside the page is our file, not somebody
+    else's player: it becomes a real <video>, which is the only way to say
+    loop and autoplay.
+
+    Given the GitHub contents API serves "courses/demo/mod/who.md" with the document:
+      """
+      # Cover
+
+      ````
+      ### 👤 The Author
+
+      ```
+      ### 👤 Name
+      Some prose about the author.
+
+      ### 🎬 In motion
+      [A word from the author](clip.mp4)
+      {: .video autoplay="true" loop="true" }
+      ```
+      {: .blocks cols="2" }
+      ````
+      {: .accordion }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/who.md"
+    And I wait for the page to be interactive
+    And I open the "The Author" accordion
+    Then the accordion holds two blocks side by side
+    And the clip is a video element that loops and starts muted

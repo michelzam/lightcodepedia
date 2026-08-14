@@ -468,3 +468,26 @@ def step_accordions_open(context):
       .filter(d => { const body = [...d.children].find(c => c.tagName !== 'SUMMARY');
                      return body && body.getBoundingClientRect().height === 0; }).length""")
     assert hidden == 0, "%d accordion(s) would print as a hole" % hidden
+
+
+# ── cols="2;1" ──────────────────────────────────────────────────────────────
+def _grid_widths(context, template_kind):
+    """Every .lc-blocks on the page, as its measured column widths."""
+    return context.page.evaluate("""() => [...document.querySelectorAll('.lc-blocks')]
+      .map(b => getComputedStyle(b).gridTemplateColumns.split(' ')
+        .map(w => Math.round(parseFloat(w))))""")
+
+
+@then("a weighted block splits its width two to one")
+def step_weighted_cols(context):
+    grids = _grid_widths(context, "weighted")
+    two_to_one = [g for g in grids
+                  if len(g) == 2 and g[1] and 1.9 <= g[0] / g[1] <= 2.1]
+    assert two_to_one, "no 2:1 grid on the page — got %r" % grids
+
+
+@then('a plain "cols" block still splits evenly')
+def step_even_cols(context):
+    grids = _grid_widths(context, "even")
+    even = [g for g in grids if len(g) == 2 and g[1] and 0.98 <= g[0] / g[1] <= 1.02]
+    assert even, "the old cols=\"2\" meaning changed — got %r" % grids

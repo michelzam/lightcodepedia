@@ -33,7 +33,9 @@ Content on the right.
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `cols` | `1` | Number of side-by-side columns |
+| `cols` | `1` | Number of side-by-side columns — or their **proportions**: `cols="2;1"` gives two columns, the first twice as wide as the second. `;` `:` `,` or a space all separate |
+{: .wide_first }
+
 
 ## Notes
 
@@ -88,3 +90,14 @@ Feature: A fenced block becomes a bordered card
 - Nested `.video`, `.quiz`, `.run`
 ```
 {: .blocks cols="2" }
+
+## Example — weighted columns
+```
+### ⚖️ Equal
+cols="2" — two columns of the same width.
+
+### 📐 Weighted
+cols="2;1" — the first column takes two thirds, the second one third.
+Useful when one side is prose and the other a picture or a clip.
+```
+{: .blocks cols="2;1" }
