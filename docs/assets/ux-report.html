@@ -1718,6 +1718,24 @@ in the vault, where the person being marked cannot reach it.</pre><ol class="sce
 ```markdown
 Wire me.
 ```
+{: .embed save="wiring.md" #work }</pre></div><span class="embed" /></li><li class="step passed"><div class="step_name"><span class="keyword">When </span><span class="step val"><span>I navigate to "</span><b>/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md</b><span>"</span></span><small class="step_duration">(0.182s)</small></div><div class="step_file"><span>tests/steps/common_steps.py:42</span></div><span class="embed" /></li><li class="step passed"><div class="step_name"><span class="keyword">And </span><span class="step val">I wait for the page to be interactive</span><small class="step_duration">(0.810s)</small></div><div class="step_file"><span>tests/steps/common_steps.py:47</span></div><span class="embed" /></li><li class="step passed"><div class="step_name"><span class="keyword">Then </span><span class="step val"><span>the slot is in the "</span><b>draft</b><span>" state</span></span><small class="step_duration">(0.020s)</small></div><div class="step_file"><span>tests/steps/rt_save_steps.py:491</span></div><span class="embed" /></li></ol><span /></div><div class="scenario"><span class="scenario_file">tests/features/rt_save.feature:419</span><h3 onclick="Collapsible_toggle('scenario_315')"><span class="val">Scenario: Only the LESSON's check turns the slot green</span></h3><pre class="message">The learner owns the file, so a check inside it could be weakened or
+deleted. The card that grades a slot names it with grades= and lives
+in the vault, where the person being marked cannot reach it.</pre><ol class="scenario_steps" id="scenario_315"><li class="step passed"><div class="step_name"><span class="keyword">Given </span><span class="step val">I have a clean browser page</span><small class="step_duration">(0.000s)</small></div><div class="step_file"><span>tests/steps/common_steps.py:24</span></div><span class="embed" /></li><li class="step passed"><div class="step_name"><span class="keyword">And </span><span class="step val">a marked shim is preinstalled</span><small class="step_duration">(0.003s)</small></div><div class="step_file"><span>tests/steps/rt_slides_steps.py:13</span></div><span class="embed" /></li><li class="step passed"><div class="step_name"><span class="keyword">And </span><span class="step val"><span>the GitHub contents API serves "</span><b>courses/demo/mod/work.md</b><span>" with the document</span></span><small class="step_duration">(0.008s)</small></div><div class="step_file"><span>tests/steps/rt_slides_steps.py:44</span></div><div class="message"><pre># Work page
+
+```markdown
+# Starter résumé — replace me
+```
+{: .mdpad #cv save="cv.md" rows="6" }
+
+```yaml
+- name: Rex
+  campus: Milwauke
+```
+{: .datagrid #dogs editable="true" save="dogs.yaml" height="160" }</pre></div><span class="embed" /></li><li class="step passed"><div class="step_name"><span class="keyword">Given </span><span class="step val"><span>a connected bench whose "</span><b>courses/demo/mod/wiring.md</b><span>" holds "</span><b>Mine now.</b><span>"</span></span><small class="step_duration">(0.008s)</small></div><div class="step_file"><span>tests/steps/rt_save_steps.py:68</span></div><span class="embed" /></li><li class="step passed"><div class="step_name"><span class="keyword">And </span><span class="step val"><span>the signed-in learner is "</span><b>ada</b><span>"</span></span><small class="step_duration">(0.003s)</small></div><div class="step_file"><span>tests/steps/rt_save_steps.py:468</span></div><span class="embed" /></li><li class="step passed"><div class="step_name"><span class="keyword">And </span><span class="step val"><span>the GitHub contents API serves "</span><b>courses/demo/mod/lesson.md</b><span>" with the document</span></span><small class="step_duration">(0.007s)</small></div><div class="step_file"><span>tests/steps/rt_slides_steps.py:44</span></div><div class="message"><pre># Lesson
+
+```markdown
+Wire me.
+```
 {: .embed save="wiring.md" #work }
 
 ```gherkin
