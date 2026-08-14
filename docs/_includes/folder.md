@@ -291,6 +291,9 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       : "repeat(" + cols + ", 1fr)";
     var wrap = document.createElement("div");
     wrap.className = "lc-cards";
+    /* the author's id, kept: a tour says `at: modules` and the guide walks to
+       the cards (2026-08-13) */
+    if (el.id) { wrap.id = el.id; wrap.setAttribute("data-lc-id", el.id); }
     wrap.setAttribute("data-lc-derived", "1");   /* generated, not authored: no text-edit gears */
     wrap.style.gridTemplateColumns = colStyle;
     wrap.innerHTML = "<div style='padding:1em;color:#888'>⏳ Loading…</div>";

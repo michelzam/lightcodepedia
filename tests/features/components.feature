@@ -252,3 +252,13 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then a weighted block splits its width two to one
     And a plain "cols" block still splits evenly
+
+  Scenario: A panel keeps the id its author gave it
+    A tour that finds a panel by the words in its summary breaks the day the
+    wording changes. `{: .accordion #author }` is an address (Michel,
+    2026-08-13: "you can define ids and use them in the avatar's script").
+
+    Given I have a clean browser page
+    When I navigate to "/components/accordion"
+    And I wait for the page to be interactive
+    Then an accordion given an id can be opened by that id

@@ -491,3 +491,29 @@ def step_even_cols(context):
     grids = _grid_widths(context, "even")
     even = [g for g in grids if len(g) == 2 and g[1] and 0.98 <= g[0] / g[1] <= 1.02]
     assert even, "the old cols=\"2\" meaning changed — got %r" % grids
+
+
+@then("an accordion given an id can be opened by that id")
+def step_accordion_by_id(context):
+    """Build one the way a page does, then drive it the way a script line
+    does: window.lcVerbs.act('open', <the element the id resolves to>)."""
+    got = context.page.evaluate("""() => {
+      const pre = document.createElement('pre');
+      pre.id = 'tour_target';
+      const code = document.createElement('code');
+      code.textContent = '### One\\nfirst\\n\\n### Two\\nsecond\\n';
+      pre.appendChild(code);
+      document.querySelector('.markdown-body, main, body').appendChild(pre);
+      window.lcUpgradeAccordion ? window.lcUpgradeAccordion(pre) : window.lcScanElement(pre.parentNode);
+      pre.className = 'accordion';
+      window.lcScanElement(document.body);
+      const el = document.getElementById('tour_target');
+      if (!el || !el.classList.contains('lc-accordion')) return { kept: false };
+      window.lcVerbs.act('open', el);
+      const open1 = [...el.querySelectorAll('details')].filter(d => d.open).length;
+      window.lcVerbs.act('close', el);
+      const open2 = [...el.querySelectorAll('details')].filter(d => d.open).length;
+      return { kept: true, opened: open1, closed: open2 };
+    }""")
+    assert got.get("kept"), "the accordion dropped the author's id"
+    assert got["opened"] == 2 and got["closed"] == 0, got

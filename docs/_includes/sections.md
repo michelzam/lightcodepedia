@@ -79,6 +79,12 @@ Auto-included by docs/_layouts/default.html.
     if (!sections.length) return;
     var wrap = document.createElement("div");
     wrap.className = "lc-accordion";
+    /* AN ID THE AUTHOR GAVE IS AN ADDRESS (Michel, 2026-08-13: "you can
+       define ids and use them in the avatar's script"). Without it a tour can
+       only find a panel by matching the words in its summary — which breaks
+       the day the wording changes. `{: .accordion #author }` + `at: author`
+       now points at this group, and do: open/close acts on its panels. */
+    if (el.id) { wrap.id = el.id; wrap.setAttribute("data-lc-id", el.id); }
     sections.forEach(function(s) {
       /* a "!" label prefix renders the body eagerly (while still shut) so
          live components inside — vitals, checks — exist from page load */
