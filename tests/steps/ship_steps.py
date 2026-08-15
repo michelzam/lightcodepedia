@@ -128,3 +128,42 @@ def step_ship_embed_renders(context, text):
 def step_ship_embed_waiting(context):
     status = context.page.locator(".lc-runner-embed .lc-run-status").first
     expect(status).to_contain_text("othing shipped yet", timeout=20_000)
+
+
+@given("the bay requires an accepted invitation before it takes writes")
+def step_bay_invite_gate(context):
+    """PUTs 404 until the invitation is accepted — exactly GitHub's shape:
+    a write without push answers Not Found, not Forbidden."""
+    context.bay_puts = {}
+    context.invite_accepted = False
+
+    def contents(route):
+        req = route.request
+        path = req.url.split("/contents/", 1)[1].split("?")[0]
+        if req.method == "PUT":
+            if not context.invite_accepted:
+                return route.fulfill(status=404, content_type="application/json",
+                                     body='{"message":"Not Found"}')
+            context.bay_puts[path] = json.loads(req.post_data or "{}")
+            return route.fulfill(status=201, content_type="application/json",
+                                 body=json.dumps({"content": {"path": path}}))
+        return route.fulfill(status=404, content_type="application/json",
+                             body='{"message":"Not Found"}')
+    context.page.route("**/api.github.com/repos/acme/bay/contents/**", contents)
+
+    def invitations(route):
+        req = route.request
+        if req.method == "GET":
+            return route.fulfill(status=200, content_type="application/json",
+                                 body=json.dumps([{"id": 77, "repository": {"full_name": "acme/bay"}}]))
+        if req.method == "PATCH":
+            context.invite_accepted = True
+            return route.fulfill(status=204, body="")
+        return route.fulfill(status=404, body="{}")
+    context.page.route("**/api.github.com/user/repository_invitations*", invitations)
+    context.page.route("**/api.github.com/user/repository_invitations/**", invitations)
+
+
+@then("the bay invitation was accepted")
+def step_invite_accepted(context):
+    assert context.invite_accepted, "the button never accepted the invitation"

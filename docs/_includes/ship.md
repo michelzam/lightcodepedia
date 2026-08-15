@@ -93,6 +93,28 @@ Auto-included by docs/_layouts/default.html.
     };
   }
 
+  /* A collaborator grant can land as a PENDING INVITATION instead of a
+     direct one (zamm-student, 2026-08-15: the bay existed, the console had
+     granted push, and the PUT still answered 404 — GitHub's word for "you
+     cannot write here"). The learner's key can accept its own invitations,
+     so the button does it: sweep, accept the bay's, retry once. */
+  function acceptBayInvite(bayRepo) {
+    return fetch("https://api.github.com/user/repository_invitations",
+                 { headers: hdrs(), cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (invs) {
+        var inv = (invs || []).filter(function (i) {
+          return i.repository && i.repository.full_name &&
+                 i.repository.full_name.toLowerCase() === bayRepo.toLowerCase();
+        })[0];
+        if (!inv) return false;
+        return fetch("https://api.github.com/user/repository_invitations/" + inv.id,
+                     { method: "PATCH", headers: hdrs() })
+          .then(function (r) { return r.ok; });
+      })
+      .catch(function () { return false; });
+  }
+
   function shipIt(box, btn, status, ctx, bay, app, files) {
     btn.disabled = true;
     status.textContent = "Shipping…";
@@ -111,11 +133,28 @@ Auto-included by docs/_layouts/default.html.
                          { headers: hdrs({ Accept: "application/vnd.github.v3.raw" }), cache: "no-store" })
               .then(function (r) { if (!r.ok) throw new Error(f + " is not in the source (HTTP " + r.status + ")"); return r.text(); })
               .then(function (text) {
-                return fetch(API + bay.repo + "/contents/" + folder + "/" + f, {
-                  method: "PUT", headers: hdrs({ "Content-Type": "application/json" }),
-                  body: JSON.stringify({ message: "🚀 " + app + " @ " + sha.slice(0, 7),
-                                         content: b64utf8(text) })
-                }).then(function (r) { if (!r.ok) throw new Error("the bay refused " + f + " (HTTP " + r.status + ")"); });
+                function put() {
+                  return fetch(API + bay.repo + "/contents/" + folder + "/" + f, {
+                    method: "PUT", headers: hdrs({ "Content-Type": "application/json" }),
+                    body: JSON.stringify({ message: "🚀 " + app + " @ " + sha.slice(0, 7),
+                                           content: b64utf8(text) })
+                  });
+                }
+                return put().then(function (r) {
+                  if (r.ok) return;
+                  /* 404 on a write = no push. The grant may be a pending
+                     invitation — accept it with this same key and go again */
+                  if (r.status !== 404 && r.status !== 403)
+                    throw new Error("the bay refused " + f + " (HTTP " + r.status + ")");
+                  status.textContent = "Accepting the bay invitation…";
+                  return acceptBayInvite(bay.repo).then(function (accepted) {
+                    if (!accepted) throw new Error("your key cannot write " + bay.repo +
+                      " (HTTP " + r.status + ") — ask your teacher to re-provision your bay");
+                    return put().then(function (r2) {
+                      if (!r2.ok) throw new Error("the bay still refused " + f + " (HTTP " + r2.status + ")");
+                    });
+                  });
+                });
               });
           });
         }, Promise.resolve());
