@@ -517,3 +517,22 @@ def step_accordion_by_id(context):
     }""")
     assert got.get("kept"), "the accordion dropped the author's id"
     assert got["opened"] == 2 and got["closed"] == 0, got
+
+
+# ── 〰️ seam ─────────────────────────────────────────────────────────────────
+@then("each seam says its register out loud")
+def step_seam_labels(context):
+    seams = context.page.evaluate("""() => [...document.querySelectorAll('.lc-seam')]
+      .map(s => ((s.querySelector('.lc-seam-label') || {}).textContent || '').trim())""")
+    assert len(seams) >= 3, "expected the three borders, got %r" % seams
+    approved = {"The app starts here", "A course tool", "Back to the lesson"}
+    assert set(seams) <= approved, "a seam drifted off the vocabulary: %r" % seams
+
+
+@then("a seam is still a rule, for a screen reader")
+def step_seam_semantics(context):
+    got = context.page.evaluate("""() => [...document.querySelectorAll('.lc-seam')].map(s => {
+      const r = s.querySelector('hr');
+      return { rule: !!r, spoken: r ? r.getAttribute('aria-label') : null }; })""")
+    assert all(g["rule"] for g in got), "the seam lost its <hr>: %r" % got
+    assert all(g["spoken"] for g in got), "the border is silent to a reader: %r" % got

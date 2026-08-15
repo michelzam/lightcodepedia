@@ -61,6 +61,11 @@ def in_fence(pos, spans):
     return any(a <= pos < b for a, b in spans)
 
 
+# The three borders a course page may draw, and no others. Adding a fourth
+# turns a vocabulary into decoration — decide it here, once, on purpose.
+SEAM_LABELS = {"The app starts here", "A course tool", "Back to the lesson"}
+
+
 def check_page(path, text):
     problems = []
     spans = fenced_spans(text)
@@ -146,6 +151,22 @@ def check_page(path, text):
             missing = (a[1:] not in text) if a.startswith(".") else (a not in ids)
             if missing:
                 problems.append(f'AVATAR-ANCHOR at: {a} resolves to nothing')
+
+    # ── the borders keep one vocabulary ─────────────────────────────────
+    # A seam is worth having only because it is the SAME border on page 40 as
+    # on page 2 (Michel, 2026-08-13). Free text drifts — "you're in the app
+    # now" by module 5 — and the mark stops meaning anything. The colour is
+    # decoration; the label is the border, so the label is what is checked.
+    for m in re.finditer(r"\{:[^}]*\.seam\b[^}]*\}", text):
+        decl = m.group(0)
+        lab = re.search(r'label="([^"]*)"', decl)
+        if not lab:
+            problems.append("SEAM-NO-LABEL a seam without a label is a "
+                            "decoration: colour alone says nothing in print, "
+                            "to a screen reader, or to a colour-blind reader")
+        elif lab.group(1).strip() not in SEAM_LABELS:
+            problems.append(f'SEAM-LABEL    "{lab.group(1)}" — say one of: '
+                            + " · ".join(sorted(SEAM_LABELS)))
     return problems
 
 

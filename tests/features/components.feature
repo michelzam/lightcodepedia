@@ -262,3 +262,15 @@ Feature: Component gallery behaviors
     When I navigate to "/components/accordion"
     And I wait for the page to be interactive
     Then an accordion given an id can be opened by that id
+
+  Scenario: A rule with a label becomes a border that says which register starts
+    A page speaks in registers — the lesson, the app, the course's tools.
+    A beginner cannot infer a frame nobody gave them (Michel, 2026-08-13),
+    so the seam is a thematic break with a name on it: the label is the
+    border, the colour only decorates.
+
+    Given I have a clean browser page
+    When I navigate to "/components/seam"
+    And I wait for the page to be interactive
+    Then each seam says its register out loud
+    And a seam is still a rule, for a screen reader
