@@ -76,6 +76,27 @@ Feature: 🚀 Ship — the author-designed deployment component
     And the bay received "bays/spike_dogs_cafebabe12345678/_ship_app.md"
     And the ship button reports the shipped link
 
+  Scenario: A pairing from another org never invents a bay
+    The bench pairing is browser-global and follows the LAST account that
+    paired — an author-side lc_ed_repo of michelzam/lightcodepedia made
+    ship derive "michelzam/lightcodepedia-bay" on a course page and fail
+    as a 404 (2026-08-15). A derived bay is only trustworthy inside its
+    own org; a foreign pairing disarms the button with the truth.
+
+    Given I am signed in with a course key
+    And this browser is paired to the bench "michelzam/lightcodepedia"
+    And the GitHub contents API serves "courses/demo/assignment.md" with the document:
+      """
+      # Assignment
+
+      [Ship it](#)
+      {: .ship app="spike_dogs" files="_ship_app.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
+    And I wait for the page to be interactive
+    Then the ship button is disarmed with a reason
+    And the reason names the foreign pairing
+
   Scenario: A ship: embed renders the latest shipped copy, keyless
     Given the bay manifest points "spike_dogs" at "cafebabe12345678" with entry "_ship_app.md"
     And the bay serves "bays/spike_dogs_cafebabe12345678/_ship_app.md" with the document:

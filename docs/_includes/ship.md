@@ -77,9 +77,21 @@ Auto-included by docs/_layouts/default.html.
     if (!seg.length) {
       var bench = "";
       try { bench = localStorage.getItem("lc_ed_repo") || ""; } catch (e) {}
-      return { repo: bench ? bench + "-bay" : "", base: "" };
+      return { repo: bench ? bench + "-bay" : "", base: "", derived: bench };
     }
     return { repo: seg.slice(0, 2).join("/"), base: seg.slice(2).join("/") };
+  }
+
+  /* A DERIVED bay is only trustworthy inside its own org. The pairing is
+     browser-global, and one browser hopping between accounts keeps the LAST
+     pairing — an author-side lc_ed_repo of michelzam/lightcodepedia made
+     ship derive "michelzam/lightcodepedia-bay" on a course page and fail as
+     a 404 (2026-08-15). The page knows which org it renders from; a foreign
+     pairing disarms with the truth instead of inventing a bay. */
+  function foreignPairing(bay, ctx) {
+    if (!bay.derived || !ctx.repo) return false;
+    var pageOrg = ctx.repo.split("/")[0], bayOrg = bay.repo.split("/")[0];
+    return pageOrg && bayOrg && pageOrg !== bayOrg;
   }
   /* the page this component rendered in — repo + folder, from the runner's
      advertisement on the render root. A built page has neither, and ship
@@ -231,6 +243,8 @@ Auto-included by docs/_layouts/default.html.
     if (!app || !files.length) why = "The author must set app= and files= before anyone can ship.";
     else if (!bay.repo) why = "No bay to ship to yet — your teacher opens shipping by provisioning bays, or the author sets bay= explicitly.";
     else if (!ctx.repo) why = "Open this page through the runner (a rendered page — your bench, a course, a demo) to ship.";
+    else if (foreignPairing(bay, ctx)) why = "This browser is paired to " + bay.derived +
+      ", which is not part of this course's space — sign in as your course account and pass through the join wizard once, then come back.";
     else if (!edKey()) why = "Shipping uses your own key — add it via 🔑 Get started, then come back.";
     if (why) { btn.disabled = true; status.textContent = why; return; }
 

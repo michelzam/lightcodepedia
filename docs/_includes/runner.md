@@ -279,15 +279,20 @@ files a learner is already working in.
      on every press of 🚀). So the embed resolves through the bay's manifest —
      latest sha per app — fetched raw and KEYLESS: what this renders is
      exactly what anyone with the link sees, and the lesson can say so. */
-  function resolveShip(name, bayAttr) {
+  function resolveShip(name, bayAttr, hostRepo) {
     var seg = String(bayAttr || "").split("/").filter(Boolean);
     var repo = seg.slice(0, 2).join("/"), base = seg.slice(2).join("/");
     if (!repo) {
       /* no bay named = the reader's own: <bench>-bay from the pairing the
          join wizard stored — the same default the ship button uses, so a
-         shared course page shows each learner THEIR deployed app */
+         shared course page shows each learner THEIR deployed app. Same
+         guard as the button: the pairing is browser-global and follows the
+         LAST account that paired, so a bench from another org must not
+         invent a bay here (michelzam/lightcodepedia-bay, 2026-08-15). */
       var bench = "";
       try { bench = localStorage.getItem("lc_ed_repo") || ""; } catch (e) {}
+      var hostOrg = (hostRepo || "").split("/")[0];
+      if (bench && hostOrg && bench.split("/")[0] !== hostOrg) return Promise.resolve(null);
       if (bench) { repo = bench + "-bay"; base = ""; }
     }
     if (!repo) return Promise.resolve(null);
@@ -310,7 +315,7 @@ files a learner is already working in.
     var shipM = fixedSrc && /^ship:(.+)$/.exec(fixedSrc);
     if (shipM) {
       status.style.display = ""; status.textContent = "Looking up your latest ship…";
-      resolveShip(shipM[1], root.dataset.lcShipBay).then(function (real) {
+      resolveShip(shipM[1], root.dataset.lcShipBay, root.dataset.lcShipHost).then(function (real) {
         if (real) return render(status, root, real, bar);
         root.innerHTML = "";
         status.textContent = "🚀 Nothing shipped yet for “" + shipM[1] +
@@ -608,6 +613,10 @@ files a learner is already working in.
        moment the 🚀 on the same page reports a ship of its app */
     if (/^ship:/.test(fixedSrc || "")) {
       root.dataset.lcShipBay = el.getAttribute("bay") || "";
+      /* the HOST page's repo, for the same foreign-pairing guard the ship
+         button applies when deriving the reader's bay */
+      var hostEl = el.closest && el.closest("[data-lc-src-repo]");
+      root.dataset.lcShipHost = (hostEl && hostEl.getAttribute("data-lc-src-repo")) || "";
       var shipName = fixedSrc.slice(5);
       window.addEventListener("lc_shipped", function (e) {
         if (e.detail && e.detail.app === shipName) render(status, root, fixedSrc, bar);
