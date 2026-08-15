@@ -167,3 +167,16 @@ def step_bay_invite_gate(context):
 @then("the bay invitation was accepted")
 def step_invite_accepted(context):
     assert context.invite_accepted, "the button never accepted the invitation"
+
+
+@given('this browser is paired to the bench "{repo}"')
+def step_paired_bench(context, repo):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_repo', %s);" % json.dumps(repo))
+
+
+@then("the reason names the foreign pairing")
+def step_reason_foreign(context):
+    text = context.page.locator(".lc-ship .lc-ship-status").first.inner_text()
+    assert "michelzam/lightcodepedia" in text, text
+    assert "join" in text.lower(), "no way back offered: %r" % text
