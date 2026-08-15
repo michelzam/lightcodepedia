@@ -66,6 +66,31 @@ def in_fence(pos, spans):
 SEAM_LABELS = {"The app starts here", "A course tool", "Back to the lesson"}
 
 
+def embedded_ids(path, text):
+    """Ids an embedded file brings with it.
+
+    `{: .runner src="_app_dogs.md" }` injects another file into this page, so
+    `#all_dogs` can live there and still be a real anchor here — the avatar's
+    `at:` finds it once the embed has rendered. Without this the app-extraction
+    of 2026-08-14 red-lit three anchors that resolve perfectly at runtime.
+    One level deep and same-course only: a src the audit cannot read (a gh:
+    URL, a missing file) simply contributes nothing, which keeps the anchor
+    check honest instead of silently permissive.
+    """
+    out = set()
+    here = os.path.dirname(path)
+    for m in re.finditer(r'\{:[^}\n]*\.runner[^}\n]*\bsrc="([^"]+)"', text):
+        src = m.group(1)
+        if re.match(r"^[a-z]+:|^/", src):
+            continue
+        try:
+            sub = open(os.path.join(here, src)).read()
+        except OSError:
+            continue
+        out |= set(re.findall(r"[#]([A-Za-z_][\w-]*)", sub))
+    return out
+
+
 def check_page(path, text):
     problems = []
     spans = fenced_spans(text)
@@ -146,7 +171,7 @@ def check_page(path, text):
                 yaml.safe_load(block)
             except Exception as e:
                 problems.append(f"AVATAR-YAML   {str(e)[:110]}")
-        ids = set(re.findall(r"[#]([A-Za-z_][\w-]*)", text))
+        ids = set(re.findall(r"[#]([A-Za-z_][\w-]*)", text)) | embedded_ids(path, text)
         for a in sorted(set(re.findall(r"^\s*(?:-\s*)?at:\s*(\S+)", block, re.M))):
             missing = (a[1:] not in text) if a.startswith(".") else (a not in ids)
             if missing:

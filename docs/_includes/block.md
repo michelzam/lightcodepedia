@@ -42,6 +42,24 @@ Auto-included by docs/_layouts/default.html.
 .lc-lazy-block[open] > summary { background: #e8f0fe; color: #0066cc; border-bottom: 1px solid #ddd; }
 .lc-lazy-block .lc-lazy-content { padding: 0.3em 0 0; }
 @media (max-width: 600px) { .lc-blocks { grid-template-columns: 1fr !important; } }
+
+/* ── tone: the register a card belongs to ─────────────────────────────────
+   Three registers share a course page — the course talking, the app the
+   learner acts in, the course's own tools — and the seam names them out
+   loud. Tone is the SAME three, worn quietly by a card: the seam says it,
+   the tone echoes it, so a reader who skipped the line still feels the
+   change. Three values and no more; free gradients would drift into
+   decoration nobody can read (Michel, 2026-08-14). */
+.lc-tone-paper > .lc-block { background: #fffdf8; border-color: #e8e2d5; }
+.lc-tone-app   > .lc-block { background: #f6f9fe; border-color: #c9dcf5; box-shadow: inset 3px 0 0 #1565c0; }
+.lc-tone-tool  > .lc-block { background: #fdfaf4; border-color: #e6d3ae; border-style: dashed; box-shadow: inset 3px 0 0 #b45309; }
+@media print {
+  /* ink is expensive and a tint that survives the printer is usually a
+     smudge — the seam's label carries the register on paper */
+  .lc-tone-paper > .lc-block, .lc-tone-app > .lc-block, .lc-tone-tool > .lc-block {
+    background: #fff; box-shadow: none;
+  }
+}
 </style>
 
 <script>
@@ -92,12 +110,22 @@ Auto-included by docs/_layouts/default.html.
     return parts.map(function (n) { return n + "fr"; }).join(" ");
   }
 
+  /* tone="app" → lc-tone-app. An unknown word is not a crash and not a
+     silent third look: it simply keeps the default card, so a typo costs a
+     reader nothing. */
+  var TONES = ["paper", "app", "tool"];
+  function toneClass(el) {
+    var t = (el.getAttribute("tone") || "").trim().toLowerCase();
+    return TONES.indexOf(t) >= 0 ? " lc-tone-" + t : "";
+  }
+
   function upgradeBlock(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
     var lazy = el.classList.contains("lazy");
     var cols = el.getAttribute("cols") || "1";
     var colStyle = colTemplate(cols);
+    var tone = toneClass(el);
     var sections = parseSections(el);
     if (!sections.length) {
       var code = el.querySelector("code");
@@ -125,7 +153,7 @@ Auto-included by docs/_layouts/default.html.
         if (!details.open || details.dataset.lcReady) return;
         details.dataset.lcReady = "1";
         var wrap = document.createElement("div");
-        wrap.className = "lc-blocks";
+        wrap.className = "lc-blocks" + tone;
         wrap.style.gridTemplateColumns = colStyle;
         content.appendChild(wrap);
         loadMarked(function() { _renderAndScanBlock(wrap, sections); });
@@ -134,7 +162,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     var wrap = document.createElement("div");
-    wrap.className = "lc-blocks";
+    wrap.className = "lc-blocks" + tone;
     wrap.style.gridTemplateColumns = colStyle;
     /* carry the source id so xray finds the pre-upgrade fence snapshot
        (lcSourceOf) and edits the verbatim source, not the rendered text */

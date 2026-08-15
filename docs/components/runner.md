@@ -14,6 +14,29 @@ render the deck re-partitions around the rendered sections (one slide per
 `##`), so 📽️ **Present** and 📲 **Reel** in the bottom-left pill drive the
 rendered course. Embedded runner demos never affect their host page's deck.
 
+**An embedded runner wears a border.** It is another file, injected — and a
+reader who cannot see where the page stops and the injected file starts is
+back to the blurry mixture the [seam](seam.md) went after. So an embedded
+render sits in a bordered box, and the injected file's own `#` title is
+hidden: that title names the file to whoever opens it alone, while inside a
+lesson the lesson's heading already said it. The page-level runner *is* the
+page, and gets neither.
+
+This is what lets a course keep the app in its own file:
+
+```
+## 🐕 The dogs in our care
+
+Double-click any box to change what it says.
+
+[Dogs](#)
+{: .runner src="_app_dogs.md" }
+```
+{: .code }
+
+The lesson keeps its commentary, the app file holds nothing but the app, and
+`_app_dogs.md` still runs on its own.
+
 **Images**: a relative `![…](pic.png)` in a rendered page resolves against
 the rendered file's folder and is fetched with your key — so pictures in a
 private course render like anywhere else. Site-absolute and external image

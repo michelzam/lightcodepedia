@@ -471,3 +471,37 @@ def step_one_download(context):
     assert len(srcs) == 2, "expected two clips, got %r" % srcs
     assert len(reads) == 1, "the file was downloaded %d times" % len(reads)
     assert srcs[0] == srcs[1], "each clip made its own blob: %r" % srcs
+
+
+@then("the embedded runner is inside a border of its own")
+def step_embed_border(context):
+    """An injected file must LOOK injected. Without an edge, a lesson and the
+    app it embeds run together again — the blurry mixture the seam went after
+    (Michel, 2026-08-14). The page-level runner IS the page and keeps none."""
+    got = context.page.evaluate(
+        """() => {
+             const e = document.querySelector('.lc-runner-embed');
+             if (!e) return null;
+             const cs = getComputedStyle(e);
+             return { w: cs.borderTopWidth, style: cs.borderTopStyle,
+                      page: !!document.querySelector('#lc-run.lc-runner-embed,'
+                            + ' .lc-runner-embed > #lc-run') };
+           }"""
+    )
+    assert got, "the embedded render wears no .lc-runner-embed box"
+    assert got["style"] != "none" and got["w"] != "0px", (
+        "the embedded runner has no visible border: %r" % got
+    )
+    assert not got["page"], "the page-level runner took the embed border too"
+
+
+@then("the injected file's own title stays out of the lesson")
+def step_embed_h1_hidden(context):
+    shown = context.page.evaluate(
+        """() => [...document.querySelectorAll('.lc-runner-embed > .lc-run > h1')]
+             .map(h => getComputedStyle(h).display)"""
+    )
+    assert shown, "the injected file brought no h1 — this proves nothing here"
+    assert all(d == "none" for d in shown), (
+        "the injected file's title doubled the lesson's heading: %r" % shown
+    )

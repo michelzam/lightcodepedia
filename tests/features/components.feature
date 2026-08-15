@@ -274,3 +274,15 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then each seam says its register out loud
     And a seam is still a rule, for a screen reader
+
+  Scenario: A card can wear the register it belongs to
+    The seam names a register out loud; tone is the same three worn quietly
+    by a card, so a reader who skimmed past the line still feels the change.
+    Three values and no more — an unknown word keeps the plain card
+    (Michel, 2026-08-14).
+
+    Given I have a clean browser page
+    When I navigate to "/components/block"
+    And I wait for the page to be interactive
+    Then each tone reaches its own cards
+    And an unknown tone leaves the card plain

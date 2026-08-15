@@ -61,3 +61,82 @@ def step_reel_back(context):
 def step_reel_back_btn(context):
     context.page.locator(".lc-reel-back").click()
     context.page.wait_for_timeout(500)
+
+
+# ── the title, and only the title ──────────────────────────────────────────
+# The engine paints a page's tags as pills inside its own h1. A raw
+# textContent read of that heading therefore returns the title WELDED to
+# every tag ("🧱 Blockui"), and that string was what the reel bar and the
+# section picker showed (Michel, 2026-08-14).
+
+
+@then("the page's title carries tag pills")
+def step_title_has_pills(context):
+    pills = context.page.evaluate(
+        "() => [...document.querySelectorAll('.lc-title-tag')].map(e => e.textContent.trim())"
+    )
+    assert pills, "this page grew no tag pills — the scenario proves nothing here"
+    context.title_pills = pills
+
+
+@then("the reel bar shows the title without the pills")
+def step_bar_title_clean(context):
+    shown = (
+        context.page.evaluate(
+            "() => (document.querySelector('.lc-reel-bar-title') || {}).textContent"
+        )
+        or ""
+    ).strip()
+    assert shown, "the reel bar has no title"
+    for pill in context.title_pills:
+        assert not shown.endswith(pill), "the bar welded a tag onto the title: %r" % shown
+        assert pill not in shown.replace(" ", ""), (
+            "the bar shows the tag %r inside the title: %r" % (pill, shown)
+        )
+
+
+@then("the section picker shows titles without the pills")
+def step_picker_titles_clean(context):
+    opts = context.page.evaluate(
+        "() => [...document.querySelectorAll('.lc-slides-nav-jump option')].map(o => o.textContent)"
+    )
+    assert opts, "no section picker to check"
+    for pill in context.title_pills:
+        for label in opts:
+            assert pill not in label.replace(" ", ""), (
+                "a picker label welded the tag %r: %r" % (pill, label)
+            )
+
+
+# ── keyboard paging ────────────────────────────────────────────────────────
+
+
+def _reel_at(context):
+    txt = (
+        context.page.evaluate(
+            "() => (document.querySelector('.lc-reel-bar-progress') || {}).textContent"
+        )
+        or ""
+    )
+    return txt.split("/")[0].strip()
+
+
+@then('the reel is at section {n}')
+def step_reel_at(context, n):
+    for _ in range(20):
+        if _reel_at(context) == n:
+            return
+        context.page.wait_for_timeout(150)
+    assert False, "expected section %s, the bar says %r" % (n, _reel_at(context))
+
+
+@when("I press the down arrow")
+def step_reel_down(context):
+    context.page.keyboard.press("ArrowDown")
+    context.page.wait_for_timeout(400)
+
+
+@when("I press the up arrow")
+def step_reel_up(context):
+    context.page.keyboard.press("ArrowUp")
+    context.page.wait_for_timeout(400)

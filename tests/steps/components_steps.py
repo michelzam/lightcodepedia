@@ -536,3 +536,38 @@ def step_seam_semantics(context):
       return { rule: !!r, spoken: r ? r.getAttribute('aria-label') : null }; })""")
     assert all(g["rule"] for g in got), "the seam lost its <hr>: %r" % got
     assert all(g["spoken"] for g in got), "the border is silent to a reader: %r" % got
+
+
+@then("each tone reaches its own cards")
+def step_tone_classes(context):
+    got = context.page.evaluate(
+        """() => [...document.querySelectorAll('.lc-blocks')]
+             .map(e => (e.className.match(/lc-tone-(\\w+)/) || [])[1] || '')
+             .filter(Boolean)"""
+    )
+    for want in ("paper", "app", "tool"):
+        assert want in got, "tone %r never reached a wrapper: %r" % (want, got)
+    assert set(got) <= {"paper", "app", "tool"}, "a fourth tone appeared: %r" % got
+    # a toned wrapper is still an ordinary block grid, cards and all
+    n = context.page.evaluate(
+        "() => document.querySelectorAll('.lc-tone-app .lc-block').length"
+    )
+    assert n >= 1, "the app tone swallowed its cards"
+
+
+@then("an unknown tone leaves the card plain")
+def step_tone_unknown(context):
+    # the knob is not a spelling test: a typo must cost the reader nothing
+    cls = context.page.evaluate(
+        """() => {
+             const p = document.createElement('pre');
+             p.className = 'blocks';
+             p.setAttribute('tone', 'chartreuse');
+             p.textContent = '### x\\nbody';
+             document.querySelector('main').appendChild(p);
+             window.lcScanElement(document.querySelector('main'));
+             const w = document.querySelector('main > .lc-blocks:last-of-type');
+             return w ? w.className : 'gone';
+           }"""
+    )
+    assert "lc-tone-" not in cls, "an unknown tone invented a look: %r" % cls

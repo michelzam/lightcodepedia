@@ -36,3 +36,29 @@ Feature: Reel mode — Instagram-style vertical snap between titles
     Then the page is in reel mode
     When I click the reel back button
     Then the page is not in reel mode
+
+  Scenario: The reel title is the title, not everything hung inside it
+    A page's tags are painted as pills INSIDE its h1, so reading that
+    heading raw gave the bar "Adoption Dayappuidatafeature" (Michel,
+    2026-08-14). A title is what the author wrote.
+
+    When I navigate to "/components/block?reel=1"
+    And I wait for the page to be interactive
+    Then the page is in reel mode
+    And the page's title carries tag pills
+    And the reel bar shows the title without the pills
+    And the section picker shows titles without the pills
+
+  Scenario: Down and up arrows page the reel
+    A thumb can reach the next section; the keyboard should too.
+
+    When I navigate to "/components/block?reel=1"
+    And I wait for the page to be interactive
+    Then the page is in reel mode
+    And the reel is at section 1
+    When I press the down arrow
+    Then the reel is at section 2
+    When I press the down arrow
+    Then the reel is at section 3
+    When I press the up arrow
+    Then the reel is at section 2

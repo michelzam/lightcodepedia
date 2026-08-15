@@ -201,6 +201,8 @@ Feature: The instant runner (RT) — Phase A parity
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/cover.md"
     And I wait for the page to be interactive
     Then the embedded runner shows a heading "Setup"
+    And the embedded runner is inside a border of its own
+    And the injected file's own title stays out of the lesson
 
   Scenario: A stale key names itself, instead of saying HTTP 401
     Michel opened a vault link in a second browser and read "⚠️ Could not

@@ -379,9 +379,22 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       return ' 🟠';
     }
 
+    /* A title is what the author WROTE, not everything the page later hung
+       inside the h1. feature.md paints the page's tags as pills there, so a
+       raw textContent read gave the reel bar "Adoption Dayappuidatafeature"
+       (Michel, 2026-08-14). Anything the engine adds to a heading is marked
+       .lc-title-tags or aria-hidden, so drop both and keep the words. */
+    function headingText(h) {
+      if (!h) return '';
+      var c = h.cloneNode(true);
+      c.querySelectorAll('.lc-title-tags, [aria-hidden="true"]').forEach(function (n) {
+        n.parentNode.removeChild(n);
+      });
+      return (c.textContent || '').trim().replace(/\s+/g, ' ');
+    }
+
     function slideTitle(s, i) {
-      var h = s.querySelector('h1, h2');
-      var t = h ? (h.textContent || '').trim().replace(/\s+/g, ' ') : '';
+      var t = headingText(s.querySelector('h1, h2'));
       if (!t) t = 'Slide ' + (i + 1);
       if (t.length > 38) t = t.substring(0, 36) + '…';
       return t + slideScoreMarker(s);
@@ -565,7 +578,7 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
            /run's hidden "🔬 Runner" heading, not the course title. On built
            pages both selectors find the same node (h1 lives in slide 0). */
         var h1 = main.querySelector('.lc-slide h1') || main.querySelector('h1');
-        titleEl.textContent = (h1 && h1.textContent.trim()) || document.title || 'Reel';
+        titleEl.textContent = headingText(h1) || document.title || 'Reel';
       }
       if (progEl) progEl.textContent = (currentReelIndex() + 1) + ' / ' + slides.length;
     }
@@ -584,6 +597,9 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
         else history.pushState({ lcReel: 1 }, '', u);
       } catch (e) {}
       try { main.scrollTo(0, 0); } catch (e) { main.scrollTop = 0; }
+      /* on an RT render main is not the scroller — the nested .lc-run is, so
+         reach the first section itself and let the browser find its box */
+      if (slides[0]) { try { slides[0].scrollIntoView({ block: 'start' }); } catch (e) {} }
       syncReelBar();
     }
     function exitReel() {
@@ -942,10 +958,32 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       else next();
     });
 
-    /* Reel: Esc exits; native scroll-snap does the paging (no nav keys). */
+    /* Move the reel one section, the way the snap points already do — the
+       keyboard should reach what a thumb reaches (Michel, 2026-08-14). */
+    function reelGo(delta) {
+      var i = currentReelIndex() + delta;
+      if (i < 0 || i >= slides.length) return;
+      try { slides[i].scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      catch (e) { slides[i].scrollIntoView(); }
+      /* the counter follows the KEY, not the animation — a smooth scroll is
+         still at the old section when this line runs, and reading position
+         back then showed the reader the step they just left */
+      var bar = document.querySelector('.lc-reel-bar');
+      var progEl = bar && bar.querySelector('.lc-reel-bar-progress');
+      if (progEl) progEl.textContent = (i + 1) + ' / ' + slides.length;
+    }
+
+    /* Reel: Esc exits; ↑/↓ page section by section. Free scrolling still
+       works — these keys only snap to the next boundary instead of drifting
+       a few pixels at a time. */
     document.addEventListener('keydown', function(e){
       if (!body.classList.contains('lc-reel-active')) return;
-      if (e.key === 'Escape') { exitReel(); e.preventDefault(); }
+      if (e.key === 'Escape') { exitReel(); e.preventDefault(); return; }
+      /* a learner typing in a cell, a prompt or an editor is not paging */
+      var t = e.target;
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)) return;
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') { reelGo(1); e.preventDefault(); }
+      else if (e.key === 'ArrowUp' || e.key === 'PageUp') { reelGo(-1); e.preventDefault(); }
     });
     /* browser Back exits the reel (consumes the entry pushed on enter) */
     window.addEventListener('popstate', function(){
@@ -962,7 +1000,10 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
     });
     /* keep the sticky bar's position counter live as the reel scrolls */
     var _reelTick = false;
-    main.addEventListener('scroll', function(){
+    /* CAPTURE ON THE DOCUMENT, not on main: an RT render's sections live in
+       the nested .lc-run, which is the element that actually scrolls — the
+       counter froze at 1/N on every course page (scroll does not bubble). */
+    document.addEventListener('scroll', function(){
       if (!body.classList.contains('lc-reel-active') || _reelTick) return;
       _reelTick = true;
       requestAnimationFrame(function(){
@@ -971,7 +1012,7 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
         var progEl = bar && bar.querySelector('.lc-reel-bar-progress');
         if (progEl) progEl.textContent = (currentReelIndex() + 1) + ' / ' + slides.length;
       });
-    }, { passive: true });
+    }, { capture: true, passive: true });
     /* Reel is "sticky": while active, internal navigations carry ?reel=1
        forward so the experience continues across pages (tap a card → the next
        page opens as a reel). Skips external links, downloads, new-tab clicks

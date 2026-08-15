@@ -22,6 +22,21 @@ files a learner is already working in.
 .lc-run-bar a { color: #0066cc; text-decoration: none; font-weight: 600; }
 .lc-run-bar.lc-run-vault { background: #fff8e6; border-color: #f0d98a; }
 .lc-run-bar .lc-run-badge { font-weight: 700; color: #8a6d00; }
+/* AN EMBEDDED RUNNER IS ANOTHER FILE, INJECTED — and a reader who cannot see
+   where the lesson stops and the injected thing starts is back to the blurry
+   mixture the seam went after (Michel, 2026-08-14: *"keeping a nice border
+   all around when injected in the lesson"*). The page-level runner IS the
+   page and gets none of this. */
+.lc-runner-embed {
+  border: 1px solid #dbe3ec; border-radius: 10px;
+  padding: 1.1em 1.3em; margin: 1.4em 0; background: #fbfcfe;
+}
+.lc-runner-embed > .lc-run > :first-child { margin-top: 0; }
+.lc-runner-embed > .lc-run > :last-child { margin-bottom: 0; }
+/* the injected file's own H1 names it for someone opening it alone; inside a
+   lesson the lesson's heading already said it */
+.lc-runner-embed > .lc-run > h1 { display: none; }
+@media print { .lc-runner-embed { background: #fff; } }
 </style>
 <script>
 (function () {
@@ -463,7 +478,7 @@ files a learner is already working in.
     el.dataset.lcUpgraded = "1";
     var fixedSrc = relativeSrc(el, (el.getAttribute && el.getAttribute("src")) || "");
     var wrap = document.createElement("div");
-    wrap.className = "lc-runner";
+    wrap.className = fixedSrc ? "lc-runner lc-runner-embed" : "lc-runner";
     /* one page-level runner (the /run page) publishes canonical ids; embedded
        demos get scoped classes so several can coexist without id clashes */
     var idAttr = fixedSrc ? "" : ' id="lc-run"';
