@@ -172,3 +172,16 @@ Feature: The learner course wizard (/courses/join)
     And an energy key "AIzaAlreadyMine" is on this device
     When I open the course wizard with a stored key
     Then the energy step is already done
+
+  Scenario: The wizard never creates the bay — that is the teacher's act
+    Bays are provisioned from the classroom console with the org key
+    (Michel, 2026-08-15: "WE create the public repo for each student").
+    A learner-side creation would need the org to let every member create
+    public repositories — a wide-open door so one repo could exist. So the
+    wizard pairs the bench and asks GitHub for nothing else.
+
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the learner can read the vault
+    And my bench exists and is 0 updates behind the hub
+    When I open the course wizard with a stored key
+    Then no repository was created by the wizard

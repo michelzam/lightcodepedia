@@ -37,6 +37,48 @@ files a learner is already working in.
    lesson the lesson's heading already said it */
 .lc-runner-embed > .lc-run > h1 { display: none; }
 @media print { .lc-runner-embed { background: #fff; } }
+
+/* ── title="…" — the injected file wears a window ─────────────────────────
+   A border says "another file". A TITLE BAR says "an application" (Michel,
+   2026-08-15: *"simulate a macos top border window to make it like a desktop
+   app… even if it's embedded in a lesson page"*). Same box, one strip on
+   top, so a lesson can show a real app looking like a real app.
+
+   THE DOTS ARE PAINT, NOT BUTTONS. They are aria-hidden, take no focus and
+   carry no pointer cursor: a control that looks like a control and does
+   nothing is a lie told to a beginner. Everything the reader can actually
+   press stays inside the window. */
+.lc-runner-win { padding: 0; overflow: hidden; }
+.lc-runner-win > .lc-win-bar {
+  display: flex; align-items: center; gap: 0.6em;
+  padding: 0.5em 0.9em;
+  background: linear-gradient(#fbfbfd, #eef0f4);
+  border-bottom: 1px solid #dbe3ec;
+  user-select: none;
+}
+.lc-win-dots { display: inline-flex; gap: 6px; flex: none; }
+.lc-win-dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.lc-win-dots i:nth-child(1) { background: #ff5f57; }
+.lc-win-dots i:nth-child(2) { background: #febc2e; }
+.lc-win-dots i:nth-child(3) { background: #28c840; }
+.lc-win-title {
+  flex: 1; min-width: 0; text-align: center;
+  font-size: 0.86em; font-weight: 600; color: #3f4650;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* the dots sit left; this keeps the title optically centred in the bar */
+  padding-right: 45px;
+}
+.lc-runner-win > .lc-run-status { padding: 0.6em 1.3em; }
+.lc-runner-win > .lc-run { padding: 1.1em 1.3em; }
+@media (max-width: 600px) {
+  .lc-win-title { padding-right: 0; text-align: left; }
+}
+@media print {
+  /* a window frame is screen furniture; on paper the title is the useful half */
+  .lc-win-dots { display: none; }
+  .lc-runner-win > .lc-win-bar { background: none; }
+  .lc-win-title { text-align: left; padding-right: 0; }
+}
 </style>
 <script>
 (function () {
@@ -231,9 +273,51 @@ files a learner is already working in.
       .catch(function () { delete _mediaBlobs[memo]; return ""; }));
   };
 
+  /* ── ship: — the deployed-app scheme ─────────────────────────────────────
+     src="ship:adoption_day" cannot be a literal URL: the course page is
+     shared, but the deployed copy is per-learner and per-ship (the sha moves
+     on every press of 🚀). So the embed resolves through the bay's manifest —
+     latest sha per app — fetched raw and KEYLESS: what this renders is
+     exactly what anyone with the link sees, and the lesson can say so. */
+  function resolveShip(name, bayAttr) {
+    var seg = String(bayAttr || "").split("/").filter(Boolean);
+    var repo = seg.slice(0, 2).join("/"), base = seg.slice(2).join("/");
+    if (!repo) {
+      /* no bay named = the reader's own: <bench>-bay from the pairing the
+         join wizard stored — the same default the ship button uses, so a
+         shared course page shows each learner THEIR deployed app */
+      var bench = "";
+      try { bench = localStorage.getItem("lc_ed_repo") || ""; } catch (e) {}
+      if (bench) { repo = bench + "-bay"; base = ""; }
+    }
+    if (!repo) return Promise.resolve(null);
+    var url = "https://raw.githubusercontent.com/" + repo + "/main/" +
+              (base ? base + "/" : "") + "manifest.json";
+    return fetch(url, { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (m) {
+        var e = m && m[name];
+        if (!e || !e.sha || !e.entry) return null;
+        return "gh:" + repo + "/" + (base ? base + "/" : "") +
+               name + "_" + e.sha + "/" + e.entry;
+      })
+      .catch(function () { return null; });
+  }
+
   /* src comes from the IAL attribute (embedded examples) or the page hash
      (the /run page). Attribute wins, so a component page can host a live demo. */
   function render(status, root, fixedSrc, bar) {
+    var shipM = fixedSrc && /^ship:(.+)$/.exec(fixedSrc);
+    if (shipM) {
+      status.style.display = ""; status.textContent = "Looking up your latest ship…";
+      resolveShip(shipM[1], root.dataset.lcShipBay).then(function (real) {
+        if (real) return render(status, root, real, bar);
+        root.innerHTML = "";
+        status.textContent = "🚀 Nothing shipped yet for “" + shipM[1] +
+          "” — press Ship above and this window fills with your deployed app.";
+      });
+      return;
+    }
     var src = fixedSrc || hashSrc();
     if (!src) {
       status.style.display = ""; status.textContent = "No source. Open with #src=<url to markdown>."; root.innerHTML = "";
@@ -473,22 +557,62 @@ files a learner is already working in.
     moduleTitle(src, dir).then(function (mt) { if (mt) window.lcSetCrumb(mt, page, href); });
   }
 
+  /* The window's name. An author who typed one has said it; an author who
+     wrote title="" is asking for the file's own — which does not exist until
+     the render lands, so watch the root and take the first h1 that appears
+     (falling back to the file name, because a nameless window looks broken).
+     The h1 itself stays hidden: the bar is now where the name lives. */
+  function paintWinTitle(wrap, root, given, src) {
+    var el = wrap.querySelector(".lc-win-title");
+    if (!el) return;
+    if (given) { el.textContent = given; return; }
+    var fallback = (src || "").split("/").pop().replace(/\.md$/i, "").replace(/^_+/, "");
+    el.textContent = fallback;
+    var obs = new MutationObserver(function () {
+      var h = root.querySelector("h1");
+      if (!h) return;
+      var t = (h.textContent || "").trim();
+      if (t) { el.textContent = t; obs.disconnect(); }
+    });
+    obs.observe(root, { childList: true, subtree: true });
+  }
+
   function upgradeRunner(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
     var fixedSrc = relativeSrc(el, (el.getAttribute && el.getAttribute("src")) || "");
+    /* title="Adoption Day" → the embed wears a window bar. Absent = the plain
+       bordered box, so nothing written before this changes. title="" is not
+       nothing: it means "use the injected file's own name", filled in below
+       once the render has one. Page-level runners keep the bench bar. */
+    var winTitle = fixedSrc ? el.getAttribute("title") : null;
     var wrap = document.createElement("div");
     wrap.className = fixedSrc ? "lc-runner lc-runner-embed" : "lc-runner";
+    if (winTitle !== null) wrap.className += " lc-runner-win";
     /* one page-level runner (the /run page) publishes canonical ids; embedded
        demos get scoped classes so several can coexist without id clashes */
     var idAttr = fixedSrc ? "" : ' id="lc-run"';
-    wrap.innerHTML = (fixedSrc ? "" : '<div class="lc-run-bar" style="display:none"></div>') +
+    wrap.innerHTML = (winTitle !== null
+                        ? '<div class="lc-win-bar"><span class="lc-win-dots" aria-hidden="true">' +
+                          '<i></i><i></i><i></i></span><span class="lc-win-title"></span></div>'
+                        : "") +
+                     (fixedSrc ? "" : '<div class="lc-run-bar" style="display:none"></div>') +
                      '<div class="lc-run-status" style="color:#6b7280;font-size:0.9em">Loading…</div>' +
                      '<div class="lc-run markdown-body"' + idAttr + '></div>';
     el.parentNode.replaceChild(wrap, el);
     var status = wrap.querySelector(".lc-run-status");
     var root = wrap.querySelector(".lc-run");
     var bar = wrap.querySelector(".lc-run-bar");
+    if (winTitle !== null) paintWinTitle(wrap, root, winTitle, fixedSrc);
+    /* a ship: embed needs its bay to resolve, and re-renders itself the
+       moment the 🚀 on the same page reports a ship of its app */
+    if (/^ship:/.test(fixedSrc || "")) {
+      root.dataset.lcShipBay = el.getAttribute("bay") || "";
+      var shipName = fixedSrc.slice(5);
+      window.addEventListener("lc_shipped", function (e) {
+        if (e.detail && e.detail.app === shipName) render(status, root, fixedSrc, bar);
+      });
+    }
     render(status, root, fixedSrc, bar);
     /* A CARD CLICK IS A NAVIGATION, so it must land at the top of the new
        page. Inside the runner a link only changes the hash and the document

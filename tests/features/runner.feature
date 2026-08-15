@@ -204,6 +204,35 @@ Feature: The instant runner (RT) — Phase A parity
     And the embedded runner is inside a border of its own
     And the injected file's own title stays out of the lesson
 
+  Scenario: title= turns the embed into a window, and title="" names it from the file
+    A border says "another file"; a title bar says "an application" (Michel,
+    2026-08-15). The dots are paint: nothing closes, minimises or zooms.
+
+    Given the GitHub contents API serves "courses/demo/_app_dogs.md" with the document:
+      """
+      # 🐕 Adoption Day — Dogs
+
+      Every dog in our care.
+      """
+    And the GitHub contents API serves "courses/demo/lesson.md" with the document:
+      """
+      # Lesson
+
+      [Named](#)
+      {: .runner src="_app_dogs.md" title="Adoption Day" }
+
+      [From the file](#)
+      {: .runner src="_app_dogs.md" title="" }
+
+      [No window](#)
+      {: .runner src="_app_dogs.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/lesson.md"
+    And I wait for the page to be interactive
+    Then the windowed embeds are titled "Adoption Day" and "🐕 Adoption Day — Dogs"
+    And an embed with no title= stays a plain box
+    And the window dots are decoration, not controls
+
   Scenario: A stale key names itself, instead of saying HTTP 401
     Michel opened a vault link in a second browser and read "⚠️ Could not
     load: HTTP 401" — which tells a learner nothing and a teacher less. 401

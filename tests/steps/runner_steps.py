@@ -505,3 +505,47 @@ def step_embed_h1_hidden(context):
     assert all(d == "none" for d in shown), (
         "the injected file's title doubled the lesson's heading: %r" % shown
     )
+
+
+@then('the windowed embeds are titled "{first}" and "{second}"')
+def step_win_titles(context, first, second):
+    """title="Adoption Day" is the author's word; title="" asks for the
+    injected file's own heading, which does not exist until the render
+    lands — so the bar has to fill in afterwards, not at upgrade time."""
+    got = context.page.evaluate(
+        "() => [...document.querySelectorAll('.lc-runner-win .lc-win-title')]"
+        ".map(e => e.textContent.trim())"
+    )
+    assert got == [first, second], "window titles: %r" % (got,)
+    # the heading moved INTO the bar, so it must not also shout from the body
+    shown = context.page.evaluate(
+        """() => [...document.querySelectorAll('.lc-runner-win > .lc-run > h1')]
+             .map(h => getComputedStyle(h).display)"""
+    )
+    assert all(d == "none" for d in shown), "the name is said twice: %r" % shown
+
+
+@then("an embed with no title= stays a plain box")
+def step_no_title_plain(context):
+    n = context.page.evaluate(
+        "() => document.querySelectorAll('.lc-runner-embed:not(.lc-runner-win)').length"
+    )
+    assert n == 1, "expected exactly one plain embed, found %d" % n
+
+
+@then("the window dots are decoration, not controls")
+def step_win_dots_decorative(context):
+    """A control that looks like a control and does nothing is a lie told to
+    a beginner. The dots are hidden from screen readers, take no focus and
+    carry no pointer cursor."""
+    got = context.page.evaluate(
+        """() => [...document.querySelectorAll('.lc-win-dots')].map(d => ({
+             hidden: d.getAttribute('aria-hidden'),
+             cursor: getComputedStyle(d).cursor,
+             focusable: !!d.querySelector('a, button, [tabindex], [role]') }))"""
+    )
+    assert got, "no window dots found"
+    for d in got:
+        assert d["hidden"] == "true", "the dots speak to a screen reader: %r" % d
+        assert d["cursor"] != "pointer", "the dots invite a click they cannot honour: %r" % d
+        assert not d["focusable"], "the dots take keyboard focus: %r" % d

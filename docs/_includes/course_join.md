@@ -232,6 +232,14 @@ The check is live truth against the API, never cached. Done steps reopen via
         .catch(function () { msg(4, "❌ Could not reach GitHub — reload to retry.", "err"); });
     }
 
+    /* The bay — the bench's public sister, <bench>-bay, where 🚀 Ship
+       deploys — is NOT created here. The TEACHER provisions bays from the
+       classroom console (⛵), with the org key (Michel, 2026-08-15: "WE
+       create the public repo for each student"): a learner-side creation
+       would need the org to let every member create public repos — a
+       wide-open door so one repo could exist. The wizard only ever pairs
+       the bench; ship and the ship: embeds derive the bay name from it. */
+
     function benchStatus() {
       sgh("/repos/" + org + "/" + B.name)
         .then(function (r) { return r.ok ? r.json() : null; })

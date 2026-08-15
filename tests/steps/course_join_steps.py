@@ -8,6 +8,7 @@ from playwright.sync_api import expect
 HUB = {"name": "build-ai-fall26", "is_template": True, "fork": False,
        "default_branch": "main", "updated_at": "2026-07-01T00:00:00Z"}
 BENCH = "build-ai-fall26-zamm-student"
+BAY = BENCH + "-bay"
 
 
 def _stub(context):
@@ -31,6 +32,22 @@ def _stub(context):
             # hub discovery: the session template is visible once enrolled
             route.fulfill(status=200, json=[HUB] if st.get("vault_ok") else [])
             return
+        if re.search(r"/orgs/[^/]+/repos", url) and method == "POST":
+            # the wizard creating the learner's public bay with their own key
+            body = json.loads(req.post_data or "{}")
+            st["bay"] = True
+            context.bay_created = body
+            route.fulfill(status=201, json={"name": body.get("name", "")})
+            return
+        # ── the bay (public sister of the bench) — before BENCH: its name
+        #    CONTAINS the bench name, so the bench block would swallow it ──
+        if BAY in url:
+            if method == "GET":
+                if st.get("bay"):
+                    route.fulfill(status=200, json={"name": BAY})
+                else:
+                    route.fulfill(status=404, json={"message": "Not Found"})
+                return
         if re.search(r"/repos/[^/]+/[^/]+/contents/", url) and method == "GET" and BENCH not in url:
             if st.get("vault_ok"):
                 route.fulfill(status=200, json={"name": "index.md", "sha": "s"})
@@ -389,3 +406,12 @@ def step_energy_step_done(context):
     expect(step).to_have_class(re.compile(r"\bok\b"), timeout=15_000)
     expect(context.page.locator('[data-m="5"]')).to_contain_text(
         "already saved", timeout=10_000)
+
+
+@then("no repository was created by the wizard")
+def step_no_repo_created(context):
+    """The wizard reads and forks; it never POSTs /orgs/*/repos. Bay
+    creation is the teacher's act, in the console, with the org key."""
+    context.page.wait_for_timeout(800)
+    assert getattr(context, "bay_created", None) is None, \
+        "the wizard created a repo: %r" % (context.bay_created,)

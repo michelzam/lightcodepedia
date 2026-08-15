@@ -37,6 +37,30 @@ Double-click any box to change what it says.
 The lesson keeps its commentary, the app file holds nothing but the app, and
 `_app_dogs.md` still runs on its own.
 
+**Give it `title=` and the box becomes a window.** A border says *another
+file*; a title bar says *an application*. Same box, one strip on top — so a
+lesson can show a real app looking like one, mid-page.
+
+```
+[Dogs](#)
+{: .runner src="_app_dogs.md" title="Adoption Day" }
+```
+{: .code }
+
+[Dogs](#)
+{: .runner src="/run_samples/probe.txt" title="Adoption Day" }
+
+Write `title=""` and the window takes the injected file's own `#` heading
+instead — one less name to keep in step when the file is renamed.
+
+[Dogs](#)
+{: .runner src="/run_samples/probe.txt" title="" }
+
+The three dots are **paint, not buttons**: nothing closes, minimises or
+zooms. They carry no cursor and no focus, and screen readers skip them — a
+control that looks like a control and does nothing is a lie told to a
+beginner. Everything pressable stays inside the window.
+
 **Images**: a relative `![…](pic.png)` in a rendered page resolves against
 the rendered file's folder and is fetched with your key — so pictures in a
 private course render like anywhere else. Site-absolute and external image
