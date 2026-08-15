@@ -16,7 +16,7 @@ rendered course. Embedded runner demos never affect their host page's deck.
 
 **An embedded runner wears a border.** It is another file, injected — and a
 reader who cannot see where the page stops and the injected file starts is
-back to the blurry mixture the [seam](seam.md) went after. So an embedded
+back to the blurry mixture the [seam](/components/seam) went after. So an embedded
 render sits in a bordered box, and the injected file's own `#` title is
 hidden: that title names the file to whoever opens it alone, while inside a
 lesson the lesson's heading already said it. The page-level runner *is* the

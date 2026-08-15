@@ -1,7 +1,3 @@
----
-title: Seam
----
-
 # 〰️ Seam
 
 A page speaks in registers — the course talking, the app the reader acts in,

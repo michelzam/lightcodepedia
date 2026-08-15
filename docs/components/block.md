@@ -105,7 +105,7 @@ Useful when one side is prose and the other a picture or a clip.
 
 ## Example — tone
 
-A course page speaks in three registers, and the [seam](seam.md) names them
+A course page speaks in three registers, and the [seam](/components/seam) names them
 out loud. `tone` is the same three worn quietly by a card: the seam says it,
 the tone echoes it, so a reader who skimmed past the line still feels the
 change. Colour never carries the meaning on its own.
