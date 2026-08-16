@@ -163,10 +163,12 @@ body.lc-reel-active .markdown-body {
   overflow-y: scroll; scroll-snap-type: y proximity;
   scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
 }
-/* every top-level block is a snap point: a flick lands on a whole idea,
-   never mid-paragraph. scroll-margin clears the fixed bar. */
+/* Blocks are NOT CSS snap points (Michel, 2026-08-16: paragraph-level
+   proximity turned every boundary into a speed bump — "vertical is not as
+   good as it used to be"). Velocity decides instead: a FLICK drives
+   blockGo, one whole block per flick; a slow drag scrolls free with zero
+   braking. scroll-margin stays — it is where blockGo lands them. */
 body.lc-reel-active .lc-slide > * {
-  scroll-snap-align: start;
   scroll-margin-top: calc(48px + 0.9em);
 }
 body.lc-reel-active .lc-slide {
@@ -1026,8 +1028,24 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
           if (blocks[j].getBoundingClientRect().top < LINE - TOL) { next = blocks[j]; break; }
       }
       if (!next) return;
-      try { next.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-      catch (e) { next.scrollIntoView(); }
+      /* scroll the reel's OWN scroller, not whatever scrollIntoView picks:
+         once blocks stopped being snap points, scrollIntoView started
+         choosing the document scroller (html took the 99px, main stayed
+         put) — deterministic beats clever here */
+      var sc = next.parentElement;
+      while (sc && sc !== document.documentElement) {
+        var cs = getComputedStyle(sc);
+        if (/(auto|scroll)/.test(cs.overflowY) && sc.scrollHeight > sc.clientHeight + 4) break;
+        sc = sc.parentElement;
+      }
+      var margin = parseFloat(getComputedStyle(next).scrollMarginTop) || 62;
+      if (sc && sc !== document.documentElement) {
+        var delta = next.getBoundingClientRect().top - sc.getBoundingClientRect().top - margin;
+        try { sc.scrollBy({ top: delta, behavior: 'smooth' }); } catch (e) { sc.scrollTop += delta; }
+      } else {
+        try { next.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        catch (e) { next.scrollIntoView(); }
+      }
     }
 
     /* Reel keys: Esc exits; ↑/↓ block by block; ←/→ (and PageUp/Down)
@@ -1062,17 +1080,46 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       if (!t0) { _sw = null; return; }
       var el = e.target;
       _sw = { x: t0.clientX, y: t0.clientY,
-              guarded: !!(el && el.closest && el.closest(SWIPE_GUARD)) };
+              guarded: !!(el && el.closest && el.closest(SWIPE_GUARD)),
+              trail: [{ t: performance.now(), y: t0.clientY }] };
+    }, { capture: true, passive: true });
+    /* the trail is how release SPEED is known: the last ~140ms of thumb
+       travel, kept short so a long slow drag ending in a snap of the wrist
+       still reads as the flick it ended as */
+    document.addEventListener('touchmove', function (e) {
+      if (!_sw || _sw.guarded) return;
+      var t = e.touches && e.touches[0];
+      if (!t) return;
+      _sw.trail.push({ t: performance.now(), y: t.clientY });
+      if (_sw.trail.length > 6) _sw.trail.shift();
     }, { capture: true, passive: true });
     document.addEventListener('touchend', function (e) {
-      if (!_sw || _sw.guarded || !body.classList.contains('lc-reel-active')) return;
+      if (!_sw || _sw.guarded || !body.classList.contains('lc-reel-active')) { _sw = null; return; }
       var t1 = e.changedTouches && e.changedTouches[0];
-      if (!t1) return;
+      if (!t1) { _sw = null; return; }
       var dx = t1.clientX - _sw.x, dy = t1.clientY - _sw.y;
+      var trail = _sw.trail;
       _sw = null;
-      /* decisive and horizontal — a diagonal thumb is a scroll, not a swipe */
-      if (Math.abs(dx) < 60 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
-      sectionGo(dx < 0 ? 1 : -1);
+      /* decisive and horizontal → the coarse axis */
+      if (Math.abs(dx) >= 60 && Math.abs(dx) > 1.5 * Math.abs(dy)) {
+        sectionGo(dx < 0 ? 1 : -1);
+        return;
+      }
+      /* ── the vertical FLICK (Michel, 2026-08-16: "Flick") ──────────────
+         Velocity is the intent CSS cannot read: fast at release = advance
+         exactly ONE block (the same blockGo the ↓ key drives — the smooth
+         programmatic scroll overrides the native fling); slow at release =
+         a reading drag, and the reel does nothing at all. */
+      var now = performance.now();
+      var base = null;
+      for (var i = 0; i < trail.length; i++)
+        if (now - trail[i].t <= 140) { base = trail[i]; break; }
+      if (!base) base = trail[0];
+      var dt = now - base.t;
+      if (dt < 1) return;
+      var v = (t1.clientY - base.y) / dt;          // px per ms, up = negative
+      if (Math.abs(v) < 0.6) return;               // a drag, not a flick
+      blockGo(v < 0 ? 1 : -1);
     }, { capture: true, passive: true });
     /* browser Back exits the reel (consumes the entry pushed on enter) */
     window.addEventListener('popstate', function(){

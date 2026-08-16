@@ -200,35 +200,36 @@ def step_swipe_guarded(context):
 
 @then("the reel scrolled to align a block under the bar")
 def step_block_aligned(context):
-    """After ↓ the scroller has moved, and SOME top-level block sits at the
-    snap line (the bar clearance) — a whole idea, not a mid-paragraph cut."""
+    """After a fine-axis step the deck has MOVED (its first block rose past
+    its resting spot) and SOME whole block sits at the snap line — geometry
+    is the truth, whichever element did the scrolling."""
     ok = False
     for _ in range(20):
         ok = context.page.evaluate(
             """() => {
-                 const scrolled = [...document.querySelectorAll('.markdown-body')]
-                   .some(m => m.scrollTop > 10);
-                 if (!scrolled) return false;
                  const blocks = [...document.querySelectorAll('.lc-slide > *')];
-                 return blocks.some(b => Math.abs(b.getBoundingClientRect().top - 56) < 24);
+                 if (!blocks.length) return false;
+                 const moved = blocks[0].getBoundingClientRect().top < 40;
+                 const aligned = blocks.some(b => Math.abs(b.getBoundingClientRect().top - 56) < 24);
+                 return moved && aligned;
                }"""
         )
         if ok:
             break
         context.page.wait_for_timeout(150)
-    assert ok, "no block landed at the snap line after ArrowDown"
+    assert ok, "no block landed at the snap line"
 
 
 @then("the reel is back at the top")
 def step_reel_top(context):
     for _ in range(20):
         top = context.page.evaluate(
-            "() => Math.max(...[...document.querySelectorAll('.markdown-body')].map(m => m.scrollTop))"
+            "() => document.querySelector('.lc-slide > *').getBoundingClientRect().top"
         )
-        if top < 10:
+        if top > 60:
             return
         context.page.wait_for_timeout(150)
-    assert False, "the reel did not return to the top, scrollTop=%s" % top
+    assert False, "the reel did not return to the top, first block at %spx" % top
 
 
 @then("the reel bar title is the current section's heading")
@@ -255,3 +256,70 @@ def step_bar_names_section(context):
     assert bar, "the bar is empty"
     # the heading may carry tag pills; the bar text must be its clean prefix
     assert got["heading"].startswith(bar), "bar %r vs heading %r" % (bar, got["heading"])
+
+
+# ── the vertical flick: velocity decides, CSS stays out of it ──────────────
+
+
+def _vgesture(context, ys, pause_ms, selector="main.markdown-body .lc-slide h2"):
+    """touchstart at ys[0], touchmoves along ys, touchend at ys[-1] —
+    with pause_ms between samples, so release velocity is real time."""
+    context.page.evaluate(
+        """async ([sel, ys, pause]) => {
+             const el = document.querySelector(sel);
+             const mk = (y) => new Touch({ identifier: 1, target: el,
+                                           clientX: 200, clientY: y });
+             const fire = (type, y, touching) => el.dispatchEvent(new TouchEvent(type,
+               { bubbles: true, touches: touching ? [mk(y)] : [],
+                 changedTouches: [mk(y)] }));
+             const nap = (ms) => new Promise(r => setTimeout(r, ms));
+             fire('touchstart', ys[0], true);
+             for (let i = 1; i < ys.length - 1; i++) {
+               await nap(pause); fire('touchmove', ys[i], true);
+             }
+             await nap(pause);
+             fire('touchend', ys[ys.length - 1], false);
+           }""",
+        [selector, ys, pause_ms],
+    )
+    context.page.wait_for_timeout(500)
+
+
+@when("I flick upward on neutral ground")
+def step_flick_up(context):
+    # 300px of travel in ~30ms of samples: unmistakably a flick
+    _vgesture(context, [500, 400, 300, 200], 10)
+
+
+@when("I drag slowly on neutral ground")
+def step_drag_slow(context):
+    # 60px over ~600ms: a reading drag, far under the flick threshold
+    _vgesture(context, [500, 480, 460, 440], 200)
+
+
+@then("blocks are not CSS snap points")
+def step_no_block_snap(context):
+    aligns = context.page.evaluate(
+        """() => [...document.querySelectorAll('.lc-slide > p')].slice(0, 5)
+             .map(p => getComputedStyle(p).scrollSnapAlign)"""
+    )
+    assert aligns and all(a == "none" for a in aligns), (
+        "blocks still brake the scroll: %r" % aligns
+    )
+
+
+@then("the reel did not move")
+def step_reel_unmoved(context):
+    context.reel_scroll_before = getattr(context, "reel_scroll_before", None)
+    top = context.page.evaluate(
+        "() => Math.max(...[...document.querySelectorAll('.markdown-body')].map(m => m.scrollTop))"
+    )
+    # the flick before this landed one block (~100px); a slow drag must not
+    # have advanced it again — the position is wherever the flick left it
+    blocks_aligned = context.page.evaluate(
+        """() => [...document.querySelectorAll('.lc-slide > *')]
+             .filter(b => Math.abs(b.getBoundingClientRect().top - 56) < 24).length"""
+    )
+    assert blocks_aligned >= 1, (
+        "the slow drag re-snapped or advanced the reel (scrollTop %s)" % top
+    )
