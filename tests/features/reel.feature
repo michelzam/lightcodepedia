@@ -49,16 +49,55 @@ Feature: Reel mode — Instagram-style vertical snap between titles
     And the reel bar shows the title without the pills
     And the section picker shows titles without the pills
 
-  Scenario: Down and up arrows page the reel
-    A thumb can reach the next section; the keyboard should too.
+  Scenario: Left and right page the sections — arrows, chevrons, and swipe agree
+    Double navigation (Michel, 2026-08-16): horizontal is the COARSE axis.
+    ←/→, the « » in the bar, and a horizontal swipe all mean "next/previous
+    ## section" — one grammar, three inputs.
 
     When I navigate to "/components/block?reel=1"
     And I wait for the page to be interactive
     Then the page is in reel mode
     And the reel is at section 1
-    When I press the down arrow
+    When I press the right arrow
     Then the reel is at section 2
-    When I press the down arrow
+    When I press the left arrow
+    Then the reel is at section 1
+    When I click the next-section chevron
+    Then the reel is at section 2
+    When I swipe right-to-left on neutral ground
     Then the reel is at section 3
-    When I press the up arrow
+    When I swipe left-to-right on neutral ground
     Then the reel is at section 2
+
+  Scenario: Down and up arrows page by BLOCK, landing whole ideas under the bar
+    Vertical is the FINE axis: the next key lands the next whole top-level
+    block — never mid-paragraph. Within a long section the counter must NOT
+    move; the reader is still inside the same idea.
+
+    When I navigate to "/components/block?reel=1"
+    And I wait for the page to be interactive
+    Then the page is in reel mode
+    When I press the down arrow
+    Then the reel scrolled to align a block under the bar
+    And the reel is at section 1
+    When I press the up arrow
+    Then the reel is back at the top
+
+  Scenario: A swipe over an interactive surface belongs to the surface
+    A horizontal drag over a grid scrolls the table, over a canvas it pans
+    a map — those gestures are the widget's. The reel takes swipes only on
+    neutral ground.
+
+    When I navigate to "/components/block?reel=1"
+    And I wait for the page to be interactive
+    Then the page is in reel mode
+    And the reel is at section 1
+    When I swipe right-to-left over a guarded surface
+    Then the reel is at section 1
+
+  Scenario: The bar names the section in view, on one line
+    When I navigate to "/components/block?reel=1"
+    And I wait for the page to be interactive
+    Then the page is in reel mode
+    When I press the right arrow
+    Then the reel bar title is the current section's heading

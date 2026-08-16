@@ -157,12 +157,21 @@ body.lc-reel-active .lc-edit-fab { display: none !important; }
 body.lc-reel-active .markdown-body {
   max-width: none; margin: 0; padding: 0;
   height: 100vh; height: 100dvh;
-  overflow-y: scroll; scroll-snap-type: y mandatory;
+  /* PROXIMITY, not mandatory (Michel, 2026-08-16): snap when a boundary is
+     near, free-scroll otherwise — mandatory plus small blocks is a thumb
+     trap, and a block taller than the screen must stay fully reachable */
+  overflow-y: scroll; scroll-snap-type: y proximity;
   scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+}
+/* every top-level block is a snap point: a flick lands on a whole idea,
+   never mid-paragraph. scroll-margin clears the fixed bar. */
+body.lc-reel-active .lc-slide > * {
+  scroll-snap-align: start;
+  scroll-margin-top: calc(48px + 0.9em);
 }
 body.lc-reel-active .lc-slide {
   min-height: 100vh; min-height: 100dvh;
-  scroll-snap-align: start; scroll-snap-stop: always;
+  scroll-snap-align: start;
   /* top clearance = the fixed context bar (~48px) + breathing room — the
      old 3.2em only tied with the bar and lost on phones (clipped titles) */
   box-sizing: border-box; padding: calc(48px + 1.6em) 1.4em 3.2em;
@@ -188,6 +197,12 @@ body.lc-reel-active .lc-reel-bar {
   font-size: 1.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lc-reel-bar-progress { flex: none; color: #6b7280; font-size: 0.82em;
   font-variant-numeric: tabular-nums; }
+/* « » page the SECTIONS — the visible half of the horizontal-swipe gesture,
+   so the coarse axis is discoverable without being taught */
+.lc-reel-sec { flex: none; border: none; background: none; cursor: pointer;
+  font-size: 1.25em; line-height: 1; color: #6b7280; padding: 0 0.15em;
+  -webkit-appearance: none; appearance: none; }
+.lc-reel-sec:hover { color: #0066cc; }
 
 /* ── RT deck: a runner render's slides live NESTED inside the render root
    (main > [page-level section] > .lc-runner > .lc-run), not as main's direct
@@ -221,7 +236,9 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
 <div class="lc-reel-bar">
   <button class="lc-reel-back" type="button" aria-label="Back to previous page" title="Back">‹</button>
   <span class="lc-reel-bar-title"></span>
+  <button class="lc-reel-sec" data-sec="-1" type="button" aria-label="Previous section (←)" title="Previous section (←)">«</button>
   <span class="lc-reel-bar-progress"></span>
+  <button class="lc-reel-sec" data-sec="1" type="button" aria-label="Next section (→)" title="Next section (→)">»</button>
 </div>
 <nav class="lc-slides-nav" role="toolbar" aria-label="Slide navigation">
   <button class="lc-slides-nav-prev" type="button" title="Previous (←)" aria-label="Previous slide">◀</button>
@@ -568,19 +585,23 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       });
       return best;
     }
-    function syncReelBar() {
+    function syncReelBar(atIndex) {
       var bar = document.querySelector('.lc-reel-bar');
       if (!bar) return;
       var titleEl = bar.querySelector('.lc-reel-bar-title');
       var progEl = bar.querySelector('.lc-reel-bar-progress');
+      var i = (atIndex === undefined) ? currentReelIndex() : atIndex;
       if (titleEl) {
-        /* prefer the deck's own H1: on an RT render the first h1 in main is
-           /run's hidden "🔬 Runner" heading, not the course title. On built
-           pages both selectors find the same node (h1 lives in slide 0). */
-        var h1 = main.querySelector('.lc-slide h1') || main.querySelector('h1');
-        titleEl.textContent = headingText(h1) || document.title || 'Reel';
+        /* ONE LINE, and it names the SECTION in view (Michel, 2026-08-16) —
+           the reader always knows which idea they are inside. Slide 0 is the
+           page's opening (its h1); every other slide leads with its h2. */
+        var s = slides[i];
+        var h = s && s.querySelector('h2, h1');
+        titleEl.textContent = headingText(h) ||
+          headingText(main.querySelector('.lc-slide h1') || main.querySelector('h1')) ||
+          document.title || 'Reel';
       }
-      if (progEl) progEl.textContent = (currentReelIndex() + 1) + ' / ' + slides.length;
+      if (progEl) progEl.textContent = (i + 1) + ' / ' + slides.length;
     }
     function enterReel(viaUrl) {
       if (!hasDeck()) return;
@@ -958,33 +979,101 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       else next();
     });
 
-    /* Move the reel one section, the way the snap points already do — the
-       keyboard should reach what a thumb reaches (Michel, 2026-08-14). */
-    function reelGo(delta) {
+    /* ── Double navigation (Michel, 2026-08-16) ──────────────────────────
+       vertical = FINE (the next block: one whole idea into view)
+       horizontal = COARSE (the next ## section)
+       Thumb and keyboard agree: flick/↑↓ page blocks, swipe/←→ page
+       sections — everything a thumb can do, a keyboard can do. */
+
+    function sectionGo(delta) {
       var i = currentReelIndex() + delta;
       if (i < 0 || i >= slides.length) return;
       try { slides[i].scrollIntoView({ behavior: 'smooth', block: 'start' }); }
       catch (e) { slides[i].scrollIntoView(); }
-      /* the counter follows the KEY, not the animation — a smooth scroll is
-         still at the old section when this line runs, and reading position
-         back then showed the reader the step they just left */
-      var bar = document.querySelector('.lc-reel-bar');
-      var progEl = bar && bar.querySelector('.lc-reel-bar-progress');
-      if (progEl) progEl.textContent = (i + 1) + ' / ' + slides.length;
+      /* the bar follows the KEY, not the animation — a smooth scroll is
+         still at the old section when this runs, and reading position back
+         then showed the reader the step they just left */
+      syncReelBar(i);
     }
 
-    /* Reel: Esc exits; ↑/↓ page section by section. Free scrolling still
-       works — these keys only snap to the next boundary instead of drifting
-       a few pixels at a time. */
+    /* the fine axis: every visible top-level block of every section is a
+       stop; the next key lands the NEXT WHOLE BLOCK under the bar */
+    function reelBlocks() {
+      var out = [];
+      slides.forEach(function (s) {
+        if (s.offsetParent === null) return;           // prereq-hidden decks
+        Array.prototype.forEach.call(s.children, function (c) {
+          if (c.offsetParent !== null && c.getBoundingClientRect().height > 0) out.push(c);
+        });
+      });
+      return out;
+    }
+    /* The resting line: a snapped block sits at its scroll-margin (~62px),
+       a section's first block at the section padding (~74px). Both are "the
+       current block" — so the line wears a DEAD ZONE: only a block clearly
+       below it is "next", only one clearly above is "previous". Without the
+       zone, ↓ kept re-choosing the block already under the bar. */
+    var LINE = 64, TOL = 30;
+    function blockGo(delta) {
+      var blocks = reelBlocks();
+      if (!blocks.length) return;
+      var next = null;
+      if (delta > 0) {
+        for (var i = 0; i < blocks.length; i++)
+          if (blocks[i].getBoundingClientRect().top > LINE + TOL) { next = blocks[i]; break; }
+      } else {
+        for (var j = blocks.length - 1; j >= 0; j--)
+          if (blocks[j].getBoundingClientRect().top < LINE - TOL) { next = blocks[j]; break; }
+      }
+      if (!next) return;
+      try { next.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      catch (e) { next.scrollIntoView(); }
+    }
+
+    /* Reel keys: Esc exits; ↑/↓ block by block; ←/→ (and PageUp/Down)
+       section by section. Free scrolling still works — proximity snapping
+       only settles near a boundary instead of trapping the thumb. */
     document.addEventListener('keydown', function(e){
       if (!body.classList.contains('lc-reel-active')) return;
       if (e.key === 'Escape') { exitReel(); e.preventDefault(); return; }
       /* a learner typing in a cell, a prompt or an editor is not paging */
       var t = e.target;
-      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)) return;
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') { reelGo(1); e.preventDefault(); }
-      else if (e.key === 'ArrowUp' || e.key === 'PageUp') { reelGo(-1); e.preventDefault(); }
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      if (e.key === 'ArrowDown') { blockGo(1); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { blockGo(-1); e.preventDefault(); }
+      else if (e.key === 'ArrowRight' || e.key === 'PageDown') { sectionGo(1); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { sectionGo(-1); e.preventDefault(); }
     });
+
+    /* the « » in the bar: the visible half of the horizontal gesture */
+    document.querySelectorAll('.lc-reel-sec').forEach(function (b) {
+      b.addEventListener('click', function () { sectionGo(+b.getAttribute('data-sec')); });
+    });
+
+    /* ── the horizontal SWIPE — with a strict no-theft rule ──────────────
+       A horizontal drag over a grid is a table scroll, over a canvas a map
+       pan or a 3D orbit, over a wide fence a code scroll. Those surfaces
+       own their gesture; the reel only takes swipes on neutral ground. */
+    var SWIPE_GUARD = WIDGET_SEL + ', pre, canvas, video, .lc-map, .lc-chart';
+    var _sw = null;
+    document.addEventListener('touchstart', function (e) {
+      if (!body.classList.contains('lc-reel-active')) { _sw = null; return; }
+      var t0 = e.touches && e.touches[0];
+      if (!t0) { _sw = null; return; }
+      var el = e.target;
+      _sw = { x: t0.clientX, y: t0.clientY,
+              guarded: !!(el && el.closest && el.closest(SWIPE_GUARD)) };
+    }, { capture: true, passive: true });
+    document.addEventListener('touchend', function (e) {
+      if (!_sw || _sw.guarded || !body.classList.contains('lc-reel-active')) return;
+      var t1 = e.changedTouches && e.changedTouches[0];
+      if (!t1) return;
+      var dx = t1.clientX - _sw.x, dy = t1.clientY - _sw.y;
+      _sw = null;
+      /* decisive and horizontal — a diagonal thumb is a scroll, not a swipe */
+      if (Math.abs(dx) < 60 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+      sectionGo(dx < 0 ? 1 : -1);
+    }, { capture: true, passive: true });
     /* browser Back exits the reel (consumes the entry pushed on enter) */
     window.addEventListener('popstate', function(){
       if (body.classList.contains('lc-reel-active')) exitReel();
@@ -1008,9 +1097,7 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       _reelTick = true;
       requestAnimationFrame(function(){
         _reelTick = false;
-        var bar = document.querySelector('.lc-reel-bar');
-        var progEl = bar && bar.querySelector('.lc-reel-bar-progress');
-        if (progEl) progEl.textContent = (currentReelIndex() + 1) + ' / ' + slides.length;
+        syncReelBar();          // title AND counter follow the scroll
       });
     }, { capture: true, passive: true });
     /* Reel is "sticky": while active, internal navigations carry ?reel=1

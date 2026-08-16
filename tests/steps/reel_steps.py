@@ -140,3 +140,118 @@ def step_reel_down(context):
 def step_reel_up(context):
     context.page.keyboard.press("ArrowUp")
     context.page.wait_for_timeout(400)
+
+
+# ── double navigation: ←/→ + « » + swipe = sections, ↑/↓ = blocks ──────────
+
+
+@when("I press the right arrow")
+def step_reel_right(context):
+    context.page.keyboard.press("ArrowRight")
+    context.page.wait_for_timeout(400)
+
+
+@when("I press the left arrow")
+def step_reel_left(context):
+    context.page.keyboard.press("ArrowLeft")
+    context.page.wait_for_timeout(400)
+
+
+@when("I click the next-section chevron")
+def step_reel_chevron(context):
+    context.page.click('.lc-reel-sec[data-sec="1"]')
+    context.page.wait_for_timeout(400)
+
+
+def _swipe(context, from_x, to_x, selector="main.markdown-body"):
+    """Synthesize the touch pair the engine listens for: touchstart at
+    from_x, touchend at to_x, on the given surface."""
+    context.page.evaluate(
+        """([sel, x0, x1]) => {
+             const el = document.querySelector(sel);
+             const mk = (x) => new Touch({ identifier: 1, target: el,
+                                           clientX: x, clientY: 300 });
+             el.dispatchEvent(new TouchEvent('touchstart',
+               { bubbles: true, touches: [mk(x0)], changedTouches: [mk(x0)] }));
+             el.dispatchEvent(new TouchEvent('touchend',
+               { bubbles: true, touches: [], changedTouches: [mk(x1)] }));
+           }""",
+        [selector, from_x, to_x],
+    )
+    context.page.wait_for_timeout(400)
+
+
+@when("I swipe right-to-left on neutral ground")
+def step_swipe_next(context):
+    _swipe(context, 320, 60, "main.markdown-body .lc-slide h2")
+
+
+@when("I swipe left-to-right on neutral ground")
+def step_swipe_prev(context):
+    _swipe(context, 60, 320, "main.markdown-body .lc-slide h2")
+
+
+@when("I swipe right-to-left over a guarded surface")
+def step_swipe_guarded(context):
+    # a fenced code block owns its own horizontal scroll — the reel must
+    # not steal a drag that starts there
+    _swipe(context, 320, 60, ".lc-slide pre")
+
+
+@then("the reel scrolled to align a block under the bar")
+def step_block_aligned(context):
+    """After ↓ the scroller has moved, and SOME top-level block sits at the
+    snap line (the bar clearance) — a whole idea, not a mid-paragraph cut."""
+    ok = False
+    for _ in range(20):
+        ok = context.page.evaluate(
+            """() => {
+                 const scrolled = [...document.querySelectorAll('.markdown-body')]
+                   .some(m => m.scrollTop > 10);
+                 if (!scrolled) return false;
+                 const blocks = [...document.querySelectorAll('.lc-slide > *')];
+                 return blocks.some(b => Math.abs(b.getBoundingClientRect().top - 56) < 24);
+               }"""
+        )
+        if ok:
+            break
+        context.page.wait_for_timeout(150)
+    assert ok, "no block landed at the snap line after ArrowDown"
+
+
+@then("the reel is back at the top")
+def step_reel_top(context):
+    for _ in range(20):
+        top = context.page.evaluate(
+            "() => Math.max(...[...document.querySelectorAll('.markdown-body')].map(m => m.scrollTop))"
+        )
+        if top < 10:
+            return
+        context.page.wait_for_timeout(150)
+    assert False, "the reel did not return to the top, scrollTop=%s" % top
+
+
+@then("the reel bar title is the current section's heading")
+def step_bar_names_section(context):
+    got = context.page.evaluate(
+        """() => {
+             const i = (() => {
+               const main = document.querySelector('main.markdown-body');
+               const top = main.getBoundingClientRect().top;
+               let best = 0, d0 = Infinity;
+               document.querySelectorAll('.lc-slide').forEach((s, i) => {
+                 const d = Math.abs(s.getBoundingClientRect().top - top);
+                 if (d < d0) { d0 = d; best = i; }
+               });
+               return best;
+             })();
+             const s = document.querySelectorAll('.lc-slide')[i];
+             const h = s.querySelector('h2, h1');
+             return { bar: (document.querySelector('.lc-reel-bar-title') || {}).textContent,
+                      heading: h ? h.textContent : '' };
+           }"""
+    )
+    bar = (got["bar"] or "").strip()
+    assert bar, "the bar is empty"
+    # the heading may carry tag pills; the bar text must be its clean prefix
+    assert got["heading"].startswith(bar), "bar %r vs heading %r" % (bar, got["heading"])
