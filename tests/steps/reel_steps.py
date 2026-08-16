@@ -354,3 +354,57 @@ def step_screenful(context):
             break
         context.page.wait_for_timeout(150)
     assert ok, "the flick advanced less than a screenful"
+
+
+# ── back is memory: the round trip is exact, not approximate ───────────────
+
+
+@when("I remember the reel position")
+def step_remember_pos(context):
+    context.reel_pos = context.page.evaluate(
+        "() => Math.max(...[...document.querySelectorAll('.markdown-body')].map(m => m.scrollTop))"
+    )
+
+
+@then("the reel is back at the remembered position")
+def step_back_remembered(context):
+    for _ in range(20):
+        top = context.page.evaluate(
+            "() => Math.max(...[...document.querySelectorAll('.markdown-body')].map(m => m.scrollTop))"
+        )
+        if abs(top - context.reel_pos) <= 2:
+            return
+        context.page.wait_for_timeout(150)
+    assert False, "expected %s, reel is at %s" % (context.reel_pos, top)
+
+
+@when("a fixed overlay sits inside the first section")
+def step_inject_fixed(context):
+    context.page.evaluate(
+        """() => {
+             const s = document.querySelector('.lc-slide');
+             const d = document.createElement('div');
+             d.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;height:200px;';
+             s.appendChild(d);
+             const host = document.createElement('div');
+             host.className = 'lc-avatar-host lc-avatar-docked';
+             host.style.position = 'fixed';
+             document.body.appendChild(host);
+             const seed = document.createElement('button');
+             seed.className = 'lc-guide-seed';
+             document.body.appendChild(seed);
+           }"""
+    )
+
+
+@then("the avatar host keeps its own opacity while the seed ghosts")
+def step_host_not_resurrected(context):
+    got = context.page.evaluate(
+        """() => ({
+             host: getComputedStyle(document.querySelector('.lc-avatar-host')).opacity,
+             seed: getComputedStyle(document.querySelector('.lc-guide-seed')).opacity })"""
+    )
+    assert float(got["host"]) != 0.35, (
+        "the reel ghosted the avatar HOST — the hidden big face is resurrected: %r" % got
+    )
+    assert abs(float(got["seed"]) - 0.35) < 0.01, "the seed did not ghost: %r" % got

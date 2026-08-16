@@ -99,13 +99,30 @@ Feature: Reel mode — Instagram-style vertical snap between titles
     When I flick upward on neutral ground
     Then the reel scrolled to align a block under the bar
     And the reel advanced by about a screenful
+    When I remember the reel position
+    And I flick upward on neutral ground
+    And I flick downward on neutral ground
+    Then the reel is back at the remembered position
     When I drag slowly on neutral ground
     Then the reel did not move
-    When I flick upward on neutral ground
-    And I flick downward on neutral ground
-    Then the reel scrolled to align a block under the bar
     When I flick downward on neutral ground
     Then the reel is back at the top
+
+  Scenario: Fixed overlays are never blocks, and never ghost-resurrected
+    A docked avatar host rides the viewport (position fixed) — its rect
+    never crosses the fold, so it kept being elected "first unseen block":
+    the flick went nowhere (module first page, 2026-08-16). Its idle big
+    face hides via opacity 0 — a blanket ghosting rule resurrected it as
+    a giant translucent face over the lesson. Fixed children are not
+    blocks; only the pill and the little seed ghost.
+
+    When I navigate to "/components/block?reel=1"
+    And I wait for the page to be interactive
+    Then the page is in reel mode
+    When a fixed overlay sits inside the first section
+    And I flick upward on neutral ground
+    Then the reel scrolled to align a block under the bar
+    And the avatar host keeps its own opacity while the seed ghosts
 
   Scenario: A swipe over an interactive surface belongs to the surface
     A horizontal drag over a grid scrolls the table, over a canvas it pans

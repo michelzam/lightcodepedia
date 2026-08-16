@@ -31,13 +31,19 @@ on load.
    (Present/Reel hide themselves; X-ray, Edit and Guide remain) */
 .lc-embed-mode .lc-slides-fab { display: none !important; }
 /* in the reel, floating chrome must never HIDE ink (Michel, 2026-08-16:
-   the mode pill sat on a card's last lines) — ghosts until touched */
+   the mode pill sat on a card's last lines) — ghosts until touched.
+   ONLY the true chrome: the pill and the little guide SEED. Never the
+   avatar HOST — its idle big face hides via opacity:0, and a blanket
+   opacity rule RESURRECTED it as a giant ghost over the lesson
+   (Michel's snapshot, same day). A speaking avatar is a speaker, not
+   chrome: it keeps full ink or the tour is unreadable. */
 body.lc-reel-active .lc-slides-fab,
-body.lc-reel-active .lc-avatar-host.lc-avatar-docked { opacity: 0.35; }
+body.lc-reel-active .lc-guide-seed { opacity: 0.35; }
 body.lc-reel-active .lc-slides-fab:hover,
 body.lc-reel-active .lc-slides-fab:focus-visible,
 body.lc-reel-active .lc-slides-fab.lc-fab-expanded,
-body.lc-reel-active .lc-avatar-host.lc-avatar-docked:hover { opacity: 1; }
+body.lc-reel-active .lc-guide-seed:hover,
+body.lc-reel-active .lc-guide-seed:focus-visible { opacity: 1; }
 @media (max-width: 700px) { .lc-slides-fab { bottom: 0.8em; left: 0.8em; } }
 
 .lc-slide { display: block; }
@@ -617,6 +623,7 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       if (!hasDeck()) return;
       if (body.classList.contains('lc-slides-active')) exit();      // mutually exclusive
       body.classList.add('lc-reel-active');
+      _flickStack.length = 0;
       syncReelFab(true);
       try {
         var url = new URL(location.href); url.searchParams.set('reel', '1');
@@ -998,6 +1005,7 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
     function sectionGo(delta) {
       var i = currentReelIndex() + delta;
       if (i < 0 || i >= slides.length) return;
+      _flickStack.length = 0;              // a section jump starts a new reading path
       try { slides[i].scrollIntoView({ behavior: 'smooth', block: 'start' }); }
       catch (e) { slides[i].scrollIntoView(); }
       /* the bar follows the KEY, not the animation — a smooth scroll is
@@ -1013,7 +1021,14 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       slides.forEach(function (s) {
         if (s.offsetParent === null) return;           // prereq-hidden decks
         Array.prototype.forEach.call(s.children, function (c) {
-          if (c.offsetParent !== null && c.getBoundingClientRect().height > 0) out.push(c);
+          if (c.offsetParent === null || c.getBoundingClientRect().height <= 0) return;
+          /* a FIXED child (a docked avatar host, a floating trigger) rides
+             the viewport: its rect never crosses the fold, so the flick
+             kept electing it "first unseen block" and went nowhere
+             (module cover, 2026-08-16). Position in the page or not a block. */
+          var cs = getComputedStyle(c);
+          if (cs.position === 'fixed' || cs.position === 'sticky') return;
+          out.push(c);
         });
       });
       return out;
@@ -1080,6 +1095,23 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
        block above settles on the bottom edge. A block taller than the
        screen pages WITHIN itself, a bar's worth short of a full screen,
        so no line of it is ever skipped. */
+    /* BACK IS MEMORY, NOT ARITHMETIC (Michel, 2026-08-16: "still not the
+       same position as the way down"). Sections are min-height 100vh, so
+       the voids between blocks defeat any computed mirror — a forward
+       flick therefore REMEMBERS where it left, and the backward flick
+       returns exactly there. The computed mirror survives only as the
+       fallback for a back-flick with nothing on the stack. */
+    var _flickStack = [];
+    function reelPos(anchor) {
+      var sc = reelScrollerOf(anchor);
+      return sc ? sc.scrollTop : (window.scrollY || 0);
+    }
+    function reelPosTo(anchor, top) {
+      var sc = reelScrollerOf(anchor);
+      if (sc) { try { sc.scrollTo({ top: top, behavior: 'smooth' }); } catch (e) { sc.scrollTop = top; } }
+      else { try { window.scrollTo({ top: top, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, top); } }
+    }
+
     function screenGo(dir) {
       var blocks = reelBlocks();
       if (!blocks.length) return;
@@ -1087,6 +1119,11 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       var vt = reelViewTop(blocks[0]), vb = reelViewBottom(blocks[0]);
       var fold = vb - FOLD;                       // where "seen" honestly ends
       var stride = (vb - vt) - LINE - FOLD;       // one screenful, overlap included
+      if (dir < 0 && _flickStack.length) {
+        reelPosTo(blocks[0], _flickStack.pop());
+        return;
+      }
+      if (dir > 0) _flickStack.push(reelPos(blocks[0]));
       if (dir > 0) {
         for (i = 0; i < blocks.length; i++) {
           r = blocks[i].getBoundingClientRect();
