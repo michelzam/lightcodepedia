@@ -30,6 +30,14 @@ on load.
 /* even without a deck the FAB stays: it is the page-mode pill
    (Present/Reel hide themselves; X-ray, Edit and Guide remain) */
 .lc-embed-mode .lc-slides-fab { display: none !important; }
+/* in the reel, floating chrome must never HIDE ink (Michel, 2026-08-16:
+   the mode pill sat on a card's last lines) — ghosts until touched */
+body.lc-reel-active .lc-slides-fab,
+body.lc-reel-active .lc-avatar-host.lc-avatar-docked { opacity: 0.35; }
+body.lc-reel-active .lc-slides-fab:hover,
+body.lc-reel-active .lc-slides-fab:focus-visible,
+body.lc-reel-active .lc-slides-fab.lc-fab-expanded,
+body.lc-reel-active .lc-avatar-host.lc-avatar-docked:hover { opacity: 1; }
 @media (max-width: 700px) { .lc-slides-fab { bottom: 0.8em; left: 0.8em; } }
 
 .lc-slide { display: block; }
@@ -1016,6 +1024,11 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
        below it is "next", only one clearly above is "previous". Without the
        zone, ↓ kept re-choosing the block already under the bar. */
     var LINE = 64, TOL = 30;
+    /* the EFFECTIVE fold sits an overlay above the real one: the mode pill
+       and the avatar float over the last ~70px, so a block "fully visible"
+       by geometry can still be half-hidden ink — it must count as unseen,
+       or a flick skips exactly the lines the pill was covering */
+    var FOLD = 68;
     function blockGo(delta) {
       var blocks = reelBlocks();
       if (!blocks.length) return;
@@ -1071,33 +1084,43 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       var blocks = reelBlocks();
       if (!blocks.length) return;
       var i, r, cand = null;
+      var vt = reelViewTop(blocks[0]), vb = reelViewBottom(blocks[0]);
+      var fold = vb - FOLD;                       // where "seen" honestly ends
+      var stride = (vb - vt) - LINE - FOLD;       // one screenful, overlap included
       if (dir > 0) {
-        var bottom = null;
         for (i = 0; i < blocks.length; i++) {
           r = blocks[i].getBoundingClientRect();
-          bottom = bottom === null ? reelViewBottom(blocks[i]) : bottom;
-          if (r.bottom > bottom - 8) { cand = blocks[i]; break; }
+          if (r.bottom > fold) { cand = blocks[i]; break; }
         }
         if (!cand) return;
         r = cand.getBoundingClientRect();
-        var top = reelViewTop(cand);
-        if (r.top < top + LINE + TOL)                      // over-tall block: page inside it
-          reelScrollBy(cand, (reelViewBottom(cand) - top) - LINE - 40);
+        if (r.top < vt + LINE + TOL)              // over-tall block: page inside it
+          reelScrollBy(cand, stride);
         else
-          reelScrollBy(cand, r.top - top -
+          reelScrollBy(cand, r.top - vt -
                              (parseFloat(getComputedStyle(cand).scrollMarginTop) || 62));
       } else {
-        for (i = blocks.length - 1; i >= 0; i--) {
+        /* BACK is forward's mirror in construction, not in edge: step a
+           screenful up and land a block AT THE BAR. Bottom-aligning parked
+           the viewport over a short section's empty tail — a big white
+           nothing (Michel, 2026-08-16). Top-aligning cannot: there is
+           always a block at the line. */
+        var anchor = vb;                          // top of the block at/below the line
+        for (i = 0; i < blocks.length; i++) {
           r = blocks[i].getBoundingClientRect();
-          if (r.top < reelViewTop(blocks[i]) + LINE - 8) { cand = blocks[i]; break; }
+          if (r.top >= vt + LINE - TOL) { anchor = r.top; break; }
         }
-        if (!cand) return;
-        r = cand.getBoundingClientRect();
-        var vb = reelViewBottom(cand), vt = reelViewTop(cand);
-        if (r.bottom > vb - 8)                             // over-tall block: page up inside it
-          reelScrollBy(cand, -((vb - vt) - LINE - 40));
-        else
-          reelScrollBy(cand, r.bottom - (vb - 12));
+        var jEl = null, hasAbove = false;
+        for (i = 0; i < blocks.length; i++) {
+          r = blocks[i].getBoundingClientRect();
+          if (r.top >= vt + LINE - TOL) break;    // reached the line — done
+          hasAbove = true;
+          if (anchor - r.top <= stride + TOL) { jEl = blocks[i]; break; }
+        }
+        if (!hasAbove) return;                    // already at the top
+        if (!jEl) { reelScrollBy(blocks[0], -stride); return; }   // over-tall above: page within
+        reelScrollBy(jEl, jEl.getBoundingClientRect().top - vt -
+                          (parseFloat(getComputedStyle(jEl).scrollMarginTop) || 62));
       }
     }
 

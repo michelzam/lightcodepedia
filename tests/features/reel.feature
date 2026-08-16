@@ -101,6 +101,9 @@ Feature: Reel mode — Instagram-style vertical snap between titles
     And the reel advanced by about a screenful
     When I drag slowly on neutral ground
     Then the reel did not move
+    When I flick upward on neutral ground
+    And I flick downward on neutral ground
+    Then the reel scrolled to align a block under the bar
     When I flick downward on neutral ground
     Then the reel is back at the top
 
