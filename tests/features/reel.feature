@@ -83,11 +83,14 @@ Feature: Reel mode — Instagram-style vertical snap between titles
     When I press the up arrow
     Then the reel is back at the top
 
-  Scenario: A vertical flick pages one block; a slow drag reads freely
-    Velocity is the intent CSS cannot read (Michel, 2026-08-16: "Flick").
-    Fast at release = exactly one block lands under the bar. Slow at
-    release = a reading drag — the reel does nothing, and no block is a
-    CSS snap point anymore, so fine reading has zero speed bumps.
+  Scenario: A flick pages a screenful, landing the first cut-off block at the bar
+    Velocity is the intent CSS cannot read (Michel, 2026-08-16). Fast at
+    release = the next FULL SCREEN: the first block that was not 100%
+    visible comes up to the line, its cut-off sliver the natural
+    continuity — the learner reads a screen, flicks once, reads the next.
+    Slow at release = a reading drag — the reel does nothing, and no block
+    is a CSS snap point anymore, so fine reading has zero speed bumps.
+    Space is the flick for keyboards (Shift+Space back).
 
     When I navigate to "/components/block?reel=1"
     And I wait for the page to be interactive
@@ -95,9 +98,11 @@ Feature: Reel mode — Instagram-style vertical snap between titles
     And blocks are not CSS snap points
     When I flick upward on neutral ground
     Then the reel scrolled to align a block under the bar
-    And the reel is at section 1
+    And the reel advanced by about a screenful
     When I drag slowly on neutral ground
     Then the reel did not move
+    When I flick downward on neutral ground
+    Then the reel is back at the top
 
   Scenario: A swipe over an interactive surface belongs to the surface
     A horizontal drag over a grid scrolls the table, over a canvas it pans
