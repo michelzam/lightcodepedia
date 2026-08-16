@@ -1028,23 +1028,76 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
           if (blocks[j].getBoundingClientRect().top < LINE - TOL) { next = blocks[j]; break; }
       }
       if (!next) return;
-      /* scroll the reel's OWN scroller, not whatever scrollIntoView picks:
-         once blocks stopped being snap points, scrollIntoView started
-         choosing the document scroller (html took the 99px, main stayed
-         put) — deterministic beats clever here */
-      var sc = next.parentElement;
+      reelScrollBy(next, next.getBoundingClientRect().top - reelViewTop(next) -
+                         (parseFloat(getComputedStyle(next).scrollMarginTop) || 62));
+    }
+
+    /* scroll the reel's OWN scroller, not whatever scrollIntoView picks:
+       once blocks stopped being snap points, scrollIntoView started
+       choosing the document scroller (html took the 99px, main stayed
+       put) — deterministic beats clever here */
+    function reelScrollerOf(el) {
+      var sc = el.parentElement;
       while (sc && sc !== document.documentElement) {
         var cs = getComputedStyle(sc);
-        if (/(auto|scroll)/.test(cs.overflowY) && sc.scrollHeight > sc.clientHeight + 4) break;
+        if (/(auto|scroll)/.test(cs.overflowY) && sc.scrollHeight > sc.clientHeight + 4) return sc;
         sc = sc.parentElement;
       }
-      var margin = parseFloat(getComputedStyle(next).scrollMarginTop) || 62;
-      if (sc && sc !== document.documentElement) {
-        var delta = next.getBoundingClientRect().top - sc.getBoundingClientRect().top - margin;
-        try { sc.scrollBy({ top: delta, behavior: 'smooth' }); } catch (e) { sc.scrollTop += delta; }
+      return null;
+    }
+    function reelViewTop(el) {
+      var sc = reelScrollerOf(el);
+      return sc ? sc.getBoundingClientRect().top : 0;
+    }
+    function reelViewBottom(el) {
+      var sc = reelScrollerOf(el);
+      return sc ? sc.getBoundingClientRect().top + sc.clientHeight : window.innerHeight;
+    }
+    function reelScrollBy(anchor, delta) {
+      var sc = reelScrollerOf(anchor);
+      if (sc) { try { sc.scrollBy({ top: delta, behavior: 'smooth' }); } catch (e) { sc.scrollTop += delta; } }
+      else { try { window.scrollBy({ top: delta, behavior: 'smooth' }); } catch (e) { window.scrollBy(0, delta); } }
+    }
+
+    /* ── the flick's stride: a SCREENFUL, aligned to a block (Michel,
+       2026-08-16: "the learner reads a full screen, then only flicks once
+       for the next full screen"). Forward: the first block that is not
+       100% visible comes up to the line — its cut-off sliver is the
+       natural continuity. Back: the mirror — the last not-fully-visible
+       block above settles on the bottom edge. A block taller than the
+       screen pages WITHIN itself, a bar's worth short of a full screen,
+       so no line of it is ever skipped. */
+    function screenGo(dir) {
+      var blocks = reelBlocks();
+      if (!blocks.length) return;
+      var i, r, cand = null;
+      if (dir > 0) {
+        var bottom = null;
+        for (i = 0; i < blocks.length; i++) {
+          r = blocks[i].getBoundingClientRect();
+          bottom = bottom === null ? reelViewBottom(blocks[i]) : bottom;
+          if (r.bottom > bottom - 8) { cand = blocks[i]; break; }
+        }
+        if (!cand) return;
+        r = cand.getBoundingClientRect();
+        var top = reelViewTop(cand);
+        if (r.top < top + LINE + TOL)                      // over-tall block: page inside it
+          reelScrollBy(cand, (reelViewBottom(cand) - top) - LINE - 40);
+        else
+          reelScrollBy(cand, r.top - top -
+                             (parseFloat(getComputedStyle(cand).scrollMarginTop) || 62));
       } else {
-        try { next.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-        catch (e) { next.scrollIntoView(); }
+        for (i = blocks.length - 1; i >= 0; i--) {
+          r = blocks[i].getBoundingClientRect();
+          if (r.top < reelViewTop(blocks[i]) + LINE - 8) { cand = blocks[i]; break; }
+        }
+        if (!cand) return;
+        r = cand.getBoundingClientRect();
+        var vb = reelViewBottom(cand), vt = reelViewTop(cand);
+        if (r.bottom > vb - 8)                             // over-tall block: page up inside it
+          reelScrollBy(cand, -((vb - vt) - LINE - 40));
+        else
+          reelScrollBy(cand, r.bottom - (vb - 12));
       }
     }
 
@@ -1059,6 +1112,7 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.isContentEditable)) return;
       if (e.key === 'ArrowDown') { blockGo(1); e.preventDefault(); }
       else if (e.key === 'ArrowUp') { blockGo(-1); e.preventDefault(); }
+      else if (e.key === ' ') { screenGo(e.shiftKey ? -1 : 1); e.preventDefault(); }   // the flick, for keyboards
       else if (e.key === 'ArrowRight' || e.key === 'PageDown') { sectionGo(1); e.preventDefault(); }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { sectionGo(-1); e.preventDefault(); }
     });
@@ -1119,7 +1173,7 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       if (dt < 1) return;
       var v = (t1.clientY - base.y) / dt;          // px per ms, up = negative
       if (Math.abs(v) < 0.6) return;               // a drag, not a flick
-      blockGo(v < 0 ? 1 : -1);
+      screenGo(v < 0 ? 1 : -1);
     }, { capture: true, passive: true });
     /* browser Back exits the reel (consumes the entry pushed on enter) */
     window.addEventListener('popstate', function(){
