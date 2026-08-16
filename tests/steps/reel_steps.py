@@ -323,3 +323,34 @@ def step_reel_unmoved(context):
     assert blocks_aligned >= 1, (
         "the slow drag re-snapped or advanced the reel (scrollTop %s)" % top
     )
+
+
+@when("I flick downward on neutral ground")
+def step_flick_down(context):
+    _vgesture(context, [200, 300, 400, 500], 10)
+
+
+@then("the reel advanced by about a screenful")
+def step_screenful(context):
+    """The flick's stride is a screen, not a block: the first block now at
+    the line must be one that was NOT fully visible before the flick — on
+    this page, far more than one block down."""
+    ok = False
+    for _ in range(20):
+        ok = context.page.evaluate(
+            """() => {
+                 const H = window.innerHeight;
+                 const blocks = [...document.querySelectorAll('.lc-slide > *')];
+                 const at = blocks.find(b => Math.abs(b.getBoundingClientRect().top - 56) < 24);
+                 if (!at) return false;
+                 // everything before the landed block sits ABOVE the viewport
+                 // top area — i.e. we skipped the fully-visible screenful,
+                 // not just the first block
+                 const idx = blocks.indexOf(at);
+                 return idx >= 2 && blocks[0].getBoundingClientRect().bottom < 0;
+               }"""
+        )
+        if ok:
+            break
+        context.page.wait_for_timeout(150)
+    assert ok, "the flick advanced less than a screenful"
