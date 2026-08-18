@@ -849,7 +849,10 @@ Auto-included by docs/_layouts/default.html.
     }
 
     // Plain styled-link button (existing behaviour).
-    var style = el.getAttribute("style-variant") || "";
+    /* the component page documents `kind=` — the code only read the older
+       style-variant, so every kind="outline" silently rendered default
+       (module 05's 🏠 button, 2026-08-18). Both spellings work; kind wins. */
+    var style = el.getAttribute("kind") || el.getAttribute("style-variant") || "";
     a.classList.add("button");
     if (style) a.classList.add("button-" + style);
     el.classList.remove("button");
@@ -884,10 +887,18 @@ Auto-included by docs/_layouts/default.html.
   /* ── boot ────────────────────────────────────────────────────── */
   /* code_chrome.md (loaded first, via topbar) provides the scan registry. */
 
+  /* the inline form — [x](y){: .button kind="…" } — tags the <a> itself,
+     so the paragraph upgrader above never sees it; map the knob here too */
+  function upgradeButtonLink(a) {
+    var k = a.getAttribute("kind") || a.getAttribute("style-variant") || "";
+    if (k) a.classList.add("button-" + k);
+  }
+
   if (window.lcRegisterUpgrader) {
     window.lcRegisterUpgrader(".highlighter-rouge.run, pre.run", upgradeRun);
     window.lcRegisterUpgrader(".highlighter-rouge.repl, pre.repl", upgradeRepl);
     window.lcRegisterUpgrader("p.button", upgradeButton);
+    window.lcRegisterUpgrader("a.button[kind], a.button[style-variant]", upgradeButtonLink);
   }
 
 })();

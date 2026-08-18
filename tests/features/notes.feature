@@ -226,3 +226,15 @@ Feature: 💬 The reader's margin — one note per block, kept and versioned in 
     And I wait for the page to be interactive
     And the page enters X-ray mode
     Then the lost margin lists "The thinking I do not want to lose."
+
+  Scenario: An absent margin is never asked for blindly
+    Every page load read the margin file just in case, and the 404 for
+    the note nobody wrote yet landed in the console of every demo
+    (Michel, 2026-08-18). The bench's tree already says what exists —
+    ask it once, quietly.
+
+    Given a connected bench whose "courses/demo/mod/__lesson.notes.md" does not exist yet
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    And the page flips into x-ray
+    Then no read was issued for any notes file

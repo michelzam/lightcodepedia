@@ -477,7 +477,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
     _notes = null;
     var t = window.lcBench && window.lcBench.target ? window.lcBench.target(fromEl) : null;
     if (!t || !t.repo || !t.pat) return Promise.resolve(null);
-    return window.lcBench.read(p.file, fromEl).then(function (f) {
+    return window.lcBench.peek(p.file, fromEl).then(function (f) {
       if (f && f.text) return { text: f.text, sha: f.sha };
       /* nothing under the dunder name: adopt a pre-dunder margin's content so
          renaming the convention never loses a note somebody wrote. The sha
@@ -485,7 +485,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
          file's sha for a new path is rejected, and the first save must CREATE
          the new file. The old one is left where it is: git keeps it, and the
          publish gate excludes both names. */
-      return window.lcBench.read(p.legacy, fromEl).then(function (old) {
+      return window.lcBench.peek(p.legacy, fromEl).then(function (old) {
         return { text: old ? old.text : "", sha: f ? f.sha : null };
       }, function () { return { text: "", sha: f ? f.sha : null }; });
     }).then(function (r) {
@@ -890,6 +890,38 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
       });
       return out.join("/");
     },
+    /* peek: read a file that MAY WELL not exist — notes margins, progress —
+       without the 404 a blind read logs to the console on every page
+       (Michel, 2026-08-18: errors during the pipes demo). One tree fetch
+       per repo answers existence for everything; write() adds new paths to
+       the cache so read-after-write stays truthful. Only for optional
+       files: read() itself stays untouched. */
+    _trees: {},
+    _treeHas: function (t, path) {
+      var self = this;
+      if (!this._trees[t.repo]) {
+        this._trees[t.repo] = fetch("https://api.github.com/repos/" + t.repo
+            + "/git/trees/HEAD?recursive=1",
+          { headers: { Authorization: "Bearer " + t.pat, Accept: "application/vnd.github+json" } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            var s = {};
+            ((j && j.tree) || []).forEach(function (n) { s[n.path] = 1; });
+            /* an unreadable or truncated tree must not hide real files —
+               null means "cannot say", and peek falls back to read */
+            return (j && !j.truncated) ? s : null;
+          }).catch(function () { return null; });
+      }
+      return this._trees[t.repo].then(function (s) { return s ? !!s[path] : true; });
+    },
+    peek: function (path, fromEl) {    /* → {text, sha} | null, quietly */
+      var t = this.target(fromEl), self = this;
+      if (!t.repo || !t.pat) return Promise.resolve(null);
+      var p = this.resolve(path, fromEl);
+      return this._treeHas(t, p).then(function (has) {
+        return has ? self.read(path, fromEl) : null;
+      });
+    },
     read: function (path, fromEl) {    /* → {text, sha} | null (no file yet) */
       var t = this.target(fromEl);
       path = this.resolve(path, fromEl);
@@ -976,6 +1008,10 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
                intentional write — the progress record does — listens here,
                so nothing needs a timer of its own. */
             try { document.dispatchEvent(new CustomEvent("lc-bench-write", { detail: { path: path } })); } catch (e) {}
+            /* a file just created exists: teach the peek cache, so
+               read-after-write never trusts a stale tree */
+            if (self._trees[t.repo]) self._trees[t.repo] = self._trees[t.repo]
+              .then(function (s) { if (s) s[path] = 1; return s; });
             return (j.content && j.content.sha) || "";
           });
         });

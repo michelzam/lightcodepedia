@@ -1,0 +1,9 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>frame host</title>
+<!-- The Canvas shape: a TALL iframe whose own window never scrolls — the
+     parent page does. Used by the runner's here-link test: a click inside
+     the frame must scroll the PARENT back to the frame's top. -->
+<div id="above" style="height:1200px">filler above the frame</div>
+<iframe id="lesson" src="/run.html?focus=1#src=/run_samples/here.md"
+        style="width:100%;height:1600px;border:0"></iframe>

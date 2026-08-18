@@ -102,7 +102,9 @@ The walk follows the verb's **subject**: with `do: open, with: "Why"` the
 avatar stands at that section's own title — not the whole accordion.
 
 Verbs are **presentation only** — fold/unfold (`open`/`close`), page modes
-(`present`/`reel`/`read`), and `select` (a datagrid row matching `with:` —
+(`present`/`reel`/`read`, and `xray` to light the pipes between datasources
+and grids — `with:` seconds returns to read on its own, so a lesson can
+flash the wiring and walk on), and `select` (a datagrid row matching `with:` —
 the grid's own selection, so bound forms follow; the avatar stands at the
 row). Form *fields* need no verb: `at:` already reaches them by id. Content, edits and
 quiz answers have no verb, by doctrine: the tutor shows, never does.

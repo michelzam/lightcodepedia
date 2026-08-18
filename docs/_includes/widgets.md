@@ -249,6 +249,29 @@ Auto-included by docs/_layouts/default.html.
       if (window.lcMode) { window.lcMode.set(m); return true; } return false;
     });
   });
+  /* xray is a mode too, but as a verb it is a pointing gesture, not a
+     toggle: a second call while the pipes are up must hold them up (a bare
+     set() would flip back to read). With seconds in `with:` the page comes
+     home to read on its own, so a tour can flash the wiring from the
+     datasources to the grids and walk on with nothing left switched on. */
+  var _lcXrayBack;
+  window.lcVerbs.register("xray", function (el, arg) {
+    if (!window.lcMode) return false;
+    if (window.lcMode.current() !== "xray") window.lcMode.set("xray");
+    if (window.lcMode.current() !== "xray") return false;   /* engine absent, or exit vetoed */
+    /* the mode is a lens — it paints nothing until asked. A tour has no
+       pointer to ask with, so draw the pipelines scene ourselves: the given
+       subject, or the first wired component on the page. */
+    if (window.lcxReveal) window.lcxReveal(el);
+    var s = parseFloat(arg);
+    clearTimeout(_lcXrayBack);
+    if (s > 0) _lcXrayBack = setTimeout(function () {
+      if (window.lcMode.current() === "xray") window.lcMode.set("read");
+    }, Math.min(s, 120) * 1000);
+    return true;
+  }, function (el) {
+    return (window.lcxSubject && window.lcxSubject(el || null)) || null;
+  });
 
   function upgradeCarousel(el) {
     var items = Array.from(el.querySelectorAll("li")).map(function(li){ return li.innerHTML; });

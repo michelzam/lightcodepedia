@@ -8,6 +8,30 @@ def step_open_runner(context, src):
     context.page.goto(context.base_url + "/run#src=" + src, wait_until="domcontentloaded")
 
 
+@when("I open the frame host page scrolled past the lesson's top")
+def step_open_frame_host(context):
+    context.page.goto(context.base_url + "/run_samples/host.html",
+                      wait_until="domcontentloaded")
+    frame = context.page.frame_locator("#lesson")
+    frame.locator('a:has-text("Back to this page")').wait_for(timeout=15_000)
+    # the reader is deep in the lesson: the frame's top is well above the fold
+    context.page.evaluate("window.scrollTo(0, 1800)")
+    context.page.wait_for_timeout(200)
+
+
+@when('I click the framed runner link "{label}"')
+def step_click_framed_link(context, label):
+    context.page.frame_locator("#lesson").locator(
+        'a:has-text("%s")' % label).click()
+
+
+@then("the host page is scrolled back to the lesson's top")
+def step_host_at_frame_top(context):
+    # the frame sits at y=1200 (the filler above it); smooth scroll settles there
+    context.page.wait_for_function(
+        "() => window.scrollY <= 1250", timeout=5_000)
+
+
 @when("I wait for the runner to render")
 def step_wait_render(context):
     # the status note hides when the render pipeline completes
@@ -303,6 +327,13 @@ def step_no_stale_snapshot(context, text):
         text,
     )
     assert not stale, "ids still holding the previous page's source: %r" % stale
+
+
+@when('I click the runner link "{label}"')
+def step_click_runner_link(context, label):
+    context.page.click('a:has-text("%s")' % label)
+    # the here-link scrolls smoothly — let the gesture finish before asserting
+    context.page.wait_for_function("() => window.scrollY === 0", timeout=5_000)
 
 
 @when("I scroll the runner to the bottom")

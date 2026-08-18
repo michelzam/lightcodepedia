@@ -273,8 +273,8 @@ Auto-included by docs/_layouts/default.html.
       }
       return d + " L" + tx + "," + ty;
     }
-    function pipe(sx, sy, tx, ty) {
-      const d = routePath(sx, sy, tx, ty, 12), cap = "round";
+    function pipeD(d, sx, sy, tx, ty) {
+      const cap = "round";
       svgEl("path", { d, fill: "none", stroke: "#14303f", "stroke-width": 10,
         "stroke-linecap": cap, "stroke-linejoin": cap, filter: "url(#lcxGlow)" });
       svgEl("path", { d, fill: "none", stroke: "#3f8fd6", "stroke-width": 6,
@@ -283,6 +283,20 @@ Auto-included by docs/_layouts/default.html.
         "stroke-linecap": "round", "stroke-dasharray": "0.01 19" });
       flow.classList.add("lcx-flow");
       flange(sx, sy); flange(tx, ty);
+    }
+    function pipe(sx, sy, tx, ty) {
+      pipeD(routePath(sx, sy, tx, ty, 12), sx, sy, tx, ty);
+    }
+    /* a docked source's pipe: straight DOWN its own column, one rounded
+       elbow, then across into the user's right edge — the reading order of
+       the scene (source above, user below) drawn literally, and drops that
+       never cross each other (Michel, 2026-08-18) */
+    function dropPipe(sx, sy, tx, ty) {
+      const r = Math.min(14, Math.abs(ty - sy) / 2, Math.abs(tx - sx) / 2),
+            dirX = tx >= sx ? 1 : -1;
+      pipeD("M" + sx + "," + sy + " L" + sx + "," + (ty - r) +
+            " Q" + sx + "," + ty + " " + (sx + dirX * r) + "," + ty +
+            " L" + tx + "," + ty, sx, sy, tx, ty);
     }
     function flange(x, y) {
       svgEl("circle", { cx: x, cy: y, r: 7, fill: "#14303f" });
@@ -336,7 +350,18 @@ Auto-included by docs/_layouts/default.html.
          first thing a wiring lesson asks for, and it must not need ⇧ */
       p0.innerHTML = schematic(hit.name, data, badLinks(data));
       p0.classList.toggle("see", shift);
-      place(p0, rect.left + OFF, rect.top + OFF);
+      /* 👻 a ghost sits on its component's top-RIGHT corner: the ink below
+         is left-justified, so the right side is the quiet side (Michel,
+         2026-08-18). The plain lens keeps the left anchor — its aperture
+         clip is computed from that corner. */
+      const placeGhost = (p, tr) => {
+        p.style.display = "block";
+        place(p, Math.max(8, tr.right - p.offsetWidth - OFF), tr.top + OFF);
+      };
+      const haunt = p => { const t = p.querySelector(".t");
+        if (t && t.textContent.indexOf("👻") < 0) t.textContent = "👻 " + t.textContent; };
+      if (shift) { placeGhost(p0, rect); haunt(p0); }
+      else place(p0, rect.left + OFF, rect.top + OFF);
       if (!shift) { svg.style.display = "none"; return; }   // lens mode: clip applied later
       svg.style.display = "block";
       // ── connected subgraph: transitive closure over the typed associations,
@@ -387,20 +412,40 @@ Auto-included by docs/_layouts/default.html.
           });
         });
       }
-      let pi = 0, gi = 0;
+      let pi = 0;
+      const docked = [];
       nodes.forEach(n => {
         if (n === root) { n.panel = p0; return; }
         const p = panel(++pi);
         p.innerHTML = schematic(n.name, n.dump, badLinks(n.dump));
         p.classList.add("see");
+        haunt(p);
         if (n.el && visible(n.el)) {
           const tr = n.el.getBoundingClientRect();
-          place(p, tr.left + OFF, tr.top + OFF);
-        } else {                                            // hidden object → its own panel
-          place(p, rect.right + 70, rect.top + gi * 104); gi++;
-        }
+          placeGhost(p, tr);
+        } else docked.push(n);   /* page-invisible (a dataset) → docked below */
         n.panel = p;
       });
+      /* invisible sources dock ABOVE their users on the right margin — high
+         enough that every drop pipe is long enough to carry its label, one
+         column so the drops never collapse into each other (Michel,
+         2026-08-18: "sources above the components who are using them") */
+      if (docked.length) {
+        let yTop = Infinity;
+        nodes.forEach(n => {
+          if (n.panel && docked.indexOf(n) < 0 && n.panel.style.display === "block")
+            yTop = Math.min(yTop, n.panel.offsetTop);
+        });
+        if (!isFinite(yTop)) yTop = rect.top;
+        const mx = window.innerWidth - 16;
+        let y = yTop;
+        docked.forEach(n => {
+          const p = n.panel; p.style.display = "block";
+          y -= p.offsetHeight + 90;            /* 90px of clear drop = label room */
+          place(p, Math.max(8, mx - p.offsetWidth), Math.max(8, y));
+          n.docked = true;
+        });
+      }
       // ── de-overlap: separate each panel from already-placed ones along the
       //    axis of least penetration — a would-be vertical pile of a hub's
       //    panels spreads sideways into a row instead of one cramped column,
@@ -428,6 +473,18 @@ Auto-included by docs/_layouts/default.html.
       });
       edges.forEach(eg => {
         const r0 = eg.a.panel.getBoundingClientRect(), r1 = eg.b.panel.getBoundingClientRect();
+        const dockN = eg.b.docked ? eg.b : (eg.a.docked ? eg.a : null);
+        if (dockN) {
+          /* docked source → down its own column, one elbow, into the user's
+             right edge; the label rides the vertical run where nothing
+             covers it */
+          const D = dockN === eg.a ? r0 : r1, T = dockN === eg.a ? r1 : r0;
+          const sx = D.left + D.width / 2, sy = D.bottom,
+                tx = T.right, ty = T.top + Math.min(T.height / 2, 44);
+          dropPipe(sx, sy, tx, ty);
+          plabel(sx, sy + Math.max(24, (ty - sy) * 0.45), (eg.list ? "⦙ " : "") + disp(eg.role));
+          return;
+        }
         const e0 = edgePoint(r0, center(r1).x, center(r1).y);
         const e1 = edgePoint(r1, center(r0).x, center(r0).y);
         pipe(e0.x, e0.y, e1.x, e1.y);
@@ -460,9 +517,47 @@ Auto-included by docs/_layouts/default.html.
       update(hit, { x: e.clientX, y: e.clientY }, e.shiftKey);
     }
 
-    addEventListener("pointermove", e => { e.altKey ? show(e) : hideAll(); }, true);
-    addEventListener("keyup", e => { if (e.key === "Alt" || !e.altKey) hideAll(); });
+    /* while a tour HOLDS the reveal (lcxReveal below), a bare mouse move must
+       not wipe the scene — without this guard the pipes died on the first
+       pixel of pointer travel, so "show the pipes" showed nothing (2026-08-18) */
+    let _hold = false;
+    addEventListener("pointermove", e => { if (e.altKey) show(e); else if (!_hold) hideAll(); }, true);
+    addEventListener("keyup", e => { if ((e.key === "Alt" || !e.altKey) && !_hold) hideAll(); });
     addEventListener("blur", hideAll);
+
+    // ── Scripted reveal — the xray VERB's door (widgets.md) ──────────────────
+    /* Resolve a subject the way the lens does, but from an ELEMENT instead of
+       a pointer: the element itself, an ancestor, or — given nothing — the
+       first visible wired component on the page. */
+    function findSubject(el) {
+      let n = el;
+      while (n && n !== document.body) {
+        if (n.classList) for (const [token, name] of WRAP)
+          if (n.classList.contains(token)) return { el: n, name };
+        n = n.parentElement;
+      }
+      for (const [token, name] of WRAP) {
+        const all = document.querySelectorAll("." + token);
+        for (const cand of all) {
+          const r = cand.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) return { el: cand, name };
+        }
+      }
+      return null;
+    }
+    window.lcxSubject = el => { const h = findSubject(el || null); return h ? h.el : null; };
+    /* The full pipelines scene, unprompted — exactly what a two-finger touch
+       on the component would draw, held until the mode exits. */
+    window.lcxReveal = function (el) {
+      const hit = findSubject(el || null);
+      if (!hit) return false;
+      try { hit.el.scrollIntoView({ block: "center" }); } catch (e) {}
+      loadMP();
+      _hold = true;
+      const r = hit.el.getBoundingClientRect();
+      update(hit, { x: r.left + r.width / 2, y: r.top + r.height / 2 }, true);
+      return true;
+    };
 
     // ── Touch x-ray mode (toggled from the slides FAB popup on touch devices) ──
     let _touchOn = false;
@@ -480,14 +575,14 @@ Auto-included by docs/_layouts/default.html.
           "z-index:10010;box-shadow:0 4px 16px rgba(0,0,0,0.25);transition:opacity 0.4s;white-space:nowrap";
         document.body.appendChild(_touchToast);
       }
-      _touchToast.textContent = "🔬 Touch a part: one finger = lens · two fingers = pipelines";
+      _touchToast.textContent = "🔬 Touch a part: one finger = its ghost 👻 · two fingers = pipelines";
       _touchToast.style.opacity = "1";
       _touchToast.style.display = "";
       clearTimeout(_touchToastT);
       _touchToastT = setTimeout(() => { if (_touchToast) _touchToast.style.opacity = "0"; }, 4500);
     }
     window.lcxTouchOn   = () => { _touchOn = true;  loadMP(); touchHint(); };
-    window.lcxTouchOff  = () => { _touchOn = false; hideAll(); };
+    window.lcxTouchOff  = () => { _touchOn = false; _hold = false; hideAll(); };
 
     // Let taps on the FAB, the popup, and the inline editor (dialog + gear)
     // through untouched — preventDefault here would block the editor's fields

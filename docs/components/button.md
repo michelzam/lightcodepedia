@@ -29,6 +29,16 @@ Feature: A link becomes a styled button
     for want in ["Get started", "Learn more", "Done", "Delete", "Outline"]:
         assert any(want in t for t in self.labels), (want, self.labels)
     :::
+
+  Scenario: The kind knob picks the variant, not just the default blue
+    Given the variant demos above
+    :::python
+    self.variants: list = Object._all(".button-outline") + Object._all(".button-secondary")
+    :::
+    Then each wears the class its kind names
+    :::python
+    assert len(self.variants) >= 2, "kind= left the demo buttons default"
+    :::
 ```
 {: .feature tags="ui" status="passing" }
 

@@ -35,6 +35,31 @@ Feature: The authored guide owns its page — the generic one yields
     And the verb "open" targets the "started" section title as its subject
     And the verb "present" enters present mode
 
+  Scenario: The xray verb lights the pipes for a beat, then hands the page back
+    "Show the pipes going from datasources to grids for a few seconds while
+    walking through a lesson" (Michel, 2026-08-18). The verb must hold, not
+    toggle, when a later line calls it again — with seconds it comes home
+    to read by itself, leaving nothing switched on.
+
+    Given I have a clean browser page
+    When I navigate to "/components/accordion"
+    And I wait for the page to be interactive
+    Then the verb "xray" turns the pipes on and stays on when asked again
+    And the verb "xray" with seconds returns the page to read by itself
+
+  Scenario: The xray verb draws the pipes itself — no pointer, no fingers
+    "Tested, but I see NOTHING behind the scene: no ghosts, no pipes!"
+    (Michel, 2026-08-18). The mode is a lens that paints only under a
+    pointer, and a bare mouse move even wiped what was there — so the verb
+    must draw the pipelines scene itself and hold it against pointer noise.
+
+    Given I have a clean browser page
+    When I navigate to "/components/dataset"
+    And I wait for the page to be interactive
+    Then the verb "xray" reveals the wiring scene and it survives a mouse move
+    And the docked source ghost floats above the ghosts that use it
+    And the verb "read" folds the wiring scene away
+
   Scenario: The select verb picks a datagrid row through the grid's own API
     Given I have a clean browser page
     When I navigate to "/components/accordion"

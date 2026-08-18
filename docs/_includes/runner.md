@@ -93,6 +93,30 @@ files a learner is already working in.
     return m ? m[1] : "";
   }
 
+  /* A link that names the source ALREADY on screen: unframed, the browser
+     quietly scrolls to top — but inside a teacher's FRAME the topbar's
+     scope-carry rewrites the click into an assignment of the identical URL,
+     a true no-op with the native scroll already prevented. So the learner's
+     "🏠 Back to the lesson" bookmark was dead exactly where they first
+     press it — the lesson's own bench slot in Canvas (Emmanuel,
+     2026-08-18). Capture + stopPropagation runs before that rewrite, and
+     delegation covers anchors bench slots paint long after render(). */
+  var _pageSrc = "";
+  document.addEventListener("click", function (ev) {
+    if (ev.button || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+    var a = ev.target && ev.target.closest ? ev.target.closest('a[href*="#src="]') : null;
+    if (!a) return;
+    var t = (a.getAttribute("href") || "").split("#src=")[1] || "";
+    try { t = decodeURIComponent(t); } catch (e) {}
+    if (!t || (t !== _pageSrc && t !== hashSrc())) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    /* scrollIntoView, not scrollTo: in Canvas the lesson iframe is TALL —
+       its own window never scrolls, the PARENT does, and only
+       scrollIntoView propagates across the frame boundary */
+    document.body.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, true);
+
   /* Resolve a src to a {url, headers, gh} fetch spec.
        gh:owner/repo/path[@ref]        → GitHub API (works on PRIVATE repos with a PAT)
        raw.githubusercontent.com/…     → same, via the API, when a PAT is connected
@@ -324,6 +348,7 @@ files a learner is already working in.
       return;
     }
     var src = fixedSrc || hashSrc();
+    if (bar) _pageSrc = src;   /* the page-level runner: what "here" means */
     if (!src) {
       status.style.display = ""; status.textContent = "No source. Open with #src=<url to markdown>."; root.innerHTML = "";
       if (bar) { bar.style.display = "none"; pageTitle(bar.parentNode, false); }

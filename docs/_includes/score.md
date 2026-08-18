@@ -31,17 +31,23 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
 .lc-score-popover .lc-score-reset { margin-top: 0.7em; width: 100%; background: #fff8e1; border: 1px solid #f0c97a; color: #b45309; border-radius: 6px; padding: 0.45em 0.6em; cursor: pointer; font-size: 0.82em; font-weight: 600; font-family: inherit; }
 .lc-score-popover .lc-score-reset:hover { background: #fdecc8; border-color: #b45309; }
 @media (max-width: 700px) { .lc-score-popover { right: 0.8em; top: 100px; } body.lc-slides-active .lc-score-popover { top: 3em; } }
-/* a score remembered from a previous visit (no live answers yet this session) */
-.lc-score-fab.lc-score-remembered { opacity: 0.9; }
+/* a score remembered from a previous visit (no live answers yet this session):
+   only the decorative trophy dims — fading the whole fab blended the #b45309
+   label to 4.21:1 on white, the a11y ratchet's red of 2026-08-15 */
+.lc-score-fab.lc-score-remembered .lc-score-fab-icon { opacity: 0.75; }
 /* per-page score tag in the corner of a card that links to that page */
 .lc-card { position: relative; }
 .lc-card-score { position: absolute; top: 8px; right: 8px; z-index: 1;
   font: 600 0.72em/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-  padding: 0.12em 0.5em; border-radius: 999px; background: #eef2f7; color: #64748b;
+  /* #64748b measured 4.23:1 on this background — the same slate that failed
+     on the title pills (2026-08-13); #475569 reads the same and passes 6.7:1 */
+  padding: 0.12em 0.5em; border-radius: 999px; background: #eef2f7; color: #475569;
   pointer-events: none; }
 .lc-card-score.partial { background: #fef9c3; color: #854d0e; }
 .lc-card-score.full { background: #dcfce7; color: #166534; }
-.lc-card-score.lc-card-unstarted { background: #f1f5f9; color: #94a3b8; }
+/* lighter than the answered chip, but #94a3b8 was 2.34:1 — waiting to go red
+   the day an unstarted card lands on a scanned page */
+.lc-card-score.lc-card-unstarted { background: #f1f5f9; color: #5d6b80; }
 /* gray "remaining" = quizzes on the page you have not answered yet */
 .lc-score-fab-remaining { color: var(--lc-ink-mute, #616161); font-weight: 600; }
 .lc-score-fab-remaining:empty { display: none; }

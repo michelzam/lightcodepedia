@@ -182,8 +182,8 @@ Auto-included by docs/_layouts/default.html.
     if (!t.repo || !t.pat) return Promise.resolve(false);
     /* one migration, no ceremony: a bench written before the rename still
        has the old name — read it once, and the next flush lands the dunder */
-    return window.lcBench.read(FILE, document.body).then(function (f) {
-      return f ? f : window.lcBench.read(WAS, document.body).then(function (old) {
+    return window.lcBench.peek(FILE, document.body).then(function (f) {
+      return f ? f : window.lcBench.peek(WAS, document.body).then(function (old) {
         return old ? { text: old.text, sha: null } : null;
       });
     }).then(function (f) {
@@ -211,7 +211,7 @@ Auto-included by docs/_layouts/default.html.
     lastWritten = fingerprint;
     /* re-read before writing: the other device may have moved since load,
        and merging what is there is the whole reason this needs no locking */
-    return window.lcBench.read(FILE, document.body).then(function (f) {
+    return window.lcBench.peek(FILE, document.body).then(function (f) {
       var base = f ? parse(f.text).map : {};
       if (f) sha = f.sha;
       var text = serialise(merge(base, mine));

@@ -425,6 +425,73 @@ def step_verb_present(context):
         "() => document.body.classList.contains('lc-slides-active')", timeout=5_000)
 
 
+@then('the verb "xray" turns the pipes on and stays on when asked again')
+def step_verb_xray(context):
+    ok = context.page.evaluate("window.lcVerbs.act('xray')")
+    assert ok, "the xray verb reported failure"
+    context.page.wait_for_function(
+        "() => window.lcMode.current() === 'xray'", timeout=5_000)
+    # a tour line calling it again must hold the pipes up, not flip them off
+    context.page.evaluate("window.lcVerbs.act('xray')")
+    mode = context.page.evaluate("window.lcMode.current()")
+    assert mode == "xray", f"a second call toggled the pipes off: {mode!r}"
+
+
+@then('the verb "xray" reveals the wiring scene and it survives a mouse move')
+def step_verb_xray_reveals(context):
+    ok = context.page.evaluate("window.lcVerbs.act('xray')")
+    assert ok, "the xray verb reported failure"
+    context.page.wait_for_function(
+        "() => { const s = document.getElementById('lcx-scene');"
+        "        return s && s.style.display === 'block'"
+        "            && s.querySelectorAll('svg .lcx-pipe, svg path, svg line').length > 0; }",
+        timeout=10_000)
+    # a bare mouse move used to wipe the scene — the tour's hold must survive it
+    context.page.mouse.move(10, 10)
+    context.page.wait_for_timeout(300)
+    shown = context.page.evaluate(
+        "() => document.getElementById('lcx-scene').style.display")
+    assert shown == "block", f"a mouse move wiped the verb's scene: {shown!r}"
+
+
+@then("the docked source ghost floats above the ghosts that use it")
+def step_ghost_source_above(context):
+    # the 👻 layout contract: an invisible source (a dataset) docks on the
+    # right margin ABOVE every component that reads it, so its drop pipes
+    # run down-then-left and never cross (Michel, 2026-08-18)
+    got = context.page.evaluate(
+        "() => { const ps = [...document.querySelectorAll('.lcx-xray')]"
+        "          .filter(p => p.style.display === 'block');"
+        "        const t = p => ((p.querySelector('.t')||{}).textContent || '');"
+        "        const src = ps.find(p => t(p).includes('Dataset'));"
+        "        const users = ps.filter(p => p !== src);"
+        "        if (!src || !users.length) return null;"
+        "        return { srcBottom: src.offsetTop + src.offsetHeight,"
+        "                 userTop: Math.min(...users.map(u => u.offsetTop)),"
+        "                 haunted: t(src).includes('👻') }; }")
+    assert got, "no dataset ghost in the scene"
+    assert got["haunted"], "the source panel lost its 👻"
+    assert got["srcBottom"] <= got["userTop"], \
+        "source ghost not above its users: %r" % got
+
+
+@then('the verb "read" folds the wiring scene away')
+def step_verb_read_folds(context):
+    context.page.evaluate("window.lcVerbs.act('read')")
+    context.page.wait_for_function(
+        "() => { const s = document.getElementById('lcx-scene');"
+        "        return !s || s.style.display !== 'block'; }", timeout=5_000)
+
+
+@then('the verb "xray" with seconds returns the page to read by itself')
+def step_verb_xray_timed(context):
+    context.page.evaluate("window.lcVerbs.act('xray', null, '0.4')")
+    context.page.wait_for_function(
+        "() => window.lcMode.current() === 'xray'", timeout=5_000)
+    context.page.wait_for_function(
+        "() => window.lcMode.current() === 'read'", timeout=5_000)
+
+
 @then('the verb "open" targets the "{title}" section title as its subject')
 def step_verb_subject(context, title):
     got = context.page.evaluate(

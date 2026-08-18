@@ -160,6 +160,18 @@ Feature: The instant runner (RT) — Phase A parity
     Then the runner is scrolled to the top
     And the runner shows a heading "RT probe page"
 
+  Scenario: In a Canvas-shaped frame, a link to the page on screen reaches its top
+    Unframed, the browser quietly handles a self-link. In Canvas the
+    lesson iframe is TALL — its own window never scrolls, the parent
+    does — so the click's only effect was invisible and the learner's
+    "🏠 Back to the lesson" bookmark was a dead button exactly where
+    they first press it (Emmanuel, 2026-08-18). Only scrollIntoView
+    crosses the frame boundary; the runner must use it.
+
+    When I open the frame host page scrolled past the lesson's top
+    And I click the framed runner link "Back to this page"
+    Then the host page is scrolled back to the lesson's top
+
   Scenario: Re-rendering the same page keeps the reader's place
     A save, a refresh or a repeated hash must not throw the reader back
     to the top of what they were already reading.

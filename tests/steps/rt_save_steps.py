@@ -52,7 +52,14 @@ def _stub_bench(context, files):
         else:
             route.fallback()
 
+    def bench_tree(route, req):
+        # the tree answers "what exists" so optional files (margins,
+        # progress) are never read blindly — see lcBench.peek
+        tree = [{"path": p, "type": "blob", "sha": "x" * 40} for p in files]
+        route.fulfill(json={"sha": "HEAD", "tree": tree, "truncated": False})
+
     context.page.route("https://api.github.com/repos/" + BENCH + "/contents/**", bench)
+    context.page.route("https://api.github.com/repos/" + BENCH + "/git/trees/**", bench_tree)
     context.page.route("https://api.github.com/repos/acme/demo-vault/contents/**", author_put)
     context.page.add_init_script(
         "localStorage.setItem('lc_ed_pat', 'ghp_stub');"
@@ -75,6 +82,21 @@ def step_bench_with_doc(context, path):
     """Same, with the file's body in a docstring — a page in their space can
     be several lines and carry components of its own."""
     _stub_bench(context, {path: context.text})
+
+
+@when("the page flips into x-ray")
+def step_flip_xray(context):
+    # the margin loads on mode change — the moment the 404s used to fire
+    context.page.evaluate("window.lcMode && window.lcMode.set('xray')")
+    context.page.wait_for_function(
+        "() => window.lcMode && window.lcMode.current() === 'xray'", timeout=5_000)
+
+
+@then("no read was issued for any notes file")
+def step_no_blind_notes_read(context):
+    context.page.wait_for_timeout(1500)   # give the margin loader its beat
+    hits = [p for p in context.bench_reads if ".notes.md" in p]
+    assert not hits, "blind margin reads: %r" % hits
 
 
 @then("the pad shows the author's starter")
