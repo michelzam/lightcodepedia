@@ -290,13 +290,16 @@ Auto-included by docs/_layouts/default.html.
     /* a docked source's pipe: straight DOWN its own column, one rounded
        elbow, then across into the user's right edge — the reading order of
        the scene (source above, user below) drawn literally, and drops that
-       never cross each other (Michel, 2026-08-18) */
+       never cross each other (Michel, 2026-08-18). The path is written
+       CONSUMER-first: the dash animation marches toward the path start, so
+       the fluid visibly runs downstream, source into user — the same
+       direction every other pipe already flows. */
     function dropPipe(sx, sy, tx, ty) {
       const r = Math.min(14, Math.abs(ty - sy) / 2, Math.abs(tx - sx) / 2),
             dirX = tx >= sx ? 1 : -1;
-      pipeD("M" + sx + "," + sy + " L" + sx + "," + (ty - r) +
-            " Q" + sx + "," + ty + " " + (sx + dirX * r) + "," + ty +
-            " L" + tx + "," + ty, sx, sy, tx, ty);
+      pipeD("M" + tx + "," + ty + " L" + (sx + dirX * r) + "," + ty +
+            " Q" + sx + "," + ty + " " + sx + "," + (ty - r) +
+            " L" + sx + "," + sy, sx, sy, tx, ty);
     }
     function flange(x, y) {
       svgEl("circle", { cx: x, cy: y, r: 7, fill: "#14303f" });
@@ -351,17 +354,16 @@ Auto-included by docs/_layouts/default.html.
       p0.innerHTML = schematic(hit.name, data, badLinks(data));
       p0.classList.toggle("see", shift);
       /* 👻 a ghost sits on its component's top-RIGHT corner: the ink below
-         is left-justified, so the right side is the quiet side (Michel,
-         2026-08-18). The plain lens keeps the left anchor — its aperture
-         clip is computed from that corner. */
+         is left-justified, so the right side is the quiet side — and the
+         loupe uses the same corner, so lens → pipes never moves the ghost
+         (Michel, 2026-08-18). lensClip reads the panel's real spot. */
       const placeGhost = (p, tr) => {
         p.style.display = "block";
         place(p, Math.max(8, tr.right - p.offsetWidth - OFF), tr.top + OFF);
       };
       const haunt = p => { const t = p.querySelector(".t");
         if (t && t.textContent.indexOf("👻") < 0) t.textContent = "👻 " + t.textContent; };
-      if (shift) { placeGhost(p0, rect); haunt(p0); }
-      else place(p0, rect.left + OFF, rect.top + OFF);
+      placeGhost(p0, rect); haunt(p0);
       if (!shift) { svg.style.display = "none"; return; }   // lens mode: clip applied later
       svg.style.display = "block";
       // ── connected subgraph: transitive closure over the typed associations,
@@ -493,10 +495,13 @@ Auto-included by docs/_layouts/default.html.
       requestAnimationFrame(fitScene);                     // fit after browser lays out panels
     }
     function lensClip(hit, xy) {
-      const rect = hit.el.getBoundingClientRect();
-      const px = rect.left + OFF, py = rect.top + OFF;
+      /* the loupe's ghost sits top-RIGHT like the reveal's — same corner,
+         so lens → pipes never moves the ghost under the reader's eyes
+         (Michel, 2026-08-18). The aperture follows the panel's REAL spot. */
+      const p0 = panel(0);
+      const px = p0.offsetLeft, py = p0.offsetTop;
       const clip = "circle(" + R + "px at " + (xy.x - px) + "px " + (xy.y - py) + "px)";
-      const p0 = panel(0); p0.style.clipPath = p0.style.webkitClipPath = clip;
+      p0.style.clipPath = p0.style.webkitClipPath = clip;
       ring.style.display = "block";
       ring.style.left = (xy.x - R) + "px"; ring.style.top = (xy.y - R) + "px";
     }

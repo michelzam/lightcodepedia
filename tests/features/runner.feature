@@ -147,6 +147,28 @@ Feature: The instant runner (RT) — Phase A parity
     Then the block editor on the rendered fence shows "From the SECOND file"
     And no snapshot still carries "From the FIRST file"
 
+  Scenario: In a teacher's frame, Edit grays out on a course page
+    The editor opened empty on a lesson in Canvas — the file is the
+    course's, not the learner's (Michel, 2026-08-18). The pill now says
+    so quietly instead of opening a dead drawer, and the hotkey stays
+    silent too.
+
+    Given the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # Lesson
+
+      The prose here belongs to the course.
+      """
+    When I navigate to "/run.html?crumb=BUILD#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the pill's Edit door is grayed with a reason
+    And pressing Alt+E does not open the editor
+
+  Scenario: In the same frame, the learner's own bench page stays editable
+    Given a stubbed bench with a course page
+    When I open the framed bench page "course/ex1.md"
+    Then the pill's Edit door is open
+
   Scenario: A card click lands at the top of the next page
     Inside the runner a link only changes the hash and the document is
     re-rendered in place, so the browser never scrolls. A reader who

@@ -656,6 +656,44 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     setTimeout(function() { document.body.style.overflow = ""; }, 260);
   }
 
+  /* A course page inside a teacher's frame is the LESSON's file, not the
+     learner's — the editor opened on it empty and useless (Michel,
+     2026-08-18, Canvas as student). One predicate, asked by every edit
+     door: the pill item, the pencil, both hotkeys. The learner's own
+     bench pages (topbar bench-mode) stay fully editable — that path
+     works and must keep working — and an explicit ?editable=1 wins, as
+     explicit always does. Returns the reason, or "" when editing is open. */
+  window.lcEditLocked = function () {
+    if (window.lcFrame && window.lcFrame.editable === false) return "editing is off in this frame";
+    if (document.documentElement.classList.contains("lc-editable")) return "";
+    var framed = window.lcFrame && (window.lcFrame.crumb || window.lcFrame.focus);
+    var ghSrc = /#src=gh(:|%3[Aa])/.test(location.hash || "");
+    var bench = !!document.querySelector("#lc-topbar.lc-bench-mode");
+    return (framed && ghSrc && !bench)
+      ? "this page is the course's — your own pages (🎒 bench) are yours to edit"
+      : "";
+  };
+  function syncEditDoors() {
+    var lk = window.lcEditLocked();
+    var fab = document.getElementById("ed-fab");
+    if (fab) { fab.classList.toggle("ed-locked", !!lk); if (lk) fab.title = lk; }
+    var pill = document.getElementById("lc-bl-edit-btn");
+    if (pill) { pill.disabled = !!lk; pill.title = lk || "⌥E"; }
+  }
+  addEventListener("hashchange", function () {
+    syncEditDoors();
+    setTimeout(syncEditDoors, 1600);   /* bench-mode is stamped after the render */
+  });
+  document.addEventListener("lc-mode-changed", syncEditDoors);
+  setTimeout(syncEditDoors, 1600);
+  /* bench-mode lands whenever the render finishes — watch the stamp itself,
+     so a slow bench never leaves its own door wrongly locked */
+  (function () {
+    var tb = document.getElementById("lc-topbar");
+    if (tb && window.MutationObserver)
+      new MutationObserver(syncEditDoors).observe(tb, { attributes: true, attributeFilter: ["class"] });
+  })();
+
   /* edit is an exclusive page mode: entering it exits present/reel/x-ray and
      vice versa; closeDrawer's own unsaved-changes confirm acts as the veto */
   /* ⌥E / Alt-E toggles edit mode — layout-independent, ignored while typing */
@@ -663,7 +701,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     if (!e.altKey || e.code !== "KeyE" || e.ctrlKey || e.metaKey) return;
     /* an embedding page said editable=0 — the hotkey honours it like the
        pill and the drawer itself (Canvas vault iframe, 2026-07-30) */
-    if (window.lcFrame && window.lcFrame.editable === false) return;
+    if (window.lcEditLocked()) return;
     var t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
     e.preventDefault();
@@ -1129,7 +1167,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var zoom   = e.target.closest("#ed-zoom-btn");
     var chip   = e.target.closest(".ed-chip");
     var view   = e.target.closest(".ed-view");
-    if (fab)   { e.preventDefault(); if (window.lcMode) window.lcMode.set("edit"); else openDrawer(); return; }
+    if (fab)   { e.preventDefault(); if (window.lcEditLocked()) return;
+                 if (window.lcMode) window.lcMode.set("edit"); else openDrawer(); return; }
     if (close) { e.preventDefault(); if (window.lcMode) window.lcMode.set("read"); else closeDrawer(); return; }
     if (conn)  { e.preventDefault(); connect(); return; }
     if (disc)  { e.preventDefault(); disconnect(); return; }

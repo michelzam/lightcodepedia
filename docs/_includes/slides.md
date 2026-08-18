@@ -122,6 +122,8 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
 }
 .lc-bl-popup-item:last-child { border-bottom: none; }
 .lc-bl-popup-item:active { background: #f0f6ff; }
+/* a door that is closed says so quietly — course pages in a teacher's frame */
+.lc-bl-popup-item:disabled { opacity: 0.45; cursor: default; }
 .lc-bl-popup-item.lc-xray-on { color: #0088aa; font-weight: 600; }
 @media (max-width: 700px) { .lc-bl-popup { bottom: calc(0.8em + 52px); left: 0.8em; } }
 /* the popup is an exclusive mode selector: the active mode carries a ✓ */
@@ -907,7 +909,9 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
         !(window.lcFrame && window.lcFrame.editable === false)) {
       editBtn.hidden = false;
       editBtn.addEventListener('click', function(e) {
-        e.stopPropagation(); closePopup(); if (window.lcMode) window.lcMode.set('edit');
+        e.stopPropagation();
+        if (window.lcEditLocked && window.lcEditLocked()) return;   /* course page in a frame */
+        closePopup(); if (window.lcMode) window.lcMode.set('edit');
       });
     }
 

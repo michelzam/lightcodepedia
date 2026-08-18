@@ -336,6 +336,44 @@ def step_click_runner_link(context, label):
     context.page.wait_for_function("() => window.scrollY === 0", timeout=5_000)
 
 
+@when('I open the framed bench page "{path}"')
+def step_open_framed_bench_page(context, path):
+    # same bench, but inside a teacher's frame (?crumb=…, the LMS view)
+    _bench_route(context)
+    context.page.add_init_script("localStorage.setItem('lc_ed_pat','ghp_stu');")
+    context.page.goto(context.base_url + "/run.html?crumb=BUILD#src=gh:"
+                      + BENCH_REPO + "/" + path, wait_until="domcontentloaded")
+
+
+@then("the pill's Edit door is grayed with a reason")
+def step_edit_grayed(context):
+    context.page.wait_for_function(
+        "() => { const b = document.getElementById('lc-bl-edit-btn');"
+        "        return b && b.disabled; }", timeout=8_000)
+    title = context.page.locator("#lc-bl-edit-btn").get_attribute("title") or ""
+    assert "bench" in title, "no reason on the grayed door: %r" % title
+
+
+@then("pressing Alt+E does not open the editor")
+def step_alt_e_noop(context):
+    context.page.keyboard.press("Alt+KeyE")
+    context.page.wait_for_timeout(600)
+    mode = context.page.evaluate("window.lcMode ? window.lcMode.current() : 'read'")
+    assert mode != "edit", "the hotkey opened the editor on a course page"
+
+
+@then("the pill's Edit door is open")
+def step_edit_open(context):
+    # bench mode stamps after the render; only then is "not disabled" a verdict
+    # rather than the initial state — and the delayed syncs get their say too
+    context.page.wait_for_function(
+        "() => document.querySelector('#lc-topbar.lc-bench-mode')", timeout=15_000)
+    context.page.wait_for_timeout(2200)
+    assert not context.page.evaluate(
+        "document.getElementById('lc-bl-edit-btn').disabled"), \
+        "the learner's own page lost its Edit door"
+
+
 @when("I scroll the runner to the bottom")
 def step_scroll_bottom(context):
     context.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
