@@ -3012,13 +3012,23 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   document.addEventListener("DOMContentLoaded", function () {
     _pat  = localStorage.getItem(LS_PAT);
     _repo = localStorage.getItem(LS_REPO);
+    var SITE_REPO = "{{ site.github.repository_nwo | default: '' }}";
     /* one credential per device, borrowed everywhere (T10): if the platform
        knows the builder (topbar sign-in shares this PAT) but the repo entry
        is gone, it is this very site's repo — never ask twice */
     if (_pat && !_repo) {
-      _repo = "{{ site.github.repository_nwo | default: '' }}";
+      _repo = SITE_REPO;
       if (_repo) localStorage.setItem(LS_REPO, _repo); else _repo = null;
     }
+    /* A PAGE OF THIS SITE BELONGS TO THIS SITE'S REPO. lc_ed_repo is ONE
+       browser-wide pairing and the last bench to connect wins it — so after
+       any bench or ship work, opening the editor on a plain pedia page
+       connected it to the BENCH, which does not contain that page: an empty
+       editor and no way to edit your own site (Michel, 2026-08-19,
+       lightcodepedia.org/events). A runner render still targets what it
+       rendered (rt.repo, below), and the pairing itself is left untouched —
+       the bench keeps it. */
+    if (SITE_REPO && _repo && _repo !== SITE_REPO && !runnerTarget()) _repo = SITE_REPO;
     var patEl = document.getElementById("ed-pat");
     var repoEl = document.getElementById("ed-repo");
     if (patEl && _pat)   patEl.value  = _pat;

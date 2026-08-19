@@ -1,4 +1,6 @@
 # 🎭 Events
+[🏛 BUILD-AI Microcredential](#) — UWM, Milwaukee, USA 🇺🇸
+
 [🏛 LightCode Certificate](https://cdn.jsdelivr.net/gh/michelzam/lightcodepedia@main/pdfs/Dauphine-Certificat.pdf) - Fall 2025, Paris, France 🇫🇷
 
 [🏛 LightCode at Dauphine-MIAGE](https://dauphine.psl.eu/formations/masters/miage/m2/vie-du-master) - Fall 2025, Paris, France 🇫🇷

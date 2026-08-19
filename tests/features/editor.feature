@@ -104,3 +104,16 @@ Feature: Page editor — ✨ AI edit dialog
     And I press the edit hotkey
     Then the editor drawer stays closed
     And the pill offers no Edit item
+
+  Scenario: A page of this site is edited in this site's repo, not the last bench paired
+    lc_ed_repo is ONE browser-wide pairing and the last bench to connect
+    wins it. After bench work, opening the editor on a plain site page
+    connected it to the BENCH — which does not hold that page — so the
+    site's own author could not edit his own site (Michel, 2026-08-19,
+    lightcodepedia.org/events). The page you are on decides the repo.
+
+    Given a browser still paired to a learner's bench
+    When I navigate to "/events"
+    And I wait for the page to be interactive
+    And I press the edit hotkey
+    Then the editor reads this site's own repo, not the bench

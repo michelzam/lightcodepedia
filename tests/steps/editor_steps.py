@@ -215,3 +215,50 @@ def step_no_edit_item(context):
         "(document.getElementById('lc-bl-edit-btn') || {hidden: true}).hidden"
     )
     assert hidden, "the pill's Edit item is visible despite editable=0"
+
+
+@given("a browser still paired to a learner's bench")
+def step_paired_to_bench(context):
+    """What ship/bay testing leaves behind: a key, and lc_ed_repo pointing at
+    someone's bench rather than the site being browsed."""
+    context.gh_repo_calls = []
+    context.page.on("request", lambda r: context.gh_repo_calls.append(r.url)
+                    if "api.github.com/repos/" in r.url else None)
+
+    def gh(route):
+        url = route.request.url
+        if "/git/trees/" in url:
+            route.fulfill(json={"sha": "HEAD", "tree": [
+                {"path": "docs/events.md", "type": "blob", "sha": "s1"}],
+                "truncated": False})
+        elif "/contents/" in url:
+            route.fulfill(json={"content": "IyBFdmVudHM=", "sha": "s1",
+                                "name": "events.md", "path": "docs/events.md"})
+        else:                                   # the repo probe itself
+            full = url.split("/repos/", 1)[1].split("?")[0]
+            route.fulfill(json={"full_name": full, "default_branch": "main",
+                                "permissions": {"push": True}})
+
+    context.page.route("https://api.github.com/repos/**", gh)
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat','ghp_author');"
+        "localStorage.setItem('lc_ed_repo','zam-academy/build-ai-fall26-zamm-student');"
+    )
+
+
+@then("the editor reads this site's own repo, not the bench")
+def step_editor_targets_site(context):
+    # the drawer names what it is connected to; the bench pairing itself is
+    # left alone (the learner's progress record still belongs to it, which is
+    # why the assertion reads the EDITOR's target, not every GitHub call)
+    context.page.wait_for_function(
+        "() => { const s = document.getElementById('ed-status');"
+        "        return s && s.textContent.trim(); }", timeout=10_000)
+    # textContent, not inner_text: the drawer may still be sliding in, and
+    # Playwright reports "" for anything not yet visible
+    status = (context.page.evaluate(
+        "() => document.getElementById('ed-status').textContent") or "").strip()
+    assert "zamm-student" not in status, \
+        "the editor connected to the bench for a site page: %r" % status
+    assert "lightcodelab" in status or "lightcodepedia" in status, \
+        "the editor did not target this site's repo: %r" % status
