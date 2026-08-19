@@ -189,3 +189,84 @@ def step_ledger_line(context):
     line = context.page.evaluate("() => window.lcTokens.line()")
     assert "token" in line.lower(), line
     assert "limited" in line.lower(), line
+
+
+@given('the model endpoint 503s once, then answers "{message}"')
+def step_stub_503_then_ok(context, message):
+    """A demand spike: the first call wobbles, the next one works."""
+    state = {"n": 0}
+
+    def fulfill(route):
+        state["n"] += 1
+        if state["n"] == 1:
+            route.fulfill(status=503, content_type="application/json",
+                          body=json.dumps({"error": {"code": 503,
+                              "message": "The model is overloaded."}}))
+        else:
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"choices": [
+                              {"message": {"content": message},
+                               "finish_reason": "stop"}]}))
+
+    context.page.route("**/chat/completions*", fulfill)
+
+
+@given("the learner also holds an openrouter key")
+def step_hold_openrouter(context):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ai_key_openrouter','sk-or-test')")
+
+
+@given('the model endpoint always 503s, but openrouter answers "{message}"')
+def step_stub_503_forever_openrouter_ok(context, message):
+    context.engine_calls = []
+
+    def fulfill(route):
+        context.engine_calls.append(route.request.url)
+        if "openrouter.ai" in route.request.url:
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"choices": [
+                              {"message": {"content": message},
+                               "finish_reason": "stop"}]}))
+        else:
+            route.fulfill(status=503, content_type="application/json",
+                          body=json.dumps({"error": {"code": 503,
+                              "message": "The model is overloaded."}}))
+
+    context.page.route("**/chat/completions*", fulfill)
+
+
+@then('the desk answers "{message}"')
+def step_desk_answers(context, message):
+    bot = context.page.locator('[data-lc-id="desk"] .lc-agent-msg-bot')
+    expect(bot).to_contain_text(message, timeout=30_000)
+
+
+@then("the desk says which engine answered")
+def step_desk_names_engine(context):
+    status = context.page.locator('[data-lc-id="desk"] .lc-agent-status')
+    expect(status).to_contain_text("openrouter.ai", timeout=15_000)
+
+
+@then("the desk offers the other engine and names whose key pays")
+def step_offer_shown(context):
+    status = context.page.locator('[data-lc-id="desk"] .lc-agent-status')
+    expect(status).to_contain_text("openrouter.ai", timeout=20_000)
+    expect(status).to_contain_text("your spending", timeout=5_000)
+
+
+@when("I accept the other engine")
+def step_accept_fallback(context):
+    context.page.click('[data-lc-id="desk"] .lc-agent-fallback-yes')
+
+
+@when("I decline the other engine")
+def step_decline_fallback(context):
+    context.page.click('[data-lc-id="desk"] .lc-agent-fallback-no', timeout=20_000)
+    context.page.wait_for_timeout(1500)
+
+
+@then("no call reached the other engine")
+def step_no_paid_call(context):
+    hits = [u for u in getattr(context, "engine_calls", []) if "openrouter.ai" in u]
+    assert not hits, "a paid engine was called without consent: %r" % hits

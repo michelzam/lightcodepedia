@@ -175,3 +175,76 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I ask the "tutor" agent "help me fix it"
     Then the day's ledger counted 1 question
     And the ledger's sentence warns that the free key is limited
+
+  Scenario: A demand spike is ridden out, not handed to the learner
+    "This model is currently experiencing high demand… (HTTP 503)" landed
+    in front of a class often enough to be the lesson (Michel,
+    2026-08-19). A spike lasts seconds; a retry the learner has to invent
+    is a retry the desk should have made.
+
+    Given I have a clean browser page
+    And the model endpoint 503s once, then answers "the shelter list looks complete"
+    And the GitHub contents API serves "courses/demo/module_01/busy.md" with the document:
+      """
+      # Busy page
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/busy.md"
+    And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
+    And I ask the desk agent into the void "hello"
+    Then the desk answers "the shelter list looks complete"
+
+  Scenario: When the spike holds, a second engine the learner already has answers
+    The chain is the keys they HOLD — never the providers that exist, or a
+    503 becomes a demand for a second signup mid-lesson.
+
+    Given I have a clean browser page
+    And the learner also holds an openrouter key
+    And the model endpoint always 503s, but openrouter answers "openrouter took it"
+    And the GitHub contents API serves "courses/demo/module_01/busy2.md" with the document:
+      """
+      # Busy page two
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/busy2.md"
+    And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
+    And I ask the desk agent into the void "hello"
+    Then the desk offers the other engine and names whose key pays
+    When I accept the other engine
+    Then the desk answers "openrouter took it"
+    And the desk says which engine answered
+
+  Scenario: Nobody's key is spent without them saying so
+    A fallback can be a PAID plan (Michel, 2026-08-19: "who might be
+    paying?"). Retrying the first engine spends nothing new; switching
+    engines is a spending decision, so it is asked — and a No spends
+    nothing at all.
+
+    Given I have a clean browser page
+    And the learner also holds an openrouter key
+    And the model endpoint always 503s, but openrouter answers "openrouter took it"
+    And the GitHub contents API serves "courses/demo/module_01/busy3.md" with the document:
+      """
+      # Busy page three
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/busy3.md"
+    And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
+    And I ask the desk agent into the void "hello"
+    And I decline the other engine
+    Then no call reached the other engine

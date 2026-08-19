@@ -83,6 +83,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-send:disabled { background: #aaa; cursor: progress; }
 .lc-agent-status { margin-bottom: 0.4em; min-height: 0; }
 .lc-agent-status:empty { display: none; }
+.lc-agent-note { font-size: 0.85em; color: #475569; }
+.lc-agent-fallback-yes, .lc-agent-fallback-no { font: inherit; font-size: 0.85em;
+  padding: 0.25em 0.8em; border-radius: 6px; border: 1px solid #cbd5e1;
+  background: #fff; cursor: pointer; margin-top: 0.4em; }
+.lc-agent-fallback-yes { border-color: #0066cc; color: #0052a3; font-weight: 600; }
 .lc-agent-err { color: #c62828; font-size: 0.88em; background: #fff5f5; padding: 0.4em 0.7em; border-radius: 4px; border: 1px solid #ffcdd2; display: inline-block; }
 .lc-agent-response { margin-bottom: 0.6em; }
 .lc-agent-response:empty { display: none; }
@@ -598,8 +603,10 @@ Auto-included by docs/_layouts/default.html.
   }
 
   // ===== API call =====
-  function ask(token, cfg, userText) {
-    var eng = resolveEngine(cfg);
+  /* ONE attempt at ONE engine. The ladder that decides which engine, and how
+     many times, is ask() below. */
+  function askOnce(token, cfg, userText, engOverride) {
+    var eng = engOverride || resolveEngine(cfg);
     if (!eng.base) return Promise.resolve({ error: 'No engine configured — set provider: or base_url: on this agent.' });
     var url = eng.base + '/chat/completions';
     var body = {
@@ -655,7 +662,11 @@ Auto-included by docs/_layouts/default.html.
         var daily = /per\s*day|daily|PerDay|quota exceeded/i.test(m429);
         return { error: daily
           ? '🔋 Out of free energy for today — the day\'s allowance is spent and refills on its own (around midnight US Pacific). Nothing is broken; come back tomorrow, or use a key with a paid plan.'
-          : '⏳ Too many questions too fast (per-minute limit). Wait about a minute and ask again — this one refills by itself.' };
+          : '⏳ Too many questions too fast (per-minute limit). Wait about a minute and ask again — this one refills by itself.',
+          status: 429,
+          /* a wall on THIS key says nothing about another provider's quota —
+             worth another engine, never worth an immediate retry here */
+          elsewhere: true };
       }
       if (result.status >= 400) {
         /* Google wraps errors in an ARRAY ([{error:{…}}]); OpenAI-style
@@ -663,7 +674,11 @@ Auto-included by docs/_layouts/default.html.
            code instead of the provider's own sentence */
         var eobj = Array.isArray(result.data) ? result.data[0] : result.data;
         var msg = (eobj && eobj.error && eobj.error.message) || ('HTTP ' + result.status);
-        return { error: msg + ' (HTTP ' + result.status + ' from ' + eng.host + ')' };
+        return { error: msg + ' (HTTP ' + result.status + ' from ' + eng.host + ')',
+                 status: result.status,
+                 /* 500/502/503/504 = the service wobbled, not the request:
+                    the same call a moment later usually works */
+                 retriable: result.status >= 500 };
       }
       var choice = result.data.choices && result.data.choices[0];
       if (!choice) return { error: 'Empty response from API.' };
@@ -689,7 +704,99 @@ Auto-included by docs/_layouts/default.html.
       return { error: "Couldn't reach " + eng.host + " — no answer got through. " +
         "Often an ad-blocker, VPN or firewall on the road; if your network is fine, " +
         "the key itself may be stale or wrong (🔑 paste a fresh " + eng.key_name + "). " +
-        "(" + (err.message || String(err)) + ")" };
+        "(" + (err.message || String(err)) + ")",
+        retriable: true };
+    });
+  }
+
+  /* ── The ladder: retry, then another engine that already has a key ──────
+     "This model is currently experiencing high demand… (HTTP 503)" landed in
+     front of a class often enough to be the lesson (Michel, 2026-08-19). A
+     spike lasts seconds, so the cheapest fix is to ask again — the same fix
+     the publish button learned on 2026-08-06: a retry the learner has to
+     invent is a retry the button should have made.
+
+     Then, and only then, another provider. The chain is the keys the learner
+     ALREADY HOLDS, never the providers that exist: falling back to a service
+     they have never signed up for replaces a 503 with a demand for a second
+     account mid-lesson. An author may name the order (fallback: openrouter);
+     otherwise it is whatever is on the keyring.
+
+     What never cascades: 401 (this key is wrong — spraying it at three
+     services helps nobody) and 403 (the key is fine, this call is not
+     allowed). Those are answers, not weather. */
+  function heldFallbacks(cfg, primaryId) {
+    var named = String(cfg.fallback || '').split(',')
+      .map(function (x) { return x.trim(); }).filter(Boolean);
+    var ids = named.length ? named : Object.keys(PROVIDERS);
+    return ids.filter(function (id) {
+      var pv = PROVIDERS[id];
+      return id !== primaryId && pv && pv.base && getSharedToken(id);
+    });
+  }
+  function pause(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  /* CONSENT BEFORE SPENDING (Michel, 2026-08-19: "who might be paying?").
+     Retrying the same engine spends nothing new — same key, same plan, and
+     the reader already chose it. Switching engines can spend someone's
+     money, so it is asked, once per sitting per engine, and remembered for
+     that sitting only. A desk with nowhere to ask (the docked guide) simply
+     does not switch: silence is the safe answer when nobody can consent. */
+  function fallbackAllowed(id) {
+    try { return sessionStorage.getItem('lc_ai_fallback_ok_' + id) === '1'; }
+    catch (e) { return false; }
+  }
+  function rememberFallback(id) {
+    try { sessionStorage.setItem('lc_ai_fallback_ok_' + id, '1'); } catch (e) {}
+  }
+
+  function ask(token, cfg, userText, askConsent) {
+    var primary = resolveEngine(cfg);
+    var RETRY_MS = [1500, 4000];          /* a demand spike outlives neither */
+
+    function tryEngine(eng, key, retries) {
+      return askOnce(key, cfg, userText, eng).then(function (res) {
+        if (!res.error || !res.retriable || !retries.length) return res;
+        return pause(retries[0]).then(function () {
+          return tryEngine(eng, key, retries.slice(1));
+        });
+      });
+    }
+
+    return tryEngine(primary, token, RETRY_MS.slice()).then(function (res) {
+      if (!res.error) return res;
+      /* the key is the problem, or the request is: no other engine helps */
+      if (res.unauthorized || res.status === 403 || res.status === 400) return res;
+      if (!res.retriable && !res.elsewhere) return res;
+      var chain = heldFallbacks(cfg, primary.id);
+      if (!chain.length) return res;
+
+      function next(i) {
+        if (i >= chain.length) return Promise.resolve(res);   /* the first failure is the honest one */
+        var id = chain[i];
+        var eng = resolveEngine({ provider: id, model: cfg.model_fallback || '' });
+        var consent = fallbackAllowed(id)
+          ? Promise.resolve(true)
+          : (askConsent ? Promise.resolve(askConsent(eng, res)) : Promise.resolve(false));
+        return consent.then(function (ok) {
+          if (!ok) return next(i + 1);
+          rememberFallback(id);
+          return run();
+        });
+
+        function run() {
+        return tryEngine(eng, getSharedToken(id), []).then(function (r2) {
+          if (r2.error) return next(i + 1);
+          /* the reader is told WHO answered when it is not the first choice —
+             the same honesty as the guide naming whose Doc is speaking. The
+             note rides `via`, never the text: a notice folded into the answer
+             gets kept into the page (the 📌 lesson of 2026-08-07). */
+          r2.via = eng.host;
+          return r2;
+        });
+        }
+      }
+      return next(0);
     });
   }
 
@@ -757,7 +864,22 @@ Auto-included by docs/_layouts/default.html.
         : Promise.resolve(buildAugmentedPrompt(boundId, question));
 
       promptP.then(function (fullPrompt) {
-        return ask(myToken(), cfg, fullPrompt);
+        return ask(myToken(), cfg, fullPrompt, function (eng, failure) {
+          /* the offer, in the desk itself: one sentence about who is busy,
+             one button naming who would answer and on whose key */
+          return new Promise(function (resolve) {
+            status.innerHTML =
+              '<span class="lc-agent-note">⏳ ' + escapeHtml(failure.error || 'That engine is busy.') +
+              '<br>Ask <b>' + escapeHtml(eng.host) + '</b> instead? It runs on your ' +
+              escapeHtml(eng.key_name) + ' — your plan there, your spending.</span> ' +
+              '<button type="button" class="lc-agent-fallback-yes">Use ' + escapeHtml(eng.host) + '</button> ' +
+              '<button type="button" class="lc-agent-fallback-no">No, wait</button>';
+            var yes = status.querySelector('.lc-agent-fallback-yes');
+            var no  = status.querySelector('.lc-agent-fallback-no');
+            yes.addEventListener('click', function () { status.innerHTML = ''; resolve(true); });
+            no.addEventListener('click', function () { resolve(false); });
+          });
+        });
       }).then(function(result){
         sendBtn.disabled = false;
         sendBtn.textContent = '▶ Ask';
@@ -768,6 +890,12 @@ Auto-included by docs/_layouts/default.html.
           if (result.unauthorized) setSharedToken(engineId, null, result.error);
           return;
         }
+        /* a fallback engine answered: say which, in the status line and not
+           in the answer — the log below keeps the model's own words only */
+        status.innerHTML = result.via
+          ? '<span class="lc-agent-note">↩︎ ' + escapeHtml(result.via) +
+            ' answered — your first engine was busy.</span>'
+          : '';
         response.innerHTML =
           '<div class="lc-agent-msg-user">' + escapeHtml(question) + '</div>' +
           '<div class="lc-agent-msg-bot">' + renderMarkdown(result.text) + '</div>';

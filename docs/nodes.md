@@ -103,9 +103,9 @@ on this node; an empty board here means this node keeps no backlog.
 {: .stat bind="ux_fast" format="⚡ fast check · {scenarios} scenarios · {commit} · 🕒 {run}" requires="scenarios" ok-when="scenarios_failed==0" stale-after="129600" }
 
 [full suite](#)
-{: .stat bind="ux_summary" format="✅ full suite · {scenarios} scenarios · 🕒 {run}" requires="scenarios" ok-when="scenarios_failed==0" stale-after="1209600" }
+{: .stat bind="ux_summary" format="✅ full suite · pedia · {scenarios} scenarios · 🕒 {run}" requires="scenarios" ok-when="scenarios_failed==0" stale-after="172800" }
 
-A **nightly** run gives the lab a fast **smoke + component-spec** check against the live site (the ⚡ line — page loads plus every component's embedded `.feature`); it can also be dispatched by hand anytime. The full [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) — every `Scenario` from every `.feature` — runs **at publish and on demand** (the ✅ line), so it's the authoritative verdict and updates less often by design. Each row below is one `Scenario` from the latest **full** run against the live site.
+A **nightly** run gives the lab a fast **smoke + component-spec** check against the live site (the ⚡ line — page loads plus every component's embedded `.feature`); it can also be dispatched by hand anytime. The full [BDD UX suite](https://github.com/michelzam/lightcodepedia/tree/main/tests/features) — every `Scenario` from every `.feature` — runs in **pedia**, free, after every deploy, and that verdict is the authority (the ✅ line). The lab mirrors it nightly rather than paying private minutes to run the same code twice, so the number on this board is pedia's and says so. Each row below is one `Scenario` from the latest **full** run against the live site.
 
 
 [ux-results]({{ '/assets/ux-results.json' | relative_url }})

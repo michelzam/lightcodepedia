@@ -153,8 +153,10 @@ All configuration goes in the YAML block.
 |---|---|---|
 | `system` | "You are a helpful assistant." | The system prompt — defines the persona |
 | `model` | the provider preset's own (`gemini-flash-latest`) | Any model that provider serves — pin one only to override the preset |
+| `model_fallback` | (the fallback preset's own) | Model to ask a fallback engine for, when its preset's default is not what you want |
 | `temperature` | `0.7` | 0 = deterministic oracle, 1 = jazz improvisation |
 | `max_tokens` | `500` | Caps response length (and API cost) |
+| `fallback` | (the keys on the keyring) | Engines to offer when the first one is busy, in order — `fallback: openrouter`. Only engines the reader already has a key for are offered, and the switch is always **asked** first: another engine can be another bill. The answer is remembered for that sitting |
 | `intro` | (none) | A hint rendered above the input |
 | `placeholder` | "Ask anything..." | Placeholder text in the prompt field |
 
