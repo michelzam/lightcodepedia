@@ -162,6 +162,7 @@ def check_page(path, text):
             problems.append(f"DOT-FAIL      block {i + 1}: {p.stderr.strip()[:110]}")
 
     problems.extend(hint_problems(text))
+    problems.extend(cross_step_problems(text))
 
     m = re.search(r"^```yaml\n(bot:.*?)^```", text, re.S | re.M)
     if m:
@@ -240,6 +241,71 @@ def hint_problems(text):
         seen.add(name)
         out.append(f"STEP-NO-HINT  {name} = … needs a type hint "
                    f"({name}: list[str] = …) — step code is read, not run.")
+    return out
+
+
+# ── a step's locals die with the step (Michel, 2026-08-18) ───────────────
+# Each :::python::: block runs on its own; only `self.` survives to the next
+# step. A plain local read one step later is a NameError the author never
+# sees — the card renders fine and only turns red when a learner presses ▶,
+# reading "this page's own check asks for something the engine does not
+# have". Module 07's `chips` did exactly that, in front of a class.
+#
+# Deliberately narrow: only names BOUND as plain locals in one block and
+# READ in a LATER block of the same feature. A name bound and used inside
+# one block is ordinary Python and never flagged.
+_BIND = re.compile(r"^\s*([a-z_][a-z_0-9]*)\s*(?::[^=]+)?=\s*\S")
+_WORD = re.compile(r"\b([a-z_][a-z_0-9]*)\b")
+_PY_KEYWORDS = {"assert", "for", "in", "if", "else", "elif", "not", "and",
+                "or", "return", "len", "int", "str", "list", "dict", "set",
+                "float", "bool", "print", "range", "self", "is", "none",
+                "true", "false", "sorted", "any", "all", "sum", "min", "max",
+                "enumerate", "zip", "abs", "round", "type", "getattr", "f"}
+
+
+def cross_step_problems(text):
+    """Locals from an earlier step read in a later one — a NameError waiting
+    for the first learner who presses ▶."""
+    out, blocks, cur, inblk = [], [], [], False
+    for line in text.split("\n"):
+        st = line.strip()
+        if st == ":::python":
+            inblk, cur = True, []
+            continue
+        if st == ":::" and inblk:
+            inblk = False
+            blocks.append(cur)
+            continue
+        if inblk:
+            cur.append(line)
+    earlier = {}                       # local name → the block that bound it
+    for i, blk in enumerate(blocks):
+        bound_here = set()
+        for line in blk:
+            code = line.split("#", 1)[0]
+            # a message is prose, not code: "end with VERDICT: n/8" must not
+            # read as a use of `n`, nor "your new sheet" as one of `sheet`
+            code = re.sub(r'"[^"]*"|\'[^\']*\'', '""', code)
+            # BIND BEFORE READ, per line: a block that opens by rebinding the
+            # name (`n: int = len(...)`, the shape every counting step uses)
+            # never reads the dead one — only the right-hand side is a read.
+            b = _BIND.match(code)
+            fr = re.match(r"\s*for\s+([a-z_][a-z_0-9]*)\s+in\s+(.*)$", code)
+            if b and b.group(1) not in _PY_KEYWORDS:
+                bound_here.add(b.group(1))
+                code = code.split("=", 1)[1]
+            elif fr:
+                bound_here.add(fr.group(1))
+                code = fr.group(2)
+            for w in _WORD.findall(code):
+                if w in earlier and w not in bound_here and w not in _PY_KEYWORDS:
+                    out.append(
+                        f"STEP-LOCAL    `{w}` is bound in one step and read in a "
+                        f"later one — a step's locals do not survive it. "
+                        f"Carry it as self.{w}.")
+                    del earlier[w]     # say it once per name
+        for name in bound_here:
+            earlier[name] = i
     return out
 
 
