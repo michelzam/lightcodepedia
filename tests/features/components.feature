@@ -15,7 +15,7 @@ Feature: Component gallery behaviors
     # (three of four footnotes vanished from the Build-AI cover). The client
     # pipeline now runs the same footnote pass the runner does, so a block
     # carries its own footnotes — refs and defs together, inside the fence.
-    When I navigate to "/courses/build_ai_cover"
+    When I navigate to "/courses/build_ai/"
     And I wait for the page to be interactive
     Then every footnote on the page resolves
 

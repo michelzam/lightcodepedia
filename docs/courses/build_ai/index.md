@@ -1,6 +1,6 @@
 # 🤖 Build-AI
 
-![AI is reshaping the world. Builders wanted. — UWM School of Information Studies](AI-Builders.png){: .lc-banner }
+![AI is reshaping the world. Builders wanted. — UWM School of Information Studies](/courses/AI-Builders.png){: .lc-banner }
 
 **AI is reshaping the world — builders wanted.** Build-AI is a private cohort
 course where you build a **real `AI`[^ai] app**, versioned in your own private
@@ -62,7 +62,7 @@ building things that work, and making the world a better place, *your style*.
 No account, no install, nothing to download: a real app runs on the page,
 you change one number, and the page proves itself out loud. Then you decide.
 
-[🎮 Join the game →](/courses/build_ai_start)
+[🎮 Join the game →](/courses/build_ai/start)
 {: .button }
 
 ## 🚀 Ready?
@@ -78,7 +78,7 @@ Enroll in your class
 ### 2️⃣ Join
 Join & open the course
 
-[📖 Join →](/courses/_build_ai_start)
+[📖 Join →](/courses/build_ai/start)
 {: .button }
 ```
 {: .blocks cols="2"}
