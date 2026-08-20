@@ -169,6 +169,17 @@ Feature: The instant runner (RT) — Phase A parity
     When I open the framed bench page "course/ex1.md"
     Then the pill's Edit door is open
 
+  Scenario: A missing file is named as missing, not blamed on the key
+    Walking into a folder that has no index.md told the LAB'S OWNER that
+    his fine-grained token "can't reach michelzam/lightcodelab" — a repo
+    it reads all day (Michel, 2026-08-19). The branch blamed the token
+    for every 404 without ever asking the repo. Ask the repo first.
+
+    Given a fine-grained key that reads the repo but not this path
+    When I navigate to "/run.html#src=gh:michelzam/lightcodelab/courses/nope/index.md"
+    And I wait for the page to be interactive
+    Then the runner says the file is missing, not the key
+
   Scenario: A card click lands at the top of the next page
     Inside the runner a link only changes the hash and the document is
     re-rendered in place, so the browser never scrolls. A reader who

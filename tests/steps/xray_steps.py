@@ -471,3 +471,30 @@ def step_xray_locked_def(context):
     head = context.page.locator(".lcx-xray .lcx-def").first
     expect(head).to_be_visible(timeout=3_000)
     expect(head).to_contain_text("def on_click(button):")
+
+
+# --- a link under the lens ---------------------------------------------------
+@when("I tap a folder card's link")
+def step_tap_card_link(context):
+    """A real Chromium touch tap: a JS-dispatched one is untrusted and would
+    never navigate, so it could not tell "the lens let go" from "it held"."""
+    link = context.page.locator(".lc-card h3 a").first
+    link.wait_for(state="visible", timeout=20_000)
+    # CDP taps land in VIEWPORT coordinates: a card below the fold would be
+    # tapped through whatever happens to sit at those pixels (the first run
+    # of this hit <html> and proved nothing)
+    link.scroll_into_view_if_needed()
+    context.page.wait_for_timeout(400)
+    box = link.bounding_box()
+    context.lc_before_url = context.page.url
+    cdp = context.page.context.new_cdp_session(context.page)
+    pt = {"x": box["x"] + box["width"] / 2, "y": box["y"] + box["height"] / 2}
+    cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [pt]})
+    cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+    context.page.wait_for_timeout(1200)
+
+
+@then("the browser followed the link")
+def step_followed(context):
+    assert context.page.url != context.lc_before_url, \
+        "the lens ate the tap — still on %s" % context.page.url

@@ -137,6 +137,12 @@ files a learner is already working in.
 
   function edKey() { try { return localStorage.getItem("lc_ed_pat") || ""; } catch (e) { return ""; } }
 
+  /* a path comes off the URL hash — never put it in innerHTML unescaped */
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
   /* the /run page's own title gives way to the bar while a source renders */
   function pageTitle(wrap, hide) {
     var n = wrap;
@@ -499,7 +505,26 @@ files a learner is already working in.
               } else if (!fine && (d.scopes || "").split(",").map(function (s) { return s.trim(); }).indexOf("repo") < 0) {
                 status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b>, but your key is missing the <code>repo</code> scope.<br>" + ladder + " → paste, reload.";
               } else if (fine) {
-                status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b> with a fine-grained token that can’t reach <code>" + repoName + "</code> (HTTP " + st + "). Fine-grained tokens are limited to selected repos — use a <b>classic</b> key instead:<br>" + ladder + " → paste, reload.";
+                /* A FINE-GRAINED KEY IS NOT AUTOMATICALLY THE CULPRIT. This
+                   branch blamed the token for every 404, so walking into a
+                   folder that simply had no index.md was reported as "your
+                   token can't reach michelzam/lightcodelab" — to the owner
+                   of that repo, whose token reached it perfectly well
+                   (Michel, 2026-08-19). Ask the repo first: if the key can
+                   read it, the missing thing is the FILE. */
+                fetch("https://api.github.com/repos/" + barSt.repo, { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
+                  .then(function (r2) {
+                    if (r2.ok) {
+                      status.innerHTML = "📄 No such file: <code>" + esc(barSt.path) +
+                        "</code> in <code>" + repoName + "</code>. Your key reads that repo fine — " +
+                        "the path is what is missing (a folder with no <code>index.md</code> lands here too).";
+                    } else {
+                      status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b> with a fine-grained token that can’t reach <code>" + repoName + "</code> (HTTP " + st + "). Fine-grained tokens are limited to selected repos — use a <b>classic</b> key instead:<br>" + ladder + " → paste, reload.";
+                    }
+                  })
+                  .catch(function () {
+                    status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b> with a fine-grained token that can’t reach <code>" + repoName + "</code> (HTTP " + st + "). Fine-grained tokens are limited to selected repos — use a <b>classic</b> key instead:<br>" + ladder + " → paste, reload.";
+                  });
               } else {
                 /* valid repo key + 404 on the file: is it the REPO that's
                    missing (no bench / not enrolled) or just the FILE (bench

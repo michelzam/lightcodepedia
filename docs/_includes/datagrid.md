@@ -33,6 +33,9 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
 .lc-datagrid { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: white; }
 .lc-datagrid-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
 .lc-datagrid-title .lc-datagrid-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute, #616161); letter-spacing: 0.05em; }
+.lc-datagrid-edit-hint { float: right; font-size: 0.72em; font-weight: 500;
+  color: #475569; background: #eef2f7; border-radius: 99px; padding: 0.1em 0.6em;
+  text-transform: none; letter-spacing: 0; }
 .lc-datagrid-grid { width: 100%; }
 .lc-datagrid-status { padding: 0.7em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #666; font-style: italic; }
 /* min-height: this is where an unwired grid comes to rest, and the ⚙️ that
@@ -150,6 +153,12 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       html += '<div class="lc-datagrid-title">📊 <span>' + escapeHtml(opts.title) + '</span>';
       if (opts.mode) html += '<span class="lc-datagrid-lang" style="font-style:italic; text-transform:none;">' + escapeHtml(opts.mode) + '</span>';
       if (opts.format) html += '<span class="lc-datagrid-lang">' + escapeHtml(opts.format) + '</span>';
+      /* AN EDITABLE GRID THAT LOOKS READ-ONLY IS READ-ONLY. Editing needs a
+         DOUBLE-click (double-tap on a phone), which nothing on screen said —
+         so a reader invited to change a value simply did not (Michel,
+         2026-08-20, testing the public taster). The affordance belongs on
+         the grid, not in the prose of whichever lesson remembers to add it. */
+      if (opts.editable) html += '<span class="lc-datagrid-edit-hint">✏️ double-click a cell</span>';
       html += '</div>';
     }
     html += '<div class="lc-datagrid-status">loading grid…</div>';
@@ -605,7 +614,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     var id = el.id || ("dg" + (++DG_ID));
     var opts = readDatagridOpts(el, "");
     var bindId = el.getAttribute("source") || el.getAttribute("bind") || "";
-    var wrapper = buildDatagridWrapper({ id: id, title: title, format: bindId ? "" : format, height: height });
+    var wrapper = buildDatagridWrapper({ id: id, title: title, format: bindId ? "" : format,
+                                        height: height, editable: opts.editable });
     if (bindId) wrapper.setAttribute("data-bind", bindId);
     el.parentNode.replaceChild(wrapper, el);
     var dataPromise;
@@ -679,7 +689,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     var url = useCdn ? cdn : raw;
     var id = el.id || ("dg" + (++DG_ID));
     var opts = readDatagridOpts(el, "data-");
-    var wrapper = buildDatagridWrapper({ id: id, title: title, format: format, height: height, mode: useCdn ? "cdn" : "live" });
+    var wrapper = buildDatagridWrapper({ id: id, title: title, format: format, height: height,
+                                        mode: useCdn ? "cdn" : "live", editable: opts.editable });
     el.parentNode.replaceChild(wrapper, el);
     var dataPromise = fetch(url)
       .then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + url); return r.text(); })

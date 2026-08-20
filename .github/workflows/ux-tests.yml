@@ -139,8 +139,23 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('tests/requirements.txt') }}
 
+      # --with-deps means apt, and apt means Ubuntu's mirrors: on 2026-08-19
+      # azure.archive.ubuntu.com stopped answering, the step hung for an HOUR,
+      # GitHub killed the runner and the suite mailed "all jobs have failed"
+      # without running a single scenario. The browser itself was already in
+      # the cache — only the system libraries needed the network, and the
+      # runner image ships them anyway. So: bound the apt half, and fall back
+      # to the browser-only install. A red that means "Ubuntu had a bad day"
+      # teaches nothing and hides the reds that matter.
       - name: Install Playwright browsers
-        run: playwright install chromium --with-deps
+        timeout-minutes: 10
+        run: |
+          if timeout 300 playwright install chromium --with-deps; then
+            echo "browser + system deps ready"
+          else
+            echo "::warning::system-deps install failed or timed out — falling back to the browser alone (the runner image ships the libs)"
+            playwright install chromium
+          fi
 
       - name: Run BDD UX tests
         id: behave

@@ -1,10 +1,6 @@
 # 🎓 Courses
 
-
-Index of ALL courses.
-
-Free courses open right here. Private cohort courses show a cover and link you to
-enrollment — the lessons themselves stay members-only.
+Discover public and private cohort courses.
 
 [Browse](docs/courses)
 {: .folder }

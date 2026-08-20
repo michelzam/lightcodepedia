@@ -113,7 +113,9 @@ Charlie,1,Pug,false
 
 ## ✏️ Editable cells
 
-Add `editable="true"` and double-click any primitive cell to edit. Numbers stay numeric; booleans stay boolean. Changes are **in-memory only** — refresh discards them.
+Add `editable="true"` and edit a cell in place. Numbers stay numeric; booleans stay boolean. Changes are **in-memory only** — refresh discards them.
+
+How you open a cell depends on which grid you are looking at: a grid built from a **fence** uses the full AG grid, where editing takes a **double-click**; a grid **bound to a dataset** (`source=` / `bind=`) is the lighter table, where **one tap or click** is enough — which is what a phone actually does.
 
 ```yaml
 - name: Lucky

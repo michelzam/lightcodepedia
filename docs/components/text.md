@@ -421,3 +421,22 @@ Then `{: .form bound="dogs" }` on another block binds a form to that grid. The `
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class #x key="value" }` syntax. Placed on its own line right after a block, it attaches HTML attributes to that block. Every interactive component on this site is activated this way.
 
 [^marked]: **marked.js** — a fast, lightweight JavaScript Markdown parser (~50 KB). Used here to render the live playground preview entirely in the browser. It handles CommonMark / GitHub-Flavored Markdown but not kramdown-specific extensions like IAL or footnotes.
+
+```yaml
+bot: doc
+face:
+  zoom: 1.2
+script: []
+stories:
+  make a tour, select components and describe them:
+    - 'You might wonder: make a tour, select components and describe them'
+    - at: playground
+      say: >-
+        This live markdown pad lets you edit syntax on the right and see instant rendered preview
+        updates on the left.
+    - at: my_scratch
+      say: >-
+        This editor demonstrates personal persistence by saving your work directly into your own
+        connected repository.
+```
+{: .avatar #guide dock="true" size="115" }

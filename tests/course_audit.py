@@ -416,6 +416,43 @@ def bench_targets(course_dir):
     return out
 
 
+# ── an answer key must be structurally unable to travel ──────────────────
+# The quiz specs live BESIDE their module now (Michel, 2026-08-19: "keep the
+# stuff there, but in a subfolder of each module"), which is far better to
+# author — the check sits next to what it checks. It is safe for exactly one
+# reason: `__` is the travel rule, and publish-courses.yml mirrors the course
+# with `rsync -a --exclude '__*'`, so a dundered folder cannot reach the
+# vault, a hub, or pedia.
+#
+# One reason is one thing to break. Enrolled learners hold READ on the vault
+# — that is how classmates are kept out of each other's benches — so a key
+# that slipped out of a `__` folder would be readable by the people it marks,
+# and greppable by the ones who never opened the module. Both halves are
+# checked here: the key is dundered, and the gate still excludes dunders.
+def key_placement_problems(root):
+    out = []
+    for path in glob.glob(os.path.join(root, "courses", "**", "*.y*ml"),
+                          recursive=True):
+        rel = os.path.relpath(path, root)
+        try:
+            text = open(path, encoding="utf-8", errors="replace").read()
+        except OSError:
+            continue
+        if not re.search(r"^\s*-?\s*correct:\s*true", text, re.M):
+            continue                      # not an answer key
+        parts = rel.split(os.sep)
+        if not any(p.startswith("__") for p in parts):
+            out.append(f"KEY-IN-THE-OPEN  {rel} marks correct answers but no part "
+                       f"of its path starts with __ — it would mirror into the "
+                       f"vault, where every enrolled learner can read it")
+    gate = os.path.join(root, ".github", "workflows", "publish-courses.yml")
+    if os.path.exists(gate):
+        if "--exclude '__*'" not in open(gate).read():
+            out.append("GATE-LOST-DUNDER  publish-courses.yml no longer excludes "
+                       "__* — every dundered margin and answer key would travel")
+    return out
+
+
 def main():
     course = sys.argv[1] if len(sys.argv) > 1 else "courses/micro_build_ai"
     bench = bench_targets(course)
@@ -451,6 +488,10 @@ def main():
                 print(f"  x {p}")
         else:
             print(f"{rel}  ok")
+
+    for p in key_placement_problems(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))):
+        bad += 1
+        print("\n  x " + p)
 
     print(f"\n{bad} page(s) with problems")
     print_notes(course)

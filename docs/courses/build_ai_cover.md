@@ -57,20 +57,28 @@ Everything rides on friendly foundations — `Python`[^python], `Markdown`[^md]
 and `git`[^git], tamed for beginners — so you can focus on what matters:
 building things that work, and making the world a better place, *your style*.
 
+## 🎮 Try it first — two minutes
+
+No account, no install, nothing to download: a real app runs on the page,
+you change one number, and the page proves itself out loud. Then you decide.
+
+[🎮 Join the game →](/courses/build_ai_start)
+{: .button }
+
 ## 🚀 Ready?
 
-Enrolled (or enrolling)? The learner wizard gets you working in four steps:
+Enrolled (or enrolling)? Two doors get you working:
 ```
 ### 1️⃣ Enroll
 Enroll in your class
 
-[🎟️ Enroll →](/courses/enroll)
+[🎟️ Enroll →](https://uwm.edu/registrar/enrollment/)
 {: .button }
 
 ### 2️⃣ Join
 Join & open the course
 
-[📖 Join →](/courses/join)
+[📖 Join →](/courses/_build_ai_start)
 {: .button }
 ```
 {: .blocks cols="2"}

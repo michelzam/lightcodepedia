@@ -89,6 +89,21 @@ Feature: X-ray inspector
     Then the page scrolled
 
   @mobile
+  Scenario: In x-ray, a tap on a link still goes where it was aimed
+    A folder card is a link, and the lens swallowed it — so a phone in
+    x-ray could inspect a card and never open it: "I want to check the
+    __quiz sub-folder … the lens steals my tap" (Michel, 2026-08-19). A
+    link is a command, not a specimen — the gear ruling, one floor up.
+    Two fingers still ask the same card about its wiring.
+
+    When I navigate to "/components/folder"
+    And I wait for the page to be interactive
+    And I tap the slides FAB button
+    And I tap the X-ray option in the popup
+    And I tap a folder card's link
+    Then the browser followed the link
+
+  @mobile
   Scenario: A drag that starts on a part is still an inspection
     The escape hatch must not become the exit. A gesture beginning on a
     component belongs to the lens — it tracks the finger and the page stays

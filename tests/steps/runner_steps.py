@@ -618,3 +618,28 @@ def step_win_dots_decorative(context):
         assert d["hidden"] == "true", "the dots speak to a screen reader: %r" % d
         assert d["cursor"] != "pointer", "the dots invite a click they cannot honour: %r" % d
         assert not d["focusable"], "the dots take keyboard focus: %r" % d
+
+
+@given("a fine-grained key that reads the repo but not this path")
+def step_fine_key_repo_ok(context):
+    """The exact shape of the report: the key is fine-grained (github_pat_),
+    the repo answers 200, and only the file is missing."""
+    context.page.add_init_script("localStorage.setItem('lc_ed_pat','github_pat_stub');")
+    context.page.route(
+        "https://api.github.com/user",
+        lambda r: r.fulfill(status=200, json={"login": "michelzam"}))
+    context.page.route(
+        "https://api.github.com/repos/michelzam/lightcodelab/contents/**",
+        lambda r: r.fulfill(status=404, json={"message": "Not Found"}))
+    context.page.route(
+        "https://api.github.com/repos/michelzam/lightcodelab",
+        lambda r: r.fulfill(status=200, json={"full_name": "michelzam/lightcodelab",
+                                              "permissions": {"push": True}}))
+
+
+@then("the runner says the file is missing, not the key")
+def step_says_missing_file(context):
+    status = context.page.locator(".lc-run-status, #lc-run-status").first
+    expect(status).to_contain_text("No such file", timeout=15_000)
+    txt = status.inner_text()
+    assert "classic" not in txt.lower(), "still blaming the token: %r" % txt[:200]

@@ -605,15 +605,29 @@ Auto-included by docs/_layouts/default.html.
        component — stay the browser's to scroll. The verdict is taken once, at
        touchstart, and held for the whole gesture: a scroll that happens to
        drag across a datagrid must not turn into an inspection halfway. */
-    let _scrolling = false;
+    /* A LINK IS A COMMAND, NOT A SPECIMEN — the gear ruling of 2026-07-31,
+       one floor up. On a phone in x-ray, tapping a folder card inspected the
+       card and swallowed the navigation, so the tree could not be walked:
+       "I want to check the __quiz sub-folder … the lens steals my tap"
+       (Michel, 2026-08-19). A ONE-finger tap on a link or a button now goes
+       where it was aimed, and x-ray rides the URL (?xray=1), so the next
+       page arrives still in x-ray and the walk continues under the lens.
+       Nothing is lost for inspecting: TWO fingers over the same link still
+       draw its pipelines, which is the gesture that asks about wiring
+       anyway. */
+    const isCommand = e => e.target.closest && e.target.closest(
+      'a[href], button, summary, [role="button"], input, select, textarea');
+    let _scrolling = false, _command = false;
     function showTouch(e) {
       if (!_touchOn || isFAB(e)) return;   // let FAB / editor taps through so focus + click fire
       const t = e.touches[0];
       if (!t) return;
       if (e.type === "touchstart") {
+        _command = e.touches.length === 1 && !!isCommand(e);
         _scrolling = !classAt(t.clientX, t.clientY);
         if (_scrolling) hideAll();
       }
+      if (_command) return;                /* aimed at a control: let it fire */
       if (_scrolling) return;              // this gesture belongs to the page
       e.preventDefault();
       const hit = classAt(t.clientX, t.clientY);
@@ -623,8 +637,8 @@ Auto-included by docs/_layouts/default.html.
     addEventListener("touchstart", showTouch, { passive: false, capture: true });
     addEventListener("touchmove",  showTouch, { passive: false, capture: true });
     addEventListener("touchend",   e => {
-      if (_touchOn && !isFAB(e) && !_scrolling) e.preventDefault();
-      _scrolling = false;
+      if (_touchOn && !isFAB(e) && !_scrolling && !_command) e.preventDefault();
+      _scrolling = false; _command = false;
     }, { passive: false });
   }
 </script>

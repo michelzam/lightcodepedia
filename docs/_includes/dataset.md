@@ -32,6 +32,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-table th { background: #f9fafb; font-weight: 600; color: #374151; cursor: pointer; user-select: none; }
 .lc-dg-table th.lc-th-hint { text-decoration: underline dotted #9ca3af; text-underline-offset: 3px; cursor: help; }
 .lc-dg-table th:hover { background: #f3f4f6; }
+/* an editable cell has to LOOK editable — a dotted underline and a caret,
+   so a reader sees where the page invites them to type */
+.lc-dg-table td.lc-dg-edit { cursor: text; background: #fcfdff;
+  border-bottom: 1px dashed #9db6d0; }
+.lc-dg-table td.lc-dg-edit:focus { outline: 2px solid #0066cc; outline-offset: -2px;
+  background: #fff; }
 .lc-dg-table tr:nth-child(even) td { background: #fafafa; }
 .lc-dg-table td { color: #111827; user-select: text; }
 .lc-dg-pages { display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em; font-size: 0.82em; color: #6b7280; }
@@ -232,6 +238,16 @@ Auto-included by docs/_layouts/default.html.
        default reads like a fault, which is wrong for a grid that is simply
        waiting on a choice made elsewhere (pick a course → see its pages). */
     var emptyMsg = el.getAttribute("empty") || "";
+    /* EDITABLE WAS SILENTLY IGNORED HERE. A grid bound to a dataset is
+       rendered by this light table, not by the AG path in datagrid.md — so
+       `editable="true"` looked like a knob and did nothing at all: "the grid
+       looks r/o", and on iPhone "double tap did not work" while tutorial-01
+       (an AG grid) was fine (Michel, 2026-08-20).
+
+       Editing lands here instead of borrowing AG, and it is BETTER on the
+       device this course is read on: a contenteditable cell takes ONE tap,
+       where AG needs a double-click that phones barely deliver. */
+    var editable = el.getAttribute("editable") === "true";
     var lcId = el.getAttribute("id") || "";
     var wrap = document.createElement("div");
     wrap.className = "lc-datagrid";
@@ -279,7 +295,14 @@ Auto-included by docs/_layouts/default.html.
             return "<tr" + trAttrs + ">"
               + cols.map(function (c) {
                   var v = row[c] !== undefined ? row[c] : "";
-                  return "<td>" + v + "</td>";
+                  if (!editable) return "<td>" + v + "</td>";
+                  /* the row is found again by its position in the CURRENT
+                     sort, so an edit after sorting still lands on the row
+                     the reader is looking at */
+                  return "<td contenteditable='true' class='lc-dg-edit'" +
+                         " data-col='" + c + "' data-row='" + sorted.indexOf(row) + "'" +
+                         " inputmode='" + (typeof row[c] === "number" ? "decimal" : "text") +
+                         "'>" + v + "</td>";
                 }).join("") + "</tr>";
           }).join("") + "</tbody></table>";
 
@@ -292,6 +315,32 @@ Auto-included by docs/_layouts/default.html.
       }
 
       el.innerHTML = html;
+      if (editable) {
+        el.querySelectorAll("td.lc-dg-edit").forEach(function (td) {
+          /* commit on blur and on Enter — never on every keystroke, or the
+             chart would redraw under the finger mid-number */
+          var commit = function () {
+            var row = sorted[parseInt(td.getAttribute("data-row"), 10)];
+            if (!row) return;
+            var col = td.getAttribute("data-col");
+            var was = row[col];
+            var txt = (td.textContent || "").trim();
+            /* a column that held numbers keeps holding numbers: a chart
+               cannot plot "120 " and a blank must stay blank, not 0 */
+            var val = txt;
+            if (typeof was === "number" || (was === "" && txt !== "" && !isNaN(Number(txt))))
+              val = txt === "" ? "" : Number(txt);
+            if (val === was) return;
+            row[col] = val;
+            if (window.lcSetDataset)
+              window.lcSetDataset(bindId, window.lcDatasets[bindId] || data);
+          };
+          td.addEventListener("blur", commit);
+          td.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") { e.preventDefault(); td.blur(); }
+          });
+        });
+      }
       el.querySelectorAll("th[data-col]").forEach(function (th) {
         th.addEventListener("click", function () {
           var col = th.getAttribute("data-col");

@@ -265,6 +265,16 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
    link on the brand. What stays is the trail (course › module · page) and
    the account chip, because "am I signed in as me?" is the one question a
    framed learner still needs answered. */
+/* ── two doors, one page ────────────────────────────────────────────────
+   A visitor and an enrolled student read the same welcome and need
+   different last paragraphs: one is invited to write in, the other is
+   already on a roster and has an invitation coming (Michel, 2026-08-19).
+   The frame already knows which is which — a Canvas embed carries
+   ?crumb=, a visitor's tab does not — so the page says both and the
+   frame picks. Content stays markdown + IAL. */
+.in_class { display: none; }
+.lc-crumb-mode .in_class { display: block; }
+.lc-crumb-mode .on_your_own { display: none; }
 .lc-crumb-mode #lc-topbar .lc-links { display: none !important; }
 /* THE SIGN-IN DOOR STAYS (the lesson focus mode already learned): a private
    course tells the learner to connect a key, and hiding the one control that
