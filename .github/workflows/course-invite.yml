@@ -1,0 +1,86 @@
+name: Canvas roster → GitHub invitations
+
+# The just-in-time enrollment gate — manual only, fired from the classroom
+# console (🎓 Roster invite). Reads the roster FROM Canvas (nothing copied,
+# nothing stored) and invites each student's university address to the org.
+# Browsers cannot call Canvas (its CORS policy), so this runs where a
+# token can travel safely: a private runner, with the tokens in Actions
+# secrets. Plan mode is the default and sends NOTHING.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "plan = dry run (default) · invite = actually send"
+        type: choice
+        options: [plan, invite]
+        default: plan
+      course:
+        description: "Canvas course # (blank = courses/micro_build_ai/__course.yaml)"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  invite:
+    # lab-only; if this file ever leaks through a publish, it stays inert
+    if: github.repository == 'michelzam/lightcodelab'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the course wiring
+        id: wiring
+        run: |
+          python3 - "$COURSE_OVERRIDE" <<'PY' >> "$GITHUB_OUTPUT"
+          import sys, yaml
+          w = yaml.safe_load(open("courses/micro_build_ai/__course.yaml"))
+          course = sys.argv[1].strip() or str(w.get("canvas_course") or "").strip()
+          print("course=%s" % course)
+          print("org=%s" % (w.get("org") or ""))
+          print("host=%s" % (w.get("canvas_host") or ""))
+          PY
+        env:
+          COURSE_OVERRIDE: ${{ inputs.course }}
+
+      - name: Guard — everything named, every key present
+        run: |
+          fail=0
+          if [ -z "${{ steps.wiring.outputs.course }}" ]; then
+            echo "::error::No Canvas course number — fill canvas_course in courses/micro_build_ai/__course.yaml (the number in the Canvas URL), or type one in the dispatch box."; fail=1
+          fi
+          if [ -z "${{ secrets.CANVAS_TOKEN }}" ]; then
+            echo "::error::No CANVAS_TOKEN secret — lab repo → Settings → Secrets and variables → Actions → New repository secret. Make the token in Canvas: Account → Settings → + New Access Token."; fail=1
+          fi
+          if [ -z "${{ secrets.ORG_VAULT_TOKEN }}" ]; then
+            echo "::error::No ORG_VAULT_TOKEN secret — it already exists for the publish gates; this runner cannot see it if it was made an Environment secret."; fail=1
+          fi
+          exit $fail
+
+      - name: ${{ inputs.mode == 'invite' && 'Send the invitations' || 'Plan (dry run — sends nothing)' }}
+        env:
+          CANVAS_TOKEN: ${{ secrets.CANVAS_TOKEN }}
+          ORG_TOKEN: ${{ secrets.ORG_VAULT_TOKEN }}
+          CANVAS_HOST: ${{ steps.wiring.outputs.host }}
+        run: |
+          set -o pipefail
+          {
+            echo "## 🎓 ${{ inputs.mode }} — course ${{ steps.wiring.outputs.course }} → ${{ steps.wiring.outputs.org }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          rc=0
+          if [ "${{ inputs.mode }}" = "invite" ]; then
+            python3 tools/course_invite.py invite \
+              --course "${{ steps.wiring.outputs.course }}" \
+              --org "${{ steps.wiring.outputs.org }}" --confirm 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || rc=$?
+          else
+            python3 tools/course_invite.py plan \
+              --course "${{ steps.wiring.outputs.course }}" \
+              --org "${{ steps.wiring.outputs.org }}" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || rc=$?
+          fi
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ $rc -ne 0 ]; then
+            echo "If invitations answered 403: the ORG_VAULT_TOKEN grant needs Organization permissions → Members: read and write (edit the fine-grained token, it keeps its value)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit $rc

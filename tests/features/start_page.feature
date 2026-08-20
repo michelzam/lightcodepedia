@@ -9,7 +9,7 @@ Feature: 🎮 Join the game — the two-minute door into BUILD-AI
     Given I have a clean browser page
 
   Scenario: The app runs for someone who has nothing
-    When I navigate to "/courses/build_ai_start"
+    When I navigate to "/courses/build_ai/start"
     And I wait for the page to be interactive
     Then the shelter list shows 3 dogs
     And the fee chart is drawn
@@ -19,7 +19,7 @@ Feature: 🎮 Join the game — the two-minute door into BUILD-AI
     A green check proves nothing to a newcomer. Nova's missing fee is the
     invitation to touch the data — and the check says her name.
 
-    When I navigate to "/courses/build_ai_start"
+    When I navigate to "/courses/build_ai/start"
     And I wait for the page to be interactive
     And I run the page's embedded features
     Then the proof is failing about "Nova"
@@ -30,7 +30,7 @@ Feature: 🎮 Join the game — the two-minute door into BUILD-AI
     grid ignored editable= entirely, and the app was loose prose on the
     page instead of a framed thing.
 
-    When I navigate to "/courses/build_ai_start"
+    When I navigate to "/courses/build_ai/start"
     And I wait for the page to be interactive
     Then the app is framed as a window titled "Shelter Desk"
     And the fee cells accept a tap
@@ -39,14 +39,14 @@ Feature: 🎮 Join the game — the two-minute door into BUILD-AI
     On iPhone the double-click AG needs never arrived. A contenteditable
     cell takes ONE tap, which is what a phone actually does.
 
-    When I navigate to "/courses/build_ai_start"
+    When I navigate to "/courses/build_ai/start"
     And I wait for the page to be interactive
     And I tap Nova's fee and type "75"
     Then the dataset carries Nova's new fee
     And the page's own promise turns green
 
   Scenario: A visitor is invited to write in
-    When I navigate to "/courses/build_ai_start"
+    When I navigate to "/courses/build_ai/start"
     And I wait for the page to be interactive
     Then the page offers the enrolment address
     And the roster paragraph stays hidden
@@ -57,7 +57,7 @@ Feature: 🎮 Join the game — the two-minute door into BUILD-AI
     "sign up with that same address", or the invitation will not match the
     account they create.
 
-    When I navigate to "/courses/build_ai_start?crumb=BUILD-AI"
+    When I navigate to "/courses/build_ai/start?crumb=BUILD-AI"
     And I wait for the page to be interactive
     Then the page tells me my invitation is coming to my university address
     And the page tells me to sign up with that same address
@@ -69,7 +69,7 @@ Feature: 🎮 Join the game — the two-minute door into BUILD-AI
     visitor finds under /courses/, and it pointed at enrolment and at the
     key wizard — never at the two-minute app (Michel, 2026-08-20).
 
-    When I navigate to "/courses/build_ai_cover"
+    When I navigate to "/courses/build_ai/"
     And I wait for the page to be interactive
     And I follow the cover's link into the game
     Then the shelter list shows 3 dogs

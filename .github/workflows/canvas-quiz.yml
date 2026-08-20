@@ -1,0 +1,69 @@
+name: Quiz → Canvas
+
+# The quiz gate — manual only, fired from the classroom console
+# (📝 Quiz → Canvas). Lints the spec first (tells + greppable keys) and
+# REFUSES a quiz an outsider could pass; then writes it to Canvas
+# UNPUBLISHED, so nobody sits a quiz the teacher has not read. Runs here
+# because a browser cannot reach Canvas (CORS) — the desk on /lab/canvas
+# still lints live, this gate is its arm.
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: "quiz spec to push (a __quiz/canvas.yaml)"
+        default: "courses/micro_build_ai/module_05/__quiz/canvas.yaml"
+      course:
+        description: "Canvas course # (blank = courses/micro_build_ai/__course.yaml)"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  push:
+    # lab-only; if this file ever leaks through a publish, it stays inert
+    if: github.repository == 'michelzam/lightcodelab'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the course wiring
+        id: wiring
+        run: |
+          python3 - "$COURSE_OVERRIDE" <<'PY' >> "$GITHUB_OUTPUT"
+          import sys, yaml
+          w = yaml.safe_load(open("courses/micro_build_ai/__course.yaml"))
+          print("course=%s" % (sys.argv[1].strip() or str(w.get("canvas_course") or "").strip()))
+          print("host=%s" % (w.get("canvas_host") or ""))
+          PY
+        env:
+          COURSE_OVERRIDE: ${{ inputs.course }}
+
+      - name: Guard — everything named, every key present
+        run: |
+          fail=0
+          [ -f "${{ inputs.spec }}" ] || { echo "::error::No such spec: ${{ inputs.spec }}"; fail=1; }
+          if [ -z "${{ steps.wiring.outputs.course }}" ]; then
+            echo "::error::No Canvas course number — fill canvas_course in courses/micro_build_ai/__course.yaml, or type one in the dispatch box."; fail=1
+          fi
+          if [ -z "${{ secrets.CANVAS_TOKEN }}" ]; then
+            echo "::error::No CANVAS_TOKEN secret — lab repo → Settings → Secrets and variables → Actions → New repository secret."; fail=1
+          fi
+          exit $fail
+
+      - name: Lint, then write unpublished
+        env:
+          CANVAS_TOKEN: ${{ secrets.CANVAS_TOKEN }}
+          CANVAS_HOST: ${{ steps.wiring.outputs.host }}
+        run: |
+          set -o pipefail
+          {
+            echo "## 📝 ${{ inputs.spec }} → course ${{ steps.wiring.outputs.course }} (unpublished)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          rc=0
+          python3 tools/canvas_quiz.py push "${{ inputs.spec }}" \
+            --course "${{ steps.wiring.outputs.course }}" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || rc=$?
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit $rc

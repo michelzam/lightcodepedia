@@ -117,8 +117,8 @@ def step_proof_green(context):
 
 @when("I follow the cover's link into the game")
 def step_cover_to_game(context):
-    link = context.page.locator('a[href$="/courses/build_ai_start"]').first
+    link = context.page.locator('a[href$="/courses/build_ai/start"]').first
     expect(link).to_be_visible(timeout=20_000)
     link.click()
-    context.page.wait_for_url("**/courses/build_ai_start*", timeout=20_000)
+    context.page.wait_for_url("**/courses/build_ai/start*", timeout=20_000)
     context.page.wait_for_load_state("networkidle")
