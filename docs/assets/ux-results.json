@@ -3852,6 +3852,33 @@
     "scenario": "Karma rewards are advertised on the wizard steps",
     "feature": "Onboarding wizard",
     "tags": "",
+    "seconds": 1.0,
+    "run": "2026-08-20T22:16Z",
+    "url": "/assets/ux-report.html#scenario_427"
+  },
+  {
+    "status": "✅",
+    "scenario": "The app runs for someone who has nothing",
+    "feature": "🎮 Join the game — the two-minute door into BUILD-AI",
+    "tags": "",
+    "seconds": 1.07,
+    "run": "2026-08-20T22:16Z",
+    "url": "/assets/ux-report.html#scenario_428"
+  },
+  {
+    "status": "✅",
+    "scenario": "The page's own promise starts red and names the gap",
+    "feature": "🎮 Join the game — the two-minute door into BUILD-AI",
+    "tags": "",
+    "seconds": 1.35,
+    "run": "2026-08-20T22:16Z",
+    "url": "/assets/ux-report.html#scenario_429"
+  },
+  {
+    "status": "✅",
+    "scenario": "The app wears a window, and its cells invite one tap",
+    "feature": "🎮 Join the game — the two-minute door into BUILD-AI",
+    "tags": "",
     "seconds": 0.99,
     "run": "2026-08-20T22:19Z",
     "url": "/assets/ux-report.html#scenario_427"
