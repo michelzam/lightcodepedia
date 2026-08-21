@@ -52,6 +52,34 @@ your progress at every step.
 {: .blocks cols="2" }
 
 
+````
+### 🐝 The loop
+```
+Need: every build starts with someone's problem
+Design: turn the need into something you can hold
+Blocks: snap the working parts together
+AI: bring in the partner that thinks with you
+Ship: put it in someone's hands
+Learn: what you shipped starts the next loop
+```
+{: .build_loop height="440" }
+
+### 🪄 Growing his own skills
+[Chad's Magics!](/courses/chad_10s2.mp4)
+{: .video autoplay="true" loop="true" }
+
+> Human hands, hearts and minds work daily, 
+in the background, along with AI, 
+to deliver the magics of joyful learning.
+````
+{: .blocks cols="2" }
+
+### 🗺️ Course Map
+[Browse](.)
+{: .sitemap height="460" }
+`````
+{: .accordion #loop }
+
 ### 😀 Friendly foundations
 Everything rides on friendly foundations — `Python`[^python], `Markdown`[^md]
 and `git`[^git], tamed for beginners — so you can focus on what matters:
@@ -76,9 +104,9 @@ Enroll in your class
 {: .button }
 
 ### 2️⃣ Tutorial 101
-Explore basic building blocks. Ask doc for a tour.
+Explore basic building blocks.
 
-[📖 Tutorial →](tutorial101)
+[📖 Tutorial →](/tutorial101)
 {: .button }
 ```
 {: .blocks cols="2"}

@@ -18,7 +18,7 @@ Go ahead, explore, play, learn and have fun! 🎉
 
 ### 📖 This block is a text [Blocks can display formatted text, hints and help]
 
-A `text` block is a simple block that displays formatted text.
+A `text` block displays formatted text.
 
 - ✅ Formatted text **bold** / *italic* / colors
 - ✅ Item lists
