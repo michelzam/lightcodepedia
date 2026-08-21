@@ -7,73 +7,113 @@ from playwright.sync_api import expect
 HOST = "https://canvas.test"
 COURSE = "4242"
 
-CLEAN = """
-title: "05 · Basement — check"
-anchors: [reservations, met, Diallo]
-questions:
-  - name: The four words
-    text: "Your reservations list shows 14 rows and the check names five families. Which fix?"
-    answers:
-      - text: "Add WHERE home = '' so the dogs not yet home stay listed"
-        why: "Diallo met Scout already; the call is done."
-      - text: "Add WHERE met = '' so families who never met a dog stay"
-        correct: true
-        why: "Nine rows left — the ones still waiting for a call."
-      - text: "Sort the grid by met and hide the rows already filled"
-        why: "The view would look right while the question stayed wrong."
-      - text: "Remove those five families from the reservations data"
-        why: "Their reservations are real; the data is not what is wrong."
-  - name: values vs count
-    text: "Why does the check read values(\\"met\\") from to_call rather than count?"
-    answers:
-      - text: "It reads inside the rows, so the check can name the five"
-        correct: true
-        why: "Which is why the red message could name them."
-      - text: "It runs faster than count on a query bound to a set"
-        why: "Speed is not the question with fourteen rows."
-      - text: "It is required when a feature card carries a grades knob"
-        why: "The grades knob decides who awards the colour."
-      - text: "It works on datasets, while count works on queries only"
-        why: "Both work on both."
+CLEAN = """# 05 \u00b7 Basement \u2014 check
+{: .canvas_quiz anchors="reservations, met, Diallo" }
+
+### The four words
+
+Your reservations list shows 14 rows and the check names five families. Which fix?
+
+- [ ] Add WHERE home = '' so the dogs not yet home stay listed
+
+  > Diallo met Scout already; the call is done.
+
+- [x] Add WHERE met = '' so families who never met a dog stay
+
+  > Nine rows left \u2014 the ones still waiting for a call.
+
+- [ ] Sort the grid by met and hide the rows already filled
+
+  > The view would look right while the question stayed wrong.
+
+- [ ] Remove those five families from the reservations data
+
+  > Their reservations are real; the data is not what is wrong.
+
+{: .quiz }
+
+### values vs count
+
+Why does the check read values("met") from to_call rather than count?
+
+- [x] It reads inside the rows, so the check can name the five
+
+  > Which is why the red message could name them.
+
+- [ ] It runs faster than count on a query bound to a set
+
+  > Speed is not the question with fourteen rows.
+
+- [ ] It is required when a feature card carries a grades knob
+
+  > The grades knob decides who awards the colour.
+
+- [ ] It works on datasets, while count works on queries only
+
+  > Both work on both.
+
+{: .quiz }
 """
 
-TELLS = """
-title: "Tempting"
-anchors: [reservations]
-questions:
-  - name: The tell
-    text: "In the reservations list, which fix makes the check green?"
-    answers:
-      - text: "Sort the grid"
-      - text: "Delete the rows"
-      - text: "**Add `WHERE met = ''` so the list keeps only the families still waiting**"
-        correct: true
-      - text: "Call them all"
+TELLS = """# Tempting
+{: .canvas_quiz anchors="reservations" }
+
+### The tell
+
+In the reservations list, which fix makes the check green?
+
+- [ ] Sort the grid
+
+  > no
+
+- [ ] Delete the rows
+
+  > no
+
+- [x] **Add `WHERE met = ''` so the list keeps only the families still waiting**
+
+  > yes
+
+- [ ] Call them all
+
+  > no
+
+{: .quiz }
 """
 
-GENERIC = """
-title: "Generic"
-anchors: [reservations, Diallo]
-questions:
-  - name: sql
-    text: "What does the SQL WHERE clause do?"
-    answers:
-      - text: "It filters the rows a query returns"
-        correct: true
-      - text: "It sorts the rows a query returns"
-      - text: "It joins two tables on a column"
+GENERIC = """# Generic
+{: .canvas_quiz anchors="reservations, Diallo" }
+
+### sql
+
+What does the SQL WHERE clause do?
+
+- [x] It filters the rows a query returns
+
+  > yes
+
+- [ ] It sorts the rows a query returns
+
+  > no
+
+- [ ] It joins two tables on a column
+
+  > no
+
+{: .quiz }
 """
 
 
 def _stub(context, spec_text, existing=None):
     context.canvas_posts = []
+    context.spec_text = spec_text
     # the desk's PAGE and its SPEC both come through the contents API — the
     # path says which is which
     page_md = (
         "# Canvas desk\n\n"
         "[Canvas quiz desk](#)\n"
         '{: .canvas_quiz #m05 course="' + COURSE + '" host="' + HOST + '" '
-        'spec="hq/quizzes/demo.yaml" }\n')
+        'spec="hq/quizzes/demo.md" }\n')
 
     def contents(route):
         body = spec_text if "quizzes/" in route.request.url else page_md
@@ -133,6 +173,90 @@ def step_open_desk(context):
         context.base_url + "/run.html#src=gh:michelzam/lightcodelab/docs/lab/canvas_desk.md",
         wait_until="domcontentloaded")
     context.page.locator(".lc-cq").first.wait_for(timeout=20_000)
+
+
+@when("I open the canvas desk with its inspection grids")
+def step_open_desk_grids(context):
+    """The __quiz folder page's shape: the desk plus a questions grid, a
+    bound form, and a master-filtered options grid over its datasets."""
+    page_md = (
+        "# Canvas desk\n\n"
+        "[Canvas quiz desk](#)\n"
+        '{: .canvas_quiz #m05 spec="hq/quizzes/demo.md" }\n\n'
+        "[questions](#)\n"
+        '{: .datagrid #m05q bind="m05_questions" rows="6" }\n\n'
+        "```yaml\n```\n"
+        '{: .form bound="m05q" title="Question" }\n\n'
+        "[options](#)\n"
+        '{: .datagrid #m05o bind="m05_options" master="m05q" filter="q=q" rows="10" }\n\n'
+        "```yaml\n```\n"
+        '{: .form bound="m05o" title="Option" }\n')
+
+    def contents(route):
+        body = context.spec_text if "quizzes/" in route.request.url else page_md
+        route.fulfill(status=200, content_type="text/plain", body=body)
+
+    context.page.route("https://api.github.com/repos/**/contents/**", contents)
+    context.page.goto(
+        context.base_url + "/run.html#src=gh:michelzam/lightcodelab/docs/lab/canvas_desk.md",
+        wait_until="domcontentloaded")
+    context.page.locator(".lc-cq").first.wait_for(timeout=20_000)
+
+
+@then("the questions grid lists the spec's questions")
+def step_grid_questions(context):
+    # the runner road renders the light table, the lab road AG — accept both
+    grid = context.page.locator(
+        '[data-lc-id="m05q"] .ag-row, [data-lc-id="m05q"] .lc-dg-table tbody tr')
+    expect(grid.first).to_be_visible(timeout=20_000)
+    assert grid.count() >= 1, "no question rows"
+
+
+@then("the options grid carries a marked key")
+def step_grid_key(context):
+    cell = context.page.locator(
+        '[data-lc-id="m05o"] .ag-cell, [data-lc-id="m05o"] .lc-dg-table td').filter(has_text="✅")
+    expect(cell.first).to_be_visible(timeout=20_000)
+
+
+@then("the options grid shows only the first question's options")
+def step_options_first(context):
+    rows = context.page.locator('[data-lc-id="m05o"] .lc-dg-table tbody tr')
+    expect(rows.first).to_be_visible(timeout=20_000)
+    n = context.page.evaluate("(window.lcDatasets.m05_options||[]).filter(o=>o.q===1).length")
+    assert rows.count() == n, "%d rows for %d q1 options" % (rows.count(), n)
+
+
+@when("I select the second question row")
+def step_select_q2(context):
+    context.page.locator('[data-lc-id="m05q"] .lc-dg-table tbody tr').nth(1).click()
+    context.page.wait_for_timeout(400)
+
+
+@then("the options grid shows only the second question's options")
+def step_options_second(context):
+    n = context.page.evaluate("(window.lcDatasets.m05_options||[]).filter(o=>o.q===2).length")
+    rows = context.page.locator('[data-lc-id="m05o"] .lc-dg-table tbody tr')
+    assert rows.count() == n, "%d rows for %d q2 options" % (rows.count(), n)
+
+
+@then("the bound form shows the second question")
+def step_form_q2(context):
+    name = context.page.evaluate("(window.lcDatasets.m05_questions||[])[1].name")
+    form = context.page.locator(".lc-form")
+    expect(form.first).to_be_visible(timeout=10_000)
+    assert name in form.first.text_content(), "form does not carry %r" % name
+
+
+@then("the option form follows into the second question's options")
+def step_option_form_follows(context):
+    """The master moved, so the option form must show a q2 option — never a
+    leftover from q1 (the detail republishes its first row on master change)."""
+    why = context.page.evaluate(
+        "(window.lcDatasets.m05_options||[]).filter(o=>o.q===2)[0].why")
+    form = context.page.locator('.lc-form[data-bound="m05o"], .lc-form:has(.lc-form-name:text("Option"))').last
+    expect(form).to_be_visible(timeout=10_000)
+    assert why in form.text_content(), "option form does not carry a q2 option"
 
 
 @when("I press the quiz desk's {label} button")

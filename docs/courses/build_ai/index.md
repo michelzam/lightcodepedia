@@ -20,7 +20,7 @@ your progress at every step.
 - AI basics
 - Best software practices
 
-### 🗺️ The format
+### 🗺️ Formats
 - Cohort — onsite or online
 - 4, 8 or 15 weeks
 - Everything runs in your browser — nothing to install
@@ -75,10 +75,10 @@ Enroll in your class
 [🎟️ Enroll →](https://uwm.edu/registrar/enrollment/)
 {: .button }
 
-### 2️⃣ Join
-Join & open the course
+### 2️⃣ Tutorial 101
+Explore basic building blocks. Ask doc for a tour.
 
-[📖 Join →](/courses/build_ai/start)
+[📖 Tutorial →](tutorial101)
 {: .button }
 ```
 {: .blocks cols="2"}

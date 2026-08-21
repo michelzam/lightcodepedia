@@ -11,14 +11,14 @@ Feature: 📝 The Canvas quiz desk — a quiz nobody can pass by pattern
     And a stubbed Canvas course
 
   Scenario: A clean spec passes and offers the push
-    Given the spec "hq/quizzes/demo.yaml" is the module 05 quiz
+    Given the spec "hq/quizzes/demo.md" is the module 05 quiz
     When I open the canvas desk for that spec
     And I press the quiz desk's Lint button
     Then the desk reports no tells
     And the push button is offered
 
   Scenario: The longest bolded key is refused, and so is the push
-    Given the spec "hq/quizzes/demo.yaml" has a key that is longest and bold
+    Given the spec "hq/quizzes/demo.md" has a key that is longest and bold
     When I open the canvas desk for that spec
     And I press the quiz desk's Lint button
     Then the desk names the longest-option tell
@@ -29,13 +29,13 @@ Feature: 📝 The Canvas quiz desk — a quiz nobody can pass by pattern
     An expert who never opened the module could answer it, which is the
     whole failure this quiz exists to prevent.
 
-    Given the spec "hq/quizzes/demo.yaml" asks a generic SQL question
+    Given the spec "hq/quizzes/demo.md" asks a generic SQL question
     When I open the canvas desk for that spec
     And I press the quiz desk's Lint button
     Then the desk says the question names nothing from the module
 
   Scenario: Reading the course lists what Canvas already holds
-    Given the spec "hq/quizzes/demo.yaml" is the module 05 quiz
+    Given the spec "hq/quizzes/demo.md" is the module 05 quiz
     When I open the canvas desk for that spec
     And I press the quiz desk's Read Canvas button
     Then the desk lists the course's quizzes
@@ -44,9 +44,26 @@ Feature: 📝 The Canvas quiz desk — a quiz nobody can pass by pattern
     Learners may have sat it. Rewriting it silently would edit somebody's
     exam, so the desk stops and says to unpublish it first.
 
-    Given the spec "hq/quizzes/demo.yaml" is the module 05 quiz
+    Given the spec "hq/quizzes/demo.md" is the module 05 quiz
     And the course already holds that quiz, published, with questions
     When I open the canvas desk for that spec
     And I press the quiz desk's Lint button
     And I press the quiz desk's Push button
     Then the desk refuses to touch the published quiz
+
+  Scenario: The spec fills the page's own grids for inspection
+    The desk judged the yaml but kept it to itself — inspecting a question
+    meant opening the raw file. The desk now republishes the spec on the
+    dataset bus, so the folder page carries a plain datagrid + form over
+    the same file (Michel, 2026-08-20: "add a datagrid and a form ... so
+    I can inspect the yaml").
+
+    Given the spec "hq/quizzes/demo.md" is the module 05 quiz
+    When I open the canvas desk with its inspection grids
+    Then the questions grid lists the spec's questions
+    And the options grid carries a marked key
+    And the options grid shows only the first question's options
+    When I select the second question row
+    Then the options grid shows only the second question's options
+    And the bound form shows the second question
+    And the option form follows into the second question's options

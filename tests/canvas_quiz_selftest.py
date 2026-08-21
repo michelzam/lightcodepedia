@@ -65,7 +65,7 @@ def test_key_always_in_the_same_slot():
 
 def test_a_clean_quiz_passes():
     quiz = cq.load(os.path.join(os.path.dirname(__file__), "..", "courses",
-                                "micro_build_ai", "module_05", "__quiz", "canvas.yaml"))
+                                "micro_build_ai", "module_05", "__quiz", "canvas.md"))
     assert cq.tells(quiz) == [], cq.tells(quiz)
 
 
@@ -95,6 +95,44 @@ def test_a_key_the_course_already_marks():
                     {"text": "No the data was wrong instead", "why": "x"}]}]}
     hits = cq.leaks(quiz, d)
     assert hits and "grep" in hits[0], hits
+
+
+def test_every_explanation_rides_its_own_option():
+    """Per-option only, by decision: the question-level comment slots stay
+    empty — a second, vaguer voice after the picked option's own why, and
+    "go fix it" is empty advice after the last attempt (Michel, 2026-08-21)."""
+    q = {"name": "Q1", "text": "why?",
+         "answers": [{"text": "a", "correct": True, "why": "the one"},
+                     {"text": "b", "why": "not this"}]}
+    body = cq.to_canvas_question(q, 1)["question"]
+    assert body["answers"][0]["comments"] == "the one"
+    assert body["answers"][1]["comments"] == "not this"
+    # comments_html is the field the RESULTS PAGE renders — plain comments
+    # stored fine and displayed nowhere (2026-08-21)
+    assert body["answers"][0]["comments_html"] == "<p>the one</p>"
+    assert "correct_comments" not in body and "incorrect_comments" not in body
+
+
+def test_markdown_reads_as_the_same_spec():
+    """One grammar, two readers: the md road must carry everything the yaml
+    carried — knobs, notes, whys — and points defaults to 1 (Michel,
+    2026-08-21: "make points = 1 by default")."""
+    md = (
+        '# T\n{: .canvas_quiz attempts="2" anchors="met, Diallo" }\n\n'
+        'About the list.\n\n'
+        '### q1\n\nWhat does met hold for Diallo?\n\n'
+        '- [ ] a\n\n  > no\n\n'
+        '- [x] b\n\n  > yes\n  > really\n\n'
+        '{: .quiz }\n')
+    sp = cq.parse_md(md)
+    assert sp["title"] == "T" and sp["attempts"] == 2
+    assert sp["anchors"] == ["met", "Diallo"]
+    assert sp["description"] == "About the list."
+    q = sp["questions"][0]
+    assert q["text"] == "What does met hold for Diallo?"
+    assert q["answers"][1].get("correct") and q["answers"][1]["why"] == "yes really"
+    body = cq.to_canvas_question(q, 1)["question"]
+    assert body["points_possible"] == 1
 
 
 if __name__ == "__main__":

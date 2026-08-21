@@ -10,11 +10,16 @@ name: Quiz → Canvas
 on:
   workflow_dispatch:
     inputs:
+      action:
+        description: "push = write unpublished · peek = print what Canvas stores"
+        type: choice
+        options: [push, peek]
+        default: push
       spec:
-        description: "quiz spec to push (a __quiz/canvas.yaml)"
-        default: "courses/micro_build_ai/module_05/__quiz/canvas.yaml"
+        description: "quiz spec to push (a __quiz/canvas.md, yaml also accepted)"
+        default: "courses/micro_build_ai/module_05/__quiz/canvas.md"
       course:
-        description: "Canvas course # (blank = courses/micro_build_ai/__course.yaml)"
+        description: "Canvas course # (blank = courses/micro_build_ai/__course.yml)"
         default: ""
 
 permissions:
@@ -33,9 +38,11 @@ jobs:
         run: |
           python3 - "$COURSE_OVERRIDE" <<'PY' >> "$GITHUB_OUTPUT"
           import sys, yaml
-          w = yaml.safe_load(open("courses/micro_build_ai/__course.yaml"))
+          # __course.yml is the course's ONE wiring file — the same one the
+          # Publish courses gate reads. The org is the vault's owner half.
+          w = yaml.safe_load(open("courses/micro_build_ai/__course.yml"))
           print("course=%s" % (sys.argv[1].strip() or str(w.get("canvas_course") or "").strip()))
-          print("host=%s" % (w.get("canvas_host") or ""))
+          print("host=%s" % (w.get("canvas_host") or "https://uwm.instructure.com"))
           PY
         env:
           COURSE_OVERRIDE: ${{ inputs.course }}
@@ -45,7 +52,7 @@ jobs:
           fail=0
           [ -f "${{ inputs.spec }}" ] || { echo "::error::No such spec: ${{ inputs.spec }}"; fail=1; }
           if [ -z "${{ steps.wiring.outputs.course }}" ]; then
-            echo "::error::No Canvas course number — fill canvas_course in courses/micro_build_ai/__course.yaml, or type one in the dispatch box."; fail=1
+            echo "::error::No Canvas course number — fill canvas_course in courses/micro_build_ai/__course.yml, or type one in the dispatch box."; fail=1
           fi
           if [ -z "${{ secrets.CANVAS_TOKEN }}" ]; then
             echo "::error::No CANVAS_TOKEN secret — lab repo → Settings → Secrets and variables → Actions → New repository secret."; fail=1
@@ -63,7 +70,7 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           rc=0
-          python3 tools/canvas_quiz.py push "${{ inputs.spec }}" \
+          python3 tools/canvas_quiz.py "${{ inputs.action || 'push' }}" "${{ inputs.spec }}" \
             --course "${{ steps.wiring.outputs.course }}" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || rc=$?
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           exit $rc

@@ -16,7 +16,7 @@ on:
         options: [plan, invite]
         default: plan
       course:
-        description: "Canvas course # (blank = courses/micro_build_ai/__course.yaml)"
+        description: "Canvas course # (blank = courses/micro_build_ai/__course.yml)"
         default: ""
 
 permissions:
@@ -35,11 +35,13 @@ jobs:
         run: |
           python3 - "$COURSE_OVERRIDE" <<'PY' >> "$GITHUB_OUTPUT"
           import sys, yaml
-          w = yaml.safe_load(open("courses/micro_build_ai/__course.yaml"))
+          # __course.yml is the course's ONE wiring file — the same one the
+          # Publish courses gate reads. The org is the vault's owner half.
+          w = yaml.safe_load(open("courses/micro_build_ai/__course.yml"))
           course = sys.argv[1].strip() or str(w.get("canvas_course") or "").strip()
           print("course=%s" % course)
-          print("org=%s" % (w.get("org") or ""))
-          print("host=%s" % (w.get("canvas_host") or ""))
+          print("org=%s" % str(w.get("vault") or "").split("/")[0])
+          print("host=%s" % (w.get("canvas_host") or "https://uwm.instructure.com"))
           PY
         env:
           COURSE_OVERRIDE: ${{ inputs.course }}
@@ -48,7 +50,7 @@ jobs:
         run: |
           fail=0
           if [ -z "${{ steps.wiring.outputs.course }}" ]; then
-            echo "::error::No Canvas course number — fill canvas_course in courses/micro_build_ai/__course.yaml (the number in the Canvas URL), or type one in the dispatch box."; fail=1
+            echo "::error::No Canvas course number — fill canvas_course in courses/micro_build_ai/__course.yml (the number in the Canvas URL), or type one in the dispatch box."; fail=1
           fi
           if [ -z "${{ secrets.CANVAS_TOKEN }}" ]; then
             echo "::error::No CANVAS_TOKEN secret — lab repo → Settings → Secrets and variables → Actions → New repository secret. Make the token in Canvas: Account → Settings → + New Access Token."; fail=1

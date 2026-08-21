@@ -38,6 +38,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-form-null { color: #aaa; font-style: italic; }
 .lc-form-num { color: #0a5; }
 .lc-form-cellbox { display: flex; align-items: center; height: 100%; overflow: hidden; }
+.lc-form-grid .ag-cell-wrap-text { line-height: 1.5; padding-top: 6px; padding-bottom: 6px; word-break: normal; }
 .lc-form-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; line-height: 1.2; padding: 4px 0; }
 .lc-form-pill { display: inline-flex; align-items: center; padding: 1px 9px; border-radius: 12px; background: #e7f1fe; color: #1756a9; font-size: 0.82em; border: 1px solid #c5dcf5; white-space: nowrap; line-height: 1.4; }
 .lc-form-selectbox { display: inline-flex; align-items: center; gap: 0.4em; padding: 0 8px 0 10px; border: 1px solid #c5dcf5; background: #f5f9ff; border-radius: 4px; color: #1756a9; font-size: 0.88em; line-height: 1.7; max-width: 100%; box-sizing: border-box; }
@@ -395,7 +396,12 @@ Auto-included by docs/_layouts/default.html.
             }
             return params.newValue;
           },
-          cellRenderer: cellRenderer
+          cellRenderer: cellRenderer,
+          /* a long value is a paragraph, not a peephole: wrap and let the
+             row grow (Michel, 2026-08-21: "it should appear as a long
+             text in the form: multiple lines") */
+          wrapText: true,
+          autoHeight: true
         }
       ];
 
@@ -410,17 +416,7 @@ Auto-included by docs/_layouts/default.html.
         suppressCellFocus: !opts.editable,
         animateRows: false,
         defaultColDef: { sortable: false, filter: false, suppressHeaderMenuButton: true, resizable: true },
-        getRowHeight: function(params) {
-          var t = params.data._type;
-          if (isImageValue(params.data._key, params.data.value)) return 110;
-          if (t === "array") {
-            var n = (params.data.value || []).length;
-            if (n <= 4) return null; // default
-            if (n <= 10) return 56;
-            return 80;
-          }
-          return null;
-        },
+
         onCellValueChanged: function(event) {
           var k = event.data._key;
           var nv = event.newValue;

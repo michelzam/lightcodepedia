@@ -249,6 +249,8 @@ Auto-included by docs/_layouts/default.html.
        where AG needs a double-click that phones barely deliver. */
     var editable = el.getAttribute("editable") === "true";
     var lcId = el.getAttribute("id") || "";
+    var masterId = el.getAttribute("master") || el.getAttribute("detail-of") || "";
+    var filterExpr = el.getAttribute("filter") || "";
     var wrap = document.createElement("div");
     wrap.className = "lc-datagrid";
     wrap.setAttribute("data-bind", bindId);
@@ -258,7 +260,34 @@ Auto-included by docs/_layouts/default.html.
 
     var sortCol = null, sortAsc = true, page = 0;
 
+    /* grid-to-grid master/detail, the light-table half: the AG road had
+       master= + filter="local=masterKey" and this road silently ignored
+       both, so on a runner page the detail grid showed everything and a
+       click upstream changed nothing (Michel, 2026-08-21). Same contract,
+       same attributes — one selection bus for both roads. */
+    var masterRow = null, lastData = null, publishedFirst = false;
+    var filterKeys = null;
+    if (masterId && filterExpr) {
+      var fm = filterExpr.match(/^\s*([\w-]+)\s*=\s*([\w-]+)\s*$/);
+      if (fm) filterKeys = { local: fm[1], master: fm[2] };
+    }
+    if (filterKeys && window.lcMasterDetail) {
+      window.lcMasterDetail.subscribe(masterId, function (row) {
+        masterRow = row;
+        /* the master moved: this grid's own detail (a bound form) must not
+           keep showing a row that just got filtered away */
+        publishedFirst = false;
+        if (lastData) render(lastData);
+      });
+    }
+
     function render(data) {
+      lastData = data;
+      if (data && filterKeys && masterRow) {
+        data = data.filter(function (r) {
+          return r[filterKeys.local] === masterRow[filterKeys.master];
+        });
+      }
       if (!data || !data.length) {
         el.innerHTML = emptyMsg
           ? "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>" + emptyMsg + "</p>"
@@ -370,6 +399,13 @@ Auto-included by docs/_layouts/default.html.
             if (lcId) window.lcMasterDetail.publish(lcId, slice[i] || null);
           });
         });
+        /* a master with data selects its first row at once, like the AG
+           road — a bound form should never sit empty waiting for a click */
+        if (lcId && !publishedFirst && slice.length && window.lcMasterDetail) {
+          publishedFirst = true;
+          if (trs[0]) trs[0].classList.add("lc-dg-selected");
+          window.lcMasterDetail.publish(lcId, slice[0]);
+        }
       }
     }
 
