@@ -122,3 +122,22 @@ def step_cover_to_game(context):
     link.click()
     context.page.wait_for_url("**/courses/build_ai/start*", timeout=20_000)
     context.page.wait_for_load_state("networkidle")
+
+
+@when('I open the cover\'s "{label}" accordion')
+def step_open_cover_accordion(context, label):
+    s = context.page.locator(".lc-accordion summary").filter(has_text=label).first
+    expect(s).to_be_visible(timeout=20_000)
+    s.click()
+
+
+@then("the loop and the video sit in a two-column block")
+def step_loop_two_cols(context):
+    body = context.page.locator(".lc-accordion details[open] .lc-ac-body").first
+    expect(body.locator(".lc-blocks")).to_have_count(1, timeout=20_000)
+    expect(body.locator(".lc-bl-stage, canvas").first).to_be_visible(timeout=20_000)
+    expect(body.locator("video").first).to_be_attached(timeout=20_000)
+    n = context.page.evaluate(
+        "getComputedStyle(document.querySelector('.lc-accordion details[open] .lc-blocks'))"
+        ".gridTemplateColumns.split(' ').length")
+    assert n == 2, "expected 2 columns, got %s" % n
