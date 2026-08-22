@@ -74,3 +74,13 @@ Feature: 🎮 Join the game — the two-minute door into BUILD-AI
     And I follow the cover's link into the game
     Then the shelter list shows 3 dogs
     And nothing on the page asked me to connect
+
+  Scenario: The cover's loop accordion holds two columns, loop beside video
+    A hand-edited fence nesting on the cover left the accordion body
+    empty: the blocks wrapper never opened, so the build loop and the
+    video could not sit side by side (Michel, 2026-08-21).
+
+    When I navigate to "/courses/build_ai/"
+    And I wait for the page to be interactive
+    And I open the cover's "How BUILD-AI works" accordion
+    Then the loop and the video sit in a two-column block

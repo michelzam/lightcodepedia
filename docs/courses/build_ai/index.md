@@ -12,7 +12,7 @@ your progress at every step.
 - 👩🏻‍💻 Create your own apps?
 - 🤔 Avoid tech hassle?
 - 🏗️ Become a builder in the AI era?
-- 🪪 Earn your AI builder licence?
+- 🪪 Earn your badge?
 
 ### 🥇 This course offers
 - A gentle, yet engaging and efficient introduction to:
@@ -27,6 +27,7 @@ your progress at every step.
 - Cloud storage for your work, at no additional cost
 ```
 {: .blocks cols="3" }
+
 
 ```
 ### 👀 What's inside
@@ -51,9 +52,11 @@ your progress at every step.
 ```
 {: .blocks cols="2" }
 
+`````
+### 🔁 How BUILD-AI works
 
 ````
-### 🐝 The loop
+### 🐝 The build loop
 ```
 Need: every build starts with someone's problem
 Design: turn the need into something you can hold
@@ -64,7 +67,7 @@ Learn: what you shipped starts the next loop
 ```
 {: .build_loop height="440" }
 
-### 🪄 Growing his own skills
+### 🪄 Growing your own skills
 [Chad's Magics!](/courses/chad_10s2.mp4)
 {: .video autoplay="true" loop="true" }
 
@@ -73,10 +76,6 @@ in the background, along with AI,
 to deliver the magics of joyful learning.
 ````
 {: .blocks cols="2" }
-
-### 🗺️ Course Map
-[Browse](.)
-{: .sitemap height="460" }
 `````
 {: .accordion #loop }
 
