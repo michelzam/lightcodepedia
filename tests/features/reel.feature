@@ -142,3 +142,18 @@ Feature: Reel mode — Instagram-style vertical snap between titles
     Then the page is in reel mode
     When I press the right arrow
     Then the reel bar title is the current section's heading
+
+  Scenario: The reel reveals its blocks progressively
+    Blocks fade in as the reel reaches them (Michel, 2026-08-23: "modular
+    plus progressive, reel included") — in-view blocks show at once, the
+    rest wait below the fold, until the reel scrolls to them. Exiting
+    tears it all down, so the read page never depends on the effect.
+
+    When I navigate to "/tutorial101?reel=1"
+    And I wait for the page to be interactive
+    Then the page is in reel mode
+    And the reel arms its blocks for reveal
+    And scrolling to the next section reveals its blocks
+    When I exit reel mode
+    Then the page is not in reel mode
+    And no block stays armed

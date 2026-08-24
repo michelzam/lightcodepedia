@@ -5,7 +5,8 @@ Attach `{: .diagram }` to a link/paragraph to render a Graphviz class diagram of
 the component model, generated IN THE BROWSER from the wrapper classes' own
 to_dot() methods (the single source of truth in steps_runtime.md). Optional
 `scope="ClassName"` narrows to that class plus its ancestors, association targets
-and subclasses. No scope → the whole model.
+and subclasses; `scope="A,B"` unions several closures — the way to include a
+manager class nothing associates INTO. No scope → the whole model.
 
 Pipeline: MicroPython runs the preamble + to_dot(scope) → DOT string →
 @viz-js/viz (vendored) renders it to inline SVG.
@@ -49,7 +50,7 @@ Auto-included by docs/_layouts/default.html.
         div.innerHTML = viz.renderString(window._lcDiagramDot || "digraph{}", { format: "svg" });
       }
       nodes.forEach(function (el) {
-        var scope = (el.getAttribute("scope") || "").replace(/[^A-Za-z0-9_*]/g, "");
+        var scope = (el.getAttribute("scope") || "").replace(/[^A-Za-z0-9_*,]/g, "");
         var arg = (scope && scope !== "*") ? ('"' + scope + '"') : "None";
         // states="false"/"off"/"no" hides the state-machine clusters (knob)
         var st = (el.getAttribute("states") || "").toLowerCase();

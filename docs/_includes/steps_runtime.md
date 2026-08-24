@@ -38,6 +38,10 @@ try:
     _LC_OBJS
 except NameError:
     _LC_OBJS = []
+try:
+    _LC_DECL          # model blocks: block id → the class names it declared
+except NameError:
+    _LC_DECL = {}
 
 # ════════════════════════ model metadata (single source) ═════════════════════
 # Type → icon. Mirrors usecases/module_manager/backend/module_decorator.py.
@@ -144,6 +148,11 @@ class Attr:
         # a non-builtin type names a Model class → a typed reference. Use the
         # string form for forward/self references: bestie = Attr("Pet")
         self.ref = self.t not in ("int", "float", "bool", "str")
+        # Attr() with no default reads as "the empty one of its type" — a
+        # blank string, a zero, a False — so name = Attr() is legal shorthand
+        # (Michel, 2026-08-22). Refs keep None: an empty reference is real.
+        if default is None and not self.ref:
+            default = {"str": "", "int": 0, "float": 0.0, "bool": False}.get(self.t)
         self.d = default
         self.min = min
         self.max = max
@@ -815,7 +824,16 @@ class Bar(Object):
 class Datagrid(Block):
     @property
     def source(self):
-        return Dataset(self._attr("data-bind") or "")
+        b = self._attr("data-bind") or ""
+        # bind="Student" names a CLASS: the source is the model block that
+        # declared it — the x-ray pipes grid → model (Michel, 2026-08-24)
+        for mid in _LC_DECL:
+            if b in _LC_DECL[mid]:
+                el = js.window.document.querySelector(
+                    ".lc-model[data-lc-id='" + mid + "']")
+                if el is not None:
+                    return Model(el)
+        return Dataset(b)
 
     def _api(self):
         # AG-backed grids register their api under their id — the honest
@@ -935,8 +953,17 @@ class Chart(Block):
 
 @component(icon="🦄",
            attrs=[{"n": "title", "t": "str"}, {"n": "status", "t": "str"}],
+           assoc=[{"n": "flow", "target": "EventFlow"}],
            methods=["run"])
 class Feature(Block):
+    @property
+    def flow(self):
+        """The event flow this feature checks (flow= knob) — Given is the
+        setup, When the command, Then the event; the pipe says which story."""
+        fid = self._attr("data-flow") or ""
+        el = js.window.document.querySelector("[data-lc-id='" + fid + "']")
+        return EventFlow(el) if el is not None else None
+
     @classmethod
     def nth(cls, n=0):
         nl = js.window.document.querySelectorAll(".lc-feature")
@@ -1763,7 +1790,8 @@ class ImpactMap(Block):
         return _lc_ref(self, "data-pitch")
 
 
-@component(icon="🎏", attrs=[{"n": "count", "t": "int"}])
+@component(icon="🎏", attrs=[{"n": "count", "t": "int"}],
+           assoc=[{"n": "map", "target": "ImpactMap"}])
 class EventFlow(Block):
     """Event-storming sequence (.event_flow) — the page's story as
     colored notes. One beat, under the user who gives it:
@@ -1777,6 +1805,64 @@ class EventFlow(Block):
         the grammar (a command before its event, a rule that governs a
         command rather than issuing one)."""
         return [str(o._el.getAttribute("data-kind") or "") for o in self._qq(".lc-ef-step")]
+
+    @property
+    def map(self):
+        """The impact map this story tells (map= knob) — each beat serves
+        an impact; the pipe says which map."""
+        mid = self._attr("data-map") or ""
+        el = js.window.document.querySelector("[data-lc-id='" + mid + "']")
+        return ImpactMap(el) if el is not None else None
+
+    def elements(self):
+        """The flow's cast — every ‘— ref’ tail, collected: #blocks, classes,
+        Class.commands, Class[states]. The meta level checks each one against
+        the page's own artifacts."""
+        return [{"kind": str(o._el.getAttribute("data-el-kind") or ""),
+                 "ref": str(o._el.getAttribute("data-el-ref") or "")}
+                for o in self._qq(".lc-ef-el")]
+
+
+@component(icon="🏛️",
+           attrs=[{"n": "classes", "t": "str"}])
+class Model(Block):
+    """The page's declarations (.model) — classes and singletons, invisible
+    on the page like a dataset: structure, not ink. Widgets point at it
+    with source=, the x-ray docks it (Michel, 2026-08-24)."""
+    @property
+    def classes(self):
+        return " ".join(_LC_DECL.get(self.id) or [])
+
+
+@component(icon="🧬",
+           attrs=[{"n": "cards", "t": "int"}, {"n": "follows", "t": "str"}],
+           assoc=[{"n": "grid", "target": "Datagrid"},
+                  {"n": "source", "target": "Model"}],
+           methods=["bind"])
+class Inspector(Block):
+    """Model widget (.inspector) — live cards over the objects its fence
+    builds; follow= makes it a claimed grid's detail form. It POINTS at the
+    model block as its source — the declarations stay the SSOT, the widget
+    only shows them, and the x-ray pipes the flow."""
+    @property
+    def cards(self):
+        return len(self._qq("[data-card]"))
+
+    @property
+    def follows(self):
+        return str(self._attr("data-bound-to") or "")
+
+    @property
+    def grid(self):
+        gid = self._attr("data-bound-to") or ""
+        el = js.window.document.querySelector("[data-lc-id='" + gid + "']")
+        return Datagrid(el) if el is not None else None
+
+    @property
+    def source(self):
+        mid = self._attr("data-bind") or ""
+        el = js.window.document.querySelector(".lc-model[data-lc-id='" + mid + "']")
+        return Model(el) if el is not None else None
 
 
 # ════════════════════════ resolver ══════════════════════════════════════════
@@ -1798,7 +1884,8 @@ _WRAP = [
     ("lc-vitals", Vitals), ("lc-modelcheck", ModelCheck), ("lc-stat", Stat), ("lc-mdpad", Mdpad),
     ("lc-avatar-trigger", AvatarTrigger),
     ("lc-persona", Persona), ("lc-pitch", Pitch), ("lc-imap", ImpactMap),
-    ("lc-event-flow", EventFlow),
+    ("lc-event-flow", EventFlow), ("lc-inspector", Inspector),
+    ("lc-model", Model),
 ]
 
 
@@ -1891,6 +1978,19 @@ def lcx_target(cls_name, idv):
     """Inspect a connected object by class + id — element-backed (a widget on
     the page) or id-backed (a hidden Dataset). Lets the lens show the full
     inspector of associated objects, even invisible ones."""
+    if cls_name == "Class":
+        # the target IS a class — Class is a component type (inheriting
+        # Object); its panel shows the declaration, docked like any other
+        # page-invisible source (Michel, 2026-08-23)
+        sp = _MODEL.get(idv)
+        if not sp:
+            return "{}"
+        vals = {"name": idv,
+                "attrs": " ".join(a["n"] for a in sp.get("attrs", [])),
+                "states": " → ".join(sp.get("states", [])),
+                "methods": " ".join(m["n"] for m in sp.get("methods", []))}
+        return json.dumps({"cls": "Class", "vals": vals, "events": {},
+                           "links": [], "state": ""})
     cls = _CLASSES.get(cls_name)
     if cls is None:
         return "{}"
@@ -1986,6 +2086,9 @@ def _lc_inspect_schema(obj):
         else:
             d["v"] = v
         fields.append(d)
+    # the state axis is special — it carries the state, so it closes the card
+    fields = ([f for f in fields if not f.get("state")]
+              + [f for f in fields if f.get("state")])
     meths = []
     tmeta = cls._lc_tmeta or {}
     for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
@@ -2013,10 +2116,80 @@ def _lc_inspect_push(elid, err=""):
         fn(elid, json.dumps({"cards": cards, "error": err}))
 
 
+def _lc_rows_of(cls):
+    """The class's collection as rows — NAMED instances only, so a feature's
+    throwaway objects never pollute the roster. One column per Attr (state
+    fields included), plus obj = the instance's bound name."""
+    rows = []
+    for o in _LC_OBJS:
+        if type(o) is cls:
+            nm = _lc_name_of(o)
+            if not nm:
+                continue
+            row = {"obj": nm}
+            for f in cls._lc_fields:
+                v = o._v.get(f.n)
+                row[f.n] = (_lc_name_of(v) or "?") if f.ref and v is not None else v
+            rows.append(row)
+    return rows
+
+
+def _lc_publish_class(cls):
+    """SSOT projection: the dataset bus carries the class's live collection
+    under the class name, so every dataset consumer — grids, charts, forms —
+    works on models with zero column declarations (Michel, 2026-08-22)."""
+    fn = getattr(js.window, "lcSetDataset", None)
+    if fn is None or not getattr(cls, "_lc_fields", None):
+        return
+    rows = _lc_rows_of(cls)
+    if rows:
+        fn(cls.__name__, js.window.JSON.parse(json.dumps(rows)))
+
+
+def _lc_publish_all():
+    seen = []
+    for o in _LC_OBJS:
+        c = type(o)
+        if c not in seen:
+            seen.append(c)
+            _lc_publish_class(c)
+
+
+def _lc_rows_load(cls_name, rows_json):
+    """Bottom-up meets the contract: values-only rows adopted by the class.
+    The header is VALIDATED against the Attrs, never declared again — a
+    column the class does not know is an error naming the class."""
+    cls = globals().get(cls_name)
+    if not isinstance(cls, type):
+        raise NameError(cls_name + " is not a model on this page")
+    rows = json.loads(rows_json)
+    fmap = getattr(cls, "_lc_fmap", None) or {}
+    for r in rows:
+        bad = [k for k in r if k not in fmap]
+        if bad:
+            raise ValueError(cls_name + " has no field named " + ", ".join(bad))
+    g = globals()
+    for i, r in enumerate(rows):
+        inst = cls()
+        for k, v in r.items():
+            f = fmap[k]
+            if f.ro or f.is_state:
+                inst._set(k, v)
+            else:
+                setattr(inst, k, v)
+        nm = str(r.get("name") or r.get("login") or "").lower()
+        safe = ""
+        for ch in nm:   # MicroPython: no str.isalnum
+            safe += ch if ("a" <= ch <= "z" or "0" <= ch <= "9") else "_"
+        g[safe or (cls_name.lower() + str(i + 1))] = inst
+    _lc_publish_all()
+
+
 def _lc_push_obj(obj):
     elid = getattr(obj, "_lc_elid", None)
     if elid:
         _lc_inspect_push(elid)
+    _lc_publish_class(type(obj))
 
 
 def _lc_inspect_bind(elid, insts):
@@ -2025,13 +2198,48 @@ def _lc_inspect_bind(elid, insts):
         inst._lc_elid = elid
         pairs.append((_lc_name_of(inst) or "obj" + str(len(pairs) + 1), inst))
     _LC_INSPECT[elid] = pairs
+    # the widget POINTS at its class — data-source feeds the x-ray's
+    # Inspector → Class pipe, and the class roster lets the lens resolve
+    # a Class target that has no DOM element (Michel, 2026-08-23)
+    el = js.window.document.querySelector("[data-lc-inspector='" + elid + "']")
+    if el is not None and pairs:
+        el.setAttribute("data-source", type(pairs[0][1]).__name__)
+    try:
+        js.window._lcxClasses = ",".join(list(_CLASSES.keys()))
+    except Exception:
+        pass
     _lc_inspect_push(elid)
+    _lc_publish_all()
 
 
 def _lc_inspect_bind_new(elid):
-    """Bind every Model instance created by the block that just ran."""
-    _lc_inspect_bind(elid, list(_LC_NEW))
+    """Bind every Model instance created by the block that just ran. A block
+    that declared classes but built nothing shows one live SPECIMEN of each
+    new class instead of an empty card — "the story, as classes" must show
+    the classes (Michel, 2026-08-23: the widget built nothing forever)."""
+    insts = list(_LC_NEW)
     _LC_NEW[:] = []
+    if not insts:
+        snap = globals().get("_LC_CLS_SNAP") or set()
+        for n in _CLASSES:
+            if n not in snap and getattr(_CLASSES[n], "_lc_fields", None):
+                insts.append(_CLASSES[n]())
+        _LC_NEW[:] = []
+    _lc_inspect_bind(elid, insts)
+
+
+def _lc_inspect_bind_decl(elid, mid):
+    """Bind an inspector to a MODEL BLOCK's declarations (source= knob): one
+    live specimen per class the block declared. The code lives in the model
+    block — the page's own structure — and the widget only points at it
+    (Michel, 2026-08-24: 'the inspector should just use that block as source')."""
+    insts = []
+    for n in _LC_DECL.get(mid) or []:
+        cls = _CLASSES.get(n)
+        if cls is not None and getattr(cls, "_lc_fields", None):
+            insts.append(cls())
+    _LC_NEW[:] = []
+    _lc_inspect_bind(elid, insts)
 
 
 def _lc_inspect_bind_names(elid, names):
@@ -2068,6 +2276,18 @@ def _lc_inspect_call(elid, name, meth):
 class _Ctx:
     def __init__(self):
         self.page = Page()
+
+    def __getattr__(self, name):
+        """The page is a class of its own: whatever a model block declares —
+        classes, singletons like `gh` or `canvas` — reads as self.<name> in
+        a feature step (Michel, 2026-08-24). Explicit self.x = … still wins:
+        __getattr__ only fires when the instance has no such attribute."""
+        if name.startswith("_"):
+            raise AttributeError(name)
+        g = globals()
+        if name in g:
+            return g[name]
+        raise AttributeError(name)
 
 _scenarios = []
 
@@ -2171,6 +2391,16 @@ def _scope_set(scope):
     # "*"/"all"/empty → whole model.
     if not scope or scope in ("*", "all"):
         return set(_MODEL.keys())
+    # "Canvas,GH" → the union of each name's closure. Managers with no
+    # inbound association need naming, or the picture omits them (Michel,
+    # 2026-08-23: "surprised the class diagram is missing GH and Canvas").
+    if "," in scope:
+        out = set()
+        for part in scope.split(","):
+            part = part.strip()
+            if part:
+                out |= _scope_set(part)
+        return out
     # a package name (e.g. "ui"/"kore") → that package's classes + their
     # ancestors (so inheritance arrows resolve to a visible base).
     if scope not in _MODEL and scope in {_pkg_of(n) for n in _MODEL}:
@@ -2405,6 +2635,10 @@ _inject_store()
 .lc-ins-err { flex-basis: 100%; font-family: monospace; font-size: 0.85em; color: #b91c1c; background: #fef2f2;
   border: 1px solid #fecaca; border-radius: 6px; padding: 5px 10px; }
 .lc-ins-loading { color: #94a3b8; font-size: 0.9em; padding: 8px 0; }
+/* a MODEL block is invisible on the page — like a dataset: structure, not
+   ink. The widgets that use it show it; the x-ray docks it (2026-08-24).
+   The pre-upgrade selectors too, so the code never flashes before hiding. */
+.lc-model, .highlighter-rouge.model, pre.model { display: none; }
 </style>
 
 <script>
@@ -2438,29 +2672,31 @@ _inject_store()
     if (!host) return;
     var d;
     try { d = JSON.parse(payload); } catch (e) { return; }
+    /* a readonly widget is a MONITOR: every field renders disabled — the
+       identity belongs to the roster, not the reader. Verbs stay live. */
+    var allRo = host.hasAttribute("data-lc-ro");
     var h = "";
     (d.cards || []).forEach(function (c) {
       h += "<div class='lc-ins-card' data-card='" + esc(c.name) + "'>";
       h += "<div class='lc-ins-head'>" + esc(c.icon) + " " + esc(c.name)
         + " <span class='lc-ins-cls'>· " + esc(c.cls) + "</span></div>";
       if (c.doc) h += "<div class='lc-ins-doc'>" + esc(c.doc) + "</div>";
-      (c.fields || []).forEach(function (f) {          /* state axes → chip rows */
-        if (!f.state) return;
-        h += "<div class='lc-ins-chips'><span class='lc-ins-axis'>" + esc(f.n) + "</span>";
-        (f.enum || []).forEach(function (s) {
-          h += "<span class='lc-ins-chip" + (s === f.v ? " active" : "") + "'>" + esc(s) + "</span>";
-        });
-        h += "</div>";
-      });
+      /* labels speak the diagram's dialect: Capitalized, type-emoji prefixed */
+      function cap(n) { n = String(n).replace(/_/g, " "); return n.charAt(0).toUpperCase() + n.slice(1); }
+      function tmoji(f) {
+        if (f.ref) return "📦";
+        if (f.secret) return "🔒";
+        return { str: "🔤", int: "🔢", float: "🔢", bool: "🔘" }[f.t] || "🔤";
+      }
       (c.fields || []).forEach(function (f) {
         if (f.state) return;
         var unit = f.unit ? " <span class='lc-ins-unit'>(" + esc(f.unit) + ")</span>" : "";
         h += "<div class='lc-ins-row'" + (f.hint ? " title='" + esc(f.hint) + "'" : "") + ">"
-          + "<label>" + esc(f.n).replace(/_/g, " ") + unit + "</label><div class='lc-ins-ctl'>";
-        var dis = f.ro ? " disabled" : "";
+          + "<label>" + tmoji(f) + " " + esc(cap(f.n)) + unit + "</label><div class='lc-ins-ctl'>";
+        var dis = (f.ro || allRo) ? " disabled" : "";
         if (f.ref) {
           /* typed reference → picklist of live, type-compatible instances */
-          h += "<select data-f='" + esc(f.n) + "' data-t='str'" + dis + "><option value=''>—</option>";
+          h += "<select data-f='" + esc(f.n) + "' data-t='str'" + dis + "><option value=''>None</option>";
           (f.options || []).forEach(function (o) {
             h += "<option" + (o === f.v ? " selected" : "") + ">" + esc(o) + "</option>";
           });
@@ -2468,8 +2704,8 @@ _inject_store()
         } else if (f.t === "bool") {
           h += "<input type='checkbox' data-f='" + esc(f.n) + "' data-t='bool'" + (f.v ? " checked" : "") + dis + ">"
             + (f.ro ? "<span class='lc-ins-ro'>🔒</span>" : "");
-        } else if (f.ro) {
-          h += "<span class='lc-ins-ro'>" + esc(f.v) + " 🔒</span>";
+        } else if (f.ro || allRo) {
+          h += "<span class='lc-ins-ro'>" + esc(f.v) + (f.ro ? " 🔒" : "") + "</span>";
         } else if (f.enum) {
           h += "<select data-f='" + esc(f.n) + "' data-t='str'>";
           f.enum.forEach(function (o) {
@@ -2489,13 +2725,23 @@ _inject_store()
         }
         h += "</div></div>";
       });
+      (c.fields || []).forEach(function (f) {          /* the state axis closes the card */
+        if (!f.state) return;
+        h += "<div class='lc-ins-chips'><span class='lc-ins-axis'>🎛️ " + esc(cap(f.n)) + "</span>";
+        (f.enum || []).forEach(function (s) {
+          h += "<span class='lc-ins-chip" + (s === f.v ? " active" : "") + "'>" + esc(String(s).replace(/_/g, " ")) + "</span>";
+        });
+        h += "</div>";
+      });
       if ((c.methods || []).length) {
         h += "<div class='lc-ins-meths'>";
         c.methods.forEach(function (m) {
+          /* the verb, not the mechanics: no end-state on the button — the
+             destination lives in the tooltip (Michel, 2026-08-22; his
+             original Lightcode drew them exactly so) */
           var tip = m.enabled ? (m.post ? "→ " + m.post : "") : "needs: " + (m.pre || []).join(" / ");
           h += "<button data-m='" + esc(m.n) + "'" + (m.enabled ? "" : " disabled")
-            + (tip ? " title='" + esc(tip) + "'" : "") + ">" + esc(m.n) + "()"
-            + (m.post ? " <span class='lc-ins-post'>▸ " + esc(m.post) + "</span>" : "") + "</button>";
+            + (tip ? " title='" + esc(tip) + "'" : "") + ">" + esc(cap(m.n)) + "</button>";
         });
         h += "</div>";
       }
@@ -2507,17 +2753,67 @@ _inject_store()
 
   function pySend(code) { mpReady().then(function (mp) { try { runPy(mp, code); } catch (e) { console.error("[lc-inspector]", e); } }); }
 
+  /* {: .dataset of="Learner" } — the bottom-up on-ramp meeting the contract:
+     a values-only csv/yaml fence, hydrated into instances by the class,
+     header validated against the Attrs, never declared twice. */
+  function upgradeRows(el) {
+    if (el.dataset.lcRowsDone) return;
+    el.dataset.lcRowsDone = "1";
+    var of = el.getAttribute("of") || "";
+    var raw = (el.querySelector("code") || el).textContent;
+    var host = document.createElement("div");
+    host.className = "lc-rows-seed";
+    if (el.id) host.setAttribute("data-lc-id", el.id);
+    host.innerHTML = "<span style='font-size:.8em;color:#888'>🌱 seeding…</span>";
+    el.parentNode.replaceChild(host, el);
+    if (!of) { host.innerHTML = "<span style='font-size:.8em;color:#b00'>⚠ rows needs of=\"SomeModel\"</span>"; return; }
+    /* the IAL eats the fence's language class, so sniff the content:
+       a first line of comma-separated bare words is csv; [ or { is json;
+       anything else goes to yaml. format= overrides the sniff. */
+    var fmt = el.getAttribute("format") || "";
+    if (!fmt) {
+      var head = (raw.trim().split("\n")[0] || "");
+      fmt = /^[\[{]/.test(raw.trim()) ? "json"
+          : (head.indexOf(",") > 0 && head.indexOf(":") < 0) ? "csv" : "";
+    }
+    window.lcParseDataText(raw, fmt).then(function (data) {
+      if (!Array.isArray(data)) { host.innerHTML = "<span style='font-size:.8em;color:#b00'>⚠ rows must be a list</span>"; return; }
+      var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
+      var tries = 0;
+      (function attempt() {
+        mpReady().then(function (mp) {
+          try {
+            runPy(mp, preamble + "\n_lc_rows_load(" + JSON.stringify(of) + "," + JSON.stringify(JSON.stringify(data)) + ")");
+            host.innerHTML = "<span style='font-size:.8em;color:#3a7'>🌱 " + data.length + " " + esc(of) + " row(s) adopted</span>";
+          } catch (e) {
+            /* the class's own fence may still be on its way through mpReady */
+            if (++tries < 25 && /NameError/.test(String(e))) { setTimeout(attempt, 400); return; }
+            host.innerHTML = "<span style='font-size:.8em;color:#b00'>⚠ " + esc(String(e.message || e).slice(-260)) + "</span>";
+          }
+        });
+      })();
+    }, function (e) { host.innerHTML = "<span style='font-size:.8em;color:#b00'>⚠ " + esc(String(e.message || e)) + "</span>"; });
+  }
+
   function upgradeInspector(el) {
     if (el.dataset.lcInsDone) return;
     el.dataset.lcInsDone = "1";
     var code = (el.querySelector("code") || el).textContent;
     var elid = el.id || ("insp" + (++INS_N));
     var bind = el.getAttribute("bind") || "";
+    var follow = el.getAttribute("follow") || "";
     var host = document.createElement("div");
     host.className = "lc-inspector";
     host.id = elid;
     host.setAttribute("data-lc-id", elid);
     host.setAttribute("data-lc-inspector", elid);
+    /* follow= is a master/detail bond — data-bound-to is the attribute the
+       x-ray already reads, so the inspector ⇄ grid pipe comes for free */
+    if (follow) host.setAttribute("data-bound-to", follow);
+    /* readonly="true": a MONITOR — identity fields come from the roster
+       (Canvas owns them), so nothing here is typable; verbs stay live
+       (Michel, 2026-08-24: the join wizard must not let name/email move) */
+    if (el.getAttribute("readonly") === "true") host.setAttribute("data-lc-ro", "1");
     host.innerHTML = "<div class='lc-ins-loading'>⏳ Building the model widget…</div>";
     el.parentNode.replaceChild(host, el);
 
@@ -2543,12 +2839,46 @@ _inject_store()
     });
 
     var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
-    var tail = bind
+    /* source="<model-id>": the code lives in a MODEL BLOCK — the page's own
+       structure — and this widget only points at it: wait for that block to
+       run, then show one specimen per class it declared (Michel, 2026-08-24). */
+    var source = el.getAttribute("source") || "";
+    if (source) {
+      host.setAttribute("data-bind", source);   // the x-ray's source pipe
+      mpReady().then(function () {
+        var tries = 0;
+        (function waitM() {
+          if ((window._lcModelReady || {})[source]) {
+            /* bind= alongside source=: the model is the WHEN, the names are
+               the WHAT — cards for its live singletons, not specimens */
+            pySend(bind
+              ? "_lc_inspect_bind_names(" + JSON.stringify(elid) + "," + JSON.stringify(bind) + ")"
+              : "_lc_inspect_bind_decl(" + JSON.stringify(elid) + "," + JSON.stringify(source) + ")");
+          } else if (++tries < 150) setTimeout(waitM, 120);
+          else host.innerHTML = "<div class='lc-ins-err'>⚠️ model block #" + esc(source) + " never ran</div>";
+        })();
+      }).catch(function () {
+        host.innerHTML = "<div class='lc-ins-err'>⚠️ Python runtime failed to load</div>";
+      });
+      return;
+    }
+    /* follow="<grid-id>": the inspector waits for the CLAIMED grid's
+       selection and binds that row's instance — the detail form is the
+       object itself, verbs and all (Michel, 2026-08-22: one SSOT). */
+    var tail = follow ? "\n"
+      : bind
       ? "\n_lc_inspect_bind_names(" + JSON.stringify(elid) + ", " + JSON.stringify(bind) + ")\n"
       : "\n_lc_inspect_bind_new(" + JSON.stringify(elid) + ")\n";
     mpReady().then(function (mp) {
       try {
-        runPy(mp, preamble + "\n_LC_NEW[:] = []\n" + code + tail);
+        runPy(mp, preamble + "\n_LC_NEW[:] = []\n_LC_CLS_SNAP = set(_CLASSES)\n" + code + tail);
+        if (follow) {
+          host.innerHTML = "<div class='lc-ins-loading'>👉 click a row to open its object</div>";
+          if (window.lcMasterDetail) window.lcMasterDetail.subscribe(follow, function (row) {
+            if (!row || !row.obj) return;
+            pySend("_lc_inspect_bind_names(" + JSON.stringify(elid) + "," + JSON.stringify(String(row.obj)) + ")");
+          });
+        }
         /* page diagrams redraw so freshly-declared classes join the picture */
         document.dispatchEvent(new CustomEvent("lc-model-changed"));
       }
@@ -2562,8 +2892,35 @@ _inject_store()
     });
   }
 
+  /* ── the MODEL block: the page's classes as a first-class structural
+     element. {: .model #id } on a python fence — the code STAYS VISIBLE
+     (it IS the declaration), runs once in the shared interpreter, and
+     records what it declared so inspectors can point at it with source=
+     and the Blocks tab shows it as a key piece (Michel, 2026-08-24). */
+  function upgradeModel(el) {
+    if (el.dataset.lcModelDone) return;
+    el.dataset.lcModelDone = "1";
+    var code = (el.querySelector("code") || el).textContent;
+    var mid = el.id || ("model" + (++INS_N));
+    el.setAttribute("data-lc-id", mid);
+    el.classList.add("lc-model");
+    var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
+    mpReady().then(function (mp) {
+      try {
+        runPy(mp, preamble + "\n_LC_SNAP_M = set(_CLASSES)\n" + code +
+          "\n_LC_DECL[" + JSON.stringify(mid) + "] = [n for n in _CLASSES if n not in _LC_SNAP_M]\n" +
+          "_LC_NEW[:] = []\n_lc_publish_all()\n");
+        (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
+        document.dispatchEvent(new CustomEvent("lc-model-changed"));
+      } catch (e) { console.error("[lc-model]", e); }
+    }).catch(function (e) { console.error("[lc-model]", e); });
+  }
+
   if (window.lcRegisterUpgrader) {
     window.lcRegisterUpgrader(".highlighter-rouge.inspector, pre.inspector", upgradeInspector);
+    window.lcRegisterUpgrader(".highlighter-rouge.model, pre.model", upgradeModel);
+    window.lcAdoptRows = upgradeRows;   /* dataset.md delegates of= here — one grammar */
+    window.lcPySend = pySend;           /* console bridges hand verdicts to page python */
   }
 })();
 </script>

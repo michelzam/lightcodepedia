@@ -117,3 +117,83 @@ Feature: Page editor — ✨ AI edit dialog
     And I wait for the page to be interactive
     And I press the edit hotkey
     Then the editor reads this site's own repo, not the bench
+
+  Scenario: The Raw editor folds its fences, and never saves them folded
+    A page is mostly fences; reading the prose between them meant
+    scrolling through walls of yaml (Michel, 2026-08-23). Fold collapses
+    every fenced block to one marker line — DISPLAY only: the value the
+    save path reads stays the full source, and clicking a marker unfolds
+    it in place.
+
+    Given I open the editor on a page with two fenced blocks
+    When I press the fold button
+    Then the display shrinks to marker lines
+    And the markers wear their block's icon and type
+    But the full source is still what a save would read
+    And the gutter numbers stay source-true across the folds
+    When I click the first marker line
+    Then that block is back in place
+    When I refold it from the gutter arrow
+    Then the display shrinks to marker lines
+
+  Scenario: A loaded file arrives folded — the outline first
+    Folded by default (Michel, 2026-08-23): a page opens as its outline,
+    every fenced block one marker line, so the Raw tab reads modular and
+    you unfold only what you touch. The virtual value stays the full
+    source, so nothing about saving changes.
+
+    Given I have a clean browser page
+    And a connected editor whose repo serves a two-fence page
+    When I navigate to "/events"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And the editor has loaded the page's own file
+    And I switch to the editor "raw" tab
+    Then the display shrinks to marker lines
+    And the markers wear their block's icon and type
+    But the full source is still what a save would read
+
+  Scenario: The draft checker knows the classes the draft declares
+    A grid binds a CLASS, not only a block id (bind="Student") — the
+    checker read that as a broken reference and stamped ⚠ on an honest
+    draft (Michel, 2026-08-23). Class names declared in python fences
+    count as identifiers; a name nothing declares still warns.
+
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And the editor content is:
+      """
+      # Demo
+
+      ```python
+      class Student(Object):
+          name = Attr()
+      ```
+      {: .inspector #models }
+
+      [grid](#)
+      {: .datagrid #g1 bind="Student" }
+
+      [ghost](#)
+      {: .datagrid #g2 bind="Ghost" }
+      """
+    Then the draft checker warns only about "Ghost"
+
+  Scenario: Closing and reopening the editor never amputates the folds
+    The drawer used to re-wire the fold engine on every open: the value
+    property rebound to a fresh empty fold map while the display still
+    held the old session's markers — one save then committed marker
+    lines to git, fences gone (Michel, 2026-08-24, classroom3). One
+    wiring per page lifetime, plus a last gate: a save refuses content
+    that still carries a fold token.
+
+    Given I have a clean browser page
+    And a connected editor whose repo serves a two-fence page
+    When I navigate to "/events"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And the editor has loaded the page's own file
+    And I close the page editor
+    And I open the page editor
+    Then the full source is still what a save would read

@@ -197,6 +197,17 @@ body.lc-reel-active .lc-slide {
   max-width: 900px; margin: 0 auto;
 }
 body.lc-reel-active .lc-slide > :first-child { margin-top: 0; }
+/* ── progressive reveal: each block fades in as the reel reaches it ──────
+   Armed (.lc-rv) on enterReel, revealed (.lc-rv-in) by an observer, all
+   torn down on exit — the page never DEPENDS on it: with no JS nothing is
+   armed and everything shows (Michel, 2026-08-23: "modular and
+   progressive", reel included). Transform+opacity only — cheap to paint. */
+body.lc-reel-active .lc-rv { opacity: 0; transform: translateY(14px);
+  transition: opacity 0.45s ease, transform 0.45s ease; }
+body.lc-reel-active .lc-rv.lc-rv-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  body.lc-reel-active .lc-rv { opacity: 1; transform: none; transition: none; }
+}
 /* sticky context bar: the page's common title + live position */
 .lc-reel-bar { display: none; }
 body.lc-reel-active .lc-reel-bar {
@@ -621,6 +632,36 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       }
       if (progEl) progEl.textContent = (i + 1) + ' / ' + slides.length;
     }
+    /* progressive reveal — one observer per reel session. The slide's own
+       heading is exempt: the title leads the panel, it never hides. Once a
+       block is seen it stays seen — calm, like a story building up, not a
+       lightshow that replays on every scroll. */
+    var _rvObs = null;
+    function armReveal() {
+      disarmReveal();
+      try {
+        _rvObs = new IntersectionObserver(function (ents) {
+          ents.forEach(function (en) {
+            if (!en.isIntersecting) return;
+            en.target.classList.add('lc-rv-in');
+            _rvObs.unobserve(en.target);
+          });
+        }, { threshold: 0.12 });
+      } catch (e) { return; }
+      slides.forEach(function (s) {
+        [].forEach.call(s.children, function (ch, i) {
+          if (i === 0 && /^H[12]$/.test(ch.tagName)) return;
+          ch.classList.add('lc-rv');
+          _rvObs.observe(ch);
+        });
+      });
+    }
+    function disarmReveal() {
+      if (_rvObs) { try { _rvObs.disconnect(); } catch (e) {} _rvObs = null; }
+      [].forEach.call(document.querySelectorAll('.lc-rv'), function (n) {
+        n.classList.remove('lc-rv', 'lc-rv-in');
+      });
+    }
     function enterReel(viaUrl) {
       if (!hasDeck()) return;
       if (body.classList.contains('lc-slides-active')) exit();      // mutually exclusive
@@ -640,10 +681,12 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       /* on an RT render main is not the scroller — the nested .lc-run is, so
          reach the first section itself and let the browser find its box */
       if (slides[0]) { try { slides[0].scrollIntoView({ block: 'start' }); } catch (e) {} }
+      armReveal();
       syncReelBar();
     }
     function exitReel() {
       body.classList.remove('lc-reel-active');
+      disarmReveal();
       syncReelFab(false);
       syncReelUrl(false);
     }

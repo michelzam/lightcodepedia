@@ -127,6 +127,14 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-step-icon.fail { color: #dc2626; }
 .lc-feature-step-icon.skip { color: #d1d5db; }
 .lc-feature-step-keyword { color: #7c3aed; font-weight: 600; min-width: 3.5em; }
+/* the keyword in the flow's own colours — Given=data, When=command,
+   Then=event; And/But inherit. Same tokens the event flow paints with. */
+.lc-feature-step-keyword.lc-kw-data,
+.lc-feature-step-keyword.lc-kw-command,
+.lc-feature-step-keyword.lc-kw-event { color: #1f2937; padding: 0 0.35em; border-radius: 3px; }
+.lc-feature-step-keyword.lc-kw-data    { background: var(--lc-k-data); }
+.lc-feature-step-keyword.lc-kw-command { background: var(--lc-k-command); }
+.lc-feature-step-keyword.lc-kw-event   { background: var(--lc-k-event); }
 .lc-feature-step-text { color: #111827; }
 /* a painted word wears the event flow's own background (.lc-ef-*), so the
    palette lives in one place — see event_flow.md */
@@ -703,6 +711,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
        (Michel, 2026-08-11). */
     var grades = el.getAttribute("grades");
     if (grades) card.setAttribute("data-grades", grades);
+    /* flow="<flow-id>": this feature CHECKS that event flow — Given is the
+       setup, When the command, Then the event. The x-ray reads data-flow
+       and draws the pipe (Michel, 2026-08-23). */
+    var flowRef = el.getAttribute("flow");
+    if (flowRef) card.setAttribute("data-flow", flowRef);
     card._lcFeatureName = featureName;
     card._lcFeatureTags = tagsRaw ? tagsRaw.split(",").map(function(t){ return t.trim(); }) : [];
 
@@ -735,11 +748,15 @@ Registers with window.lcScanElement so the editor preview also renders cards.
         } else if (r.kind === "step") {
           var isAnd = /^(And|But)$/i.test(r.keyword);
           if (!isAnd) lastGwt = r.keyword;
+          /* the keyword itself wears the flow's paint — Given 📦 data,
+             When 🗣️ command, Then ⚡ event — the same palette the story's
+             notes wear, so one grammar shows twice (Michel, 2026-08-23) */
+          var kwKind = GWT[String(isAnd ? lastGwt : r.keyword).toLowerCase()] || "";
           var stepEl = document.createElement("div"); stepEl.className = "lc-feature-step" + (isAnd ? " lc-step-and" : "");
           stepEl.innerHTML =
             "<div class='lc-feature-step-row'>"
               + "<span class='lc-feature-step-icon'>●</span>"
-              + "<span class='lc-feature-step-keyword'>" + r.keyword + "</span>"
+              + "<span class='lc-feature-step-keyword" + (kwKind ? " lc-kw-" + kwKind : "") + "'>" + r.keyword + "</span>"
               + "<span class='lc-feature-step-text'>" + paintGwt(r.text, isAnd ? lastGwt : r.keyword) + "</span>"
               + "<span class='lc-feature-step-time'></span>"
             + "</div>";

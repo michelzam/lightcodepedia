@@ -77,15 +77,19 @@ Feature: Problem space — persona, pitch, impact map
     Then the save button for "sam" sits inside the form "sam_src"
 
   Scenario: The who is calculated from the persona the pitch reads
+    The FOR names the PERSONA — "Ana" — not her subtitle: the name is who
+    the pitch serves, the role is how the card explains her (Michel,
+    2026-08-24).
+
     When I navigate to "/components/pitch"
     And I wait for the page to be interactive
-    Then the pitch "demo_pitch" reads "Shelter coordinator"
+    Then the pitch "demo_pitch" reads "Ana"
     And the pitch "demo_pitch" shows "who" as calculated
 
   Scenario: A typed who is ignored while the knob is set
     When I navigate to "/components/pitch"
     And I wait for the page to be interactive
-    Then the pitch "drifting" reads "Shelter coordinator"
+    Then the pitch "drifting" reads "Ana"
     And the pitch "drifting" shows a drift warning
 
   Scenario: The pitch reads as a form — one blank per line

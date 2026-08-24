@@ -99,6 +99,15 @@ Auto-included by docs/_layouts/default.html.
 :is(strong, em, code, a, span).rule     { background: var(--lc-k-rule); }
 :is(strong, em, code, a, span).event    { background: var(--lc-k-event); }
 :is(strong, em, code, a, span).external { background: var(--lc-k-external); }
+/* the ‘— ref’ tail: a small machine badge on the note, and the collected
+   cast strip under the story — each element wears its note's color */
+.lc-ef-ref { font-size: 0.82em; padding: 0.05em 0.3em; border-radius: 3px;
+             background: rgba(255,255,255,0.55); border: 1px solid rgba(0,0,0,0.08); }
+.lc-ef-elements { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35em;
+                  margin-top: 0.2em; padding-top: 0.55em; border-top: 1px dashed #e5e7eb; }
+.lc-ef-el-lead { font-size: 0.78em; color: #4b5563; margin-right: 0.3em; }
+.lc-ef-el { font-size: 0.78em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            padding: 0.15em 0.45em; border-radius: 3px; color: #1f2937; }
 .lc-ef-legend { display: flex; flex-wrap: wrap; gap: 0.4em 1em; margin-top: 0.2em; padding-top: 0.55em; border-top: 1px dashed #e5e7eb; font-size: 0.78em; color: #4b5563; }
 .lc-ef-legend span::before { content: "■ "; }
 .lc-ef-legend .lc-ef-l-user::before    { color: var(--lc-k-user); }
@@ -151,24 +160,45 @@ Auto-included by docs/_layouts/default.html.
        workshop wall and heavy inside a lesson; a flow should read as a
        sentence unless a page asks for the wall. */
     var sticky = el.getAttribute("notes") === "sticky";
+    /* THE TAIL IS THE BINDING (Michel, 2026-08-23). Any note may end with
+       an em-dash and a machine ref — "#roster3" a block, "Student" a class,
+       "Student.invite" a command, "Student[invited]" a state — and those
+       tails, collected, ARE the flow's elements: the cast the meta level
+       checks against the page's own artifacts. Only a ref-shaped tail is
+       lifted; an em-dash inside prose stays prose. */
+    var REF_RE = /^(#[\w-]+|[A-Za-z_]\w*(\[[\w-]+\]|\.\w+)?)$/;
+    function splitRef(text) {
+      var di = text.lastIndexOf("—");
+      if (di < 0) return { text: text, ref: "" };
+      var tail = text.slice(di + 1).trim();
+      if (!REF_RE.test(tail)) return { text: text, ref: "" };
+      return { text: text.slice(0, di).trim(), ref: tail };
+    }
     parseData(raw, "yaml").then(function (rows) {
       var steps = (Array.isArray(rows) ? rows : []).map(function (r) {
         if (r && typeof r === "object") {
           var k = Object.keys(r)[0] || "", kind = ALIAS[k] || k;
-          return { kind: KINDS.indexOf(kind) >= 0 ? kind : "unknown", text: String(r[k] == null ? "" : r[k]) };
+          var sr = splitRef(String(r[k] == null ? "" : r[k]));
+          return { kind: KINDS.indexOf(kind) >= 0 ? kind : "unknown", text: sr.text, ref: sr.ref };
         }
-        return { kind: "unknown", text: String(r == null ? "" : r) };
+        return { kind: "unknown", text: String(r == null ? "" : r), ref: "" };
       });
       var box = document.createElement("div");
       box.className = "lc-event-flow" + (sticky ? "" : " lc-ef-plain");
       var id = el.id || "event_flow";
       box.id = id;
       box.setAttribute("data-lc-id", id);
+      /* map="<impact-map-id>": this story TELLS that map's impacts — the
+         x-ray pipes the two (Michel, 2026-08-24) */
+      var mapRef = el.getAttribute("map");
+      if (mapRef) box.setAttribute("data-map", mapRef);
       box.setAttribute("role", "list");
       box.setAttribute("aria-label", "event flow");
       function chip(s) {
-        return "<span class='lc-ef-step lc-ef-" + s.kind + "' role='listitem' data-kind='" + s.kind + "'>" +
-               ICON[s.kind] + " " + escapeHtml(s.text) + "</span>";
+        return "<span class='lc-ef-step lc-ef-" + s.kind + "' role='listitem' data-kind='" + s.kind + "'" +
+               (s.ref ? " data-ref='" + escapeHtml(s.ref) + "'" : "") + ">" +
+               ICON[s.kind] + " " + escapeHtml(s.text) +
+               (s.ref ? " <code class='lc-ef-ref'>" + escapeHtml(s.ref) + "</code>" : "") + "</span>";
       }
       /* A RULE CANNOT MAKE A PERSON DO ANYTHING — a person does (Michel,
          2026-08-11). One beat is
@@ -215,6 +245,21 @@ Auto-included by docs/_layouts/default.html.
                "<div class='lc-ef-beats' style='--lc-ef-cols:" + cols + "'>" + cells + "</div>" +
                "</div>";
       }).join("");
+      /* the cast, derived — never authored twice: distinct refs in story
+         order, each wearing its note's own color */
+      var els = [], elSeen = {};
+      steps.forEach(function (s) {
+        var k = s.kind + "|" + s.ref;
+        if (s.ref && !elSeen[k]) { elSeen[k] = 1; els.push(s); }
+      });
+      if (els.length) {
+        html += "<div class='lc-ef-elements'><span class='lc-ef-el-lead'>🧩 elements</span>" +
+          els.map(function (s) {
+            return "<span class='lc-ef-el lc-ef-" + s.kind + "' data-el-kind='" + s.kind +
+                   "' data-el-ref='" + escapeHtml(s.ref) + "'>" + ICON[s.kind] + " " +
+                   escapeHtml(s.ref) + "</span>";
+          }).join("") + "</div>";
+      }
       if (legend) {
         html += "<div class='lc-ef-legend'>" +
           "<span class='lc-ef-l-user'>👤 user — a person</span>" +

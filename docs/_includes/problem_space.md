@@ -358,7 +358,9 @@ Auto-included by docs/_layouts/default.html.
   function pitchWho(p, ref) {
     var persona = ref ? (window.lcDatasets || {})[ref] : null;
     if (!persona) return { v: p.who || "", calc: false };
-    return { v: persona.role || persona.name || "", calc: true };
+    /* the PERSONA, not its subtitle: the name is who the pitch serves —
+       the role is how the card explains them (Michel, 2026-08-24) */
+    return { v: persona.name || persona.role || "", calc: true };
   }
   function pitchHtml(p, ref) {
     var who = pitchWho(p, ref);

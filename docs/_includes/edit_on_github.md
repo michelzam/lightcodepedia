@@ -102,8 +102,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-input::placeholder { color: #6c7086; }
 /* line-number gutter for the Raw editor */
 #ed-raw-body { display: flex; flex: 1; min-height: 0; overflow: hidden; }
-#ed-gutter { flex: none; overflow: hidden; background: #181825; border-right: 1px solid #313244; }
-#ed-gutter-inner { padding: 1em 0.55em 1em 0.75em; min-width: 1.6em; text-align: right;
+#ed-gutter { flex: none; overflow: hidden; background: #181825; border-right: 1px solid #313244; position: relative; z-index: 1; }
+#ed-gutter-inner { padding: 1em 0.55em 1em 0.75em; min-width: 2.4em; text-align: right;
+  cursor: default; }
+#ed-gutter-inner .ed-gl { display: block; white-space: pre; }
+/* the parent gutter is pointer-events:none (numbers must not steal the
+   caret) — the fold arrows re-arm themselves, or no real click ever lands */
+#ed-gutter-inner .ed-fold-a { cursor: pointer; color: #89b4fa; margin-right: 3px; user-select: none; pointer-events: auto; }
+#ed-gutter-inner .ed-fold-a:hover { color: #cdd6f4; }
+#ed-gutter-inner {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; line-height: 1.6;
   color: #585b70; white-space: pre; pointer-events: none; user-select: none; will-change: transform; }
 #ed-preview { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; box-sizing: border-box; }
@@ -482,7 +489,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 <script>
 (function () {
   var LS_PAT = "lc_ed_pat", LS_REPO = "lc_ed_repo";
-  var _pat, _repo, _curFile, _curSha, _dirty = false, _previewTimer = null, _savedContent = null;
+  var _pat, _repo, _curFile, _curSha, _dirty = false, _previewTimer = null, _savedContent = null, _savedSinceOpen = false;
   var _runnerEdit = false;   // editing a runner-rendered source (gh:repo/path), not a docs/ page
 
   /* On the runtime (/run.html) the page itself is only the runner stub — what
@@ -641,12 +648,33 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       setTimeout(openFilePanel, 0);
     }
   }
+  /* the page you RETURN to shows what you saved (Michel, 2026-08-24):
+     Pages takes minutes to rebuild, so re-render main from the draft
+     client-side — the same road the live preview walks. (X-ray edits feel
+     instant for the same reason: they patch the live DOM directly.) */
+  function renderIntoPage(src) {
+    var main = document.querySelector("main.markdown-body");
+    if (!main || !window.marked) return;
+    try {
+      if (window.lcDestroyInstancesIn) window.lcDestroyInstancesIn(main);
+      main.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(normIAL(src)));
+      if (window.lcApplyIAL)    window.lcApplyIAL(main);
+      if (window.lcScanElement) window.lcScanElement(main);
+      if (window.lcSlidesRebuild) window.lcSlidesRebuild();
+    } catch (e) { console.warn("[lc-edit] page refresh failed", e); }
+  }
   function closeDrawer() {
     if (_dirty && !confirm("Discard unsaved changes to " + (_curFile || "this file") + "?")) return;
     if (_dirty && _savedContent !== null) {
       var inp = document.getElementById("ed-input");
       if (inp) { inp.value = _savedContent; if (inp._hist) inp._hist.reset(); updatePreview(_savedContent); }
       _blocks = []; _selIdx = -1; buildGrid();
+    }
+    if (_savedSinceOpen && _savedContent !== null) {
+      var fab2 = document.getElementById("ed-fab");
+      var pp = fab2 && fab2.dataset ? fab2.dataset.pagePath : "";
+      if (pp && _curFile === "docs/" + pp) renderIntoPage(_savedContent);
+      _savedSinceOpen = false;
     }
     setDirty(false);
     closeFilePanel();   /* it lives on <body> now — it would outlive the drawer */
@@ -856,6 +884,11 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var content = b64d(data.content.replace(/\n/g, ""));
       _savedContent = content;
       if (inp) { inp.value = content; if (inp._hist) inp._hist.reset(); updatePreview(content); }
+      /* FOLDED BY DEFAULT (Michel, 2026-08-23): a page arrives as its
+         outline — every fenced block one marker line wearing its icon and
+         knobs — so the Raw tab reads modular; unfold what you touch. Only
+         the LOAD folds: AI edits and typing never re-collapse the file. */
+      if (window._lcEdFold) window._lcEdFold.foldAll();
       setDirty(false);
       loadHistory();
       // refresh blocks grid whenever new content loads
@@ -881,6 +914,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var lintErrs = (_lintFindings || []).filter(function (f) { return f.sev === "error"; });
       if (lintErrs.length && !confirm("⚠️ " + lintErrs.length + " reference/id error" +
           (lintErrs.length === 1 ? "" : "s") + " in the draft (see the ✖ chip). Save anyway?")) return;
+      /* LAST GATE: a fold marker in the outgoing content means folded lines
+         lost their source (a bug, not a state) — refuse rather than commit
+         a page with its fences amputated (Michel, 2026-08-24). */
+      if (/\u2060/.test(inp.value)) {
+        toast("⚠️ folded blocks lost their content — press ▾ unfold, reload the file, then save", false);
+        return;
+      }
       var fallback = (_curSha ? "Update " : "Add ") + _curFile.split("/").pop();
       var msg = prompt("Commit message:", logCommitMessage() || fallback);
       if (msg === null) return;
@@ -892,6 +932,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         _curSha = data.content.sha;
         _savedContent = inp.value;
         toast("Saved · " + data.commit.sha.slice(0, 7) + " ✓", true);
+        _savedSinceOpen = true;   // closing the drawer refreshes the page from this
         pushAction("💾", "Saved · " + data.commit.sha.slice(0, 7), null);  // trace (no undo)
         setDirty(false);
         loadFiles();
@@ -2149,30 +2190,211 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var input = document.getElementById("ed-input");
     var inner = document.getElementById("ed-gutter-inner");
     if (!input || !inner) return;
-    var lastN = -1;
-    function render() {
-      var n = (input.value.match(/\n/g) || []).length + 1;
-      if (n === lastN) return;
-      lastN = n;
-      var s = "";
-      for (var i = 1; i <= n; i++) s += (i > 1 ? "\n" : "") + i;
-      inner.textContent = s;
+    /* ONCE, forever. Re-opening the drawer used to re-run this, rebinding
+       the value property to a FRESH (empty) fold map while the display
+       still held the old session's markers — the "full" value then WAS the
+       folded text, and one save committed markers to git, content gone
+       (Michel, 2026-08-24, classroom3). One closure per page lifetime. */
+    if (input._lcGutterWired) return;
+    input._lcGutterWired = true;
+    var desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
+
+    /* ── Folding (Michel, 2026-08-23: "fold/unfold blocks") ─────────────
+       A fold swaps a fenced block's lines for ONE marker line in the
+       DISPLAY only. The value property stays virtual-full: every reader —
+       save, blocks grid, features, preview, diff — always sees the whole
+       source, so a folded file can never be committed folded. Clicking a
+       marker line (or typing into it) unfolds it in place. */
+    var folds = {}, foldSeq = 0;
+    /* the marker's machine half is INVISIBLE (Michel, 2026-08-23: "not even
+       clear what ⟢f19⟣ means"): the fold id rides as zero-width characters —
+       U+2060 sentinels around a binary of U+200B (0) / U+200C (1) — so the
+       reader sees only icon · type · preview · count. The virtual value
+       substitutes the whole line back, so the invisibles can never be saved. */
+    var MARK = /\u2060([\u200B\u200C]+)\u2060/;
+    function encId(id) {
+      var b = Number(id).toString(2), out = "\u2060";
+      for (var i = 0; i < b.length; i++) out += b[i] === "1" ? "\u200C" : "\u200B";
+      return out + "\u2060";
     }
+    function decId(bits) {
+      var n = 0;
+      for (var i = 0; i < bits.length; i++) n = n * 2 + (bits.charAt(i) === "\u200C" ? 1 : 0);
+      return String(n);
+    }
+    function markId(line) {
+      var m = line.match(MARK);
+      return m ? decId(m[1]) : null;
+    }
+    function dv() { return desc.get.call(input); }                 /* display */
+    function fullOf(v) {
+      /* recursive: a folded outer fence may hold inner markers */
+      for (var guard = 0; guard < 12; guard++) {
+        if (!Object.keys(folds).length) return v;
+        var changed = false;
+        v = v.split("\n").map(function (line) {
+          var id = markId(line);
+          if (id != null && folds[id] != null) { changed = true; return folds[id]; }
+          return line;
+        }).join("\n");
+        if (!changed) break;
+      }
+      return v;
+    }
+    function setDisplay(v) { desc.set.call(input, v); refresh(); }
+    function regionAt(lines, i) {
+      /* the fold region opened by line i, or null. IAL lines ride along. */
+      var m = lines[i].match(/^(`{3,}|~{3,})/);
+      if (!m || MARK.test(lines[i])) return null;
+      var tick = m[1].charAt(0), len = m[1].length, j = i + 1;
+      while (j < lines.length) {
+        var c = lines[j].match(/^(`{3,}|~{3,})\s*$/);
+        if (c && c[1].charAt(0) === tick && c[1].length >= len) break;
+        j++;
+      }
+      if (j >= lines.length) return null;
+      while (j + 1 < lines.length && /^\{:/.test(lines[j + 1])) j++;
+      return j;
+    }
+    function foldLabel(region) {
+      /* icon + type FIRST, like the block's visible cue; then #id and key
+         knobs when it has them, else the first words of the first content
+         line as a preview; the line count trails (Michel, 2026-08-23) */
+      var ial = "";
+      for (var k = region.length - 1; k >= 0 && /^\{:/.test(region[k]); k--) {
+        if (/^\{:\s*\./.test(region[k])) { ial = region[k]; break; }
+      }
+      var preview = "";
+      for (var c = 1; c < region.length - 1; c++) {
+        var t = region[c].trim();
+        if (t && !/^[`~]/.test(t) && !/^\{:/.test(t)) { preview = t.slice(0, 34); break; }
+      }
+      if (ial) {
+        var type = (ial.match(/\.([\w-]+)/) || [])[1] || "";
+        var bid = (ial.match(/#([\w-]+)/) || [])[1] || "";
+        var knobs = [], kr = /(\w+)="([^"]*)"/g, km;
+        while ((km = kr.exec(ial)) && knobs.length < 2)
+          knobs.push(km[1] + '="' + km[2] + '"');
+        var icon = iconFor(type);
+        var cue = bid ? " #" + bid + (knobs.length ? " " + knobs.join(" ") : "")
+                      : knobs.length ? " " + knobs.join(" ")
+                      : preview ? " · " + preview : "";
+        return ((icon ? icon + " " : "") + "." + type + cue).slice(0, 72);
+      }
+      var lang = region[0].replace(/^[`~]+/, "").trim();
+      return ((lang || "…") + (preview ? " · " + preview : "")).slice(0, 60);
+    }
+    function foldRegion(lines, i, j) {
+      var region = lines.slice(i, j + 1);
+      var id = ++foldSeq;
+      folds[id] = region.join("\n");
+      return "▸ " + foldLabel(region) + " · " + region.length + " lines" + encId(id);
+    }
+    function foldAll() {
+      var lines = dv().split("\n"), out = [], i = 0;
+      while (i < lines.length) {
+        var j = regionAt(lines, i);
+        if (j == null || j - i + 1 < 3) { out.push(lines[i]); i++; continue; }
+        out.push(foldRegion(lines, i, j));
+        i = j + 1;
+      }
+      setDisplay(out.join("\n"));
+    }
+    function foldAt(i) {
+      var lines = dv().split("\n");
+      var j = regionAt(lines, i);
+      if (j == null) return;
+      var marker = foldRegion(lines, i, j);
+      lines.splice(i, j - i + 1, marker);
+      setDisplay(lines.join("\n"));
+    }
+    function unfoldOne(id) {
+      var lines = dv().split("\n");
+      for (var i = 0; i < lines.length; i++) {
+        if (markId(lines[i]) === String(id) && folds[id] != null) {
+          lines[i] = folds[id];
+          delete folds[id];
+          setDisplay(lines.join("\n"));
+          return;
+        }
+      }
+    }
+    function unfoldAll() { setDisplay(fullOf(dv())); folds = {}; refresh(); }
+    function caretFold() {
+      var v = dv(), pos = input.selectionStart || 0;
+      var start = v.lastIndexOf("\n", pos - 1) + 1;
+      var end = v.indexOf("\n", pos); if (end < 0) end = v.length;
+      return markId(v.slice(start, end));
+    }
+    input.addEventListener("click", function () {
+      var id = caretFold(); if (id != null) unfoldOne(id);
+    });
+    input.addEventListener("beforeinput", function (e) {
+      /* an edit must never land ON a marker — unfold it and let them retry */
+      var id = caretFold();
+      if (id != null) { e.preventDefault(); unfoldOne(id); }
+    });
+    window._lcEdFold = { foldAll: foldAll, unfoldAll: unfoldAll,
+                         count: function () { return Object.keys(folds).length; } };
+
+    function render() {
+      /* numbers are SOURCE numbers: a fold marker wears its region's first
+         line and the next visible line resumes after the hidden ones —
+         and every fence line wears its own ▾/▸ (Michel, 2026-08-23) */
+      var lines = dv().split("\n"), h = "", src = 1;
+      for (var i = 0; i < lines.length; i++) {
+        var fid = markId(lines[i]);
+        var arrow = "";
+        if (fid != null && folds[fid] != null) {
+          arrow = "<span class='ed-fold-a' data-unfold='" + fid + "' title='unfold'>▸</span>";
+          h += "<div class='ed-gl'>" + arrow + src + "</div>";
+          src += folds[fid].split("\n").length;
+        } else {
+          if (regionAt(lines, i) != null) {
+            arrow = "<span class='ed-fold-a' data-foldline='" + i + "' title='fold this block'>▾</span>";
+          }
+          h += "<div class='ed-gl'>" + arrow + src + "</div>";
+          src += 1;
+        }
+      }
+      inner.innerHTML = h;
+    }
+    inner.addEventListener("click", function (e) {
+      var a = e.target.closest(".ed-fold-a");
+      if (!a) return;
+      if (a.hasAttribute("data-unfold")) unfoldOne(a.getAttribute("data-unfold"));
+      else foldAt(parseInt(a.getAttribute("data-foldline"), 10));
+    });
     function sync() { inner.style.transform = "translateY(" + (-input.scrollTop) + "px)"; }
     function refresh() { render(); sync(); }
     input.addEventListener("input", refresh);
     input.addEventListener("scroll", sync);
     /* programmatic writes (loadFile, AI edits, feature status) bypass the
-       'input' event — intercept the value setter once so the gutter still tracks */
+       'input' event — intercept the value property once: reads are always
+       the FULL source (folds substituted back), writes reset the folds */
     try {
-      var desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
       Object.defineProperty(input, "value", {
         configurable: true,
-        get: function () { return desc.get.call(this); },
-        set: function (v) { desc.set.call(this, v); refresh(); }
+        get: function () { return fullOf(desc.get.call(this)); },
+        set: function (v) { folds = {}; desc.set.call(this, v); refresh(); }
       });
     } catch (e) {}
     window._lcEdGutterRefresh = refresh;
+    /* the workshop bar grows the two fold buttons */
+    var shop = document.getElementById("ed-raw-shop");
+    if (shop && !shop.querySelector(".ed-fold-btn")) {
+      var bf = document.createElement("button");
+      bf.className = "ed-fold-btn"; bf.textContent = "▸ fold blocks"; bf.title = "collapse every fenced block to one line (display only — saves always carry the full source)";
+      var bu = document.createElement("button");
+      bu.className = "ed-fold-btn"; bu.textContent = "▾ unfold"; bu.title = "restore every folded block";
+      [bf, bu].forEach(function (b) {
+        b.style.cssText = "margin-left:8px;font:inherit;font-size:0.85em;background:#313244;color:#cdd6f4;border:none;border-radius:5px;padding:1px 9px;cursor:pointer";
+      });
+      bf.addEventListener("click", foldAll);
+      bu.addEventListener("click", unfoldAll);
+      var grow = shop.querySelector(".ed-shop-grow");
+      shop.insertBefore(bf, grow); shop.insertBefore(bu, grow);
+    }
     refresh();
   }
 
@@ -2278,6 +2500,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     fences.forEach(function (f) {
       f.body = lines.slice(f.start + 1, f.end).join("\n");
       f.checked = (f.parent === null) || chainLive(f.parent);   // code checks apply to live code only
+    });
+    /* authored classes are identifiers too (Michel, 2026-08-23): a grid
+       binds a CLASS the python above declares — bind="Student",
+       of="Student" — and that must not read as a broken reference */
+    fences.forEach(function (f) {
+      if (f.lang !== "python") return;
+      f.body.split("\n").forEach(function (ln, j) {
+        var cm = ln.match(/^class\s+([A-Za-z_]\w*)\s*[(:]/);
+        if (cm && ids[cm[1]] === undefined) ids[cm[1]] = f.start + 1 + j;
+      });
     });
     return { lines: lines, fences: fences, ials: ials, ids: ids };
   }

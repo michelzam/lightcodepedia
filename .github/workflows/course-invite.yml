@@ -20,7 +20,8 @@ on:
         default: ""
 
 permissions:
-  contents: read
+  contents: write   # the verdict travels as an orphan blob
+  statuses: write   # ...announced by a commit status the author key can read
 
 jobs:
   invite:
@@ -75,14 +76,40 @@ jobs:
           if [ "${{ inputs.mode }}" = "invite" ]; then
             python3 tools/course_invite.py invite \
               --course "${{ steps.wiring.outputs.course }}" \
-              --org "${{ steps.wiring.outputs.org }}" --confirm 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || rc=$?
+              --org "${{ steps.wiring.outputs.org }}" --confirm 2>&1 | tee -a /tmp/out.txt "$GITHUB_STEP_SUMMARY" || rc=$?
           else
             python3 tools/course_invite.py plan \
               --course "${{ steps.wiring.outputs.course }}" \
-              --org "${{ steps.wiring.outputs.org }}" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || rc=$?
+              --org "${{ steps.wiring.outputs.org }}" 2>&1 | tee -a /tmp/out.txt "$GITHUB_STEP_SUMMARY" || rc=$?
           fi
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           if [ $rc -ne 0 ]; then
             echo "If invitations answered 403: the ORG_VAULT_TOKEN grant needs Organization permissions → Members: read and write (edit the fine-grained token, it keeps its value)." >> "$GITHUB_STEP_SUMMARY"
           fi
           exit $rc
+
+      - name: Report to the console
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Fine-grained author keys cannot read check-runs (GitHub offers no
+          # Checks permission for them — field-discovered 2026-08-22), so the
+          # verdict rides a channel they CAN read: an orphan git blob (no
+          # path, no branch, GC'd) announced by a commit status whose
+          # description is the blob sha. The console holds Contents read
+          # already and needs only Commit statuses read.
+          touch /tmp/out.txt
+          [ -s /tmp/out.txt ] || echo "The run stopped before producing output — its guard names the missing piece (course number or secret)." > /tmp/out.txt
+          STATE="${{ job.status == 'success' && 'success' || 'failure' }}"
+          BLOB=$(jq -n --rawfile c /tmp/out.txt '{content: $c, encoding: "utf-8"}' \
+            | curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" -d @- \
+                   "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs" | jq -r .sha)
+          jq -n --arg s "$STATE" --arg d "$BLOB" \
+                '{state: (if $s == "success" then "success" else "failure" end),
+                  context: "lc/roster-invite", description: $d}' \
+            | curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" -d @- \
+                   "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            | jq -r 'if .id then "filed status \(.id) → blob" else "status refused: \(.message)" end'

@@ -151,8 +151,12 @@ Auto-included by docs/_layouts/default.html.
     /* Does anything on this page actually answer to this name? An element
        carrying the id, or a dataset registered without one — a real hidden
        Dataset is legitimate and must keep resolving. */
-    function resolves(id) {
+    function resolves(id, target) {
       if (!id) return false;
+      /* a Class target has no DOM element — it answers to the model
+         registry the runtime mirrors (window._lcxClasses) */
+      if (target === "Class")
+        return ("," + (window._lcxClasses || "") + ",").indexOf("," + id + ",") >= 0;
       try { if (document.querySelector("[data-lc-id='" + id + "']")) return true; }
       catch (e) { return false; }                 // not even a usable name
       return !!(window.lcDatasets &&
@@ -166,7 +170,7 @@ Auto-included by docs/_layouts/default.html.
        leaves it, the same way a language does not materialise a variable
        just because something mentioned its name. */
     const badLinks = dump =>
-      ((dump && dump.links) || []).filter(lk => !resolves(lk.id));
+      ((dump && dump.links) || []).filter(lk => !resolves(lk.id, lk.target));
 
     function schematic(name, live, bad) {
       const sp = MODEL[name]; if (!sp) return esc(name);
@@ -384,7 +388,7 @@ Auto-included by docs/_layouts/default.html.
         if (eSeen.has(k)) return;
         eSeen.add(k); edges.push({ a, b, role, list });
       }
-      const REF_ATTRS = [["data-bind", "source"], ["data-bound-to", "master"], ["data-bound", "master"], ["data-avt-target", "target"]];
+      const REF_ATTRS = [["data-bind", "source"], ["data-bound-to", "master"], ["data-bound", "master"], ["data-avt-target", "target"], ["data-flow", "flow"], ["data-map", "map"]];
       const wrapName = el => { if (el && el.classList) for (const [t, n] of WRAP)
         if (el.classList.contains(t)) return n; return null; };
       const root = addNode(hit.name, hit.el.getAttribute("data-lc-id") || "", hit.el, data);
@@ -395,7 +399,7 @@ Auto-included by docs/_layouts/default.html.
         ((n.dump && n.dump.links) || []).forEach(lk => {
           /* names nothing → no node, no wire. The referrer's 💣 row says it,
              and a pipe to a fabricated panel would say the opposite. */
-          if (!resolves(lk.id)) return;
+          if (!resolves(lk.id, lk.target)) return;
           const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
           // the live element's actual class wins over the declared association
           // target — a bind says "Dataset", but the element may be a Query

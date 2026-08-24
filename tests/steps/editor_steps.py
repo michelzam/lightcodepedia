@@ -262,3 +262,168 @@ def step_editor_targets_site(context):
         "the editor connected to the bench for a site page: %r" % status
     assert "lightcodelab" in status or "lightcodepedia" in status, \
         "the editor did not target this site's repo: %r" % status
+
+
+@given("I open the editor on a page with two fenced blocks")
+def step_open_with_fences(context):
+    context.execute_steps('''
+        When I navigate to "/components/examples/"
+        And I wait for the page to be interactive
+        When I open the page editor
+        And I switch to the editor "raw" tab
+    ''')
+    md = (
+        "# Demo\n\nProse before.\n\n"
+        "```yaml\na: 1\nb: 2\nc: 3\n```\n"
+        '{: .dataset #ds }\n\n'
+        "Prose between.\n\n"
+        "```python\nx = 1\ny = 2\nz = 3\n```\n"
+        '{: .inspector #w }\n\n'
+        "Prose after.\n"
+    )
+    context.ed_full = md
+    context.page.evaluate(
+        "(v) => { document.getElementById('ed-input').value = v; }", md)
+
+
+@when("I press the fold button")
+def step_fold(context):
+    context.page.evaluate("window._lcEdFold.foldAll()")
+
+
+@then("the display shrinks to marker lines")
+def step_folded_display(context):
+    n = context.page.evaluate("window._lcEdFold.count()")
+    assert n == 2, "expected 2 folds, got %s" % n
+    disp = context.page.evaluate(
+        "() => Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')"
+        ".get.call(document.getElementById('ed-input'))")
+    assert "▸ " in disp and "a: 1" not in disp, disp
+
+
+@then("but the full source is still what a save would read")
+@then("the full source is still what a save would read")
+def step_value_full(context):
+    val = context.page.evaluate("() => document.getElementById('ed-input').value")
+    assert val == context.ed_full, "the virtual value lost content:\n" + val
+
+
+@when("I click the first marker line")
+def step_click_marker(context):
+    context.page.evaluate('''() => {
+      const i = document.getElementById('ed-input');
+      const dv = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').get.call(i);
+      const pos = dv.search(/\u2060/);
+      i.focus(); i.setSelectionRange(pos, pos);
+      i.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    }''')
+
+
+@then("that block is back in place")
+def step_unfolded(context):
+    n = context.page.evaluate("window._lcEdFold.count()")
+    assert n == 1, "expected 1 remaining fold, got %s" % n
+    disp = context.page.evaluate(
+        "() => Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')"
+        ".get.call(document.getElementById('ed-input'))")
+    assert "a: 1" in disp, "the yaml fence did not return"
+
+
+@then("the gutter numbers stay source-true across the folds")
+def step_gutter_source_true(context):
+    # "Prose after." sits at a fixed SOURCE line; with both blocks folded the
+    # display is far shorter, yet the gutter must still say the source number.
+    src_no = context.ed_full.split("\n").index("Prose after.") + 1
+    ok = context.page.evaluate('''(n) => {
+      const gl = [...document.querySelectorAll('#ed-gutter-inner .ed-gl')];
+      return gl.some(d => parseInt(d.textContent, 10) === n);
+    }''', src_no)
+    assert ok, "source line %s missing from the folded gutter" % src_no
+
+
+@then("the markers wear their block's icon and type")
+def step_marker_outfit(context):
+    disp = context.page.evaluate(
+        "() => Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')"
+        ".get.call(document.getElementById('ed-input'))")
+    assert ".dataset #ds" in disp, "marker lost the dataset outfit:\n" + disp
+    assert ".inspector #w" in disp, "marker lost the inspector outfit:\n" + disp
+    # icons come from component-model.json — Dataset and Inspector both have one
+    assert "\U0001F6E2" in disp or "\U0001F9EC" in disp, \
+        "no component icon on any marker:\n" + disp
+    # the machine half is invisible now: the count trails in words, the old
+    # ⟢f19⟣ token is gone, the fold id rides as zero-width characters
+    assert "6 lines" in disp, "no trailing line count:\n" + disp
+    assert "⟢" not in disp, "the old visible fold token is back:\n" + disp
+    assert "\u2060" in disp, "no invisible fold id on the markers:\n" + disp
+
+
+@when("I refold it from the gutter arrow")
+def step_refold_real_click(context):
+    # a REAL pointer click. The arrow used to sit under the gutter's
+    # pointer-events:none and only a dispatched event "worked" — this step
+    # pins the honest path (Michel, 2026-08-23: "gutter click not working").
+    context.page.locator("#ed-gutter-inner .ed-fold-a[data-foldline]").first.click()
+
+
+@given("a connected editor whose repo serves a two-fence page")
+def step_stub_fenced_repo(context):
+    import base64
+    md = (
+        "# Demo\n\nProse before.\n\n"
+        "```yaml\na: 1\nb: 2\nc: 3\n```\n"
+        '{: .dataset #ds }\n\n'
+        "Prose between.\n\n"
+        "```python\nx = 1\ny = 2\nz = 3\n```\n"
+        '{: .inspector #w }\n\n'
+        "Prose after.\n"
+    )
+    context.ed_full = md
+    b64 = base64.b64encode(md.encode()).decode()
+
+    def gh(route):
+        url = route.request.url
+        if "/git/trees/" in url:
+            route.fulfill(json={"sha": "HEAD", "tree": [
+                {"path": "docs/events.md", "type": "blob", "sha": "s1"}],
+                "truncated": False})
+        elif "/contents/" in url:
+            route.fulfill(json={"content": b64, "sha": "s1",
+                                "name": "events.md", "path": "docs/events.md"})
+        else:
+            full = url.split("/repos/", 1)[1].split("?")[0]
+            route.fulfill(json={"full_name": full, "default_branch": "main",
+                                "permissions": {"push": True}})
+
+    context.page.route("https://api.github.com/repos/**", gh)
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat','ghp_author');"
+        "localStorage.setItem('lc_ed_repo','michelzam/lightcodelab');")
+
+
+@when("the editor has loaded the page's own file")
+def step_wait_served_file(context):
+    # the editor auto-targets docs/<page>.md when connected — wait for it
+    context.page.wait_for_function(
+        "() => document.getElementById('ed-input').value.indexOf('Prose after.') >= 0",
+        timeout=15_000)
+
+
+@then('the draft checker warns only about "{name}"')
+def step_lint_only(context, name):
+    # the checker is debounced — wait for the genuinely-broken name to land
+    context.page.wait_for_function(
+        "() => (document.getElementById('ed-lint-panel') || {innerHTML: ''})"
+        ".innerHTML.indexOf('%s') >= 0" % name, timeout=15_000)
+    items = context.page.evaluate(
+        "() => [...document.querySelectorAll('#ed-lint-panel .ed-lint-item .msg')]"
+        ".map(e => e.textContent)")
+    refs = [m for m in items if "no such id" in m]
+    assert len(refs) == 1 and name in refs[0], \
+        "reference findings %r — wanted exactly one, about %s" % (refs, name)
+
+
+@when("I close the page editor")
+def step_close_editor(context):
+    context.page.locator("#ed-close-btn").click()
+    context.page.wait_for_timeout(400)

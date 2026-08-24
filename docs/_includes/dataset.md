@@ -142,6 +142,16 @@ Auto-included by docs/_layouts/default.html.
   /* ── .dataset upgrade ───────────────────────────── */
   function upgradeDataset(el) {
     if (el.dataset.lcDsDone) return; el.dataset.lcDsDone = "1";
+    /* of="SomeModel": the rows are ADOPTED by a model class — same fence,
+       one grammar (Michel, 2026-08-22: "KISS that"). The model machinery
+       owns the hydration; retry briefly if its include has not parsed yet. */
+    if (el.getAttribute("of")) {
+      (function adopt(tries) {
+        if (window.lcAdoptRows) { delete el.dataset.lcRowsDone; window.lcAdoptRows(el); return; }
+        if (tries < 50) setTimeout(function () { adopt(tries + 1); }, 200);
+      })(0);
+      return;
+    }
     var id = el.id || el.getAttribute("id");
     if (!id) return;
 
@@ -266,6 +276,7 @@ Auto-included by docs/_layouts/default.html.
        click upstream changed nothing (Michel, 2026-08-21). Same contract,
        same attributes — one selection bus for both roads. */
     var masterRow = null, lastData = null, publishedFirst = false;
+    var selKey = null;   /* the selected row's identity (obj name, else its index) */
     var filterKeys = null;
     if (masterId && filterExpr) {
       var fm = filterExpr.match(/^\s*([\w-]+)\s*=\s*([\w-]+)\s*$/);
@@ -392,18 +403,31 @@ Auto-included by docs/_layouts/default.html.
            grid has an id it also publishes, so bound-to charts and bound forms
            can hang off it (dataset → grid → detail). */
         var trs = el.querySelectorAll("tbody tr");
+        function keyOf(r) { return r && r.obj != null ? "o:" + r.obj : null; }
         trs.forEach(function (tr, i) {
           tr.addEventListener("click", function () {
             trs.forEach(function (x) { x.classList.remove("lc-dg-selected"); });
             tr.classList.add("lc-dg-selected");
+            selKey = keyOf(slice[i]) || "i:" + i;
             if (lcId) window.lcMasterDetail.publish(lcId, slice[i] || null);
           });
         });
+        /* the selection survives a republish: a model's verb repaints the
+           whole table, and the row you were on must stay lit (Michel,
+           2026-08-22: "the datagrid does not show the selected row") */
+        if (selKey) {
+          slice.forEach(function (r, i) {
+            if ((keyOf(r) || "i:" + i) === selKey && trs[i]) trs[i].classList.add("lc-dg-selected");
+          });
+        }
         /* a master with data selects its first row at once, like the AG
            road — a bound form should never sit empty waiting for a click */
         if (lcId && !publishedFirst && slice.length && window.lcMasterDetail) {
           publishedFirst = true;
-          if (trs[0]) trs[0].classList.add("lc-dg-selected");
+          if (!selKey) {
+            selKey = keyOf(slice[0]) || "i:0";
+            if (trs[0]) trs[0].classList.add("lc-dg-selected");
+          }
           window.lcMasterDetail.publish(lcId, slice[0]);
         }
       }

@@ -408,3 +408,30 @@ def step_host_not_resurrected(context):
         "the reel ghosted the avatar HOST — the hidden big face is resurrected: %r" % got
     )
     assert abs(float(got["seed"]) - 0.35) < 0.01, "the seed did not ghost: %r" % got
+
+
+@then("the reel arms its blocks for reveal")
+def step_reel_armed(context):
+    # the opening slide may be title-only, so entry proves only the ARMING:
+    # blocks wait below the fold — that remainder IS the "progressive"
+    context.page.wait_for_timeout(600)
+    armed = context.page.locator(".lc-rv").count()
+    assert armed > 0, "nothing armed for reveal"
+    seen = context.page.locator(".lc-rv.lc-rv-in").count()
+    assert seen < armed, \
+        "all %d blocks revealed at once — nothing left to build up" % armed
+
+
+@then("scrolling to the next section reveals its blocks")
+def step_reel_reveal_on_scroll(context):
+    before = context.page.locator(".lc-rv.lc-rv-in").count()
+    context.page.keyboard.press("ArrowDown")
+    context.page.wait_for_function(
+        "(n) => document.querySelectorAll('.lc-rv.lc-rv-in').length > n",
+        arg=before, timeout=15_000)
+
+
+@then("no block stays armed")
+def step_reel_disarmed(context):
+    n = context.page.locator(".lc-rv").count()
+    assert n == 0, "%d blocks still armed after exit" % n

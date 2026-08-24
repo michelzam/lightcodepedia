@@ -50,6 +50,10 @@ Auto-included by docs/_layouts/default.html.
    the tone echoes it, so a reader who skipped the line still feels the
    change. Three values and no more; free gradients would drift into
    decoration nobody can read (Michel, 2026-08-14). */
+/* inside the app WINDOW the frame is the border — the cards go bare, the
+   content reads as one app screen (adoption-day look) */
+.lc-block-win > .lc-blocks { padding: 1.1em 1.3em; margin: 0; }
+.lc-block-win .lc-blocks .lc-block { border: none; background: transparent; padding: 0.4em 0; }
 .lc-tone-paper > .lc-block { background: #fffdf8; border-color: #e8e2d5; }
 .lc-tone-app   > .lc-block { background: #f6f9fe; border-color: #c9dcf5; box-shadow: inset 3px 0 0 #1565c0; }
 .lc-tone-tool  > .lc-block { background: #fdfaf4; border-color: #e6d3ae; border-style: dashed; box-shadow: inset 3px 0 0 #b45309; }
@@ -126,12 +130,13 @@ Auto-included by docs/_layouts/default.html.
     var cols = el.getAttribute("cols") || "1";
     var colStyle = colTemplate(cols);
     var tone = toneClass(el);
-    var sections = parseSections(el);
-    if (!sections.length) {
-      var code = el.querySelector("code");
-      var raw = (code ? code.textContent : el.textContent).trim();
-      sections = [{ label: "", body: raw }];
-    }
+    /* a title exists ONLY when authored — "### Title" (Michel, 2026-08-23:
+       the first prose line was being promoted to a header; author's choice,
+       not the engine's). No ### → the whole content is one plain card. */
+    var code = el.querySelector("code");
+    var raw = (code ? code.textContent : el.textContent).trim();
+    var sections = /^###\s/m.test(raw) ? parseSections(el) : [];
+    if (!sections.length) sections = [{ label: "", body: raw }];
 
     if (lazy) {
       var titles = sections.filter(function(s){ return s.label; }).map(function(s){
@@ -167,7 +172,21 @@ Auto-included by docs/_layouts/default.html.
     /* carry the source id so xray finds the pre-upgrade fence snapshot
        (lcSourceOf) and edits the verbatim source, not the rendered text */
     if (el.id) wrap.setAttribute("data-lc-id", el.id);
-    el.parentNode.replaceChild(wrap, el);
+    /* title="…" → the APP WINDOW frame — the same dots-and-title chrome an
+       adoption-day runner embed wears (Michel, 2026-08-24: "this is what I
+       want here"). One look for "you are in an app now", wherever it shows. */
+    var winTitle = el.getAttribute("title");
+    if (winTitle != null && winTitle !== "") {
+      var frame = document.createElement("div");
+      frame.className = "lc-runner lc-runner-embed lc-runner-win lc-block-win";
+      frame.innerHTML = '<div class="lc-win-bar"><span class="lc-win-dots" aria-hidden="true">' +
+        '<i></i><i></i><i></i></span><span class="lc-win-title">' + escapeHtml(winTitle) + '</span></div>';
+      if (el.id) { frame.setAttribute("data-lc-id", el.id); wrap.removeAttribute("data-lc-id"); }
+      frame.appendChild(wrap);
+      el.parentNode.replaceChild(frame, el);
+    } else {
+      el.parentNode.replaceChild(wrap, el);
+    }
     loadMarked(function() { _renderAndScanBlock(wrap, sections); });
   }
 
