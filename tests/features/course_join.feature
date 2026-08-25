@@ -6,6 +6,22 @@ Feature: The learner course wizard (/courses/join)
   Background:
     Given I have a clean browser page
 
+  Scenario: The content door forwards to the course root
+    One short address for the LMS iframe (Michel, 2026-08-25) — the door
+    rewrites /go into the runner's full incantation; the runner still
+    demands the visitor's own key, so the door guards nothing.
+
+    When I open the content door "/go"
+    Then the runner is asked for "courses/micro_build_ai/index.md"
+
+  Scenario: The content door forwards a named lesson, md optional
+    When I open the content door "/go?p=module_00/00_welcome"
+    Then the runner is asked for "courses/micro_build_ai/module_00/00_welcome.md"
+
+  Scenario: The content door never climbs out of the course
+    When I open the content door "/go?p=../../evil"
+    Then the runner is asked for "courses/micro_build_ai/evil.md"
+
   Scenario: A fresh learner sees step 1 active and the rest waiting
     When I open the course wizard
     Then join step 1 is active and steps 2 and 3 are off
@@ -37,17 +53,23 @@ Feature: The learner course wizard (/courses/join)
     Then the wizard says the learner is in
     And the open-course door points at the vault entry
 
-  Scenario: An enrolled learner with no bench is offered the fork
-    Given a stubbed GitHub that accepts the key with repo scope
-    And the learner can read the vault
-    When I open the course wizard with a stored key
-    Then the bench step offers the fork
+  Scenario: A missing bench is a message, never a button
+    The DESK is the one bench builder (A′, Michel 2026-08-25): the
+    teacher's Sync forges the fork and the grants in one press. The
+    wizard only ever finds, opens and refreshes a bench — so with none
+    there yet, it says who builds it and asks GitHub for nothing.
 
-  Scenario: Forking creates the org bench, explicitly up to date
     Given a stubbed GitHub that accepts the key with repo scope
     And the learner can read the vault
     When I open the course wizard with a stored key
-    And I fork my bench
+    Then the bench step says the teacher's desk builds it
+    And no repository was created by the wizard
+
+  Scenario: A desk-built bench is found, up to date, and opens in the runner
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the learner can read the vault
+    And my bench exists and is 0 updates behind the hub
+    When I open the course wizard with a stored key
     Then my bench shows up to date with the hub
     And the bench door opens in the runner
 

@@ -76,7 +76,9 @@ def _stub(context):
                     route.fulfill(status=404, json={"message": "Not Found"})
                 return
         if url.endswith("/forks") and method == "POST":
-            st["bench"] = True             # fork lands in the org as the bench
+            # the wizard must never fork — that is the desk's act (A′)
+            context.fork_posted = url
+            st["bench"] = True
             route.fulfill(status=202, json={"name": BENCH})
             return
         if re.search(r"/repos/[^/]+/[^/]+$", url) and method == "GET":
@@ -89,6 +91,22 @@ def _stub(context):
         route.fulfill(status=404, json={"message": "stub"})
 
     context.page.route("https://api.github.com/**", handler)
+
+
+@when('I open the content door "{path}"')
+def step_open_door(context, path):
+    context.page.goto(context.base_url + path, wait_until="domcontentloaded")
+    # the runner's own load never settles in the offline rig — the door's
+    # job ends at the address bar, so commit is the moment to judge
+    context.page.wait_for_url(lambda u: "/run.html#src=" in u,
+                              timeout=15_000, wait_until="commit")
+
+
+@then('the runner is asked for "{target}"')
+def step_door_target(context, target):
+    assert context.page.url.endswith(
+        "#src=gh:uwm-build-ai/uwm-build-ai-vault/" + target), \
+        "the door forwarded to %s" % context.page.url
 
 
 @given("a stubbed GitHub that accepts the key with repo scope")
@@ -192,15 +210,12 @@ def step_bench_exists(context, n):
     context.join_stub["behind"] = n
 
 
-@then("the bench step offers the fork")
-def step_offers_fork(context):
-    expect(context.page.locator('.lc-join [data-a="fork"]')).to_be_visible(timeout=8000)
-
-
-@when("I fork my bench")
-def step_fork_bench(context):
-    context.page.click('.lc-join [data-a="fork"]')
-    context.page.wait_for_timeout(1500)
+@then("the bench step says the teacher's desk builds it")
+def step_bench_is_desks(context):
+    expect(context.page.locator('.lc-join [data-m="4"]')).to_contain_text(
+        "your teacher’s desk builds it", timeout=8000)
+    assert context.page.locator('.lc-join [data-a="fork"]').count() == 0, \
+        "the retired Create-my-bench button is back"
 
 
 @then("my bench shows up to date with the hub")
@@ -410,8 +425,10 @@ def step_energy_step_done(context):
 
 @then("no repository was created by the wizard")
 def step_no_repo_created(context):
-    """The wizard reads and forks; it never POSTs /orgs/*/repos. Bay
-    creation is the teacher's act, in the console, with the org key."""
+    """The wizard only reads and syncs. Bays are the console's act, and
+    since A′ the bench fork is the desk's — the wizard asks for neither."""
     context.page.wait_for_timeout(800)
     assert getattr(context, "bay_created", None) is None, \
         "the wizard created a repo: %r" % (context.bay_created,)
+    assert getattr(context, "fork_posted", None) is None, \
+        "the wizard forked a bench: %r" % (context.fork_posted,)

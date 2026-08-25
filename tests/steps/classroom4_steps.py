@@ -6,8 +6,7 @@ from playwright.sync_api import expect
 @then("both personas face each other")
 def step_personas(context):
     cards = context.page.locator(".lc-persona")
-    expect(cards.first).to_be_visible(timeout=30_000)
-    assert cards.count() == 2, "expected 2 personas, got %d" % cards.count()
+    expect(cards).to_have_count(2, timeout=30_000)
     expect(context.page.locator('[data-lc-id="p_instructor"]')).to_contain_text("one button")
     expect(context.page.locator('[data-lc-id="p_student"]')).to_contain_text("am I done")
 
@@ -28,7 +27,7 @@ def step_map(context):
     expect(imap).to_be_visible(timeout=20_000)
     # goal omitted in the yaml — it must arrive from the pitch's benefit
     expect(imap).to_contain_text("one click invites the roster")
-    expect(imap).to_contain_text("Invite-the-roster")
+    expect(imap).to_contain_text("Invite button, gated")
 
 
 @then("the flow declares the one-click cast")
@@ -38,8 +37,8 @@ def step_flow_cast(context):
     # the story tells the impact map — the x-ray pipes the two
     assert context.page.locator('#c4_flow[data-map="c4_map"]').count() == 1, \
         "the flow does not name its impact map"
-    for ref in ("#c4_desk", "#c4_student", "GH.invite_roster",
-                "Student[building]", "Invitation[sent]"):
+    for ref in ("#c4_desk", "#c4_student", "Desk.plan", "Desk.sync",
+                "Student[invited]", "Student[building]"):
         n = strip.locator('[data-el-ref="%s"]' % ref).count()
         assert n == 1, "cast misses %s (found %d)" % (ref, n)
 
@@ -50,9 +49,9 @@ def step_windows(context):
         bar = context.page.locator('.lc-block-win[data-lc-id="%s"] .lc-win-title' % bid)
         expect(bar).to_be_visible(timeout=30_000)
         expect(bar).to_contain_text(word)
-    # the desk's mission card holds THE one button, live singletons not specimens
+    # the mission card IS the Desk instance — its verbs are the buttons
     btn = context.page.locator(
-        '[data-lc-inspector="c4_mission"] [data-card="gh"] button[data-m="simulate_invites"]')
+        '[data-lc-inspector="c4_mission"] [data-card="desk"] button[data-m="plan"]')
     expect(btn).to_be_visible(timeout=45_000)
     # the join wizard is a MONITOR: identity comes from Canvas, nothing typable
     assert context.page.locator(
@@ -60,14 +59,14 @@ def step_windows(context):
         "the student view is editable"
 
 
-@then("the model is backstage and the diagram shows the managers")
+@then("the model is backstage and the diagram shows the desk")
 def step_model_diagram(context):
     model = context.page.locator('.lc-model[data-lc-id="c4_model"]')
     expect(model).to_be_hidden()
     assert "class Student" in (model.text_content() or ""), "model code missing"
     svg = context.page.locator(".lc-diagram svg").first
     expect(svg).to_be_visible(timeout=45_000)
-    for word in ("Canvas", "GH", "invite roster", "seats"):
+    for word in ("Desk", "Student", "plan", "sync", "roster"):
         expect(svg).to_contain_text(word, timeout=10_000)
 
 
@@ -130,9 +129,13 @@ def _author_key(context):
 def step_stub_gate(context):
     _author_key(context)
     plan = (
-        "Course 10954: 5 seat(s).\n\n"
-        "ada@uwm.edu                            Ada Lovelace\n"
-        "zik@uwm.edu                            Zik Newcomer\n\n"
+        "Org uwm-build-ai: 4 member(s).\n\n"
+        "Skipped:\n"
+        "   \u00b7  mk@karmicsoft.com                   already invited (2026-08-24)\n\n"
+        "To invite: 3\n"
+        "   ada@uwm.edu                            Ada Lovelace\n"
+        "   zik@uwm.edu                            Zik Newcomer\n"
+        "   ENONAIVI@UWM.EDU                       Onaivi, Emmanuel\n\n"
         "Dry run - nothing was sent, nothing was stored.\n"
     )
     b64 = base64.b64encode(plan.encode()).decode()
@@ -153,6 +156,7 @@ def step_stub_gate(context):
     context.page.route("https://api.github.com/repos/**", gh)
 
 
+@given("a stubbed org")
 @given("a connected author key and a stubbed org")
 def step_stub_org(context):
     _author_key(context)
@@ -164,26 +168,36 @@ def step_stub_org(context):
         elif "/failed_invitations" in url:
             route.fulfill(json=[])
         elif "/members" in url:
-            route.fulfill(json=[{"login": "linus"}])
+            route.fulfill(json=[{"login": "zik"}])
         elif "/repos" in url:
-            route.fulfill(json=[{
-                "name": "build-ai-fall26-noor",
-                "created_at": "2026-08-01T00:00:00Z",
-                "pushed_at": "2026-08-20T00:00:00Z"}])
+            route.fulfill(json=[
+                {"name": "build-ai-summer26-zik",
+                 "created_at": "2026-08-01T00:00:00Z",
+                 "pushed_at": "2026-08-20T00:00:00Z"},
+                # the bench's public bay twin — must NOT become a student
+                {"name": "build-ai-summer26-zik-bay",
+                 "created_at": "2026-08-01T00:00:00Z",
+                 "pushed_at": "2026-08-21T00:00:00Z"}])
         else:
             route.fulfill(status=404, json={"message": "not stubbed"})
 
     context.page.route("https://api.github.com/orgs/**", org)
 
 
-@when('I press the desk button "{bid}"')
-def step_press_desk(context, bid):
-    btn = context.page.locator('.lc-gate-btn[data-lc-id="%s"] button' % bid)
-    expect(btn).to_be_visible(timeout=30_000)
-    # the desk acts on the model — wait for the grid (the model ran) first
-    expect(context.page.locator(
-        '[data-lc-id="c4_roster"] tbody tr').first).to_be_visible(timeout=45_000)
-    btn.click()
+@then('the "{verb}" verb on the "{elid}" inspector is enabled')
+def step_verb_enabled(context, verb, elid):
+    btn = context.page.locator(
+        '[data-lc-inspector="%s"] [data-card] button[data-m="%s"]' % (elid, verb)).first
+    expect(btn).to_be_visible(timeout=45_000)
+    expect(btn).to_be_enabled(timeout=15_000)
+
+
+@then('the "{verb}" verb on the "{elid}" inspector is disabled')
+def step_verb_disabled(context, verb, elid):
+    btn = context.page.locator(
+        '[data-lc-inspector="%s"] [data-card] button[data-m="%s"]' % (elid, verb)).first
+    expect(btn).to_be_visible(timeout=45_000)
+    expect(btn).to_be_disabled()
 
 
 @then("the roster holds exactly {n:d} seats")
@@ -200,3 +214,132 @@ def step_roster_count(context, n):
     txt = body.text_content() or ""
     assert "Dry run" not in txt and "\\n" not in txt, \
         "the verdict leaked into a seat: %r" % txt[:200]
+
+
+
+@then("no bay twin became a student")
+def step_no_bay_phantom(context):
+    txt = context.page.locator('[data-lc-id="c4_roster"] tbody').text_content() or ""
+    assert "bay" not in txt, "a -bay repo minted a phantom seat: %r" % txt[:200]
+
+
+@then("no seat is named after a skip reason")
+def step_no_reason_names(context):
+    txt = context.page.locator('[data-lc-id="c4_roster"] tbody').text_content() or ""
+    assert "already invited" not in txt, \
+        "a skip reason became a name: %r" % txt[:200]
+
+
+@given("an org where ada accepts between two syncs")
+def step_stub_org_acceptance(context):
+    context.c4_syncs = {"n": 0}
+
+    def org(route):
+        url = route.request.url
+        if "/invitations" in url and "failed" not in url:
+            context.c4_syncs["n"] += 1
+            first = context.c4_syncs["n"] <= 1
+            route.fulfill(json=[{"email": "ada@uwm.edu", "login": None}] if first else [])
+        elif "/failed_invitations" in url:
+            route.fulfill(json=[])
+        elif "/members" in url:
+            first = context.c4_syncs["n"] <= 1
+            route.fulfill(json=[{"login": "zik"}] if first
+                          else [{"login": "zik"}, {"login": "adalove"}])
+        elif "/repos" in url:
+            route.fulfill(json=[])
+        else:
+            route.fulfill(status=404, json={"message": "not stubbed"})
+
+    context.page.route("https://api.github.com/orgs/**", org)
+
+
+@given("an org where guest zara is invited by hand and then accepts")
+def step_stub_org_guest(context):
+    context.c4_syncs = {"n": 0}
+
+    def org(route):
+        url = route.request.url
+        if "/invitations" in url and "failed" not in url:
+            context.c4_syncs["n"] += 1
+            first = context.c4_syncs["n"] <= 1
+            route.fulfill(json=[{"email": "zara@ext.org", "login": None}] if first else [])
+        elif "/failed_invitations" in url:
+            route.fulfill(json=[])
+        elif "/members" in url:
+            first = context.c4_syncs["n"] <= 1
+            route.fulfill(json=[] if first else [{"login": "zaralove"}])
+        elif "/repos" in url:
+            route.fulfill(json=[])
+        else:
+            route.fulfill(status=404, json={"message": "not stubbed"})
+
+    context.page.route("https://api.github.com/orgs/**", org)
+
+
+@then('the "{grid_id}" grid shows "{who}" with login "{login}"')
+def step_login_cell(context, grid_id, who, login):
+    row = context.page.locator(
+        '[data-lc-id="%s"] tbody tr' % grid_id).filter(has_text=who).first
+    expect(row).to_contain_text(login, timeout=20_000)
+
+
+@given("a bench factory that records what it builds")
+def step_stub_factory(context):
+    context.c4_built = []
+
+    def repos(route):
+        url = route.request.url
+        m = route.request.method
+        # a bench is a FORK of the hub (register §18) — a /generate template
+        # copy finds no answer here and the scenario goes red
+        if m == "POST" and url.rstrip("/").endswith("/forks"):
+            body = _json.loads(route.request.post_data or "{}")
+            context.c4_built.append(("fork", body.get("name", "")))
+            route.fulfill(status=202, json={"full_name": "x"})
+        elif m == "GET" and any(url.rstrip("/").endswith("/" + b)
+                                for k, b in context.c4_built if k == "fork"):
+            # the bridge polls the fresh fork until it answers
+            route.fulfill(status=200, json={"name": url.rsplit("/", 1)[-1]})
+        elif m == "PUT" and "/collaborators/" in url:
+            context.c4_built.append(("grant", url.rsplit("/", 1)[-1] + "@" + url.split("/repos/")[1].split("/")[1]))
+            route.fulfill(status=204, body="")
+        else:
+            route.fallback()   # the roster gate's own stub handles the rest
+
+    context.page.route("https://api.github.com/repos/**", repos)
+
+
+@then('the factory built "{bench}" and granted "{login}"')
+def step_factory_built(context, bench, login):
+    def done():
+        return ("fork", bench) in context.c4_built and \
+               any(k == "grant" and v.startswith(login + "@") for k, v in context.c4_built)
+    for _ in range(40):
+        if done():
+            return
+        context.page.wait_for_timeout(250)
+    raise AssertionError("factory log: %r" % context.c4_built)
+
+
+@given("an org whose members wear their names")
+def step_stub_org_names(context):
+    _author_key(context)
+
+    def org(route):
+        url = route.request.url
+        if "/invitations" in url and "failed" not in url:
+            route.fulfill(json=[])
+        elif "/failed_invitations" in url:
+            route.fulfill(json=[])
+        elif "/members" in url:
+            route.fulfill(json=[{"login": "Emmanuel-Onaivi"}, {"login": "egbas"}])
+        elif "/repos" in url:
+            route.fulfill(json=[{
+                "name": "build-ai-summer26-Emmanuel-Onaivi",
+                "created_at": "2026-08-01T00:00:00Z",
+                "pushed_at": "2026-08-20T00:00:00Z"}])
+        else:
+            route.fulfill(status=404, json={"message": "not stubbed"})
+
+    context.page.route("https://api.github.com/orgs/**", org)

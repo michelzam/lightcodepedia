@@ -8,8 +8,10 @@ builder/LightNode journey). Activated by IAL on a link paragraph:
 Five steps: ① GitHub account → ② course key (classic, repo scope — deep link
 pre-fills scope + an org-named note) → ③ access check (tries the actual course
 entry with the learner's key; green = enrolled + key right → 📖 Open button)
-→ ④ the bench: the learner's private fork of the session hub, forked INTO the
-org (org-owned, named <hub>-<login>) so teachers see the work at any time.
+→ ④ the bench: the learner's private fork of the session hub, org-owned and
+named <hub>-<login> so teachers see the work at any time. The DESK builds it
+(classroom4 Sync forges fork + grants — A′, Michel 2026-08-25); this wizard
+only ever finds, opens and refreshes it.
 
 CLASSMATES MUST NOT — and that is a permission rule, not a wish. Private forks
 inherit the upstream's TEAM permissions, so while the session team held pull on
@@ -82,7 +84,7 @@ The check is live truth against the API, never cached. Done steps reopen via
     wrap.className = "lc-join";
     wrap.innerHTML =
       '<div class="lcj-step" data-n="1"><div class="lcj-head"><span class="lcj-num">1</span>Create a GitHub account</div>' +
-      '<div class="lcj-body"><p style="margin-top:0">GitHub hosts the course and proves who you are. Already have an account? Just confirm.</p>' +
+      '<div class="lcj-body"><p style="margin-top:0">GitHub hosts the course and proves who you are. <b>Sign up with the same email address your class invitation came to</b> — that address is how GitHub matches you to it. Already have an account? Just confirm.</p>' +
       '<div class="lcj-row"><a class="lcj-btn alt" href="https://github.com/signup" target="_blank" rel="noopener">Open GitHub signup →</a>' +
       '<button type="button" class="lcj-btn" data-a="have">I have an account ✓</button></div></div></div>' +
 
@@ -255,8 +257,12 @@ The check is live truth against the API, never cached. Done steps reopen via
     }
 
     function benchOffer() {
-      msg(4, "🧰 No bench yet for session “" + B.hub.name + "” — create yours to start working:", "");
-      benchRow().innerHTML = '<button type="button" class="lcj-btn" data-a="fork">🛠 Create my bench</button>';
+      /* the DESK is the one bench builder (A′, Michel 2026-08-25): the
+         teacher's Sync forges the fork and the grants in one press — a
+         learner could never fork before that anyway (hub read is an
+         individual grant, only possible once their login is known). */
+      msg(4, "🧰 No bench yet for session “" + B.hub.name + "” — your teacher’s desk builds it (it appears here right after their next Sync). Check back, or ask in class.", "");
+      benchRow().innerHTML = "";
     }
 
     function benchShow(behind) {
@@ -367,29 +373,6 @@ The check is live truth against the API, never cached. Done steps reopen via
       var a = b.getAttribute("data-a");
       if (a === "have") { setState("1", "ok"); setState("2", "on"); }
       if (a === "checkaccess") checkAccess(false);
-      if (a === "fork") {
-        b.disabled = true; msg(4, "🛠 Creating your bench… GitHub is copying the hub in.", "");
-        sgh("/repos/" + org + "/" + B.hub.name + "/forks",
-            { method: "POST", body: { organization: org, name: B.name, default_branch_only: true } })
-          .then(function (r) {
-            if (r.status === 202 || r.ok) {
-              /* forking is async server-side — poll until the bench answers */
-              var tries = 0;
-              (function poll() {
-                sgh("/repos/" + org + "/" + B.name).then(function (r2) {
-                  if (r2.ok) benchStatus();
-                  else if (++tries < 10) setTimeout(poll, 900);
-                  else msg(4, "⏳ Still setting up your bench — reload this page in a minute.", "");
-                });
-              })();
-            }
-            else return r.json().then(function (d) {
-              b.disabled = false;
-              msg(4, "❌ Couldn't create your bench: " + (d.message || "HTTP " + r.status) + " — your teacher may need to allow members to create private repositories (cockpit, step 3).", "err");
-            });
-          })
-          .catch(function () { b.disabled = false; msg(4, "❌ Could not reach GitHub — try again.", "err"); });
-      }
       if (a === "sync") {
         b.disabled = true; msg(4, "🔄 Refreshing from the hub…", "");
         sgh("/repos/" + org + "/" + B.name + "/merge-upstream", { method: "POST", body: { branch: B.branch } })
