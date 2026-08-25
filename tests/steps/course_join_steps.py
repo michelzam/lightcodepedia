@@ -98,7 +98,7 @@ def step_open_door(context, path):
     context.page.goto(context.base_url + path, wait_until="domcontentloaded")
     # the runner's own load never settles in the offline rig — the door's
     # job ends at the address bar, so commit is the moment to judge
-    context.page.wait_for_url(lambda u: "/run.html#src=" in u,
+    context.page.wait_for_url(lambda u: "/run.html" in u and "#src=" in u,
                               timeout=15_000, wait_until="commit")
 
 
@@ -107,6 +107,14 @@ def step_door_target(context, target):
     assert context.page.url.endswith(
         "#src=gh:uwm-build-ai/uwm-build-ai-vault/" + target), \
         "the door forwarded to %s" % context.page.url
+
+
+@then("the runner carries the baked learner flags")
+def step_door_flags(context):
+    url = context.page.url
+    for piece in ("focus=1", "editable=1",
+                  "open=gh%3Auwm-build-ai%2Fuwm-build-ai-vault%2Fcourses%2F*"):
+        assert piece in url, "missing %s in %s" % (piece, url)
 
 
 @given("a stubbed GitHub that accepts the key with repo scope")

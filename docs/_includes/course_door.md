@@ -29,9 +29,15 @@ the LMS keeps framing one URL per page and nothing else.
     var p = (q.p || "").replace(/\.\./g, "").replace(/^\/+/, "");
     if (p && !/\.md$/.test(p)) p += ".md";
     var target = (course ? course + "/" : "") + (p || "index.md");
+    /* the standard learner flags are BAKED — that is the whole point of a
+       short address. A query param still overrides its default. */
+    var flags = { focus: "1", editable: "1",
+                  open: "gh:" + vault + "/" + (course.split("/")[0] || "courses") + "/*" };
     var pass = ["focus", "editable", "navigable", "open"]
-      .filter(function (k) { return q[k] !== undefined; })
-      .map(function (k) { return k + "=" + encodeURIComponent(q[k]); }).join("&");
+      .filter(function (k) { return q[k] !== undefined || flags[k] !== undefined; })
+      .map(function (k) {
+        return k + "=" + encodeURIComponent(q[k] !== undefined ? q[k] : flags[k]);
+      }).join("&");
     location.replace((window.lcHref ? window.lcHref("/run.html") : "/run.html")
       + (pass ? "?" + pass : "") + "#src=gh:" + vault + "/" + target);
   }
