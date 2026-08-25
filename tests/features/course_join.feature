@@ -18,6 +18,14 @@ Feature: The learner course wizard (/courses/join)
     When I open the content door "/go?p=module_00/00_welcome"
     Then the runner is asked for "courses/micro_build_ai/module_00/00_welcome.md"
 
+  Scenario: The door bakes the learner flags
+    Focus, editable and the open scope ride INSIDE the door — that is
+    what keeps the LMS line short. A query param still overrides its own
+    default.
+
+    When I open the content door "/go"
+    Then the runner carries the baked learner flags
+
   Scenario: The content door never climbs out of the course
     When I open the content door "/go?p=../../evil"
     Then the runner is asked for "courses/micro_build_ai/evil.md"
