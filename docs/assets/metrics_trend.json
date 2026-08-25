@@ -280,12 +280,12 @@
   "scenarios": 483
  },
  {
-  "run": "2026-08-25T13:37Z",
+  "run": "2026-08-25T13:33Z",
   "pages": 61,
   "heap_max_mb": 42.6,
-  "heap_avg_mb": 13.1,
+  "heap_avg_mb": 13.0,
   "dom_max": 2236,
-  "errors": 97,
+  "errors": 91,
   "passed": 468,
   "scenarios": 490
  },

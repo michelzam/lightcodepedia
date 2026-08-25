@@ -30,11 +30,14 @@ the LMS keeps framing one URL per page and nothing else.
     if (p && !/\.md$/.test(p)) p += ".md";
     var target = (course ? course + "/" : "") + (p || "index.md");
     /* the standard learner flags are BAKED — that is the whole point of a
-       short address. A query param still overrides its default. */
+       short address. A query param still overrides its default. crumb= is
+       what makes the LMS view (topbar → one read-only course line, no
+       source pill); without it a bare tap lands on the full platform. */
     var flags = { focus: "1", editable: "1",
+                  crumb: el.getAttribute("crumb") || "",
                   open: "gh:" + vault + "/" + (course.split("/")[0] || "courses") + "/*" };
-    var pass = ["focus", "editable", "navigable", "open"]
-      .filter(function (k) { return q[k] !== undefined || flags[k] !== undefined; })
+    var pass = ["focus", "editable", "navigable", "open", "crumb", "up", "strict"]
+      .filter(function (k) { return q[k] !== undefined || flags[k]; })
       .map(function (k) {
         return k + "=" + encodeURIComponent(q[k] !== undefined ? q[k] : flags[k]);
       }).join("&");
