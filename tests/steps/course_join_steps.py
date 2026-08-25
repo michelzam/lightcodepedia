@@ -112,9 +112,22 @@ def step_door_target(context, target):
 @then("the runner carries the baked learner flags")
 def step_door_flags(context):
     url = context.page.url
-    for piece in ("focus=1", "editable=1",
+    for piece in ("focus=1", "editable=1", "crumb=BUILD-AI",
                   "open=gh%3Auwm-build-ai%2Fuwm-build-ai-vault%2Fcourses%2F*"):
         assert piece in url, "missing %s in %s" % (piece, url)
+
+
+@then("the landing wears the learner chrome, not the platform")
+def step_door_chrome(context):
+    # the URL said the right thing once and the page still wore the full
+    # platform (Michel's mac, 2026-08-25) — so judge the CHROME itself:
+    # crumb mode on the root, the topbar's menu links gone
+    context.page.wait_for_timeout(800)
+    root_cls = context.page.evaluate("document.documentElement.className")
+    assert "lc-crumb-mode" in root_cls, "no crumb mode: %r" % root_cls
+    links = context.page.locator("#lc-topbar .lc-links")
+    if links.count():
+        expect(links.first).to_be_hidden()
 
 
 @given("a stubbed GitHub that accepts the key with repo scope")
