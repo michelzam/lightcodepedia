@@ -28,6 +28,38 @@ Feature: Avatar — speaking overlay instructor
     And I click the avatar trigger for "prof_avatar"
     Then the avatar "prof_avatar" is in the "idle" state
 
+  Scenario: A tap on the playing face holds the tour, never kills it
+    Michel, 2026-08-25: replace killing with pause. The face freezes at
+    its line, the bubble stays, and the little remote floats in — prev,
+    play, next, replay — gone again the moment it speaks. The trigger
+    keeps its stop.
+
+    When I navigate to "/components/examples/avatar"
+    And I wait for the page to be interactive
+    And I click the avatar trigger for "prof_avatar"
+    And I tap the avatar face "prof_avatar"
+    Then the avatar "prof_avatar" is in the "paused" state
+    And the paused remote of "prof_avatar" offers prev, play, next and replay
+    When I press "play" on the paused remote of "prof_avatar"
+    Then the avatar "prof_avatar" is in the "speaking" state
+    And the paused remote of "prof_avatar" is hidden
+
+  Scenario: The remote steps the held tour forward
+    When I navigate to "/components/examples/avatar"
+    And I wait for the page to be interactive
+    And I click the avatar trigger for "prof_avatar"
+    And I tap the avatar face "prof_avatar"
+    And I press "next" on the paused remote of "prof_avatar"
+    Then the avatar "prof_avatar" is in the "speaking" state
+
+  Scenario: The speaking guide outranks the platform chrome
+    The bubble slid UNDER the topbar on a phone (Michel, 2026-08-25) —
+    the guide is always foreground; only the editor drawer outranks it.
+
+    When I navigate to "/components/examples/avatar"
+    And I wait for the page to be interactive
+    Then the avatar overlay "prof_avatar" rides above the topbar
+
   Scenario: A Rive state-machine character renders on canvas
     When I navigate to "/components/examples/avatar"
     And I wait for the page to be interactive

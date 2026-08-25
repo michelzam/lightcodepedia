@@ -27,6 +27,45 @@ def step_click_trigger(context, avatar_id):
     context.page.wait_for_timeout(300)
 
 
+@when('I tap the avatar face "{avatar_id}"')
+def step_tap_face(context, avatar_id):
+    # the face glides between anchors (1.6s transitions) — a tap mid-air
+    # is exactly the user's gesture, so skip the stability wait
+    _host(context, avatar_id).locator(".lc-avatar-char").click(force=True)
+    context.page.wait_for_timeout(300)
+
+
+@then('the paused remote of "{avatar_id}" offers prev, play, next and replay')
+def step_remote_offers(context, avatar_id):
+    ctl = _host(context, avatar_id).locator(".lc-avatar-ctl")
+    expect(ctl).to_be_visible(timeout=5_000)
+    for verb in ("prev", "play", "next", "replay"):
+        expect(ctl.locator("[data-avt='%s']" % verb)).to_be_visible()
+
+
+@when('I press "{verb}" on the paused remote of "{avatar_id}"')
+def step_press_remote(context, verb, avatar_id):
+    _host(context, avatar_id).locator("[data-avt='%s']" % verb).click()
+    context.page.wait_for_timeout(300)
+
+
+@then('the paused remote of "{avatar_id}" is hidden')
+def step_remote_hidden(context, avatar_id):
+    expect(_host(context, avatar_id).locator(".lc-avatar-ctl")).to_be_hidden()
+
+
+@then('the avatar overlay "{avatar_id}" rides above the topbar')
+def step_above_topbar(context, avatar_id):
+    z = context.page.evaluate(
+        """(id) => {
+             const host = document.getElementById('lc-avatar-' + id);
+             const bar = document.getElementById('lc-topbar');
+             return { host: parseInt(getComputedStyle(host).zIndex || 0),
+                      bar: bar ? parseInt(getComputedStyle(bar).zIndex || 0) : 0 };
+           }""", avatar_id)
+    assert z["host"] > z["bar"], "guide z %s under topbar z %s" % (z["host"], z["bar"])
+
+
 @then('the avatar trigger for "{avatar_id}" shows the stop label')
 def step_trigger_stop_label(context, avatar_id):
     expect(_trigger(context, avatar_id)).to_have_class(
