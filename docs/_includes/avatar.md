@@ -117,7 +117,10 @@ Auto-included by docs/_layouts/default.html.
 <style>
 /* ── overlay host ────────────────────────────────────── */
 .lc-avatar-host {
-  position: fixed; bottom: 90px; z-index: 900;
+  /* above the topbar (1000) and its menus (2000): the guide's bubble slid
+     UNDER the bar on a phone (Michel, 2026-08-25) — the speaking guide
+     outranks the platform chrome, only the editor drawer outranks it */
+  position: fixed; bottom: 90px; z-index: 2100;
   pointer-events: none;
   transition: left 1.6s cubic-bezier(.4,0,.2,1),
               top 1.6s cubic-bezier(.4,0,.2,1),
@@ -217,16 +220,33 @@ Auto-included by docs/_layouts/default.html.
 /* ── guide seed: the docked companion (dock="true") ──── */
 /* when a page docks its guide, the SEED is the idle presence — the full
    character appears only while performing (and melts away after) */
-.lc-avatar-host.lc-avatar-docked:not([data-state="speaking"]) {
+.lc-avatar-host.lc-avatar-docked:not([data-state="speaking"]):not([data-state="paused"]) {
   opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
 }
 /* the face re-enables pointer-events on itself (it must be clickable when
    visible) — while docked-idle that left an INVISIBLE click-catcher floating
    over the page: a Next button underneath started the tour instead of
    navigating. Invisible means untouchable, all the way down. */
-.lc-avatar-host.lc-avatar-docked:not([data-state="speaking"]) .lc-avatar-char {
+.lc-avatar-host.lc-avatar-docked:not([data-state="speaking"]):not([data-state="paused"]) .lc-avatar-char {
   pointer-events: none;
 }
+/* ── the paused remote ────────────────────────────────
+   A tap mid-tour HOLDS the guide instead of killing it: the face freezes
+   at its line and these four float in — prev · play · next · replay —
+   gone again the moment it speaks (Michel, 2026-08-25). */
+.lc-avatar-ctl {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  top: 100%; margin-top: 10px; display: none; gap: 6px;
+  pointer-events: auto; white-space: nowrap;
+}
+.lc-avatar-host[data-state="paused"] .lc-avatar-ctl { display: flex; }
+.lc-avatar-ctl button {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid #d0d7de; background: #fff; color: #1f2328;
+  box-shadow: 0 2px 10px rgba(0,0,0,.22); cursor: pointer;
+  font-size: 14px; line-height: 1; padding: 0;
+}
+.lc-avatar-ctl button:hover { background: #f3f6fa; }
 .lc-guide-seed {
   position: fixed; right: 16px; bottom: 16px; z-index: 940;
   width: 46px; height: 46px; border-radius: 50%;
@@ -966,6 +986,28 @@ Auto-included by docs/_layouts/default.html.
       bubble.className = "lc-avatar-speech";
       pose.appendChild(bubble);
 
+      /* the paused remote — CSS shows it only in the paused state */
+      var ctl = document.createElement("div");
+      ctl.className = "lc-avatar-ctl";
+      [["⏮", "prev", function () { seekPaused(elId, -1); }],
+       ["▶", "play", function () { resumePlay(elId); }],
+       ["⏭", "next", function () { seekPaused(elId, 1); }],
+       ["⟲", "replay", function () { stopPlay(elId); startPlay(elId); }]
+      ].forEach(function (b) {
+        var btn = document.createElement("button");
+        btn.type = "button"; btn.textContent = b[0];
+        btn.setAttribute("data-avt", b[1]);
+        btn.setAttribute("aria-label", b[1]);
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var a = window._lcAvatars[elId];
+          if (a) primeVoice(a);   /* still inside the tap — audio stays blessed */
+          b[2]();
+        });
+        ctl.appendChild(btn);
+      });
+      pose.appendChild(ctl);
+
       document.body.appendChild(host);
 
       /* safety net: an avatar id is unique — if any stray re-upgrade already
@@ -1006,8 +1048,8 @@ Auto-included by docs/_layouts/default.html.
       /* idle saccades keep the built-in face alive */
       av._idleT = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
 
-      /* click to play/stop; right-click (or long-press) → local verb menu */
-      char.addEventListener("click", function () { togglePlay(elId); });
+      /* click to play/pause; right-click (or long-press) → local verb menu */
+      char.addEventListener("click", function () { togglePlay(elId, true); });
       char.addEventListener("contextmenu", function (e) { e.preventDefault(); openVerbMenu(elId, av); });
 
       if (autoplay) {
@@ -1275,10 +1317,15 @@ Auto-included by docs/_layouts/default.html.
   }
 
   /* ── playback ──────────────────────────────────────── */
-  function togglePlay(id) {
+  function togglePlay(id, viaFace) {
     var av = window._lcAvatars && window._lcAvatars[id];
     if (!av) return;
     primeVoice(av);   /* we're inside the user's tap — bless the audio element */
+    if (av._pausedAt != null || av._pausedMedia) {
+      /* held — any tap (the ▶ face, the ▶ trigger) lets it speak again */
+      resumePlay(id);
+      return;
+    }
     if (!av.playing) {
       startPlay(id);
     } else if (av._waiting) {
@@ -1292,10 +1339,69 @@ Auto-included by docs/_layouts/default.html.
     } else if (av._curStep || av.step) {
       /* mid-line in a step context → skip ahead to the next line */
       nextLine(id);
+    } else if (viaFace) {
+      /* a tap on the playing FACE holds the tour — never kills it
+         (Michel, 2026-08-25); the ⏹ trigger below keeps stop */
+      pausePlay(id);
     } else {
-      /* a normally-playing (non-step) line → stop */
       stopPlay(id);
     }
+    updateTriggers(id);
+  }
+
+  /* ── pause / resume — the held tour ──────────────────
+     Pause freezes at the CURRENT line: sound stops, the bubble stays, a
+     recorded take holds its frame, and the face grows its little remote
+     (prev · play · next · replay). Play resumes — a spoken line restarts
+     from its own first word, a take from where it stood. */
+  function pausePlay(id) {
+    var av = window._lcAvatars[id];
+    if (!av || !av.playing) return;
+    var line = av.script[av.idx - 1];
+    var m = av._media || av.videoEl;
+    if (line && line.video && m && !m.ended) {
+      try { m.pause(); } catch (e) {}
+      av._pausedMedia = m;
+    }
+    av._pausedAt = av.idx - 1;
+    av.playing = false;              /* pending line timers die on their guard */
+    stopAudio(av);
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+    charTalk(av, false);
+    av.host.classList.remove("lc-avatar-talking");
+    av.host.setAttribute("data-state", "paused");
+    updateTriggers(id);
+  }
+
+  function resumePlay(id) {
+    var av = window._lcAvatars[id];
+    if (!av || (av._pausedAt == null && !av._pausedMedia)) return;
+    var at = av._pausedAt;
+    av._pausedAt = null;
+    av.playing = true;
+    av.host.setAttribute("data-state", "speaking");
+    if (av._pausedMedia && !av._pausedMedia.ended) {
+      var m = av._pausedMedia; av._pausedMedia = null;
+      av.host.classList.add("lc-avatar-talking");
+      charTalk(av, true);
+      try { m.play().catch(function () {}); } catch (e) {}
+    } else {
+      av._pausedMedia = null;
+      av.idx = Math.max(0, at == null ? 0 : at);
+      nextLine(id);
+    }
+    updateTriggers(id);
+  }
+
+  function seekPaused(id, delta) {
+    var av = window._lcAvatars[id];
+    if (!av || av._pausedAt == null) return;
+    var at = Math.max(0, Math.min(av.script.length - 1, av._pausedAt + delta));
+    av._pausedAt = null; av._pausedMedia = null;
+    av.playing = true;
+    av.host.setAttribute("data-state", "speaking");
+    av.idx = at;
+    nextLine(id);
     updateTriggers(id);
   }
 
@@ -1327,6 +1433,7 @@ Auto-included by docs/_layouts/default.html.
     var av = window._lcAvatars[id];
     if (!av) return;
     av.playing = false;
+    av._pausedAt = null; av._pausedMedia = null;
     try {
       av.host.dispatchEvent(new CustomEvent("lc-avatar-ended",
         { bubbles: true, detail: { id: id, completed: !!completed } }));
@@ -1401,6 +1508,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     var finish = function () {
+      if (!av.playing) return;   /* paused or stopped mid-line — no tail runs */
       if (av._cueOff) av._cueOff();
       av.host.classList.remove("lc-avatar-talking");
       charTalk(av, false);
@@ -2344,7 +2452,7 @@ Auto-included by docs/_layouts/default.html.
     };
     initChar(elId, char, size);              /* no video/rive/lottie → built-in face */
     var idle = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
-    char.addEventListener("click", function () { togglePlay(elId); });
+    char.addEventListener("click", function () { togglePlay(elId, true); });
 
     var onEnd = function (ev) {
       if (!ev.detail || ev.detail.id !== elId) return;
