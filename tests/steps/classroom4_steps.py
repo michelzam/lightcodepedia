@@ -32,8 +32,11 @@ def step_map(context):
 
 @then("the flow declares the one-click cast")
 def step_flow_cast(context):
+    # the cast strip is STRUCTURE, not ink — attached for x-ray and
+    # proofs, never shown to the reader (Michel, 2026-08-25)
     strip = context.page.locator("#c4_flow .lc-ef-elements")
-    expect(strip).to_be_visible(timeout=30_000)
+    expect(strip).to_be_attached(timeout=30_000)
+    expect(strip).to_be_hidden()
     # the story tells the impact map — the x-ray pipes the two
     assert context.page.locator('#c4_flow[data-map="c4_map"]').count() == 1, \
         "the flow does not name its impact map"
@@ -68,6 +71,37 @@ def step_model_diagram(context):
     expect(svg).to_be_visible(timeout=45_000)
     for word in ("Desk", "Student", "plan", "sync", "roster"):
         expect(svg).to_contain_text(word, timeout=10_000)
+
+
+@then('the desk offers exactly the verbs "{verbs}"')
+def step_only_verbs(context, verbs):
+    # proofs-only muscle (_simulate) must never wear a button here
+    got = context.page.evaluate(
+        """() => Array.from(document.querySelectorAll(
+             '[data-lc-inspector="c4_mission"] [data-card="desk"] button[data-m]'))
+             .map(b => b.getAttribute('data-m'))""")
+    want = [v.strip() for v in verbs.split(",")]
+    assert sorted(got) == sorted(want), "desk offers %r" % got
+
+
+@when('I click the "{kind}" legend chip on "{flow_id}"')
+def step_click_legend(context, kind, flow_id):
+    context.page.click("#%s [data-lk='%s']" % (flow_id, kind))
+    context.page.wait_for_timeout(150)
+
+
+@then('the "{flow_id}" flow shows its "{kind}" notes')
+def step_flow_kind_shown(context, flow_id, kind):
+    expect(context.page.locator(
+        "#%s .lc-ef-step[data-kind='%s']" % (flow_id, kind)).first
+    ).to_be_visible(timeout=15_000)
+
+
+@then('the "{flow_id}" flow hides its "{kind}" notes')
+def step_flow_kind_hidden(context, flow_id, kind):
+    expect(context.page.locator(
+        "#%s .lc-ef-step[data-kind='%s']" % (flow_id, kind)).first
+    ).to_be_hidden()
 
 
 @then("the HQ card links to classroom 4")
@@ -288,6 +322,22 @@ def step_login_cell(context, grid_id, who, login):
 def step_stub_factory(context):
     context.c4_built = []
 
+    def org_side(route):
+        # the reconciler's org-level acts: the session team and the bay
+        url = route.request.url
+        m = route.request.method
+        if m == "PUT" and "/teams/" in url and "/memberships/" in url:
+            context.c4_built.append(("team", url.rsplit("/", 1)[-1]))
+            route.fulfill(status=200, json={"state": "active"})
+        elif m == "POST" and url.rstrip("/").endswith("/repos"):
+            body = _json.loads(route.request.post_data or "{}")
+            context.c4_built.append(("bay", body.get("name", "")))
+            route.fulfill(status=201, json={"name": body.get("name", "")})
+        else:
+            route.fallback()   # the org facts stub handles the rest
+
+    context.page.route("https://api.github.com/orgs/**", org_side)
+
     def repos(route):
         url = route.request.url
         m = route.request.method
@@ -297,6 +347,9 @@ def step_stub_factory(context):
             body = _json.loads(route.request.post_data or "{}")
             context.c4_built.append(("fork", body.get("name", "")))
             route.fulfill(status=202, json={"full_name": "x"})
+        elif m == "GET" and url.rstrip("/").endswith("-bay"):
+            # no bay yet — the reconciler must create it
+            route.fulfill(status=404, json={"message": "Not Found"})
         elif m == "GET" and any(url.rstrip("/").endswith("/" + b)
                                 for k, b in context.c4_built if k == "fork"):
             # the bridge polls the fresh fork until it answers
@@ -308,6 +361,57 @@ def step_stub_factory(context):
             route.fallback()   # the roster gate's own stub handles the rest
 
     context.page.route("https://api.github.com/repos/**", repos)
+
+
+@given("a bench factory where the bench already stands")
+def step_stub_factory_exists(context):
+    context.c4_built = []
+
+    def org_side(route):
+        url = route.request.url
+        m = route.request.method
+        if m == "PUT" and "/teams/" in url and "/memberships/" in url:
+            context.c4_built.append(("team", url.rsplit("/", 1)[-1]))
+            route.fulfill(status=200, json={"state": "active"})
+        elif m == "POST" and url.rstrip("/").endswith("/repos"):
+            body = _json.loads(route.request.post_data or "{}")
+            context.c4_built.append(("bay", body.get("name", "")))
+            route.fulfill(status=201, json={"name": body.get("name", "")})
+        else:
+            route.fallback()
+
+    context.page.route("https://api.github.com/orgs/**", org_side)
+
+    def repos(route):
+        url = route.request.url
+        m = route.request.method
+        if m == "POST" and url.rstrip("/").endswith("/forks"):
+            # the name already stands — GitHub says 403, NOT "exists"
+            route.fulfill(status=403, json={"message": "Name already exists on this account"})
+        elif m == "GET" and url.rstrip("/").endswith("-bay"):
+            route.fulfill(status=404, json={"message": "Not Found"})
+        elif m == "GET" and "/repos/" in url and url.rstrip("/").endswith("-adalove"):
+            # the bench itself answers — this is what acquits the key
+            route.fulfill(status=200, json={"name": url.rsplit("/", 1)[-1]})
+        elif m == "PUT" and "/collaborators/" in url:
+            context.c4_built.append(("grant", url.rsplit("/", 1)[-1]))
+            route.fulfill(status=204, body="")
+        else:
+            route.fallback()
+
+    context.page.route("https://api.github.com/repos/**", repos)
+
+
+@then('the factory teamed "{login}" and built the bay "{bay}"')
+def step_factory_kit(context, login, bay):
+    def done():
+        return ("team", login) in context.c4_built and \
+               ("bay", bay) in context.c4_built
+    for _ in range(40):
+        if done():
+            return
+        context.page.wait_for_timeout(250)
+    raise AssertionError("factory log: %r" % context.c4_built)
 
 
 @then('the factory built "{bench}" and granted "{login}"')

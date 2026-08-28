@@ -1,6 +1,36 @@
 from behave import then, when
 from playwright.sync_api import expect
 
+
+@then("the page has entered reel mode")
+def step_reel_on(context):
+    expect(context.page.locator("body")).to_have_class(
+        __import__("re").compile(r"lc-reel-active"), timeout=10_000)
+
+
+@then("the page has not entered reel mode")
+def step_reel_off(context):
+    context.page.wait_for_timeout(1200)
+    assert "lc-reel-active" not in (
+        context.page.evaluate("document.body.className") or ""), "reel is on"
+
+
+@then("the frame keeps up off")
+def step_up_off(context):
+    def up():
+        return context.page.evaluate(
+            "window.lcFrame && window.lcFrame.up === false")
+    for _ in range(20):
+        if up():
+            return
+        context.page.wait_for_timeout(250)
+    raise AssertionError("lcFrame.up is not false")
+
+
+@then('the address carries "{piece}"')
+def step_url_carries(context, piece):
+    assert piece in context.page.url, context.page.url
+
 # Frame flags define the SCOPE a host (Canvas, any LMS) grants. These steps
 # click a real internal link and inspect where the learner actually lands —
 # same tab or new, flags kept or lost.

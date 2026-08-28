@@ -30,6 +30,23 @@ work in and save from, but cannot wander off. `focus=1&navigable=1` keeps the
 links live — useful for a multi-page exercise the host wants to hand over
 wholesale.
 
+## 📄 The page's half — a frame declaration
+
+The URL is the **host's** word. A page can carry its own preferences too —
+one IAL line, typically on a module's cover:
+
+```
+[frame](#)
+{: .frame up="0" reel="1" }
+```
+
+Two levels, same law as `strict=`: the declaration **fills what the URL left
+unsaid**; a flag the host spelled out is never touched. The declared flags
+merge into the address itself, so the flag-carry takes them along on every
+in-frame hop — a module declaring `up="0"` stays a sealed pod behind the same
+generic `/go` door as every other page. Any flag from the table above (plus
+`reel`) can be declared. [Live example](/components/examples/frame).
+
 ## 🎓 Side by side
 
 `open` is how a learner reads the course and works the exercise at the same

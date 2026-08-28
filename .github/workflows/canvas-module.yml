@@ -1,0 +1,94 @@
+name: Course module → Canvas
+
+# The module-delivery gate — manual only, fired from the material board's
+# 📦 To Canvas button. Browsers cannot call Canvas (its CORS policy), so
+# tools/canvas_module.py runs here, where the token lives in an Actions
+# secret: 📦 Module XX created if missing, 📜 Module XX holding the scoped
+# /go iframe, ⚙️ Quiz XX pushed lint-gated — everything unpublished, and
+# the verdict rides back on the orphan-blob channel.
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "module folder name, e.g. module_05"
+        required: true
+
+permissions:
+  contents: write   # the verdict travels as an orphan blob
+  statuses: write   # ...announced by a commit status the author key can read
+
+jobs:
+  deliver:
+    # lab-only; if this file ever leaks through a publish, it stays inert
+    if: github.repository == 'michelzam/lightcodelab'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the course wiring
+        id: wiring
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import yaml
+          w = yaml.safe_load(open("courses/micro_build_ai/__course.yml"))
+          print("course=%s" % str(w.get("canvas_course") or "").strip())
+          print("host=%s" % (w.get("canvas_host") or "https://uwm.instructure.com"))
+          PY
+
+      - name: Guard — everything named, token present
+        run: |
+          # the guard's words ARE the verdict when it stops the run — say
+          # them into the blob, not only the log (field-caught 2026-08-26:
+          # the console showed the fallback line, the reason stayed here)
+          fail=0
+          say() { echo "::error::$1"; echo "❌ $1" >> /tmp/out.txt; }
+          case "${{ inputs.module }}" in
+            module_[0-9][0-9]) ;;
+            *) say "module must look like module_05, got '${{ inputs.module }}'"; fail=1;;
+          esac
+          if [ ! -d "courses/micro_build_ai/${{ inputs.module }}" ]; then
+            say "courses/micro_build_ai/${{ inputs.module }} does not exist"; fail=1
+          fi
+          if [ -z "${{ steps.wiring.outputs.course }}" ]; then
+            say "No canvas_course in courses/micro_build_ai/__course.yml"; fail=1
+          fi
+          if [ -z "${{ secrets.CANVAS_TOKEN }}" ]; then
+            say "No CANVAS_TOKEN secret — lab repo → Settings → Secrets and variables → Actions."; fail=1
+          fi
+          exit $fail
+
+      - name: Deliver the module
+        env:
+          CANVAS_TOKEN: ${{ secrets.CANVAS_TOKEN }}
+          CANVAS_HOST: ${{ steps.wiring.outputs.host }}
+        run: |
+          set -o pipefail
+          python3 tools/canvas_module.py "courses/micro_build_ai/${{ inputs.module }}" \
+            --course "${{ steps.wiring.outputs.course }}" 2>&1 | tee /tmp/out.txt
+          {
+            echo "## 📦 ${{ inputs.module }} → course ${{ steps.wiring.outputs.course }}"
+            echo '```'
+            cat /tmp/out.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report to the console
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          touch /tmp/out.txt
+          [ -s /tmp/out.txt ] || echo "The run stopped before delivering — its guard names the missing piece." > /tmp/out.txt
+          STATE="${{ job.status == 'success' && 'success' || 'failure' }}"
+          BLOB=$(jq -n --rawfile c /tmp/out.txt '{content: $c, encoding: "utf-8"}' \
+            | curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" -d @- \
+                   "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs" | jq -r .sha)
+          jq -n --arg s "$STATE" --arg d "$BLOB" \
+                '{state: (if $s == "success" then "success" else "failure" end),
+                  context: "lc/canvas-module", description: $d}' \
+            | curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" -d @- \
+                   "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            | jq -r 'if .id then "filed status \(.id) → blob" else "status refused: \(.message)" end'

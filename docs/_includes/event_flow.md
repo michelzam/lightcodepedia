@@ -103,13 +103,26 @@ Auto-included by docs/_layouts/default.html.
    cast strip under the story — each element wears its note's color */
 .lc-ef-ref { font-size: 0.82em; padding: 0.05em 0.3em; border-radius: 3px;
              background: rgba(255,255,255,0.55); border: 1px solid rgba(0,0,0,0.08); }
-.lc-ef-elements { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35em;
-                  margin-top: 0.2em; padding-top: 0.55em; border-top: 1px dashed #e5e7eb; }
+/* the cast strip is STRUCTURE, not ink (Michel, 2026-08-25: "I don't
+   need to see the elements listed at the end") — x-ray pipes and the
+   proofs still read it from the DOM, the reader never does */
+.lc-ef-elements { display: none; }
 .lc-ef-el-lead { font-size: 0.78em; color: #4b5563; margin-right: 0.3em; }
 .lc-ef-el { font-size: 0.78em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
             padding: 0.15em 0.45em; border-radius: 3px; color: #1f2937; }
 .lc-ef-legend { display: flex; flex-wrap: wrap; gap: 0.4em 1em; margin-top: 0.2em; padding-top: 0.55em; border-top: 1px dashed #e5e7eb; font-size: 0.78em; color: #4b5563; }
 .lc-ef-legend span::before { content: "■ "; }
+/* the legend is also the DIMMER: each chip toggles its kind's notes, so a
+   reader chooses their level of detail (Michel, 2026-08-25) */
+.lc-ef-legend span { cursor: pointer; user-select: none; }
+.lc-ef-legend span.lc-ef-off { opacity: 0.35; text-decoration: line-through; }
+.lc-ef-hide-user .lc-ef-who { display: none; }
+.lc-ef-hide-ui .lc-ef-step[data-kind="ui"],
+.lc-ef-hide-data .lc-ef-step[data-kind="data"],
+.lc-ef-hide-command .lc-ef-step[data-kind="command"],
+.lc-ef-hide-rule .lc-ef-step[data-kind="rule"],
+.lc-ef-hide-event .lc-ef-step[data-kind="event"],
+.lc-ef-hide-external .lc-ef-step[data-kind="external"] { display: none; }
 .lc-ef-legend .lc-ef-l-user::before    { color: var(--lc-k-user); }
 .lc-ef-legend .lc-ef-l-command::before  { color: var(--lc-k-command); }
 .lc-ef-legend .lc-ef-l-event::before    { color: var(--lc-k-event); }
@@ -262,15 +275,26 @@ Auto-included by docs/_layouts/default.html.
       }
       if (legend) {
         html += "<div class='lc-ef-legend'>" +
-          "<span class='lc-ef-l-user'>👤 user — a person</span>" +
-          "<span class='lc-ef-l-ui'>🖥️ ui — the screen they act on</span>" +
-          "<span class='lc-ef-l-data'>📦 data — what the beat is about</span>" +
-          "<span class='lc-ef-l-command'>🗣️ command — what they ask for</span>" +
-          "<span class='lc-ef-l-rule'>📏 rule — what governs it</span>" +
-          "<span class='lc-ef-l-event'>⚡ event — what became true</span>" +
+          "<span class='lc-ef-l-user' data-lk='user' role='button' aria-pressed='true'>👤 user — a person</span>" +
+          "<span class='lc-ef-l-ui' data-lk='ui' role='button' aria-pressed='true'>🖥️ ui — the screen they act on</span>" +
+          "<span class='lc-ef-l-data' data-lk='data' role='button' aria-pressed='true'>📦 data — what the beat is about</span>" +
+          "<span class='lc-ef-l-command' data-lk='command' role='button' aria-pressed='true'>🗣️ command — what they ask for</span>" +
+          "<span class='lc-ef-l-rule' data-lk='rule' role='button' aria-pressed='true'>📏 rule — what governs it</span>" +
+          "<span class='lc-ef-l-event' data-lk='event' role='button' aria-pressed='true'>⚡ event — what became true</span>" +
+          "<span class='lc-ef-l-external' data-lk='external' role='button' aria-pressed='true'>🌐 external — beyond our walls</span>" +
           "</div>";
       }
       box.innerHTML = html;
+      /* each legend chip dims its own kind — the reader picks the level
+         of detail; the story's spine (what stays) reflows into the gap */
+      box.addEventListener("click", function (e) {
+        var chip = e.target.closest("[data-lk]");
+        if (!chip) return;
+        var kind = chip.getAttribute("data-lk");
+        var off = box.classList.toggle("lc-ef-hide-" + kind);
+        chip.classList.toggle("lc-ef-off", off);
+        chip.setAttribute("aria-pressed", off ? "false" : "true");
+      });
       el.parentNode.replaceChild(box, el);
       if (window.lcSetDataset) window.lcSetDataset(id, steps);
     }).catch(function (e) {

@@ -49,4 +49,4 @@ sleep 1
 nohup python3 "$LIBS/serve.py" < /dev/null > /dev/null 2>&1 &
 for i in $(seq 1 10); do curl -s -o /dev/null http://127.0.0.1:8899/run.html && break; sleep 1; done
 echo "rig up: $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8899/run.html)"
-echo "env: MAPLIBRE_DIR=$LIBS/maplibre THREE_DIR=$LIBS/three MARKED_JS=$LIBS/marked.min.js JS_YAML=$LIBS/js-yaml.min.js MPY_DIR=$LIBS/mpy AG_GRID_DIR=$LIBS/ag CHART_JS=$LIBS/chart.umd.min.js ALASQL_JS=$LIBS/alasql.min.js"
+echo "env: MAPLIBRE_DIR=$LIBS/maplibre THREE_DIR=$LIBS/three MARKED_JS=$LIBS/marked.min.js JS_YAML=$LIBS/js-yaml.min.js MPY_DIR=$LIBS/mpy AG_GRID_DIR=$LIBS/ag CHART_JS=$LIBS/chart.umd.min.js ALASQL_JS=$LIBS/alasql.min.js PRISM_DIR=$LIBS/prism"

@@ -20,7 +20,10 @@
    a course. Staying in the teacher's scope is the flags riding along, not
    the links dying; ?navigable=0 is still there for the author who really
    means "this page only". ?embed=true keeps its old meaning (hide the bar). */
-(function () {
+/* callable, not a one-shot: a page-level `.frame` declaration merges its
+   flags into the URL after render and re-applies through this same door —
+   one reading of the flags, wherever they came from (Michel, 2026-08-25) */
+window.lcFrameApply = function () {
   var q = new URLSearchParams(location.search);
   var flag = function (name, dflt) {
     var v = q.get(name);
@@ -57,7 +60,8 @@
     open: (q.get("open") || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean),
     open_in: (q.get("open_in") || "frame").toLowerCase()
   };
-})();
+};
+window.lcFrameApply();
 </script>
 <style>
 #lc-topbar {

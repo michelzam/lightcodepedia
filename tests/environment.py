@@ -148,6 +148,19 @@ if ALASQL_JS and os.path.isfile(ALASQL_JS):
     with open(ALASQL_JS, "rb") as _f:
         _ALASQL_BODY = _f.read()
 
+# LOCAL HARNESS ONLY: prism was added to the rig's lib downloads but never
+# wired here — pages that highlight code failed offline on the CDN fetch
+# (found 2026-08-25). When PRISM_DIR points at the unpacked components,
+# fulfil them from disk.
+PRISM_DIR = os.environ.get("PRISM_DIR") or None
+_PRISM = {}
+if PRISM_DIR:
+    for _n in ("prism-core.min.js", "prism-python.min.js"):
+        _p = os.path.join(PRISM_DIR, _n)
+        if os.path.isfile(_p):
+            with open(_p, "rb") as _f:
+                _PRISM[_n] = _f.read()
+
 
 # LOCAL HARNESS ONLY: the build_loop diorama imports Three.js as ES modules
 # from https://cdn.jsdelivr.net/npm/three@0.170.0/… (an importmap in the
@@ -299,6 +312,9 @@ def before_scenario(context, scenario):
     _stub_script(context.page,  # LOCAL HARNESS ONLY (no-op when ALASQL_JS unset)
                  "https://cdn.jsdelivr.net/npm/alasql@*/dist/alasql.min.js",
                  _ALASQL_BODY)
+    for _n, _b in _PRISM.items():  # LOCAL HARNESS ONLY (empty when PRISM_DIR unset)
+        _stub_script(context.page,
+                     "https://cdn.jsdelivr.net/npm/prismjs@*/components/" + _n, _b)
     context.page.set_default_timeout(15_000)
     context.lc_console_errors = 0
     context.page.on(

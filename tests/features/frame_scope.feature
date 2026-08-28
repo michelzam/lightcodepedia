@@ -8,6 +8,28 @@ Feature: Frame flags are a scope, not a page setting
   Background:
     Given I have a clean browser page
 
+  Scenario: A page declares its own frame — the generic door stays generic
+    Michel, 2026-08-25: one short /go link in Canvas for every page, while
+    a given module keeps itself scoped and forces reel. The page carries
+    the declaration ({: .frame up="0" reel="1" }); its flags merge into
+    the address so the carry takes them on every hop.
+
+    When I navigate to "/components/examples/frame"
+    And I wait for the page to be interactive
+    Then the page has entered reel mode
+    And the frame keeps up off
+    And the address carries "reel=1"
+    And the address carries "up=0"
+
+  Scenario: The host's explicit flag overrules the page's declaration
+    The URL is the host's word — a declared flag never touches one the
+    host spelled out; it only fills what the URL left unsaid.
+
+    When I navigate to "/components/examples/frame?reel=0"
+    And I wait for the page to be interactive
+    Then the page has not entered reel mode
+    And the frame keeps up off
+
   Scenario: A focused learner can still walk the course
     Focus once implied navigable=0, so a framed learner tapping a folder
     card got nothing at all — every card link neutralised, the course
