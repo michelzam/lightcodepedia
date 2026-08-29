@@ -130,6 +130,17 @@ def step_door_chrome(context):
         expect(links.first).to_be_hidden()
 
 
+@then("no retired pencil floats over the lesson")
+def step_no_pencil(context):
+    # The ✏️ FAB was retired for the pill + ⌥E, but a leftover rule showed it
+    # again whenever a frame said editable=1 — which every door bakes — so the
+    # Canvas view of 410 wore a pencil (Michel, 2026-08-30). It stays in the
+    # DOM as the editor's presence marker; it must never be on screen.
+    fab = context.page.locator("#ed-fab")
+    if fab.count():
+        expect(fab.first).to_be_hidden()
+
+
 @given("a stubbed GitHub that accepts the key with repo scope")
 def step_stub_key(context):
     context.join_stub = {"vault_ok": False}

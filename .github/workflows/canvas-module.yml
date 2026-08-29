@@ -3,9 +3,10 @@ name: Course module → Canvas
 # The module-delivery gate — manual only, fired from the material board's
 # 📦 To Canvas button. Browsers cannot call Canvas (its CORS policy), so
 # tools/canvas_module.py runs here, where the token lives in an Actions
-# secret: 📦 Module XX created if missing, 📜 Module XX holding the scoped
-# /go iframe, ⚙️ Quiz XX pushed lint-gated — everything unpublished, and
-# the verdict rides back on the orphan-blob channel.
+# secret: 📦 the module already standing for module XX, under whatever name
+# the teacher gave it (a new one only when the number has none), 📜 Module XX
+# holding the scoped /go iframe, ⚙️ Quiz XX pushed lint-gated — everything
+# unpublished, and the verdict rides back on the orphan-blob channel.
 #
 # MULTI-COURSE (Michel, 2026-08-29): the course dir travels with the
 # dispatch, and each course's own __course.yml names its Canvas course,

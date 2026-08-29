@@ -106,3 +106,49 @@ Feature: The authored guide owns its page — the generic one yields
     And I wait for the page to be interactive
     And I play the guide's tour
     Then the bubble narrates "Take a breath" without the cue tag
+
+  Scenario: The studio records the page the learner walked to, not the one they left
+    The docked seed lives outside the lesson, so an in-frame hop replaces the
+    page under it while the seed stays — holding the guide it was born with.
+    Playback always asked the registry and stayed right; the seed's own
+    🎙️ Voices did not, so it voiced the PREVIOUS page's tour and filed it
+    under THIS page's name. 410 module_01 shipped three pages carrying one
+    page's twelve recordings, and two of them spoke robot (Michel,
+    2026-08-29).
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And a voice key is in this browser
+    And every line's audio is already in the repo
+    And the voice manifest is watched
+    And the GitHub contents API serves "courses/demo/mod/01_one.md" with the document:
+      """
+      # One
+
+      ```yaml
+      script:
+        - say: "The first page speaks."
+      ```
+      {: .avatar #guide dock="true" }
+
+      [Next](02_two.md)
+      """
+    And the GitHub contents API serves "courses/demo/mod/02_two.md" with the document:
+      """
+      # Two
+
+      ```yaml
+      script:
+        - say: "The second page speaks."
+      ```
+      {: .avatar #guide dock="true" }
+
+      [Back](01_one.md)
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/01_one.md"
+    And I wait for the page to be interactive
+    And I walk to the next lesson through "Next"
+    And I record the guide's voices
+    Then the recordings filed under "courses-demo-mod-02_two" are of "The second page speaks."
+    And no recording is of "The first page speaks."

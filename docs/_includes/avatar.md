@@ -2160,7 +2160,17 @@ Auto-included by docs/_layouts/default.html.
       b.addEventListener('click', function (e) { e.stopPropagation(); fn(); render(); });
       return b;
     }
+    /* The seed lives on <body>, so it OUTLIVES an in-frame hop while the page
+       under it is replaced — and it was born closing over that first page's
+       avatar. Playback always asked the registry and stayed right, but the
+       menu's own verbs kept the stale one: 🎙️ Voices then voiced the
+       PREVIOUS page's tour and filed it under THIS page's slug (410
+       module_01, Michel 2026-08-29 — three pages, one tour, the same twelve
+       recordings three times, so two pages spoke robot). The registry is the
+       one answer to "whose guide is this page's", so ask it every render. */
+    function live() { return (window._lcAvatars && window._lcAvatars[elId]) || av; }
     function render() {
+      var av = live();
       menu.innerHTML = '';
       if (!av.playing) {
         if (av.script.length) {
@@ -2174,18 +2184,18 @@ Auto-included by docs/_layouts/default.html.
           menu.appendChild(note);
         }
         if (av.botName && window.lcBotAsk) {
-          menu.appendChild(item('💬 Ask', function () { menu.classList.remove('open'); openAskPanel(elId, av); }));
+          menu.appendChild(item('💬 Ask', function () { menu.classList.remove('open'); openAskPanel(elId, live()); }));
         }
         var _pat0 = null, _repo0 = null;
         try { _pat0 = localStorage.getItem('lc_ed_pat'); _repo0 = localStorage.getItem('lc_ed_repo'); } catch (e) {}
         if (av._lastAnswer && _pat0 && _repo0) {
-          menu.appendChild(item('📌 Keep & voice', function () { menu.classList.remove('open'); keepAnswer(elId, av); }));
+          menu.appendChild(item('📌 Keep & voice', function () { menu.classList.remove('open'); keepAnswer(elId, live()); }));
         }
         if (_pat0 && _repo0 && (av.script.length || (av.stories && Object.keys(av.stories).length))) {
           menu.appendChild(item('🎙️ Voices', function () {
             menu.classList.remove('open');
             seedToast('🎙️ generating…');
-            runVoices(av, elId === 'site_guide' ? 'guide' : elId, { shift: false, status: function () {} })
+            runVoices(live(), elId === 'site_guide' ? 'guide' : elId, { shift: false, status: function () {} })
               .then(function (sum) { seedToast(sum || '🎙️ cancelled'); });
           }));
         }
