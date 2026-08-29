@@ -26,6 +26,7 @@ Feature: The learner course wizard (/courses/join)
     When I open the content door "/go"
     Then the runner carries the baked learner flags
     And the landing wears the learner chrome, not the platform
+    And no retired pencil floats over the lesson
 
   Scenario: The content door never climbs out of the course
     When I open the content door "/go?p=../../evil"

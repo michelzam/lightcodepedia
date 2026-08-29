@@ -222,10 +222,11 @@ body {
 /* a neutralised link still reads as text, so the page doesn't look broken —
    it just isn't a door any more */
 .lc-focus-mode a.lc-inert { color: inherit; text-decoration: none; cursor: default; }
-/* explicit editable= wins over embed mode's blanket hiding, both ways. The
-   html. prefix outranks .lc-embed-mode .lc-edit-fab whatever order the two
-   include styles land in. */
-html.lc-editable .lc-edit-fab { display: inline-flex !important; }
+/* explicit editable=0 hides the FAB; editable=1 no longer SHOWS it. The
+   pencil was retired in favour of the pill + ⌥E, but this rule still
+   resurrected it wherever a frame said editable=1 — which every course door
+   bakes — so the LMS view wore a pencil nobody had asked for (Michel,
+   2026-08-30, Canvas 410). A retired control has no un-retiring switch. */
 html.lc-not-editable .lc-edit-fab { display: none !important; }
 /* fork awareness — shown only when the site is served from a fork's Pages URL */
 #lc-fork-hint {
