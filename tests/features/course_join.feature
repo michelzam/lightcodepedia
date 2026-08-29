@@ -19,7 +19,7 @@ Feature: The learner course wizard (/courses/join)
     Then the runner is asked for "courses/micro_build_ai/module_00/00_welcome.md"
 
   Scenario: The door bakes the learner flags
-    Focus, editable and the open scope ride INSIDE the door — that is
+    Focus, the crumb and the open scope ride INSIDE the door — that is
     what keeps the LMS line short. A query param still overrides its own
     default.
 
@@ -27,6 +27,23 @@ Feature: The learner course wizard (/courses/join)
     Then the runner carries the baked learner flags
     And the landing wears the learner chrome, not the platform
     And no retired pencil floats over the lesson
+
+  Scenario: A course page in the frame offers no way into edit mode
+    Course material in a teacher's frame is READ-ONLY — the editor opened
+    on it empty and useless (2026-08-18). The door was baking editable=1,
+    which is the one thing that overrides that rule, so a visitor with no
+    key at all could still switch the Canvas view into edit mode (Michel,
+    2026-08-30, Firefox). The door says nothing about editing now; the
+    rule decides.
+
+    When I open the content door "/go"
+    Then the edit door is closed, and it says why
+
+  Scenario: An explicit editable still opens the door
+    The escape hatch survives: whoever writes ?editable=1 means it.
+
+    When I open the content door "/go?editable=1"
+    Then the edit door is open
 
   Scenario: The content door never climbs out of the course
     When I open the content door "/go?p=../../evil"
