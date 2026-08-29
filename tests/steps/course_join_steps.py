@@ -112,9 +112,34 @@ def step_door_target(context, target):
 @then("the runner carries the baked learner flags")
 def step_door_flags(context):
     url = context.page.url
-    for piece in ("focus=1", "editable=1", "crumb=BUILD-AI",
+    for piece in ("focus=1", "crumb=BUILD-AI",
                   "open=gh%3Auwm-build-ai%2Fuwm-build-ai-vault%2Fcourses%2F*"):
         assert piece in url, "missing %s in %s" % (piece, url)
+    # editable is NOT baked: it would override the frame's own read-only rule
+    assert "editable=" not in url, "the door still declares editable: %s" % url
+
+
+def _edit_pill(context):
+    """The pill's ✏️ Edit — the one door into edit mode on a framed page."""
+    context.page.wait_for_selector("#lc-bl-edit-btn", state="attached", timeout=10_000)
+    context.page.wait_for_timeout(2200)   # syncEditDoors settles after the render
+    return context.page.evaluate(
+        "() => { const b = document.getElementById('lc-bl-edit-btn');"
+        "        return { disabled: !!b.disabled, title: b.title || '' }; }")
+
+
+@then("the edit door is closed, and it says why")
+def step_edit_door_closed(context):
+    st = _edit_pill(context)
+    assert st["disabled"], "the ✏️ Edit item is still live on a course page in the frame"
+    assert "course" in st["title"].lower(), \
+        "a disabled door must name its reason, got %r" % st["title"]
+
+
+@then("the edit door is open")
+def step_edit_door_open(context):
+    st = _edit_pill(context)
+    assert not st["disabled"], "an explicit editable=1 was ignored: %r" % st["title"]
 
 
 @then("the landing wears the learner chrome, not the platform")
