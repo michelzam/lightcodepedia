@@ -32,8 +32,15 @@ the LMS keeps framing one URL per page and nothing else.
     /* the standard learner flags are BAKED — that is the whole point of a
        short address. A query param still overrides its default. crumb= is
        what makes the LMS view (topbar → one read-only course line, no
-       source pill); without it a bare tap lands on the full platform. */
-    var flags = { focus: "1", editable: "1",
+       source pill); without it a bare tap lands on the full platform.
+       editable is NOT among them (Michel, 2026-08-30, Canvas with no key:
+       "I can still switch to edit mode"). It was baked as "1", and an
+       explicit editable is the one thing that OVERRIDES the frame's own
+       rule — course material in a teacher's frame is read-only (2026-08-18:
+       the editor opened on it empty and useless). So the door says nothing,
+       the rule decides: the course is closed, a learner's own bench stays
+       open, and ?editable=1 still reopens it for whoever means it. */
+    var flags = { focus: "1",
                   crumb: el.getAttribute("crumb") || "",
                   open: "gh:" + vault + "/" + (course.split("/")[0] || "courses") + "/*" };
     var pass = ["focus", "editable", "navigable", "open", "crumb", "up", "strict"]
