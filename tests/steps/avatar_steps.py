@@ -182,6 +182,100 @@ def step_stub_complete(context, text):
     _stub_completion(context, text, "stop")
 
 
+# ── a wobble ends in a 🔁 chip, not a dead end ────────────────────────────
+# The ladder already retries a 5xx twice on its own (agent.md, RETRY_MS) —
+# so any wobble the GUIDE ever surfaces is three failed calls in a row.
+# The stub serves exactly that shape: the first ask burns out in 503s,
+# and the next call — the learner's 🔁 tap — gets the answer.
+
+@given('the model endpoint wobbles out, then answers in full with "{text}"')
+def step_stub_wobble(context, text):
+    import json as _json
+
+    ok = _json.dumps({
+        "choices": [{"message": {"content": text}, "finish_reason": "stop"}],
+        "usage": {"total_tokens": 11},
+    })
+    err = _json.dumps({"error": {"message": "The model is overloaded."}})
+    context.model_calls = []
+
+    def _answer(route):
+        try:
+            context.model_calls.append(route.request.post_data or "")
+        except Exception:
+            pass
+        if len(context.model_calls) <= 3:
+            route.fulfill(status=503, content_type="application/json", body=err)
+        else:
+            route.fulfill(status=200, content_type="application/json", body=ok)
+
+    context.page.route("**/chat/completions*", _answer)
+
+
+@given('the model endpoint answers the day-quota wall once, then in full with "{text}"')
+def step_stub_quota_once(context, text):
+    """A 429 is never retried by the ladder — one call, one wall — so the
+    stub only has to fail once before the 🔁 tap finds the answer."""
+    import json as _json
+
+    ok = _json.dumps({
+        "choices": [{"message": {"content": text}, "finish_reason": "stop"}],
+        "usage": {"total_tokens": 11},
+    })
+    wall = _json.dumps([{"error": {
+        "code": 429, "status": "RESOURCE_EXHAUSTED",
+        "message": "Quota exceeded for quota metric 'Generate requests per day'"}}])
+    context.model_calls = []
+
+    def _answer(route):
+        try:
+            context.model_calls.append(route.request.post_data or "")
+        except Exception:
+            pass
+        if len(context.model_calls) <= 1:
+            route.fulfill(status=429, content_type="application/json", body=wall)
+        else:
+            route.fulfill(status=200, content_type="application/json", body=ok)
+
+    context.page.route("**/chat/completions*", _answer)
+
+
+@then('the guide speaks "{snippet}"')
+def step_guide_speaks(context, snippet):
+    context.page.wait_for_function(
+        """(w) => {
+          const b = document.querySelector('.lc-avatar-speech');
+          return !!(b && b.textContent.indexOf(w) >= 0);
+        }""",
+        arg=snippet, timeout=20_000)
+
+
+@then("the guide offers the retry chip with a warning")
+def step_retry_chip_offered(context):
+    # the ladder's own two retries (1.5s + 4s) run first — wait them out
+    context.page.wait_for_selector(
+        ".lc-avatar-retry [data-avt=retry]", timeout=20_000)
+    bubble = context.page.locator(".lc-avatar-speech").first.inner_text()
+    assert "⚠" in bubble, "no warning spoken; bubble was %r" % bubble
+    assert "🔁" in bubble, "the bubble never points at the chip: %r" % bubble
+
+
+@when("I tap the guide's retry chip")
+def step_tap_retry(context):
+    context.page.click(".lc-avatar-retry [data-avt=retry]")
+
+
+@then('the guide speaks "{word}" and the chip is gone')
+def step_retry_recovered(context, word):
+    context.page.wait_for_function(
+        """(w) => {
+          const b = document.querySelector('.lc-avatar-speech');
+          return !!(b && b.textContent.indexOf(w) >= 0) &&
+                 !document.querySelector('.lc-avatar-retry');
+        }""",
+        arg=word, timeout=20_000)
+
+
 @given("the editor is connected as the author")
 def step_editor_connected(context):
     context.page.add_init_script(

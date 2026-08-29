@@ -65,9 +65,12 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
 
   Scenario: The two 429 walls are told apart
     A per-minute limit refills by itself; the day's free allowance does not.
-    A learner must know which wall they hit.
+    A learner must know which wall they hit. (The day's wall is believed
+    only when this browser really spent energy — the zero-spend case is
+    the scenario below.)
 
     Given I have a clean browser page
+    And this browser already spent AI energy today
     And the model endpoint answers 429 saying "Quota exceeded for quota metric 'Generate requests per day'"
     And the GitHub contents API serves "courses/demo/module_01/quota.md" with the document:
       """
@@ -82,7 +85,32 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I wait for the page to be interactive
     And I connect the "desk" agent with key "test-key"
     And I ask the desk agent into the void "hello"
-    Then the desk relays "today"
+    Then the desk relays "come back tomorrow"
+
+  Scenario: A day-quota wall over a zero meter is called a suspected spike
+    Michel, 2026-08-28: "I used NO energy today!" — yet the desk read the
+    day's allowance as spent. The free tier counts REQUESTS per project,
+    shared by every device on the key — and demand spikes are shed
+    through the same quota door, sometimes at a limit of zero. When our
+    own meter reads zero, sentencing the learner to tomorrow is a
+    misdiagnosis: say what is actually known.
+
+    Given I have a clean browser page
+    And the model endpoint answers 429 saying "Quota exceeded for quota metric 'Generate requests per day'"
+    And the GitHub contents API serves "courses/demo/module_01/quota0.md" with the document:
+      """
+      # Quota page
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/quota0.md"
+    And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
+    And I ask the desk agent into the void "hello"
+    Then the desk relays "spent nothing today"
 
   Scenario: A 403 keeps the key — pasting the same one again would not help
     Michel, 2026-08-05: "it asks every time after a refresh". A 403 means the

@@ -75,6 +75,15 @@ def step_desk_relays(context, message):
     expect(status).to_contain_text(message, timeout=15_000)
 
 
+@given("this browser already spent AI energy today")
+def step_energy_spent_today(context):
+    """The day-quota verdict is believed only when OUR meter agrees —
+    seed the meter so the wall is real, not a suspected spike."""
+    context.page.add_init_script(
+        "localStorage.setItem('lc_tokens', JSON.stringify("
+        "{day: new Date().toISOString().slice(0,10), tokens: 1200, asks: 3}));")
+
+
 @given('the model endpoint answers 429 saying "{message}"')
 def step_stub_429(context, message):
     body = json.dumps([{"error": {"code": 429, "message": message,

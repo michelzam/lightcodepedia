@@ -194,6 +194,74 @@ Feature: Avatar — speaking overlay instructor
     And I ask the guide "Summarize this page"
     Then the guide offers to keep the answer
 
+  Scenario: A wobbling model hands the guide a 🔁 chip, and one tap recovers
+    Doc answered "high demand… (HTTP 503)" and stopped there (Michel,
+    2026-08-26) — the learner's only road back was reopening the panel
+    to retype the question. A retry the learner has to invent is a
+    retry the button should have made (the publish button learned this
+    2026-08-06): a wobble gets a 🔁 chip under the face; one tap asks
+    the same question again. Real refusals (401/403) stay final.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And an energy key "gem_stub" is already saved on this device
+    And the "doc" bot is available
+    And the GitHub contents API serves "courses/demo/mod/guide.md" with the document:
+      """
+      # Guided page
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script:
+        - say: "Hello."
+      stories: {}
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    And the model endpoint wobbles out, then answers in full with "Nine families are waiting."
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide.md"
+    And I wait for the page to be interactive
+    And I ask the guide "Why the hurry?"
+    Then the guide offers the retry chip with a warning
+    When I tap the guide's retry chip
+    Then the guide speaks "families" and the chip is gone
+
+  Scenario: A quota wall over a zero meter gets the chip too
+    Michel, 2026-08-28: "I used NO energy today!" — yet the guide read
+    the day as spent. Demand spikes are shed through the quota door,
+    sometimes at a limit of zero; with our own meter at zero the honest
+    verdict is a suspected spike, and a suspected spike is worth a 🔁 —
+    not a sentence to tomorrow.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And an energy key "gem_stub" is already saved on this device
+    And the "doc" bot is available
+    And the GitHub contents API serves "courses/demo/mod/guide.md" with the document:
+      """
+      # Guided page
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script:
+        - say: "Hello."
+      stories: {}
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    And the model endpoint answers the day-quota wall once, then in full with "Nine families are waiting."
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide.md"
+    And I wait for the page to be interactive
+    And I ask the guide "Why the hurry?"
+    Then the guide speaks "spent nothing today"
+    And the guide offers the retry chip with a warning
+    When I tap the guide's retry chip
+    Then the guide speaks "families" and the chip is gone
+
   Scenario: A recording made on one mount plays back on another
     The voice manifest keys recordings by the rendered file's MOUNT path.
     One course mounts at courses/… in the lab, at course/… on every learner

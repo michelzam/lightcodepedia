@@ -6,6 +6,12 @@ name: Course module → Canvas
 # secret: 📦 Module XX created if missing, 📜 Module XX holding the scoped
 # /go iframe, ⚙️ Quiz XX pushed lint-gated — everything unpublished, and
 # the verdict rides back on the orphan-blob channel.
+#
+# MULTI-COURSE (Michel, 2026-08-29): the course dir travels with the
+# dispatch, and each course's own __course.yml names its Canvas course,
+# host and the NAME of the token secret (canvas_token, default
+# CANVAS_TOKEN) — so BUILD-AI on uws-ce and 410 on uws ride one gate,
+# and the next in-person 410 is one __course.yml away.
 
 on:
   workflow_dispatch:
@@ -13,6 +19,10 @@ on:
       module:
         description: "module folder name, e.g. module_05"
         required: true
+      course:
+        description: "course dir under courses/, e.g. micro_build_ai"
+        required: false
+        default: "micro_build_ai"
 
 permissions:
   contents: write   # the verdict travels as an orphan blob
@@ -28,12 +38,21 @@ jobs:
 
       - name: Read the course wiring
         id: wiring
+        env:
+          COURSE_DIR: ${{ inputs.course }}
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import yaml
-          w = yaml.safe_load(open("courses/micro_build_ai/__course.yml"))
+          import os, re, yaml
+          cdir = os.environ["COURSE_DIR"].strip()
+          ok = re.fullmatch(r"[a-z0-9_]+", cdir)
+          w = {}
+          if ok:
+              try: w = yaml.safe_load(open("courses/%s/__course.yml" % cdir)) or {}
+              except FileNotFoundError: pass
+          print("cdir=%s" % (cdir if ok else ""))
           print("course=%s" % str(w.get("canvas_course") or "").strip())
           print("host=%s" % (w.get("canvas_host") or "https://uwm.instructure.com"))
+          print("token_name=%s" % (w.get("canvas_token") or "CANVAS_TOKEN"))
           PY
 
       - name: Guard — everything named, token present
@@ -43,31 +62,34 @@ jobs:
           # the console showed the fallback line, the reason stayed here)
           fail=0
           say() { echo "::error::$1"; echo "❌ $1" >> /tmp/out.txt; }
+          if [ -z "${{ steps.wiring.outputs.cdir }}" ]; then
+            say "course must be a plain dir name (a-z, 0-9, _), got '${{ inputs.course }}'"; fail=1
+          fi
           case "${{ inputs.module }}" in
             module_[0-9][0-9]) ;;
             *) say "module must look like module_05, got '${{ inputs.module }}'"; fail=1;;
           esac
-          if [ ! -d "courses/micro_build_ai/${{ inputs.module }}" ]; then
-            say "courses/micro_build_ai/${{ inputs.module }} does not exist"; fail=1
+          if [ ! -d "courses/${{ steps.wiring.outputs.cdir }}/${{ inputs.module }}" ]; then
+            say "courses/${{ inputs.course }}/${{ inputs.module }} does not exist"; fail=1
           fi
           if [ -z "${{ steps.wiring.outputs.course }}" ]; then
-            say "No canvas_course in courses/micro_build_ai/__course.yml"; fail=1
+            say "No canvas_course in courses/${{ inputs.course }}/__course.yml"; fail=1
           fi
-          if [ -z "${{ secrets.CANVAS_TOKEN }}" ]; then
-            say "No CANVAS_TOKEN secret — lab repo → Settings → Secrets and variables → Actions."; fail=1
+          if [ -z "${{ secrets[steps.wiring.outputs.token_name] }}" ]; then
+            say "No ${{ steps.wiring.outputs.token_name }} secret — lab repo → Settings → Secrets and variables → Actions."; fail=1
           fi
           exit $fail
 
       - name: Deliver the module
         env:
-          CANVAS_TOKEN: ${{ secrets.CANVAS_TOKEN }}
+          CANVAS_TOKEN: ${{ secrets[steps.wiring.outputs.token_name] }}
           CANVAS_HOST: ${{ steps.wiring.outputs.host }}
         run: |
           set -o pipefail
-          python3 tools/canvas_module.py "courses/micro_build_ai/${{ inputs.module }}" \
+          python3 tools/canvas_module.py "courses/${{ steps.wiring.outputs.cdir }}/${{ inputs.module }}" \
             --course "${{ steps.wiring.outputs.course }}" 2>&1 | tee /tmp/out.txt
           {
-            echo "## 📦 ${{ inputs.module }} → course ${{ steps.wiring.outputs.course }}"
+            echo "## 📦 ${{ inputs.course }}/${{ inputs.module }} → course ${{ steps.wiring.outputs.course }}"
             echo '```'
             cat /tmp/out.txt
             echo '```'

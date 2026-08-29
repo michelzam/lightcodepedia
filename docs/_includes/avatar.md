@@ -1738,6 +1738,32 @@ Auto-included by docs/_layouts/default.html.
     av.bubble.classList.remove('visible');
     av.host.setAttribute('data-state', 'idle');
   }
+  /* the 🔁 chip: one button under the face, wearing the paused remote's
+     clothes. Click = ask the same question again; ignored for 30s = the
+     guide folds back to idle on its own. */
+  function offerRetry(elId, av, question, giveUp) {
+    var old = av.host.querySelector('.lc-avatar-retry');
+    if (old) old.remove();
+    var wrap = document.createElement('div');
+    wrap.className = 'lc-avatar-ctl lc-avatar-retry';
+    wrap.style.display = 'flex';
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.textContent = '🔁';
+    btn.setAttribute('data-avt', 'retry');
+    btn.setAttribute('aria-label', 'try again');
+    var timer = setTimeout(function () {
+      if (wrap.parentNode) { wrap.remove(); giveUp(); }
+    }, 30000);
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      clearTimeout(timer);
+      wrap.remove();
+      askDoc(elId, av, question);
+    });
+    wrap.appendChild(btn);
+    (av.host.querySelector('.lc-avatar-pose') || av.host).appendChild(wrap);
+  }
+
   function askDoc(elId, av, question) {
     if (av.playing) stopPlay(elId);
     if (!av._tourScript) av._tourScript = av.script;   /* stash the authored tour */
@@ -1757,10 +1783,29 @@ Auto-included by docs/_layouts/default.html.
       });
     asked.then(function (result) {
       if (!result || result.error) {
-        guideBubble(av, '⚠ ' + ((result && result.error) || 'No answer.'));
-        setTimeout(function () { guideIdle(av); restore(); }, 4000);
+        /* a retry the learner has to invent is a retry the button should
+           have made (publish button, 2026-08-06; the guide learns it
+           2026-08-26): a wobble — 5xx, or no HTTP answer at all — gets a
+           🔁 chip under the face instead of a dead end — and so does a
+           quota wall this browser cannot have hit (suspectSpike: zero
+           spent today = likely demand-shedding, not a spent day). Real
+           answers (401/403, a truly spent day) stay final: retrying
+           those helps nobody. */
+        var canRetry = !result || result.retriable || result.suspectSpike ||
+                       (result.status >= 500) || result.status === undefined;
+        if (result && (result.unauthorized || result.status === 401 ||
+                       result.status === 403)) canRetry = false;
+        guideBubble(av, '⚠ ' + ((result && result.error) || 'No answer.') +
+                        (canRetry ? '\n🔁 tap the arrows to try again' : ''));
+        if (canRetry) {
+          offerRetry(elId, av, question, function () { guideIdle(av); restore(); });
+        } else {
+          setTimeout(function () { guideIdle(av); restore(); }, 4000);
+        }
         return;
       }
+      var oldRetry = av.host.querySelector('.lc-avatar-retry');
+      if (oldRetry) oldRetry.remove();
       /* A cut-off answer stops mid-sentence, so read it from `clean` (the
          model's words without the ⚠️ notice) and drop the dangling last
          fragment. It is spoken, because half an answer still helps — but it

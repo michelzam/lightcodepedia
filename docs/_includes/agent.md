@@ -660,6 +660,19 @@ Auto-included by docs/_layouts/default.html.
         var e429 = Array.isArray(result.data) ? result.data[0] : result.data;
         var m429 = (e429 && e429.error && e429.error.message) || '';
         var daily = /per\s*day|daily|PerDay|quota exceeded/i.test(m429);
+        /* …and a THIRD face wears the second's costume (Michel, 2026-08-28:
+           "I used NO energy today!"): the free tier counts REQUESTS per
+           project, and during demand spikes the provider sheds load through
+           this same quota door — sometimes at a limit of zero. When OUR
+           meter says this browser spent nothing today, "come back tomorrow"
+           is a misdiagnosis; say what is actually known instead. Suspect,
+           never retriable: the ladder must not hammer a quota wall, but a
+           human is welcome to tap try-again in a moment. */
+        var spent = (window.lcTokens && window.lcTokens.today()) || {};
+        if (daily && !spent.asks) {
+          return { error: '🔋 The provider says the day\'s free allowance is spent — but this browser spent nothing today. Usually a demand spike on the free tier, or another device using the same key. Nothing is broken; worth trying again in a few minutes.',
+                   status: 429, elsewhere: true, suspectSpike: true };
+        }
         return { error: daily
           ? '🔋 Out of free energy for today — the day\'s allowance is spent and refills on its own (around midnight US Pacific). Nothing is broken; come back tomorrow, or use a key with a paid plan.'
           : '⏳ Too many questions too fast (per-minute limit). Wait about a minute and ask again — this one refills by itself.',

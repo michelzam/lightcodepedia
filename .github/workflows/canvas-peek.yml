@@ -1,0 +1,118 @@
+name: Canvas peek
+
+# Read-only reconnaissance of a Canvas course — manual only. Browsers and
+# the dev container cannot reach Canvas (CORS, egress policy); the runner
+# can. Prints the course's shape — modules, items, pages, assignments,
+# discussion titles — to the job log for the author to read. STRUCTURE
+# ONLY: no enrollments, no submissions, no student anything, ever.
+#
+# The token comes from the CANVAS_410_TOKEN secret when present; the
+# dispatch input is a one-time bridge for a token not yet stored (it is
+# masked before anything else runs). Metadata only — never in files.
+
+on:
+  workflow_dispatch:
+    inputs:
+      course:
+        description: "Canvas course id, e.g. 861887"
+        required: true
+      host:
+        description: "Canvas host"
+        required: false
+        default: "https://uws.instructure.com"
+      token:
+        description: "Canvas token (only if the secret is not stored yet)"
+        required: false
+      quiz_filter:
+        description: "also dump the QUESTIONS of quizzes whose title contains this"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  peek:
+    # lab-only; if this file ever leaks through a publish, it stays inert
+    if: github.repository == 'michelzam/lightcodelab'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mask the token before anything else
+        env:
+          TOK: ${{ inputs.token }}
+        run: |
+          [ -n "$TOK" ] && echo "::add-mask::$TOK" || true
+
+      - name: Read the course shape
+        env:
+          TOK: ${{ inputs.token || secrets.CANVAS_410_TOKEN }}
+          HOST: ${{ inputs.host }}
+          COURSE: ${{ inputs.course }}
+          QUIZ_FILTER: ${{ inputs.quiz_filter }}
+        run: |
+          [ -n "$TOK" ] || { echo "::error::no token — pass one or store CANVAS_410_TOKEN"; exit 1; }
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+
+          host, course, tok = os.environ["HOST"].rstrip("/"), os.environ["COURSE"], os.environ["TOK"]
+
+          def get(path, params=""):
+              url = f"{host}/api/v1{path}?per_page=100{params}"
+              req = urllib.request.Request(url, headers={"Authorization": "Bearer " + tok})
+              with urllib.request.urlopen(req) as r:
+                  return json.load(r)
+
+          c = get(f"/courses/{course}")
+          print(f"## 🎓 {c.get('name')} · id {c.get('id')} · state {c.get('workflow_state')}")
+          print(f"   code {c.get('course_code')} · start {c.get('start_at')} · default_view {c.get('default_view')}")
+
+          print("\n## 📦 Modules")
+          for m in get(f"/courses/{course}/modules", "&include[]=items"):
+              print(f"- [{m.get('workflow_state')}] {m['name']} (id {m['id']})")
+              for it in (m.get("items") or get(f"/courses/{course}/modules/{m['id']}/items")):
+                  print(f"    · {it.get('type'):12} {it.get('title')}")
+
+          print("\n## 📜 Pages")
+          pages = get(f"/courses/{course}/pages")
+          for p in pages:
+              print(f"- [{'published' if p.get('published') else 'draft'}] {p.get('title')} ({p.get('url')})")
+
+          # the page bodies the author asked about — Welcome and friends
+          for p in pages:
+              t = (p.get("title") or "").lower()
+              if "welcome" in t or "home" in t:
+                  body = get(f"/courses/{course}/pages/{p['url']}").get("body") or ""
+                  text = re.sub(r"<[^>]+>", " ", body)
+                  text = re.sub(r"\s+", " ", text).strip()
+                  print(f"\n## 📄 Page body — {p.get('title')}\n{text[:2500]}")
+
+          print("\n## 📝 Assignments")
+          for a in get(f"/courses/{course}/assignments"):
+              print(f"- [{'published' if a.get('published') else 'draft'}] {a.get('name')} · "
+                    f"{a.get('points_possible')} pts · types {a.get('submission_types')} · due {a.get('due_at')}")
+
+          print("\n## 💬 Discussions (titles only)")
+          for d in get(f"/courses/{course}/discussion_topics"):
+              print(f"- [{'published' if d.get('published') else 'draft'}] {d.get('title')} (id {d.get('id')})")
+
+          print("\n## ⚙️ Quizzes")
+          quizzes = get(f"/courses/{course}/quizzes")
+          for q in quizzes:
+              print(f"- [{'published' if q.get('published') else 'draft'}] {q.get('title')} · "
+                    f"{q.get('question_count')} questions · attempts {q.get('allowed_attempts')}")
+
+          # question dump on request — the author's own quiz bank, never answers
+          # a student gave, so still structure only
+          flt = (os.environ.get("QUIZ_FILTER") or "").strip().lower()
+          if flt:
+              for q in quizzes:
+                  if flt not in (q.get("title") or "").lower():
+                      continue
+                  print(f"\n## ❓ {q.get('title')} (id {q['id']}) · {q.get('quiz_type')}")
+                  for qq in get(f"/courses/{course}/quizzes/{q['id']}/questions"):
+                      stem = re.sub(r"<[^>]+>", " ", qq.get("question_text") or "")
+                      stem = re.sub(r"\s+", " ", stem).strip()
+                      print(f"- ({qq.get('question_type')}, {qq.get('points_possible')} pts) {stem[:300]}")
+                      for a in (qq.get("answers") or []):
+                          mark = "[x]" if a.get("weight") else "[ ]"
+                          print(f"    {mark} {(a.get('text') or '')[:160]}")
+          PY
