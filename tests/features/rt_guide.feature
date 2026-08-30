@@ -67,6 +67,19 @@ Feature: The authored guide owns its page — the generic one yields
     And a stub datagrid holds rows for "Lucky" and "Wanda"
     Then the verb "select" with "Wanda" selects that row and stands at it
 
+  Scenario: The select verb moves the light table a course page really uses
+    Two roads draw a grid: AG for a .datagrid fence, and the light table for
+    a grid bound to a dataset — which is what course pages use. The verb
+    knew only AG, so on 410 module_01 Doc announced "there is our winner:
+    one row" over a table where nothing was ever picked (Michel, 2026-08-30,
+    reading the quiz that claimed he did). The scenario above passed all
+    along: it stubs the road the course does not take.
+
+    Given I have a clean browser page
+    When I navigate to "/components/dataset"
+    And I wait for the page to be interactive
+    Then the verb "select" with "Mar" lights that row in the bound table
+
   Scenario: An action-only story line is a quick stage direction, not a dead beat
     Given I have a clean browser page
     And a marked shim is preinstalled

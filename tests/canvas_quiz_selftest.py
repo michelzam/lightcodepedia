@@ -135,6 +135,34 @@ def test_markdown_reads_as_the_same_spec():
     assert body["points_possible"] == 1
 
 
+def test_a_survey_of_open_questions_passes_the_lint():
+    """A screenshot and a sentence hold no key — nothing to pattern-match
+    (Michel, 2026-08-30: Assignment 1a asks for a TryIt screenshot)."""
+    spec = cq.parse_md(
+        '# 📍 Assignment 1a — DataQuest\n{: .canvas_quiz kind="survey" attempts="1" }\n\n'
+        'Run it yourself and show me.\n\n'
+        '### Your screenshot\n\nUpload the editor and the result.\n\n'
+        '{: .quiz kind="upload" points="6" }\n\n'
+        '### The SQL you ran\n\nPaste it, and the row count.\n\n'
+        '{: .quiz kind="essay" points="2" }\n')
+    assert spec["quiz_type"] == "graded_survey", spec.get("quiz_type")
+    assert spec["attempts"] == 1
+    assert cq.tells(spec) == [], cq.tells(spec)
+    kinds = [cq.to_canvas_question(q, i)["question"]["question_type"]
+             for i, q in enumerate(spec["questions"], 1)]
+    assert kinds == ["file_upload_question", "essay_question"], kinds
+    first = cq.to_canvas_question(spec["questions"][0], 1)["question"]
+    assert first["answers"] == [] and first["points_possible"] == 6, first
+
+
+def test_a_multiple_choice_quiz_is_still_judged():
+    """The exemption is for open questions only — options still get read."""
+    bad = cq.tells(q([{"text": "Sort it"}, {"text": "Delete rows"},
+                      {"text": "Add WHERE met = '' so only the families still waiting remain",
+                       "correct": True}]))
+    assert bad, "the tell detector went quiet on a multiple-choice key"
+
+
 if __name__ == "__main__":
     fails = 0
     for name, fn in sorted(globals().items()):

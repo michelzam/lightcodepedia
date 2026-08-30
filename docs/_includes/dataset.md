@@ -412,6 +412,27 @@ Auto-included by docs/_layouts/default.html.
             if (lcId) window.lcMasterDetail.publish(lcId, slice[i] || null);
           });
         });
+        /* THE GUIDE'S HANDS. A grid bound to a dataset is drawn by this
+           light table, not by AG — so the select verb, which only knew the
+           AG api, moved nothing here: on 410 module_01 Doc said "there is
+           our winner: one row" over a table where nothing was ever picked
+           (Michel, 2026-08-30, reading the quiz that claimed otherwise).
+           Selection belongs to whoever draws the rows, so this table hands
+           the verb its own door instead of letting anyone guess from
+           outside. Same effect as a finger, minus a link row's navigation. */
+        el._lcSelectRow = function (text) {
+          var t = String(text == null ? "" : text).toLowerCase();
+          for (var i = 0; i < trs.length; i++) {
+            if (trs[i].textContent.toLowerCase().indexOf(t) < 0) continue;
+            trs.forEach(function (x) { x.classList.remove("lc-dg-selected"); });
+            trs[i].classList.add("lc-dg-selected");
+            selKey = keyOf(slice[i]) || "i:" + i;
+            if (lcId && window.lcMasterDetail) window.lcMasterDetail.publish(lcId, slice[i] || null);
+            try { trs[i].scrollIntoView({ block: "nearest" }); } catch (e) {}
+            return trs[i];
+          }
+          return null;
+        };
         /* the selection survives a republish: a model's verb repaints the
            whole table, and the row you were on must stay lit (Michel,
            2026-08-22: "the datagrid does not show the selected row") */

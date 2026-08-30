@@ -52,6 +52,31 @@ def test_the_teacher_may_spell_it_any_way():
         assert mod and not clash, name
 
 
+def test_the_folder_is_the_modules_checks():
+    """canvas.md wears the gate's name; a second spec keeps its own."""
+    assert cm.specs_of(["canvas.md"], "01") == [("canvas.md", "⚙️ Quiz 01")]
+    assert cm.specs_of(["assignment.md", "canvas.md"], "01") == [
+        ("canvas.md", "⚙️ Quiz 01"), ("assignment.md", None)]
+
+
+def test_the_module_check_is_always_filed_first():
+    got = [n for n, _ in cm.specs_of(["a_first.md", "canvas.md", "z_last.md"], "02")]
+    assert got == ["canvas.md", "a_first.md", "z_last.md"], got
+
+
+def test_only_specs_count():
+    """A stray file in __quiz is not a check."""
+    got = cm.specs_of(["canvas.md", "notes.txt", "screenshot.png"], "01")
+    assert got == [("canvas.md", "⚙️ Quiz 01")], got
+
+
+def test_the_folders_front_page_is_not_a_check():
+    """index.md is the shelf's own page everywhere else — it pushed an empty
+    quiz into 861887 once, and once is the whole point of this line."""
+    got = cm.specs_of(["assignment.md", "canvas.md", "index.md"], "01")
+    assert [n for n, _ in got] == ["canvas.md", "assignment.md"], got
+
+
 if __name__ == "__main__":
     fails = 0
     for name, fn in sorted(globals().items()):

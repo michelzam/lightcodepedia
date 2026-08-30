@@ -225,9 +225,17 @@ Auto-included by docs/_layouts/default.html.
     for (var i = 0; i < keys.length; i++) if (keys[i] && apis[keys[i]]) return apis[keys[i]];
     return null;
   }
+  /* TWO ROADS DRAW A GRID: AG (a .datagrid fence) and the light table a
+     dataset-bound grid gets from dataset.md. The verb knew only the first,
+     so on a course page it silently did nothing — the light table now
+     offers its own door and the verb takes whichever road this grid is on. */
+  function _lcLightSelect(g, arg) {
+    return (g && typeof g._lcSelectRow === "function") ? g._lcSelectRow(arg) : null;
+  }
   window.lcVerbs.register("select", function (el, arg) {
     var g = _lcGridOf(el), api = _lcGridApi(g);
-    if (!api || !arg) return false;
+    if (!arg) return false;
+    if (!api) return !!_lcLightSelect(g, arg);
     var t = String(arg).toLowerCase(), hit = null;
     api.forEachNode(function (n) {
       if (!hit && n.data && JSON.stringify(n.data).toLowerCase().indexOf(t) >= 0) hit = n;
@@ -239,7 +247,8 @@ Auto-included by docs/_layouts/default.html.
   }, function (el, arg) {
     var g = _lcGridOf(el);
     if (!g || !arg) return null;
-    var t = String(arg).toLowerCase(), rows = g.querySelectorAll(".ag-row");
+    var t = String(arg).toLowerCase();
+    var rows = g.querySelectorAll(".ag-row, tbody tr");
     for (var i = 0; i < rows.length; i++)
       if (rows[i].textContent.toLowerCase().indexOf(t) >= 0) return rows[i];
     return g;   /* row virtualised out of the DOM: stand at the grid itself */

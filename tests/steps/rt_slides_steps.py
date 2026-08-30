@@ -542,6 +542,30 @@ def step_verb_select(context, name):
     assert got["ok"] and got["selected"] == name and got["subject"] == name, f"{got!r}"
 
 
+@then('the verb "select" with "{name}" lights that row in the bound table')
+def step_verb_select_light(context, name):
+    """The REAL road: a dataset-bound grid, no stub — the guide resolves the
+    grid by its id exactly as a story's at: does, and the row must end up
+    lit and standing as the verb's subject."""
+    context.page.wait_for_selector(".lc-datagrid tbody tr", timeout=15_000)
+    got = context.page.evaluate(
+        """(n) => {
+            const g = window.lcAvatarResolve('monthly_grid');
+            const ok = window.lcVerbs.act('select', g, n);
+            const subj = window.lcVerbs.target('select', g, n);
+            const lit = Array.from(document.querySelectorAll('.lc-dg-selected'))
+                             .map(r => r.textContent.trim());
+            return { ok, lit, subject: subj ? subj.textContent.trim() : null };
+        }""",
+        name,
+    )
+    assert got["ok"], "the verb did nothing on a dataset-bound grid: %r" % (got,)
+    assert any(name in row for row in got["lit"]), \
+        "no row lit for %r — lit: %r" % (name, got["lit"])
+    assert got["subject"] and name in got["subject"], \
+        "the guide would stand nowhere useful: %r" % (got["subject"],)
+
+
 @given("a tour yaml shim with a stage direction is preinstalled")
 def step_tour_yaml_shim(context):
     # a bare do: line (no say) followed by narration — the dead-beat case
