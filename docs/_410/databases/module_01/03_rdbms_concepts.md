@@ -149,9 +149,11 @@ purpose**.
 ```
 ### ✅ Your move
 
-Everything graded lives in **Canvas 410, Module 01**: the Welcome
-and Syllabus quizzes if you have not taken them, the module check,
-and your video introduction in the discussion.
+Everything graded lives in **Canvas 410, 📦 Module 01 — Data Quest**:
+⚙️ Quiz 1a - Welcome and ⚙️ Quiz 1b — Syllabus if you have not taken
+them, 📍 Assignment 1c — Data Quest (your own screenshot, retake it any
+time), ⚙️ Quiz 1d — Data Quest, and your video introduction in
+💬 Discussion 1.
 ```
 {: .accordion #your_move }
 

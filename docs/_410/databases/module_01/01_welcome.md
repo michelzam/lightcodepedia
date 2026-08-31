@@ -141,9 +141,9 @@ touch, and quizzes you can take twice.
 ```
 ### 🎉 Your first move
 
-The **Welcome Quiz** is open in Canvas, Module 01 — short, friendly,
-and it counts. Then introduce yourself — on video — in the
-discussion.
+**⚙️ Quiz 1a - Welcome** is open in Canvas, 📦 Module 01 — Data Quest —
+short, friendly, and it counts. Then introduce yourself — on video — in
+**💬 Discussion 1: Video Introductions**.
 
 Welcome aboard. Wahoo!
 ```

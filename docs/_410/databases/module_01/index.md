@@ -20,8 +20,9 @@ say exactly which row wins — in English, and in SQL.
    for what you just did: database, DBMS, the relational model.
 
 Each page has a guide — press play and Doc walks you through, or read
-at your own pace. When you are done, the **Welcome Quiz** waits in
-Canvas, Module 01.
+at your own pace. The checks wait in Canvas, 📦 Module 01 — Data Quest:
+⚙️ Quiz 1a - Welcome and ⚙️ Quiz 1b — Syllabus, then 📍 Assignment 1c and
+⚙️ Quiz 1d, both named for this quest.
 
 [Browse](#)
 {: .folder parent="true"}
@@ -37,11 +38,11 @@ stories:
     - Module 01 introduces the course, the instructor, and the world of databases.
     - It has three walks — the course welcome, a hands-on data quest, and the core RDBMS concepts.
     - Take them in order; each page has a guided tour you can play.
-    - The module ends with the Welcome Quiz in Canvas, Module 01.
+    - The module ends with ⚙️ Quiz 1d — Data Quest in Canvas, Module 01.
   what should I do first:
     - 'You might wonder: what should I do first'
     - Open the Welcome page and play the tour — it explains how the whole course works.
     - Then take the Data Quest, where you run your first query on a real table.
-    - Finish with the concepts page, and take the Welcome Quiz in Canvas.
+    - Finish with the concepts page, then take ⚙️ Quiz 1d — Data Quest in Canvas.
 ```
 {: .avatar #guide dock="true" size="115" }

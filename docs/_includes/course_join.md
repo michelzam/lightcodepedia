@@ -78,7 +78,6 @@ The check is live truth against the API, never cached. Done steps reopen via
        instead of a trip through GitHub's UI */
     var keyUrl = "https://github.com/settings/tokens/new?scopes=repo,write:org&description=" + keyNote;
     var inviteUrl = "https://github.com/orgs/" + org + "/invitation";
-    var openUrl = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + vault + "/" + entry;
 
     var wrap = document.createElement("div");
     wrap.className = "lc-join";
@@ -109,8 +108,7 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-body"><p style="margin-top:0">Your teacher enrolls you — that sends you a class <b>invitation</b>. Accept it right here:</p>' +
       '<div class="lcj-row"><button type="button" class="lcj-btn" data-a="accept">✅ Accept my invitation</button>' +
       '<button type="button" class="lcj-btn alt" data-a="checkaccess">Check my access ✓</button></div>' +
-      '<div class="lcj-msg" data-m="3"></div>' +
-      '<div class="lcj-row" style="display:none" data-open><a class="lcj-btn" href="' + openUrl + '">📖 Open the course →</a></div></div></div>' +
+      '<div class="lcj-msg" data-m="3"></div></div></div>' +
 
       '<div class="lcj-step off" data-n="4"><div class="lcj-head"><span class="lcj-num">4</span>Your bench</div>' +
       '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Create it once, keep it refreshed, and work: your teacher can see your bench at any time.</p>' +
@@ -169,7 +167,6 @@ The check is live truth against the API, never cached. Done steps reopen via
           setState("3", "on");              // stays open — it hosts the door
           if (r.ok) {
             msg(3, "✅ You’re in — enjoy the course!", "ok");
-            wrap.querySelector("[data-open]").style.display = "";
           } else {
             msg(3, "🎓 You HAVE access to the course library, but this lesson isn’t there (yet) — tell your teacher: “" + entry + " is missing from the vault”.", "err");
           }
@@ -276,8 +273,13 @@ The check is live truth against the API, never cached. Done steps reopen via
       msgH(4, "🛠 Your bench: <b>" + org + "/" + B.name + "</b> — " +
         (behind ? "⬆️ the hub has <b>" + behind + " update" + (behind > 1 ? "s" : "") + "</b> you don’t have yet."
                 : "✅ up to date with the hub."), behind ? "" : "ok");
-      /* the bench opens IN the runner — learners never land in the GitHub UI;
-         xray Keep commits their edits straight back to the bench */
+      /* SETUP ENDS AT SETUP (Michel, 2026-08-30). Two doors used to lead out
+         of the middle of a five-step wizard: one into the whole course at
+         step 3, one into the bench at step 4 — both before the learner had
+         their AI key. The wizard now NAMES the bench and stops there; the
+         course is entered from the LMS, where the sequence and the dates
+         live. The ?go=bench forward below is untouched: that one is asked
+         for by the bench menu, and it lands where it says. */
       /* Carry the frame flags through. An LMS frames ONE url for every
          learner and the wizard resolves the bench per visitor — so the flags
          have to survive the hop, or the bench opens with the full platform
@@ -289,8 +291,7 @@ The check is live truth against the API, never cached. Done steps reopen via
         + (pass ? "?" + pass : "") + "#src=gh:" + org + "/" + B.name + "/index.md";
       function paintBenchRow() {
         benchRow().innerHTML =
-          (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Refresh from hub</button>' : "") +
-          '<a class="lcj-btn' + (behind ? " alt" : "") + '" href="' + benchOpen + '">🛠 Open my bench →</a>';
+          (behind ? '<button type="button" class="lcj-btn" data-a="sync">🔄 Refresh from hub</button>' : "");
       }
       /* forward only when green AND the root actually exists in the bench —
          a bench that hasn't synced the index.md rename must NOT be flung at a

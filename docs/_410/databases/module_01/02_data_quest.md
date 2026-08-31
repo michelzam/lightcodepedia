@@ -166,8 +166,10 @@ customers table. What is that line called?
 - 🔭 With this we can explore the *whole* database, to solve
   problems. Wahoo 🎉
 
-⚙️ **The module check** waits in Canvas, Module 01 — the quest
-continues there, on a bigger table.
+⚙️ **Quiz 1d — Data Quest** waits in Canvas, 📦 Module 01 — the quest
+continues there, on a bigger table. And 📍 **Assignment 1c — Data Quest**
+asks for a screenshot of your own first query on the big table — you may
+retake it as often as you like.
 ```
 {: .accordion #observations }
 

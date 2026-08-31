@@ -52,11 +52,11 @@ def test_the_teacher_may_spell_it_any_way():
         assert mod and not clash, name
 
 
-def test_the_folder_is_the_modules_checks():
-    """canvas.md wears the gate's name; a second spec keeps its own."""
-    assert cm.specs_of(["canvas.md"], "01") == [("canvas.md", "⚙️ Quiz 01")]
+def test_every_spec_is_named_by_its_own_first_line():
+    """The gate stopped imposing names the day it renamed Michel's."""
+    assert cm.specs_of(["canvas.md"], "01") == [("canvas.md", None)]
     assert cm.specs_of(["assignment.md", "canvas.md"], "01") == [
-        ("canvas.md", "⚙️ Quiz 01"), ("assignment.md", None)]
+        ("canvas.md", None), ("assignment.md", None)]
 
 
 def test_the_module_check_is_always_filed_first():
@@ -67,7 +67,43 @@ def test_the_module_check_is_always_filed_first():
 def test_only_specs_count():
     """A stray file in __quiz is not a check."""
     got = cm.specs_of(["canvas.md", "notes.txt", "screenshot.png"], "01")
-    assert got == [("canvas.md", "⚙️ Quiz 01")], got
+    assert got == [("canvas.md", None)], got
+
+
+def test_a_renamed_check_keeps_the_teachers_name():
+    """410: he renamed ⚙️ Quiz 01 to ⚙️ Quiz 1d — Data Quest by hand."""
+    got = cm.title_for("⚙️ Quiz 1d — Data Quest", "⚙️ Quiz 01",
+                       ["⚙️ Quiz 1d — Data Quest", "📍 Assignment 1c — Data Quest"])
+    assert got == "⚙️ Quiz 1d — Data Quest", got
+
+
+def test_a_check_created_under_the_gates_name_is_never_renamed():
+    """BUILD-AI: the spec says "05 · Basement — check", Canvas says
+    "⚙️ Quiz 05" — the run must update it, not rename it."""
+    assert cm.title_for("05 · Basement — check", "⚙️ Quiz 05",
+                        ["⚙️ Quiz 05"]) == "⚙️ Quiz 05"
+
+
+def test_something_new_wears_its_own_title():
+    assert cm.title_for("📍 Assignment 2a", "⚙️ Quiz 02", []) == "📍 Assignment 2a"
+    assert cm.title_for("", "⚙️ Quiz 02", []) == "⚙️ Quiz 02"
+
+
+def test_the_frame_page_is_found_by_number_under_any_name():
+    page, clash = cm.page_for("01", ["📜 Module 01 — Data Quest", "ℹ️ Introduction"])
+    assert (page, clash) == ("📜 Module 01 — Data Quest", None), (page, clash)
+
+
+def test_only_our_scroll_pages_count_as_frames():
+    """A course's own "📖 Module 10 — Advanced MySQL" must never be
+    overwritten by a lesson frame — the scroll is ours, the book is his."""
+    page, clash = cm.page_for("10", ["📖 Module 10 — Advanced MySQL"])
+    assert (page, clash) == ("📜 Module 10", None), (page, clash)
+
+
+def test_two_frames_for_one_module_stop_the_run():
+    page, clash = cm.page_for("01", ["📜 Module 01", "📜 Module 01 — Data Quest"])
+    assert page is None and "merge them in Canvas" in clash
 
 
 def test_the_folders_front_page_is_not_a_check():

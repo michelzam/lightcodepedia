@@ -60,12 +60,18 @@ Feature: The learner course wizard (/courses/join)
     And I paste the course key "ghp_newkey" and check it
     Then join steps 1 and 2 are done and step 3 is active
 
-  Scenario: An enrolled learner gets the open-course door
+  Scenario: An enrolled learner is told they are in — and setup goes on
+    Setup ends at setup (Michel, 2026-08-30). Two doors used to lead out of
+    the middle of the wizard — one into the whole course at step 3, one into
+    the bench at step 4 — both before the learner had their AI key, and the
+    course one opened all eight modules at once. The wizard says where you
+    stand and nothing else; the course is entered from the LMS.
+
     Given a stubbed GitHub that accepts the key with repo scope
     And the learner can read the vault
     When I open the course wizard with a stored key
     Then the wizard says the learner is in
-    And the open-course door points at the vault entry
+    And the wizard offers no way out of setup
 
   Scenario: A not-yet-enrolled learner is guided to their invitation
     Given a stubbed GitHub that accepts the key with repo scope
@@ -78,7 +84,7 @@ Feature: The learner course wizard (/courses/join)
     When I open the course wizard with a stored key
     And I accept my invitation in the wizard
     Then the wizard says the learner is in
-    And the open-course door points at the vault entry
+    And the wizard offers no way out of setup
 
   Scenario: A missing bench is a message, never a button
     The DESK is the one bench builder (A′, Michel 2026-08-25): the
@@ -92,13 +98,17 @@ Feature: The learner course wizard (/courses/join)
     Then the bench step says the teacher's desk builds it
     And no repository was created by the wizard
 
-  Scenario: A desk-built bench is found, up to date, and opens in the runner
+  Scenario: A desk-built bench is found and named, with no door out of setup
+    The wizard tells the learner their bench exists and is current. It does
+    not open it: the ?go=bench forward below is the one that opens a bench —
+    asked for by the bench menu, never offered mid-setup.
+
     Given a stubbed GitHub that accepts the key with repo scope
     And the learner can read the vault
     And my bench exists and is 0 updates behind the hub
     When I open the course wizard with a stored key
     Then my bench shows up to date with the hub
-    And the bench door opens in the runner
+    And the wizard offers no way out of setup
 
   Scenario: A bench behind the hub shows the gap and syncs
     Given a stubbed GitHub that accepts the key with repo scope

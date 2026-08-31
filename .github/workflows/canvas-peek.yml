@@ -24,7 +24,10 @@ on:
         description: "Canvas token (only if the secret is not stored yet)"
         required: false
       quiz_filter:
-        description: "also dump the QUESTIONS of quizzes whose title contains this"
+        description: "also dump the QUESTIONS of quizzes whose title contains this (comma-separated)"
+        required: false
+      module_filter:
+        description: "read ONE module — its items only, no course-wide listings"
         required: false
 
 permissions:
@@ -48,6 +51,7 @@ jobs:
           HOST: ${{ inputs.host }}
           COURSE: ${{ inputs.course }}
           QUIZ_FILTER: ${{ inputs.quiz_filter }}
+          MODULE_FILTER: ${{ inputs.module_filter }}
         run: |
           [ -n "$TOK" ] || { echo "::error::no token — pass one or store CANVAS_410_TOKEN"; exit 1; }
           python3 - <<'PY'
@@ -65,14 +69,27 @@ jobs:
           print(f"## 🎓 {c.get('name')} · id {c.get('id')} · state {c.get('workflow_state')}")
           print(f"   code {c.get('course_code')} · start {c.get('start_at')} · default_view {c.get('default_view')}")
 
+          # ONE module, when asked: aligning the lab to Canvas is module work,
+          # and a course with fifteen weeks of history buries the one module
+          # being read under everything else (Michel, 2026-08-30).
+          mflt = (os.environ.get("MODULE_FILTER") or "").strip().lower()
           print("\n## 📦 Modules")
           for m in get(f"/courses/{course}/modules", "&include[]=items"):
+              if mflt and mflt not in (m.get("name") or "").lower():
+                  continue
               print(f"- [{m.get('workflow_state')}] {m['name']} (id {m['id']})")
               for it in (m.get("items") or get(f"/courses/{course}/modules/{m['id']}/items")):
-                  print(f"    · {it.get('type'):12} {it.get('title')}")
+                  print(f"    · {it.get('position'):>2} {it.get('type'):12} "
+                        f"{'[published]' if it.get('published') else '[draft]    '} {it.get('title')}")
+                  if it.get("type") == "Page" and it.get("page_url"):
+                      body = get(f"/courses/{course}/pages/{it['page_url']}").get("body") or ""
+                      text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", body)).strip()
+                      print(f"         ↳ {text[:600]}")
+          if mflt:
+              print("\n(one module read — course-wide listings skipped)")
 
-          print("\n## 📜 Pages")
-          pages = get(f"/courses/{course}/pages")
+          print("\n## 📜 Pages" if not mflt else "")
+          pages = [] if mflt else get(f"/courses/{course}/pages")
           for p in pages:
               print(f"- [{'published' if p.get('published') else 'draft'}] {p.get('title')} ({p.get('url')})")
 
@@ -85,34 +102,52 @@ jobs:
                   text = re.sub(r"\s+", " ", text).strip()
                   print(f"\n## 📄 Page body — {p.get('title')}\n{text[:2500]}")
 
-          print("\n## 📝 Assignments")
-          for a in get(f"/courses/{course}/assignments"):
+          if not mflt: print("\n## 📝 Assignments")
+          for a in ([] if mflt else get(f"/courses/{course}/assignments")):
               print(f"- [{'published' if a.get('published') else 'draft'}] {a.get('name')} · "
                     f"{a.get('points_possible')} pts · types {a.get('submission_types')} · due {a.get('due_at')}")
 
-          print("\n## 💬 Discussions (titles only)")
-          for d in get(f"/courses/{course}/discussion_topics"):
+          if not mflt: print("\n## 💬 Discussions (titles only)")
+          for d in ([] if mflt else get(f"/courses/{course}/discussion_topics")):
               print(f"- [{'published' if d.get('published') else 'draft'}] {d.get('title')} (id {d.get('id')})")
 
-          print("\n## ⚙️ Quizzes")
+          if not mflt: print("\n## ⚙️ Quizzes")
           quizzes = get(f"/courses/{course}/quizzes")
-          for q in quizzes:
+          for q in ([] if mflt else quizzes):
               print(f"- [{'published' if q.get('published') else 'draft'}] {q.get('title')} · "
                     f"{q.get('question_count')} questions · attempts {q.get('allowed_attempts')}")
 
           # question dump on request — the author's own quiz bank, never answers
           # a student gave, so still structure only
-          flt = (os.environ.get("QUIZ_FILTER") or "").strip().lower()
-          if flt:
+          # A comma-separated filter, because ALIGNING the lab to Canvas needs
+          # several quizzes in one read — and needs every field the lab's spec
+          # carries: the settings, and the per-answer comment under each
+          # option (Michel, 2026-08-30: "keep my last namings and text, and
+          # all the params"). Read-only still: the author's own bank.
+          flts = [f.strip().lower() for f in (os.environ.get("QUIZ_FILTER") or "").split(",") if f.strip()]
+          if flts:
+              def clean(html):
+                  return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html or "")).strip()
               for q in quizzes:
-                  if flt not in (q.get("title") or "").lower():
+                  title = (q.get("title") or "")
+                  if not any(f in title.lower() for f in flts):
                       continue
-                  print(f"\n## ❓ {q.get('title')} (id {q['id']}) · {q.get('quiz_type')}")
+                  full = get(f"/courses/{course}/quizzes/{q['id']}")
+                  print(f"\n## ❓ {title} (id {q['id']})")
+                  print(f"   type {full.get('quiz_type')} · {full.get('points_possible')} pts · "
+                        f"attempts {full.get('allowed_attempts')} · scoring {full.get('scoring_policy')} · "
+                        f"shuffle {full.get('shuffle_answers')} · show_correct {full.get('show_correct_answers')} · "
+                        f"{'published' if full.get('published') else 'draft'} · due {full.get('due_at')}")
+                  desc = clean(full.get("description"))
+                  if desc:
+                      print(f"   description: {desc}")
                   for qq in get(f"/courses/{course}/quizzes/{q['id']}/questions"):
-                      stem = re.sub(r"<[^>]+>", " ", qq.get("question_text") or "")
-                      stem = re.sub(r"\s+", " ", stem).strip()
-                      print(f"- ({qq.get('question_type')}, {qq.get('points_possible')} pts) {stem[:300]}")
+                      print(f"- ({qq.get('question_type')}, {qq.get('points_possible')} pts) "
+                            f"[{qq.get('question_name')}] {clean(qq.get('question_text'))}")
                       for a in (qq.get("answers") or []):
                           mark = "[x]" if a.get("weight") else "[ ]"
-                          print(f"    {mark} {(a.get('text') or '')[:160]}")
+                          why = clean(a.get("comments_html") or a.get("comments") or a.get("answer_comments"))
+                          print(f"    {mark} {clean(a.get('text') or a.get('html'))}")
+                          if why:
+                              print(f"        > {why}")
           PY

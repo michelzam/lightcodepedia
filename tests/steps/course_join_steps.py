@@ -238,12 +238,15 @@ def step_is_in(context):
     expect(context.page.locator('.lc-join [data-m="3"]')).to_contain_text("You’re in", timeout=6000)
 
 
-@then("the open-course door points at the vault entry")
-def step_door(context):
-    a = context.page.locator(".lc-join [data-open] a")
-    expect(a).to_be_visible(timeout=6000)
-    href = a.get_attribute("href") or ""
-    assert "run.html#src=gh:uwm-build-ai/uwm-build-ai-vault/courses/micro_build_ai/index.md" in href, href
+@then("the wizard offers no way out of setup")
+def step_no_exit(context):
+    """No door into the course, no door into the bench — a five-step setup
+    that hands out exits at step 3 loses learners before their AI key."""
+    context.page.wait_for_timeout(600)
+    hrefs = context.page.eval_on_selector_all(
+        ".lc-join a", "els => els.map(e => (e.getAttribute('href') || '') + '|' + e.textContent.trim())")
+    stray = [h for h in hrefs if "/run.html" in h.split("|")[0]]
+    assert not stray, "the wizard still opens the runner from inside setup: %r" % stray
 
 
 @then("the wizard guides to the invitation, not an error dump")
@@ -290,15 +293,6 @@ def step_bench_behind(context, n):
 def step_sync_bench(context):
     context.page.click('.lc-join [data-a="sync"]')
     context.page.wait_for_timeout(800)
-
-
-@then("the bench door opens in the runner")
-def step_bench_door(context):
-    a = context.page.locator(".lc-join [data-bench] a")
-    expect(a).to_be_visible(timeout=6000)
-    href = a.get_attribute("href") or ""
-    assert "run.html#src=gh:uwm-build-ai/" + BENCH + "/index.md" in href, href
-    assert "github.com/" not in href, href
 
 
 @when('I open the course door "{query}" with a stored key')
