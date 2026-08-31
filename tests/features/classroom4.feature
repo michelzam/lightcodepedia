@@ -131,7 +131,7 @@ Feature: 🧭 Classroom 4 — the onboarding desk, problem to solution
     And I press "plan" on the "c4_mission" inspector
     And I press "sync" on the "c4_mission" inspector
     And I press "sync" on the "c4_mission" inspector
-    Then the factory teamed "adalove" and built the bay "build-ai-summer26-adalove-bay"
+    Then the factory teamed "adalove" and built the bay "build-ai-fall26-adalove-bay"
     And the "c4_roster" grid shows "ada" in "benched"
 
   Scenario: A guest invited by hand becomes a seat, walks, and gets a bench
@@ -151,7 +151,7 @@ Feature: 🧭 Classroom 4 — the onboarding desk, problem to solution
     When I press "sync" on the "c4_mission" inspector
     Then the "c4_roster" grid shows "zara" with login "zaralove"
     And the "c4_roster" grid shows "zara" in "benched"
-    And the factory built "build-ai-summer26-zaralove" and granted "zaralove"
+    And the factory built "build-ai-fall26-zaralove" and granted "zaralove"
 
   Scenario: Sync forges the whole kit, the instant a login is known
     No Benches button anywhere (A′, Michel 2026-08-25): the same Sync
@@ -171,6 +171,6 @@ Feature: 🧭 Classroom 4 — the onboarding desk, problem to solution
     And I press "plan" on the "c4_mission" inspector
     And I press "sync" on the "c4_mission" inspector
     And I press "sync" on the "c4_mission" inspector
-    Then the factory built "build-ai-summer26-adalove" and granted "adalove"
-    And the factory teamed "adalove" and built the bay "build-ai-summer26-adalove-bay"
+    Then the factory built "build-ai-fall26-adalove" and granted "adalove"
+    And the factory teamed "adalove" and built the bay "build-ai-fall26-adalove-bay"
     And the "c4_roster" grid shows "ada" in "benched"

@@ -205,11 +205,11 @@ def step_stub_org(context):
             route.fulfill(json=[{"login": "zik"}])
         elif "/repos" in url:
             route.fulfill(json=[
-                {"name": "build-ai-summer26-zik",
+                {"name": "build-ai-fall26-zik",
                  "created_at": "2026-08-01T00:00:00Z",
                  "pushed_at": "2026-08-20T00:00:00Z"},
                 # the bench's public bay twin — must NOT become a student
-                {"name": "build-ai-summer26-zik-bay",
+                {"name": "build-ai-fall26-zik-bay",
                  "created_at": "2026-08-01T00:00:00Z",
                  "pushed_at": "2026-08-21T00:00:00Z"}])
         else:
@@ -440,7 +440,7 @@ def step_stub_org_names(context):
             route.fulfill(json=[{"login": "Emmanuel-Onaivi"}, {"login": "egbas"}])
         elif "/repos" in url:
             route.fulfill(json=[{
-                "name": "build-ai-summer26-Emmanuel-Onaivi",
+                "name": "build-ai-fall26-Emmanuel-Onaivi",
                 "created_at": "2026-08-01T00:00:00Z",
                 "pushed_at": "2026-08-20T00:00:00Z"}])
         else:
