@@ -512,6 +512,36 @@ def step_stale_pairing(context):
         "localStorage.setItem('lc_ed_pat','ghp_stored');" % OLD_BENCH)
 
 
+@given("this device carries a pairing from before the stamp")
+def step_unstamped_pairing(context):
+    """The state every device was in until 2026-09-01: a bench, no session.
+    The page cannot ask the address either — a cached door serves no hub."""
+    if not hasattr(context, "join_stub"):
+        context.join_stub = {"vault_ok": False}
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_repo','%s');"
+        "localStorage.setItem('lc_ed_pat','ghp_stored');" % OLD_BENCH)
+
+
+@when("I open a saving lesson with no session in its address")
+def step_open_bare_lesson(context):
+    context.page.goto(context.base_url + "/components/datagrid",
+                      wait_until="domcontentloaded")
+    context.page.wait_for_selector('[data-lc-id="repair_me"] .lc-dg-save',
+                                   timeout=20_000)
+    context.page.wait_for_timeout(400)
+
+
+@then("the keep button says the bench belongs to another class")
+def step_keep_refuses_unstamped(context):
+    keep = context.page.locator('[data-lc-id="repair_me"] .lc-dg-save').first
+    expect(keep).to_be_disabled(timeout=20_000)
+    assert "another class" in (keep.get_attribute("title") or ""), \
+        keep.get_attribute("title")
+    t = context.page.evaluate("() => window.lcBench.target(document.body)")
+    assert not t.get("repo"), "an unstamped pairing was inherited"
+
+
 @when('I open a saving lesson framed for "{session}"')
 def step_open_framed_lesson(context, session):
     """A course page carries the session in its address — the door bakes it —

@@ -1153,6 +1153,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           return;
         }
         localStorage.setItem(LS_PAT, _pat); localStorage.setItem(LS_REPO, _repo);
+        /* stamp it: an unstamped pairing is refused by lcBench (a bench from
+           another class must never be inherited) — this one is the author's */
+        try { localStorage.setItem("lc_ed_session", window.lcAuthorPair || "lc:author"); } catch (e) {}
         setStatus("✓ " + d.full_name + (d.fork ? " (fork)" : ""), true);
         var setup = document.getElementById("ed-setup");
         if (setup) setup.open = false;
@@ -1177,6 +1180,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 
   function disconnect() {
     localStorage.removeItem(LS_PAT); localStorage.removeItem(LS_REPO);
+    try { localStorage.removeItem("lc_ed_session"); } catch (e) {}
     _pat = _repo = _curFile = _curSha = null;
     setStatus("Disconnected.", false);
     toggleConnected(false);
@@ -3250,7 +3254,10 @@ Auto-included by docs/_layouts/default.html. Skipped for:
        is gone, it is this very site's repo — never ask twice */
     if (_pat && !_repo) {
       _repo = SITE_REPO;
-      if (_repo) localStorage.setItem(LS_REPO, _repo); else _repo = null;
+      if (_repo) {
+        localStorage.setItem(LS_REPO, _repo);
+        try { localStorage.setItem("lc_ed_session", window.lcAuthorPair || "lc:author"); } catch (e) {}
+      } else _repo = null;
     }
     /* A PAGE OF THIS SITE BELONGS TO THIS SITE'S REPO. lc_ed_repo is ONE
        browser-wide pairing and the last bench to connect wins it — so after
