@@ -2,10 +2,21 @@ from behave import when, then
 from playwright.sync_api import expect
 
 
+def _unfold(page):
+    """A fenced accordion renders its body only when a reader opens it — so a
+    page whose demo lives in a panel has no demo until then (the pitch
+    elevator, 2026-09-01). The suite opens every fold first: where the author
+    put the demo is not the suite's business."""
+    page.evaluate(
+        "document.querySelectorAll('details').forEach(function(d){ d.open = true; });")
+    page.wait_for_timeout(400)
+
+
 @when('I wait for the selector "{css}"')
 def step_wait_selector(context, css):
     # file-backed components (e.g. tabs) render after an async fetch; wait for
     # them to exist before driving them from the in-page runner.
+    _unfold(context.page)
     context.page.locator(css).first.wait_for(state="visible", timeout=20_000)
 
 
@@ -29,14 +40,9 @@ def step_run_features(context):
         "document.querySelectorAll('.lc-feature')"
         ".forEach(function(c){ c.classList.remove('lc-feature-hidden'); });"
     )
-    # A proof may live in a folded section — an accordion panel is shut until
-    # a reader asks, and a shut <details> has no visible button (the pitch
-    # elevator keeps its proof folded, 2026-09-01). Open every fold first:
-    # where the promises live is the author's choice, not the suite's.
-    context.page.evaluate(
-        "document.querySelectorAll('details').forEach(function(d){ d.open = true; });"
-    )
-    context.page.wait_for_timeout(200)
+    # A proof may live in a folded section — and a fenced panel has not even
+    # rendered until it is opened (2026-09-01).
+    _unfold(context.page)
     btns = context.page.locator(".lc-feature .lc-feature-run")
     btns.first.wait_for(state="visible", timeout=20_000)
     n = btns.count()

@@ -25,10 +25,7 @@ your own words come back as a program.
 ```
 {: .blocks cols="3" }
 
-## 🪜 Start here
+## 🪜 Explore
 
-- [🛗 Pitch elevator](/courses/python/pitch_elevator) — say what your program is for, in one
-  sentence, then meet the three steps every program is made of: **read**,
-  **compute**, **write back**.
+{: .fodler}
 
-More lessons land here as the course grows. Nothing on this shelf needs a key.

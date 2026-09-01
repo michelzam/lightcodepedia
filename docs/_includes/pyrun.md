@@ -897,13 +897,24 @@ Auto-included by docs/_layouts/default.html.
     if (!pyCode) return;
     var lcId = btn.getAttribute("data-lc-id") || "";
     var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
-    var fullCode = preamble + "\n" + window.lcWrapHandler(pyCode) + "\n"
-      + "_btn = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n"
-      + "on_click(_btn)\n";
+    /* A BARE BODY IS THE PAGE'S OWN LINES, not a function's. Wrapped in a
+       def, every name a beginner assigns died with the click — Michel wrote
+       `message = …` in a button and `{= message }` beside it stayed empty
+       (2026-09-01). A bare fence now runs at module scope with `button`
+       bound, so what the lines set, the page can read. An explicit
+       `def on_click(…)` keeps Python's own rules: its locals stay local. */
+    var bare = !/^\s*def\s+on_click\s*\(/m.test(pyCode);
+    var fullCode = preamble + "\n"
+      + "button = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n"
+      + (bare ? pyCode + "\n" : pyCode + "\non_click(button)\n");
     if (!window._lcMpReady) window._lcMpReady = lcMpy();
     window._lcMpReady.then(function (mp) {
       var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
       try { if (runFn) runFn.call(mp, fullCode); } catch (e) { console.error("[lc-button]", e); }
+      /* a click changed the page's data, exactly as a form edit does — so the
+         page's cells recompute on the same bus, and never a second later */
+      try { document.dispatchEvent(new CustomEvent("lc-model-changed",
+                                   { detail: { source: "button" } })); } catch (e) {}
     });
   }
 

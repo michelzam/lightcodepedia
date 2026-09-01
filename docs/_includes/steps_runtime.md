@@ -1025,18 +1025,24 @@ class Button(Block):
             if self._el:
                 self._el.click()
             return self
-        # a fence may be just the body — the def line is the engine's,
-        # exactly as lcWrapHandler adds it on the JS side
-        if "def on_click" not in code:
-            code = "def on_click(button):\n" + "\n".join(
-                "    " + l for l in code.split("\n"))
-        ns = dict(globals())
-        ns["button"] = self
+        # A BARE BODY RUNS AT MODULE SCOPE, `button` in hand — the same
+        # contract the JS side runs on a real click, so a proof cannot pass
+        # on semantics no reader ever gets. What the lines set, the page
+        # reads: `message = …` in a button feeds `{= message }` beside it.
+        g = globals()
+        g["button"] = self
         try:
-            exec(code + "\non_click(button)\n", ns)
+            if "def on_click" in code:
+                exec(code + "\non_click(button)\n", g)
+            else:
+                exec(code, g)
         except Exception as _e:
             if self._el:
                 self._el.setAttribute("data-lc-err", str(_e))
+        try:
+            js.window.document.dispatchEvent(js.CustomEvent.new("lc-model-changed"))
+        except Exception:
+            pass
         return self
 
 
@@ -1283,6 +1289,25 @@ class _Attrs(object):
            assoc=[{"n": "master", "target": "Datagrid"}],
            methods=["submit", "set"])
 class Form(Block):
+    def __setattr__(self, name, value):
+        """`page.ask.name = "Ada"` types the field, like a person would.
+
+        Reading was already pythonistic (`.data.name`); writing needed
+        `.set("name", …)`, and Michel wrote the natural line in a scenario
+        (2026-09-01) — it set a dead attribute on the wrapper and the form
+        never moved. A name that IS one of this form's fields now goes
+        through the same edit path a keystroke takes; anything else stays a
+        plain attribute, so the wrapper's own internals are untouched.
+        """
+        if not name.startswith("_"):
+            try:
+                if name in self.data._d:
+                    self.set(name, value)
+                    return
+            except Exception:
+                pass
+        object.__setattr__(self, name, value)
+
     @property
     def master(self):
         gid = self._attr("data-bound") or ""

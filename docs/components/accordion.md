@@ -134,35 +134,28 @@ so grids, proofs and diagrams inside a shut section are alive from page load.
 
 ```gherkin
 Feature: A heading folds its own section
-  Scenario: The demo below is a panel, shut until the reader asks
-    Given the page's section panels
+  Scenario: The demo below is a panel the reader opens
+    Given the heading's panel
     :::python
-    self.panels: list = Object._all(".lc-acc-section details")
-    assert self.panels, "no folded heading on this page"
-    self.p: object = self.panels[0]
-    self.p._el.open = False
+    self.demo: Accordion = self.page.try_it
     :::
-    Then the heading is the handle, and the section is inside it
+    Then it wears the heading as its handle
     :::python
-    head = self.p._q("summary")._el
-    assert head is not None, "the panel has no summary"
-    assert "Try it" in str(head.textContent)
-    body = self.p._q(".lc-ac-body")._el
-    assert body is not None and "unfolded it" in str(body.textContent)
+    assert "Try it" in " ".join(self.demo.sections()), self.demo.sections()
     :::
-    When I click the folded heading
+    When a reader opens it
     :::python
-    self.p._tap("summary")
+    self.demo.open()
     :::
-    Then the section is open
+    Then the section is theirs to read
     :::python
-    assert self.p._el.open
+    assert "unfolded it" in self.demo.text, self.demo.text[:120]
     :::
 ```
 {: .feature tags="ui" status="passing"}
 
 ### 🎪 Try it — this very heading is a panel
-{: .accordion }
+{: .accordion #try_it }
 
 You just unfolded it. Click the heading again to tuck it away. Notice the
 heading kept its size and its emoji: no new widget, the accordion took the
