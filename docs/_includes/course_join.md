@@ -70,7 +70,11 @@ The check is live truth against the API, never cached. Done steps reopen via
     var q = {};
     try { location.search.replace(/^\?/, "").split("&").forEach(function (kv) {
       var p = kv.split("="); if (p[0]) q[p[0]] = decodeURIComponent(p[1] || ""); }); } catch (e) {}
-    var wantHub = q.hub || "";
+    /* WHICH CLASS IS THIS? ?hub=<session> (the door bakes it) wins; the
+       fence's own session= is the fallback for a page opened bare. Guessing
+       — newest template in the org — is what paired a teacher with last
+       term's bench (Michel, 2026-08-31). */
+    var wantHub = q.hub || el.getAttribute("session") || "";
     var goBench = q.go === "bench";
     var keyNote = encodeURIComponent("Lightcode course key — " + org);
     /* write:org lets the wizard ACCEPT the class invitation in-app (a learner
@@ -189,6 +193,27 @@ The check is live truth against the API, never cached. Done steps reopen via
     var B = { hub: null, login: "", name: "", branch: "main" };
     function benchRow() { return wrap.querySelector("[data-bench]"); }
 
+    /* A PAIRING BELONGS TO ITS SESSION. lc_ed_repo is what every save="my/…"
+       reads and writes, and it used to outlive the class it was made for: a
+       returning learner — or a teacher who taught last term — opened THIS
+       course and the lesson quietly served, and saved, the OTHER session's
+       files (Michel, 2026-08-31: module_00's dogs already repaired, from
+       build-ai-summer26-zamm-student, and Save reported success). So the
+       pairing is stamped with its session, and a pairing that is not this
+       session's bench is dropped rather than inherited. */
+    function pairBench(name) {
+      try {
+        if (name) {
+          localStorage.setItem("lc_ed_repo", org + "/" + name);
+          localStorage.setItem("lc_ed_session", (B.hub && B.hub.name) || "");
+        } else {
+          var cur = localStorage.getItem("lc_ed_repo") || "";
+          if (cur.indexOf(org + "/") === 0) localStorage.removeItem("lc_ed_repo");
+          localStorage.removeItem("lc_ed_session");
+        }
+      } catch (e) {}
+    }
+
     /* the energy key as the DEVICE already holds it — agent.md owns the slot,
        so ask it; the raw read is the fallback when the engine isn't on the page */
     function haveEnergyKey() {
@@ -219,6 +244,7 @@ The check is live truth against the API, never cached. Done steps reopen via
           var hubs = (repos || []).filter(function (x) { return x.is_template && !x.fork; });
           if (wantHub) hubs = hubs.filter(function (x) { return x.name === wantHub; });
           if (!hubs.length) {
+            pairBench("");
             msg(4, wantHub
               ? "🧑‍🏫 The session “" + wantHub + "” isn’t visible to you yet — your teacher enrolls you, then this step lights up."
               : "🧑‍🏫 No session is visible to you yet — your teacher adds you to one, then this step lights up.", "");
@@ -258,6 +284,7 @@ The check is live truth against the API, never cached. Done steps reopen via
          teacher's Sync forges the fork and the grants in one press — a
          learner could never fork before that anyway (hub read is an
          individual grant, only possible once their login is known). */
+      pairBench("");
       msg(4, "🧰 No bench yet for session “" + B.hub.name + "” — your teacher’s desk builds it (it appears here right after their next Sync). Check back, or ask in class.", "");
       benchRow().innerHTML = "";
     }
@@ -269,7 +296,7 @@ The check is live truth against the API, never cached. Done steps reopen via
          author's site, or nothing at all) and the learner's key answered
          404 for a repo it was never meant to cover. The bench is resolved
          per visitor from their own key, so pair them here. */
-      try { localStorage.setItem("lc_ed_repo", org + "/" + B.name); } catch (e) {}
+      pairBench(B.name);
       msgH(4, "🛠 Your bench: <b>" + org + "/" + B.name + "</b> — " +
         (behind ? "⬆️ the hub has <b>" + behind + " update" + (behind > 1 ? "s" : "") + "</b> you don’t have yet."
                 : "✅ up to date with the hub."), behind ? "" : "ok");

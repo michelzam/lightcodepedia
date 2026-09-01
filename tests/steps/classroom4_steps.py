@@ -104,6 +104,55 @@ def step_flow_kind_hidden(context, flow_id, kind):
     ).to_be_hidden()
 
 
+# ── the sections: each heading is an accordion, the desk stays open ─────────
+
+def _panel(context, sid):
+    return context.page.locator('.lc-acc-section[data-section="%s"] details' % sid)
+
+
+@then("the page wears {n:d} section accordions")
+def step_section_count(context, n):
+    expect(context.page.locator(".lc-acc-section details")).to_have_count(
+        n, timeout=30_000)
+
+
+@then('the "{sid}" section is open')
+def step_section_open(context, sid):
+    expect(_panel(context, sid)).to_have_attribute("open", "", timeout=20_000)
+
+
+@then('the "{sid}" section is folded')
+def step_section_shut(context, sid):
+    assert _panel(context, sid).count() == 1, "no section panel %s" % sid
+    assert not _panel(context, sid).first.evaluate("d => d.open"), \
+        "%s is open" % sid
+
+
+@then("the folded sections still hold their content")
+def step_section_holds(context):
+    """MOVED, never re-rendered: the promises and the picture are built at
+    page load, so a reader who opens a panel late finds them ready — and the
+    page's own proofs never depend on which section is open."""
+    for sel, what in ((".lc-feature", "the promises"),
+                      (".lc-diagram svg", "the picture"),
+                      ('[data-lc-id="c4_flow"], #c4_flow', "the story")):
+        assert context.page.locator(sel).count() >= 1, \
+            "%s vanished with its section" % what
+
+
+@when('I open the "{sid}" section')
+def step_section_open_one(context, sid):
+    _panel(context, sid).first.locator("summary").click()
+    context.page.wait_for_timeout(200)
+
+
+@when("I open every section")
+def step_section_open_all(context):
+    context.page.eval_on_selector_all(
+        ".lc-acc-section details", "ds => ds.forEach(d => { d.open = true; })")
+    context.page.wait_for_timeout(300)
+
+
 @then("the HQ card links to classroom 4")
 def step_hq_door(context):
     card = context.page.locator('.lc-block a[href*="classroom4"]')
@@ -172,6 +221,27 @@ def step_stub_gate(context):
         "   ENONAIVI@UWM.EDU                       Onaivi, Emmanuel\n\n"
         "Dry run - nothing was sent, nothing was stored.\n"
     )
+    _serve_plan(context, plan)
+
+
+@given("a connected author key and a class-sized roster gate")
+def step_stub_gate_class(context):
+    """Nineteen seats — fall26's real first Plan, where the echo stopped at
+    eight and looked finished (Michel, 2026-08-31)."""
+    _author_key(context)
+    names = ["Conner, Jay", "Lers, David", "Mank, Owen", "Mensah, Jennifer",
+             "Messenger, Nate", "Miller Jr., Alonzo", "Nebrat, Leo",
+             "Nielsen, Jack", "Okafor, Ada", "Perez, Luis", "Quinn, Robin",
+             "Rossi, Marco", "Silva, Ana", "Tran, Minh", "Ueda, Ken",
+             "Vasquez, Sol", "Walsh, Erin", "Xu, Wei", "Zamora, Iris"]
+    lines = ["Org uwm-build-ai: 4 member(s).", "", "To invite: %d" % len(names)]
+    for i, n in enumerate(names, 1):
+        lines.append("   student%02d@uwm.edu                      %s" % (i, n))
+    lines += ["", "Dry run - nothing was sent, nothing was stored."]
+    _serve_plan(context, "\n".join(lines) + "\n")
+
+
+def _serve_plan(context, plan):
     b64 = base64.b64encode(plan.encode()).decode()
 
     def gh(route):
@@ -188,6 +258,35 @@ def step_stub_gate(context):
             route.fulfill(status=404, json={"message": "not stubbed"})
 
     context.page.route("https://api.github.com/repos/**", gh)
+
+
+@then("all {n:d} seats stand on the roster, page after page")
+def step_roster_paged(context, n):
+    """A class does not fit one page of the grid: nineteen seats live on
+    three, and the count is only honest when every page is read."""
+    grid = context.page.locator('[data-lc-id="c4_roster"]')
+    seen = set()
+    while True:
+        rows = grid.locator("tbody tr")
+        for i in range(rows.count()):
+            seen.add((rows.nth(i).text_content() or "").strip())
+        nxt = grid.locator(".lc-dg-pages button").last
+        if nxt.count() == 0 or (nxt.text_content() or "").strip() != "\u2192":
+            break
+        nxt.click()
+        context.page.wait_for_timeout(300)
+    assert len(seen) == n, "the roster holds %d seats, expected %d" % (len(seen), n)
+    joined = " ".join(seen)
+    assert "Dry run" not in joined, "the verdict leaked into a seat"
+
+
+@then('the verdict echo names every seat, first "{first}" to last "{last}"')
+def step_echo_whole(context, first, last):
+    """No silent truncation: a roster is read to the end, or the teacher
+    invites people they never saw."""
+    out = context.page.locator('[data-lc-id="c4_out"]')
+    expect(out).to_contain_text(first, timeout=20_000)
+    expect(out).to_contain_text(last, timeout=10_000)
 
 
 @given("a stubbed org")

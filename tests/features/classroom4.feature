@@ -11,12 +11,30 @@ Feature: 🧭 Classroom 4 — the onboarding desk, problem to solution
   Scenario: The whole problem-solution ladder stands on the page
     When I navigate to "/lab/classroom4"
     And I wait for the page to be interactive
+    And I open every section
     Then both personas face each other
     And the pitch serves the instructor
     And the impact map pulls its goal from the pitch
     And the flow declares the one-click cast
     And the desk and the join wizard wear their windows
     And the model is backstage and the diagram shows the desk
+
+  Scenario: The page opens on the desk, the rest folded away
+    Seven sections is a scroll, and the desk is the one the instructor
+    came for (Michel, 2026-08-31: "an accordion for each of the sections,
+    keep the desk open" — the accordion itself, no new component type).
+    A shut section still HOLDS its content: the proofs and the diagram
+    exist from page load, folded or not.
+
+    When I navigate to "/lab/classroom4"
+    And I wait for the page to be interactive
+    Then the page wears 7 section accordions
+    And the "5--the-desk" section is open
+    And the "6--proof-running" section is folded
+    And the "7--the-picture" section is folded
+    And the folded sections still hold their content
+    When I open the "6--proof-running" section
+    Then the "6--proof-running" section is open
 
   Scenario: The legend is the dimmer — a chip folds its kind away
     The cast strip is structure, not ink; the reader tunes the level of
@@ -25,6 +43,7 @@ Feature: 🧭 Classroom 4 — the onboarding desk, problem to solution
 
     When I navigate to "/lab/classroom4"
     And I wait for the page to be interactive
+    And I open every section
     Then the "c4_flow" flow shows its "event" notes
     When I click the "event" legend chip on "c4_flow"
     Then the "c4_flow" flow hides its "event" notes
@@ -55,6 +74,7 @@ Feature: 🧭 Classroom 4 — the onboarding desk, problem to solution
   Scenario: Every promise on the page turns green
     When I navigate to "/lab/classroom4"
     And I wait for the page to be interactive
+    And I open every section
     And I run every embedded feature
     Then all embedded features pass
 
@@ -72,6 +92,19 @@ Feature: 🧭 Classroom 4 — the onboarding desk, problem to solution
     And the "c4_roster" grid shows "mk" in "invited"
     And the roster holds exactly 4 seats
     And no seat is named after a skip reason
+
+  Scenario: A class-sized plan is echoed to the last name
+    The echo stopped at twelve lines and said nothing about the rest, so
+    fall26's first Plan showed eight of nineteen students and looked
+    finished (Michel, 2026-08-31). A roster is read to the end, or the
+    teacher invites people they never saw.
+
+    Given a connected author key and a class-sized roster gate
+    When I navigate to "/lab/classroom4"
+    And I wait for the page to be interactive
+    And I press "plan" on the "c4_mission" inspector
+    Then the verdict echo names every seat, first "Conner, Jay" to last "Zamora, Iris"
+    And all 19 seats stand on the roster, page after page
 
   Scenario: Sync reads the org's live facts (stubbed) and journeys advance
     Pending invitation = invited · member = in_org · pushed bench =

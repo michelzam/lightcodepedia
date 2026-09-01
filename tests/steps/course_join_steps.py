@@ -7,6 +7,11 @@ from playwright.sync_api import expect
 
 HUB = {"name": "build-ai-fall26", "is_template": True, "fork": False,
        "default_branch": "main", "updated_at": "2026-07-01T00:00:00Z"}
+# last term's session, still standing in the org and touched more recently
+# than this one — the shape that paired a teacher with the wrong bench
+OLD_HUB = {"name": "build-ai-summer26", "is_template": True, "fork": False,
+           "default_branch": "main", "updated_at": "2026-08-30T00:00:00Z"}
+OLD_BENCH = "uwm-build-ai/build-ai-summer26-zamm-student"
 BENCH = "build-ai-fall26-zamm-student"
 BAY = BENCH + "-bay"
 
@@ -30,7 +35,10 @@ def _stub(context):
             return
         if re.search(r"/orgs/[^/]+/repos", url) and method == "GET":
             # hub discovery: the session template is visible once enrolled
-            route.fulfill(status=200, json=[HUB] if st.get("vault_ok") else [])
+            hubs = []
+            if st.get("vault_ok"):
+                hubs = [OLD_HUB, HUB] if st.get("last_term") else [HUB]
+            route.fulfill(status=200, json=hubs)
             return
         if re.search(r"/orgs/[^/]+/repos", url) and method == "POST":
             # the wizard creating the learner's public bay with their own key
@@ -483,3 +491,58 @@ def step_no_repo_created(context):
         "the wizard created a repo: %r" % (context.bay_created,)
     assert getattr(context, "fork_posted", None) is None, \
         "the wizard forked a bench: %r" % (context.fork_posted,)
+
+
+# ── one bench per SESSION: last term's is never inherited ───────────────────
+
+@given("last term's session is still in the org")
+def step_last_term_hub(context):
+    """Its hub was touched more recently than this term's — the wizard used
+    to take that as "the session" (Michel, 2026-08-31)."""
+    context.join_stub["last_term"] = True
+
+
+@given("this device is still paired to last term's bench")
+def step_stale_pairing(context):
+    if not hasattr(context, "join_stub"):
+        context.join_stub = {"vault_ok": False}
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_repo','%s');"
+        "localStorage.setItem('lc_ed_session','build-ai-summer26');"
+        "localStorage.setItem('lc_ed_pat','ghp_stored');" % OLD_BENCH)
+
+
+@when('I open a saving lesson framed for "{session}"')
+def step_open_framed_lesson(context, session):
+    """A course page carries the session in its address — the door bakes it —
+    and holds a grid that saves into the bench."""
+    context.page.goto(context.base_url + "/components/datagrid?hub=" + session,
+                      wait_until="domcontentloaded")
+    context.page.wait_for_selector('[data-lc-id="repair_me"] .lc-dg-save',
+                                   timeout=20_000)
+    context.page.wait_for_timeout(400)
+
+
+@then('the bench step names the session "{session}"')
+def step_bench_names_session(context, session):
+    m = context.page.locator('.lc-join [data-m="4"]')
+    expect(m).to_contain_text(session, timeout=20_000)
+    assert "summer26" not in (m.text_content() or ""), \
+        "the wizard reached for last term: %r" % m.text_content()
+
+
+@then("this device is paired to no bench")
+def step_no_pairing(context):
+    repo = context.page.evaluate("() => localStorage.getItem('lc_ed_repo') || ''")
+    assert not repo, "still paired to %s" % repo
+
+
+@then("the keep button says the bench for this session is not paired")
+def step_keep_refuses(context):
+    keep = context.page.locator('[data-lc-id="repair_me"] .lc-dg-save').first
+    expect(keep).to_be_disabled(timeout=20_000)
+    title = keep.get_attribute("title") or ""
+    assert "build-ai-fall26" in title and "paired" in title, title
+    t = context.page.evaluate(
+        "() => window.lcBench.target(document.body)")
+    assert not t.get("repo"), "a page of this session reached last term's bench"

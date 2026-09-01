@@ -40,10 +40,18 @@ the LMS keeps framing one URL per page and nothing else.
        the editor opened on it empty and useless). So the door says nothing,
        the rule decides: the course is closed, a learner's own bench stays
        open, and ?editable=1 still reopens it for whoever means it. */
+    /* THE DOOR NAMES THE SESSION IT TEACHES (Michel, 2026-08-31). The join
+       wizard used to guess it — newest template in the org wins — and a
+       teacher (or a returning student) with last term's bench got paired to
+       it: module_00's dogs arrived already repaired, from
+       build-ai-summer26-…, and Save filed this year's work there without a
+       word. The door carries hub=<session> so every page opened through it
+       knows which class it belongs to. One line, in the lab, per term. */
     var flags = { focus: "1",
                   crumb: el.getAttribute("crumb") || "",
+                  hub: el.getAttribute("session") || "",
                   open: "gh:" + vault + "/" + (course.split("/")[0] || "courses") + "/*" };
-    var pass = ["focus", "editable", "navigable", "open", "crumb", "up", "strict"]
+    var pass = ["focus", "editable", "navigable", "open", "crumb", "hub", "up", "strict"]
       .filter(function (k) { return q[k] !== undefined || flags[k]; })
       .map(function (k) {
         return k + "=" + encodeURIComponent(q[k] !== undefined ? q[k] : flags[k]);

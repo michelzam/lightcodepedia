@@ -98,6 +98,31 @@ Feature: The learner course wizard (/courses/join)
     Then the bench step says the teacher's desk builds it
     And no repository was created by the wizard
 
+  Scenario: Last term's session is never adopted
+    The wizard used to take "the newest template in the org" for the class
+    it was in. A teacher who taught last term (Michel, 2026-08-31) opened
+    fall26's Module 00 in Canvas and got summer26: the dogs came back
+    already repaired, from the OLD bench, and Save filed this year's work
+    there without a word. The class is named — by the door, or by the
+    page — never guessed.
+
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the learner can read the vault
+    And last term's session is still in the org
+    And this device is still paired to last term's bench
+    When I open the course wizard with a stored key
+    Then the bench step names the session "build-ai-fall26"
+    And this device is paired to no bench
+
+  Scenario: Last term's bench is not usable on this session's page
+    The pairing is stamped with the class it was made for, and every
+    save="my/…" reads that stamp: a page framed for THIS session refuses a
+    bench from another one instead of writing into it silently.
+
+    Given this device is still paired to last term's bench
+    When I open a saving lesson framed for "build-ai-fall26"
+    Then the keep button says the bench for this session is not paired
+
   Scenario: A desk-built bench is found and named, with no door out of setup
     The wizard tells the learner their bench exists and is current. It does
     not open it: the ?go=bench forward below is the one that opens a bench —

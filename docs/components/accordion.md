@@ -113,10 +113,66 @@ Another answer.
 
 Accordion has no extra IAL attributes — the structure comes entirely from `### ` headings and body content. Full markdown is supported in every panel body: bullets, tables, `code`, bold, links, even [🐍 Run](/components/run) runners.
 
+## 🪄 The same accordion, from a heading
+
+One level up, same instrument, same IAL: put `{: .accordion }` on the line
+**under a heading** and that heading folds its own section — everything down to
+the next heading of the same or higher level. The heading keeps its look, its id
+and its anchor; it simply becomes the panel's handle. `open="true"` starts it
+unfolded.
+
+````markdown
+## 5. 🏠 The desk
+{: .accordion open="true" }
+
+Everything under this heading folds with it.
+````
+
+A long page becomes a menu: the reader opens the one section they came for.
+Nothing is re-rendered when a panel opens — the content is moved, not rebuilt —
+so grids, proofs and diagrams inside a shut section are alive from page load.
+
+```gherkin
+Feature: A heading folds its own section
+  Scenario: The demo below is a panel, shut until the reader asks
+    Given the page's section panels
+    :::python
+    self.panels: list = Object._all(".lc-acc-section details")
+    assert self.panels, "no folded heading on this page"
+    self.p: object = self.panels[0]
+    self.p._el.open = False
+    :::
+    Then the heading is the handle, and the section is inside it
+    :::python
+    head = self.p._q("summary")._el
+    assert head is not None, "the panel has no summary"
+    assert "Try it" in str(head.textContent)
+    body = self.p._q(".lc-ac-body")._el
+    assert body is not None and "unfolded it" in str(body.textContent)
+    :::
+    When I click the folded heading
+    :::python
+    self.p._tap("summary")
+    :::
+    Then the section is open
+    :::python
+    assert self.p._el.open
+    :::
+```
+{: .feature tags="ui" status="passing"}
+
+### 🎪 Try it — this very heading is a panel
+{: .accordion }
+
+You just unfolded it. Click the heading again to tuck it away. Notice the
+heading kept its size and its emoji: no new widget, the accordion took the
+heading as its handle.
+
 ## ⚠️ Limits worth knowing
 
 - **No exclusive mode** (one-open-at-a-time). Each panel is a native `<details>` element — open/close is handled by the browser with no JS.
 - **Same format as Tabs and Radio.** Accordion, tabs, and radio all use the same `### ` fenced-block source. Swap the IAL class to switch widget type with no other changes.
+- **A section panel is furniture, not a component.** It wears no component id, so nothing binds to it. Address a folded section by its heading's anchor.
 
 ## 🏁 Final exam
 

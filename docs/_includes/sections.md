@@ -36,6 +36,15 @@ Auto-included by docs/_layouts/default.html.
 .lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #f0f6ff; color: #0066cc; }
 .lc-accordion details .lc-ac-body { padding: 0.8em 1.2em; }
 
+/* the SAME accordion, sourced from a heading: the panel wears the heading
+   itself, so a folded section keeps the page's typography */
+.lc-acc-section > details > summary { display: flex; align-items: baseline; gap: 0.45em; }
+.lc-acc-section > details > summary::before { content: "\25B8"; color: #94a3b8; font-size: 0.8em; }
+.lc-acc-section > details[open] > summary::before { content: "\25BE"; }
+.lc-acc-section > details > summary > h1, .lc-acc-section > details > summary > h2,
+.lc-acc-section > details > summary > h3, .lc-acc-section > details > summary > h4 {
+  margin: 0; border: 0; font-size: 1.15em; }
+
 .lc-radio-group { margin: 1em 0; }
 .lc-radio-options { margin-bottom: 1em; padding: 0.6em 1em; background: #f5f5f5; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 0.2em 0; }
 .lc-radio-options label { margin-right: 1.4em; cursor: pointer; font-weight: 500; }
@@ -131,6 +140,47 @@ Auto-included by docs/_layouts/default.html.
       wrap.appendChild(d);
     });
     el.parentNode.replaceChild(wrap, el);
+  }
+
+  /* THE SAME ACCORDION, SOURCED FROM A HEADING — `{: .accordion }` on the
+     line under a `## Title` (Michel, 2026-08-31: "an accordion for each of
+     the sections, keep the desk open" — and, the day after: no new component
+     type for it, the accordion IS the instrument). Everything down to the
+     next heading of the same or higher level moves into the panel; the
+     heading itself becomes the summary, so the page keeps its typography,
+     its id and its anchor. `open="true"` starts it unfolded. The content is
+     MOVED, never re-rendered: what a section holds still exists — and still
+     runs — while the panel is shut. */
+  var HEAD_SEL = "h1.accordion, h2.accordion, h3.accordion, h4.accordion";
+
+  function upgradeAccordionHeading(h) {
+    if (h.dataset.lcSection) return;
+    h.dataset.lcSection = "1";
+    var level = parseInt(h.tagName.slice(1), 10);
+    var wrap = document.createElement("div");
+    wrap.className = "lc-accordion lc-acc-section";
+    /* a section panel is page FURNITURE: it wears data-section, never
+       data-lc-id — heading ids are hyphenated and the page's own rule wants
+       component ids to be Python identifiers (caught by c4_gating, 2026-08-31).
+       The heading itself moves into the summary, so its anchor still works. */
+    if (h.id) wrap.setAttribute("data-section", h.id);
+    var d = document.createElement("details");
+    if (String(h.getAttribute("open") || "").toLowerCase() === "true") d.open = true;
+    var sum = document.createElement("summary");
+    var body = document.createElement("div");
+    body.className = "lc-ac-body";
+    d.appendChild(sum);
+    d.appendChild(body);
+    wrap.appendChild(d);
+    h.parentNode.insertBefore(wrap, h);
+    var n = wrap.nextSibling;
+    while (n) {
+      var nx = n.nextSibling;
+      if (n !== h && n.nodeType === 1 && /^H[1-6]$/.test(n.tagName)
+          && parseInt(n.tagName.slice(1), 10) <= level) break;
+      (n === h ? sum : body).appendChild(n);
+      n = nx;
+    }
   }
 
   function upgradeTabsInline(el) {
@@ -304,7 +354,14 @@ Auto-included by docs/_layouts/default.html.
     window.lcRegisterUpgrader(".highlighter-rouge.radio, pre.radio", upgradeRadio);
     window.lcRegisterUpgrader(".highlighter-rouge.grid, pre.grid", upgradeGrid);
     window.lcRegisterUpgrader(".highlighter-rouge.cards, pre.cards", upgradeCards);
+    window.lcRegisterUpgrader(HEAD_SEL, upgradeAccordionHeading);
   }
+  /* panel the sections BEFORE the heavy components paint — a diagram or a
+     grid that first measures itself inside a shut panel measures zero. This
+     include parses after <main>, so the page's headings are already here. */
+  document.querySelectorAll(HEAD_SEL).forEach(function (h) {
+    try { upgradeAccordionHeading(h); } catch (e) {}
+  });
 
 })();
 </script>

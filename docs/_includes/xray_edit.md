@@ -855,8 +855,28 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
        repo and key are a PAIR set together at join; if the key does not
        cover the repo, the write error below says so by name. */
     target: function (fromEl) {
-      return { repo: localStorage.getItem("lc_ed_repo") || "",
-               pat: localStorage.getItem("lc_ed_pat") || "" };
+      var repo = "", pat = "", paired = "";
+      try {
+        repo = localStorage.getItem("lc_ed_repo") || "";
+        pat = localStorage.getItem("lc_ed_pat") || "";
+        paired = localStorage.getItem("lc_ed_session") || "";
+      } catch (e) {}
+      /* AND IT BELONGS TO THIS SESSION. The address the LMS frames names the
+         class it teaches (hub=<session>, baked by the door); the pairing
+         records the class it was made for. When they differ, the bench on
+         this device is LAST TERM's: reading it serves a lesson already done,
+         and writing it files this year's work in last year's repo — silently
+         (Michel, 2026-08-31, module_00 in Canvas: the dogs arrived repaired,
+         from build-ai-summer26-…, and Save said nothing). No bench, then,
+         until setup pairs this session's one. */
+      var want = "";
+      try { location.search.replace(/^\?/, "").split("&").forEach(function (kv) {
+        var kvp = kv.split("=");
+        if (kvp[0] === "hub") want = decodeURIComponent(kvp[1] || "");
+      }); } catch (e) {}
+      if (want && paired !== want)
+        return { repo: "", pat: pat, gap: want };
+      return { repo: repo, pat: pat };
     },
     /* WHERE in the bench? The author's spelling decides the shelf:
          save="dogs.yaml"        → beside the lesson — the page's own folder,
