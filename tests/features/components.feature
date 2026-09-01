@@ -286,3 +286,15 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then each tone reaches its own cards
     And an unknown tone leaves the card plain
+
+  Scenario: input() is refused, because waiting for a console freezes the page
+    MicroPython runs on the page's own thread, so input() waits for a stdin
+    the browser does not have and the whole tab stops answering — no error,
+    no way back but a reload (measured, 2026-09-01). Students arrive with the
+    assignment's own code, and that code starts with input(). The runner says
+    why, and where input() does work.
+
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    And I type "name = input(\"name: \")" into the first runner and run it
+    Then the runner explains that a page has no console, and the page is alive
