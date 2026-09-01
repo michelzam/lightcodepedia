@@ -1099,7 +1099,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
 
     // disconnect
     document.getElementById('lc-ud-disconnect').addEventListener('click', function(){
-      ['lc_ed_pat','lc_ed_repo','lc_gh_user','lc_gh_user_for'].forEach(function(k){ localStorage.removeItem(k); });
+      ['lc_ed_pat','lc_ed_repo','lc_ed_session','lc_gh_user','lc_gh_user_for'].forEach(function(k){ localStorage.removeItem(k); });
       location.reload();
     });
   }

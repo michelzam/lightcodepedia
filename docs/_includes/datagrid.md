@@ -481,8 +481,9 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
           : null;
         var refreshKeep = function () {
           var t = window.lcBench.target(wrapper);
-          var why = t.gap
-            ? "Your bench for “" + t.gap + "” isn’t paired on this device yet — open Setup"
+          var why = t.stale
+            ? (t.gap ? "Your bench for “" + t.gap + "” isn’t paired on this device — open Setup"
+                     : "This device’s bench belongs to another class — open Setup to pair this one")
             : (!t.pat || !t.repo ? "Join the course (connect your key) to keep your work" : "");
           keep.disabled = !!why;
           keep.title = why || "Keep these rows in your own space (" +
