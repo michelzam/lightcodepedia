@@ -571,3 +571,30 @@ def step_tone_unknown(context):
            }"""
     )
     assert "lc-tone-" not in cls, "an unknown tone invented a look: %r" % cls
+
+
+# ── the runner refuses input() rather than freezing the tab ─────────────────
+
+@when('I type "{code}" into the first runner and run it')
+def step_type_and_run(context, code):
+    box = context.page.locator(".lc-pyrun").first
+    ed = box.locator("textarea, [contenteditable=true]").first
+    ed.click()
+    context.page.keyboard.press("Control+a")
+    context.page.keyboard.type(code)
+    # fire it asynchronously: a frozen tab would swallow the click itself and
+    # the failure would look like a flaky selector instead of the hang it is
+    context.page.evaluate(
+        "() => setTimeout(() => document.querySelector"
+        "('.lc-pyrun .lc-pyrun-run').click(), 0)")
+    context.page.wait_for_timeout(2500)
+
+
+@then("the runner explains that a page has no console, and the page is alive")
+def step_input_refused(context):
+    # alive at all — the whole point: a blocked thread answers nothing
+    context.page.wait_for_function("() => true", timeout=8000)
+    out = context.page.evaluate(
+        "() => document.querySelector('.lc-pyrun').innerText")
+    assert "no console" in out, out[-300:]
+    assert "PythonAnywhere" in out, out[-300:]

@@ -405,9 +405,32 @@ Auto-included by docs/_layouts/default.html.
       return loading;
     }
 
+    /* input() HANGS THE TAB, IT DOES NOT FAIL. MicroPython runs synchronously
+       on the page's own thread and waits for a stdin the browser does not
+       have — so the whole page stops answering, with no error and no way
+       back but a reload (measured, 2026-09-01). Students arrive here with
+       the assignment's own code, and that code starts with input(). So the
+       runner refuses it, in one friendly line, and says where input() DOES
+       work. The check is deliberately dumb: a call to the builtin, quoted
+       occurrences and comments included, because a false positive costs a
+       sentence and a false negative costs the page. */
+    var INPUT_CALL = /(^|[^\w.])input\s*\(/;
+    function refusesInput(code) {
+      return INPUT_CALL.test(String(code || ""));
+    }
+
     function runUserCode(m) {
       buf = "";
       view.innerHTML = "";
+      if (refusesInput(codeEl.value)) {
+        setOut("input() cannot run in a browser page — there is no console to "
+             + "type into, and waiting for one would freeze this tab.\n"
+             + "Here, the page itself asks the question (a form), or you set "
+             + "the value in the code:  name = \"Ada\"\n"
+             + "In a real terminal — PythonAnywhere, or Python on your "
+             + "machine — input() works exactly as written.", true);
+        return false;
+      }
       /* shared interpreter: point `show` (and print) at THIS editor for
          the duration of the run — runPython is synchronous */
       window._lcMpyOut = function (t) { buf += t; };
