@@ -845,6 +845,11 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
      persists HERE, in whoever-is-reading's bench". One reader/writer pair,
      used by every component with a save= knob, so the contract cannot
      drift: fence = the author's seed, bench file = the learner's truth. */
+  /* the stamp an AUTHOR's pairing wears: their own repo, connected by hand
+     in the editor — valid everywhere except a page that names a class. */
+  var AUTHOR_PAIR = "lc:author";
+  window.lcAuthorPair = AUTHOR_PAIR;
+
   window.lcBench = {
     /* WHICH bench? The learner's OWN connected space — ALWAYS, and never the
        repo the page happens to render from. Canvas gives the whole class ONE
@@ -874,8 +879,20 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         var kvp = kv.split("=");
         if (kvp[0] === "hub") want = decodeURIComponent(kvp[1] || "");
       }); } catch (e) {}
-      if (want && paired !== want)
-        return { repo: "", pat: pat, gap: want };
+      /* NO STAMP, NO BENCH. A pairing made before this rule carries no
+         session at all, and the address is not always there to appeal to —
+         a cached door page serves no hub=, and then an unstamped pairing
+         would sail straight through. So an unstamped pairing is never used:
+         one visit to setup re-pairs a learner, connecting the editor
+         re-stamps an author. Refusing costs a click; inheriting costs a
+         class their lesson and files their work in last term's repo. */
+      if (repo && !paired)
+        return { repo: "", pat: pat, gap: want, stale: true };
+      if (repo && paired === AUTHOR_PAIR)
+        return want ? { repo: "", pat: pat, gap: want, stale: true }
+                    : { repo: repo, pat: pat };
+      if (repo && want && paired !== want)
+        return { repo: "", pat: pat, gap: want, stale: true };
       return { repo: repo, pat: pat };
     },
     /* WHERE in the bench? The author's spelling decides the shelf:
