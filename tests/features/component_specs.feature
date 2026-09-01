@@ -285,7 +285,7 @@ Feature: Component specs run green
     whose cells stopped following the learner's words fails here.
 
     Given I have a clean browser page
-    When I navigate to "/components/examples/pitch_elevator"
+    When I navigate to "/courses/python/pitch_elevator"
     And I wait for the page to be interactive
     And I wait for the selector ".lc-form-grid .ag-row"
     And I run the page's embedded features
