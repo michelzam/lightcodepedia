@@ -27,5 +27,5 @@ your own words come back as a program.
 
 ## 🪜 Explore
 
-{: .fodler}
+{: .folder}
 
