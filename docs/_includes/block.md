@@ -95,6 +95,12 @@ Auto-included by docs/_layouts/default.html.
        hand-picked subset — the registry covers components that live in other
        includes (chart, dataset-bound widgets, scene3d…) too. */
     window.lcScanElement(wrap);
+    /* CONTENT INJECTED AFTER LOAD IS STILL THE PAGE. A block renders its
+       markdown once the runtime is up, so any {= cell } or visible="= …" it
+       carries was collected by nobody and stayed a literal on screen
+       (Michel, 2026-09-01, the pitch elevator). The rescan is idempotent and
+       document-wide — the same call the runner already makes. */
+    if (window.lcCellsRescan) window.lcCellsRescan();
   }
 
   /* cols="3"    → three equal columns, as it always was

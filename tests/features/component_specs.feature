@@ -278,3 +278,15 @@ Feature: Component specs run green
     And I wait for the page to be interactive
     And I run the page's embedded features
     Then every embedded feature passes
+
+  Scenario: Pitch elevator spec passes
+    The students' example: an app on the left, its Python on the right. Its
+    own proof drives the form and reads the printed line back, so a page
+    whose cells stopped following the learner's words fails here.
+
+    Given I have a clean browser page
+    When I navigate to "/components/examples/pitch_elevator"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-form-grid .ag-row"
+    And I run the page's embedded features
+    Then every embedded feature passes

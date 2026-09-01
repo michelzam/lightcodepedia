@@ -115,6 +115,7 @@ Auto-included by docs/_layouts/default.html.
         loadMarked(function() {
           body.innerHTML = markdownBody(s.body);
           window.lcScanElement(body); /* IAL + full upgrade pipeline */
+          if (window.lcCellsRescan) window.lcCellsRescan();  /* its cells too */
           /* mirror live counters into the summary: any element in the body
              with data-acc-summary shows its value in the title, visible
              even when the section is shut */

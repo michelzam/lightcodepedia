@@ -29,6 +29,14 @@ def step_run_features(context):
         "document.querySelectorAll('.lc-feature')"
         ".forEach(function(c){ c.classList.remove('lc-feature-hidden'); });"
     )
+    # A proof may live in a folded section — an accordion panel is shut until
+    # a reader asks, and a shut <details> has no visible button (the pitch
+    # elevator keeps its proof folded, 2026-09-01). Open every fold first:
+    # where the promises live is the author's choice, not the suite's.
+    context.page.evaluate(
+        "document.querySelectorAll('details').forEach(function(d){ d.open = true; });"
+    )
+    context.page.wait_for_timeout(200)
     btns = context.page.locator(".lc-feature .lc-feature-run")
     btns.first.wait_for(state="visible", timeout=20_000)
     n = btns.count()
