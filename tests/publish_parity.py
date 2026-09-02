@@ -20,6 +20,10 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXCLUDES = os.path.join(ROOT, ".github", "rsync-excludes", "tests.txt")
+DOCS_EXCLUDES = os.path.join(ROOT, ".github", "rsync-excludes", "docs.txt")
+UX_WORKFLOW = os.path.join(ROOT, ".github", "workflows", "ux-tests.yml")
+# every docs/assets/… path the test bot WRITES, as the workflow spells it
+BOT_ASSET = re.compile(r"docs/assets/([\w.-]+\.(?:json|html))")
 FEATURES = os.path.join(ROOT, "tests", "features")
 STEPS = os.path.join(ROOT, "tests", "steps")
 
@@ -94,6 +98,21 @@ def lab_only_travellers(excluded):
     return out
 
 
+def bot_assets_that_travel():
+    """A result file is written by whichever node ran the tests, so it must
+    never ride the gate: a lab verdict landing on pedia sits on the board for
+    ever, foreign and stale. ux-fast.json did exactly that — every sibling was
+    listed, that one was not (Michel, 2026-09-02: "not for the fast check").
+    Anything the UX workflow writes under docs/assets must be excluded."""
+    if not os.path.isfile(DOCS_EXCLUDES) or not os.path.isfile(UX_WORKFLOW):
+        return []                        # not the lab — nothing to check
+    with open(DOCS_EXCLUDES, encoding="utf-8") as fh:
+        listed = {ln.strip() for ln in fh if ln.strip() and not ln.startswith("#")}
+    with open(UX_WORKFLOW, encoding="utf-8") as fh:
+        written = set(BOT_ASSET.findall(fh.read()))
+    return sorted(n for n in written if ("assets/" + n) not in listed)
+
+
 def main():
     excluded = excluded_names()
     if excluded is None:
@@ -126,14 +145,20 @@ def main():
               "private tree the gate never copies) — every scenario in it "
               "fails in pedia. List it and its steps in tests.txt." % name)
 
+    strays = bot_assets_that_travel()
+    for name in strays:
+        print("docs/assets/%s is written by the test bot but is not in "
+              "docs.txt — this node's verdict would be published onto the "
+              "next one's board." % name)
+
     if problems:
         print("\n%d published step(s) with no definition in pedia. "
               "Move the step to a module that ships (e.g. common_steps.py)."
               % len(problems))
-    if problems or travellers:
+    if problems or travellers or strays:
         return 1
     print("publish parity: every published feature's steps ship with it, "
-          "and no lab-only page is tested abroad")
+          "no lab-only page is tested abroad, and no verdict travels")
     return 0
 
 

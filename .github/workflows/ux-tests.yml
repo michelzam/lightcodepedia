@@ -200,15 +200,28 @@ jobs:
       # slice — publishing its report would wipe the other 130+ scenarios from
       # ux-results.json. Only the full suite (pedia deploy, or a manual full
       # dispatch) updates the canonical results shown on /nodes.
+      # NOT always(): a cancelled run has a TRUNCATED report. behave opens
+      # docs/assets/ux-report.html at startup and writes it at the end, so a
+      # run superseded by the next publish is killed holding a 0-byte file —
+      # and always() ran anyway and committed it, blanking the board's Gherkin
+      # report (Michel, 2026-09-02: "the gherkin report is empty!"). !cancelled()
+      # keeps the point of always() — a run whose SCENARIOS failed still
+      # publishes its verdict — and drops only the killed ones.
       - name: Build per-scenario results JSON
-        if: always() && env.ONLY == '' && env.SCENARIOS == '' && env.FAST != 'true'
+        if: ${{ !cancelled() && env.ONLY == '' && env.SCENARIOS == '' && env.FAST != 'true' }}
         run: python tests/report_to_results.py ux-report.json docs/assets/ux-results.json
 
       - name: Publish results to main
-        if: always() && env.ONLY == '' && env.SCENARIOS == '' && env.FAST != 'true'
+        if: ${{ !cancelled() && env.ONLY == '' && env.SCENARIOS == '' && env.FAST != 'true' }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Belt and braces behind the guard above: an empty report is never
+          # news. Keep the last good one rather than publish a blank page.
+          if [ ! -s docs/assets/ux-report.html ]; then
+            echo "::warning::report came out empty — keeping the published one"
+            git checkout -- docs/assets/ux-report.html || true
+          fi
           git add docs/assets/ux-results.json docs/assets/ux-report.html docs/assets/ux-summary.json docs/assets/metrics.json docs/assets/metrics_trend.json
           if git diff --cached --quiet; then
             echo "No change in results."
