@@ -4,6 +4,8 @@ Every app starts as a **sentence**. Say who it is for, say what it changes —
 then meet the three steps that turn that sentence into a program: **read**,
 **compute**, **write back**.
 
+## 🏁 Ready?
+
 ```
 ### 🎤 The pitch
 Fill the blanks out loud, in one breath. That is the whole ride: **an
