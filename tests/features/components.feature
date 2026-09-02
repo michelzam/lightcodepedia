@@ -287,24 +287,26 @@ Feature: Component gallery behaviors
     Then each tone reaches its own cards
     And an unknown tone leaves the card plain
 
-  Scenario: input() is refused, because waiting for a console freezes the page
-    MicroPython runs on the page's own thread, so input() waits for a stdin
-    the browser does not have and the whole tab stops answering — no error,
-    no way back but a reload (measured, 2026-09-01). Students arrive with the
-    assignment's own code, and that code starts with input(). The runner says
-    why, and where input() does work.
+  Scenario: input() asks in the console, and a loop asks as often as it needs
+    MicroPython runs on the page's own thread, so a real input() would wait
+    for a stdin the browser does not have and freeze the tab (measured,
+    2026-09-01). So a pass runs to the first unanswered question and stops;
+    the reader answers in the console; the script runs again from the top
+    with that answer in hand. The queue is keyed by CALL ORDER — which is
+    why a while-loop needs nothing special (Michel, 2026-09-02).
 
     When I navigate to "/components/run"
     And I wait for the page to be interactive
-    And I type "name = input(\"name: \")" into the first runner and run it
-    Then the runner explains that a page has no console, and the page is alive
+    And I run a program that adds numbers until a blank line
+    And I answer "3", then "4", then nothing
+    Then the console shows the whole conversation, ending in "total: 7"
 
-  Scenario: A bare folder lists the folder it lives in
-    "The folder I live in" has to know where it lives. Inside a runner the
-    render root supplies the directory; on a SITE page there was none, so
-    Python4All's cover said "No pages in this folder yet" while holding two
-    (Michel, 2026-09-01 — the documented idiom, a link and a bare IAL).
+  Scenario: Two prints are two lines
+    The build hands stdout one LINE at a time, without its newline, so two
+    prints arrived as "ab" and expected="0\n1\n2" — which this component's
+    own page teaches — could never match.
 
-    When I navigate to "/courses/python/"
+    When I navigate to "/components/run"
     And I wait for the page to be interactive
-    Then the shelf lists "🛗 Pitch elevator"
+    And I run a program that prints two lines
+    Then the console shows them on two lines

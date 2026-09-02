@@ -277,11 +277,50 @@ print("math loaded!")
 - [ ] A pop-up asking if you want to save the variable.
 {: .quiz }
 
+## 🙋 `input()` — asking the reader
+
+`input(prompt)` works. It doesn't freeze the tab, because it doesn't wait: the pass stops at the first unanswered question, the console shows the prompt with a box under it, and your answer restarts the script from the top with that answer already in hand. You see the finished transcript, exactly as a terminal would print it.
+
+```python
+name = input("your name: ")
+print(f"Hello, {name}! 🎉")
+```
+{: .run #ask_name rows="3" }
+
+A loop needs nothing special — answers are queued by **call order**, so the second time around the loop asks the second question:
+
+```python
+total = 0
+while True:
+    line = input("number (blank to stop): ")
+    if not line:
+        break
+    total += int(line)
+print("total:", total)
+```
+{: .run #ask_loop rows="8" }
+
+Type `3`, Enter, `4`, Enter, then just Enter. Three questions, one transcript, `total: 7`.
+
+> Because each pass re-runs the whole script, keep asking scripts side-effect free —
+> the same rule as a pure function. Changing an answer mid-way re-asks from that
+> question on, which is the behaviour readers expect.
+{: .speaker-note }
+
+**Q:** Your script asks three times inside a loop. How many times does the code actually run from the top?
+
+- [ ] Once — the runner pauses the interpreter.
+- [x] Four times — one pass per answer, plus the final pass that finishes.
+- [ ] Three times, in three separate tabs.
+- [ ] It doesn't run at all; `input()` is refused.
+{: .quiz }
+
 ## 🧰 Built-in helpers (always available)
 
 | Symbol | What it does |
 |---|---|
 | `print(…)` | Writes to the dark output pane |
+| `input(prompt)` | Asks in the console, then re-runs the script with the answer |
 | `Object(**kw)` | Simple attribute holder. Pair with `bound=` to show a live card |
 | `show(obj, title=None)` | Renders `obj` as a card below the output |
 | `show.clear()` | Removes all cards |
@@ -293,7 +332,7 @@ print("math loaded!")
 
 - **Slim stdlib.** The browser Python[^wasm] has `json`, `math`, `re`, `collections`, `itertools` and more — but no `numpy`, `pandas`, `requests`, or any C extension. For the full Python ecosystem you'd switch to Pyodide (~10 MB).
 - **No filesystem.** `open()` doesn't work. Use `yaml.load()`, inline strings, or `show()` for data.
-- **Single thread.** No `threading`, no `asyncio`. Code blocks the tab while running (fast scripts only).
+- **Single thread.** No `threading`, no `asyncio`. Code blocks the tab while running (fast scripts only). That's why `input()` re-runs the script instead of waiting — see above.
 - **No persistence.** Variables reset between page loads. Use `bound=` to keep state visible between runs within the same session.
 
 ## 🏁 Final exam — boss level

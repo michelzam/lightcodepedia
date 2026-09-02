@@ -47,6 +47,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-out { margin: 0; padding: 0.9em 1em; background: #1e1e1e; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; min-height: 2em; max-height: 300px; overflow-y: auto; }
 .lc-pyrun-out.lc-empty { color: #888; font-style: italic; }
 .lc-pyrun-out .lc-err { color: #ff6b6b; }
+/* the question, and the line the reader answers on — a terminal's own look:
+   the caret sits where the prompt ends, and Enter sends it */
+.lc-pyrun-ask { display: inline; }
+.lc-pyrun-ask-box { background: transparent; border: 0; border-bottom: 1px solid #4d4d4d;
+  color: #9cdcfe; font: inherit; outline: none; min-width: 8em; padding: 0 0.15em; caret-color: #9cdcfe; }
+.lc-pyrun-ask-box:focus { border-bottom-color: #9cdcfe; }
 .lc-pyrun-view { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 0.9em 1em; background: #fafbfc; border-top: 1px solid #e0e0e0; }
 .lc-pyrun-view:empty { display: none; }
 .lc-pyrun-view .lc-rt-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 0.8em 1em; background: white; transition: transform 0.15s, box-shadow 0.15s; }
@@ -170,9 +176,16 @@ Auto-included by docs/_layouts/default.html.
     window._lcMpyP = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
       .then(function (mjs) {
         return mjs.loadMicroPython({
-          stdout: function (t) { if (window._lcMpyOut) window._lcMpyOut(t); },
+          /* THE BUILD HANDS US LINES, NOT BYTES: with a function hook,
+             MicroPython calls stdout once per line WITHOUT its newline — so
+             two prints arrived as "ab", and `expected="0\n1\n2"`, which this
+             component's own docs teach, could never match (found while
+             building input(), 2026-09-02). Put the newline back, unless a
+             build ever hands one over. */
+          stdout: function (t) { if (window._lcMpyOut) window._lcMpyOut(/\n$/.test(t) ? t : t + "\n"); },
           stderr: function (t) {
-            if (window._lcMpyOut) window._lcMpyOut(t);
+            var line = /\n$/.test(t) ? t : t + "\n";
+            if (window._lcMpyOut) window._lcMpyOut(line);
             else if (window.console) console.warn("[lc mpy stderr]", t);
           }
         });
@@ -249,6 +262,41 @@ Auto-included by docs/_layouts/default.html.
     "    def __repr__(self):",
     "        attrs = ', '.join(k + '=' + repr(v) for k, v in self.__dict__.items())",
     "        return 'Object(' + attrs + ')'",
+    /* input() WITHOUT A CONSOLE. MicroPython runs on the page's own thread,
+       so a real input() would wait for a stdin the browser does not have and
+       freeze the tab (measured, 2026-09-01). Instead the call is ANSWERED
+       FROM A QUEUE and, when the queue runs dry, it stops the pass and says
+       which question is unanswered; the driver asks the reader and runs the
+       script again from the top with one more answer in hand. The queue is
+       keyed by CALL ORDER, so a loop needs nothing special — five questions
+       in a while are just calls 1..5 (Michel asked exactly this, 2026-09-02).
+       Each answer remembers its prompt: if a re-run asks something else at
+       that position, the program changed its mind and the driver drops the
+       answers from there on. */
+    "import js",
+    "import json as _lc_json",
+    "class _LcNeedInput(Exception):",
+    "    pass",
+    "_lc_answers = []",
+    "_lc_ask_i = 0",
+    "def _lc_load_answers():",
+    "    global _lc_answers, _lc_ask_i",
+    "    _lc_ask_i = 0",
+    "    try:",
+    "        _lc_answers = _lc_json.loads(str(js.window._lcInputAnswers or '[]'))",
+    "    except Exception:",
+    "        _lc_answers = []",
+    "def input(prompt=''):",
+    "    global _lc_ask_i",
+    "    p = str(prompt)",
+    "    i = _lc_ask_i",
+    "    _lc_ask_i = i + 1",
+    "    if i < len(_lc_answers) and _lc_answers[i][0] == p:",
+    "        v = _lc_answers[i][1]",
+    "        print(p + v)",   /* the transcript a terminal would show */
+    "        return v",
+    "    js.window._lcInputWant = _lc_json.dumps([i, p])",
+    "    raise _LcNeedInput(p)",
     "_BOUND_ID = 'lc-pyrun-__ID__-bound'",
     "def _render_bound(name):",
     "    g = globals()",
@@ -405,41 +453,90 @@ Auto-included by docs/_layouts/default.html.
       return loading;
     }
 
-    /* input() HANGS THE TAB, IT DOES NOT FAIL. MicroPython runs synchronously
-       on the page's own thread and waits for a stdin the browser does not
-       have — so the whole page stops answering, with no error and no way
-       back but a reload (measured, 2026-09-01). Students arrive here with
-       the assignment's own code, and that code starts with input(). So the
-       runner refuses it, in one friendly line, and says where input() DOES
-       work. The check is deliberately dumb: a call to the builtin, quoted
-       occurrences and comments included, because a false positive costs a
-       sentence and a false negative costs the page. */
-    var INPUT_CALL = /(^|[^\w.])input\s*\(/;
-    function refusesInput(code) {
-      return INPUT_CALL.test(String(code || ""));
+    /* ── input(), by ask-and-replay ─────────────────────────────────────
+       One pass runs to the first unanswered question and stops there; the
+       reader answers in the console; the script runs AGAIN from the top with
+       that answer in the queue. n questions cost n+1 passes, and the reader
+       sees only the last one — the transcript, prompts and answers included,
+       exactly as a terminal shows it.
+
+       A loop needs nothing special: the queue is keyed by call order.
+       What it cannot survive is a program that asks a DIFFERENT question at
+       the same position on a re-run (a random or timed path) — the prompts
+       are recorded with the answers, and a mismatch drops the tail. And a
+       program that asks without end would replay for ever, so the ceiling
+       below stops it with a sentence instead of a hang. */
+    var MAX_ASKS = 25;
+    var answers = [];              /* [[prompt, value], …] — this press only */
+
+    function askInConsole(prompt) {
+      return new Promise(function (resolve) {
+        out.classList.remove("lc-empty");
+        out.textContent = buf;                       /* what printed so far */
+        var line = document.createElement("span");
+        line.className = "lc-pyrun-ask";
+        line.textContent = prompt;
+        var box = document.createElement("input");
+        box.type = "text";
+        box.className = "lc-pyrun-ask-box";
+        box.setAttribute("aria-label", prompt || "input");
+        line.appendChild(box);
+        out.appendChild(line);
+        box.focus();
+        box.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); resolve(box.value); }
+          else if (e.key === "Escape") { e.preventDefault(); resolve(null); }
+        });
+      });
+    }
+
+    /* the whole press: passes, questions, and the verdict */
+    function runAsking(m) {
+      answers = [];
+      var pass = 0;
+      function once() {
+        window._lcInputAnswers = JSON.stringify(answers);
+        window._lcInputWant = "";
+        var ok = runUserCode(m);
+        var want = window._lcInputWant;
+        if (!want) return Promise.resolve(ok);       /* finished, green or red */
+        if (++pass > MAX_ASKS) {
+          setOut(buf + "\n… this program asks more questions than a page can "
+               + "hold (" + MAX_ASKS + "). A conversation that long belongs in a "
+               + "terminal, or in a REPL block.", true);
+          return Promise.resolve(false);
+        }
+        var asked;
+        try { asked = JSON.parse(want); } catch (e) { return Promise.resolve(ok); }
+        answers.length = asked[0];                   /* the tail is stale */
+        return askInConsole(asked[1]).then(function (value) {
+          if (value === null) {                      /* Escape — leave it be */
+            setOut(buf + "\n(cancelled — nothing was asked twice)", false);
+            return false;
+          }
+          answers.push([asked[1], value]);
+          return once();
+        });
+      }
+      return once();
     }
 
     function runUserCode(m) {
       buf = "";
       view.innerHTML = "";
-      if (refusesInput(codeEl.value)) {
-        setOut("input() cannot run in a browser page — there is no console to "
-             + "type into, and waiting for one would freeze this tab.\n"
-             + "Here, the page itself asks the question (a form), or you set "
-             + "the value in the code:  name = \"Ada\"\n"
-             + "In a real terminal — PythonAnywhere, or Python on your "
-             + "machine — input() works exactly as written.", true);
-        return false;
-      }
       /* shared interpreter: point `show` (and print) at THIS editor for
          the duration of the run — runPython is synchronous */
       window._lcMpyOut = function (t) { buf += t; };
       try { m.runPython(BOOTSTRAP); } catch (e) { }
+      try { m.runPython("_lc_load_answers()"); } catch (e) { }
       try {
         m.runPython(codeEl.value);
         setOut(buf || "(no print output)", false);
         return true;
       } catch (e) {
+        /* an unanswered input() is not an error the reader should read: the
+           driver is about to ask the question and run this again */
+        if (window._lcInputWant) return false;
         setOut(buf + (buf ? "\n" : "") + (e.message || String(e)), true);
         return false;
       } finally {
@@ -467,11 +564,12 @@ Auto-included by docs/_layouts/default.html.
         clearTests();
         status.textContent = "running…";
         status.style.color = "";
-        var ok = runUserCode(m);
-        status.textContent = ok ? "done" : "error";
-        status.style.color = "";
-        repaintBound();
-        checkExpected(ok);
+        return runAsking(m).then(function (ok) {
+          status.textContent = ok ? "done" : "error";
+          status.style.color = "";
+          repaintBound();
+          checkExpected(ok);
+        });
       }).catch(function(e){
         setOut("Failed to load MicroPython: " + (e.message || String(e)), true);
       });

@@ -61,7 +61,7 @@ With <simple code that comforts, not intimidates>
 """
 
 # read  (the box above plays this part)
-name: str = "your name"
+name: str = input("your name: ")
 
 # computation
 message: str = f"Hi {name}, welcome to coding. Take it slow, like hot chocolate."
@@ -71,11 +71,10 @@ print(message)
 ```
 {: .run rows="16" }
 
-**Why not `input()` here?** A web page has no console to type into. `input()`
-would sit there waiting for one and freeze the tab, so this runner refuses it
-and says so. In a real terminal — PythonAnywhere, or Python on your machine —
-`input("name: ")` is exactly the right first line, and it plays the part the
-box above plays here.
+**About `input()`.** Press ▶ Run and the console asks you for the name, with a
+box to type into — the same `input("your name: ")` you would write in a real
+terminal, on PythonAnywhere or on your own machine. It is the code twin of the
+form above: the form is the app's way of asking, `input()` is the program's way.
 
 ## 🦄 Does it work?
 {: .accordion }

@@ -1608,6 +1608,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         if (bp && bp.classList.contains("ed-active")) buildGrid();  // repaint with icons
         var dp = document.getElementById("ed-diagram-pane");
         if (dp && !dp.classList.contains("ed-hidden")) renderDiagram();  // repaint once model lands
+        if (window._lcEdFold) window._lcEdFold.relabel();  // markers get their icons
       })
       .catch(function () { _compModel = {}; });
   }
@@ -2338,7 +2339,22 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var id = caretFold();
       if (id != null) { e.preventDefault(); unfoldOne(id); }
     });
-    window._lcEdFold = { foldAll: foldAll, unfoldAll: unfoldAll,
+    function relabel() {
+      /* the icon comes from the component model, which arrives over the
+         network — a page folded before it lands wears bare markers
+         (pedia, 2026-09-02). Re-stamp the labels in place when it does:
+         same ids, same regions, nothing the reader touched moves. */
+      var lines = dv().split("\n"), hit = false;
+      for (var i = 0; i < lines.length; i++) {
+        var id = markId(lines[i]);
+        if (id == null || folds[id] == null) continue;
+        var region = folds[id].split("\n");
+        lines[i] = "▸ " + foldLabel(region) + " · " + region.length + " lines" + encId(id);
+        hit = true;
+      }
+      if (hit) setDisplay(lines.join("\n"));
+    }
+    window._lcEdFold = { foldAll: foldAll, unfoldAll: unfoldAll, relabel: relabel,
                          count: function () { return Object.keys(folds).length; } };
 
     function render() {

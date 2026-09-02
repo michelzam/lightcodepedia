@@ -427,3 +427,41 @@ def step_lint_only(context, name):
 def step_close_editor(context):
     context.page.locator("#ed-close-btn").click()
     context.page.wait_for_timeout(400)
+
+
+@given("the component model is served late")
+def step_hold_comp_model(context):
+    # hold the RESPONSE in the page, the way a slow network does: the editor
+    # folds with no icons, exactly as pedia did, and nothing on this side waits
+    context.page.add_init_script("""
+      (() => {
+        const real = window.fetch;
+        window._lcHeldComp = [];
+        window.fetch = function (u, o) {
+          if (String(u).indexOf("component-model.json") >= 0 && !window._lcCompFreed) {
+            return new Promise((ok, no) => {
+              window._lcHeldComp.push(() => real(u, o).then(ok, no));
+            });
+          }
+          return real(u, o);
+        };
+        window._lcReleaseComp = () => {
+          window._lcCompFreed = true;
+          const q = window._lcHeldComp; window._lcHeldComp = [];
+          q.forEach(f => f());
+        };
+      })();
+    """)
+
+
+@when("the component model finally arrives")
+def step_release_comp_model(context):
+    disp = ("() => Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')"
+            ".get.call(document.getElementById('ed-input'))")
+    assert "\U0001F6E2" not in context.page.evaluate(disp), \
+        "the model was not held back — this scenario proves nothing"
+    context.page.evaluate("window._lcReleaseComp()")
+    context.page.wait_for_function(
+        "() => /\\uD83D\\uDEE2|\\uD83E\\uDDEC/.test("
+        "Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')"
+        ".get.call(document.getElementById('ed-input')))", timeout=15_000)

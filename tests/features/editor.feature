@@ -153,6 +153,23 @@ Feature: Page editor — ✨ AI edit dialog
     And the markers wear their block's icon and type
     But the full source is still what a save would read
 
+  Scenario: Late component model — the markers still get their icons
+    The icon comes from component-model.json, fetched over the network. On
+    pedia it landed AFTER the fold and every marker showed bare (2026-09-02).
+    The markers are re-stamped when the model arrives.
+
+    Given I have a clean browser page
+    And a connected editor whose repo serves a two-fence page
+    And the component model is served late
+    When I navigate to "/events"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And the editor has loaded the page's own file
+    And I switch to the editor "raw" tab
+    And the component model finally arrives
+    Then the markers wear their block's icon and type
+    But the full source is still what a save would read
+
   Scenario: The draft checker knows the classes the draft declares
     A grid binds a CLASS, not only a block id (bind="Student") — the
     checker read that as a broken reference and stamped ⚠ on an honest
