@@ -58,20 +58,39 @@ def as_pattern(phrase):
                                             .replace(r"\{", "{").replace(r"\}", "}")) + "$")
 
 
+# A LAB PAGE, or a private tree read off the working tree. Both are precise
+# on purpose: a stubbed repo path in a runner URL ("gh:acme/demo/courses/…")
+# is not our courses/ and must not be flagged.
+LAB_PAGE = re.compile(r'["\'#][^"\'\s]*/lab/')
+FROM_DISK = re.compile(
+    r'(?:ROOT|__file__)[^\n]*["\'](?:tools|local|hq|courses|hubs)["\']')
+
+
 def lab_only_travellers(excluded):
-    """A feature that drives a /lab/ page cannot run in pedia — the page is
-    not there. Every scenario in it fails with a 404 nobody reads as a
-    missing exclusion: 17 of the 75 reds on 2026-09-02 were classroom4 and
-    the triptych, green in the lab all along. The exclude list is the fix,
-    and this is what notices when a new suite forgets it.
+    """A suite that reaches something only the lab has cannot run in pedia.
+
+    Every scenario in it fails there with a 404 — or a missing file — that
+    nobody reads as a missing exclusion: 25 of the reds on 2026-09-02 were
+    exactly this, green in the lab all along (classroom4 and the triptych
+    driving /lab/ pages, the quiz desk reaching /lab/canvas_desk from its
+    STEPS, and the bundle suite reading tools/ off the working tree).
+
+    So the search covers a feature AND its companion steps module: the
+    address is as often in one as the other.
     """
     out = []
     for name in sorted(os.listdir(FEATURES)):
         if not name.endswith(".feature") or name in excluded:
             continue
+        texts = []
         with open(os.path.join(FEATURES, name), encoding="utf-8") as fh:
-            if '"/lab/' in fh.read():
-                out.append(name)
+            texts.append(fh.read())
+        steps = name[:-len(".feature")] + "_steps.py"
+        if steps not in excluded and os.path.isfile(os.path.join(STEPS, steps)):
+            with open(os.path.join(STEPS, steps), encoding="utf-8") as fh:
+                texts.append(fh.read())
+        if any(LAB_PAGE.search(t) or FROM_DISK.search(t) for t in texts):
+            out.append(name)
     return out
 
 
@@ -103,8 +122,9 @@ def main():
               % (feature, used, mod))
     travellers = lab_only_travellers(excluded)
     for name in travellers:
-        print("%s drives a /lab/ page — pedia has none, so every scenario in "
-              "it fails there. List it (and its steps) in tests.txt." % name)
+        print("%s reaches something only the lab has (a /lab/ page, or a "
+              "private tree the gate never copies) — every scenario in it "
+              "fails in pedia. List it and its steps in tests.txt." % name)
 
     if problems:
         print("\n%d published step(s) with no definition in pedia. "
