@@ -253,6 +253,18 @@ Feature: Component gallery behaviors
     Then a weighted block splits its width two to one
     And a plain "cols" block still splits evenly
 
+  Scenario: A title turns a block into an app window, and nothing else does
+    Michel, 2026-09-02, reading the pitch elevator: "How come a block gets an
+    app frame? Any block would have that?" No — only one carrying a title=,
+    a knob documented nowhere until today. That is the whole switch: with a
+    title it is a window, without one it stays a card.
+
+    Given I have a clean browser page
+    When I navigate to "/components/block"
+    And I wait for the page to be interactive
+    Then a titled block wears the window bar, and its title
+    And an untitled block is still a plain card
+
   Scenario: A panel keeps the id its author gave it
     A tour that finds a panel by the words in its summary breaks the day the
     wording changes. `{: .accordion #author }` is an address (Michel,
