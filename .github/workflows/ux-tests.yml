@@ -235,8 +235,15 @@ jobs:
       # "the full ux tests in the lab, old from August 3"). A stale number that
       # looks current is worse than no number. Mirroring costs zero minutes and
       # never travels: both files are in the publish gate's exclude list.
+      # A HAND-PRESSED RUN REFRESHES THE BOARD TOO. The mirror used to ride
+      # only the nightly, so after a fix the lab's dashboard kept showing
+      # yesterday's verdict all day with no way to hurry it — Michel read a
+      # board that said 71 while pedia already said 8 (2026-09-02). The
+      # dispatch costs the same zero minutes for the copy itself.
       - name: Mirror pedia's full-suite verdict
-        if: always() && env.FAST == 'true' && github.repository == 'michelzam/lightcodelab'
+        if: >
+          always() && github.repository == 'michelzam/lightcodelab' &&
+          (env.FAST == 'true' || github.event_name == 'workflow_dispatch')
         continue-on-error: true          # a mirror that fails must not fail the check
         run: |
           base=https://lightcodepedia.org/assets
