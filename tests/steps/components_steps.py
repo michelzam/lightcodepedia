@@ -575,34 +575,55 @@ def step_tone_unknown(context):
 
 # ── the runner refuses input() rather than freezing the tab ─────────────────
 
-@when('I type "{code}" into the first runner and run it')
-def step_type_and_run(context, code):
-    box = context.page.locator(".lc-pyrun").first
-    ed = box.locator("textarea, [contenteditable=true]").first
+def _type_into_runner(page, code):
+    box = page.locator(".lc-pyrun").first
+    ed = box.locator("textarea").first
     ed.click()
-    context.page.keyboard.press("Control+a")
-    context.page.keyboard.type(code)
-    # fire it asynchronously: a frozen tab would swallow the click itself and
-    # the failure would look like a flaky selector instead of the hang it is
-    context.page.evaluate(
-        "() => setTimeout(() => document.querySelector"
-        "('.lc-pyrun .lc-pyrun-run').click(), 0)")
-    context.page.wait_for_timeout(2500)
+    page.keyboard.press("Control+a")
+    page.keyboard.type(code)
+    box.locator(".lc-pyrun-run").first.click()
+    return box
 
 
-@then("the runner explains that a page has no console, and the page is alive")
-def step_input_refused(context):
-    # alive at all — the whole point: a blocked thread answers nothing
-    context.page.wait_for_function("() => true", timeout=8000)
-    out = context.page.evaluate(
-        "() => document.querySelector('.lc-pyrun').innerText")
-    assert "no console" in out, out[-300:]
-    assert "PythonAnywhere" in out, out[-300:]
+@when("I run a program that adds numbers until a blank line")
+def step_run_loop_program(context):
+    context.runner = _type_into_runner(context.page, (
+        "total = 0\n"
+        "while True:\n"
+        "    line = input(\"number (blank to stop): \")\n"
+        "    if not line:\n"
+        "        break\n"
+        "    total += int(line)\n"
+        "print(\"total:\", total)"))
 
 
-@then('the shelf lists "{title}"')
-def step_shelf_lists(context, title):
-    cards = context.page.locator(".lc-cards .lc-card h3")
-    expect(cards.first).to_be_visible(timeout=20_000)
-    got = [t.strip() for t in cards.all_text_contents()]
-    assert any(title in t for t in got), got
+@when("I run a program that prints two lines")
+def step_run_two_prints(context):
+    context.runner = _type_into_runner(context.page, 'print("a")\nprint("b")')
+
+
+@when('I answer "{first}", then "{second}", then nothing')
+def step_answer_three(context, first, second):
+    for value in (first, second, ""):
+        context.page.wait_for_selector(".lc-pyrun-ask-box", timeout=25_000)
+        box = context.runner.locator(".lc-pyrun-ask-box").first
+        box.fill(value)
+        box.press("Enter")
+
+
+@then('the console shows the whole conversation, ending in "{tail}"')
+def step_console_transcript(context, tail):
+    out = context.runner.locator(".lc-pyrun-out").first
+    expect(out).to_contain_text(tail, timeout=25_000)
+    text = out.text_content() or ""
+    # every question asked appears with the answer beside it, as a terminal shows it
+    assert text.count("number (blank to stop):") == 3, text
+    assert "3" in text and "4" in text, text
+
+
+@then("the console shows them on two lines")
+def step_two_lines(context):
+    out = context.runner.locator(".lc-pyrun-out").first
+    expect(out).to_contain_text("a", timeout=25_000)
+    text = (out.text_content() or "").strip()
+    assert text.splitlines()[:2] == ["a", "b"], repr(text)
