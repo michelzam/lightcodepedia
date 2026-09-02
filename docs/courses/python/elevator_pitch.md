@@ -1,5 +1,7 @@
 # 🛗 Elevator pitch
 
+## 🏁 Start
+
 Every app starts as a **sentence**. Say who it is for, say what it changes —
 then meet the three steps that turn that sentence into a program: **read**,
 **compute**, **write back**.
