@@ -627,3 +627,24 @@ def step_two_lines(context):
     expect(out).to_contain_text("a", timeout=25_000)
     text = (out.text_content() or "").strip()
     assert text.splitlines()[:2] == ["a", "b"], repr(text)
+
+
+@then("a titled block wears the window bar, and its title")
+def step_titled_block_is_a_window(context):
+    win = context.page.locator(".lc-block-win").first
+    expect(win).to_be_visible(timeout=15_000)
+    expect(win.locator(".lc-win-dots")).to_be_visible()
+    title = (win.locator(".lc-win-title").first.text_content() or "").strip()
+    assert title == "Lucky's day", "the window bar lost its title: %r" % title
+
+
+@then("an untitled block is still a plain card")
+def step_untitled_block_is_a_card(context):
+    # the page is full of plain .block cards — none of them may have grown a bar
+    plain = context.page.locator(".lc-blocks:not(.lc-block-win .lc-blocks)")
+    assert plain.count() > 0, "no plain blocks on the block page"
+    bars = context.page.evaluate(
+        """() => [...document.querySelectorAll('.lc-blocks')]
+             .filter(b => !b.closest('.lc-block-win'))
+             .filter(b => b.querySelector('.lc-win-bar')).length""")
+    assert bars == 0, "%d untitled block(s) grew a window bar" % bars

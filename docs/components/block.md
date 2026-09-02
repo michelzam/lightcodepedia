@@ -35,6 +35,7 @@ Content on the right.
 |-----------|---------|-------------|
 | `cols` | `1` | Number of side-by-side columns — or their **proportions**: `cols="2;1"` gives two columns, the first twice as wide as the second. `;` `:` `,` or a space all separate |
 | `tone` | *(none)* | The register the card belongs to: `paper` the course talking · `app` the app the learner acts in · `tool` the course's own scaffolding. Three values, no others — an unknown word keeps the plain card |
+| `title` | *(none)* | **Turns the card into an app window** — three dots and the title in a bar, the same chrome an embedded runner wears. Give it to content the learner *acts in*; leave it off and you keep the plain card |
 {: .wide_first }
 
 
@@ -44,6 +45,53 @@ Content on the right.
 - `.block` is shorthand for `.blocks cols="1"` — same component.
 - Nested components work inside blocks: `{: .video }`, `{: .quiz }`, `{: .run }`, `{: .button }`.
 - On small screens columns collapse to a single column automatically.
+
+## 🖥 `title=` — the card becomes an app window
+
+A block with a `title=` stops being a card and becomes a **window**: three
+dots, the title in a bar. It is the one look that says *you are in an app
+now* — the same chrome an embedded [runner](/components/runner) wears, so a
+learner reads it the same whether the app is another file or written right
+here.
+
+````markdown
+```
+[Say it](#)
+{: .button #hello_btn }
+```
+{: .block title="Say hello" }
+````
+
+The rule is that simple: **`title=` present → window; absent → card.** Nothing
+else switches it, and no other component is needed to frame an inline app.
+
+````
+### 🐕 Walk Lucky
+Lucky is waiting. Press the button.
+
+[🦴 Give a treat](#)
+{: .button #treat_btn }
+```python
+treat = "Lucky wags his tail. 🐕"
+```
+{: .onclick }
+
+{=treat}
+````
+{: .block title="Lucky's day" }
+
+> `tone=` is a different question — it says which **register** a card belongs
+> to (paper, app, tool), not what it *is*. A window already says "app" out
+> loud, so it needs no tone beside it.
+{: .speaker-note }
+
+**Q:** You wrote a form and a button inside a fenced block and want it to read as an app. What do you add?
+
+- [x] `title="…"` — the block becomes a window
+- [ ] `{: .runner }` — that renders another file, and needs a `src=`
+- [ ] `frame="app"`
+- [ ] Nothing; any block is already an app window
+{: .quiz }
 
 ## Example — single block
 
