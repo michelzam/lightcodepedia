@@ -270,18 +270,18 @@
   "scenarios": 502
  },
  {
-  "run": "2026-09-02T13:52Z",
+  "run": "2026-09-02T14:12Z",
   "pages": 62,
   "heap_max_mb": 42.6,
-  "heap_avg_mb": 13.4,
-  "dom_max": 2264,
-  "errors": 93,
+  "heap_avg_mb": 13.7,
+  "dom_max": 2237,
+  "errors": 180,
   "passed": 489,
   "scenarios": 494
  },
  {
-  "run": "2026-09-02T14:12Z",
-  "pages": 62,
+  "run": "2026-09-02T14:50Z",
+  "pages": 61,
   "heap_max_mb": 42.6,
   "heap_avg_mb": 13.4,
   "dom_max": 2264,
