@@ -279,6 +279,19 @@ Feature: Component specs run green
     And I run the page's embedded features
     Then every embedded feature passes
 
+  Scenario: A reader who opens only the proof still sees it pass
+    The sweep opens every fold before running a page's checks, so a proof
+    that leans on a panel the reader never opened passes here and fails on
+    the page (2026-09-02: the app panel lost its eager "!" and the check
+    went red for everyone but this suite). This one opens what a reader opens.
+
+    Given I have a clean browser page
+    When I navigate to "/courses/python/pitch_elevator"
+    And I wait for the page to be interactive
+    And I open only the "Does it work?" section
+    And I run the features in that section
+    Then every embedded feature passes
+
   Scenario: Pitch elevator spec passes
     The students' example: an app on the left, its Python on the right. Its
     own proof drives the form and reads the printed line back, so a page

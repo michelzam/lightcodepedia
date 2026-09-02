@@ -76,3 +76,27 @@ def step_features_pass(context):
             raise AssertionError(
                 "embedded feature #%d did not pass.\n--- card ---\n%s" % (i, detail)
             )
+
+
+@when('I open only the "{label}" section')
+def step_open_only(context, label):
+    """The reader's path, not the suite's: every other panel stays folded, so a
+    proof that leans on a panel nobody opened is caught here."""
+    context.page.evaluate(
+        """(label) => {
+          document.querySelectorAll('details').forEach(function (d) {
+            var s = d.querySelector('summary');
+            d.open = !!(s && (s.textContent || '').indexOf(label) >= 0);
+          });
+        }""", label)
+    context.page.wait_for_timeout(800)
+
+
+@when("I run the features in that section")
+def step_run_open_features(context):
+    btns = context.page.locator("details[open] .lc-feature .lc-feature-run")
+    btns.first.wait_for(state="visible", timeout=20_000)
+    for i in range(btns.count()):
+        btn = btns.nth(i)
+        btn.scroll_into_view_if_needed(timeout=10_000)
+        btn.click(timeout=20_000)

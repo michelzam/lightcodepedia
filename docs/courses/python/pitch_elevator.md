@@ -4,12 +4,10 @@ Every app starts as a **sentence**. Say who it is for, say what it changes —
 then meet the three steps that turn that sentence into a program: **read**,
 **compute**, **write back**.
 
-## 🏁 Ready?
-
 ```
-### 🎤 The pitch
-Fill the blanks out loud, in one breath. That is the whole ride: **an
-elevator pitch** is a promise short enough to say between two floors.
+### 🎤 The Pitch
+
+An **elevator pitch** is a promise short enough to say between two floors.
 
 > **For** students curious to *taste programming* without being burned  
 > **Who need** a gentle, warming first experience  
@@ -19,20 +17,17 @@ elevator pitch** is a promise short enough to say between two floors.
 ```
 {: .accordion }
 
-````
-### !🖥 The app
+`````
+### !🖥 A Web App
 
-Here is the finished thing, the way a user meets it: a box to fill, a button
+Here is a living running app, as user meets it: a box to fill, a button
 to press, an answer that was not there before.
 
-*(The `!` on this section's title is the engine's: it builds the app as the
-page loads, still folded, so the check further down can press this button
-whether or not you opened the panel first.)*
-
+````
 ```
 name:  
 ```
-{: .form editable="true" #ask title="Say hello" }
+{: .form editable="true" #ask }
 
 [▶ input, compute and print](#)
 {: .button #say }
@@ -45,14 +40,14 @@ message = f"Hi {name}, welcome to coding. Take it slow, like hot chocolate."
 {=message}
 
 ````
+{: .block title="Say hello" }
+`````
 {: .accordion }
 
+````
+### 🐍 The Code Backstage
 
-## 🐍 The code
-{: .accordion open="true" }
-
-The same program, written the way you will write it for real. Change a
-string, press ▶ Run.
+The same program, written the way you will write it for real. Just press ▶ Run and interract.
 
 ```python
 """
@@ -63,7 +58,7 @@ With <simple code that comforts, not intimidates>
 """
 
 # read  (the box above plays this part)
-name: str = input("your name: ")
+name: str = input("Your name: ")
 
 # computation
 message: str = f"Hi {name}, welcome to coding. Take it slow, like hot chocolate."
@@ -73,13 +68,12 @@ print(message)
 ```
 {: .run rows="16" }
 
-**About `input()`.** Press ▶ Run and the console asks you for the name, with a
-box to type into — the same `input("your name: ")` you would write in a real
-terminal, on PythonAnywhere or on your own machine. It is the code twin of the
-form above: the form is the app's way of asking, `input()` is the program's way.
+````
+{: .accordion}
 
-## 🦄 Does it work?
-{: .accordion }
+
+````
+### 🦄 Does it work?
 
 The page checks itself: it fills the box, presses the button, and reads the
 answer back.
@@ -122,3 +116,5 @@ Feature: The button turns a name into a welcome
     :::
 ```
 {: .feature tags="ui,code" status="passing" visible="true" celebration="true" }
+````
+{: .accordion }
