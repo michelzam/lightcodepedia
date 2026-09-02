@@ -45,7 +45,7 @@ Feature: Temperature converter
     assert (0 * 9 / 5) + 32 == 32.0
     :::
 ```
-{: .feature visible="true" #temp_feature status="passing" tags="lifecycle" }
+{: .feature visible="true" #temp_feature status="passing" tags="lifecycle" celebration="true" }
 
 `self` is shared across all steps in a run — state set in one step (`self.celsius`) is available in later ones.
 
@@ -192,7 +192,9 @@ Two knobs and a verb make a feature card the page's heartbeat:
   `visible="= audit.passing"` and unfold the moment the run turns green.
 - **`celebration="true"`**: the card's **first** honest red→green earns a
   confetti burst. Re-running an already-green card celebrates nothing, and
-  reduced-motion users get a quiet ✨ instead of the storm.
+  reduced-motion users get a quiet ✨ instead of the storm. The **Celsius
+  card above wears it** — press its ▶ Run and watch; press it again and
+  nothing falls, because nothing was earned the second time.
 - **`confetti()`**: the authored version — any component speaks it from a
   step (`self.page.audit.confetti()`), a `.button`, anywhere. Put it after
   the asserts of a final step: it only fires when everything above survived.

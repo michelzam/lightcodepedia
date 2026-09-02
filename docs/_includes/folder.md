@@ -1372,6 +1372,22 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         var _rawPath = _resolved;
         if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
         path = _rawPath.replace(/^\/+|\/+$/g, "");
+        /* "THE FOLDER I LIVE IN" HAS TO KNOW WHERE IT LIVES. A bare
+           `{: .folder }` resolves to "." — inside a runner render the root
+           supplies the directory, but on a SITE page there was none, so the
+           shelf listed the repo root and reported "No pages in this folder
+           yet" on a folder holding two (Michel, 2026-09-01, Python4All's
+           cover: `[Explore →](#)` + `{: .folder }`, the documented idiom).
+           A site page knows its own source: the editor stamps it, and every
+           site page lives under docs/. */
+        if ((path === "." || path === "") && !runRoot) {
+          var fab = document.getElementById("ed-fab");
+          var own = (fab && fab.dataset && fab.dataset.pagePath) || "";
+          if (own) {
+            var dir = own.indexOf("/") >= 0 ? own.replace(/\/[^\/]*$/, "") : "";
+            path = dir ? "docs/" + dir : "docs";
+          }
+        }
         /* BEFORE refresh(): the way up must survive a folder that cannot
            list anything — no key, empty directory, API error. Those are the
            moments a reader is most stuck, and the first version of this only

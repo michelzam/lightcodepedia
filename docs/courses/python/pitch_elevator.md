@@ -116,4 +116,4 @@ Feature: The button turns a name into a welcome
     assert "Hi Bo" in message, message
     :::
 ```
-{: .feature tags="ui,code" status="passing" visible="true" }
+{: .feature tags="ui,code" status="passing" visible="true" celebration="true" }

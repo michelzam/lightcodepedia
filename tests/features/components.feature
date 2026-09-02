@@ -298,3 +298,13 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     And I type "name = input(\"name: \")" into the first runner and run it
     Then the runner explains that a page has no console, and the page is alive
+
+  Scenario: A bare folder lists the folder it lives in
+    "The folder I live in" has to know where it lives. Inside a runner the
+    render root supplies the directory; on a SITE page there was none, so
+    Python4All's cover said "No pages in this folder yet" while holding two
+    (Michel, 2026-09-01 — the documented idiom, a link and a bare IAL).
+
+    When I navigate to "/courses/python/"
+    And I wait for the page to be interactive
+    Then the shelf lists "🛗 Pitch elevator"

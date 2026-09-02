@@ -598,3 +598,11 @@ def step_input_refused(context):
         "() => document.querySelector('.lc-pyrun').innerText")
     assert "no console" in out, out[-300:]
     assert "PythonAnywhere" in out, out[-300:]
+
+
+@then('the shelf lists "{title}"')
+def step_shelf_lists(context, title):
+    cards = context.page.locator(".lc-cards .lc-card h3")
+    expect(cards.first).to_be_visible(timeout=20_000)
+    got = [t.strip() for t in cards.all_text_contents()]
+    assert any(title in t for t in got), got
