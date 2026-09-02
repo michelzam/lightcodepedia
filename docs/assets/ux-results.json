@@ -1669,7 +1669,7 @@
     "url": "/assets/ux-report.html#scenario_182"
   },
   {
-    "status": "❌",
+    "status": "✅",
     "scenario": "A loaded file arrives folded — the outline first",
     "feature": "Page editor — ✨ AI edit dialog",
     "tags": "",
