@@ -1,13 +1,13 @@
 [
  {
-  "run": "2026-09-01T07:08Z",
+  "run": "2026-09-02T07:11Z",
   "features": 2,
   "features_failed": 1,
-  "scenarios": 41,
+  "scenarios": 42,
   "scenarios_failed": 1,
-  "steps": 234,
+  "steps": 240,
   "steps_failed": 1,
-  "commit": "0b31fbe",
+  "commit": "0f99757",
   "subset": "smoke + component specs"
  }
 ]

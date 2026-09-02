@@ -879,18 +879,15 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         var kvp = kv.split("=");
         if (kvp[0] === "hub") want = decodeURIComponent(kvp[1] || "");
       }); } catch (e) {}
-      /* NO STAMP, NO BENCH. A pairing made before this rule carries no
-         session at all, and the address is not always there to appeal to —
-         a cached door page serves no hub=, and then an unstamped pairing
-         would sail straight through. So an unstamped pairing is never used:
-         one visit to setup re-pairs a learner, connecting the editor
-         re-stamps an author. Refusing costs a click; inheriting costs a
-         class their lesson and files their work in last term's repo. */
-      if (repo && !paired)
-        return { repo: "", pat: pat, gap: want, stale: true };
-      if (repo && paired === AUTHOR_PAIR)
-        return want ? { repo: "", pat: pat, gap: want, stale: true }
-                    : { repo: repo, pat: pat };
+      /* THE RULE IS A MISMATCH, NOT A MISSING STAMP. Refusing every
+         unstamped pairing was too wide: it also refused the author's own
+         connection and every page that pairs a bench directly — 29 saves in
+         one suite alone, and Michel's own "no bench" on the lab (2026-09-02).
+         A pairing is only ever WRONG against a page that names its class:
+         there, an id that does not match — another session's, an author's,
+         or none at all — is last term's bench, and must not be read or
+         written. A page that names no class has nothing to contradict, so
+         the pairing stands, as it always did. */
       if (repo && want && paired !== want)
         return { repo: "", pat: pat, gap: want, stale: true };
       return { repo: repo, pat: pat };

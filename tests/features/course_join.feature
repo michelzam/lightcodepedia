@@ -123,16 +123,21 @@ Feature: The learner course wizard (/courses/join)
     When I open a saving lesson framed for "build-ai-fall26"
     Then the keep button says the bench for this session is not paired
 
-  Scenario: A pairing from before the stamp is never inherited
-    The address is not always there to appeal to: a browser holding a cached
-    door page serves no hub= at all, and the guard above would wave the old
-    bench through (Michel, 2026-09-01: "as you can see, same!"). A pairing
-    with no session on it is refused wherever it is found — one visit to
-    setup re-pairs a learner, connecting the editor re-stamps an author.
+  Scenario: A pairing from before the stamp is not this class's bench
+    A pairing made before the stamp names no class — so against a page that
+    names one it is exactly as unproven as another session's, and is refused
+    the same way. On a page that names no class it still stands: refusing
+    everything unstamped once cost 29 saves in one suite and the author his
+    own bench (2026-09-02).
 
     Given this device carries a pairing from before the stamp
+    When I open a saving lesson framed for "build-ai-fall26"
+    Then the keep button says the bench for this session is not paired
+
+  Scenario: A page that names no class keeps the bench it was given
+    Given this device carries a pairing from before the stamp
     When I open a saving lesson with no session in its address
-    Then the keep button says the bench belongs to another class
+    Then the keep button is armed
 
   Scenario: A desk-built bench is found and named, with no door out of setup
     The wizard tells the learner their bench exists and is current. It does

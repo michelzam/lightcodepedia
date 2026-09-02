@@ -105,13 +105,18 @@ Feature: The pitch assembles and checks itself
     :::
 
   Scenario: The who is calculated, never typed
+    A pitch that names a persona reads the PERSON, not their subtitle:
+    "Ana" is who it serves, "Shelter coordinator" is how the card explains
+    her (Michel, 2026-08-24). This check still asked for the role, and had
+    been red ever since.
+
     Given a pitch that names a persona
     :::python
     self.p: Pitch = self.page.demo_pitch
     :::
     Then it reads the who off that card
     :::python
-    assert self.p.data.who == "Shelter coordinator", self.p.data.who
+    assert self.p.data.who == "Ana", self.p.data.who
     assert self.p.data.who_calculated
     :::
 ```

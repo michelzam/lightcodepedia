@@ -95,16 +95,15 @@ Auto-included by docs/_layouts/default.html.
        now points at this group, and do: open/close acts on its panels. */
     if (el.id) { wrap.id = el.id; wrap.setAttribute("data-lc-id", el.id); }
     sections.forEach(function(s) {
-      /* ONE ACCORDION, ONE BEHAVIOUR (Michel, 2026-09-01: "KISS, and that
-         means homogeneous"). A panel used to render only when a reader
-         opened it, so a form, a runner or a proof inside simply did not
-         exist until then — the pitch elevator's own check asked for
-         #ask and the engine answered "no component on this page". The
-         heading form always kept its content alive; the fenced one now does
-         too, so an author never has to know which source they used. The old
-         "!" eager prefix is therefore the default: still stripped from a
-         label, so pages that carry it read the same. */
-      var label = s.label.charAt(0) === "!" ? s.label.slice(1).trim() : s.label;
+      /* A PANEL IS LAZY UNLESS ITS AUTHOR SAYS OTHERWISE — and that is not
+         an accident: this component page folds a Three.js hive away
+         precisely so the page stays light, and eager-rendering everything
+         built it at load (2026-09-02). A "!" on the label renders the body
+         at once, still shut, for the sections that hold something the page
+         must be able to reach — a form, a runner, a proof. Heading panels
+         keep their content alive by nature: they ARE the page. */
+      var eager = s.label.charAt(0) === "!";
+      var label = eager ? s.label.slice(1).trim() : s.label;
       var d = document.createElement("details");
       var sum = document.createElement("summary");
       sum.textContent = label;
@@ -143,7 +142,7 @@ Auto-included by docs/_layouts/default.html.
         });
       }
       d.addEventListener("toggle", function() { if (d.open) render(); });
-      render();
+      if (eager) render();
       wrap.appendChild(d);
     });
     el.parentNode.replaceChild(wrap, el);

@@ -532,14 +532,14 @@ def step_open_bare_lesson(context):
     context.page.wait_for_timeout(400)
 
 
-@then("the keep button says the bench belongs to another class")
-def step_keep_refuses_unstamped(context):
+@then("the keep button is armed")
+def step_keep_armed(context):
+    """A page that names no class has nothing to contradict — the bench the
+    device was given still saves, exactly as before the session rule."""
     keep = context.page.locator('[data-lc-id="repair_me"] .lc-dg-save').first
-    expect(keep).to_be_disabled(timeout=20_000)
-    assert "another class" in (keep.get_attribute("title") or ""), \
-        keep.get_attribute("title")
+    expect(keep).to_be_enabled(timeout=20_000)
     t = context.page.evaluate("() => window.lcBench.target(document.body)")
-    assert not t.get("repo"), "an unstamped pairing was inherited"
+    assert t.get("repo") == OLD_BENCH, t
 
 
 @when('I open a saving lesson framed for "{session}"')

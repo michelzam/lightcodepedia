@@ -161,6 +161,31 @@ You just unfolded it. Click the heading again to tuck it away. Notice the
 heading kept its size and its emoji: no new widget, the accordion took the
 heading as its handle.
 
+## 💤 A panel is lazy — unless you say `!`
+
+A fenced panel renders when a reader opens it. That is what keeps a page
+light when a section holds something heavy (this is how a course page folds a
+3D scene away). But a panel nobody opened has **nothing inside it** — a form,
+a runner or a check in there does not exist yet, and a proof elsewhere on the
+page cannot reach it.
+
+Start the section's title with `!` and the body is built as the page loads,
+still folded:
+
+````markdown
+```
+### !🖥 The app
+A form and a button, alive from the first paint.
+
+### 📖 The long story
+Rendered only if someone asks for it.
+```
+{: .accordion }
+````
+
+A heading panel never needs this: its content *is* the page, always there,
+folded or not.
+
 ## ⚠️ Limits worth knowing
 
 - **No exclusive mode** (one-open-at-a-time). Each panel is a native `<details>` element — open/close is handled by the browser with no JS.

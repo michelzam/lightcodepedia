@@ -58,6 +58,23 @@ def as_pattern(phrase):
                                             .replace(r"\{", "{").replace(r"\}", "}")) + "$")
 
 
+def lab_only_travellers(excluded):
+    """A feature that drives a /lab/ page cannot run in pedia — the page is
+    not there. Every scenario in it fails with a 404 nobody reads as a
+    missing exclusion: 17 of the 75 reds on 2026-09-02 were classroom4 and
+    the triptych, green in the lab all along. The exclude list is the fix,
+    and this is what notices when a new suite forgets it.
+    """
+    out = []
+    for name in sorted(os.listdir(FEATURES)):
+        if not name.endswith(".feature") or name in excluded:
+            continue
+        with open(os.path.join(FEATURES, name), encoding="utf-8") as fh:
+            if '"/lab/' in fh.read():
+                out.append(name)
+    return out
+
+
 def main():
     excluded = excluded_names()
     if excluded is None:
@@ -84,12 +101,19 @@ def main():
     for feature, used, mod in problems:
         print("%s uses \"%s\" — defined in %s, which never reaches pedia"
               % (feature, used, mod))
+    travellers = lab_only_travellers(excluded)
+    for name in travellers:
+        print("%s drives a /lab/ page — pedia has none, so every scenario in "
+              "it fails there. List it (and its steps) in tests.txt." % name)
+
     if problems:
         print("\n%d published step(s) with no definition in pedia. "
               "Move the step to a module that ships (e.g. common_steps.py)."
               % len(problems))
+    if problems or travellers:
         return 1
-    print("publish parity: every published feature's steps ship with it")
+    print("publish parity: every published feature's steps ship with it, "
+          "and no lab-only page is tested abroad")
     return 0
 
 

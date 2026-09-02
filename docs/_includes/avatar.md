@@ -2370,7 +2370,7 @@ Auto-included by docs/_layouts/default.html.
     var lines = av.script.slice();
     if (av.stories) Object.keys(av.stories).forEach(function (t) { lines = lines.concat(av.stories[t]); });
     lines = lines.filter(function (l) { return l.say && !l.video; });
-    var made = 0, cached = 0, committed = 0, failed = 0, vox = {};
+    var made = 0, cached = 0, committed = 0, failed = 0, vox = {}, lastErr = "";
     for (var i = 0; i < lines.length; i++) {
       var l = lines[i], text = String(l.say).trim();
       ui.status("🎙️ " + (i + 1) + "/" + lines.length + "…");
@@ -2386,7 +2386,43 @@ Auto-included by docs/_layouts/default.html.
           headers: { "xi-api-key": key, "Content-Type": "application/json" },
           body: JSON.stringify({ text: text, model_id: av.genModel })
         });
-        if (!r.ok) throw new Error("ElevenLabs HTTP " + r.status);
+        if (!r.ok) {
+          /* THE API ALREADY SAYS WHY — carry it back. "see console" is no
+             help on a phone (Michel, 2026-09-01: four lines failed on the
+             lab and the reason was unreachable). A wrong key, a voice id
+             that is not on this account, an empty quota: each has its own
+             sentence, and each needs a different move. */
+          var why = "";
+          try {
+            var e11 = await r.json();
+            why = (e11 && ((e11.detail && (e11.detail.message || e11.detail.status)) || e11.message)) || "";
+            if (why && typeof why !== "string") why = JSON.stringify(why);
+          } catch (eJson) {}
+          /* "not fine-tuned and cannot be used" is a MODEL mismatch, not a
+             broken voice (Michel's new clone, 2026-09-01): a cloned voice is
+             trained per model, and we ask for eleven_multilingual_v2. The
+             voice itself knows which models it is ready for — so ask it, and
+             name them, instead of leaving a dead end. */
+          if (/fine.?tuned/i.test(why)) {
+            try {
+              var vr = await fetch("https://api.elevenlabs.io/v1/voices/" +
+                  encodeURIComponent(av.genVoice), { headers: { "xi-api-key": key } });
+              if (vr.ok) {
+                var vj = await vr.json();
+                var ready = (vj.high_quality_base_model_ids || []).slice();
+                var st = (vj.fine_tuning && vj.fine_tuning.state) || {};
+                Object.keys(st).forEach(function (m) {
+                  if (String(st[m]) === "fine_tuned" && ready.indexOf(m) < 0) ready.push(m);
+                });
+                why += ready.length
+                  ? " · ready for: " + ready.join(", ") + " — put it in the fence: elevenlabs: { voice: "
+                    + av.genVoice + ", model: " + ready[0] + " }"
+                  : " · no model is trained for this voice yet — ElevenLabs is still fine-tuning it, or the clone never finished";
+              }
+            } catch (eV) {}
+          }
+          throw new Error("ElevenLabs HTTP " + r.status + (why ? " — " + why : ""));
+        }
         var blob = await r.blob();
         l.audio = URL.createObjectURL(blob);   /* hear it right now, this session */
         made++;
@@ -2402,6 +2438,7 @@ Auto-included by docs/_layouts/default.html.
         }
       } catch (err) {
         failed++;
+        lastErr = (err && err.message) || String(err);
         /* a rejected key would fail every line — forget it so the next
            attempt asks again instead of failing silently forever */
         if (/HTTP 401/.test((err && err.message) || "")) { try { localStorage.removeItem("lc_11_key"); } catch (e4) {} }
@@ -2432,7 +2469,7 @@ Auto-included by docs/_layouts/default.html.
     return "✔ " + made + " generated · " + cached + " cached" +
       (committed ? " · " + committed + " committed" : ((pat && repo) ? "" : " · not committed — connect the ✏️ editor (PAT + repo) first")) +
       (manifestOk ? " · playback wired automatically" : "") +
-      (failed ? " · ✖ " + failed + " failed (see console)" : "") +
+      (failed ? " · ✖ " + failed + " failed — " + (lastErr || "see console") : "") +
       (av._genAdhoc && (made || cached) && !manifestOk ? " · add elevenlabs: " + av.genVoice + " to the fence to keep it" : "");
   }
 

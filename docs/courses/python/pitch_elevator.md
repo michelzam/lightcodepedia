@@ -4,8 +4,6 @@ Every app starts as a **sentence**. Say who it is for, say what it changes —
 then meet the three steps that turn that sentence into a program: **read**,
 **compute**, **write back**.
 
-## Start
-
 ```
 ### 🎤 The pitch
 Fill the blanks out loud, in one breath. That is the whole ride: **an
@@ -20,10 +18,14 @@ elevator pitch** is a promise short enough to say between two floors.
 {: .accordion }
 
 ````
-### 🖥 The app
+### !🖥 The app
 
 Here is the finished thing, the way a user meets it: a box to fill, a button
 to press, an answer that was not there before.
+
+*(The `!` on this section's title is the engine's: it builds the app as the
+page loads, still folded, so the check further down can press this button
+whether or not you opened the panel first.)*
 
 ```
 name:  
