@@ -342,5 +342,27 @@
    "eb0b9baa842ba6c8": "lc-a3be63ba59d2ad91.mp3",
    "97180df1e826f5ac": "lc-9c1da3b7b06e4547.mp3"
   }
+ },
+ "courses-build_ai-start": {
+  "guide": {
+   "62e282e8ce3d295a": "lc-9c811e5d1cdc2f60.mp3",
+   "4d0d080793d97c06": "lc-2b939dd0c8737928.mp3",
+   "1858888b3eaeff23": "lc-c2b0ac0f32018f6a.mp3",
+   "baf52731a477a130": "lc-bc8847574f667d79.mp3",
+   "3afccbf692867198": "lc-7de37846f0942b12.mp3"
+  }
+ },
+ "courses-databases-module_01-index": {
+  "guide": {
+   "e52dbeb43e7c3616": "lc-9aa6196968798f8c.mp3",
+   "f1909d3401ca4bd1": "lc-c4af3f7602d56ae5.mp3",
+   "66a2f6b3213960b9": "lc-4c27aa76a0cb9370.mp3",
+   "96e645cccb7754ae": "lc-6e669f9483cf51e2.mp3",
+   "b59e527b0b986aaf": "lc-401e8f5d61f9dc2c.mp3",
+   "803d9220e33a898c": "lc-27ef7a8495b2e863.mp3",
+   "08100ea620bfc524": "lc-19337567bcb6137f.mp3",
+   "f7475bbadb34562c": "lc-c3989c45011f26d2.mp3",
+   "b4a2a82b26805560": "lc-6fb6e1f76cda5413.mp3"
+  }
  }
 }

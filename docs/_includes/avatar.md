@@ -2318,9 +2318,18 @@ Auto-included by docs/_layouts/default.html.
        scenario recorded on the bench resolves on every later render. */
     var r = document.querySelector('#lc-run[data-lc-src-path]');
     if (r && r.dataset.lcSrcRepo && r.dataset.lcSrcPath) {
-      var d = r.dataset.lcSrcPath.split('/').slice(0, -1).join('/');
+      var sp = r.dataset.lcSrcPath;
+      /* AN UNLISTED MIRROR IS THE COURSE, RENDERED ELSEWHERE. docs/_410/
+         databases/… is published from courses/databases/… (one source, the
+         gate copies it); a recording made on the source must play on the
+         copy — the file is the same, only the shelf differs. Without this
+         the copy fell to the page path below, slug "run", and every studio
+         line came back robotic in Canvas (Michel, 2026-09-03). */
+      var mirror = sp.match(/^docs\/_[^\/]+\/(.+)$/);
+      if (mirror) sp = "courses/" + mirror[1];
+      var d = sp.split('/').slice(0, -1).join('/');
       if (!/^docs(\/|$)/.test(d))
-        return r.dataset.lcSrcPath.replace(/\.md$/i, "").replace(/\//g, "-");
+        return sp.replace(/\.md$/i, "").replace(/\//g, "-");
     }
     var p = (window.lcPagePath ? window.lcPagePath() : location.pathname).replace(/\.html?$/, "").replace(/^\/+|\/+$/g, "");
     return p ? p.replace(/\//g, "-") : "index";

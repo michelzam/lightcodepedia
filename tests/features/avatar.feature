@@ -323,6 +323,39 @@ Feature: Avatar — speaking overlay instructor
     And I click the avatar trigger for "guide"
     Then the avatar "guide" speaks from the studio file "lc-test-voice.mp3"
 
+  Scenario: A recording made on the course plays on its unlisted mirror
+    The 410 material renders in Canvas from docs/_410/databases/… — a copy
+    the publish gate makes of courses/databases/…. Michel recorded module 01
+    on the source and Canvas spoke robot (2026-09-03): under docs/ the slug
+    fell to the page, "run", so the studio's lines were filed and looked up
+    under the wrong shelf. A mirror IS the course, rendered elsewhere: its
+    slug is the source's. The decoy under "run" is what the bug would pick.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "docs/_410/databases/mod/guide.md" with the document:
+      """
+      # Mirror page
+
+      Some prose.
+
+      ```yaml
+      script:
+        - say: "Hello builders."
+      ```
+      {: .avatar #guide }
+
+      [▶ Play](#)
+      {: .avatar_trigger target="guide" }
+      """
+    And the voice manifest shelves "Hello builders." as "lc-course-voice.mp3" under "courses-databases-mod-guide" and as "lc-decoy.mp3" under "run" for avatar "guide"
+    And the studio file "lc-course-voice.mp3" is served
+    And the studio file "lc-decoy.mp3" is served
+    When I navigate to "/run.html#src=gh:acme/demo/docs/_410/databases/mod/guide.md"
+    And I wait for the page to be interactive
+    And I click the avatar trigger for "guide"
+    Then the avatar "guide" speaks from the studio file "lc-course-voice.mp3"
+
   Scenario: The guide says whose Doc is answering
     An editor key in the browser makes the guide answer as the AUTHOR's:
     direct, complete, nothing withheld (doctrine 7). Michel read that on a

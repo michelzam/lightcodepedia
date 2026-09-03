@@ -391,6 +391,19 @@ def step_vox_manifest(context, text, file, slug, aid):
     )
 
 
+@given('the voice manifest shelves "{text}" as "{file}" under "{slug}" and as "{file2}" under "{slug2}" for avatar "{aid}"')
+def step_vox_manifest_two(context, text, file, slug, file2, slug2, aid):
+    """two shelves for the same line — the exact slug must win, so the one the
+    engine computes is visible in which file it picks"""
+    key = hashlib.sha1(text.strip().encode()).hexdigest()[:16]
+    body = _json.dumps({slug: {aid: {key: file}}, slug2: {aid: {key: file2}}})
+    context.page.route(
+        "**/assets/audio/vox.json*",
+        lambda r: r.fulfill(status=200, content_type="application/json",
+                            body=body),
+    )
+
+
 @given('the studio file "{file}" is served')
 def step_serve_mp3(context, file):
     context.page.route(
