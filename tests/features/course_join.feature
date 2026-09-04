@@ -285,3 +285,37 @@ Feature: The learner course wizard (/courses/join)
     And my bench exists and is 0 updates behind the hub
     When I open the course wizard with a stored key
     Then no repository was created by the wizard
+
+  Scenario: The seat is read from the key and written into the bench — nothing typed
+    Nobody types a login: the key already says who they are (Michel,
+    2026-09-04). With user:email on the key, the wizard reads the learner's
+    verified address too, and once the bench is found it writes email ↔
+    login into the bench as __seat.yml — the teacher's desk reads it back
+    after any reload. The learner saw one extra scope in a link, and no field.
+
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the learner can read the vault
+    And GitHub knows the learner's verified email "zamm-student@uwm.edu"
+    And my bench exists and is 0 updates behind the hub
+    When I open the course wizard
+    And I confirm I have an account
+    And I paste the course key "ghp_valid" and check it
+    Then the wizard says the learner is in
+    And the seat field is not shown
+    And the bench carries a seat file naming "zamm-student@uwm.edu" and "zamm-student"
+
+  Scenario: Without the email scope the wizard asks once, then writes the seat
+    A key made before the scope existed cannot tell the address, so step 3
+    shows one field, the address the invitation came to, exactly once.
+
+    Given a stubbed GitHub that accepts the key with repo scope
+    And the learner can read the vault
+    And GitHub will not tell the learner's email
+    And my bench exists and is 0 updates behind the hub
+    When I open the course wizard
+    And I confirm I have an account
+    And I paste the course key "ghp_valid" and check it
+    Then the wizard says the learner is in
+    And the seat field is shown
+    When I type the seat email "zamm-student@uwm.edu" and save it
+    Then the bench carries a seat file naming "zamm-student@uwm.edu" and "zamm-student"

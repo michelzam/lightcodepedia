@@ -322,3 +322,13 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     And I run a program that prints two lines
     Then the console shows them on two lines
+
+  Scenario: A verb's docstring is its tooltip
+    A button says what it does on hover — the docstring's first line, read
+    off the model's own source, then the gate. The desk's four verbs lean
+    on it to say what each reads and writes (Michel, 2026-09-04).
+
+    When I navigate to "/components/examples/model"
+    And I wait for the page to be interactive
+    Then the "eat" verb on the "lucky_widget" inspector explains "Reads the bowl. Writes weight — and the mood turns fed. · → fed"
+    And the "bark" verb on the "lucky_widget" inspector explains "needs: fed"

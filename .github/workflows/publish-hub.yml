@@ -61,7 +61,10 @@ jobs:
           set -e
           # Full sync: the hub is a published artifact of hubs/<session>/,
           # like pedia is of docs/ and the vault of courses/.
-          rsync -a --delete --exclude .git lab/hubs/${{ inputs.session }}/ hub/
+          # __* NEVER TRAVELS — the one dunder rule (Michel, 2026-08-06), here too:
+          # the desk's memory (__seats.yml: emails, logins, dates) lives beside
+          # the hub in the lab and must never reach the org hub the class reads.
+          rsync -a --delete --exclude .git --exclude '__*' lab/hubs/${{ inputs.session }}/ hub/
 
       - name: Commit & push as KarmicSoft (rebase-and-retry)
         working-directory: hub

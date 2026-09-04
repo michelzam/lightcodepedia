@@ -19,6 +19,7 @@ class Dog(Object):
 
     @transition(pre=["hungry"], post="fed")
     def eat(self):
+        """Reads the bowl. Writes weight — and the mood turns fed."""
         self.weight_kg += 1
 
     @transition(pre=["fed"])
@@ -127,6 +128,7 @@ association, and the mood statechart hangs below:
 | `Attr("Pet")` | a **picklist** of live, type-compatible instances (subclasses count); wrong types raise |
 | `@transition(pre=["hungry"], post="fed")` | a gated button — disabled outside `pre`, moves the state to `post` |
 | `def run(self): …` | **every public method is a button** — no decorator needed; `_underscore` methods stay internal |
+| `"""Reads the bowl. Writes weight…"""` | a docstring's **first line is the button's tooltip** — say what the verb reads and writes; the gate (→ fed, needs: …) follows it |
 
 - **Everything is an Object** — your classes inherit `Object` directly, the
   same root every component descends from, so they join the

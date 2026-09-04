@@ -1,3 +1,4 @@
+import base64
 import json
 import re
 
@@ -22,6 +23,25 @@ def _stub(context):
     def handler(route):
         req = route.request
         url, method = req.url, req.method
+        if url.endswith("/user/emails") and method == "GET":
+            if st.get("emails") is None:
+                route.fulfill(status=404, json={"message": "Not Found"})   # no user:email scope
+            else:
+                route.fulfill(status=200, json=st["emails"])
+            return
+        if url.endswith("/contents/__seat.yml"):
+            if method == "GET":
+                if st.get("seat_text"):
+                    route.fulfill(status=200, json={"content": base64.b64encode(st["seat_text"].encode()).decode(), "encoding": "base64", "sha": "s1"})
+                else:
+                    route.fulfill(status=404, json={"message": "Not Found"})
+                return
+            if method == "PUT":
+                body = json.loads(req.post_data or "{}")
+                st["seat_text"] = base64.b64decode(body.get("content", "")).decode()
+                context.seat_written = st["seat_text"]
+                route.fulfill(status=201, json={"content": {"sha": "s2"}})
+                return
         if url.endswith("/user") and method == "GET":
             # the page reads the scope header cross-origin — it must be exposed,
             # exactly as the real GitHub API exposes it
@@ -576,3 +596,42 @@ def step_keep_refuses(context):
     t = context.page.evaluate(
         "() => window.lcBench.target(document.body)")
     assert not t.get("repo"), "a page of this session reached last term's bench"
+
+
+@given('GitHub knows the learner\'s verified email "{email}"')
+def step_gh_emails(context, email):
+    context.join_stub["emails"] = [{"email": email, "verified": True, "primary": True}]
+
+
+@given("GitHub will not tell the learner's email")
+def step_gh_no_emails(context):
+    context.join_stub["emails"] = None
+
+
+@then("the seat field is not shown")
+def step_seat_hidden(context):
+    row = context.page.locator(".lc-join [data-seat]")
+    context.page.wait_for_timeout(800)
+    assert not row.is_visible(), "the wizard asked for an email it could have read"
+
+
+@then("the seat field is shown")
+def step_seat_shown(context):
+    expect(context.page.locator(".lc-join [data-seat]")).to_be_visible(timeout=10_000)
+
+
+@when('I type the seat email "{email}" and save it')
+def step_seat_type(context, email):
+    context.page.fill(".lc-join .lcj-seat", email)
+    context.page.click('.lc-join [data-a="seat"]')
+    context.page.wait_for_timeout(1200)
+
+
+@then('the bench carries a seat file naming "{email}" and "{login}"')
+def step_seat_written(context, email, login):
+    for _ in range(40):
+        txt = getattr(context, "seat_written", "") or ""
+        if ('email: "%s"' % email) in txt and ('login: "%s"' % login) in txt and "wizard" in txt:
+            return
+        context.page.wait_for_timeout(250)
+    raise AssertionError("no seat file written into the bench — last: %r" % getattr(context, "seat_written", None))

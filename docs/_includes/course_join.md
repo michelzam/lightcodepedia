@@ -80,7 +80,10 @@ The check is live truth against the API, never cached. Done steps reopen via
     /* write:org lets the wizard ACCEPT the class invitation in-app (a learner
        is admin of no org, so the scope is inert beyond that) — one click here
        instead of a trip through GitHub's UI */
-    var keyUrl = "https://github.com/settings/tokens/new?scopes=repo,write:org&description=" + keyNote;
+    /* user:email is what lets the wizard read the learner's verified address
+       and bind their seat without a single field (Michel, 2026-09-04) */
+    var keyUrl = "https://github.com/settings/tokens/new?scopes=repo,write:org,user:email&description=" + keyNote;
+    var seatDomain = (el.getAttribute("seat_domain") || "").toLowerCase();
     var inviteUrl = "https://github.com/orgs/" + org + "/invitation";
 
     var wrap = document.createElement("div");
@@ -112,7 +115,12 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-body"><p style="margin-top:0">Your teacher enrolls you — that sends you a class <b>invitation</b>. Accept it right here:</p>' +
       '<div class="lcj-row"><button type="button" class="lcj-btn" data-a="accept">✅ Accept my invitation</button>' +
       '<button type="button" class="lcj-btn alt" data-a="checkaccess">Check my access ✓</button></div>' +
-      '<div class="lcj-msg" data-m="3"></div></div></div>' +
+      '<div class="lcj-msg" data-m="3"></div>' +
+      /* the seat: WHICH Canvas email this key belongs to. Read from GitHub
+         when the key carries user:email; asked here, once, when it does not. */
+      '<div class="lcj-row" data-seat style="display:none"><input class="lcj-seat" type="email" placeholder="your UWM email — the address your invitation came to" aria-label="Your course email" spellcheck="false">' +
+      '<button type="button" class="lcj-btn" data-a="seat">Save ✓</button></div>' +
+      '<div class="lcj-msg" data-m="seat"></div></div></div>' +
 
       '<div class="lcj-step off" data-n="4"><div class="lcj-head"><span class="lcj-num">4</span>Your bench</div>' +
       '<div class="lcj-body"><p style="margin-top:0">Your <b>bench</b> is your own private copy of the class workbench — visible only to you and your teachers. Create it once, keep it refreshed, and work: your teacher can see your bench at any time.</p>' +
@@ -151,6 +159,57 @@ The check is live truth against the API, never cached. Done steps reopen via
 
     function pat() { try { return localStorage.getItem("lc_ed_pat") || ""; } catch (e) { return ""; } }
 
+    /* ── the seat: email ↔ login, stated once, written into the bench ─────
+       Nobody types a login: the key already says who they are. The email
+       is read from GitHub (user:email) or asked once. The pair goes into the
+       learner's own bench as __seat.yml, where the teacher's desk reads it
+       back after any reload — nothing is stored on our side. */
+    function seatEmail() { try { return localStorage.getItem("lc_seat_email") || ""; } catch (e) { return ""; } }
+    function seatRow(show) { var r = wrap.querySelector("[data-seat]"); if (r) r.style.display = show ? "" : "none"; }
+    function seatFromGitHub(key) {
+      return fetch("https://api.github.com/user/emails", { headers: { Authorization: "Bearer " + key, "X-GitHub-Api-Version": "2022-11-28" } })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (list) {
+          var ok = (Array.isArray(list) ? list : []).filter(function (e) { return e && e.verified && e.email; });
+          var pick = null;
+          if (seatDomain) pick = ok.filter(function (e) { return String(e.email).toLowerCase().indexOf("@" + seatDomain) > 0; })[0] || null;
+          if (!pick) pick = ok.filter(function (e) { return e.primary; })[0] || ok[0] || null;
+          if (pick) { try { localStorage.setItem("lc_seat_email", String(pick.email).toLowerCase()); } catch (e) {} }
+          return pick ? String(pick.email).toLowerCase() : "";
+        })
+        .catch(function () { return ""; });
+    }
+    function seatAsk() {
+      /* no address known → the one field; shown only now, only once */
+      if (seatEmail()) { seatRow(false); return; }
+      seatRow(true);
+      msg("seat", "🪪 One more thing: which address did your class invitation come to? Your teacher's desk uses it to know this bench is yours.", "");
+    }
+    /* ONE writer of the seat file: the console's lcSeatText (a global
+       include). Provision writes the same lines from the teacher's side. */
+    function seatText(seat) { return window.lcSeatText ? window.lcSeatText(seat) : ""; }
+    function seatMark(ok) {
+      if (!ok) return;
+      var m4 = wrap.querySelector('[data-m="4"]');
+      if (m4 && m4.innerHTML.indexOf("🪪") < 0) m4.innerHTML += " · 🪪 seat recorded";
+    }
+    function seatWrite() {
+      /* into the bench, with the learner's own key (they hold push there);
+         idempotent — a file already saying the same is left alone */
+      var email = seatEmail(); if (!email || !B.name || !B.login || !window.lcSeatText) return Promise.resolve(false);
+      var path = "/repos/" + org + "/" + B.name + "/contents/__seat.yml";
+      return sgh(path).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (cur) {
+          var have = "";
+          try { have = cur && cur.content ? atob(String(cur.content).replace(/\n/g, "")) : ""; } catch (e) {}
+          if (have && have.indexOf('login: "' + B.login + '"') >= 0 && have.indexOf('email: "' + email + '"') >= 0) return true;
+          var body = { message: "🪪 seat", content: btoa(unescape(encodeURIComponent(seatText({ email: email, login: B.login, bound_by: "wizard", bound_at: new Date().toISOString() })))) };
+          if (cur && cur.sha) body.sha = cur.sha;
+          return sgh(path, { method: "PUT", body: body }).then(function (r) { return r.ok; });
+        })
+        .catch(function () { return false; });
+    }
+
     function checkAccess(auto) {
       var p = pat(); if (!p) { setState("3", "on"); msg(3, "Connect your key first (step 2).", "err"); return; }
       msg(3, "Checking…", "");
@@ -174,7 +233,10 @@ The check is live truth against the API, never cached. Done steps reopen via
           } else {
             msg(3, "🎓 You HAVE access to the course library, but this lesson isn’t there (yet) — tell your teacher: “" + entry + " is missing from the vault”.", "err");
           }
-          benchStart();                   // vault visible = enrolled → light the bench
+          benchStart();                     // vault visible = enrolled → light the bench
+          /* the seat rides BESIDE the bench, never in front of it: an address
+             GitHub will not tell is asked once, and the bench stands meanwhile */
+          if (!seatEmail()) seatFromGitHub(p).then(function (e) { if (e) seatWrite().then(seatMark); else seatAsk(); });
         })
         .catch(function () { if (!auto) msg(3, "❌ Could not reach GitHub — try again.", "err"); });
     }
@@ -300,6 +362,7 @@ The check is live truth against the API, never cached. Done steps reopen via
       msgH(4, "🛠 Your bench: <b>" + org + "/" + B.name + "</b> — " +
         (behind ? "⬆️ the hub has <b>" + behind + " update" + (behind > 1 ? "s" : "") + "</b> you don’t have yet."
                 : "✅ up to date with the hub."), behind ? "" : "ok");
+      seatWrite().then(seatMark);
       /* SETUP ENDS AT SETUP (Michel, 2026-08-30). Two doors used to lead out
          of the middle of a five-step wizard: one into the whole course at
          step 3, one into the bench at step 4 — both before the learner had
@@ -398,6 +461,14 @@ The check is live truth against the API, never cached. Done steps reopen via
 
     wrap.addEventListener("click", function (e) {
       var b = e.target.closest("[data-a]"); if (!b) return;
+      if (b.getAttribute("data-a") === "seat") {
+        var v = (wrap.querySelector(".lcj-seat").value || "").trim().toLowerCase();
+        if (v.indexOf("@") < 1) { msg("seat", "That does not look like an email address.", "err"); return; }
+        try { localStorage.setItem("lc_seat_email", v); } catch (e2) {}
+        seatRow(false); msg("seat", "🪪 Noted — " + v, "ok");
+        seatWrite().then(seatMark);       // the bench already stands; only the file is missing
+        return;
+      }
       var a = b.getAttribute("data-a");
       if (a === "have") { setState("1", "ok"); setState("2", "on"); }
       if (a === "checkaccess") checkAccess(false);
@@ -462,7 +533,9 @@ The check is live truth against the API, never cached. Done steps reopen via
             } catch (e) {}
             msg(2, "✅ Key saved — logged in as @" + d.user.login + ".", "ok");
             if (window.lcUserPillRefresh) window.lcUserPillRefresh();
-            setTimeout(function () { setState("1", "ok"); setState("2", "ok"); setState("3", "on"); checkAccess(true); }, 600);
+            seatFromGitHub(val).then(function () {
+              setState("1", "ok"); setState("2", "ok"); setState("3", "on"); checkAccess(true);
+            });
           })
           .catch(function () { if (b) b.disabled = false; msg(2, "❌ Could not reach GitHub — check your connection.", "err"); });
     }

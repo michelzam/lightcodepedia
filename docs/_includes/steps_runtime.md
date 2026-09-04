@@ -2116,14 +2116,27 @@ def _lc_inspect_schema(obj):
               + [f for f in fields if f.get("state")])
     meths = []
     tmeta = cls._lc_tmeta or {}
+
+    def _doc1(n):
+        # the verb's own first docstring line rides to the button as its
+        # tooltip — "Reads X. Writes Y." — so what a press touches is said
+        # where it is pressed, and can never drift from the spec (Michel,
+        # 2026-09-04: "tooltips … to explicit if it's read or write")
+        try:
+            d = getattr(getattr(cls, n), "__doc__", "") or ""
+        except Exception:
+            d = ""
+        return str(d).strip().split("\n")[0].strip()
+
     for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
         pre, post, sfn, _o = tmeta[n]
         cur = obj._v.get(sfn) if sfn else None
-        meths.append({"n": n, "pre": pre, "post": post,
+        meths.append({"n": n, "pre": pre, "post": post, "doc": _doc1(n),
                       "enabled": (not pre) or (cur in pre)})
     for n in sorted(getattr(cls, "_lc_pub", {}) or {}):
         if n not in tmeta:
-            meths.append({"n": n, "pre": [], "post": None, "enabled": True})
+            meths.append({"n": n, "pre": [], "post": None, "doc": _doc1(n),
+                          "enabled": True})
     return {"cls": cls.__name__, "icon": sp.get("icon", ""),
             "doc": str(getattr(cls, "__doc__", "") or ""),
             "fields": fields, "methods": meths}
@@ -2691,12 +2704,44 @@ _inject_store()
     });
   }
 
+  /* verb tooltips come from the docstring's FIRST LINE. MicroPython keeps no
+     docstrings at runtime, so the inspector reads them off the model block's
+     own source (the pre-upgrade snapshot) — the page text stays the single
+     source of "what does this verb read and write" (Michel, 2026-09-04). */
+  function verbDocs(sourceId) {
+    var out = {};
+    if (!sourceId || !window.lcSourceOf) return out;
+    var html = window.lcSourceOf(sourceId);
+    if (!html) return out;
+    var box = document.createElement("div"); box.innerHTML = html;
+    var lines = (box.textContent || "").split("\n"), cls = null;
+    lines.forEach(function (line, i) {
+      var mc = line.match(/^\s*class\s+(\w+)/); if (mc) { cls = mc[1]; return; }
+      var md = line.match(/^\s+def\s+(\w+)\s*\(/);
+      if (!md || !cls) return;
+      for (var j = i + 1; j < lines.length && j <= i + 3; j++) {
+        var l = lines[j].trim();
+        if (!l) continue;
+        var mq = l.match(/^[rRuU]?("""|''')\s*(.*)$/);
+        if (mq) {
+          var first = mq[2];
+          for (var k = j + 1; !first.trim() && k < lines.length; k++) first = lines[k];
+          out[cls + "." + md[1]] = first.replace(/("""|''').*$/, "").trim();
+        }
+        break;
+      }
+    });
+    return out;
+  }
+
   /* the Python side pushes a fresh schema here after every change */
   window._lcInspectorRender = function (elid, payload) {
     var host = document.querySelector("[data-lc-inspector='" + elid + "']");
     if (!host) return;
     var d;
     try { d = JSON.parse(payload); } catch (e) { return; }
+    /* source="…" points at a model block; without it the fence IS the model */
+    var docs = verbDocs(host.getAttribute("data-bind") || elid);
     /* a readonly widget is a MONITOR: every field renders disabled — the
        identity belongs to the roster, not the reader. Verbs stay live. */
     var allRo = host.hasAttribute("data-lc-ro");
@@ -2764,7 +2809,9 @@ _inject_store()
           /* the verb, not the mechanics: no end-state on the button — the
              destination lives in the tooltip (Michel, 2026-08-22; his
              original Lightcode drew them exactly so) */
-          var tip = m.enabled ? (m.post ? "→ " + m.post : "") : "needs: " + (m.pre || []).join(" / ");
+          var gate = m.enabled ? (m.post ? "→ " + m.post : "") : "needs: " + (m.pre || []).join(" / ");
+          var doc = m.doc || docs[c.cls + "." + m.n] || "";
+          var tip = doc ? (doc + (gate ? " · " + gate : "")) : gate;
           h += "<button data-m='" + esc(m.n) + "'" + (m.enabled ? "" : " disabled")
             + (tip ? " title='" + esc(tip) + "'" : "") + ">" + esc(cap(m.n)) + "</button>";
         });
