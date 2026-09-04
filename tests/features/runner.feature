@@ -180,6 +180,25 @@ Feature: The instant runner (RT) — Phase A parity
     And I wait for the page to be interactive
     Then the runner says the file is missing, not the key
 
+  Scenario: The join link carries no session when this browser is not paired
+    A learner reading the VAULT with no bench yet is offered "Open my course".
+    The link used to guess the session from the repo name — the vault, minus
+    "-vault" — and sent Alonzo to a session called "uwm-build-ai", the org
+    (2026-09-04). Unpaired, the link names nothing: the wizard then lists
+    every session the key can see.
+
+    Given a classic key that reads the repo but not this path
+    When I navigate to "/run.html#src=gh:michelzam/lightcodelab/courses/demo/index.md"
+    And I wait for the page to be interactive
+    Then the runner's join link names no session
+
+  Scenario: The join link names the session this browser is paired with
+    Given a classic key that reads the repo but not this path
+    And this browser is paired with the session "build-ai-fall26"
+    When I navigate to "/run.html#src=gh:michelzam/lightcodelab/courses/demo/index.md"
+    And I wait for the page to be interactive
+    Then the runner's join link names the session "build-ai-fall26"
+
   Scenario: A card click lands at the top of the next page
     Inside the runner a link only changes the hash and the document is
     re-rendered in place, so the browser never scrolls. A reader who

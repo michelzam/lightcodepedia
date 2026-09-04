@@ -529,7 +529,15 @@ files a learner is already working in.
                 /* valid repo key + 404 on the file: is it the REPO that's
                    missing (no bench / not enrolled) or just the FILE (bench
                    behind — needs a Refresh)? Probe the repo to tell them apart. */
-                var doorUrl = (window.lcHref ? window.lcHref("/courses/join") : "/courses/join") + "?go=bench&hub=" + (barSt.repo.split("/")[1] || "").replace(/-[^-]+$/, "");
+                /* which session? The one this browser is PAIRED with — the door
+                   and the wizard stamp it. It used to be guessed from the repo
+                   name, and a learner reading the VAULT (no bench yet) was sent
+                   to a session called "uwm-build-ai" — the org, minus "-vault"
+                   (Alonzo, 2026-09-04). Unpaired → no hub=, the wizard lists
+                   every session the key can see. */
+                var pairedHub = ""; try { pairedHub = localStorage.getItem("lc_ed_session") || ""; } catch (e) {}
+                if (/^lc:/.test(pairedHub)) pairedHub = "";
+                var doorUrl = (window.lcHref ? window.lcHref("/courses/join") : "/courses/join") + "?go=bench" + (pairedHub ? "&hub=" + encodeURIComponent(pairedHub) : "");
                 fetch("https://api.github.com/repos/" + barSt.repo, { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
                   .then(function (r2) {
                     if (r2.ok)
