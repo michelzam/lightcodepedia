@@ -53,6 +53,33 @@ The check is live truth against the API, never cached. Done steps reopen via
 </style>
 <script>
 (function () {
+  /* ── the seat file: email ↔ login, one flat YAML in the learner's bench ──
+     Written here by the wizard (the learner's own key) and by the teacher's
+     desk at Provision; read back by the desk's Check. ONE writer, ONE reader,
+     defined once, exported for the desk. Two levels of "key: value", values
+     double-quoted on the way out, quotes optional on the way in — no library,
+     and a teacher can read the file in GitHub. */
+  function yq(v) { return '"' + String(v == null ? "" : v).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'; }
+  function yUnq(v) {
+    v = String(v || "").trim();
+    if (v.length >= 2 && v.charAt(0) === '"' && v.charAt(v.length - 1) === '"')
+      return v.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+    return v;
+  }
+  window.lcSeatParse = function (text) {
+    var out = {};
+    String(text || "").split("\n").forEach(function (ln) {
+      var m = ln.match(/^([A-Za-z_][\w-]*):\s*(.*)$/);
+      if (m) out[m[1]] = yUnq(m[2]);
+    });
+    return out;
+  };
+  window.lcSeatText = function (seat) {
+    return "# the seat this bench belongs to — read by the teacher's desk, written once\n" +
+      "email: " + yq(seat.email) + "\nlogin: " + yq(seat.login) +
+      "\nbound_by: " + yq(seat.bound_by || "teacher") + "\nbound_at: " + yq(seat.bound_at || new Date().toISOString()) + "\n";
+  };
+  window.lcNowIso = function () { return new Date().toISOString(); };   /* page python asks the browser for the clock */
   if (window._lcCourseJoinReady) return;
   window._lcCourseJoinReady = true;
 

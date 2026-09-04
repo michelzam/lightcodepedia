@@ -648,3 +648,32 @@ def step_untitled_block_is_a_card(context):
              .filter(b => !b.closest('.lc-block-win'))
              .filter(b => b.querySelector('.lc-win-bar')).length""")
     assert bars == 0, "%d untitled block(s) grew a window bar" % bars
+
+
+# ── the inspector's verbs: engine steps, so every published page can use them
+# (they lived in the lab-only classroom4 steps and pedia's run had them undefined, 2026-09-04)
+@when('I press "{verb}" on the "{elid}" inspector')
+def step_press(context, verb, elid):
+    context.page.locator(
+        '[data-lc-inspector="%s"] [data-card] button[data-m="%s"]' % (elid, verb)).first.click()
+
+@then('the "{verb}" verb on the "{elid}" inspector is enabled')
+def step_verb_enabled(context, verb, elid):
+    btn = context.page.locator(
+        '[data-lc-inspector="%s"] [data-card] button[data-m="%s"]' % (elid, verb)).first
+    expect(btn).to_be_visible(timeout=45_000)
+    expect(btn).to_be_enabled(timeout=15_000)
+
+@then('the "{verb}" verb on the "{elid}" inspector explains "{tip}"')
+def step_verb_tip(context, verb, elid, tip):
+    btn = context.page.locator(
+        '[data-lc-inspector="%s"] [data-card] button[data-m="%s"]' % (elid, verb)).first
+    expect(btn).to_be_visible(timeout=45_000)
+    expect(btn).to_have_attribute("title", tip, timeout=15_000)
+
+@then('the "{verb}" verb on the "{elid}" inspector is disabled')
+def step_verb_disabled(context, verb, elid):
+    btn = context.page.locator(
+        '[data-lc-inspector="%s"] [data-card] button[data-m="%s"]' % (elid, verb)).first
+    expect(btn).to_be_visible(timeout=45_000)
+    expect(btn).to_be_disabled()
