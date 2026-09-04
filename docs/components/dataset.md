@@ -159,6 +159,7 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 | `.dataset` | `refresh="…"` | seconds (≥10) | Live mode: re-fetch on a timer (cache-busted); every bound grid/stat/chart repaints itself — no page reload |
 | `.datagrid` | `source="…"` | dataset id | Which dataset to display |
 | `.datagrid` | `rows="…"` | number | Rows per page (0 = all) |
+| `.datagrid` | `height="…"` | px | A scrolling table with a sticky header instead of pages — wins over `rows` |
 | `.datagrid` | `url` column | URL string | Hidden column; makes rows clickable links |
 | `.chart` | `source="…"` | dataset id | Which dataset to plot |
 | `.chart` | `type="…"` | `bar` · `line` | Chart type |
