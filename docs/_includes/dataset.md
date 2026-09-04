@@ -40,6 +40,8 @@ Auto-included by docs/_layouts/default.html.
   background: #fff; }
 .lc-dg-table tr:nth-child(even) td { background: #fafafa; }
 .lc-dg-table td { color: #111827; user-select: text; }
+.lc-dg-scroll { overflow: auto; }
+.lc-dg-scroll .lc-dg-table thead th { position: sticky; top: 0; z-index: 1; }
 .lc-dg-pages { display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em; font-size: 0.82em; color: #6b7280; }
 .lc-dg-pages button { background: none; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.15em 0.55em; cursor: pointer; color: #374151; }
 .lc-dg-pages button:hover { background: #f3f4f6; }
@@ -235,6 +237,11 @@ Auto-included by docs/_layouts/default.html.
     var fileFmt = fileRef && window.lcInferFormat ? window.lcInferFormat(fileRef, el.getAttribute("format")) : "yaml";
     el.dataset.lcDgDone = "1";
     var perPage = parseInt(el.getAttribute("rows") || "0", 10) || 0;
+    /* height="…" — a SCROLLING table with a sticky header, never pages: a
+       roster of a class is read in one glance, not in pages of eight with
+       the last one half empty (Michel, 2026-09-04). height wins over rows. */
+    var height = parseInt(el.getAttribute("height") || "0", 10) || 0;
+    if (height) perPage = 0;
     /* hints="col: explanation | col2: ..." → header tooltips. Read from the
        declaration HERE — below, el is reassigned to the fresh wrapper and
        the original attributes are gone with the replaced element. */
@@ -322,7 +329,8 @@ Auto-included by docs/_layouts/default.html.
       page = Math.min(page, Math.max(0, pages - 1));
       var slice = sorted.slice(page * pp, (page + 1) * pp);
 
-      var html = "<table class='lc-dg-table'><thead><tr>"
+      var html = (height ? "<div class='lc-dg-scroll' style='max-height:" + height + "px'>" : "")
+        + "<table class='lc-dg-table'><thead><tr>"
         + cols.map(function (c) {
             var arrow = sortCol === c ? (sortAsc ? " ↑" : " ↓") : "";
             var hint = hints[c] ? " title='" + hints[c].replace(/'/g, "&#39;") + "' class='lc-th-hint'" : "";
@@ -344,7 +352,7 @@ Auto-included by docs/_layouts/default.html.
                          " inputmode='" + (typeof row[c] === "number" ? "decimal" : "text") +
                          "'>" + v + "</td>";
                 }).join("") + "</tr>";
-          }).join("") + "</tbody></table>";
+          }).join("") + "</tbody></table>" + (height ? "</div>" : "");
 
       if (pages > 1) {
         html += "<div class='lc-dg-pages'>";
