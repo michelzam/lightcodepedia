@@ -49,6 +49,26 @@ one row per person, one column per kind of fact:
 ```
 {: .accordion #vocabulary }
 
+**Q:** "Thomas Hardy, London" sits in one horizontal line of the
+customers table. What is that line called?
+
+- [ ] A column of the table
+
+  > Columns run the other way — vertical slices like `ContactName`,
+  > one *kind* of fact across everyone.
+
+- [x] A row, or tuple
+
+  > One row = all the facts that belong together about one customer.
+  > Finding the right row was the whole quest.
+
+- [ ] One of the strategic key columns
+
+  > Keys are special *columns*, not lines — the strategic ones that
+  > identify and link. They get their moment two cards down.
+{: .quiz }
+
+
 ```
 ### 🪜 From noise to wisdom — DIKIW
 
@@ -88,7 +108,7 @@ WHERE ContactName = 'Thomas Hardy';
 ~~~
 
 🔗 Try it on a full-size database:
-[w3schools SQL TryIt](https://www.w3schools.com/sql/trysql.asp?filename=trysql_select_all)
+[w3schools SQL editor](https://www.w3schools.com/sql/trysql.asp?filename=trysql_select_all)
 ```
 {: .accordion #speak_sql }
 
@@ -118,25 +138,6 @@ ordered cranberry sauce on Sept 2."* Two tables, one truth.
 ````
 {: .accordion #two_tables }
 
-**Q:** "Thomas Hardy, London" sits in one horizontal line of the
-customers table. What is that line called?
-
-- [ ] A column of the table
-
-  > Columns run the other way — vertical slices like `ContactName`,
-  > one *kind* of fact across everyone.
-
-- [x] A row, or tuple
-
-  > One row = all the facts that belong together about one customer.
-  > Finding the right row was the whole quest.
-
-- [ ] One of the strategic key columns
-
-  > Keys are special *columns*, not lines — the strategic ones that
-  > identify and link. They get their moment two cards down.
-{: .quiz }
-
 **Q:** How does an order know which customer placed it?
 
 - [ ] The two tables are stored side by side on the same disk
@@ -155,6 +156,7 @@ customers table. What is that line called?
   > primary key in customers. One shared identifier, zero copies.
 {: .quiz }
 
+
 ```
 ### 🔬 Observations — what we just played
 
@@ -166,12 +168,46 @@ customers table. What is that line called?
 - 🔭 With this we can explore the *whole* database, to solve
   problems. Wahoo 🎉
 
-⚙️ **Quiz 1d — Data Quest** waits in Canvas, 📦 Module 01 — the quest
-continues there, on a bigger table. And 📍 **Assignment 1c — Data Quest**
-asks for a screenshot of your own first query on the big table — you may
-retake it as often as you like.
+Next: the words for all of this, on the concepts page — and the
+full-size table on w3schools, where the same query finds the same Thomas.
 ```
 {: .accordion #observations }
+
+Four words to keep from this page: a `table`[^table] holds the facts;
+a `row`[^row] is one customer; a `column`[^column] is one kind of fact;
+a `key`[^key] is the column that identifies a row and lets another
+table point at it. The proof below reads the two tables on this page:
+
+```gherkin
+Feature: The winner is one row, and his orders point at him
+  Scenario: The customers table holds Thomas Hardy as one row
+    Given the customers table on this page
+    :::python
+    self.customers: Dataset = Dataset("customers")
+    self.grid: Datagrid = self.page.customers_grid
+    :::
+    Then it has five rows, four columns, and one of the rows is Thomas
+    :::python
+    assert self.customers.count == 5, self.customers.count
+    heads: list[str] = self.grid.headers
+    assert heads == ["CustomerID", "ContactName", "City", "Country"], heads
+    names: list[str] = self.customers.values("ContactName")
+    assert "Thomas Hardy" in names, names
+    :::
+
+  Scenario: Every order carries a key that a customer answers to
+    Given the orders table
+    :::python
+    self.orders: Dataset = Dataset("orders")
+    :::
+    Then each CustomerID in orders is a CustomerID in customers
+    :::python
+    keys: list[str] = self.customers.values("CustomerID")
+    refs: list[str] = self.orders.values("CustomerID")
+    assert refs and all(r in keys for r in refs), refs
+    :::
+```
+{: .feature #quest_proof tags="table, row, column, key" visible="true" status="passing" }
 
 [Browse](#)
 {: .folder parent="true" }
@@ -204,7 +240,7 @@ script:
     say: "Here is the trick the whole relational world runs on: two tables, linked by key equality. Primary key meets foreign key, and one sentence spans both."
   - at: observations
     do: open
-    say: "You started with a problem, found Tom with your bare hands, then with SQL. The module check in Canvas lets you play it again on a bigger board."
+    say: "You started with a problem, found Tom with your bare hands, then with SQL. The full-size table on TryIt lets you play it again on a bigger board."
 stories:
   summarize the page:
     - 'You might wonder: summarize the page'
@@ -220,3 +256,13 @@ stories:
     - Finding his row, then his contact info, is your first data quest.
 ```
 {: .avatar #guide dock="true" size="115" }
+
+[^table]: **table** — a named rectangle of facts: one row per thing,
+    one column per kind of fact. Customers and Orders are tables.
+[^row]: **row** — one thing and all its facts across the columns:
+    Thomas Hardy is a row. Also called a tuple.
+[^column]: **column** — one kind of fact, named and typed, down the
+    whole table: `City` is a column.
+[^key]: **key** — the column that identifies a row (primary key) or
+    points at another table's row (foreign key). Tables relate by key
+    equality, primary = foreign.

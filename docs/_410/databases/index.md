@@ -7,9 +7,10 @@ schools, the shop that sells your pizza 🍕. This course teaches you how
 that data is stored, retrieved, and kept reliable at scale: relational
 databases and SQL first, then a look at the NoSQL families.
 
-Start with the first module:
+Start with the first module, then follow the quest:
 
 - [👋 01 · Introductions](module_01/index.md)
+- [🔎 02 · Data Quest 2](module_02/index.md)
 
 [Browse](#)
 {: .folder }
@@ -25,6 +26,7 @@ stories:
     - This is the front door of the Databases course, INFOST 410.
     - The course covers relational databases and SQL, then the NoSQL families.
     - Module 01 introduces the course, the instructor, and your first data quest.
+    - Module 02 hands you the query — English first, then SQL, over the shop's eight tables.
     - Open module 01 to begin, or browse the folder to see everything at once.
 ```
 {: .avatar #guide dock="true" size="115" }

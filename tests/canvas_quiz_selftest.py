@@ -163,6 +163,73 @@ def test_a_multiple_choice_quiz_is_still_judged():
     assert bad, "the tell detector went quiet on a multiple-choice key"
 
 
+MATCH = (
+    '# 📍 Assignment 2a — Data Quest 2\n'
+    '{: .canvas_quiz attempts="unlimited" anchors="Customers, TryIt, Thomas" }\n\n'
+    'Say it in English, then match the SQL.\n\n'
+    '### Say it in SQL\n\n'
+    'Match each sentence with the SQL that answers it on TryIt.\n\n'
+    '| English | SQL |\n'
+    '|---|---|\n'
+    '| Select all customers | SELECT * FROM Customers; |\n'
+    "| Select London customers | SELECT * FROM Customers WHERE City = 'London'; |\n"
+    '| Select names and cities | SELECT ContactName, City FROM Customers; |\n'
+    '|  | SELECT ContactName AND City FROM Customers; |\n\n'
+    '> A comma lists columns; AND joins conditions, never columns.\n\n'
+    '{: .quiz kind="matching" points="5" }\n')
+
+
+def test_a_matching_question_is_a_table():
+    """Michel, 2026-09-04: "NOT multiple choices BUT a classic quiz with
+    Matching questions" — sentences left, SQL right, one table per
+    question, an empty left cell for a distractor."""
+    sp = cq.parse_md(MATCH)
+    q = sp["questions"][0]
+    assert q["type"] == "matching" and sp["attempts"] == -1
+    assert q["text"] == "Match each sentence with the SQL that answers it on TryIt."
+    assert [p["left"] for p in q["pairs"]] == [
+        "Select all customers", "Select London customers", "Select names and cities"]
+    assert q["pairs"][1]["right"] == "SELECT * FROM Customers WHERE City = 'London';"
+    assert q["distractors"] == ["SELECT ContactName AND City FROM Customers;"]
+    assert q["why"].startswith("A comma lists columns")
+    assert cq.tells(sp) == [], cq.tells(sp)
+
+
+def test_a_matching_question_pushes_as_canvas_matching():
+    """One answer per pair, distractors in the incorrect-matches box, the
+    why as the question's neutral comment in both fields Canvas reads."""
+    q = cq.parse_md(MATCH)["questions"][0]
+    body = cq.to_canvas_question(q, 1)["question"]
+    assert body["question_type"] == "matching_question"
+    assert body["points_possible"] == 5
+    assert body["answers"][0] == {"answer_match_left": "Select all customers",
+                                  "answer_match_right": "SELECT * FROM Customers;",
+                                  "answer_weight": 100}
+    assert body["matching_answer_incorrect_matches"] == \
+        "SELECT ContactName AND City FROM Customers;"
+    assert body["neutral_comments"] == q["why"]
+    assert body["neutral_comments_html"] == "<p>" + q["why"] + "</p>"
+
+
+def test_a_matching_question_has_its_own_tells():
+    """Too few pairs, a right side shared by two lefts, a silent table, and
+    a table under a question that never said kind="matching"."""
+    thin = MATCH.replace("| Select names and cities | SELECT ContactName, City FROM Customers; |\n", "")
+    assert any("at least 3" in b for b in cq.tells(cq.parse_md(thin)))
+    twice = MATCH.replace("SELECT ContactName, City FROM Customers;", "SELECT * FROM Customers;")
+    assert any("matches two lefts" in b for b in cq.tells(cq.parse_md(twice)))
+    mute = MATCH.replace("> A comma lists columns; AND joins conditions, never columns.\n\n", "")
+    assert any("no why" in b for b in cq.tells(cq.parse_md(mute)))
+    unsaid = MATCH.replace('{: .quiz kind="matching" points="5" }', "{: .quiz }")
+    assert any('kind="matching"' in b for b in cq.tells(cq.parse_md(unsaid)))
+    generic = MATCH.replace('anchors="Customers, TryIt, Thomas"', 'anchors="Diallo, reservations"')
+    assert any("names nothing" in b for b in cq.tells(cq.parse_md(generic)))
+
+
+def test_a_pipe_inside_a_cell_survives():
+    assert cq._cells(r"| a \| b | c |") == ["a | b", "c"]
+
+
 if __name__ == "__main__":
     fails = 0
     for name, fn in sorted(globals().items()):

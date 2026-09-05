@@ -11,6 +11,13 @@ Attach `{: .diagram }` to a link. Add `scope="ClassName"` to focus on one class
 plus its ancestors, association targets and subclasses. No scope → the whole
 model.
 
+It draws wherever the block appears — a static page, a runner render (the road
+every course page takes to Canvas), the body of a folded accordion — and it
+redraws once a `{: .model }` block lands the page's own classes in the runtime.
+A model block stays hidden, so a lesson can declare eight classes out of sight
+and show only their picture: `scope="OrderDetail,Order,Product"` names the
+classes nothing points into, and the closure brings the rest.
+
 ## 🌍 Whole model
 
 [Component model](#)

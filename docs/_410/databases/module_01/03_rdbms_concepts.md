@@ -58,40 +58,6 @@ Mondays. MySQL, which you will install soon, is one.
 ```
 {: .accordion #what_dbms }
 
-```
-### 📋 4 · Why "relational"?
-
-Because the data are stored as **relations** — and a relation is
-just a way of tying pieces of information together, at two levels:
-
-**Within a row** — `CustomerID = 4`, `ContactName = Thomas Hardy`,
-`City = London` are related because they describe the *same person*.
-The columns define what kinds of facts we can store.
-
-**Across tables** — Orders carries a `CustomerID`; that ID relates
-each order back to the right row in Customers. Shared identifiers —
-**keys** — connect the tables.
-
-One word, two levels of connection. That is the relational model.
-```
-{: .accordion #relational }
-
-```
-### 🌍 5 · Why it matters
-
-Databases are behind almost every modern information system:
-
-- 💳 banking systems,
-- 💬 social media platforms,
-- 🔬 scientific archives,
-- 🛒 retail and logistics networks.
-
-Understanding databases means understanding how information is
-**stored, retrieved, and kept reliable at scale** — from your bank
-account to the scientific archive for berries.
-```
-{: .accordion #why_matters }
-
 **Q:** Your app wants to read customer data. What is the official way in?
 
 - [ ] Open the database files directly — it is faster
@@ -109,6 +75,25 @@ account to the scientific archive for berries.
   > The admin runs it through… the DBMS. Charming, but you added a
   > human to the pipeline, not a way in.
 {: .quiz }
+
+
+```
+### 📋 4 · Why "relational"?
+
+Because the data are stored as **relations** — and a relation is
+just a way of tying pieces of information together, at two levels:
+
+**Within a row** — `CustomerID = 4`, `ContactName = Thomas Hardy`,
+`City = London` are related because they describe the *same person*.
+The columns define what kinds of facts we can store.
+
+**Across tables** — Orders carries a `CustomerID`; that ID relates
+each order back to the right row in Customers. Shared identifiers —
+**keys** — connect the tables.
+
+One word, two levels of connection. That is the relational model.
+```
+{: .accordion #relational }
 
 **Q:** "Relational" means the data are related — at how many levels?
 
@@ -128,6 +113,23 @@ account to the scientific archive for berries.
   > Admins are lovely people, but the term is math: a relation is a
   > way of tying pieces of information together.
 {: .quiz }
+
+
+```
+### 🌍 5 · Why it matters
+
+Databases are behind almost every modern information system:
+
+- 💳 banking systems,
+- 💬 social media platforms,
+- 🔬 scientific archives,
+- 🛒 retail and logistics networks.
+
+Understanding databases means understanding how information is
+**stored, retrieved, and kept reliable at scale** — from your bank
+account to the scientific archive for berries.
+```
+{: .accordion #why_matters }
 
 ```
 ### 📖 Formal definitions — for reference
@@ -149,13 +151,64 @@ purpose**.
 ```
 ### ✅ Your move
 
-Everything graded lives in **Canvas 410, 📦 Module 01 — Data Quest**:
-⚙️ Quiz 1a - Welcome and ⚙️ Quiz 1b — Syllabus if you have not taken
-them, 📍 Assignment 1c — Data Quest (your own screenshot, retake it any
-time), ⚙️ Quiz 1d — Data Quest, and your video introduction in
-💬 Discussion 1.
+Keep your one-table sentences coming — and try a two-table one on the
+full-size database, on [w3schools](https://www.w3schools.com/sql/trysql.asp?filename=trysql_select_all). Next module: the query, the tool that
+reads eight tables without scrolling.
 ```
 {: .accordion #your_move }
+
+Three words to keep from this page: a `database`[^database] is the
+organized collection; the `dbms`[^dbms] is the only official way in;
+`relational`[^relational] means related at two levels — within a row,
+and across tables through keys. The proof below checks the second level
+on a tiny shop:
+
+````
+```json
+[
+  {"CustomerID": 1, "ContactName": "Maria Anders", "City": "Berlin"},
+  {"CustomerID": 4, "ContactName": "Thomas Hardy", "City": "London"}
+]
+```
+{: .dataset #shop_customers }
+
+```json
+[
+  {"OrderID": 10355, "CustomerID": 4, "OrderDate": "1996-11-15"},
+  {"OrderID": 10383, "CustomerID": 4, "OrderDate": "1996-12-16"},
+  {"OrderID": 10643, "CustomerID": 1, "OrderDate": "1997-08-25"}
+]
+```
+{: .dataset #shop_orders }
+
+```sql
+SELECT ContactName, OrderID
+FROM shop_customers, shop_orders
+WHERE shop_customers.CustomerID = shop_orders.CustomerID
+```
+{: .query source="shop_customers,shop_orders" #q_related }
+
+[each order, with the customer it relates to](#)
+{: .datagrid source="q_related" rows="3" }
+````
+{: .block title="🖇️ A tiny shop — two tables, related by key" #tiny_shop }
+
+```gherkin
+Feature: Relational means related through keys
+  Scenario: Every order relates to exactly one customer
+    Given the tiny shop's two tables and the query tying them by key
+    :::python
+    self.orders: Dataset = Dataset("shop_orders")
+    self.related: Query = self.page.q_related
+    :::
+    Then the key equality gives one line per order, each naming its customer
+    :::python
+    assert self.related.count == self.orders.count, self.related.count
+    names: list[str] = sorted(self.related.values("ContactName"))
+    assert names == ["Maria Anders", "Thomas Hardy", "Thomas Hardy"], names
+    :::
+```
+{: .feature #relational_proof tags="database, dbms, relational" visible="true" status="passing" }
 
 [Browse](#)
 {: .folder parent="true" }
@@ -183,7 +236,7 @@ script:
     say: "Your bank balance is a row. Your transcript is a row. Reliability at scale is not an abstraction — it is your life, stored carefully."
   - at: your_move
     do: open
-    say: "Words done, moves next: Canvas, Module 01. And keep your one-table sentences coming."
+    say: "Words done, moves next: a two-table sentence on the full-size database. And keep your one-table sentences coming."
 stories:
   summarize the page:
     - 'You might wonder: summarize the page'
@@ -191,7 +244,7 @@ stories:
     - A database is data organized to mirror the aspects of a domain that matter.
     - The DBMS is the only official way to reach the data, keeping it consistent and secure.
     - Relational means related at two levels — within a row, and across tables through keys.
-    - It closes with formal definitions and your next moves in Canvas, Module 01.
+    - It closes with formal definitions and a two-table sentence to try on the full-size database.
   what is the difference between a database and a DBMS:
     - 'You might wonder: what is the difference between a database and a DBMS'
     - The database is the organized collection of data itself — the jar with the tables.
@@ -199,3 +252,13 @@ stories:
     - MySQL is a DBMS; the shop's customers and orders are a database it manages.
 ```
 {: .avatar #guide dock="true" size="115" }
+
+[^database]: **database** — a collection of data organized to mirror
+    the aspects of a domain that matter: the shop's customers, orders,
+    products.
+[^dbms]: **dbms** — the database management system, the software that
+    defines, creates, maintains, and controls access to the database.
+    MySQL is one. The only official way in.
+[^relational]: **relational** — data stored as relations: values in a
+    row belong to one thing, and rows across tables meet through shared
+    keys.

@@ -257,6 +257,26 @@ def step_dot_rendered(context):
         "the DOT source is still on the page, unrendered"
 
 
+@then('a class diagram is drawn naming "{a}" and "{b}"')
+def step_class_diagram(context, a, b):
+    from playwright.sync_api import expect
+    svg = context.page.locator(".lc-diagram svg").first
+    expect(svg).to_be_visible(timeout=40_000)
+    # the model lands after the first draw — the redraw must carry it
+    expect(svg).to_contain_text(a, timeout=20_000)
+    expect(svg).to_contain_text(b, timeout=20_000)
+    assert context.page.locator("p.diagram, a.diagram").count() == 0, \
+        "the diagram link is still on the page, undrawn"
+
+
+@then("the model's code stays hidden")
+def step_model_hidden(context):
+    shown = context.page.evaluate(
+        """() => [...document.querySelectorAll('.lc-model, pre.model')]
+                 .map(e => getComputedStyle(e).display).filter(d => d !== 'none').length""")
+    assert shown == 0, "%d model block(s) visible" % shown
+
+
 @then("the diagram is no wider than the page")
 def step_diagram_fits(context):
     m = context.page.evaluate(
