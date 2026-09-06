@@ -332,3 +332,12 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then the "eat" verb on the "lucky_widget" inspector explains "Reads the bowl. Writes weight — and the mood turns fed. · → fed"
     And the "bark" verb on the "lucky_widget" inspector explains "needs: fed"
+
+  Scenario: The folder page's recap example folds a built folder into facts
+    The recap view also runs on a built site (manifest road, no key): the
+    component page's own example lists the examples folder.
+
+    When I navigate to "/components/folder"
+    And I wait for the page to be interactive
+    Then the recap head reads "pages done"
+    And the recap lists at least 3 pages

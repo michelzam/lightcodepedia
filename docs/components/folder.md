@@ -20,6 +20,7 @@ Auto-generate a card grid from all `.md` files in a folder — no manual list to
 | `sort` | `name` | Initial order: `name` or `recent` (git dates, lazy). |
 | `open` | | `runner`: scan a repo path *outside* `docs/` (unrendered material like `courses/`) via the API with your key — every card opens in the runner. |
 | `title` | `true` | Name the module above the cards — the folder's own `index.md` title. `title="false"` when the page already carries that heading. |
+| `view` | cards | `recap`: one factual line per page — tags, quizzes ok/missed, proofs green, a link to finish — with the module's points and one line to cheer. See below. |
 | `path` | the link href | Folder to scan. Accepts a knob-cell: `path="= get_var('COURSE_PATH', 'courses')"` resolves the node's variable (see [Cells](/components/cells)). |
 
 ## Two postures — read and workbench
@@ -79,8 +80,27 @@ the same way a card's href is keyed, so the shelf reads them without
 inventing a second convention. The module's census — how many quizzes, how
 many features — is read once and cached for 12 hours.
 
-Progress is **per browser** today. Moving it to the learner's bench, so it
-follows them across devices, is the next step.
+Progress travels in the learner's **bench**: their `__progress.txt` merges
+into these records when it lands, so a phone shows the laptop's work.
+
+## Where you are — `view="recap"`
+
+Before a graded check, a learner juggling three classes and a job wants
+facts, not prose: what they earned on each page of **this module**, what
+they missed, what is left — and a link to finish it. `view="recap"` folds
+the shelf into exactly that:
+
+[this folder](docs/components/examples)
+{: .folder view="recap" }
+
+One line per page: ✅ done · 🟡 started · ⬜ untouched, then the page's tags,
+`quiz ok/total` with the misses named, `proofs green/total`, and ↗ *open*,
+*finish* or *start*. The head counts pages done and **points = quizzes ok +
+proofs green** — the ribbon's own formula. The last line cheers with numbers
+only. Module-scoped by construction: it lists one folder.
+
+Its home is the intro of a module's graded check, framed from Canvas through
+the course door: `/go?p=module_01/_recap&focus=1`.
 
 ## Notes
 

@@ -36,6 +36,15 @@ Auto-included by docs/_layouts/default.html.
 /* WHICH MODULE IS THIS? A shelf of siblings never said what it was a shelf
    OF. One quiet line above the cards, in the eyebrow register, so it names
    the module without competing with the page's own heading. */
+/* view="recap": one factual line per page, module-scoped */
+.lc-recap { display: block !important; }
+.lc-recap-head { font-weight: 600; margin: 0 0 0.5em; }
+.lc-recap-row { padding: 0.25em 0; border-top: 1px solid #f0f0f0; font-size: 0.92em; }
+.lc-recap-row a { color: inherit; text-decoration: none; font-weight: 600; }
+.lc-recap-row a:hover { text-decoration: underline; }
+.lc-recap-tags { color: #6b7280; }
+.lc-recap-go { color: #0066cc !important; font-weight: 500 !important; white-space: nowrap; }
+.lc-recap-cheer { margin-top: 0.6em; font-weight: 600; color: #15803d; }
 .lc-folder-title { font-size: 0.74em; font-weight: 600; letter-spacing: 0.07em;
   text-transform: uppercase; color: #6b7280; margin: 0.2em 0 0.5em; }
 /* a door, but a quiet one: the eyebrow keeps its register until you aim */
@@ -261,6 +270,10 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
        sits under its own heading */
     var wantTitle = el.getAttribute("title") !== "false";
     var sortMode = (el.getAttribute("sort") || "name").toLowerCase();   // "name" (default) | "recent"
+    /* view="recap": the shelf's cards folded into one factual line per page
+       — what the reader earned there, what they missed, what is left, and a
+       link to finish it. Same items, same records, module-scoped. */
+    var recapView = (el.getAttribute("view") || "") === "recap";
     /* Rendered INSIDE a bench (a runner render stamps its repo/path on the
        root)? Then scan THAT repo, not the site — a bench's index.md lists its
        own course/ folder, per viewer, regardless of where the page lives. */
@@ -982,6 +995,95 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
          write affordances appear and retire with the mode */
       if (document.body.contains(wrap) && _xrayRW() !== _lastModeX) refresh();
     });
+    /* ── WHERE YOU ARE IN THIS MODULE (Michel, 2026-09-06) ───────────────
+       Before a graded check a learner juggling three classes and a job
+       wants one factual line per page: what they earned, what they missed,
+       what is left, and a link to finish it. No prose. Points = quizzes ok
+       + proofs green — the ribbon's own formula — from the reader's records
+       (lc_scores, lc_features), which the bench's progress file feeds, so a
+       phone shows the laptop's work: the recap redraws when that file lands. */
+    function recapRows(items) {
+      var norm = window.lcPageScores && window.lcPageScores.norm;
+      var scores = (window.lcPageScores && window.lcPageScores.all) ? window.lcPageScores.all() : {};
+      return items.filter(function (it) { return !it.isSubdir; }).map(function (it) {
+        var feats = rememberedFeatures(it.url, it.features) || [];
+        var s = (norm && scores[norm(it.url)]) || {};
+        var Q = it.quizzes || 0, A = Math.min(Q, s.total || 0), W = Math.min(A, s.won || 0);
+        var F = feats.length;
+        var G = feats.filter(function (f) { return f && f.remembered && f.status === "passing"; }).length;
+        var pts = W + G, max = Q + F;
+        var state = (max && pts === max) ? "done" : (A || G) ? "going" : "fresh";
+        return { title: it.title, url: it.url, tags: cardTagList(feats), Q: Q, A: A, W: W,
+                 missed: A - W, F: F, G: G, pts: pts, max: max, state: state };
+      });
+    }
+    function numWord(n) {
+      return ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"][n] || String(n);
+    }
+    function pagesWord(n) { return numWord(n) + " page" + (n === 1 ? "" : "s"); }
+    function recapCheer(t) {
+      if (!t.max) return "Nothing to collect here.";
+      if (!t.pts) return "Nothing yet. " + t.max + " points on " + pagesWord(t.n) + ".";
+      if (t.pts >= t.max) return "Module complete. " + t.max + " points. Collect the check.";
+      var tail = t.left + " points left on " + pagesWord(t.open) + ".";
+      if (t.pts * 2 < t.max) return "Under way. " + tail;
+      return pagesWord(t.done).replace(/^./, function (c) { return c.toUpperCase(); }) + " down. " + tail;
+    }
+    function moduleTitle(rp) {
+      var dir = String(rp || "").replace(/\/+$/, "");
+      if (!dir || dir === ".") dir = runBaseDir || "";
+      var fallback = dir ? titleCase(dir.split("/").pop()) : "";
+      if (!dir) return Promise.resolve(fallback);
+      var idx = dir + "/index.md";
+      var get = runnerMode
+        ? apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" + idx, true)
+        : fetchText(mdUrl(idx));
+      return Promise.resolve(get).then(function (t) {
+        var m = typeof t === "string" ? extractPageMeta(t) : null;
+        return (m && m.title) || fallback;
+      }).catch(function () { return fallback; });
+    }
+    var _recapItems = null;
+    function renderRecap(items) {
+      _recapItems = items;
+      wrap.classList.add("lc-recap");
+      var rows = recapRows(items);
+      var t = { n: 0, done: 0, open: 0, pts: 0, max: 0 };
+      rows.forEach(function (r) {
+        if (!r.max) return;
+        t.n++; t.pts += r.pts; t.max += r.max;
+        if (r.state === "done") t.done++; else t.open++;
+      });
+      t.left = t.max - t.pts;
+      var h = "<div class='lc-recap-head'>🏁 <span class='lc-recap-module'></span> — "
+        + t.done + " of " + t.n + " pages done · 🏆 " + t.pts + " of " + t.max + " points</div>";
+      rows.forEach(function (r) {
+        var icon = r.state === "done" ? "✅" : r.state === "going" ? "🟡" : "⬜";
+        var parts = [];
+        if (r.tags.length) parts.push("<span class='lc-recap-tags'>" + escapeHtml(r.tags.join(", ")) + "</span>");
+        if (r.Q) parts.push("quiz " + r.W + "/" + r.Q + (r.missed ? ", " + r.missed + " missed" : ""));
+        if (r.F) parts.push((r.F === 1 ? "proof " : "proofs ") + r.G + "/" + r.F);
+        if (!r.max) parts.push("no points here");
+        var verb = r.state === "done" ? "open" : r.state === "going" ? "finish" : "start";
+        h += "<div class='lc-recap-row' data-url='" + escapeHtml(r.url) + "' data-state='" + r.state + "'>"
+          + icon + " <a href='" + escapeHtml(r.url) + "'>" + escapeHtml(r.title) + "</a> · " + parts.join(" · ")
+          + " · <a class='lc-recap-go' href='" + escapeHtml(r.url) + "'>↗ " + verb + "</a></div>";
+      });
+      h += "<div class='lc-recap-cheer'>💪 " + escapeHtml(recapCheer(t)) + "</div>";
+      wrap.innerHTML = h;
+      if (window.lcRebase) window.lcRebase(wrap);
+      moduleTitle(path).then(function (name) {
+        var el2 = wrap.querySelector(".lc-recap-module");
+        if (el2) el2.textContent = name;
+      });
+      if (!renderRecap.listening) {
+        renderRecap.listening = true;
+        /* the bench's progress file landed after the first paint: redraw
+           from the merged records — the phone now shows the laptop's work */
+        document.addEventListener("lc-progress-loaded", function () { if (_recapItems) renderRecap(_recapItems); });
+      }
+    }
+
     function renderItems(items) {
         if (!items || !items.length) {
           var _where = (path === "." || path === "") ? "this folder yet" : escapeHtml(path);
@@ -1016,6 +1118,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
           });
         });
 
+        if (recapView) { renderRecap(items); return; }
         /* YOU ARE HERE, AND WHERE IS HERE (Michel, 2026-08-11). A shelf of
            sibling pages says nothing about which module it belongs to, and
            nothing about which of its cards is the page the reader is

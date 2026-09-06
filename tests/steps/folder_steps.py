@@ -471,3 +471,93 @@ def step_card_not_here(context, title):
     card = context.page.locator(".lc-card", has_text=title).first
     expect(card).to_be_visible(timeout=15_000)
     assert "lc-card-here" not in (card.get_attribute("class") or "")
+
+
+# ── view="recap": where you are in this module ─────────────────────────────
+@given('the module "{dirpath}" holds pages with quizzes and proofs')
+def step_module_pages(context, dirpath):
+    """the listing plus one raw body per page, built from the table:
+    N `{: .quiz }` blocks and N pending `.feature` proofs carrying the tags"""
+    files, bodies = [], {}
+    for row in context.table:
+        name = row["file"].strip()
+        body = "# " + row["title"].strip() + "\n\nSome prose.\n\n"
+        for i in range(int(row["quizzes"])):
+            body += "**Q%d:** Ready?\n\n- [x] Yes\n- [ ] No\n{: .quiz }\n\n" % (i + 1)
+        for i in range(int(row["proofs"])):
+            body += ("```gherkin\nFeature: proof %d\n```\n{: .feature #p%d status=\"pending\" tags=\"%s\" }\n\n"
+                     % (i + 1, i + 1, row["tags"].strip()))
+        bodies[name] = body
+        files.append({
+            "type": "file", "name": name, "path": dirpath + "/" + name,
+            "download_url": "https://raw.example.org/" + dirpath + "/" + name,
+            "url": "https://api.github.com/repos/acme/demo/contents/" + dirpath + "/" + name,
+        })
+    bodies["index.md"] = "# 📦 01 · Outside-in\n\nFrom user to builder.\n"
+    listing = json.dumps(files)
+
+    def serve(route):
+        url = route.request.url.split("?")[0]
+        name = url.split("/")[-1]
+        if url.endswith("/" + dirpath):
+            route.fulfill(status=200, content_type="application/json", body=listing)
+        elif name in bodies:
+            route.fulfill(status=200, content_type="text/plain", body=bodies[name])
+        else:
+            route.fallback()
+
+    context.page.route("**/api.github.com/repos/**/contents/" + dirpath, serve)
+    context.page.route("**/api.github.com/repos/**/contents/" + dirpath + "/*", serve)
+    context.page.route("**/raw.example.org/" + dirpath + "/*", serve)
+
+
+@then('the recap head reads "{text}"')
+def step_recap_head(context, text):
+    expect(context.page.locator(".lc-recap-head").first).to_contain_text(text, timeout=20_000)
+
+
+@then('the recap names the module "{name}"')
+def step_recap_module(context, name):
+    expect(context.page.locator(".lc-recap-module").first).to_have_text(name, timeout=20_000)
+
+
+@then('the recap cheers "{text}"')
+def step_recap_cheer(context, text):
+    expect(context.page.locator(".lc-recap-cheer").first).to_contain_text(text, timeout=20_000)
+
+
+@then('the recap row "{title}" reads "{text}" and offers "{verb}"')
+def step_recap_row(context, title, text, verb):
+    row = context.page.locator(".lc-recap-row").filter(has_text=title).first
+    expect(row).to_contain_text(text, timeout=20_000)
+    expect(row.locator(".lc-recap-go")).to_have_text("↗ " + verb)
+
+
+@when("the bench's records arrive")
+def step_records_arrive(context):
+    """what progress.md does when __progress.txt lands: the merged records
+    are in localStorage and lc-progress-loaded fires — keyed exactly as the
+    recap keys its rows, through lcPageScores.norm"""
+    rows = [{"page": r["page"].strip(), "won": int(r["won"]), "answered": int(r["answered"]),
+             "green": int(r["green"])} for r in context.table]
+    context.page.evaluate("""(rows) => {
+      const scores = JSON.parse(localStorage.getItem('lc_scores') || '{}');
+      const feats = JSON.parse(localStorage.getItem('lc_features') || '{}');
+      rows.forEach(r => {
+        const el = Array.from(document.querySelectorAll('.lc-recap-row'))
+          .find(e => e.textContent.indexOf(r.page) >= 0);
+        if (!el) throw new Error('no recap row for ' + r.page);
+        const key = window.lcPageScores.norm(el.getAttribute('data-url'));
+        scores[key] = { won: r.won, total: r.answered, ts: '2026-09-06T00:00:00Z' };
+        for (let i = 1; i <= r.green; i++) feats[key + '#p' + i] = { status: 'passing', ts: '2026-09-06T00:00:00Z' };
+      });
+      localStorage.setItem('lc_scores', JSON.stringify(scores));
+      localStorage.setItem('lc_features', JSON.stringify(feats));
+      document.dispatchEvent(new CustomEvent('lc-progress-loaded'));
+    }""", rows)
+
+
+@then("the recap lists at least {n:d} pages")
+def step_recap_rows(context, n):
+    context.page.wait_for_function(
+        "(n) => document.querySelectorAll('.lc-recap-row').length >= n", arg=n, timeout=20_000)
