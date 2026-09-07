@@ -561,3 +561,25 @@ def step_records_arrive(context):
 def step_recap_rows(context, n):
     context.page.wait_for_function(
         "(n) => document.querySelectorAll('.lc-recap-row').length >= n", arg=n, timeout=20_000)
+
+
+@given("the org key alone can read that module")
+def step_org_key_only(context):
+    """the teacher's case: the author key is owner-scoped and the vault is
+    the org's — the runner already falls back to the cockpit's org key, and
+    the shelf must too (2026-09-07: page rendered, shelf said HTTP 404)"""
+    context.page.add_init_script("localStorage.setItem('lc_org_pat','ghp_org');")
+
+    def gate(route):
+        auth = route.request.headers.get("authorization") or ""
+        if auth == "Bearer ghp_org":
+            route.fallback()          # the module stub answers
+        else:
+            route.fulfill(status=404, json={"message": "Not Found"})
+
+    context.page.route("**/api.github.com/repos/**/contents/courses/demo/mod*", gate)
+
+
+@then('the recap key line says "{text}"')
+def step_recap_key(context, text):
+    expect(context.page.locator(".lc-recap-key").first).to_contain_text(text, timeout=20_000)

@@ -45,6 +45,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-recap-tags { color: #6b7280; }
 .lc-recap-go { color: #0066cc !important; font-weight: 500 !important; white-space: nowrap; }
 .lc-recap-cheer { margin-top: 0.6em; font-weight: 600; color: #15803d; }
+.lc-recap-key { font-size: 0.85em; margin: -0.2em 0 0.5em; padding: 0.2em 0.4em; border-radius: 4px; color: #6b7280; }
+.lc-recap-key.lc-key-warn { background: #fff8e1; color: #8a6d00; }
+.lc-recap-key.lc-key-dead { background: #fff5f5; color: #c00; }
+.lc-recap-key a { color: inherit; text-decoration: underline; }
 .lc-folder-title { font-size: 0.74em; font-weight: 600; letter-spacing: 0.07em;
   text-transform: uppercase; color: #6b7280; margin: 0.2em 0 0.5em; }
 /* a door, but a quiet one: the eyebrow keeps its register until you aim */
@@ -336,7 +340,18 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
           });
       };
       if (!_folderPat) return go(null);
-      return go(_folderHdrs).catch(function () { return go(_folderHdrs); });
+      return go(_folderHdrs).catch(function () { return go(_folderHdrs); })
+        .catch(function (e) {
+          /* educator fallback, the runner's own (runner.md): the cockpit's
+             org key may read what the author key can't — a vault or a bench
+             lives in the org, not under the author's account. The page
+             rendered through it while the shelf on it said HTTP 404
+             (Michel, 2026-09-07). Learners never hold lc_org_pat: no-op. */
+          var opat = ""; try { opat = localStorage.getItem("lc_org_pat") || ""; } catch (e2) {}
+          if (opat && /HTTP (404|401)/.test(String(e && e.message)))
+            return go({ Authorization: "Bearer " + opat, "X-GitHub-Api-Version": "2022-11-28" });
+          throw e;
+        });
     }
     /* ── enumerate from the build-time manifest, not the GitHub API ──────
        The lab repo is private, so api.github.com/contents 404s for anonymous
@@ -1057,6 +1072,9 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       t.left = t.max - t.pts;
       var h = "<div class='lc-recap-head'>🏁 <span class='lc-recap-module'></span> — "
         + t.done + " of " + t.n + " pages done · 🏆 " + t.pts + " of " + t.max + " points</div>";
+      /* the key's life, where a learner checks their points (Michel, 2026-09-07) */
+      var kl = window.lcKey ? window.lcKey.line() : null;
+      if (kl) h += "<div class='lc-recap-key lc-key-" + kl.cls + "'>" + kl.html + "</div>";
       rows.forEach(function (r) {
         var icon = r.state === "done" ? "✅" : r.state === "going" ? "🟡" : "⬜";
         var parts = [];

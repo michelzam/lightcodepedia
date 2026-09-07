@@ -121,6 +121,9 @@ window.lcFrameApply();
 .lc-ud-row:hover { background: #f5f5f5; }
 .lc-ud-row:last-child { border-bottom: none; }
 .lc-ud-row.danger { color: #c00; }
+.lc-key-warn { background: #fff8e1 !important; color: #8a6d00 !important; }
+.lc-key-dead { background: #fff5f5 !important; color: #c00 !important; }
+.lc-key-warn a, .lc-key-dead a { color: inherit; text-decoration: underline; }
 .lc-ud-legal, .lc-sd-legal { font-size: 0.78em !important; color: #aaa !important;
   border-top: 1px solid #f0f0f0; padding: 7px 16px !important; }
 .lc-ud-legal:hover, .lc-sd-legal:hover { color: #888 !important; }
@@ -512,6 +515,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
         </div>
         <div id="lc-ud-karma-detail" style="font-size:0.75em;color:#c47900;opacity:0.75"></div>
       </a>
+      <div class="lc-ud-row" id="lc-ud-key" style="display:none;flex-direction:column;align-items:flex-start;gap:2px;font-size:0.85em"></div>
       <a class="lc-ud-row" href="/courses/join"><span>🎓</span><span>My course</span></a>
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
       <div class="lc-ud-row" id="lc-ud-qr"><span>📷</span><span>QR code of this page</span></div>
@@ -784,6 +788,54 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
   // without this the avatar only appeared on the NEXT page load ("had to
   // onboard twice"). Signed-out runs attach no listeners, so one re-run
   // after connect initializes everything exactly once.
+  /* ── THE COURSE KEY'S LIFE, from the two facts a page can know ─────────
+     GitHub does not let a page read a token's expiry (the header is not
+     CORS-exposed — checked 2026-09-07), so: the day the wizard saved it,
+     and the day it stopped working (any 401). Yellow between day 25 and 35
+     (GitHub's 30-day default), yellow again from day 106 (the 4-month rule
+     the wizard asks for), red on 401 — with the two ways out. */
+  window.lcKey = (function () {
+    function get(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+    function set(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
+    function fmt(iso) { var d = new Date(iso); return isNaN(d.getTime()) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+    function state() {
+      if (!get("lc_ed_pat")) return { state: "none" };
+      var since = get("lc_key_since"), dead = get("lc_key_dead");
+      if (dead) return { state: "dead", since: since, dead: dead };
+      var t = Date.parse(since);
+      if (isNaN(t)) return { state: "ok", since: "", days: null };
+      var n = Math.floor((Date.now() - t) / 86400000);
+      return { state: ((n >= 25 && n <= 35) || n >= 106) ? "warn" : "ok", since: since, days: n };
+    }
+    function line() {
+      var s = state();
+      if (s.state === "none") return null;
+      var setup = window.lcHref ? window.lcHref("/courses/join") : "/courses/join";
+      var links = ' <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">check on GitHub ↗</a> · <a href="' + setup + '">renew in Setup ↗</a>';
+      if (s.state === "dead")
+        return { cls: "dead", html: "🔴 Your key no longer works — expired or revoked. Create a new one (Expiration → Custom → 4 months) and paste it in Setup." + links };
+      if (s.state === "warn")
+        return { cls: "warn", html: "🟡 Key saved " + s.days + " days ago" +
+          (s.days <= 35 ? " — if you kept GitHub's 30-day default, it dies at day 30." : " — a 4-month key dies around day 120.") + links };
+      return { cls: "ok", html: s.since ? "🔑 Key saved on " + fmt(s.since) + "." : "🔑 Key connected." };
+    }
+    return {
+      state: state, line: line,
+      saved: function () { set("lc_key_since", new Date().toISOString()); set("lc_key_dead", ""); },
+      alive: function () { set("lc_key_dead", ""); },
+      died:  function () { if (!get("lc_key_dead")) set("lc_key_dead", new Date().toISOString()); }
+    };
+  })();
+  function lcPaintKeyRow() {
+    var row = document.getElementById('lc-ud-key'); if (!row) return;
+    var l = window.lcKey.line();
+    if (!l) { row.style.display = 'none'; return; }
+    row.className = 'lc-ud-row lc-key-' + l.cls;
+    row.innerHTML = '<span>' + l.html + '</span>';
+    row.style.display = 'flex';
+  }
+  window.lcPaintKeyRow = lcPaintKeyRow;
+
   function lcInitUserPill() {
     var pat  = localStorage.getItem('lc_ed_pat');
     var repo = localStorage.getItem('lc_ed_repo');
@@ -799,6 +851,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       document.getElementById('lc-ud-avatar').src = u.avatar_url;
       document.getElementById('lc-ud-name').textContent = u.name || u.login;
       document.getElementById('lc-ud-login').textContent = '@' + u.login;
+      lcPaintKeyRow();
 
       // karma: show cached value instantly, then verify from GitHub API
       var kRow = document.getElementById('lc-ud-karma-row');
@@ -834,7 +887,12 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       // against your quota, so it's the reliable source of truth. Runs even when
       // the karma cache is fresh (before the early return below).
       fetch('https://api.github.com/rate_limit', { headers: _ghHdrs })
-        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(r){
+          /* the one fact about a key's life a page can read: it works, or
+             it answers 401 — expired or revoked. Paint the row either way. */
+          if (r.status === 401) { window.lcKey.died(); lcPaintKeyRow(); }
+          else if (r.ok) { window.lcKey.alive(); lcPaintKeyRow(); }
+          return r.ok ? r.json() : null; })
         .then(function(d){
           var core = d && d.resources && d.resources.core;
           if (core) {

@@ -122,7 +122,7 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<button type="button" class="lcj-btn" data-a="have">I have an account ✓</button></div></div></div>' +
 
       '<div class="lcj-step off" data-n="2"><div class="lcj-head"><span class="lcj-num">2</span>Create your course key</div>' +
-      '<div class="lcj-body"><p style="margin-top:0">A course key lets this site open your private lessons. The link pre-fills the right scope and name — set <b>Expiration → Custom</b> past your course’s end (a semester), <b>Generate token</b>, copy, paste below.</p>' +
+      '<div class="lcj-body"><p style="margin-top:0">A course key lets this site open your private lessons. The link pre-fills the right scope and name — set <b>Expiration → Custom → 4 months</b> (GitHub’s default is 30 days, and a 30-day key stops the course in week five), <b>Generate token</b>, copy, paste below.</p>' +
       '<div class="lcj-row"><a class="lcj-btn alt" href="' + keyUrl + '" target="_blank" rel="noopener">🪜 Create the key →</a></div>' +
       /* a REAL form with a named identity, exactly like the energy key below.
          A bare password field makes the browser hunt for a username to file
@@ -193,10 +193,12 @@ The check is live truth against the API, never cached. Done steps reopen via
        back after any reload — nothing is stored on our side. */
     function seatEmail() { try { return localStorage.getItem("lc_seat_email") || ""; } catch (e) { return ""; } }
     function seatRow(show) { var r = wrap.querySelector("[data-seat]"); if (r) r.style.display = show ? "" : "none"; }
+    var lastEmails = null;   /* the account's verified addresses, when GitHub told them */
     function seatFromGitHub(key) {
       return fetch("https://api.github.com/user/emails", { headers: { Authorization: "Bearer " + key, "X-GitHub-Api-Version": "2022-11-28" } })
-        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (list) {
+          lastEmails = Array.isArray(list) ? list : null;
           var ok = (Array.isArray(list) ? list : []).filter(function (e) { return e && e.verified && e.email; });
           var pick = null;
           if (seatDomain) pick = ok.filter(function (e) { return String(e.email).toLowerCase().indexOf("@" + seatDomain) > 0; })[0] || null;
@@ -245,6 +247,17 @@ The check is live truth against the API, never cached. Done steps reopen via
          (enrollment/key) vs a missing lesson path (teacher-side publish) */
       fetch("https://api.github.com/repos/" + vault, { headers: H })
         .then(function (r0) {
+          if (r0.status === 401) {
+            /* fact two: the key answers 401 — expired or revoked. Say it,
+               in red, with the way out — never "Not yet" (2026-09-07). */
+            if (window.lcKey) window.lcKey.died();
+            if (window.lcPaintKeyRow) window.lcPaintKeyRow();
+            setState("3", "on"); setState("2", "on");
+            var l = window.lcKey ? window.lcKey.line() : null;
+            msgH(3, l ? l.html : "🔴 Your key no longer works — create a new one in step 2.", "err");
+            return null;
+          }
+          if (window.lcKey) window.lcKey.alive();
           if (!r0.ok) {
             setState("3", "on");
             msg(3, auto ? "" : "⏳ Not yet: your key can’t see the course library. Click ✅ Accept my invitation above (or ask your teacher to enroll you), then check again.", auto ? "" : "err");
@@ -528,8 +541,15 @@ The check is live truth against the API, never cached. Done steps reopen via
               msg(3, "", "");
               var m = wrap.querySelector('[data-m="3"]');
               m.className = "lcj-msg err";
-              m.innerHTML = "Couldn’t accept from here (no pending invitation, or the key lacks the org permission). " +
-                "<a href=\"" + inviteUrl + "\" target=\"_blank\" rel=\"noopener\">Open your invitation →</a> — one green button — then come back and Check my access.";
+              var who = ""; try { who = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; } catch (e) {}
+              var me = who ? "@" + who : "this account";
+              /* David, 2026-09-06: the old line said nothing about WHY, and he
+                 regenerated keys for three days. Name the account, name the
+                 address, and send to the email's green button first. */
+              m.innerHTML = "GitHub finds no invitation for <b>" + me + "</b>. Your invitation went to the address you were enrolled with: " +
+                "check that address is on this GitHub account and verified (<a href=\"https://github.com/settings/emails\" target=\"_blank\" rel=\"noopener\">GitHub → Settings → Emails</a>), " +
+                "or open the invitation email and press <b>Join</b> while signed in as " + me + ". Then press Check my access. " +
+                "<a href=\"" + inviteUrl + "\" target=\"_blank\" rel=\"noopener\">Open your invitation →</a>";
             }
           })
           .catch(function () { b.disabled = false; msg(3, "❌ Could not reach GitHub — try again.", "err"); });
@@ -545,11 +565,15 @@ The check is live truth against the API, never cached. Done steps reopen via
         fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + val, "X-GitHub-Api-Version": "2022-11-28" } })
           .then(function (r) {
             var scopes = r.headers.get("X-OAuth-Scopes") || "";
-            return r.json().then(function (u) { return { ok: r.ok, user: u, scopes: scopes }; });
+            return r.json().then(function (u) { return { ok: r.ok, status: r.status, user: u, scopes: scopes }; });
           })
           .then(function (d) {
             if (b) b.disabled = false;
-            if (!d.ok) { msg(2, "❌ Key not recognised — generate a new one and try again.", "err"); return; }
+            if (!d.ok) {
+              msgH(2, "❌ Key not recognised — expired, revoked, or mistyped. " +
+                "<a href=\"" + keyUrl + "\" target=\"_blank\" rel=\"noopener\">Create a new one →</a> (Expiration → Custom → 4 months) and paste it here.", "err");
+              return;
+            }
             var hasRepo = val.indexOf("github_pat_") === 0 ||
               d.scopes.split(",").map(function (s) { return s.trim(); }).indexOf("repo") >= 0;
             if (!hasRepo) { msg(2, "⚠️ Key is valid but missing the repo permission — regenerate with the repo box checked.", "err"); return; }
@@ -558,9 +582,23 @@ The check is live truth against the API, never cached. Done steps reopen via
               localStorage.setItem("lc_gh_user", JSON.stringify(d.user));
               localStorage.setItem("lc_gh_user_for", val);
             } catch (e) {}
-            msg(2, "✅ Key saved — logged in as @" + d.user.login + ".", "ok");
+            if (window.lcKey) window.lcKey.saved();          /* the day it was saved: fact one */
+            var today = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
+            msgH(2, "✅ Key saved — @" + d.user.login + ", on " + today +
+              " · <a href=\"https://github.com/settings/tokens\" target=\"_blank\" rel=\"noopener\">check its expiry on GitHub ↗</a>", "ok");
             if (window.lcUserPillRefresh) window.lcUserPillRefresh();
             seatFromGitHub(val).then(function () {
+              /* David's day one (2026-09-07): the account carried none of the
+                 addresses the class writes to, and nothing said so until
+                 step 3 looped. The page declares the domain; the message
+                 never names one it was not told. */
+              if (seatDomain && lastEmails && !lastEmails.some(function (e) {
+                    return e && e.verified && String(e.email || "").toLowerCase().indexOf("@" + seatDomain) > 0; })) {
+                var m2 = wrap.querySelector('[data-m="2"]');
+                m2.innerHTML += "<br>⚠️ This GitHub account has no verified address at <b>@" + seatDomain + "</b>, and your class invitation went to one. " +
+                  "Add that address under <a href=\"https://github.com/settings/emails\" target=\"_blank\" rel=\"noopener\">GitHub → Settings → Emails</a> and verify it, " +
+                  "or open the invitation email and press <b>Join</b> while signed in as @" + d.user.login + ".";
+              }
               setState("1", "ok"); setState("2", "ok"); setState("3", "on"); checkAccess(true);
             });
           })
@@ -568,8 +606,25 @@ The check is live truth against the API, never cached. Done steps reopen via
     }
 
     /* returning learner: key already stored → straight to the door */
-    if (pat()) { setState("1", "ok"); setState("2", "ok"); setState("3", "on"); checkAccess(true); }
+    if (pat()) {
+      setState("1", "ok"); setState("2", "ok"); setState("3", "on");
+      var kl = window.lcKey ? window.lcKey.line() : null;
+      if (kl) msgH(2, kl.html, kl.cls === "ok" ? "ok" : "err");
+      checkAccess(true);
+    }
     else setState("1", "on");
+
+    /* THE PAGE CATCHES UP BY ITSELF (David's video, 2026-09-07: he accepted
+       elsewhere and never refreshed). While step 3 is not green: re-check
+       when the tab comes back into view, and every 30 s meanwhile. */
+    function step3Pending() {
+      var m3 = wrap.querySelector('[data-m="3"]');
+      return !!pat() && steps["3"] && steps["3"].classList.contains("on") && !(m3 && m3.classList.contains("ok"));
+    }
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible" && step3Pending()) checkAccess(true);
+    });
+    setInterval(function () { if (step3Pending()) checkAccess(true); }, 30000);
   }
 
   if (window.lcRegisterUpgrader) window.lcRegisterUpgrader("p.course_join", upgrade);

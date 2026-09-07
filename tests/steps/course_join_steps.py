@@ -42,6 +42,13 @@ def _stub(context):
                 context.seat_written = st["seat_text"]
                 route.fulfill(status=201, json={"content": {"sha": "s2"}})
                 return
+        if st.get("dead"):
+            # an expired or revoked key: GitHub answers 401 to everything
+            route.fulfill(status=401, json={"message": "Bad credentials"})
+            return
+        if url.endswith("/rate_limit") and method == "GET":
+            route.fulfill(status=200, json={"resources": {"core": {"remaining": 4999, "limit": 5000}}})
+            return
         if url.endswith("/user") and method == "GET":
             # the page reads the scope header cross-origin — it must be exposed,
             # exactly as the real GitHub API exposes it
@@ -50,6 +57,11 @@ def _stub(context):
                                    "Access-Control-Expose-Headers": "X-OAuth-Scopes"})
             return
         if re.search(r"/user/memberships/orgs/", url) and method == "PATCH":
+            if st.get("no_invite"):
+                # GitHub knows no invitation for THIS account (the address
+                # it was sent to is not on it) — David's case, 2026-09-06
+                route.fulfill(status=404, json={"message": "Not Found"})
+                return
             st["vault_ok"] = True          # accepting the invite grants the team read
             route.fulfill(status=200, json={"state": "active"})
             return
@@ -635,3 +647,57 @@ def step_seat_written(context, email, login):
             return
         context.page.wait_for_timeout(250)
     raise AssertionError("no seat file written into the bench — last: %r" % getattr(context, "seat_written", None))
+
+
+# ── the key's life: the day it was saved, the day it died ──────────────────
+@given("the key no longer works")
+def step_key_dead(context):
+    context.join_stub["dead"] = True
+
+
+@given("GitHub knows no invitation for this account")
+def step_no_invite(context):
+    context.join_stub["no_invite"] = True
+
+
+@given("my face is cached on this device")
+def step_face_cached(context):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_gh_user', JSON.stringify({login:'zamm-student', name:'Zamm', avatar_url:'https://avatars.githubusercontent.com/u/1?v=4'}));"
+        "localStorage.setItem('lc_gh_user_for','ghp_stored');")
+
+
+@given("my key was saved {n:d} days ago")
+def step_key_saved_days_ago(context, n):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_key_since', new Date(Date.now() - %d * 86400000).toISOString());" % n)
+
+
+@then("the day the key was saved is remembered")
+def step_since_remembered(context):
+    since = context.page.evaluate("() => localStorage.getItem('lc_key_since') || ''")
+    assert since[:10] == __import__("datetime").datetime.utcnow().strftime("%Y-%m-%d")[:10] or since, "no lc_key_since"
+    assert since, "lc_key_since not written"
+
+
+@then('join step {n:d} says "{text}"')
+def step_join_says(context, n, text):
+    expect(context.page.locator('.lc-join [data-m="%d"]' % n)).to_contain_text(text, timeout=8000)
+
+
+@then('the account menu key row says "{text}"')
+def step_key_row(context, text):
+    expect(context.page.locator("#lc-ud-key")).to_contain_text(text, timeout=10_000)
+
+
+@given("the learner gets enrolled meanwhile")
+def step_enrolled_meanwhile(context):
+    context.join_stub["vault_ok"] = True
+
+
+@when("the learner comes back to the tab")
+def step_tab_back(context):
+    context.page.evaluate(
+        "() => { Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true });"
+        " document.dispatchEvent(new Event('visibilitychange')); }")
+    context.page.wait_for_timeout(800)

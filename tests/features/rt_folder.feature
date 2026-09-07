@@ -496,3 +496,47 @@ Feature: Folder shelf — read posture and X-ray workbench
     And the recap row "The Essentials" reads "quiz 0/3 · proofs 0/2" and offers "start"
     And the recap row "The Volunteer" reads "quiz 3/3 · proof 1/1" and offers "open"
     And the recap cheers "Two pages down. 6 points left on two pages."
+
+  Scenario: The teacher's shelf reads a vault the author key cannot
+    An author key is owner-scoped; the vault is the org's. The runner
+    already retries a page with the cockpit's org key, so the page rendered
+    — and the recap on it said HTTP 404 (Michel, 2026-09-07). The shelf
+    falls back the same way; learners hold no org key and are untouched.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the module "courses/demo/mod" holds pages with quizzes and proofs:
+      | file        | title            | quizzes | proofs | tags     |
+      | 01_first.md | 📝 The Volunteer | 3       | 1      | markdown |
+    And the GitHub contents API serves "courses/demo/mod/_recap.md" with the document:
+      """
+      # Where you are
+
+      [this module](#)
+      {: .folder view="recap" }
+      """
+    And the org key alone can read that module
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/_recap.md"
+    And I wait for the page to be interactive
+    Then the recap head reads "0 of 1 pages done · 🏆 0 of 4 points"
+
+  Scenario: The recap carries the key's age where the points are
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And my key was saved 27 days ago
+    And the module "courses/demo/mod" holds pages with quizzes and proofs:
+      | file        | title            | quizzes | proofs | tags     |
+      | 01_first.md | 📝 The Volunteer | 3       | 1      | markdown |
+    And the GitHub contents API serves "courses/demo/mod/_recap.md" with the document:
+      """
+      # Where you are
+
+      [this module](#)
+      {: .folder view="recap" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/_recap.md"
+    And I wait for the page to be interactive
+    Then the recap head reads "0 of 1 pages done"
+    And the recap key line says "Key saved 27 days ago"
