@@ -439,8 +439,8 @@ Feature: Folder shelf — read posture and X-ray workbench
 
   Scenario: A module-scoped frame offers no way out
     A Canvas page framing ONE module must not hand the learner a door out of
-    it. ?up=0 takes the pill away, and the flag rides every hop inside
-    (Michel, 2026-08-13).
+    it. ?up=0 takes the pill away on the module's front page, and the flag
+    rides every hop inside (Michel, 2026-08-13).
 
     Given I have a clean browser page
     And a marked shim is preinstalled
@@ -540,3 +540,24 @@ Feature: Folder shelf — read posture and X-ray workbench
     And I wait for the page to be interactive
     Then the recap head reads "0 of 1 pages done"
     And the recap key line says "Key saved 27 days ago"
+
+  Scenario: In a module-scoped frame, a lesson still climbs to the module's front page
+    Scoped means no way OUT of the module, not no way back to its index:
+    on the Essentials page of module 00, framed with ?up=0, there was no
+    way up to the module page the learner came from (Michel, 2026-09-07).
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the folder "courses/demo/mod" serves pages "alpha.md"
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # A lesson
+
+      [in this module](#)
+      {: .folder parent="true" }
+      """
+    When I navigate to "/run.html?up=0#src=gh:acme/demo/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the shelf shows a card for "Alpha"
+    And the way up leads to "courses/demo/mod/index.md"

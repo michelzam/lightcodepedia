@@ -366,3 +366,14 @@ Feature: Component gallery behaviors
     Then the share overlay shows this page's address
     When I press "Escape"
     Then the share overlay is closed
+
+  Scenario: An accordion header wears the fold cue
+    A bar with no marker reads as a title, not a door: who could guess
+    "Markdown, in one page" unfolds? (Michel, 2026-09-07). Every header
+    wears ▸, and ▾ once open.
+
+    When I navigate to "/components/accordion"
+    And I wait for the page to be interactive
+    Then the closed accordion headers wear "▸"
+    When I open the first accordion section
+    Then the open accordion header wears "▾"

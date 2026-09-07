@@ -709,3 +709,23 @@ def step_share_overlay_shows(context):
 @then("the share overlay is closed")
 def step_share_overlay_closed(context):
     expect(context.page.locator(".lc-slides-share-overlay.lc-share-open")).to_have_count(0, timeout=5_000)
+
+
+def _summary_cue(context, nth, state):
+    return context.page.evaluate(
+        """([n, st]) => { const d = document.querySelectorAll('.lc-accordion > details')[n];
+             if (!d) return 'no details';
+             if (st === 'open' && !d.open) return 'not open';
+             return getComputedStyle(d.querySelector('summary'), '::before').content; }""", [nth, state])
+
+
+@then('the closed accordion headers wear "{cue}"')
+def step_closed_cue(context, cue):
+    got = _summary_cue(context, 0, "closed")
+    assert cue in got, "closed header cue: %r" % got
+
+
+@then('the open accordion header wears "{cue}"')
+def step_open_cue(context, cue):
+    got = _summary_cue(context, 0, "open")
+    assert cue in got, "open header cue: %r" % got

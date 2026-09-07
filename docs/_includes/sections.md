@@ -32,6 +32,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-accordion details { border: 1px solid #ddd; border-radius: 6px; margin: 0.4em 0; overflow: hidden; }
 .lc-accordion details summary { padding: 0.7em 1em; background: #fbfcfd; cursor: pointer; font-weight: 600; list-style: none; user-select: none; }
 .lc-accordion details summary::-webkit-details-marker { display: none; }
+/* THE CUE: a bar with no marker reads as a title, not a door. Who could
+   guess "Markdown, in one page" unfolds? (Michel, 2026-09-07) — every
+   accordion header wears ▸, turning ▾ when open. */
+.lc-accordion > details > summary::before { content: "\25B8"; color: #94a3b8; font-size: 0.8em; margin-right: 0.45em; }
+.lc-accordion > details[open] > summary::before { content: "\25BE"; }
 .lc-acc-live { float: right; font-weight: 400; font-size: 0.82em; color: #64748b; margin-left: 1em; }
 .lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #f0f6ff; color: #0066cc; }
 .lc-accordion details .lc-ac-body { padding: 0.8em 1.2em; }
@@ -39,8 +44,7 @@ Auto-included by docs/_layouts/default.html.
 /* the SAME accordion, sourced from a heading: the panel wears the heading
    itself, so a folded section keeps the page's typography */
 .lc-acc-section > details > summary { display: flex; align-items: baseline; gap: 0.45em; }
-.lc-acc-section > details > summary::before { content: "\25B8"; color: #94a3b8; font-size: 0.8em; }
-.lc-acc-section > details[open] > summary::before { content: "\25BE"; }
+.lc-acc-section > details > summary::before { margin-right: 0; }
 .lc-acc-section > details > summary > h1, .lc-acc-section > details > summary > h2,
 .lc-acc-section > details > summary > h3, .lc-acc-section > details > summary > h4 {
   margin: 0; border: 0; font-size: 1.15em; }

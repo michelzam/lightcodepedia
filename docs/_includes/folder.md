@@ -405,8 +405,12 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       if (!pPath) return;
       /* ?up=0 — an iframe scoped to ONE module (a Canvas page framing this
          folder) must not offer a door out of it. The flag rides with the
-         frame, so every hop inside stays scoped (Michel, 2026-08-13). */
-      if (window.lcFrame && window.lcFrame.up === false) return;
+         frame, so every hop inside stays scoped (Michel, 2026-08-13).
+         The subtlety (Michel, 2026-09-07): scoped means no climbing OUT of
+         the module — from a lesson, Up still leads to the module's own
+         front page, which is inside the scope. Only the index has nothing
+         left to offer. */
+      if (window.lcFrame && window.lcFrame.up === false && onIndex) return;
       /* "Up" — the label, and nothing else. It used to read "⬆️ up to
          micro_build_ai", which spends a whole line naming a folder the reader
          is about to see anyway (Michel, 2026-08-05).
