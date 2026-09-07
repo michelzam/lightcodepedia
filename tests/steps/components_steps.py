@@ -686,3 +686,26 @@ def step_inspector_confetti(context, elid):
         "(id) => { const h = document.querySelector('[data-lc-inspector=\"' + id + '\"]');"
         " return !!(h && h.parentElement && h.parentElement.querySelector('.lc-confetti, .lc-confetti-quiet')); }",
         arg=elid, timeout=20_000)
+
+
+# ── the account menu's QR door ──────────────────────────────────────────────
+@when('I choose "{label}" in my account menu')
+def step_choose_in_account_menu(context, label):
+    btn = context.page.locator("#lc-user-btn")
+    expect(btn).to_be_visible(timeout=10_000)
+    btn.click()
+    context.page.wait_for_function(
+        "() => document.getElementById('lc-user-drop').classList.contains('open')", timeout=5_000)
+    context.page.locator("#lc-user-drop .lc-ud-row", has_text=label).first.click()
+
+
+@then("the share overlay shows this page's address")
+def step_share_overlay_shows(context):
+    overlay = context.page.locator(".lc-slides-share-overlay.lc-share-open")
+    expect(overlay).to_be_visible(timeout=10_000)
+    expect(overlay.locator(".lc-slides-share-url")).to_have_text(context.page.url)
+
+
+@then("the share overlay is closed")
+def step_share_overlay_closed(context):
+    expect(context.page.locator(".lc-slides-share-overlay.lc-share-open")).to_have_count(0, timeout=5_000)

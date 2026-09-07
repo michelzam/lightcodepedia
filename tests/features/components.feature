@@ -352,3 +352,17 @@ Feature: Component gallery behaviors
     And I press "eat" on the "lucky_widget" inspector
     And I press "bark" on the "lucky_widget" inspector
     Then the "lucky_widget" inspector bursts with confetti
+
+  Scenario: The account menu hands out this page as a QR code, in any mode
+    Present mode had a share button (Q); the same QR is wanted from the
+    account menu on any page, any mode (Michel, 2026-09-07). One overlay,
+    two doors.
+
+    Given I have a clean browser page
+    And I am signed in with my face already cached
+    When I navigate to "/components/qr"
+    And I wait for the page to be interactive
+    And I choose "QR code of this page" in my account menu
+    Then the share overlay shows this page's address
+    When I press "Escape"
+    Then the share overlay is closed

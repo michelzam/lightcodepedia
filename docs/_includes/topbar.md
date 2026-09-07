@@ -514,6 +514,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       </a>
       <a class="lc-ud-row" href="/courses/join"><span>🎓</span><span>My course</span></a>
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
+      <div class="lc-ud-row" id="lc-ud-qr"><span>📷</span><span>QR code of this page</span></div>
       <div class="lc-ud-row" id="lc-ud-sync" style="display:none"><span>🔄</span><span id="lc-ud-sync-label">Update from Lightcodepedia</span></div>
       {% if site.github.repository_name == "lightcodelab" %}
       {% comment %} HQ only: educator doors live HERE, behind the avatar —
@@ -1117,6 +1118,15 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
   ['lc-sd-record','lc-ud-record'].forEach(function(id){
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', openRec);
+  });
+
+  /* 📷 QR code of this page — present mode's share overlay, from the
+     account menu, in any mode (Michel, 2026-09-07) */
+  var qrRow = document.getElementById('lc-ud-qr');
+  if (qrRow) qrRow.addEventListener('click', function(e){
+    e.stopPropagation();
+    var u = document.getElementById('lc-user-drop'); if (u) u.classList.remove('open');
+    if (window.lcShareQr) window.lcShareQr();
   });
 
   var ytBtn = document.getElementById('lc-ud-yt-upload');

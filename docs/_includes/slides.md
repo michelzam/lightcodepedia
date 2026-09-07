@@ -723,6 +723,9 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       }
       return -1;
     }
+    /* ONE QR for a page's address: present mode's share (Q) and the account
+       menu's "QR code of this page" open the same overlay, whatever the mode */
+    window.lcShareQr = openShare;
     window.lcSlides = {
       next: next, prev: prev, enter: enter, exit: exit, toggle: toggle,
       goto: gotoSlide, slideOf: slideOf,
@@ -1010,14 +1013,16 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
     }
 
     document.addEventListener('keydown', function(e){
-      if (!body.classList.contains('lc-slides-active')) return;
-      var t = e.target;
-      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)) return;
+      /* the share overlay opens from the account menu too, in any mode —
+         Escape closes it wherever it came from (Michel, 2026-09-07) */
       var overlay = document.querySelector('.lc-slides-share-overlay');
       if (overlay && overlay.classList.contains('lc-share-open')) {
         if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') { closeShare(); e.preventDefault(); }
         return;
       }
+      if (!body.classList.contains('lc-slides-active')) return;
+      var t = e.target;
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)) return;
       if (e.key === 'Escape') { exit(); e.preventDefault(); }
       else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { next(); e.preventDefault(); }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { prev(); e.preventDefault(); }
