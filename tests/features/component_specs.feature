@@ -292,6 +292,19 @@ Feature: Component specs run green
     And I run the features in that section
     Then every embedded feature passes
 
+  Scenario: Fun with functions spec passes
+    Play first, read later: two buttons that are two functions, a guess to
+    make before the cup cools, and the same program as plain Python
+    (Michel, 2026-09-07). Its own proof drives the model and reads the
+    verdict back.
+
+    Given I have a clean browser page
+    When I navigate to "/courses/python/fun"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-inspector='choco'] button[data-m='cool']"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
   Scenario: Elevator pitch spec passes
     The students' example: an app on the left, its Python on the right. Its
     own proof drives the form and reads the printed line back, so a page

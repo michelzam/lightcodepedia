@@ -677,3 +677,12 @@ def step_verb_disabled(context, verb, elid):
         '[data-lc-inspector="%s"] [data-card] button[data-m="%s"]' % (elid, verb)).first
     expect(btn).to_be_visible(timeout=45_000)
     expect(btn).to_be_disabled()
+
+
+@then('the "{elid}" inspector bursts with confetti')
+def step_inspector_confetti(context, elid):
+    # the burst lands on the card's parent (the card itself redraws after a verb)
+    context.page.wait_for_function(
+        "(id) => { const h = document.querySelector('[data-lc-inspector=\"' + id + '\"]');"
+        " return !!(h && h.parentElement && h.parentElement.querySelector('.lc-confetti, .lc-confetti-quiet')); }",
+        arg=elid, timeout=20_000)

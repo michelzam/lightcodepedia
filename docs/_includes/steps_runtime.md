@@ -515,6 +515,28 @@ class Object:
         _lc_push_obj(self)
         return self
 
+    def confetti(self):
+        """Celebrate from wherever this object is shown. A widget bursts on
+        its own element; a MODEL instance bursts on the inspector card that
+        displays it (Michel, 2026-09-07: "Congrats! and confettis" when the
+        cup is guessed right) — page Python, no js in the page."""
+        burst = getattr(js.window, "lcConfetti", None)
+        if not burst:
+            return self
+        el = getattr(self, "_el", None)
+        if el is None:
+            for elid, pairs in _LC_INSPECT.items():
+                if any(inst is self for _, inst in pairs):
+                    host = js.window.document.querySelector("[data-lc-inspector='" + elid + "']")
+                    # the card REDRAWS right after the verb returns, and a
+                    # redraw wipes anything appended inside it — the burst
+                    # lands on the card's parent, which survives
+                    el = host.parentElement if host is not None else None
+                    if el is not None:
+                        break
+        burst(el if el is not None else js.window.document.body)
+        return self
+
     def _reload_runtime(self):
         """Re-run the steps preamble in place — exactly what a button click
         does. Object is the js bridge, so author code (feature steps) calls

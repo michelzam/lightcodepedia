@@ -11,10 +11,13 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "push = write unpublished · peek = print what Canvas stores"
+        description: "push = write unpublished · peek = print what Canvas stores · quizzes = list ids · delete = remove an UNPUBLISHED quiz (needs quiz)"
         type: choice
-        options: [push, peek]
+        options: [push, peek, quizzes, delete]
         default: push
+      quiz:
+        description: "Canvas quiz id — delete only"
+        default: ""
       spec:
         description: "quiz spec to push (a __quiz/canvas.md, yaml also accepted)"
         default: "courses/micro_build_ai/module_05/__quiz/canvas.md"
@@ -71,8 +74,10 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           rc=0
+          extra=""
+          [ -n "${{ inputs.quiz }}" ] && extra="--quiz ${{ inputs.quiz }}"
           python3 tools/canvas_quiz.py "${{ inputs.action || 'push' }}" "${{ inputs.spec }}" \
-            --course "${{ steps.wiring.outputs.course }}" 2>&1 | tee -a /tmp/out.txt "$GITHUB_STEP_SUMMARY" || rc=$?
+            --course "${{ steps.wiring.outputs.course }}" $extra 2>&1 | tee -a /tmp/out.txt "$GITHUB_STEP_SUMMARY" || rc=$?
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           exit $rc
 

@@ -331,7 +331,7 @@ Feature: Component gallery behaviors
     When I navigate to "/components/examples/model"
     And I wait for the page to be interactive
     Then the "eat" verb on the "lucky_widget" inspector explains "Reads the bowl. Writes weight — and the mood turns fed. · → fed"
-    And the "bark" verb on the "lucky_widget" inspector explains "needs: fed"
+    And the "bark" verb on the "lucky_widget" inspector explains "Reads nothing. Writes last_said and adopted — and celebrates. · needs: fed"
 
   Scenario: The folder page's recap example folds a built folder into facts
     The recap view also runs on a built site (manifest road, no key): the
@@ -341,3 +341,14 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then the recap head reads "pages done"
     And the recap lists at least 3 pages
+
+  Scenario: A behaviour can celebrate on its own card
+    self.confetti() inside a model's method bursts on the inspector card
+    that shows the object — page Python, no js in the page (Michel,
+    2026-09-07: the cup says Congrats! with confetti).
+
+    When I navigate to "/components/examples/model"
+    And I wait for the page to be interactive
+    And I press "eat" on the "lucky_widget" inspector
+    And I press "bark" on the "lucky_widget" inspector
+    Then the "lucky_widget" inspector bursts with confetti
