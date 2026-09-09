@@ -2797,7 +2797,9 @@ _inject_store()
           h += "<input type='checkbox' data-f='" + esc(f.n) + "' data-t='bool'" + (f.v ? " checked" : "") + dis + ">"
             + (f.ro ? "<span class='lc-ins-ro'>🔒</span>" : "");
         } else if (f.ro || allRo) {
-          h += "<span class='lc-ins-ro'>" + esc(f.v) + (f.ro ? " 🔒" : "") + "</span>";
+          var w = window.lcWhen ? window.lcWhen(f.v) : null;      /* a stamp, on the reader's clock */
+          h += "<span class='lc-ins-ro'" + (w ? " title='" + esc(w.utc) + "'" : "") + ">"
+            + esc(w ? w.text : f.v) + (f.ro ? " 🔒" : "") + "</span>";
         } else if (f.enum) {
           h += "<select data-f='" + esc(f.n) + "' data-t='str'>";
           f.enum.forEach(function (o) {

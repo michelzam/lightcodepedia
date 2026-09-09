@@ -729,3 +729,35 @@ def step_closed_cue(context, cue):
 def step_open_cue(context, cue):
     got = _summary_cue(context, 0, "open")
     assert cue in got, "open header cue: %r" % got
+
+
+# ── UTC stamps on the reader's clock (Michel, 2026-09-09) ─────────────────
+LOCAL_STAMP = r"^[A-Z][a-z]{2} \d{1,2}(, \d{4})?, \d{1,2}:\d{2}\s?[AP]M$"
+
+
+def _expect_local(context, cell, utc=None):
+    """the cell prints the browser's own rendering of its title's UTC —
+    computed in the page, so the rig's timezone never matters"""
+    title = cell.get_attribute("title") or ""
+    assert title.endswith("Z") and "T" in title, "no UTC on hover: %r" % title
+    if utc:
+        assert title == utc, "hover should carry the raw UTC %s, got %s" % (utc, title)
+    want = context.page.evaluate("u => window.lcWhen(u).text", title)
+    text = cell.inner_text().replace(" 🔒", "").strip()
+    assert text == want, "printed %r, the reader's clock says %r" % (text, want)
+    assert re.match(LOCAL_STAMP, text.replace("\u202f", " ")), "not a local stamp: %r" % text
+
+
+@then('the grid "{grid_id}" prints the stamp "{utc}" on the reader\'s clock, UTC on hover')
+def step_grid_local_stamp(context, grid_id, utc):
+    cell = context.page.locator(".lc-datagrid[data-lc-id='" + grid_id + "'] td[title='" + utc + "']")
+    expect(cell).to_have_count(1, timeout=15_000)
+    _expect_local(context, cell.first, utc)
+
+
+@then('the "{elid}" card prints "{field}" on the reader\'s clock, UTC on hover')
+def step_card_local_stamp(context, elid, field):
+    row = context.page.locator("[data-lc-inspector='" + elid + "'] .lc-ins-row").filter(
+        has=context.page.locator("label", has_text=field.replace("_", " ").capitalize())).first
+    expect(row).to_be_visible(timeout=15_000)
+    _expect_local(context, row.locator(".lc-ins-ro").first)

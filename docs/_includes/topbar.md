@@ -23,6 +23,19 @@
 /* callable, not a one-shot: a page-level `.frame` declaration merges its
    flags into the URL after render and re-applies through this same door —
    one reading of the flags, wherever they came from (Michel, 2026-08-25) */
+/* ── UTC stamps read on the reader's clock (Michel, 2026-09-09) ────────
+   Files, memory and GitHub keep ISO-Z; a teacher in Milwaukee read
+   01:43Z as the middle of the night. Every view that prints a value asks
+   here: a stamp becomes local time, the UTC stays one hover away. Not a
+   toggle, not a state — one reading, wherever a grid or a card prints. */
+window.lcWhen = function (v) {
+  if (typeof v !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?Z$/.test(v)) return null;
+  var d = new Date(v);
+  if (isNaN(d.getTime())) return null;
+  var o = { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
+  if (d.getFullYear() !== new Date().getFullYear()) o.year = "numeric";
+  return { text: d.toLocaleString(undefined, o), utc: v };
+};
 window.lcFrameApply = function () {
   var q = new URLSearchParams(location.search);
   var flag = function (name, dflt) {

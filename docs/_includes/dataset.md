@@ -343,6 +343,10 @@ Auto-included by docs/_layouts/default.html.
             return "<tr" + trAttrs + ">"
               + cols.map(function (c) {
                   var v = row[c] !== undefined ? row[c] : "";
+                  /* a UTC stamp prints on the reader's clock, UTC on hover;
+                     an editable cell keeps the raw value it will write back */
+                  var w = !editable && window.lcWhen ? window.lcWhen(v) : null;
+                  if (w) return "<td title='" + w.utc + "'>" + w.text + "</td>";
                   if (!editable) return "<td>" + v + "</td>";
                   /* the row is found again by its position in the CURRENT
                      sort, so an edit after sorting still lands on the row

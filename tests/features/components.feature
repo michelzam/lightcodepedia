@@ -377,3 +377,12 @@ Feature: Component gallery behaviors
     Then the closed accordion headers wear "▸"
     When I open the first accordion section
     Then the open accordion header wears "▾"
+
+  Scenario: A grid prints UTC stamps on the reader's clock, UTC on hover
+    The memory, the seat files and GitHub keep ISO-Z; a teacher in
+    Milwaukee read 01:43Z as the middle of the night (Michel, 2026-09-09).
+    The data stays UTC; the printing is local, one hover from the raw.
+
+    When I navigate to "/components/dataset"
+    And I wait for the page to be interactive
+    Then the grid "joins_grid" prints the stamp "2026-09-09T01:43:04Z" on the reader's clock, UTC on hover

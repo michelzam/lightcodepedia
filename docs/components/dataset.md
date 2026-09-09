@@ -79,6 +79,21 @@ Feature: One dataset feeds many bound views
 ```
 {: .feature tags="data" status="passing"}
 
+## Timestamps read on your clock
+
+A cell holding a UTC stamp (`2026-09-09T01:43:04Z`) prints in the reader's local time; hover it for the UTC. The data keeps UTC — only the printing changes, in grids and in the read-only fields of a card.
+
+```json
+[
+  {"who":"ada","joined":"2026-09-09T01:43:04Z"},
+  {"who":"zara","joined":"2026-09-04T18:05:49Z"}
+]
+```
+{: .dataset #joins }
+
+[Who joined when](#)
+{: .datagrid source="joins" #joins_grid }
+
 ## CSV example
 
 ```csv
@@ -161,6 +176,7 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 | `.datagrid` | `rows="…"` | number | Rows per page (0 = all) |
 | `.datagrid` | `height="…"` | px | A scrolling table with a sticky header instead of pages — wins over `rows` |
 | `.datagrid` | `url` column | URL string | Hidden column; makes rows clickable links |
+| `.datagrid` | UTC stamp cells | `…T…Z` strings | Print in the reader's local time, UTC on hover (data unchanged) |
 | `.chart` | `source="…"` | dataset id | Which dataset to plot |
 | `.chart` | `type="…"` | `bar` · `line` | Chart type |
 | `.chart` | `x="…"` | column name | Horizontal axis column |
