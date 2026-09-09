@@ -177,12 +177,17 @@ The check is live truth against the API, never cached. Done steps reopen via
       try { localStorage.setItem("lc_probe", "1"); localStorage.removeItem("lc_probe"); return true; }
       catch (e) { return false; }
     }
-    var ownTab = '<a href="' + location.href.replace(/"/g, "&quot;") + '" target="_blank" rel="noopener">open Setup in its own tab ↗</a>';
+    /* Canvas is the ONLY door (Michel, 2026-09-09): no "open in your own
+       tab" — a learner outside the frame can wander the whole course and
+       get lost. The remedy stays inside Canvas: a computer, a normal
+       window, and third-party cookies allowed for this site. */
+    var noMem = "Use a computer, in a normal (not private) window, and allow third-party cookies for <b>" + location.hostname + "</b> " +
+      "(Chrome: Settings → Privacy and security → Third-party cookies → Add site). The Canvas mobile app cannot run the course.";
     if (!remembers()) {
       var warn = document.createElement("div");
       warn.className = "lcj-msg err lcj-nomem";
-      warn.innerHTML = "⚠️ This browser is not letting the course remember anything inside this frame, so a key pasted here would be forgotten at the next reload. " +
-        "Please " + ownTab + " and finish Setup there, or allow third-party cookies for this site and reload.";
+      warn.innerHTML = "⚠️ This browser is not letting the course remember anything inside Canvas, so a key pasted here would be forgotten at the next reload. " +
+        noMem + " Then reload this page.";
       wrap.insertBefore(warn, wrap.firstChild);
     }
 
@@ -604,8 +609,8 @@ The check is live truth against the API, never cached. Done steps reopen via
               localStorage.setItem("lc_gh_user_for", val);
             } catch (e) {}
             if (pat() !== val) {                              /* the save did not happen: never say it did */
-              msgH(2, "❌ Key checked, but this browser will not remember it inside this frame. " +
-                "Please " + ownTab + " and paste it there.", "err");
+              msgH(2, "❌ Key checked, but this browser will not remember it inside Canvas. " +
+                noMem + " Then reload and paste it again.", "err");
               return;
             }
             if (window.lcKey) window.lcKey.saved();          /* the day it was saved: fact one */

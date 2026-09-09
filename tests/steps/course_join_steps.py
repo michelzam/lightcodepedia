@@ -714,14 +714,14 @@ def step_storage_denied(context):
         "  throw new DOMException('Access is denied for this document.', 'SecurityError'); } });")
 
 
-@then("the wizard warns the key cannot be remembered here and offers its own tab")
+@then("the wizard warns the key cannot be remembered here, without a door out of Canvas")
 def step_storage_warned(context):
     warn = context.page.locator(".lc-join .lcj-nomem")
     expect(warn).to_be_visible()
     expect(warn).to_contain_text("remember")
-    link = warn.locator("a[target='_blank']")
-    expect(link).to_have_count(1)
-    assert "/courses/join" in (link.get_attribute("href") or ""), "own-tab link must be this page"
+    expect(warn).to_contain_text("third-party cookies")
+    # Canvas is the only door: no link leaves the frame
+    expect(warn.locator("a")).to_have_count(0)
 
 
 @then("join step 2 refuses to call the key saved")
@@ -729,6 +729,7 @@ def step_key_not_saved(context):
     m = context.page.locator('.lc-join [data-m="2"]')
     expect(m).to_have_class(re.compile(r"\berr\b"))
     expect(m).to_contain_text("will not remember")
+    expect(m).to_contain_text("third-party cookies")
     expect(m).not_to_contain_text("Key saved")
-    expect(m.locator("a[target='_blank']")).to_have_count(1)
+    expect(m.locator("a")).to_have_count(0)
     assert "on" in _cls(context, 2), "step 2 must stay open"
