@@ -391,3 +391,18 @@ Feature: The learner course wizard (/courses/join)
     Given the learner gets enrolled meanwhile
     When the learner comes back to the tab
     Then the wizard says the learner is in
+
+  Scenario: A frame that cannot remember says so before any key is typed
+    David (2026-09-09): Canvas framed the wizard, Chrome denied the frame its
+    storage, every save died in a silent catch and "Key saved" was a lie.
+    Each reload asked for a new key; three days of keys in a notepad. The
+    wizard probes its memory first, warns on top with the page's own tab;
+    a key it could not keep is never reported as saved.
+
+    Given a browser that denies this frame its storage
+    And a stubbed GitHub that accepts the key with repo scope
+    When I open the course wizard
+    Then the wizard warns the key cannot be remembered here and offers its own tab
+    When I confirm I have an account
+    And I paste the course key "ghp_newkey" and check it
+    Then join step 2 refuses to call the key saved

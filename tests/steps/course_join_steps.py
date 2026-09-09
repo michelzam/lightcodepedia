@@ -701,3 +701,34 @@ def step_tab_back(context):
         "() => { Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true });"
         " document.dispatchEvent(new Event('visibilitychange')); }")
     context.page.wait_for_timeout(800)
+
+
+# ── a frame that cannot remember (David, 2026-09-09) ──────────────────────
+@given("a browser that denies this frame its storage")
+def step_storage_denied(context):
+    """Chrome with third-party cookies blocked throws SecurityError on any
+    touch of localStorage inside a cross-site frame; so does incognito and
+    the Canvas mobile webview. Same throw, from the first byte."""
+    context.page.add_init_script(
+        "Object.defineProperty(window, 'localStorage', { configurable: true, get: function () {"
+        "  throw new DOMException('Access is denied for this document.', 'SecurityError'); } });")
+
+
+@then("the wizard warns the key cannot be remembered here and offers its own tab")
+def step_storage_warned(context):
+    warn = context.page.locator(".lc-join .lcj-nomem")
+    expect(warn).to_be_visible()
+    expect(warn).to_contain_text("remember")
+    link = warn.locator("a[target='_blank']")
+    expect(link).to_have_count(1)
+    assert "/courses/join" in (link.get_attribute("href") or ""), "own-tab link must be this page"
+
+
+@then("join step 2 refuses to call the key saved")
+def step_key_not_saved(context):
+    m = context.page.locator('.lc-join [data-m="2"]')
+    expect(m).to_have_class(re.compile(r"\berr\b"))
+    expect(m).to_contain_text("will not remember")
+    expect(m).not_to_contain_text("Key saved")
+    expect(m.locator("a[target='_blank']")).to_have_count(1)
+    assert "on" in _cls(context, 2), "step 2 must stay open"

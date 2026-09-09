@@ -50,6 +50,7 @@ The check is live truth against the API, never cached. Done steps reopen via
 .lc-join .lcj-msg { margin-top: 0.6em; font-size: 0.9em; }
 .lc-join .lcj-msg.ok { color: #2a7d2a; }
 .lc-join .lcj-msg.err { color: #b3261e; }
+.lc-join .lcj-nomem { margin: 0 0 0.8em; padding: 0.6em 0.8em; border: 1px solid #b3261e; border-radius: 6px; }
 </style>
 <script>
 (function () {
@@ -164,6 +165,26 @@ The check is live truth against the API, never cached. Done steps reopen via
       '</form>' +
       '<div class="lcj-msg" data-m="5"></div></div></div>';
     el.parentNode.replaceChild(wrap, el);
+
+    /* ── can this frame REMEMBER? (David, 2026-09-09) ────────────────────
+       Canvas frames the wizard; Chrome with third-party cookies blocked, an
+       incognito window, and the Canvas mobile app all deny a cross-site
+       frame its storage. Every save was try/catch'd into silence, "Key
+       saved" was a lie, and each reload asked for a new key — three days
+       of keys in a notepad. Probe first; when the frame cannot remember,
+       say so on top and hand out the page's own tab. */
+    function remembers() {
+      try { localStorage.setItem("lc_probe", "1"); localStorage.removeItem("lc_probe"); return true; }
+      catch (e) { return false; }
+    }
+    var ownTab = '<a href="' + location.href.replace(/"/g, "&quot;") + '" target="_blank" rel="noopener">open Setup in its own tab ↗</a>';
+    if (!remembers()) {
+      var warn = document.createElement("div");
+      warn.className = "lcj-msg err lcj-nomem";
+      warn.innerHTML = "⚠️ This browser is not letting the course remember anything inside this frame, so a key pasted here would be forgotten at the next reload. " +
+        "Please " + ownTab + " and finish Setup there, or allow third-party cookies for this site and reload.";
+      wrap.insertBefore(warn, wrap.firstChild);
+    }
 
     var steps = {}; wrap.querySelectorAll(".lcj-step").forEach(function (s) { steps[s.getAttribute("data-n")] = s; });
     function msg(n, text, cls) { var m = wrap.querySelector('[data-m="' + n + '"]'); m.textContent = text; m.className = "lcj-msg " + (cls || ""); }
@@ -582,6 +603,11 @@ The check is live truth against the API, never cached. Done steps reopen via
               localStorage.setItem("lc_gh_user", JSON.stringify(d.user));
               localStorage.setItem("lc_gh_user_for", val);
             } catch (e) {}
+            if (pat() !== val) {                              /* the save did not happen: never say it did */
+              msgH(2, "❌ Key checked, but this browser will not remember it inside this frame. " +
+                "Please " + ownTab + " and paste it there.", "err");
+              return;
+            }
             if (window.lcKey) window.lcKey.saved();          /* the day it was saved: fact one */
             var today = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
             msgH(2, "✅ Key saved — @" + d.user.login + ", on " + today +
