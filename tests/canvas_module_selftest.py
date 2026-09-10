@@ -90,19 +90,30 @@ def test_something_new_wears_its_own_title():
 
 
 def test_the_frame_page_is_found_by_number_under_any_name():
-    page, clash = cm.page_for("01", ["📜 Module 01 — Data Quest", "ℹ️ Introduction"])
-    assert (page, clash) == ("📜 Module 01 — Data Quest", None), (page, clash)
+    standing, page, clash = cm.page_for("01", ["📜 Module 01 — Data Quest", "ℹ️ Introduction"])
+    assert (standing, page, clash) == ("📜 Module 01 — Data Quest", "🧩 Module 01 — Activity — Data Quest", None), (standing, page, clash)
 
 
-def test_only_our_scroll_pages_count_as_frames():
+def test_only_our_marked_pages_count_as_frames():
     """A course's own "📖 Module 10 — Advanced MySQL" must never be
-    overwritten by a lesson frame — the scroll is ours, the book is his."""
-    page, clash = cm.page_for("10", ["📖 Module 10 — Advanced MySQL"])
-    assert (page, clash) == ("📜 Module 10", None), (page, clash)
+    overwritten by a lesson frame — the marker is ours, the book is his."""
+    standing, page, clash = cm.page_for("10", ["📖 Module 10 — Advanced MySQL"])
+    assert (standing, page, clash) == (None, "🧩 Module 10 — Activity", None), (standing, page, clash)
+
+
+def test_a_frame_is_an_activity_renamed_once():
+    """Michel, 2026-09-10: the frame page is an activity, a playground —
+    🧩 and the word before the teacher's own name; spelled once, kept after."""
+    assert cm.activity_title("📜 Module 00", "00") == "🧩 Module 00 — Activity"
+    assert cm.activity_title("🧩 Module 00 — Activity", "00") == "🧩 Module 00 — Activity"
+    assert cm.activity_title("📜 Module 01 — Data Quest", "01") == "🧩 Module 01 — Activity — Data Quest"
+    assert cm.activity_title("🧩 Module 01 — Activity — Data Quest", "01") == "🧩 Module 01 — Activity — Data Quest"
+    standing, page, clash = cm.page_for("02", ["🧩 Module 02 — Activity"])
+    assert (standing, page, clash) == ("🧩 Module 02 — Activity", "🧩 Module 02 — Activity", None)
 
 
 def test_two_frames_for_one_module_stop_the_run():
-    page, clash = cm.page_for("01", ["📜 Module 01", "📜 Module 01 — Data Quest"])
+    standing, page, clash = cm.page_for("01", ["📜 Module 01", "🧩 Module 01 — Activity"])
     assert page is None and "merge them in Canvas" in clash
 
 

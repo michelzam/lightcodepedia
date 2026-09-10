@@ -423,5 +423,44 @@
    "14750445dc7e6976": "lc-6509776735f5d4e5.mp3",
    "f359fda1ab5539c1": "lc-b9255fd445960603.mp3"
   }
+ },
+ "courses-micro_build_ai-module_01-02_north_burns": {
+  "guide": {
+   "e3313f9c11874bbb": "lc-afb0c38cf35a23e8.mp3",
+   "631c4ea79d7bb600": "lc-f926d746e8d262bd.mp3",
+   "adbbb4bbd65a89a3": "lc-9d7e0c5eab08462b.mp3",
+   "7a5a1e50f620ba08": "lc-db5feaa9335f20cc.mp3",
+   "0394a84eb290207e": "lc-0d71a63166f2d8cd.mp3",
+   "baa4aa8e50c921d7": "lc-5b72ee406473c7ab.mp3",
+   "89db5a4930a86c2e": "lc-d65869c9469a3a96.mp3",
+   "7ff67e36d274c504": "lc-627d212afbf90b89.mp3",
+   "428c39725aa671f8": "lc-f31b0cd0beefd110.mp3",
+   "661420bff1461d35": "lc-87cf55c3a52a534b.mp3",
+   "aa573364a5b579bd": "lc-5370f528ff93cc95.mp3",
+   "6e22f9ec0b900d8f": "lc-2105fcb2dfa2f4ff.mp3",
+   "1ca780ce293f9655": "lc-c20483f69c61b7b0.mp3",
+   "482f9f6aa1c7f38d": "lc-c93af6754dbd6c9d.mp3",
+   "59c11a0ef34ce27f": "lc-443d99df7e985546.mp3",
+   "125268b7e3cc4e98": "lc-7ecd08a9cc861a5d.mp3",
+   "deb7350070fec8e4": "lc-91ea34dc263a0379.mp3",
+   "8d30555997a215c8": "lc-54414342df304ab8.mp3",
+   "fbb5f583029b819b": "lc-595be8a180a21c04.mp3",
+   "be796ac9529ca4ba": "lc-cc9b050fdaa0497a.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_01-03_broken_wire": {
+  "guide": {
+   "ac89e069c80a8351": "lc-ebdc8021719375e0.mp3",
+   "5ce393385c5632e1": "lc-4cbc8ac6684e0ff5.mp3",
+   "eb7762833aa221e8": "lc-5a2b2874842c88fb.mp3",
+   "757bd23ae839b75c": "lc-fb53e525a42f4804.mp3",
+   "467bca51e739c3a4": "lc-8237bc5cac44ebb3.mp3",
+   "5fba41dfd8108402": "lc-dffd4456110576d7.mp3",
+   "064f4dc83549d18f": "lc-f5e774a7cc92d65b.mp3",
+   "a3370cec84075936": "lc-c8ae10114e0d2bff.mp3",
+   "2d38fd438f9838c3": "lc-c49b1e9d4c07c7ec.mp3",
+   "6e035a34cc103ad4": "lc-0738866e9b347caf.mp3",
+   "ad0b8e0b143efd41": "lc-cb6c5cd5fc1fd04b.mp3"
+  }
  }
 }
