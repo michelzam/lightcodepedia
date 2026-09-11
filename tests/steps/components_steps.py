@@ -761,3 +761,18 @@ def step_card_local_stamp(context, elid, field):
         has=context.page.locator("label", has_text=field.replace("_", " ").capitalize())).first
     expect(row).to_be_visible(timeout=15_000)
     _expect_local(context, row.locator(".lc-ins-ro").first)
+
+
+@then('the grid "{grid_id}" lists "{col}" as "{order}"')
+def step_grid_order(context, grid_id, col, order):
+    """the column's cells, top to bottom, joined by ' | '"""
+    grid = context.page.locator(".lc-datagrid[data-lc-id='" + grid_id + "']")
+    expect(grid.locator("tbody tr").first).to_be_visible(timeout=15_000)
+    got = context.page.evaluate(
+        """([id, col]) => {
+             const g = document.querySelector(".lc-datagrid[data-lc-id='" + id + "']");
+             const heads = Array.from(g.querySelectorAll("th")).map(th => th.getAttribute("data-col"));
+             const i = heads.indexOf(col);
+             return Array.from(g.querySelectorAll("tbody tr")).map(tr => tr.children[i].textContent.trim());
+           }""", [grid_id, col])
+    assert got == [x.strip() for x in order.split("|")], "grid order %r" % got

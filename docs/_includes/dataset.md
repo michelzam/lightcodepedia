@@ -268,6 +268,10 @@ Auto-included by docs/_layouts/default.html.
     var lcId = el.getAttribute("id") || "";
     var masterId = el.getAttribute("master") || el.getAttribute("detail-of") || "";
     var filterExpr = el.getAttribute("filter") || "";
+    /* sort="<column>": the order the table opens in — a roster by name
+       (Canvas writes "Last, First", so that is by last name), a work
+       table by module (Michel, 2026-09-11). A header click still re-sorts. */
+    var sortAttr = el.getAttribute("sort") || null;
     var wrap = document.createElement("div");
     wrap.className = "lc-datagrid";
     wrap.setAttribute("data-bind", bindId);
@@ -275,7 +279,7 @@ Auto-included by docs/_layouts/default.html.
     el.parentNode.replaceChild(wrap, el);
     el = wrap;
 
-    var sortCol = null, sortAsc = true, page = 0;
+    var sortCol = sortAttr, sortAsc = true, page = 0;
 
     /* grid-to-grid master/detail, the light-table half: the AG road had
        master= + filter="local=masterKey" and this road silently ignored
@@ -320,7 +324,10 @@ Auto-included by docs/_layouts/default.html.
       if (sortCol !== null) {
         sorted.sort(function (a, b) {
           var va = a[sortCol], vb = b[sortCol];
-          var diff = va > vb ? 1 : va < vb ? -1 : 0;
+          /* words compare as a reader would: "abeera" before "DWLERS" */
+          var diff = (typeof va === "string" && typeof vb === "string")
+            ? va.localeCompare(vb, undefined, { sensitivity: "base" })
+            : (va > vb ? 1 : va < vb ? -1 : 0);
           return sortAsc ? diff : -diff;
         });
       }

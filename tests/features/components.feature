@@ -386,3 +386,12 @@ Feature: Component gallery behaviors
     When I navigate to "/components/dataset"
     And I wait for the page to be interactive
     Then the grid "joins_grid" prints the stamp "2026-09-09T01:43:04Z" on the reader's clock, UTC on hover
+
+  Scenario: A grid opens in the order its sort= names
+    A roster is read by last name, a work table by module (Michel,
+    2026-09-11): the table opens sorted, words compared as a reader would;
+    a header click still re-sorts.
+
+    When I navigate to "/components/dataset"
+    And I wait for the page to be interactive
+    Then the grid "joins_grid" lists "who" as "ada | Mike | zara"

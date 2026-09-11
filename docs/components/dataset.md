@@ -85,14 +85,15 @@ A cell holding a UTC stamp (`2026-09-09T01:43:04Z`) prints in the reader's local
 
 ```json
 [
+  {"who":"zara","joined":"2026-09-04T18:05:49Z"},
   {"who":"ada","joined":"2026-09-09T01:43:04Z"},
-  {"who":"zara","joined":"2026-09-04T18:05:49Z"}
+  {"who":"Mike","joined":"2026-09-10T14:32:45Z"}
 ]
 ```
 {: .dataset #joins }
 
-[Who joined when](#)
-{: .datagrid source="joins" #joins_grid }
+[Who joined when — opened in name order](#)
+{: .datagrid source="joins" #joins_grid sort="who" }
 
 ## CSV example
 
@@ -177,6 +178,7 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 | `.datagrid` | `height="…"` | px | A scrolling table with a sticky header instead of pages — wins over `rows` |
 | `.datagrid` | `url` column | URL string | Hidden column; makes rows clickable links |
 | `.datagrid` | UTC stamp cells | `…T…Z` strings | Print in the reader's local time, UTC on hover (data unchanged) |
+| `.datagrid` | `sort="…"` | column name | The order the table opens in, ascending, words compared case-insensitively; a header click still re-sorts |
 | `.chart` | `source="…"` | dataset id | Which dataset to plot |
 | `.chart` | `type="…"` | `bar` · `line` | Chart type |
 | `.chart` | `x="…"` | column name | Horizontal axis column |
