@@ -89,6 +89,15 @@ def test_something_new_wears_its_own_title():
     assert cm.title_for("", "⚙️ Quiz 02", []) == "⚙️ Quiz 02"
 
 
+def test_a_spec_beside_the_check_never_borrows_its_name():
+    """Check-in 01 beside Quiz 01 (2026-09-10): the legacy name is the
+    module's own check's, never a fallback for the survey next to it —
+    the gate has no legacy for an extra spec, so the standing Quiz 01
+    must not capture it."""
+    assert cm.title_for("📍 Check-in 01 — your learning path", "", ["⚙️ Quiz 01"]) == \
+        "📍 Check-in 01 — your learning path"
+
+
 def test_the_frame_page_is_found_by_number_under_any_name():
     standing, page, clash = cm.page_for("01", ["📜 Module 01 — Data Quest", "ℹ️ Introduction"])
     assert (standing, page, clash) == ("📜 Module 01 — Data Quest", "🧩 Module 01 — Activity — Data Quest", None), (standing, page, clash)
