@@ -16,6 +16,9 @@ Ask Doc for a tour!
 ```
 ### 💾 0 · Backup first — just in case
 
+[Server → Data Export](_slides/m03_03.jpg)
+{: .embed image="true" width="100%" }
+
 Before touching a database, make a copy of it. In Workbench:
 **Server → Data Export**, tick your schema, *Export to Self-Contained
 File*, **Start Export**. The way back is **Server → Data Import**.
@@ -29,6 +32,9 @@ gamblers do not.
 
 ```
 ### 🌙 1 · Reverse engineer — from data to structure
+
+[Database → Reverse Engineer: from the data to its model](_slides/m03_04.jpg)
+{: .embed image="true" width="100%" }
 
 You have data. Ask the database for its **structure**: in Workbench,
 **Database → Reverse Engineer…**, pick your schema, next, next,
@@ -49,7 +55,12 @@ database reads back out of it.
 ````
 ### 🧱 2 · Build Orders — a table related to Customers
 
-The shop needs orders, and every order belongs to a customer. Say it
+The shop needs orders, and every order belongs to a customer.
+
+[Build a new table, related to Customers](_slides/m03_05.jpg)
+{: .embed image="true" width="100%" }
+
+Say it
 in English first: *an order has a number, a date, and the customer who
 placed it.* Now the SQL — paste it into a Workbench query tab with your
 database as the default schema (double-click it in the left panel so
@@ -95,6 +106,9 @@ SELECT * FROM Orders;
 SELECT * FROM Orders, Customers
 WHERE Orders.CustomerID = Customers.CustomerID;
 ```
+
+[The script, and Orders in the left panel](_slides/m03_06.jpg)
+{: .embed image="true" width="100%" }
 
 Three things to notice in the result grids: the OrderIDs you never
 typed, the join from module 02 running on tables that are now yours,
@@ -171,7 +185,12 @@ nothing yet — and the join, rightly, does not invent an order for him.
 ### 🌙 4 · Reverse engineer again — the model grows
 
 Back to **Database → Reverse Engineer…**. The diagram now shows two
-boxes and a line between them. Here is the same picture, drawn on the
+boxes and a line between them:
+
+[Reverse engineer again: Orders joins the model, a diamond on its foreign key](_slides/m03_07.jpg)
+{: .embed image="true" width="100%" }
+
+Here is the same picture, drawn on the
 page from a hidden declaration of your two tables:
 
 ```python

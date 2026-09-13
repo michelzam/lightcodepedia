@@ -6,10 +6,6 @@ steps, one picture each, in the order you will click them. At the end
 you own a database with a Customers table and Thomas Hardy in it — the
 starting point of the Moon Walk.
 
-- [🗺️ The Treasure Hunt](../module_02/01_hunt.md)
-- [📋 Query Concepts](../module_02/02_concepts.md)
-{: .prerequisite }
-
 Ask Doc for a tour!
 {: .avatar_trigger target="guide" }
 

@@ -13,6 +13,9 @@ Ask Doc for a tour!
 ```
 ### 🧭 1 · From table to entity — the model
 
+[The building blocks of database design](_slides/m03_08.jpg)
+{: .embed image="true" width="100%" }
+
 A **database** is tables, rows, columns, data, types — the thing that
 runs. A **model** is its picture: more abstract, fewer details, and it
 catches the decisions with foundational consequences. Change a row and
@@ -36,6 +39,9 @@ sentence to an entity-relationship picture.
 ```
 ### 🗣️ 2 · English to ER — cardinality
 
+[English to ER: the sentence, the two scripts, the two tables](_slides/m03_09.jpg)
+{: .embed image="true" width="100%" }
+
 > *A customer may place zero, one, or many orders, and each order is
 > placed by exactly one customer.*
 
@@ -46,6 +52,9 @@ That sentence is the whole design of the Customers–Orders line:
   Orders;
 - **zero** allowed → a customer with no orders is fine; Jay in Paris
   is a customer.
+
+[Cardinalities: 1:1, 1:N, parents above children](_slides/m03_20.jpg)
+{: .embed image="true" width="100%" }
 
 Read as **1 : N**, one to many. A **1 : 1** line — each employee has
 exactly one badge, each badge exactly one employee — is rarer, and
@@ -116,10 +125,18 @@ way — each one above Orders, each arrow a foreign key.
 
 A skyscraper in London once melted a parked car with the sunlight its
 curved glass focused on the street. The design looked good; the side
-effect came later. Tables do the same. Three smells, each with the
+effect came later. Tables do the same.
+
+[Poor design: looks good, unwanted side effects](_slides/m03_13.jpg)
+{: .embed image="true" width="100%" }
+
+Three smells, each with the
 poor table and the good one, live:
 
 #### 1NF — a primary key, atomic columns, no repeating groups
+
+[1NF: a key, atomic columns, no groups](_slides/m03_15.jpg)
+{: .embed image="true" width="100%" }
 
 Two phone numbers in one cell: how do you search for one? Or three
 Phone columns: what happens to the fourth number?
@@ -153,6 +170,9 @@ has a key; no column comes in numbered copies.
 
 #### 2NF — every non-key column depends on the whole key
 
+[2NF: every non-key column depends on the whole key](_slides/m03_16.jpg)
+{: .embed image="true" width="100%" }
+
 OrderDetails is keyed by *OrderID + ProductID*. CustomerName depends
 on OrderID alone; ProductName and UnitPrice on ProductID alone. Change
 a product's price and you must hunt down every line that copied it:
@@ -174,6 +194,9 @@ The cure is the shop's own map: OrderDate and the customer live in
 OrderDetails keeps only the keys and the quantity.
 
 #### 3NF — no non-key column depends on another non-key column
+
+[3NF: no non-key column depends on another non-key column](_slides/m03_17.jpg)
+{: .embed image="true" width="100%" }
 
 MajorName depends on MajorID, not on the student. Rename a major and
 you edit every student who takes it — and one day two rows disagree:
