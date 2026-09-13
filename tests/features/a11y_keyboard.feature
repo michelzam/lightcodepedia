@@ -65,6 +65,19 @@ Feature: Everything a mouse can do, a keyboard can do
     And I wait for the page to be interactive
     Then every code editor on the page exposes an accessible name
 
+  Scenario: A code editor's painted overlay is not a tab stop
+    Behind every Python editor sits a painted copy of the code, hidden from
+    assistive tech, that the syntax highlighter colours. The highlighter
+    also makes any bare pre it touches a tab stop, so a keyboard user landed
+    on an element a screen reader was told did not exist; the axe ratchet
+    stayed red on aria-hidden-focus from 2026-09-03, two nodes per new
+    example (2026-09-13). The overlay says "not a tab stop" itself, before
+    the highlighter can say otherwise.
+
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    Then no hidden code overlay on the page is a tab stop
+
   Scenario: Form fields carry the name their row shows
     When I navigate to "/components/form"
     And I wait for the page to be interactive

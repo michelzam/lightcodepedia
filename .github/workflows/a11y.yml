@@ -119,7 +119,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add hq/a11y/latest.json hq/a11y/trend.jsonl hq/a11y/baseline.json
+          git add hq/a11y/latest.json hq/a11y/nodes.json hq/a11y/trend.jsonl hq/a11y/baseline.json
           if git diff --cached --quiet; then echo "No change."; exit 0; fi
           git commit -m "chore: a11y scan"
           git push origin HEAD:main || { git pull --rebase origin main && git push origin HEAD:main; }

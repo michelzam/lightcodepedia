@@ -776,3 +776,19 @@ def step_grid_order(context, grid_id, col, order):
              return Array.from(g.querySelectorAll("tbody tr")).map(tr => tr.children[i].textContent.trim());
            }""", [grid_id, col])
     assert got == [x.strip() for x in order.split("|")], "grid order %r" % got
+
+
+@then("no hidden code overlay on the page is a tab stop")
+def step_hidden_overlay_not_tab_stop(context):
+    bad = context.page.evaluate(
+        """() => {
+          const out = [];
+          document.querySelectorAll('.lc-pyrun-hl').forEach((pre) => {
+            const t = pre.getAttribute('tabindex');
+            if (pre.getAttribute('aria-hidden') !== 'true' || t !== '-1')
+              out.push((pre.closest('[id]') || {}).id + ' tabindex=' + t);
+          });
+          return out;
+        }"""
+    )
+    assert bad == [], "hidden overlays a keyboard could land on: " + ", ".join(bad)
