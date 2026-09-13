@@ -651,3 +651,14 @@ def step_bench_read_path(context, path):
     different files."""
     reads = getattr(context, "bench_reads", [])
     assert path in reads, "the bench was read at %r, never at %r" % (reads, path)
+
+
+@when("the learner leaves the page without saving")
+def step_leave_page(context):
+    """the tab goes hidden — what iOS fires when a learner switches away,
+    and what progress.md listens to; then the write is given time to land"""
+    context.page.evaluate("""() => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+      document.dispatchEvent(new Event("visibilitychange"));
+    }""")
+    context.page.wait_for_timeout(1500)

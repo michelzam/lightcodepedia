@@ -143,3 +143,22 @@ if __name__ == "__main__":
                 fails += 1; print("FAIL " + name + ": " + str(e)[:200])
     print("\n%d failure(s)" % fails)
     sys.exit(1 if fails else 0)
+
+
+def test_the_intro_page_is_found_by_number_and_named_when_new():
+    assert cm.intro_for("02", ["ℹ️ Module 02 — Intro", "🧩 Module 02 — Activity"]) == ("ℹ️ Module 02 — Intro", None)
+    assert cm.intro_for("02", ["ℹ️ Module 2 — Welcome back"]) == ("ℹ️ Module 2 — Welcome back", None)
+    assert cm.intro_for("03", ["ℹ️ Module 02 — Intro"]) == (None, None)
+    assert cm.intro_title("03") == "ℹ️ Module 03 — Intro"
+    standing, clash = cm.intro_for("02", ["ℹ️ Module 02", "ℹ️ Module 02 — Intro"])
+    assert standing is None and "merge them" in clash
+
+
+def test_the_little_markdown_an_intro_needs():
+    html = cm.md_html("# Title\n\nHope **all** is *well* — see [the map](x).\n\n## Parts\n\n- one\n- two & three\n\n<iframe src=\"u\"></iframe>\n\nBye.")
+    assert "Title" not in html.replace("<h2>", ""), html          # the title is the page's name
+    assert "<p>Hope <strong>all</strong> is <em>well</em> — see <a href=\"x\">the map</a>.</p>" in html, html
+    assert "<h2>Parts</h2>" in html
+    assert "<ul><li>one</li><li>two &amp; three</li></ul>" in html, html
+    assert "<iframe src=\"u\"></iframe>" in html
+    assert html.endswith("<p>Bye.</p>")

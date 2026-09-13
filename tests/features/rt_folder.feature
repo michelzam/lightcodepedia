@@ -497,6 +497,31 @@ Feature: Folder shelf — read posture and X-ray workbench
     And the recap row "The Volunteer" reads "quiz 3/3 · proof 1/1" and offers "open"
     And the recap cheers "Two pages down. 6 points left on two pages."
 
+  Scenario: A dashboard above the modules recaps each one by name
+    One page for the whole course — "this way they will know where they
+    are" (Michel, 2026-09-13): a recap per module, each folder named by a
+    relative link from the course's own front folder, not by the page the
+    recap sits on.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the module "courses/demo/mod" holds pages with quizzes and proofs:
+      | file         | title              | quizzes | proofs | tags             |
+      | 01_first.md  | 📝 The Volunteer   | 3       | 1      | markdown         |
+      | 02_second.md | 🔥 North Burns     | 3       | 4      | agent, prompt    |
+    And the GitHub contents API serves "courses/demo/_progress.md" with the document:
+      """
+      # Where you are
+
+      [Module 01](mod)
+      {: .folder view="recap" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/_progress.md"
+    And I wait for the page to be interactive
+    Then the recap head reads "0 of 2 pages done · 🏆 0 of 11 points"
+    And the recap names the module "📦 01 · Outside-in"
+
   Scenario: The teacher's shelf reads a vault the author key cannot
     An author key is owner-scoped; the vault is the org's. The runner
     already retries a page with the cockpit's org key, so the page rendered

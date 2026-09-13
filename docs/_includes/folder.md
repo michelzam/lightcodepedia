@@ -1051,6 +1051,11 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
     function moduleTitle(rp) {
       var dir = String(rp || "").replace(/\/+$/, "");
       if (!dir || dir === ".") dir = runBaseDir || "";
+      /* a relative folder ("module_01" from the course's own front page)
+         lives under the render's folder, exactly as the rows resolve it —
+         without this the title read "Mod" while the rows were right
+         (dashboard, 2026-09-13) */
+      else if (runBaseDir && dir.charAt(0) !== "/") dir = runBaseDir + "/" + dir;
       var fallback = dir ? titleCase(dir.split("/").pop()) : "";
       if (!dir) return Promise.resolve(fallback);
       var idx = dir + "/index.md";
