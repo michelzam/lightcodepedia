@@ -159,7 +159,7 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-body"><p style="margin-top:0">The course’s AI helpers run on a second, free key — separate from your course key on purpose: one badge for your <b>work</b>, one for the AI’s <b>energy</b>. Create it (any Google account), paste it below, and when your browser offers to <b>save it as a password — say yes</b>: it will follow you to your other devices by itself.</p>' +
       '<div class="lcj-row"><a class="lcj-btn alt" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">⚡ Create the energy key →</a></div>' +
       '<form class="lcj-energy" autocomplete="on">' +
-      '<input type="text" name="username" value="lc-gemini" autocomplete="username" tabindex="-1" readonly style="position:absolute;left:-9999px">' +
+      '<input type="text" name="username" value="lc-gemini" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager" style="position:absolute;left:-9999px">' +
       '<div class="lcj-row"><input class="lcj-ekey" type="password" name="password" autocomplete="current-password" placeholder="AIza…" spellcheck="false">' +
       '<button type="submit" class="lcj-btn">Check key ✓</button></div>' +
       '</form>' +

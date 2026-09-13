@@ -30,7 +30,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun .token.keyword, .lc-pyrun .token.boolean, .lc-pyrun .token.null { color: #cf222e; font-weight: 500; }
 .lc-pyrun .token.string, .lc-pyrun .token.triple-quoted-string { color: #0a3069; }
 .lc-pyrun .token.number { color: #0550ae; }
-.lc-pyrun .token.comment { color: #6e7781; font-style: italic; }
+.lc-pyrun .token.comment { color: #59636e; font-style: italic; }
 .lc-pyrun .token.function, .lc-pyrun .token.class-name, .lc-pyrun .token.builtin, .lc-pyrun .token.decorator { color: #8250df; }
 .lc-pyrun .token.operator, .lc-pyrun .token.punctuation { color: #24292f; }
 .lc-pyrun-gutter { position: relative; overflow: hidden; background: #f3f4f6; border-right: 1px solid #e8e8e8; user-select: none; min-width: 2.5em; }

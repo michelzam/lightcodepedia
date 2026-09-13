@@ -41,6 +41,7 @@ jobs:
     permissions:
       contents: write
       actions: read      # the deploys widget lists workflow runs
+      statuses: write    # the verdict is announced to the shelf's ♿ button
     steps:
       - uses: actions/checkout@v4
         with:
@@ -73,13 +74,16 @@ jobs:
       # Length only, never the value.
       - name: Confirm the scan key reaches this job
         env:
-          A11Y_SCAN_PAT: ${{ secrets.A11Y_SCAN_PAT || github.token }}
+          A11Y_SCAN_PAT: ${{ secrets.A11Y_SCAN_PAT || secrets.ORG_VAULT_TOKEN || github.token }}
           HAVE_PAT: ${{ secrets.A11Y_SCAN_PAT != '' }}
+          HAVE_VAULT: ${{ secrets.ORG_VAULT_TOKEN != '' }}
         run: |
           if [ -z "${A11Y_SCAN_PAT}" ]; then
             echo "::error::No key at all — not even the built-in token. Should be impossible."
           elif [ "$HAVE_PAT" = "true" ]; then
             echo "Using A11Y_SCAN_PAT (${#A11Y_SCAN_PAT} chars) — user menu will render."
+          elif [ "$HAVE_VAULT" = "true" ]; then
+            echo "Using ORG_VAULT_TOKEN — the Build-AI course pages behind /go will render."
           else
             echo "::notice::A11Y_SCAN_PAT not visible; falling back to the built-in job token."
             echo "  Data widgets will render; the user menu will not (the token is not a user)."
@@ -87,12 +91,19 @@ jobs:
             echo "  (Codespaces and Dependabot are separate tabs) → Repository secrets, not Variables."
           fi
 
+      - name: Prove the ratchet before trusting it
+        run: python hq/a11y/selftest.py
+
+      # stdout is also the VERDICT the shelf's ♿ button reads back, so it is
+      # kept; pipefail so the tee does not launder a red exit into green.
       - name: Scan and ratchet
         id: scan
         continue-on-error: true
         env:
-          A11Y_SCAN_PAT: ${{ secrets.A11Y_SCAN_PAT || github.token }}
-        run: python hq/a11y/scan.py "https://michelzam.github.io/lightcodelab"
+          A11Y_SCAN_PAT: ${{ secrets.A11Y_SCAN_PAT || secrets.ORG_VAULT_TOKEN || github.token }}
+        run: |
+          set -o pipefail
+          python hq/a11y/scan.py "https://michelzam.github.io/lightcodelab" 2>&1 | tee /tmp/out.txt
 
       - name: Summarise into the run (not into the site)
         if: always()
@@ -123,6 +134,29 @@ jobs:
           if git diff --cached --quiet; then echo "No change."; exit 0; fi
           git commit -m "chore: a11y scan"
           git push origin HEAD:main || { git pull --rebase origin main && git push origin HEAD:main; }
+
+      # The same blob-and-status channel the course gates use: the shelf's
+      # button polls lc/a11y and prints the verdict where it was pressed.
+      - name: Report to the shelf
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          touch /tmp/out.txt
+          sed -i 's/::error:://' /tmp/out.txt
+          [ -s /tmp/out.txt ] || echo "The scan stopped before measuring — the run log names the missing piece." > /tmp/out.txt
+          STATE="${{ steps.scan.outcome == 'success' && 'success' || 'failure' }}"
+          BLOB=$(jq -n --rawfile c /tmp/out.txt '{content: $c, encoding: "utf-8"}' \
+            | curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" -d @- \
+                   "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs" | jq -r .sha)
+          jq -n --arg s "$STATE" --arg d "$BLOB" \
+                '{state: (if $s == "success" then "success" else "failure" end),
+                  context: "lc/a11y", description: $d}' \
+            | curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" -d @- \
+                   "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            | jq -r 'if .id then "filed status \(.id) → blob" else "status refused: \(.message)" end'
 
       - name: Fail if accessibility regressed
         if: steps.scan.outcome == 'failure'

@@ -79,7 +79,7 @@ Auto-included by docs/_layouts/default.html.
     if (bound) {
       var xAttr = el.getAttribute("x") || (lines.length > 0 ? lines[0].split(",")[0].trim() : "");
       var placeholder = document.createElement("div");
-      placeholder.style.cssText = "min-height:" + h + "px;display:flex;align-items:center;justify-content:center;color:#aaa;border:2px dashed #e0e0e0;border-radius:8px;font-style:italic;padding:1em;text-align:center";
+      placeholder.style.cssText = "min-height:" + h + "px;display:flex;align-items:center;justify-content:center;color:#767676;border:2px dashed #e0e0e0;border-radius:8px;font-style:italic;padding:1em;text-align:center";
       placeholder.textContent = "Select a row to visualize";
       wrap.appendChild(placeholder);
       loadChartJs(function() {

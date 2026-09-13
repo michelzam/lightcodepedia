@@ -682,7 +682,7 @@ files a learner is already working in.
                           '<i></i><i></i><i></i></span><span class="lc-win-title"></span></div>'
                         : "") +
                      (fixedSrc ? "" : '<div class="lc-run-bar" style="display:none"></div>') +
-                     '<div class="lc-run-status" style="color:#6b7280;font-size:0.9em">Loading…</div>' +
+                     '<div class="lc-run-status" style="color:#4b5563;font-size:0.9em">Loading…</div>' +
                      '<div class="lc-run markdown-body"' + idAttr + '></div>';
     el.parentNode.replaceChild(wrap, el);
     var status = wrap.querySelector(".lc-run-status");

@@ -105,7 +105,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 <div>
 <div id="lcw-done-welcome" style="font-weight:600;font-size:1.1em"></div>
 <div><a id="lcw-done-url" href="#" target="_blank" style="font-size:0.9em"></a></div>
-<div id="lcw-done-karma" style="font-size:0.85em;color:#c47900;margin-top:4px"></div>
+<div id="lcw-done-karma" style="font-size:0.85em;color:#9a5f00;margin-top:4px"></div>
 </div>
 </div>
 <div class="lcw-next-cards">
@@ -192,7 +192,7 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 }
 .lcw-karma-badge {
   margin-left: auto; font-size: 0.75em; font-weight: 600;
-  color: #c47900; background: #fff8e1; border: 1px solid #ffe082;
+  color: #9a5f00; background: #fff8e1; border: 1px solid #ffe082;
   border-radius: 10px; padding: 2px 9px; white-space: nowrap; flex-shrink: 0;
 }
 .lcw-karma-badge:not([data-pts]) { color: var(--lc-ink-mute, #616161); background: #f3f4f6; border-color: #e0e0e0; }

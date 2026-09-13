@@ -526,7 +526,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
           <span>🌟 <span id="lc-ud-karma-pts">…</span> karma pts</span>
           <span style="font-size:0.75em;color:#bbb">network →</span>
         </div>
-        <div id="lc-ud-karma-detail" style="font-size:0.75em;color:#c47900;opacity:0.75"></div>
+        <div id="lc-ud-karma-detail" style="font-size:0.75em;color:#9a5f00"></div>
       </a>
       <div class="lc-ud-row" id="lc-ud-key" style="display:none;flex-direction:column;align-items:flex-start;gap:2px;font-size:0.85em"></div>
       <a class="lc-ud-row" href="/courses/join"><span>🎓</span><span>My course</span></a>
@@ -965,7 +965,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
         var batt = ratio < 0.2 ? '🪫' : '🔋';
         el.style.display = 'flex';
         el.textContent = batt + ' ' + rem + ' / ' + lim + ' API calls left this hour';
-        el.style.color = ratio < 0.1 ? '#c00' : ratio < 0.25 ? '#c47900' : '#888';
+        el.style.color = ratio < 0.1 ? '#c00' : ratio < 0.25 ? '#9a5f00' : '#6b7280';
       }
 
       fetch(_repoBase, { headers: _ghHdrs }).then(trackRate)

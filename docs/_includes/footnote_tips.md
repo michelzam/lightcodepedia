@@ -57,6 +57,10 @@ div.footnotes ol { font-size: 0.9em; color: #555; }
 (function(){
   function init() {
     var FN_SEL = 'a[href^="#fn:"]';
+    /* kramdown stamps every footnote role="doc-endnote"; DPUB-ARIA 1.1
+       retired that role and axe counts each one (aria-deprecated-role).
+       A list item is a list item — drop the stamp. */
+    document.querySelectorAll('li[role="doc-endnote"]').forEach(function (li) { li.removeAttribute('role'); });
     /* no early return on an empty page: a block can create the first ref later */
 
     var popover = document.createElement('div');

@@ -36,7 +36,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-form-bool .lc-form-bool-t { color: #2a7a2a; font-weight: 600; }
 .lc-form-bool .lc-form-bool-f { color: #b00; font-weight: 600; }
 .lc-form-null { color: #aaa; font-style: italic; }
-.lc-form-num { color: #0a5; }
+.lc-form-num { color: #087a40; }
 .lc-form-cellbox { display: flex; align-items: center; height: 100%; overflow: hidden; }
 .lc-form-grid .ag-cell-wrap-text { line-height: 1.5; padding-top: 6px; padding-bottom: 6px; word-break: normal; }
 .lc-form-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; line-height: 1.2; padding: 4px 0; }
