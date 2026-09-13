@@ -342,6 +342,23 @@ Feature: The instant runner (RT) — Phase A parity
     Then the runner says the key itself is the problem
     And the runner never shows a bare HTTP status
 
+  Scenario: A stale key does not hide a public course
+    Michel opened the 410 door on pedia with an expired key in his browser:
+    "your key isn't valid anymore", on a public course that every keyless
+    student reads fine (2026-09-13). A key GitHub refuses says nothing
+    about the page: the runner reads it again the way a visitor with no
+    key would, so only a course that refuses THAT read is private. The
+    page's pictures take the same road — and this page lives under
+    docs/_410/, the publish gate's mirror: an underscore folder Pages
+    never builds, so a relative picture there is a sibling file, never a
+    site asset (every slide of the setup page 404'd on pedia, 2026-09-13).
+
+    Given a course key that GitHub rejects, over a public course
+    When I open the runner page on "gh:acme/pedia/docs/_410/databases/module_03/index.md"
+    Then the runner shows a heading "Build the Shop"
+    And the runner never shows a bare HTTP status
+    And the page's relative image took the keyless road
+
   Scenario: A framed learner with no key still has a door in
     Focus mode learned this once already: a private course tells the learner
     to connect a key, and hiding the one control that does it makes the

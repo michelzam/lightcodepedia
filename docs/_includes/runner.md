@@ -251,7 +251,12 @@ files a learner is already working in.
           root._lcImgUrls.push(u);
           img.src = u;
         })
-        .catch(function () {});   // leave the broken image; the alt text speaks
+        /* A KEY GITHUB REFUSES SAYS NOTHING ABOUT THE IMAGE (Michel,
+           2026-09-13: the setup page's fifteen slides, blank on pedia, in
+           the one browser holding an expired key). Fall back to the road a
+           keyless visitor takes — raw — which a public repo serves; a
+           private one 404s there as it always did, no worse than a blank. */
+        .catch(function () { img.src = "https://raw.githubusercontent.com/" + repo + "/HEAD/" + full; });
     });
   }
 
@@ -276,7 +281,8 @@ files a learner is already working in.
     });
     var full = parts.join("/");
     var pat = edKey();
-    if (!pat) return Promise.resolve("https://raw.githubusercontent.com/" + repo + "/HEAD/" + full);
+    var rawUrl = "https://raw.githubusercontent.com/" + repo + "/HEAD/" + full;
+    if (!pat) return Promise.resolve(rawUrl);
     var memo = repo + "/" + full;
     if (_mediaBlobs[memo]) return _mediaBlobs[memo];
     return (_mediaBlobs[memo] = fetch("https://api.github.com/repos/" + repo + "/contents/" + full,
@@ -300,7 +306,9 @@ files a learner is already working in.
         if (mime && b.type !== mime) b = new Blob([b], { type: mime });
         return URL.createObjectURL(b);
       })
-      .catch(function () { delete _mediaBlobs[memo]; return ""; }));
+      /* same rule as healImages: a refused key falls back to the keyless
+         road, so a public course's pictures and clips still show */
+      .catch(function () { delete _mediaBlobs[memo]; return rawUrl; }));
   };
 
   /* ── ship: — the deployed-app scheme ─────────────────────────────────────
@@ -391,6 +399,20 @@ files a learner is already working in.
         var opat = ""; try { opat = localStorage.getItem("lc_org_pat") || ""; } catch (e) {}
         if (spec.gh && opat && err && (err.status === 404 || err.status === 401))
           return fetchMd({ Authorization: "Bearer " + opat, Accept: "application/vnd.github.v3.raw", "X-GitHub-Api-Version": "2022-11-28" });
+        throw err;
+      })
+      .catch(function (err) {
+        /* A KEY GITHUB REFUSES SAYS NOTHING ABOUT THE PAGE. Michel opened the
+           410 door on pedia with an expired key in his browser and read "your
+           key isn't valid anymore" — on a PUBLIC course that every keyless
+           student reads fine (2026-09-13). The embed engine already knew this
+           (embed.feature, "a stale key does not hide a node the public site
+           serves"). So before diagnosing the key, read the way a visitor with
+           no key at all would have: anonymously. A public repo answers; a
+           private one still 404s, and the diagnosis below still runs. */
+        var sent = spec.headers && spec.headers.Authorization;
+        if (spec.gh && sent && err && (err.status === 404 || err.status === 401))
+          return fetchMd({ Accept: "application/vnd.github.v3.raw" }).catch(function () { throw err; });
         throw err;
       })
       .then(function (md) {

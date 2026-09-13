@@ -820,7 +820,13 @@ Auto-included by docs/_layouts/default.html.
        the site-root meaning untouched. */
     var srcEl  = container.closest ? container.closest("[data-lc-src-path]") : null;
     var srcDir = srcEl ? (srcEl.getAttribute("data-lc-src-path") || "").split("/").slice(0, -1).join("/") : "";
-    var based  = !!(srcDir && !/^docs(\/|$)/.test(srcDir));
+    /* A MIRROR IS THE COURSE, RENDERED ELSEWHERE. docs/_410/databases/… is
+       the publish gate's copy of courses/databases/… — under docs/, but an
+       underscore folder Pages never builds, so "/x" can only mean the
+       sibling file. Read as a site asset, every slide of the setup page
+       404'd on pedia (Michel, 2026-09-13). Same rule the voice manifest
+       learned on 2026-09-03. */
+    var based  = !!(srcDir && (!/^docs(\/|$)/.test(srcDir) || /^docs\/_[^\/]+(\/|$)/.test(srcDir)));
     /* height="400" knob (same as embed-page): sizes the image; width follows.
        width="40%" sizes relative to the container (or px) so the picture
        scales with the page; align="left|right" floats it so text wraps. */

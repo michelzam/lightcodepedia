@@ -441,6 +441,53 @@ def step_stale_key(context):
                             body='{"message": "Bad credentials"}'))
 
 
+@given("a course key that GitHub rejects, over a public course")
+def step_stale_key_public(context):
+    """The pedia case: the stored PAT is dead (every call carrying it gets
+    401), but the repo is public — the same URL with no Authorization header
+    answers 200, as it does for a student who never had a key."""
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat','ghp_stale');"
+        "localStorage.setItem('lc_ed_repo','acme/pedia');")
+
+    def contents(route):
+        req = route.request
+        if req.headers.get("authorization"):
+            route.fulfill(status=401, content_type="application/json",
+                          body='{"message": "Bad credentials"}')
+        elif "/contents/" in req.url and req.url.rstrip("/").endswith("index.md"):
+            route.fulfill(status=200, content_type="text/plain; charset=utf-8",
+                          body="# 🏗️ 03 · Build the Shop\n\nThe shop is yours.\n\n"
+                               "![the map](_setup/setup_02.jpg)\n\n"
+                               "[the slide](_setup/setup_03.jpg)\n{: .embed image=\"true\" width=\"100%\" }\n")
+        else:
+            route.fulfill(status=404, content_type="application/json", body='{"message": "Not Found"}')
+
+    context.page.route("https://api.github.com/**", contents)
+    # the keyless road: raw answers a public repo — a 1×1 PNG stands in
+    png = (b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+           b"\x00\x00\x00\rIDATx\x9cc\xf8\x0f\x00\x01\x01\x01\x00\x18\xdd\x8d\xb4\x00\x00\x00\x00IEND\xaeB`\x82")
+    context.page.route("https://raw.githubusercontent.com/**",
+                       lambda r: r.fulfill(status=200, content_type="image/png", body=png))
+
+
+@then("the page's relative image took the keyless road")
+def step_image_raw_road(context):
+    img = context.page.locator("#lc-run img[alt='the map']").first
+    expect(img).to_be_attached(timeout=20_000)
+    context.page.wait_for_timeout(1500)
+    src = img.get_attribute("src") or ""
+    assert src.startswith("https://raw.githubusercontent.com/acme/pedia/HEAD/docs/_410/databases/module_03/_setup/setup_02.jpg"), src
+    ok = context.page.evaluate("() => { const i = document.querySelector('#lc-run img[alt=\"the map\"]'); return i.complete && i.naturalWidth > 0; }")
+    assert ok, "the image never loaded from the raw road"
+    # the embed road (widgets → lcMediaBlob) must take the same fallback
+    emb = context.page.locator("#lc-run .lc-embed img").first
+    expect(emb).to_be_attached(timeout=20_000)
+    context.page.wait_for_timeout(1500)
+    esrc = emb.get_attribute("src") or ""
+    assert esrc.startswith("https://raw.githubusercontent.com/acme/pedia/HEAD/docs/_410/databases/module_03/_setup/setup_03.jpg"), esrc
+
+
 @then("the runner says the key itself is the problem")
 def step_key_named(context):
     status = context.page.locator(".lc-runner .lc-run-status")
