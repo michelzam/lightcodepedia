@@ -11,6 +11,7 @@ Start with the first module, then follow the quest:
 
 - [👋 01 · Introductions](module_01/index.md)
 - [🔎 02 · Data Quest 2](module_02/index.md)
+- [🏗️ 03 · Build the Shop](module_03/index.md)
 
 [Browse](#)
 {: .folder }
@@ -27,6 +28,7 @@ stories:
     - The course covers relational databases and SQL, then the NoSQL families.
     - Module 01 introduces the course, the instructor, and your first data quest.
     - Module 02 hands you the query — English first, then SQL, over the shop's eight tables.
+    - Module 03 hands you the trowel — build the shop's tables in your own MySQL, keys and all.
     - Open module 01 to begin, or browse the folder to see everything at once.
 ```
 {: .avatar #guide dock="true" size="115" }

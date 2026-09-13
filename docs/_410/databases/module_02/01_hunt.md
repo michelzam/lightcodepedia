@@ -291,7 +291,7 @@ can sit inside another query's FROM:
 ```sql
 SELECT ProductName, Price
 FROM (SELECT * FROM Products, Categories
-      WHERE Products.CategoryID = Categories.CategoryID)
+      WHERE Products.CategoryID = Categories.CategoryID) AS ProductsWithCategories
 ```
 {: .query source="Products,Categories" #q_nested editable="true" }
 
@@ -301,6 +301,8 @@ FROM (SELECT * FROM Products, Categories
 The inner SELECT builds the related pairs; the outer one keeps two
 columns of them. Queries nest like Russian dolls, because a result
 is always a table. Still 7 rows here, still 77 on w3schools.
+
+> Note. Some SQL dialects require an alias for the inner query, using the keyword `AS`.
 ````
 {: .accordion #nested }
 
@@ -387,7 +389,7 @@ script:
   - say: "The paper hunt made a claim about Thomas Hardy and a date. Claims are cheap. Let us ask the one place that actually knows."
   - at: map
     do: open
-    say: "Eight tables, and they are live — slices of the real shop. Customers, orders, order lines, products, categories, suppliers, shippers, employees. The full-size versions wait on TryIt with the same names, so what you write here runs there."
+    say: "Eight tables, and they are live — slices of the real shop. Customers, orders, order lines, products, categories, suppliers, shippers, employees. The full-size versions wait on w3schools with the same names, so what you write here runs there."
   - at: map
     do: select
     with: "Thomas Hardy"

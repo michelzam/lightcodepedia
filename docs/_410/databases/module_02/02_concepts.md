@@ -9,24 +9,8 @@ five ideas every query you will ever write is made of.
 Ask Doc for a tour!
 {: .avatar_trigger target="guide" }
 
-````
-### 🗣️ 1 · A query is a sentence
-
-A small slice of the customers table, for the examples on this page:
-
-```json
-[
-  {"CustomerID": 1, "ContactName": "Maria Anders", "City": "Berlin", "Country": "Germany"},
-  {"CustomerID": 4, "ContactName": "Thomas Hardy", "City": "London", "Country": "UK"},
-  {"CustomerID": 11, "ContactName": "Victoria Ashworth", "City": "London", "Country": "UK"},
-  {"CustomerID": 34, "ContactName": "Mario Pontes", "City": "Rio de Janeiro", "Country": "Brazil"},
-  {"CustomerID": 90, "ContactName": "Matti Karttunen", "City": "Helsinki", "Country": "Finland"}
-]
 ```
-{: .dataset #Customers }
-
-[the slice](#)
-{: .datagrid bind="Customers" rows="5" }
+### 🗣️ 1 · A query is a sentence
 
 > "A query is a question asked of the database, in a language it
 > understands."
@@ -41,7 +25,7 @@ SELECT * FROM Customers WHERE City = 'London';
 Three clauses, three jobs: **SELECT** says which columns, **FROM**
 says which tables, **WHERE** says which rows. If you cannot say it
 in English, no syntax will save you.
-````
+```
 {: .accordion #sentence }
 
 ```
@@ -53,10 +37,6 @@ you want after it, and only those come back — for every row:
 ~~~sql
 SELECT ContactName, City FROM Customers;
 ~~~
-{: .query source="Customers" #q_columns }
-
-[two columns, every row](#)
-{: .datagrid #cols_grid source="q_columns" rows="3" }
 
 `*` means *every column*, the whole width. A comma separates column
 names; `AND` never does — `AND` joins conditions, not columns. And
@@ -73,10 +53,6 @@ test, and every column comes along because of the `*`:
 ~~~sql
 SELECT * FROM Customers WHERE City = 'London';
 ~~~
-{: .query source="Customers" #q_rows }
-
-[every column, the London rows](#)
-{: .datagrid source="q_rows" rows="3" }
 
 The test compares a column with a **value** — and text values wear
 quotes: `'London'`. Without them, `London` would be read as the name
@@ -104,6 +80,44 @@ WHERE: two clauses, two directions.
   > filters rows, and `*` still brings back every column.
 {: .quiz }
 
+
+````
+### 🔎 Both directions, live
+
+A small slice of the customers table, and the two queries above running
+on it — edit either, press ▶ Run, and watch which direction moves:
+
+```json
+[
+  {"CustomerID": 1, "ContactName": "Maria Anders", "City": "Berlin", "Country": "Germany"},
+  {"CustomerID": 4, "ContactName": "Thomas Hardy", "City": "London", "Country": "UK"},
+  {"CustomerID": 11, "ContactName": "Victoria Ashworth", "City": "London", "Country": "UK"},
+  {"CustomerID": 34, "ContactName": "Mario Pontes", "City": "Rio de Janeiro", "Country": "Brazil"},
+  {"CustomerID": 90, "ContactName": "Matti Karttunen", "City": "Helsinki", "Country": "Finland"}
+]
+```
+{: .dataset #Customers }
+
+[the slice](#)
+{: .datagrid bind="Customers" rows="5" }
+
+```sql
+SELECT ContactName, City FROM Customers
+```
+{: .query source="Customers" #q_columns editable="true" }
+
+[two columns, every row](#)
+{: .datagrid #cols_grid source="q_columns" rows="3" }
+
+```sql
+SELECT * FROM Customers WHERE City = 'London'
+```
+{: .query source="Customers" #q_rows editable="true" }
+
+[every column, the London rows](#)
+{: .datagrid source="q_rows" rows="3" }
+````
+{: .block title="🔎 Select columns, select rows — live" #live }
 
 ```
 ### 🖇️ 4 · Cross product and join — two tables
