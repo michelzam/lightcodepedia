@@ -20,6 +20,7 @@ cd "$LIBS"
 [ -d maplibre ] || { npm pack maplibre-gl@4 >/dev/null 2>&1 && tar xzf maplibre-gl-4*.tgz && mkdir -p maplibre && mv package/dist/maplibre-gl.js package/dist/maplibre-gl.css maplibre/ && rm -rf package maplibre-gl-4*.tgz; }
 [ -d three ] || { npm pack three@0.170.0 >/dev/null 2>&1 && tar xzf three-0.170.0.tgz && mkdir -p three/build three/examples && mv package/build/three.module.js three/build/ && mv package/examples/jsm three/examples/jsm && rm -rf package three-0.170.0.tgz; }
 [ -d ag ] || { npm pack ag-grid-community@31 >/dev/null 2>&1 && tar xzf ag-grid-community-31*.tgz && mv package ag && rm -f ag-grid-community-31*.tgz; }
+[ -f axe.min.js ] || { npm pack axe-core@4.10.2 >/dev/null 2>&1 && tar xzf axe-core-4.10.2.tgz package/axe.min.js && mv package/axe.min.js axe.min.js && rm -rf package axe-core-4.10.2.tgz; }
 [ -d prism ] || { npm pack prismjs@1 >/dev/null 2>&1 && tar xzf prismjs-1*.tgz package/components/prism-core.min.js package/components/prism-python.min.js && mkdir -p prism && mv package/components/*.js prism/ && rm -rf package prismjs-1*.tgz; }
 cat > serve.py <<'PYEOF'
 import http.server, os, socketserver
@@ -49,4 +50,4 @@ sleep 1
 nohup python3 "$LIBS/serve.py" < /dev/null > /dev/null 2>&1 &
 for i in $(seq 1 10); do curl -s -o /dev/null http://127.0.0.1:8899/run.html && break; sleep 1; done
 echo "rig up: $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8899/run.html)"
-echo "env: MAPLIBRE_DIR=$LIBS/maplibre THREE_DIR=$LIBS/three MARKED_JS=$LIBS/marked.min.js JS_YAML=$LIBS/js-yaml.min.js MPY_DIR=$LIBS/mpy AG_GRID_DIR=$LIBS/ag CHART_JS=$LIBS/chart.umd.min.js ALASQL_JS=$LIBS/alasql.min.js PRISM_DIR=$LIBS/prism"
+echo "env: MAPLIBRE_DIR=$LIBS/maplibre THREE_DIR=$LIBS/three MARKED_JS=$LIBS/marked.min.js JS_YAML=$LIBS/js-yaml.min.js MPY_DIR=$LIBS/mpy AG_GRID_DIR=$LIBS/ag CHART_JS=$LIBS/chart.umd.min.js ALASQL_JS=$LIBS/alasql.min.js PRISM_DIR=$LIBS/prism AXE_JS=$LIBS/axe.min.js"

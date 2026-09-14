@@ -6,7 +6,9 @@ a later edit can quietly undo. Effective background is the nearest painted
 ancestor; opacity along the way is blended in, since fading text is the
 usual way contrast is lost without touching a colour.
 """
-from behave import given, then
+import re
+
+from behave import given, then, when
 from playwright.sync_api import expect
 
 _CONTRAST = """(sel) => {
@@ -93,7 +95,7 @@ def step_grid_scroll_focusable(context):
     context.page.wait_for_selector(".ag-body-viewport", state="attached", timeout=20_000)
     context.page.wait_for_function(
         "() => Array.from(document.querySelectorAll('.ag-body-viewport'))"
-        "        .every(v => v.getAttribute('tabindex') === '0')", timeout=10_000)
+        "        .every(v => v.querySelector('[tabindex=\"0\"]'))", timeout=10_000)
 
 
 @then("no quiz answer contains a focusable descendant")
@@ -113,3 +115,44 @@ def step_answer_footnote_popover(context):
     popover = context.page.locator(".lc-fn-popover.lc-fn-visible")
     expect(popover).to_be_visible(timeout=5_000)
     assert popover.text_content().strip(), "the popover opened empty"
+
+
+
+# ── the editor's ♿ Audit tab ──────────────────────────────────────────────
+
+@when("a nameless text field is planted on the page")
+def step_plant_nameless(context):
+    context.page.evaluate(
+        """() => { const i = document.createElement('input'); i.type = 'text'; i.id = 'lc-planted';
+                   document.querySelector('main, article, body').appendChild(i); }""")
+
+
+@when("the planted field is removed")
+def step_unplant(context):
+    context.page.evaluate("() => { const i = document.getElementById('lc-planted'); if (i) i.remove(); }")
+
+
+@when("I press the editor's audit button")
+def step_press_audit(context):
+    context.page.click("#ed-a11y-run")
+
+
+@then('the audit lists a "{rule}" finding')
+def step_audit_lists(context, rule):
+    row = context.page.locator(".ed-a11y-row[data-rule='" + rule + "']").first
+    expect(row).to_be_visible(timeout=20_000)
+
+
+@then("clicking that finding outlines the planted field")
+def step_audit_click(context):
+    context.page.locator(".ed-a11y-row[data-rule='label']").first.click()
+    expect(context.page.locator("#lc-planted")).to_have_class(re.compile(r"ed-a11y-outline"), timeout=5_000)
+
+
+@then("the audit reports no issues")
+def step_audit_clean(context):
+    ok = context.page.locator("#ed-a11y-list .ed-a11y-ok")
+    try:
+        expect(ok).to_be_visible(timeout=20_000)
+    except AssertionError:
+        raise AssertionError("the audit still lists: " + context.page.locator("#ed-a11y-list").inner_text()[:600])

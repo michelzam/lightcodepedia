@@ -214,3 +214,22 @@ Feature: Page editor — ✨ AI edit dialog
     And I close the page editor
     And I open the page editor
     Then the full source is still what a save would read
+
+
+  Scenario: The ♿ Audit tab names what a reader would miss, and points at it
+    The nightly scan reports tomorrow; an author writing tonight needs the
+    same answer now (Michel, 2026-09-14). A nameless field is planted on the
+    page; the audit names the rule and outlines the field when clicked; with
+    the field gone the page audits clean.
+
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And a nameless text field is planted on the page
+    And I open the page editor
+    And I switch to the editor "a11y" tab
+    And I press the editor's audit button
+    Then the audit lists a "label" finding
+    And clicking that finding outlines the planted field
+    When the planted field is removed
+    And I press the editor's audit button
+    Then the audit reports no issues

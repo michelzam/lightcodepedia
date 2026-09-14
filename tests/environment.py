@@ -142,6 +142,11 @@ if CHART_JS and os.path.isfile(CHART_JS):
     with open(CHART_JS, "rb") as _f:
         _CHART_BODY = _f.read()
 
+AXE_JS = os.environ.get("AXE_JS") or None
+_AXE_BODY = None
+if AXE_JS and os.path.isfile(AXE_JS):
+    with open(AXE_JS, "rb") as _f:
+        _AXE_BODY = _f.read()
 ALASQL_JS = os.environ.get("ALASQL_JS") or None
 _ALASQL_BODY = None
 if ALASQL_JS and os.path.isfile(ALASQL_JS):
@@ -312,6 +317,9 @@ def before_scenario(context, scenario):
     _stub_script(context.page,  # LOCAL HARNESS ONLY (no-op when ALASQL_JS unset)
                  "https://cdn.jsdelivr.net/npm/alasql@*/dist/alasql.min.js",
                  _ALASQL_BODY)
+    _stub_script(context.page,  # LOCAL HARNESS ONLY (no-op when AXE_JS unset)
+                 "https://cdn.jsdelivr.net/npm/axe-core@*/axe.min.js",
+                 _AXE_BODY)
     for _n, _b in _PRISM.items():  # LOCAL HARNESS ONLY (empty when PRISM_DIR unset)
         _stub_script(context.page,
                      "https://cdn.jsdelivr.net/npm/prismjs@*/components/" + _n, _b)

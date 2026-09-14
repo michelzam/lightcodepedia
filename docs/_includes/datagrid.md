@@ -277,12 +277,17 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       /* The rows scroll — sideways too, whenever the columns outgrow the
          page — and nothing in that scroll region was a tab stop, so a wheel
          could reach what a keyboard could not (axe: scrollable-region-
-         focusable, WCAG 2.1.1). The viewport takes the tab stop; the arrow
-         keys then scroll it. The library paints it a beat after createGrid. */
-      (function armViewport(tries) {
-        var vp = gridEl.querySelector(".ag-body-viewport");
-        if (vp) { vp.setAttribute("tabindex", "0"); return; }
-        if (tries > 0) setTimeout(function () { armViewport(tries - 1); }, 100);
+         focusable, WCAG 2.1.1). The tab stop goes on the rows' container:
+         the viewport itself is presentational and a focusable presentation
+         breaks the tree-grid's ownership of its rows (aria-required-
+         children, critical — caught by the editor's ♿ Audit before it
+         shipped); cells and rows are repainted by the library and lose any
+         attribute. Focus lands there, the arrow keys scroll the viewport.
+         The library paints it a beat after createGrid. */
+      (function armRows(tries) {
+        var rows = gridEl.querySelector(".ag-body-viewport .ag-center-cols-container");
+        if (rows) { rows.setAttribute("tabindex", "0"); return; }
+        if (tries > 0) setTimeout(function () { armRows(tries - 1); }, 100);
       })(30);
 
       /* Cell editors are DATA, never credentials. The browser pairs a saved

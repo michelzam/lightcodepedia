@@ -177,6 +177,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-blocks-pane.ed-active { display: flex; }
 #ed-log-pane { display: flex; flex: 1; flex-direction: column; overflow: auto; padding: 0.4em; }
 #ed-log-pane.ed-hidden { display: none; }
+#ed-a11y-pane { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#ed-a11y-pane.ed-hidden { display: none; }
+#ed-a11y-bar { flex: none; display: flex; align-items: center; gap: 0.7em; padding: 0.4em 0.8em; border-bottom: 1px solid #e5e7eb; background: #fafafa; font-size: 0.82em; color: #4b5563; }
+#ed-a11y-list { flex: 1; overflow: auto; font-size: 0.85em; }
+.ed-a11y-row { padding: 0.5em 0.9em; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+.ed-a11y-row:hover { background: #f5f9ff; }
+.ed-a11y-row b { display: inline-block; min-width: 4.6em; margin-right: 0.5em; padding: 0 0.45em; border-radius: 6px; font-size: 0.8em; text-align: center; color: #fff; }
+.ed-a11y-row b.critical { background: #991b1b; } .ed-a11y-row b.serious { background: #b45309; }
+.ed-a11y-row b.moderate { background: #1d4ed8; } .ed-a11y-row b.minor { background: #4b5563; }
+.ed-a11y-row code { display: block; margin-top: 0.25em; color: #4b5563; font-size: 0.85em; white-space: pre-wrap; word-break: break-all; }
+.ed-a11y-ok { padding: 1em; color: #087a40; font-weight: 600; }
+.ed-a11y-outline { outline: 3px solid #b45309 !important; outline-offset: 2px; }
 #ed-diagram-pane { display: flex; flex: 1; flex-direction: column; overflow: auto; padding: 0.6em; }
 #ed-diagram-pane.ed-hidden { display: none; }
 #ed-diagram-pane .ed-diagram-wrap { overflow: auto; flex: 1; }
@@ -428,6 +440,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           <span class="ed-tab" data-tab="features">🧪 Features</span>
           <span class="ed-tab" data-tab="diagram">🗺️ Diagram</span>
           <span class="ed-tab" data-tab="log">📝 Log</span>
+          <span class="ed-tab" data-tab="a11y">♿ Audit</span>
         </div>
         <div id="ed-raw-pane" class="ed-hidden">
           <div id="ed-raw-shop">🔧 <b>basement workshop</b> · the source the self-growing house is built from<span class="ed-shop-grow">🌱→🏠</span></div>
@@ -450,6 +463,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         </div>
         <div id="ed-log-pane" class="ed-hidden">
           <div id="ed-log"><p style="color:#bbb;padding:1em">No AI edits yet. Select a block or text, then ✨ to ask for a change.</p></div>
+        </div>
+        <div id="ed-a11y-pane" class="ed-hidden">
+          <div id="ed-a11y-bar">
+            <a href="#" class="button" id="ed-a11y-run">♿ Audit this page</a>
+            <span id="ed-a11y-note">WCAG 2.1 A/AA on the page as rendered — nothing is stored; click a finding to see it</span>
+          </div>
+          <div id="ed-a11y-list"><p style="color:#bbb;padding:1em">Press ♿ Audit this page. The same rules the nightly scan runs, on what you are looking at right now.</p></div>
         </div>
         <div id="ed-blocks-pane" class="ed-active">
           <div id="ed-grid"><p style="color:#bbb;padding:1em">Load a file to see its blocks.</p></div>
@@ -2418,6 +2438,71 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     refresh();
   }
 
+  /* ♿ Audit — the nightly scan, on demand, on THIS page as rendered
+     (Michel, 2026-09-14: "an a11y tab to audit in the page editor, with a
+     dedicated button"). Same rule engine, same version, same WCAG 2.1 A/AA
+     tags as hq's scan, so the two never disagree; nothing stored, nothing
+     published — the page never carries its own report. */
+  var AXE_SRC = "https://cdn.jsdelivr.net/npm/axe-core@4.10.2/axe.min.js";
+  var AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
+  var _axeLoading = null;
+  function loadAxe() {
+    if (window.axe && window.axe.run) return Promise.resolve();
+    if (_axeLoading) return _axeLoading;
+    _axeLoading = new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = AXE_SRC;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { _axeLoading = null; reject(new Error("the rule engine did not load — offline?")); };
+      document.head.appendChild(s);
+    });
+    return _axeLoading;
+  }
+  var _a11yLit = null;
+  function a11yShow(sel) {
+    var el = null;
+    try { el = document.querySelector(sel); } catch (e) {}
+    if (!el) return;
+    if (_a11yLit) _a11yLit.classList.remove("ed-a11y-outline");
+    _a11yLit = el; el.classList.add("ed-a11y-outline");
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+  function a11yEsc(s) { return String(s || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function runAudit() {
+    var list = document.getElementById("ed-a11y-list");
+    if (!list) return;
+    list.innerHTML = '<p style="color:#777;padding:1em">Auditing…</p>';
+    loadAxe().then(function () {
+      /* the editor's own chrome is not the page */
+      return window.axe.run({ exclude: [["#ed-drawer"], ["#lcx-ghost"], ["#lcx-gear"], ["#lcx-edit"], [".lc-fn-popover"]] },
+                            { runOnly: { type: "tag", values: AXE_TAGS } });
+    }).then(function (res) {
+      var order = { critical: 0, serious: 1, moderate: 2, minor: 3 };
+      var vs = (res.violations || []).slice().sort(function (a, b) { return (order[a.impact] || 9) - (order[b.impact] || 9); });
+      var n = vs.reduce(function (t, v) { return t + v.nodes.length; }, 0);
+      if (!n) { list.innerHTML = '<p class="ed-a11y-ok">✅ No issues on this page — WCAG 2.1 A/AA, ' + (res.passes || []).length + ' rules passed.</p>'; return; }
+      var html = '<p style="padding:0.6em 0.9em;margin:0;color:#4b5563">' + n + ' finding' + (n > 1 ? 's' : '') + ' in ' + vs.length + ' rule' + (vs.length > 1 ? 's' : '') + '</p>';
+      vs.forEach(function (v) {
+        v.nodes.forEach(function (nd) {
+          var sel = (nd.target && nd.target[0]) || "";
+          html += '<div class="ed-a11y-row" data-sel="' + a11yEsc(sel) + '" data-rule="' + a11yEsc(v.id) + '">'
+                + '<b class="' + a11yEsc(v.impact || "minor") + '">' + a11yEsc(v.impact || "minor") + '</b>'
+                + a11yEsc(v.help) + ' <a href="' + a11yEsc(v.helpUrl) + '" target="_blank" rel="noopener" style="font-size:0.85em">why?</a>'
+                + '<code>' + a11yEsc((nd.html || "").slice(0, 160)) + '</code></div>';
+        });
+      });
+      list.innerHTML = html;
+    }).catch(function (e) {
+      list.innerHTML = '<p style="color:#b91c1c;padding:1em">❌ ' + a11yEsc((e && e.message) || e) + '</p>';
+    });
+  }
+  document.addEventListener("click", function (e) {
+    var run = e.target.closest("#ed-a11y-run");
+    if (run) { e.preventDefault(); runAudit(); return; }
+    var row = e.target.closest(".ed-a11y-row");
+    if (row && !e.target.closest("a")) a11yShow(row.dataset.sel);
+  });
+
   /* Tab switching */
   document.addEventListener("click", function(e) {
     var tab = e.target.closest(".ed-tab");
@@ -2429,6 +2514,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     var log    = document.getElementById("ed-log-pane");
     var feats  = document.getElementById("ed-features-pane");
     var diag   = document.getElementById("ed-diagram-pane");
+    var a11y   = document.getElementById("ed-a11y-pane");
+    if (a11y) a11y.classList.toggle("ed-hidden", name !== "a11y");
     blocks.classList.toggle("ed-active", name === "blocks");
     raw.classList.toggle("ed-hidden", name !== "raw");
     if (log) log.classList.toggle("ed-hidden", name !== "log");
