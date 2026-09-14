@@ -54,3 +54,24 @@ Feature: What we paint ourselves reads, and names itself
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/missing.md"
     And I wait for the page to be interactive
     Then the text in ".lc-run-status code" reads at AA contrast
+
+
+  Scenario: Every map marker has a role and says what it marks
+    The map library stamps each dot "Map marker" on a box with no role — a
+    name with nothing to hang it on. A dot is a button that opens its
+    popup, and its name is what the popup says.
+
+    When I navigate to "/components/map"
+    And I wait for the page to be interactive
+    Then every map marker carries a role and a name of its own
+
+  Scenario: A grid's scroll region is reachable by keyboard
+    When I navigate to "/components/datagrid"
+    And I wait for the page to be interactive
+    Then every grid scroll region is a tab stop
+
+  Scenario: A quiz answer holds no second control
+    When I navigate to "/components/datagrid"
+    And I wait for the page to be interactive
+    Then no quiz answer contains a focusable descendant
+    And the footnote mark inside an answer still opens its popover

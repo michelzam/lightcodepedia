@@ -202,6 +202,12 @@ Auto-included by docs/_layouts/default.html.
           .setLngLat([m.lon, m.lat])
           .setPopup(new maplibregl.Popup({ offset: 12 }).setText(m.label))
           .addTo(map);
+        /* the library stamps every marker aria-label="Map marker" on a box
+           with no role — a name with nothing to hang it on (ARIA 1.2 forbids
+           it; axe: aria-prohibited-attr). A dot is a button that opens its
+           popup, and its name is what the popup says. */
+        dot.setAttribute("role", "button");
+        dot.setAttribute("aria-label", m.label || "Map marker");
       });
 
       // bind="formid": a movable dot that follows a form's lat/lon, plus an
@@ -219,6 +225,8 @@ Auto-included by docs/_layouts/default.html.
         var bmarker = new maplibregl.Marker({ element: pin, anchor: "center" })
           .setLngLat(ballLngLat)
           .addTo(map);
+        pin.setAttribute("role", "img");
+        pin.setAttribute("aria-label", "The ball — where the form's latitude and longitude put it");
 
         // fetch="icon": a Fetch button; the fetcher glides to the ball, then
         // cheers only if it's within radius= of target= (both in degrees).
@@ -243,6 +251,8 @@ Auto-included by docs/_layouts/default.html.
           var dogMarker = new maplibregl.Marker({ element: dog, anchor: "center" })
             .setLngLat(tgtLngLat)                                // parked to a corner by fitAll (never on the red dot)
             .addTo(map);
+          dog.setAttribute("role", "img");
+          dog.setAttribute("aria-label", "The fetcher, waiting at the park");
 
           status = document.createElement("div");
           status.style.cssText = "position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:3;background:rgba(255,255,255,.9);padding:3px 12px;border-radius:12px;font-size:.82em;white-space:nowrap";

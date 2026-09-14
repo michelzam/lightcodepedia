@@ -192,6 +192,16 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
          descendants: still clickable, no longer a separate tab stop, so Tab
          moves answer to answer the way a learner expects. Footnotes stay
          reachable from the list at the foot of the page. */
+      /* A footnote ref is the common case, and demoting its tab stop was
+         not enough: a link is a control even at tabindex -1. Inside an
+         answer it becomes a plain mark that still opens its popover. */
+      li.querySelectorAll('sup[id^="fnref"] > a[href^="#fn:"]').forEach(function (a) {
+        var mark = document.createElement('span');
+        mark.className = a.className + ' lc-fn-ref';
+        mark.setAttribute('data-href', a.getAttribute('href'));
+        mark.textContent = a.textContent;
+        a.parentNode.replaceChild(mark, a);
+      });
       li.querySelectorAll('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])')
         .forEach(function (n) { n.setAttribute('tabindex', '-1'); });
       li.addEventListener('keydown', function (e) {

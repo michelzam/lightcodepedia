@@ -25,7 +25,8 @@ the popover engine kicks in.
 .lc-fn-popover-body ul, .lc-fn-popover-body ol { margin: 0.4em 0; padding-left: 1.4em; }
 
 /* Style footnote refs themselves (kramdown emits <sup id="fnref:X"><a href="#fn:X" class="footnote">N</a></sup>) */
-a.footnote, sup.footnote a, sup[id^="fnref"] a {
+a.footnote, sup.footnote a, sup[id^="fnref"] a, .lc-fn-ref {
+  cursor: pointer;
   text-decoration: none;
   color: #0066cc;
   background: #e7f1fe;
@@ -56,7 +57,7 @@ div.footnotes ol { font-size: 0.9em; color: #555; }
 <script>
 (function(){
   function init() {
-    var FN_SEL = 'a[href^="#fn:"]';
+    var FN_SEL = 'a[href^="#fn:"], .lc-fn-ref[data-href]';
     /* kramdown stamps every footnote role="doc-endnote"; DPUB-ARIA 1.1
        retired that role and axe counts each one (aria-deprecated-role).
        A list item is a list item — drop the stamp. */
@@ -76,7 +77,7 @@ div.footnotes ol { font-size: 0.9em; color: #555; }
     var touchOnly = window.matchMedia('(hover: none)').matches;
 
     function show(ref) {
-      var href = ref.getAttribute('href');
+      var href = ref.getAttribute('href') || ref.getAttribute('data-href');
       if (!href || href.charAt(0) !== '#') return;
       var target = document.getElementById(href.substring(1));
       if (!target) return;

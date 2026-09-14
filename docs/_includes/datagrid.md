@@ -274,6 +274,17 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       var api = window.agGrid.createGrid(gridEl, gridOptions);
       window.lcMasterDetail.registerGrid(gridId, api);
 
+      /* The rows scroll — sideways too, whenever the columns outgrow the
+         page — and nothing in that scroll region was a tab stop, so a wheel
+         could reach what a keyboard could not (axe: scrollable-region-
+         focusable, WCAG 2.1.1). The viewport takes the tab stop; the arrow
+         keys then scroll it. The library paints it a beat after createGrid. */
+      (function armViewport(tries) {
+        var vp = gridEl.querySelector(".ag-body-viewport");
+        if (vp) { vp.setAttribute("tabindex", "0"); return; }
+        if (tries > 0) setTimeout(function () { armViewport(tries - 1); }, 100);
+      })(30);
+
       /* Cell editors are DATA, never credentials. The browser pairs a saved
          key with "the text field it saw" — a campus cell got offered (and
          once, stolen as) a password-manager username. Editors are created

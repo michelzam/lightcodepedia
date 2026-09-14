@@ -6,7 +6,8 @@ a later edit can quietly undo. Effective background is the nearest painted
 ancestor; opacity along the way is blended in, since fading text is the
 usual way contrast is lost without touching a colour.
 """
-from behave import then
+from behave import given, then
+from playwright.sync_api import expect
 
 _CONTRAST = """(sel) => {
   const lum = c => { const [r, g, b] = c.map(v => { v /= 255;
@@ -72,3 +73,43 @@ def step_gh_404(context):
     received."""
     context.page.route("**/api.github.com/**",
                        lambda r: r.fulfill(status=404, json={"message": "Not Found"}))
+
+
+
+@then("every map marker carries a role and a name of its own")
+def step_markers_named(context):
+    context.page.wait_for_selector(".maplibregl-marker", state="attached", timeout=20_000)
+    context.page.wait_for_timeout(500)
+    got = context.page.evaluate(
+        """() => Array.from(document.querySelectorAll('.maplibregl-marker')).map(m => ({
+              role: m.getAttribute('role') || '', name: m.getAttribute('aria-label') || '' }))""")
+    assert got, "no markers rendered"
+    bad = [g for g in got if not g["role"] or not g["name"] or g["name"] == "Map marker"]
+    assert not bad, "markers with no role or a library name: %r" % bad
+
+
+@then("every grid scroll region is a tab stop")
+def step_grid_scroll_focusable(context):
+    context.page.wait_for_selector(".ag-body-viewport", state="attached", timeout=20_000)
+    context.page.wait_for_function(
+        "() => Array.from(document.querySelectorAll('.ag-body-viewport'))"
+        "        .every(v => v.getAttribute('tabindex') === '0')", timeout=10_000)
+
+
+@then("no quiz answer contains a focusable descendant")
+def step_answers_single_control(context):
+    context.page.wait_for_selector("li[role=radio], li[role=checkbox]", state="attached", timeout=10_000)
+    bad = context.page.evaluate(
+        """() => Array.from(document.querySelectorAll('li[role=radio], li[role=checkbox]'))
+                 .filter(li => li.querySelector('a[href], button, input, select, textarea, [tabindex]'))
+                 .map(li => li.textContent.trim().slice(0, 40))""")
+    assert not bad, "answers holding a second control: %r" % bad
+
+
+@then("the footnote mark inside an answer still opens its popover")
+def step_answer_footnote_popover(context):
+    mark = context.page.locator("li[role=radio] .lc-fn-ref, li[role=checkbox] .lc-fn-ref").first
+    mark.click()
+    popover = context.page.locator(".lc-fn-popover.lc-fn-visible")
+    expect(popover).to_be_visible(timeout=5_000)
+    assert popover.text_content().strip(), "the popover opened empty"
