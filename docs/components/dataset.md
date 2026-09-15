@@ -81,13 +81,14 @@ Feature: One dataset feeds many bound views
 
 ## Timestamps read on your clock
 
-A cell holding a UTC stamp (`2026-09-09T01:43:04Z`) prints in the reader's local time; hover it for the UTC. The data keeps UTC — only the printing changes, in grids and in the read-only fields of a card.
+A cell holding a UTC stamp (`2026-09-09T01:43:04Z`) prints in the reader's local time; hover it for the UTC. A stamp with a zone offset (`2026-09-11T11:56:32.000-05:00`, the way GitHub dates an invitation) prints the same way, and the hover shows its UTC. The data keeps what it was given — only the printing changes, in grids and in the read-only fields of a card.
 
 ```json
 [
   {"who":"zara","joined":"2026-09-04T18:05:49Z"},
   {"who":"ada","joined":"2026-09-09T01:43:04Z"},
-  {"who":"Mike","joined":"2026-09-10T14:32:45Z"}
+  {"who":"Mike","joined":"2026-09-10T14:32:45Z"},
+  {"who":"wassim","joined":"2026-09-11T11:56:32.000-05:00"}
 ]
 ```
 {: .dataset #joins }

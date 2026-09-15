@@ -792,3 +792,10 @@ def step_hidden_overlay_not_tab_stop(context):
         }"""
     )
     assert bad == [], "hidden overlays a keyboard could land on: " + ", ".join(bad)
+
+
+@then('the grid "{grid_id}" prints the offset stamp as UTC "{utc}" on the reader\'s clock')
+def step_grid_offset_stamp(context, grid_id, utc):
+    cell = context.page.locator(".lc-datagrid[data-lc-id='" + grid_id + "'] td[title='" + utc + "']")
+    expect(cell).to_have_count(1, timeout=15_000)
+    _expect_local(context, cell.first, utc)

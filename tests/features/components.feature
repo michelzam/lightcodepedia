@@ -387,6 +387,14 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then the grid "joins_grid" prints the stamp "2026-09-09T01:43:04Z" on the reader's clock, UTC on hover
 
+  Scenario: A stamp with a zone offset prints on the reader's clock too
+    GitHub dates an invitation with an offset, not Z; the desk showed
+    Wassim's raw beside everyone else's "Sep 4 at 1:05 PM" (2026-09-15).
+
+    When I navigate to "/components/dataset"
+    And I wait for the page to be interactive
+    Then the grid "joins_grid" prints the offset stamp as UTC "2026-09-11T16:56:32.000Z" on the reader's clock
+
   Scenario: A grid opens in the order its sort= names
     A roster is read by last name, a work table by module (Michel,
     2026-09-11): the table opens sorted, words compared as a reader would;
@@ -394,4 +402,4 @@ Feature: Component gallery behaviors
 
     When I navigate to "/components/dataset"
     And I wait for the page to be interactive
-    Then the grid "joins_grid" lists "who" as "ada | Mike | zara"
+    Then the grid "joins_grid" lists "who" as "ada | Mike | wassim | zara"

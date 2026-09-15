@@ -29,12 +29,15 @@
    here: a stamp becomes local time, the UTC stays one hover away. Not a
    toggle, not a state — one reading, wherever a grid or a card prints. */
 window.lcWhen = function (v) {
-  if (typeof v !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?Z$/.test(v)) return null;
+  /* ISO with a zone: Z, or an offset the way GitHub dates an invitation
+     (2026-09-11T11:56:32.000-05:00 — read raw on the desk, 2026-09-15).
+     The hover always carries UTC, whatever zone the stamp came in. */
+  if (typeof v !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(v)) return null;
   var d = new Date(v);
   if (isNaN(d.getTime())) return null;
   var o = { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
   if (d.getFullYear() !== new Date().getFullYear()) o.year = "numeric";
-  return { text: d.toLocaleString(undefined, o), utc: v };
+  return { text: d.toLocaleString(undefined, o), utc: /Z$/.test(v) ? v : d.toISOString() };
 };
 window.lcFrameApply = function () {
   var q = new URLSearchParams(location.search);
