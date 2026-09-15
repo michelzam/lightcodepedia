@@ -82,3 +82,38 @@ Feature: Everything a mouse can do, a keyboard can do
     When I navigate to "/components/form"
     And I wait for the page to be interactive
     Then every form control on the page exposes an accessible name
+
+
+  Scenario: ⌥C shows every shortcut, Space closes the sheet and focus comes home
+    Michel (2026-09-15): a hot key that displays all the key shortcuts, to
+    document High contrast and the other options; closing with a space.
+
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I focus the Modes pill
+    And I press "Alt+KeyC"
+    Then the shortcuts sheet is open with focus on its close button
+    When I press " "
+    Then the shortcuts sheet is closed and focus is back on the Modes pill
+
+  Scenario: ⌥H turns High contrast on and off, and the sheet says which
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I press "Alt+KeyH"
+    Then the page is in High contrast
+    When I press "Alt+KeyC"
+    Then the shortcuts sheet says High contrast is "now on"
+    When I press "Escape"
+    And I press "Alt+KeyH"
+    Then the page is not in High contrast
+
+  Scenario: The Modes pill opens from the keyboard, and Escape brings focus back
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I focus the Modes pill
+    And I press "Enter"
+    Then the modes popup is open with focus on its first item
+    When I press "ArrowDown"
+    Then focus is on the second item of the modes popup
+    When I press "Escape"
+    Then the modes popup is closed and focus is back on the Modes pill

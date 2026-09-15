@@ -174,3 +174,83 @@ def step_passes_listed(context):
     assert first.locator("b.ok").text_content() in ("A", "AA")
     assert "checked" in first.locator("span").text_content()
     assert first.locator("a").get_attribute("href", timeout=2_000).startswith("http")
+
+
+
+# ── the keyboard: the pill, the shortcuts sheet, High contrast ────────────
+
+@when("I focus the Modes pill")
+def step_focus_pill(context):
+    context.page.focus(".lc-slides-fab")
+
+
+@then("the shortcuts sheet is open with focus on its close button")
+def step_keys_open(context):
+    expect(context.page.locator("#lc-keys")).to_be_visible(timeout=5_000)
+    assert context.page.evaluate("() => document.activeElement && document.activeElement.id") == "lc-keys-close"
+
+
+@then("the shortcuts sheet is closed and focus is back on the Modes pill")
+def step_keys_closed(context):
+    expect(context.page.locator("#lc-keys")).to_be_hidden(timeout=5_000)
+    assert context.page.evaluate(
+        "() => document.activeElement && document.activeElement.classList.contains('lc-slides-fab')"), "focus did not come home"
+
+
+@then('the shortcuts sheet says High contrast is "{state}"')
+def step_keys_contrast_state(context, state):
+    expect(context.page.locator("#lc-keys-contrast")).to_have_text(state, timeout=5_000)
+
+
+@then("the page is in High contrast")
+def step_contrast_on(context):
+    expect(context.page.locator("html")).to_have_attribute("data-theme", "contrast", timeout=5_000)
+
+
+@then("the page is not in High contrast")
+def step_contrast_off(context):
+    context.page.wait_for_function("() => !document.documentElement.hasAttribute('data-theme')", timeout=5_000)
+
+
+def _popup_items(context):
+    return context.page.evaluate(
+        """() => Array.from(document.querySelectorAll('#lc-bl-popup .lc-bl-popup-item'))
+                 .filter(b => !b.hidden && b.offsetParent !== null).map(b => b.id)""")
+
+
+@then("the modes popup is open with focus on its first item")
+def step_popup_open_focused(context):
+    expect(context.page.locator("#lc-bl-popup")).to_have_class(re.compile(r"\bopen\b"), timeout=5_000)
+    items = _popup_items(context)
+    assert context.page.evaluate("() => document.activeElement.id") == items[0], items
+
+
+@then("focus is on the second item of the modes popup")
+def step_popup_second(context):
+    items = _popup_items(context)
+    assert context.page.evaluate("() => document.activeElement.id") == items[1], items
+
+
+@then("the modes popup is closed and focus is back on the Modes pill")
+def step_popup_closed(context):
+    expect(context.page.locator("#lc-bl-popup")).not_to_have_class(re.compile(r"\bopen\b"), timeout=5_000)
+    assert context.page.evaluate(
+        "() => document.activeElement && document.activeElement.classList.contains('lc-slides-fab')"), "focus did not come home"
+
+
+@then("no visible text on the page is smaller than {px:d} pixels")
+def step_no_tiny_text(context, px):
+    """WAVE flags text at ten pixels and under as very small; under High
+    contrast nothing we paint should be there."""
+    bad = context.page.evaluate(
+        """(min) => { const out = [];
+          document.querySelectorAll('body *').forEach(el => {
+            const cs = getComputedStyle(el);
+            if (cs.display === 'none' || cs.visibility === 'hidden') return;
+            const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
+            if (!Array.from(el.childNodes).some(n => n.nodeType === 3 && n.textContent.trim())) return;
+            if (el.closest('#ed-drawer, .lc-fn-popover, .ag-root-wrapper, #lc-keys')) return;
+            const f = parseFloat(cs.fontSize);
+            if (f < min) out.push(el.tagName.toLowerCase() + '.' + (el.className || '') + ' "' + el.textContent.trim().slice(0, 30) + '" ' + f.toFixed(1) + 'px');
+          }); return out; }""", px)
+    assert not bad, "text under %dpx:\n  %s" % (px, "\n  ".join(bad))

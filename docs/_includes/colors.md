@@ -55,6 +55,14 @@ Auto-included by docs/_layouts/default.html.
 /* The switch may set the theme before this stylesheet parses; keep the page
    from flashing by having the attribute already meaningful at :root. */
 :root[data-theme="contrast"] body { background: var(--lc-bg); }
+/* Under High contrast the small chrome darkens AND grows — the help chips,
+   the select arrows, the hints. The default keeps its look (Michel,
+   2026-09-15): a learner who needs more gets more with one toggle, ⌥H. */
+:root[data-theme="contrast"] .lc-help { color: #002270; border-color: #002270; opacity: 1; font-size: 12px; width: 18px; height: 18px; }
+:root[data-theme="contrast"] .lc-form-selectbox-arrow { color: #002270; font-size: 1em; }
+:root[data-theme="contrast"] .lc-form-title .lc-form-meta { font-size: 0.9em; font-weight: 600; color: #000; }
+:root[data-theme="contrast"] .lc-datagrid-edit-hint { font-size: 0.95em; font-weight: 600; color: #000; background: #e9edf1; }
+:root[data-theme="contrast"] .lc-map-hint { font-size: 0.95em !important; font-weight: 600; color: #000 !important; }
 
 /* rendered-markdown surfaces: page content (incl. mdpad / section widgets,
    which nest inside it) plus the editor's live-preview panes */

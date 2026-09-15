@@ -126,6 +126,17 @@ body.lc-slides-active .lc-slides-nav { display: inline-flex; }
 .lc-bl-popup-item:disabled { opacity: 0.45; cursor: default; }
 .lc-bl-popup-item.lc-xray-on { color: #0088aa; font-weight: 600; }
 @media (max-width: 700px) { .lc-bl-popup { bottom: calc(0.8em + 52px); left: 0.8em; } }
+.lc-keys { position: fixed; inset: 0; z-index: 100002; display: flex; align-items: center; justify-content: center; background: rgba(15,23,42,.35); }
+.lc-keys[hidden] { display: none; }
+.lc-keys-card { background: var(--lc-bg, #fff); color: var(--lc-ink, #222); border: 1px solid var(--lc-border, #d0e3f5); border-radius: 12px; box-shadow: 0 18px 60px rgba(0,0,0,.32); padding: 1em 1.2em 0.9em; width: min(560px, 92vw); max-height: 90vh; overflow: auto; }
+.lc-keys-card h3 { margin: 0 0 0.6em; font-size: 1.05em; }
+.lc-keys-table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+.lc-keys-table th { text-align: left; white-space: nowrap; padding: 0.45em 0.8em 0.45em 0; vertical-align: top; font-weight: 600; color: var(--lc-ink-soft, #374151); }
+.lc-keys-table td { padding: 0.45em 0; border-top: 1px solid var(--lc-border-soft, #eef2f7); line-height: 1.5; }
+.lc-keys-table tr:first-child td { border-top: none; }
+.lc-keys kbd { display: inline-block; min-width: 1.4em; padding: 0 0.4em; border: 1px solid var(--lc-border, #c7d2e0); border-bottom-width: 2px; border-radius: 5px; background: var(--lc-surface, #f6f8fa); font: 600 0.85em ui-monospace, Menlo, monospace; text-align: center; color: var(--lc-ink, #222); }
+.lc-keys-close { margin-top: 0.8em; padding: 0.4em 1.1em; border-radius: 8px; border: 1px solid var(--lc-accent, #0066cc); background: var(--lc-accent, #0066cc); color: #fff; font: inherit; cursor: pointer; }
+.lc-keys-close:focus-visible { outline: 3px solid #b45309; outline-offset: 2px; }
 /* the popup is an exclusive mode selector: the active mode carries a ✓ */
 .lc-bl-popup-item { display: flex; align-items: center; gap: 6px; }
 .lc-bl-popup-item.lc-mode-on::after { content: "✓"; margin-left: auto; color: #0066cc; font-weight: 700; }
@@ -261,6 +272,24 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
   <button class="lc-bl-popup-item" id="lc-bl-edit-btn"    type="button" hidden title="⌥E">✏️ Edit</button>
   <button class="lc-bl-popup-item" id="lc-bl-guide-btn"   type="button" style="border-top:2px solid #e5e7eb">🧑‍🏫 Guide</button>
   <button class="lc-bl-popup-item" id="lc-bl-contrast-btn" type="button" role="menuitemcheckbox" aria-checked="false" style="border-top:2px solid #e5e7eb">👁️ High contrast</button>
+</div>
+<!-- ⌨️ the shortcuts sheet: ⌥C opens it (Michel, 2026-09-15 — "a hot key
+     that displays all the key shortcuts, to document the change and the
+     other options; closing with a space"). Space or Esc closes; focus goes
+     to the close button and comes back where it was. -->
+<div class="lc-keys" id="lc-keys" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" hidden>
+  <div class="lc-keys-card">
+    <h3>⌨️ Keyboard shortcuts</h3>
+    <table class="lc-keys-table">
+      <tr><th><kbd>⌥</kbd><kbd>C</kbd></th><td>This sheet — <kbd>Space</kbd> or <kbd>Esc</kbd> closes it</td></tr>
+      <tr><th><kbd>⌥</kbd><kbd>H</kbd></th><td>High contrast on / off — <span id="lc-keys-contrast">now off</span>. Darker, larger help chips, arrows and hints.</td></tr>
+      <tr id="lc-keys-edit" hidden><th><kbd>⌥</kbd><kbd>E</kbd></th><td>Edit this page</td></tr>
+      <tr><th><kbd>Tab</kbd></th><td>Reaches the ⚙️ Modes pill (bottom left) — <kbd>Enter</kbd> opens it, <kbd>↑</kbd> <kbd>↓</kbd> walk it, <kbd>Enter</kbd> picks, <kbd>Esc</kbd> closes</td></tr>
+      <tr><th>Present</th><td><kbd>→</kbd> <kbd>Space</kbd> next · <kbd>←</kbd> previous · <kbd>1</kbd>–<kbd>9</kbd> jump · <kbd>F</kbd> full screen · <kbd>N</kbd> notes · <kbd>Q</kbd> or <kbd>Esc</kbd> back to reading</td></tr>
+      <tr><th>Reel</th><td><kbd>Esc</kbd> back to reading</td></tr>
+    </table>
+    <button type="button" class="lc-keys-close" id="lc-keys-close">Close</button>
+  </div>
 </div>
 <div class="lc-reel-bar">
   <button class="lc-reel-back" type="button" aria-label="Back to previous page" title="Back">‹</button>
@@ -933,24 +962,90 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
        pill only has to toggle and mark. A display preference, not a page mode,
        so it sits in its own group under the separator. */
     var contrastBtn = document.getElementById('lc-bl-contrast-btn');
+    var editBtn = null;
     function contrastOn() { return document.documentElement.getAttribute('data-theme') === 'contrast'; }
     function refreshContrastMark() {
       if (!contrastBtn) return;
       contrastBtn.classList.toggle('lc-mode-on', contrastOn());
       contrastBtn.setAttribute('aria-checked', contrastOn() ? 'true' : 'false');
     }
-    if (contrastBtn) contrastBtn.addEventListener('click', function (e) {
-      e.stopPropagation(); closePopup();
+    function toggleContrast() {
       var next = contrastOn() ? 'default' : 'contrast';
       if (next === 'contrast') document.documentElement.setAttribute('data-theme', 'contrast');
       else document.documentElement.removeAttribute('data-theme');
       try { localStorage.setItem('lc_theme', next); } catch (e2) {}
-      refreshContrastMark();
+      refreshContrastMark(); refreshKeysSheet();
+    }
+    if (contrastBtn) contrastBtn.addEventListener('click', function (e) {
+      e.stopPropagation(); closePopup(); toggleContrast();
     });
     refreshContrastMark();
 
+    /* ── keyboard: the pill, the popup, the sheet ─────────────────────────
+       A keyboard opening the pill lands on its first item; ↑ ↓ walk it, Esc
+       closes and hands focus back. ⌥C shows every shortcut (documenting
+       ⌥H, High contrast, among them); Space or Esc closes the sheet and
+       focus comes home. Physical keys (e.code): on a Mac ⌥C types "ç". */
+    function popupItems() {
+      return Array.prototype.filter.call(popup ? popup.querySelectorAll('.lc-bl-popup-item') : [],
+        function (b) { return !b.hidden && b.offsetParent !== null; });
+    }
+    fab.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      if (body.classList.contains('lc-slides-active') || body.classList.contains('lc-reel-active')) return;
+      e.preventDefault();
+      if (popup.classList.contains('open')) { closePopup(); return; }
+      openPopup();
+      var items = popupItems(); if (items.length) items[0].focus();
+    });
+    if (popup) popup.addEventListener('keydown', function (e) {
+      var items = popupItems(), i = items.indexOf(document.activeElement);
+      if (e.key === 'Escape') { e.preventDefault(); closePopup(); fab.focus(); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); if (items.length) items[(i + 1) % items.length].focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (items.length) items[(i - 1 + items.length) % items.length].focus(); }
+    });
+
+    var keys = document.getElementById('lc-keys'), keysClose = document.getElementById('lc-keys-close');
+    var keysReturn = null;
+    function refreshKeysSheet() {
+      var st = document.getElementById('lc-keys-contrast');
+      if (st) st.textContent = contrastOn() ? 'now on' : 'now off';
+      var er = document.getElementById('lc-keys-edit');
+      if (er) er.hidden = !(editBtn && !editBtn.hidden);
+    }
+    function openKeys() {
+      if (!keys) return;
+      keysReturn = document.activeElement;
+      closePopup(); refreshKeysSheet();
+      keys.hidden = false;
+      if (keysClose) keysClose.focus();
+    }
+    function closeKeys() {
+      if (!keys || keys.hidden) return;
+      keys.hidden = true;
+      if (keysReturn && keysReturn.focus) keysReturn.focus();
+      keysReturn = null;
+    }
+    if (keysClose) keysClose.addEventListener('click', closeKeys);
+    if (keys) keys.addEventListener('click', function (e) { if (e.target === keys) closeKeys(); });
+    function typing(e) {
+      var t = e.target; if (!t || !t.tagName) return false;
+      return t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+    }
+    document.addEventListener('keydown', function (e) {
+      if (keys && !keys.hidden) {
+        if (e.key === ' ' || e.key === 'Escape') { e.preventDefault(); closeKeys(); }
+        else if (e.key === 'Tab') { e.preventDefault(); if (keysClose) keysClose.focus(); }   /* one control: focus stays */
+        return;
+      }
+      if (!e.altKey || e.ctrlKey || e.metaKey || typing(e)) return;
+      if (e.code === 'KeyC') { e.preventDefault(); openKeys(); }
+      else if (e.code === 'KeyH') { e.preventDefault(); toggleContrast(); }
+    });
+    window.lcKeysOpen = openKeys;
+
     /* Edit joins the pill only where the editor exists on the page */
-    var editBtn = document.getElementById('lc-bl-edit-btn');
+    editBtn = document.getElementById('lc-bl-edit-btn');
     if (editBtn && document.getElementById('ed-fab') &&
         !(window.lcFrame && window.lcFrame.editable === false)) {
       editBtn.hidden = false;

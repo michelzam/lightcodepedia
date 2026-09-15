@@ -75,3 +75,16 @@ Feature: What we paint ourselves reads, and names itself
     And I wait for the page to be interactive
     Then no quiz answer contains a focusable descendant
     And the footnote mark inside an answer still opens its popover
+
+
+  Scenario: High contrast makes the help chips read at AA, and nothing on the page stays tiny
+    The default keeps its look (Michel, 2026-09-15): under High contrast the
+    "i" chips, the arrows and the hints darken and grow, for the learner who
+    asked for more — one toggle, ⌥H, no impact on anyone else.
+
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I press "Alt+KeyH"
+    Then the page is in High contrast
+    And the text in ".lc-help" reads at AA contrast
+    And no visible text on the page is smaller than 11 pixels

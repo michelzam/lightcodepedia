@@ -307,6 +307,7 @@ Auto-included by docs/_layouts/default.html.
 
       // Hint overlay
       var hint = document.createElement("div");
+      hint.className = "lc-map-hint";
       hint.textContent = "⇧ Shift + drag to tilt / rotate";
       hint.style.cssText = "position:absolute;bottom:8px;left:8px;background:rgba(255,255,255,0.85);color:#555;font-size:0.72em;padding:3px 8px;border-radius:4px;pointer-events:none;z-index:2";
       wrap.style.position = "relative";
