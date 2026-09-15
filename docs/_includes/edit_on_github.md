@@ -188,6 +188,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 .ed-a11y-row b.moderate { background: #1d4ed8; } .ed-a11y-row b.minor { background: #4b5563; }
 .ed-a11y-row code { display: block; margin-top: 0.25em; color: #4b5563; font-size: 0.85em; white-space: pre-wrap; word-break: break-all; }
 .ed-a11y-ok { padding: 1em; color: #087a40; font-weight: 600; }
+#ed-a11y-show-passes { font-weight: 400; font-size: 0.9em; color: #0066cc; }
+#ed-a11y-passes { margin-top: 0.6em; font-weight: 400; color: #374151; }
+.ed-a11y-pass { padding: 0.3em 0; border-top: 1px solid #f0f0f0; font-size: 0.92em; }
+.ed-a11y-pass b.ok { display: inline-block; min-width: 2.2em; margin-right: 0.5em; padding: 0 0.4em; border-radius: 6px; font-size: 0.8em; text-align: center; color: #fff; background: #087a40; }
+.ed-a11y-pass span { color: #6b7280; font-size: 0.9em; margin-left: 0.4em; }
+.ed-a11y-pass a { margin-left: 0.4em; font-size: 0.85em; }
 .ed-a11y-outline { outline: 3px solid #b45309 !important; outline-offset: 2px; }
 #ed-diagram-pane { display: flex; flex: 1; flex-direction: column; overflow: auto; padding: 0.6em; }
 #ed-diagram-pane.ed-hidden { display: none; }
@@ -2480,8 +2486,19 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       var order = { critical: 0, serious: 1, moderate: 2, minor: 3 };
       var vs = (res.violations || []).slice().sort(function (a, b) { return (order[a.impact] || 9) - (order[b.impact] || 9); });
       var n = vs.reduce(function (t, v) { return t + v.nodes.length; }, 0);
-      if (!n) { list.innerHTML = '<p class="ed-a11y-ok">✅ No issues on this page — WCAG 2.1 A/AA, ' + (res.passes || []).length + ' rules passed.</p>'; return; }
-      var html = '<p style="padding:0.6em 0.9em;margin:0;color:#4b5563">' + n + ' finding' + (n > 1 ? 's' : '') + ' in ' + vs.length + ' rule' + (vs.length > 1 ? 's' : '') + '</p>';
+      /* what already works is worth showing (Michel, 2026-09-15: "it's
+         pedagogically interesting"): the rules that passed, each with its
+         WCAG level and how many elements it looked at, one click away */
+      var ps = (res.passes || []).slice().sort(function (a, b) { return a.help < b.help ? -1 : 1; });
+      function level(r) { var t = r.tags || []; return t.indexOf("wcag2aa") >= 0 || t.indexOf("wcag21aa") >= 0 ? "AA" : "A"; }
+      var passed = '<a href="#" id="ed-a11y-show-passes">show the ' + ps.length + ' rules that passed</a>'
+        + '<div id="ed-a11y-passes" hidden>' + ps.map(function (r) {
+            return '<div class="ed-a11y-pass"><b class="ok">' + level(r) + '</b>' + a11yEsc(r.help)
+              + ' <span>' + r.nodes.length + ' element' + (r.nodes.length === 1 ? '' : 's') + ' checked</span>'
+              + ' <a href="' + a11yEsc(r.helpUrl) + '" target="_blank" rel="noopener">why?</a></div>';
+          }).join('') + '</div>';
+      if (!n) { list.innerHTML = '<p class="ed-a11y-ok">✅ No issues on this page — WCAG 2.1 A/AA, ' + ps.length + ' rules passed. ' + passed + '</p>'; return; }
+      var html = '<p style="padding:0.6em 0.9em;margin:0;color:#4b5563">' + n + ' finding' + (n > 1 ? 's' : '') + ' in ' + vs.length + ' rule' + (vs.length > 1 ? 's' : '') + ' · ' + passed + '</p>';
       vs.forEach(function (v) {
         v.nodes.forEach(function (nd) {
           var sel = (nd.target && nd.target[0]) || "";
@@ -2499,6 +2516,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   document.addEventListener("click", function (e) {
     var run = e.target.closest("#ed-a11y-run");
     if (run) { e.preventDefault(); runAudit(); return; }
+    var show = e.target.closest("#ed-a11y-show-passes");
+    if (show) {
+      e.preventDefault();
+      var box = document.getElementById("ed-a11y-passes");
+      if (box) { box.hidden = !box.hidden; show.textContent = (box.hidden ? "show" : "hide") + show.textContent.slice(4); }
+      return;
+    }
     var row = e.target.closest(".ed-a11y-row");
     if (row && !e.target.closest("a")) a11yShow(row.dataset.sel);
   });

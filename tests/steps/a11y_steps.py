@@ -156,3 +156,21 @@ def step_audit_clean(context):
         expect(ok).to_be_visible(timeout=20_000)
     except AssertionError:
         raise AssertionError("the audit still lists: " + context.page.locator("#ed-a11y-list").inner_text()[:600])
+
+
+@when("I unfold the rules that passed")
+def step_unfold_passes(context):
+    context.page.click("#ed-a11y-show-passes")
+
+
+@then("the audit lists the rules that passed, each with its level and the elements it checked")
+def step_passes_listed(context):
+    """What already works is worth showing (Michel, 2026-09-15)."""
+    box = context.page.locator("#ed-a11y-passes")
+    expect(box).to_be_visible(timeout=5_000)
+    rows = box.locator(".ed-a11y-pass")
+    assert rows.count() >= 20, "too few rules listed as passed: %d" % rows.count()
+    first = rows.first
+    assert first.locator("b.ok").text_content() in ("A", "AA")
+    assert "checked" in first.locator("span").text_content()
+    assert first.locator("a").get_attribute("href", timeout=2_000).startswith("http")

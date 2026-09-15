@@ -233,3 +233,5 @@ Feature: Page editor — ✨ AI edit dialog
     When the planted field is removed
     And I press the editor's audit button
     Then the audit reports no issues
+    When I unfold the rules that passed
+    Then the audit lists the rules that passed, each with its level and the elements it checked
