@@ -141,3 +141,40 @@ Feature: A data block becomes a chart
 {: .related }
 
 Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).
+
+## 📈 A line that follows a grid, with bars, key points and series
+
+A dataset-bound line can ride the master/detail road a detail grid rides —
+`master="grid-id" filter="col=col"` — and carry more than one measure:
+`bars="col"` draws a second measure as bars behind the line, `marks="col"`
+turns the rows whose value is set into diamonds (hover for the text),
+`hover="col"` adds a line to every point's hover, and `series="col"` draws
+one line per value: with a master, the selected one in blue, the others grey.
+
+```json
+[
+  {"who":"ada","day":"2026-09-04","points":0,"saves":1,"mark":"🛠 bench forged","notes":""},
+  {"who":"ada","day":"2026-09-06","points":3,"saves":2,"mark":"✍️ first save","notes":"cv.md; dogs.yaml"},
+  {"who":"ada","day":"2026-09-10","points":4,"saves":1,"mark":"","notes":"cv.md"},
+  {"who":"bo","day":"2026-09-05","points":1,"saves":1,"mark":"✍️ first save","notes":"cv.md"},
+  {"who":"bo","day":"2026-09-11","points":2,"saves":3,"mark":"last save","notes":"cv.md; dogs.yaml; notes.md"}
+]
+```
+{: .dataset #days }
+
+```json
+[
+  {"who":"ada","name":"Ada Lovelace"},
+  {"who":"bo","name":"Bo Diddley"}
+]
+```
+{: .dataset #crew }
+
+[Pick a learner](#)
+{: .datagrid source="crew" #crew_grid }
+
+[Their days](#)
+{: .chart #days_chart bind="days" type="line" x="day" y="points" bars="saves" marks="mark" hover="notes" master="crew_grid" filter="who=who" height="220" title="📈 One learner — points, saves, key points" empty="Pick a learner above." }
+
+[Everyone](#)
+{: .chart #crew_chart bind="days" type="line" x="day" y="points" series="who" master="crew_grid" filter="who=who" height="200" title="📈 Everyone — the picked one in blue" }

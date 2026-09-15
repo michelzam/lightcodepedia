@@ -799,3 +799,29 @@ def step_grid_offset_stamp(context, grid_id, utc):
     cell = context.page.locator(".lc-datagrid[data-lc-id='" + grid_id + "'] td[title='" + utc + "']")
     expect(cell).to_have_count(1, timeout=15_000)
     _expect_local(context, cell.first, utc)
+
+
+# ── the dataset-bound line: master, bars, marks, series ──────────────────
+
+@then('the chart "{cid}" draws {n:d} points, {b:d} bars and {m:d} marks, the first mark reading "{text}"')
+def step_chart_line_knobs(context, cid, n, b, m, text):
+    box = context.page.locator(".lc-chart[data-lc-id='" + cid + "'] svg")
+    expect(box).to_be_visible(timeout=15_000)
+    got = context.page.evaluate(
+        """(cid) => { const s = document.querySelector(".lc-chart[data-lc-id='" + cid + "'] svg");
+             return { pts: s.querySelectorAll('circle[r="9"]').length, bars: s.querySelectorAll('rect[data-bar]').length,
+                      marks: Array.from(s.querySelectorAll('path[data-mark]')).map(p => p.getAttribute('data-mark')) }; }""", cid)
+    assert (got["pts"], got["bars"], len(got["marks"])) == (n, b, m), got
+    assert text in got["marks"][0], got
+
+
+@then('the chart "{cid}" draws {n:d} series with "{who}" in blue')
+def step_chart_series(context, cid, n, who):
+    box = context.page.locator(".lc-chart[data-lc-id='" + cid + "'] svg")
+    expect(box).to_be_visible(timeout=15_000)
+    got = context.page.evaluate(
+        """(cid) => Array.from(document.querySelectorAll(".lc-chart[data-lc-id='" + cid + "'] svg polyline"))
+                     .map(p => [p.getAttribute('data-series'), p.getAttribute('stroke')])""", cid)
+    assert len(got) == n, got
+    blue = [g[0] for g in got if g[1] == "#0066cc"]
+    assert blue == [who], got

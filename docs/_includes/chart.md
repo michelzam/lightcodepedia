@@ -17,6 +17,15 @@ Dataset-bound (SVG) — re-renders on every dataset update:
   [Sales](#)
   {: .chart bind="sales" type="bar" x="month" y="sales" }
 
+  Follows a grid, like a detail grid does — master="grid-id" filter="col=col";
+  a line can carry more (2026-09-15, the desk's activity chart):
+    series="col"  one line per value; with a master, the selected one in
+                  blue and the others grey (hover a line for its name)
+    bars="col"    a second measure as bars behind the line, its own scale
+    marks="col"   rows whose value is set become diamonds — a key point,
+                  its text on hover
+    hover="col"   extra text on every point's hover
+
 upgradeChartInline owns the first two; upgradeChartBound the third — they
 were the duplicate `upgradeChart` pair split across code_chrome.md and
 dataset.md (audit A2), now co-located here.
@@ -178,6 +187,11 @@ Auto-included by docs/_layouts/default.html.
     var emptyMsg = el.getAttribute("empty") || "";
 
     var lcId2 = el.getAttribute("id") || "";
+    var masterId = el.getAttribute("master") || "", filterExpr = el.getAttribute("filter") || "";
+    var fm = filterExpr.match(/^\s*([\w-]+)\s*=\s*([\w-]+)\s*$/);
+    var knobs = { series: el.getAttribute("series") || "", bars: el.getAttribute("bars") || "",
+                  marks: el.getAttribute("marks") || "", hover: el.getAttribute("hover") || "", focus: null };
+    var masterRow = null;
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
     wrap.setAttribute("data-bind", bindId);
@@ -210,7 +224,7 @@ Auto-included by docs/_layouts/default.html.
     var painted = false;
     function render(data) {
       wrap.innerHTML = "";
-      if (!data || !data.length || !xCol || !yCol) {
+      if (!xCol || !yCol) {
         paintTitle();
         var w = document.createElement("p");
         w.style.cssText = "color:var(--lc-ink-mute,#616161);font-size:.85em";
@@ -218,14 +232,30 @@ Auto-included by docs/_layouts/default.html.
         wrap.appendChild(w);
         return;
       }
+      var rows = (data || []).slice();
+      knobs.focus = null;
+      if (masterId && fm) {
+        /* the master's row narrows the data (filter) — or, with series,
+           only picks which line is the blue one */
+        if (masterRow) {
+          var want = String(masterRow[fm[2]]);
+          if (knobs.series) knobs.focus = want;
+          else rows = rows.filter(function (r) { return String(r[fm[1]]) === want; });
+        } else if (!knobs.series) {
+          note(emptyMsg || "Select a row above."); return;
+        }
+      }
+      if (!rows.length) { if (data && data.length === 0 && !painted) return; note(emptyMsg || "Nothing to draw yet."); return; }
       painted = true;
       paintTitle();
-      if (type === "line") renderLine(wrap, data, xCol, yCol);
-      else                 renderBar(wrap, data, xCol, yCol);
+      if (type === "line") renderLine(wrap, rows, xCol, yCol, knobs);
+      else                 renderBar(wrap, rows, xCol, yCol);
     }
 
     window.lcDatasetListeners[bindId] = window.lcDatasetListeners[bindId] || [];
     window.lcDatasetListeners[bindId].push(render);
+    if (masterId && window.lcMasterDetail)
+      window.lcMasterDetail.subscribe(masterId, function (row) { masterRow = row || null; render(window.lcDatasets[bindId] || []); });
 
     if (window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);
     else {
@@ -294,15 +324,26 @@ Auto-included by docs/_layouts/default.html.
       transform: "rotate(-90,8," + (pT + cH / 2) + ")" }).textContent = yCol;
   }
 
-  function renderLine(el, data, xCol, yCol) {
+  function renderLine(el, data, xCol, yCol, o) {
+    o = o || {};
     var W = Math.max(el.offsetWidth || 0, 300), H = 220;
     var pL = 44, pB = 36, pT = 14, pR = 10;
     var cW = W - pL - pR, cH = H - pT - pB;
+    /* one x axis shared by every series: the sorted set of x values */
+    var xs = [];
+    data.forEach(function (d) { var x = String(d[xCol]); if (xs.indexOf(x) < 0) xs.push(x); });
+    xs.sort();
+    var xi = {}; xs.forEach(function (x, i) { xi[x] = i; });
+    var groups = {};
+    data.forEach(function (d) { var g = o.series ? String(d[o.series]) : ""; (groups[g] = groups[g] || []).push(d); });
     var vals = data.map(function (d) { return +d[yCol] || 0; });
-    var maxV = Math.max.apply(null, vals) || 1, minV = Math.min.apply(null, vals);
-    if (maxV === minV) { maxV += 1; minV -= 1; }
-    var range = maxV - minV, step = cW / Math.max(data.length - 1, 1);
+    var maxV = Math.max.apply(null, vals), minV = Math.min.apply(null, vals);
+    if (o.bars || o.series) minV = Math.min(0, minV);
+    if (maxV === minV) { maxV += 1; if (!o.bars && !o.series) minV -= 1; }
+    var range = maxV - minV, step = cW / Math.max(xs.length - 1, 1);
     var s = chartSVG(el, W, H), svg = s.svg, NS = s.NS;
+    function X(d) { return pL + xi[String(d[xCol])] * step; }
+    function Y(v) { return pT + cH - ((v - minV) / range) * cH; }
 
     /* grid lines */
     [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
@@ -311,24 +352,47 @@ Auto-included by docs/_layouts/default.html.
       svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" }).textContent = tickLabel(v, range);
     });
 
-    var pts = data.map(function (d, i) {
-      var val = +d[yCol] || 0;
-      return (pL + i * step) + "," + (pT + cH - ((val - minV) / range) * cH);
-    });
-    svgEl(svg, NS, "polyline", { points: pts.join(" "), stroke: "#0066cc", fill: "none", "stroke-width": 2, "stroke-linejoin": "round" });
+    /* bars behind the line: a second measure on its own scale, for the
+       focused series only */
+    if (o.bars) {
+      var bmax = Math.max.apply(null, data.map(function (d) { return +d[o.bars] || 0; })) || 1;
+      var bw = Math.max(3, Math.min(18, step * 0.5));
+      data.forEach(function (d) {
+        if (o.series && o.focus != null && String(d[o.series]) !== o.focus) return;
+        var v = +d[o.bars] || 0; if (!v) return;
+        var h = v / bmax * cH * 0.6;
+        var r = svgEl(svg, NS, "rect", { x: X(d) - bw / 2, y: pT + cH - h, width: bw, height: h, fill: "#93c5fd", opacity: 0.6, rx: 2, "data-bar": v });
+        svgEl(r, NS, "title", {}).textContent = d[xCol] + " — " + o.bars + ": " + v + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
+      });
+    }
 
-    /* dots (hover for the exact value) + x labels, thinned when dense */
-    var lblEvery = Math.max(1, Math.ceil(data.length / Math.max(2, Math.floor(cW / 40))));
-    data.forEach(function (d, i) {
-      var val = +d[yCol] || 0;
-      var x = pL + i * step, y = pT + cH - ((val - minV) / range) * cH;
-      svgEl(svg, NS, "circle", { cx: x, cy: y, r: 3, fill: "#0066cc" });
-      var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent" });
-      svgEl(hit, NS, "title", {}).textContent = xCol + " " + d[xCol] + " — " + yCol + ": " + val;
-      if (i % lblEvery === 0 || i === data.length - 1) {
-        svgEl(svg, NS, "text", { x: x, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
-          .textContent = String(d[xCol]).substring(0, 7);
-      }
+    Object.keys(groups).sort().forEach(function (g) {
+      var rows = groups[g].slice().sort(function (a, b) { return String(a[xCol]) < String(b[xCol]) ? -1 : 1; });
+      var focused = !o.series || o.focus == null || g === o.focus;
+      var color = focused ? "#0066cc" : "#c7d2e0";
+      var pts = rows.map(function (d) { return X(d) + "," + Y(+d[yCol] || 0); });
+      var pl = svgEl(svg, NS, "polyline", { points: pts.join(" "), stroke: color, fill: "none",
+        "stroke-width": focused ? 2 : 1.2, "stroke-linejoin": "round", "data-series": g });
+      if (o.series) svgEl(pl, NS, "title", {}).textContent = g;
+      if (!focused) return;
+      /* dots (hover for the exact value); a key point is a diamond */
+      rows.forEach(function (d) {
+        var val = +d[yCol] || 0, x = X(d), y = Y(val);
+        var mark = o.marks ? String(d[o.marks] || "") : "";
+        if (mark) svgEl(svg, NS, "path", { d: "M" + x + "," + (y - 6) + " l6,6 l-6,6 l-6,-6 z", fill: "#b45309", "data-mark": mark });
+        else svgEl(svg, NS, "circle", { cx: x, cy: y, r: 3, fill: color });
+        var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent" });
+        svgEl(hit, NS, "title", {}).textContent = xCol + " " + d[xCol] + " — " + yCol + ": " + val
+          + (mark ? "\n" + mark : "") + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
+      });
+    });
+
+    /* x labels, thinned when dense */
+    var lblEvery = Math.max(1, Math.ceil(xs.length / Math.max(2, Math.floor(cW / 40))));
+    xs.forEach(function (x, i) {
+      if (i % lblEvery === 0 || i === xs.length - 1)
+        svgEl(svg, NS, "text", { x: pL + i * step, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
+          .textContent = String(x).substring(0, 10);
     });
 
     svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af",

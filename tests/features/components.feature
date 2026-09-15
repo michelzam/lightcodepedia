@@ -37,6 +37,19 @@ Feature: Component gallery behaviors
     And I click the bound grid "monthly_grid" row containing "Feb"
     Then the detail chart bound to "monthly_grid" renders a canvas
 
+  Scenario: A line follows a grid and carries bars, key points and series
+    The desk's activity chart (Michel, 2026-09-15): a seat picked in the
+    roster, its days as a line with saves as bars and key points as
+    diamonds; the class chart draws every seat, the picked one in blue.
+
+    When I navigate to "/components/chart"
+    And I wait for the page to be interactive
+    Then the chart "days_chart" draws 3 points, 3 bars and 2 marks, the first mark reading "bench forged"
+    And the chart "crew_chart" draws 2 series with "ada" in blue
+    When I click the bound grid "crew_grid" row containing "Bo"
+    Then the chart "days_chart" draws 2 points, 2 bars and 2 marks, the first mark reading "first save"
+    And the chart "crew_chart" draws 2 series with "bo" in blue
+
   Scenario: The markdown pad renders a live preview
     When I navigate to "/components/text"
     And I wait for the page to be interactive
