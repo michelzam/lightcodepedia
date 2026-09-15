@@ -34,8 +34,10 @@ Feature: The résumé rubric — acceptance criteria grade what the learner type
           assert len(self.cv.numbered) >= 2, self.cv.numbered
           heads = [l.strip().split(".", 1)[0] for l in self.cv.source.split("\n")]
           assert "2" not in heads, "lazy-number every rank as 1."
-          words = self.cv.rendered.replace(",", " ").replace(".", " ").split()
-          years = [int(w) for w in words if len(w) == 4 and w.isdigit()]
+          text = self.cv.rendered
+          for sep in ",./-":
+              text = text.replace(sep, " ")
+          years = [int(w) for w in text.split() if len(w) == 4 and w.isdigit()]
           assert years and max(years) > this_year(), years
           assert len(self.cv.links) >= 1, self.cv.links
           assert self.cv.images >= 1, self.cv.images
@@ -53,6 +55,36 @@ Feature: The résumé rubric — acceptance criteria grade what the learner type
       # Jordan Rivera
 
       **Volunteer** builder for the shelter, writing *from the future* — 2999.
+
+      ## Mission
+
+      I help the shelter cope with data, apps and AI.
+
+      ## Future skills
+
+      - I wire forms, grids and charts so numbers explain themselves
+      - I ask a page questions in SQL and watch it answer
+      - I write the acceptance criteria before I build the thing
+      - I repair data problems where they live, in the values
+
+      ## Preferred pets
+
+      1. Dogs, obviously
+      1. Cats, when they allow it
+
+      ## Reach me
+
+      [write to me](https://example.org/jordan)
+
+      ![a portrait](https://example.org/jordan.png)
+      """
+    And I run the page's embedded features
+    Then every embedded feature passes
+    When I retype the pad with:
+      """
+      # Jordan Rivera
+
+      **Volunteer** builder for the shelter, proficient by 09/10/2999 — *a date the American way* (David, 2026-09-15: slashes glued the year to the day and the check saw no year).
 
       ## Mission
 
