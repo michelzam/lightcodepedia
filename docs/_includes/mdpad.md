@@ -134,6 +134,7 @@ Auto-included by docs/_layouts/default.html.
        per file — the author can republish forever without touching it. */
     var saveKnob = el.getAttribute("save") || "";
     var benchPath = saveKnob && saveKnob !== "true" ? saveKnob : "";
+    if (benchPath) wrap.setAttribute("data-lc-save", benchPath);   /* named in a proof's verdict */
     var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null;
     /* the stripe every saved block wears — see lcBenchFrame in widgets.md */
     var frame = null;
@@ -226,6 +227,8 @@ Auto-included by docs/_layouts/default.html.
           .then(function (sha) {
             bOrigin = ta.value; bSha = sha || bSha;
             wrap.setAttribute("data-lc-mine", "1");
+            wrap.removeAttribute("data-lc-dirty");
+            try { document.dispatchEvent(new CustomEvent("lc-saved", { detail: { id: id } })); } catch (e2) {}
             if (mineTag) mineTag.hidden = false;
             if (frame) frame.setMine(true);
             revealVersions();
@@ -264,6 +267,11 @@ Auto-included by docs/_layouts/default.html.
     }
     ta.addEventListener("input", render);
     ta.addEventListener("input", function () {
+      /* edited since the last save: a proof reading this pad says so */
+      if (benchPath) {
+        if (ta.value !== bOrigin) wrap.setAttribute("data-lc-dirty", "1");
+        else wrap.removeAttribute("data-lc-dirty");
+      }
       clearTimeout(_pubT);
       _pubT = setTimeout(function () { publish(true); }, 400);
     });

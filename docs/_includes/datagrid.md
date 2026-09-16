@@ -267,6 +267,9 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
           if (opts.bindId && window.lcSetDataset) {
             window.lcSetDataset(opts.bindId, window.lcDatasets[opts.bindId] || data);
           }
+          /* edited since the last save: a proof that reads these rows says
+             so, and is not booked until 💾 (feature.md, unsavedBehind) */
+          if (opts.save) wrapper.setAttribute("data-lc-dirty", "1");
           // an input cell changed → the ƒ columns recompute from their formulas
           recompute();
         };
@@ -553,6 +556,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
             .then(function (sha) {
               wrapper._lcBenchSha = sha || wrapper._lcBenchSha;
               wrapper.setAttribute("data-lc-mine", "1");
+              wrapper.removeAttribute("data-lc-dirty");
+              try { document.dispatchEvent(new CustomEvent("lc-saved", { detail: { id: gridId } })); } catch (e2) {}
               mine.hidden = false;
               if (dgFrame) dgFrame.setMine(true);
               if (vers) { vers.reveal(); vers.close(); }
@@ -571,6 +576,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
                charts and queries return to the author's story too */
             if (opts.saveApply) opts.saveApply(rows.slice());
             else { api.setGridOption("rowData", rows); recompute(); }
+            /* the lesson's rows over a saved copy: not what the bench holds */
+            if (wrapper._lcBenchSha) wrapper.setAttribute("data-lc-dirty", "1");
             window.lcxToast && window.lcxToast("Lesson data restored — 💾 to make it yours", true);
           }).catch(function (e) {
             window.lcxToast && window.lcxToast("Could not restore: " + (e.message || e), false);
@@ -636,6 +643,9 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     var wrapper = buildDatagridWrapper({ id: id, title: title, format: bindId ? "" : format,
                                         height: height, editable: opts.editable });
     if (bindId) wrapper.setAttribute("data-bind", bindId);
+    /* a grid that saves says so, by the name a learner knows it by — a
+       proof standing on unsaved rows names it in its verdict */
+    if (opts.save) wrapper.setAttribute("data-lc-save", (title || id).split(" — ")[0]);
     el.parentNode.replaceChild(wrapper, el);
     var dataPromise;
     if (bindId) {

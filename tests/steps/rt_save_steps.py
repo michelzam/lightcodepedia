@@ -662,3 +662,18 @@ def step_leave_page(context):
       document.dispatchEvent(new Event("visibilitychange"));
     }""")
     context.page.wait_for_timeout(1500)
+
+
+@when('I type "{text}" into the pad')
+def step_type_only(context, text):
+    ta = context.page.locator(".lc-mdpad-in").first
+    ta.wait_for(state="visible", timeout=15_000)
+    ta.fill(text)
+    context.page.wait_for_timeout(500)
+
+
+@when("I press the pad's 💾")
+def step_press_pad_save(context):
+    btn = context.page.locator(".lc-mdpad-save").first
+    expect(btn).to_be_enabled(timeout=10_000)
+    btn.click()

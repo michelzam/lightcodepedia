@@ -614,3 +614,43 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I wait for the page to be interactive
     Then the persona card "who" shows the name "Ana"
     And the bench was read at "courses/demo/mod/persona.yaml"
+
+  Scenario: A green over an unsaved pad names it, and books only once it is saved
+    Michel, 2026-09-16: a learner repairs, runs, sees green — and never
+    presses 💾. On reload the bench brings the starter back, yet the record
+    had booked the green. The run knows what it read; the verdict names the
+    file that is not saved, the record waits, and the save re-runs and books.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/proof.md" with the document:
+      """
+      # Proof page
+
+      ```markdown
+      # Starter résumé — replace me
+      ```
+      {: .mdpad #cv save="cv.md" rows="6" }
+
+      ```gherkin
+      Feature: The résumé is yours
+        Scenario: It no longer says replace me
+          Given the pad
+          :::python
+          self.cv: Mdpad = self.page.cv
+          :::
+          Then it is rewritten
+          :::python
+          assert "replace me" not in self.cv.source, "still the starter"
+          :::
+      ```
+      {: .feature #mine visible="true" status="pending" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/proof.md"
+    And I wait for the page to be interactive
+    And I type "# Mine now" into the pad
+    And I run the feature "mine"
+    Then the feature "mine" is green but names "cv.md" as not saved
+    And no green is booked for "mine"
+    When I press the pad's 💾
+    Then the feature "mine" is green, based on saved data
+    And the green for "mine" is booked

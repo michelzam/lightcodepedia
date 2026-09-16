@@ -20,7 +20,11 @@ Bound to a runner (writes code back to a .run editor):
 
 YAML knobs (optional):
   system, model, temperature, max_tokens, intro, placeholder
-  provider: gemini | openrouter | custom   (default gemini)
+  provider: gemini | openrouter | groq | custom   (default from the ring)
+            THE AUTHOR'S SUGGESTION, not the learner's engine: the ring
+            (docs/bots/providers.yml — engines, endpoints, models, where a
+            key comes from; never a key) lets a learner hold several keys
+            and pick which answers first. Their ★ outranks provider:.
   base_url: https://…   override the endpoint (OpenAI-compatible dialect) —
             THE portability valve: a dead provider costs one yaml line.
             (GitHub Models died 2026-07-30 with a 410; never again.)
@@ -72,6 +76,15 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-token:focus { outline: 2px solid #0066cc; border-color: #0066cc; }
 .lc-agent-auth button[type="submit"] { background: #0066cc; color: white; border: none; padding: 0.5em 1.1em; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.9em; }
 .lc-agent-auth button[type="submit"]:hover { background: #0052a3; }
+.lc-agent-ring-row { display: flex; gap: 0.5em; align-items: center; flex-wrap: wrap; padding: 0.4em 0; border-top: 1px solid #f0f0f0; }
+.lc-agent-ring-row:first-child { border-top: none; }
+.lc-agent-ring-name { flex: 0 0 11em; font-weight: 600; color: #444; font-size: 0.9em; }
+.lc-agent-ring-name small { font-weight: 400; color: #2e7d32; margin-left: 0.3em; }
+.lc-agent-ring-row input[type="password"] { flex: 1 1 10em; min-width: 8em; }
+.lc-agent-ring-held { color: #2e7d32; font-size: 0.88em; }
+.lc-agent-ring-first { color: #b45309; font-size: 0.85em; font-weight: 600; }
+.lc-agent-ring-row button[type="button"] { background: white; color: #555; border: 1px solid #ccc; padding: 0.3em 0.7em; border-radius: 4px; cursor: pointer; font-size: 0.82em; }
+.lc-agent-ring-row button[type="button"]:hover { border-color: #0066cc; color: #0066cc; }
 .lc-agent-help { font-size: 0.83em; color: #666; text-decoration: none; }
 .lc-agent-help:hover { color: #0066cc; text-decoration: underline; }
 .lc-agent-intro { margin: 0 0 0.7em; color: #666; font-style: italic; font-size: 0.9em; }
@@ -264,9 +277,72 @@ Auto-included by docs/_layouts/default.html.
       key_url: 'https://openrouter.ai/keys',
       key_hint: 'sk-or-...'
     },
+    groq: {
+      base: 'https://api.groq.com/openai/v1',
+      model: 'llama-3.3-70b-versatile',
+      key_name: 'Groq key',
+      key_url: 'https://console.groq.com/keys',
+      key_hint: 'gsk_...'
+    },
     custom: { base: '', model: '', key_name: 'API key', key_url: '', key_hint: 'sk-...' }
   };
   var DEFAULT_PROVIDER = 'gemini';
+
+  /* THE RING IS A FILE. docs/bots/providers.yml declares the engines — name,
+     endpoint, model, where a key comes from — and never a key. Adding an
+     engine that speaks the OpenAI dialect is a yaml entry, not a release;
+     the table above is only the fallback for a site whose file cannot be
+     read. (Michel, 2026-09-16: "declare those somewhere, in a yaml file in
+     the repo, so the ring stays generic".) */
+  var _lcSiteBase = {{ site.baseurl | default: "" | jsonify }};
+  function loadProviders() {
+    if (window.lcProvidersReady) return window.lcProvidersReady;
+    window.lcProvidersReady = loadJsYaml().then(function () {
+      return fetch(_lcSiteBase + '/bots/providers.yml', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.text() : ''; });
+    }).then(function (txt) {
+      var doc = (txt && window.jsyaml) ? window.jsyaml.load(txt) : null;
+      if (doc && doc.providers && typeof doc.providers === 'object') {
+        var ring = {};
+        Object.keys(doc.providers).forEach(function (id) {
+          var p = doc.providers[id] || {};
+          if (!p.base) return;
+          ring[id] = { name: p.name || id, base: String(p.base).replace(/\/+$/, ''),
+                       model: p.model || '', key_name: p.key_name || ((p.name || id) + ' key'),
+                       key_url: p.key_url || '', key_hint: p.key_hint || 'sk-...', free: !!p.free };
+        });
+        if (Object.keys(ring).length) {
+          Object.keys(PROVIDERS).forEach(function (id) { if (id !== 'custom') delete PROVIDERS[id]; });
+          Object.keys(ring).forEach(function (id) { PROVIDERS[id] = ring[id]; });
+          if (doc['default'] && PROVIDERS[doc['default']]) DEFAULT_PROVIDER = doc['default'];
+        }
+      }
+      try { document.dispatchEvent(new CustomEvent('lc-providers')); } catch (e) {}
+      return PROVIDERS;
+    }).catch(function () { return PROVIDERS; });
+    return window.lcProvidersReady;
+  }
+  loadProviders();
+  /* the engines a learner can hold a key for, in the ring's order */
+  function ringIds() {
+    return Object.keys(PROVIDERS).filter(function (id) { return id !== 'custom' && PROVIDERS[id].base; });
+  }
+  /* WHICH HELD KEY ANSWERS FIRST: the learner's ★ if that key is held, else
+     the page's own suggestion if held, else the first held key on the ring.
+     A learner with only a Groq key is served by Groq on every page. */
+  function firstHeld(prefer) {
+    var star = '';
+    try { star = localStorage.getItem('lc_ai_first') || ''; } catch (e) {}
+    if (star && PROVIDERS[star] && getSharedToken(star)) return star;
+    if (prefer && PROVIDERS[prefer] && getSharedToken(prefer)) return prefer;
+    var ids = ringIds();
+    for (var i = 0; i < ids.length; i++) if (getSharedToken(ids[i])) return ids[i];
+    return '';
+  }
+  function setFirst(id) {
+    try { if (id) localStorage.setItem('lc_ai_first', id); else localStorage.removeItem('lc_ai_first'); } catch (e) {}
+    SHARED.listeners.forEach(function (cb) { try { cb(id, getSharedToken(id), ''); } catch (e) {} });
+  }
 
   var DEFAULTS = {
     system: 'You are a helpful assistant.',
@@ -284,14 +360,22 @@ Auto-included by docs/_layouts/default.html.
 
   /* resolve provider preset + per-fence overrides into {base, model, …} */
   function resolveEngine(cfg) {
-    var pv = PROVIDERS[cfg.provider] || PROVIDERS[DEFAULT_PROVIDER];
+    var suggested = cfg.provider || DEFAULT_PROVIDER;
+    var pid = suggested;
+    /* the learner's ring outranks the page's suggestion — unless the page
+       wires its own endpoint, which no ring key could serve */
+    if (!cfg.base_url && suggested !== 'custom' && !cfg.exact) pid = firstHeld(suggested) || suggested;
+    var pv = PROVIDERS[pid] || PROVIDERS[DEFAULT_PROVIDER];
     var base = (cfg.base_url || pv.base || '').replace(/\/+$/, '');
     return {
       base: base,
       host: (base.match(/^https?:\/\/([^\/]+)/) || [])[1] || 'the model service',
-      model: cfg.model || pv.model,
+      /* a fence's model: names a model OF ITS provider — on another engine
+         it would 404; the ring's own preset answers there */
+      model: (cfg.model && pid === suggested) ? cfg.model : pv.model,
+      name: pv.name || pid,
       key_name: pv.key_name, key_url: pv.key_url, key_hint: pv.key_hint,
-      id: cfg.provider || DEFAULT_PROVIDER
+      id: pid
     };
   }
 
@@ -495,12 +579,14 @@ Auto-included by docs/_layouts/default.html.
       Object.keys(DEFAULTS).forEach(function (k) { cfg[k] = DEFAULTS[k]; });
       return resolveEngine(cfg);
     },
-    ready: function () { return !!getSharedToken(DEFAULT_PROVIDER); },
-    connect: function (key) { if (key) setSharedToken(DEFAULT_PROVIDER, String(key).trim()); },
-    disconnect: function () { setSharedToken(DEFAULT_PROVIDER, null); },
+    ready: function () { return !!firstHeld(DEFAULT_PROVIDER); },
+    /* a key pasted at a door or the guide goes to the engine the ring names
+       for this learner — the same identity the agents will look under */
+    connect: function (key) { if (key) setSharedToken(window.lcBotAsk.engine().id, String(key).trim()); },
+    disconnect: function () { setSharedToken(window.lcBotAsk.engine().id, null); },
     onChange: onSharedTokenChange,
     ask: function (botName, question, opts) {
-      if (!getSharedToken(DEFAULT_PROVIDER)) return Promise.resolve({ error: 'No key' });
+      if (!firstHeld(DEFAULT_PROVIDER)) return Promise.resolve({ error: 'No key' });
       return loadBot(botName).then(function (botCfg) {
         var cfg = {};
         Object.keys(DEFAULTS).forEach(function (k) { cfg[k] = DEFAULTS[k]; });
@@ -512,11 +598,14 @@ Auto-included by docs/_layouts/default.html.
             'material, not a learner: answer directly and completely, no guiding ' +
             'questions, no withheld solutions. Keep the step format.';
         }
-        return ask(getSharedToken(DEFAULT_PROVIDER), cfg, question);
+        var eng = resolveEngine(cfg);
+        return ask(getSharedToken(eng.id), cfg, question).then(function (result) {
+          if (result && result.unauthorized) setSharedToken(eng.id, null, result.error);
+          return result;
+        });
       }, function () {
         return { error: 'bot "' + botName + '" could not be loaded' };
       }).then(function (result) {
-        if (result && result.unauthorized) setSharedToken(DEFAULT_PROVIDER, null, result.error);
         if (result && result.usage && window.lcTokens) window.lcTokens.add(result.usage);
         return result;
       });
@@ -577,16 +666,11 @@ Auto-included by docs/_layouts/default.html.
         boundLabel +
         '<button type="button" class="lc-agent-key" title="Change token" aria-label="Change token">🔑</button>' +
       '</div>' +
-      '<form class="lc-agent-auth" autocomplete="on">' +
+      '<div class="lc-agent-auth">' +
         '<div class="lc-agent-authmsg" role="status" aria-live="polite" hidden></div>' +
-        '<p>Paste your ' + escapeHtml(eng.key_name) + ' once — it is saved on this device, and every ' + escapeHtml(eng.id) + ' helper in the course opens connected. Let your browser save it as a password too: that copy follows you to your other devices.</p>' +
-        '<input type="text" name="username" value="lc-' + escapeHtml(eng.id) + '" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager">' +
-        '<div class="lc-agent-pw-row">' +
-          '<input type="password" name="password" class="lc-agent-token" autocomplete="current-password" placeholder="' + escapeHtml(eng.key_hint) + '" required aria-label="' + escapeHtml(eng.key_name) + '">' +
-          '<button type="submit">Save &amp; start</button>' +
-        '</div>' +
-        (eng.key_url ? '<a class="lc-agent-help" href="' + eng.key_url + '" target="_blank" rel="noopener">How do I get one?</a>' : '') +
-      '</form>' +
+        '<p>Paste a key for any engine below. One is enough; two means a busy engine never stops you — the ★ one answers first, the others step in. Keys stay on this device, sent to their own engine only; let your browser keep them as passwords and they follow you.</p>' +
+        '<div class="lc-agent-ring"></div>' +
+      '</div>' +
       '<div class="lc-agent-body" hidden>' +
         introHtml +
         '<form class="lc-agent-ask">' +
@@ -600,6 +684,51 @@ Auto-included by docs/_layouts/default.html.
       '</div>' +
       '<div class="lc-agent-warn">⚠ Calls ' + escapeHtml(eng.host) + ' directly with your key. Use a key made for this, nothing broader.</div>';
     return div;
+  }
+
+  /* THE RING: one row per engine the file declares — held keys show a check
+     and a forget, the rest a paste box and where to get one. Each row is its
+     own form with the hidden-username trick, so a password manager files
+     every key under its engine's name. ★ marks who answers first. */
+  function paintRing(panel, cfg) {
+    var box = panel.querySelector('.lc-agent-ring');
+    if (!box) return;
+    var ids = ringIds();
+    if (cfg.provider === 'custom' && cfg.base_url) ids = ['custom'].concat(ids);
+    var star = firstHeld(cfg.provider || DEFAULT_PROVIDER);
+    box.innerHTML = ids.map(function (id) {
+      var pv = PROVIDERS[id] || {};
+      var held = !!getSharedToken(id);
+      var name = escapeHtml(pv.name || id) + (pv.free ? '<small>free tier</small>' : '');
+      return '<form class="lc-agent-ring-row" data-pid="' + escapeHtml(id) + '" data-held="' + (held ? '1' : '0') + '" autocomplete="on">' +
+        '<span class="lc-agent-ring-name">' + (held && id === star ? '★ ' : '') + name + '</span>' +
+        '<input type="text" name="username" value="lc-' + escapeHtml(id) + '" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager">' +
+        (held
+          ? '<span class="lc-agent-ring-held">✓ key saved</span>' +
+            (id === star ? '<span class="lc-agent-ring-first">answers first</span>'
+                         : '<button type="button" data-first="' + escapeHtml(id) + '">★ answer first</button>') +
+            '<button type="button" data-forget="' + escapeHtml(id) + '">forget</button>'
+          : '<input type="password" name="password" class="lc-agent-token" autocomplete="current-password" placeholder="' + escapeHtml(pv.key_hint || 'sk-...') + '" required aria-label="' + escapeHtml(pv.key_name || id) + '">' +
+            '<button type="submit">Save</button>' +
+            (pv.key_url ? '<a class="lc-agent-help" href="' + escapeHtml(pv.key_url) + '" target="_blank" rel="noopener">get a key</a>' : '')) +
+        '</form>';
+    }).join('');
+    box.querySelectorAll('form').forEach(function (f) {
+      f.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = (f.querySelector('input[type=password]').value || '').trim();
+        if (v) setSharedToken(f.getAttribute('data-pid'), v);
+      });
+    });
+    box.querySelectorAll('[data-forget]').forEach(function (b) {
+      b.addEventListener('click', function () { setSharedToken(b.getAttribute('data-forget'), null); });
+    });
+    box.querySelectorAll('[data-first]').forEach(function (b) {
+      b.addEventListener('click', function () { setFirst(b.getAttribute('data-first')); });
+    });
+    panel.setAttribute('data-engine', resolveEngine(cfg).host);
+    var warn = panel.querySelector('.lc-agent-warn');
+    if (warn) warn.textContent = '⚠ Calls ' + resolveEngine(cfg).host + ' directly with your key. Use a key made for this, nothing broader.';
   }
 
   // ===== API call =====
@@ -787,7 +916,9 @@ Auto-included by docs/_layouts/default.html.
       function next(i) {
         if (i >= chain.length) return Promise.resolve(res);   /* the first failure is the honest one */
         var id = chain[i];
-        var eng = resolveEngine({ provider: id, model: cfg.model_fallback || '' });
+        /* exact: the ladder picked this engine on purpose — the ring's ★
+           must not fold it back into the engine that just failed */
+        var eng = resolveEngine({ provider: id, model: cfg.model_fallback || '', exact: true });
         var consent = fallbackAllowed(id)
           ? Promise.resolve(true)
           : (askConsent ? Promise.resolve(askConsent(eng, res)) : Promise.resolve(false));
@@ -825,38 +956,38 @@ Auto-included by docs/_layouts/default.html.
     var response = panel.querySelector('.lc-agent-response');
     var usage = panel.querySelector('.lc-agent-usage');
     var keyBtn = panel.querySelector('.lc-agent-key');
-    var tokenInput = panel.querySelector('.lc-agent-token');
     var authMsg = panel.querySelector('.lc-agent-authmsg');
 
-    var engineId = resolveEngine(cfg).id;
-    function myToken() { return getSharedToken(engineId); }
+    /* the engine is whoever the ring names NOW — it moves when a key is
+       pasted, forgotten or starred, on this desk or any other */
+    function engineId() { return resolveEngine(cfg).id; }
+    function myToken() { return getSharedToken(engineId()); }
     function sayOnForm(why) {
       if (!authMsg) return;
       authMsg.textContent = why || '';
       authMsg.hidden = !why;
     }
     function showChat() { authForm.hidden = true; body.hidden = false; sayOnForm(''); }
-    function showAuth(why) { authForm.hidden = false; body.hidden = true; sayOnForm(why); }
+    function showAuth(why) { paintRing(panel, cfg); authForm.hidden = false; body.hidden = true; sayOnForm(why); }
 
-    // Initial state from this provider's shared key
+    // Initial state from the ring: any held key opens the desk
+    paintRing(panel, cfg);
     if (myToken()) showChat(); else showAuth();
+    document.addEventListener('lc-providers', function () { paintRing(panel, cfg); });
 
-    // React to other panels changing THIS provider's key
+    // React to any desk changing any key: the ring repaints, the door follows
     onSharedTokenChange(function(pid, v, why){
-      if (pid !== engineId) return;
+      paintRing(panel, cfg);
       /* the reason rides along, because this repaint is what used to erase it */
-      if (v) showChat(); else { response.innerHTML = ''; status.innerHTML = ''; showAuth(why); }
+      if (myToken()) { if (authForm.hidden === false && !why) showChat(); }
+      else { response.innerHTML = ''; status.innerHTML = ''; showAuth(why); }
+      if (v && !why && pid === engineId()) showChat();
     });
 
-    authForm.addEventListener('submit', function(e){
-      e.preventDefault();
-      var v = (tokenInput.value || '').trim();
-      if (!v) return;
-      setSharedToken(engineId, v);  // sibling panels of the same provider switch too
-    });
-
+    /* 🔑 opens the ring — add a second engine, star one, forget one */
     keyBtn.addEventListener('click', function(){
-      setSharedToken(engineId, null);
+      if (authForm.hidden) { paintRing(panel, cfg); authForm.hidden = false; }
+      else if (myToken()) authForm.hidden = true;
     });
 
     askForm.addEventListener('submit', function(e){
@@ -900,7 +1031,7 @@ Auto-included by docs/_layouts/default.html.
           status.innerHTML = '<span class="lc-agent-err">⚠ ' + escapeHtml(result.error) + '</span>';
           /* carry the reason INTO the clear — the auth wall this triggers
              hides the status line we just wrote */
-          if (result.unauthorized) setSharedToken(engineId, null, result.error);
+          if (result.unauthorized) setSharedToken(engineId(), null, result.error);
           return;
         }
         /* a fallback engine answered: say which, in the status line and not

@@ -105,6 +105,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-run { background: #0066cc; color: #fff; border: none; border-radius: 4px; padding: 0.25em 0.75em; font-size: 0.8em; font-weight: 500; cursor: pointer; flex-shrink: 0; }
 .lc-feature-run:hover:not(:disabled) { background: #0052a3; }
 .lc-feature-run:disabled { background: #9ca3af; cursor: progress; }
+.lc-feature-saved { font-size: 0.8em; color: #15803d; padding: 0.35em 0 0; }
+.lc-feature-saved.unsaved { color: #b45309; font-weight: 600; }
 
 /* ── scenario / narrative ─────────────────────────────────────────────── */
 .lc-feature-scenario { padding: 0.5em 1em 0.2em; font-size: 0.82em; font-weight: 600; color: #6b7280; letter-spacing: 0.03em; text-transform: uppercase; }
@@ -285,6 +287,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
   function rememberResult(card, status) {
     if (!status || status === "pending") return;   /* mid-run is not a result */
     if (!cardName(card)) return;
+    /* A GREEN OVER UNSAVED DATA IS NOT BOOKED. The record is what the
+       desk counts; booking it now would let the bench hold a green proof
+       over data it does not contain (Michel, 2026-09-16). The card shows
+       the green and says what to save; the save re-runs and books. */
+    if (status === "passing" && card.getAttribute("data-unsaved")) return;
     try {
       var all = loadResults();
       all[resultKey(card)] = { status: status, ts: new Date().toISOString() };
@@ -304,6 +311,68 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     }
   }
   window.lcFeatureResults = { all: loadResults, restore: restoreResult };
+
+  /* ── WHICH DATA A PROOF STANDS ON ─────────────────────────────────────────
+     Nothing the author declares. The run records every block its steps read
+     (Page.__getattr__ → window._lcStepsTouched); from each one we walk
+     upstream through data-bind — a report grid to its query, the query to
+     its datasets, a dataset to the grid that saves it — until a block with
+     a save= is found. A pad with save= is reached directly. Whatever is
+     found and edited since its last save is what a green stands on. */
+  function unsavedBehind(card) {
+    var names = [];
+    try { names = JSON.parse(window._lcStepsTouched || "[]"); } catch (e) {}
+    (card.getAttribute("data-saves") || "").split(",").forEach(function (s) {
+      s = s.trim(); if (s) names.push(s);
+    });
+    var seen = {}, out = [];
+    function visit(id) {
+      if (!id || seen[id]) return;
+      seen[id] = 1;
+      var sel = "[data-lc-id='" + id + "'], [data-bind='" + id + "'][data-lc-save]";
+      document.querySelectorAll(sel).forEach(function (el) {
+        if (el.hasAttribute("data-lc-save") && el.getAttribute("data-lc-dirty") === "1"
+            && out.indexOf(el) < 0) out.push(el);
+        (el.getAttribute("data-bind") || "").split(",").forEach(function (b) { visit(b.trim()); });
+      });
+    }
+    names.forEach(visit);
+    return out;
+  }
+  /* one line under the verdict, the same on every page: a green says
+     whether the data it read is in the bench, and names what is not */
+  function paintSaved(card, allPass) {
+    var body = card.querySelector("[data-lc-body]");
+    var old = card.querySelector(".lc-feature-saved");
+    if (old) old.parentNode.removeChild(old);
+    card.removeAttribute("data-unsaved");
+    if (!allPass || !body) return;
+    var dirty = unsavedBehind(card);
+    var line = document.createElement("div");
+    line.className = "lc-feature-saved";
+    if (!dirty.length) {
+      line.textContent = "✓ green, based on saved data";
+    } else {
+      var names = dirty.map(function (el) { return el.getAttribute("data-lc-save"); });
+      line.className += " unsaved";
+      line.textContent = "✓ green, but " + names.join(" and ") + (names.length > 1 ? " are" : " is")
+                       + " not saved. Press 💾 to keep this.";
+      card.setAttribute("data-unsaved", dirty.map(function (el) {
+        return el.getAttribute("data-lc-id") || ""; }).join(","));
+    }
+    body.appendChild(line);
+  }
+  /* the save re-runs the checks that were waiting on it, and they book */
+  document.addEventListener("lc-saved", function (e) {
+    var id = (e.detail || {}).id || "";
+    document.querySelectorAll(".lc-feature[data-unsaved]").forEach(function (card) {
+      var ids = card.getAttribute("data-unsaved").split(",");
+      if (id && ids.indexOf(id) < 0) return;
+      var btn = card.querySelector(".lc-feature-run");
+      if (btn && btn.classList.contains("lc-feature-run-btn")) runFeatureNew(card, btn);
+      else if (btn && !btn.classList.contains("lc-feature-run-pending")) runFeature(card, btn);
+    });
+  });
 
   /* ── Update badge + notify suite row ────────────────────────────────────────── */
   function setCardStatus(card, status) {
@@ -430,10 +499,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     var mpP = window._lcMpReady;
 
     window._lcStepsResult = null;
+    window._lcStepsTouched = "[]";   /* declared here: the bridge only sets what exists */
     return mpP.then(function(mp) {
       var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
-      var jsonStr;
-      try { if (runFn) jsonStr = runFn.call(mp, fullCode); } catch(e) {}
+      var jsonStr, runErr = null;
+      try { if (runFn) jsonStr = runFn.call(mp, fullCode); } catch(e) { runErr = e; }
       if (jsonStr == null) jsonStr = window._lcStepsResult;
       var results = [];
       try { results = JSON.parse(jsonStr) || []; } catch(e) {}
@@ -441,6 +511,22 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       var builtinResults = results.slice(0, 2);
       var userResults    = results.slice(2);
       var allPass = true;
+      /* NO RESULTS IS NOT A PASS. When the interpreter throws before the
+         first step (a syntax error in the runtime, a build that will not
+         load), nothing came back — and an empty list used to paint every
+         step "○" and the card green (found 2026-09-16, a runtime edit that
+         did not parse "passed" every proof on the page). Say what fell
+         over, in the engine's voice, and turn red. */
+      if (!results.length) {
+        allPass = false;
+        var first = stepEls[0];
+        if (first) {
+          var eDiv = document.createElement("div");
+          eDiv.className = "lc-feature-step-err";
+          eDiv.textContent = engineErrText(runErr ? (runErr.message || String(runErr)) : "the run returned nothing");
+          first.querySelector(".lc-feature-step-row").insertAdjacentElement("afterend", eDiv);
+        }
+      }
 
       /* show user step results */
       stepEls.forEach(function(s, i) {
@@ -508,6 +594,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       });
       if (body) body.appendChild(footer);
 
+      paintSaved(card, allPass);
       setCardStatus(card, allPass ? "passing" : "failing");
       if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
     }).catch(function() {
@@ -528,6 +615,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     });
     setCardStatus(card, "pending");
     if (runBtn) { runBtn.disabled = true; runBtn.textContent = "…"; }
+    window._lcStepsTouched = "[]";
 
     return (window.lcMpy ? window.lcMpy() : getMpModule()
       .then(function(mjs) {
@@ -568,7 +656,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
             s.querySelector(".lc-feature-step-row").insertAdjacentElement("afterend", errDiv);
           }
         });
-        setCardStatus(card, allPass ? "passing" : "failing");
+        paintSaved(card, allPass);
+      setCardStatus(card, allPass ? "passing" : "failing");
         if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
         return allPass;
       })
@@ -711,6 +800,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
        (Michel, 2026-08-11). */
     var grades = el.getAttribute("grades");
     if (grades) card.setAttribute("data-grades", grades);
+    /* saves="a, b": data a step reads INDIRECTLY (through a page global,
+       say) that a green still stands on. The direct case needs nothing —
+       the run records what its steps read; see unsavedBehind. */
+    var saves = el.getAttribute("saves");
+    if (saves) card.setAttribute("data-saves", saves);
     /* flow="<flow-id>": this feature CHECKS that event flow — Given is the
        setup, When the command, Then the event. The x-ray reads data-flow
        and draws the pipe (Michel, 2026-08-23). */

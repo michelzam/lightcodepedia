@@ -276,3 +276,62 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I ask the desk agent into the void "hello"
     And I decline the other engine
     Then no call reached the other engine
+
+  Scenario: The ring lists the engines the repo declares, and any one key opens the desk
+    Michel, 2026-09-16: a 503 from the one engine every learner was told
+    about, often. The 🔑 is now a ring — every engine docs/bots/providers.yml
+    declares, a key for any of them opens the desk.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/module_01/one.md" with the document:
+      """
+      # One desk
+
+      ```yaml
+      system: One.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
+    And I wait for the page to be interactive
+    Then the desk's ring offers "gemini", "openrouter" and "groq"
+    When I paste "gsk_test" as the "groq" key on the desk
+    Then the desk is connected through "api.groq.com"
+
+  Scenario: The learner's ★ engine outranks the page's provider
+    Given I have a clean browser page
+    And keys for "gemini" and "groq" are saved on this device, "groq" answering first
+    And every engine answers "hello" and records who was asked
+    And the GitHub contents API serves "courses/demo/module_01/one.md" with the document:
+      """
+      # One desk
+
+      ```yaml
+      system: One.
+      provider: gemini
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
+    And I wait for the page to be interactive
+    And I ask the "desk" agent "hi"
+    Then the question went to "api.groq.com" and never to "generativelanguage.googleapis.com"
+
+  Scenario: A busy ★ engine is answered by the next key on the ring, and the desk says so
+    Given I have a clean browser page
+    And keys for "gemini" and "groq" are saved on this device, "gemini" answering first
+    And "generativelanguage.googleapis.com" answers 503 while "api.groq.com" answers "hello"
+    And the GitHub contents API serves "courses/demo/module_01/one.md" with the document:
+      """
+      # One desk
+
+      ```yaml
+      system: One.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
+    And I wait for the page to be interactive
+    And I ask the "desk" agent "hi", accepting the other engine when offered
+    Then the agent says "api.groq.com answered"
+    And the question went to "api.groq.com" and never to "generativelanguage.googleapis.com" for the answer

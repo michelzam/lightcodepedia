@@ -285,6 +285,41 @@ Nothing to write for the first two — tag a feature and the page wears it. A
 page with no tagged feature keeps a bare title, which is the honest signal
 that it has nothing claimed about it yet.
 
+## 💾 A green says what it stands on
+
+A proof reads blocks — a grid, a pad, a report grid fed by a query. The run
+records what its steps read and walks upstream to the block that **saves**
+it: the report grid to its query, the query to its datasets, the dataset to
+the grid with `save=`; a pad with `save=` is reached directly. One line
+under the verdict then says the truth, the same on every page:
+
+- *✓ green, based on saved data* — nothing it read has changed since its last 💾
+- *✓ green, but 🐕 All our dogs is not saved. Press 💾 to keep this.* — a green
+  the bench does not hold yet. It is **not booked** in the progress record
+  until the save; the save re-runs the check, and then it books.
+
+A red says nothing about saving: red is about the data. The example below
+reads the pad above it — edit the pad, run, and the line changes.
+
+```md
+Three lines, one word each: ready.
+```
+{: .mdpad #notes rows="3" save="notes.md" }
+
+```gherkin
+Feature: The notes are ready
+  Scenario: The pad says so
+    Given the notes
+    :::python
+    self.notes: Mdpad = self.page.notes
+    :::
+    Then they say ready
+    :::python
+    assert "ready" in self.notes.source, "the notes do not say ready"
+    :::
+```
+{: .feature #notes_ready visible="true" status="pending" }
+
 ## 🎛️ Knobs
 
 | Block | Attribute | Values | What it does |
@@ -292,6 +327,7 @@ that it has nothing claimed about it yet.
 | `.feature` | `status="…"` | `passing` · `failing` · `pending` | Border colour and badge; updated live after a run |
 | `.feature` | `tags="…"` | comma-separated | Chips in the card header |
 | `.feature` | `#<id>` | Python-compatible id | Makes the card reachable as `self.page.<id>` in any step |
+| `.feature` | `saves="a, b"` | block ids | Data a step reads *indirectly* that a green still stands on — the direct case needs nothing |
 
 ## 🧠 Quick check
 

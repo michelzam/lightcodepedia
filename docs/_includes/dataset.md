@@ -373,7 +373,15 @@ Auto-included by docs/_layouts/default.html.
         html += "</div>";
       }
 
+      /* THE SCROLL SURVIVES A REPUBLISH. Picking a seat binds its card,
+         the card republishes the class, and this table is rebuilt from
+         the new rows: the selection was kept (below), the scroll was not —
+         the box came back at the top and the picked row sat out of view
+         (Michel, 2026-09-15, the desk's roster). Keep where the reader was. */
+      var scrollBox = el.querySelector(".lc-dg-scroll");
+      var keepTop = scrollBox ? scrollBox.scrollTop : 0;
       el.innerHTML = html;
+      if (keepTop) { var nb = el.querySelector(".lc-dg-scroll"); if (nb) nb.scrollTop = keepTop; }
       if (editable) {
         el.querySelectorAll("td.lc-dg-edit").forEach(function (td) {
           /* commit on blur and on Enter — never on every keystroke, or the

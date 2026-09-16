@@ -330,6 +330,35 @@ Code > 4000 chars is truncated. Empty editor and no-run-yet silently drop those 
 - [ ] File a strongly-worded bug report against your own PAT.
 {: .quiz }
 
+## 💍 The keyring — engines declared in one file
+
+The 🔑 on any desk opens the **ring**: one row per engine, each with where
+to get a key. Paste one and the desk opens; paste two and a busy engine
+never stops you — the ★ one answers first, and when it is down (a 503, a
+quota wall) the desk retries, then asks the next key you hold, with your
+consent once per sitting, and says who answered.
+
+Which engines exist is **declared, not coded**: `docs/bots/providers.yml`
+lists each one's name, endpoint, model and key page — never a key. Adding
+an engine that speaks the OpenAI-compatible dialect is one entry there.
+Your ★ outranks a page's `provider:`, which is only the author's
+suggestion; a page's `model:` applies on that provider alone, the ring's
+own preset answers elsewhere. Keys live in this browser, per device and
+per engine, and are sent to their own engine only.
+
+```yaml
+default: gemini
+providers:
+  groq:
+    name: Groq
+    base: https://api.groq.com/openai/v1
+    model: llama-3.3-70b-versatile
+    key_name: Groq key
+    key_url: https://console.groq.com/keys
+    key_hint: gsk_...
+    free: true
+```
+
 ## 🔐 How your token stays safe
 
 Three layers, nothing exotic.

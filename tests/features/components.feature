@@ -75,6 +75,12 @@ Feature: Component gallery behaviors
     Then the query "ghost_q" says it is waiting for "ghost"
     And the grid "ghost_grid" shows its author's empty message
 
+  Scenario: A green says what it stands on
+    When I navigate to "/components/feature"
+    And I wait for the page to be interactive
+    And I run the feature "notes_ready"
+    Then the feature "notes_ready" is green, based on saved data
+
   Scenario: An editable query is a live SQL editor feeding a grid
     When I navigate to "/components/query"
     And I wait for the page to be interactive

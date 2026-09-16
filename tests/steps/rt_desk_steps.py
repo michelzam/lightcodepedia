@@ -75,8 +75,14 @@ def step_connect_agent_key(context, agent_id, key):
     # with GitHub Models; sibling panels of the same provider follow along
     panel = context.page.locator('[data-lc-id="' + agent_id + '"]')
     panel.wait_for(state="attached", timeout=20_000)
-    panel.locator(".lc-agent-token").fill(key)
-    panel.locator(".lc-agent-auth button[type=submit]").click()
+    # the ring: one row per engine. A desk already open on another held key
+    # keeps the ring folded — 🔑 opens it; the first row without a key is
+    # the page's own engine
+    if panel.locator(".lc-agent-auth").is_hidden():
+        panel.locator(".lc-agent-key").click()
+    row = panel.locator(".lc-agent-ring-row[data-held='0']").first
+    row.locator("input[type=password]").fill(key)
+    row.locator("button[type=submit]").click()
     expect(panel.locator(".lc-agent-prompt")).to_be_visible(timeout=10_000)
 
 
@@ -97,9 +103,13 @@ def step_desk_connected(context):
 
 @when("I press the desk's forget-key button")
 def step_forget_key(context):
+    # 🔑 opens the ring; "forget" on the held row drops that key everywhere
     btn = context.page.locator(".lc-agent .lc-agent-key").first
     btn.wait_for(state="visible", timeout=15_000)
     btn.click()
+    forget = context.page.locator(".lc-agent .lc-agent-ring-row[data-held='1'] [data-forget]").first
+    forget.wait_for(state="visible", timeout=10_000)
+    forget.click()
     context.page.wait_for_timeout(300)
 
 

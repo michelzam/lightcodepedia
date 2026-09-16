@@ -843,3 +843,55 @@ def step_grid_empty_message(context, gid):
     box = context.page.locator("[data-lc-id='" + gid + "']")
     expect(box).to_contain_text("Nothing arrives here", timeout=15_000)
     expect(box).not_to_contain_text("Loading")
+
+
+# ── a green says what it stands on ────────────────────────────────────────
+
+def _unfold_and_click(context, fid, css):
+    return context.page.evaluate("""([fid, css]) => {
+        const c = document.querySelector('[data-lc-id="' + fid + '"]');
+        if (!c) return 'no block ' + fid;
+        let d = c.closest('details');
+        while (d) { d.open = true; d = d.parentElement && d.parentElement.closest('details'); }
+        const b = c.querySelector(css);
+        if (!b) return 'no ' + css;
+        if (b.disabled) return 'disabled: ' + (b.title || '');
+        b.click(); return 'clicked'; }""", [fid, css])
+
+
+@when('I run the feature "{fid}"')
+def step_run_feature_by_id(context, fid):
+    got = _unfold_and_click(context, fid, ".lc-feature-run")
+    assert got == "clicked", got
+
+
+@then('the feature "{fid}" is green but names "{what}" as not saved')
+def step_feature_green_unsaved(context, fid, what):
+    card = context.page.locator('[data-lc-id="%s"]' % fid)
+    expect(card).to_have_attribute("data-status", "passing", timeout=30_000)
+    expect(card.locator(".lc-feature-saved")).to_contain_text(what + " is not saved")
+    assert card.get_attribute("data-unsaved"), "the card does not carry what is unsaved"
+
+
+@then('the feature "{fid}" is green, based on saved data')
+def step_feature_green_saved(context, fid):
+    card = context.page.locator('[data-lc-id="%s"]' % fid)
+    expect(card.locator(".lc-feature-saved")).to_contain_text("based on saved data", timeout=30_000)
+    expect(card).to_have_attribute("data-status", "passing")
+    assert card.get_attribute("data-unsaved") is None
+
+
+def _booked(context, fid):
+    return context.page.evaluate("""(fid) => {
+        let all = {}; try { all = JSON.parse(localStorage.getItem('lc_features') || '{}'); } catch (e) {}
+        return Object.keys(all).filter(k => k.endsWith('#' + fid) && all[k].status === 'passing').length; }""", fid)
+
+
+@then('no green is booked for "{fid}"')
+def step_not_booked_for(context, fid):
+    assert _booked(context, fid) == 0, "the record booked a green over unsaved data"
+
+
+@then('the green for "{fid}" is booked')
+def step_booked_for(context, fid):
+    assert _booked(context, fid) == 1, "the save did not book the green"

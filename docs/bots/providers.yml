@@ -1,0 +1,42 @@
+# The keyring — which engines a learner may hold a key for.
+#
+# NO KEYS HERE, EVER. A key lives in the learner's browser (per device, per
+# engine, offered to their password manager) and is sent to that engine only.
+# This file only says which engines exist, where they answer, which model to
+# ask, and where a key is obtained. Every entry speaks the OpenAI-compatible
+# chat dialect with a Bearer key; an engine that does not (Azure, Bedrock…)
+# will need an adapter in the agent before it can be listed here.
+#
+# The learner picks which held key answers first (★ in the ring); the page's
+# provider: is only the author's suggestion. When the first engine is busy
+# (5xx, 429), the agent retries, then asks the next engine the learner holds
+# a key for — with consent, once per sitting — and says who answered.
+#
+# Order here is the ring's order, and the fallback order when no ★ is set.
+default: gemini
+providers:
+  gemini:
+    name: Google Gemini
+    base: https://generativelanguage.googleapis.com/v1beta/openai
+    # the -latest alias rides Google's version churn; a pinned version 404s twice a year
+    model: gemini-flash-latest
+    key_name: Google AI Studio key
+    key_url: https://aistudio.google.com/apikey
+    key_hint: AIza...
+    free: true
+  openrouter:
+    name: OpenRouter
+    base: https://openrouter.ai/api/v1
+    model: meta-llama/llama-3.3-70b-instruct:free
+    key_name: OpenRouter key
+    key_url: https://openrouter.ai/keys
+    key_hint: sk-or-...
+    free: true
+  groq:
+    name: Groq
+    base: https://api.groq.com/openai/v1
+    model: llama-3.3-70b-versatile
+    key_name: Groq key
+    key_url: https://console.groq.com/keys
+    key_hint: gsk_...
+    free: true

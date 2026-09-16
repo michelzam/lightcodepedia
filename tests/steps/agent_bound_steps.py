@@ -279,3 +279,102 @@ def step_decline_fallback(context):
 def step_no_paid_call(context):
     hits = [u for u in getattr(context, "engine_calls", []) if "openrouter.ai" in u]
     assert not hits, "a paid engine was called without consent: %r" % hits
+
+
+# ── the ring ──────────────────────────────────────────────────────────────
+
+def _ok_reply(text):
+    return json.dumps({"choices": [{"message": {"content": text}}], "usage": {"total_tokens": 3}})
+
+
+@then('the desk\'s ring offers "{a}", "{b}" and "{c}"')
+def step_ring_offers(context, a, b, c):
+    rows = context.page.locator('[data-lc-id="desk"] .lc-agent-ring-row')
+    expect(rows).to_have_count(3, timeout=20_000)
+    got = [rows.nth(i).get_attribute("data-pid") for i in range(3)]
+    assert got == [a, b, c], got
+
+
+@when('I paste "{key}" as the "{pid}" key on the desk')
+def step_paste_ring_key(context, key, pid):
+    row = context.page.locator('[data-lc-id="desk"] .lc-agent-ring-row[data-pid="%s"]' % pid)
+    row.locator("input[type=password]").fill(key)
+    row.locator("button[type=submit]").click()
+
+
+@then('the desk is connected through "{host}"')
+def step_connected_through(context, host):
+    panel = context.page.locator('[data-lc-id="desk"]')
+    expect(panel.locator(".lc-agent-body")).to_be_visible(timeout=10_000)
+    expect(panel).to_have_attribute("data-engine", host)
+    expect(panel.locator(".lc-agent-warn")).to_contain_text(host)
+
+
+@given('keys for "{a}" and "{b}" are saved on this device, "{first}" answering first')
+def step_two_keys(context, a, b, first):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ai_key_%s','k-%s');"
+        "localStorage.setItem('lc_ai_key_%s','k-%s');"
+        "localStorage.setItem('lc_ai_first','%s');" % (a, a, b, b, first))
+
+
+def _record_hosts(context):
+    if not hasattr(context, "asked_hosts"):
+        context.asked_hosts = []
+
+
+@given('every engine answers "{text}" and records who was asked')
+def step_every_engine(context, text):
+    _record_hosts(context)
+
+    def fulfill(route):
+        context.asked_hosts.append(route.request.url.split("/")[2])
+        route.fulfill(status=200, content_type="application/json", body=_ok_reply(text))
+
+    context.page.route("**/chat/completions*", fulfill)
+
+
+@given('"{down}" answers 503 while "{up}" answers "{text}"')
+def step_one_down(context, down, up, text):
+    _record_hosts(context)
+
+    def fulfill(route):
+        host = route.request.url.split("/")[2]
+        context.asked_hosts.append(host)
+        if host == down:
+            route.fulfill(status=503, content_type="application/json",
+                          body=json.dumps({"error": {"message": "The service is currently unavailable."}}))
+        else:
+            route.fulfill(status=200, content_type="application/json", body=_ok_reply(text))
+
+    context.page.route("**/chat/completions*", fulfill)
+
+
+@then('the question went to "{host}" and never to "{other}"')
+def step_went_to(context, host, other):
+    assert host in context.asked_hosts, context.asked_hosts
+    assert other not in context.asked_hosts, context.asked_hosts
+
+
+@when('I ask the "{agent_id}" agent "{prompt}", accepting the other engine when offered')
+def step_ask_accepting(context, agent_id, prompt):
+    panel = context.page.locator('[data-lc-id="' + agent_id + '"]')
+    panel.locator(".lc-agent-prompt").fill(prompt)
+    panel.locator(".lc-agent-send").click()
+    # two silent retries first (1.5s + 4s), then the offer
+    yes = panel.locator(".lc-agent-fallback-yes")
+    expect(yes).to_be_visible(timeout=20_000)
+    yes.click()
+    expect(panel.locator(".lc-agent-log-entry")).to_have_count(1, timeout=20_000)
+
+
+@then('the agent says "{text}"')
+def step_agent_says(context, text):
+    expect(context.page.locator('[data-lc-id="desk"] .lc-agent-status')).to_contain_text(text, timeout=10_000)
+
+
+@then('the question went to "{host}" and never to "{other}" for the answer')
+def step_went_to_for_answer(context, host, other):
+    # the first engine was asked (and retried) before the switch; the answer came from the other
+    assert context.asked_hosts[-1] == host, context.asked_hosts
+    assert other in context.asked_hosts, context.asked_hosts

@@ -2075,6 +2075,11 @@ def lcx_target(cls_name, idv):
     return json.dumps(_lcx_dump(obj))
 
 
+# every block a run reads by name — the data a proof stands on is whatever
+# its steps touched, walked upstream to the block that saves it (feature.md)
+_LC_TOUCHED = []
+
+
 @component(icon="📄", attrs=[{"n": "id", "t": "str"}], methods=["feature", "features"])
 class Page(Object):
     @property
@@ -2088,6 +2093,7 @@ class Page(Object):
     def __getattr__(self, name):
         if name.startswith("_"):
             raise AttributeError(name)
+        _LC_TOUCHED.append(name)
         el = js.window.document.querySelector("[data-lc-id='" + name + "']")
         if el:
             return _wrap(el)
@@ -2402,6 +2408,8 @@ def _builtin_python_ids(ctx):
     assert not bad, "ids must be valid Python identifiers: " + str(bad)
 
 def _run_all():
+    while _LC_TOUCHED:          # MicroPython: no slice deletion
+        _LC_TOUCHED.pop()
     ctx = _Ctx()
     all_s = [
         ("component ids are unique", _builtin_unique_ids),
@@ -2417,6 +2425,7 @@ def _run_all():
                         "error": type(e).__name__ + ": " + str(e)})
     result = json.dumps(out)
     js.window._lcStepsResult = result
+    js.window._lcStepsTouched = json.dumps(_LC_TOUCHED)
     return result
 
 
