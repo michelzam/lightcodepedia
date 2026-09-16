@@ -350,6 +350,13 @@ suggestion; a page's `model:` applies on that provider alone, the ring's
 own preset answers elsewhere. Keys live in this browser, per device and
 per engine, and are sent to their own engine only.
 
+**Presets rot.** Engines retire model ids without notice. Each entry also
+lists `models:` in order of preference; when an engine answers "no such
+model", the desk asks the engine for its own list, takes the first
+preference it serves (or the first free one), remembers it on this device,
+and says so under the answer. Steer it by editing the list — nothing breaks
+meanwhile.
+
 ```yaml
 default: gemini
 providers:
@@ -357,6 +364,7 @@ providers:
     name: Groq
     base: https://api.groq.com/openai/v1
     model: llama-3.3-70b-versatile
+    models: [llama-3.3-70b-versatile, llama-3.1-8b-instant]
     key_name: Groq key
     key_url: https://console.groq.com/keys
     key_hint: gsk_...

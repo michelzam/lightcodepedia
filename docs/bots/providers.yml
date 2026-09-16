@@ -12,6 +12,14 @@
 # (5xx, 429), the agent retries, then asks the next engine the learner holds
 # a key for — with consent, once per sitting — and says who answered.
 #
+# PRESETS ROT (2026-09-16: OpenRouter retired its free llama slug, Groq its
+# 70b id, within days of each other). So each engine lists MODELS in order
+# of preference; when the engine answers "no such model", the agent asks
+# the engine for its own list (/models), takes the first preference it
+# serves — or, failing that, the first free one — and remembers the choice
+# on the device. Edit the lists here when a better model appears; nothing
+# breaks meanwhile.
+#
 # Order here is the ring's order, and the fallback order when no ★ is set.
 default: gemini
 providers:
@@ -20,6 +28,7 @@ providers:
     base: https://generativelanguage.googleapis.com/v1beta/openai
     # the -latest alias rides Google's version churn; a pinned version 404s twice a year
     model: gemini-flash-latest
+    models: [gemini-flash-latest, gemini-2.5-flash, gemini-2.0-flash]
     key_name: Google AI Studio key
     key_url: https://aistudio.google.com/apikey
     key_hint: AIza...
@@ -28,6 +37,8 @@ providers:
     name: OpenRouter
     base: https://openrouter.ai/api/v1
     model: meta-llama/llama-3.3-70b-instruct:free
+    models: ["meta-llama/llama-3.3-70b-instruct:free", "deepseek/deepseek-chat-v3-0324:free",
+             "google/gemma-3-27b-it:free", "meta-llama/llama-3.1-8b-instruct:free"]
     key_name: OpenRouter key
     key_url: https://openrouter.ai/keys
     key_hint: sk-or-...
@@ -36,6 +47,7 @@ providers:
     name: Groq
     base: https://api.groq.com/openai/v1
     model: llama-3.3-70b-versatile
+    models: [llama-3.3-70b-versatile, llama-3.1-8b-instant, openai/gpt-oss-120b, llama3-70b-8192]
     key_name: Groq key
     key_url: https://console.groq.com/keys
     key_hint: gsk_...

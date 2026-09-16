@@ -308,7 +308,8 @@ Auto-included by docs/_layouts/default.html.
           var p = doc.providers[id] || {};
           if (!p.base) return;
           ring[id] = { name: p.name || id, base: String(p.base).replace(/\/+$/, ''),
-                       model: p.model || '', key_name: p.key_name || ((p.name || id) + ' key'),
+                       model: p.model || '', models: Array.isArray(p.models) ? p.models.map(String) : [],
+                       key_name: p.key_name || ((p.name || id) + ' key'),
                        key_url: p.key_url || '', key_hint: p.key_hint || 'sk-...', free: !!p.free };
         });
         if (Object.keys(ring).length) {
@@ -358,6 +359,45 @@ Auto-included by docs/_layouts/default.html.
     max_tokens: 2000
   };
 
+  function rememberedModel(pid) {
+    try { return localStorage.getItem('lc_ai_model_' + pid) || ''; } catch (e) { return ''; }
+  }
+  function rememberModel(pid, model) {
+    try { if (model) localStorage.setItem('lc_ai_model_' + pid, model); } catch (e) {}
+  }
+  /* THE PRESET IS GONE — ASK THE ENGINE. A 404 on chat/completions is the
+     engine saying "no such model" (Michel, 2026-09-16: OpenRouter retired
+     the free slug, Groq the 70b id, and the trail showed both). Every
+     engine on the ring also serves /models; take the first of the ring's
+     preferences it lists (exact id, then prefix — Gemini says
+     "models/gemini-2.5-flash"), else the first free one, else the first.
+     The choice is remembered on this device; the ring file's list is where
+     the author steers it. Returns '' when nothing better is known. */
+  function isFreeModel(m) {
+    if (/:free$/.test(String(m.id || ''))) return true;
+    var pr = m.pricing || {};
+    return pr.prompt != null && Number(pr.prompt) === 0 && Number(pr.completion || 0) === 0;
+  }
+  function discoverModel(eng, key) {
+    var pv = PROVIDERS[eng.id] || {};
+    var prefs = (pv.models || []).filter(function (m) { return m && m !== eng.model; });
+    return fetch(eng.base + '/models', { headers: { Authorization: 'Bearer ' + key } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        var list = ((j && j.data) || []).filter(function (m) { return m && m.id; });
+        if (!list.length) return '';
+        var ids = list.map(function (m) { return String(m.id).replace(/^models\//, ''); });
+        for (var i = 0; i < prefs.length; i++) {
+          var want = String(prefs[i]).replace(/^models\//, '');
+          for (var k = 0; k < ids.length; k++) {
+            if (ids[k] === want || ids[k].indexOf(want) === 0) { if (ids[k] !== eng.model) return ids[k]; }
+          }
+        }
+        for (var f = 0; f < list.length; f++) if (isFreeModel(list[f]) && ids[f] !== eng.model) return ids[f];
+        return ids[0] !== eng.model ? ids[0] : '';
+      }).catch(function () { return ''; });
+  }
+
   /* resolve provider preset + per-fence overrides into {base, model, …} */
   function resolveEngine(cfg) {
     var suggested = cfg.provider || DEFAULT_PROVIDER;
@@ -371,8 +411,9 @@ Auto-included by docs/_layouts/default.html.
       base: base,
       host: (base.match(/^https?:\/\/([^\/]+)/) || [])[1] || 'the model service',
       /* a fence's model: names a model OF ITS provider — on another engine
-         it would 404; the ring's own preset answers there */
-      model: (cfg.model && pid === suggested) ? cfg.model : pv.model,
+         it would 404; the ring's own preset answers there, or the model the
+         engine itself named the day the preset was gone (see discoverModel) */
+      model: (cfg.model && pid === suggested) ? cfg.model : (rememberedModel(pid) || pv.model),
       name: pv.name || pid,
       key_name: pv.key_name, key_url: pv.key_url, key_hint: pv.key_hint,
       id: pid
@@ -896,11 +937,26 @@ Auto-included by docs/_layouts/default.html.
     var primary = resolveEngine(cfg);
     var RETRY_MS = [1500, 4000];          /* a demand spike outlives neither */
 
-    function tryEngine(eng, key, retries) {
+    function tryEngine(eng, key, retries, healed) {
       return askOnce(key, cfg, userText, eng).then(function (res) {
-        if (!res.error || !res.retriable || !retries.length) return res;
+        if (!res.error) return res;
+        /* "no such model": heal once — the engine names what it serves */
+        if (res.status === 404 && !healed) {
+          return discoverModel(eng, key).then(function (found) {
+            if (!found) return res;
+            var was = eng.model;
+            eng.model = found;
+            rememberModel(eng.id, found);
+            return tryEngine(eng, key, retries, true).then(function (r2) {
+              if (!r2.error) r2.healed = eng.host + ': ' + was + ' is gone; using ' + found + ' (remembered on this device)';
+              else r2.error = r2.error + ' — after ' + was + ' was gone and ' + found + ' was tried instead';
+              return r2;
+            });
+          });
+        }
+        if (!res.retriable || !retries.length) return res;
         return pause(retries[0]).then(function () {
-          return tryEngine(eng, key, retries.slice(1));
+          return tryEngine(eng, key, retries.slice(1), healed);
         });
       });
     }
@@ -1049,10 +1105,12 @@ Auto-included by docs/_layouts/default.html.
         }
         /* a fallback engine answered: say which, in the status line and not
            in the answer — the log below keeps the model's own words only */
-        status.innerHTML = result.via
+        status.innerHTML = (result.via
           ? '<span class="lc-agent-note">↩︎ ' + escapeHtml(result.via) +
             ' answered — your first engine was busy.</span>'
-          : '';
+          : '') + (result.healed
+          ? '<div class="lc-agent-note lc-agent-healed">🩹 ' + escapeHtml(result.healed) + '</div>'
+          : '');
         response.innerHTML =
           '<div class="lc-agent-msg-user">' + escapeHtml(question) + '</div>' +
           '<div class="lc-agent-msg-bot">' + renderMarkdown(result.text) + '</div>';

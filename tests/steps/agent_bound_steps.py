@@ -412,3 +412,39 @@ def step_trail(context, a, b):
     expect(trail).to_be_visible(timeout=5_000)
     expect(trail).to_contain_text(a)
     expect(trail).to_contain_text(b)
+
+
+@given('"{host}" serves only "{model}" and answers "{text}" on it')
+def step_engine_serves_only(context, host, model, text):
+    _record_hosts(context)
+    context.asked_models = []
+
+    def chat(route):
+        context.asked_hosts.append(route.request.url.split("/")[2])
+        body = json.loads(route.request.post_data or "{}")
+        context.asked_models.append(body.get("model"))
+        if body.get("model") == model:
+            route.fulfill(status=200, content_type="application/json", body=_ok_reply(text))
+        else:
+            route.fulfill(status=404, content_type="application/json",
+                          body=json.dumps({"error": {"message": "The model `%s` does not exist or you do not have access to it." % body.get("model")}}))
+
+    def models(route):
+        route.fulfill(status=200, content_type="application/json",
+                      body=json.dumps({"data": [{"id": "whisper-large-v3"}, {"id": model}]}))
+
+    context.page.route("https://" + host + "/**/chat/completions*", chat)
+    context.page.route("https://" + host + "/**/models*", models)
+
+
+@then('the desk answered "{text}" with the model "{model}"')
+def step_answered_with_model(context, text, model):
+    panel = context.page.locator('[data-lc-id="desk"]')
+    expect(panel.locator(".lc-agent-msg-bot")).to_contain_text(text, timeout=20_000)
+    assert context.asked_models[-1] == model, context.asked_models
+
+
+@then('the device remembers "{model}" for "{pid}"')
+def step_remembers_model(context, model, pid):
+    got = context.page.evaluate("(k) => localStorage.getItem(k)", "lc_ai_model_" + pid)
+    assert got == model, got

@@ -357,3 +357,28 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I wait for the page to be interactive
     And I ask the "desk" agent "hi", accepting the other engine, and it fails too
     Then the agent's trail names "generativelanguage.googleapis.com" and "api.groq.com: The model does not exist"
+
+  Scenario: A model the ring names is gone: the engine's own list is asked, and the choice remembered
+    Michel, 2026-09-16, the trail: OpenRouter "this model is unavailable for
+    free", Groq "the model does not exist". Presets rot; the engine knows
+    what it serves. A 404 asks /models once, takes the ring's next
+    preference, and the desk says so.
+
+    Given I have a clean browser page
+    And keys for "gemini" and "groq" are saved on this device, "groq" answering first
+    And "api.groq.com" serves only "llama-3.1-8b-instant" and answers "healed hello" on it
+    And the GitHub contents API serves "courses/demo/module_01/one.md" with the document:
+      """
+      # One desk
+
+      ```yaml
+      system: One.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
+    And I wait for the page to be interactive
+    And I ask the "desk" agent "hi"
+    Then the desk answered "healed hello" with the model "llama-3.1-8b-instant"
+    And the agent says "llama-3.3-70b-versatile is gone; using llama-3.1-8b-instant"
+    And the device remembers "llama-3.1-8b-instant" for "groq"
