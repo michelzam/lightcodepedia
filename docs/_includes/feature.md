@@ -369,8 +369,17 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       var ids = card.getAttribute("data-unsaved").split(",");
       if (id && ids.indexOf(id) < 0) return;
       var btn = card.querySelector(".lc-feature-run");
-      if (btn && btn.classList.contains("lc-feature-run-btn")) runFeatureNew(card, btn);
-      else if (btn && !btn.classList.contains("lc-feature-run-pending")) runFeature(card, btn);
+      var run = null;
+      if (btn && btn.classList.contains("lc-feature-run-btn")) run = runFeatureNew(card, btn);
+      else if (btn && !btn.classList.contains("lc-feature-run-pending")) run = runFeature(card, btn);
+      /* THE RECORD FOLLOWS. The save that woke this run already carried the
+         record to the bench — before the green was booked, so the bench
+         held "3/4" while the page showed four (Michel, 2026-09-16, zamm's
+         Module 00 on the desk). Write it again once the booking is in;
+         the record's own fingerprint makes it a no-op when nothing moved. */
+      if (run && run.then) run.then(function () {
+        if (window.lcProgress && window.lcProgress.flush) window.lcProgress.flush();
+      });
     });
   });
 
