@@ -1,4 +1,5 @@
 import json
+import re
 
 from behave import given, then, when
 from playwright.sync_api import expect
@@ -119,3 +120,44 @@ def step_energy_key_gone(context, pid):
         "(k) => localStorage.getItem(k)", "lc_ai_key_" + pid
     )
     assert v is None, "key still on the device: %r" % v
+
+
+# ── the gear on a vault lesson ─────────────────────────────────────────────
+
+@when('I summon the gear on the "{desk_id}" desk')
+def step_summon_gear(context, desk_id):
+    """pointermove with altKey ON the desk — x-ray reads e.target"""
+    panel = context.page.locator('[data-lc-id="' + desk_id + '"]')
+    panel.wait_for(state="visible", timeout=20_000)
+    panel.scroll_into_view_if_needed()
+    context.page.wait_for_timeout(300)
+    panel.evaluate("el => el.dispatchEvent(new PointerEvent('pointermove', {altKey: true, bubbles: true, cancelable: true}))")
+    context.page.wait_for_timeout(600)
+
+
+@then('the gear offers "{glyph}", not a note')
+def step_gear_glyph(context, glyph):
+    gear = context.page.locator("#lcx-gear")
+    expect(gear).to_be_visible(timeout=5_000)
+    expect(gear).to_have_text(glyph)
+
+
+@when("I open the editor and replace the desk's sheet with")
+def step_open_and_replace(context):
+    context.page.locator("#lcx-gear").click(force=True)
+    expect(context.page.locator("#lcx-content")).to_be_visible(timeout=5_000)
+    context.page.fill("#lcx-content", context.text)
+    context.page.click("#lcx-keep")
+    # the slot writes the lesson's starter FIRST (the "before" of the change),
+    # then the edit: wait for the commit that carries the new sheet
+    want = [l for l in context.text.splitlines() if l.startswith("system:")][0]
+    import time
+    deadline = time.time() + 20
+    while time.time() < deadline and not any(want in c["text"] for c in getattr(context, "bench_commits", [])):
+        context.page.wait_for_timeout(200)
+
+
+@then('the "{desk_id}" desk now carries a sheet mentioning "{word}"')
+def step_desk_sheet(context, desk_id, word):
+    panel = context.page.locator('[data-lc-id="' + desk_id + '"]')
+    expect(panel).to_have_attribute("data-system", re.compile(word), timeout=20_000)

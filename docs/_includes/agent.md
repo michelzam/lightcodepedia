@@ -691,6 +691,22 @@ Auto-included by docs/_layouts/default.html.
     };
   })();
 
+  var KNOB_RE = /^(system|intro|placeholder|name|model|model_fallback|provider|base_url|fallback|temperature|max_tokens|bot|knowledge|knowledge_budget)\s*:\s?(.*)$/;
+  function lenientCfg(raw) {
+    var out = {}, key = null, buf = [];
+    function flush() { if (key) out[key] = buf.join('\n').replace(/^\s*\|\s*\n?/, '').trim(); }
+    String(raw || '').split('\n').forEach(function (line) {
+      var m = KNOB_RE.exec(line);
+      if (m) { flush(); key = m[1]; buf = [m[2]]; }
+      else if (key) buf.push(line);
+    });
+    flush();
+    ['temperature', 'max_tokens', 'knowledge_budget'].forEach(function (k) {
+      if (out[k] != null && out[k] !== '' && !isNaN(Number(out[k]))) out[k] = Number(out[k]);
+    });
+    return out;
+  }
+
   // ===== panel structure =====
   function buildPanel(id, cfg, rows, boundId, boundExpr) {
     var eng = resolveEngine(cfg);
@@ -1189,9 +1205,17 @@ Auto-included by docs/_layouts/default.html.
     var raw = codeNode ? codeNode.textContent.replace(/\n+$/, '') : '';
     var pageCfg = {};
     if (window.jsyaml && raw) {
-      try { pageCfg = window.jsyaml.load(raw) || {}; } catch (e) {}
+      try { pageCfg = window.jsyaml.load(raw) || {}; } catch (e) { pageCfg = null; }
     }
-    if (typeof pageCfg !== 'object' || Array.isArray(pageCfg)) pageCfg = {};
+    /* A SHEET IS PROSE, NOT YAML. Module 01 asks the learner to paste a
+       whole briefing after `system:` — and a briefing that ends with
+       "VERDICT: n/8" is not valid YAML: the second colon kills the parse,
+       the desk fell back to "You are a helpful assistant.", and the check
+       read "too short" (found 2026-09-16, building the gear scenario).
+       When YAML refuses, read the sheet the way a person does: a known
+       knob at the start of a line opens a value, everything until the next
+       knob belongs to it. */
+    if (pageCfg === null || typeof pageCfg !== 'object' || Array.isArray(pageCfg)) pageCfg = lenientCfg(raw);
     var givenId = el.getAttribute('id') || null;
     var id = givenId || ('agent-' + (++AGENT_SEQ));
     var rows = parseInt(el.getAttribute('rows'), 10) || 3;

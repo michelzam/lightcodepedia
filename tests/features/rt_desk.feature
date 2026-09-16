@@ -201,3 +201,37 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
     And I wait for the page to be interactive
     And I press the desk's forget-key button
     Then the saved energy key for "gemini" is gone
+
+  Scenario: On a vault lesson, the desk in the learner's slot keeps its gear
+    Michel, 2026-09-16, Module 01 in Canvas: "click the ⚙️ on the desk",
+    yet the desk showed a 💬. The vault is read-only for everyone, so a
+    desk written straight into the lesson can only take a note. In a
+    bench slot the nearest source is the learner's own file: the gear
+    opens, Keep writes the bench, the desk re-renders with the new sheet.
+
+    Given I have a clean browser page
+    And a connected bench whose "courses/demo/mod/desk_one.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/desk.md" with the document:
+      """
+      # North burns
+
+      ````markdown
+      ```yaml
+      system: Review this resume.
+      intro: Ask, and I'll review.
+      ```
+      {: .agent #desk_one rows="3" }
+      ````
+      {: .embed save="desk_one.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/desk.md"
+    And I wait for the page to be interactive
+    And I summon the gear on the "desk_one" desk
+    Then the gear offers "⚙️", not a note
+    When I open the editor and replace the desk's sheet with:
+      """
+      system: You are the coordinator. End with VERDICT: n/8.
+      intro: Ask, and I'll review.
+      """
+    Then the bench received a commit to "courses/demo/mod/desk_one.md" containing "VERDICT"
+    And the "desk_one" desk now carries a sheet mentioning "VERDICT"
