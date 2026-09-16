@@ -912,9 +912,18 @@ Auto-included by docs/_layouts/default.html.
       if (!res.retriable && !res.elsewhere) return res;
       var chain = heldFallbacks(cfg, primary.id);
       if (!chain.length) return res;
+      /* EVERY ENGINE'S OWN WORD. When the fallback failed too, the desk
+         moved on in silence and the final red line quoted Gemini alone —
+         Michel (2026-09-16) could not tell whether OpenRouter and Groq had
+         been asked, let alone what they said. The trail rides the failure:
+         one line per engine, its host and its sentence, or "not asked". */
+      var trail = [primary.host + ': ' + res.error];
 
       function next(i) {
-        if (i >= chain.length) return Promise.resolve(res);   /* the first failure is the honest one */
+        if (i >= chain.length) {                  /* the first failure is the honest one */
+          if (trail.length > 1) res.trail = trail;
+          return Promise.resolve(res);
+        }
         var id = chain[i];
         /* exact: the ladder picked this engine on purpose — the ring's ★
            must not fold it back into the engine that just failed */
@@ -923,14 +932,14 @@ Auto-included by docs/_layouts/default.html.
           ? Promise.resolve(true)
           : (askConsent ? Promise.resolve(askConsent(eng, res)) : Promise.resolve(false));
         return consent.then(function (ok) {
-          if (!ok) return next(i + 1);
+          if (!ok) { trail.push(eng.host + ': not asked — you said wait'); return next(i + 1); }
           rememberFallback(id);
           return run();
         });
 
         function run() {
         return tryEngine(eng, getSharedToken(id), []).then(function (r2) {
-          if (r2.error) return next(i + 1);
+          if (r2.error) { trail.push(eng.host + ': ' + r2.error); return next(i + 1); }
           /* the reader is told WHO answered when it is not the first choice —
              the same honesty as the guide naming whose Doc is speaking. The
              note rides `via`, never the text: a notice folded into the answer
@@ -1028,7 +1037,11 @@ Auto-included by docs/_layouts/default.html.
         sendBtn.disabled = false;
         sendBtn.textContent = '▶ Ask';
         if (result.error) {
-          status.innerHTML = '<span class="lc-agent-err">⚠ ' + escapeHtml(result.error) + '</span>';
+          status.innerHTML = '<span class="lc-agent-err">⚠ ' + escapeHtml(result.error) + '</span>' +
+            (result.trail && result.trail.length
+              ? '<div class="lc-agent-note lc-agent-trail">The ring was tried, engine by engine:<br>' +
+                result.trail.map(function (l) { return '· ' + escapeHtml(l); }).join('<br>') + '</div>'
+              : '');
           /* carry the reason INTO the clear — the auth wall this triggers
              hides the status line we just wrote */
           if (result.unauthorized) setSharedToken(engineId(), null, result.error);

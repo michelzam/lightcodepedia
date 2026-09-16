@@ -335,3 +335,25 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I ask the "desk" agent "hi", accepting the other engine when offered
     Then the agent says "api.groq.com answered"
     And the question went to "api.groq.com" and never to "generativelanguage.googleapis.com" for the answer
+
+  Scenario: When the next key fails too, the desk says what every engine answered
+    Michel, 2026-09-16: OpenRouter accepted, failed, and the desk moved on
+    to Groq without a word; the final red line quoted Gemini alone. The
+    trail now names every engine tried, in its own words.
+
+    Given I have a clean browser page
+    And keys for "gemini" and "groq" are saved on this device, "gemini" answering first
+    And "generativelanguage.googleapis.com" answers 503 and "api.groq.com" answers 404 "The model does not exist"
+    And the GitHub contents API serves "courses/demo/module_01/one.md" with the document:
+      """
+      # One desk
+
+      ```yaml
+      system: One.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
+    And I wait for the page to be interactive
+    And I ask the "desk" agent "hi", accepting the other engine, and it fails too
+    Then the agent's trail names "generativelanguage.googleapis.com" and "api.groq.com: The model does not exist"

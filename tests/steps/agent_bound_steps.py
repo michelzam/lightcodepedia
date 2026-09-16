@@ -378,3 +378,37 @@ def step_went_to_for_answer(context, host, other):
     # the first engine was asked (and retried) before the switch; the answer came from the other
     assert context.asked_hosts[-1] == host, context.asked_hosts
     assert other in context.asked_hosts, context.asked_hosts
+
+
+@given('"{down}" answers 503 and "{other}" answers {code:d} "{msg}"')
+def step_both_down(context, down, other, code, msg):
+    _record_hosts(context)
+
+    def fulfill(route):
+        host = route.request.url.split("/")[2]
+        context.asked_hosts.append(host)
+        status = 503 if host == down else code
+        text = "The service is currently unavailable." if host == down else msg
+        route.fulfill(status=status, content_type="application/json",
+                      body=json.dumps({"error": {"message": text}}))
+
+    context.page.route("**/chat/completions*", fulfill)
+
+
+@when('I ask the "{agent_id}" agent "{prompt}", accepting the other engine, and it fails too')
+def step_ask_accept_fail(context, agent_id, prompt):
+    panel = context.page.locator('[data-lc-id="' + agent_id + '"]')
+    panel.locator(".lc-agent-prompt").fill(prompt)
+    panel.locator(".lc-agent-send").click()
+    yes = panel.locator(".lc-agent-fallback-yes")
+    expect(yes).to_be_visible(timeout=20_000)
+    yes.click()
+    expect(panel.locator(".lc-agent-err")).to_be_visible(timeout=20_000)
+
+
+@then('the agent\'s trail names "{a}" and "{b}"')
+def step_trail(context, a, b):
+    trail = context.page.locator('[data-lc-id="desk"] .lc-agent-trail')
+    expect(trail).to_be_visible(timeout=5_000)
+    expect(trail).to_contain_text(a)
+    expect(trail).to_contain_text(b)
