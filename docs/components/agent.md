@@ -1,6 +1,6 @@
 # 🤖 Agent
 
-An AI chat panel that lives right on the page — no server, no shared API key, no back-end code. Each learner uses their **own provider key**[^key] to call the model directly from the browser. The provider is configuration, not code: **Google AI Studio (Gemini)** by default, and `provider:` / `base_url:` point anywhere that speaks the OpenAI-compatible dialect.
+An AI chat panel that lives right on the page — no server, no shared API key, no back-end code. Each learner uses their **own engine key**[^key] to call the model directly from the browser. The engines are configuration, not code: a **ring** of them — Gemini, OpenRouter, Groq, all with a free tier — declared in one file, and the learner holds a key for any of them; `base_url:` points a page anywhere that speaks the OpenAI-compatible dialect.
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode, then press → to advance. Live agent panels throughout the page let you chat with the examples as you read.
 
@@ -9,7 +9,7 @@ An AI chat panel that lives right on the page — no server, no shared API key, 
 No magic — just a direct HTTPS call you could paste into `curl`.
 
 - You type a question.
-- The widget sends it (plus a system prompt) straight to the provider's endpoint — `generativelanguage.googleapis.com` for the default Gemini preset.
+- The widget sends it (plus a system prompt) straight to the engine's endpoint — the one you starred on the ring, `api.groq.com` for Groq, `generativelanguage.googleapis.com` for Gemini.
 - The response comes back as JSON. The widget renders it.
 - Your key travels from your browser to that provider — never to ours.
 
@@ -33,24 +33,27 @@ Two badges, two jobs — and they are different keys on purpose:
 
 | Use case | What it calls | The key |
 |---|---|---|
-| 🤖 **Agent chat** | An AI provider (OpenAI-compatible dialect) | the provider's own key — default **Google AI Studio** (free tier, [aistudio.google.com/apikey](https://aistudio.google.com/apikey)) |
+| 🤖 **Agent chat** | An AI engine (OpenAI-compatible dialect) | that engine's own key — any of the ring: **Gemini** ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)), **OpenRouter** ([openrouter.ai/keys](https://openrouter.ai/keys)), **Groq** ([console.groq.com/keys](https://console.groq.com/keys)); all free tiers |
 | ✏️ **Page editor** (✏️ FAB) | GitHub Contents API (your repo files) | a GitHub PAT — `repo` (classic) or Contents → Read + Write (fine-grained) |
 
 > **History note (2026-07-30):** the agent used to ride GitHub Models with a
 > plain PAT — GitHub retired that service overnight (HTTP 410). The desk
-> survived because the provider is *configuration*: `provider:` picks a
-> preset (gemini, openrouter), `base_url:` points anywhere that speaks the
-> OpenAI-compatible dialect — including a future class gateway. A dead
-> provider costs one yaml line, never a course.
+> survived because the engine is *configuration*: the ring file names
+> the engines, `provider:` suggests one, `base_url:` points anywhere that
+> speaks the OpenAI-compatible dialect — including a future class gateway.
+> A dead engine costs one yaml line, never a course.
 
 ```
 ### 🤖 Agent only — the energy key
 
-1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-   (any Google account; the free tier is plenty for a course).
-2. *Create API key* → copy it.
-3. Paste it into any agent's key form — one key covers every agent of that
-   provider on the page, and your browser offers to remember it.
+1. Press 🔑 on any agent: the **ring** lists every engine, each with a
+   *get a key* link (any Google account for Gemini, a GitHub or email
+   sign-in for OpenRouter and Groq; the free tiers are plenty for a course).
+2. Get one key, paste it in its row, *Save* — the desk opens. One key covers
+   every agent on every page, and your browser offers to remember it.
+3. Get a second one on another row. Now a busy engine never stops you: the
+   ★ one answers first, the other steps in when it is down — with your
+   consent, once per sitting — and the desk says who answered.
 
 The free quota IS the energy lesson: every question spends a little —
 fewer, better questions.
@@ -94,7 +97,7 @@ by construction.
 **Q:** You want to chat with the Agent AND edit pages in your fork. What do you need?
 
 - [ ] One GitHub PAT with every scope — the master key approach.
-- [x] Two keys: a GitHub PAT for the editor, a provider key (e.g. AI Studio)
+- [x] Two keys: a GitHub PAT for the editor, an engine key (Gemini, OpenRouter or Groq)
   for the agent — each does one job.
 - [ ] A fine-grained PAT with Models → Read-only. (That service is retired.)
 - [ ] No key needed — the site uses a shared server-side key.
@@ -138,10 +141,10 @@ Feature: An AI tutor runs right on the page
 ```
 {: .feature tags="ai,learn" status="passing" }
 
-On first use the panel asks for a PAT. Paste it, click **Save & start**, and your browser offers to remember it in the OS keychain. Next visit the field auto-fills.
+On first use the panel shows the ring. Paste a key in any engine's row, click **Save**, and your browser offers to remember it in the OS keychain, filed under that engine's name. Next visit the desk opens by itself.
 
-> Walk through the PAT entry live — expand the key field, paste,
-> click Save & start. Show the browser's "save password?" prompt
+> Walk through the ring live — pick an engine, paste,
+> click Save. Show the browser's "save password?" prompt
 > and explain that this is the OS keychain, not localStorage.
 {: .speaker-note }
 
@@ -152,7 +155,8 @@ All configuration goes in the YAML block.
 | Key | Default | What it does |
 |---|---|---|
 | `system` | "You are a helpful assistant." | The system prompt — defines the persona |
-| `model` | the provider preset's own (`gemini-flash-latest`) | Any model that provider serves — pin one only to override the preset |
+| `provider` | the ring's default (`gemini`) | The author's *suggestion* of an engine — a learner's ★ on the ring outranks it |
+| `model` | the engine's own preset (`gemini-flash-latest`, `llama-3.3-70b-versatile`…) | Any model that engine serves — applies on that engine only; on another, the ring's preset answers |
 | `model_fallback` | (the fallback preset's own) | Model to ask a fallback engine for, when its preset's default is not what you want |
 | `temperature` | `0.7` | 0 = deterministic oracle, 1 = jazz improvisation |
 | `max_tokens` | `500` | Caps response length (and API cost) |
@@ -426,6 +430,6 @@ Know these before you build a 300-slide AI curriculum on top of it.
 > `bound=` is the magic word. Point it at the runner's `id` and every Ask carries the editor state.
 {: .speaker-note }
 
-[^key]: **Provider key** = the credential the AI provider issues to *you*. The default preset is Google AI Studio (`AIza…`, free tier); `provider: openrouter` or a `base_url:` of your own swaps it. It lives in this browser and is sent to that provider only.
+[^key]: **Engine key** = the credential an AI engine issues to *you*: Gemini (`AIza…`), OpenRouter (`sk-or-…`), Groq (`gsk_…`), each with a free tier; a `base_url:` of your own points a page elsewhere. Every key lives in this browser, per engine, and is sent to its own engine only.
 
 [^pat]: **PAT** = Personal Access Token, the credential GitHub uses for API authentication — the ✏️ page editor's key, not the agent's. Classic PATs with `repo` work out of the box; fine-grained ones need Contents → Read + Write.
