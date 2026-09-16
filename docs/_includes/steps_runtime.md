@@ -869,8 +869,26 @@ class Datagrid(Block):
         except Exception:
             return None
 
+    def _waiting_for(self):
+        # the query this grid is bound to, if it is still waiting for one of
+        # its own sources — see query.md: it publishes nothing until then
+        b = self._attr("data-bind") or ""
+        if not b:
+            return ""
+        q = js.window.document.querySelector(".lc-query[data-lc-id='" + b + "']")
+        return (q.getAttribute("data-waiting") or "") if q is not None else ""
+
     @property
     def row_count(self):
+        # a grid whose query is still waiting has NO count yet: 0 would pass
+        # a proof early, and a half-computed join failed one for the wrong
+        # reason ("12 dog(s) still invisible", Michel 2026-09-16). Name the
+        # wait, so the reader runs again once the page has finished loading.
+        w = self._waiting_for()
+        if w:
+            raise AssertionError((self._attr("data-lc-id") or "this grid")
+                                 + " is still waiting for " + w
+                                 + " - the page has not finished loading; run again")
         # three renderers back a datagrid: the AG api (code-block grids —
         # its row model updates synchronously, the painted rows do not),
         # the custom HTML table (source-bound grids), and painted AG rows

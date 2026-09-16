@@ -101,6 +101,23 @@ Feature: A query is a dataset that computes itself
 ```
 {: .feature tags="data,code" status="passing"}
 
+## ⏳ A query waits for what has not arrived
+
+A query only answers when every source it names has been published. One
+that is still missing — a dataset further down a slow page, an embedded app
+still loading, or a name that matches nothing — is named on the chip, and
+nothing goes downstream until it lands. Half the inputs is no answer: a join
+with an empty right-hand side would report *every* row as unmatched, and a
+proof reading that grid would fail for the wrong reason.
+
+```sql
+SELECT name FROM ghost
+```
+{: .query source="ghost" #ghost_q }
+
+[The grid downstream waits too](#)
+{: .datagrid source="ghost_q" #ghost_grid height="120" empty="Nothing arrives here — no dataset on this page is called ghost." }
+
 ## 🔗 Related components & examples
 
 ```

@@ -65,6 +65,16 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then the "by_breed" bound grid shows at least 3 rows
 
+  Scenario: A query names the source it is waiting for, instead of answering from half its inputs
+    Michel, 2026-09-16, Module 00 in Canvas: "12 dog(s) still invisible" —
+    every dog, because the campuses list had not arrived when the report
+    ran. A missing source is now a wait, not an empty table.
+
+    When I navigate to "/components/query"
+    And I wait for the page to be interactive
+    Then the query "ghost_q" says it is waiting for "ghost"
+    And the grid "ghost_grid" shows its author's empty message
+
   Scenario: An editable query is a live SQL editor feeding a grid
     When I navigate to "/components/query"
     And I wait for the page to be interactive

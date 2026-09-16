@@ -825,3 +825,21 @@ def step_chart_series(context, cid, n, who):
     assert len(got) == n, got
     blue = [g[0] for g in got if g[1] == "#0066cc"]
     assert blue == [who], got
+
+
+# ── a query waits for a source that has not been published ───────────────
+
+@then('the query "{qid}" says it is waiting for "{src}"')
+def step_query_waiting(context, qid, src):
+    chip = context.page.locator(".lc-query[data-lc-id='" + qid + "']")
+    expect(chip).to_have_attribute("data-waiting", src, timeout=15_000)
+    expect(chip).to_contain_text("waiting for " + src)
+    assert context.page.evaluate("id => id in (window.lcDatasets || {})", qid) is False, \
+        "the waiting query published something downstream"
+
+
+@then('the grid "{gid}" shows its author\'s empty message')
+def step_grid_empty_message(context, gid):
+    box = context.page.locator("[data-lc-id='" + gid + "']")
+    expect(box).to_contain_text("Nothing arrives here", timeout=15_000)
+    expect(box).not_to_contain_text("Loading")

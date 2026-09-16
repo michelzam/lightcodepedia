@@ -491,7 +491,21 @@ Auto-included by docs/_layouts/default.html.
     window.lcDatasetListeners[bindId].push(render);
 
     if (window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);
-    else el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
+    else {
+      el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
+      /* a source that is merely slow arrives inside the grace; one that will
+         never arrive — a name that matches nothing, a query still waiting
+         for ITS source — stops pretending to load and says what the author
+         wrote for the case. Same knob as the datagrid and the chart. A late
+         arrival still renders straight over this through the listener. */
+      var grace = window.lcDatagridBindGrace;
+      if (grace == null) grace = 4000;
+      setTimeout(function () {
+        if (window.lcDatasets[bindId] === undefined)
+          el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>"
+            + (emptyMsg || "Nothing arrives here yet.") + "</p>";
+      }, grace);
+    }
   }
 
   /* NOTE: .button upgrade (incl. optional Python on_click handler) lives in

@@ -112,6 +112,23 @@ Auto-included by docs/_layouts/default.html.
     function run() {
       var sql = currentSql();
       chip.setAttribute("data-query", sql);
+      /* HALF THE INPUTS IS NO ANSWER. A source that has not been published
+         yet used to become an empty table, and the join answered from it:
+         "12 dog(s) still invisible" on Module 00 in Canvas (Michel,
+         2026-09-16) — every dog, because the campuses list had not arrived
+         when the report ran, and the proof repeated that number as if it
+         were a fact about the data. Say what is missing instead, publish
+         nothing, and let the listener below re-run the moment it lands.
+         Missing means never published (undefined); an empty dataset is a
+         real answer and still runs. */
+      var missing = binds.filter(function (id) { return window.lcDatasets[id] === undefined; });
+      if (missing.length) {
+        chip.className = "lc-query";
+        chip.setAttribute("data-waiting", missing.join(","));
+        chip.textContent = "⏳ waiting for " + missing.join(", ");
+        return;
+      }
+      chip.removeAttribute("data-waiting");
       loadAlaSQL().then(function (alasql) {
         if (!alasql) { fail("AlaSQL failed to load"); return; }
         try {
