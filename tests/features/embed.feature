@@ -191,7 +191,7 @@ Feature: Folder-relative embeds — a course page composes from its siblings
     And I wait for the page to be interactive
     And I record what the video frame is told
     And the avatar verb "play" fires at "recap_demo"
-    Then the player was told to "playVideo"
+    Then the player was told to "mute" and then "playVideo"
     When the avatar verb "pause" fires at "recap_demo"
     Then the player was told to "pauseVideo"
     When the avatar verb "seek" fires at "recap_demo" with "12"
@@ -206,6 +206,21 @@ Feature: Folder-relative embeds — a course page composes from its siblings
     And I record what the video frame is told
     And the avatar verb "play" fires at "recap_demo" with "12"
     Then the player was told to "seekTo" and then "playVideo"
+
+  Scenario: A player that has not answered yet is asked again, not once
+    Michel, 2026-09-16, Module 01 Essentials: Doc talked over a clip that
+    never started. The frame is lazy and far down the page; the tour
+    scrolls to it on the line that plays it, so one command into a frame
+    still loading was lost. The verb now wakes the frame, says "listening"
+    to it, keeps asking every half second, stops once the player answers.
+
+    Given I have a clean browser page
+    When I navigate to "/components/embed_page"
+    And I wait for the page to be interactive
+    And I record what the video frame is told
+    And the avatar verb "play" fires at "recap_demo"
+    Then within two seconds the player was told to "playVideo" more than once
+    And the video "recap_demo" is no longer lazy
 
   Scenario: The avatar walks to the video it is about to play
     A verb that declares its subject makes the avatar stand at the right thing

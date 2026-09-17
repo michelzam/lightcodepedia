@@ -192,7 +192,7 @@ script:
 
 | verb | `with:` | what it does |
 |---|---|---|
-| `play` | seconds (optional) | starts the clip; `with: 12` jumps there first |
+| `play` | seconds (optional) | starts the clip **muted** — the guide is the soundtrack, and a muted clip may start where a scripted, unmuted one is refused (a frame inside Canvas, Safari). Wakes a lazy frame and asks again every half second until the player answers; `with: 12` jumps there first |
 | `pause` | — | stops it where it is |
 | `seek` | seconds | moves without starting |
 

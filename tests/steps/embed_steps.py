@@ -412,3 +412,17 @@ def step_verb_subject(context, verb, vid):
              return s ? (s.getAttribute('data-lc-id') || s.tagName) : null;
            }""", [verb, vid])
     assert got == vid, f"the avatar would stand at {got!r}, not the video"
+
+
+@then('within two seconds the player was told to "{func:w}" more than once')
+def step_player_asked_again(context, func):
+    context.page.wait_for_timeout(2000)
+    sent = _sent(context)
+    n = len([s for s in sent if func in s])
+    assert n >= 2, f"{func} sent {n} time(s): {sent}"
+
+
+@then('the video "{vid:w}" is no longer lazy')
+def step_video_not_lazy(context, vid):
+    el = context.page.locator('[data-lc-id="' + vid + '"]')
+    assert (el.get_attribute("loading") or "") != "lazy", "the frame was left lazy"

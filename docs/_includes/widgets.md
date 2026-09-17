@@ -1124,6 +1124,39 @@ Auto-included by docs/_layouts/default.html.
       return true;
     } catch (e) { return false; }
   }
+  /* THE PLAYER ANSWERS ONCE IT LISTENS. A YouTube frame only speaks back
+     after the page has said "listening"; from then on every message it
+     sends marks the frame ready, and the asking below stops. */
+  window.addEventListener("message", function (e) {
+    var frames = document.querySelectorAll("iframe.lc-video[data-lc-yt]");
+    for (var i = 0; i < frames.length; i++) {
+      if (frames[i].contentWindow === e.source) { frames[i].setAttribute("data-lc-yt-ready", "1"); return; }
+    }
+  });
+  /* ONE COMMAND INTO A FRAME STILL LOADING IS LOST. The recap clip sits
+     far down the page, lazily loaded; the tour scrolls to it on the very
+     line that plays it, so the single playVideo used to land before the
+     player existed (Michel, 2026-09-16: "the video never played"). Wake
+     the frame, say "listening", and ask again every half second until the
+     player answers or eight seconds pass. And MUTED: the recaps are silent
+     by design — the guide is the soundtrack — and a muted clip may start
+     everywhere a scripted, unmuted one is refused (a frame inside Canvas,
+     Safari without a tap on the player itself). */
+  function _lcYtPlay(frame, seekTo) {
+    if (frame.getAttribute("loading") === "lazy") frame.setAttribute("loading", "eager");
+    var tries = 0;
+    function ask() {
+      if (!frame.isConnected) return;
+      try { frame.contentWindow.postMessage(JSON.stringify({ event: "listening", id: frame.id || "lc" }), "*"); } catch (e) {}
+      _lcYtCmd(frame, "mute");
+      if (seekTo != null) _lcYtCmd(frame, "seekTo", [seekTo, true]);
+      _lcYtCmd(frame, "playVideo");
+      tries += 1;
+      if (frame.getAttribute("data-lc-yt-ready") !== "1" && tries < 16) setTimeout(ask, 500);
+    }
+    ask();
+    return true;
+  }
   function _lcMediaCmd(el, func, args) {
     var m = _lcMedia(el);
     if (!m) return false;
@@ -1141,10 +1174,15 @@ Auto-included by docs/_layouts/default.html.
   window.lcVerbs.register("play", function (el, arg) {
     /* with: 12 → start from twelve seconds in, so a script can narrate one
        beat of a clip without replaying the whole thing */
-    if (arg !== null && arg !== undefined && arg !== "") {
-      _lcMediaCmd(el, "seekTo", [Number(arg) || 0, true]);
+    var at = (arg !== null && arg !== undefined && arg !== "") ? (Number(arg) || 0) : null;
+    var m = _lcMedia(el);
+    if (!m) return false;
+    if (m.tagName === "VIDEO") {
+      try { m.muted = true; if (at != null) m.currentTime = at; m.play().catch(function () {}); return true; }
+      catch (e) { return false; }
     }
-    return _lcMediaCmd(el, "playVideo");
+    if (!m.getAttribute("data-lc-yt")) return false;
+    return _lcYtPlay(m, at);
   }, _lcMedia);
   window.lcVerbs.register("pause", function (el) {
     return _lcMediaCmd(el, "pauseVideo");
