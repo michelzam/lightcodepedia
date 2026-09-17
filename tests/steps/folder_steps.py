@@ -583,3 +583,17 @@ def step_org_key_only(context):
 @then('the recap key line says "{text}"')
 def step_recap_key(context, text):
     expect(context.page.locator(".lc-recap-key").first).to_contain_text(text, timeout=20_000)
+
+
+@when('a proof on "{title}" turns green on this device')
+def step_proof_green_here(context, title):
+    """what feature.md does when a run passes: book it in the browser's
+    store and announce it — the recap must catch up without a reload"""
+    context.page.evaluate("""(title) => {
+        const row = Array.from(document.querySelectorAll('.lc-recap-row')).find(r => r.textContent.includes(title));
+        const key = window.lcPageScores.norm(row.getAttribute('data-url')) + '#p1';
+        let all = {}; try { all = JSON.parse(localStorage.getItem('lc_features') || '{}'); } catch (e) {}
+        all[key] = { status: 'passing', ts: new Date().toISOString() };
+        localStorage.setItem('lc_features', JSON.stringify(all));
+        document.dispatchEvent(new CustomEvent('lc-feature-result')); }""", title)
+    context.page.wait_for_timeout(400)

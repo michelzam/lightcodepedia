@@ -476,6 +476,16 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
        features), which means reading the pages once. That is cached in
        lc_census against the folder's path, so only the first visit pays. */
     var CENSUS_TTL = 12 * 3600 * 1000;
+    /* the same two announcements move every folder card's hairline — the
+       census is cached, so this costs nothing over the wire */
+    if (!window._lcCardBarsListening) {
+      window._lcCardBarsListening = true;
+      ["lc-feature-result", "lc-score-changed"].forEach(function (ev) {
+        document.addEventListener(ev, function () {
+          document.querySelectorAll(".lc-card[data-dirpath]").forEach(paintProgress);
+        });
+      });
+    }
     function censusStore() {
       try { return JSON.parse(localStorage.getItem("lc_census") || "{}"); }
       catch (e) { return {}; }
@@ -549,7 +559,10 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
     }
     function paintProgress(card) {
       var dir = card.getAttribute("data-dirpath");
-      if (!dir || card.querySelector(".lc-card-bar")) return;
+      if (!dir) return;
+      /* repainting replaces the bar — a result that just landed moves it */
+      var oldBar = card.querySelector(".lc-card-bar");
+      if (oldBar) oldBar.remove();
       censusOf(dir).then(function (pages) {
         var total = 0, done = 0;
         pages.forEach(function (pg) { total += pg.quizzes + pg.features; done += doneOn(pg); });
@@ -1108,6 +1121,14 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         /* the bench's progress file landed after the first paint: redraw
            from the merged records — the phone now shows the laptop's work */
         document.addEventListener("lc-progress-loaded", function () { if (_recapItems) renderRecap(_recapItems); });
+        /* A PROOF JUST TURNED GREEN ON THIS PAGE. The recap read the records
+           once and kept showing the score from before the run (Michel,
+           2026-09-16). Both records already announce themselves; redraw from
+           the browser's own store — no request, no census, the items are
+           cached — so the card catches up in the same breath as the badge. */
+        ["lc-feature-result", "lc-score-changed"].forEach(function (ev) {
+          document.addEventListener(ev, function () { if (_recapItems) renderRecap(_recapItems); });
+        });
       }
     }
 

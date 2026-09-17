@@ -496,6 +496,9 @@ Feature: Folder shelf — read posture and X-ray workbench
     And the recap row "The Essentials" reads "quiz 0/3 · proofs 0/2" and offers "start"
     And the recap row "The Volunteer" reads "quiz 3/3 · proof 1/1" and offers "open"
     And the recap cheers "Two pages down. 6 points left on two pages."
+    When a proof on "The Essentials" turns green on this device
+    Then the recap row "The Essentials" reads "quiz 0/3 · proofs 1/2" and offers "finish"
+    And the recap head reads "2 of 4 pages done · 🏆 14 of 19 points"
 
   Scenario: A dashboard above the modules recaps each one by name
     One page for the whole course — "this way they will know where they
