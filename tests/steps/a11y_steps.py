@@ -254,3 +254,43 @@ def step_no_tiny_text(context, px):
             if (f < min) out.push(el.tagName.toLowerCase() + '.' + (el.className || '') + ' "' + el.textContent.trim().slice(0, 30) + '" ' + f.toFixed(1) + 'px');
           }); return out; }""", px)
     assert not bad, "text under %dpx:\n  %s" % (px, "\n  ".join(bad))
+
+
+# ── the needs-review bucket: what axe could not decide ────────────────
+
+@when("a paragraph over a picture is planted on the page")
+def step_plant_over_picture(context):
+    """a background image is the classic case axe cannot read a contrast
+    through — it files the element as incomplete, never as a pass"""
+    context.page.evaluate(
+        """() => { const p = document.createElement('p'); p.id = 'lc-planted-bg'; p.textContent = 'text over a picture';
+                   p.style.cssText = 'background-image:url(data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==);color:#777;padding:4px';
+                   document.querySelector('main, article, body').appendChild(p); }""")
+
+
+@then("the audit reports no confirmed issues, and elements for a human look")
+def step_audit_review_count(context):
+    """the tutorial's own ⓘ badges are already a human's call (one letter is
+    too short for the engine to read a contrast); the planted paragraph joins them"""
+    ok = context.page.locator("#ed-a11y-list .ed-a11y-ok")
+    expect(ok).to_be_visible(timeout=20_000)
+    expect(ok).to_contain_text("No confirmed issues")
+    try:
+        expect(ok.locator(".ed-a11y-review-n")).to_contain_text("need a human look", timeout=5_000)
+    except AssertionError:
+        raise AssertionError("the audit read: " + context.page.locator("#ed-a11y-list").inner_text()[:500])
+    assert context.page.locator(".ed-a11y-row[data-kind='review']").count() >= 1
+
+
+@then('the planted paragraph\'s look row names "{rule}" and says why the engine could not decide')
+def step_review_row(context, rule):
+    row = context.page.locator(".ed-a11y-row[data-kind='review'][data-rule='" + rule + "'][data-sel='#lc-planted-bg']").first
+    expect(row).to_be_visible(timeout=5_000)
+    expect(row.locator("b")).to_have_text("look")
+    assert "could not be determined" in row.locator("i").text_content(), row.inner_text()
+
+
+@then("clicking that row outlines the planted paragraph")
+def step_review_click(context):
+    context.page.locator(".ed-a11y-row[data-kind='review'][data-sel='#lc-planted-bg']").first.click()
+    expect(context.page.locator("#lc-planted-bg")).to_have_class(re.compile(r"ed-a11y-outline"), timeout=5_000)

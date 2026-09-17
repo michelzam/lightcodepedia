@@ -265,12 +265,12 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
   <span class="lc-slides-fab-icon" aria-hidden="true">⚙️</span><span class="lc-slides-fab-label">Modes</span>
 </a>
 <div class="lc-bl-popup" id="lc-bl-popup" role="menu" aria-label="Page mode">
-  <button class="lc-bl-popup-item" id="lc-bl-read-btn"    type="button">📖 Read</button>
-  <button class="lc-bl-popup-item" id="lc-bl-present-btn" type="button">📽️ Present</button>
-  <button class="lc-bl-popup-item" id="lc-bl-reel-btn"    type="button">📲 Reel</button>
-  <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    type="button">🔬 X-ray</button>
-  <button class="lc-bl-popup-item" id="lc-bl-edit-btn"    type="button" hidden title="⌥E">✏️ Edit</button>
-  <button class="lc-bl-popup-item" id="lc-bl-guide-btn"   type="button" style="border-top:2px solid #e5e7eb">🧑‍🏫 Guide</button>
+  <button class="lc-bl-popup-item" id="lc-bl-read-btn"    role="menuitem" type="button">📖 Read</button>
+  <button class="lc-bl-popup-item" id="lc-bl-present-btn" role="menuitem" type="button">📽️ Present</button>
+  <button class="lc-bl-popup-item" id="lc-bl-reel-btn"    role="menuitem" type="button">📲 Reel</button>
+  <button class="lc-bl-popup-item" id="lc-bl-xray-btn"    role="menuitem" type="button">🔬 X-ray</button>
+  <button class="lc-bl-popup-item" id="lc-bl-edit-btn"    role="menuitem" type="button" hidden title="⌥E">✏️ Edit</button>
+  <button class="lc-bl-popup-item" id="lc-bl-guide-btn"   role="menuitem" type="button" style="border-top:2px solid #e5e7eb">🧑‍🏫 Guide</button>
   <button class="lc-bl-popup-item" id="lc-bl-contrast-btn" type="button" role="menuitemcheckbox" aria-checked="false" style="border-top:2px solid #e5e7eb">👁️ High contrast</button>
 </div>
 <!-- ⌨️ the shortcuts sheet: ⌥C opens it (Michel, 2026-09-15 — "a hot key

@@ -2149,13 +2149,15 @@ Auto-included by docs/_layouts/default.html.
     seed.innerHTML = buildFaceSvg(av.faceCfg || {});
     var menu = document.createElement('div');
     menu.className = 'lc-guide-menu';
-    menu.setAttribute('role', 'menu');
+    /* role="menu" only while it holds items: an empty menu at rest is a
+       "broken ARIA menu" to WAVE (Michel, 2026-09-17) — render() sets it */
     document.body.appendChild(seed);
     document.body.appendChild(menu);
 
     function item(label, fn) {
       var b = document.createElement('button');
       b.type = 'button'; b.setAttribute('role', 'menuitem');
+      menu.setAttribute('role', 'menu');
       b.textContent = label;
       b.addEventListener('click', function (e) { e.stopPropagation(); fn(); render(); });
       return b;
@@ -2171,7 +2173,7 @@ Auto-included by docs/_layouts/default.html.
     function live() { return (window._lcAvatars && window._lcAvatars[elId]) || av; }
     function render() {
       var av = live();
-      menu.innerHTML = '';
+      menu.innerHTML = ''; menu.removeAttribute('role');
       if (!av.playing) {
         if (av.script.length) {
           menu.appendChild(item(av.idx > 0 ? '↺ Replay tour' : '▶ Play tour', function () { togglePlay(elId); menu.classList.remove('open'); }));

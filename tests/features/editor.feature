@@ -235,3 +235,20 @@ Feature: Page editor — ✨ AI edit dialog
     Then the audit reports no issues
     When I unfold the rules that passed
     Then the audit lists the rules that passed, each with its level and the elements it checked
+
+  Scenario: What the engine could not decide is a human's job, not a pass
+    WAVE showed contrast errors on the tutorial while the ♿ tab read "no
+    issues" (Michel, 2026-09-17). axe files the contrast it cannot compute
+    — text over a picture, a gradient, an overlapping layer — as
+    "incomplete", and the panel dropped that bucket. It shows now: the
+    element, the reason the engine stepped back, and the outline on click.
+
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And a paragraph over a picture is planted on the page
+    And I open the page editor
+    And I switch to the editor "a11y" tab
+    And I press the editor's audit button
+    Then the audit reports no confirmed issues, and elements for a human look
+    And the planted paragraph's look row names "color-contrast" and says why the engine could not decide
+    And clicking that row outlines the planted paragraph

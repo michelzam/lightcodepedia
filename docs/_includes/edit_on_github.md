@@ -186,6 +186,9 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 .ed-a11y-row b { display: inline-block; min-width: 4.6em; margin-right: 0.5em; padding: 0 0.45em; border-radius: 6px; font-size: 0.8em; text-align: center; color: #fff; }
 .ed-a11y-row b.critical { background: #991b1b; } .ed-a11y-row b.serious { background: #b45309; }
 .ed-a11y-row b.moderate { background: #1d4ed8; } .ed-a11y-row b.minor { background: #4b5563; }
+.ed-a11y-row b.review { background: #fff3cd; color: #7a5a00; }
+.ed-a11y-row i { display: block; margin-top: 0.2em; color: #7a5a00; font-style: normal; font-size: 0.9em; }
+.ed-a11y-review-n { color: #7a5a00; }
 .ed-a11y-row code { display: block; margin-top: 0.25em; color: #4b5563; font-size: 0.85em; white-space: pre-wrap; word-break: break-all; }
 .ed-a11y-ok { padding: 1em; color: #087a40; font-weight: 600; }
 #ed-a11y-show-passes { font-weight: 400; font-size: 0.9em; color: #0066cc; }
@@ -452,7 +455,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           <div id="ed-raw-shop">🔧 <b>basement workshop</b> · the source the self-growing house is built from<span class="ed-shop-grow">🌱→🏠</span></div>
           <div id="ed-raw-body">
             <div id="ed-gutter"><div id="ed-gutter-inner">1</div></div>
-            <textarea id="ed-input" placeholder="Select a file to start editing…" spellcheck="false" wrap="off"></textarea>
+            <textarea id="ed-input" aria-label="Page source" placeholder="Select a file to start editing…" spellcheck="false" wrap="off"></textarea>
           </div>
         </div>
         <div id="ed-features-pane" class="ed-hidden">
@@ -490,7 +493,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   <div id="ed-agent-dialog" class="ed-hidden">
     <div id="ed-ag-card">
       <div id="ed-ag-head">✨ Ask AI <span id="ed-ag-scope"></span><a href="#" id="ed-ag-x" title="Close">✕</a></div>
-      <textarea id="ed-agent-prompt" spellcheck="false"
+      <textarea id="ed-agent-prompt" aria-label="Describe the change to this block" spellcheck="false"
         placeholder="Describe the change to this block — e.g. “remove the ! from the title”, “make the intro one sentence shorter”. The model proposes exact edits you approve before anything changes."></textarea>
       <div id="ed-ag-actions">
         <a href="#" class="button" id="ed-agent-ask">✨ Plan the change</a>
@@ -2497,18 +2500,44 @@ Auto-included by docs/_layouts/default.html. Skipped for:
               + ' <span>' + r.nodes.length + ' element' + (r.nodes.length === 1 ? '' : 's') + ' checked</span>'
               + ' <a href="' + a11yEsc(r.helpUrl) + '" target="_blank" rel="noopener">why?</a></div>';
           }).join('') + '</div>';
-      if (!n) { list.innerHTML = '<p class="ed-a11y-ok">✅ No issues on this page — WCAG 2.1 A/AA, ' + ps.length + ' rules passed. ' + passed + '</p>'; return; }
-      var html = '<p style="padding:0.6em 0.9em;margin:0;color:#4b5563">' + n + ' finding' + (n > 1 ? 's' : '') + ' in ' + vs.length + ' rule' + (vs.length > 1 ? 's' : '') + ' · ' + passed + '</p>';
-      vs.forEach(function (v) {
+      /* WHAT THE ENGINE COULD NOT DECIDE IS NOT A PASS. axe files the contrast
+         it cannot compute (text over a picture, a gradient, an overlapping
+         layer) under "incomplete" — the bucket WAVE reports as errors while
+         this panel read "no issues" (Michel, 2026-09-17). Shown as a human's
+         job: the element, and why the engine stepped back. */
+      /* not a human's job: a grid's empty row containers (AG Grid virtualises
+         rows) make axe say "may be populated later" — 35 of them on the
+         tutorial once the editor narrows the page. Judgment calls only. */
+      var inc = (res.incomplete || []).filter(function (v) { return v.id !== "aria-required-children"; });
+      var ni = inc.reduce(function (t, v) { return t + v.nodes.length; }, 0);
+      function reason(nd) {
+        var checks = (nd.any || []).concat(nd.all || [], nd.none || []);
+        for (var i = 0; i < checks.length; i++) if (checks[i].message) return checks[i].message;
+        return "";
+      }
+      function rows(v, cls, label) {
+        var h = "";
         v.nodes.forEach(function (nd) {
-          var sel = (nd.target && nd.target[0]) || "";
-          html += '<div class="ed-a11y-row" data-sel="' + a11yEsc(sel) + '" data-rule="' + a11yEsc(v.id) + '">'
-                + '<b class="' + a11yEsc(v.impact || "minor") + '">' + a11yEsc(v.impact || "minor") + '</b>'
-                + a11yEsc(v.help) + ' <a href="' + a11yEsc(v.helpUrl) + '" target="_blank" rel="noopener" style="font-size:0.85em">why?</a>'
-                + '<code>' + a11yEsc((nd.html || "").slice(0, 160)) + '</code></div>';
+          var sel = (nd.target && nd.target[0]) || "", why = cls === "review" ? reason(nd) : "";
+          h += '<div class="ed-a11y-row" data-sel="' + a11yEsc(sel) + '" data-rule="' + a11yEsc(v.id) + '" data-kind="' + cls + '">'
+             + '<b class="' + a11yEsc(cls) + '">' + a11yEsc(label) + '</b>'
+             + a11yEsc(v.help) + ' <a href="' + a11yEsc(v.helpUrl) + '" target="_blank" rel="noopener" style="font-size:0.85em">why?</a>'
+             + (why ? '<i>' + a11yEsc(why) + '</i>' : '')
+             + '<code>' + a11yEsc((nd.html || "").slice(0, 160)) + '</code></div>';
         });
-      });
-      list.innerHTML = html;
+        return h;
+      }
+      var review = inc.map(function (v) { return rows(v, "review", "look"); }).join("");
+      if (!n) {
+        list.innerHTML = '<p class="ed-a11y-ok">✅ No confirmed issues on this page — WCAG 2.1 A/AA, ' + ps.length + ' rules passed. '
+          + (ni ? '<span class="ed-a11y-review-n">⚠️ ' + ni + ' element' + (ni > 1 ? 's' : '') + ' need' + (ni > 1 ? '' : 's') + ' a human look.</span> ' : '')
+          + passed + '</p>' + review;
+        return;
+      }
+      var html = '<p style="padding:0.6em 0.9em;margin:0;color:#4b5563">' + n + ' finding' + (n > 1 ? 's' : '') + ' in ' + vs.length + ' rule' + (vs.length > 1 ? 's' : '')
+               + (ni ? ' · ⚠️ ' + ni + ' for a human look' : '') + ' · ' + passed + '</p>';
+      vs.forEach(function (v) { html += rows(v, v.impact || "minor", v.impact || "minor"); });
+      list.innerHTML = html + review;
     }).catch(function (e) {
       list.innerHTML = '<p style="color:#b91c1c;padding:1em">❌ ' + a11yEsc((e && e.message) || e) + '</p>';
     });
