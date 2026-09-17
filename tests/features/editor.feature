@@ -240,8 +240,12 @@ Feature: Page editor — ✨ AI edit dialog
     WAVE showed contrast errors on the tutorial while the ♿ tab read "no
     issues" (Michel, 2026-09-17). axe files the contrast it cannot compute
     — text over a picture, a gradient, an overlapping layer — as
-    "incomplete", and the panel dropped that bucket. It shows now: the
-    element, the reason the engine stepped back, and the outline on click.
+    "incomplete", and the panel dropped that bucket. It shows now, grouped
+    by rule: the element, the reason the engine stepped back, the outline
+    on click — and where the engine stepped back on a classification, not
+    the math (one glyph: text or not?), a rule with a default value measures
+    it and signs the verdict with its ratio, so the auditor answers for the
+    rule rather than the engine (Michel, 2026-09-17).
 
     When I navigate to "/tutorial101"
     And I wait for the page to be interactive
@@ -250,5 +254,7 @@ Feature: Page editor — ✨ AI edit dialog
     And I switch to the editor "a11y" tab
     And I press the editor's audit button
     Then the audit reports no confirmed issues, and elements for a human look
+    And the human-look rows are grouped by rule, "color-contrast" among them
     And the planted paragraph's look row names "color-contrast" and says why the engine could not decide
+    And a ⓘ chip's row carries a measured ratio, decided by the rule "short text is text"
     And clicking that row outlines the planted paragraph

@@ -282,6 +282,27 @@ def step_audit_review_count(context):
     assert context.page.locator(".ed-a11y-row[data-kind='review']").count() >= 1
 
 
+@then('the human-look rows are grouped by rule, "{rule}" among them')
+def step_review_groups(context, rule):
+    groups = context.page.locator("#ed-a11y-list details.ed-a11y-group")
+    assert groups.count() >= 1, context.page.locator("#ed-a11y-list").inner_text()[:400]
+    g = context.page.locator("#ed-a11y-list details.ed-a11y-group[data-rule='" + rule + "']").first
+    expect(g).to_be_visible(timeout=5_000)
+    assert "element" in g.locator("summary span").text_content()
+    context.page.evaluate("() => document.querySelectorAll('#ed-a11y-list details').forEach(d => d.open = true)")
+
+
+@then('a ⓘ chip\'s row carries a measured ratio, decided by the rule "{rule}"')
+def step_review_measured(context, rule):
+    """the chips are one glyph each; the default rule calls a glyph text and
+    measures it — the verdict names the rule and the ratio"""
+    row = context.page.locator(".ed-a11y-row[data-kind='review'][data-sel*='lc-help']").first
+    expect(row).to_be_visible(timeout=5_000)
+    assert row.get_attribute("data-verdict") in ("pass", "fail"), row.inner_text()
+    assert rule in row.locator(".ed-a11y-byrule").text_content()
+    assert re.search(r"\d+(\.\d+)?:1", row.locator("i").text_content()), row.inner_text()
+
+
 @then('the planted paragraph\'s look row names "{rule}" and says why the engine could not decide')
 def step_review_row(context, rule):
     row = context.page.locator(".ed-a11y-row[data-kind='review'][data-rule='" + rule + "'][data-sel='#lc-planted-bg']").first

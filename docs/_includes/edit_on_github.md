@@ -186,9 +186,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 .ed-a11y-row b { display: inline-block; min-width: 4.6em; margin-right: 0.5em; padding: 0 0.45em; border-radius: 6px; font-size: 0.8em; text-align: center; color: #fff; }
 .ed-a11y-row b.critical { background: #991b1b; } .ed-a11y-row b.serious { background: #b45309; }
 .ed-a11y-row b.moderate { background: #1d4ed8; } .ed-a11y-row b.minor { background: #4b5563; }
-.ed-a11y-row b.review { background: #fff3cd; color: #7a5a00; }
+.ed-a11y-row b.review, .ed-a11y-row b.look, .ed-a11y-group summary b.review { background: #fff3cd; color: #7a5a00; }
+.ed-a11y-row b.pass { background: #dcfce7; color: #14532d; } .ed-a11y-row b.fail { background: #fee2e2; color: #7f1d1d; }
 .ed-a11y-row i { display: block; margin-top: 0.2em; color: #7a5a00; font-style: normal; font-size: 0.9em; }
+.ed-a11y-row[data-verdict="pass"] i { color: #14532d; } .ed-a11y-row[data-verdict="fail"] i { color: #7f1d1d; }
+.ed-a11y-byrule { color: #6b7280; font-size: 0.85em; }
 .ed-a11y-review-n { color: #7a5a00; }
+.ed-a11y-rules { padding: 0.5em 0.9em; margin: 0; color: #6b7280; font-size: 0.85em; border-top: 1px solid #f0f0f0; }
+.ed-a11y-group { border-top: 1px solid #f0f0f0; }
+.ed-a11y-group summary { padding: 0.5em 0.9em; cursor: pointer; }
+.ed-a11y-group summary b { display: inline-block; min-width: 4.6em; margin-right: 0.5em; padding: 0 0.45em; border-radius: 6px; font-size: 0.8em; text-align: center; }
+.ed-a11y-group summary span { display: block; color: #6b7280; font-size: 0.85em; margin-top: 0.15em; }
+.ed-a11y-group .ed-a11y-row { padding-left: 1.8em; }
 .ed-a11y-row code { display: block; margin-top: 0.25em; color: #4b5563; font-size: 0.85em; white-space: pre-wrap; word-break: break-all; }
 .ed-a11y-ok { padding: 1em; color: #087a40; font-weight: 600; }
 #ed-a11y-show-passes { font-weight: 400; font-size: 0.9em; color: #0066cc; }
@@ -2502,41 +2511,116 @@ Auto-included by docs/_layouts/default.html. Skipped for:
           }).join('') + '</div>';
       /* WHAT THE ENGINE COULD NOT DECIDE IS NOT A PASS. axe files the contrast
          it cannot compute (text over a picture, a gradient, an overlapping
-         layer) under "incomplete" — the bucket WAVE reports as errors while
-         this panel read "no issues" (Michel, 2026-09-17). Shown as a human's
-         job: the element, and why the engine stepped back. */
-      /* not a human's job: a grid's empty row containers (AG Grid virtualises
-         rows) make axe say "may be populated later" — 35 of them on the
-         tutorial once the editor narrows the page. Judgment calls only. */
-      var inc = (res.incomplete || []).filter(function (v) { return v.id !== "aria-required-children"; });
-      var ni = inc.reduce(function (t, v) { return t + v.nodes.length; }, 0);
+         layer, one letter too short to call text) under "incomplete" — the
+         bucket WAVE reports as errors while this panel read "no issues"
+         (Michel, 2026-09-17). Shown grouped by rule, and DECIDED where a
+         rule can: the engine steps back on a classification (is one glyph
+         text?), not on the math — so a rule with a default value measures
+         it, names itself and its ratio, and the auditor answers for the
+         rule. Where the pixels behind the text are unknowable from CSS
+         (a picture, a gradient), the rule says "look". */
+      var RULES = window.lcAuditRules = window.lcAuditRules || {
+        short_text_is_text: true,       /* a lone glyph reads like text: measure it */
+        image_behind_text: "look",      /* pixels unknown from CSS: a human looks */
+        gradient_behind_text: "look",
+        overlap_behind_text: "look"
+      };
+      function lum(c) {
+        var m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/.exec(c || "");
+        if (!m) return null;
+        var a = m[4] == null ? 1 : +m[4];
+        return { r: +m[1], g: +m[2], b: +m[3], a: a };
+      }
+      function relLum(c) {
+        function ch(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+        return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
+      }
+      function over(fg, a, bg) { return { r: fg.r * a + bg.r * (1 - a), g: fg.g * a + bg.g * (1 - a), b: fg.b * a + bg.b * (1 - a), a: 1 }; }
+      /* the colour behind an element: the first painted background up the
+         tree; null when a picture or gradient sits in between */
+      function behind(el) {
+        var n = el.parentElement, bg = null;
+        while (n) {
+          var cs = getComputedStyle(n);
+          if (cs.backgroundImage && cs.backgroundImage !== "none") return null;
+          var c = lum(cs.backgroundColor);
+          if (c && c.a > 0) { bg = bg ? over(bg, bg.a, c) : c; if (bg.a >= 1) return bg; }
+          n = n.parentElement;
+        }
+        return over(bg || { r: 255, g: 255, b: 255, a: 1 }, bg ? bg.a : 1, { r: 255, g: 255, b: 255, a: 1 });
+      }
+      function opacityOf(el) { var o = 1, n = el; while (n && n !== document.body) { o *= (+getComputedStyle(n).opacity || 1); n = n.parentElement; } return o; }
+      function measure(el) {
+        var cs = getComputedStyle(el), fg = lum(cs.color), bg = behind(el);
+        if (!fg || !bg) return null;
+        var ownBg = lum(cs.backgroundColor);
+        if (ownBg && ownBg.a > 0) bg = over(ownBg, ownBg.a, bg);
+        if (cs.backgroundImage && cs.backgroundImage !== "none") return null;
+        fg = over(fg, fg.a * opacityOf(el), bg);
+        var L1 = relLum(fg), L2 = relLum(bg), ratio = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+        var px = parseFloat(cs.fontSize) || 16, bold = (parseInt(cs.fontWeight, 10) || 400) >= 700;
+        var large = px >= 24 || (bold && px >= 18.66), need = large ? 3 : 4.5;
+        return { ratio: Math.round(ratio * 100) / 100, need: need, ok: ratio >= need };
+      }
       function reason(nd) {
         var checks = (nd.any || []).concat(nd.all || [], nd.none || []);
         for (var i = 0; i < checks.length; i++) if (checks[i].message) return checks[i].message;
         return "";
       }
-      function rows(v, cls, label) {
-        var h = "";
-        v.nodes.forEach(function (nd) {
-          var sel = (nd.target && nd.target[0]) || "", why = cls === "review" ? reason(nd) : "";
-          h += '<div class="ed-a11y-row" data-sel="' + a11yEsc(sel) + '" data-rule="' + a11yEsc(v.id) + '" data-kind="' + cls + '">'
-             + '<b class="' + a11yEsc(cls) + '">' + a11yEsc(label) + '</b>'
-             + a11yEsc(v.help) + ' <a href="' + a11yEsc(v.helpUrl) + '" target="_blank" rel="noopener" style="font-size:0.85em">why?</a>'
-             + (why ? '<i>' + a11yEsc(why) + '</i>' : '')
-             + '<code>' + a11yEsc((nd.html || "").slice(0, 160)) + '</code></div>';
-        });
-        return h;
+      /* the rule that answers an engine's step-back, with its verdict */
+      function decide(v, nd) {
+        var why = reason(nd), sel = (nd.target && nd.target[0]) || "";
+        if (v.id === "color-contrast") {
+          if (/too short/i.test(why) && RULES.short_text_is_text) {
+            var el = null; try { el = document.querySelector(sel); } catch (e) {}
+            var m = el && measure(el);
+            if (m) return { verdict: m.ok ? "pass" : "fail", rule: "short text is text", note: m.ratio + ":1 " + (m.ok ? "≥" : "<") + " " + m.need + ":1" };
+          }
+          if (/background image/i.test(why)) return { verdict: RULES.image_behind_text, rule: "picture behind text", note: why };
+          if (/gradient/i.test(why)) return { verdict: RULES.gradient_behind_text, rule: "gradient behind text", note: why };
+          if (/overlap/i.test(why)) return { verdict: RULES.overlap_behind_text, rule: "overlapped text", note: why };
+        }
+        return { verdict: "look", rule: "", note: why };
       }
-      var review = inc.map(function (v) { return rows(v, "review", "look"); }).join("");
+      var inc = (res.incomplete || []).filter(function (v) { return v.id !== "aria-required-children"; });
+      var ni = 0, nfail = 0, groups = "";
+      inc.forEach(function (v) {
+        var body = "", tally = { pass: 0, fail: 0, look: 0 };
+        v.nodes.forEach(function (nd) {
+          var sel = (nd.target && nd.target[0]) || "", d = decide(v, nd);
+          tally[d.verdict] = (tally[d.verdict] || 0) + 1; ni++; if (d.verdict === "fail") nfail++;
+          body += '<div class="ed-a11y-row" data-sel="' + a11yEsc(sel) + '" data-rule="' + a11yEsc(v.id) + '" data-kind="review" data-verdict="' + d.verdict + '">'
+                + '<b class="' + d.verdict + '">' + d.verdict + '</b>'
+                + (d.rule ? '<span class="ed-a11y-byrule">by rule “' + a11yEsc(d.rule) + '”</span> ' : '')
+                + '<i>' + a11yEsc(d.note) + '</i>'
+                + '<code>' + a11yEsc((nd.html || "").slice(0, 160)) + '</code></div>';
+        });
+        groups += '<details class="ed-a11y-group" data-rule="' + a11yEsc(v.id) + '"' + (tally.fail ? ' open' : '') + '><summary>'
+                + '<b class="review">look</b>' + a11yEsc(v.help) + ' <a href="' + a11yEsc(v.helpUrl) + '" target="_blank" rel="noopener" style="font-size:0.85em">why?</a>'
+                + '<span>' + v.nodes.length + ' element' + (v.nodes.length === 1 ? '' : 's') + ' · '
+                + (tally.fail || 0) + ' fail · ' + (tally.pass || 0) + ' pass by rule · ' + (tally.look || 0) + ' to look at</span>'
+                + '</summary>' + body + '</details>';
+      });
+      var rulesLine = '<p class="ed-a11y-rules">Rules with defaults, yours to answer for: short text is text · picture, gradient or overlap behind text → a human looks.</p>';
+      var review = ni ? rulesLine + groups : "";
       if (!n) {
         list.innerHTML = '<p class="ed-a11y-ok">✅ No confirmed issues on this page — WCAG 2.1 A/AA, ' + ps.length + ' rules passed. '
-          + (ni ? '<span class="ed-a11y-review-n">⚠️ ' + ni + ' element' + (ni > 1 ? 's' : '') + ' need' + (ni > 1 ? '' : 's') + ' a human look.</span> ' : '')
+          + (ni ? '<span class="ed-a11y-review-n">⚠️ ' + ni + ' element' + (ni > 1 ? 's' : '') + ' need' + (ni > 1 ? '' : 's') + ' a human look'
+                  + (nfail ? ', ' + nfail + ' failing by rule' : '') + '.</span> ' : '')
           + passed + '</p>' + review;
         return;
       }
       var html = '<p style="padding:0.6em 0.9em;margin:0;color:#4b5563">' + n + ' finding' + (n > 1 ? 's' : '') + ' in ' + vs.length + ' rule' + (vs.length > 1 ? 's' : '')
-               + (ni ? ' · ⚠️ ' + ni + ' for a human look' : '') + ' · ' + passed + '</p>';
-      vs.forEach(function (v) { html += rows(v, v.impact || "minor", v.impact || "minor"); });
+               + (ni ? ' · ⚠️ ' + ni + ' for a human look' + (nfail ? ', ' + nfail + ' failing by rule' : '') : '') + ' · ' + passed + '</p>';
+      vs.forEach(function (v) {
+        v.nodes.forEach(function (nd) {
+          var sel = (nd.target && nd.target[0]) || "";
+          html += '<div class="ed-a11y-row" data-sel="' + a11yEsc(sel) + '" data-rule="' + a11yEsc(v.id) + '">'
+                + '<b class="' + a11yEsc(v.impact || "minor") + '">' + a11yEsc(v.impact || "minor") + '</b>'
+                + a11yEsc(v.help) + ' <a href="' + a11yEsc(v.helpUrl) + '" target="_blank" rel="noopener" style="font-size:0.85em">why?</a>'
+                + '<code>' + a11yEsc((nd.html || "").slice(0, 160)) + '</code></div>';
+        });
+      });
       list.innerHTML = html + review;
     }).catch(function (e) {
       list.innerHTML = '<p style="color:#b91c1c;padding:1em">❌ ' + a11yEsc((e && e.message) || e) + '</p>';
