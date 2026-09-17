@@ -645,3 +645,27 @@ def step_open_editor_on_form(context):
 def step_card_follows(context, master):
     form = context.page.locator('.lc-bench-slot [data-lc-id="request"]').first
     expect(form).to_have_attribute("data-bound", master, timeout=20_000)
+
+
+@then('the slot\'s tally reads "{text}"')
+def step_slot_tally(context, text):
+    """a cell inside the slot reads a table outside it — ids are page-wide"""
+    tally = context.page.locator(".lc-bench-slot #tally").first
+    expect(tally).to_contain_text(text, timeout=20_000)
+
+
+@when("I open the x-ray editor on the tally block")
+def step_open_editor_on_tally(context):
+    block = context.page.locator(".lc-bench-slot #tally").first
+    _alt_move_on(context.page, block)
+    gear = context.page.locator("#lcx-gear")
+    gear.wait_for(state="visible", timeout=10_000)
+    expect(gear).to_have_text("⚙️")
+    gear.click(force=True)
+    expect(context.page.locator("#lcx-content")).to_be_visible(timeout=5_000)
+
+
+@then('the editor holds "{text}"')
+def step_editor_holds(context, text):
+    expect(context.page.locator("#lcx-content")).to_have_value(
+        __import__("re").compile(__import__("re").escape(text)), timeout=5_000)

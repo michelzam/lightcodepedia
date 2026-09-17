@@ -597,3 +597,22 @@ def step_proof_green_here(context, title):
         localStorage.setItem('lc_features', JSON.stringify(all));
         document.dispatchEvent(new CustomEvent('lc-feature-result')); }""", title)
     context.page.wait_for_timeout(400)
+
+
+@then("a recap row already visited keeps the row's own colour")
+def step_recap_visited_colour(context):
+    """Michel, 2026-09-17: The Broken Wire sat in blue on the Canvas recap —
+    the one page his browser had opened. The topbar's .markdown-body
+    a:visited outranked the recap's colour rule. A browser hides :visited
+    from scripts (privacy), so the check reads the stylesheet: a visited
+    rule scoped to the recap row must exist and hand the colour back."""
+    ok = context.page.evaluate("""() => {
+      for (const s of document.styleSheets) {
+        let rules; try { rules = s.cssRules; } catch (e) { continue; }
+        for (const r of rules) {
+          const sel = r.selectorText || "";
+          if (sel.includes(".lc-recap-row a:visited") && /inherit/.test(r.style.color)) return true;
+        }
+      }
+      return false; }""")
+    assert ok, "no .lc-recap-row a:visited rule hands the colour back — a visited page shows in link blue"

@@ -726,6 +726,10 @@ Auto-included by docs/_layouts/default.html.
         if (window.lcSnapshotSources) window.lcSnapshotSources(body, true);
         if (window.lcScanElement) window.lcScanElement(body);
         if (window.lcRebase)      window.lcRebase(body);
+        /* a slot renders after the page's cells were collected: a {= cell }
+           inside it stayed a literal (Module 02's tally, 2026-09-17). Same
+           idempotent, document-wide rescan a block makes. */
+        if (window.lcCellsRescan) window.lcCellsRescan();
       });
     }
 

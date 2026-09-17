@@ -279,6 +279,39 @@ Feature: X-ray inspector
     And the last of them wires master to dog_list
     And the request card now follows "dog_list"
 
+  Scenario: A tally in the learner's slot still counts the lesson's table, and opens to the gear
+    Michel, 2026-09-17, sweep of every "open the ⚙️" line in the course:
+    Module 02's gate cards and tally, Module 06's writer were vault blocks
+    (a 💬, never a gear). Wrapped in slots they belong to the learner — and
+    a cell inside the slot must still find a table that stayed OUTSIDE it.
+    First run: the cell stayed a literal — a slot renders after the page's
+    cells were collected and nobody rescanned. The slot rescans now.
+
+    Given a connected bench whose "courses/demo/mod/tally.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/stop.md" with the document:
+      """
+      # Where they stop
+
+      ```csv
+      family,dog,met
+      Nguyen,Biscuit,
+      Alvarez,Scout,Wed
+      Brooks,Nova,Tue
+      ```
+      {: .dataset #reservations }
+
+      ````markdown
+      - 📨 **{= reservations.count }** families asked.
+      {: .block #tally }
+      ````
+      {: .embed save="tally.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/stop.md"
+    And I wait for the page to be interactive
+    Then the slot's tally reads "3 families asked"
+    When I open the x-ray editor on the tally block
+    Then the editor holds "reservations.count"
+
   Scenario: A name nothing answers to gets a bomb, not a part of its own
     The lens used to MATERIALISE the missing target: lcx_target falls back to
     constructing Dataset(id) when no element carries the id, so a source that

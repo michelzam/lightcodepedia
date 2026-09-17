@@ -499,6 +499,7 @@ Feature: Folder shelf — read posture and X-ray workbench
     When a proof on "The Essentials" turns green on this device
     Then the recap row "The Essentials" reads "quiz 0/3 · proofs 1/2" and offers "finish"
     And the recap head reads "2 of 4 pages done · 🏆 14 of 19 points"
+    And a recap row already visited keeps the row's own colour
 
   Scenario: A dashboard above the modules recaps each one by name
     One page for the whole course — "this way they will know where they

@@ -41,6 +41,9 @@ Auto-included by docs/_layouts/default.html.
 .lc-recap-head { font-weight: 600; margin: 0 0 0.5em; }
 .lc-recap-row { padding: 0.25em 0; border-top: 1px solid #f0f0f0; font-size: 0.92em; }
 .lc-recap-row a { color: inherit; text-decoration: none; font-weight: 600; }
+/* a page already opened is not a different colour of page — the topbar's
+   .markdown-body a:visited outranks the rule above, so say it again, heavier */
+.lc-recap-row a:visited:not(.lc-recap-go) { color: inherit; }
 .lc-recap-row a:hover { text-decoration: underline; }
 .lc-recap-tags { color: #6b7280; }
 .lc-recap-go { color: #0066cc !important; font-weight: 500 !important; white-space: nowrap; }
