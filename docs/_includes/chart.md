@@ -37,6 +37,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-chart { margin: 1em 0; position: relative; }
 .lc-chart svg { display: block; width: 100%; height: auto; }
 .lc-chart-title { font-size: 0.82em; font-weight: 600; color: #374151; margin-bottom: 0.3em; }
+/* the hover legend: a browser's own <title> bubble is slow, and on some
+   browsers never comes for a transparent hit circle (Michel, 2026-09-17:
+   "nothing visible when I hover") — so the chart draws its own */
+.lc-chart-tip { position: absolute; pointer-events: none; display: none; z-index: 5;
+  background: #111827; color: #fff; font-size: 0.78em; line-height: 1.35; padding: 0.3em 0.55em;
+  border-radius: 4px; white-space: pre; max-width: 260px; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
 </style>
 
 <script>
@@ -283,7 +289,30 @@ Auto-included by docs/_layouts/default.html.
     svg.setAttribute("width", W); svg.setAttribute("height", H);
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     el.appendChild(svg);
+    wireTip(el, svg);
     return { svg: svg, NS: NS };
+  }
+  /* every shape that carries a <title> shows it in a tip the moment the
+     pointer arrives; the <title> itself stays for screen readers */
+  function wireTip(el, svg) {
+    var tip = el.querySelector(".lc-chart-tip");
+    if (!tip) { tip = document.createElement("div"); tip.className = "lc-chart-tip"; el.appendChild(tip); }
+    function titled(t) {
+      while (t && t !== svg) { var c = t.querySelector && t.querySelector(":scope > title"); if (c) return c.textContent; t = t.parentNode; }
+      return "";
+    }
+    function place(e) {
+      var r = el.getBoundingClientRect(), x = e.clientX - r.left + 12, y = e.clientY - r.top + 12;
+      if (x + tip.offsetWidth > r.width) x = Math.max(0, e.clientX - r.left - tip.offsetWidth - 12);
+      tip.style.left = x + "px"; tip.style.top = y + "px";
+    }
+    svg.addEventListener("mouseover", function (e) {
+      var text = titled(e.target);
+      if (!text) { tip.style.display = "none"; return; }
+      tip.textContent = text; tip.style.display = "block"; place(e);
+    });
+    svg.addEventListener("mousemove", function (e) { if (tip.style.display === "block") place(e); });
+    svg.addEventListener("mouseleave", function () { tip.style.display = "none"; });
   }
   function svgEl(c, NS, tag, attrs) {
     var el = document.createElementNS(NS, tag);
@@ -381,7 +410,7 @@ Auto-included by docs/_layouts/default.html.
         var mark = o.marks ? String(d[o.marks] || "") : "";
         if (mark) svgEl(svg, NS, "path", { d: "M" + x + "," + (y - 6) + " l6,6 l-6,6 l-6,-6 z", fill: "#b45309", "data-mark": mark });
         else svgEl(svg, NS, "circle", { cx: x, cy: y, r: 3, fill: color });
-        var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent" });
+        var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent", "pointer-events": "all" });
         svgEl(hit, NS, "title", {}).textContent = xCol + " " + d[xCol] + " — " + yCol + ": " + val
           + (mark ? "\n" + mark : "") + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
       });
