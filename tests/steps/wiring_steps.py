@@ -626,3 +626,22 @@ def step_composer_shows(context, text):
     ta = context.page.locator("#lcx-note-text")
     expect(ta).to_be_visible(timeout=10_000)
     expect(ta).to_have_value(text, timeout=10_000)
+
+
+@when("I open the x-ray editor on the request card")
+def step_open_editor_on_form(context):
+    """the form inside the learner's slot — Module 02, the card that must
+    follow the dogs (Michel, 2026-09-16: only the 💬 showed)"""
+    form = context.page.locator(".lc-bench-slot .lc-form").first
+    _alt_move_on(context.page, form)
+    gear = context.page.locator("#lcx-gear")
+    gear.wait_for(state="visible", timeout=10_000)
+    expect(gear).to_have_text("⚙️")
+    gear.click(force=True)
+    expect(context.page.locator("#lcx-content")).to_be_visible(timeout=5_000)
+
+
+@then('the request card now follows "{master}"')
+def step_card_follows(context, master):
+    form = context.page.locator('.lc-bench-slot [data-lc-id="request"]').first
+    expect(form).to_have_attribute("data-bound", master, timeout=20_000)

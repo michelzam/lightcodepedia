@@ -229,6 +229,56 @@ Feature: X-ray inspector
     And the last of them wires source to adoptions
     And the author's repo received no commit
 
+  Scenario: A form in the learner's slot changes its master through the gear
+    Michel, 2026-09-16, Module 02 "A long walk": the lesson says open the
+    ⚙️ on the card and point master at the dogs — the card showed a 💬,
+    the vault being read-only. In a slot the card is the learner's own:
+    the gear opens with the master knob, Keep rewrites the learner's file,
+    the card follows the dogs.
+
+    Given a connected bench whose "courses/demo/mod/request.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/walk.md" with the document:
+      """
+      # A long walk
+
+      ```csv
+      name,breed
+      Scout,Husky mix
+      Nova,Lab
+      ```
+      {: .dataset #dogs }
+
+      ```csv
+      ```
+      {: .datagrid #dog_list source="dogs" height="160" }
+
+      ```csv
+      family,phone
+      Rivera,555-0101
+      ```
+      {: .dataset #requests }
+
+      ```csv
+      ```
+      {: .datagrid #paper source="requests" height="120" }
+
+      ````markdown
+      ```csv
+      ```
+      {: .form #request master="paper" editable="true" title="🖐️ I want to meet this dog" }
+      ````
+      {: .embed save="request.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/walk.md"
+    And I wait for the page to be interactive
+    And I open the x-ray editor on the request card
+    Then the editor offers a "master" knob
+    When I set the "master" knob to "dog_list"
+    And I save, and the bench receives it
+    Then the bench received 2 commits to "courses/demo/mod/request.md"
+    And the last of them wires master to dog_list
+    And the request card now follows "dog_list"
+
   Scenario: A name nothing answers to gets a bomb, not a part of its own
     The lens used to MATERIALISE the missing target: lcx_target falls back to
     constructing Dataset(id) when no element carries the id, so a source that
