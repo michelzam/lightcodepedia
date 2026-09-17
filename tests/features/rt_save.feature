@@ -545,6 +545,41 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the learner leaves the page without saving
     Then the bench received a commit to "__progress.txt" containing "gh:"
 
+  Scenario: A row read from another bench never travels into mine
+    Michel, 2026-09-17: students' benches held HIS record — components
+    pages from June, another class's modules — line for line the file at
+    pedia's root. A misdirected app read it, the browser adopted every
+    row, the next flush wrote them all into the student's bench. A row
+    now remembers the bench it was earned in: adopted rows belong to that
+    bench, and a new bench on the same browser starts without them.
+
+    Given a connected bench whose "__progress.txt" holds the document
+      """
+      # lc-progress v1
+      gh:acme/demo-vault/courses/demo/mod/other	2/2	0/0	2026-09-01T00:00:00Z
+      crc 00000000
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    Given the key is re-paired to the bench "stub/other-bench" holding nothing
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And a quiz on this page is answered
+    And the learner leaves the page without saving
+    Then the bench received a commit to "__progress.txt" containing "courses/demo/mod/work"
+    And the bench received a commit to "__progress.txt" without "courses/demo/mod/other"
+
+  Scenario: The site's own repo is never a bench for the record
+    The file it would write is public, and it seeds everyone whose app
+    once pointed there (Michel, 2026-09-17: the copy at pedia's root).
+
+    Given the key is paired to the site's own repo
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And a quiz on this page is answered
+    And the learner leaves the page without saving
+    Then the bench received no commit
+
   Scenario: Two devices converge, and neither undoes the other
     The merge is max-per-page, so a phone one lesson behind can never
     lower a laptop's record — which is why the sync needs no locking and

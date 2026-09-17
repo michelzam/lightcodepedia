@@ -52,7 +52,47 @@ Auto-included by docs/_layouts/default.html.
      course mirror, a hub, or pedia. His own test progression stays his. */
   var FILE = "/__progress.txt";        /* bench root: it outlives one lesson */
   var WAS  = "/progress.txt";          /* pre-dunder benches — read, never written */
-  var HEAD = "# lc-progress v1";
+  var HEAD = "# lc-progress v2";       /* v2: a fifth column, the bench each row was earned in */
+
+  /* A ROW HAS AN OWNER (Michel, 2026-09-17). Students' benches held HIS
+     record — components pages from June, another class's modules — line
+     for line the file at pedia's root: a misdirected app read it, the
+     browser adopted every row, and the next flush wrote them all into
+     the student's own bench. Jessica's office-hours points went the other
+     way and reached nobody. So every row remembers the bench it was
+     earned in: load adopts only that bench's rows, flush writes only
+     rows earned here or not yet claimed, and switching benches on a
+     shared device drops the previous bench's rows from the browser (they
+     live in that bench). The site's own repo is never a bench: the file
+     it would write is public, and it seeds everyone who lands there. */
+  var SITE = {{ site.github.repository_nwo | default: "" | jsonify }};
+  var OWNER = "lc_progress_owner", LAST = "lc_progress_bench";
+  function owners() { try { return JSON.parse(localStorage.getItem(OWNER) || "{}"); } catch (e) { return {}; } }
+  function keepOwners(m) { try { localStorage.setItem(OWNER, JSON.stringify(m)); } catch (e) {} }
+  function lastBench() { try { return localStorage.getItem(LAST) || ""; } catch (e) { return ""; } }
+  function benchTarget() {
+    if (!window.lcBench) return null;
+    var t = window.lcBench.target(document.body) || {};
+    if (!t.repo || !t.pat) return null;
+    if (SITE && t.repo.toLowerCase() === String(SITE).toLowerCase()) return null;   /* the site is where you stand, not where you live */
+    return t;
+  }
+  /* another bench's rows leave this browser when a new bench connects —
+     they are safe in their own bench, and they must not be claimed here */
+  function forget(bench) {
+    var own = owners(), scores = {}, feats = {}, changed = false;
+    try { scores = JSON.parse(localStorage.getItem("lc_scores") || "{}"); } catch (e) {}
+    try { feats = JSON.parse(localStorage.getItem("lc_features") || "{}"); } catch (e) {}
+    Object.keys(own).forEach(function (k) {
+      if (!own[k] || own[k] === bench) return;
+      delete scores[k]; delete own[k]; changed = true;
+      Object.keys(feats).forEach(function (fk) { if (fk.indexOf(k + "#") === 0) delete feats[fk]; });
+    });
+    if (changed) {
+      try { localStorage.setItem("lc_scores", JSON.stringify(scores)); localStorage.setItem("lc_features", JSON.stringify(feats)); } catch (e) {}
+      keepOwners(own);
+    }
+  }
 
   /* CRC32 — small, standard, and enough to say "this file was edited by
      something other than the app". Not a signature: it cannot be, since the
@@ -95,11 +135,11 @@ Auto-included by docs/_layouts/default.html.
     return out;
   }
 
-  function serialise(map) {
+  function serialise(map, bench) {
     var lines = [HEAD];
     Object.keys(map).sort().forEach(function (k) {
       var r = map[k];
-      lines.push([k, r.won + "/" + r.total, r.green + "/" + r.feats, r.ts || ""].join("\t"));
+      lines.push([k, r.won + "/" + r.total, r.green + "/" + r.feats, r.ts || "", r.bench || bench || ""].join("\t"));
     });
     var body = lines.join("\n") + "\n";
     return body + "crc " + crc32(body) + "\n";
@@ -118,7 +158,8 @@ Auto-included by docs/_layouts/default.html.
       if (p.length < 3) return;
       var q = (p[1] || "0/0").split("/"), f = (p[2] || "0/0").split("/");
       map[p[0]] = { won: +q[0] || 0, total: +q[1] || 0,
-                    green: +f[0] || 0, feats: +f[1] || 0, ts: (p[3] || "").trim() };
+                    green: +f[0] || 0, feats: +f[1] || 0, ts: (p[3] || "").trim(),
+                    bench: (p[4] || "").trim() };
     });
     var recomputed = crc32(body.join("\n") + "\n");
     return { map: map, intact: !crcSaid || crcSaid === recomputed };
@@ -131,8 +172,9 @@ Auto-included by docs/_layouts/default.html.
     var out = {};
     [a, b].forEach(function (src) {
       Object.keys(src || {}).forEach(function (k) {
-        var r = out[k] || (out[k] = { won: 0, total: 0, green: 0, feats: 0, ts: "" });
+        var r = out[k] || (out[k] = { won: 0, total: 0, green: 0, feats: 0, ts: "", bench: "" });
         var s = src[k];
+        if (s.bench && !r.bench) r.bench = s.bench;
         r.won = Math.max(r.won, s.won || 0);
         r.total = Math.max(r.total, s.total || 0);
         r.green = Math.max(r.green, s.green || 0);
@@ -176,10 +218,15 @@ Auto-included by docs/_layouts/default.html.
   }
 
   function load() {
-    if (loaded || readAlready() || !window.lcBench) return Promise.resolve(false);
+    var t = benchTarget();
+    if (!t) return Promise.resolve(false);
+    var switched = lastBench() !== t.repo;
+    if (loaded || (readAlready() && !switched)) return Promise.resolve(false);
     loaded = true;
-    var t = window.lcBench.target(document.body) || {};
-    if (!t.repo || !t.pat) return Promise.resolve(false);
+    if (switched) {
+      forget(t.repo);
+      try { localStorage.setItem(LAST, t.repo); } catch (e) {}
+    }
     /* one migration, no ceremony: a bench written before the rename still
        has the old name — read it once, and the next flush lands the dunder */
     return window.lcBench.peek(FILE, document.body).then(function (f) {
@@ -190,18 +237,31 @@ Auto-included by docs/_layouts/default.html.
       if (!f) return false;
       sha = f.sha;
       markRead();
-      var got = parse(f.text);
-      var did = adopt(got.map);
+      var got = parse(f.text), mine = {}, own = owners();
+      /* only this bench's rows come home; a row stamped with another bench
+         (a merge from before v2) stays in the file for the scrub to see */
+      Object.keys(got.map).forEach(function (k) {
+        var b = got.map[k].bench || "";
+        if (b && b !== t.repo) return;
+        mine[k] = got.map[k]; own[k] = t.repo;
+      });
+      keepOwners(own);
+      var did = adopt(mine);
       if (did) document.dispatchEvent(new CustomEvent("lc-progress-loaded"));
       return did;
     }).catch(function () { return false; });
   }
 
   function flush() {
-    if (!window.lcBench) return Promise.resolve(false);
-    var t = window.lcBench.target(document.body) || {};
-    if (!t.repo || !t.pat) return Promise.resolve(false);
-    var mine = rows();
+    var t = benchTarget();
+    if (!t) return Promise.resolve(false);
+    var mine = rows(), own = owners(), claimed = false;
+    /* earned here or not yet claimed → this bench's, now; another bench's → never */
+    Object.keys(mine).forEach(function (k) {
+      if (own[k] && own[k] !== t.repo) { delete mine[k]; return; }
+      if (!own[k]) { own[k] = t.repo; claimed = true; }
+    });
+    if (claimed) keepOwners(own);
     if (!Object.keys(mine).length) return Promise.resolve(false);
     /* NOTHING NEW IS NOT A COMMIT. Several saves on one page each call
        this, and so does leaving — without a guard the same bytes land
@@ -214,7 +274,7 @@ Auto-included by docs/_layouts/default.html.
     return window.lcBench.peek(FILE, document.body).then(function (f) {
       var base = f ? parse(f.text).map : {};
       if (f) sha = f.sha;
-      var text = serialise(merge(base, mine));
+      var text = serialise(merge(base, mine), t.repo);
       return window.lcBench.write(FILE, text, "📊 progress", sha, document.body)
         .then(function (s) { sha = s || sha; return true; });
     }).catch(function () { return false; });

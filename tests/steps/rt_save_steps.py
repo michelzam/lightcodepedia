@@ -14,8 +14,9 @@ from playwright.sync_api import expect
 BENCH = "stub/bench"
 
 
-def _stub_bench(context, files):
+def _stub_bench(context, files, bench=BENCH):
     """Route the bench repo's contents API: GET serves `files`, PUT records."""
+    repo_name = bench
     context.bench_commits = []
     context.author_commits = []
     context.bench_reads = []
@@ -58,12 +59,14 @@ def _stub_bench(context, files):
         tree = [{"path": p, "type": "blob", "sha": "x" * 40} for p in files]
         route.fulfill(json={"sha": "HEAD", "tree": tree, "truncated": False})
 
-    context.page.route("https://api.github.com/repos/" + BENCH + "/contents/**", bench)
-    context.page.route("https://api.github.com/repos/" + BENCH + "/git/trees/**", bench_tree)
+    context.page.route("https://api.github.com/repos/" + repo_name + "/contents/**", bench)
+    context.page.route("https://api.github.com/repos/" + repo_name + "/git/trees/**", bench_tree)
     context.page.route("https://api.github.com/repos/acme/demo-vault/contents/**", author_put)
+    # a re-pairing later in the scenario sets the repo by hand; the init
+    # script must not put the first bench back on every navigation
     context.page.add_init_script(
         "localStorage.setItem('lc_ed_pat', 'ghp_stub');"
-        "localStorage.setItem('lc_ed_repo', '" + BENCH + "');"
+        "if (!localStorage.getItem('lc_ed_repo')) localStorage.setItem('lc_ed_repo', '" + repo_name + "');"
     )
 
 
@@ -677,3 +680,28 @@ def step_press_pad_save(context):
     btn = context.page.locator(".lc-mdpad-save").first
     expect(btn).to_be_enabled(timeout=10_000)
     btn.click()
+
+
+@given('the key is re-paired to the bench "{bench}" holding nothing')
+def step_repair_bench(context, bench):
+    """a second learner on the same browser, or the same learner's real bench
+    after a misdirected first pairing — the record must follow the bench"""
+    _stub_bench(context, {}, bench=bench)
+    context.page.evaluate("(b) => localStorage.setItem('lc_ed_repo', b)", bench)
+    # registered last, runs last: the re-pairing wins on the next navigation
+    context.page.add_init_script("localStorage.setItem('lc_ed_repo', '" + bench + "');")
+
+
+@given("the key is paired to the site's own repo")
+def step_pair_site(context):
+    """the rig builds the site as michelzam/lightcodelab; pointing the key at it
+    is exactly what put a public copy of Michel's record at pedia's root"""
+    _stub_bench(context, {}, bench="michelzam/lightcodelab")
+
+
+@then('the bench received a commit to "{path}" without "{text}"')
+def step_bench_commit_without(context, path, text):
+    hits = [c for c in context.bench_commits if c["path"] == path]
+    assert hits, "no commit to %s — bench saw: %r" % (path, [c["path"] for c in context.bench_commits])
+    assert text not in hits[-1]["text"], "a foreign row travelled:\n" + "\n---\n".join(
+        c["message"] + " @ " + c["path"] + "\n" + c["text"][:300] for c in context.bench_commits)
