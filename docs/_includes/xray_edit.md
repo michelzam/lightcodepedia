@@ -338,7 +338,13 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
       ta = document.createElement("textarea"); ta.id = "lcx-content"; ta.setAttribute("autofocus", "");
       if (isComponent) {
         var codeEl = srcEl.querySelector("code") || srcEl;
-        ta.value = (codeEl.textContent || "").replace(/\n$/, "");
+        /* THE EDITOR SHOWS THE INSIDE OF THE FENCE. A snapshot can hold the
+           whole fence — markers, the IAL line — when the block was rendered
+           inside another (a bench slot in a lesson: Michel, 2026-09-16,
+           "looked for «```yaml…», found it 0 time(s)"). The learner edits
+           the yaml, never the backticks, and the file is anchored on the
+           yaml too (see editTransform). */
+        ta.value = fenceInner((codeEl.textContent || "").replace(/\n$/, ""));
       } else {
         ta.value = (block.textContent || "").trim();   // plain text — never raw HTML
       }
@@ -751,6 +757,37 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
      either file that might hold it — the page's own source or a learner's
      bench. It also makes "retitled the block AND rewired it" one commit
      instead of two that race for the same sha. */
+  /* the text between a fence's markers, or the text itself when there are
+     none; a trailing IAL line ({: … }) goes too — it belongs to the file's
+     wiring, not to the block's content */
+  function fenceInner(text) {
+    var s = String(text == null ? "" : text).replace(/\s+$/, "");
+    var m = /^(`{3,})[^\n]*\n([\s\S]*?)\n\1[ \t]*(?:\n+\{:[^\n]*\})?\s*$/.exec(s);
+    return m ? m[2] : String(text == null ? "" : text);
+  }
+  /* A COMPONENT IS FOUND BY ITS NAME, NOT ITS TEXT. When the exact text
+     is not in the file — the snapshot said one thing, the file another —
+     the IAL line carrying #id says where the block is: the fence right
+     above it is the one to rewrite. Same finder as the knobs use. */
+  function replaceFenceById(src, id, inner) {
+    if (!id) return null;
+    var lines = String(src).split("\n");
+    var idRe = new RegExp("#" + id.replace(/[^\w-]/g, "") + "(?![\\w-])");
+    var ial = -1;
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf("{:") >= 0 && idRe.test(lines[i])) { ial = i; break; }
+    }
+    if (ial < 0) return null;
+    var close = ial - 1;
+    while (close >= 0 && !/^\s*`{3,}\s*$/.test(lines[close])) close--;
+    if (close < 0) return null;
+    var fence = lines[close].trim();
+    var open = close - 1;
+    while (open >= 0 && lines[open].indexOf(fence) !== 0) open--;
+    if (open < 0) return null;
+    return lines.slice(0, open + 1).concat(String(inner).split("\n"), lines.slice(close)).join("\n");
+  }
+
   function editTransform(opts) {
     /* The diagnostics ride ON the transform. commitTransform cannot know what
        a refusal was looking for, and discarding that fact — "couldn't locate"
@@ -762,6 +799,8 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         out = replaceBlockIn(out, before, after, opts.text.ordinal);
         xf.diag = { anchor: before.slice(0, 200), hits: replaceBlockIn.hits,
                     ordinal: opts.text.ordinal };
+        if (out == null && opts.id && replaceBlockIn.hits === 0)
+          out = replaceFenceById(String(src), opts.id, fenceInner(after));
         if (out == null) return null;
       }
       if (opts.knobs) {

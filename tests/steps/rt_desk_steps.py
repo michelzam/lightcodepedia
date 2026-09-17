@@ -170,3 +170,13 @@ def step_slot_save(context):
     btn.click()
     expect(context.page.locator(".lc-bench-slot[data-lc-mine='1']").first).to_be_visible(timeout=15_000)
     context.page.wait_for_timeout(500)
+
+
+@when('the page\'s snapshot of "{desk_id}" is the whole fence, markers included')
+def step_bad_snapshot(context, desk_id):
+    """what Michel's page held: the source registry keyed the desk to the
+    outer fence's text, backticks and all"""
+    context.page.wait_for_selector('[data-lc-id="' + desk_id + '"]', timeout=20_000)
+    context.page.evaluate("""(id) => {
+        const html = '<pre id="' + id + '" class="agent"><code>```yaml\\nsystem: Review this resume.\\nintro: I read the second pad. Brief me like my twin, then ask.\\nplaceholder: Say "review it" and Ask\\n```\\n\\n{: .agent #' + id + ' rows="3" }\\n</code></pre>';
+        window.lcSetSourceOf(id, html); }""", desk_id)
