@@ -741,7 +741,16 @@ Auto-included by docs/_layouts/default.html.
       save: function (transform, label) {
         var next;
         try { next = transform(md); } catch (e) { next = null; }
-        if (next == null) return Promise.reject(new Error("couldn't locate that part in your file"));
+        if (next == null) {
+          /* say what was looked for — "couldn't locate" fits a dozen causes
+             (Michel, 2026-09-16, desk two on North Burns: the toast alone
+             left nothing to reason from) */
+          var dg = (transform && transform.diag) || {};
+          var anchor = String(dg.anchor == null ? "" : dg.anchor).split("\n")[0].slice(0, 60);
+          return Promise.reject(new Error("couldn't locate that part in your file — looked for «"
+            + anchor + "…», found it " + (dg.hits == null ? "?" : dg.hits) + " time(s) in "
+            + benchPath + " (" + md.length + " chars)"));
+        }
         if (!window.lcBench) return Promise.reject(new Error("no bench connected"));
         var first = !mine;
         return (first

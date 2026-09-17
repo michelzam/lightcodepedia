@@ -235,3 +235,94 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
       """
     Then the bench received a commit to "courses/demo/mod/desk_one.md" containing "VERDICT"
     And the "desk_one" desk now carries a sheet mentioning "VERDICT"
+
+  Scenario: The lesson's own desk two — quotes, a bound pad and all — keeps its gear and its Keep
+    Michel, 2026-09-16, as a student on North Burns: "Save failed: couldn't
+    locate that part in your file" on desk two. The first gear scenario
+    used a bare desk; the lesson's desk carries a bound= cell expression,
+    an apostrophe and quoted words. Same road, the real fixture.
+
+    Given I have a clean browser page
+    And a connected bench whose "courses/demo/mod/desk_two.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/north.md" with the document:
+      """
+      # North burns
+
+      ```markdown
+      # Jordan Rivera — version two
+      ```
+      {: .mdpad #cv2 rows="6" }
+
+      ````markdown
+      ```yaml
+      system: Review this resume.
+      intro: I read the second pad. Brief me like my twin, then ask.
+      placeholder: Say "review it" and Ask
+      ```
+      {: .agent #desk_two bound="{=cv2.source}" rows="3" }
+      ````
+      {: .embed save="desk_two.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/north.md"
+    And I wait for the page to be interactive
+    And I summon the gear on the "desk_two" desk
+    Then the gear offers "⚙️", not a note
+    When I open the editor and replace the desk's sheet with:
+      """
+      system: You are the volunteer coordinator at the Humane Society. Be direct. End with exactly one line: VERDICT: n/8
+      intro: I read the second pad. Brief me like my twin, then ask.
+      placeholder: Say "review it" and Ask
+      """
+    Then the bench received a commit to "courses/demo/mod/desk_two.md" containing "VERDICT"
+    And the "desk_two" desk now carries a sheet mentioning "VERDICT"
+
+  Scenario: Copy the starter first, then the gear with the whole sheet — Keep still lands
+    The road a student takes: 💾 "Save to my space" on the slot, then the
+    ⚙️, then the shelter's whole sheet pasted after system: — lines, dashes,
+    blank lines and the VERDICT colon.
+
+    Given I have a clean browser page
+    And a connected bench whose "courses/demo/mod/desk_two.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/north.md" with the document:
+      """
+      # North burns
+
+      ```markdown
+      # Jordan Rivera — version two
+      ```
+      {: .mdpad #cv2 rows="6" }
+
+      ````markdown
+      ```yaml
+      system: Review this resume.
+      intro: I read the second pad. Brief me like my twin, then ask.
+      placeholder: Say "review it" and Ask
+      ```
+      {: .agent #desk_two bound="{=cv2.source}" rows="3" }
+      ````
+      {: .embed save="desk_two.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/north.md"
+    And I wait for the page to be interactive
+    And I press "Save to my space" on the slot
+    And I summon the gear on the "desk_two" desk
+    Then the gear offers "⚙️", not a note
+    When I open the editor and replace the desk's sheet with:
+      """
+      system: You are the volunteer coordinator at the Humane Society. You are busy,
+      practical, and you have read a thousand résumés.
+
+      Judge this one against what we actually need:
+      - one clear name at the top
+      - at least three sections
+      - no empty bragging (the word "expert" earns nothing)
+
+      Be direct and specific. Quote the résumé when you criticise it.
+
+      End your answer with exactly one line, on its own:
+      VERDICT: n/8
+      intro: I read the second pad. Brief me like my twin, then ask.
+      placeholder: Say "review it" and Ask
+      """
+    Then the bench received a commit to "courses/demo/mod/desk_two.md" containing "VERDICT"
+    And the "desk_two" desk now carries a sheet mentioning "VERDICT"

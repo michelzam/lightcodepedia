@@ -161,3 +161,12 @@ def step_open_and_replace(context):
 def step_desk_sheet(context, desk_id, word):
     panel = context.page.locator('[data-lc-id="' + desk_id + '"]')
     expect(panel).to_have_attribute("data-system", re.compile(word), timeout=20_000)
+
+
+@when('I press "Save to my space" on the slot')
+def step_slot_save(context):
+    btn = context.page.locator(".lc-bench-slot .lc-bench-save").first
+    btn.wait_for(state="visible", timeout=20_000)
+    btn.click()
+    expect(context.page.locator(".lc-bench-slot[data-lc-mine='1']").first).to_be_visible(timeout=15_000)
+    context.page.wait_for_timeout(500)
