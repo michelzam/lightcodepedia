@@ -257,6 +257,7 @@ Auto-included by docs/_layouts/default.html.
         var arrow = document.createElement("span");
         arrow.className = "lc-form-selectbox-arrow";
         arrow.textContent = "▾";
+        arrow.setAttribute("aria-hidden", "true");   /* decoration: the label names the field */
         sb.appendChild(txt);
         sb.appendChild(arrow);
         sb.title = (function(){ try { return JSON.stringify(v, null, 2); } catch (e) { return String(v); }})();

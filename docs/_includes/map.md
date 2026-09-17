@@ -9,6 +9,11 @@ Auto-included by docs/_layouts/default.html.
 
 <style>
 .lc-map { margin: 1em 0; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
+/* the attribution strip sat on half-transparent white over the tiles — its
+   contrast depended on the map underneath (WAVE, 2026-09-17). It paints its
+   own background now, the same white, and reads at AA on any tile. */
+.lc-map .maplibregl-ctrl-attrib, .lc-map .leaflet-control-attribution { background: #fff; color: #333; }
+.lc-map .maplibregl-ctrl-attrib a, .lc-map .leaflet-control-attribution a { color: #0a4f99; }
 </style>
 
 <script>

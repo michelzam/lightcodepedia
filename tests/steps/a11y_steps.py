@@ -303,23 +303,12 @@ def step_rules_shown(context, rule, value):
     assert row.locator("td b").text_content() == value, row.inner_text()
 
 
-@then('each chip row names the md block it sits in, its count there, and a ratio decided by the rule "{rule}"')
-def step_review_measured(context, rule):
-    """the unit a person can act on is the fence they wrote: every row names
-    that block (kind + title), the chips it holds, one verdict by rule"""
+@then("no chip is left for a human: the engine itself now passes them")
+def step_no_chip_rows(context):
+    """axe files a short text as 'incomplete' only when its contrast FAILS —
+    at 5:1 the chips pass on the engine's own rule and leave the bucket"""
     rows = context.page.locator(".ed-a11y-row[data-kind='review'][data-of='help']")
-    assert rows.count() >= 2, context.page.locator("#ed-a11y-list").inner_text()[:400]
-    seen = set()
-    for i in range(rows.count()):
-        row = rows.nth(i)
-        md = row.get_attribute("data-md") or ""
-        assert md.startswith("block "), md            # the fence's kind, then its title
-        seen.add(md)
-        assert row.get_attribute("data-verdict") in ("pass", "fail"), row.inner_text()
-        assert re.match(r"\d+ × help$", row.locator(".ed-a11y-kind").text_content().strip())
-        assert rule in row.locator(".ed-a11y-byrule").text_content()
-        assert re.search(r"\d+(\.\d+)?:1", row.locator("i").text_content()), row.inner_text()
-    assert len(seen) >= 2, seen                        # distinct blocks, each named
+    assert rows.count() == 0, "chips still for a human:\n" + "\n".join(rows.all_inner_texts())[:400]
 
 
 @then('the planted paragraph\'s look row names "{rule}" and says why the engine could not decide')
@@ -334,3 +323,39 @@ def step_review_row(context, rule):
 def step_review_click(context):
     context.page.locator(".ed-a11y-row[data-kind='review'][data-sel='#lc-planted-bg']").first.click()
     expect(context.page.locator("#lc-planted-bg")).to_have_class(re.compile(r"ed-a11y-outline"), timeout=5_000)
+
+
+@then("every select-box arrow is hidden from assistive tech")
+def step_arrows_hidden(context):
+    context.page.wait_for_selector(".lc-form-selectbox-arrow", state="attached", timeout=15_000)
+    bad = context.page.evaluate(
+        """() => Array.from(document.querySelectorAll('.lc-form-selectbox-arrow'))
+                 .filter(a => a.getAttribute('aria-hidden') !== 'true').length""")
+    assert bad == 0, "%d select arrows still read as text" % bad
+
+
+@then("the map's attribution strip paints an opaque background")
+def step_map_strip_opaque(context):
+    context.page.wait_for_selector(".lc-map .maplibregl-ctrl-attrib, .lc-map .leaflet-control-attribution", state="attached", timeout=20_000)
+    got = context.page.evaluate(
+        """() => { const s = document.querySelector('.lc-map .maplibregl-ctrl-attrib, .lc-map .leaflet-control-attribution');
+                   return getComputedStyle(s).backgroundColor; }""")
+    m = re.match(r"rgba?\(([^)]+)\)", got or "")
+    parts = [float(x) for x in m.group(1).split(",")] if m else []
+    assert parts and (len(parts) < 4 or parts[3] >= 1), "the strip is still see-through: %s" % got
+
+
+@then('no grid cell is left for a human: the rule "{rule}" decides them')
+def step_grid_cells_decided(context, rule):
+    """a grid layers cells over rows; the row's colour is the background —
+    a component fact the rule measures, whatever the page"""
+    rows = context.page.locator(".ed-a11y-row[data-kind='review']")
+    for i in range(rows.count()):
+        row = rows.nth(i)
+        of = row.get_attribute("data-of") or ""
+        if not re.match(r"(datagrid|form)", of):
+            continue
+        if row.get_attribute("data-verdict") == "look" and "overlapped" in (row.locator("i").text_content() or ""):
+            raise AssertionError("a grid cell still waits for a human: " + row.inner_text()[:200])
+        if "overlapped" in (row.locator("i").text_content() or ""):
+            assert rule in row.locator(".ed-a11y-byrule").text_content(), row.inner_text()

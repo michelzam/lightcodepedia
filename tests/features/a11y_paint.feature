@@ -77,6 +77,19 @@ Feature: What we paint ourselves reads, and names itself
     And the footnote mark inside an answer still opens its popover
 
 
+  Scenario: The help chips read at AA at rest, the select arrow is decoration, the map strip paints its own background
+    Michel, 2026-09-17, after WAVE on the tutorial: the ⓘ chips were the one
+    true contrast gap (2.65:1 at 0.75 opacity); the ▾ of a select box was
+    read aloud as a character; the map's attribution sat on half-transparent
+    white over the tiles. The default look keeps its light circle — only the
+    letter darkens; nothing else moves.
+
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    Then the text in ".lc-help" reads at AA contrast
+    And every select-box arrow is hidden from assistive tech
+    And the map's attribution strip paints an opaque background
+
   Scenario: High contrast makes the help chips read at AA, and nothing on the page stays tiny
     The default keeps its look (Michel, 2026-09-15): under High contrast the
     "i" chips, the arrows and the hints darken and grow, for the learner who

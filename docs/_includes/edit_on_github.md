@@ -2527,12 +2527,18 @@ Auto-included by docs/_layouts/default.html. Skipped for:
          (a picture, a gradient), the rule says "look". */
       var RULES = window.lcAuditRules = window.lcAuditRules || {
         short_text_is_text: true,       /* a lone glyph reads like text: measure it */
+        grid_cell_over_row: true,       /* a grid paints cells over its row: measure against the row */
+        glyph_only_is_decoration: true, /* ▾ and friends: decoration, not text */
+        third_party_controls: "look",   /* a map's own strip: look, pass or fail */
         image_behind_text: "look",      /* pixels unknown from CSS: a human looks */
         gradient_behind_text: "look",
         overlap_behind_text: "look"
       };
       var RULE_WORDS = {
-        short_text_is_text: ["short text is text", "one glyph (a ⓘ chip, an arrow) is measured like any text — off: a human looks"],
+        short_text_is_text: ["short text is text", "one glyph (a ⓘ chip, a digit) is measured like any text — off: a human looks"],
+        grid_cell_over_row: ["grid cell over its row", "a grid (datagrid, form) layers cells over rows: the row's colour is the background — a component fact, measured"],
+        glyph_only_is_decoration: ["glyph is decoration", "content with no letters (▾) decorates; it is not read — off: a human looks"],
+        third_party_controls: ["third-party control", "a map's own attribution strip and the like — look, pass or fail"],
         image_behind_text: ["picture behind text", "the pixels behind the text are unknown from CSS — look, pass or fail"],
         gradient_behind_text: ["gradient behind text", "same — look, pass or fail"],
         overlap_behind_text: ["overlapped text", "another element paints behind it — look, pass or fail"]
@@ -2566,9 +2572,15 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         }
         return over(bg || { r: 255, g: 255, b: 255, a: 1 }, bg ? bg.a : 1, { r: 255, g: 255, b: 255, a: 1 });
       }
+      /* the colour an element paints, or what is behind it if it paints nothing */
+      function paintOf(el) {
+        var c = lum(getComputedStyle(el).backgroundColor), b = behind(el);
+        if (!b) return null;
+        return (c && c.a > 0) ? over(c, c.a, b) : b;
+      }
       function opacityOf(el) { var o = 1, n = el; while (n && n !== document.body) { o *= (+getComputedStyle(n).opacity || 1); n = n.parentElement; } return o; }
-      function measure(el) {
-        var cs = getComputedStyle(el), fg = lum(cs.color), bg = behind(el);
+      function measure(el, bgFrom) {
+        var cs = getComputedStyle(el), fg = lum(cs.color), bg = bgFrom ? paintOf(bgFrom) : behind(el);
         if (!fg || !bg) return null;
         var ownBg = lum(cs.backgroundColor);
         if (ownBg && ownBg.a > 0) bg = over(ownBg, ownBg.a, bg);
@@ -2593,6 +2605,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
             var m = el && measure(el);
             if (m) return { verdict: m.ok ? "pass" : "fail", rule: "short text is text", note: m.ratio + ":1 " + (m.ok ? "≥" : "<") + " " + m.need + ":1" };
           }
+          if (/overlap/i.test(why)) {
+            var el2 = null; try { el2 = document.querySelector(sel); } catch (e) {}
+            var row = el2 && el2.closest && el2.closest(".ag-row, .ag-header-row, .ag-root-wrapper");
+            if (row && RULES.grid_cell_over_row) {
+              var m2 = measure(el2, row);
+              if (m2) return { verdict: m2.ok ? "pass" : "fail", rule: "grid cell over its row", note: m2.ratio + ":1 " + (m2.ok ? "≥" : "<") + " " + m2.need + ":1" };
+            }
+            if (el2 && el2.closest && el2.closest(".maplibregl-ctrl, .leaflet-control")) return { verdict: RULES.third_party_controls, rule: "third-party control", note: why };
+          }
+          if (/only non-text/i.test(why) && RULES.glyph_only_is_decoration) return { verdict: "pass", rule: "glyph is decoration", note: why };
           if (/background image/i.test(why)) return { verdict: RULES.image_behind_text, rule: "picture behind text", note: why };
           if (/gradient/i.test(why)) return { verdict: RULES.gradient_behind_text, rule: "gradient behind text", note: why };
           if (/overlap/i.test(why)) return { verdict: RULES.overlap_behind_text, rule: "overlapped text", note: why };

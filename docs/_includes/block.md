@@ -20,12 +20,14 @@ Auto-included by docs/_layouts/default.html.
 .lc-help {
   display: inline-flex; align-items: center; justify-content: center;
   width: 15px; height: 15px; border-radius: 50%;
-  border: 1.4px solid #0a84ff; color: #0a84ff;
+  /* the letter reads at AA (5:1) at rest; the circle keeps its light touch —
+     the whole chip used to sit at 0.75 opacity, 2.65:1 (Michel, 2026-09-17) */
+  border: 1.4px solid rgba(10, 132, 255, 0.6); color: #1a6fcc;
   font: italic 700 10px/1 Georgia, "Times New Roman", serif;
-  cursor: help; opacity: 0.75; vertical-align: super; user-select: none;
+  cursor: help; vertical-align: super; user-select: none;
   position: relative; margin-left: 0.2em; flex-shrink: 0;
 }
-.lc-help:hover, .lc-help:focus { opacity: 1; outline: none; }
+.lc-help:hover, .lc-help:focus { border-color: #0a84ff; color: #0a4f99; outline: none; }
 /* Tooltip lives on <body> (position:fixed) so the block's overflow:hidden can't clip it. */
 .lc-help-tip {
   position: fixed; display: none; z-index: 2147483600;

@@ -257,5 +257,6 @@ Feature: Page editor — ✨ AI edit dialog
     And the human-look rows are grouped by rule, "color-contrast" among them
     And the planted paragraph's look row names "color-contrast" and says why the engine could not decide
     And the audit shows its rules with their values, "short text is text" set to "on"
-    And each chip row names the md block it sits in, its count there, and a ratio decided by the rule "short text is text"
+    And no chip is left for a human: the engine itself now passes them
+    And no grid cell is left for a human: the rule "grid cell over its row" decides them
     And clicking that row outlines the planted paragraph
