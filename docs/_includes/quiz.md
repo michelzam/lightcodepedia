@@ -237,7 +237,9 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
 
       items.forEach(function(li, i){
         var toggle = function () {
-          if (li.classList.contains('lc-quiz-correct') || li.classList.contains('lc-quiz-wrong')) {
+          if (el.querySelector('.lc-quiz-correct, .lc-quiz-wrong')) {
+            /* a new pick after a Check: the verdict colours go, the ticks
+               stay as the learner left them */
             items.forEach(function(o){ o.classList.remove('lc-quiz-correct', 'lc-quiz-wrong'); });
           }
           if (selected[i]) {
@@ -261,7 +263,16 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
         items.forEach(function(li, i){
           var isCorrect = !!correctSet[i];
           var isSelected = !!selected[i];
-          li.classList.remove('lc-quiz-selected', 'lc-quiz-correct', 'lc-quiz-wrong');
+          /* THE TICK STAYS. Check used to strip lc-quiz-selected from every
+             option while `selected` still held them: the boxes looked empty,
+             the next click on one silently UNselected it (no tick to remove),
+             the click after that ticked it again — state and picture a step
+             apart, and Check grading picks the learner could not see
+             (Michel, 2026-09-16). The colour is the verdict, the tick is the
+             pick: both stay, and toggling after a Check starts from what the
+             learner sees. */
+          li.classList.remove('lc-quiz-correct', 'lc-quiz-wrong');
+          li.classList.toggle('lc-quiz-selected', isSelected);
           if (isCorrect && isSelected) {
             li.classList.add('lc-quiz-correct');
           } else if (isCorrect && !isSelected) {

@@ -895,3 +895,53 @@ def step_not_booked_for(context, fid):
 @then('the green for "{fid}" is booked')
 def step_booked_for(context, fid):
     assert _booked(context, fid) == 1, "the save did not book the green"
+
+
+# ── multi quiz: the tick is the pick, the colour is the verdict ─────────
+
+def _multi_opt(context, text):
+    quiz = context.page.locator('.lc-quiz[multi="true"]').first
+    return quiz.locator("li", has_text=text).first
+
+
+@when('I toggle the multi quiz option "{text}"')
+def step_toggle_multi(context, text):
+    li = _multi_opt(context, text)
+    li.wait_for(state="visible", timeout=15_000)
+    li.click()
+    context.page.wait_for_timeout(200)
+
+
+@when("I press Check on the multi quiz")
+def step_press_check(context):
+    context.page.locator(".lc-quiz-check").first.click()
+    context.page.wait_for_timeout(300)
+
+
+@then('the multi quiz option "{text}" is ticked and marked {verdict:w}')
+def step_multi_ticked_verdict(context, text, verdict):
+    li = _multi_opt(context, text)
+    expect(li).to_have_attribute("aria-checked", "true")
+    expect(li).to_have_class(re.compile(r"lc-quiz-selected"))
+    expect(li).to_have_class(re.compile(r"lc-quiz-" + verdict))
+
+
+@then('the multi quiz option "{text}" is unticked, with no verdict colour')
+def step_multi_unticked(context, text):
+    li = _multi_opt(context, text)
+    expect(li).to_have_attribute("aria-checked", "false")
+    expect(li).not_to_have_class(re.compile(r"lc-quiz-selected"))
+    expect(li).not_to_have_class(re.compile(r"lc-quiz-(correct|wrong)"))
+
+
+@then('the multi quiz option "{text}" is ticked, with no verdict colour')
+def step_multi_ticked_plain(context, text):
+    li = _multi_opt(context, text)
+    expect(li).to_have_attribute("aria-checked", "true")
+    expect(li).to_have_class(re.compile(r"lc-quiz-selected"))
+    expect(li).not_to_have_class(re.compile(r"lc-quiz-(correct|wrong)"))
+
+
+@then('the multi quiz says "{text}"')
+def step_multi_says(context, text):
+    expect(context.page.locator(".lc-quiz-status").first).to_contain_text(text, timeout=5_000)
