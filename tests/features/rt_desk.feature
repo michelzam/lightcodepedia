@@ -326,3 +326,39 @@ Feature: The fire page's acts — two wired desks, three points, gated rewards
       """
     Then the bench received a commit to "courses/demo/mod/desk_two.md" containing "VERDICT"
     And the "desk_two" desk now carries a sheet mentioning "VERDICT"
+
+  Scenario: A snapshot that kept the fence markers still lets Keep land on the yaml
+    Michel, 2026-09-16, the diagnostic toast: "looked for «```yaml…», found
+    it 0 time(s) in desk_two.md". The editor had opened on the fence
+    markers, the file holds the yaml between them. Whatever took that
+    snapshot, Keep anchors on the yaml inside the fence and lands.
+
+    Given I have a clean browser page
+    And a connected bench whose "courses/demo/mod/desk_two.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/north.md" with the document:
+      """
+      # North burns
+
+      ````markdown
+      ```yaml
+      system: Review this resume.
+      intro: I read the second pad. Brief me like my twin, then ask.
+      placeholder: Say "review it" and Ask
+      ```
+      {: .agent #desk_two rows="3" }
+      ````
+      {: .embed save="desk_two.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/north.md"
+    And I wait for the page to be interactive
+    And the page's snapshot of "desk_two" is the whole fence, markers included
+    And I summon the gear on the "desk_two" desk
+    Then the gear offers "⚙️", not a note
+    When I open the editor and replace the desk's sheet with:
+      """
+      system: You are the volunteer coordinator. End with exactly one line: VERDICT: n/8
+      intro: I read the second pad. Brief me like my twin, then ask.
+      placeholder: Say "review it" and Ask
+      """
+    Then the bench received a commit to "courses/demo/mod/desk_two.md" containing "VERDICT"
+    And the "desk_two" desk now carries a sheet mentioning "VERDICT"
