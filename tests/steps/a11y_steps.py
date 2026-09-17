@@ -292,15 +292,34 @@ def step_review_groups(context, rule):
     context.page.evaluate("() => document.querySelectorAll('#ed-a11y-list details').forEach(d => d.open = true)")
 
 
-@then('a ⓘ chip\'s row carries a measured ratio, decided by the rule "{rule}"')
-def step_review_measured(context, rule):
-    """the chips are one glyph each; the default rule calls a glyph text and
-    measures it — the verdict names the rule and the ratio"""
-    row = context.page.locator(".ed-a11y-row[data-kind='review'][data-sel*='lc-help']").first
+@then('the audit shows its rules with their values, "{rule}" set to "{value}"')
+def step_rules_shown(context, rule, value):
+    """rules with defaults, always on screen — the auditor answers for them"""
+    box = context.page.locator("#ed-a11y-rules")
+    expect(box).to_be_visible(timeout=5_000)
+    context.page.evaluate("() => { const d = document.getElementById('ed-a11y-rules'); if (d) d.open = true; }")
+    row = box.locator("tr", has_text=rule).first
     expect(row).to_be_visible(timeout=5_000)
-    assert row.get_attribute("data-verdict") in ("pass", "fail"), row.inner_text()
-    assert rule in row.locator(".ed-a11y-byrule").text_content()
-    assert re.search(r"\d+(\.\d+)?:1", row.locator("i").text_content()), row.inner_text()
+    assert row.locator("td b").text_content() == value, row.inner_text()
+
+
+@then('each chip row names the md block it sits in, its count there, and a ratio decided by the rule "{rule}"')
+def step_review_measured(context, rule):
+    """the unit a person can act on is the fence they wrote: every row names
+    that block (kind + title), the chips it holds, one verdict by rule"""
+    rows = context.page.locator(".ed-a11y-row[data-kind='review'][data-of='help']")
+    assert rows.count() >= 2, context.page.locator("#ed-a11y-list").inner_text()[:400]
+    seen = set()
+    for i in range(rows.count()):
+        row = rows.nth(i)
+        md = row.get_attribute("data-md") or ""
+        assert md.startswith("block "), md            # the fence's kind, then its title
+        seen.add(md)
+        assert row.get_attribute("data-verdict") in ("pass", "fail"), row.inner_text()
+        assert re.match(r"\d+ × help$", row.locator(".ed-a11y-kind").text_content().strip())
+        assert rule in row.locator(".ed-a11y-byrule").text_content()
+        assert re.search(r"\d+(\.\d+)?:1", row.locator("i").text_content()), row.inner_text()
+    assert len(seen) >= 2, seen                        # distinct blocks, each named
 
 
 @then('the planted paragraph\'s look row names "{rule}" and says why the engine could not decide')

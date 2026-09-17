@@ -192,7 +192,13 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 .ed-a11y-row[data-verdict="pass"] i { color: #14532d; } .ed-a11y-row[data-verdict="fail"] i { color: #7f1d1d; }
 .ed-a11y-byrule { color: #6b7280; font-size: 0.85em; }
 .ed-a11y-review-n { color: #7a5a00; }
-.ed-a11y-rules { padding: 0.5em 0.9em; margin: 0; color: #6b7280; font-size: 0.85em; border-top: 1px solid #f0f0f0; }
+#ed-a11y-rules { border-top: 1px solid #f0f0f0; font-size: 0.85em; color: #4b5563; }
+#ed-a11y-rules summary { padding: 0.5em 0.9em; cursor: pointer; }
+#ed-a11y-rules table { margin: 0 0.9em 0.6em; border-collapse: collapse; }
+#ed-a11y-rules td { padding: 0.2em 0.6em 0.2em 0; vertical-align: top; }
+#ed-a11y-rules td b { color: #0a4f99; }
+.ed-a11y-kind { font-weight: 600; margin-right: 0.4em; }
+.ed-a11y-md { font-weight: 600; color: #0a4f99; }
 .ed-a11y-group { border-top: 1px solid #f0f0f0; }
 .ed-a11y-group summary { padding: 0.5em 0.9em; cursor: pointer; }
 .ed-a11y-group summary b { display: inline-block; min-width: 4.6em; margin-right: 0.5em; padding: 0 0.45em; border-radius: 6px; font-size: 0.8em; text-align: center; }
@@ -2525,6 +2531,17 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         gradient_behind_text: "look",
         overlap_behind_text: "look"
       };
+      var RULE_WORDS = {
+        short_text_is_text: ["short text is text", "one glyph (a ⓘ chip, an arrow) is measured like any text — off: a human looks"],
+        image_behind_text: ["picture behind text", "the pixels behind the text are unknown from CSS — look, pass or fail"],
+        gradient_behind_text: ["gradient behind text", "same — look, pass or fail"],
+        overlap_behind_text: ["overlapped text", "another element paints behind it — look, pass or fail"]
+      };
+      var rulesBox = '<details id="ed-a11y-rules"><summary>⚖️ ' + Object.keys(RULES).length + ' rules with defaults — the auditor answers for these, not the engine</summary><table>'
+        + Object.keys(RULES).map(function (k) {
+            var w = RULE_WORDS[k] || [k, ""], v = RULES[k] === true ? "on" : RULES[k] === false ? "off" : String(RULES[k]);
+            return '<tr><td>' + a11yEsc(w[0]) + '</td><td><b>' + a11yEsc(v) + '</b></td><td>' + a11yEsc(w[1]) + '</td></tr>';
+          }).join('') + '</table></details>';
       function lum(c) {
         var m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/.exec(c || "");
         if (!m) return null;
@@ -2582,18 +2599,65 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         }
         return { verdict: "look", rule: "", note: why };
       }
+      /* THE PAGE IS MARKDOWN AND COMPONENTS, NOT PIXELS (Michel, 2026-09-17).
+         Every element the engine hesitated on belongs to a component kind
+         stamped from one master copy — twelve ⓘ chips are one fact, not
+         twelve. So the rows are per kind: the kind, how many on this page,
+         one verdict, the first one outlined on click. */
+      function kindOf(sel) {
+        var el = null; try { el = document.querySelector(sel); } catch (e) {}
+        var n = el;
+        while (n && n !== document.body) {
+          var c = (n.className && typeof n.className === "string") ? n.className.match(/(?:^|\s)lc-([a-z0-9-]+)/) : null;
+          if (c) return c[1];
+          n = n.parentElement;
+        }
+        return el ? el.tagName.toLowerCase() : "?";
+      }
+      /* THE MD COMPONENT THAT NEEDS ATTENTION (Michel, 2026-09-17): the fence
+         the author wrote — {: .block }, {: .quiz #q1 }… — is the unit a
+         person can act on. Its root is the nearest ancestor stamped with an
+         id, else the nearest component root; named by its id or its own
+         first heading, so it can be found in the source. */
+      var MD_KINDS = /(?:^|\s)lc-(block|text|blocks|quiz|form|datagrid|chart|agent|feature|folder|embed|bench-slot|mdpad|image|video|dataset|query|button|slides|map|scene3d|avatar|steps|nodes|flow|pitch|persona|recap|footnote|blocks-grid)(?:\s|$)/;
+      function mdComponentOf(sel) {
+        var el = null; try { el = document.querySelector(sel); } catch (e) {}
+        var n = el ? el.parentElement : null, root = null, kind = "";
+        while (n && n !== document.body) {
+          if (n.hasAttribute("data-lc-id")) { root = n; break; }
+          var c = (n.className && typeof n.className === "string") ? n.className.match(MD_KINDS) : null;
+          if (c && !root) { root = n; kind = c[1]; }
+          n = n.parentElement;
+        }
+        if (!root) return { label: "page", sel: "" };
+        if (!kind) { var c2 = (root.className || "").match(/(?:^|\s)lc-([a-z0-9-]+)/); kind = c2 ? c2[1] : root.tagName.toLowerCase(); }
+        var id = root.getAttribute("data-lc-id") || root.id || "";
+        var h = root.querySelector("h1,h2,h3,h4,h5,h6,summary,.lc-block-title,legend");
+        var text = "";
+        if (h) { var hc = h.cloneNode(true); hc.querySelectorAll(".lc-help").forEach(function (x) { x.remove(); }); text = hc.textContent.trim().replace(/\s+/g, " ").slice(0, 40); }
+        var title = id ? "#" + id : text;
+        return { label: kind + (title ? " " + title : ""), sel: id ? '[data-lc-id="' + id + '"], #' + id : "" , el: root };
+      }
       var inc = (res.incomplete || []).filter(function (v) { return v.id !== "aria-required-children"; });
       var ni = 0, nfail = 0, groups = "";
       inc.forEach(function (v) {
-        var body = "", tally = { pass: 0, fail: 0, look: 0 };
+        var body = "", tally = { pass: 0, fail: 0, look: 0 }, kinds = {}, order = [];
         v.nodes.forEach(function (nd) {
-          var sel = (nd.target && nd.target[0]) || "", d = decide(v, nd);
+          var sel = (nd.target && nd.target[0]) || "", d = decide(v, nd), md = mdComponentOf(sel);
+          var key = md.label + "|" + kindOf(sel) + "|" + d.verdict + "|" + d.rule;
           tally[d.verdict] = (tally[d.verdict] || 0) + 1; ni++; if (d.verdict === "fail") nfail++;
-          body += '<div class="ed-a11y-row" data-sel="' + a11yEsc(sel) + '" data-rule="' + a11yEsc(v.id) + '" data-kind="review" data-verdict="' + d.verdict + '">'
+          if (!kinds[key]) { kinds[key] = { md: md, kind: kindOf(sel), sel: sel, d: d, n: 0, html: nd.html || "" }; order.push(key); }
+          kinds[key].n++;
+        });
+        order.forEach(function (key) {
+          var k = kinds[key], d = k.d;
+          body += '<div class="ed-a11y-row" data-sel="' + a11yEsc(k.sel) + '" data-rule="' + a11yEsc(v.id) + '" data-kind="review" data-verdict="' + d.verdict + '" data-of="' + a11yEsc(k.kind) + '" data-md="' + a11yEsc(k.md.label) + '">'
                 + '<b class="' + d.verdict + '">' + d.verdict + '</b>'
+                + '<span class="ed-a11y-md">' + a11yEsc(k.md.label) + '</span> · '
+                + '<span class="ed-a11y-kind">' + k.n + ' × ' + a11yEsc(k.kind) + '</span> '
                 + (d.rule ? '<span class="ed-a11y-byrule">by rule “' + a11yEsc(d.rule) + '”</span> ' : '')
                 + '<i>' + a11yEsc(d.note) + '</i>'
-                + '<code>' + a11yEsc((nd.html || "").slice(0, 160)) + '</code></div>';
+                + '<code>' + a11yEsc(k.html.slice(0, 160)) + '</code></div>';
         });
         groups += '<details class="ed-a11y-group" data-rule="' + a11yEsc(v.id) + '"' + (tally.fail ? ' open' : '') + '><summary>'
                 + '<b class="review">look</b>' + a11yEsc(v.help) + ' <a href="' + a11yEsc(v.helpUrl) + '" target="_blank" rel="noopener" style="font-size:0.85em">why?</a>'
@@ -2601,8 +2665,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
                 + (tally.fail || 0) + ' fail · ' + (tally.pass || 0) + ' pass by rule · ' + (tally.look || 0) + ' to look at</span>'
                 + '</summary>' + body + '</details>';
       });
-      var rulesLine = '<p class="ed-a11y-rules">Rules with defaults, yours to answer for: short text is text · picture, gradient or overlap behind text → a human looks.</p>';
-      var review = ni ? rulesLine + groups : "";
+      var review = rulesBox + groups;
       if (!n) {
         list.innerHTML = '<p class="ed-a11y-ok">✅ No confirmed issues on this page — WCAG 2.1 A/AA, ' + ps.length + ' rules passed. '
           + (ni ? '<span class="ed-a11y-review-n">⚠️ ' + ni + ' element' + (ni > 1 ? 's' : '') + ' need' + (ni > 1 ? '' : 's') + ' a human look'
