@@ -19,7 +19,7 @@ Bound to a runner (writes code back to a .run editor):
   {: .agent bound="play" }
 
 YAML knobs (optional):
-  system, model, temperature, max_tokens, intro, placeholder
+  system, model, temperature, max_tokens, intro, placeholder, placeholder_next
   provider: gemini | openrouter | groq | custom   (default from the ring)
             THE AUTHOR'S SUGGESTION, not the learner's engine: the ring
             (docs/bots/providers.yml — engines, endpoints, models, where a
@@ -691,7 +691,7 @@ Auto-included by docs/_layouts/default.html.
     };
   })();
 
-  var KNOB_RE = /^(system|intro|placeholder|name|model|model_fallback|provider|base_url|fallback|temperature|max_tokens|bot|knowledge|knowledge_budget)\s*:\s?(.*)$/;
+  var KNOB_RE = /^(system|intro|placeholder|placeholder_next|name|model|model_fallback|provider|base_url|fallback|temperature|max_tokens|bot|knowledge|knowledge_budget)\s*:\s?(.*)$/;
   function lenientCfg(raw) {
     var out = {}, key = null, buf = [];
     function flush() { if (key) out[key] = buf.join('\n').replace(/^\s*\|\s*\n?/, '').trim(); }
@@ -1130,6 +1130,13 @@ Auto-included by docs/_layouts/default.html.
         response.innerHTML =
           '<div class="lc-agent-msg-user">' + escapeHtml(question) + '</div>' +
           '<div class="lc-agent-msg-bot">' + renderMarkdown(result.text) + '</div>';
+        /* THE BOX STOPS INVITING THE OPENING LINE ONCE IT HAS BEEN SAID.
+           A placeholder that reads Ask "what still drifts?" after the first
+           reply told a student to ask it again (Michel, 2026-09-18). From
+           the second turn the box invites the next move — the page's own
+           words with placeholder_next, or a plain default. */
+        var promptEl = panel.querySelector('.lc-agent-prompt');
+        if (promptEl) promptEl.placeholder = cfg.placeholder_next || 'Your answer — then press Ask';
 
         // The panel shows one exchange at a time, but the SITTING has a
         // memory: every raw answer joins a hidden ledger, so a page's

@@ -448,3 +448,18 @@ def step_answered_with_model(context, text, model):
 def step_remembers_model(context, model, pid):
     got = context.page.evaluate("(k) => localStorage.getItem(k)", "lc_ai_model_" + pid)
     assert got == model, got
+
+
+@then('the "{agent_id}" agent\'s box invites the opening line')
+def step_box_first(context, agent_id):
+    box = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-prompt')
+    context.first_placeholder = box.get_attribute("placeholder") or ""
+    assert context.first_placeholder, "the box has no placeholder at all"
+
+
+@then('the "{agent_id}" agent\'s box invites the next move instead')
+def step_box_next(context, agent_id):
+    box = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-prompt')
+    expect(box).not_to_have_attribute("placeholder", context.first_placeholder, timeout=10_000)
+    got = box.get_attribute("placeholder") or ""
+    assert "Ask" in got and got != context.first_placeholder, got

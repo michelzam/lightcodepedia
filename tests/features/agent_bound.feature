@@ -18,6 +18,21 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I apply the agent's fix
     Then the "buggy" editor now holds "print('fixed')"
 
+  Scenario: After the first reply the box invites the next move, not the opening line
+    Michel, 2026-09-18: a placeholder that still read Ask "what still
+    drifts?" after the Agent had answered told a student to ask it again.
+    From the second turn the box says what comes next.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with a python fix "print('fixed')"
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "tutor" agent with key "test-key"
+    Then the "tutor" agent's box invites the opening line
+    When I ask the "tutor" agent "help me fix it"
+    Then the "tutor" agent's box invites the next move instead
+
   Scenario: Expression — bound reads a pad through a cell expression
     Given I have a clean browser page
     And a builder key is connected

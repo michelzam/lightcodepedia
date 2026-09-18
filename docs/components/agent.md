@@ -163,6 +163,7 @@ All configuration goes in the YAML block.
 | `fallback` | (the keys on the keyring) | Engines to offer when the first one is busy, in order — `fallback: openrouter`. Only engines the reader already has a key for are offered, and the switch is always **asked** first: another engine can be another bill. The answer is remembered for that sitting |
 | `intro` | (none) | A hint rendered above the input |
 | `placeholder` | "Ask anything..." | Placeholder text in the prompt field |
+| `placeholder_next` | "Your answer — then press Ask" | What the prompt field invites from the second turn on — the opening line is said once, then the box asks for the next move |
 
 A fully-dressed example:
 
