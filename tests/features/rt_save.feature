@@ -569,6 +569,25 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     Then the bench received a commit to "__progress.txt" containing "courses/demo/mod/work"
     And the bench received a commit to "__progress.txt" without "courses/demo/mod/other"
 
+  Scenario: A key paired to the learner's own fork is re-paired to the org bench, and the fork's record comes home
+    Michel, 2026-09-18: a wizard had students fork the hub into their own
+    account; their key paired with <login>/<hub>, every flush went there,
+    the org bench stayed empty — Jessey's, after office hours. She must do
+    nothing: opened through the class door, the pairing becomes the org
+    bench, the fork's course rows come home, the fork is never written.
+
+    Given the signed-in learner is "ada"
+    And the key is paired to ada's own fork "ada/demo" whose record holds a vault row for "courses/demo/mod/other"
+    And the org bench "acme/demo-ada" exists and is empty
+    When I navigate to "/run.html?hub=demo#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And a quiz on this page is answered
+    And the learner leaves the page without saving
+    Then the bench received a commit to "__progress.txt" containing "courses/demo/mod/other"
+    And the bench received a commit to "__progress.txt" containing "courses/demo/mod/work"
+    And the fork received no commit
+    And the key is now paired to "acme/demo-ada"
+
   Scenario: The site's own repo is never a bench for the record
     The file it would write is public, and it seeds everyone whose app
     once pointed there (Michel, 2026-09-17: the copy at pedia's root).

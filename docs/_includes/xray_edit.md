@@ -931,6 +931,53 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         return { repo: "", pat: pat, gap: want, stale: true };
       return { repo: repo, pat: pat };
     },
+    /* A PAIRING TO THE LEARNER'S OWN FORK IS REPAIRED, NOT REFUSED (Michel,
+       2026-09-18). A wizard once had students fork the hub into their own
+       account; their key paired with <login>/<hub>, every save and every
+       progress flush went there, and the org bench the desk reads stayed
+       empty. The student did nothing wrong and must do nothing now: on a
+       page opened through the class door (hub named, vault rendered), a
+       pairing whose owner is the key's own login is switched to
+       <org>/<hub>-<login> when that bench exists — once, silently — and
+       the fork's record is read (the key can) so its course rows come
+       home on the next flush. The fork is never written. */
+    repair: function () {
+      if (window._lcRepairP) return window._lcRepairP;
+      var done = function (v) { return Promise.resolve(v || null); };
+      var repo = "", pat = "", want = "", src = "";
+      try { repo = localStorage.getItem("lc_ed_repo") || ""; pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+      try { (location.search.replace(/^\?/, "") + "&" + location.hash.replace(/^#/, "")).split("&").forEach(function (kv) {
+        var p = kv.split("="); if (p[0] === "hub") want = decodeURIComponent(p[1] || ""); if (p[0] === "src") src = decodeURIComponent(p[1] || "");
+      }); } catch (e) {}
+      var gm = /^gh:([^\/]+)\/([^\/]+)/.exec(src);
+      var org = gm && /-vault$/.test(gm[2]) ? gm[1] : "";   /* the vault's owner is the org, whatever the vault is called */
+      if (!repo || !pat || !want || !org) return done();
+      var H = { Authorization: "Bearer " + pat, "X-GitHub-Api-Version": "2022-11-28" };
+      var who = null; try { who = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); } catch (e) {}
+      var loginP = who && who.login ? Promise.resolve(who.login)
+        : fetch("https://api.github.com/user", { headers: H }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (d) { return d.login || ""; }).catch(function () { return ""; });
+      window._lcRepairP = loginP.then(function (login) {
+        if (!login || repo.split("/")[0].toLowerCase() !== String(login).toLowerCase()) return null;   /* not a personal repo: nothing to repair */
+        var bench = org + "/" + want + "-" + login;
+        if (bench.toLowerCase() === repo.toLowerCase()) return null;
+        return fetch("https://api.github.com/repos/" + bench, { headers: H, cache: "no-store" }).then(function (r) {
+          if (!r.ok) return null;                                                   /* no bench yet: the desk provisions, the pairing waits */
+          try { localStorage.setItem("lc_ed_repo", bench); localStorage.setItem("lc_ed_session", want);
+                localStorage.setItem("lc_bench_repaired_from", repo); } catch (e) {}
+          /* the fork's record: read once, its course rows brought home by the next flush */
+          return fetch("https://api.github.com/repos/" + repo + "/contents/__progress.txt", { headers: H, cache: "no-store" })
+            .then(function (r2) { return r2.ok ? r2.json() : null; })
+            .then(function (file) {
+              var text = "";
+              try { text = file && file.content ? decodeURIComponent(escape(atob(String(file.content).replace(/\n/g, "")))) : ""; } catch (e) {}
+              if (text && window.lcProgress && window.lcProgress.reclaim) window.lcProgress.reclaim(text, "gh:" + gm[1] + "/" + gm[2] + "/");
+              document.dispatchEvent(new CustomEvent("lc-bench-repaired", { detail: { from: repo, to: bench } }));
+              return { from: repo, to: bench };
+            }).catch(function () { return { from: repo, to: bench }; });
+        }).catch(function () { return null; });
+      });
+      return window._lcRepairP;
+    },
     /* WHERE in the bench? The author's spelling decides the shelf:
          save="dogs.yaml"        → beside the lesson — the page's own folder,
                                    FULL course path (courses/…/module_00/),

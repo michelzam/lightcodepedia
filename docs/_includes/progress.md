@@ -217,7 +217,25 @@ Auto-included by docs/_layouts/default.html.
     try { sessionStorage.setItem("lc_progress_read", "1"); } catch (e) {}
   }
 
+  /* the fork's course rows, adopted as UNOWNED: the next flush claims them
+     for the bench the page is now paired with. Max-per-page, nothing lowered. */
+  function reclaim(text, prefix) {
+    var got = parse(text), mine = {}, own = owners(), any = false;
+    Object.keys(got.map).forEach(function (k) {
+      if (prefix && k.indexOf(prefix) !== 0) return;
+      mine[k] = got.map[k]; delete own[k]; any = true;
+    });
+    if (!any) return false;
+    keepOwners(own);
+    adopt(mine);
+    return true;
+  }
+
   function load() {
+    var pre = (window.lcBench && window.lcBench.repair) ? window.lcBench.repair() : Promise.resolve(null);
+    return pre.then(function () { return loadNow(); }, function () { return loadNow(); });
+  }
+  function loadNow() {
     var t = benchTarget();
     if (!t) return Promise.resolve(false);
     var switched = lastBench() !== t.repo;
@@ -306,7 +324,7 @@ Auto-included by docs/_layouts/default.html.
   });
   window.addEventListener("pagehide", leaving);
 
-  window.lcProgress = { load: load, flush: flush, rows: rows,
+  window.lcProgress = { load: load, flush: flush, rows: rows, reclaim: reclaim,
                         parse: parse, merge: merge, serialise: serialise, crc32: crc32 };
 
   if (document.readyState === "loading")

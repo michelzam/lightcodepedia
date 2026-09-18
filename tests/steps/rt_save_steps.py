@@ -705,3 +705,50 @@ def step_bench_commit_without(context, path, text):
     assert hits, "no commit to %s — bench saw: %r" % (path, [c["path"] for c in context.bench_commits])
     assert text not in hits[-1]["text"], "a foreign row travelled:\n" + "\n---\n".join(
         c["message"] + " @ " + c["path"] + "\n" + c["text"][:300] for c in context.bench_commits)
+
+
+@given('the key is paired to ada\'s own fork "{fork}" whose record holds a vault row for "{page}"')
+def step_pair_fork(context, fork, page):
+    """the misdirected pairing: the learner's own fork of the hub, with the
+    record the app wrote there — never to be written again"""
+    import zlib
+    body = "# lc-progress v1\ngh:acme/demo-vault/" + page + "\t2/2\t0/0\t2026-09-10T15:00:00Z\n"
+    record = body + "crc %08x\n" % (zlib.crc32(body.encode()) & 0xFFFFFFFF)
+    context.fork_commits = []
+
+    def fork_api(route, req):
+        if req.method == "PUT":
+            context.fork_commits.append(req.url)
+            route.fulfill(status=200, json={"content": {"sha": "fork-sha"}})
+        elif req.url.split("/contents/", 1)[1].split("?")[0] == "__progress.txt":
+            context.fork_reads = getattr(context, "fork_reads", 0) + 1
+            route.fulfill(json={"content": base64.b64encode(record.encode()).decode(), "sha": "fork-p1"})
+        else:
+            route.fulfill(status=404, json={"message": "Not Found"})
+
+    context.page.route("https://api.github.com/repos/" + fork + "/contents/**", fork_api)
+    # the key names its owner — the one fact the repair needs
+    context.page.route("https://api.github.com/user",
+                       lambda route, req: route.fulfill(json={"login": fork.split("/")[0], "avatar_url": ""}))
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat', 'ghp_stub');"
+        "if (!localStorage.getItem('lc_ed_repo')) { localStorage.setItem('lc_ed_repo', '" + fork + "'); localStorage.setItem('lc_ed_session', 'demo'); }"
+    )
+
+
+@given('the org bench "{bench}" exists and is empty')
+def step_org_bench_exists(context, bench):
+    context.page.route("https://api.github.com/repos/" + bench,
+                       lambda route, req: route.fulfill(json={"full_name": bench, "private": True}))
+    _stub_bench(context, {}, bench=bench)
+
+
+@then("the fork received no commit")
+def step_fork_untouched(context):
+    assert not context.fork_commits, context.fork_commits
+
+
+@then('the key is now paired to "{bench}"')
+def step_paired_now(context, bench):
+    got = context.page.evaluate("() => localStorage.getItem('lc_ed_repo')")
+    assert got == bench, "paired to %r" % got
