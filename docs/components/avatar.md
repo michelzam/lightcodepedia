@@ -96,7 +96,12 @@ section it is talking about, or flips the page into reel:
 ```yaml
 - { at: faq, do: open, with: "get started", say: "Let's unfold this one." }
 - { do: reel, say: "Now swipe through it like a reel." }
+- { at: desk_one, do: xray, say: "Here is the gear. Press it." }
 ```
+
+`do: xray` with an `at:` flips the page into X-ray, draws the lens on that
+part and shows the ⚙️ on its corner — the guide points at the door instead
+of describing where it is; the learner opens it.
 
 The walk follows the verb's **subject**: with `do: open, with: "Why"` the
 avatar stands at that section's own title — not the whole accordion.

@@ -512,3 +512,25 @@ def step_ask_in_open_panel(context, question):
     panel.locator("textarea").fill(question)
     panel.locator("button").first.click()
     context.page.wait_for_timeout(1_200)
+
+
+@when('I pick "{title}" from the guide\'s menu')
+def step_pick_story(context, title):
+    _open_dock_menu(context)
+    item = context.page.locator(".lc-guide-menu.open button", has_text=title).first
+    expect(item).to_be_visible(timeout=5_000)
+    item.click()
+
+
+@then('the gear is showing on "{elid}"')
+def step_gear_on(context, elid):
+    """the ⚙️ badge sits on the part's corner, the page in X-ray, nothing opened"""
+    gear = context.page.locator("#lcx-gear")
+    expect(gear).to_be_visible(timeout=10_000)
+    expect(gear).to_have_text("⚙️")
+    near = context.page.evaluate("""(id) => {
+      const g = document.getElementById('lcx-gear').getBoundingClientRect();
+      const el = document.querySelector('[data-lc-id="' + id + '"]').getBoundingClientRect();
+      return Math.abs(g.left - el.right) < 40 && Math.abs(g.top - el.top) < 40; }""", elid)
+    assert near, "the gear is not on the part's corner"
+    assert context.page.locator("#lcx-content").count() == 0 or not context.page.locator("#lcx-content").is_visible(), "the editor opened by itself"

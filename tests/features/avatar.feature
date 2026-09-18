@@ -107,6 +107,40 @@ Feature: Avatar — speaking overlay instructor
     Then the key prompt names the AI provider, not GitHub
     And the saved-password identity matches the agents'
 
+  Scenario: A story can show the gear on a part instead of describing where it is
+    Michel, 2026-09-18: Doc has verbs, and x-ray is one. Rather than "move
+    the mouse over the desk and press the gear that appears", the story
+    calls x-ray on the part: the lens, and the ⚙️ on its corner. Nothing
+    opens, nothing is edited — the learner presses it.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/guide.md" with the document:
+      """
+      # Guided page
+
+      ```yaml
+      system: Review this resume.
+      ```
+      {: .agent #desk_one rows="3" }
+
+      ```yaml
+      bot: doc
+      script:
+        - say: "Hello."
+      stories:
+        "Where is the gear?":
+          - at: desk_one
+            do: xray
+            say: "Here is the gear. Press it."
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/guide.md"
+    And I wait for the page to be interactive
+    And I pick "Where is the gear?" from the guide's menu
+    Then the gear is showing on "desk_one"
+
   Scenario: A docked idle guide is untouchable, not just invisible
     The hidden big face kept its click handler while docked — an invisible
     circle floating over the page, and a Next button underneath started

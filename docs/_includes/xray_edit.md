@@ -226,6 +226,15 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
   function hideGhost() { ghost.style.display = "none"; gear.style.display = "none"; ghostEl = null; }
   function keep() { if (hideT) { clearTimeout(hideT); hideT = null; } }
   function scheduleHide() { keep(); hideT = setTimeout(hideGhost, 320); }
+  /* the guide's x-ray verb, given a part, also draws the ⚙️ on it (Michel,
+     2026-09-18): Doc points at the door instead of describing where it
+     is. Nothing opens, nothing is edited — the learner presses it. */
+  window.lcxShowGear = function (el) {
+    var blk = el ? blockAt(el) : null;
+    if (!blk) return false;
+    showGhost(blk); keep();
+    return true;
+  };
 
   // Edit affordance lives only inside X-ray mode: Option/Alt held (desktop) or
   // the X-ray toggle on (touch). Otherwise the page reads clean, no gears.

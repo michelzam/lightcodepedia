@@ -164,7 +164,8 @@ Auto-included by docs/_layouts/default.html.
      "tutor never acts" ruling is structural: a consequential action simply
      has no verb to call. Names stay snake_case (doctrine 2).
        open / close [title]   fold or unfold accordion sections
-       present / reel / read  page modes (same engine as the pill) */
+       present / reel / read  page modes (same engine as the pill)
+       xray [seconds]         the lens; with at: also the ⚙️ on that part */
   window.lcVerbs = (function () {
     var map = {};
     return {
@@ -272,6 +273,9 @@ Auto-included by docs/_layouts/default.html.
        pointer to ask with, so draw the pipelines scene ourselves: the given
        subject, or the first wired component on the page. */
     if (window.lcxReveal) window.lcxReveal(el);
+    /* and, on a named part, the ⚙️ on its corner — the tour has no pointer
+       to hover with, so the verb shows what a hover would */
+    if (el && window.lcxShowGear) window.lcxShowGear(el);
     var s = parseFloat(arg);
     clearTimeout(_lcXrayBack);
     if (s > 0) _lcXrayBack = setTimeout(function () {
