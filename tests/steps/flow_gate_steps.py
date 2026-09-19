@@ -259,3 +259,17 @@ def step_tally(context, want):
             return
         context.page.wait_for_timeout(500)
     raise AssertionError("the tally reads %r, expected %r" % (got, want))
+
+
+@given('"{path}" answers {secs:d} seconds late with {n:d} rows')
+def step_late_csv(context, path, secs, n):
+    """a table that lands after the cells' first paint — the handler sleeps,
+    the page keeps rendering, the count arrives late"""
+    import time
+    body = "name\n" + "\n".join("row%d" % i for i in range(n)) + "\n"
+
+    def slow(route):
+        time.sleep(secs)
+        route.fulfill(status=200, content_type="text/csv", body=body)
+
+    context.page.route("**" + path + "*", slow)

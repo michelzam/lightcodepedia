@@ -694,9 +694,13 @@ def step_repair_bench(context, bench):
 
 @given("the key is paired to the site's own repo")
 def step_pair_site(context):
-    """the rig builds the site as michelzam/lightcodelab; pointing the key at it
-    is exactly what put a public copy of Michel's record at pedia's root"""
-    _stub_bench(context, {}, bench="michelzam/lightcodelab")
+    """whichever repo THIS site was built from — the lab on the rig, pedia in
+    its own suite; pointing the key at it is exactly what put a public copy
+    of Michel's record at pedia's root"""
+    context.page.goto(context.base_url + "/run.html")
+    context.page.wait_for_function("() => typeof window.lcSiteRepo === 'string'", timeout=20_000)
+    site = context.page.evaluate("() => window.lcSiteRepo") or "michelzam/lightcodelab"
+    _stub_bench(context, {}, bench=site)
 
 
 @then('the bench received a commit to "{path}" without "{text}"')

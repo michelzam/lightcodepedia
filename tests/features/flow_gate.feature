@@ -123,3 +123,23 @@ Feature: 🚦 A workflow ordered by its own values
     And I wait for the page to be interactive
     And I wait for the cells to settle
     Then the tally reads "Everyone 3 and visited 2."
+
+  Scenario: A cell counts a table that lands after the first paint
+    Pedia, 2026-09-19: "Everyone 3 and visited ." — the query's engine came
+    off a slow CDN, the cell had already read an empty count, and nothing
+    told it to look again. Data that lands late schedules a recompute.
+
+    Given the GitHub contents API serves "courses/demo/mod/late.md" with the document:
+      """
+      # Late
+
+      [late rows](/assets/late.csv)
+      {: .dataset #late }
+
+      Late {= late.count }.
+      {: #tally }
+      """
+    And "/assets/late.csv" answers 3 seconds late with 2 rows
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/late.md"
+    And I wait for the page to be interactive
+    Then the tally reads "Late 2."

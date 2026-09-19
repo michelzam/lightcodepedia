@@ -66,6 +66,7 @@ Auto-included by docs/_layouts/default.html.
      live in that bench). The site's own repo is never a bench: the file
      it would write is public, and it seeds everyone who lands there. */
   var SITE = {{ site.github.repository_nwo | default: "" | jsonify }};
+  window.lcSiteRepo = SITE;            /* the one repo that is never a bench — read by the suite */
   var OWNER = "lc_progress_owner", LAST = "lc_progress_bench";
   function owners() { try { return JSON.parse(localStorage.getItem(OWNER) || "{}"); } catch (e) { return {}; } }
   function keepOwners(m) { try { localStorage.setItem(OWNER, JSON.stringify(m)); } catch (e) {} }

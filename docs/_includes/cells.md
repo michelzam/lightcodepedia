@@ -249,6 +249,21 @@ Auto-included by docs/_layouts/default.html.
       document.addEventListener("lc-model-changed", function () { evalAll(m); });
       evalAll(m);
     });
+    /* DATA THAT LANDS LATE STILL COUNTS. A cell read a query's count once,
+       at first paint; a query whose engine came off a slow CDN, or a table
+       fetched from a file, landed AFTER that and the cell kept its blank —
+       pedia, 2026-09-19: "Everyone 3 and visited ." for thirty seconds. Any
+       dataset landing now schedules one recompute. */
+    var setter = window.lcSetDataset, landT = null;
+    if (setter && !setter._lcCells) {
+      window.lcSetDataset = function (id, data) {
+        setter(id, data);
+        if (!_runtime || !(cells.length || vis.length)) return;
+        clearTimeout(landT);
+        landT = setTimeout(function () { evalAll(_runtime); }, 40);
+      };
+      window.lcSetDataset._lcCells = true;
+    }
   }
 
   /* Re-scan after content is injected AFTER load (the runner renders a page
