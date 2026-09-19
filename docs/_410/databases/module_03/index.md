@@ -31,9 +31,8 @@ Each page has a guide — press play and Doc walks you through, or read at
 your own pace. Already have MySQL and a Customers table with Thomas in
 it? Skim the Setup page, take its two quizzes, and go on.
 
-- [🗺️ The Treasure Hunt](../module_02/01_hunt.md)
-- [📋 Query Concepts](../module_02/02_concepts.md)
-{: .prerequisite }
+Coming from module 02: [🗺️ The Treasure Hunt](../module_02/01_hunt.md)
+and [📋 Query Concepts](../module_02/02_concepts.md).
 
 [Browse](#)
 {: .folder parent="true"}

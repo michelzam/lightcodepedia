@@ -3,8 +3,7 @@
 The Treasure Hunt gave you the moves. This page gives you the words —
 five ideas every query you will ever write is made of.
 
-- [🗺️ The Treasure Hunt](01_hunt.md)
-{: .prerequisite }
+Coming from [🗺️ The Treasure Hunt](01_hunt.md).
 
 Ask Doc for a tour!
 {: .avatar_trigger target="guide" }
