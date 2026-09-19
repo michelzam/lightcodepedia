@@ -2205,7 +2205,7 @@
     "url": "/assets/ux-report.html#scenario_244"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "A cell can count a table, so no component is needed for one number",
     "feature": "🚦 A workflow ordered by its own values",
     "tags": "",
