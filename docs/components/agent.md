@@ -165,6 +165,13 @@ All configuration goes in the YAML block.
 | `placeholder` | "Ask anything..." | Placeholder text in the prompt field |
 | `placeholder_next` | "Your answer — then press Ask" | What the prompt field invites from the second turn on — the opening line is said once, then the box asks for the next move |
 
+Every reply signs itself under the answer, beside the token count: the
+**provider and the model** that actually answered — the ring's fallback or a
+healed model included, and the provider's own model name when it says one.
+Agents are not deterministic and engines change hands; two verdicts from
+two engines are not a difference of sheets. The hidden log keeps the same
+two facts on each entry, so a proof can tell who wrote a line.
+
 A fully-dressed example:
 
 ````markdown

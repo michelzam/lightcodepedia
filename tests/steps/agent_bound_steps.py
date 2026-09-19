@@ -22,6 +22,7 @@ def step_recording_model(context, code):
             "choices": [{"message": {
                 "content": "Try this:\n\n```python\n" + code + "\n```"}}],
             "usage": {"total_tokens": 7},
+            "model": "stub-model-9",
         })
         route.fulfill(status=200, content_type="application/json", body=body)
 
@@ -284,7 +285,8 @@ def step_no_paid_call(context):
 # ── the ring ──────────────────────────────────────────────────────────────
 
 def _ok_reply(text):
-    return json.dumps({"choices": [{"message": {"content": text}}], "usage": {"total_tokens": 3}})
+    return json.dumps({"choices": [{"message": {"content": text}}], "usage": {"total_tokens": 3},
+                       "model": "stub-model-9"})
 
 
 @then('the desk\'s ring offers "{a}", "{b}" and "{c}"')
@@ -463,3 +465,15 @@ def step_box_next(context, agent_id):
     expect(box).not_to_have_attribute("placeholder", context.first_placeholder, timeout=10_000)
     got = box.get_attribute("placeholder") or ""
     assert "Ask" in got and got != context.first_placeholder, got
+
+
+@then('the "{agent_id}" agent\'s reply is signed by its provider and the model "{model}"')
+def step_reply_signed(context, agent_id, model):
+    """who answered, beside the tokens — the provider's own model name"""
+    panel = context.page.locator('[data-lc-id="' + agent_id + '"]')
+    usage = panel.locator(".lc-agent-usage")
+    expect(usage).to_contain_text(model, timeout=10_000)
+    expect(usage).to_contain_text("tokens")
+    assert (usage.get_attribute("data-provider") or ""), "no provider on the usage line"
+    entry = panel.locator(".lc-agent-log-entry").last
+    assert entry.get_attribute("data-model") == model, entry.get_attribute("data-model")

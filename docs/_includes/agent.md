@@ -894,7 +894,13 @@ Auto-included by docs/_layouts/default.html.
       var clean = text;
       if (truncated) text = (text ? text + '\n\n' : '') + TRUNCATED_NOTE;
       return { text: text, clean: clean, truncated: truncated,
-               usage: result.data.usage || null };
+               usage: result.data.usage || null,
+               /* WHO ANSWERED (Michel, 2026-09-19): agents are not
+                  deterministic and engines change hands — two verdicts
+                  from two engines are not a difference of sheets. The
+                  provider's own model name when it says one, else the
+                  one we asked for. */
+               engine: { pid: eng.id, name: eng.name, model: (result.data && result.data.model) || eng.model } };
     }).catch(function(err){
       /* fetch rejected → no HTTP answer reached the page. Usually the ROAD
          (ad-blocker, VPN, firewall) — but some providers answer errors
@@ -1147,6 +1153,7 @@ Auto-included by docs/_layouts/default.html.
           var entry = document.createElement('div');
           entry.className = 'lc-agent-log-entry';
           entry.textContent = result.text;
+          if (result.engine) { entry.setAttribute('data-provider', result.engine.pid || ''); entry.setAttribute('data-model', result.engine.model || ''); }
           logEl.appendChild(entry);
         }
 
@@ -1191,14 +1198,18 @@ Auto-included by docs/_layouts/default.html.
           }
         }
 
+        var who = result.engine ? (result.engine.name || result.engine.pid || '') + ' · ' + (result.engine.model || '') : '';
         if (result.usage) {
           var t = result.usage.total_tokens || 0;
           totalTokens += t;
           if (window.lcTokens) window.lcTokens.add(result.usage);
           usage.textContent = 'Session: ' + totalTokens + ' tokens · this ask: ' + t +
             ' (' + (result.usage.prompt_tokens || 0) + ' prompt + ' +
-            (result.usage.completion_tokens || 0) + ' reply).';
+            (result.usage.completion_tokens || 0) + ' reply)' + (who ? ' · ' + who : '') + '.';
+        } else if (who) {
+          usage.textContent = 'This ask: ' + who + '.';
         }
+        if (result.engine) { usage.setAttribute('data-provider', result.engine.pid || ''); usage.setAttribute('data-model', result.engine.model || ''); }
         prompt.value = '';
       });
     });

@@ -18,10 +18,13 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I apply the agent's fix
     Then the "buggy" editor now holds "print('fixed')"
 
-  Scenario: After the first reply the box invites the next move, not the opening line
+  Scenario: After the first reply the box invites the next move, and the reply signs who answered
     Michel, 2026-09-18: a placeholder that still read Ask "what still
     drifts?" after the Agent had answered told a student to ask it again.
-    From the second turn the box says what comes next.
+    From the second turn the box says what comes next. And 2026-09-19:
+    agents are not deterministic and engines change hands, so the reply
+    names the provider and the model beside the tokens, the provider's
+    own model name when it says one.
 
     Given I have a clean browser page
     And a builder key is connected
@@ -32,6 +35,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     Then the "tutor" agent's box invites the opening line
     When I ask the "tutor" agent "help me fix it"
     Then the "tutor" agent's box invites the next move instead
+    And the "tutor" agent's reply is signed by its provider and the model "stub-model-9"
 
   Scenario: Expression — bound reads a pad through a cell expression
     Given I have a clean browser page
