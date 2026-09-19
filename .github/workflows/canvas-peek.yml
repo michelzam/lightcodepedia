@@ -29,6 +29,9 @@ on:
       module_filter:
         description: "read ONE module — its items only, no course-wide listings"
         required: false
+      page_filter:
+        description: "print the FULL body of pages whose title or url contains this (comma-separated)"
+        required: false
 
 permissions:
   contents: read
@@ -51,6 +54,7 @@ jobs:
           HOST: ${{ inputs.host }}
           COURSE: ${{ inputs.course }}
           QUIZ_FILTER: ${{ inputs.quiz_filter }}
+          PAGE_FILTER: ${{ inputs.page_filter }}
           MODULE_FILTER: ${{ inputs.module_filter }}
         run: |
           [ -n "$TOK" ] || { echo "::error::no token — pass one or store CANVAS_410_TOKEN"; exit 1; }
@@ -87,6 +91,20 @@ jobs:
                       print(f"         ↳ {text[:600]}")
           if mflt:
               print("\n(one module read — course-wide listings skipped)")
+
+          # A PAGE THE AUTHOR NAMES IS READ WHOLE. The module listing truncates
+          # every body to 600 characters — enough to recognise a page, useless
+          # for rebuilding its story in the lab (Michel, 2026-09-19: the Forms
+          # and Queries page). Still read-only, still the author's own text.
+          pflts = [f.strip().lower() for f in (os.environ.get("PAGE_FILTER") or "").split(",") if f.strip()]
+          if pflts:
+              for p in get(f"/courses/{course}/pages"):
+                  hay = ((p.get("title") or "") + " " + (p.get("url") or "")).lower()
+                  if not any(f in hay for f in pflts):
+                      continue
+                  body = get(f"/courses/{course}/pages/{p['url']}").get("body") or ""
+                  text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", body)).strip()
+                  print(f"\n## 📄 Full page — {p.get('title')} ({p.get('url')})\n{text}")
 
           print("\n## 📜 Pages" if not mflt else "")
           pages = [] if mflt else get(f"/courses/{course}/pages")

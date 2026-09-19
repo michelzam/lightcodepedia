@@ -793,7 +793,8 @@ class Dataset(Object):
 @component(icon="🔎",
            attrs=[{"n": "query", "t": "str"}, {"n": "editable", "t": "bool"},
                   {"n": "loaded", "t": "bool"}, {"n": "count", "t": "int"}],
-           assoc=[{"n": "source", "target": "Dataset"}])
+           assoc=[{"n": "source", "target": "Dataset"}],
+           methods=["run"])
 class Query(Dataset):
     """A dataset computed by SQL over other datasets — it IS a Dataset (it
     publishes its result under its id), so consumers can't tell it apart.
@@ -818,6 +819,24 @@ class Query(Dataset):
     def source(self):
         sid = self._el.getAttribute("data-bind") if self._el is not None else None
         return Dataset((str(sid).split(",")[0] if sid else ""))
+
+    def run(self, sql=None):
+        """Run SQL in this query — exactly what the reader does by typing in
+        the editor and pressing Run. Omit sql to re-run what is there.
+
+        Lets a check rehearse the learner's own move: rewrite the query the
+        other way and show that one question, said twice, gives one answer
+        (Michel, 2026-09-19). The result is published before this returns,
+        so the next step can read it."""
+        if self._el is None:
+            raise AttributeError("no query #" + str(self._id) + " on this page")
+        try:
+            fn = self._el._lcRun
+        except AttributeError:
+            fn = None
+        if fn is None:
+            raise AttributeError("this query cannot be run from here")
+        return str(fn(sql) if sql is not None else fn())
 
 
 @component(icon="▮", attrs=[{"n": "value", "t": "float"}, {"n": "color", "t": "str"}])

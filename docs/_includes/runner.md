@@ -260,6 +260,24 @@ files a learner is already working in.
     });
   }
 
+  /* A LATE SUBTREE NEEDS THE SAME HEALING. healImages runs once, when the
+     page renders — but a fenced accordion or block renders its markdown
+     only when it opens, so a plain ![picture](sibling.jpg) inside one was
+     never healed and stayed a broken relative path (410 module 04's
+     Workbench slides, Michel 2026-09-19). Exposed so lcScanElement can
+     heal whatever it has just scanned; the repo and path come from the
+     render's own ancestor, the data-lc-src contract xray and .folder
+     already follow. Idempotent: an already-healed blob: src is skipped. */
+  window.lcHealImages = function (sub) {
+    if (!sub || !sub.querySelector) return;
+    var host = sub.closest ? sub.closest("[data-lc-src-repo]") : null;
+    if (!host && sub.getAttribute && sub.getAttribute("data-lc-src-repo")) host = sub;
+    var repo = host && host.getAttribute("data-lc-src-repo");
+    var path = (host && host.getAttribute("data-lc-src-path")) || "";
+    if (!repo) return;
+    healImages(sub, repo, path);
+  };
+
   /* THE SAME DOOR, FOR ANY MEDIA. healImages reads a page's images through
      the contents API because a private repo's raw URLs 404 anonymously; a
      video beside the page has exactly that problem, and no <video src> can

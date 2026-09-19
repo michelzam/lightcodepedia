@@ -63,6 +63,16 @@ Auto-included by docs/_layouts/default.html.
     return _p;
   }
 
+  /* AlaSQL is loaded once per page. After that, waiting on a promise buys
+     nothing and costs determinism: a feature's steps all run in one tick,
+     so a check that asks a query to run and then reads its result would
+     read the PREVIOUS answer. Synchronous when the engine is already
+     here, promised only the first time. */
+  function withAlaSQL(cb) {
+    if (window.alasql) { cb(window.alasql); return; }
+    loadAlaSQL().then(cb);
+  }
+
   function upgradeQuery(el) {
     if (el.dataset.lcQueryDone) return;
     el.dataset.lcQueryDone = "1";
@@ -129,7 +139,7 @@ Auto-included by docs/_layouts/default.html.
         return;
       }
       chip.removeAttribute("data-waiting");
-      loadAlaSQL().then(function (alasql) {
+      withAlaSQL(function (alasql) {
         if (!alasql) { fail("AlaSQL failed to load"); return; }
         try {
           binds.forEach(function (id) {
@@ -144,6 +154,17 @@ Auto-included by docs/_layouts/default.html.
         } catch (e) { fail(e.message || e); }
       });
     }
+
+    /* THE READER'S OWN MOVE, REHEARSABLE. Typing other SQL in the editor
+       and pressing ▶ Run is what a learner does; a page's check can now do
+       the same and compare the answers — two ways of saying one question,
+       one result (410 module 04: the WHERE rewritten as JOIN … ON, Michel
+       2026-09-19). Same path as the button, so nothing can drift. */
+    chip._lcRun = function (sql) {
+      if (typeof sql === "string") { if (ta) ta.value = sql; else seed = sql; }
+      run();
+      return chip.getAttribute("data-query") || "";
+    };
 
     /* reactive: re-run (with the current SQL) when any input changes */
     binds.forEach(function (id) {

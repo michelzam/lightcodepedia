@@ -287,23 +287,35 @@ Auto-included by docs/_layouts/default.html.
   });
 
   function upgradeCarousel(el) {
-    var items = Array.from(el.querySelectorAll("li")).map(function(li){ return li.innerHTML; });
-    if (!items.length) return;
+    var lis = Array.from(el.querySelectorAll("li"));
+    if (!lis.length) return;
     var delay = parseInt(el.getAttribute("delay") || "4000", 10);
     var gid = el.id || ("lc-car-" + Math.random().toString(36).slice(2, 7));
-    var itemsHtml = items.map(function(h, i){
-      return '<div class="lc-carousel-item' + (i === 0 ? " active" : "") + '">' + h + '</div>';
-    }).join("");
-    var dotsHtml = items.map(function(_, i){
-      return '<span class="' + (i === 0 ? "active" : "") + '" data-idx="' + i + '"></span>';
-    }).join("");
     var wrapper = document.createElement("div");
     wrapper.className = "lc-carousel";
     wrapper.id = gid;
-    wrapper.innerHTML = itemsHtml + '<div class="lc-carousel-dots">' + dotsHtml + '</div>';
+    /* MOVE the nodes, never copy their HTML. A relative image is healed
+       ASYNCHRONOUSLY (runner.md fetches it through the contents API and
+       swaps in a blob), so innerHTML copied at upgrade time froze the raw
+       src and the slide never appeared — three Workbench screenshots on
+       410's module 04, broken while the same files rendered fine as
+       embeds (Michel, 2026-09-19). Moving the live nodes keeps whatever
+       lands on them later, healing and upgrades alike. */
+    lis.forEach(function (li, i) {
+      var item = document.createElement("div");
+      item.className = "lc-carousel-item" + (i === 0 ? " active" : "");
+      while (li.firstChild) item.appendChild(li.firstChild);
+      wrapper.appendChild(item);
+    });
+    var dots = document.createElement("div");
+    dots.className = "lc-carousel-dots";
+    dots.innerHTML = lis.map(function(_, i){
+      return '<span class="' + (i === 0 ? "active" : "") + '" data-idx="' + i + '"></span>';
+    }).join("");
+    wrapper.appendChild(dots);
     el.parentNode.replaceChild(wrapper, el);
     var elItems = wrapper.querySelectorAll(".lc-carousel-item");
-    var dots = wrapper.querySelectorAll(".lc-carousel-dots span");
+    dots = wrapper.querySelectorAll(".lc-carousel-dots span");
     var idx = 0;
     function show(n) {
       elItems.forEach(function(x){ x.classList.remove("active"); });

@@ -504,7 +504,13 @@
   window.lcInlineIAL = inlineIAL;
   window.lcParseSections = parseSections;
   window.lcMarkdownBody = markdownBody;
-  window.lcScanElement = scanElement;
+  /* Every late render passes here — a fenced block opening, a bench slot
+     repainting, an embedded runner. Heal its relative pictures too, or a
+     markdown image inside a folded accordion never loads (2026-09-19). */
+  window.lcScanElement = function (root) {
+    scanElement(root);
+    try { if (window.lcHealImages) window.lcHealImages(root); } catch (e) {}
+  };
   window.lcApplyIAL   = _applyIAL;
   window.lcRegisterUpgrader = lcRegisterUpgrader;
 

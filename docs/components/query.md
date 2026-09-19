@@ -101,6 +101,36 @@ Feature: A query is a dataset that computes itself
 ```
 {: .feature tags="data,code" status="passing"}
 
+## ▶️ Run it from code — `run()`
+
+A page's own check can do what the reader does: put other SQL in the query
+and press Run. `self.page.<id>.run("SELECT …")` sets the editor's text and
+runs it through the same path the ▶ Run button uses, then publishes the
+result before returning — so the next step can read the new answer. Call
+`run()` with no argument to re-run what is already there.
+
+That is how a lesson proves two spellings of one question give one answer:
+
+```gherkin
+Feature: One question, said two ways
+  Scenario: A comma and a WHERE, rewritten as JOIN … ON
+    Given the live editor above
+    :::python
+    self.q: Query = self.page.live_q
+    self.before: int = self.q.count
+    :::
+    When the reader rewrites it the other way
+    :::python
+    self.q.run("SELECT breed, MAX(cuteness) AS cutest FROM dogs GROUP BY breed")
+    :::
+    Then the answer is the same size, from different SQL
+    :::python
+    assert self.q.count == self.before, self.q.count
+    assert "GROUP BY" in self.q.query, self.q.query
+    :::
+```
+{: .feature tags="learn" status="passing" }
+
 ## ⏳ A query waits for what has not arrived
 
 A query only answers when every source it names has been published. One

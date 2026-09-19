@@ -488,6 +488,40 @@ def step_image_raw_road(context):
     assert esrc.startswith("https://raw.githubusercontent.com/acme/pedia/HEAD/docs/_410/databases/module_03/_setup/setup_03.jpg"), esrc
 
 
+@when("I open every folded section")
+def step_open_folds(context):
+    context.page.evaluate(
+        "document.querySelectorAll('details:not([open]) > summary').forEach(s => s.click())")
+    context.page.wait_for_timeout(2500)
+
+
+@then("the picture in the folded section loaded")
+def step_folded_image(context):
+    from playwright.sync_api import expect
+    img = context.page.locator("#lc-run img[alt='a slide']").first
+    expect(img).to_be_attached(timeout=20_000)
+    context.page.wait_for_timeout(1500)
+    ok = context.page.evaluate(
+        """() => { const i = document.querySelector('#lc-run img[alt="a slide"]');
+                   return !!i && i.complete && i.naturalWidth > 0; }""")
+    src = img.get_attribute("src") or ""
+    assert ok, "the folded picture never loaded — src %r" % src
+
+
+@then("every carousel slide is a picture that loaded")
+def step_carousel_images(context):
+    from playwright.sync_api import expect
+    items = context.page.locator(".lc-carousel .lc-carousel-item")
+    expect(items.first).to_be_attached(timeout=20_000)
+    context.page.wait_for_timeout(2000)
+    bad = context.page.evaluate(
+        """() => [...document.querySelectorAll('.lc-carousel img')]
+                 .filter(i => !(i.complete && i.naturalWidth > 0))
+                 .map(i => i.getAttribute('src'))""")
+    assert items.count() == 2, items.count()
+    assert not bad, "carousel slides never loaded: %r" % bad
+
+
 @then("the runner says the key itself is the problem")
 def step_key_named(context):
     status = context.page.locator(".lc-runner .lc-run-status")

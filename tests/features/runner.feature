@@ -359,6 +359,51 @@ Feature: The instant runner (RT) — Phase A parity
     And the runner never shows a bare HTTP status
     And the page's relative image took the keyless road
 
+  Scenario: A picture inside a folded block is healed when the block opens
+    healImages runs once, at render. A fenced accordion renders its
+    markdown only when it opens, so a plain relative image inside one
+    stayed a broken path — three Workbench slides on 410 module 04, while
+    the same files rendered fine outside the fold (Michel, 2026-09-19).
+    Every late scan heals what it just rendered.
+
+    Given the GitHub contents API serves "courses/demo/mod/folded.md" with the document:
+      """
+      # Folded
+
+      ```
+      ### The slides
+
+      ![a slide](_slides/one.jpg)
+      ```
+      {: .accordion #shots }
+      """
+    And the GitHub contents API serves the image "courses/demo/mod/_slides/one.jpg"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/folded.md"
+    And I wait for the page to be interactive
+    And I open every folded section
+    Then the picture in the folded section loaded
+
+  Scenario: A carousel keeps the images the renderer heals after it
+    A relative picture is healed asynchronously — fetched through the
+    contents API and swapped to a blob. The carousel copied its items'
+    HTML at upgrade time, so the heal landed on the discarded nodes and
+    three Workbench slides stayed broken while the same files rendered
+    fine as embeds (Michel, 2026-09-19). It moves the nodes now.
+
+    Given the GitHub contents API serves "courses/demo/mod/deck.md" with the document:
+      """
+      # Deck
+
+      - ![first slide](_slides/one.jpg)
+      - ![second slide](_slides/two.jpg)
+      {: .carousel }
+      """
+    And the GitHub contents API serves the image "courses/demo/mod/_slides/one.jpg"
+    And the GitHub contents API serves the image "courses/demo/mod/_slides/two.jpg"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/deck.md"
+    And I wait for the page to be interactive
+    Then every carousel slide is a picture that loaded
+
   Scenario: A framed learner with no key still has a door in
     Focus mode learned this once already: a private course tells the learner
     to connect a key, and hiding the one control that does it makes the

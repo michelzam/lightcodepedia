@@ -133,6 +133,27 @@ def test_the_folders_front_page_is_not_a_check():
     assert [n for n, _ in got] == ["canvas.md", "assignment.md"], got
 
 
+def test_a_module_without_a_quiz_folder_ships_its_page():
+    """An ACTIVITY carries its check on the page (Michel, 2026-09-19):
+    module 04's proof is the learner's to turn green, and the week's graded
+    work is the teacher's own assignment. No __quiz folder says so."""
+    import tempfile, os as _os
+    d = tempfile.mkdtemp()
+    mdir = _os.path.join(d, "module_04")
+    _os.makedirs(mdir)
+    open(_os.path.join(mdir, "index.md"), "w").write("# 04\n")
+    assert not _os.path.isdir(_os.path.join(mdir, "__quiz"))
+    # the rule the gate applies, stated here so it cannot drift
+    assert cm.specs_of([], "04") == []
+
+
+def test_a_half_written_quiz_folder_still_stops_the_run():
+    """A folder that exists without canvas.md is not a decision, it is an
+    unfinished check — the gate must keep refusing that one."""
+    got = cm.specs_of(["assignment.md"], "04")
+    assert got == [("assignment.md", None)], got
+
+
 if __name__ == "__main__":
     fails = 0
     for name, fn in sorted(globals().items()):
