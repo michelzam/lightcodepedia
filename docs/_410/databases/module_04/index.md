@@ -8,16 +8,14 @@ Ask Doc for a tour!
 You have asked the database questions, built its tables, and drawn its
 model. This is the **activity page**: the whole story in one walk, with
 the tool in your hands. Nothing new to install — everything here you
-have already met, once.
+have already met, once. Want the longer version of a step? The
+[Moon Walk](../module_03/01_moon_walk.md) built the tables and
+[Good Design](../module_03/02_design.md) named the pieces.
 
 **The promise:** by the end of this page you can say what each move was
 *for* — the question, the filter, the link between tables, the two ways
 to look at an answer — and you can prove it on a quiz you take as many
 times as you like.
-
-- [🧱 The Moon Walk](../module_03/01_moon_walk.md)
-- [📐 Good Design](../module_03/02_design.md)
-{: .prerequisite }
 
 ````
 ### 🏆 1 · From story to structure
