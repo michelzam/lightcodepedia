@@ -957,7 +957,12 @@ Auto-included by docs/_layouts/default.html.
 
   function ask(token, cfg, userText, askConsent) {
     var primary = resolveEngine(cfg);
-    var RETRY_MS = [1500, 4000];          /* a demand spike outlives neither */
+    /* ONE silent retry, then the next engine (Michel, 2026-09-19: "Gemini
+       is slow and often busy"). Two retries with pauses were six seconds of
+       nothing before the ring even offered Groq; a demand spike that
+       outlives 1.5 s outlives 5.5 s too, and a learner holding two keys
+       should wait for the second engine, not for the first to feel better. */
+    var RETRY_MS = [1500];
 
     function tryEngine(eng, key, retries, healed) {
       return askOnce(key, cfg, userText, eng).then(function (res) {

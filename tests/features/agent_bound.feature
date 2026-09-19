@@ -352,6 +352,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
     And I wait for the page to be interactive
     And I ask the "desk" agent "hi", accepting the other engine when offered
+    Then the first engine "generativelanguage.googleapis.com" was asked twice, no more, and the offer came within 6 seconds
     Then the agent says "api.groq.com answered"
     And the question went to "api.groq.com" and never to "generativelanguage.googleapis.com" for the answer
 

@@ -362,10 +362,13 @@ def step_went_to(context, host, other):
 def step_ask_accepting(context, agent_id, prompt):
     panel = context.page.locator('[data-lc-id="' + agent_id + '"]')
     panel.locator(".lc-agent-prompt").fill(prompt)
+    import time
+    t0 = time.time()
     panel.locator(".lc-agent-send").click()
-    # two silent retries first (1.5s + 4s), then the offer
+    # one silent retry (1.5s), then the offer
     yes = panel.locator(".lc-agent-fallback-yes")
     expect(yes).to_be_visible(timeout=20_000)
+    context.offer_after = time.time() - t0
     yes.click()
     expect(panel.locator(".lc-agent-log-entry")).to_have_count(1, timeout=20_000)
 
@@ -477,3 +480,12 @@ def step_reply_signed(context, agent_id, model):
     assert (usage.get_attribute("data-provider") or ""), "no provider on the usage line"
     entry = panel.locator(".lc-agent-log-entry").last
     assert entry.get_attribute("data-model") == model, entry.get_attribute("data-model")
+
+
+@then('the first engine "{host}" was asked twice, no more, and the offer came within {secs:d} seconds')
+def step_one_retry(context, host, secs):
+    """one silent retry, then the next engine — six seconds of nothing was
+    the "slow" everyone felt (Michel, 2026-09-19)"""
+    n = [h for h in context.asked_hosts if h == host]
+    assert len(n) == 2, "the first engine was asked %d times: %r" % (len(n), context.asked_hosts)
+    assert context.offer_after <= secs, "the offer took %.1fs" % context.offer_after
