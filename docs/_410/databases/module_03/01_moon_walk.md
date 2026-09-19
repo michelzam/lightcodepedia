@@ -7,8 +7,8 @@ will walk backwards from the data to its structure, build the missing
 table, tie it to Customers with a key, and walk back again to see what
 the database now draws.
 
-- [🔧 Setup — MySQL on your machine](00_setup.md)
-{: .prerequisite }
+Coming from [🔧 Setup — MySQL on your machine](00_setup.md) — MySQL and
+Workbench installed, a Customers table with Thomas in it.
 
 Ask Doc for a tour!
 {: .avatar_trigger target="guide" }

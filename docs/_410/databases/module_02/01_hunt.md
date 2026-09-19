@@ -5,9 +5,8 @@ on 7/8/96."* Written by hand, from memory, on a Friday. Is it true?
 Nobody knows — until someone asks the **database**. That is this page:
 eight tables, live, and the tool that reads them without scrolling.
 
-- [🏆 The Data Quest](../module_01/02_data_quest.md)
-- [📋 Databases & RDBMS Concepts](../module_01/03_rdbms_concepts.md)
-{: .prerequisite }
+Coming from [🏆 The Data Quest](../module_01/02_data_quest.md) and
+[📋 Databases & RDBMS Concepts](../module_01/03_rdbms_concepts.md).
 
 Ask Doc for a tour!
 {: .avatar_trigger target="guide" }

@@ -23,9 +23,8 @@ two — and you can tell a *related* pair of tables from a *crossed* one.
 Each page has a guide — press play and Doc walks you through, or read at
 your own pace.
 
-- [🏆 The Data Quest](../module_01/02_data_quest.md)
-- [📋 Databases & RDBMS Concepts](../module_01/03_rdbms_concepts.md)
-{: .prerequisite }
+Coming from module 01: [🏆 The Data Quest](../module_01/02_data_quest.md)
+and [📋 Databases & RDBMS Concepts](../module_01/03_rdbms_concepts.md).
 
 [Browse](#)
 {: .folder parent="true"}

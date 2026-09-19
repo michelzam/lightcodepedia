@@ -8,8 +8,7 @@ one to order cranberry sauce after Labor Day. To deliver the award we
 need his contact info. And here starts our quest 🏴‍☠️ — because the
 answer lives in a **database**, the place where data lives.
 
-- [🗽 Welcome to 410](01_welcome.md)
-{: .prerequisite }
+Coming from [🗽 Welcome to 410](01_welcome.md).
 
 Ask Doc for a tour!
 {: .avatar_trigger target="guide" }

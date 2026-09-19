@@ -3,8 +3,7 @@
 The Data Quest gave you the moves. This page gives you the words —
 the five concepts the whole semester stands on.
 
-- [🏆 The Data Quest](02_data_quest.md)
-{: .prerequisite }
+Coming from [🏆 The Data Quest](02_data_quest.md).
 
 Ask Doc for a tour!
 {: .avatar_trigger target="guide" }

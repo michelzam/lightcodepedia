@@ -4,8 +4,7 @@ The Moon Walk gave you the moves. This page gives you the words —
 and three smell tests, because a table can look perfectly fine and
 still burn you later.
 
-- [🧱 The Moon Walk](01_moon_walk.md)
-{: .prerequisite }
+Coming from [🧱 The Moon Walk](01_moon_walk.md).
 
 Ask Doc for a tour!
 {: .avatar_trigger target="guide" }
