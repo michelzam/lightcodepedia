@@ -192,3 +192,28 @@ def step_frame_on(context):
 @then("the phone frame is off")
 def step_frame_off(context):
     expect(context.page.locator("body")).not_to_have_class(re.compile(r"\blc-short-frame\b"), timeout=5_000)
+
+
+@then('the take is held, an end card on offer for "{path}"')
+def step_held(context, path):
+    # the recorder pauses under the dialog: the card is an upload-time choice
+    assert context.page.evaluate("window.lcShort.busy()"), "the take was already released"
+    card = context.page.locator(".lc-short-ov .lc-short-card")
+    expect(card).to_be_checked()
+    expect(context.page.locator(".lc-short-ov .lc-short-url")).to_have_value(context.base_url + path)
+
+
+@then("the Short's description says where to watch more")
+def step_watch_more(context):
+    meta = _json.loads(context.yt_posts[-1])
+    desc = meta.get("snippet", {}).get("description", "")
+    assert desc.startswith("Watch more: " + context.base_url + "/run.html#src="), desc
+
+
+@then("the take is released")
+def step_released(context):
+    for _ in range(20):
+        if not context.page.evaluate("window.lcShort.busy()"):
+            return
+        context.page.wait_for_timeout(250)
+    raise AssertionError("the recorder is still holding the take")

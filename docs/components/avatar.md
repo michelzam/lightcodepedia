@@ -187,10 +187,14 @@ one more line in the docked guide's menu: **☐ 🎬 Short next walk**.
   tab** and tick **share tab audio**, then Doc walks and the clip runs from
   his first line to his last (three minutes at most). The counter and ⏹ sit
   in a band, never in the frame.
-- **Review**: **⬆ Upload unlisted** (the recorder's YouTube sign-in),
-  **⬇ Save**, **🗑 Discard**, and **Also embed on this page** — a folded
-  **🎬 Shorts** accordion appended to the rendered file, one section per
-  clip, committed with your key.
+- **Review** opens over the held take: **⬆ Upload unlisted** (the
+  recorder's YouTube sign-in), **⬇ Save**, **🗑 Discard**, plus two options.
+  **End card and description** (on by default) appends three seconds of
+  *Watch more:* with the page's public address — edit it in the box — and
+  puts the same line first in the YouTube description; links under a Short
+  are not reliably clickable, so the address is in the picture. **Also embed
+  on this page** appends a folded **🎬 Shorts** accordion to the rendered
+  file, one section per clip, committed with your key.
 - The tick goes off after one walk.
 
 Tab capture is a desktop Chrome/Edge affair. Browser TTS is spoken by the

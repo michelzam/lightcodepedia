@@ -49,8 +49,11 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     And the page wears the phone frame
     When I pick "Say hi" from the guide's menu
     Then the Short review dialog shows the clip
+    And the take is held, an end card on offer for "/run.html#src=gh:acme/demo/courses/demo/mod/short.md"
     When I upload the Short, embedded on this page
     Then the Short went to YouTube unlisted
+    And the Short's description says where to watch more
+    And the take is released
     And "courses/demo/mod/short.md" now carries a folded Shorts accordion with Short 1
     When I close the Short dialog
     Then the phone frame is off

@@ -100,6 +100,7 @@ Auto-included by docs/_layouts/default.html.
       '.lc-short-ov .lc-rec-review-vid{aspect-ratio:9/16;max-height:56vh;object-fit:contain}',
       '.lc-short-opts{display:flex;flex-direction:column;gap:8px;font-size:.88em;color:#333;margin:0 0 12px}',
       '.lc-short-opts label{display:flex;align-items:center;gap:8px;cursor:pointer}',
+      '.lc-short-url{font:inherit;font-size:.85em;padding:5px 8px;border:1px solid #ccc;border-radius:6px;width:100%;box-sizing:border-box}',
       '.lc-short-up{background:#ff0000;color:#fff}.lc-short-up:hover{background:#cc0000}.lc-short-up:disabled{opacity:.5;cursor:default}',
       '.lc-short-status{font-size:.82em;color:#555;margin-top:10px;min-height:1.2em;word-break:break-all}'
     ].join("");
@@ -985,7 +986,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     // Core upload: takes a File or Blob, returns videoUrl via onDone(url) or onDone(null, err).
-    function ytDoUpload(token, fileOrBlob, title, mimeType, onProgress, onDone) {
+    function ytDoUpload(token, fileOrBlob, title, mimeType, onProgress, onDone, description) {
       fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
         method: "POST",
         headers: {
@@ -995,7 +996,7 @@ Auto-included by docs/_layouts/default.html.
           "X-Upload-Content-Length": String(fileOrBlob.size)
         },
         body: JSON.stringify({
-          snippet: { title: title, description: "Recorded on Lightcodepedia · " + new Date().toLocaleDateString() },
+          snippet: { title: title, description: description || ("Recorded on Lightcodepedia · " + new Date().toLocaleDateString()) },
           status: { privacyStatus: "unlisted" }
         })
       }).then(function(r){
@@ -1117,12 +1118,12 @@ Auto-included by docs/_layouts/default.html.
     };
     // The same upload as a promise (unlisted, same token): the Shorts review
     // dialog draws its own progress and decides what to do with the URL.
-    window.lcYtUpload = function(blob, mimeType, title, onProgress) {
+    window.lcYtUpload = function(blob, mimeType, title, onProgress, description) {
       return new Promise(function(resolve, reject) {
         function run(token) {
           ytDoUpload(token, blob, title, mimeType, onProgress, function(url, err) {
             if (err) reject(new Error(err)); else resolve(url);
-          });
+          }, description);
         }
         var t = ytGetToken();
         if (t) run(t); else ytStartOAuthPopup(run);
@@ -1139,7 +1140,8 @@ Auto-included by docs/_layouts/default.html.
   // in a canvas stream through window.lcShortCapture instead.
   (function () {
     var W = 1080, H = 1920, FPS = 30;
-    var MAX_MS = 180000, WARN_MS = 150000;        /* a Short is three minutes at most */
+    var CARD_MS = 3000;                           /* the end card: "Watch more: <page>" */
+    var MAX_MS = 180000 - CARD_MS, WARN_MS = 150000;   /* a Short is three minutes at most, card included */
     var MIN_MS = 3000, TAIL_MS = 800;             /* the last bubble stays in frame; the encoder needs a moment for its first frames */
     var S = { armed: false, busy: false, turnedReelOn: false };
     var listeners = [];
@@ -1196,6 +1198,11 @@ Auto-included by docs/_layouts/default.html.
         surfaceSwitching: "exclude"
       });
     }
+    /* the page's public address, the one a viewer types after the clip */
+    function shareUrl() {
+      var h = location.hash.indexOf("#src=") === 0 ? location.hash : "";
+      return location.origin + location.pathname + h;
+    }
     function fmt(ms) {
       var sec = Math.floor(ms / 1000);
       return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
@@ -1247,37 +1254,92 @@ Auto-included by docs/_layouts/default.html.
         stream.getAudioTracks().forEach(function (a) { out.addTrack(a); });
         var mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"]
           .filter(function (m) { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); })[0] || "";
-        var rec, chunks = [], t0 = 0, note = "", tick = null, hud = null, timer = null, done = false;
-        function stop(why) {
+        var rec, chunks = [], t0 = 0, note = "", tick = null, hud = null, timer = null, done = false, lab = null;
+        var onFinal = null, finalBlob = null;
+        /* the walk's end HOLDS the recorder instead of stopping it: the
+           review dialog opens over a paused take, and the end card — an
+           upload-time choice — is appended by resuming for three seconds,
+           never by re-encoding (Michel, 2026-09-20: "an option when
+           uploading"). A dead share (hard) can only stop. */
+        function stop(why, hard) {
           if (done) return; done = true;
           if (why) note = why;
           var wait = why ? 0 : Math.max(TAIL_MS, MIN_MS - (Date.now() - t0));
-          setTimeout(function () { try { rec.stop(); } catch (e) { finish(); } }, wait);
+          setTimeout(function () {
+            clearInterval(timer);
+            if (hard || !rec || rec.state !== "recording") { end(false); return; }
+            var armed = false;
+            var once = function () { if (armed) return; armed = true; rec.removeEventListener("dataavailable", once); hold(); };
+            rec.addEventListener("dataavailable", once);
+            try { rec.pause(); rec.requestData(); } catch (e) { end(false); return; }
+            setTimeout(once, 600);
+          }, wait);
         }
-        function finish() {
-          clearInterval(tick); clearInterval(timer); off();
-          try { stream.getTracks().forEach(function (tr) { tr.stop(); }); } catch (e) {}
-          try { out.getTracks().forEach(function (tr) { tr.stop(); }); } catch (e) {}
-          if (hud) hud.remove();
-          S.busy = false; fire();
-          var blob = new Blob(chunks, { type: mime || "video/webm" });
-          if (!blob.size) { toast("🎬 nothing was recorded"); restoreMode(); return; }
-          review(blob, { ms: Date.now() - t0, note: note });
+        function hold() {
+          if (lab) lab.textContent = "🎬 held";
+          var preview = new Blob(chunks, { type: mime || "video/webm" });
+          if (!preview.size) { end(false); return; }
+          review(preview, { ms: Date.now() - t0, note: note, url: shareUrl(), end: end });
         }
+        /* end(card) → Promise<Blob>: the final clip, with or without the card */
+        function end(card, text) {
+          if (finalBlob) return Promise.resolve(finalBlob);
+          if (onFinal) return onFinal;
+          onFinal = new Promise(function (res) {
+            var settle = function () {
+              clearInterval(tick); off();
+              try { stream.getTracks().forEach(function (tr) { tr.stop(); }); } catch (e) {}
+              try { out.getTracks().forEach(function (tr) { tr.stop(); }); } catch (e) {}
+              if (hud) hud.remove();
+              S.busy = false; fire();
+              finalBlob = new Blob(chunks, { type: mime || "video/webm" });
+              res(finalBlob);
+            };
+            if (!rec || rec.state === "inactive") { settle(); return; }
+            rec.onstop = settle;
+            if (card && rec.state === "paused") {
+              if (lab) lab.textContent = "🎬 end card";
+              clearInterval(tick);
+              tick = setInterval(function () { drawCard(text || ""); }, 1000 / FPS);
+              try { rec.resume(); } catch (e) { settle(); return; }
+              setTimeout(function () { try { rec.stop(); } catch (e) { settle(); } }, CARD_MS);
+            } else {
+              try { rec.stop(); } catch (e) { settle(); }
+            }
+          });
+          return onFinal;
+        }
+        /* the card: dark, "Watch more:", the address big enough for a phone */
+        function drawCard(text) {
+          ctx.fillStyle = "#111"; ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.font = "600 64px system-ui, -apple-system, sans-serif";
+          ctx.fillText("Watch more:", W / 2, H / 2 - 120);
+          ctx.fillStyle = "#fbbf24";
+          ctx.font = "700 60px ui-monospace, Menlo, monospace";
+          var shown = String(text).replace(/^https?:\/\//, "");
+          var lines = [], cur = "";
+          shown.split(/(?=[\/#?&])/).forEach(function (part) {
+            if (ctx.measureText(cur + part).width > W - 120 && cur) { lines.push(cur); cur = part; } else cur += part;
+          });
+          if (cur) lines.push(cur);
+          lines.slice(0, 5).forEach(function (l, i) { ctx.fillText(l, W / 2, H / 2 + i * 80); });
+        }
+        function finish() { end(false); }
         function go() {
           vid.play().catch(function () {});
           try { rec = new MediaRecorder(out, mime ? { mimeType: mime, videoBitsPerSecond: 12000000 } : {}); }
           catch (e) { toast("🎬 " + e.message); S.busy = false; fire(); restoreMode(); resolve(false); return; }
           rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
           rec.onstop = finish;
-          rec.onerror = function () { stop("The recorder failed; the clip up to that point is below."); };
+          rec.onerror = function () { stop("The recorder failed; the clip up to that point is below.", true); };
           rec.start(1000);
           t0 = Date.now();
           tick = setInterval(draw, 1000 / FPS);
           hud = document.createElement("div");
           hud.className = "lc-short-hud";
           hud.setAttribute("role", "status");
-          var lab = document.createElement("span"); lab.textContent = "🎬 Short 0:00";
+          lab = document.createElement("span"); lab.textContent = "🎬 Short 0:00";
           var btn = document.createElement("button"); btn.type = "button"; btn.textContent = "⏹"; btn.setAttribute("aria-label", "Stop the Short");
           btn.addEventListener("click", function () { stop(); });
           hud.appendChild(lab); hud.appendChild(btn);
@@ -1288,7 +1350,7 @@ Auto-included by docs/_layouts/default.html.
           placeHud(); on(window, "resize", placeHud);
           timer = setInterval(function () {
             var ms = Date.now() - t0;
-            if (ms >= MAX_MS) { stop("Cut at 3:00 — a Short is three minutes at most."); return; }
+            if (ms >= MAX_MS) { stop("Cut at " + fmt(MAX_MS) + " — a Short is three minutes at most, end card included."); return; }
             if (ms >= WARN_MS) { hud.classList.add("warn"); lab.textContent = "🎬 " + fmt(MAX_MS - ms) + " left"; }
             else lab.textContent = "🎬 Short " + fmt(ms);
           }, 500);
@@ -1298,7 +1360,7 @@ Auto-included by docs/_layouts/default.html.
             stop();
           });
           var vt = stream.getVideoTracks()[0];
-          if (vt) on(vt, "ended", function () { stop("The screen share ended; the clip up to that point is below."); });
+          if (vt) on(vt, "ended", function () { stop("The screen share ended; the clip up to that point is below.", true); });
           resolve(true);
         }
         if (vid.readyState >= 1) go(); else vid.onloadedmetadata = go;
@@ -1306,10 +1368,13 @@ Auto-included by docs/_layouts/default.html.
       });
     }
 
-    /* ── review: upload unlisted · save · discard · embed on this page ── */
+    /* ── review: upload unlisted · save · discard · end card · embed ──
+       Opens over the HELD take (a preview of the chunks so far); meta.end(card,
+       text) finishes it, with the card appended when asked. */
     function review(blob, meta) {
       ensureRecorderStyles();
       var url = URL.createObjectURL(blob);
+      var canCard = typeof meta.end === "function" && !meta.note;
       var ov = document.createElement("div");
       ov.className = "lc-rec-ov lc-short-ov";
       var mb = (blob.size / 1048576).toFixed(1);
@@ -1321,6 +1386,8 @@ Auto-included by docs/_layouts/default.html.
         meta.note ? '    <div class="lc-rec-review-warn">⚠️ ' + meta.note + '</div>' : '',
         '    <div class="lc-rec-review-meta">🎬 Short · ' + fmt(meta.ms) + ' · ' + mb + ' MB · 1080×1920</div>',
         '    <div class="lc-short-opts">',
+        canCard ? '      <label><input type="checkbox" class="lc-short-card" checked> End card and description: <em>Watch more:</em></label>' : '',
+        canCard ? '      <input type="text" class="lc-short-url" aria-label="Watch more address">' : '',
         '      <label><input type="checkbox" class="lc-short-embed"> Also embed on this page</label>',
         '    </div>',
         '    <div class="lc-rec-review-acts">',
@@ -1336,12 +1403,34 @@ Auto-included by docs/_layouts/default.html.
       var v = ov.querySelector("video"); v.src = url;
       var st = ov.querySelector(".lc-short-status");
       var up = ov.querySelector(".lc-short-up");
-      function close() { URL.revokeObjectURL(url); ov.remove(); restoreMode(); }
+      var urlIn = ov.querySelector(".lc-short-url"), cardIn = ov.querySelector(".lc-short-card");
+      if (urlIn) urlIn.value = meta.url || "";
+      function wantCard() { return !!(cardIn && cardIn.checked && urlIn && urlIn.value.trim()); }
+      function watchLine() { return wantCard() ? "Watch more: " + urlIn.value.trim() : ""; }
+      /* the final clip: the held take, plus the card when asked — once */
+      var finalUrl = null;
+      function final() {
+        if (!meta.end) return Promise.resolve(blob);
+        if (cardIn) cardIn.disabled = true;
+        if (urlIn) urlIn.disabled = true;
+        return meta.end(wantCard(), urlIn && urlIn.value.trim()).then(function (b) {
+          if (!finalUrl) { finalUrl = URL.createObjectURL(b); v.src = finalUrl; }
+          return b;
+        });
+      }
+      function close() {
+        URL.revokeObjectURL(url); if (finalUrl) URL.revokeObjectURL(finalUrl);
+        ov.remove();
+        if (meta.end) meta.end(false).then(restoreMode); else restoreMode();
+      }
       ov.querySelector(".lc-rb-save").addEventListener("click", function () {
-        var a = document.createElement("a");
-        a.href = url; a.download = "short-" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".webm";
-        a.click();
-        st.textContent = "✅ Saved.";
+        st.textContent = wantCard() ? "Adding the end card…" : "Saving…";
+        final().then(function (b) {
+          var a = document.createElement("a");
+          a.href = finalUrl || url; a.download = "short-" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".webm";
+          a.click();
+          st.textContent = "✅ Saved.";
+        });
       });
       var discard = function () { close(); };
       ov.querySelector(".lc-rb-discard").addEventListener("click", discard);
@@ -1352,8 +1441,11 @@ Auto-included by docs/_layouts/default.html.
         up.disabled = true;
         var embed = ov.querySelector(".lc-short-embed").checked;
         var title = (document.title || "Lightcodepedia").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia";
-        st.textContent = "Uploading…";
-        window.lcYtUpload(blob, blob.type || "video/webm", title + " — Short", function (pct) { st.textContent = "Uploading… " + pct + "%"; })
+        var desc = (watchLine() ? watchLine() + "\n\n" : "") + "Recorded on Lightcodepedia · " + new Date().toLocaleDateString();
+        st.textContent = wantCard() ? "Adding the end card…" : "Uploading…";
+        final().then(function (b) {
+          return window.lcYtUpload(b, b.type || "video/webm", title + " — Short", function (pct) { st.textContent = "Uploading… " + pct + "%"; }, desc);
+        })
           .then(function (videoUrl) {
             st.textContent = "✅ Uploaded (unlisted): " + videoUrl;
             if (!embed) return;
