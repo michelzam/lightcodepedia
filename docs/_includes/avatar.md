@@ -775,9 +775,9 @@ Auto-included by docs/_layouts/default.html.
     t.classList.add("lc-avatar-spot");
     setTimeout(function () {
       if (!av.playing) return;
-      var r = t.getBoundingClientRect(), s = av.size, pad = 10;
+      var r = t.getBoundingClientRect(), s = av.size, pad = 10, st = stage();
       var left, top;
-      var roomR = window.innerWidth - r.right, roomL = r.left;
+      var roomR = st.right - r.right, roomL = r.left - st.left;
       if (Math.max(roomR, roomL) >= s + 28) {
         /* desktop: park on the roomier side, vertically centered */
         left = roomR >= s + 28 ? r.right + 18 : r.left - s - 18;
@@ -790,7 +790,7 @@ Auto-included by docs/_layouts/default.html.
         top = r.top - s - 22;
         if (top < 90) top = Math.min(window.innerHeight - s - pad, r.bottom + 22);
       }
-      left = Math.max(pad, Math.min(window.innerWidth - s - pad, left));
+      left = Math.max(st.left + pad, Math.min(st.right - s - pad, left));
       moveHost(av, left + "px", top + "px");
       lookAt(av, r.left + r.width / 2, r.top + r.height / 2);
     }, 480);
@@ -799,6 +799,15 @@ Auto-included by docs/_layouts/default.html.
 
   function clearSpot(av) {
     if (av.spot) { av.spot.classList.remove("lc-avatar-spot"); av.spot = null; }
+  }
+  /* where Doc may stand: the whole viewport — or, while a Short's phone
+     frame is on (recorder.md), the 9:16 column between the dark bands */
+  function stage() {
+    if (document.body.classList.contains("lc-short-frame")) {
+      var g = Math.max(0, (window.innerWidth - window.innerHeight * 9 / 16) / 2);
+      return { left: g, right: window.innerWidth - g };
+    }
+    return { left: 0, right: window.innerWidth };
   }
 
   /* travel with a lean in the direction of movement; bounce on arrival */
@@ -1482,6 +1491,8 @@ Auto-included by docs/_layouts/default.html.
       clearSpot(av);
       moveHost(av, "", null);
       Object.assign(av.host.style, (PATHS[av.path] || PATHS.wander)(av.idx - 1));
+      var st = stage();
+      if (st.left > 0) av.host.style.left = Math.round(st.left + (st.right - st.left) * 0.55) + "px";
       if (av.pupils) lookAt(av, window.innerWidth / 2, 0);
     }
 

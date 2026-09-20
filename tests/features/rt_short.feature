@@ -1,8 +1,9 @@
 Feature: 🎬 Short next walk — Doc walks, the page records itself
   Michel, 2026-09-20: one checkable line in Doc's menu, for the page's
   owner only. Tick it, play a tour or a story, and the walk is captured
-  from its first line to its last in a phone frame (9:16), reviewed in a
-  dialog, uploaded unlisted on demand, and — if asked — embedded on the
+  from its first line to its last inside a phone frame — the page itself
+  becomes the 9:16 column, Doc in it, so what is on screen is the clip —
+  reviewed in a dialog, uploaded unlisted on demand, and — if asked — embedded on the
   page in a folded "🎬 Shorts" accordion. The tick goes away after one
   walk. The tab capture and the upload are the browser's and YouTube's;
   the suite hands in a painted canvas and stub endpoints instead.
@@ -45,13 +46,15 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     Then the guide's menu offers "🎬 Short next walk"
     When I tick "🎬 Short next walk" in the guide's menu
     Then the page is in reel mode
+    And the page wears the phone frame
     When I pick "Say hi" from the guide's menu
     Then the Short review dialog shows the clip
     When I upload the Short, embedded on this page
     Then the Short went to YouTube unlisted
     And "courses/demo/mod/short.md" now carries a folded Shorts accordion with Short 1
     When I close the Short dialog
-    Then the guide's menu shows "🎬 Short next walk" unticked
+    Then the phone frame is off
+    And the guide's menu shows "🎬 Short next walk" unticked
 
   Scenario: A second Short joins the same accordion
     Given a marked shim is preinstalled

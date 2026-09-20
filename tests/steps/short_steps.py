@@ -174,3 +174,21 @@ def step_acc_video(context):
     frame = context.short_acc.locator("iframe.lc-video, .lc-video iframe, iframe[src*='stub1234']").first
     expect(frame).to_be_visible(timeout=10_000)
     assert "stub1234" in (frame.get_attribute("src") or ""), frame.get_attribute("src")
+
+
+@then("the page wears the phone frame")
+def step_frame_on(context):
+    expect(context.page.locator("body")).to_have_class(re.compile(r"\blc-short-frame\b"), timeout=5_000)
+    # the column is 9:16 of the viewport's height, centred, and Doc's seed sits inside it
+    box = context.page.evaluate("""() => {
+      const vw = innerWidth, vh = innerHeight, w = vh * 9 / 16, g = Math.max(0, (vw - w) / 2);
+      const m = document.querySelector('.markdown-body').getBoundingClientRect();
+      const s = document.querySelector('.lc-guide-seed').getBoundingClientRect();
+      return { g, ml: m.left, mr: m.right, vw, sr: s.right }; }""")
+    assert abs(box["ml"] - box["g"]) < 2 and abs(box["mr"] - (box["vw"] - box["g"])) < 2, box
+    assert box["sr"] <= box["vw"] - box["g"] + 1, box
+
+
+@then("the phone frame is off")
+def step_frame_off(context):
+    expect(context.page.locator("body")).not_to_have_class(re.compile(r"\blc-short-frame\b"), timeout=5_000)
