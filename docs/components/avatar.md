@@ -177,26 +177,24 @@ video file as the character — in-memory only, never uploaded or committed.
 ## 🎬 Short next walk — a phone-frame clip of one walk
 
 The page's **owner** (the connected ✏️ key can push to the page's repo) sees
-one more line in the docked guide's menu: **☐ 🎬 Short next walk**. Tick it and
-the next tour or story you play is captured **from its first line to its
-last**, cropped to **9:16** (1080×1920) — no window resizing — and reviewed
-before anything leaves the browser:
+one more line in the docked guide's menu: **☐ 🎬 Short next walk**.
 
-- **⬆ Upload unlisted** sends the clip to your YouTube channel (the same
-  sign-in as the recorder). **⬇ Save** keeps the file; **🗑 Discard** drops it.
-- **Also embed on this page** appends a folded **🎬 Shorts** accordion at the
-  end of the page — one section per clip, `{: .video }` inside — committed
-  with your key to the rendered file (a course page on the runner, or the
-  site page itself).
-- **Crop for the next Short**: *centre of the page* (default — arming also
-  switches the page to **reel** mode, one section per screen) or *follow Doc*
-  (the frame pans to the spotlighted part).
-- The tick goes off after one walk. A pill in the top-left corner counts;
-  a Short is **three minutes** at most, and the clip is cut there.
+- **Tick it** and the page puts on a **phone frame**: a 9:16 column in the
+  middle of the window, dark bands on both sides, reel on (one section per
+  screen), Doc and his bubble inside the column. What you see is exactly the
+  clip — no window resizing, no crop to choose. Untick and the page is back.
+- **Play** the tour or a ❓ story. The share prompt comes first: pick **this
+  tab** and tick **share tab audio**, then Doc walks and the clip runs from
+  his first line to his last (three minutes at most). The counter and ⏹ sit
+  in a band, never in the frame.
+- **Review**: **⬆ Upload unlisted** (the recorder's YouTube sign-in),
+  **⬇ Save**, **🗑 Discard**, and **Also embed on this page** — a folded
+  **🎬 Shorts** accordion appended to the rendered file, one section per
+  clip, committed with your key.
+- The tick goes off after one walk.
 
-Tab capture is a desktop Chrome/Edge affair: pick **this tab** in the share
-prompt and tick **share tab audio** so the studio voices are in the clip
-(browser TTS is spoken by the system, not the tab, and stays silent).
+Tab capture is a desktop Chrome/Edge affair. Browser TTS is spoken by the
+system, not the tab, and stays silent in the clip; studio voices are in.
 
 ## 🎙️ Studio voices from text — no recording (ElevenLabs)
 

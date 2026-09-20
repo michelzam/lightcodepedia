@@ -82,11 +82,24 @@ Auto-included by docs/_layouts/default.html.
       '.lc-short-hud{position:fixed;top:8px;left:8px;z-index:2147483647;display:flex;align-items:center;gap:8px;background:rgba(15,15,25,.82);color:#fff;font:600 .8em/1.2 system-ui,sans-serif;padding:5px 10px;border-radius:14px;font-variant-numeric:tabular-nums}',
       '.lc-short-hud.warn{background:#a35a00}',
       '.lc-short-hud button{background:#c00;color:#fff;border:none;border-radius:10px;padding:3px 9px;cursor:pointer;font:inherit}',
+      /* the phone frame: the page becomes a 9:16 column between two dark
+         bands; what is on screen is exactly the clip */
+      'body.lc-short-frame{--lc-frame-w:calc(100vh * 9 / 16);--lc-gutter:max(0px,calc((100vw - 100vh * 9 / 16) / 2))}',
+      'body.lc-short-frame::before,body.lc-short-frame::after{content:"";position:fixed;top:0;bottom:0;width:var(--lc-gutter);background:#111;z-index:2147483000;pointer-events:none}',
+      'body.lc-short-frame::before{left:0}body.lc-short-frame::after{right:0}',
+      'body.lc-short-frame .markdown-body{max-width:var(--lc-frame-w)!important;margin:0 auto!important;box-sizing:border-box;scrollbar-width:none}',
+      'body.lc-short-frame .markdown-body::-webkit-scrollbar{display:none}',
+      'body.lc-short-frame.lc-reel-active .markdown-body{margin:0 var(--lc-gutter)!important}',
+      'body.lc-short-frame .lc-reel-bar{left:var(--lc-gutter)!important;right:var(--lc-gutter)!important}',
+      /* the column is phone-wide but the viewport is not: the phone
+         breakpoints of blocks and cards (block.md, sections.md) apply by hand */
+      'body.lc-short-frame .lc-blocks,body.lc-short-frame .lc-cards{grid-template-columns:1fr!important}',
+      'body.lc-short-frame .lc-guide-seed,body.lc-short-frame .lc-guide-menu{right:calc(var(--lc-gutter) + 16px)!important}',
+      'body.lc-short-frame .lc-score-fab,body.lc-short-frame .lc-score-popover{right:calc(var(--lc-gutter) + 1.2em)!important}',
       '.lc-short-ov .lc-rec-panel{max-width:440px}',
       '.lc-short-ov .lc-rec-review-vid{aspect-ratio:9/16;max-height:56vh;object-fit:contain}',
       '.lc-short-opts{display:flex;flex-direction:column;gap:8px;font-size:.88em;color:#333;margin:0 0 12px}',
       '.lc-short-opts label{display:flex;align-items:center;gap:8px;cursor:pointer}',
-      '.lc-short-opts select{font:inherit;padding:2px 6px;border-radius:6px;border:1px solid #ccc}',
       '.lc-short-up{background:#ff0000;color:#fff}.lc-short-up:hover{background:#cc0000}.lc-short-up:disabled{opacity:.5;cursor:default}',
       '.lc-short-status{font-size:.82em;color:#555;margin-top:10px;min-height:1.2em;word-break:break-all}'
     ].join("");
@@ -1128,8 +1141,7 @@ Auto-included by docs/_layouts/default.html.
     var W = 1080, H = 1920, FPS = 30;
     var MAX_MS = 180000, WARN_MS = 150000;        /* a Short is three minutes at most */
     var MIN_MS = 3000, TAIL_MS = 800;             /* the last bubble stays in frame; the encoder needs a moment for its first frames */
-    var S = { armed: false, busy: false, crop: "reel", turnedReelOn: false };
-    try { S.crop = localStorage.getItem("lc_short_crop") === "follow" ? "follow" : "reel"; } catch (e) {}
+    var S = { armed: false, busy: false, turnedReelOn: false };
     var listeners = [];
 
     function supported() {
@@ -1148,23 +1160,31 @@ Auto-included by docs/_layouts/default.html.
       setTimeout(function () { try { n.remove(); } catch (e) {} }, 5000);
     }
     function mode() { return window.lcMode ? window.lcMode.current() : "read"; }
+    /* the gutter: what is left of the window beside a 9:16 column */
+    function gutter() { return Math.max(0, (window.innerWidth - window.innerHeight * 9 / 16) / 2); }
+    function frameOn() {
+      ensureRecorderStyles();
+      document.body.classList.add("lc-short-frame");
+    }
     function restoreMode() {
+      document.body.classList.remove("lc-short-frame");
       if (S.turnedReelOn && mode() === "reel" && window.lcMode) window.lcMode.set("read");
       S.turnedReelOn = false;
     }
-    /* arming turns reel mode on — one section per screen is what a phone
-       frame wants; disarming (or the review closing) gives the page back */
+    /* arming puts the phone frame on — the page itself becomes the 9:16
+       column, Doc inside it, reel on (one section per screen). The owner
+       sees the exact clip before the walk; disarming, or the review
+       closing, gives the page back (Michel, 2026-09-20: "page cropping is
+       bad… I have to resize the window myself") */
     function arm(on) {
       on = !!on;
       if (on === S.armed) return;
       S.armed = on;
-      if (on && mode() !== "reel" && window.lcMode) { window.lcMode.set("reel"); S.turnedReelOn = mode() === "reel"; }
-      else if (!on && !S.busy) restoreMode();
+      if (on) {
+        frameOn();
+        if (mode() !== "reel" && window.lcMode) { window.lcMode.set("reel"); S.turnedReelOn = mode() === "reel"; }
+      } else if (!S.busy) restoreMode();
       fire();
-    }
-    function setCrop(v) {
-      S.crop = v === "follow" ? "follow" : "reel";
-      try { localStorage.setItem("lc_short_crop", S.crop); } catch (e) {}
     }
     function capture() {
       if (window.lcShortCapture) return Promise.resolve(window.lcShortCapture());
@@ -1209,28 +1229,14 @@ Auto-included by docs/_layouts/default.html.
         var canvas = document.createElement("canvas");
         canvas.width = W; canvas.height = H;
         var ctx = canvas.getContext("2d");
-        var cx = null, cy = null;                    /* eased crop centre */
-        function target() {
-          if (S.crop !== "follow") return null;
-          var el = document.querySelector(".lc-avatar-spot") ||
-                   document.querySelector('.lc-avatar-host[data-state="speaking"]') ||
-                   document.querySelector(".lc-avatar-host");
-          return el ? el.getBoundingClientRect() : null;
-        }
+        /* the frame column is centred and exactly 9:16 of the viewport's
+           height, so the centred 9:16 window of the capture IS the column */
         function draw() {
           var vw = vid.videoWidth, vh = vid.videoHeight;
           if (!vw || !vh) return;
           var sw = Math.round(vh * 9 / 16), sh = vh;
           if (sw > vw) { sw = vw; sh = Math.round(vw * 16 / 9); }
-          var tx = vw / 2, ty = vh / 2, t = target();
-          if (t && window.innerWidth && window.innerHeight) {
-            tx = (t.left + t.width / 2) * vw / window.innerWidth;
-            ty = (t.top + t.height / 2) * vh / window.innerHeight;
-          }
-          if (cx === null) { cx = tx; cy = ty; } else { cx += (tx - cx) * 0.12; cy += (ty - cy) * 0.12; }
-          var sx = Math.max(0, Math.min(vw - sw, Math.round(cx - sw / 2)));
-          var sy = Math.max(0, Math.min(vh - sh, Math.round(cy - sh / 2)));
-          ctx.drawImage(vid, sx, sy, sw, sh, 0, 0, W, H);
+          ctx.drawImage(vid, Math.round((vw - sw) / 2), Math.round((vh - sh) / 2), sw, sh, 0, 0, W, H);
         }
         var out = canvas.captureStream(FPS);
         stream.getAudioTracks().forEach(function (a) { out.addTrack(a); });
@@ -1251,7 +1257,7 @@ Auto-included by docs/_layouts/default.html.
           S.busy = false; fire();
           var blob = new Blob(chunks, { type: mime || "video/webm" });
           if (!blob.size) { toast("🎬 nothing was recorded"); restoreMode(); return; }
-          review(blob, { ms: Date.now() - t0, note: note, crop: S.crop });
+          review(blob, { ms: Date.now() - t0, note: note });
         }
         function go() {
           vid.play().catch(function () {});
@@ -1271,6 +1277,10 @@ Auto-included by docs/_layouts/default.html.
           btn.addEventListener("click", function () { stop(); });
           hud.appendChild(lab); hud.appendChild(btn);
           document.body.appendChild(hud);
+          /* the pill lives in the gutter; a window too narrow for one has no
+             pill at all (Doc's ⏹ Stop still ends the take) */
+          function placeHud() { hud.style.display = gutter() >= 130 ? "" : "none"; }
+          placeHud(); on(window, "resize", placeHud);
           timer = setInterval(function () {
             var ms = Date.now() - t0;
             if (ms >= MAX_MS) { stop("Cut at 3:00 — a Short is three minutes at most."); return; }
@@ -1304,10 +1314,9 @@ Auto-included by docs/_layouts/default.html.
         '  <video class="lc-rec-review-vid" controls playsinline></video>',
         '  <div class="lc-rec-review-body">',
         meta.note ? '    <div class="lc-rec-review-warn">⚠️ ' + meta.note + '</div>' : '',
-        '    <div class="lc-rec-review-meta">🎬 Short · ' + fmt(meta.ms) + ' · ' + mb + ' MB · ' + (meta.crop === "follow" ? "follows Doc" : "centred") + '</div>',
+        '    <div class="lc-rec-review-meta">🎬 Short · ' + fmt(meta.ms) + ' · ' + mb + ' MB · 1080×1920</div>',
         '    <div class="lc-short-opts">',
         '      <label><input type="checkbox" class="lc-short-embed"> Also embed on this page</label>',
-        '      <label>Crop for the next Short <select class="lc-short-crop"><option value="reel">Centre of the page</option><option value="follow">Follow Doc</option></select></label>',
         '    </div>',
         '    <div class="lc-rec-review-acts">',
         '      <button class="lc-short-up">⬆ Upload unlisted</button>',
@@ -1320,8 +1329,6 @@ Auto-included by docs/_layouts/default.html.
       ].join("");
       document.body.appendChild(ov);
       var v = ov.querySelector("video"); v.src = url;
-      var sel = ov.querySelector(".lc-short-crop"); sel.value = S.crop;
-      sel.addEventListener("change", function () { setCrop(sel.value); });
       var st = ov.querySelector(".lc-short-status");
       var up = ov.querySelector(".lc-short-up");
       function close() { URL.revokeObjectURL(url); ov.remove(); restoreMode(); }
@@ -1406,7 +1413,7 @@ Auto-included by docs/_layouts/default.html.
       supported: supported,
       armed: function () { return S.armed; },
       busy: function () { return S.busy; },
-      arm: arm, begin: begin, setCrop: setCrop, crop: function () { return S.crop; }
+      arm: arm, begin: begin, gutter: gutter
     };
   })();
 
