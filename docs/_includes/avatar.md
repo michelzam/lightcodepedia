@@ -2162,6 +2162,44 @@ Auto-included by docs/_layouts/default.html.
       b.addEventListener('click', function (e) { e.stopPropagation(); fn(); render(); });
       return b;
     }
+    /* a ticked line in the same menu: ☐/☑ in the label, the state on ARIA */
+    function check(label, on, fn) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.setAttribute('role', 'menuitemcheckbox');
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      menu.setAttribute('role', 'menu');
+      b.textContent = (on ? '☑ ' : '☐ ') + label;
+      b.addEventListener('click', function (e) { e.stopPropagation(); fn(!on); render(); });
+      return b;
+    }
+    /* 🎬 Short next walk (Michel, 2026-09-20): the page's OWNER — the
+       connected key can push to the repo the material came from, the same
+       test author mode uses — may tick it; the next tour or story is then
+       captured before Doc says a word (recorder.md, lcShort). Learners never
+       see the line. Ownership resolves async and is cached per session, so
+       the first render asks and re-renders once the answer is in. */
+    var shortOwner = null;
+    function shortLine() {
+      if (!window.lcShort || !window.lcShort.supported()) return;
+      var k = ''; try { k = localStorage.getItem('lc_ed_pat') || ''; } catch (e) {}
+      if (!k || !window.lcAuthorMode) return;
+      if (shortOwner === null) {
+        shortOwner = false;
+        window.lcAuthorMode.check().then(function (ok) { shortOwner = !!ok; if (ok) render(); });
+      }
+      if (!shortOwner) return;
+      menu.appendChild(check('🎬 Short next walk', window.lcShort.armed(), function (on) {
+        window.lcShort.arm(on);
+        menu.classList.remove('open');
+      }));
+    }
+    /* an armed Short captures FIRST (the prompt needs this very click),
+       then Doc walks; a refused share means no walk either */
+    function walk(fn) {
+      if (window.lcShort && window.lcShort.armed()) {
+        window.lcShort.begin({ id: elId }).then(function (ok) { if (ok) fn(); });
+      } else fn();
+    }
     /* The seed lives on <body>, so it OUTLIVES an in-frame hop while the page
        under it is replaced — and it was born closing over that first page's
        avatar. Playback always asked the registry and stayed right, but the
@@ -2176,9 +2214,9 @@ Auto-included by docs/_layouts/default.html.
       menu.innerHTML = ''; menu.removeAttribute('role');
       if (!av.playing) {
         if (av.script.length) {
-          menu.appendChild(item(av.idx > 0 ? '↺ Replay tour' : '▶ Play tour', function () { togglePlay(elId); menu.classList.remove('open'); }));
+          menu.appendChild(item(av.idx > 0 ? '↺ Replay tour' : '▶ Play tour', function () { menu.classList.remove('open'); walk(function () { togglePlay(elId); }); }));
         }
-        storyItems(elId, av, menu, item);
+        storyItems(elId, av, menu, function (label, fn) { return item(label, function () { walk(fn); }); });
         if (!av.script.length && (!av.stories || !Object.keys(av.stories).length)) {
           var note = document.createElement('div');
           note.style.cssText = 'padding:0.5em 0.9em;font-size:0.8em;color:#9ca3af;white-space:nowrap';
@@ -2201,6 +2239,7 @@ Auto-included by docs/_layouts/default.html.
               .then(function (sum) { seedToast(sum || '🎙️ cancelled'); });
           }));
         }
+        if (av.script.length || (av.stories && Object.keys(av.stories).length)) shortLine();
       } else if (av._waiting || av._curStep || av.step) {
         menu.appendChild(item('Next →', function () { togglePlay(elId); }));
         menu.appendChild(item('⏹ Stop', function () { stopPlay(elId); menu.classList.remove('open'); }));

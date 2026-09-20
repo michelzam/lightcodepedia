@@ -77,7 +77,18 @@ Auto-included by docs/_layouts/default.html.
       '.lc-rb-save{background:#0066cc;color:#fff}.lc-rb-save:hover{background:#0052a3}',
       '.lc-rb-yt{background:#ff0000;color:#fff}.lc-rb-yt:hover{background:#cc0000}.lc-rb-yt:disabled{opacity:.5;cursor:default}',
       '.lc-rb-again{background:#eee;color:#333}.lc-rb-again:hover{background:#ddd}',
-      '.lc-rb-discard{background:#fff;color:#c00;border:1px solid #f0caca!important}.lc-rb-discard:hover{background:#fff5f5}'
+      '.lc-rb-discard{background:#fff;color:#c00;border:1px solid #f0caca!important}.lc-rb-discard:hover{background:#fff5f5}',
+      /* Shorts: the pill stays in the top-left corner, outside a centred 9:16 crop */
+      '.lc-short-hud{position:fixed;top:8px;left:8px;z-index:2147483647;display:flex;align-items:center;gap:8px;background:rgba(15,15,25,.82);color:#fff;font:600 .8em/1.2 system-ui,sans-serif;padding:5px 10px;border-radius:14px;font-variant-numeric:tabular-nums}',
+      '.lc-short-hud.warn{background:#a35a00}',
+      '.lc-short-hud button{background:#c00;color:#fff;border:none;border-radius:10px;padding:3px 9px;cursor:pointer;font:inherit}',
+      '.lc-short-ov .lc-rec-panel{max-width:440px}',
+      '.lc-short-ov .lc-rec-review-vid{aspect-ratio:9/16;max-height:56vh;object-fit:contain}',
+      '.lc-short-opts{display:flex;flex-direction:column;gap:8px;font-size:.88em;color:#333;margin:0 0 12px}',
+      '.lc-short-opts label{display:flex;align-items:center;gap:8px;cursor:pointer}',
+      '.lc-short-opts select{font:inherit;padding:2px 6px;border-radius:6px;border:1px solid #ccc}',
+      '.lc-short-up{background:#ff0000;color:#fff}.lc-short-up:hover{background:#cc0000}.lc-short-up:disabled{opacity:.5;cursor:default}',
+      '.lc-short-status{font-size:.82em;color:#555;margin-top:10px;min-height:1.2em;word-break:break-all}'
     ].join("");
     document.head.appendChild(st);
   }
@@ -1090,6 +1101,312 @@ Auto-included by docs/_layouts/default.html.
     // Called from the recorder review panel with the recorded blob.
     window.lcYtUploadBlob = function(blob, mimeType, title, container) {
       ytShowUploadUI(container, blob, mimeType, title);
+    };
+    // The same upload as a promise (unlisted, same token): the Shorts review
+    // dialog draws its own progress and decides what to do with the URL.
+    window.lcYtUpload = function(blob, mimeType, title, onProgress) {
+      return new Promise(function(resolve, reject) {
+        function run(token) {
+          ytDoUpload(token, blob, title, mimeType, onProgress, function(url, err) {
+            if (err) reject(new Error(err)); else resolve(url);
+          });
+        }
+        var t = ytGetToken();
+        if (t) run(t); else ytStartOAuthPopup(run);
+      });
+    };
+  })();
+
+  // ── Shorts — Doc walks, the page records itself in 9:16 ──────────────────
+  // The owner ticks "🎬 Short next walk" in Doc's menu; the next tour or
+  // story is captured from its first line to its last, cropped to a phone
+  // frame (1080×1920), then reviewed: upload unlisted, optionally embedded
+  // on the page in a folded "🎬 Shorts" accordion. One tick, one walk.
+  // Tab capture (getDisplayMedia) is desktop Chrome/Edge; the suite hands
+  // in a canvas stream through window.lcShortCapture instead.
+  (function () {
+    var W = 1080, H = 1920, FPS = 30;
+    var MAX_MS = 180000, WARN_MS = 150000;        /* a Short is three minutes at most */
+    var MIN_MS = 3000, TAIL_MS = 800;             /* the last bubble stays in frame; the encoder needs a moment for its first frames */
+    var S = { armed: false, busy: false, crop: "reel", turnedReelOn: false };
+    try { S.crop = localStorage.getItem("lc_short_crop") === "follow" ? "follow" : "reel"; } catch (e) {}
+    var listeners = [];
+
+    function supported() {
+      return !!window.lcShortCapture ||
+             !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && screenCaptureAllowed());
+    }
+    function fire() {
+      try { document.dispatchEvent(new CustomEvent("lc-short-changed", { detail: { armed: S.armed, busy: S.busy } })); } catch (e) {}
+    }
+    function toast(text) {
+      var n = document.createElement("div");
+      n.className = "lc-guide-hello";
+      n.style.cssText = "position:fixed;bottom:110px;right:20px;z-index:2147483647;background:#1e1e2e;color:#fff;padding:8px 14px;border-radius:12px;font-size:.85em";
+      n.textContent = text;
+      document.body.appendChild(n);
+      setTimeout(function () { try { n.remove(); } catch (e) {} }, 5000);
+    }
+    function mode() { return window.lcMode ? window.lcMode.current() : "read"; }
+    function restoreMode() {
+      if (S.turnedReelOn && mode() === "reel" && window.lcMode) window.lcMode.set("read");
+      S.turnedReelOn = false;
+    }
+    /* arming turns reel mode on — one section per screen is what a phone
+       frame wants; disarming (or the review closing) gives the page back */
+    function arm(on) {
+      on = !!on;
+      if (on === S.armed) return;
+      S.armed = on;
+      if (on && mode() !== "reel" && window.lcMode) { window.lcMode.set("reel"); S.turnedReelOn = mode() === "reel"; }
+      else if (!on && !S.busy) restoreMode();
+      fire();
+    }
+    function setCrop(v) {
+      S.crop = v === "follow" ? "follow" : "reel";
+      try { localStorage.setItem("lc_short_crop", S.crop); } catch (e) {}
+    }
+    function capture() {
+      if (window.lcShortCapture) return Promise.resolve(window.lcShortCapture());
+      return navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: FPS, width: { ideal: 3840 }, height: { ideal: 2160 } },
+        audio: true,                    /* tab audio: the studio voices */
+        selfBrowserSurface: "include",  /* this very tab is the one we want */
+        preferCurrentTab: true,
+        surfaceSwitching: "exclude"
+      });
+    }
+    function fmt(ms) {
+      var sec = Math.floor(ms / 1000);
+      return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+    }
+    function off() {
+      listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2]); });
+      listeners = [];
+    }
+    function on(target, ev, fn) { target.addEventListener(ev, fn); listeners.push([target, ev, fn]); }
+
+    /* begin() runs INSIDE the click that starts the walk: the capture prompt
+       needs that gesture. It resolves true once frames are being encoded —
+       the caller then starts Doc — or false when the share was refused. */
+    function begin(opts) {
+      opts = opts || {};
+      if (!S.armed || S.busy) return Promise.resolve(false);
+      S.armed = false; S.busy = true; fire();
+      return capture().then(function (stream) { return start(stream, opts); })
+        .catch(function (e) {
+          S.busy = false; fire();
+          toast("🎬 no Short — " + (e && e.name === "NotAllowedError" ? "the share was cancelled" : (e && e.message) || e));
+          restoreMode();
+          return false;
+        });
+    }
+
+    function start(stream, opts) {
+      return new Promise(function (resolve) {
+        var vid = document.createElement("video");
+        vid.muted = true; vid.playsInline = true; vid.srcObject = stream;
+        var canvas = document.createElement("canvas");
+        canvas.width = W; canvas.height = H;
+        var ctx = canvas.getContext("2d");
+        var cx = null, cy = null;                    /* eased crop centre */
+        function target() {
+          if (S.crop !== "follow") return null;
+          var el = document.querySelector(".lc-avatar-spot") ||
+                   document.querySelector('.lc-avatar-host[data-state="speaking"]') ||
+                   document.querySelector(".lc-avatar-host");
+          return el ? el.getBoundingClientRect() : null;
+        }
+        function draw() {
+          var vw = vid.videoWidth, vh = vid.videoHeight;
+          if (!vw || !vh) return;
+          var sw = Math.round(vh * 9 / 16), sh = vh;
+          if (sw > vw) { sw = vw; sh = Math.round(vw * 16 / 9); }
+          var tx = vw / 2, ty = vh / 2, t = target();
+          if (t && window.innerWidth && window.innerHeight) {
+            tx = (t.left + t.width / 2) * vw / window.innerWidth;
+            ty = (t.top + t.height / 2) * vh / window.innerHeight;
+          }
+          if (cx === null) { cx = tx; cy = ty; } else { cx += (tx - cx) * 0.12; cy += (ty - cy) * 0.12; }
+          var sx = Math.max(0, Math.min(vw - sw, Math.round(cx - sw / 2)));
+          var sy = Math.max(0, Math.min(vh - sh, Math.round(cy - sh / 2)));
+          ctx.drawImage(vid, sx, sy, sw, sh, 0, 0, W, H);
+        }
+        var out = canvas.captureStream(FPS);
+        stream.getAudioTracks().forEach(function (a) { out.addTrack(a); });
+        var mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"]
+          .filter(function (m) { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); })[0] || "";
+        var rec, chunks = [], t0 = 0, note = "", tick = null, hud = null, timer = null, done = false;
+        function stop(why) {
+          if (done) return; done = true;
+          if (why) note = why;
+          var wait = why ? 0 : Math.max(TAIL_MS, MIN_MS - (Date.now() - t0));
+          setTimeout(function () { try { rec.stop(); } catch (e) { finish(); } }, wait);
+        }
+        function finish() {
+          clearInterval(tick); clearInterval(timer); off();
+          try { stream.getTracks().forEach(function (tr) { tr.stop(); }); } catch (e) {}
+          try { out.getTracks().forEach(function (tr) { tr.stop(); }); } catch (e) {}
+          if (hud) hud.remove();
+          S.busy = false; fire();
+          var blob = new Blob(chunks, { type: mime || "video/webm" });
+          if (!blob.size) { toast("🎬 nothing was recorded"); restoreMode(); return; }
+          review(blob, { ms: Date.now() - t0, note: note, crop: S.crop });
+        }
+        function go() {
+          vid.play().catch(function () {});
+          try { rec = new MediaRecorder(out, mime ? { mimeType: mime, videoBitsPerSecond: 8000000 } : {}); }
+          catch (e) { toast("🎬 " + e.message); S.busy = false; fire(); restoreMode(); resolve(false); return; }
+          rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+          rec.onstop = finish;
+          rec.onerror = function () { stop("The recorder failed; the clip up to that point is below."); };
+          rec.start(1000);
+          t0 = Date.now();
+          tick = setInterval(draw, 1000 / FPS);
+          hud = document.createElement("div");
+          hud.className = "lc-short-hud";
+          hud.setAttribute("role", "status");
+          var lab = document.createElement("span"); lab.textContent = "🎬 Short 0:00";
+          var btn = document.createElement("button"); btn.type = "button"; btn.textContent = "⏹"; btn.setAttribute("aria-label", "Stop the Short");
+          btn.addEventListener("click", function () { stop(); });
+          hud.appendChild(lab); hud.appendChild(btn);
+          document.body.appendChild(hud);
+          timer = setInterval(function () {
+            var ms = Date.now() - t0;
+            if (ms >= MAX_MS) { stop("Cut at 3:00 — a Short is three minutes at most."); return; }
+            if (ms >= WARN_MS) { hud.classList.add("warn"); lab.textContent = "🎬 " + fmt(MAX_MS - ms) + " left"; }
+            else lab.textContent = "🎬 Short " + fmt(ms);
+          }, 500);
+          /* the walk's last line ends the clip; "Stop sharing" ends it too */
+          on(document, "lc-avatar-ended", function (ev) {
+            if (opts.id && ev.detail && ev.detail.id && ev.detail.id !== opts.id) return;
+            stop();
+          });
+          var vt = stream.getVideoTracks()[0];
+          if (vt) on(vt, "ended", function () { stop("The screen share ended; the clip up to that point is below."); });
+          resolve(true);
+        }
+        if (vid.readyState >= 1) go(); else vid.onloadedmetadata = go;
+        setTimeout(function () { if (!rec && !done) go(); }, 1500);
+      });
+    }
+
+    /* ── review: upload unlisted · save · discard · embed on this page ── */
+    function review(blob, meta) {
+      ensureRecorderStyles();
+      var url = URL.createObjectURL(blob);
+      var ov = document.createElement("div");
+      ov.className = "lc-rec-ov lc-short-ov";
+      var mb = (blob.size / 1048576).toFixed(1);
+      ov.innerHTML = [
+        '<div class="lc-rec-panel" role="dialog" aria-label="Your Short">',
+        '  <button class="lc-rec-panel-close" title="Discard">✕</button>',
+        '  <video class="lc-rec-review-vid" controls playsinline></video>',
+        '  <div class="lc-rec-review-body">',
+        meta.note ? '    <div class="lc-rec-review-warn">⚠️ ' + meta.note + '</div>' : '',
+        '    <div class="lc-rec-review-meta">🎬 Short · ' + fmt(meta.ms) + ' · ' + mb + ' MB · ' + (meta.crop === "follow" ? "follows Doc" : "centred") + '</div>',
+        '    <div class="lc-short-opts">',
+        '      <label><input type="checkbox" class="lc-short-embed"> Also embed on this page</label>',
+        '      <label>Crop for the next Short <select class="lc-short-crop"><option value="reel">Centre of the page</option><option value="follow">Follow Doc</option></select></label>',
+        '    </div>',
+        '    <div class="lc-rec-review-acts">',
+        '      <button class="lc-short-up">⬆ Upload unlisted</button>',
+        '      <button class="lc-rb-save">⬇ Save</button>',
+        '      <button class="lc-rb-discard">🗑 Discard</button>',
+        '    </div>',
+        '    <div class="lc-short-status" aria-live="polite"></div>',
+        '  </div>',
+        '</div>'
+      ].join("");
+      document.body.appendChild(ov);
+      var v = ov.querySelector("video"); v.src = url;
+      var sel = ov.querySelector(".lc-short-crop"); sel.value = S.crop;
+      sel.addEventListener("change", function () { setCrop(sel.value); });
+      var st = ov.querySelector(".lc-short-status");
+      var up = ov.querySelector(".lc-short-up");
+      function close() { URL.revokeObjectURL(url); ov.remove(); restoreMode(); }
+      ov.querySelector(".lc-rb-save").addEventListener("click", function () {
+        var a = document.createElement("a");
+        a.href = url; a.download = "short-" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".webm";
+        a.click();
+        st.textContent = "✅ Saved.";
+      });
+      var discard = function () { close(); };
+      ov.querySelector(".lc-rb-discard").addEventListener("click", discard);
+      ov.querySelector(".lc-rec-panel-close").addEventListener("click", discard);
+      ov.addEventListener("click", function (e) { if (e.target === ov) discard(); });
+      up.addEventListener("click", function () {
+        if (!window.lcYtUpload) { st.textContent = "⚠️ Upload module not ready, try again."; return; }
+        up.disabled = true;
+        var embed = ov.querySelector(".lc-short-embed").checked;
+        var title = (document.title || "Lightcodepedia").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia";
+        st.textContent = "Uploading…";
+        window.lcYtUpload(blob, blob.type || "video/webm", title + " — Short", function (pct) { st.textContent = "Uploading… " + pct + "%"; })
+          .then(function (videoUrl) {
+            st.textContent = "✅ Uploaded (unlisted): " + videoUrl;
+            if (!embed) return;
+            st.textContent += " · embedding…";
+            return embedOnPage(videoUrl).then(function (n) {
+              st.textContent = "✅ Uploaded and embedded as Short " + n + ": " + videoUrl;
+            });
+          })
+          .catch(function (e) { st.textContent = "❌ " + (e && e.message || e); up.disabled = false; });
+      });
+    }
+
+    /* ── embed: a folded "🎬 Shorts" accordion at the end of the page ──
+       Same target rule as 📌 Keep: a runner render commits to the RENDERED
+       file, a site page to its own docs/*.md. A second Short joins the
+       accordion instead of growing a second one. */
+    function pageTarget() {
+      var rt = document.querySelector("#lc-run[data-lc-src-path]");
+      if (rt && rt.dataset.lcSrcRepo && rt.dataset.lcSrcPath) return { repo: rt.dataset.lcSrcRepo, path: rt.dataset.lcSrcPath };
+      var p = (window.lcPagePath ? window.lcPagePath() : location.pathname).replace(/\.html?$/, "").replace(/\/+$/, "");
+      var repo = (window.lcAuthorMode && window.lcAuthorMode.repo()) || _lcSiteRepo || "";
+      return { repo: repo, path: (!p || p === "/") ? "docs/index.md" : "docs" + (p.charAt(0) === "/" ? p : "/" + p) + ".md" };
+    }
+    function embedOnPage(videoUrl) {
+      var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+      var tg = pageTarget();
+      if (!pat || !tg.repo) return Promise.reject(new Error("connect the ✏️ editor to embed"));
+      var H = { "Authorization": "token " + pat, "Accept": "application/vnd.github+json", "Content-Type": "application/json" };
+      var api = "https://api.github.com/repos/" + tg.repo + "/contents/" + tg.path;
+      return fetch(api, { headers: H }).then(function (r) {
+        if (r.status === 404 && !/\/index\.md$/.test(tg.path)) {
+          api = api.replace(/\.md$/, "/index.md");
+          return fetch(api, { headers: H });
+        }
+        return r;
+      }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status + " reading the page");
+        return r.json();
+      }).then(function (cur) {
+        var md = decodeURIComponent(escape(atob(String(cur.content || "").replace(/\s/g, ""))));
+        var masked = md.replace(/````[\s\S]*?````/g, function (m) { return Array(m.length + 1).join(" "); });
+        var re = /```[^\n]*\r?\n([\s\S]*?)```[ \t]*\r?\n\{:\s*\.accordion\s+#shorts\b[^}]*\}/;
+        var m = re.exec(masked), n = 1, out;
+        var when = new Date().toISOString().slice(0, 10);
+        if (m) {
+          n = (m[1].match(/^### /gm) || []).length + 1;
+          var section = "### 🎬 Short " + n + " · " + when + "\n\n[▶️ Short " + n + "](" + videoUrl + ")\n{: .video }\n\n";
+          var at = m.index + m[0].indexOf(m[1]) + m[1].length;
+          out = md.slice(0, at) + section + md.slice(at);
+        } else {
+          out = md.replace(/\s*$/, "\n\n") +
+            "```\n### 🎬 Short 1 · " + when + "\n\n[▶️ Short 1](" + videoUrl + ")\n{: .video }\n\n```\n{: .accordion #shorts }\n";
+        }
+        return fetch(api, {
+          method: "PUT", headers: H,
+          body: JSON.stringify({ message: "short: " + when + " — Doc's walk, embedded", content: btoa(unescape(encodeURIComponent(out))), sha: cur.sha })
+        }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " committing"); return n; });
+      });
+    }
+
+    window.lcShort = {
+      supported: supported,
+      armed: function () { return S.armed; },
+      busy: function () { return S.busy; },
+      arm: arm, begin: begin, setCrop: setCrop, crop: function () { return S.crop; }
     };
   })();
 

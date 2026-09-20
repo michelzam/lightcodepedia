@@ -174,6 +174,30 @@ YouTube upload — a narrated video of the page, produced by the page itself.
 A `pick` trigger (`{: .avatar_trigger pick target="guide" }`) plays a **local**
 video file as the character — in-memory only, never uploaded or committed.
 
+## 🎬 Short next walk — a phone-frame clip of one walk
+
+The page's **owner** (the connected ✏️ key can push to the page's repo) sees
+one more line in the docked guide's menu: **☐ 🎬 Short next walk**. Tick it and
+the next tour or story you play is captured **from its first line to its
+last**, cropped to **9:16** (1080×1920) — no window resizing — and reviewed
+before anything leaves the browser:
+
+- **⬆ Upload unlisted** sends the clip to your YouTube channel (the same
+  sign-in as the recorder). **⬇ Save** keeps the file; **🗑 Discard** drops it.
+- **Also embed on this page** appends a folded **🎬 Shorts** accordion at the
+  end of the page — one section per clip, `{: .video }` inside — committed
+  with your key to the rendered file (a course page on the runner, or the
+  site page itself).
+- **Crop for the next Short**: *centre of the page* (default — arming also
+  switches the page to **reel** mode, one section per screen) or *follow Doc*
+  (the frame pans to the spotlighted part).
+- The tick goes off after one walk. A pill in the top-left corner counts;
+  a Short is **three minutes** at most, and the clip is cut there.
+
+Tab capture is a desktop Chrome/Edge affair: pick **this tab** in the share
+prompt and tick **share tab audio** so the studio voices are in the clip
+(browser TTS is spoken by the system, not the tab, and stays silent).
+
 ## 🎙️ Studio voices from text — no recording (ElevenLabs)
 
 Browser TTS is the zero-setup default; for **studio quality that still needs no

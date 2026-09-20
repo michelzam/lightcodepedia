@@ -226,6 +226,71 @@ def test_a_matching_question_has_its_own_tells():
     assert any("names nothing" in b for b in cq.tells(cq.parse_md(generic)))
 
 
+def test_markdown_reaches_canvas_as_html():
+    """Michel, 2026-09-19: "the quiz's text is ugly! no formatting". Canvas
+    stores HTML, so the push renders the page's markdown instead of showing
+    students the asterisks."""
+    md = """# Pretty
+{: .canvas_quiz anchors="Customers" }
+
+**Read this first.** Open the [shop](https://example.org/x?a=1&b=2).
+
+A second paragraph.
+
+### The cheapest
+
+Run `SELECT * FROM Customers;` then `SELECT * FROM Products;` — the *first* row.
+
+- [x] `SELECT TOP 1 * FROM Customers;`
+
+  > TOP keeps one row, and `ORDER BY` decides which.
+
+- [ ] `SELECT MIN(Price) FROM Customers;`
+
+  > A number, not a row.
+
+- [ ] Scroll the grid until the Customers row shows
+
+  > Scrolling is not a query.
+{: .quiz }
+"""
+    sp = cq.parse_md(md)
+    desc = cq.md_html(sp["description"])
+    assert desc.count("<p>") == 2, desc                      # a blank line is a paragraph
+    assert "<strong>Read this first.</strong>" in desc, desc
+    assert '<a href="https://example.org/x?a=1&amp;b=2">shop</a>' in desc, desc
+
+    body = cq.to_canvas_question(sp["questions"][0], 1)["question"]
+    # the star in SELECT * is punctuation — two code spans in one sentence
+    # must not italicise everything between them
+    assert body["question_text"] == (
+        "<p>Run <code>SELECT * FROM Customers;</code> then "
+        "<code>SELECT * FROM Products;</code> — the <em>first</em> row.</p>"), body["question_text"]
+    assert body["answers"][0]["answer_html"] == \
+        "<code>SELECT TOP 1 * FROM Customers;</code>", body["answers"][0]
+    # the plain twin carries no markers: if Canvas ever ignores the html
+    # field, a student still reads SQL, not backticks
+    assert body["answers"][0]["answer_text"] == "SELECT TOP 1 * FROM Customers;"
+    assert "<code>ORDER BY</code>" in body["answers"][0]["comments_html"]
+    # a plain option renders as itself, with nothing added
+    assert body["answers"][2]["answer_html"] == \
+        "Scroll the grid until the Customers row shows"
+
+
+def test_html_in_a_spec_is_escaped_not_run():
+    """A page is markdown; anything that looks like a tag is text."""
+    assert cq.md_html("a <script>alert(1)</script> b") == \
+        "<p>a &lt;script&gt;alert(1)&lt;/script&gt; b</p>"
+
+
+def test_every_question_can_be_worth_one_point():
+    """Michel, 2026-09-19: "each question should bring just 1 point" — a
+    matching question included, which otherwise counts one per pair."""
+    one = MATCH.replace('points="5"', 'points="1"')
+    body = cq.to_canvas_question(cq.parse_md(one)["questions"][0], 1)["question"]
+    assert body["points_possible"] == 1, body["points_possible"]
+
+
 def test_a_pipe_inside_a_cell_survives():
     assert cq._cells(r"| a \| b | c |") == ["a | b", "c"]
 

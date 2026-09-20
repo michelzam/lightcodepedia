@@ -39,6 +39,8 @@ You don't need a tag on the page to record. The **🎬 button in the top bar** o
 
 The in-page `{: .recorder }` tag below is just a second way to drop a launcher exactly where you want it in your content.
 
+A third door is Doc's: **🎬 Short next walk** in the [guide's menu](/components/avatar#-short-next-walk--a-phone-frame-clip-of-one-walk) records one tour or story as a 9:16 clip, for the page's owner only.
+
 > On **desktop**, recording covers a single page — navigating away reloads the page and ends the recording. On **iPhone** the recording is owned by iOS and spans pages.
 
 ---
