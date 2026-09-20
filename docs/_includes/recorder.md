@@ -1239,6 +1239,11 @@ Auto-included by docs/_layouts/default.html.
           ctx.drawImage(vid, Math.round((vw - sw) / 2), Math.round((vh - sh) / 2), sw, sh, 0, 0, W, H);
         }
         var out = canvas.captureStream(FPS);
+        /* a page is text: tell both encoders to spend bits on detail, not
+           motion (YouTube re-encodes whatever softness we hand it) */
+        try { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; } catch (e) {}
+        try { out.getVideoTracks()[0].contentHint = "detail"; } catch (e) {}
+        try { stream.getVideoTracks()[0].contentHint = "detail"; } catch (e) {}
         stream.getAudioTracks().forEach(function (a) { out.addTrack(a); });
         var mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"]
           .filter(function (m) { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); })[0] || "";
@@ -1261,7 +1266,7 @@ Auto-included by docs/_layouts/default.html.
         }
         function go() {
           vid.play().catch(function () {});
-          try { rec = new MediaRecorder(out, mime ? { mimeType: mime, videoBitsPerSecond: 8000000 } : {}); }
+          try { rec = new MediaRecorder(out, mime ? { mimeType: mime, videoBitsPerSecond: 12000000 } : {}); }
           catch (e) { toast("🎬 " + e.message); S.busy = false; fire(); restoreMode(); resolve(false); return; }
           rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
           rec.onstop = finish;
