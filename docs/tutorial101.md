@@ -302,3 +302,12 @@ stories:
       say: "So welcome again, and happy discovery."
 ```
 {: .avatar #guide dock="true" size="115" }
+
+```
+### 🎬 Short 1 · 2026-09-20
+
+[▶️ Short 1](https://youtu.be/6YrEsNmBeMw)
+{: .video }
+
+```
+{: .accordion #shorts }
