@@ -309,5 +309,10 @@ stories:
 [▶️ Short 1](https://youtu.be/xpDAcHgXWOA)
 {: .video }
 
+### 🎬 Short 5 · 2026-09-20
+
+[▶️ Short 5](https://youtu.be/JGftzMjJ7Zk)
+{: .video }
+
 ```
 {: .accordion #shorts }
