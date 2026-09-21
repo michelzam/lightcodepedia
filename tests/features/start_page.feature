@@ -84,3 +84,27 @@ Feature: 🎮 Join the game — the two-minute door into BUILD-AI
     And I wait for the page to be interactive
     And I open the cover's "How BUILD-AI works" accordion
     Then the loop and the video sit in a two-column block
+
+  Scenario: Inside Canvas, Get started leads to the class, never to a fork
+    Jessica (2026-09-21) followed "Start here" from a Canvas page into the
+    community wizard and forked the site: her rows went to a personal fork
+    while her org bench stayed empty. On the Canvas road the door is the
+    class wizard, scoped to the session, and the start page hides its fork.
+
+    When I navigate to "/components/text?crumb=BUILD-AI&hub=build-ai-fall26"
+    And I wait for the page to be interactive
+    Then the Get started menu leads to "Join your class" at "/courses/join?hub=build-ai-fall26"
+    When I navigate to "/start?crumb=BUILD-AI&hub=build-ai-fall26"
+    And I wait for the page to be interactive
+    Then the fork step offers no fork, only the class door "/courses/join?hub=build-ai-fall26"
+
+  Scenario: A visitor's Get started still leads to Start here, fork included
+    The community road is untouched: no crumb, no session — Start here and
+    the fork step as before.
+
+    When I navigate to "/components/text"
+    And I wait for the page to be interactive
+    Then the Get started menu leads to "Start here" at "/start"
+    When I navigate to "/start"
+    And I wait for the page to be interactive
+    Then the fork step offers the fork

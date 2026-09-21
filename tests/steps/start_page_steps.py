@@ -141,3 +141,24 @@ def step_loop_two_cols(context):
         "getComputedStyle(document.querySelector('.lc-accordion details[open] .lc-blocks'))"
         ".gridTemplateColumns.split(' ').length")
     assert n == 2, "expected 2 columns, got %s" % n
+
+
+@then('the Get started menu leads to "{label}" at "{href}"')
+def step_get_started_door(context, label, href):
+    row = context.page.locator("#lc-start-drop a.lc-sd-row").first
+    expect(row).to_have_attribute("href", href, timeout=5_000)
+    expect(row).to_contain_text(label)
+
+
+@then('the fork step offers no fork, only the class door "{href}"')
+def step_fork_hidden(context, href):
+    assert not context.page.locator("#lcw-fork-actions").is_visible(), "the fork button shows on the Canvas road"
+    note = context.page.locator("#lcw-class-note")
+    expect(note).to_be_visible(timeout=5_000)
+    expect(note.locator("a")).to_have_attribute("href", href)
+
+
+@then("the fork step offers the fork")
+def step_fork_shown(context):
+    expect(context.page.locator("#lcw-fork-actions")).to_be_visible(timeout=5_000)
+    assert not context.page.locator("#lcw-class-note").is_visible(), "the class note shows to a visitor"

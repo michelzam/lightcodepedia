@@ -59,6 +59,23 @@ _Karma measures your contribution to the network: your site, your bio, the frien
 <div class="lcw-actions" id="lcw-fork-actions">
 <button class="lcw-btn" id="lcw-fork-btn" onclick="lcwFork()">🍴 Fork &amp; launch</button>
 </div>
+<div id="lcw-class-note" class="lcw-result" style="display:none">🎓 <strong>In a class, your bench is made for you</strong> — no fork. <a id="lcw-class-door" href="/courses/join">Join your class →</a></div>
+<script>
+/* a student who lands here from Canvas (?crumb=) or with a paired session
+   must not fork the site: their bench is forged by the desk (Jessica,
+   2026-09-21). The step keeps its number; its verb changes. */
+(function () {
+  var q = new URLSearchParams(location.search), paired = "";
+  try { paired = localStorage.getItem("lc_ed_session") || ""; } catch (e) {}
+  if (/^lc:/.test(paired)) paired = "";
+  if (!q.get("crumb") && !paired) return;
+  var acts = document.getElementById("lcw-fork-actions"), note = document.getElementById("lcw-class-note"), door = document.getElementById("lcw-class-door");
+  if (acts) acts.style.display = "none";
+  if (note) note.style.display = "";
+  var hub = q.get("hub") || paired;
+  if (door && hub) door.href = "/courses/join?hub=" + encodeURIComponent(hub);
+})();
+</script>
 <div id="lcw-launch-result" style="display:none">
 <p>✅ <strong>Your site is being built.</strong> It will be live at:</p>
 <p><a id="lcw-site-url" href="#" target="_blank" style="font-size:1.1em;font-weight:600"></a></p>

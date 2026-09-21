@@ -61,6 +61,25 @@ window.lcFrameApply = function () {
      module cannot walk out of it. */
   var crumb = q.get("crumb");
   if (crumb) root.classList.add("lc-crumb-mode");
+  /* THE CANVAS ROAD HAS NO FORK. A student's bench is forged by the desk,
+     yet "Start here" on a Canvas page led to the community wizard and its
+     fork of the site (Jessica, 2026-09-21). In crumb mode that door is the
+     class wizard, scoped to the session the address or the pairing names;
+     a visitor's tab keeps the community road untouched. */
+  window.lcClassDoor = function () {
+    var hub = q.get("hub") || "";
+    if (!hub) { try { hub = localStorage.getItem("lc_ed_session") || ""; } catch (e) {} if (/^lc:/.test(hub)) hub = ""; }
+    return "/courses/join" + (hub ? "?hub=" + encodeURIComponent(hub) : "");
+  };
+  if (crumb) document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("a.lc-sd-row, a.lc-ud-row").forEach(function (a) {
+      if (!/\/start$/.test(a.getAttribute("href") || "")) return;
+      var door = window.lcClassDoor();
+      a.setAttribute("href", window.lcHref ? window.lcHref(door) : door);
+      if (a.firstElementChild) a.firstElementChild.textContent = "🎓";
+      if (a.lastElementChild) a.lastElementChild.textContent = "Join your class";
+    });
+  });
   /* ?strict=1 — every prerequisite on every page of this frame also asks for
      the PROOFS, not only the points (Michel, 2026-08-13: *"a url param to
      apply this globally! 2 levels: global by url, local by knob"*). The URL
@@ -542,6 +561,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
          are compiled out of pedia and fork builds entirely. {% endcomment %}
       <a class="lc-ud-row" href="/lab/"><span>🎓</span><span>HQ — classroom &amp; material</span></a>
       <div class="lc-ud-row" id="lc-ud-publish"><span>🚀</span><span id="lc-ud-publish-label">Publish to pedia</span></div>
+      <div class="lc-ud-row" id="lc-ud-share" style="display:none"><span>🔗</span><span>Share unlisted</span></div>
       {% endif %}
       <a class="lc-ud-row" id="lc-ud-pages-link" href="#" target="_blank"><span>🌐</span><span id="lc-ud-pages-label">Your site</span></a>
       <div id="lc-ud-rate" style="display:none;padding:6px 16px;font-size:0.75em;border-bottom:1px solid #f0f0f0"></div>
