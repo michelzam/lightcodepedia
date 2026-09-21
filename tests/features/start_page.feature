@@ -108,3 +108,14 @@ Feature: 🎮 Join the game — the two-minute door into BUILD-AI
     When I navigate to "/start"
     And I wait for the page to be interactive
     Then the fork step offers the fork
+
+  Scenario: The join wizard in Canvas shows the face as a chip, no menu
+    The wizard is embedded with the session in its address, no crumb, so
+    it opened the full account menu (Michel, 2026-09-21). A session in the
+    address makes it the Canvas road: chip kept, menu gone, links gone.
+
+    Given I am signed in with my face already cached
+    When I navigate to "/courses/join?hub=build-ai-fall26"
+    And I wait for the page to be interactive
+    Then the account face is a chip and its menu never opens
+    And the site links are hidden

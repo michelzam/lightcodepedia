@@ -162,3 +162,17 @@ def step_fork_hidden(context, href):
 def step_fork_shown(context):
     expect(context.page.locator("#lcw-fork-actions")).to_be_visible(timeout=5_000)
     assert not context.page.locator("#lcw-class-note").is_visible(), "the class note shows to a visitor"
+
+
+@then("the account face is a chip and its menu never opens")
+def step_chip_only(context):
+    btn = context.page.locator("#lc-user-btn")
+    expect(btn).to_be_visible(timeout=10_000)
+    btn.click()
+    context.page.wait_for_timeout(500)
+    assert not context.page.locator("#lc-user-drop").is_visible(), "the account menu opened on the Canvas road"
+
+
+@then("the site links are hidden")
+def step_links_hidden(context):
+    assert not context.page.locator("#lc-topbar .lc-links").is_visible(), "the site links show on the Canvas road"

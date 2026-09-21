@@ -60,7 +60,12 @@ window.lcFrameApply = function () {
      ?up=0 — the folder's ⬆️ Up pill disappears, so an iframe scoped to one
      module cannot walk out of it. */
   var crumb = q.get("crumb");
-  if (crumb) root.classList.add("lc-crumb-mode");
+  /* a session in the address is the Canvas road too: the join wizard is
+     embedded with ?hub= and no crumb, and opened the full account menu —
+     two doors out of the module and a fork under Onboarding (Michel,
+     2026-09-21). Same chip, same read-only bar. */
+  var canvasRoad = !!(crumb || q.get("hub"));
+  if (canvasRoad) root.classList.add("lc-crumb-mode");
   /* THE CANVAS ROAD HAS NO FORK. A student's bench is forged by the desk,
      yet "Start here" on a Canvas page led to the community wizard and its
      fork of the site (Jessica, 2026-09-21). In crumb mode that door is the
@@ -71,7 +76,7 @@ window.lcFrameApply = function () {
     if (!hub) { try { hub = localStorage.getItem("lc_ed_session") || ""; } catch (e) {} if (/^lc:/.test(hub)) hub = ""; }
     return "/courses/join" + (hub ? "?hub=" + encodeURIComponent(hub) : "");
   };
-  if (crumb) document.addEventListener("DOMContentLoaded", function () {
+  if (canvasRoad) document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("a.lc-sd-row, a.lc-ud-row").forEach(function (a) {
       if (!/\/start$/.test(a.getAttribute("href") || "")) return;
       var door = window.lcClassDoor();
