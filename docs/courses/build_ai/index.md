@@ -2,6 +2,9 @@
 
 ![AI is reshaping the world. Builders wanted. — UWM School of Information Studies](/courses/AI-Builders.png){: .lc-banner }
 
+[▶️ Doc, show me around](#)
+{: .avatar_trigger target="guide" label-stop="⏹ Stop the tour" }
+
 **AI is reshaping the world — builders wanted.** Build-AI is a private cohort
 course where you build a **real `AI`[^ai] app**, versioned in your own private
 bench: graded challenges, answer keys, live sessions, and a teacher who sees

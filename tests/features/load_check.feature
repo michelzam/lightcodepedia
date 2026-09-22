@@ -46,6 +46,7 @@ Feature: 🧠 Cognitive load check — four scores, their factors, and the chang
       {: .video #vid }
       """
     And the commits API names the page's last commit "edit: drop the loose form"
+    And the audit file "courses/demo/mod/__load_audit.yaml" does not exist yet, and its commits are watched
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/load.md"
     And I wait for the page to be interactive
     And I open the page editor
@@ -62,5 +63,6 @@ Feature: 🧠 Cognitive load check — four scores, their factors, and the chang
     And I press the editor's load check
     Then the load card "friction" reads "0 loose controls" and says "-1 vs previous"
     And the load history remembers 2 runs
-    And the history grid marks "loose" as improved on the latest run, its headers explained
+    And the history grid marks "Loose" as improved on the latest run, its headers explained
+    And the history was committed beside the page as "courses/demo/mod/__load_audit.yaml", two versions in it
     And the latest version's tooltip names the commit "edit: drop the loose form"

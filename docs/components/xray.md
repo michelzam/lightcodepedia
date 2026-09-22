@@ -72,9 +72,12 @@ with one row per component (click a row: the part is outlined):
   validation and no binding ever reads: work with no path to a target.
 - **🎬 seduction** — media nothing points at: engaging, target-less.
 
-Rules carry defaults you answer for, listed under the scores. Every run is
-remembered per page on this device, together with the audit's own numbers,
-and each card says what changed **since the previous version** of the file:
-improvement is the point. Difficulty is not load — a hard target with nothing
+Rules carry defaults you answer for, listed under the scores. Every run,
+with the audit's own numbers, is written **beside the page** in
+`__<page>_audit.yaml`, one row per version, committed with your key — a
+dunder file, never published, never rendered. The grid under the scores
+reads it back: header tooltips say what each column means, the version
+names its commit on hover, and each number turns green when it improved
+or red when it regressed against the run before. Improvement is the point. Difficulty is not load — a hard target with nothing
 around it scores green everywhere but coherence, where it must be validated.
 No AI here; a semantic pass on prose is a later, key-gated step.

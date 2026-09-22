@@ -2,6 +2,9 @@
 
 ⏱️ Two minutes. No account, no install, nothing to download.
 
+[▶️ Doc, walk me through it](#)
+{: .avatar_trigger target="guide" label-stop="⏹ Stop the walk" }
+
 Below is an app. Not a picture of one — the thing itself, running on this
 page, on your phone if that is what you are holding. Everything you touch
 here was written as **text**, and you are about to change some.

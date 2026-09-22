@@ -470,6 +470,8 @@ Feature: Avatar — speaking overlay instructor
     When I navigate to "/courses/build_ai/"
     And I wait for the page to be interactive
     Then every stop of the guide's tour exists on the page, and every verb is known
+    And a ▶ button on top offers Doc's tour
     When I navigate to "/courses/build_ai/start"
     And I wait for the page to be interactive
     Then every stop of the guide's tour exists on the page, and every verb is known
+    And a ▶ button on top offers Doc's tour

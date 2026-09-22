@@ -553,3 +553,14 @@ def step_tour_stops_exist(context):
     assert got["n"] >= 6, got
     assert not got["missing"], "stops the page lacks: " + ", ".join(got["missing"])
     assert not got["unknown"], "verbs the engine lacks: " + ", ".join(got["unknown"])
+
+
+@then("a ▶ button on top offers Doc's tour")
+def step_trigger_on_top(context):
+    trig = context.page.locator(".lc-avatar-trigger, [data-lc-avatar-trigger], .avatar_trigger").first
+    expect(trig).to_be_visible(timeout=10_000)
+    expect(trig).to_contain_text("Doc")
+    # on top: before the first h2 of the page
+    above = context.page.evaluate("""() => { const t = document.querySelector('.lc-avatar-trigger, [data-lc-avatar-trigger], .avatar_trigger');
+      const h = document.querySelector('.markdown-body h2'); return !!(t && h) && !!(t.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING); }""")
+    assert above, "the tour button is not above the first section"

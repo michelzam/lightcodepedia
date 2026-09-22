@@ -109,3 +109,36 @@ def step_grid_improved(context, col):
 def step_sha_tooltip(context, message):
     sha = context.page.locator("#ed-load-hist tbody tr").first.locator(".ed-load-sha")
     expect(sha).to_have_attribute("title", re.compile(re.escape(message)), timeout=10_000)
+
+
+@then('the history was committed beside the page as "{path}", two versions in it')
+def step_audit_committed(context, path):
+    import base64 as _b64
+    import json as _json
+    body = None
+    for _ in range(40):
+        puts = [b for p, b in getattr(context, "keep_puts", []) if p == path and b]
+        if puts:
+            body = puts[-1]
+            content = _b64.b64decode(_json.loads(body)["content"]).decode("utf-8")
+            if content.count("sha:") >= 2:
+                break
+        context.page.wait_for_timeout(250)
+    assert body, "no commit of the audit history"
+    assert "loose: 1" in content and "loose: 0" in content, content
+    assert "violations" not in content or "a11y" in content
+    expect(context.page.locator("#ed-load-file")).to_contain_text("committed beside the page")
+
+
+@given('the audit file "{path}" does not exist yet, and its commits are watched')
+def step_audit_file_watched(context, path):
+    if not hasattr(context, "keep_puts"):
+        context.keep_puts = []
+
+    def fulfill(route):
+        if route.request.method == "PUT":
+            context.keep_puts.append((path, route.request.post_data or ""))
+            route.fulfill(status=200, content_type="application/json", body='{"content":{"sha":"audit-1"},"commit":{"sha":"c1"}}')
+            return
+        route.fulfill(status=404, content_type="application/json", body='{"message":"Not Found"}')
+    context.page.route("**/api.github.com/repos/**/contents/" + path + "*", fulfill)

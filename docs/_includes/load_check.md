@@ -105,6 +105,7 @@ pass on prose is a later, key-gated step.
       }
     }
     var heads = Array.prototype.slice.call(body.querySelectorAll("h2"));
+    heads.forEach(function (h, i) { if (!h.id) h.id = "lc_section_" + (i + 1); });
     function sectionOf(el) {
       var s = "";
       for (var i = 0; i < heads.length; i++) if (heads[i].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) s = heads[i].textContent.trim().slice(0, 40);
@@ -139,9 +140,13 @@ pass on prose is a later, key-gated step.
     Object.keys(sections).forEach(function (name) {
       var s = sections[name], nk = Object.keys(s.kinds).length;
       var hi = heads.map(function (h) { return h.textContent.trim().slice(0, 40); }).indexOf(name);
-      s.sel = hi >= 0 ? ".markdown-body h2:nth-of-type(" + (hi + 1) + ")" : "";
-      var big = 0, bigIds = [];
-      s.ids.forEach(function (id) { var c = clusters[find(id)]; if (c.length > big) { big = c.length; bigIds = c; } });
+      s.sel = hi >= 0 ? "#" + heads[hi].id : "";
+      var big = 0, bigIds = [], here = {};
+      s.ids.forEach(function (id) { here[id] = true; });
+      s.ids.forEach(function (id) {
+        var c = clusters[find(id)].filter(function (x) { return here[x]; });   /* members on this screen */
+        if (c.length > big) { big = c.length; bigIds = c; }
+      });
       loadRows.push({ section: name, sel: s.sel, kinds: nk, kindList: Object.keys(s.kinds), cluster: big, clusterIds: bigIds, ids: s.ids });
     });
     var loose = parts.filter(function (p) { return INTERACTIVE.test(p.kind) && !referenced[p.id]; });
@@ -161,6 +166,51 @@ pass on prose is a later, key-gated step.
     return rt ? (rt.dataset.lcSrcRepo + "/" + rt.dataset.lcSrcPath) : (window.lcPagePath ? window.lcPagePath() : location.pathname);
   }
   function hist() { try { return JSON.parse(localStorage.getItem("lc_load_hist") || "{}"); } catch (e) { return {}; } }
+  /* THE HISTORY LIVES BESIDE THE PAGE (Michel, 2026-09-22: "store all that
+     in an __pagename_audit.yaml so we can see the progress in time"): a
+     dunder file in the page's own folder — never published, never rendered —
+     written with the editor's key, one row per version. The browser keeps
+     a mirror for a device without the key. */
+  function auditFile() {
+    var rt = document.querySelector("#lc-run[data-lc-src-path]"), repo, path;
+    if (rt && rt.dataset.lcSrcRepo && rt.dataset.lcSrcPath) { repo = rt.dataset.lcSrcRepo; path = rt.dataset.lcSrcPath; }
+    else { repo = window.lcEdRepo || ""; path = window.lcEdPath || ""; }
+    if (!repo || !path) return null;
+    var segs = path.split("/"), base = segs.pop().replace(/\.md$/, "");
+    return { repo: repo, path: (segs.length ? segs.join("/") + "/" : "") + "__" + base + "_audit.yaml" };
+  }
+  function ghHeaders() {
+    var key = ""; try { key = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+    return key ? { Authorization: "token " + key, Accept: "application/vnd.github+json", "Content-Type": "application/json" } : null;
+  }
+  var _fileRows = null, _fileSha = null, _fileLoaded = false;
+  function loadFile() {
+    var f = auditFile(), H = ghHeaders();
+    if (!f || !H || !window.jsyaml) { _fileLoaded = true; return Promise.resolve(null); }
+    return fetch("https://api.github.com/repos/" + f.repo + "/contents/" + f.path, { headers: H })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        _fileLoaded = true;
+        if (!d || !d.content) { _fileRows = []; _fileSha = null; return _fileRows; }
+        _fileSha = d.sha;
+        try { _fileRows = window.jsyaml.load(decodeURIComponent(escape(atob(String(d.content).replace(/\s/g, ""))))) || []; }
+        catch (e) { _fileRows = []; }
+        if (!Array.isArray(_fileRows)) _fileRows = [];
+        var all = hist(); all[pageKey()] = _fileRows.slice(-20);
+        try { localStorage.setItem("lc_load_hist", JSON.stringify(all)); } catch (e) {}
+        return _fileRows;
+      }).catch(function () { _fileLoaded = true; return null; });
+  }
+  function saveFile(rows, note) {
+    var f = auditFile(), H = ghHeaders();
+    if (!f || !H || !window.jsyaml) return Promise.resolve(false);
+    var body = { message: "audit: " + f.path.split("/").pop().replace(/^__|_audit\.yaml$/g, "") + " — " + note,
+                 content: btoa(unescape(encodeURIComponent("# audit history — one row per version, written by the editor's ♿/🧠 checks\n" + window.jsyaml.dump(rows, { lineWidth: 120 })))) };
+    if (_fileSha) body.sha = _fileSha;
+    return fetch("https://api.github.com/repos/" + f.repo + "/contents/" + f.path, { method: "PUT", headers: H, body: JSON.stringify(body) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d && d.content) { _fileSha = d.content.sha; return true; } return false; });
+  }
   /* the commit behind the file the editor holds — its message is the
      tooltip on the version, so a line reads "what changed", not a hash */
   var _commitFor = {};
@@ -183,13 +233,22 @@ pass on prose is a later, key-gated step.
     all[key] = rows.slice(-20);
     try { localStorage.setItem("lc_load_hist", JSON.stringify(all)); } catch (e) {}
     renderHist();
-    if (!entry.commit) commitOf(sha).then(function (c) {
-      if (!c) return;
+    var note = Object.keys(patch).map(function (k) {
+      var v = patch[k];
+      return k === "a11y" ? ("♿ " + v.violations + " issues, " + v.review + " to look at") : ("🧠 " + v.validations + " validations, " + v.loose + " loose, " + v.orphan + " orphan");
+    }).join(" · ");
+    var done = entry.commit ? Promise.resolve(entry.commit) : commitOf(sha).then(function (c) {
+      if (!c) return null;
       var again = hist(), rs = again[key] || [];
       rs.forEach(function (r) { if (r.sha === sha) r.commit = c; });
       try { localStorage.setItem("lc_load_hist", JSON.stringify(again)); } catch (e) {}
       renderHist();
+      return c;
     });
+    done.then(function () {
+      var latest = hist()[key] || [];
+      return saveFile(latest, note);
+    }).then(function (ok) { var st = document.getElementById("ed-load-file"); if (st) st.textContent = ok ? "📄 history committed beside the page" : (auditFile() ? "📄 history kept on this device only" : ""); });
   }
   window.lcLoadRecord = record;
   /* the previous VERSION: the latest run whose file differed from this one */
@@ -206,16 +265,16 @@ pass on prose is a later, key-gated step.
     return '<span class="ed-load-delta ' + (better ? "better" : "worse") + '">' + (d > 0 ? "+" : "") + d + ' vs previous</span>';
   }
   var COLS = [
-    ["when", "when", "when this run was made, on this device"],
-    ["version", "version", "the file's version — hover: the commit behind it"],
-    ["violations", "♿ issues", "audit: confirmed WCAG failures"],
-    ["review", "♿ look", "audit: elements the engine could not decide — a human looks"],
-    ["validations", "validations", "coherence: quizzes and proofs on the page"],
-    ["untagged", "untagged", "coherence: proofs without a skill tag"],
-    ["kinds", "kinds", "load: most component kinds one section shows at once"],
-    ["cluster", "cluster", "load: largest set of blocks bound together"],
-    ["loose", "loose", "friction: interactive parts no validation or binding reads"],
-    ["orphan", "orphan", "seduction: media nothing points at"]
+    ["when", "When", "when this run was made"],
+    ["version", "Version", "the file's version — hover: the commit behind it"],
+    ["violations", "♿ Issues", "audit: confirmed WCAG failures"],
+    ["review", "♿ Look", "audit: elements the engine could not decide — a human looks"],
+    ["validations", "Validations", "coherence: quizzes and proofs on the page"],
+    ["untagged", "Untagged", "coherence: proofs without a skill tag"],
+    ["kinds", "Kinds", "load: most component kinds one section shows at once"],
+    ["cluster", "Cluster", "load: largest set of blocks bound together on one screen"],
+    ["loose", "Loose", "friction: interactive parts no validation or binding reads"],
+    ["orphan", "Orphan", "seduction: media nothing points at"]
   ];
   function valueOf(r, k) {
     if (k === "violations" || k === "review") return (r.a11y || {})[k];
@@ -285,11 +344,12 @@ pass on prose is a later, key-gated step.
     var pane = document.getElementById("ed-a11y-pane");
     if (!pane || document.getElementById("ed-load-bar")) return;
     var bar = document.createElement("div"); bar.id = "ed-load-bar";
-    bar.innerHTML = '<a href="#" class="button" id="ed-load-run">🧠 Check load</a><span id="ed-load-note">coherence · load · friction · seduction — from the page as rendered; runs are remembered on this device</span>';
+    bar.innerHTML = '<a href="#" class="button" id="ed-load-run">🧠 Check load</a><span id="ed-load-note">coherence · load · friction · seduction — from the page as rendered; every run, with the audit\'s, is kept beside the page in __&lt;page&gt;_audit.yaml</span> <span id="ed-load-file"></span>';
     var list = document.createElement("div"); list.id = "ed-load-list";
     var h = document.createElement("div"); h.id = "ed-load-hist";
     pane.appendChild(bar); pane.appendChild(list); pane.appendChild(h);
     renderHist();
+    loadFile().then(renderHist);
   }
   document.addEventListener("click", function (e) {
     var b = e.target.closest("#ed-load-run"); if (!b) return;
