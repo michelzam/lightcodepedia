@@ -925,6 +925,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         return;
       }
       _curSha = data.sha;
+      window.lcEdSha = _curSha;
       var content = b64d(data.content.replace(/\n/g, ""));
       _savedContent = content;
       if (inp) { inp.value = content; if (inp._hist) inp._hist.reset(); updatePreview(content); }
@@ -2689,6 +2690,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       });
       var review = rulesBox + groups;
       if (!n) {
+        if (window.lcLoadRecord) window.lcLoadRecord({ a11y: { violations: 0, review: ni, fail: nfail } });
         list.innerHTML = '<p class="ed-a11y-ok">✅ No confirmed issues on this page — WCAG 2.1 A/AA, ' + ps.length + ' rules passed. '
           + (ni ? '<span class="ed-a11y-review-n">⚠️ ' + ni + ' element' + (ni > 1 ? 's' : '') + ' need' + (ni > 1 ? '' : 's') + ' a human look'
                   + (nfail ? ', ' + nfail + ' failing by rule' : '') + '.</span> ' : '')
@@ -2707,6 +2709,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         });
       });
       list.innerHTML = html + review;
+      if (window.lcLoadRecord) window.lcLoadRecord({ a11y: { violations: n, review: ni, fail: nfail } });
     }).catch(function (e) {
       list.innerHTML = '<p style="color:#b91c1c;padding:1em">❌ ' + a11yEsc((e && e.message) || e) + '</p>';
     });

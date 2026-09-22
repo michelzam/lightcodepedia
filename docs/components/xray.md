@@ -54,3 +54,27 @@ Feature: X-ray inline editing keeps changes honestly
 
 The commit path itself is proven by the UX suite (`tests/features/xray.feature`):
 a stubbed repository receives the block's new content — exactly once, or not at all.
+
+## 🧠 Cognitive load check — the ♿ Audit tab's second button
+
+Beside **♿ Audit this page**, **🧠 Check load** reads the page as rendered
+and scores four things, deterministically, each expanding into its factors
+with one row per component (click a row: the part is outlined):
+
+- **🎯 coherence** — validations on the page (quizzes and proofs), proofs
+  tagged with a skill, a prerequisite declared. A page that cannot tell what
+  was learned scores here.
+- **🧩 load** — per section, one reel screen: distinct component kinds shown
+  at once, and the largest cluster of blocks bound together (bindings,
+  masters, cells) that must be understood as one. Element interactivity,
+  not a count of words.
+- **⚙️ friction** — interactive parts (forms, agents, runners, grids) that no
+  validation and no binding ever reads: work with no path to a target.
+- **🎬 seduction** — media nothing points at: engaging, target-less.
+
+Rules carry defaults you answer for, listed under the scores. Every run is
+remembered per page on this device, together with the audit's own numbers,
+and each card says what changed **since the previous version** of the file:
+improvement is the point. Difficulty is not load — a hard target with nothing
+around it scores green everywhere but coherence, where it must be validated.
+No AI here; a semantic pass on prose is a later, key-gated step.
