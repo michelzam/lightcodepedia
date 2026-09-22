@@ -1135,7 +1135,27 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       }
     }
 
+    var _shelfItems = null;
     function renderItems(items) {
+        _shelfItems = items;
+        /* A PROOF JUST TURNED GREEN ON THIS PAGE: the recap caught up, the
+           shelf's own card for this page kept yesterday's dots until a
+           reload (Michel, 2026-09-22). Same two announcements, same records:
+           redraw that one card's footer — nothing else on the shelf moves. */
+        if (!wrap._lcHereListening) {
+          wrap._lcHereListening = true;
+          ["lc-feature-result", "lc-score-changed"].forEach(function (ev) {
+            document.addEventListener(ev, function () {
+              var it = (_shelfItems || []).filter(function (x) { return x.here; })[0];
+              var card = wrap.querySelector(".lc-card-here");
+              if (!it || !card) return;
+              var tmp = document.createElement("div");
+              tmp.innerHTML = buildCardHtml(it, { clickableTags: true });
+              var nf = tmp.querySelector(".lc-card-footer"), of = card.querySelector(".lc-card-footer");
+              if (of && nf) of.replaceWith(nf); else if (nf) card.appendChild(nf); else if (of) of.remove();
+            });
+          });
+        }
         if (!items || !items.length) {
           var _where = (path === "." || path === "") ? "this folder yet" : escapeHtml(path);
           /* the hint matches the posture: read mode has no ➕ New to point at */

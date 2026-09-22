@@ -590,3 +590,39 @@ Feature: Folder shelf — read posture and X-ray workbench
     And I wait for the page to be interactive
     Then the shelf shows a card for "Alpha"
     And the way up leads to "courses/demo/mod/index.md"
+
+  Scenario: A proof turning green on this page redraws the page's own card on the shelf
+    The recap caught up with a green proof in the same breath (2026-09-16);
+    the shelf under the same page kept yesterday's dots until a reload
+    (Michel, 2026-09-22: "the current card on a page is not refreshed").
+    Same announcement, same records — the here-card's footer redraws.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the module "courses/demo/mod" holds pages with quizzes and proofs:
+      | file         | title              | quizzes | proofs | tags   |
+      | 01_first.md  | 📝 The Volunteer   | 1       | 1      | agent  |
+      | 04_fourth.md | 💎 The Essentials  | 0       | 2      | agent  |
+    And the GitHub contents API serves "courses/demo/mod/04_fourth.md" with the document:
+      """
+      # 💎 The Essentials
+
+      ```gherkin
+      Feature: proof 1
+      ```
+      {: .feature #p1 status="pending" tags="agent" }
+
+      ```gherkin
+      Feature: proof 2
+      ```
+      {: .feature #p2 status="pending" tags="agent" }
+
+      [this module](#)
+      {: .folder }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/04_fourth.md"
+    And I wait for the page to be interactive
+    Then the here-card shows "2" proofs pending and none passing
+    When the proof "p1" on this page turns green on this device
+    Then the here-card shows "1" proof passing

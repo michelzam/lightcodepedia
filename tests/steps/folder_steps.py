@@ -616,3 +616,29 @@ def step_recap_visited_colour(context):
       }
       return false; }""")
     assert ok, "no .lc-recap-row a:visited rule hands the colour back — a visited page shows in link blue"
+
+
+@then('the here-card shows "{n}" proofs pending and none passing')
+def step_here_pending(context, n):
+    card = context.page.locator(".lc-card-here").first
+    expect(card).to_be_visible(timeout=20_000)
+    expect(card.locator(".lc-feat-pending")).to_contain_text(n, timeout=10_000)
+    assert card.locator(".lc-feat-passing").count() == 0, "a passing dot before any run"
+
+
+@when('the proof "{fid}" on this page turns green on this device')
+def step_proof_green_here_card(context, fid):
+    context.page.evaluate("""(fid) => {
+        const card = document.querySelector('.lc-card-here');
+        const key = window.lcPageScores.norm(card.getAttribute('data-url')) + '#' + fid;
+        let all = {}; try { all = JSON.parse(localStorage.getItem('lc_features') || '{}'); } catch (e) {}
+        all[key] = { status: 'passing', ts: new Date().toISOString() };
+        localStorage.setItem('lc_features', JSON.stringify(all));
+        document.dispatchEvent(new CustomEvent('lc-feature-result')); }""", fid)
+    context.page.wait_for_timeout(400)
+
+
+@then('the here-card shows "{n}" proof passing')
+def step_here_passing(context, n):
+    card = context.page.locator(".lc-card-here").first
+    expect(card.locator(".lc-feat-passing")).to_contain_text(n, timeout=10_000)

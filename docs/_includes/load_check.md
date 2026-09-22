@@ -53,7 +53,8 @@ pass on prose is a later, key-gated step.
     loose_controls_max: ["loose controls, at most", "an interactive part (form, agent, runner, grid…) no validation or binding reads: work with no path to a target"],
     orphan_media_max: ["orphan media, at most", "a video, map, scene, demo nothing points at: engaging, target-less"]
   };
-  var INTERACTIVE = /^(form|agent|runner|editor|datagrid|grid|pytutor|playfield|cells?|embed|recorder|studio)$/;
+  var INTERACTIVE = /^(form|agent|runner|editor|datagrid|grid|pytutor|playfield|cells?|recorder|studio)$/;
+  var TRANSPARENT = /^(embed|slot|blocks|accordion|tabs|cards)$/;   /* wrappers: the parts inside are the parts */
   var MEDIA = /^(video|audio|map|scene3d|demo|qr|slides)$/;
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -80,9 +81,23 @@ pass on prose is a later, key-gated step.
     var roots = Array.prototype.filter.call(body.querySelectorAll("[data-lc-id]"), function (el) {
       if (el.closest("#ed-drawer, .lc-avatar-host, .lc-guide-menu")) return false;
       var up = el.parentElement ? el.parentElement.closest("[data-lc-id]") : null;
-      return !up;   /* nested parts belong to their block */
+      /* nested parts belong to their block — unless the block is a wrapper
+         (an embed, a bench slot, a tab set): then the part inside is the part */
+      while (up && TRANSPARENT.test(kindOf(up))) up = up.parentElement ? up.parentElement.closest("[data-lc-id]") : null;
+      return !up;
     });
     var parts = roots.map(function (el) { return { el: el, id: el.getAttribute("data-lc-id"), kind: kindOf(el), attrs: attrsText(el) }; });
+    parts = parts.filter(function (p) { return !TRANSPARENT.test(p.kind) || !p.el.querySelector("[data-lc-id]"); });
+    /* what a validation READS: its attributes, and the words of its own
+       fence in the source (a proof's steps name the parts they drive) */
+    var fenceText = {};
+    if (src) {
+      var re = /```[^\n]*\n([\s\S]*?)```[ \t]*\n\{:\s*\.(feature|quiz)\b([^}]*)\}/g, m;
+      while ((m = re.exec(src)) !== null) {
+        var idm = /#([A-Za-z0-9_-]+)/.exec(m[3]);
+        if (idm) fenceText[idm[1]] = m[1] + " " + m[3];
+      }
+    }
     var heads = Array.prototype.slice.call(body.querySelectorAll("h2"));
     function sectionOf(el) {
       var s = "";
@@ -97,15 +112,16 @@ pass on prose is a later, key-gated step.
     function find(x) { while (parent[x] !== x) x = parent[x]; return x; }
     function union(a, b) { parent[find(a)] = find(b); }
     parts.forEach(function (a) {
+      var reads = a.attrs + " " + (fenceText[a.id] || "") + (a.kind === "feature" || a.kind === "quiz" ? " " + a.el.textContent : "");
       parts.forEach(function (b) {
         if (a === b) return;
-        if (mentions(a.attrs, b.id)) { referenced[b.id] = (referenced[b.id] || []).concat(a.kind + " #" + a.id); union(a.id, b.id); }
+        if (mentions(reads, b.id)) { referenced[b.id] = (referenced[b.id] || []).concat(a.kind + " #" + a.id); union(a.id, b.id); }
       });
       if (src && new RegExp("\\{=\\s*" + a.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b").test(src)) referenced[a.id] = (referenced[a.id] || []).concat("a cell");
     });
     var validations = parts.filter(function (p) { return p.kind === "quiz" || p.kind === "feature"; });
     var untagged = parts.filter(function (p) { return p.kind === "feature" && !p.el.querySelector(".lc-feature-tags *"); });
-    var prereq = !!body.querySelector(".lc-prereq, .prerequisite");
+    var prereq = !!body.querySelector(".lc-prereq, .lc-prereq-met, .prerequisite");
     var sections = {};
     parts.forEach(function (p) {
       var s = sections[p.section] || (sections[p.section] = { kinds: {}, ids: [] });
