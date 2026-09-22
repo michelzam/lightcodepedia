@@ -27,8 +27,14 @@ pass on prose is a later, key-gated step.
 .ed-load-card small { color: #6b7280; }
 .ed-load-delta { color: #6b7280; font-size: 0.85em; }
 .ed-load-delta.better { color: #15803d; } .ed-load-delta.worse { color: #b45309; }
-#ed-load-hist table { margin: 0 0.9em 0.6em; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-#ed-load-hist td, #ed-load-hist th { padding: 0.2em 0.6em 0.2em 0; text-align: left; font-weight: normal; color: #4b5563; }
+#ed-load-hist { font-size: 0.85em; }
+#ed-load-hist summary { padding: 0.5em 0.9em; cursor: pointer; color: #4b5563; }
+.ed-load-grid { margin: 0 0.9em 0.8em; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ed-load-grid th { text-align: left; font-weight: 600; color: #374151; background: #f3f4f6; padding: 0.3em 0.6em; border-bottom: 1px solid #e5e7eb; cursor: help; }
+.ed-load-grid td { padding: 0.3em 0.6em; border-bottom: 1px solid #f0f0f0; color: #4b5563; }
+.ed-load-grid td.better { background: #dcfce7; color: #15803d; font-weight: 600; }
+.ed-load-grid td.worse { background: #fee2e2; color: #b91c1c; font-weight: 600; }
+.ed-load-sha { font-family: ui-monospace, Menlo, monospace; cursor: help; border-bottom: 1px dotted #9ca3af; }
 </style>
 <script>
 (function () {
@@ -132,9 +138,11 @@ pass on prose is a later, key-gated step.
     var loadRows = [];
     Object.keys(sections).forEach(function (name) {
       var s = sections[name], nk = Object.keys(s.kinds).length;
+      var hi = heads.map(function (h) { return h.textContent.trim().slice(0, 40); }).indexOf(name);
+      s.sel = hi >= 0 ? ".markdown-body h2:nth-of-type(" + (hi + 1) + ")" : "";
       var big = 0, bigIds = [];
       s.ids.forEach(function (id) { var c = clusters[find(id)]; if (c.length > big) { big = c.length; bigIds = c; } });
-      loadRows.push({ section: name, kinds: nk, kindList: Object.keys(s.kinds), cluster: big, clusterIds: bigIds, ids: s.ids });
+      loadRows.push({ section: name, sel: s.sel, kinds: nk, kindList: Object.keys(s.kinds), cluster: big, clusterIds: bigIds, ids: s.ids });
     });
     var loose = parts.filter(function (p) { return INTERACTIVE.test(p.kind) && !referenced[p.id]; });
     var orphan = parts.filter(function (p) { return MEDIA.test(p.kind) && !referenced[p.id]; });
@@ -153,14 +161,35 @@ pass on prose is a later, key-gated step.
     return rt ? (rt.dataset.lcSrcRepo + "/" + rt.dataset.lcSrcPath) : (window.lcPagePath ? window.lcPagePath() : location.pathname);
   }
   function hist() { try { return JSON.parse(localStorage.getItem("lc_load_hist") || "{}"); } catch (e) { return {}; } }
+  /* the commit behind the file the editor holds — its message is the
+     tooltip on the version, so a line reads "what changed", not a hash */
+  var _commitFor = {};
+  function commitOf(sha) {
+    if (_commitFor[sha] !== undefined) return Promise.resolve(_commitFor[sha]);
+    var repo = window.lcEdRepo, path = window.lcEdPath, key = "";
+    try { key = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+    if (!repo || !path || !key) return Promise.resolve(null);
+    return fetch("https://api.github.com/repos/" + repo + "/commits?path=" + encodeURIComponent(path) + "&per_page=1",
+                 { headers: { Authorization: "token " + key, Accept: "application/vnd.github+json" } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (cs) { var c = cs && cs[0]; _commitFor[sha] = c ? { sha: c.sha, message: ((c.commit || {}).message || "").split("\n")[0] } : null; return _commitFor[sha]; })
+      .catch(function () { return null; });
+  }
   function record(patch) {
     var all = hist(), key = pageKey(), rows = all[key] || [], sha = window.lcEdSha || "live";
-    var last = rows[rows.length - 1];
-    if (last && last.sha === sha) { Object.keys(patch).forEach(function (k) { last[k] = patch[k]; }); last.when = new Date().toISOString(); }
-    else { var e = { when: new Date().toISOString(), sha: sha }; Object.keys(patch).forEach(function (k) { e[k] = patch[k]; }); rows.push(e); }
+    var last = rows[rows.length - 1], entry;
+    if (last && last.sha === sha) { entry = last; Object.keys(patch).forEach(function (k) { last[k] = patch[k]; }); last.when = new Date().toISOString(); }
+    else { entry = { when: new Date().toISOString(), sha: sha }; Object.keys(patch).forEach(function (k) { entry[k] = patch[k]; }); rows.push(entry); }
     all[key] = rows.slice(-20);
     try { localStorage.setItem("lc_load_hist", JSON.stringify(all)); } catch (e) {}
     renderHist();
+    if (!entry.commit) commitOf(sha).then(function (c) {
+      if (!c) return;
+      var again = hist(), rs = again[key] || [];
+      rs.forEach(function (r) { if (r.sha === sha) r.commit = c; });
+      try { localStorage.setItem("lc_load_hist", JSON.stringify(again)); } catch (e) {}
+      renderHist();
+    });
   }
   window.lcLoadRecord = record;
   /* the previous VERSION: the latest run whose file differed from this one */
@@ -176,18 +205,45 @@ pass on prose is a later, key-gated step.
     var better = LOWER_IS_BETTER[name] ? d < 0 : d > 0;
     return '<span class="ed-load-delta ' + (better ? "better" : "worse") + '">' + (d > 0 ? "+" : "") + d + ' vs previous</span>';
   }
+  var COLS = [
+    ["when", "when", "when this run was made, on this device"],
+    ["version", "version", "the file's version — hover: the commit behind it"],
+    ["violations", "♿ issues", "audit: confirmed WCAG failures"],
+    ["review", "♿ look", "audit: elements the engine could not decide — a human looks"],
+    ["validations", "validations", "coherence: quizzes and proofs on the page"],
+    ["untagged", "untagged", "coherence: proofs without a skill tag"],
+    ["kinds", "kinds", "load: most component kinds one section shows at once"],
+    ["cluster", "cluster", "load: largest set of blocks bound together"],
+    ["loose", "loose", "friction: interactive parts no validation or binding reads"],
+    ["orphan", "orphan", "seduction: media nothing points at"]
+  ];
+  function valueOf(r, k) {
+    if (k === "violations" || k === "review") return (r.a11y || {})[k];
+    return (r.load || {})[k];
+  }
   function renderHist() {
     var box = document.getElementById("ed-load-hist"); if (!box) return;
     var rows = hist()[pageKey()] || [];
     if (!rows.length) { box.innerHTML = ""; return; }
-    var html = '<details><summary>📈 ' + rows.length + ' run' + (rows.length > 1 ? "s" : "") + ' remembered on this device — what changed since the previous version</summary><table><tr><th>when</th><th>version</th><th>♿ issues</th><th>♿ look</th><th>validations</th><th>kinds</th><th>cluster</th><th>loose</th><th>orphan</th></tr>';
-    rows.slice().reverse().forEach(function (r) {
-      var a = r.a11y || {}, l = r.load || {};
-      html += '<tr><td>' + esc(r.when.slice(0, 16).replace("T", " ")) + '</td><td>' + esc(String(r.sha).slice(0, 7)) + '</td>'
-        + '<td>' + esc(a.violations == null ? "·" : a.violations) + '</td><td>' + esc(a.review == null ? "·" : a.review) + '</td>'
-        + ["validations", "kinds", "cluster", "loose", "orphan"].map(function (k) { return '<td>' + esc(l[k] == null ? "·" : l[k]) + '</td>'; }).join("") + '</tr>';
-    });
-    box.innerHTML = html + '</table></details>';
+    var html = '<details open><summary>📈 ' + rows.length + ' run' + (rows.length > 1 ? "s" : "") + ' remembered on this device — green improved, red regressed, against the run before</summary>'
+      + '<table class="ed-load-grid"><thead><tr>' + COLS.map(function (c) { return '<th title="' + esc(c[2]) + '">' + esc(c[1]) + '</th>'; }).join("") + '</tr></thead><tbody>';
+    for (var i = rows.length - 1; i >= 0; i--) {
+      var r = rows[i], before = rows[i - 1] || null;
+      html += '<tr data-sha="' + esc(r.sha) + '">';
+      COLS.forEach(function (c) {
+        var k = c[0];
+        if (k === "when") { html += '<td>' + esc(r.when.slice(0, 16).replace("T", " ")) + '</td>'; return; }
+        if (k === "version") {
+          var tip = r.commit ? (String(r.commit.sha).slice(0, 7) + " — " + r.commit.message) : "the file as loaded in the editor";
+          html += '<td><span class="ed-load-sha" title="' + esc(tip) + '">' + esc(String(r.sha).slice(0, 7)) + '</span></td>'; return;
+        }
+        var v = valueOf(r, k), b = before ? valueOf(before, k) : null, cls = "";
+        if (v != null && b != null && v !== b) cls = (LOWER_IS_BETTER[k] ? v < b : v > b) ? "better" : "worse";
+        html += '<td class="' + cls + '"' + (cls ? ' title="' + esc((v > b ? "+" : "") + (v - b) + " vs the run before") + '"' : "") + '>' + esc(v == null ? "·" : v) + '</td>';
+      });
+      html += '</tr>';
+    }
+    box.innerHTML = html + '</tbody></table></details>';
   }
 
   function row(p, note) {
@@ -214,7 +270,7 @@ pass on prose is a later, key-gated step.
     var rows = "";
     r.untagged.forEach(function (p) { rows += row(p, "a proof without a skill tag"); });
     r.loadRows.filter(function (s) { return s.kinds > RULES.kinds_per_section_max || s.cluster > RULES.cluster_max; }).forEach(function (s) {
-      rows += '<div class="ed-a11y-row" data-kind="load-section"><b class="review">section</b> ' + esc(s.section) + ' <span>' + s.kinds + ' kinds (' + esc(s.kindList.join(", ")) + ')' + (s.cluster > RULES.cluster_max ? ' · cluster of ' + s.cluster + ': ' + esc(s.clusterIds.join(", ")) : "") + '</span></div>';
+      rows += '<div class="ed-a11y-row" data-kind="load-section" data-sel="' + esc(s.sel) + '"><b class="review">section</b> ' + esc(s.section) + ' <span>' + s.kinds + ' kinds (' + esc(s.kindList.join(", ")) + ')' + (s.cluster > RULES.cluster_max ? ' · cluster of ' + s.cluster + ': ' + esc(s.clusterIds.join(", ")) : "") + '</span></div>';
     });
     r.loose.forEach(function (p) { rows += row(p, "interactive, read by no validation and no binding"); });
     r.orphan.forEach(function (p) { rows += row(p, "media nothing points at"); });

@@ -925,7 +925,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
         return;
       }
       _curSha = data.sha;
-      window.lcEdSha = _curSha;
+      window.lcEdSha = _curSha; window.lcEdRepo = _repo; window.lcEdPath = _curFile;
       var content = b64d(data.content.replace(/\n/g, ""));
       _savedContent = content;
       if (inp) { inp.value = content; if (inp._hist) inp._hist.reset(); updatePreview(content); }
