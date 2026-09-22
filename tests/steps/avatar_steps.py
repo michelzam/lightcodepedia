@@ -534,3 +534,22 @@ def step_gear_on(context, elid):
       return Math.abs(g.left - el.right) < 40 && Math.abs(g.top - el.top) < 40; }""", elid)
     assert near, "the gear is not on the part's corner"
     assert context.page.locator("#lcx-content").count() == 0 or not context.page.locator("#lcx-content").is_visible(), "the editor opened by itself"
+
+
+@then("every stop of the guide's tour exists on the page, and every verb is known")
+def step_tour_stops_exist(context):
+    context.page.wait_for_function("() => window._lcAvatars && window._lcAvatars.guide && window._lcAvatars.guide.script.length", timeout=20_000)
+    # folded sections render lazily: unfold them all, as the tour's own open verb would
+    context.page.evaluate("() => document.querySelectorAll('.lc-accordion details').forEach(d => { d.open = true; })")
+    context.page.wait_for_timeout(1500)
+    got = context.page.evaluate("""() => {
+      const av = window._lcAvatars.guide;
+      const missing = [], unknown = [];
+      av.script.forEach(l => {
+        if (l.at && !window.lcAvatarResolve(l.at)) missing.push(l.at);
+        if (l.do && !(window.lcVerbs && window.lcVerbs.has ? window.lcVerbs.has(l.do) : true)) unknown.push(l.do);
+      });
+      return { n: av.script.length, missing, unknown }; }""")
+    assert got["n"] >= 6, got
+    assert not got["missing"], "stops the page lacks: " + ", ".join(got["missing"])
+    assert not got["unknown"], "verbs the engine lacks: " + ", ".join(got["unknown"])

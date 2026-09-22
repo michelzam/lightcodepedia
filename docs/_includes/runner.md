@@ -702,6 +702,9 @@ files a learner is already working in.
                      (fixedSrc ? "" : '<div class="lc-run-bar" style="display:none"></div>') +
                      '<div class="lc-run-status" style="color:#4b5563;font-size:0.9em">Loading…</div>' +
                      '<div class="lc-run markdown-body"' + idAttr + '></div>';
+    /* an embedded window keeps the author's id, so a tour's at: and the
+       x-ray verb can address it like any other part (Michel, 2026-09-22) */
+    if (fixedSrc && el.id) { wrap.id = el.id; wrap.setAttribute("data-lc-id", el.id); }
     el.parentNode.replaceChild(wrap, el);
     var status = wrap.querySelector(".lc-run-status");
     var root = wrap.querySelector(".lc-run");

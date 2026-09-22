@@ -173,6 +173,7 @@ Auto-included by docs/_layouts/default.html.
          the avatar refines the at: walk onto that subject — open("Why") walks
          to that section's own title, not the whole accordion */
       register: function (verb, fn, targetFn) { map[verb] = { fn: fn, target: targetFn || null }; },
+      has: function (verb) { return !!map[verb]; },   /* a page's meta check asks before a tour promises */
       act: function (verb, el, arg) {
         var v = map[verb];
         if (!v) return false;

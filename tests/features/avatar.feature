@@ -460,3 +460,16 @@ Feature: Avatar — speaking overlay instructor
     And the ask panel shows the day's AI spend
     When I ask "What is the answer?" in the open panel
     Then the question reached the model without the author's licence
+
+  Scenario: The course cover's teaser and the start page's walk point at parts that exist
+    Michel, 2026-09-22: a teaser walk for Doc on the Build-AI cover, and a
+    better one on the start page — verbs on components (open, play, pause,
+    x-ray), the method in plain words: play, experiment with AI, and bring
+    the proof. Every stop must be a real part, every verb a real verb.
+
+    When I navigate to "/courses/build_ai/"
+    And I wait for the page to be interactive
+    Then every stop of the guide's tour exists on the page, and every verb is known
+    When I navigate to "/courses/build_ai/start"
+    And I wait for the page to be interactive
+    Then every stop of the guide's tour exists on the page, and every verb is known

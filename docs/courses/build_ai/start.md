@@ -9,7 +9,7 @@ here was written as **text**, and you are about to change some.
 ## 🐕 The shelter's dogs
 
 [Shelter Desk](#)
-{: .runner src="app_shelter.md" title="🐕 Shelter Desk" }
+{: .runner src="app_shelter.md" title="🐕 Shelter Desk" #shelter }
 
 **Nova has no fee yet.** Double-click her fee cell — double-tap on a phone —
 type any number, and watch the chart answer. That is the whole trick: one
@@ -84,14 +84,23 @@ bot: doc
 face:
   zoom: 1.2
 script:
-  - say: "Two minutes, and you build something. No account needed."
+  - say: "Two minutes. No account. You will build something, and make the page prove it. Press me to pause."
+  - at: shelter
+    do: xray
+    say: "This window is an app. The gear opens its text. Everything you see here is text you can change."
+    pause: 2
   - at: dog_list
-    say: "Nova has no adoption fee. Type any number in her row."
+    do: read
+    say: "Nova has no fee. Double-click her fee cell. Type any number. Press Enter."
   - at: fee_chart
-    say: "The chart followed. You changed the data, not the picture."
+    say: "The chart moved. You changed the data, not the picture. One source, many views."
   - at: fee_proof
-    say: "Now press play. The page checks its own promise, out loud."
-  - say: "That is the deal. Pages that run, and prove themselves."
+    say: "Now press the play button. The page checks its own promise, out loud. Green means it kept its word."
+  - at: start_quiz
+    say: "One question. Answer it. The page tells you, nobody else."
+  - say: "That is the method. Play. Experiment, with AI at your side. Then make the page bring the proof that it behaves."
+  - at: fee_proof
+    say: "Humans, AI and code play and learn together here. Want a page of your own? Read on below."
 stories: {}
 ```
 {: .avatar #guide dock="true" size="115" }
