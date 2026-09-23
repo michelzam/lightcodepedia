@@ -69,6 +69,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 /* ── card shell ────────────────────────────────────────────────── */
 .lc-feature { border: 1px solid #e5e7eb; border-left: 4px solid #9ca3af; border-radius: 0 8px 8px 0; margin: 1.2em 0; background: #fff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .lc-feature-passing { border-left-color: #22c55e; }
+.lc-feature-progress { height: 4px; background: #e5e7eb; border-radius: 2px; overflow: hidden; margin: 0 0 6px; }
+.lc-feature-progress i { display: block; height: 100%; background: #22c55e; transition: width 0.25s ease; }
 .lc-feature-failing  { border-left-color: #ef4444; }
 .lc-feature-pending  { border-left-color: #f59e0b; }
 /* hidden by default — a .feature is a spec/test, shown only with visible="true" */
@@ -384,6 +386,31 @@ Registers with window.lcScanElement so the editor preview also renders cards.
   });
 
   /* ── Update badge + notify suite row ────────────────────────────────────────── */
+  /* ── The reveal has a pace ─────────────────────────────────────────────────
+     The proof runs as fast as it runs; the CARD shows its steps one at a
+     time, a thin bar filling with them — suspense without waiting on code.
+     300 ms a step by default; pace="0" is natural speed; an author who
+     wants a slower lesson says a bigger number. A reader who asked their
+     system for less motion gets the natural speed and no bar. */
+  function paceOf(card) {
+    try { if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return 0; } catch (e) {}
+    var v = card.getAttribute("data-pace");
+    if (v == null || v === "") return 300;
+    var n = parseInt(v, 10);
+    return isNaN(n) || n < 0 ? 300 : n;
+  }
+  function progressBar(card, on) {
+    var old = card.querySelector(".lc-feature-progress");
+    if (old) old.remove();
+    if (!on) return null;
+    var body = card.querySelector("[data-lc-body]") || card;
+    var bar = document.createElement("div");
+    bar.className = "lc-feature-progress";
+    bar.setAttribute("aria-hidden", "true");
+    bar.innerHTML = "<i style='width:0%'></i>";
+    body.insertBefore(bar, body.firstChild);
+    return bar;
+  }
   function setCardStatus(card, status) {
     var was = card.getAttribute("data-status") || "";
     card.classList.remove("lc-feature-passing", "lc-feature-failing", "lc-feature-pending");
@@ -537,8 +564,9 @@ Registers with window.lcScanElement so the editor preview also renders cards.
         }
       }
 
-      /* show user step results */
-      stepEls.forEach(function(s, i) {
+      /* show user step results — one at a time, at the card's pace */
+      var pace = paceOf(card), bar = progressBar(card, pace > 0 && stepEls.length > 0);
+      var paintStep = function(s, i) {
         var r = userResults[i];
         var icon = s.querySelector(".lc-feature-step-icon");
         if (!r) { icon.className = "lc-feature-step-icon skip"; icon.textContent = "○"; return; }
@@ -562,7 +590,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
           }
           s.querySelector(".lc-feature-step-row").insertAdjacentElement("afterend", errDiv);
         }
-      });
+      };
 
       /* A non-assertion failure is the page's CHECK falling over, not the learner
      failing. There are two reasons for that and they need different words:
@@ -588,7 +616,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
          + "bug, not yours. (" + e + ")";
   }
 
-  /* show built-in check results as a footer — always, pass or fail */
+  var finish = function() {
+      /* show built-in check results as a footer — always, pass or fail */
       var body = card.querySelector("[data-lc-body]");
       var oldFooter = card.querySelector(".lc-feature-builtin-footer");
       if (oldFooter) oldFooter.parentNode.removeChild(oldFooter);
@@ -604,8 +633,16 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       if (body) body.appendChild(footer);
 
       paintSaved(card, allPass);
+      if (bar) bar.firstChild.style.width = "100%";
       setCardStatus(card, allPass ? "passing" : "failing");
       if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
+      };
+      (function reveal(i) {
+        if (i >= stepEls.length) { finish(); return; }
+        paintStep(stepEls[i], i);
+        if (bar) bar.firstChild.style.width = Math.round((i + 1) * 100 / stepEls.length) + "%";
+        if (pace) setTimeout(function() { reveal(i + 1); }, pace); else reveal(i + 1);
+      })(0);
     }).catch(function() {
       setCardStatus(card, "failing");
       if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
@@ -801,6 +838,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     if (lcId) card.setAttribute("data-lc-id", lcId);
     var celebration = el.getAttribute("celebration");
     if (celebration) card.setAttribute("data-celebration", celebration);
+    /* pace="ms": the checks land one at a time — 300 by default, 0 for
+       natural speed, more when a lesson wants the suspense (Michel,
+       2026-09-23: "so learners can see the progression") */
+    var pace = el.getAttribute("pace");
+    if (pace != null && pace !== "") card.setAttribute("data-pace", pace);
     /* grades="<slot id>": this check GRADES a bench slot. The learner owns
        the file in the slot, so a check living inside it could be weakened
        or deleted — self-assessment through the back door. The lesson's

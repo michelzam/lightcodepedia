@@ -190,7 +190,7 @@ Two knobs and a verb make a feature card the page's heartbeat:
 - **State**: a card with an `#id` publishes `id.passing` / `id.status` to
   the page's [cells](/components/cells) — any block can wear
   `visible="= audit.passing"` and unfold the moment the run turns green.
-- **`celebration="true"`**: the card's **first** honest red→green earns a
+- **`celebration="true"`**: every honest red→green crossing earns a
   confetti burst. Re-running an already-green card celebrates nothing, and
   reduced-motion users get a quiet ✨ instead of the storm. The **Celsius
   card above wears it** — press its ▶ Run and watch; press it again and
@@ -198,6 +198,11 @@ Two knobs and a verb make a feature card the page's heartbeat:
 - **`confetti()`**: the authored version — any component speaks it from a
   step (`self.page.audit.confetti()`), a `.button`, anywhere. Put it after
   the asserts of a final step: it only fires when everything above survived.
+- **`pace="ms"`**: the checks land **one at a time**, a thin green bar filling
+  with them — 300 ms a step by default, so a learner watches the proof arrive.
+  `pace="0"` shows everything at natural speed; a bigger number slows a lesson
+  down on purpose. A reader whose system asks for reduced motion gets natural
+  speed and no bar, whatever the page says.
 
 The engine never celebrates on its own — like scores, celebrations belong
 to the page.
