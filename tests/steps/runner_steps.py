@@ -792,3 +792,12 @@ def step_classic_key_repo_ok(context):
         "https://api.github.com/repos/michelzam/lightcodelab",
         lambda r: r.fulfill(status=200, json={"full_name": "michelzam/lightcodelab",
                                               "permissions": {"push": True}}))
+
+
+@then('the runner points to Setup at "{href}"')
+def step_points_to_setup(context, href):
+    status = context.page.locator(".lc-runner .lc-run-status")
+    expect(status).to_contain_text("Setup", timeout=20_000)
+    link = status.locator('a[href$="' + href + '"]')
+    expect(link).to_have_count(1, timeout=5_000)
+    assert "Get started" not in status.inner_text(), "the hidden menu is still named on the class road"

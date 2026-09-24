@@ -458,3 +458,21 @@ Feature: The instant runner (RT) — Phase A parity
     And I open the "The Author" accordion
     Then the accordion holds two blocks side by side
     And the clip is a video element that loops and starts muted
+
+  Scenario: Inside Canvas, a dead key is sent to Setup, not to a hidden menu
+    Gabriel, survey 2026-09-22: "the api key needed me to reenter it and
+    somehow lost the key so it wouldn't let me edit things". The bar said
+    "paste it in Get started (top right)" — a menu the class road hides.
+    On that road the place is ⚙️ Setup, step 2, named and linked.
+
+    Given a course key that GitHub rejects
+    When I navigate to "/run?hub=build-ai-fall26#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the runner says the key itself is the problem
+    And the runner points to Setup at "/courses/join?hub=build-ai-fall26"
+
+  Scenario: On a visitor's tab, the dead key still names Get started
+    Given a course key that GitHub rejects
+    When I open the runner page on "gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    Then the runner says the key itself is the problem
+    And the runner names the Get started door

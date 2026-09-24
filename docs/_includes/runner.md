@@ -82,6 +82,17 @@ files a learner is already working in.
 </style>
 <script>
 (function () {
+  /* the place a key is pasted, by road: the class door's ⚙️ Setup when the
+     address names a class (hub= or crumb=), the Get started pill otherwise */
+  function pasteWhere(verb) {
+    var q = null; try { q = new URLSearchParams(location.search); } catch (e) {}
+    var framed = q && (q.get("hub") || q.get("crumb"));
+    if (framed && window.lcClassDoor) {
+      var d = window.lcClassDoor(); d = window.lcHref ? window.lcHref(d) : d;
+      return verb + " <a href=\"" + d + "\"><b>⚙️ Setup</b></a>, step 2, then come back here";
+    }
+    return verb + " <b>🔑 Get started</b> (top right)";
+  }
   if (window._lcRunnerReady) return;
   window._lcRunnerReady = true;
 
@@ -506,6 +517,14 @@ files a learner is already working in.
              have a better message, and some directions"*). One line for what
              is happening, then the three moves, in order, with the door to
              make the key. */
+          /* WHERE THE KEY GOES depends on the road. A visitor's tab has the
+             Get started pill, top right. Inside Canvas the bar is the class
+             crumb and that menu is hidden — so "paste it in Get started"
+             pointed at nothing, and Gabriel lost a week to it (survey,
+             2026-09-22: "the api key needed me to reenter it and somehow
+             lost the key so it wouldn't let me edit things"). On the
+             class road the place is ⚙️ Setup, step 2, and the door is
+             named and linked. */
           var mkKey = "<a href=\"https://github.com/settings/tokens/new?scopes=repo&description=" +
             encodeURIComponent("Lightcode course key") + "\" target=\"_blank\" rel=\"noopener\" " +
             "style=\"display:inline-block;margin:0.4em 0;padding:0.4em 0.9em;border:1px solid #d0e3f5;border-radius:8px;background:#fff;color:#0066cc;font-weight:600;text-decoration:none\">🪜 Create a course key</a>";
@@ -513,7 +532,7 @@ files a learner is already working in.
             "🔒 <b>This course is private</b> — it opens with your own GitHub key, and this browser has none yet.<br>" +
             "<ol style=\"margin:0.5em 0 0.2em 1.2em;padding:0;line-height:1.6\">" +
             "<li>" + mkKey + " — a <b>classic</b> token with the <code>repo</code> scope.</li>" +
-            "<li>Paste it into <b>🔑 Get started</b>, top right of this bar.</li>" +
+            "<li>" + pasteWhere("Paste it into") + ".</li>" +
             "<li>Reload this page.</li></ol>" +
             "<div style=\"font-size:0.9em;color:#6b7280;margin-top:0.4em\">Already have a key on another device? Same steps — the key lives in the browser, not in your account. If it still says this, ask your teacher whether you have access to this course.</div>";
         }
@@ -541,9 +560,9 @@ files a learner is already working in.
             .then(function (d) {
               var fine = pat.indexOf("github_pat_") === 0;
               if (!d.ok) {
-                status.innerHTML = "🔑 Your key isn’t valid anymore — generate a fresh one.<br>" + ladder + " → paste it in <b>Get started</b> (top right), reload.";
+                status.innerHTML = "🔑 Your key isn’t valid anymore — generate a fresh one.<br>" + ladder + " → " + pasteWhere("paste it in") + ", reload.";
               } else if (!fine && (d.scopes || "").split(",").map(function (s) { return s.trim(); }).indexOf("repo") < 0) {
-                status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b>, but your key is missing the <code>repo</code> scope.<br>" + ladder + " → paste, reload.";
+                status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b>, but your key is missing the <code>repo</code> scope.<br>" + ladder + " → " + pasteWhere("paste it in") + ", reload.";
               } else if (fine) {
                 /* A FINE-GRAINED KEY IS NOT AUTOMATICALLY THE CULPRIT. This
                    branch blamed the token for every 404, so walking into a
