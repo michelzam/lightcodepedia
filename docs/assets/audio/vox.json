@@ -279,7 +279,8 @@
    "73d9727b95abe925": "lc-370cb9628966f556.mp3",
    "de5d74761bd1d6a1": "lc-9f827d570510635d.mp3",
    "e286e2b239fa3548": "lc-31fa587b32a75462.mp3",
-   "40b783c162992035": "lc-fad8483e40aadabd.mp3"
+   "40b783c162992035": "lc-fad8483e40aadabd.mp3",
+   "c51249c20653c850": "lc-c088974abdfce343.mp3"
   }
  },
  "courses-micro_build_ai-__pitch_for_m": {
@@ -695,6 +696,30 @@
    "c209383d2d838406": "lc-3ab1c51d0904a99c.mp3",
    "1d2718d9de298a85": "lc-d2814bf535fc59eb.mp3",
    "816778384b3ba6ed": "lc-cb22401e414b424d.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_02-01_long_walk": {
+  "guide": {
+   "590063413ef9b09a": "lc-3dcb84bd3753c8d0.mp3",
+   "58b5d02d31218641": "lc-a0c72993bda9f180.mp3",
+   "9b5094e0516d3238": "lc-99221da1c6ff936a.mp3",
+   "ee5592159a2125c7": "lc-b00ef11c561dcee7.mp3",
+   "7e0dbf4330704a03": "lc-c043796c3519062b.mp3",
+   "3e0cbe5d45f794e9": "lc-7ab394960d5937d4.mp3",
+   "8d0bcd8f6ef5656c": "lc-1cadbd9e252ac11c.mp3",
+   "62b2b14d95339a8f": "lc-cb892a9716cf9017.mp3",
+   "11649382ed29535a": "lc-188755de93f5579f.mp3",
+   "2bfc2196082ffbae": "lc-80bc954e2f366219.mp3",
+   "7207b642089b3419": "lc-5366aa49d9e34393.mp3",
+   "dbd885c0dbb3ba82": "lc-850d5274e568fac4.mp3",
+   "df2c9eb19e8d0fe9": "lc-f4f967d8ede9bad8.mp3",
+   "42e00c3658a82efc": "lc-db1269ca4fa19c8e.mp3",
+   "d6c8b083215f85e4": "lc-23ae58f387801c4f.mp3",
+   "04495184f1f897d6": "lc-dec1bc0b554ecd67.mp3",
+   "8e52dabd19cb1911": "lc-18dd3914f3712371.mp3",
+   "e4cca8a97f97d16d": "lc-04ce4d5a180df551.mp3",
+   "2565981ea9fc34c0": "lc-e4d31b2caf77f1c2.mp3",
+   "882bb250b7d1e141": "lc-1cfb9556464793e5.mp3"
   }
  }
 }

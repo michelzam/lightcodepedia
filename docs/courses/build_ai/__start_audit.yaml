@@ -1,0 +1,17 @@
+# audit history — one row per version, written by the editor's ♿/🧠 checks
+- when: '2026-09-23T14:21:37.015Z'
+  sha: d94ef098a284e9ec94d18090d917d872e32d69ae
+  a11y:
+    violations: 0
+    review: 12
+    fail: 0
+  commit:
+    sha: cee835a4443fa25bf0a0dbe8af9996b458945fa9
+    message: 🧠 Audit history committed beside the page; per-screen clusters; Doc's button on top of the Build-AI pages
+  load:
+    validations: 1
+    untagged: 1
+    kinds: 1
+    cluster: 1
+    loose: 0
+    orphan: 0
