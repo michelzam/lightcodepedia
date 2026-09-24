@@ -58,6 +58,7 @@ A list of links with the `{: .prerequisite }` IAL:
 | `pass="50"` | relax it: that percentage of the page's points is enough |
 | `escape="true"` | offer a *show it anyway* hatch (off by default) |
 | `escape="Peek anyway"` | same hatch, in your own words |
+| *(author paired)* | whoever is connected as the material's author always gets *Show it anyway (author)*, whatever the block says — the wall is for the learner, the author walks their own course |
 | `features="true"` | the proofs count too: every `.feature` on each page above must be green in this learner's record. A page whose proofs were never run is a page they read, not one they did. Off by default |
 | `features="false"` | the points only — the way to opt one page out of a frame opened with `?strict=1` |
 {: .wide_first }

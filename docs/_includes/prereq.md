@@ -199,6 +199,15 @@ null]</script>
     var escOff = !escRaw || /^(false|0|no|off)$/i.test(escRaw);
     var escLabel = (!escRaw || /^(true|1|yes|on)$/i.test(escRaw))
       ? "Show it anyway →" : escRaw;
+    /* THE AUTHOR HOLDS THE KEY (Michel, 2026-09-24: "if my proofs don't
+       pass, the prerequisites stop me from going forward"). Whoever is
+       paired as the material's author — their own repo, connected by hand,
+       never a class — gets a way through on every gate, whatever the block
+       says: the wall is for the learner, the author needs to walk their
+       own course. A learner's pairing is a bench, so they never see it. */
+    var authorPaired = false;
+    try { authorPaired = localStorage.getItem("lc_ed_session") === (window.lcAuthorPair || "lc:author"); } catch (e) {}
+    if (authorPaired && escOff) { escOff = false; escLabel = "Show it anyway (author) →"; }
     var links = [];
     var anchors = el.querySelectorAll("a[href]");
     if (anchors.length) {

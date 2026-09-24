@@ -756,3 +756,58 @@ def step_fork_untouched(context):
 def step_paired_now(context, bench):
     got = context.page.evaluate("() => localStorage.getItem('lc_ed_repo')")
     assert got == bench, "paired to %r" % got
+
+
+@given('the key is paired as the material\'s author to "{repo}"')
+def step_pair_author(context, repo):
+    """the author's own connection: the paired repo IS the source repo, and
+    the pairing wears the lc:author stamp the editor gives it. PUTs are
+    recorded like a bench's; GETs fall back to the page stub."""
+    context.bench_commits = []
+    context.bench_reads = []
+
+    def source(route, req):
+        path = req.url.split("/contents/", 1)[1].split("?")[0]
+        if req.method == "PUT":
+            body = json.loads(req.post_data)
+            context.bench_commits.append({
+                "path": path,
+                "text": base64.b64decode(body.get("content", "")).decode(),
+                "message": body.get("message", ""),
+            })
+            route.fulfill(json={"content": {"sha": "src-sha-2"}})
+        elif req.method == "GET" and path.startswith("__sandbox/"):
+            context.bench_reads.append(path)
+            route.fulfill(status=404, json={"message": "Not Found"})
+        else:
+            route.fallback()
+
+    def tree(route, req):
+        route.fulfill(json={"sha": "HEAD", "tree": [], "truncated": False})
+
+    context.page.route("https://api.github.com/repos/" + repo + "/contents/**", source)
+    context.page.route("https://api.github.com/repos/" + repo + "/git/trees/**", tree)
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_pat', 'ghp_stub');"
+        "localStorage.setItem('lc_ed_repo', '" + repo + "');"
+        "localStorage.setItem('lc_ed_session', 'lc:author');"
+    )
+
+
+@given('the bench is paired to the class "{session}"')
+def step_pair_class(context, session):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ed_session', '" + session + "');"
+    )
+
+
+@then("the source received no commit outside the sandbox")
+def step_source_untouched(context):
+    stray = [c["path"] for c in context.bench_commits if not c["path"].startswith("__sandbox/")]
+    assert not stray, "the course source was written: %r" % stray
+
+
+@then('the bench received no commit under "{prefix}"')
+def step_bench_no_commit_under(context, prefix):
+    hits = [c["path"] for c in context.bench_commits if c["path"].startswith(prefix)]
+    assert not hits, "a learner's save went under %s: %r" % (prefix, hits)

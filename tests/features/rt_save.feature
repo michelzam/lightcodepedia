@@ -708,3 +708,29 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I press the pad's 💾
     Then the feature "mine" is green, based on saved data
     And the green for "mine" is booked
+
+  Scenario: The author's own pairing saves into a sandbox, the course source untouched
+    Michel, 2026-09-24: "if I test and save the data in my bench, there is
+    no bench there, and I don't want to modify the course's original". An
+    author's pairing IS the source repo, so a learner-style save would land
+    in the lesson's folder. Under that pairing every bench file goes under
+    __sandbox/ — dunder, so it never travels or publishes.
+
+    Given the key is paired as the material's author to "acme/demo-vault"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I type "# Mine now" into the pad and save
+    Then the bench received a commit to "__sandbox/courses/demo/mod/cv.md" containing "# Mine now"
+    And the source received no commit outside the sandbox
+
+  Scenario: A learner's pairing never sees the sandbox
+    The guard on the change above: a bench paired to a class saves where
+    it always did.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
+    And the bench is paired to the class "demo"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I type "# Mine now" into the pad and save
+    Then the bench received a commit to "courses/demo/mod/cv.md" containing "# Mine now"
+    And the bench received no commit under "__sandbox/"

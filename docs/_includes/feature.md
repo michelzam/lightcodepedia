@@ -637,12 +637,19 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       setCardStatus(card, allPass ? "passing" : "failing");
       if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
       };
-      (function reveal(i) {
-        if (i >= stepEls.length) { finish(); return; }
-        paintStep(stepEls[i], i);
-        if (bar) bar.firstChild.style.width = Math.round((i + 1) * 100 / stepEls.length) + "%";
-        if (pace) setTimeout(function() { reveal(i + 1); }, pace); else reveal(i + 1);
-      })(0);
+      /* THE RUN IS OVER WHEN THE VERDICT IS BOOKED, not when the reveal is
+         scheduled: whoever waits on this promise (the save that re-runs a
+         proof, then writes the record again) must see the green already
+         booked, or the bench holds the count from before (bench_session
+         "books only once they are saved", caught 2026-09-24). */
+      return new Promise(function(done) {
+        (function reveal(i) {
+          if (i >= stepEls.length) { finish(); done(); return; }
+          paintStep(stepEls[i], i);
+          if (bar) bar.firstChild.style.width = Math.round((i + 1) * 100 / stepEls.length) + "%";
+          if (pace) setTimeout(function() { reveal(i + 1); }, pace); else reveal(i + 1);
+        })(0);
+      });
     }).catch(function() {
       setCardStatus(card, "failing");
       if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }

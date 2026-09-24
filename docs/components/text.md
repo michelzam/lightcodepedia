@@ -68,6 +68,8 @@ Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The 
 
 **The spelling picks the shelf.** A relative path (`cv.md`, `../shared/notes.md`) resolves against the *lesson's own folder* — the full course path, so the reader's bench mirrors the course tree and two courses never collide, and a teacher browsing a bench finds each contribution beside the lesson that produced it. A leading slash (`/my/cv.md`) means the bench root — for the personal files that outlive one lesson. On a plain site page (no rendered lesson) relative falls back to the root.
 
+**The author's sandbox.** When the connection is the author's own — their source repo, paired by hand in the editor, not a class — every saved copy goes under `__sandbox/` in that repo, same path below it. The author can walk their own lesson, save, repair, and never rewrite the material; the dunder folder never travels, never publishes. A learner's pairing is a bench, so nothing changes for them.
+
 Try it — this pad keeps its text at `/my/scratch.md` in *your* connected repo (the button explains itself if you aren't connected yet):
 
 ````markdown

@@ -897,6 +897,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
      in the editor — valid everywhere except a page that names a class. */
   var AUTHOR_PAIR = "lc:author";
   window.lcAuthorPair = AUTHOR_PAIR;
+  var SANDBOX = "__sandbox";
 
   window.lcBench = {
     /* WHICH bench? The learner's OWN connected space — ALWAYS, and never the
@@ -1017,7 +1018,23 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         if (p === "..") out.pop();
         else out.push(p);
       });
+      /* THE AUTHOR'S SANDBOX (Michel, 2026-09-24: "if I test and save the
+         data in my bench, there is no bench there, and I don't want to
+         modify the course's original"). An author's pairing is their own
+         repo — the one the course SOURCE lives in — so a learner-style save
+         would land in the lesson's folder and rewrite the material. Under
+         that pairing, and only that one, every bench read and write goes
+         under __sandbox/ instead: same path below it, dunder so it never
+         travels, never publishes, never reaches a vault. A learner's
+         pairing names a class or a bench, never lc:author, so their files
+         stay exactly where they were. */
+      if (this.sandboxed() && out[0] !== SANDBOX) out.unshift(SANDBOX);
       return out.join("/");
+    },
+    sandboxed: function () {
+      var paired = "";
+      try { paired = localStorage.getItem("lc_ed_session") || ""; } catch (e) {}
+      return paired === AUTHOR_PAIR;
     },
     /* peek: read a file that MAY WELL not exist — notes margins, progress —
        without the 404 a blind read logs to the console on every page

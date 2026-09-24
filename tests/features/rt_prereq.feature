@@ -431,3 +431,29 @@ Feature: RT prerequisite gate — the key names the content, not the runner
     And I wait for the page to be interactive
     Then the prerequisites are met
     And "Welcome" leads back through the runner to "courses/demo/mod/welcome.md"
+
+  Scenario: The author holds the key to their own gates
+    Michel, 2026-09-24: "if my proofs don't pass, the prerequisites stop me
+    from going forward". Whoever is paired as the material's author gets a
+    way through on every gate, whatever the block says. A learner's pairing
+    is a bench, so the default gate stays shut for them (scenario above).
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/strict.md" with the document:
+      """
+      # Strict page
+
+      - [Basics](basics.md)
+      {: .prerequisite }
+
+      ## Body
+
+      Secret wisdom here.
+      """
+    And the key is paired as the material's author to "acme/demo"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/strict.md"
+    And I wait for the page to be interactive
+    Then the escape hatch reads "Show it anyway (author) →"
+    When I show the page anyway
+    Then the gated content "Secret wisdom here." is visible
