@@ -34,6 +34,14 @@ Auto-included by docs/_layouts/default.html.
 /* hidden until a cell decides — the .lc-vis-show class (set by JS) wins */
 [visible^="="] { display: none; border-left: 3px solid #cde8cd; background: #fffdf5; padding: 6px 12px; border-radius: 6px; margin: 8px 0; }
 [visible^="="].lc-vis-show { display: block !important; }
+/* A SHUT GATE IS STILL A BLOCK TO THE X-RAY. Hidden by its own formula, a
+   card had no box to sweep, so the author who wrote the gate could not
+   reach the gear to change it (Michel, 2026-09-24: "once a card is hidden,
+   I cannot change it anymore in xray mode"). While the x-ray looks, a shut
+   gate stands as a ghost — dimmed, dashed, named by its formula — and the
+   gear finds it. The reader never sees this: the class is the x-ray's. */
+body.lc-xray-deco [visible^="="]:not(.lc-vis-show) { display: block !important; opacity: 0.55; outline: 2px dashed #f59e0b; outline-offset: 2px; }
+body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut — visible=\"" attr(visible) "\""; display: block; font-size: 0.75em; color: #92400e; margin-bottom: 4px; }
 </style>
 
 <script>
@@ -74,6 +82,12 @@ Auto-included by docs/_layouts/default.html.
       if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
       t.parentNode.replaceChild(frag, t);
     });
+    /* A REPLACED BLOCK IS GONE. The x-ray's Keep re-renders a component
+       from its edited source — a fresh element, the old one detached. The
+       old row kept answering for a node nobody sees, and the new one was
+       never asked (Module 02's gate, Michel 2026-09-24: "once meet.when has
+       again a value, card 3 should be visible again"). Drop the detached. */
+    vis = vis.filter(function (v) { return document.documentElement.contains(v.el); });
     document.querySelectorAll("[visible]").forEach(function (el) {
       if (el._lcVisWired) return;   // rescan is idempotent — no duplicate rows
       var v = (el.getAttribute("visible") || "").trim();

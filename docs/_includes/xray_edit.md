@@ -388,6 +388,10 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         if (widget && widget.parentNode) {
           widget.parentNode.replaceChild(srcEl, widget);
           if (window.lcScanElement) window.lcScanElement(srcEl.parentNode);
+          /* the re-rendered block is a new node: its visible= and its
+             {= cells } must be wired again, or a gate edited here stays
+             shut for good (Module 02, 2026-09-24) */
+          if (window.lcCellsRescan) window.lcCellsRescan();
         }
       } else if (curEl) {
         curEl.textContent = val;                  // plain block: edit its text in place

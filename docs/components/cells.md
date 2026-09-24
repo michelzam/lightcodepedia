@@ -84,6 +84,8 @@ The reinforcement quiz appears exactly when the learner has just *lived*
 the answer. Any block gates on any state — quizzes on features, hints on
 `not audit.passing`, a conclusion on three greens combined with `and`.
 
+**A shut gate under the x-ray.** Hidden by its formula, a block has no box on the page. While the x-ray looks, it stands as a ghost — dimmed, dashed, named by its `visible=` — so the author who wrote the gate can still reach the gear and change it. A gate rewritten there is wired again on the spot: it opens the moment its formula turns true. The reader never sees the ghost.
+
 Named `.mdpad` pads publish too: `{=cv1.source}` is whatever the learner
 has typed (debounced). One scope model — forms, pads, features, the store.
 
