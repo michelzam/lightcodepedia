@@ -27,6 +27,49 @@ def test_longest_key():
              "correct": True}]), "longest option")
 
 
+def _slightly_longest(n_long, n_all):
+    """n_all questions whose key is longest by only 3 characters in n_long
+    of them — under rule 1's 8-character bar every single time."""
+    qs = []
+    for i in range(n_all):
+        key = "Add WHERE met to the query %d" % i
+        pad = "" if i < n_long else "and more words here"
+        qs.append({"name": "q%d" % i, "text": "Which fix works on the reservations list?",
+                   "answers": [{"text": "Sort the grid by met %d" % i, "why": "no"},
+                               {"text": key, "correct": True, "why": "yes"},
+                               {"text": "Delete the rows now %d%s" % (i, pad), "why": "no"},
+                               {"text": "Call the families %d" % i, "why": "no"}]})
+    # the key moves around, so rule 7 (position) stays quiet
+    for i, qq in enumerate(qs):
+        a = qq["answers"]; a.insert(i % 4, a.pop(1))
+    return {"questions": qs, "anchors": ["reservations"]}
+
+
+def test_a_key_always_a_little_longest_is_a_pattern():
+    """Michel, 2026-09-26, Assignment 5a: "the good answers are easy to
+    spot: they are the longest always". Each key beat the longest
+    distractor by a few characters only, so rule 1 never fired; the pattern
+    is across the quiz, and so is the rule."""
+    quiz = _slightly_longest(4, 8)
+    assert not [b for b in cq.tells(quiz) if "longest option by" in b], cq.tells(quiz)
+    only(quiz, "the key is the longest option in 4 of 8 questions")
+
+
+def test_a_key_sometimes_longest_is_chance():
+    """A quarter of the time is what chance gives among four options."""
+    quiz = _slightly_longest(2, 8)
+    assert not [b for b in cq.tells(quiz) if "longest option in" in b], cq.tells(quiz)
+
+
+def test_a_check_all_question_is_judged_on_its_longest_key():
+    """Several keys on purpose: the rule weighs the longest of them against
+    the longest distractor."""
+    quiz = _slightly_longest(0, 3)
+    quiz["questions"][0]["type"] = "multiple_answers"
+    quiz["questions"][0]["answers"][0]["correct"] = True
+    assert not [b for b in cq.tells(quiz) if "correct options marked" in b], cq.tells(quiz)
+
+
 def test_formatting_only_on_key():
     only(q([{"text": "Sort the reservations grid by met"},
             {"text": "Delete the five rows from data"},
