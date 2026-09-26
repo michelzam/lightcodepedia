@@ -1,0 +1,51 @@
+{
+  "name": "@karmicsoft/lc-gateway",
+  "version": "0.1.0",
+  "private": false,
+  "description": "E-mail sign-in and pull-request writer for git-backed content — one contribution, one branch, one pull request. A LightCode brick, shipped as a container.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./config": "./config.js"
+  },
+  "bin": {
+    "lc-gateway": "./server.js"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "config.js",
+    "server.js",
+    "Dockerfile",
+    "DEPLOY.md",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test.mjs",
+    "start": "node server.js"
+  },
+  "license": "MIT",
+  "author": "KarmicSoft",
+  "homepage": "https://lightcodepedia.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/michelzam/lightcodepedia",
+    "directory": "packages/lc-gateway"
+  },
+  "dependencies": {
+    "@karmicsoft/lc-patch": "^0.1.0",
+    "@karmicsoft/lc-serialize": "^0.1.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

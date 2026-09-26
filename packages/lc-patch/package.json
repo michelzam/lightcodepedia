@@ -1,0 +1,41 @@
+{
+  "name": "@karmicsoft/lc-patch",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Minimal-diff writer for git-backed YAML records — only the edited lines change. A LightCode brick.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "license": "MIT",
+  "author": "KarmicSoft",
+  "homepage": "https://lightcodepedia.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/michelzam/lightcodepedia",
+    "directory": "packages/lc-patch"
+  },
+  "dependencies": {
+    "@karmicsoft/lc-serialize": "^0.1.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

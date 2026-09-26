@@ -9,7 +9,9 @@
     "lc-schema",
     "lc-record",
     "lc-map",
-    "lc-suggest"
+    "lc-suggest",
+    "lc-patch",
+    "lc-gateway"
   ],
   "scripts": {
     "test": "npm test --workspaces && node gen-includes.mjs --check",

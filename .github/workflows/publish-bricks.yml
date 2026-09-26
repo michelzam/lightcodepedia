@@ -58,6 +58,12 @@ jobs:
           for pkg in $(node -p "require('./package.json').workspaces.join(' ')"); do
             name=$(node -p "require('./$pkg/package.json').name")
             ver=$(node -p "require('./$pkg/package.json').version")
+            # a brick marked private is HELD: tested like the others, never
+            # published until Michel flips the flag (lc-patch, lc-gateway 0.1.0)
+            if [ "$(node -p "require('./$pkg/package.json').private === true")" = "true" ]; then
+              echo "· $name@$ver is private — held"
+              continue
+            fi
             onnpm=$(npm view "$name@$ver" version 2>/dev/null || true)
             if [ "$onnpm" = "$ver" ]; then
               echo "· $name@$ver already on npm — skip"
