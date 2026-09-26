@@ -54,6 +54,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-button[data-color="muted"]   { background: #9ca3af; }
 .lc-button[data-color="danger"]  { background: #ef4444; }
 .lc-button[data-color="success"] { background: #22c55e; }
+.lc-dbx { font-size: 0.85em; color: #6b7280; border: 1px dashed #d1d5db; border-radius: 8px; padding: 6px 10px; margin: 6px 0 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lc-dbx input { flex: 1 1 220px; font-family: monospace; font-size: 0.95em; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.lc-dbx button { font-size: 0.9em; padding: 3px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; cursor: pointer; }
+.lc-dbx .lc-dbx-ok { color: #166534; }
+.lc-dbx .lc-dbx-err { color: #b91c1c; }
 </style>
 
 <script>
@@ -199,6 +204,14 @@ Auto-included by docs/_layouts/default.html.
       }
     }
 
+    /* Databricks variant: the fence is SQL, dbx="<warehouse id>" names the
+       warehouse. The statement goes through a same-origin proxy (host=,
+       default /dbx) that forwards the browser's OWN token and stores nothing
+       — the key lives on this device like every other key here, and no
+       server ever holds it (Michel, 2026-09-26: "the perfect match with
+       the CFO's need to not share strategic data with anyone else"). */
+    if (el.getAttribute("dbx")) { dbxDataset(el, id); return; }
+
     /* inline code block variant */
     var code = el.querySelector("code") || el;
     var seed = code.textContent.trim();
@@ -225,6 +238,81 @@ Auto-included by docs/_layouts/default.html.
       return;
     }
     setFromText(seed, fmt, el, id);
+  }
+
+  /* ── Databricks: a SQL statement on a warehouse, with this device's token ── */
+  var DBX_KEY = "lc_key_dbx";
+  function dbxToken() { try { return localStorage.getItem(DBX_KEY) || ""; } catch (e) { return ""; } }
+  function dbxKeep(v) { try { if (v) localStorage.setItem(DBX_KEY, v); else localStorage.removeItem(DBX_KEY); } catch (e) {} }
+  var DBX_NUM = /^(INT|LONG|SHORT|BYTE|FLOAT|DOUBLE|DECIMAL)/i;
+  function dbxDataset(el, id) {
+    var code = el.querySelector("code") || el;
+    var sql = code.textContent.trim();
+    var wh = el.getAttribute("dbx");
+    var host = (el.getAttribute("host") || "/dbx").replace(/\/$/, "");
+    var every = parseInt(el.getAttribute("refresh") || "0", 10);
+    /* the fence is invisible, as every dataset is; the bar beside it is
+       where the token is pasted once and where the run reports */
+    var bar = document.createElement("div");
+    bar.className = "lc-dbx"; bar.setAttribute("data-lc-dbx", id);
+    bar.innerHTML = '<span class="lc-dbx-status"></span>' +
+      '<input type="password" class="lc-dbx-token" placeholder="Databricks token — stays in this browser" aria-label="Databricks token" hidden>' +
+      '<button type="button" class="lc-dbx-save" hidden>Save</button>' +
+      '<button type="button" class="lc-dbx-change">🔑 token</button>';
+    el.parentNode.insertBefore(bar, el.nextSibling);
+    var status = bar.querySelector(".lc-dbx-status"), input = bar.querySelector(".lc-dbx-token"),
+        save = bar.querySelector(".lc-dbx-save"), change = bar.querySelector(".lc-dbx-change");
+    function say(t, cls) { status.textContent = t; status.className = "lc-dbx-status" + (cls ? " " + cls : ""); }
+    function ask(open) { input.hidden = save.hidden = !open; if (open) input.focus(); }
+    change.addEventListener("click", function () { ask(input.hidden); });
+    save.addEventListener("click", function () { dbxKeep(input.value.trim()); input.value = ""; ask(false); run(); });
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") save.click(); });
+    function headers(tok) { return { Authorization: "Bearer " + tok, "Content-Type": "application/json", Accept: "application/json" }; }
+    function asJson(r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); }
+    function run() {
+      var tok = dbxToken();
+      if (!tok) { window.lcSetDataset(id, []); say("🔑 paste your Databricks token to run this query", "lc-dbx-err"); ask(true); return; }
+      say("⏳ running on warehouse " + wh + "…");
+      var H = headers(tok);
+      fetch(host + "/api/2.0/sql/statements", { method: "POST", headers: H, cache: "no-store",
+        body: JSON.stringify({ warehouse_id: wh, statement: sql, wait_timeout: "30s", disposition: "INLINE", format: "JSON_ARRAY" }) })
+        .then(asJson)
+        .then(function step(d) {
+          if (!d.ok) throw new Error(d.status === 401 || d.status === 403 ? "token refused — paste a fresh one" : ("HTTP " + d.status + (d.j && d.j.message ? " — " + d.j.message : "")));
+          var st = d.j.status && d.j.status.state;
+          if (st === "PENDING" || st === "RUNNING")
+            return new Promise(function (res) { setTimeout(res, 1000); })
+              .then(function () { return fetch(host + "/api/2.0/sql/statements/" + d.j.statement_id, { headers: H, cache: "no-store" }); })
+              .then(asJson).then(step);
+          if (st !== "SUCCEEDED") throw new Error((d.j.status && d.j.status.error && d.j.status.error.message) || ("statement " + (st || "failed")));
+          var cols = ((d.j.manifest || {}).schema || {}).columns || [];
+          var rows = [];
+          var take = function (arr) {
+            (arr || []).forEach(function (a) {
+              var o = {};
+              cols.forEach(function (c, i) {
+                var v = a[i];
+                o[c.name] = (v !== null && v !== undefined && DBX_NUM.test(c.type_name || "") && v !== "" && !isNaN(v)) ? Number(v) : v;
+              });
+              rows.push(o);
+            });
+          };
+          take((d.j.result || {}).data_array);
+          /* a large result comes in chunks — follow them to the end */
+          var more = function (link) {
+            if (!link) return rows;
+            return fetch(host + link, { headers: H, cache: "no-store" }).then(asJson).then(function (c) {
+              if (!c.ok) throw new Error("HTTP " + c.status + " on a result chunk");
+              take(c.j.data_array); return more(c.j.next_chunk_internal_link);
+            });
+          };
+          return more((d.j.result || {}).next_chunk_internal_link);
+        })
+        .then(function (rows) { window.lcSetDataset(id, rows); say("✓ " + rows.length + " row" + (rows.length === 1 ? "" : "s") + " from warehouse " + wh, "lc-dbx-ok"); })
+        .catch(function (e) { window.lcSetDataset(id, [{ "⚠️": e.message }]); say("⚠️ " + e.message, "lc-dbx-err"); });
+    }
+    run();
+    if (every > 0) setInterval(run, Math.max(10, every) * 1000);
   }
 
   /* ── .datagrid upgrade ──────────────────────────── */

@@ -25,6 +25,38 @@ Invisible data block that `.datagrid` and `.chart` bind to. Declare data once, r
 [Full table](#)
 {: .datagrid source="monthly" rows="4" }
 
+## Databricks — a SQL statement on a warehouse
+
+Apply `{: .dataset }` to a **SQL fence** with `dbx="<warehouse id>"`. The
+statement runs on that warehouse through a same-origin proxy (`host=`, default
+`/dbx`) that forwards **this browser's own token** and stores nothing. The
+token is pasted once, in the bar under the fence, and lives on this device
+like every other key here. Rows land on the bus like any dataset: grids,
+charts, queries and proofs read them without knowing where they came from.
+
+````markdown
+```sql
+SELECT region, SUM(arr_kusd) AS arr_kusd FROM finance.accounts GROUP BY region
+```
+{: .dataset #arr dbx="0123456789abcdef" }
+
+[ARR by region](#)
+{: .datagrid source="arr" #arr_grid height="200" }
+````
+
+The proxy is one block in the host's reverse proxy, no secret in it:
+
+```nginx
+location /dbx/ {
+  proxy_pass https://<workspace>.cloud.databricks.com/;
+  proxy_set_header Authorization $http_authorization;
+}
+```
+
+Numeric columns arrive as numbers, results in chunks are followed to the
+end, `refresh="60"` re-runs the statement every minute, and a refused token
+says so in the bar instead of failing silently.
+
 ## Master/detail — dataset → grid → chart
 
 Give the bound grid an **id** and it becomes a master/detail source: clicking
@@ -173,6 +205,7 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 |---|---|---|---|
 | `.dataset` | `#id` | snake_case | Registers data under this key |
 | `.dataset` | _(applied to a link)_ | `https://…` href | Fetches JSON or CSV from the URL |
+| `.dataset` | `dbx="…"` + `host="…"` | warehouse id, proxy root (default `/dbx`) | The fence is a SQL statement run on a Databricks warehouse with this device's token — see above |
 | `.dataset` | `refresh="…"` | seconds (≥10) | Live mode: re-fetch on a timer (cache-busted); every bound grid/stat/chart repaints itself — no page reload |
 | `.datagrid` | `source="…"` | dataset id | Which dataset to display |
 | `.datagrid` | `rows="…"` | number | Rows per page (0 = all) |
