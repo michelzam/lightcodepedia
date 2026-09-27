@@ -134,6 +134,12 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
     var src = source(), srcDir = src.path.split("/").slice(0, -1).join("/");
     var name = src.path.split("/").pop();
     if (name === "index.md") name = (srcDir.split("/").pop() || "index") + ".md";
+    /* a dunder never travels — and Jekyll never BUILDS a file whose name
+       starts with an underscore either, so a share of __pitch.md landed in
+       the folder and answered 404 (Michel, 2026-09-27). The copy is a
+       deliberate act on a page, not a leak: it takes the name the site
+       can serve. Unshare lists the folder, so an old dunder copy still goes. */
+    name = name.replace(/^_+/, "") || "page.md";
     status("Looking for an earlier share…");
     return findShare(src.path).then(function (hit) {
       var id = hit ? hit.id : hex(6);

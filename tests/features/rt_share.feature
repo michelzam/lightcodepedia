@@ -70,3 +70,25 @@ Feature: 🔗 Share unlisted — a lab page gets an unlisted address
     When I navigate to "/share/000000000000/example"
     And I wait for the page to be interactive
     Then the page reads as a shared page of Lightcodepedia
+
+  Scenario: A page named with underscores shares under a name the site can build
+    Michel, 2026-09-27: share.lightcodepedia.org/share/<id>/__pitch answered
+    404. A dunder never travels, and Jekyll never builds a file whose name
+    starts with an underscore either. The copy is a deliberate act on the
+    page, so it takes the name the site can serve: pitch.md.
+
+    Given I am signed in with my face already cached
+    And the lab's share folder is empty
+    And the lab serves the raw page "courses/demo/__pitch.md" with the document:
+      """
+      # The pitch
+
+      One paragraph, nothing relative.
+      """
+    When I navigate to "/run.html#src=gh:michelzam/lightcodelab/courses/demo/__pitch.md"
+    And I wait for the page to be interactive
+    And I choose Share unlisted in my account menu
+    Then the share dialog says the page is not shared
+    When I press Share
+    Then the share dialog offers a link, an iframe and a QR code for "pitch"
+    And the page was copied to the share folder as "pitch.md", never as "__pitch.md"

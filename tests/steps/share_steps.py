@@ -206,3 +206,31 @@ def step_reader_chrome(context):
         assert not context.page.locator(sel).first.is_visible(), sel + " shows on a shared page"
     hrefs = context.page.evaluate("() => Array.from(document.querySelectorAll('#lc-topbar .lc-links a')).map(a => a.href)")
     assert hrefs and all(h.startswith("https://lightcodepedia.org/") for h in hrefs), hrefs
+
+
+@given('the lab serves the raw page "{path}" with the document')
+@given('the lab serves the raw page "{path}" with the document:')
+def step_lab_serves_raw(context, path):
+    """the runner reads the source raw (Accept: raw), the share reads it as
+    JSON with a sha — one stub, two answers, by the Accept header"""
+    doc = context.text
+    context.share_src_dir = path.rsplit("/", 1)[0]
+
+    def fulfill(route):
+        accept = route.request.headers.get("accept", "")
+        if "raw" in accept:
+            route.fulfill(status=200, content_type="text/plain; charset=utf-8", body=doc)
+        else:
+            route.fulfill(status=200, content_type="application/json",
+                          body=_json.dumps({"content": _b64.b64encode(doc.encode()).decode(), "sha": "src-sha"}))
+    context.page.route(CONTENTS + path + "*", fulfill)
+
+
+@then('the page was copied to the share folder as "{good}", never as "{bad}"')
+def step_copied_as(context, good, bad):
+    sid = context.share_link.split("/share/")[1].split("/")[0]
+    paths = {p: body for m, p, body in _puts(context) if m == "PUT"}
+    assert "docs/share/" + sid + "/" + good in paths, list(paths.keys())
+    assert "docs/share/" + sid + "/" + bad not in paths, list(paths.keys())
+    content = _b64.b64decode(_json.loads(paths["docs/share/" + sid + "/" + good])["content"]).decode()
+    assert content.startswith("---\nlc_share_of: courses/demo/__pitch.md\n---\n# The pitch"), content
