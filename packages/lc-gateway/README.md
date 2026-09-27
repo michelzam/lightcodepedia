@@ -15,16 +15,24 @@ by name.
 |---|---|---|
 | `/health` | GET | `{ ok, version }` |
 | `/auth/request` | POST `{ email }` | mails a magic link through Brevo — same answer whether the address is known or not; rate-limited |
-| `/auth/verify?t=` | GET | the link: single use, 15 minutes; sets the session cookie (7 days) and redirects to the app |
+| `/auth/verify?t=` | GET | the mailed link opens a page with one button; it reads nothing and consumes nothing, so a mail scanner that follows it does no harm |
+| `/auth/verify` | POST `t` (the button) | the one use of the link, 15 minutes; sets the session cookie (7 days) and redirects to the app |
 | `/me` | GET | `{ name, role }` of the signed-in volunteer |
-| `/contrib` | POST `{ path, baseSha, record, title?, type?, message? }` | one branch `contrib/<slug>-<yyyymmdd-hhmm>` + one pull request to `main`, the file written through **lc-patch** |
+| `/fiche?path=` | GET | `{ path, sha, text, record }` of a record on `main`, for a form whose repository is private; content folders only |
+| `/contrib` | POST `{ path, baseSha, record, title?, type?, message? }` | one branch `contrib/<slug>-<yyyymmdd-hhmm>` + one pull request to `main`, the file written through **lc-patch**. `baseSha` is required |
 | `/contrib/new` | POST `{ kind, title, record }` | a new record under the folder named by `kind`; `id`/`slug` derived from the title, never editable |
 
 Refusals the host must expect, each with `keep: true` so the form keeps the
 edit in the browser:
 
+- `400 baseSha required` — the form must send the sha the record was opened
+  with (`GET /fiche` gives it);
 - `401` not signed in, session expired, or address removed from the allowlist;
 - `403` path outside the content folders;
+- `403 protected fields` — the record changes a field the form may never
+  touch (`id`, `slug`, `workflow.published`, `validated`, `withdrawnReason`,
+  `periods`, `districts`, configurable); the answer names them. Refused for
+  every role, so a trusted author's auto-merge cannot carry one either;
 - `409 stale` — the record moved on `main` since it was opened: reload it;
 - `409 open pull request` — someone's contribution on this fiche is already
   waiting; the answer names it.
@@ -51,9 +59,12 @@ GitHub App, Brevo, the OVH and Scaleway recipes, and the live test mode.
 ## Prove
 
 `npm test` runs the sign-in and write scenarios agreed with a partner — link
-once and 15 minutes, no enumeration, rate limit, session expiry, revocation,
+once and 15 minutes, a scanner that opens it consumes nothing, no
+enumeration, limits per minute, per hour and a daily mail quota, nothing
+outliving its window in memory, session expiry, revocation, the fiche read,
 one branch and one pull request, name never address, folders only, roles,
-open-pull-request and stale refusals, creation — against an in-memory GitHub,
+open-pull-request, stale, missing-sha and protected-field refusals, creation
+— against an in-memory GitHub,
 a mailbox and a clock of its own: no network, no secret. The service is a pure
 function of an abstract request (`createGateway().request`), which is why it
 can be tested that way and why `server.js` is fifteen lines.

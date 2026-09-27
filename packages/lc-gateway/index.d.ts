@@ -39,7 +39,15 @@ export interface GatewayConfig {
   sessionSecret: string;
   linkTtlMin?: number;        // 15
   sessionTtlDays?: number;    // 7
-  rateLimitPerMin?: number;   // 5
+  rateLimitPerMin?: number;   // 5 sign-in requests per address per minute
+  rateLimitPerHour?: number;  // 10 per address per hour
+  mailPerDay?: number;        // 200 sign-in mails a day, all addresses together (the mail quota)
+  /** Fields the form may never change; dotted paths. Default: id, slug, workflow.published, workflow.validated, workflow.withdrawnReason, withdrawnReason, validated, periods, districts. */
+  protectedFields?: string[];
+  /** The page the mailed link opens: its title, its sentence, its button. */
+  verifyTitle?: string;
+  verifyText?: string;
+  verifyButton?: string;
   branchPrefix?: string;      // "contrib"
   prTitle?: string;           // "{type}: {title} — {name}"
   /** The service address every volunteer is credited with — required, never a personal one. */
@@ -75,7 +83,7 @@ export interface AbstractResponse {
 }
 
 export interface Gateway {
-  /** The whole service as a function: routes /health, /auth/request, /auth/verify, /me, /contrib, /contrib/new. */
+  /** The whole service as a function: routes /health, /auth/request, /auth/verify (GET page, POST use), /me, /fiche, /contrib, /contrib/new. */
   request(req: AbstractRequest): Promise<AbstractResponse>;
   config: Required<GatewayConfig>;
   version: string;

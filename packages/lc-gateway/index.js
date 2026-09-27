@@ -15,11 +15,11 @@
  * socket and with GitHub, Brevo and the clock replaced. server.js is the
  * thin HTTP adapter, config.js reads the environment.
  */
-import { createHmac, createSign, randomBytes, createHash } from 'node:crypto';
+import { createHmac, createSign, randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { patch } from '@karmicsoft/lc-patch';
 import { load, dump } from '@karmicsoft/lc-serialize';
 
-export const GATEWAY_VERSION = '0.1.0';
+export const GATEWAY_VERSION = '0.2.0';
 
 const DEFAULTS = {
   baseBranch: 'main',
@@ -28,12 +28,18 @@ const DEFAULTS = {
   linkTtlMin: 15,
   sessionTtlDays: 7,
   rateLimitPerMin: 5,
+  rateLimitPerHour: 10,             // sign-in requests per address per hour
+  mailPerDay: 200,                  // sign-in mails per day, all addresses together (the mail quota)
+  protectedFields: ['id', 'slug', 'workflow.published', 'workflow.validated', 'workflow.withdrawnReason', 'withdrawnReason', 'validated', 'periods', 'districts'],
   allowCreate: true,
   requiredCheck: 'fiche-check',
   mergeMethod: 'SQUASH',
   mailFromName: 'Contributions',
   mailSubject: 'Your sign-in link',
   mailText: 'Hello {name},\n\nHere is your sign-in link, valid {minutes} minutes and once only:\n\n{link}\n\nIf you did not ask for it, ignore this message.',
+  verifyTitle: 'Sign in',
+  verifyButton: 'Sign in',
+  verifyText: 'Press the button to finish signing in. The link works once.',
   githubApi: 'https://api.github.com',
   brevoApi: 'https://api.brevo.com/v3/smtp/email',
   contentDirs: [],
@@ -55,6 +61,7 @@ export function createGateway(config, deps = {}) {
 
   const links = new Map();          // sha256(token) → { email, exp, used }
   const hits = new Map();           // email → [timestamps] (rate limit)
+  let sent = [];                    // timestamps of every mail sent (the daily quota)
   let ghToken = null;               // { token, exp }
 
   // ── allowlist ────────────────────────────────────────────────────────
@@ -73,24 +80,37 @@ export function createGateway(config, deps = {}) {
     const m = /(?:^|;\s*)lc_session=([^;]+)/.exec(cookie);
     const raw = m ? m[1] : cookie;
     const [payload, sig] = String(raw).split('.');
-    if (!payload || !sig || sign(payload) !== sig) return null;
+    if (!payload || !sig || !sameSig(sign(payload), sig)) return null;
     let s; try { s = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')); } catch (e) { return null; }
     if (!s || !s.e || !s.x || s.x < now()) return null;
     const a = who(s.e);
     return a ? { email: norm(s.e), name: a.name, role: a.role || 'contributor' } : null;   // removal revokes
   }
+  function sameSig(a, b) {           // constant time: the length leaks nothing, the bytes must not
+    const x = Buffer.from(String(a)), y = Buffer.from(String(b));
+    return x.length === y.length && timingSafeEqual(x, y);
+  }
   const cookieFor = (sess) => 'lc_session=' + sess + '; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=' + (cfg.sessionTtlDays * 86400);
 
   // ── sign-in links ────────────────────────────────────────────────────
   const hash = (t) => createHash('sha256').update(t).digest('hex');
-  function rateLimited(email) {
-    const t = now(), win = 60000;
-    const arr = (hits.get(email) || []).filter((x) => t - x < win);
-    arr.push(t); hits.set(email, arr);
-    return arr.length > cfg.rateLimitPerMin;
+  const DAY = 86400000, HOUR = 3600000;
+  function sweep() {                 // nothing outlives its window in memory
+    const t = now();
+    for (const [k, l] of links) if (l.used || l.exp < t) links.delete(k);
+    for (const [k, arr] of hits) { const a = arr.filter((x) => t - x < HOUR); a.length ? hits.set(k, a) : hits.delete(k); }
+    sent = sent.filter((x) => t - x < DAY);
   }
+  function rateLimited(email) {      // per address: a minute and an hour
+    const t = now();
+    const arr = (hits.get(email) || []).filter((x) => t - x < HOUR);
+    arr.push(t); hits.set(email, arr);
+    return arr.length > cfg.rateLimitPerHour || arr.filter((x) => t - x < 60000).length > cfg.rateLimitPerMin;
+  }
+  const quotaSpent = () => sent.length >= cfg.mailPerDay;   // all addresses together, known or not
   async function sendLink(a) {
     const token = b64u(random(32));
+    sent.push(now());
     links.set(hash(token), { email: norm(a.email), exp: now() + cfg.linkTtlMin * 60000, used: false });
     const link = cfg.publicUrl.replace(/\/$/, '') + '/auth/verify?t=' + token;
     const mail = {
@@ -110,6 +130,18 @@ export function createGateway(config, deps = {}) {
     if (!l || l.used || l.exp < now()) return null;
     l.used = true;
     return who(l.email);
+  }
+  // The mailed link opens a page; a mail scanner that follows it consumes
+  // nothing. The button on that page posts the token, and that is the one use.
+  function verifyPage(token) {
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<meta name="robots" content="noindex"><title>' + esc(cfg.verifyTitle) + '</title>'
+      + '<style>body{font:16px/1.5 system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem}button{font:inherit;padding:.6rem 1.4rem}</style></head>'
+      + '<body><h1>' + esc(cfg.verifyTitle) + '</h1><p>' + esc(cfg.verifyText) + '</p>'
+      + '<form method="post" action="' + esc(cfg.publicUrl.replace(/\/$/, '')) + '/auth/verify">'
+      + '<input type="hidden" name="t" value="' + esc(token) + '"><button type="submit">' + esc(cfg.verifyButton) + '</button></form></body></html>';
+    return { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' }, body: html };
   }
 
   // ── GitHub, as an App ────────────────────────────────────────────────
@@ -149,6 +181,12 @@ export function createGateway(config, deps = {}) {
   function insideContent(p) {
     if (!p || /(^|\/)\.\.(\/|$)/.test(p) || p.startsWith('/') || !/\.ya?ml$/.test(p)) return false;
     return cfg.contentDirs.some((d) => p.startsWith(d.replace(/\/$/, '') + '/') && !p.slice(d.length + 1).includes('/'));
+  }
+  // ── protected fields: the gateway refuses what the form must not send ──
+  const getPath = (o, path) => path.split('.').reduce((x, k) => (x && typeof x === 'object' ? x[k] : undefined), o);
+  const sameValue = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+  function touchedProtected(original, record) {
+    return cfg.protectedFields.filter((f) => !sameValue(getPath(original, f), getPath(record, f)));
   }
   const stamp = () => { const d = new Date(now()); const z = (n) => String(n).padStart(2, '0');
     return d.getUTCFullYear() + z(d.getUTCMonth() + 1) + z(d.getUTCDate()) + '-' + z(d.getUTCHours()) + z(d.getUTCMinutes()); };
@@ -190,20 +228,30 @@ export function createGateway(config, deps = {}) {
   async function request(req) {
     const url = new URL(req.path || '/', 'http://x');
     const p = url.pathname, m = (req.method || 'GET').toUpperCase();
-    const body = typeof req.body === 'string' ? safeJson(req.body) : (req.body || {});
+    const ctype = String((req.headers && (req.headers['content-type'] || req.headers['Content-Type'])) || '');
+    const body = typeof req.body === 'string'
+      ? (/x-www-form-urlencoded/i.test(ctype) ? Object.fromEntries(new URLSearchParams(req.body)) : safeJson(req.body))
+      : (req.body || {});
     const sess = readSession(req.headers && (req.headers.cookie || req.headers.Cookie));
     try {
       if (m === 'GET' && p === '/health') return json(200, { ok: true, version: GATEWAY_VERSION });
       if (m === 'POST' && p === '/auth/request') {
         const email = norm(body.email);
         if (!email) return json(400, { error: 'email required' });
-        if (rateLimited(email)) return json(429, { error: 'too many requests, try again in a minute' });
+        sweep();
+        if (quotaSpent()) return json(429, { error: 'too many requests today, try again tomorrow' });
+        if (rateLimited(email)) return json(429, { error: 'too many requests, try again later' });
         const a = who(email);
         if (a) await sendLink(a);                          // an unknown address learns nothing
         return same202();
       }
-      if (m === 'GET' && p === '/auth/verify') {
-        const a = useLink(url.searchParams.get('t'));
+      if (m === 'GET' && p === '/auth/verify') {                 // the page: reads nothing, consumes nothing
+        const t = url.searchParams.get('t') || '';
+        if (!t) return json(400, { error: 't required' });
+        return verifyPage(t);
+      }
+      if (m === 'POST' && p === '/auth/verify') {                // the button: the one use
+        const a = useLink(body.t || url.searchParams.get('t'));
         if (!a) return json(401, { error: 'link refused', message: 'this link is no longer valid — ask for a new one' });
         const s = issueSession(a.email);
         const h = { 'set-cookie': cookieFor(s) };
@@ -213,6 +261,15 @@ export function createGateway(config, deps = {}) {
       if (m === 'GET' && p === '/me') {
         if (!sess) return json(401, { error: 'not signed in' });
         return json(200, { name: sess.name, role: sess.role });
+      }
+      if (m === 'GET' && p === '/fiche') {                        // the record and its sha, for a private repository
+        if (!sess) return json(401, { error: 'not signed in' });
+        const path = String(url.searchParams.get('path') || '');
+        if (!insideContent(path)) return json(403, { error: 'reads are limited to ' + cfg.contentDirs.join(', ') });
+        const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
+        if (!cur.ok) return json(404, { error: 'no such record on ' + cfg.baseBranch });
+        const text = Buffer.from(cur.json.content || '', 'base64').toString('utf8');
+        return json(200, { path, sha: cur.json.sha, text, record: load(text) }, { 'cache-control': 'no-store' });
       }
       if (m === 'POST' && (p === '/contrib' || p === '/contrib/new')) {
         if (!sess) return json(401, { error: 'not signed in', keep: true });
@@ -230,15 +287,19 @@ export function createGateway(config, deps = {}) {
     const path = String(body.path || '');
     if (!insideContent(path)) return json(403, { error: 'writes are limited to ' + cfg.contentDirs.join(', ') });
     if (!body.record || typeof body.record !== 'object') return json(400, { error: 'record required', keep: true });
+    if (!body.baseSha) return json(400, { error: 'baseSha required', message: 'send the sha of the record as it was opened (GET /fiche gives it)', keep: true });
     const slug = slugOf(path);
     const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
     if (!cur.ok) return json(404, { error: 'no such record on ' + cfg.baseBranch, keep: true });
-    if (body.baseSha && body.baseSha !== cur.json.sha)
+    if (body.baseSha !== cur.json.sha)
       return json(409, { error: 'stale', message: 'the record changed since it was opened — reload it', keep: true });
     const open = await openPrOn(slug);
     if (open) return json(409, { error: 'open pull request', keep: true,
       message: 'a contribution on this record is already waiting: #' + open.number, pr: { number: open.number, url: open.html_url } });
     const original = Buffer.from(cur.json.content || '', 'base64').toString('utf8');
+    const touched = touchedProtected(load(original), body.record);
+    if (touched.length) return json(403, { error: 'protected fields', fields: touched, keep: true,
+      message: 'these fields are not the form\'s to change: ' + touched.join(', ') });
     const text = patch(original, body.record);
     if (text === original) return json(400, { error: 'nothing changed', keep: true });
     const type = String(body.type || body.record.type || 'fiche');
@@ -260,6 +321,9 @@ export function createGateway(config, deps = {}) {
     if (exists.ok) return json(409, { error: 'a record with this slug already exists', path, keep: true });
     const record = { id: slug, slug, ...(body.record || {}) };
     record.id = slug; record.slug = slug; record.title = title;
+    const touched = touchedProtected({ id: slug, slug }, record).filter((f) => f !== 'id' && f !== 'slug');
+    if (touched.length) return json(403, { error: 'protected fields', fields: touched, keep: true,
+      message: 'these fields are not the form\'s to set: ' + touched.join(', ') });
     const type = String(record.type || kind.replace(/s$/, ''));
     const text = dump(record);
     load(text);                                                   // must parse back
@@ -269,7 +333,7 @@ export function createGateway(config, deps = {}) {
 
   return { request, config: cfg, version: GATEWAY_VERSION,
            setAllowlist(list) { cfg.allowlist = list; },
-           _links: links };
+           _links: links, _hits: hits };
 }
 
 function safeJson(s) { try { return JSON.parse(s || '{}'); } catch (e) { return {}; } }

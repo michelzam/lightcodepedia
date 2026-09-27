@@ -54,6 +54,10 @@ address. The gateway sends plain-text mail through `POST /v3/smtp/email`.
 | `LINK_TTL_MIN` | no | 15 |
 | `SESSION_TTL_DAYS` | no | 7 |
 | `RATE_LIMIT_PER_MIN` | no | 5 sign-in requests per address per minute |
+| `RATE_LIMIT_PER_HOUR` | no | 10 sign-in requests per address per hour |
+| `MAIL_PER_DAY` | no | 200 sign-in mails a day for everyone together: the ceiling on your Brevo quota. Once spent, every request answers 429 until tomorrow |
+| `PROTECTED_FIELDS` | no | Dotted paths the form may never change, comma-separated. Default `id,slug,workflow.published,workflow.validated,workflow.withdrawnReason,withdrawnReason,validated,periods,districts` |
+| `VERIFY_TITLE`, `VERIFY_TEXT`, `VERIFY_BUTTON` | no | The page the mailed link opens (title, sentence, button), in your language |
 | `ALLOW_CREATE` | no | `true` — volunteers may create records in the content folders |
 | `REQUIRED_CHECK` | no | `fiche-check` (documentation; GitHub enforces it) |
 | `MERGE_METHOD` | no | `SQUASH`, `MERGE` or `REBASE` for auto-merge |
@@ -83,11 +87,11 @@ signs everyone out (they ask for a new link). Fine for a pilot.
 
 ```sh
 scw registry namespace create name=lc region=fr-par
-docker tag lc-gateway rg.fr-par.scw.cloud/lc/lc-gateway:0.1.0
-docker push rg.fr-par.scw.cloud/lc/lc-gateway:0.1.0
+docker tag lc-gateway rg.fr-par.scw.cloud/lc/lc-gateway:0.2.0
+docker push rg.fr-par.scw.cloud/lc/lc-gateway:0.2.0
 scw container namespace create name=contrib region=fr-par
 scw container container create namespace-id=<ns> name=lc-gateway \
-  registry-image=rg.fr-par.scw.cloud/lc/lc-gateway:0.1.0 port=8080 \
+  registry-image=rg.fr-par.scw.cloud/lc/lc-gateway:0.2.0 port=8080 \
   min-scale=1 max-scale=1 memory-limit=256 \
   environment-variables.PUBLIC_URL=https://… environment-variables.APP_URL=https://… \
   secret-environment-variables.GITHUB_APP_PRIVATE_KEY="$(cat app.pem)" \
@@ -103,7 +107,7 @@ Settings → Environment variables / Secrets.
 ## 5. Check it runs
 
 ```sh
-curl https://contrib.example.org/health          # {"ok":true,"version":"0.1.0"}
+curl https://contrib.example.org/health          # {"ok":true,"version":"0.2.0"}
 curl -X POST https://contrib.example.org/auth/request -H 'content-type: application/json' \
      -d '{"email":"you@example.org"}'             # 202, and a mail if you are allowlisted
 ```
@@ -123,7 +127,16 @@ then drive `/auth/request` with `sendMail` replaced by reading the link from
 the log, or call `/contrib` with a session you mint in Node. `GITHUB_TOKEN`
 is accepted for this mode only; production always uses the App.
 
-## 7. What is not in 0.1.0
+## 7. Since 0.1.0
+
+0.2.0 (after the partner's first replay): `GET /fiche?path=` for a private
+repository; `baseSha` required on `/contrib`; protected fields refused by the
+gateway itself, for every role; the mailed link opens a page whose button
+does the one use, so mail scanners consume nothing; an hourly limit per
+address and a daily mail quota for everyone; memory swept on every sign-in
+request; constant-time signature comparison.
+
+## 8. What is not in 0.2.0
 
 - Persistent sessions across restarts or instances (a store would come with
   a second instance).

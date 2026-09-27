@@ -106,11 +106,13 @@ function rig(over = {}) {
   async function signIn(email) {
     await call('POST', '/auth/request', { email });
     const link = new URL(mailbox[mailbox.length - 1].textContent.match(/https:\S+/)[0]);
-    const r = await call('GET', '/auth/verify?t=' + link.searchParams.get('t'));
+    const r = await press(link.searchParams.get('t'));
     eq(r.status, 302);
     return r.headers['set-cookie'].split(';')[0];
   }
-  return { gw, gh, mailbox, clock, call, signIn };
+  // the volunteer presses the button on the mailed page: a form post
+  const press = (t) => gw.request({ method: 'POST', path: '/auth/verify', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 't=' + encodeURIComponent(t) });
+  return { gw, gh, mailbox, clock, call, signIn, press };
 }
 const edit = (path, fn) => { const o = load(fixtures[path]); fn(o); return o; };
 
@@ -133,23 +135,38 @@ await scenario('An unknown address learns nothing', async () => {
   deep(unknown.body, known.body);
 });
 await scenario('A sign-in link works once', async () => {
-  const { call, mailbox } = rig();
+  const { call, mailbox, press } = rig();
   await call('POST', '/auth/request', { email: 'ada@example.org' });
   const t = new URL(mailbox[0].textContent.match(/https:\S+/)[0]).searchParams.get('t');
-  const first = await call('GET', '/auth/verify?t=' + t);
+  const first = await press(t);
   eq(first.status, 302);
   ok(/^lc_session=/.test(first.headers['set-cookie']));
   const me = await call('GET', '/me', null, first.headers['set-cookie'].split(';')[0]);
   eq(me.status, 200); deep(me.body, { name: 'Ada Test', role: 'contributor' });
-  const again = await call('GET', '/auth/verify?t=' + t);
+  const again = await press(t);
   eq(again.status, 401);
 });
+await scenario('A mail scanner that opens the link consumes nothing', async () => {
+  const { call, mailbox, press } = rig();
+  await call('POST', '/auth/request', { email: 'ada@example.org' });
+  const t = new URL(mailbox[0].textContent.match(/https:\S+/)[0]).searchParams.get('t');
+  for (let i = 0; i < 3; i++) {                          // the scanner, then the volunteer's browser
+    const page = await call('GET', '/auth/verify?t=' + t);
+    eq(page.status, 200);
+    ok(/text\/html/.test(page.headers['content-type']));
+    ok(!page.headers['set-cookie'], 'a GET signed someone in');
+    ok(page.body.includes('method="post"') && page.body.includes('action="https://contrib.example.org/auth/verify"'), 'no button');
+    ok(page.body.includes('value="' + t + '"'), 'the page does not carry the token');
+  }
+  eq((await press(t)).status, 302, 'the button did not work after the scanner');
+  eq((await press(t)).status, 401, 'the button worked twice');
+});
 await scenario('A sign-in link expires', async () => {
-  const { call, mailbox, clock } = rig();
+  const { call, mailbox, clock, press } = rig();
   await call('POST', '/auth/request', { email: 'ada@example.org' });
   const t = new URL(mailbox[0].textContent.match(/https:\S+/)[0]).searchParams.get('t');
   clock.t += 16 * 60000;
-  eq((await call('GET', '/auth/verify?t=' + t)).status, 401);
+  eq((await press(t)).status, 401);
 });
 await scenario('A session expires', async () => {
   const { call, clock, signIn } = rig();
@@ -166,6 +183,35 @@ await scenario('Requests are rate-limited', async () => {
   deep(codes.slice(0, 5), [202, 202, 202, 202, 202]);
   deep(codes.slice(5), [429, 429, 429, 429, 429]);
 });
+await scenario('An address gets at most ten links an hour', async () => {
+  const { call, clock, mailbox } = rig();
+  const codes = [];
+  for (let i = 0; i < 12; i++) { codes.push((await call('POST', '/auth/request', { email: 'ada@example.org' })).status); clock.t += 4 * 60000; }
+  deep(codes.filter((c) => c === 202).length, 10); eq(codes[10], 429); eq(codes[11], 429);
+  eq(mailbox.length, 10);
+  clock.t += 60 * 60000;
+  eq((await call('POST', '/auth/request', { email: 'ada@example.org' })).status, 202);
+});
+await scenario('The mail quota is shared by everyone and refills daily', async () => {
+  const { call, clock, mailbox } = rig({ mailPerDay: 3 });
+  const codes = [];
+  for (const e of ['ada@example.org', 'zoe@example.org', 'ada@example.org', 'zoe@example.org', 'stranger@example.org']) {
+    codes.push((await call('POST', '/auth/request', { email: e })).status); clock.t += 60000;
+  }
+  deep(codes, [202, 202, 202, 429, 429], 'known and unknown answer alike once the quota is spent');
+  eq(mailbox.length, 3);
+  clock.t += 24 * 60 * 60000;
+  eq((await call('POST', '/auth/request', { email: 'ada@example.org' })).status, 202);
+});
+await scenario('Nothing outlives its window in memory', async () => {
+  const { gw, call, clock } = rig();
+  await call('POST', '/auth/request', { email: 'ada@example.org' });
+  await call('POST', '/auth/request', { email: 'zoe@example.org' });
+  eq(gw._links.size, 2); eq(gw._hits.size, 2);
+  clock.t += 61 * 60000;
+  await call('POST', '/auth/request', { email: 'stranger@example.org' });
+  eq(gw._links.size, 0, 'expired links kept'); deep([...gw._hits.keys()], ['stranger@example.org']);
+});
 await scenario('Removing an address revokes access', async () => {
   const { gw, call, signIn } = rig();
   const cookie = await signIn('ada@example.org');
@@ -175,8 +221,26 @@ await scenario('Removing an address revokes access', async () => {
   eq(r.status, 401);
 });
 
-feature('A contribution becomes one branch and one pull request');
+feature('The form reads a fiche through the gateway');
 const LM = 'fiches/persons/louise-michel.yaml';
+await scenario('A signed-in volunteer reads a fiche and its sha', async () => {
+  const { call, gh, signIn } = rig();
+  const cookie = await signIn('ada@example.org');
+  const r = await call('GET', '/fiche?path=' + encodeURIComponent(LM), null, cookie);
+  eq(r.status, 200, JSON.stringify(r.body));
+  eq(r.body.sha, gh.sha(LM)); eq(r.body.text, fixtures[LM]); eq(r.body.record.title, 'Louise Michel');
+  eq(r.headers['cache-control'], 'no-store');
+});
+await scenario('Reading needs a session and stays inside the content folders', async () => {
+  const { call, signIn } = rig();
+  eq((await call('GET', '/fiche?path=' + encodeURIComponent(LM))).status, 401);
+  const cookie = await signIn('ada@example.org');
+  for (const path of ['src/lib/published.ts', 'fiches/persons/../../package.json', '/etc/passwd', 'fiches/themes/x.yaml'])
+    eq((await call('GET', '/fiche?path=' + encodeURIComponent(path), null, cookie)).status, 403, path);
+  eq((await call('GET', '/fiche?path=fiches/persons/nobody.yaml', null, cookie)).status, 404);
+});
+
+feature('A contribution becomes one branch and one pull request');
 await scenario('A contribution opens a pull request', async () => {
   const { call, gh, signIn } = rig();
   const cookie = await signIn('ada@example.org');
@@ -196,7 +260,7 @@ await scenario('A contribution opens a pull request', async () => {
 await scenario('The commit carries the name, never the personal address', async () => {
   const { call, gh, signIn } = rig();
   const cookie = await signIn('ada@example.org');
-  const r = await call('POST', '/contrib', { path: LM, record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
+  const r = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
   eq(r.status, 201);
   const c = gh.commits[0];
   eq(c.author, null, 'the commit author is the App, never a person');
@@ -216,7 +280,7 @@ await scenario('Writes are limited to persons and events', async () => {
 await scenario("A contributor's pull request waits for review", async () => {
   const { call, gh, signIn } = rig();
   const cookie = await signIn('ada@example.org');
-  const r = await call('POST', '/contrib', { path: LM, record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
+  const r = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
   eq(r.status, 201);
   eq(r.body.pr.autoMerge, false);
   eq(gh.graphql.length, 0, 'auto-merge was requested for a contributor');
@@ -224,7 +288,7 @@ await scenario("A contributor's pull request waits for review", async () => {
 await scenario("A trusted author's pull request merges itself after a green check", async () => {
   const { call, gh, signIn } = rig();
   const cookie = await signIn('zoe@example.org');
-  const r = await call('POST', '/contrib', { path: LM, record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
+  const r = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
   eq(r.status, 201);
   eq(r.body.pr.autoMerge, true);
   eq(gh.graphql.length, 1);
@@ -239,18 +303,18 @@ await scenario("A failing check blocks a trusted author's merge", async () => {
   // merges by itself. Proven by the absence of any merge call.
   const { call, gh, signIn } = rig();
   const cookie = await signIn('zoe@example.org');
-  await call('POST', '/contrib', { path: LM, record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
+  await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
   eq(gh.prs[0].state, 'open');
   ok(!JSON.stringify(gh.graphql).includes('mergePullRequest'), 'the gateway tried to merge');
 });
 await scenario('Two contributors on the same fiche do not overwrite each other', async () => {
   const { call, gh, signIn, clock } = rig();
   const ada = await signIn('ada@example.org');
-  const first = await call('POST', '/contrib', { path: LM, record: edit(LM, (o) => { o.gender = 'femme'; }) }, ada);
+  const first = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, ada);
   eq(first.status, 201);
   clock.t += 60000;
   const zoe = await signIn('zoe@example.org');
-  const r = await call('POST', '/contrib', { path: LM, record: edit(LM, (o) => { o.gender = 'autre'; }) }, zoe);
+  const r = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'autre'; }) }, zoe);
   eq(r.status, 409);
   eq(r.body.pr.number, first.body.pr.number);
   ok(String(r.body.message).includes('#' + first.body.pr.number));
@@ -266,6 +330,45 @@ await scenario('An edit based on an outdated fiche is refused', async () => {
   eq(r.status, 409);
   eq(r.body.error, 'stale');
   eq(r.body.keep, true);
+  eq(gh.prs.length, 0);
+});
+await scenario('An edit without baseSha is refused — nothing is overwritten silently', async () => {
+  // reproduced by the partner on Louise Michel: a gender corrected on main came back
+  const { call, gh, signIn } = rig();
+  const cookie = await signIn('ada@example.org');
+  const opened = edit(LM, (o) => { o.bornName = 'Louise'; });           // opened before main moved…
+  gh.main[LM] = fixtures[LM].replace('gender: féminin', 'gender: femme'); // …the correction on main
+  const r = await call('POST', '/contrib', { path: LM, record: opened }, cookie);
+  eq(r.status, 400); eq(r.body.error, 'baseSha required'); eq(r.body.keep, true);
+  eq(gh.prs.length, 0);
+  ok(gh.main[LM].includes('gender: femme'), 'the correction on main was lost');
+});
+await scenario('Protected fields are refused, whatever the role', async () => {
+  const { call, gh, signIn } = rig();
+  for (const email of ['ada@example.org', 'zoe@example.org']) {
+    const cookie = await signIn(email);
+    const cases = [
+      ['slug', (o) => { o.slug = 'elsewhere'; }],
+      ['id', (o) => { o.id = 'elsewhere'; }],
+      ['workflow.published', (o) => { o.workflow = { ...(o.workflow || {}), published: false }; }],
+      ['workflow.validated', (o) => { o.workflow = { ...(o.workflow || {}), validated: false }; }],
+      ['periods', (o) => { o.periods = ['none']; }],
+      ['withdrawnReason', (o) => { o.withdrawnReason = 'gone'; }],
+    ];
+    for (const [field, fn] of cases) {
+      const r = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, fn) }, cookie);
+      eq(r.status, 403, email + ' ' + field + ': ' + JSON.stringify(r.body));
+      deep(r.body.fields, [field]); eq(r.body.keep, true);
+    }
+  }
+  eq(gh.prs.length, 0, 'a pull request opened'); eq(gh.graphql.length, 0, 'auto-merge was requested');
+});
+await scenario('A new record cannot arrive with protected fields set', async () => {
+  const { call, gh, signIn } = rig();
+  const cookie = await signIn('zoe@example.org');
+  const r = await call('POST', '/contrib/new', { kind: 'persons', title: 'Jeanne Test',
+    record: { type: 'person', title: 'Jeanne Test', periods: ['commune-de-1871'], workflow: { published: true } } }, cookie);
+  eq(r.status, 403); deep(r.body.fields, ['workflow.published', 'periods']);
   eq(gh.prs.length, 0);
 });
 await scenario('A contributor creates a new person', async () => {
@@ -296,7 +399,7 @@ await scenario('Creation can be switched off by configuration', async () => {
 await scenario('The installation token is minted once and reused', async () => {
   const { call, gh, signIn } = rig();
   const cookie = await signIn('ada@example.org');
-  await call('POST', '/contrib', { path: LM, record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
+  await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
   eq(gh.tokens, 1);
 });
 })();
