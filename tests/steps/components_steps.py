@@ -945,3 +945,17 @@ def step_multi_ticked_plain(context, text):
 @then('the multi quiz says "{text}"')
 def step_multi_says(context, text):
     expect(context.page.locator(".lc-quiz-status").first).to_contain_text(text, timeout=5_000)
+
+
+@then('the chart "{cid}" offers its gear under the x-ray')
+def step_chart_gear(context, cid):
+    box = context.page.locator('[data-lc-id="%s"]' % cid)
+    expect(box).to_be_visible(timeout=10_000)
+    box.scroll_into_view_if_needed()
+    bb = box.bounding_box()
+    # two moves: the first may land while the page still scrolls, and a
+    # scroll hides the ghost — the second is the reader's real sweep
+    context.page.mouse.move(bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2)
+    context.page.wait_for_timeout(200)
+    context.page.mouse.move(bb["x"] + bb["width"] / 2 + 4, bb["y"] + bb["height"] / 2)
+    expect(context.page.locator("#lcx-gear")).to_be_visible(timeout=5_000)

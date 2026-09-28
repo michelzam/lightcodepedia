@@ -186,6 +186,33 @@ Feature: Component gallery behaviors
     Then the waiting chart comes to rest on "Nothing arrives here yet."
     And the waiting chart still shows its title
 
+  Scenario: A chart whose source is empty keeps its box and its gear
+    Michel, 2026-09-28: "the fees chart has no gear anymore in x-ray mode…
+    the bug arrives only if the source of the chart is empty". A learner
+    cleared the name in the ⚙️ and kept: source="" fell between the two
+    upgraders — not bound (no name), not inline (the knob exists) — so the
+    fence drew nothing and the gear, the one way back, went with it.
+
+    Given the GitHub contents API serves "courses/demo/chartblank.md" with the document:
+      """
+      # Her screen
+
+      ```csv
+      name,fee
+      Scout,180
+      ```
+      {: .dataset #dogs }
+
+      ```csv
+      ```
+      {: .chart #fees type="bar" x="name" y="fee" source="" height="200" title="💵 Adoption fee, dog by dog" }
+      """
+    When I navigate to "/run.html?xray=1#src=gh:acme/demo-vault/courses/demo/chartblank.md"
+    And I wait for the page to be interactive
+    Then the waiting chart comes to rest on "names no source"
+    And the waiting chart still shows its title
+    And the chart "fees" offers its gear under the x-ray
+
   Scenario: A chart whose source does resolve draws, title and all
     Given the GitHub contents API serves "courses/demo/chartok.md" with the document:
       """

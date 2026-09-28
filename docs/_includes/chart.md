@@ -64,7 +64,13 @@ Auto-included by docs/_layouts/default.html.
 
   /* ── inline + master/detail variants (Chart.js) ──────── */
   function upgradeChartInline(el) {
-    if (el.getAttribute("source") || el.getAttribute("bind")) return; /* dataset-bound — upgradeChartBound below */
+    /* dataset-bound — upgradeChartBound below. The knob's PRESENCE decides,
+       not its value: source="" (a learner cleared the name in the ⚙️ and
+       kept) must stay a bound chart with a box and a gear, never fall
+       through to an inline chart with no rows — which drew nothing and
+       took the gear with it (Michel, 2026-09-28: "the bug arrives only if
+       the source of the chart is empty"). */
+    if (el.hasAttribute("source") || el.hasAttribute("bind")) return;
     var code = el.querySelector("code");
     var raw = (code ? code.textContent : el.textContent).trim();
     var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
@@ -178,8 +184,8 @@ Auto-included by docs/_layouts/default.html.
   /* ── dataset-bound variant (SVG) ─────────────────────── */
   function upgradeChartBound(el) {
     if (el.dataset.lcChDone) return;
-    var bindId = el.getAttribute("source") || el.getAttribute("bind");
-    if (!bindId) return; /* inline/master-detail — upgradeChartInline above */
+    if (!el.hasAttribute("source") && !el.hasAttribute("bind")) return; /* inline/master-detail — upgradeChartInline above */
+    var bindId = el.getAttribute("source") || el.getAttribute("bind") || "";
     el.dataset.lcChDone = "1";
     var type  = el.getAttribute("type") || "bar";
     var xCol  = el.getAttribute("x");
@@ -258,6 +264,9 @@ Auto-included by docs/_layouts/default.html.
       else                 renderBar(wrap, rows, xCol, yCol);
     }
 
+    /* an EMPTY name: the box stands, says what is missing, and keeps its
+       gear — the repair is one knob away, not a lost fence */
+    if (!bindId) { paintTitle(); note(emptyMsg || "This chart names no source — open ⚙️ and set source to the part it should read."); return; }
     window.lcDatasetListeners[bindId] = window.lcDatasetListeners[bindId] || [];
     window.lcDatasetListeners[bindId].push(render);
     if (masterId && window.lcMasterDetail)

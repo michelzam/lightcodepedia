@@ -21,7 +21,7 @@ Auto-generate a card grid from all `.md` files in a folder — no manual list to
 | `open` | | `runner`: scan a repo path *outside* `docs/` (unrendered material like `courses/`) via the API with your key — every card opens in the runner. |
 | `title` | `true` | Name the module above the cards — the folder's own `index.md` title. `title="false"` when the page already carries that heading. |
 | `view` | cards | `recap`: one factual line per page — tags, quizzes ok/missed, proofs green, a link to finish — with the module's points and one line to cheer. See below. |
-| `path` | the link href | Folder to scan. Accepts a knob-cell: `path="= get_var('COURSE_PATH', 'courses')"` resolves the node's variable (see [Cells](/components/cells)). |
+| `path` | the link href | Folder to scan. Accepts a knob-cell: `path="= get_var('COURSE_PATH', 'courses')"` resolves the node's variable (see [Cells](/components/cells)). Inside a runner render a relative path lives under the rendered file's folder; a path starting with `/` is the **repo root** (`path="/courses/x"` from a page deep in `hq/`; `path="/"` lists the root itself). |
 
 ## Two postures — read and workbench
 

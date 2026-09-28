@@ -646,7 +646,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       var idxRel = (dir ? dir + "/" : "") + "index.md";
       var got = runnerMode
         ? apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" +
-                   ((runBaseDir && idxRel.charAt(0) !== "/") ? runBaseDir + "/" + idxRel : idxRel), true)
+                   ((runBaseDir && idxRel.charAt(0) !== "/") ? runBaseDir + "/" + idxRel : idxRel.replace(/^\/+/, "")), true)
         : fetchText(mdUrl(idxRel));
       Promise.resolve(got).then(function (text) {
         if (typeof text !== "string") return;
@@ -717,8 +717,11 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       /* inside a bench, a relative path resolves against the rendered file's
          dir (index.md at root → "course" scans <bench>/course) */
       var rel = (path === "." || path === "") ? "" : path;
+      /* a leading "/" is the REPO ROOT — the one way a page rendered deep in
+         a folder (hq/topics/x.md) lists a folder elsewhere (courses/…); the
+         API takes no leading slash (hq map, 2026-09-27) */
       var apiPath = (runBaseDir && (rel === "" || rel.charAt(0) !== "/"))
-        ? (rel ? runBaseDir + "/" + rel : runBaseDir) : rel;
+        ? (rel ? runBaseDir + "/" + rel : runBaseDir) : rel.replace(/^\/+/, "");
       return apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" + apiPath)
       .then(function(files) {
         if (!Array.isArray(files)) throw new Error("Not a directory: " + escapeHtml(path));
@@ -1072,6 +1075,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
          without this the title read "Mod" while the rows were right
          (dashboard, 2026-09-13) */
       else if (runBaseDir && dir.charAt(0) !== "/") dir = runBaseDir + "/" + dir;
+      dir = dir.replace(/^\/+/, "");                 // "/x" = repo root, no leading slash for the API
       var fallback = dir ? titleCase(dir.split("/").pop()) : "";
       if (!dir) return Promise.resolve(fallback);
       var idx = dir + "/index.md";
@@ -1337,7 +1341,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
           var slug = raw.replace(/\/+$/, "").trim().toLowerCase().replace(/\.md$/i, "").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
           if (!slug) return;
           var rel = (path === "." || path === "") ? "" : path;
-          var apiPath = (runBaseDir && (rel === "" || rel.charAt(0) !== "/")) ? (rel ? runBaseDir + "/" + rel : runBaseDir) : rel;
+          var apiPath = (runBaseDir && (rel === "" || rel.charAt(0) !== "/")) ? (rel ? runBaseDir + "/" + rel : runBaseDir) : rel.replace(/^\/+/, "");
           /* git has no empty folders — a new folder is created as its index.md,
              which is also its landing page (same convention as the vault) */
           var filePath = (apiPath ? apiPath + "/" : "") + slug + (isFolder ? "/index.md" : ".md");
@@ -1546,6 +1550,10 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         var _rawPath = _resolved;
         if (window.lcBase && _rawPath.indexOf(window.lcBase + "/") === 0) _rawPath = _rawPath.slice(window.lcBase.length);
         path = _rawPath.replace(/^\/+|\/+$/g, "");
+        /* inside a render, a leading "/" says REPO ROOT — keep that one mark
+           so the listing below does not heal the path under the render's
+           folder (a topic page in hq/topics listing courses/, 2026-09-27) */
+        if (runRoot && /^\//.test(_rawPath)) path = "/" + path;   // "/" alone = the root itself
         /* "THE FOLDER I LIVE IN" HAS TO KNOW WHERE IT LIVES. A bare
            `{: .folder }` resolves to "." — inside a runner render the root
            supplies the directory, but on a SITE page there was none, so the
