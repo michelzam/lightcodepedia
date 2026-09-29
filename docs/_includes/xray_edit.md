@@ -357,6 +357,24 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
       } else {
         ta.value = (block.textContent || "").trim();   // plain text — never raw HTML
       }
+      /* THE FRAME'S OWN GEAR EDITS THE LEARNER'S FILE, NOT THE LESSON'S
+         STARTER. A bench slot's ⚙️ opened on the seed fence and anchored
+         its save on that seed — fine on the very first save, then never
+         again: once the file differs from the starter (any earlier save,
+         a NAME.count typed by mistake) the anchor was "found 0 time(s)"
+         and the learner was locked out of their own file (Leo, Michel:
+         Module 02's tally, 2026-09-29). The slot knows its file; the
+         editor shows THAT, and Save writes THAT back, whole — a wrong
+         cell name inside is the learner's to fix next, never a reason to
+         refuse the edit. */
+      /* Two doors lead there: the frame itself, and any plain line inside it
+         — a list line renders its cells as values ("🐕 2 met a dog."), text
+         no file holds, so an anchored save could never find it either. A
+         component inside the slot (a grid, a chart) keeps its own fence
+         and its own anchor. */
+      curSlotFile = window.lcBenchSlotOf ? window.lcBenchSlotOf(block) : null;
+      if (curSlotFile && isComponent && !(block.classList && block.classList.contains("lc-bench-slot"))) curSlotFile = null;
+      if (curSlotFile) ta.value = curSlotFile.text();
       body.appendChild(clab); body.appendChild(ta);
       _origVal = ta.value;   // Keep's exact-match anchor into the page source
     } else {
@@ -376,6 +394,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
   function apply() {
     try {
       var val = document.getElementById("lcx-content").value;
+      if (curSlotFile) { curSlotFile.preview(val); return; }   /* the frame: repaint from the text, never rebuild the slot from the seed */
       if (isComponent) {
         var srcEl = parseSrc(curSnap);
         Array.prototype.forEach.call(document.querySelectorAll("#lcx-edit-body input[data-knob]"), function (inp) {
@@ -400,6 +419,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
   }
 
   var _origVal = null, curName = "", curReadonly = false, _notes = null;
+  var curSlotFile = null;   /* the bench slot whose WHOLE file the frame's gear edits, else null */
 
   /* ── 💬 the reader's margin ──────────────────────────────────────────────
      One markdown file per lesson, in the LEARNER'S bench, next to the work
@@ -1320,7 +1340,9 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
     /* Same trap, same reason, one question later: which file owns this block?
        Inside a bench slot the answer is the learner's own, and after apply()
        the detached curEl can no longer be asked. */
-    var slot = (window.lcBenchSlotOf && curEl) ? window.lcBenchSlotOf(curEl) : null;
+    /* the frame's gear already holds its slot from open(): after an Apply
+       the slot repainted and curEl is detached, so closest() finds nothing */
+    var slot = curSlotFile || ((window.lcBenchSlotOf && curEl) ? window.lcBenchSlotOf(curEl) : null);
     apply();
     var pat = localStorage.getItem("lc_ed_pat"), repo = localStorage.getItem("lc_ed_repo");
     var fabEl = document.getElementById("ed-fab");
@@ -1334,6 +1356,16 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
        every offset, which is not a position at all. */
     var textChanged = !!(ta && _origVal && ta.value !== _origVal);
     if (!knobs && !textChanged) { closeDlg(); return; }   // nothing moved
+
+    /* the frame's gear: the file is the text, no anchor to look for */
+    if (slot && curSlotFile) {
+      var whole = ta.value;
+      slot.save(function () { return whole; }, "Inline edit: " + ((document.getElementById("lcx-edit-title") || {}).textContent || "file").replace(/^✏️\s*/, ""))
+        .then(function (sha) { lcxToast("Saved" + (sha ? " · " + String(sha).slice(0, 7) : "") + " ✓", true); })
+        .catch(function (e) { lcxToast("Save failed: " + (e && e.message ? e.message : e), false); });
+      closeDlg();
+      return;
+    }
 
     /* Which one of the identical blocks is this? Rank it among the page's
        blocks whose source text matches, so an ambiguous file position is

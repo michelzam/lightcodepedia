@@ -69,7 +69,7 @@ The one list a session updates before pushing: the date of the topic it
 touched. Thirty days without a touch and the proof names the topic.
 
 ```yaml
-- { topic: engine,       page: "topics/engine.md",       last: "2026-09-28" }
+- { topic: engine,       page: "topics/engine.md",       last: "2026-09-29" }
 - { topic: pedia,        page: "topics/pedia.md",        last: "2026-09-27" }
 - { topic: cohorts,      page: "topics/cohorts.md",      last: "2026-09-28" }
 - { topic: partners,     page: "topics/partners.md",     last: "2026-09-27" }

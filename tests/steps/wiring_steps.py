@@ -669,3 +669,42 @@ def step_open_editor_on_tally(context):
 def step_editor_holds(context, text):
     expect(context.page.locator("#lcx-content")).to_have_value(
         __import__("re").compile(__import__("re").escape(text)), timeout=5_000)
+
+
+# ── the frame's own gear: the learner's whole file ─────────────────────────
+
+@when('I open the x-ray editor on the frame holding "{text}"')
+def step_open_editor_on_frame(context, text):
+    line = context.page.locator(".lc-bench-slot li, .lc-bench-slot p", has_text=text).first
+    _alt_move_on(context.page, line)
+    gear = context.page.locator("#lcx-gear")
+    gear.wait_for(state="visible", timeout=10_000)
+    gear.click(force=True)
+    expect(context.page.locator("#lcx-content")).to_be_visible(timeout=5_000)
+
+
+@then('the editor holds the learner\'s file, with "{text}"')
+def step_editor_holds_file(context, text):
+    val = context.page.locator("#lcx-content").input_value()
+    assert text in val, "the editor shows %r — not the learner's file" % val[:200]
+
+
+@when('I replace "{old}" with "{new}" in the editor and apply')
+def step_replace_and_apply(context, old, new):
+    ta = context.page.locator("#lcx-content")
+    ta.fill(ta.input_value().replace(old, new))
+    context.page.locator("#lcx-apply").click()
+    context.page.wait_for_timeout(800)
+
+
+@then('the frame shows a cell for "{expr}"')
+def step_frame_cell(context, expr):
+    expect(context.page.locator('.lc-bench-slot .lc-cell[data-expr="%s"]' % expr).first).to_be_attached(timeout=8_000)
+
+
+@when("I press Save in the editor")
+def step_press_save(context):
+    context.page.locator("#lcx-keep").click()
+    context.page.wait_for_timeout(2_000)
+    toast = (context.page.locator("#lcx-toast").text_content() or "").strip()
+    assert not toast.startswith("Save failed"), toast + " — bench reads: %r" % getattr(context, "bench_reads", None)

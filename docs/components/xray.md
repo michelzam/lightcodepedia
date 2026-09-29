@@ -29,6 +29,13 @@ Tap the pill again to leave.
 
 Knob changes are not committed inline yet — keep those via the ✏️ page editor.
 
+- **Inside a bench slot** (`{: .embed save="…" }`), the frame's own gear and
+  the gear on any plain line inside it edit the learner's **whole file**, as
+  it is now, and 💾 Save writes it back whole: no anchor to find, so a file
+  that already left the lesson's starter, or a cell name typed by mistake,
+  can always be edited again. A component inside the slot (a grid, a chart)
+  keeps its own fence and its own exact-match save.
+
 ```gherkin
 Feature: X-ray inline editing keeps changes honestly
   As a connected builder

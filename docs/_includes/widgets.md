@@ -759,6 +759,9 @@ Auto-included by docs/_layouts/default.html.
     box._lcSlot = {
       path: benchPath,
       text: function () { return md; },
+      /* Apply on the frame's own gear: repaint from the edited text without
+         touching the bench — what the learner sees before they Save */
+      preview: function (text) { paint(text, mine); },
       save: function (transform, label) {
         var next;
         try { next = transform(md); } catch (e) { next = null; }

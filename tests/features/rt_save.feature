@@ -734,3 +734,39 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I type "# Mine now" into the pad and save
     Then the bench received a commit to "courses/demo/mod/cv.md" containing "# Mine now"
     And the bench received no commit under "__sandbox/"
+
+  Scenario: The frame's gear edits the learner's file, even after it left the starter
+    Leo, then Michel, on Module 02's tally (2026-09-29): "Save failed:
+    couldn't locate that part in your file — looked for «- 📨 **{=
+    reservations.count }**…», found it 0 time(s)". The frame's ⚙️ showed
+    the lesson's starter and anchored its save on it; after any earlier
+    save the file no longer held the starter, so nothing could be saved
+    again — and a NAME typed by mistake locked the learner out for good.
+    The frame edits the file it holds, and writes it back whole.
+
+    Given a connected bench whose "courses/demo/mod/tally.md" holds the document:
+      """
+      - 📨 **{= reservations.count }** families asked.
+      - 🐕 **{= NAME.count }** met a dog.
+      {: .block #tally }
+      """
+    And the GitHub contents API serves "courses/demo/mod/stop.md" with the document:
+      """
+      # Where they stop
+
+      ```markdown
+      - 📨 **{= reservations.count }** families asked.
+      - 🐕 **{= reservations.count }** met a dog.
+      {: .block #tally }
+      ```
+      {: .embed save="tally.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/stop.md"
+    And I wait for the page to be interactive
+    And I open the x-ray editor on the frame holding "met a dog"
+    Then the editor holds the learner's file, with "NAME.count"
+    When I replace "NAME.count" with "visited.count" in the editor and apply
+    Then the frame shows a cell for "visited.count"
+    When I press Save in the editor
+    Then the bench received a commit to "courses/demo/mod/tally.md" containing "visited.count"
+    And the bench received a commit to "courses/demo/mod/tally.md" without "NAME.count"
