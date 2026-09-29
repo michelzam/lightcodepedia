@@ -202,3 +202,221 @@ Feature: Blocks gate on feature state through cells
     When the x-ray looks at the page
     Then the card "home" stands as a ghost
     And the gear can be summoned on "home"
+
+  Scenario: The lesson's own proof turns green on a gate the learner wrote
+    Nate, Module 02 (2026-09-29): "when inserting = meet.when into visible on
+    card 3, I am shown that this is correct. When I delete the day in card 2
+    card 3 becomes shut. When I click run I am still prompted that it is
+    failing." By hand the gate works; the proof, which types into the form
+    from Python, must see the gate move too — before its next line runs.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/module_02/nate.md" with the document:
+      """
+      # Gates
+
+      ```yaml
+      dog: Biscuit
+      ```
+      {: .form #ask editable="true" title="1 Ask" }
+
+      ```yaml
+      when: ""
+      ```
+      {: .form #meet editable="true" title="2 Meet" visible="= ask.dog" }
+
+      ```yaml
+      paid: ""
+      ```
+      {: .form #home editable="true" title="3 Home" visible="= meet.when" }
+
+      ```gherkin
+      Feature: A family pays only after they meet the dog
+        Scenario: With no visit booked, the fee card stays shut
+          Given Biscuit's reservation
+          :::python
+          self.meet: Form = self.page.meet
+          self.home: Form = self.page.home
+          :::
+          When the volunteer clears the visit date
+          :::python
+          self.meet.set("when", "")
+          :::
+          Then the fee card is shut
+          :::python
+          assert not self.home.visible, "the fee card is open, and no visit is booked"
+          :::
+
+        Scenario: Booking the visit opens the fee card
+          Given Biscuit's reservation
+          :::python
+          self.meet: Form = self.page.meet
+          self.home: Form = self.page.home
+          :::
+          When the volunteer books Thursday afternoon
+          :::python
+          self.meet.set("when", "Thu")
+          :::
+          Then the fee card is open
+          :::python
+          assert self.home.visible, "the visit is booked and the fee card is still shut"
+          :::
+      ```
+      {: .feature #proof visible="true" status="pending" }
+      """
+    And a key that may keep edits to "acme/demo"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_02/nate.md"
+    And I wait for the page to be interactive
+    Then the card "home" is shut
+    When I run the feature "proof"
+    Then the feature "proof" is green
+
+  Scenario: The same proof, on the gate saved in the learner's bench
+    Nate's real situation: the lesson holds the starter, his bench holds
+    the file with the gate he wrote, and ▶ sits in the lesson.
+
+    Given I have a clean browser page
+    And a connected bench whose "courses/demo/mod/gates.md" holds the document:
+      """
+      ```yaml
+      dog: Biscuit
+      ```
+      {: .form #ask editable="true" title="1 Ask" }
+
+      ```yaml
+      when: ""
+      ```
+      {: .form #meet editable="true" title="2 Meet" visible="= ask.dog" }
+
+      ```yaml
+      paid: ""
+      ```
+      {: .form #home editable="true" title="3 Home" visible="= meet.when" }
+      """
+    And the GitHub contents API serves "courses/demo/mod/gates_lesson.md" with the document:
+      """
+      # Gates
+
+      ````markdown
+      ```yaml
+      dog: Biscuit
+      ```
+      {: .form #ask editable="true" title="1 Ask" }
+
+      ```yaml
+      when: ""
+      ```
+      {: .form #meet editable="true" title="2 Meet" visible="= ask.dog" }
+
+      ```yaml
+      paid: ""
+      ```
+      {: .form #home editable="true" title="3 Home" visible="= ask.dog" }
+      ````
+      {: .embed save="gates.md" }
+
+      ```gherkin
+      Feature: A family pays only after they meet the dog
+        Scenario: With no visit booked, the fee card stays shut
+          Given Biscuit's reservation
+          :::python
+          self.meet: Form = self.page.meet
+          self.home: Form = self.page.home
+          :::
+          When the volunteer clears the visit date
+          :::python
+          self.meet.set("when", "")
+          :::
+          Then the fee card is shut
+          :::python
+          assert not self.home.visible, "the fee card is open, and no visit is booked"
+          :::
+
+        Scenario: Booking the visit opens the fee card
+          Given Biscuit's reservation
+          :::python
+          self.meet: Form = self.page.meet
+          self.home: Form = self.page.home
+          :::
+          When the volunteer books Thursday afternoon
+          :::python
+          self.meet.set("when", "Thu")
+          :::
+          Then the fee card is open
+          :::python
+          assert self.home.visible, "the visit is booked and the fee card is still shut"
+          :::
+      ```
+      {: .feature #proof visible="true" status="pending" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/gates_lesson.md"
+    And I wait for the page to be interactive
+    Then the card "home" is shut
+    When I run the feature "proof"
+    Then the feature "proof" is green
+
+  Scenario: Gate rewritten in the x-ray, then ▶ — green without a reload
+    Nate's exact sequence: gear on card 3, meet.when, then the lesson's ▶.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/module_02/nate2.md" with the document:
+      """
+      # Gates
+
+      ```yaml
+      dog: Biscuit
+      ```
+      {: .form #ask editable="true" title="1 Ask" }
+
+      ```yaml
+      when: ""
+      ```
+      {: .form #meet editable="true" title="2 Meet" visible="= ask.dog" }
+
+      ```yaml
+      paid: ""
+      ```
+      {: .form #home editable="true" title="3 Home" visible="= ask.dog" }
+
+      ```gherkin
+      Feature: A family pays only after they meet the dog
+        Scenario: With no visit booked, the fee card stays shut
+          Given Biscuit's reservation
+          :::python
+          self.meet: Form = self.page.meet
+          self.home: Form = self.page.home
+          :::
+          When the volunteer clears the visit date
+          :::python
+          self.meet.set("when", "")
+          :::
+          Then the fee card is shut
+          :::python
+          assert not self.home.visible, "the fee card is open, and no visit is booked"
+          :::
+
+        Scenario: Booking the visit opens the fee card
+          Given Biscuit's reservation
+          :::python
+          self.meet: Form = self.page.meet
+          self.home: Form = self.page.home
+          :::
+          When the volunteer books Thursday afternoon
+          :::python
+          self.meet.set("when", "Thu")
+          :::
+          Then the fee card is open
+          :::python
+          assert self.home.visible, "the visit is booked and the fee card is still shut"
+          :::
+      ```
+      {: .feature #proof visible="true" status="pending" }
+      """
+    And a key that may keep edits to "acme/demo"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_02/nate2.md"
+    And I wait for the page to be interactive
+    Then the card "home" is open
+    When I rewrite the gate of "home" to "= meet.when" in the x-ray
+    Then the card "home" is shut
+    When I run the feature "proof"
+    Then the feature "proof" is green

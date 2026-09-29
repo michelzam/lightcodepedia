@@ -298,6 +298,14 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
   function open(block) {
     if (!block) return;
     curEl = block;
+    /* WHO OWNS THIS BLOCK IS DECIDED NOW, while it is still on the page.
+       Apply rebuilds the part from its edited source, so by the time Save
+       comes (Apply, then Save — Michel, 2026-09-29: "works every other
+       time") curEl is a detached node and closest() finds no render root
+       and no bench slot: the save then went to the wrong file and came
+       back "Not Found". */
+    curRunRoot = block.closest ? block.closest(".lc-run[data-lc-src-path]") : null;
+    curSlot = window.lcBenchSlotOf ? window.lcBenchSlotOf(block) : null;
     curId = (block.getAttribute && (block.getAttribute("data-lc-id") || block.id)) || "";
     curSnap = (curId && window.lcSourceOf && window.lcSourceOf(curId)) || "";
     isComponent = !!curSnap;
@@ -420,6 +428,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
 
   var _origVal = null, curName = "", curReadonly = false, _notes = null;
   var curSlotFile = null;   /* the bench slot whose WHOLE file the frame's gear edits, else null */
+  var curRunRoot = null, curSlot = null;   /* the block's render root and bench slot, taken at open() */
 
   /* ── 💬 the reader's margin ──────────────────────────────────────────────
      One markdown file per lesson, in the LEARNER'S bench, next to the work
@@ -1336,13 +1345,11 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
        page itself has no_edit and knows nothing) — the runner stamps it on
        its root. Resolve BEFORE apply(): re-rendering a component detaches
        curEl, and closest() on a detached node finds no ancestors. */
-    var runRoot = curEl && curEl.closest ? curEl.closest(".lc-run[data-lc-src-path]") : null;
+    var runRoot = curRunRoot || (curEl && curEl.closest ? curEl.closest(".lc-run[data-lc-src-path]") : null);
     /* Same trap, same reason, one question later: which file owns this block?
        Inside a bench slot the answer is the learner's own, and after apply()
-       the detached curEl can no longer be asked. */
-    /* the frame's gear already holds its slot from open(): after an Apply
-       the slot repainted and curEl is detached, so closest() finds nothing */
-    var slot = curSlotFile || ((window.lcBenchSlotOf && curEl) ? window.lcBenchSlotOf(curEl) : null);
+       the detached curEl can no longer be asked — both were taken at open(). */
+    var slot = curSlotFile || curSlot || ((window.lcBenchSlotOf && curEl) ? window.lcBenchSlotOf(curEl) : null);
     apply();
     var pat = localStorage.getItem("lc_ed_pat"), repo = localStorage.getItem("lc_ed_repo");
     var fabEl = document.getElementById("ed-fab");

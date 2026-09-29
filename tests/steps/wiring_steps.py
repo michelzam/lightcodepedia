@@ -708,3 +708,9 @@ def step_press_save(context):
     context.page.wait_for_timeout(2_000)
     toast = (context.page.locator("#lcx-toast").text_content() or "").strip()
     assert not toast.startswith("Save failed"), toast + " — bench reads: %r" % getattr(context, "bench_reads", None)
+
+
+@when("I press Apply in the editor")
+def step_press_apply(context):
+    context.page.locator("#lcx-apply").click()
+    context.page.wait_for_timeout(800)

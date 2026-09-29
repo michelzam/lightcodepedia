@@ -229,6 +229,43 @@ Feature: X-ray inspector
     And the last of them wires source to adoptions
     And the author's repo received no commit
 
+  Scenario: Apply first, then Save, still lands in the learner's file
+    Michel, 2026-09-29, Broken Wire and Gates: "Apply, then Save works every
+    other time — Save failed: Not Found". Apply rebuilds the part from its
+    edited source, so the block the editor held was off the page by the
+    time Save asked which file owns it; the answer came back empty and the
+    write went to the wrong place. The owner is decided when the editor
+    opens, not when it saves.
+
+    Given a connected bench whose "courses/demo/mod/wiring.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # Her screen, exactly as she left it
+
+      ````markdown
+      ```csv
+      campus,dogs_adopted
+      Milwaukee,12
+      Ozaukee,5
+      ```
+      {: .dataset #adoptions }
+
+      ```csv
+      ```
+      {: .datagrid #wired source="ozaukee" height="160" empty="Nothing arrives here yet." }
+      ````
+      {: .embed save="wiring.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    And I open the x-ray editor on the wired table
+    And I set the "source" knob to "adoptions"
+    And I press Apply in the editor
+    And I save, and the bench receives it
+    Then the bench received 2 commits to "courses/demo/mod/wiring.md"
+    And the last of them wires source to adoptions
+    And the author's repo received no commit
+
   Scenario: A form in the learner's slot changes its master through the gear
     Michel, 2026-09-16, Module 02 "A long walk": the lesson says open the
     ⚙️ on the card and point master at the dogs — the card showed a 💬,
