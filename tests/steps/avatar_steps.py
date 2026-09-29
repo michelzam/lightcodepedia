@@ -564,3 +564,11 @@ def step_trigger_on_top(context):
     above = context.page.evaluate("""() => { const t = document.querySelector('.lc-avatar-trigger, [data-lc-avatar-trigger], .avatar_trigger');
       const h = document.querySelector('.markdown-body h2'); return !!(t && h) && !!(t.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING); }""")
     assert above, "the tour button is not above the first section"
+
+
+@when('I pick the guide\'s story "{title}"')
+def step_pick_story(context, title):
+    _open_dock_menu(context)
+    item = context.page.locator(".lc-guide-menu.open *", has_text=title).last
+    item.click()
+    context.page.wait_for_timeout(800)

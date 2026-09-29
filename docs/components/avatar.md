@@ -300,3 +300,13 @@ two jobs: **guide** on the way in, **witness** on the way back.
 /components/slides
 ```
 {: .related }
+
+
+## 📓 The Doc log
+
+Every exchange with the guide lands in the learner's own bench, next to the
+margin: `__<lesson>.doc.md`, one section per exchange — when, **Q**, **A**,
+and whether Doc read a kept story (`kept`) or answered live (`live · model`).
+Dunder, so it never travels to a vault, a hub or pedia. Nothing is written
+per question: exchanges wait in the browser and land with the next 💾, or
+when the tab goes away, the road the progress record already takes.

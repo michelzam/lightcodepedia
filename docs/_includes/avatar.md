@@ -1718,6 +1718,75 @@ Auto-included by docs/_layouts/default.html.
     return out.slice(0, 12);
   }
   /* play a transient set of lines through the avatar, then restore its tour */
+  /* ── 📓 THE DOC LOG: every exchange, in the learner's own bench ─────────
+     Michel, 2026-09-29: "when students use Doc to ask questions, can we
+     store the Q&A as __notes in their bench? That would be great for the
+     research. They've accepted already to share all that." One file per
+     lesson beside the margin — __<lesson>.doc.md, dunder so it never
+     travels — one section per exchange: when, the question, the answer,
+     and whether Doc read a kept story or answered live. It rides the
+     roads the progress record already takes: exchanges buffer in this
+     browser and land with the next 💾, or when the tab goes away. Never a
+     commit per question. The runner shell is never a lesson: no render
+     root, no file. */
+  var DOC_KEY = "lc_doclog:";
+  var _docPending = {};
+  function docLogRoot(av) {
+    var host = av && av.host;
+    return (host && host.closest ? host.closest(".lc-run[data-lc-src-path]") : null)
+        || document.querySelector(".lc-run[data-lc-src-path]") || null;
+  }
+  function logDoc(av, question, answer, kind) {
+    try {
+      if (!window.lcBench || !window.lcBench.target) return;
+      var root = docLogRoot(av);
+      var lesson = root && root.dataset ? (root.dataset.lcSrcPath || "") : "";
+      if (!lesson) return;
+      var t = window.lcBench.target(root);
+      if (!t || !t.repo || !t.pat) return;
+      var base = lesson.split("/").pop().replace(/\.[^.]*$/, "");
+      var file = "__" + base + ".doc.md";
+      var key = DOC_KEY + t.repo + ":" + lesson;
+      var buf = []; try { buf = JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { buf = []; }
+      buf.push({ t: new Date().toISOString().replace(/\.\d+Z$/, "Z"), q: String(question || ""),
+                 a: String(answer || ""), k: String(kind || "live") });
+      try { localStorage.setItem(key, JSON.stringify(buf)); } catch (e) {}
+      _docPending[key] = { file: file, lesson: lesson, root: root };
+    } catch (e) {}
+  }
+  function docSection(x) {
+    return "## " + x.t + " · " + x.k + "\n\n**Q** " + x.q.replace(/\s+/g, " ").trim() +
+           "\n\n**A** " + x.a.trim().replace(/\n/g, "\n   ") + "\n";
+  }
+  function flushDocLog() {
+    var keys = Object.keys(_docPending);
+    if (!keys.length || !window.lcBench) return Promise.resolve(false);
+    return Promise.all(keys.map(function (key) {
+      var p = _docPending[key];
+      var buf = []; try { buf = JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { buf = []; }
+      if (!buf.length) { delete _docPending[key]; return false; }
+      return window.lcBench.peek(p.file, p.root).then(function (f) {
+        var head = (f && f.text) ? f.text.replace(/\s+$/, "") : "# 📓 " + p.lesson + " — Doc";
+        var text = head + "\n\n" + buf.map(docSection).join("\n");
+        return window.lcBench.write(p.file, text, "📓 doc", f ? f.sha : null, p.root).then(function () {
+          try { localStorage.removeItem(key); } catch (e) {}
+          delete _docPending[key];
+          return true;
+        });
+      }).catch(function () { return false; });
+    })).then(function (r) { return r.some(Boolean); });
+  }
+  document.addEventListener("lc-bench-write", function (ev) {
+    var path = (ev && ev.detail && ev.detail.path) || "";
+    if (path.indexOf(".doc.md") >= 0) return;      /* our own write */
+    flushDocLog();
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") flushDocLog();
+  });
+  window.addEventListener("pagehide", function () { flushDocLog(); });
+  window.lcDocLog = { log: logDoc, flush: flushDocLog };
+
   function performLines(elId, av, specLines) {
     if (av.playing) stopPlay(elId);
     if (!av._tourScript) av._tourScript = av.script;
@@ -1736,6 +1805,7 @@ Auto-included by docs/_layouts/default.html.
     Object.keys(av.stories).forEach(function (tt) {
       menu.appendChild(item('❓ ' + (tt.length > 44 ? tt.slice(0, 43) + '…' : tt), function () {
         menu.classList.remove('open');
+        logDoc(av, tt, av.stories[tt].map(function (l) { return l && l.say; }).filter(Boolean).join("\n"), "kept");
         performLines(elId, av, av.stories[tt]);
       }));
     });
@@ -1831,6 +1901,8 @@ Auto-included by docs/_layouts/default.html.
         return;
       }
       av._lastAnswer = result.truncated ? null : { question: question, steps: steps };
+      logDoc(av, question, result.truncated ? (result.clean || result.text) : result.text,
+             "live" + (result.model ? " · " + result.model : "") + (result.truncated ? " · cut off" : ""));
       /* TESTING COSTS TOO (Michel, 2026-08-13). The author is the heaviest
          user of every page they write, so in author mode each answer says
          what it cost and where the day stands. Learners see none of this:
