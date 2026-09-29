@@ -1,11 +1,11 @@
 [
  {
-  "run": "2026-09-29T03:31Z",
-  "features": 51,
+  "run": "2026-09-29T05:46Z",
+  "features": 52,
   "features_failed": 2,
-  "scenarios": 607,
+  "scenarios": 609,
   "scenarios_failed": 6,
-  "steps": 4428,
+  "steps": 4455,
   "steps_failed": 5
  }
 ]
