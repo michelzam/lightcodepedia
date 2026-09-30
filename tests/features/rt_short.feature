@@ -200,3 +200,67 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     And the review says the clip is longer than a Short
     When I upload the Short, embedded on this page
     Then the upload was titled as a walk, not a Short
+
+  Scenario: A share without tab audio is named, not discovered in the file
+    Michel, 2026-09-30: "why is the sound not present anymore in those
+    downloaded shorts?" Chrome records tab audio only for a tab with
+    "Share tab audio" ticked. The suite's painted canvas carries no audio:
+    the review must say so.
+
+    Given a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And the viewer can push to "acme/demo"
+    And the committable GitHub page "courses/demo/mod/mute.md" serves:
+      """
+      # Walked page
+
+      ## One
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script: []
+      stories:
+        "Say hi":
+          - say: "Hello there."
+            pause: 1
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/mute.md"
+    And I wait for the page to be interactive
+    And I tick "🎬 Short next walk" in the guide's menu
+    And I pick "Say hi" from the guide's menu
+    Then the Short review dialog shows the clip
+    And the review says the share had no tab audio
+
+  Scenario: A share with tab audio is marked as such
+    Given the tab capture is stubbed with a painted canvas and a tone
+    And a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And the viewer can push to "acme/demo"
+    And the committable GitHub page "courses/demo/mod/loud.md" serves:
+      """
+      # Walked page
+
+      ## One
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script: []
+      stories:
+        "Say hi":
+          - say: "Hello there."
+            pause: 1
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/loud.md"
+    And I wait for the page to be interactive
+    And I tick "🎬 Short next walk" in the guide's menu
+    And I pick "Say hi" from the guide's menu
+    Then the Short review dialog shows the clip
+    And the review says the share carried tab audio

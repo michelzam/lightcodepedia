@@ -254,3 +254,36 @@ def step_upload_title_walk(context):
     title = meta.get("snippet", {}).get("title", "")
     assert title.endswith("— Walk"), title
     assert "Short" not in title, title
+
+
+@given("the tab capture is stubbed with a painted canvas and a tone")
+def step_stub_capture_tone(context):
+    # the same canvas, plus one audio track from an oscillator — what Chrome
+    # hands over when "Share tab audio" is ticked
+    context.page.add_init_script(
+        """window.lcShortCapture = function () {
+             var g = window._lcAvatars && window._lcAvatars.guide;
+             window._lcPrimedAtCapture = !!(g && g._voicePrimed);
+             var c = document.createElement('canvas'); c.width = 320; c.height = 180;
+             var ctx = c.getContext('2d'), i = 0;
+             setInterval(function () { i++; ctx.fillStyle = i % 2 ? '#3366cc' : '#cc6633';
+                                       ctx.fillRect(0, 0, 320, 180); }, 80);
+             var s = c.captureStream(15);
+             var AC = window.AudioContext || window.webkitAudioContext, ac = new AC();
+             var osc = ac.createOscillator(), dest = ac.createMediaStreamDestination();
+             osc.connect(dest); osc.start();
+             dest.stream.getAudioTracks().forEach(function (t) { s.addTrack(t); });
+             return s;
+           };"""
+    )
+
+
+@then("the review says the share had no tab audio")
+def step_review_no_audio(context):
+    expect(context.page.locator(".lc-short-ov .lc-rec-review-meta")).to_contain_text("🔇 no tab audio", timeout=10_000)
+    expect(context.page.locator(".lc-short-ov .lc-rec-review-warn")).to_contain_text("Share tab audio")
+
+
+@then("the review says the share carried tab audio")
+def step_review_audio(context):
+    expect(context.page.locator(".lc-short-ov .lc-rec-review-meta")).to_contain_text("🔊 tab audio", timeout=10_000)

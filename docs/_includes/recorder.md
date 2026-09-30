@@ -1259,6 +1259,14 @@ Auto-included by docs/_layouts/default.html.
         try { out.getVideoTracks()[0].contentHint = "detail"; } catch (e) {}
         try { stream.getVideoTracks()[0].contentHint = "detail"; } catch (e) {}
         stream.getAudioTracks().forEach(function (a) { out.addTrack(a); });
+        /* A SILENT SHARE IS SAID, NOT DISCOVERED IN THE FILE. Chrome records
+           tab audio only for a tab, with "Share tab audio" ticked in its
+           picker; a window or the whole screen carries none on a Mac. The
+           take went on and the clip came out mute (Michel, 2026-09-30:
+           "why is the sound not present anymore in those downloaded
+           shorts?"). Name it in the pill and in the review. */
+        var hasAudio = stream.getAudioTracks().length > 0;
+        if (!hasAudio) toast("🔇 The share carries no tab audio — the clip will be silent. Next time tick “Share tab audio” in the picker, and share the tab, not a window.");
         var mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"]
           .filter(function (m) { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); })[0] || "";
         var rec, chunks = [], t0 = 0, note = "", tick = null, hud = null, timer = null, done = false, lab = null;
@@ -1286,7 +1294,7 @@ Auto-included by docs/_layouts/default.html.
           if (lab) lab.textContent = "🎬 held";
           var preview = new Blob(chunks, { type: mime || "video/webm" });
           if (!preview.size) { end(false); return; }
-          review(preview, { ms: Date.now() - t0, note: note, url: shareUrl(), end: end });
+          review(preview, { ms: Date.now() - t0, note: note, url: shareUrl(), end: end, audio: hasAudio });
         }
         /* end(card) → Promise<Blob>: the final clip, with or without the card */
         function end(card, text) {
@@ -1361,6 +1369,7 @@ Auto-included by docs/_layouts/default.html.
             if (ms >= shortMs()) { hud.classList.add("warn"); lab.textContent = "🎬 Video " + fmt(ms) + " · past the Short limit"; }
             else if (ms >= WARN_MS && shortMs() === SHORT_MS) { hud.classList.add("warn"); lab.textContent = "🎬 " + fmt(shortMs() - ms) + " of Short left"; }
             else lab.textContent = "🎬 Short " + fmt(ms);
+            if (!hasAudio) lab.textContent = "🔇 " + lab.textContent;
           }, 500);
           /* the walk's last line ends the clip; "Stop sharing" ends it too */
           on(document, "lc-avatar-ended", function (ev) {
@@ -1387,6 +1396,7 @@ Auto-included by docs/_layouts/default.html.
       var long = meta.ms > shortMs();
       var kind = long ? "Video" : "Short";
       var note = meta.note || (long ? "Longer than a Short (" + fmt(meta.ms) + ") — it uploads as a regular unlisted video, not a Short." : "");
+      if (meta.audio === false) note = (note ? note + " " : "") + "No tab audio in the share — the clip is silent. Next time tick “Share tab audio” in Chrome's picker and share the tab itself.";
       var ov = document.createElement("div");
       ov.className = "lc-rec-ov lc-short-ov";
       var mb = (blob.size / 1048576).toFixed(1);
@@ -1396,7 +1406,7 @@ Auto-included by docs/_layouts/default.html.
         '  <video class="lc-rec-review-vid" controls playsinline></video>',
         '  <div class="lc-rec-review-body">',
         note ? '    <div class="lc-rec-review-warn">⚠️ ' + note + '</div>' : '',
-        '    <div class="lc-rec-review-meta">🎬 ' + kind + ' · ' + fmt(meta.ms) + ' · ' + mb + ' MB · 1080×1920</div>',
+        '    <div class="lc-rec-review-meta">🎬 ' + kind + ' · ' + fmt(meta.ms) + ' · ' + mb + ' MB · 1080×1920 · ' + (meta.audio === false ? '🔇 no tab audio' : '🔊 tab audio') + '</div>',
         '    <div class="lc-short-opts">',
         canCard ? '      <label><input type="checkbox" class="lc-short-card" checked> End card and description: <em>Watch more:</em></label>' : '',
         canCard ? '      <input type="text" class="lc-short-url" aria-label="Watch more address">' : '',
