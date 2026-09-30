@@ -865,6 +865,19 @@ def step_run_feature_by_id(context, fid):
     assert got == "clicked", got
 
 
+@then('the feature "{fid}" is green')
+def step_feature_green(context, fid):
+    card = context.page.locator('[data-lc-id="%s"]' % fid)
+    expect(card).to_have_attribute("data-status", "passing", timeout=60_000)
+
+
+@then('the feature "{fid}" is red and names "{what}"')
+def step_feature_red_names(context, fid, what):
+    card = context.page.locator('[data-lc-id="%s"]' % fid)
+    expect(card).to_have_attribute("data-status", "failing", timeout=60_000)
+    expect(card).to_contain_text(what)
+
+
 @then('the feature "{fid}" is green but names "{what}" as not saved')
 def step_feature_green_unsaved(context, fid, what):
     card = context.page.locator('[data-lc-id="%s"]' % fid)

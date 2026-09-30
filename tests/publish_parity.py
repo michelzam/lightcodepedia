@@ -68,6 +68,10 @@ def as_pattern(phrase):
 LAB_PAGE = re.compile(r'["\'#][^"\'\s]*/lab/')
 FROM_DISK = re.compile(
     r'(?:ROOT|__file__)[^\n]*["\'](?:tools|local|hq|courses|hubs)["\']')
+# the lab's own share folder: publish-excluded, and the row that fills it
+# is painted for lab builds only (2026-09-30: rt_share, 4 reds a night in
+# pedia since 09-24, green in the lab all along)
+LAB_TREE = re.compile(r'docs/share/')
 
 
 def lab_only_travellers(excluded):
@@ -93,7 +97,7 @@ def lab_only_travellers(excluded):
         if steps not in excluded and os.path.isfile(os.path.join(STEPS, steps)):
             with open(os.path.join(STEPS, steps), encoding="utf-8") as fh:
                 texts.append(fh.read())
-        if any(LAB_PAGE.search(t) or FROM_DISK.search(t) for t in texts):
+        if any(LAB_PAGE.search(t) or FROM_DISK.search(t) or LAB_TREE.search(t) for t in texts):
             out.append(name)
     return out
 
