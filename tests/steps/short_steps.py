@@ -287,3 +287,18 @@ def step_review_no_audio(context):
 @then("the review says the share carried tab audio")
 def step_review_audio(context):
     expect(context.page.locator(".lc-short-ov .lc-rec-review-meta")).to_contain_text("🔊 tab audio", timeout=10_000)
+
+
+@given("the browser presents itself as Safari")
+def step_safari_ua(context):
+    context.page.add_init_script(
+        "Object.defineProperty(navigator, 'userAgent', { get: () => "
+        "'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15' });"
+    )
+
+
+@then("a toast says Safari records no tab sound")
+def step_safari_toast(context):
+    toast = context.page.locator(".lc-guide-hello", has_text="Safari").first
+    expect(toast).to_be_visible(timeout=5_000)
+    expect(toast).to_contain_text("Chrome")

@@ -1185,11 +1185,19 @@ Auto-included by docs/_layouts/default.html.
        sees the exact clip before the walk; disarming, or the review
        closing, gives the page back (Michel, 2026-09-20: "page cropping is
        bad… I have to resize the window myself") */
+    /* Safari shares the picture and never the tab's sound: a Short made
+       there is mute whatever the picker says (Michel, 2026-09-30, "I was
+       on Safari"). Say it when the line is ticked, not after the take. */
+    function isSafari() {
+      var ua = navigator.userAgent || "";
+      return /safari/i.test(ua) && !/chrome|chromium|crios|android|edg/i.test(ua);
+    }
     function arm(on) {
       on = !!on;
       if (on === S.armed) return;
       S.armed = on;
       if (on) {
+        if (isSafari()) toast("🔇 Safari records the picture only, never the tab's sound — for Doc's voice in the clip, make the Short in Chrome.");
         frameOn();
         if (mode() !== "reel" && window.lcMode) { window.lcMode.set("reel"); S.turnedReelOn = mode() === "reel"; }
       } else if (!S.busy) restoreMode();

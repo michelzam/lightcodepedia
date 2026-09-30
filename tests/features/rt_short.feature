@@ -264,3 +264,31 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     And I pick "Say hi" from the guide's menu
     Then the Short review dialog shows the clip
     And the review says the share carried tab audio
+
+  Scenario: On Safari, ticking the line says the clip will have no sound
+    Given the browser presents itself as Safari
+    And a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And the viewer can push to "acme/demo"
+    And the committable GitHub page "courses/demo/mod/safari.md" serves:
+      """
+      # Walked page
+
+      ## One
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script: []
+      stories:
+        "Say hi":
+          - say: "Hello there."
+            pause: 1
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/safari.md"
+    And I wait for the page to be interactive
+    And I tick "🎬 Short next walk" in the guide's menu
+    Then a toast says Safari records no tab sound
