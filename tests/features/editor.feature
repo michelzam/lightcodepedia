@@ -260,3 +260,14 @@ Feature: Page editor — ✨ AI edit dialog
     And no chip is left for a human: the engine itself now passes them
     And no grid cell is left for a human: the rule "grid cell over its row" decides them
     And clicking that row outlines the planted paragraph
+
+  Scenario: A poster wider than the pane leaves the editor's tabs on screen
+    Michel, 2026-09-30, Safari on Module 03: the lesson's poster made the
+    preview take the whole drawer, no splitter, no Blocks tab. The panes
+    split the drawer whatever the preview holds.
+
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And the preview holds a poster 1800 pixels wide
+    Then the editor's tabs are on screen beside the preview

@@ -465,3 +465,35 @@ def step_release_comp_model(context):
         "() => /\\uD83D\\uDEE2|\\uD83E\\uDDEC/.test("
         "Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')"
         ".get.call(document.getElementById('ed-input')))", timeout=15_000)
+
+
+@when("the preview holds a poster {px:d} pixels wide")
+def step_preview_wide_poster(context, px):
+    """The exact shape the embed builds for effect="ambient": an inline-block
+    that clips a full-width image — the content WebKit sized the pane from."""
+    context.page.evaluate("""(px) => {
+      const prev = document.getElementById("ed-preview");
+      const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='" + px + "' height='" + (px / 2) + "'><rect width='100%' height='100%' fill='#c33'/></svg>";
+      const box = document.createElement("div");
+      box.className = "lc-embed lc-embed-ambient";
+      const img = document.createElement("img");
+      img.src = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+      img.style.cssText = "max-width:100%;width:100%";
+      box.appendChild(img);
+      prev.insertBefore(box, prev.firstChild);
+    }""", px)
+    context.page.wait_for_timeout(300)
+
+
+@then("the editor's tabs are on screen beside the preview")
+def step_tabs_on_screen(context):
+    tabs = context.page.locator("#ed-tabs")
+    expect(tabs).to_be_visible(timeout=5_000)
+    got = context.page.evaluate("""() => {
+      const r = (id) => document.getElementById(id).getBoundingClientRect();
+      const main = r("ed-main"), prev = r("ed-preview"), left = r("ed-left"), tabs = r("ed-tabs");
+      return { main: main.width, prev: prev.width, left: left.width,
+               tabsRight: tabs.right, view: innerWidth };
+    }""")
+    assert got["tabsRight"] <= got["view"], "the tabs sit past the viewport: %r" % got
+    assert got["prev"] < got["main"] and got["left"] >= 200, "the preview took the drawer: %r" % got

@@ -80,7 +80,12 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-files-btn.ed-open { border-color: #0066cc; background: #f0f6ff; }
 #ed-files-arrow { font-size: 0.65em; color: #aaa; transition: transform 0.15s; flex-shrink: 0; }
 #ed-files-btn.ed-open #ed-files-arrow { transform: rotate(180deg); }
-#ed-body { display: flex; flex: 1; overflow: hidden; }
+/* WebKit sizes a `flex: 1` (= 1 1 0%) item from its CONTENT when the pane's
+   width comes from a stretched ancestor: a poster wider than the pane made
+   the preview take the whole drawer and pushed the tabs off-screen in Safari
+   (Michel, 2026-09-30, Module 03). A 0px basis, a 0 minimum and an explicit
+   width leave nothing for the content to argue with. */
+#ed-body { display: flex; flex: 1 1 0px; min-height: 0; width: 100%; overflow: hidden; }
 /* ── Sidebar as dropdown panel ───────────────────── */
 #ed-sidebar {
   position: absolute; top: calc(100% + 2px); left: 0; z-index: 300;
@@ -91,8 +96,8 @@ Auto-included by docs/_layouts/default.html. Skipped for:
   transition: opacity 0.15s ease, visibility 0.15s, transform 0.18s ease;
 }
 #ed-sidebar.ed-open { opacity: 1; visibility: visible; transform: none; }
-#ed-main { flex: 1; display: flex; flex-direction: row; overflow: hidden; }
-#ed-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
+#ed-main { flex: 1 1 0px; min-width: 0; width: 100%; display: flex; flex-direction: row; overflow: hidden; }
+#ed-left { flex: 1 1 0px; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
 #ed-input {
   flex: 1; border: none; resize: none;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; padding: 1em; line-height: 1.6;
@@ -113,7 +118,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
 #ed-gutter-inner {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; line-height: 1.6;
   color: #585b70; white-space: pre; pointer-events: none; user-select: none; will-change: transform; }
-#ed-preview { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; box-sizing: border-box; }
+#ed-preview { flex: 1 1 0px; min-width: 0; overflow-y: auto; overflow-x: hidden; padding: 1em 1.5em; position: relative; border-right: 1px solid #e0e0e0; box-sizing: border-box; }
 /* 50% zoom mode: render content at 200% width then scale to fit */
 #ed-preview.lc-zoom { overflow-x: hidden; }
 #ed-preview.lc-zoom > div:not(.ed-pbar) { width: 200%; zoom: 0.5; transform-origin: top left; }
