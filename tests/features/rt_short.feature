@@ -161,3 +161,42 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     Then the Shorts accordion is folded
     When I unfold the Shorts accordion
     Then the Short plays inside it
+
+  Scenario: A walk longer than a Short is not cut — it uploads as a video
+    Michel, 2026-09-30, the four-minute slam: "Cut at 2:57" threw the take
+    away. The limit is YouTube's word Short, not ours: the take keeps going,
+    the review says it is longer than a Short, and it uploads unlisted as a
+    regular video. The suite shortens the Short limit to two seconds.
+
+    Given a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And the viewer can push to "acme/demo"
+    And the Short limit is 2 seconds for this test
+    And the committable GitHub page "courses/demo/mod/long.md" serves:
+      """
+      # Walked page
+
+      ## One
+
+      Some prose.
+
+      ```yaml
+      bot: doc
+      script: []
+      stories:
+        "Say hi":
+          - say: "Hello there."
+            pause: 2
+          - say: "Bye now."
+            pause: 2
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/long.md"
+    And I wait for the page to be interactive
+    And I tick "🎬 Short next walk" in the guide's menu
+    And I pick "Say hi" from the guide's menu
+    Then the Short review dialog shows the clip
+    And the review says the clip is longer than a Short
+    When I upload the Short, embedded on this page
+    Then the upload was titled as a walk, not a Short

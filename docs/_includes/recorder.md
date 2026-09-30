@@ -1141,7 +1141,14 @@ Auto-included by docs/_layouts/default.html.
   (function () {
     var W = 1080, H = 1920, FPS = 30;
     var CARD_MS = 3000;                           /* the end card: "Watch more: <page>" */
-    var MAX_MS = 180000 - CARD_MS, WARN_MS = 150000;   /* a Short is three minutes at most, card included */
+    /* A Short is three minutes at most, card included — but a walk that
+       runs longer is not lost: the take keeps going and uploads as a
+       regular unlisted video (Michel, 2026-09-30: "it should suggest to
+       upload anyway, even if not as a Short"). Fifteen minutes is the
+       ceiling YouTube gives an unverified channel. A test may shorten
+       the Short limit through window.lcShortMs. */
+    var SHORT_MS = 180000 - CARD_MS, WARN_MS = 150000, MAX_MS = 15 * 60000 - CARD_MS;
+    function shortMs() { var v = Number(window.lcShortMs); return v > 0 ? v : SHORT_MS; }
     var MIN_MS = 3000, TAIL_MS = 800;             /* the last bubble stays in frame; the encoder needs a moment for its first frames */
     var S = { armed: false, busy: false, turnedReelOn: false };
     var listeners = [];
@@ -1350,8 +1357,9 @@ Auto-included by docs/_layouts/default.html.
           placeHud(); on(window, "resize", placeHud);
           timer = setInterval(function () {
             var ms = Date.now() - t0;
-            if (ms >= MAX_MS) { stop("Cut at " + fmt(MAX_MS) + " — a Short is three minutes at most, end card included."); return; }
-            if (ms >= WARN_MS) { hud.classList.add("warn"); lab.textContent = "🎬 " + fmt(MAX_MS - ms) + " left"; }
+            if (ms >= MAX_MS) { stop("Cut at " + fmt(MAX_MS) + " — fifteen minutes is the longest clip we upload."); return; }
+            if (ms >= shortMs()) { hud.classList.add("warn"); lab.textContent = "🎬 Video " + fmt(ms) + " · past the Short limit"; }
+            else if (ms >= WARN_MS && shortMs() === SHORT_MS) { hud.classList.add("warn"); lab.textContent = "🎬 " + fmt(shortMs() - ms) + " of Short left"; }
             else lab.textContent = "🎬 Short " + fmt(ms);
           }, 500);
           /* the walk's last line ends the clip; "Stop sharing" ends it too */
@@ -1375,16 +1383,20 @@ Auto-included by docs/_layouts/default.html.
       ensureRecorderStyles();
       var url = URL.createObjectURL(blob);
       var canCard = typeof meta.end === "function" && !meta.note;
+      /* longer than a Short: still yours, still uploads — as a plain video */
+      var long = meta.ms > shortMs();
+      var kind = long ? "Video" : "Short";
+      var note = meta.note || (long ? "Longer than a Short (" + fmt(meta.ms) + ") — it uploads as a regular unlisted video, not a Short." : "");
       var ov = document.createElement("div");
       ov.className = "lc-rec-ov lc-short-ov";
       var mb = (blob.size / 1048576).toFixed(1);
       ov.innerHTML = [
-        '<div class="lc-rec-panel" role="dialog" aria-label="Your Short">',
+        '<div class="lc-rec-panel" role="dialog" aria-label="Your ' + kind + '">',
         '  <button class="lc-rec-panel-close" title="Discard">✕</button>',
         '  <video class="lc-rec-review-vid" controls playsinline></video>',
         '  <div class="lc-rec-review-body">',
-        meta.note ? '    <div class="lc-rec-review-warn">⚠️ ' + meta.note + '</div>' : '',
-        '    <div class="lc-rec-review-meta">🎬 Short · ' + fmt(meta.ms) + ' · ' + mb + ' MB · 1080×1920</div>',
+        note ? '    <div class="lc-rec-review-warn">⚠️ ' + note + '</div>' : '',
+        '    <div class="lc-rec-review-meta">🎬 ' + kind + ' · ' + fmt(meta.ms) + ' · ' + mb + ' MB · 1080×1920</div>',
         '    <div class="lc-short-opts">',
         canCard ? '      <label><input type="checkbox" class="lc-short-card" checked> End card and description: <em>Watch more:</em></label>' : '',
         canCard ? '      <input type="text" class="lc-short-url" aria-label="Watch more address">' : '',
@@ -1444,7 +1456,7 @@ Auto-included by docs/_layouts/default.html.
         var desc = (watchLine() ? watchLine() + "\n\n" : "") + "Recorded on Lightcodepedia · " + new Date().toLocaleDateString();
         st.textContent = wantCard() ? "Adding the end card…" : "Uploading…";
         final().then(function (b) {
-          return window.lcYtUpload(b, b.type || "video/webm", title + " — Short", function (pct) { st.textContent = "Uploading… " + pct + "%"; }, desc);
+          return window.lcYtUpload(b, b.type || "video/webm", title + (long ? " — Walk" : " — Short"), function (pct) { st.textContent = "Uploading… " + pct + "%"; }, desc);
         })
           .then(function (videoUrl) {
             st.textContent = "✅ Uploaded (unlisted): " + videoUrl;

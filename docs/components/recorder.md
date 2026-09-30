@@ -157,3 +157,9 @@ The file is named `recording-YYYY-MM-DD-HH-MM-SS.webm` (or `.mp4` on Safari).
 - [ ] Into the void, never to be seen again.
 - [ ] To your most embarrassing group chat, automatically.
 {: .quiz }
+
+
+**Longer than a Short.** The take is never cut at three minutes: it keeps
+going, up to fifteen, and the review says it is longer than a Short and
+uploads it unlisted as a regular video, titled "— Walk". The embed on the
+page is the same.

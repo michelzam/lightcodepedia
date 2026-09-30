@@ -123,7 +123,7 @@ def step_review_dialog(context):
     vid = context.page.locator(".lc-short-ov video")
     expect(vid).to_have_attribute("src", re.compile(r"^blob:"), timeout=30_000)
     meta = context.page.locator(".lc-short-ov .lc-rec-review-meta")
-    expect(meta).to_contain_text("🎬 Short")
+    expect(meta).to_contain_text(re.compile(r"🎬 (Short|Video)"))   # a long walk reviews as a video
 
 
 @when("I upload the Short, embedded on this page")
@@ -233,3 +233,24 @@ def step_primed_before_capture(context):
             break
         context.page.wait_for_timeout(200)
     assert v is True, "the voice element was not primed before the capture prompt: %r" % v
+
+
+@given("the Short limit is {n:d} seconds for this test")
+def step_short_limit(context, n):
+    context.page.add_init_script("window.lcShortMs = %d;" % (n * 1000))
+
+
+@then("the review says the clip is longer than a Short")
+def step_review_long(context):
+    warn = context.page.locator(".lc-short-ov .lc-rec-review-warn")
+    expect(warn).to_contain_text("Longer than a Short", timeout=10_000)
+    expect(context.page.locator(".lc-short-ov .lc-rec-review-meta")).to_contain_text("🎬 Video")
+
+
+@then("the upload was titled as a walk, not a Short")
+def step_upload_title_walk(context):
+    assert context.yt_posts, "no upload was started"
+    meta = _json.loads(context.yt_posts[-1])
+    title = meta.get("snippet", {}).get("title", "")
+    assert title.endswith("— Walk"), title
+    assert "Short" not in title, title
