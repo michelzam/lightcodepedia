@@ -48,7 +48,8 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     Then the page is in reel mode
     And the page wears the phone frame
     When I pick "Say hi" from the guide's menu
-    Then the Short review dialog shows the clip
+    Then the voice was blessed before the capture prompt
+    And the Short review dialog shows the clip
     And the take is held, an end card on offer for "/run.html#src=gh:acme/demo/courses/demo/mod/short.md"
     When I upload the Short, embedded on this page
     Then the Short went to YouTube unlisted

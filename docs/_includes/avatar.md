@@ -2280,6 +2280,13 @@ Auto-included by docs/_layouts/default.html.
        then Doc walks; a refused share means no walk either */
     function walk(fn) {
       if (window.lcShort && window.lcShort.armed()) {
+        /* THE TAP IS SPENT ON THE SHARE DIALOG. Doc starts only once the
+           capture resolves, outside any user gesture — so the first
+           audio.play() was refused, playAudio fell back to TTS, and the
+           whole walk spoke robot with the studio voices right there (Michel,
+           2026-09-30: "it's my voice, but when I check Short next walk…").
+           Bless the voice element now, while the click is still ours. */
+        primeVoice(live());
         window.lcShort.begin({ id: elId }).then(function (ok) { if (ok) fn(); });
       } else fn();
     }

@@ -28,6 +28,9 @@ def step_stub_capture(context):
     # repainting so the recorder receives frames.
     context.page.add_init_script(
         """window.lcShortCapture = function () {
+             /* was the voice blessed BEFORE the share dialog took the tap? */
+             var g = window._lcAvatars && window._lcAvatars.guide;
+             window._lcPrimedAtCapture = !!(g && g._voicePrimed);
              var c = document.createElement('canvas'); c.width = 320; c.height = 180;
              var ctx = c.getContext('2d'), i = 0;
              setInterval(function () { i++; ctx.fillStyle = i % 2 ? '#3366cc' : '#cc6633';
@@ -217,3 +220,16 @@ def step_released(context):
             return
         context.page.wait_for_timeout(250)
     raise AssertionError("the recorder is still holding the take")
+
+
+@then("the voice was blessed before the capture prompt")
+def step_primed_before_capture(context):
+    # the click that starts an armed walk is spent on the share dialog; the
+    # studio voice plays afterwards only if the audio element was primed
+    # inside that click — before the capture, not after
+    for _ in range(20):
+        v = context.page.evaluate("window._lcPrimedAtCapture")
+        if v is not None:
+            break
+        context.page.wait_for_timeout(200)
+    assert v is True, "the voice element was not primed before the capture prompt: %r" % v
