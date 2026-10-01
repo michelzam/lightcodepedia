@@ -133,3 +133,10 @@ def step_prereq_link_healed(context, title, path):
     href = link.get_attribute("href") or ""
     assert "#src=gh:" in href, "a raw markdown href cannot be opened by the site: %r" % href
     assert href.endswith("/" + path), href
+
+
+@then('the editor preview shows a prerequisite gate for "{title}"')
+def step_preview_gate(context, title):
+    gate = context.page.locator("#ed-preview .lc-prereq")
+    expect(gate).to_be_visible(timeout=15_000)
+    expect(gate).to_contain_text(title)

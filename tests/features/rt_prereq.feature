@@ -457,3 +457,29 @@ Feature: RT prerequisite gate — the key names the content, not the runner
     Then the escape hatch reads "Show it anyway (author) →"
     When I show the page anyway
     Then the gated content "Secret wisdom here." is visible
+
+  Scenario: A gated lesson opened in the editor keeps the editor's tabs
+    Michel, 2026-10-01: on every lesson, the right pane showed for a fraction
+    of a second, then the preview took the whole drawer. The gate, rendered
+    in the preview, hid everything after it — up past the preview, to the
+    editor's own splitter and tabs. The walk stops at the render root.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And the committable GitHub page "courses/demo/mod/gated.md" serves:
+      """
+      # Gated module
+
+      - [Basics](basics.md)
+      {: .prerequisite }
+
+      ## Deep content
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/gated.md"
+    And I wait for the page to be interactive
+    And I open the page editor
+    Then the editor preview shows a prerequisite gate for "Basics"
+    And the editor's tabs are on screen beside the preview

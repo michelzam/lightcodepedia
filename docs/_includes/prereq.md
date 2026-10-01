@@ -284,7 +284,7 @@ null]</script>
        one-shot walk nor a sibling CSS rule survives. Hide by DOCUMENT ORDER
        at every level up to the render root, and re-apply whenever the tree
        changes. */
-    var root = (card.closest && (card.closest(".lc-run") || card.closest("main"))) || document.body;
+    var root = gateRoot(card);
     var locked = true;
     function lockAfter() {
       if (!locked) return;
@@ -315,8 +315,16 @@ null]</script>
 
   /* the same hide-by-document-order the gate uses, borrowed for the moment a
      strict gate is still asking */
+  /* The walk hides by document order up to the RENDER ROOT — and the editor
+     preview is one: without it the gate climbed past #ed-preview and hid the
+     editor's own splitter and tabs (Michel, 2026-10-01: "the right pane is
+     displayed for a fraction of a second, then the preview takes the whole
+     surface" — on every lesson, since every lesson opens with a gate). */
+  function gateRoot(el) {
+    return (el.closest && el.closest("#ed-preview, .lc-run, main")) || document.body;
+  }
   function lockFrom(anchor) {
-    var root = (anchor.closest && (anchor.closest(".lc-run") || anchor.closest("main"))) || document.body;
+    var root = gateRoot(anchor);
     var node = anchor;
     while (node && node !== root && node.parentNode) {
       var n = node.nextElementSibling;
@@ -325,7 +333,7 @@ null]</script>
     }
   }
   function unlockFrom(anchor) {
-    var root = (anchor.closest && (anchor.closest(".lc-run") || anchor.closest("main"))) || document.body;
+    var root = gateRoot(anchor);
     root.querySelectorAll(".lc-prereq-hidden").forEach(function (h) {
       h.classList.remove("lc-prereq-hidden");
     });
