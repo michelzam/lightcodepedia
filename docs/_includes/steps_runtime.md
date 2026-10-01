@@ -415,6 +415,10 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
         for a in attrs:
             if a.get("data"):
                 cname = a["n"]
+                # a class may write its own property for a knob (an agent's
+                # system is live configuration, not only a data-* echo)
+                if cname in (getattr(cls, "_lc_keep", ()) or ()):
+                    continue
                 aname = a.get("attr", "data-" + cname)
                 setattr(cls, cname,
                         _prop(aname, a.get("t", "str"), a.get("d"), a.get("set", False)))
@@ -1465,9 +1469,42 @@ class Code(Block):
                    "attr": "data-max-tokens"},
                   {"n": "intro", "t": "str", "data": True, "d": ""},
                   {"n": "placeholder", "t": "str", "data": True, "d": "Ask anything..."},
-                  {"n": "replies", "t": "list"}],
-           methods=["ask"])
+                  {"n": "replies", "t": "list"},
+                  {"n": "last", "t": "str"}],
+           methods=["ask", "clear"])
 class Agent(Block):
+    """A page agent (.agent) — a part a proof, a guide or another agent can
+    act on: read or rewrite its brain (system), ask it, read what it said."""
+    _lc_keep = ("system",)
+    @property
+    def system(self):
+        cfg = getattr(self._el, "_lcCfg", None) if self._el is not None else None
+        v = getattr(cfg, "system", None) if cfg is not None else None
+        return str(v) if v is not None else str(self._attr("data-system") or "")
+
+    @system.setter
+    def system(self, v):
+        """Rewrite the instructions the NEXT ask runs under — the assignment
+        move: disturb the agent, change its brain, prove the change."""
+        if self._el is None:
+            return
+        cfg = getattr(self._el, "_lcCfg", None)
+        if cfg is not None:
+            cfg.system = str(v)
+        self._el.setAttribute("data-system", str(v))
+
+    @property
+    def last(self):
+        r = self.replies
+        return r[-1] if r else ""
+
+    def clear(self):
+        """Forget this sitting's exchanges, so the next verdict is read alone."""
+        for sel in (".lc-agent-log-entry", ".lc-agent-msg-bot", ".lc-agent-msg-user"):
+            for o in self._qq(sel):
+                o._el.remove()
+        return self
+
     @property
     def replies(self):
         """Every answer the agent has given this sitting — the panel shows
@@ -1477,11 +1514,16 @@ class Agent(Block):
         return out if out else [m.text for m in self._qq(".lc-agent-msg-bot")]
 
     def ask(self, prompt):
+        """Send a message, as a person would. The prompt box is named: the
+        first input in the panel is the key field, not the question (found
+        2026-10-01, a proof that asked and nothing left the page)."""
         if self._el is not None:
-            box = self._el.querySelector("textarea, input")
+            box = self._el.querySelector(".lc-agent-prompt")
+            if box is None:
+                box = self._el.querySelector("textarea")
             if box is not None:
                 box.value = str(prompt)
-            self._tap(".lc-agent-send, button")
+            self._tap(".lc-agent-send")
         return self
 
 

@@ -1283,6 +1283,12 @@ Auto-included by docs/_layouts/default.html.
        the page model (auto ids aren't python names). */
     if (givenId) panel.setAttribute('data-lc-id', givenId);
     panel.setAttribute('data-system', cfg.system || '');
+    /* THE AGENT IS A PART OTHERS ACT ON (Michel, 2026-10-01: "a verb to run
+       and properties to be customized upfront, and other agents, avatars or
+       humans can act on them"). The live configuration hangs on the panel:
+       a proof sets `desk.system` and asks; the next request runs under the
+       new brain, because ask() reads this same object. */
+    panel._lcCfg = cfg;
     var _eng = resolveEngine(cfg);
     panel.setAttribute('data-model', _eng.model || '');
     panel.setAttribute('data-provider', _eng.id || '');

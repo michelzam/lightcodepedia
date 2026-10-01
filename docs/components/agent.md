@@ -240,6 +240,45 @@ rubric can, say, compare the `VERDICT:` lines two versions of a document
 earned, deterministically, out of stochastic text: force the format in the
 briefing, then parse it in the proof.
 
+## 🧪 A part others act on
+
+An agent is a part like any other: a proof, a guide or another agent can
+read it, set it and run it. In a `.feature`, `self.page.<id>` is an `Agent`:
+
+| member | what it does |
+|---|---|
+| `system` | its brain — read it, or **set it**: the next `ask` runs under the new instructions |
+| `ask(text)` | send a message, as a person would |
+| `replies` · `last` | every answer this sitting, or the latest one |
+| `clear()` | forget the sitting, so the next verdict is read alone |
+
+That is the shape of an assignment: disturb the agent with an edge case,
+rewrite its brain, ask again, and let the scenario say whether the change
+helped — red before, green after.
+
+```gherkin
+Feature: The intake agent trusts the cards over the message
+  Scenario: A message that claims a visit the card does not know
+    Given the intake agent, told to trust the cards
+    :::python
+    self.intake: Agent = self.page.intake
+    self.intake.system = self.intake.system + " When the message and the cards disagree, the cards win."
+    :::
+    When a family writes that they met the dog, and no visit is booked
+    :::python
+    self.intake.ask("We met Biscuit on Thursday and want to pay.")
+    :::
+    Then the verdict is a visit, not a payment
+    :::python
+    assert "VERDICT: VISIT" in self.intake.last, self.intake.last
+    :::
+```
+
+The answer takes a moment to arrive, and a proof runs in one breath: a
+scenario that reads `last` right after `ask` reads the previous reply. The
+rhythm is the one the course teaches: ask first, run second. Set the brain
+and ask in one run; press ▶ again once the reply is in, and assert on it.
+
 ## 🧑‍⚕️ Bots — one persona, many pages
 
 A **bot** is a markdown file in `docs/bots/` — the file's text *is* the

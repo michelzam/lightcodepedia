@@ -489,3 +489,13 @@ def step_one_retry(context, host, secs):
     n = [h for h in context.asked_hosts if h == host]
     assert len(n) == 2, "the first engine was asked %d times: %r" % (len(n), context.asked_hosts)
     assert context.offer_after <= secs, "the offer took %.1fs" % context.offer_after
+
+
+@then('the model request carried the instruction "{text}"')
+def step_request_carried_system(context, text):
+    # ask() leaves the page asynchronously; give the request a moment to go out
+    for _ in range(40):
+        if any(text in a for a in context.model_asks):
+            return
+        context.page.wait_for_timeout(250)
+    assert False, "no model request carried %r: %r" % (text, [a[:300] for a in context.model_asks])

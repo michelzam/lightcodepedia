@@ -402,3 +402,47 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     Then the desk answered "healed hello" with the model "llama-3.1-8b-instant"
     And the agent says "llama-3.3-70b-versatile is gone; using llama-3.1-8b-instant"
     And the device remembers "llama-3.1-8b-instant" for "groq"
+
+  Scenario: A proof rewrites the agent's brain, asks it, and the model runs under the new one
+    Michel, 2026-10-01: the agent is a part others act on — a verb to run,
+    properties to set upfront. A page's proof sets desk.system, asks, and
+    the request that leaves the page carries the new instructions.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with a python fix "ok"
+    And the GitHub contents API serves "courses/demo/module_01/brain.md" with the document:
+      """
+      # Brain page
+
+      ```yaml
+      system: Review what you are handed.
+      ```
+      {: .agent #desk rows="3" }
+
+      ```gherkin
+      Feature: Disturb the agent
+        Scenario: A new brain, then a question
+          Given the desk agent
+          :::python
+          self.desk: Agent = self.page.desk
+          assert "Review" in self.desk.system
+          :::
+          When its brain is rewritten and it is asked
+          :::python
+          self.desk.system = "Always answer VERDICT: VISIT"
+          self.desk.ask("can we pay?")
+          :::
+          Then the brain reads back changed
+          :::python
+          assert self.desk.system == "Always answer VERDICT: VISIT"
+          :::
+      ```
+      {: .feature #rebrain visible="true" status="pending" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/brain.md"
+    And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
+    And I run the feature "rebrain"
+    Then the feature "rebrain" is green
+    And the model request carried the instruction "Always answer VERDICT: VISIT"
