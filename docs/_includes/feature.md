@@ -73,6 +73,9 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-progress i { display: block; height: 100%; background: #22c55e; transition: width 0.25s ease; }
 .lc-feature-failing  { border-left-color: #ef4444; }
 .lc-feature-pending  { border-left-color: #f59e0b; }
+/* wanted: a request from the problem space — steps written, none implemented
+   yet. Dashed, no ▶: the solution brings the bodies (Michel, 2026-10-01). */
+.lc-feature-wanted   { border-left-color: #64748b; border-left-style: dashed; }
 /* hidden by default — a .feature is a spec/test, shown only with visible="true" */
 .lc-feature-hidden { display: none; }
 
@@ -85,6 +88,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-badge-passing { background: #dcfce7; color: #15803d; }
 .lc-feature-badge-failing  { background: #fee2e2; color: #b91c1c; }
 .lc-feature-badge-pending  { background: #fef3c7; color: #92400e; }
+.lc-feature-badge-wanted   { background: #e2e8f0; color: #334155; }
 
 .lc-feature-tags { display: flex; gap: 0.35em; flex-wrap: wrap; }
 .lc-feature-tag { background: #e0f2fe; color: #075985; padding: 0.1em 0.55em; border-radius: 99px; font-size: 0.78em; font-weight: 500; }
@@ -413,7 +417,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
   }
   function setCardStatus(card, status) {
     var was = card.getAttribute("data-status") || "";
-    card.classList.remove("lc-feature-passing", "lc-feature-failing", "lc-feature-pending");
+    card.classList.remove("lc-feature-passing", "lc-feature-failing", "lc-feature-pending", "lc-feature-wanted");
     if (status) card.classList.add("lc-feature-" + status);
     /* the card IS page state: expose it, and let the cells recompute — a
        block gated with visible="= audit.passing" opens the moment the run
@@ -870,6 +874,16 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     if (flowRef) card.setAttribute("data-flow", flowRef);
     card._lcFeatureName = featureName;
     card._lcFeatureTags = tagsRaw ? tagsRaw.split(",").map(function(t){ return t.trim(); }) : [];
+    /* THE FEATURE IS A DOCUMENT TOO. Its title and its Gherkin — the request,
+       without the :::python bodies — are published on the card, so a cell
+       ({= gate.text }), an agent bound to it, and a map leaf read the
+       feature as written, the way they read a persona or a pitch. */
+    card.setAttribute("data-title", featureName);
+    card.setAttribute("data-gherkin", text.replace(/^[ \t]*:::python[\s\S]*?^[ \t]*:::[ \t]*$/gm, "").replace(/\n{3,}/g, "\n\n").trim());
+    /* wanted = the problem space's word: steps written, none implemented.
+       It is page state from the first paint (a map leaf reads it), unlike
+       passing/failing, which only a run may claim. */
+    if (status === "wanted") card.setAttribute("data-status", "wanted");
 
     card.innerHTML =
       "<div class='lc-feature-header'>"
@@ -938,6 +952,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
         (function(btn) {
           btn.addEventListener("click", function() { runFeatureNew(card, btn); });
         })(runBtn2);
+      } else if (status === "wanted") {
+        /* a request, not a test yet: nothing to run, and nothing to pretend */
       } else {
         /* steps exist but none implemented — pending runner */
         var pendingBtn = document.createElement("button");

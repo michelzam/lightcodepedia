@@ -1030,12 +1030,26 @@ class Feature(Block):
 
     @property
     def title(self):
-        return self._q(".lc-feature-title").text
+        return str(self._attr("data-title") or "")
 
     @property
     def status(self):
         v = self._attr("data-status")
         return str(v) if v else "none"
+
+    @property
+    def wanted(self):
+        """A request from the problem space: steps written, none implemented."""
+        return self.status == "wanted"
+
+    @property
+    def tags(self):
+        return [str(o._el.getAttribute("data-tag") or "") for o in self._qq(".lc-feature-tag")]
+
+    @property
+    def text(self):
+        """The feature as written — Gherkin only, no step bodies."""
+        return str(self._attr("data-gherkin") or "")
 
     def run(self):
         """Trigger the card's ▶ Run button."""
@@ -1872,6 +1886,18 @@ class ImpactMap(Block):
     @property
     def pitch(self):
         return _lc_ref(self, "data-pitch")
+
+    @property
+    def features(self):
+        """The features its leaves name, in map order — the link from the
+        problem space to the solution. A leaf whose card is missing wraps
+        None, so .exists says so."""
+        out = []
+        for o in self._qq(".lc-imap-what a[data-feature]"):
+            fid = str(o._el.getAttribute("data-feature") or "")
+            el = js.window.document.querySelector(".lc-feature[data-lc-id='" + fid + "']")
+            out.append(Feature(el))
+        return out
 
 
 @component(icon="🎏", attrs=[{"n": "count", "t": "int"}],

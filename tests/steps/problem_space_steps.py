@@ -218,3 +218,24 @@ def step_agent_named_bound(context, aid, name, expr):
     panel = context.page.locator(f".lc-agent[data-lc-id='{aid}'], .lc-agent#{aid}, [data-lc-id='{aid}'] .lc-agent").first
     expect(panel.locator(".lc-agent-title")).to_have_text(name, timeout=PS_TIMEOUT)
     expect(panel.locator(".lc-agent-bound")).to_contain_text(expr)
+
+
+@then('the impact map "{cid}" leaf "{ref}" reads "{text}"')
+def step_leaf_reads(context, cid, ref, text):
+    leaf = _card(context, "imap", cid).locator(f'.lc-imap-what a[data-feature="{ref}"]')
+    expect(leaf).to_have_text(text, timeout=PS_TIMEOUT)
+
+
+@then('the feature "{fid}" is wanted, with no run button')
+def step_feature_wanted(context, fid):
+    card = context.page.locator(f'.lc-feature[data-lc-id="{fid}"]')
+    expect(card).to_have_attribute("data-status", "wanted", timeout=PS_TIMEOUT)
+    expect(card.locator(".lc-feature-badge")).to_have_text("wanted")
+    assert card.locator(".lc-feature-run").count() == 0, "a wanted feature offers nothing to run"
+
+
+@then('the impact map "{cid}" does not collect "{ref}"')
+def step_imap_not_collects(context, cid, ref):
+    context.page.wait_for_timeout(1500)
+    found = _card(context, "imap", cid).locator(f'.lc-imap-found a[href="#{ref}"]')
+    assert found.count() == 0, "the map listed a lesson check as an app feature"

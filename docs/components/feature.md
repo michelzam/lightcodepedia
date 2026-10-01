@@ -325,11 +325,36 @@ Feature: The notes are ready
 ```
 {: .feature #notes_ready visible="true" status="pending" }
 
+## 📝 A wanted feature
+
+The problem space writes the request; the solution implements it. A card
+with `status="wanted"` holds Given/When/Then in the user's words and no
+step bodies yet: dashed border, a badge, no ▶. Tag it `app` and an impact
+map's leaf can name it, read its title and show where it stands.
+
+```gherkin
+Feature: No payment before a visit
+  As the shelter's coordinator
+  I want no family to pay before they have met the dog
+  So that no adoption fails after payment
+
+  Scenario: Paying before any visit
+    Given a family that has chosen Biscuit
+    And nobody has booked a visit yet
+    When the family offers to pay
+    Then the shelter does not take the payment
+```
+{: .feature #wanted_demo visible="true" status="wanted" tags="app" }
+
+A cell reads it like any document — `{= wanted_demo.title }` says
+**{= wanted_demo.title }** — and so can an agent bound to it.
+
 ## 🎛️ Knobs
 
 | Block | Attribute | Values | What it does |
 |---|---|---|---|
-| `.feature` | `status="…"` | `passing` · `failing` · `pending` | Border colour and badge; updated live after a run |
+| `.feature` | `status="…"` | `passing` · `failing` · `pending` · `wanted` | Border colour and badge; updated live after a run. `wanted` is the problem space's word: steps written, none implemented — dashed border, no ▶; the solution brings the bodies later |
+| `.feature` | `tags="app"` | | The app's own feature, as opposed to a lesson's check: an impact map lists these, never the checks |
 | `.feature` | `tags="…"` | comma-separated | Chips in the card header |
 | `.feature` | `#<id>` | Python-compatible id | Makes the card reachable as `self.page.<id>` in any step |
 | `.feature` | `saves="a, b"` | block ids | Data a step reads *indirectly* that a green still stands on — the direct case needs nothing |

@@ -57,7 +57,9 @@ def step_run_features(context):
 
 @then("every embedded feature passes")
 def step_features_pass(context):
-    cards = context.page.locator(".lc-feature")
+    # a WANTED card is a request from the problem space, not a test: it has
+    # no bodies and nothing to pass (Michel, 2026-10-01)
+    cards = context.page.locator(".lc-feature:not([data-status='wanted'])")
     n = cards.count()
     assert n > 0, "no embedded features on page"
     for i in range(n):

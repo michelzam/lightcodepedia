@@ -206,18 +206,31 @@ Feature: Problem space — persona, pitch, impact map
       Filler six. Filler seven. Filler eight. Filler nine. Filler ten.
 
       ```gherkin
-      Feature: The count table serves the goal
-        Scenario: It is here
-          Given the map
+      Feature: The coordinator sees where families stop
+        Scenario: The week's count
+          Given fourteen families asked about a dog this week
+          When the coordinator reads the week
+          Then she sees how many went home, and where the others stopped
+      ```
+      {: .feature #count_proof visible="true" status="wanted" tags="app" }
+
+      ```gherkin
+      Feature: The chain holds
+        Scenario: The leaf is a wanted app feature
+          Given the map's leaves
           :::python
-          self.map: ImpactMap = self.page.map
+          self.features: list = self.page.map.features
           :::
-          Then it exists
+          Then the one leaf names a wanted feature of the app, by its title
           :::python
-          assert self.map.exists
+          assert len(self.features) == 1
+          assert self.features[0].exists and self.features[0].wanted
+          assert "app" in self.features[0].tags
+          assert self.features[0].title == "The coordinator sees where families stop"
+          assert "Given fourteen families" in self.features[0].text
           :::
       ```
-      {: .feature #count_proof visible="true" status="pending" }
+      {: .feature #chain_proof visible="true" status="pending" }
 
       ```yaml
       name: The judge
@@ -230,6 +243,30 @@ Feature: Problem space — persona, pitch, impact map
     And I wait for the page to be interactive
     Then the page reads "The goal reads: No adoption fails after payment"
     And the agent "judge" is named "The judge" and reads "map.goal"
+    And the impact map "map" leaf "count_proof" reads "📝 The coordinator sees where families stop"
+    When I run the feature "chain_proof"
+    Then the feature "chain_proof" is green
     When I follow the impact map "map" leaf to "count_proof"
     Then the page's address still names "courses/demo/mod/map.md"
     And the proof "count_proof" is in view
+
+  Scenario: A wanted feature shows its request and nothing to run
+    Michel, 2026-10-01: the problem space writes the request in plain
+    Given/When/Then; the solution implements the steps later. Until then
+    the card is wanted — dashed, badged, no ▶ — and readable as a document.
+
+    When I navigate to "/components/feature"
+    And I wait for the page to be interactive
+    Then the feature "wanted_demo" is wanted, with no run button
+    And the page reads "says No payment before a visit"
+
+  Scenario: A map leaf wears its feature's title and state
+    When I navigate to "/components/impact_map"
+    And I wait for the page to be interactive
+    Then the impact map "shelter_map" leaf "visit_first" reads "📝 Families meet the dog before they pay"
+
+  Scenario: The map collects the app's features, never the lesson's checks
+    When I navigate to "/components/impact_map"
+    And I wait for the page to be interactive
+    Then the impact map "pulled_map" collects the proof "weekly_proof"
+    And the impact map "pulled_map" does not collect "impact_map_proof"

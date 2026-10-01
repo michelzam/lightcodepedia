@@ -512,9 +512,22 @@ Auto-included by docs/_layouts/default.html.
         var html = "<ul><li class='lc-imap-goal'>🎯 " + (goal ? escapeHtml(goal) : "<span class='lc-pitch-blank'>＿＿＿</span>");
         html += "<ul><li class='lc-imap-who'>👥 " + (who ? escapeHtml(who) : "<span class='lc-pitch-blank'>＿＿＿</span>") + "<ul>";
         html += rows.map(function (r) {
-          var what = r.feature
-            ? "<a href='#" + escapeHtml(r.feature) + "'>" + escapeHtml(r.what || r.feature) + "</a>"
-            : escapeHtml(r.what || "");
+          /* THE LEAF READS ITS FEATURE. feature: names a card; the name on
+             the leaf is the card's title (calculated, like the pitch's who)
+             and the glyph its state — 📝 wanted, 🔧 implemented, 🟢 proven,
+             🔴 failing. The feature is the link from the problem space to
+             the solution, so the map says where each one stands. */
+          var what;
+          if (r.feature) {
+            var fc = document.querySelector(".lc-feature[data-lc-id='" + r.feature + "']");
+            var st = fc ? (fc.getAttribute("data-status") || "") : "";
+            var glyph = !fc ? "⚪" : st === "wanted" ? "📝" : st === "passing" ? "🟢" : st === "failing" ? "🔴" : "🔧";
+            var name = (fc && fc._lcFeatureName) || r.what || r.feature;
+            what = "<a href='#" + escapeHtml(r.feature) + "' data-feature='" + escapeHtml(r.feature) +
+              "' data-state='" + escapeHtml(st || (fc ? "implemented" : "missing")) + "'>" + glyph + " " + escapeHtml(name) + "</a>";
+          } else {
+            what = escapeHtml(r.what || "");
+          }
           return "<li class='lc-imap-how'>🔀 " + escapeHtml(r.how || "") +
             "<ul><li class='lc-imap-what'>🧩 " + what + "</li></ul></li>";
         }).join("");
@@ -533,25 +546,49 @@ Auto-included by docs/_layouts/default.html.
       if (pitchRef && window.lcDatasetListeners)
         (window.lcDatasetListeners[pitchRef] = window.lcDatasetListeners[pitchRef] || []).push(render);
 
-      /* collect the page's proofs as leaves — a map that names features
-         which actually run. Proofs upgrade after us, so look twice. */
+      /* the leaves follow their cards: a feature that upgrades later (a
+         bench slot's), or turns green under ▶, repaints the leaf — only
+         when something it shows has changed, so no publish storm */
       var referenced = (Array.isArray(m.impacts) ? m.impacts : [])
         .map(function (r) { return r.feature; }).filter(Boolean);
+      function leafSig() {
+        return referenced.map(function (id) {
+          var fc = document.querySelector(".lc-feature[data-lc-id='" + id + "']");
+          return id + ":" + (fc ? (fc.getAttribute("data-status") || "") + "/" + (fc._lcFeatureName || "") : "-");
+        }).join("|");
+      }
+      var lastSig = leafSig();
+      function follow() {
+        if (!box.isConnected) return;
+        var sig = leafSig();
+        if (sig === lastSig) return;
+        lastSig = sig;
+        render();
+        collect();
+      }
+      document.addEventListener("lc-model-changed", follow);
+
+      /* collect the page's APP features as leaves-to-be: the map lists the
+         app's features (tag app), never the lesson's own checks — the course
+         checks the learner, the app's features check the app (Michel,
+         2026-10-01). A feature on the page that no row names is exactly
+         what an author should notice. */
       function collect() {
         var found = [];
         document.querySelectorAll(".lc-feature").forEach(function (card) {
           var id = card.getAttribute("data-lc-id") || card.id;
           if (referenced.indexOf(id) >= 0) return;
+          if ((card._lcFeatureTags || []).indexOf("app") < 0) return;
           var name = (card.querySelector(".lc-feature-name") || {}).textContent || id || "proof";
           found.push(statusDot(card) + " <a href='#" + escapeHtml(id || "") + "'>" + escapeHtml(name.trim()) + "</a>");
         });
         var slot = box.querySelector(".lc-imap-found");
         if (!slot) return;
         slot.hidden = !found.length;
-        if (found.length) slot.innerHTML = "🧩 proofs on this page, not yet on the map: " + found.join(" · ");
+        if (found.length) slot.innerHTML = "🧩 app features on this page, not yet on the map: " + found.join(" · ");
       }
-      setTimeout(collect, 1000);
-      setTimeout(collect, 4000);
+      setTimeout(function () { follow(); collect(); }, 1000);
+      setTimeout(function () { follow(); collect(); }, 4000);
     }).catch(function (e) { fail(el, "lc-imap", e); });
   }
 

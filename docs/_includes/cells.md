@@ -128,7 +128,8 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
       var id = f.getAttribute("data-lc-id");
       if (!id || scopes[id]) return;
       var st = f.getAttribute("data-status") || "";
-      scopes[id] = { status: st, passing: st === "passing" };
+      scopes[id] = { status: st, passing: st === "passing", wanted: st === "wanted",
+                     title: f.getAttribute("data-title") || "", text: f.getAttribute("data-gherkin") || "" };
     });
     /* TABLES ARE STATE TOO. A cell could read a form, a mdpad and a feature,
        but not a table — so counting rows needed a whole separate component
