@@ -146,3 +146,90 @@ Feature: Problem space — persona, pitch, impact map
     When I navigate to "/components/impact_map"
     And I wait for the page to be interactive
     Then the impact map "pulled_map" collects the proof "weekly_proof"
+
+  Scenario: The drift warning names words the need could echo
+    Michel, 2026-10-01: "why do I have this warning?" — a finding has to
+    say where to look. The warning names words from the card's goal and
+    frustrations.
+
+    When I navigate to "/components/pitch"
+    And I wait for the page to be interactive
+    Then the pitch "drifting" shows a drift warning
+    And the drift warning on "drifting" names words from the card
+
+  Scenario: The editor offers a way back to the lesson's starter, and the versions
+    Michel, 2026-10-01: "we lost the versioning and being able to reset the
+    data". Under the editor: ↺ puts the starter back, 🕘 lists every saved
+    version (hidden until a first save exists).
+
+    When I navigate to "/components/persona"
+    And I wait for the page to be interactive
+    And the form "sam_src" field "name" is set to "Zed"
+    Then the persona card "sam" shows the name "Zed"
+    When I start over from the lesson's starter for "sam"
+    Then the persona card "sam" shows the name "Sam"
+    And the editor of "sam" carries a versions handle
+
+  Scenario: In the runner, a leaf link scrolls to its proof and keeps the page's address
+    Michel, 2026-10-01: "the impact map has a link 'The count table' but it
+    leads nowhere" — on /run.html the hash is the address, and a plain
+    anchor replaced it. The map is also a document: a cell reads its goal.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/map.md" with the document:
+      """
+      # Map page
+
+      ```yaml
+      goal: No adoption fails after payment
+      impacts:
+        - how: She sees where families stop
+          what: The count table
+          feature: count_proof
+      ```
+      {: .impact_map #map }
+
+      The goal reads: {= map.goal }
+
+      Filler one. Filler two. Filler three. Filler four. Filler five.
+      Filler six. Filler seven. Filler eight. Filler nine. Filler ten.
+      Filler one. Filler two. Filler three. Filler four. Filler five.
+      Filler six. Filler seven. Filler eight. Filler nine. Filler ten.
+      Filler one. Filler two. Filler three. Filler four. Filler five.
+      Filler six. Filler seven. Filler eight. Filler nine. Filler ten.
+      Filler one. Filler two. Filler three. Filler four. Filler five.
+      Filler six. Filler seven. Filler eight. Filler nine. Filler ten.
+      Filler one. Filler two. Filler three. Filler four. Filler five.
+      Filler six. Filler seven. Filler eight. Filler nine. Filler ten.
+      Filler one. Filler two. Filler three. Filler four. Filler five.
+      Filler six. Filler seven. Filler eight. Filler nine. Filler ten.
+
+      ```gherkin
+      Feature: The count table serves the goal
+        Scenario: It is here
+          Given the map
+          :::python
+          self.map: ImpactMap = self.page.map
+          :::
+          Then it exists
+          :::python
+          assert self.map.exists
+          :::
+      ```
+      {: .feature #count_proof visible="true" status="pending" }
+
+      ```yaml
+      name: The judge
+      placeholder: Does this map hold?
+      system: You judge impact maps.
+      ```
+      {: .agent #judge bound="{= dict(goal=map.goal, impacts=map.impacts) }" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/map.md"
+    And I wait for the page to be interactive
+    Then the page reads "The goal reads: No adoption fails after payment"
+    And the agent "judge" is named "The judge" and reads "map.goal"
+    When I follow the impact map "map" leaf to "count_proof"
+    Then the page's address still names "courses/demo/mod/map.md"
+    And the proof "count_proof" is in view

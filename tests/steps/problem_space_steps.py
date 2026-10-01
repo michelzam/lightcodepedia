@@ -155,3 +155,66 @@ def step_pitch_lines(context, cid, n):
 def step_pitch_line_reads(context, cid, field, text):
     line = _card(context, "pitch", cid).locator(f'.lc-pitch-line[data-field="{field}"]')
     expect(line).to_contain_text(text, timeout=15_000)
+
+
+@then('the drift warning on "{cid}" names words from the card')
+def step_warn_names_words(context, cid):
+    warn = _card(context, "pitch", cid).locator(".lc-pitch-warn")
+    expect(warn).to_contain_text("words on the card:", timeout=PS_TIMEOUT)
+
+
+def _editor_bar(context, cid):
+    """the save bar of the form that edits document cid"""
+    card = _card(context, "persona", cid)
+    src = card.get_attribute("data-bind")
+    return context.page.locator(f".lc-form[data-lc-id='{src}'] .lc-ps-savebar")
+
+
+@when('I start over from the lesson\'s starter for "{cid}"')
+def step_start_over(context, cid):
+    context.page.once("dialog", lambda d: d.accept())
+    btn = _editor_bar(context, cid).locator(".lc-ps-reset")
+    expect(btn).to_be_visible(timeout=PS_TIMEOUT)
+    btn.click()
+    context.page.wait_for_timeout(500)
+
+
+@then('the editor of "{cid}" carries a versions handle')
+def step_versions_handle(context, cid):
+    expect(_editor_bar(context, cid).locator(".lc-ver-btn")).to_be_attached(timeout=PS_TIMEOUT)
+
+
+@then('the page reads "{text}"')
+def step_page_reads(context, text):
+    expect(context.page.locator("body")).to_contain_text(text, timeout=30_000)
+
+
+@when('I follow the impact map "{cid}" leaf to "{ref}"')
+def step_follow_leaf(context, cid, ref):
+    leaf = _card(context, "imap", cid).locator(f'.lc-imap-what a[href="#{ref}"]')
+    expect(leaf).to_be_visible(timeout=PS_TIMEOUT)
+    leaf.click()
+    context.page.wait_for_timeout(900)
+
+
+@then('the page\'s address still names "{path}"')
+def step_address_names(context, path):
+    assert path in context.page.evaluate("() => location.hash"), context.page.url
+
+
+@then('the proof "{fid}" is in view')
+def step_proof_in_view(context, fid):
+    ok = context.page.evaluate("""(fid) => {
+      const el = document.querySelector('[data-lc-id="' + fid + '"]') || document.getElementById(fid);
+      if (!el) return "missing";
+      const r = el.getBoundingClientRect();
+      return (r.top < innerHeight && r.bottom > 0) ? "ok" : "off " + Math.round(r.top);
+    }""", fid)
+    assert ok == "ok", ok
+
+
+@then('the agent "{aid}" is named "{name}" and reads "{expr}"')
+def step_agent_named_bound(context, aid, name, expr):
+    panel = context.page.locator(f".lc-agent[data-lc-id='{aid}'], .lc-agent#{aid}, [data-lc-id='{aid}'] .lc-agent").first
+    expect(panel.locator(".lc-agent-title")).to_have_text(name, timeout=PS_TIMEOUT)
+    expect(panel.locator(".lc-agent-bound")).to_contain_text(expr)

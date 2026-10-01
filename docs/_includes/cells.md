@@ -110,7 +110,7 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
        typed field — which is how a later page shows a learner their own words
        back (Michel, 2026-08-10). */
     document.querySelectorAll(".lc-form[data-lc-value], .lc-mdpad[data-lc-value], "
-                            + ".lc-persona[data-lc-value], .lc-pitch[data-lc-value]").forEach(function (f) {
+                            + ".lc-persona[data-lc-value], .lc-pitch[data-lc-value], .lc-imap[data-lc-value]").forEach(function (f) {
       var id = f.getAttribute("data-lc-id") || "";
       var o;
       try { o = JSON.parse(f.getAttribute("data-lc-value")); } catch (e) { return; }

@@ -83,6 +83,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-ps-empty { color: #6b7280; font-style: italic; }
 .lc-ps-save { font: inherit; padding: 0.3em 0.9em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; margin-left: auto; }
 .lc-ps-save:hover { background: #0052a3; }
+.lc-ps-reset, .lc-ps-savebar .lc-ver-btn { font: inherit; font-size: 0.9em; padding: 0.3em 0.7em; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #374151; cursor: pointer; }
+.lc-ps-reset:hover, .lc-ps-savebar .lc-ver-btn:hover { border-color: #94a3b8; }
 </style>
 
 <script>
@@ -113,6 +115,8 @@ Auto-included by docs/_layouts/default.html.
   function words(s) {
     return String(s || "").toLowerCase().split(/[^a-zà-ÿ0-9]+/).filter(function (w) { return w.length > 3; });
   }
+  /* a light stem, so "dogs" echoes "dog" and "adoptions" "adoption" */
+  function stem(w) { return w.replace(/(ing|ed|es|s)$/, ""); }
 
   /* ── the two wires every document shares ─────────────────────────────
      source="<form id>": the form is the editor, we are the live view.
@@ -214,7 +218,12 @@ Auto-included by docs/_layouts/default.html.
     mine.hidden = true;
     mine.textContent = writable ? "✓ yours — saved in your space" : "✓ yours";
     bar.appendChild(mine);
-    var keep = null;
+    var keep = null, vers = null;
+    /* the author's starter, as the fence said it before any copy came back */
+    var seed = JSON.parse(JSON.stringify(opts.getData() || {}));
+    function load(obj) {
+      if (!(opts.srcId && pushToForm(opts.srcId, obj, 5))) { opts.setData(obj); opts.render(); }
+    }
     if (writable) {
       keep = document.createElement("button");
       keep.type = "button";
@@ -222,6 +231,28 @@ Auto-included by docs/_layouts/default.html.
       keep.textContent = "💾 Save";
       keep.title = "Keep this document in your own space";
       bar.appendChild(keep);
+      /* THE WAY BACK (Michel, 2026-10-01: "we lost the versioning and being
+         able to reset the data"). A bench slot offers both under ⋯; a
+         document card has no ⋯, so the two sit in the save bar, with the 💾
+         they belong to: 🕘 every version saved, ↺ the lesson's starter. */
+      var over = document.createElement("button");
+      over.type = "button";
+      over.className = "lc-ps-reset";
+      over.textContent = "↺ Start over";
+      over.title = "Put the lesson's starter back in the editor — 💾 to keep it; 🕘 keeps every version you saved";
+      over.addEventListener("click", function () {
+        if (!confirm("Put the lesson's starter back in the editor? Your saved versions stay in 🕘.")) return;
+        var fresh = JSON.parse(JSON.stringify(seed));
+        Object.keys(opts.getData() || {}).forEach(function (k) { if (!(k in fresh)) fresh[k] = ""; });
+        load(fresh);
+      });
+      bar.appendChild(over);
+      vers = window.lcVersions ? window.lcVersions.attach({
+        path: opts.save, el: node, anchor: bar,
+        current: function () { return dumpYaml(opts.getData()); },
+        apply: function (text) { parseData(text, "yaml").then(function (obj) { if (obj) load(obj); }); }
+      }) : null;
+      if (vers) bar.appendChild(vers.button);
     } else {
       /* nothing saved yet: say where it gets built, instead of showing the
          author's empty seed as if it were the learner's document */
@@ -260,12 +291,10 @@ Auto-included by docs/_layouts/default.html.
         sha = f.sha;
         mine.hidden = false;
         if (psFrame) psFrame.setMine(true);
+        if (vers) vers.reveal();
         if (bar._lcEmpty) bar._lcEmpty.hidden = true;
         node.setAttribute("data-lc-mine", "1");
-        if (!(opts.srcId && pushToForm(opts.srcId, obj, 5))) {
-          opts.setData(obj);
-          opts.render();
-        }
+        load(obj);
       });
     }).catch(function () {});
 
@@ -277,6 +306,7 @@ Auto-included by docs/_layouts/default.html.
           sha = s || sha;
           mine.hidden = false;
           if (psFrame) psFrame.setMine(true);
+          if (vers) vers.reveal();
           node.setAttribute("data-lc-mine", "1");
         })
         .catch(function (e) { alert("Save failed: " + (e.message || e)); })
@@ -407,14 +437,26 @@ Auto-included by docs/_layouts/default.html.
         /* who is DERIVED from this persona, so it cannot drift. What the
            learner types is the need — and a need that echoes nothing on the
            card is the real finding. */
-        var mine = words(data.need);
-        var theirs = words(persona.goal)
-          .concat(words(persona.role), asList(persona.frustrations).join(" ").split(/\s+/));
-        theirs = theirs.filter(function (w) { return w.length > 3; });
-        if (!mine.length || !theirs.length) return;
-        var hit = mine.some(function (w) { return theirs.indexOf(w.toLowerCase()) >= 0; });
+        var mine = words(data.need).map(stem);
+        /* EVERY LINE OF THE CARD COUNTS — goal, role, frustrations, quote and
+           the four empathy cells — and the warning names what would echo.
+           "Echoes nothing" alone sent Michel hunting (2026-10-01): a finding
+           has to say where to look. */
+        var lines = [persona.goal, persona.role, persona.quote]
+          .concat(asList(persona.frustrations), asList(persona.says),
+                  asList(persona.thinks), asList(persona.does), asList(persona.feels));
+        var theirs = words(lines.join(" ")).map(stem).filter(function (w) { return w.length > 2; });
+        if (!mine.length || !theirs.length) { warn.hidden = true; return; }
+        var hit = mine.some(function (w) { return theirs.indexOf(w) >= 0; });
         warn.hidden = hit;
-        if (!hit) warn.textContent = "⚠️ the need echoes nothing on #" + ref + " — one of the two documents may be off.";
+        if (!hit) {
+          var offer = [];
+          words([persona.goal].concat(asList(persona.frustrations)).join(" ")).forEach(function (w) {
+            if (offer.indexOf(w) < 0 && offer.length < 5) offer.push(w);
+          });
+          warn.textContent = "⚠️ the need shares no word with #" + ref + ". Echo her goal or a frustration" +
+            (offer.length ? " — words on the card: " + offer.join(", ") : "") + ".";
+        }
       }
       function render() {
         body.innerHTML = pitchHtml(data, ref);
@@ -460,7 +502,7 @@ Auto-included by docs/_layouts/default.html.
       m = m || {};
       var box = document.createElement("div");
       box.className = "lc-imap";
-      carryId(el, box, "impact_map");
+      var mapId = carryId(el, box, "impact_map");
       if (pitchRef) box.setAttribute("data-pitch", pitchRef);
       function render() {
         var pitch = pitchRef ? (window.lcDatasets || {})[pitchRef] : null;
@@ -480,6 +522,11 @@ Auto-included by docs/_layouts/default.html.
         if (pitchRef) html += "<div class='lc-pitch-meta'><a class='lc-pitch-chip' href='#" + escapeHtml(pitchRef) + "'>✨ reads #" + escapeHtml(pitchRef) + "</a></div>";
         html += "<div class='lc-imap-found' hidden></div>";
         box.innerHTML = html;
+        /* the map is a document too: {= map.goal } in a cell, and an agent
+           bound to it, read the map as rendered — goal and who included */
+        var pub = { goal: goal, who: who, impacts: rows };
+        box.setAttribute("data-lc-value", JSON.stringify(pub));
+        if (window.lcSetDataset) window.lcSetDataset(mapId, pub);
       }
       render();
       el.parentNode.replaceChild(box, el);
@@ -507,6 +554,23 @@ Auto-included by docs/_layouts/default.html.
       setTimeout(collect, 4000);
     }).catch(function (e) { fail(el, "lc-imap", e); });
   }
+
+  /* IN-PAGE LINKS THAT SURVIVE THE RUNNER. A leaf's "#trace_proof" and the
+     "reads #persona" chips are plain anchors; on /run.html the hash IS the
+     page's address (#src=…), so a plain anchor click replaced it and the
+     runner rendered nothing — "the link leads nowhere" (Michel, 2026-10-01).
+     Scroll to the part instead, and leave the address alone. */
+  document.addEventListener("click", function (ev) {
+    if (ev.button || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+    var a = ev.target && ev.target.closest ? ev.target.closest(".lc-imap a[href^='#'], .lc-pitch a[href^='#']") : null;
+    if (!a) return;
+    var id = (a.getAttribute("href") || "").slice(1);
+    if (!id || /^src=/.test(id)) return;
+    var t = document.getElementById(id) || document.querySelector("[data-lc-id='" + id + "']");
+    if (!t) return;
+    ev.preventDefault();
+    t.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
 
   if (window.lcRegisterUpgrader) {
     window.lcRegisterUpgrader(".highlighter-rouge.persona, pre.persona", upgradePersona);
