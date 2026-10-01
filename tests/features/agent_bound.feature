@@ -446,3 +446,50 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I run the feature "rebrain"
     Then the feature "rebrain" is green
     And the model request carried the instruction "Always answer VERDICT: VISIT"
+
+  Scenario: A proof asks the agent and reads its answer in the same run
+    Michel, 2026-10-01, Disturb Your Agent: set a card in Given, ask in
+    When, read the verdict in Then. The bound document travels with the
+    question, read from the page as it stands when the step runs.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with a python fix "VERDICT: VISIT"
+    And the GitHub contents API serves "courses/demo/module_01/intake.md" with the document:
+      """
+      # Intake page
+
+      ```yaml
+      when: ""
+      ```
+      {: .form #meet editable="true" title="Meet" }
+
+      ```yaml
+      system: You are the intake assistant.
+      ```
+      {: .agent #intake rows="3" bound="{= dict(visit=meet.when) }" }
+
+      ```gherkin
+      Feature: Ask and read
+        Scenario: The cards travel with the question
+          Given the visit is booked
+          :::python
+          self.page.meet.set("when", "Thu")
+          :::
+          When a family asks to pay
+          :::python
+          self.page.intake.ask("We met Biscuit and want to pay")
+          :::
+          Then the verdict is read in the same breath
+          :::python
+          assert "VERDICT: VISIT" in self.page.intake.last, self.page.intake.last
+          :::
+      ```
+      {: .feature #askread visible="true" status="pending" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/intake.md"
+    And I wait for the page to be interactive
+    And I connect the "intake" agent with key "test-key"
+    And I run the feature "askread"
+    Then the feature "askread" is green
+    And the model request carried the instruction "'visit': 'Thu'"

@@ -248,7 +248,7 @@ read it, set it and run it. In a `.feature`, `self.page.<id>` is an `Agent`:
 | member | what it does |
 |---|---|
 | `system` | its brain — read it, or **set it**: the next `ask` runs under the new instructions |
-| `ask(text)` | send a message, as a person would |
+| `ask(text)` | send a message, as a person would, and wait for the answer; `ask(text, wait=False)` only presses Ask |
 | `replies` · `last` | every answer this sitting, or the latest one |
 | `clear()` | forget the sitting, so the next verdict is read alone |
 
@@ -274,10 +274,11 @@ Feature: The intake agent trusts the cards over the message
     :::
 ```
 
-The answer takes a moment to arrive, and a proof runs in one breath: a
-scenario that reads `last` right after `ask` reads the previous reply. The
-rhythm is the one the course teaches: ask first, run second. Set the brain
-and ask in one run; press ▶ again once the reply is in, and assert on it.
+`ask` waits: the panel hands the runtime the exact request it would send,
+the runtime carries it and files the reply in the panel's box and ledger,
+so the next line of the scenario reads `last`. A bound agent is asked with
+its document, read from the page as it stands when the step runs — set a
+card in Given, ask in When, read the verdict in Then.
 
 ## 🧑‍⚕️ Bots — one persona, many pages
 

@@ -849,5 +849,65 @@
    "3b28a67896c2d1b3": "lc-56f0c00c8afbd209.mp3",
    "2faacfa366360eb9": "lc-9b6fb02728fa4916.mp3"
   }
+ },
+ "courses-micro_build_ai-module_03-01_persona": {
+  "guide": {
+   "6601188cb460fc36": "lc-1ad63033895186a3.mp3",
+   "e5bdf39c4c7609ae": "lc-dabc02c820e40547.mp3",
+   "4a78ccd47e1a6e62": "lc-53714aa131923000.mp3",
+   "dda19701174f1afd": "lc-f08d0ede51d8340e.mp3",
+   "52d7d07081fc4827": "lc-7ebc19d51c69c4db.mp3",
+   "51e7b41b30885893": "lc-1dfa47d3416f4785.mp3",
+   "7abb97f8e819e6fb": "lc-6f9ab56e47462a23.mp3",
+   "21df4154ea895d9c": "lc-5efb3e2f9496b9d1.mp3",
+   "79ceafae16c4b43c": "lc-4910872b1c27ba00.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_03-02_pitch": {
+  "guide": {
+   "6f337cfff72d08d3": "lc-c2e74db2d71eea78.mp3",
+   "d6128901c989cc0e": "lc-c8de18031cc58fe4.mp3",
+   "96a7e1a6b0a7d732": "lc-e14401ef6075e95e.mp3",
+   "140c07cc3a0d6a54": "lc-f1616e0887da39c3.mp3",
+   "82308580e0596305": "lc-c5d174765b20686d.mp3",
+   "ac149bcd97cbeb7d": "lc-e32c11ed257b2014.mp3",
+   "8a0fd50792c54e80": "lc-7160081483223a35.mp3",
+   "a2d3afde4a1b7416": "lc-21a9967a7e78220b.mp3",
+   "e7cff89c07ad0adf": "lc-606677cfdf22187a.mp3",
+   "6b0c4b51f724c18d": "lc-cadeabc4c94ec891.mp3",
+   "e3a2abac56a5366f": "lc-a6d999cf72091edf.mp3",
+   "e6e130efa0e5cf7e": "lc-8cfa437782264eed.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_03-03_impact_map": {
+  "guide": {
+   "e54c3420dc9faffb": "lc-1293c945e311c02f.mp3",
+   "1840d87ff928dfc5": "lc-829bb9db619df659.mp3",
+   "67b58e43d34bbb19": "lc-1072bcbf555d3286.mp3",
+   "1b91af8d180102c3": "lc-627fac0aad79069b.mp3",
+   "f724c33884f44980": "lc-cc3eaa6ebd30d003.mp3",
+   "76d33b996be3a634": "lc-9febc5bf7d11c784.mp3",
+   "89d4cea82d12d223": "lc-3e748af77b8e4bb5.mp3",
+   "6992ee0f29b3b18c": "lc-09a2ca4fe21bbfdc.mp3",
+   "82c84c421631566b": "lc-e0ced008bfc5f233.mp3",
+   "d37d640a79ca115f": "lc-701517a63806aece.mp3",
+   "193c7a8d35b25eff": "lc-5b1164ce395d8137.mp3",
+   "784a8d1406ba5525": "lc-83b7a479219a8e7a.mp3",
+   "e27a480acb6923c2": "lc-1345dd0571d74533.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_03-04_concepts": {
+  "guide": {
+   "8464fcd049782137": "lc-2c4c51e3bb5c9659.mp3",
+   "34e02b55031a6f59": "lc-800ca9f3e8ec0570.mp3",
+   "5a643181f6eb8d1f": "lc-42acd5279148039b.mp3",
+   "9f99e2fbff4b26bd": "lc-61d7120157742164.mp3",
+   "e3476530799ab5f6": "lc-68c0bc4f45b6b82a.mp3",
+   "cdb2ca56994e8654": "lc-eaea802fd9c31550.mp3",
+   "79af14272ff63647": "lc-98710182c9eec807.mp3",
+   "f748246826f130e7": "lc-3beae94861919fa7.mp3",
+   "4a06c23325106a6e": "lc-61a67a823a64aac7.mp3",
+   "ab8c4b6585fbebbf": "lc-192f98dce16aeba3.mp3"
+  }
  }
 }

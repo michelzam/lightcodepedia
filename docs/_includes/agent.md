@@ -1054,6 +1054,38 @@ Auto-included by docs/_layouts/default.html.
        pasted, forgotten or starred, on this desk or any other */
     function engineId() { return resolveEngine(cfg).id; }
     function myToken() { return getSharedToken(engineId()); }
+    /* THE PANEL OFFERS ITS HANDS TO THE PROOF RUNTIME. A scenario that asks
+       the agent and reads the answer in the same breath cannot wait for a
+       fetch: the runtime builds the exact request this panel would send
+       (request), sends it synchronously, and files the reply where the
+       panel would (record) — same box, same ledger, same provenance.
+       (Michel, 2026-10-01: Disturb Your Agent — ask, then assert.) */
+    panel.setAttribute('data-bound-expr', boundExpr || '');
+    panel._lcAgent = {
+      request: function (userText) {
+        var eng = resolveEngine(cfg), tok = myToken();
+        if (!eng.base || !tok) return null;
+        var body = { model: eng.model, messages: [
+          { role: 'system', content: String(cfg.system) },
+          { role: 'user', content: String(userText) } ] };
+        if (cfg.temperature != null) body.temperature = parseFloat(cfg.temperature);
+        if (cfg.max_tokens != null) body.max_tokens = parseInt(cfg.max_tokens, 10);
+        return { url: eng.base + '/chat/completions', token: tok,
+                 pid: eng.id || '', model: eng.model || '', body: JSON.stringify(body) };
+      },
+      record: function (question, text) {
+        response.innerHTML =
+          '<div class="lc-agent-msg-user">' + escapeHtml(question) + '</div>' +
+          '<div class="lc-agent-msg-bot">' + renderMarkdown(text) + '</div>';
+        var logEl = panel.querySelector('.lc-agent-log');
+        if (logEl) {
+          var entry = document.createElement('div');
+          entry.className = 'lc-agent-log-entry';
+          entry.textContent = text;
+          logEl.appendChild(entry);
+        }
+      }
+    };
     function sayOnForm(why) {
       if (!authMsg) return;
       authMsg.textContent = why || '';

@@ -1513,17 +1513,69 @@ class Agent(Block):
         out = [m.text for m in self._qq(".lc-agent-log-entry")]
         return out if out else [m.text for m in self._qq(".lc-agent-msg-bot")]
 
-    def ask(self, prompt):
-        """Send a message, as a person would. The prompt box is named: the
-        first input in the panel is the key field, not the question (found
-        2026-10-01, a proof that asked and nothing left the page)."""
-        if self._el is not None:
-            box = self._el.querySelector(".lc-agent-prompt")
-            if box is None:
-                box = self._el.querySelector("textarea")
-            if box is not None:
-                box.value = str(prompt)
-            self._tap(".lc-agent-send")
+    def _bound_text(self, prompt):
+        """What the panel would send: the bound document under review, read
+        from the page as it stands, then the request. The expression is the
+        panel's own ({= dict(dog=ask.dog, …) }), evaluated over every part
+        that publishes its data — forms, documents, feature cards."""
+        expr = self._attr("data-bound-expr") or ""
+        if not expr:
+            return str(prompt)
+        ns = {}
+        nodes = js.window.document.querySelectorAll("[data-lc-id][data-lc-value]")
+        for i in range(int(nodes.length)):
+            n = nodes.item(i)
+            try:
+                ns[str(n.getAttribute("data-lc-id"))] = _Attrs(json.loads(str(n.getAttribute("data-lc-value"))))
+            except Exception:
+                pass
+        cards = js.window.document.querySelectorAll(".lc-feature[data-lc-id]")
+        for i in range(int(cards.length)):
+            c = cards.item(i)
+            cid = str(c.getAttribute("data-lc-id"))
+            if cid not in ns:
+                ns[cid] = _Attrs({"status": str(c.getAttribute("data-status") or ""),
+                                  "title": str(c.getAttribute("data-title") or ""),
+                                  "text": str(c.getAttribute("data-gherkin") or "")})
+        try:
+            v = eval(expr, {"dict": dict, "str": str, "len": len, "int": int, "float": float, "list": list}, ns)
+        except Exception as e:
+            return str(prompt)
+        return "The document under review:\n\n```\n" + str(v) + "\n```\n\nThe request:\n\n" + str(prompt)
+
+    def ask(self, prompt, wait=True):
+        """Send a message, as a person would — and, by default, WAIT for the
+        answer, so the next line of the scenario can read `last`. The panel
+        hands the runtime the exact request it would send; a synchronous
+        call carries it and the reply is filed in the panel's own box and
+        ledger. wait=False only presses Ask (the prompt box is named: the
+        first input in the panel is the key field, not the question)."""
+        if self._el is None:
+            return self
+        api = getattr(self._el, "_lcAgent", None) if wait else None
+        req = api.request(self._bound_text(prompt)) if api is not None else None
+        if req is not None:
+            xhr = js.XMLHttpRequest.new()
+            xhr.open("POST", str(req.url), False)
+            xhr.setRequestHeader("Authorization", "Bearer " + str(req.token))
+            xhr.setRequestHeader("Content-Type", "application/json")
+            xhr.send(str(req.body))
+            status = int(xhr.status)
+            if status < 200 or status >= 300:
+                raise AssertionError("the agent's engine answered " + str(status) + " — ask it by hand once, then run again")
+            data = json.loads(str(xhr.responseText))
+            try:
+                text = data["choices"][0]["message"]["content"]
+            except Exception:
+                raise AssertionError("the agent's engine sent no answer text")
+            api.record(str(prompt), str(text))
+            return self
+        box = self._el.querySelector(".lc-agent-prompt")
+        if box is None:
+            box = self._el.querySelector("textarea")
+        if box is not None:
+            box.value = str(prompt)
+        self._tap(".lc-agent-send")
         return self
 
 
