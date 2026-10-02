@@ -54,6 +54,17 @@ Auto-included by docs/_layouts/default.html.
   border: 1px solid #d0d0d0; border-radius: 6px;
   background: #fafafa; font-size: 0.95em;
 }
+/* an APP SCREEN: a pad that is both saved to the bench and decorated is a
+   page of the learner's own app, so its preview wears app chrome — a title
+   bar mirroring the page's own # line — instead of a bare rendering */
+.lc-mdpad-app { padding: 0; border-radius: 12px; border: 1px solid #c7cdd6;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10); background: #fff; display: flex; flex-direction: column; }
+.lc-mdpad-apphead { display: flex; align-items: center; gap: 0.5em; padding: 0.5em 0.9em;
+  background: #1e293b; color: #f8fafc; font-weight: 600; font-size: 0.9em;
+  border-radius: 12px 12px 0 0; letter-spacing: 0.01em; }
+.lc-mdpad-apphead .lc-mdpad-appdots { display: inline-flex; gap: 4px; margin-right: 0.2em; }
+.lc-mdpad-apphead .lc-mdpad-appdots i { width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block; }
+.lc-mdpad-appbody { padding: 0.8em; overflow: auto; flex: 1; }
 /* phones: preview first, then the source under it — same order as wide */
 @media (max-width: 640px) { .lc-mdpad { flex-direction: column; } }
 .lc-mdpad-bar { margin: -0.4em 0 1em; display: flex; justify-content: flex-end; gap: 0.5em; align-items: center; }
@@ -130,6 +141,7 @@ Auto-included by docs/_layouts/default.html.
 
     var out = document.createElement("div");
     out.className = "lc-mdpad-out";
+    var body = out, appTitle = null;   /* app chrome, decided once save= is known */
 
     /* save="true" — commit straight from the pad, no x-ray, no page editor.
        It reuses the SAME commit path the x-ray Keep uses (lcCommitInline), so
@@ -145,6 +157,25 @@ Auto-included by docs/_layouts/default.html.
     var benchPath = saveKnob && saveKnob !== "true" ? saveKnob : "";
     if (benchPath) wrap.setAttribute("data-lc-save", benchPath);   /* named in a proof's verdict */
     var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null;
+    /* AN APP SCREEN (Michel, 2026-10-02): saved to the bench AND decorated,
+       the pad is a page of the learner's own app — so the preview wears app
+       chrome, a title bar that mirrors the page's # line (the file's name
+       until there is one). The outer .lc-mdpad-out stays what proofs and
+       the suite read; only the rendering moves into the body under the bar. */
+    if (deco && benchPath) {
+      out.classList.add("lc-mdpad-app");
+      var head = document.createElement("div");
+      head.className = "lc-mdpad-apphead";
+      head.innerHTML = "<span class='lc-mdpad-appdots'><i></i><i></i><i></i></span>";
+      appTitle = document.createElement("span");
+      appTitle.className = "lc-mdpad-apptitle";
+      appTitle.textContent = benchPath;
+      head.appendChild(appTitle);
+      body = document.createElement("div");
+      body.className = "lc-mdpad-appbody";
+      out.appendChild(head);
+      out.appendChild(body);
+    }
     /* the stripe every saved block wears — see lcBenchFrame in widgets.md */
     var frame = null;
     if (saveKnob) {
@@ -271,19 +302,23 @@ Auto-included by docs/_layouts/default.html.
 
     function render() {
       if (!window.marked) {
-        out.innerHTML = "<pre>" + ta.value.replace(/[&<]/g, function (c) { return c === "&" ? "&amp;" : "&lt;"; }) + "</pre>";
+        body.innerHTML = "<pre>" + ta.value.replace(/[&<]/g, function (c) { return c === "&" ? "&amp;" : "&lt;"; }) + "</pre>";
         return;
       }
       var inline = window.lcInlineIAL || function (h) { return h; };
-      if (!deco) { out.innerHTML = inline(window.marked.parse(ta.value)); return; }
+      if (!deco) { body.innerHTML = inline(window.marked.parse(ta.value)); return; }
       /* decorations: the runner's pipeline on the preview — IAL on its own
          paragraph, block IAL applied, then the same scan that upgrades a
          page's fences into components, and the cells inside them */
       var norm = ta.value.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
-      out.innerHTML = inline(window.marked.parse(norm));
-      if (window.lcApplyIAL) window.lcApplyIAL(out);
-      if (window.lcScanElement) window.lcScanElement(out);
+      body.innerHTML = inline(window.marked.parse(norm));
+      if (window.lcApplyIAL) window.lcApplyIAL(body);
+      if (window.lcScanElement) window.lcScanElement(body);
       if (window.lcCellsRescan) window.lcCellsRescan();
+      if (appTitle) {
+        var h1 = body.querySelector("h1");
+        appTitle.textContent = (h1 && h1.textContent.trim()) || benchPath;
+      }
     }
     var _renT = null;
     ta.addEventListener("input", deco

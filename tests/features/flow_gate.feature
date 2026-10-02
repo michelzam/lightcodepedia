@@ -112,6 +112,28 @@ Feature: 🚦 A workflow ordered by its own values
     And I wait for the cells to settle
     And I run the lesson's proof
     Then the lesson's proof is green
+    And the pad's preview wears app chrome titled "Welcome to the shelter"
+
+  Scenario: Module 04's dogs screen is red on arrival
+    The second screen of the learner's app: the dog pile, declared in the
+    pad with no face, until the learner types the datagrid line.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_04/01_dogs.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/01_dogs.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's proof
+    Then the lesson's proof is red
+
+  Scenario: Module 04's dogs screen is green once the pile wears a table
+    Given the runner serves the course page "courses/micro_build_ai/module_04/01_dogs.md"
+    And the learner has given the dog pile a table
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/01_dogs.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's proof
+    Then the lesson's proof is green
+    And the pad's preview wears app chrome titled "Our dogs"
 
   Scenario: A cell can count a table, so no component is needed for one number
     Michel, 2026-08-06: "I am totally surprised by stat. Could it be rather

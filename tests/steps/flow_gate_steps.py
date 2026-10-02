@@ -5,6 +5,7 @@ silent: a condition that never fires leaves a step shut for ever, the proof
 goes red, and the learner is told they made a mistake they did not make.
 """
 from behave import when, then
+from playwright.sync_api import expect
 
 
 def _vis(context, sid):
@@ -138,6 +139,26 @@ def step_first_screen_fix(context):
         return body.replace(title, "# 🐾 Welcome to the shelter") \
                    .replace(link, link + "{: .button }\n")
     _serve_course_page(context, context.lesson_path, fix)
+
+
+@given("the learner has given the dog pile a table")
+def step_dogs_fix(context):
+    """Module 04's second screen: the two lines under the pile's dataset
+    decoration that give it a face. Loud if the seed drifts."""
+    def fix(body):
+        line = '{: .dataset #dogs save="../module_00/dogs.yaml" }\n'
+        assert line in body, "the dogs seed no longer carries the dataset line the lesson builds on"
+        return body.replace(line, line + '\n[The dogs](#)\n{: .datagrid source="dogs" }\n')
+    _serve_course_page(context, context.lesson_path, fix)
+
+
+@then('the pad\'s preview wears app chrome titled "{title}"')
+def step_app_chrome(context, title):
+    """A saved AND decorated pad is a page of the learner's app: its preview
+    carries a title bar that mirrors the page's own # line."""
+    head = context.page.locator(".lc-mdpad-out.lc-mdpad-app .lc-mdpad-apptitle").first
+    head.wait_for(state="attached", timeout=20_000)
+    expect(head).to_contain_text(title, timeout=10_000)
 
 
 @when("I run the lesson's proof")

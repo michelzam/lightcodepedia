@@ -59,6 +59,7 @@ Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The 
 | `save="true"` | Adds a 💾 **Save** button that commits the block straight back to the page source — no x-ray, no page editor |
 | `save="cv.md"` | The **two-repo contract**: the fence stays the author's seed; the reader's copy persists in *their own* connected repo — relative lands beside the lesson, `/my/cv.md` at the bench root — see below |
 | `decorations="true"` | The preview renders the way the site does: block decorations apply and component fences come alive — see below |
+| `save="<path>"` **+** `decorations="true"` | An **app screen**: the pad is a page of the learner's own app, so the preview wears app chrome — a title bar mirroring the page's `#` line (the file's name until there is one) |
 | `#id` | Optional — names the pad for X-ray |
 
 **About `save="true"`:** the button appears only when a save could actually work — you are connected, the page has a source file, and that source is not read-only. Otherwise it is disabled and says which of the three is missing, rather than failing after the click. It writes through the same path the x-ray **Keep** uses, so a block is committed one way, not two.
