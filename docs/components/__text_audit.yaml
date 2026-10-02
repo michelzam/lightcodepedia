@@ -1,0 +1,17 @@
+# audit history — one row per version, written by the editor's ♿/🧠 checks
+- when: '2026-10-02T21:01:59.881Z'
+  sha: e216d034bf9b715d7abd679af354c02c8ded2692
+  a11y:
+    violations: 0
+    review: 12
+    fail: 0
+  commit:
+    sha: 7af9a04b0c914910e7b9126fe1bc5c3d7d0cd8a8
+    message: mdpad decorations = the whole library; a prerequisite gates only the preview
+  load:
+    validations: 0
+    untagged: 0
+    kinds: 1
+    cluster: 1
+    loose: 0
+    orphan: 0

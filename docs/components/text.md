@@ -58,6 +58,7 @@ Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The 
 | `rows="14"` | Editor height in text rows (default 12) |
 | `save="true"` | Adds a 💾 **Save** button that commits the block straight back to the page source — no x-ray, no page editor |
 | `save="cv.md"` | The **two-repo contract**: the fence stays the author's seed; the reader's copy persists in *their own* connected repo — relative lands beside the lesson, `/my/cv.md` at the bench root — see below |
+| `decorations="true"` | The preview renders the way the site does: block decorations apply and component fences come alive — see below |
 | `#id` | Optional — names the pad for X-ray |
 
 **About `save="true"`:** the button appears only when a save could actually work — you are connected, the page has a source file, and that source is not read-only. Otherwise it is disabled and says which of the three is missing, rather than failing after the click. It writes through the same path the x-ray **Keep** uses, so a block is committed one way, not two.
@@ -77,6 +78,104 @@ Try it — this pad keeps its text at `/my/scratch.md` in *your* connected repo 
 Whatever you write here is **yours** — saved in your repo, not this page's.
 ````
 {: .mdpad #my_scratch save="/my/scratch.md" rows="8" }
+
+### 🎨 Decorations — the page, not only the text
+
+By default the preview shows the **text**: headings, bold, lists, inline
+*colour*{: .red}. Add `decorations="true"` and it shows the **page** —
+every `{: … }` line works as it does on the site. A `{: .red }` under a
+paragraph tints it, and a fenced block followed by `{: .pitch }` or
+`{: .cards }` turns into the live component. A résumé grows into a page
+that pitches its author:
+
+`````markdown
+## Ana Diaz
+*Data analyst*{: .blue} — Milwaukee
+
+Open to internships from June.
+{: .green }
+
+```yaml
+who: hiring managers
+need: must turn messy spreadsheets into decisions
+product: Ana Diaz
+category: junior data analyst
+benefit: clean data and one chart that answers the question
+alternative: a generic résumé
+difference: every claim links to a page that runs
+```
+{: .pitch }
+
+```
+### 🐍 Python
+pandas, matplotlib, notebooks
+
+### 🛢️ SQL
+joins, window functions, PostgreSQL
+
+### 📊 Dashboards
+one question, one chart
+```
+{: .cards cols="3" }
+`````
+{: .mdpad #cv_deco decorations="true" rows="18" }
+
+Change `product:` to your own name, or break the `{: .cards }` line, and
+watch the component leave and come back. The preview waits for a short
+pause in your typing before it rebuilds, so a component is not rebuilt
+on every key. The pad also reports which components are alive:
+`components` lists them by kind.
+
+**Every decoration is a library component.** Nothing is invented for the
+pad. Any component's own example, typed into a decorated pad, comes alive.
+That is the whole library, proven by the suite:
+
+| for | decorations |
+|---|---|
+| layout | `.block` `.blocks` `.cards` `.grid` `.accordion` `.carousel` `.scrollable` |
+| story | `.pitch` `.persona` `.impact_map` `.event_flow` `.feature` |
+| data | `.chart` `.datagrid` `.query` `.record` `.map` `.qr` |
+| interaction | `.quiz` `.radio` `.form` `.dropdown` `.menu` `.button` `.run` `.code` `.pytutor` `.agent` `.embed-page` `.prerequisite` `.build_loop` |
+| words | `{: .red }` `{: .green }` `{: .blue }`, inline or under a paragraph |
+
+Two have nothing to show in a preview, by design. `.dataset` is data
+without a face: it feeds a chart or a grid in the same pad. `.avatar`
+belongs to the page, not to a document. A `.prerequisite` gates only the
+preview, never the page around the pad.
+
+```gherkin
+Feature: Decorations turn the pad's preview into a page
+  As a learner writing my résumé
+  I want my decorations to show in the preview as on the site
+  So that my résumé can carry a pitch and cards, not only text
+
+  Scenario: Block decorations and components render in the preview
+    Given the résumé pad
+    :::python
+    self.pad: Mdpad = self.page.cv_deco
+    :::
+    When the preview has rendered the page
+    Then the pitch and the cards are live components
+    :::python
+    assert "pitch" in self.pad.components, self.pad.components
+    assert "cards" in self.pad.components, self.pad.components
+    :::
+    And the decoration lines are not left as text
+    :::python
+    assert "{:" not in self.pad.rendered, "a {: } line leaked into the preview"
+    :::
+
+  Scenario: A plain pad still previews text only
+    Given the playground pad
+    :::python
+    self.pad: Mdpad = self.page.playground
+    :::
+    Then it raises no components
+    :::python
+    assert self.pad.components == [], self.pad.components
+    :::
+```
+{: .feature tags="code" status="passing" }
 
 ### 📏 Ask the pad questions
 
@@ -422,7 +521,7 @@ Then `{: .form bound="dogs" }` on another block binds a form to that grid. The `
 
 [^ial]: **IAL (Inline Attribute List)** — kramdown's `{: .class #x key="value" }` syntax. Placed on its own line right after a block, it attaches HTML attributes to that block. Every interactive component on this site is activated this way.
 
-[^marked]: **marked.js** — a fast, lightweight JavaScript Markdown parser (~50 KB). Used here to render the live playground preview entirely in the browser. It handles CommonMark / GitHub-Flavored Markdown but not kramdown-specific extensions like IAL or footnotes.
+[^marked]: **marked.js** — a fast, lightweight JavaScript Markdown parser (~50 KB). It renders the live preview entirely in the browser. On its own it knows CommonMark / GitHub-Flavored Markdown, not kramdown's extras, so the pad adds the IAL part itself: inline colours like `*word*{: .red}` always, and with `decorations="true"` every `{: … }` line, components included. Footnotes are not rendered in the pad's preview.
 
 ```yaml
 bot: doc

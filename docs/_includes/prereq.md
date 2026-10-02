@@ -320,8 +320,11 @@ null]</script>
      editor's own splitter and tabs (Michel, 2026-10-01: "the right pane is
      displayed for a fraction of a second, then the preview takes the whole
      surface" — on every lesson, since every lesson opens with a gate). */
+  /* A mdpad's decorated preview is a render root too: a learner typing a
+     prerequisite into their résumé locked the host page, pad included
+     (2026-10-02) — the gate stays inside the preview. */
   function gateRoot(el) {
-    return (el.closest && el.closest("#ed-preview, .lc-run, main")) || document.body;
+    return (el.closest && el.closest("#ed-preview, .lc-mdpad-out, .lc-run, main")) || document.body;
   }
   function lockFrom(anchor) {
     var root = gateRoot(anchor);

@@ -28,6 +28,13 @@ IAL knobs:
               it). The author can republish the page forever: seed and
               saved copy are different files in different repos, so
               nothing ever collides.
+  decorations="true"
+              the preview renders the page the way the site does: block
+              decorations ({: .red} under a paragraph, {: .pitch} under a
+              yaml fence…) apply, and component fences come alive — a
+              learner's résumé can carry a pitch, cards, a chart. Same
+              pipeline as the runner. Debounced, not per keystroke: a
+              component rebuilds, a word does not.
   id="..."    optional — names the pad for X-ray
 
 Auto-included by docs/_layouts/default.html.
@@ -94,10 +101,12 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcMdpadDone = "1";
     var seed = (el.querySelector("code") || el).textContent.replace(/\n+$/, "");
     var rows = parseInt(el.getAttribute("rows") || "12", 10);
+    var deco = el.getAttribute("decorations") === "true";
     var id = el.id || "";
 
     var wrap = document.createElement("div");
     wrap.className = "lc-mdpad";
+    if (deco) wrap.setAttribute("data-lc-decorations", "1");
     if (id) wrap.setAttribute("data-lc-id", id);
     /* a named pad is page data: it publishes {source} as a cell scope, so
        expressions can read what the learner typed — {=cv1.source} in prose,
@@ -261,11 +270,25 @@ Auto-included by docs/_layouts/default.html.
     }
 
     function render() {
-      out.innerHTML = window.marked
-        ? (window.lcInlineIAL || function (h) { return h; })(window.marked.parse(ta.value))
-        : "<pre>" + ta.value.replace(/[&<]/g, function (c) { return c === "&" ? "&amp;" : "&lt;"; }) + "</pre>";
+      if (!window.marked) {
+        out.innerHTML = "<pre>" + ta.value.replace(/[&<]/g, function (c) { return c === "&" ? "&amp;" : "&lt;"; }) + "</pre>";
+        return;
+      }
+      var inline = window.lcInlineIAL || function (h) { return h; };
+      if (!deco) { out.innerHTML = inline(window.marked.parse(ta.value)); return; }
+      /* decorations: the runner's pipeline on the preview — IAL on its own
+         paragraph, block IAL applied, then the same scan that upgrades a
+         page's fences into components, and the cells inside them */
+      var norm = ta.value.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+      out.innerHTML = inline(window.marked.parse(norm));
+      if (window.lcApplyIAL) window.lcApplyIAL(out);
+      if (window.lcScanElement) window.lcScanElement(out);
+      if (window.lcCellsRescan) window.lcCellsRescan();
     }
-    ta.addEventListener("input", render);
+    var _renT = null;
+    ta.addEventListener("input", deco
+      ? function () { clearTimeout(_renT); _renT = setTimeout(render, 350); }
+      : render);
     ta.addEventListener("input", function () {
       /* edited since the last save: a proof reading this pad says so */
       if (benchPath) {

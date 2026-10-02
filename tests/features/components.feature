@@ -98,6 +98,26 @@ Feature: Component gallery behaviors
     Then the mdpad preview shows a red word
     And the mdpad italic text is not coloured
 
+  # decorations="true": the preview is the page, not only the text — a
+  # decorated fence becomes the live component, and follows the typing
+  Scenario: A decorated mdpad preview renders components and follows typing
+    When I navigate to "/components/text"
+    And I wait for the page to be interactive
+    Then the decorated mdpad shows a live "lc-pitch"
+    And the decorated mdpad shows a live "lc-cards"
+    When I delete the cards decoration in the decorated mdpad
+    Then the decorated mdpad no longer shows a live "lc-cards"
+    And the decorated mdpad still shows a live "lc-pitch"
+
+  # the whole library, not two hand-picked parts: each component's own
+  # example, typed into the pad, must come alive (avatar and dataset have no
+  # face in a preview, by design)
+  Scenario: Every library component is a decoration the mdpad previews
+    When I navigate to "/components/text"
+    And I wait for the page to be interactive
+    And I type every library component into the decorated mdpad
+    Then every one of them comes alive in the preview
+
   # The lab and every fork serve under /<repo>/, where a component that injects
   # a root-absolute path ("/assets/lab.jpg") 404s unless the scan pipeline heals
   # it. The suite serves at a domain root, so this drives the real pipeline with

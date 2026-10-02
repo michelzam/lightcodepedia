@@ -1815,7 +1815,8 @@ class Vitals(Block):
                              {"n": "bullets", "t": "list"},
                              {"n": "numbered", "t": "list"},
                              {"n": "links", "t": "list"},
-                             {"n": "images", "t": "int"}])
+                             {"n": "images", "t": "int"},
+                             {"n": "components", "t": "list"}])
 class Mdpad(Block):
     # The preview half IS the document being made — every property reads it,
     # so a rubric feature can grade what the learner typed without any js.
@@ -1875,6 +1876,20 @@ class Mdpad(Block):
     def images(self):
         o = self._el.querySelector(".lc-mdpad-out") if self._el is not None else None
         return int(o.querySelectorAll("img").length) if o is not None else 0
+
+    @property
+    def components(self):
+        """The live components in the preview (decorations="true"), by kind:
+        ['cards', 'pitch'] — a fence the learner decorated came alive."""
+        o = self._el.querySelector(".lc-mdpad-out") if self._el is not None else None
+        if o is None:
+            return []
+        kinds = []
+        for token, cls in _WRAP:
+            name = cls.__name__.lower()
+            if token.startswith("lc-") and name not in kinds and o.querySelector("." + token) is not None:
+                kinds.append(name)
+        return sorted(kinds)
 
 
 @component(icon="🏷️", attrs=[{"n": "value", "t": "str"}])

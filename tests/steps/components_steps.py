@@ -972,3 +972,92 @@ def step_chart_gear(context, cid):
     context.page.wait_for_timeout(200)
     context.page.mouse.move(bb["x"] + bb["width"] / 2 + 4, bb["y"] + bb["height"] / 2)
     expect(context.page.locator("#lcx-gear")).to_be_visible(timeout=5_000)
+
+
+_DECO = "[data-lc-id='cv_deco'] > .lc-mdpad-out"
+
+
+@then('the decorated mdpad shows a live "{kind}"')
+@then('the decorated mdpad still shows a live "{kind}"')
+def step_deco_live(context, kind):
+    context.page.locator(_DECO + " ." + kind).first.wait_for(state="attached", timeout=20_000)
+
+
+@when("I delete the cards decoration in the decorated mdpad")
+def step_deco_drop_cards(context):
+    ta = context.page.locator("[data-lc-id='cv_deco'] > .lc-mdpad-in")
+    text = ta.input_value()
+    assert '{: .cards cols="3" }' in text, "the résumé seed lost its cards line"
+    ta.fill(text.replace('{: .cards cols="3" }', ""))
+
+
+@then('the decorated mdpad no longer shows a live "{kind}"')
+def step_deco_gone(context, kind):
+    context.page.wait_for_function(
+        "sel => !document.querySelector(sel)", arg=_DECO + " ." + kind, timeout=10_000)
+
+
+# Every library component, typed into a decorated pad, comes alive: the
+# example is the one on its own component page. Avatar (page chrome) and
+# dataset (data, no face) have nothing to show in a preview, by design.
+_LIBRARY = {
+    'button': ('button', '[🗓️ Event: ON](#)\n{: .button }'),
+    'accordion': ('lc-accordion', "```\n### 🐍 What is Python?\nPython is a high-level, general-purpose programming language known for its readable syntax. Used for web, data science, AI, scripting, and more.\n\n### 🤔 Do I need to install anything?\nNo — this site runs Python directly in your browser using WebAssembly. Nothing to install, nothing to configure.\n\n### 🏁 How do I get started?\nGo to the [🐍 Run](/components/run) page, edit the code, and hit ▶ Run. That's the whole setup.\n```\n{: .accordion }"),
+    'agent': ('lc-agent', '```yaml\nsystem: You are a Python tutor. Keep answers short.\n```\n{: .agent }'),
+    'block': ('lc-block', '```\n### Optional title\nText, images, lists — any markdown.\n```\n{: .block }'),
+    'blocks': ('lc-blocks', '```\n### Left\nContent on the left.\n\n### Right\nContent on the right.\n```\n{: .blocks cols="2" }'),
+    'build_loop': ('lc-build-loop', '```\nNeed: every build starts with someone\'s problem\nDesign: turn the need into something you can hold\nBlocks: snap the working parts together\nAI: bring in the partner that thinks with you\nShip: put it in someone\'s hands\nLearn: what you shipped starts the next loop\n```\n{: .build_loop height="470" }'),
+    'cards': ('lc-cards', '```\n### 🎬 Demo\nTry the live LightCode demo right in your browser.\n[Open demo →](/demo)\n\n### 📚 Chapters\nRead the course materials covering low-code fundamentals.\n[Start reading →](/chapters)\n\n### 🤖 Ari\nChat with your AI pair lightcoder.\n[Chat with Ari →](/ari)\n```\n{: .cards cols="3" }'),
+    'carousel': ('lc-carousel', '- 💬 one\n- 💬 two\n- 💬 three\n{: .carousel }'),
+    'chart': ('lc-chart', '```\nDog,Speed\nHusky,5\nShiny,3\nBlaze,4\nMisty,2\nRocket,6\nWhisper,3\n```\n{: .chart type="bar" x="Dog" y="Speed" height="280" }'),
+    'code': ('lc-code', '```python\ndef greet(name):\n    print(f"Hello, {name}!")\n\ngreet("Lightcoder")\n```\n{: .code title="hello.py" }'),
+    'datagrid': ('lc-datagrid', '```yaml\n- name: Lucky\n  age: 3\n  breed: Beagle\n  adopted: true\n- name: Wanda\n  age: 5\n  breed: Poodle\n  adopted: true\n- name: Max\n  age: 2\n  breed: Husky\n  adopted: false\n- name: Bella\n  age: 4\n  breed: Labrador\n  adopted: true\n```\n{: .datagrid title="Shelter dogs" }'),
+    'dropdown': ('lc-dropdown', '- [🐍 Run](/components/run)\n- [📊 Datagrid](/components/datagrid)\n{: .dropdown label="Components ▾" }'),
+    'embed_page': ('lc-embed-page', '[🐍 Run component](/components/run)\n{: .embed-page height="300" }'),
+    'event_flow': ('lc-event-flow', '```yaml\n- user: The family\n- ui: dog_grid — the list of dogs\n- command: Name a dog\n- event: A dog is named\n- ui: meet — the second card\n- rule: Opens only once a dog is named\n- command: Pick an afternoon\n- event: A visit is on the calendar\n- user: The coordinator\n- ui: week — this week\'s reservations\n- command: Count who is still waiting\n```\n{: .event_flow #demo_flow legend="true" }'),
+    'feature': ('lc-feature', '```gherkin\nFeature: User login\n    As a curious lowcoder to be\n    I want to see the dashboard \n    So that I can decide quickly\n  Scenario: Successful login\n    Given I am on the login page\n    When I enter valid credentials\n    Then I should see the dashboard\n```\n{: .feature visible="true" tags="spec" }'),
+    'form': ('lc-form', '```yaml\nname: Lucky\nage: 3\nbreed: Beagle\nweight_kg: 11.2\nadopted: true\nfavorite_toys:\n  - squeaky bone\n  - tennis ball\nvet:\n  name: Dr. Patel\n  phone: "555-0142"\nnotes: null\n```\n{: .form }'),
+    'grid': ('lc-grid', '```\n### ⚡ Fast\nWebAssembly runs Python at near-native speed in your browser. No server round-trip.\n\n### 🔒 Private\nYour code never leaves your browser. No data sent to any server.\n\n### 🆓 Free\nNo login, no API key, no quota. Open source, forever.\n```\n{: .grid }'),
+    'impact_map': ('lc-imap', '```yaml\ngoal: More dogs go home, and no adoption fails after payment\nwho: The shelter coordinator\nimpacts:\n  - how: She stops payments that come before a visit\n    feature: visit_first\n  - how: She sees each week where families stop\n    what: The count table\n    feature: weekly_proof\n```\n{: .impact_map #shelter_map pitch="map_pitch" }'),
+    'map': ('lc-map', '```\nname,lat,lng\nParc des Buttes-Chaumont,48.8787,2.3828\nJardin du Luxembourg,48.8462,2.3372\nBois de Vincennes,48.8333,2.4333\nParc de la Villette,48.8938,2.3928\nParc Monceau,48.8793,2.3093\nParc de Bercy,48.8369,2.3832\n```\n{: .map lat="48.86" lng="2.35" zoom="12" height="380" }'),
+    'menu': ('lc-menu', '[🏠 Home](/) [🎓 Tutorial](/tutorial101)\n{: .menu }'),
+    'persona': ('lc-persona', '```yaml\nname: Maria\nrole: Shelter coordinator\nphoto: ""\ngoal: Every dog goes to a family that met it first\nfrustrations:\n  - Families pay before they visit\n  - Nobody knows where applicants stop\nquote: We are driving to their house this afternoon to explain.\nsays:\n  - Did they meet the dog?\nthinks:\n  - The app got lucky once\ndoes:\n  - Checks the week\'s numbers every Tuesday\nfeels:\n  - Responsible for every adoption\n```\n{: .persona #maria }'),
+    'pitch': ('lc-pitch', '```yaml\nwho: shelter coordinators\nneed: must stop payments that come before a visit\nproduct: Shelter Desk\ncategory: adoption tracker\nbenefit: no family pays before meeting the dog\nalternative: the paper binder\ndifference: enforces the order of the three steps\n```\n{: .pitch #demo_pitch persona="ana" }'),
+    'prerequisite': ('lc-prereq', '- [🎓 Tutorial 101 — Explore](/tutorial101)\n{: .prerequisite }'),
+    'pytutor': ('lc-pytutor', '```python\nx = [1, 2, 3]\nfor i in x:\n    print(i * 2)\n```\n{: .pytutor height="420" }'),
+    'qr': ('lc-qr', '```\nhttps://lightcodepedia.org\nScan to visit Lightcodepedia\n```\n{: .qr }'),
+    'query': ('lc-query', '```sql\nSELECT breed, COUNT(*) AS n, AVG(cuteness) AS cuteness\nFROM dogs GROUP BY breed ORDER BY cuteness DESC\n```\n{: .query source="dogs" #by_breed }'),
+    'quiz': ('lc-quiz', '**Q:** Which?\n\n- [ ] a\n- [x] b\n{: .quiz }'),
+    'radio': ('lc-radio-group', '```\n### 🐍 Python\nPython is readable, beginner-friendly, and runs in your browser on this site. Great first language.\n- Easy to read\n- Huge ecosystem\n- Works everywhere\n\n### 🦀 Rust\nRust is fast, safe, and beloved by systems programmers. Steeper curve, big payoff.\n- Memory-safe without GC\n- Blazingly fast\n- Loved on Stack Overflow every year since 2016\n\n### 🐹 Go\nGo is simple, fast, and built for networked services. Minimal syntax, fast compilation.\n- Built-in concurrency\n- Fast compile times\n- Single binary output\n```\n{: .radio }'),
+    'record': ('lc-rec', '```yaml\ntitle: A. de Longpré\ntags: [politician]\nera: [belle-epoque]\nbody: président\n```\n{: .record schema="my_schema" index="my_index" }'),
+    'run': ('lc-pyrun', '```python\ndef greet(name):\n    print(f"Hello, {name}! 🎉")\n\ngreet("Lightcoder")\ngreet("World")\n```\n{: .run #first_run }'),
+    'scrollable': ('lc-scrollable', '```\nLine 1: Starting up...\nLine 2: Loading modules...\nLine 3: Connecting to database...\nLine 4: Running migrations...\nLine 5: Seeding data...\nLine 6: Starting server...\nLine 7: Listening on port 8080...\nLine 8: First request received.\nLine 9: GET / 200 OK\nLine 10: GET /api/users 200 OK\nLine 11: POST /api/login 200 OK\nLine 12: Server running healthy.\n```\n{: .scrollable height="120" }'),
+}
+
+
+@when("I type every library component into the decorated mdpad")
+def step_deco_library(context):
+    ta = context.page.locator("[data-lc-id='cv_deco'] > .lc-mdpad-in")
+    context.deco_dead = []
+    for name, (live, src) in sorted(_LIBRARY.items()):
+        if not ta.is_visible():
+            # a decoration reached outside its preview and hid the host
+            # page — the prerequisite gate did, until 2026-10-02
+            raise AssertionError("after %r the pad itself is hidden: a decoration "
+                                 "escaped its preview" % context.deco_last)
+        context.deco_last = name
+        ta.fill(src)
+        try:
+            context.page.wait_for_function(
+                "([sel, raw]) => { const o = document.querySelector(sel);"
+                " return o && o.querySelector('.' + raw) && !o.textContent.includes('{:'); }",
+                arg=[_DECO, live], timeout=8_000)
+        except Exception:
+            context.deco_dead.append(name)
+
+
+@then("every one of them comes alive in the preview")
+def step_deco_library_alive(context):
+    assert not context.deco_dead, (
+        "%d of %d library components stayed text in the decorated preview: %s"
+        % (len(context.deco_dead), len(_LIBRARY), ", ".join(context.deco_dead)))
