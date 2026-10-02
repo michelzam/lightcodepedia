@@ -208,6 +208,13 @@ null]</script>
     var authorPaired = false;
     try { authorPaired = localStorage.getItem("lc_ed_session") === (window.lcAuthorPair || "lc:author"); } catch (e) {}
     if (authorPaired && escOff) { escOff = false; escLabel = "Show it anyway (author) →"; }
+    /* AND WALKS THROUGH BY DEFAULT (Michel, 2026-10-02, from his phone: a
+       hatch to tap on every page, every visit, is still a wall). The paired
+       author's gates open on arrival as one line naming the pages; the wall
+       is a remembered choice — "test as a learner" — not the default. */
+    var walls = false;
+    try { walls = localStorage.getItem("lc_prereq_author_walls") === "1"; } catch (e) {}
+    var authorOpen = authorPaired && !walls;
     var links = [];
     var anchors = el.querySelectorAll("a[href]");
     if (anchors.length) {
@@ -270,14 +277,33 @@ null]</script>
       el.parentNode.replaceChild(card, el);
       return;
     }
+    if (authorOpen) {
+      card.className = "lc-prereq-met lc-prereq-author";
+      card.innerHTML = "📋 Gated for learners: " + links.map(function (l) {
+        return "<a href='" + esc(linkHref(el, l.href)) + "'>" + esc(l.title) + "</a>";
+      }).join(" <span class='lc-prereq-sep'>·</span> ")
+        + " — open for you (author). <a data-wall>🔒 Test as a learner →</a>";
+      el.parentNode.replaceChild(card, el);
+      card.querySelector("[data-wall]").addEventListener("click", function () {
+        try { localStorage.setItem("lc_prereq_author_walls", "1"); } catch (e) {}
+        location.reload();
+      });
+      return;
+    }
     card.className = "lc-prereq";
     card.innerHTML = "<h4>📋 Before this page</h4><ul>" + items.join("") + "</ul>"
       + "<div class='lc-prereq-note'>"
       + (passPct >= 100 ? "Finish the pages above — every point — and this page unlocks itself."
                         : "Earn " + passPct + "% on the pages above and this page unlocks itself.")
       + (escOff ? "" : " <a data-show>" + esc(escLabel) + "</a>")
+      + (authorPaired ? " <a data-unwall>Stop testing as a learner →</a>" : "")
       + "</div>";
     el.parentNode.replaceChild(card, el);
+    var unwall = card.querySelector("[data-unwall]");
+    if (unwall) unwall.addEventListener("click", function () {
+      try { localStorage.removeItem("lc_prereq_author_walls"); } catch (e) {}
+      location.reload();
+    });
     /* Hide the page body until earned or overridden. Two things fight this:
        components upgrade LATE and REPLACE their block (a csv fence becomes a
        grid), and slides re-parent everything into sections — so neither a

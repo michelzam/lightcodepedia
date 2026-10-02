@@ -454,9 +454,41 @@ Feature: RT prerequisite gate — the key names the content, not the runner
     And the key is paired as the material's author to "acme/demo"
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/strict.md"
     And I wait for the page to be interactive
-    Then the escape hatch reads "Show it anyway (author) →"
+    Then the gated content "Secret wisdom here." is visible
+    And the author's gate line names "Basics"
+
+  Scenario: The author can still test the wall as a learner, and it is remembered
+    Michel, 2026-10-02, from his phone: a hatch to tap on every page, every
+    visit, is still a wall — so the paired author's gates open on arrival
+    (scenario above). The wall remains one tap away, and stays until the
+    author stops testing.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/strict.md" with the document:
+      """
+      # Strict page
+
+      - [Basics](basics.md)
+      {: .prerequisite }
+
+      ## Body
+
+      Secret wisdom here.
+      """
+    And the key is paired as the material's author to "acme/demo"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/strict.md"
+    And I wait for the page to be interactive
+    And I test the page as a learner
+    And I wait for the page to be interactive
+    Then the gated content "Secret wisdom here." is hidden
+    And the escape hatch reads "Show it anyway (author) →"
     When I show the page anyway
     Then the gated content "Secret wisdom here." is visible
+    When I stop testing as a learner
+    And I wait for the page to be interactive
+    Then the gated content "Secret wisdom here." is visible
+    And the author's gate line names "Basics"
 
   Scenario: A gated lesson opened in the editor keeps the editor's tabs
     Michel, 2026-10-01: on every lesson, the right pane showed for a fraction

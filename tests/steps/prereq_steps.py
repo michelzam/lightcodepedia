@@ -82,6 +82,24 @@ def step_show_anyway(context):
     context.page.locator(".lc-prereq [data-show]").click()
 
 
+@then('the author\'s gate line names "{title}"')
+def step_author_line(context, title):
+    line = context.page.locator(".lc-prereq-author")
+    expect(line).to_be_visible(timeout=10_000)
+    expect(line).to_contain_text(title)
+    expect(line).to_contain_text("open for you (author)")
+
+
+@when("I test the page as a learner")
+def step_test_as_learner(context):
+    context.page.locator(".lc-prereq-author [data-wall]").click()
+
+
+@when("I stop testing as a learner")
+def step_stop_testing(context):
+    context.page.locator(".lc-prereq [data-unwall]").click()
+
+
 @then("no escape hatch is offered")
 def step_no_escape(context):
     n = context.page.locator(".lc-prereq [data-show]").count()
