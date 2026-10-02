@@ -117,6 +117,9 @@ joins, window functions, PostgreSQL
 one question, one chart
 ```
 {: .cards cols="3" }
+
+[✉️ Write to Ana](mailto:ana@example.org)
+{: .button }
 `````
 {: .mdpad #cv_deco decorations="true" rows="18" }
 
@@ -163,6 +166,11 @@ Feature: Decorations turn the pad's preview into a page
     And the decoration lines are not left as text
     :::python
     assert "{:" not in self.pad.rendered, "a {: } line leaked into the preview"
+    :::
+    And a plain link-button counts as a component too
+    :::python
+    assert "button" in self.pad.components, \
+        "a {: .button } under a link is the learner's first part — it must be listed"
     :::
 
   Scenario: A plain pad still previews text only

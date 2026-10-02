@@ -128,6 +128,18 @@ def step_apply_fix(context):
     _serve_course_page(context, context.lesson_path, fix)
 
 
+@given("the learner has finished the welcome and turned its link into a button")
+def step_first_screen_fix(context):
+    """Module 04's first beat, both edits the page asks for: a finished title
+    and `{: .button }` under the link. Loud if the seed drifts."""
+    def fix(body):
+        title, link = "# 🐾 Welcome to …", "[wihumane.org](https://www.wihumane.org)\n"
+        assert title in body and link in body, "the welcome seed no longer carries the title or the link the lesson asks to change"
+        return body.replace(title, "# 🐾 Welcome to the shelter") \
+                   .replace(link, link + "{: .button }\n")
+    _serve_course_page(context, context.lesson_path, fix)
+
+
 @when("I run the lesson's proof")
 def step_run_proof(context):
     card = context.page.locator(".lc-feature").first

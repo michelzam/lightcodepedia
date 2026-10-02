@@ -1885,9 +1885,12 @@ class Mdpad(Block):
         if o is None:
             return []
         kinds = []
+        # A plain link-button is the one part whose class carries no lc-
+        # prefix ({: .button }); a learner's first decoration must count.
         for token, cls in _WRAP:
             name = cls.__name__.lower()
-            if token.startswith("lc-") and name not in kinds and o.querySelector("." + token) is not None:
+            if (token.startswith("lc-") or token == "button") and name not in kinds \
+                    and o.querySelector("." + token) is not None:
                 kinds.append(name)
         return sorted(kinds)
 

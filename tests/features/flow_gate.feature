@@ -92,6 +92,27 @@ Feature: 🚦 A workflow ordered by its own values
     And I run the lesson's proof
     Then the lesson's proof is green
 
+  Scenario: Module 04's first screen is red on arrival
+    The learner's first part: a welcome page in a decorated pad, whose link
+    they turn into a button with one line. Red until the title is finished
+    plus the line typed: the smallest red-then-green in the course.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_04/00_first_screen.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/00_first_screen.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's proof
+    Then the lesson's proof is red
+
+  Scenario: Module 04's first screen is green once the link is a button
+    Given the runner serves the course page "courses/micro_build_ai/module_04/00_first_screen.md"
+    And the learner has finished the welcome and turned its link into a button
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/00_first_screen.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's proof
+    Then the lesson's proof is green
+
   Scenario: A cell can count a table, so no component is needed for one number
     Michel, 2026-08-06: "I am totally surprised by stat. Could it be rather
     done with a cell?" It could not — a formula reached forms, mdpads and
