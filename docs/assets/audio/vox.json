@@ -919,7 +919,48 @@
    "f4f69b7851258fa4": "lc-9fdc6fe3ae7125cd.mp3",
    "52b2920c795f27ac": "lc-052460bce8a97fa5.mp3",
    "4ac904c312357285": "lc-6c046a1f14b63d2a.mp3",
-   "044005682fa23f5c": "lc-e1c4014eecbd556d.mp3"
+   "044005682fa23f5c": "lc-e1c4014eecbd556d.mp3",
+   "12da98ee8e619a2d": "lc-c31e950f657cbbe3.mp3",
+   "d5d2ac3917ce458f": "lc-eb3c4806d03c91e4.mp3",
+   "dc6320ddb7350027": "lc-2c71f99fa1366e77.mp3",
+   "d46b71bff7b73c18": "lc-b2f243d3339c96ae.mp3",
+   "2d4b5f1afc94c539": "lc-031f2af925ab06d8.mp3",
+   "d69ecf29c9ef0572": "lc-58d1ab27850c17f2.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_04-03_faces": {
+  "guide": {
+   "810e9942adcc87ad": "lc-0d63bf5aa2c4c476.mp3",
+   "19ed708c5cd39bae": "lc-ba5ba8fae11efd34.mp3",
+   "a692ff35d015f7d0": "lc-474f89bba8ccf023.mp3",
+   "523abfd06d785f94": "lc-dc07f0f6cc8415d4.mp3",
+   "9e685961206b3be4": "lc-98d84f8bb4e77feb.mp3",
+   "6dd79cf32fbbbe0f": "lc-fd0c49810f61cf62.mp3",
+   "367130acd2adf059": "lc-be331b66536e1743.mp3",
+   "99696a17074f4921": "lc-b8e2dd11018a13c9.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_04-02_dogs": {
+  "guide": {
+   "d1116eb786d5807d": "lc-104a52f63527d39a.mp3",
+   "2e59f5a2de5afc55": "lc-18d7dbf3b888c3d8.mp3",
+   "63cc15fc577656fb": "lc-b273d948253510af.mp3",
+   "630e0a884462f2da": "lc-dbe127c5357f7425.mp3",
+   "a43b86e24d63a3a3": "lc-a50705946ff5bf92.mp3",
+   "82fd11d0215d54c0": "lc-edf15e77a4b79ba5.mp3",
+   "55251cc6a3f4439a": "lc-7e62485f0d300305.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_04-04_concepts": {
+  "guide": {
+   "913adc8af44f0151": "lc-5bffc9f5e5321833.mp3",
+   "f640d97881b0be95": "lc-24376fe22c72478b.mp3",
+   "a174185737689a42": "lc-40b23c0aa54d90ba.mp3",
+   "39b3ca12de128c4a": "lc-ee185c304cd9144e.mp3",
+   "2aa8266c47d03795": "lc-df39ae4cf5fc8781.mp3",
+   "4cf45a12406e1933": "lc-0572442f58a9ad52.mp3",
+   "d17008ceb30740dc": "lc-d3bc25409245b168.mp3",
+   "a3d69d416c466366": "lc-3a9d85cc63ae8220.mp3"
   }
  }
 }
