@@ -530,9 +530,23 @@ Auto-included by docs/_layouts/default.html.
        not wipe the scene — without this guard the pipes died on the first
        pixel of pointer travel, so "show the pipes" showed nothing (2026-08-18) */
     let _hold = false;
-    addEventListener("pointermove", e => { if (e.altKey) show(e); else if (!_hold) hideAll(); }, true);
-    addEventListener("keyup", e => { if ((e.key === "Alt" || !e.altKey) && !_hold) hideAll(); });
-    addEventListener("blur", hideAll);
+    /* PINNED AFTER RELEASE (Michel, 2026-10-03: "I would like the pipes to
+       stay visible after I release the keys so I can take screenshots").
+       Letting go of ⌥ no longer wipes the scene: it stays, pinned, until the
+       next click or tap anywhere, Esc, or a new ⌥-sweep replacing it. A
+       screenshot chord is keys, not a click, so it leaves the pipes alone.
+       Phones never used the keys (lcxTouchOn) and are untouched. */
+    let _pinned = false;
+    addEventListener("pointermove", e => {
+      if (e.altKey) { _pinned = false; show(e); }
+      else if (!_hold && !_pinned) hideAll();
+    }, true);
+    addEventListener("keyup", e => {
+      if ((e.key === "Alt" || !e.altKey) && !_hold && cur) _pinned = true;
+    });
+    addEventListener("keydown", e => { if (e.key === "Escape" && _pinned) { _pinned = false; hideAll(); } });
+    addEventListener("pointerdown", () => { if (_pinned) { _pinned = false; hideAll(); } }, true);
+    addEventListener("blur", () => { if (!_pinned) hideAll(); });
 
     // ── Scripted reveal — the xray VERB's door (widgets.md) ──────────────────
     /* Resolve a subject the way the lens does, but from an ELEMENT instead of

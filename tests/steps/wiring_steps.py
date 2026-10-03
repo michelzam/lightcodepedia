@@ -207,6 +207,37 @@ def step_lens_wired(context):
     _shift_alt_hover(context.page, context.page.locator(".lc-datagrid").first)
 
 
+@when("I release the x-ray keys")
+def step_release_keys(context):
+    context.page.evaluate(
+        "() => { dispatchEvent(new KeyboardEvent('keyup', {key: 'Alt', altKey: false, bubbles: true}));"
+        " document.body.dispatchEvent(new PointerEvent('pointermove', {altKey: false, bubbles: true,"
+        " clientX: 5, clientY: 5})); }")
+    context.page.wait_for_timeout(400)
+
+
+def _scene_shown(page):
+    return page.evaluate(
+        "() => [...document.querySelectorAll('#lcx-scene .lcx-xray')]"
+        ".some(p => p.style.display !== 'none')")
+
+
+@then("the x-ray scene is still on screen")
+def step_scene_stays(context):
+    assert _scene_shown(context.page), "the reveal vanished when the keys were released"
+
+
+@when("I click anywhere on the page")
+def step_click_anywhere(context):
+    context.page.mouse.click(5, 5)
+    context.page.wait_for_timeout(300)
+
+
+@then("the x-ray scene is gone")
+def step_scene_gone(context):
+    assert not _scene_shown(context.page), "a click should put the pinned reveal away"
+
+
 @then('the lens marks "{role}" as naming nothing')
 def step_lens_bomb(context, role):
     row = context.page.locator("#lcx-scene .lcx-xray .bad", has_text=role).first

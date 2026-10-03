@@ -124,6 +124,15 @@ The older attribute form still works as a fallback (`sliders="lat:43.05:43.075:0
 
 An empty `{: .form master="<id>" }` waits for a row to be clicked in the named datagrid, then fills itself with that row's data. The grid is the list view; the form is the detail view.
 
+A card that follows a table has no words of its own, so it needs no fence: a link paragraph is enough, spelled like a chart or a grid —
+
+```markdown
+[The dog](#)
+{: .form master="dog_grid" }
+```
+
+(the fence form below still works, and is the way to seed a card with its own rows).
+
 ```yaml
 - name: Lucky
   age: 3

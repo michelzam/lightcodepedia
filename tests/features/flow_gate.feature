@@ -97,17 +97,17 @@ Feature: 🚦 A workflow ordered by its own values
     they turn into a button with one line. Red until the title is finished
     plus the line typed: the smallest red-then-green in the course.
 
-    Given the runner serves the course page "courses/micro_build_ai/module_04/00_first_screen.md"
-    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/00_first_screen.md"
+    Given the runner serves the course page "courses/micro_build_ai/module_04/01_first_screen.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/01_first_screen.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
     And I run the lesson's proof
     Then the lesson's proof is red
 
   Scenario: Module 04's first screen is green once the link is a button
-    Given the runner serves the course page "courses/micro_build_ai/module_04/00_first_screen.md"
+    Given the runner serves the course page "courses/micro_build_ai/module_04/01_first_screen.md"
     And the learner has finished the welcome and turned its link into a button
-    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/00_first_screen.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/01_first_screen.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
     And I run the lesson's proof
@@ -118,24 +118,60 @@ Feature: 🚦 A workflow ordered by its own values
     The second screen of the learner's app: the dog pile, declared in the
     pad with no face, until the learner types the datagrid line.
 
-    Given the runner serves the course page "courses/micro_build_ai/module_04/01_dogs.md"
+    Given the runner serves the course page "courses/micro_build_ai/module_04/02_dogs.md"
     And the runner serves the course file "courses/micro_build_ai/module_00/dogs.yaml"
-    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/01_dogs.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/02_dogs.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
     And I run the lesson's proof
     Then the lesson's proof is red
 
   Scenario: Module 04's dogs screen is green once the pile wears a table
-    Given the runner serves the course page "courses/micro_build_ai/module_04/01_dogs.md"
+    Given the runner serves the course page "courses/micro_build_ai/module_04/02_dogs.md"
     And the runner serves the course file "courses/micro_build_ai/module_00/dogs.yaml"
     And the learner has given the dog pile a table
-    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/01_dogs.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/02_dogs.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
     And I run the lesson's proof
     Then the lesson's proof is green
     And the pad's preview wears app chrome titled "Our dogs"
+
+  Scenario: Module 04's three faces are red on arrival
+    Given the runner serves the course page "courses/micro_build_ai/module_04/03_faces.md"
+    And the runner serves the course file "courses/micro_build_ai/module_00/dogs.yaml"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/03_faces.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's proof
+    Then the lesson's proof is red
+
+  Scenario: Module 04's three faces are green once the card and the chart are typed
+    Given the runner serves the course page "courses/micro_build_ai/module_04/03_faces.md"
+    And the runner serves the course file "courses/micro_build_ai/module_00/dogs.yaml"
+    And the learner has given the pile a card and a chart
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/03_faces.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's proof
+    Then the lesson's proof is green
+
+  Scenario: Module 04's Essentials beat proof is red until the learner's beat is written
+    Given the runner serves the course page "courses/micro_build_ai/module_04/04_concepts.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/04_concepts.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's proof
+    Then the lesson's proof is red
+
+  Scenario: Module 04's Essentials beat proof is green once the beat is written
+    Given the runner serves the course page "courses/micro_build_ai/module_04/04_concepts.md"
+    And the learner has written the chart's beat
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/04_concepts.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's proof
+    Then the lesson's proof is green
 
   Scenario: A cell can count a table, so no component is needed for one number
     Michel, 2026-08-06: "I am totally surprised by stat. Could it be rather

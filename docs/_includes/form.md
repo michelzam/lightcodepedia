@@ -632,7 +632,11 @@ Auto-included by docs/_layouts/default.html.
      and the shared helpers aliased above. */
 
   if (window.lcRegisterUpgrader) {
-    window.lcRegisterUpgrader(".highlighter-rouge.form, pre.form", upgradeForm);
+    /* a link paragraph too — [The dog](#) + {: .form master="dog_grid" }: a
+       card that follows a table has no words of its own, so it needs no
+       fence (Michel, 2026-10-03: "keep simple things simple — the chart
+       needs none, why would the form"). Same spelling as a chart or a grid. */
+    window.lcRegisterUpgrader(".highlighter-rouge.form, pre.form, p.form", upgradeForm);
     window.lcRegisterUpgrader("div.lc-form-src", upgradeFormFile);
   }
 

@@ -169,6 +169,26 @@ def step_serve_course_file(context, path):
     context.page.route("**/raw.githubusercontent.com/**/" + path + "*", fulfill)
 
 
+@given("the learner has given the pile a card and a chart")
+def step_faces_fix(context):
+    def fix(body):
+        line = '{: .datagrid #dog_grid source="dogs" rows="5" }\n'
+        assert line in body, "the faces seed no longer carries the named table the lesson builds on"
+        return body.replace(line, line + '\n[The dog](#)\n{: .form master="dog_grid" }\n'
+                                         '\n[Fees](#)\n{: .chart source="dogs" x="name" y="fee" }\n')
+    _serve_course_page(context, context.lesson_path, fix)
+
+
+@given("the learner has written the chart's beat")
+def step_beat_fix(context):
+    def fix(body):
+        seed = "- user: …\n- ui: …\n- command: …\n- event: …\n"
+        assert seed in body, "the beat seed no longer carries the four dotted notes"
+        return body.replace(seed, "- user: The coordinator\n- ui: the fees chart\n"
+                                  "- command: Compare the fees\n- event: The dearest dog is known\n")
+    _serve_course_page(context, context.lesson_path, fix)
+
+
 @then('the pad\'s preview wears app chrome titled "{title}"')
 def step_app_chrome(context, title):
     """A saved AND decorated pad is a page of the learner's app: its preview

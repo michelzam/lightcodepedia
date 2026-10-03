@@ -107,6 +107,10 @@ by construction.
 
 Drop `{: .agent }` after a fenced YAML block. That's the whole syntax.
 
+The panel shows the last exchange — 💬 your question, 🤖 the answer — and
+**↩** on the question puts it back in the box, so you can change something
+on the page and ask the same thing again without retyping it.
+
 ````markdown
 ```yaml
 system: You are a Python tutor. Keep answers short.

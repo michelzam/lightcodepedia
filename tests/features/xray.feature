@@ -380,6 +380,34 @@ Feature: X-ray inspector
     And the lens draws no part called "ozaukee"
     And the lens draws no wire from it
 
+  Scenario: The pipes stay on screen after the keys are released
+    Michel, 2026-10-03: "I would like the pipes to stay visible after I
+    release the keys so I can take screenshots." Letting go of ⌥ pins the
+    scene; a click anywhere, or Esc, puts it away. Phones are untouched.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/ghost.md" with the document:
+      """
+      # Ghost
+
+      ```yaml
+      - name: Lucky
+        fee: 150
+      ```
+      {: .dataset #dogs }
+
+      [Dogs](#)
+      {: .datagrid source="dogs" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/ghost.md"
+    And I wait for the page to be interactive
+    And I sweep the lens over the wired table
+    And I release the x-ray keys
+    Then the x-ray scene is still on screen
+    When I click anywhere on the page
+    Then the x-ray scene is gone
+
   Scenario: A working wire beside a broken one is what makes the broken one legible
     The lesson's whole mechanism. A dataset alone draws no wire — only a
     bound VISUAL does — so a learner with nothing but a mis-wired part has

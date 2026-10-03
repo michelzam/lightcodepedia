@@ -5,6 +5,13 @@ X-ray is the platform's inspection mode: switch it on from the ⚙️ pill (or h
 Each block gets a ghost; the ⚙️ gear on a ghost opens the inline editor — one
 dialog for a component's knobs and its content, reachable before any account.
 
+## 📌 It stays for the screenshot
+
+On a computer, letting go of ⌥ no longer puts the reveal away: the lens or
+the pipes stay **pinned** until you click or tap anywhere, press **Esc**, or
+sweep again with ⌥. A screenshot chord is keys, not a click, so the pipes
+hold still for it.
+
 ## 📱 On a phone or tablet
 
 Everything works by touch — ⚙️ pill → **🔬 X-ray**, then:

@@ -105,6 +105,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-response { margin-bottom: 0.6em; }
 .lc-agent-response:empty { display: none; }
 .lc-agent-msg-user { background: #e3f2fd; color: #1565c0; padding: 0.55em 0.85em; border-radius: 8px 8px 8px 2px; margin-bottom: 0.6em; font-size: 0.9em; white-space: pre-wrap; word-break: break-word; }
+.lc-agent-again { font: inherit; font-size: 0.8em; margin-left: 0.4em; padding: 0 0.4em; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; color: #334155; cursor: pointer; vertical-align: middle; }
+.lc-agent-again:hover { border-color: #0066cc; color: #0066cc; }
 .lc-agent-msg-bot { background: #f5f5f5; color: #222; padding: 0.7em 0.95em; border-radius: 8px 8px 2px 8px; font-size: 0.94em; line-height: 1.55; word-break: break-word; }
 .lc-agent-msg-bot p:first-child { margin-top: 0; }
 .lc-agent-msg-bot p:last-child { margin-bottom: 0; }
@@ -1170,9 +1172,18 @@ Auto-included by docs/_layouts/default.html.
           : '') + (result.healed
           ? '<div class="lc-agent-note lc-agent-healed">🩹 ' + escapeHtml(result.healed) + '</div>'
           : '');
+        /* who said what, at a glance — and ↩ puts the question back in the
+           box, so a learner who changed something can ask the same thing
+           again without retyping it (Michel, 2026-10-03) */
         response.innerHTML =
-          '<div class="lc-agent-msg-user">' + escapeHtml(question) + '</div>' +
-          '<div class="lc-agent-msg-bot">' + renderMarkdown(result.text) + '</div>';
+          '<div class="lc-agent-msg-user">💬 ' + escapeHtml(question) +
+            ' <button type="button" class="lc-agent-again" title="Put this question back in the box">↩</button></div>' +
+          '<div class="lc-agent-msg-bot">🤖 ' + renderMarkdown(result.text) + '</div>';
+        var againBtn = response.querySelector('.lc-agent-again');
+        if (againBtn) againBtn.addEventListener('click', function () {
+          var pe = panel.querySelector('.lc-agent-prompt');
+          if (pe) { pe.value = question; pe.focus(); }
+        });
         /* THE BOX STOPS INVITING THE OPENING LINE ONCE IT HAS BEEN SAID.
            A placeholder that reads Ask "what still drifts?" after the first
            reply told a student to ask it again (Michel, 2026-09-18). From
