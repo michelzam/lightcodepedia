@@ -2,7 +2,7 @@
  {
   "run": "2026-10-03T01:30Z",
   "features": 50,
-  "features_failed": 2,
+  "features_failed": 1,
   "scenarios": 619,
   "scenarios_failed": 2,
   "steps": 4570,
