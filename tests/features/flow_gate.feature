@@ -172,6 +172,7 @@ Feature: 🚦 A workflow ordered by its own values
     And I wait for the cells to settle
     And I run the lesson's proof
     Then the lesson's proof is green
+    And the story pad stacks its preview above its source
 
   Scenario: A cell can count a table, so no component is needed for one number
     Michel, 2026-08-06: "I am totally surprised by stat. Could it be rather

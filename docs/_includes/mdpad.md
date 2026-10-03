@@ -36,6 +36,9 @@ IAL knobs:
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
   id="..."    optional — names the pad for X-ray
+  layout="rows"  preview ABOVE the source instead of beside it — for a
+              landscape document (a story in colour) that would be squeezed
+              in half a pane. DEFAULT: side by side (left/right).
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -67,6 +70,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-appbody { padding: 0.8em; overflow: auto; flex: 1; }
 /* phones: preview first, then the source under it — same order as wide */
 @media (max-width: 640px) { .lc-mdpad { flex-direction: column; } }
+/* layout="rows": the same stacking on every screen, for a landscape document */
+.lc-mdpad.lc-mdpad-rows { flex-direction: column; }
 .lc-mdpad-bar { margin: -0.4em 0 1em; display: flex; justify-content: flex-end; gap: 0.5em; align-items: center; }
 .lc-mdpad-mine { margin-right: auto; font-size: 0.78em; color: #2e7d32; }
 .lc-mdpad-reset { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px;
@@ -118,6 +123,7 @@ Auto-included by docs/_layouts/default.html.
     var wrap = document.createElement("div");
     wrap.className = "lc-mdpad";
     if (deco) wrap.setAttribute("data-lc-decorations", "1");
+    if ((el.getAttribute("layout") || "") === "rows") wrap.classList.add("lc-mdpad-rows");
     if (id) wrap.setAttribute("data-lc-id", id);
     /* a named pad is page data: it publishes {source} as a cell scope, so
        expressions can read what the learner typed — {=cv1.source} in prose,

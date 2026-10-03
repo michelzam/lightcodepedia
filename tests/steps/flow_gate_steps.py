@@ -189,6 +189,15 @@ def step_beat_fix(context):
     _serve_course_page(context, context.lesson_path, fix)
 
 
+@then("the story pad stacks its preview above its source")
+def step_pad_rows(context):
+    """layout="rows": a landscape document gets the whole width."""
+    pad = context.page.locator("[data-lc-id='my_beat'].lc-mdpad.lc-mdpad-rows")
+    pad.wait_for(state="attached", timeout=20_000)
+    assert context.page.evaluate(
+        "() => getComputedStyle(document.querySelector(\"[data-lc-id='my_beat'].lc-mdpad\")).flexDirection") == "column"
+
+
 @then('the pad\'s preview wears app chrome titled "{title}"')
 def step_app_chrome(context, title):
     """A saved AND decorated pad is a page of the learner's app: its preview
