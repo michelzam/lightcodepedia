@@ -48,13 +48,13 @@ Feature: Solution space — the event flow
     And the event flow legend mentions "rule"
 
   Scenario: A step's marked words wear the flow's colours
-    The keyword decides — Given paints data, When paints a command, Then
-    paints an event — and only marked words are painted, so nothing is
+    The keyword decides — Given paints an event (a state already true,
+    Michel 2026-10-03), When paints a command, Then paints an event — and only marked words are painted, so nothing is
     guessed from the words themselves (Michel, 2026-08-11).
 
     When I navigate to "/components/feature"
     And I wait for the page to be interactive
-    Then in "paint_demo" the word "Biscuit" is painted "data"
+    Then in "paint_demo" the word "Biscuit" is painted "event"
     And in "paint_demo" the word "names a dog" is painted "command"
     And in "paint_demo" the word "is open" is painted "event"
 

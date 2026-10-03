@@ -246,7 +246,7 @@ painted, so the author chooses what matters:
 
 | keyword | paints marked words as |
 |---|---|
-| `Given` | 📦 `data` — shown on a 🖥️  **ui**{: .ui }|
+| `Given` | ⚡ `event` — a state that already became true, shown on a 🖥️  **ui**{: .ui } (mark a word `{: .data }` for 📦 data) |
 | `When` | 🗣️ `command` — what **someone**{: .user } does |
 | `Then` | ⚡ `event` — what became true |
 

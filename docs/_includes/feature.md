@@ -135,7 +135,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-step-icon.fail { color: #dc2626; }
 .lc-feature-step-icon.skip { color: #d1d5db; }
 .lc-feature-step-keyword { color: #7c3aed; font-weight: 600; min-width: 3.5em; }
-/* the keyword in the flow's own colours — Given=data, When=command,
+/* the keyword in the flow's own colours — Given=event (a state), When=command,
    Then=event; And/But inherit. Same tokens the event flow paints with. */
 .lc-feature-step-keyword.lc-kw-data,
 .lc-feature-step-keyword.lc-kw-command,
@@ -732,13 +732,17 @@ Registers with window.lcScanElement so the editor preview also renders cards.
      is guessing which words mean what — that would be confidently wrong
      in front of a learner. The KEYWORD already says it:
 
-         Given …  📦 data      When …  🗣️ command     Then …  ⚡ event
+         Given …  ⚡ a state   When …  🗣️ command     Then …  ⚡ event
 
      and only MARKED words are painted — `backticked` or **bold** — so the
      author chooses what matters. An IAL after the mark overrides the
      default: **is open**{: .event } inside a Given. And/But inherit the
      last real keyword. Everything else renders as ordinary markdown. */
-  var GWT = { given: "data", when: "command", then: "event" };
+  /* Given = event (Michel, 2026-10-03): a Given is a STATE — something
+     that already became true — so it wears the event's orange, as Then
+     does; only When, the command, is blue. Data has no keyword of its own:
+     mark a word {: .data } to paint it. */
+  var GWT = { given: "event", when: "command", then: "event" };
   var lastGwt = "";
   var MARK = /(?:\*\*([^*]+)\*\*|`([^`]+)`)(?:\{:\s*\.([a-z_]+)\s*\})?/g;
 
@@ -914,7 +918,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
         } else if (r.kind === "step") {
           var isAnd = /^(And|But)$/i.test(r.keyword);
           if (!isAnd) lastGwt = r.keyword;
-          /* the keyword itself wears the flow's paint — Given 📦 data,
+          /* the keyword itself wears the flow's paint — Given ⚡ a state,
              When 🗣️ command, Then ⚡ event — the same palette the story's
              notes wear, so one grammar shows twice (Michel, 2026-08-23) */
           var kwKind = GWT[String(isAnd ? lastGwt : r.keyword).toLowerCase()] || "";

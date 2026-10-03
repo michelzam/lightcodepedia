@@ -155,7 +155,11 @@ def check_page(path, text):
 
     problems.extend(verb_problems(body))
 
+    import shutil
     for i, m in enumerate(re.finditer(r"^```dot\n(.*?)^```", text, re.S | re.M)):
+        if not shutil.which("dot"):      # no graphviz here: say so once, do not crash the audit
+            problems.append("DOT-SKIPPED   graphviz is not installed in this sandbox; dot blocks unchecked")
+            break
         p = subprocess.run(["dot", "-Tsvg"], input=m.group(1),
                            capture_output=True, text=True)
         if p.returncode != 0:
@@ -163,6 +167,7 @@ def check_page(path, text):
 
     problems.extend(hint_problems(text))
     problems.extend(cross_step_problems(text))
+    problems.extend(gherkin_problems(text))
 
     m = re.search(r"^```yaml\n(bot:.*?)^```", text, re.S | re.M)
     if m:
@@ -212,6 +217,28 @@ def check_page(path, text):
 # call (`Attr(float, …)`) is already saying it.
 _ASSIGN = re.compile(r"^\s*((?:self\.)?[a-z_][a-z_0-9]*)\s*=\s*(\S.*)$")
 _DECLARED = re.compile(r"^\s*((?:self\.)?[a-z_][a-z_0-9]*)\s*:\s*[^=]+=")
+
+
+# ── Gherkin is systematic or it is prose (Michel, 2026-10-03) ─────────────
+# The header's three lines are keywords the card colours — `As a`, `I want`,
+# `So that` — so "As the coordinator" renders black among two blue lines.
+# And every scenario carries a When, even one with no body yet: Given →
+# When → Then is the beat a check writes down, and a scenario without the
+# command in the middle is a state asserted twice.
+def gherkin_problems(text):
+    out = []
+    for m in re.finditer(r"^```gherkin\n(.*?)^```", text, re.S | re.M):
+        g = m.group(1)
+        for h in re.finditer(r"^\s*As (the|an?) (.*)$", g, re.M):
+            if h.group(1) != "a":
+                out.append(f"FEATURE-AS-THE  \"As {h.group(1)} {h.group(2)[:40]}\" — the keyword "
+                           f"is `As a`, the only spelling the card colours.")
+        for sc in re.split(r"^\s*Scenario(?: Outline)?:", g, flags=re.M)[1:]:
+            if not re.search(r"^\s*When\b", sc, re.M):
+                title = sc.strip().split("\n", 1)[0].strip()
+                out.append(f"SCENARIO-NO-WHEN  \"{title[:50]}\" has no When — Given → When → "
+                           f"Then, even with no body yet.")
+    return out
 
 
 def hint_problems(text):
