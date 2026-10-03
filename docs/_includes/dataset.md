@@ -64,6 +64,7 @@ Auto-included by docs/_layouts/default.html.
 <script>
 (function () {
 
+  var _lcSiteRepo = {{ site.github.repository_nwo | default: "" | jsonify }};
   window.lcDatasets = window.lcDatasets || {};
   window.lcDatasetListeners = window.lcDatasetListeners || {};
 
@@ -200,6 +201,51 @@ Auto-included by docs/_layouts/default.html.
            the generic auto-refresh, not a dashboard special-case. */
         var every = parseInt(el.getAttribute("refresh") || "0", 10);
         if (every > 0) setInterval(pull, Math.max(10, every) * 1000);
+        return;
+      }
+      /* RELATIVE LINK — a pile that LIVES IN A FILE (Michel, 2026-10-03:
+         "why is there a yaml if we use the dogs yaml file?"). The fence was
+         a second truth for the same rows, so a dataset can now be declared
+         by its file alone: [dogs](../module_00/dogs.yaml) + {: .dataset #dogs }.
+         The learner's bench copy wins when there is one; otherwise the
+         lesson's own copy, read from the course repo beside the page. */
+      if (href && href !== "#") {
+        var rfmt = (el.getAttribute("format") || "").toLowerCase();
+        if (window.lcInferFormat) rfmt = window.lcInferFormat(href, rfmt);
+        var fromSource = function () {
+          var srcEl = el.closest ? el.closest("[data-lc-src-path]") : null;
+          if (!srcEl) srcEl = document.querySelector(".lc-run[data-lc-src-path]");
+          var srcPath = srcEl ? (srcEl.getAttribute("data-lc-src-path") || "") : "";
+          var dir = srcPath.indexOf("/") >= 0 ? srcPath.replace(/\/[^\/]*$/, "") : "";
+          var parts = [];
+          (dir ? dir + "/" + href : href).split("/").forEach(function (p) {
+            if (!p || p === ".") return;
+            if (p === "..") parts.pop(); else parts.push(p);
+          });
+          var repo = (srcEl && srcEl.getAttribute("data-lc-src-repo")) || _lcSiteRepo;
+          var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+          var h = { Accept: "application/vnd.github.v3.raw" };
+          if (pat) h.Authorization = "Bearer " + pat;
+          return fetch("https://api.github.com/repos/" + repo + "/contents/" + parts.join("/"), { headers: h })
+            .then(function (r) {
+              if (r.status === 404) return null;
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              return r.text();
+            });
+        };
+        var bench = window.lcBench
+          ? window.lcBench.read(href, el).then(function (f) { return f ? f.text : null; })
+          : Promise.resolve(null);
+        bench.catch(function () { return null; })
+          .then(function (text) {
+            if (text !== null) { el.setAttribute("data-lc-mine", "1"); return text; }
+            return fromSource();
+          })
+          .then(function (text) {
+            if (text === null) { window.lcSetDataset(id, []); return; }
+            setFromText(text, rfmt, el, id);
+          })
+          .catch(function (e) { if (!window.lcDatasets[id]) window.lcSetDataset(id, [{ "⚠️": e.message }]); });
         return;
       }
     }

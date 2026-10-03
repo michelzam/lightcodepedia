@@ -119,6 +119,7 @@ Feature: 🚦 A workflow ordered by its own values
     pad with no face, until the learner types the datagrid line.
 
     Given the runner serves the course page "courses/micro_build_ai/module_04/01_dogs.md"
+    And the runner serves the course file "courses/micro_build_ai/module_00/dogs.yaml"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/01_dogs.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
@@ -127,6 +128,7 @@ Feature: 🚦 A workflow ordered by its own values
 
   Scenario: Module 04's dogs screen is green once the pile wears a table
     Given the runner serves the course page "courses/micro_build_ai/module_04/01_dogs.md"
+    And the runner serves the course file "courses/micro_build_ai/module_00/dogs.yaml"
     And the learner has given the dog pile a table
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/01_dogs.md"
     And I wait for the page to be interactive

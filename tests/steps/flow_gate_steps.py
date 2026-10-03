@@ -146,10 +146,27 @@ def step_dogs_fix(context):
     """Module 04's second screen: the two lines under the pile's dataset
     decoration that give it a face. Loud if the seed drifts."""
     def fix(body):
-        line = '{: .dataset #dogs save="../module_00/dogs.yaml" }\n'
+        line = '[dogs](../module_00/dogs.yaml)\n{: .dataset #dogs }\n'
         assert line in body, "the dogs seed no longer carries the dataset line the lesson builds on"
         return body.replace(line, line + '\n[The dogs](#)\n{: .datagrid source="dogs" }\n')
     _serve_course_page(context, context.lesson_path, fix)
+
+
+@given('the runner serves the course file "{path}"')
+def step_serve_course_file(context, path):
+    """A file BESIDE the lesson (a dataset's own yaml) — its own closure, so
+    the lesson's body and the file's never share one variable."""
+    import os
+    if not os.path.isfile(path):
+        context.scenario.skip("%s is not in this repo — course content lives in the lab" % path)
+        return
+    with open(path, encoding="utf-8") as f:
+        body = f.read()
+
+    def fulfill(route):
+        route.fulfill(status=200, content_type="text/plain; charset=utf-8", body=body)
+    context.page.route("**/api.github.com/repos/**/contents/" + path + "*", fulfill)
+    context.page.route("**/raw.githubusercontent.com/**/" + path + "*", fulfill)
 
 
 @then('the pad\'s preview wears app chrome titled "{title}"')
