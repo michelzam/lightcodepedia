@@ -172,7 +172,7 @@ def step_serve_course_file(context, path):
 @given("the learner has given the pile a card and a chart")
 def step_faces_fix(context):
     def fix(body):
-        line = '{: .datagrid #dog_grid source="dogs" rows="5" }\n'
+        line = '{: .datagrid #dog_grid source="dogs" rows="5" compute="photo = \'https://placedog.net/400/240?id=\' + str(pic)" }\n'
         assert line in body, "the faces seed no longer carries the named table the lesson builds on"
         return body.replace(line, line + '\n[The dog](#)\n{: .form master="dog_grid" }\n'
                                          '\n[Fees](#)\n{: .chart source="dogs" x="name" y="fee" }\n')
