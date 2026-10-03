@@ -413,6 +413,27 @@ def step_serve_mp3(context, file):
     )
 
 
+@given('the studio file "{file}" is served as a page that never plays')
+def step_serve_stalled(context, file):
+    """what a not-yet-published mp3 looks like from the page: a 200 that is
+    not audio — some browsers never raise `error` on it"""
+    context.page.route(
+        "**/assets/audio/" + file + "*",
+        lambda r: r.fulfill(status=200, content_type="text/html",
+                            body="<html><body>not here yet</body></html>"),
+    )
+
+
+@then('the guide moves on to "{snippet}" within {secs:d} seconds')
+def step_guide_moves_on(context, snippet, secs):
+    context.page.wait_for_function(
+        """(w) => {
+          const b = document.querySelector('.lc-avatar-speech');
+          return !!(b && b.textContent.indexOf(w) >= 0);
+        }""",
+        arg=snippet, timeout=secs * 1000)
+
+
 @then('the avatar "{avatar_id}" speaks from the studio file "{file}"')
 def step_speaks_from_studio(context, avatar_id, file):
     """The line resolved to the committed mp3 — TTS never sets audioEl.src."""

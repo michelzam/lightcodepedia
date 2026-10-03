@@ -329,6 +329,40 @@ Feature: Avatar — speaking overlay instructor
     And I click the avatar trigger for "guide"
     Then the avatar "guide" speaks from the studio file "lc-test-voice.mp3"
 
+  Scenario: A studio file that never starts playing does not silence the line
+    Michel, 2026-10-03: "some voices are mine, some are completely absent."
+    The recordings were in the lab, not yet published where the page is
+    served; iOS sits on a 404 page without raising error, so the line was
+    never heard. A watchdog settles it: no sound within a few seconds and
+    the line falls back to TTS, and the walk moves on.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "course/mod/stall.md" with the document:
+      """
+      # Bench page
+
+      Some prose.
+
+      ```yaml
+      voice: off
+      script:
+        - say: "Hello builders."
+        - say: "Second line, still here."
+      ```
+      {: .avatar #guide }
+
+      [▶ Play](#)
+      {: .avatar_trigger target="guide" }
+      """
+    And the voice manifest maps "Hello builders." to "lc-stalled.mp3" under the mount "course-mod-stall" for avatar "guide"
+    And the studio file "lc-stalled.mp3" is served as a page that never plays
+    When I navigate to "/run.html#src=gh:acme/demo/course/mod/stall.md"
+    And I wait for the page to be interactive
+    And I click the avatar trigger for "guide"
+    Then the avatar "guide" speaks from the studio file "lc-stalled.mp3"
+    And the guide moves on to "Second line" within 12 seconds
+
   Scenario: A recording under the page's own mount still plays
     The control for the scenario above: exact-slug resolution must keep
     winning before any cross-mount fallback.

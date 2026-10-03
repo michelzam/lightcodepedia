@@ -520,10 +520,20 @@ Auto-included by docs/_layouts/default.html.
     if (window.lcHref) url = window.lcHref(url);
     if (a.getAttribute("src") !== url) a.src = url;
     try { a.currentTime = 0; } catch (e) {}
-    var done = function () { stopAudio(av); resetMouth(av); onEnd(); };
-    var fail = function () { stopAudio(av); resetMouth(av); (onErr || onEnd)(); };
+    /* ONE OUTCOME PER LINE. A file that is not there yet (generated in the
+       lab, not yet published where this page is served) does not always
+       raise `error` — iOS sits on a 404 page in silence, so the line was
+       simply never heard (Michel, 2026-10-03: "some voices are completely
+       absent"). A watchdog settles it: no sound within a few seconds → the
+       caller's fallback (TTS), exactly as a prompt error would. */
+    var settled = false, started = false;
+    var once = function (fn) { return function () { if (settled) return; settled = true; fn(); }; };
+    var done = once(function () { stopAudio(av); resetMouth(av); onEnd(); });
+    var fail = once(function () { stopAudio(av); resetMouth(av); (onErr || onEnd)(); });
     a.onended = done;
     a.onerror = fail;                 /* missing/unreachable file → caller's fallback */
+    a.onplaying = function () { started = true; };
+    setTimeout(function () { if (!started && !settled && av.audioEl === a) fail(); }, 4000);
     a.play().catch(fail);
   }
   function mouthLoop(av) {
