@@ -1205,6 +1205,20 @@ Auto-included by docs/_layouts/default.html.
           logEl.appendChild(entry);
         }
 
+        /* 📓 THE AGENT JOINS THE DOC LOG (Michel, 2026-10-04): a page agent's
+           exchange lands in the learner's bench beside Doc's — same file,
+           same buffer, same riders (the next 💾, or leaving). The learner's
+           own words, not the augmented prompt; the kind names the agent and
+           the model that answered. No bench, no key → nothing happens. */
+        try {
+          if (window.lcDocLog && window.lcDocLog.log) {
+            var agentName = cfg.name || panel.getAttribute('data-lc-id') || panel.id.replace(/^lc-agent-/, '');
+            var agentKind = 'agent ' + agentName +
+              (result.engine && result.engine.model ? ' · ' + result.engine.model : '');
+            window.lcDocLog.log({ host: panel }, question, result.text, agentKind);
+          }
+        } catch (e) {}
+
         // If bound: add an Apply button to the first python code block in the response.
         if (boundId) {
           var bot = response.querySelector('.lc-agent-msg-bot');

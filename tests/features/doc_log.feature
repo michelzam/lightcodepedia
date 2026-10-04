@@ -28,6 +28,12 @@ Feature: Doc's exchanges land in the learner's bench
           - say: "Here. The gear on the corner of this table."
       ```
       {: .avatar #guide dock="true" size="115" }
+
+      ```yaml
+      name: Vet
+      system: You are the shelter's vet. Answer in one line.
+      ```
+      {: .agent #vet }
       """
 
   Scenario: A live question and its answer are in the bench once the learner leaves
@@ -48,3 +54,14 @@ Feature: Doc's exchanges land in the learner's bench
     And the learner leaves the page without saving
     Then the bench received a commit to "courses/demo/mod/__guide.doc.md" containing "**Q** Where is the gear?"
     And the bench received a commit to "courses/demo/mod/__guide.doc.md" containing "· kept"
+
+  Scenario: A page agent's exchange joins the same log, named after the agent
+    Given the model endpoint answers in full with "She is healthy, just shy."
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/guide.md"
+    And I wait for the page to be interactive
+    And I ask the "vet" agent "Is Luna healthy?"
+    Then the bench received no commit
+    When the learner leaves the page without saving
+    Then the bench received a commit to "courses/demo/mod/__guide.doc.md" containing "**Q** Is Luna healthy?"
+    And the bench received a commit to "courses/demo/mod/__guide.doc.md" containing "She is healthy, just shy."
+    And the bench received a commit to "courses/demo/mod/__guide.doc.md" containing "· agent Vet"
