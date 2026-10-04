@@ -170,6 +170,23 @@ Feature: Problem space — persona, pitch, impact map
     Then the persona card "sam" shows the name "Sam"
     And the editor of "sam" carries a versions handle
 
+  Scenario: The starter survives an editor that arrives late
+    Pedia's full suite, 2026-10-03/04: ↺ put "Unnamed" on the card every other
+    run, green on the rig every time. The card wires before the editor form has
+    published (its grid library comes from a CDN), so the starter it remembered
+    was its own placeholder fence, not the author's document. The seed must be
+    the first value the source ever publishes, whenever that lands.
+
+    Given I have a clean browser page
+    And the editor's grid library arrives late
+    When I navigate to "/components/persona"
+    And I wait for the page to be interactive
+    Then the persona card "sam" shows the name "Sam"
+    When the form "sam_src" field "name" is set to "Zed"
+    Then the persona card "sam" shows the name "Zed"
+    When I start over from the lesson's starter for "sam"
+    Then the persona card "sam" shows the name "Sam"
+
   Scenario: In the runner, a leaf link scrolls to its proof and keeps the page's address
     Michel, 2026-10-01: "the impact map has a link 'The count table' but it
     leads nowhere" — on /run.html the hash is the address, and a plain

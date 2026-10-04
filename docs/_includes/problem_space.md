@@ -179,11 +179,20 @@ Auto-included by docs/_layouts/default.html.
   /* wire one document card: live source + bench save. getData/render come
      from the component; this helper owns the plumbing. */
   function wireDoc(node, opts) {
+    /* THE STARTER IS THE FIRST VALUE THE SOURCE EVER PUBLISHES. The card
+       often wires before its editor form has published (the form waits on a
+       library from a CDN), so a starter copied at wiring time was the card's
+       own placeholder fence — and ↺ put "Unnamed" on the card every other
+       run of pedia's suite, never on the rig (2026-10-03/04). */
+    var starter = null;   /* set once, by the source's first non-empty publish */
+    function remember(d) {
+      if (starter === null && d && Object.keys(d).length) starter = JSON.parse(JSON.stringify(d));
+    }
     if (opts.srcId) {
       node.setAttribute("data-bind", opts.srcId);
       var pull = function () {
         var d = readSource(opts.srcId);
-        if (d) { opts.setData(d); opts.render(); }
+        if (d) { remember(d); opts.setData(d); opts.render(); }
         return !!d;
       };
       pull();
@@ -219,8 +228,8 @@ Auto-included by docs/_layouts/default.html.
     mine.textContent = writable ? "✓ yours — saved in your space" : "✓ yours";
     bar.appendChild(mine);
     var keep = null, vers = null;
-    /* the author's starter, as the fence said it before any copy came back */
-    var seed = JSON.parse(JSON.stringify(opts.getData() || {}));
+    /* the author's starter is what the source first publishes — never the
+       card's own fence, which on a sourced card is only a placeholder */
     function load(obj) {
       if (!(opts.srcId && pushToForm(opts.srcId, obj, 5))) { opts.setData(obj); opts.render(); }
     }
@@ -242,7 +251,7 @@ Auto-included by docs/_layouts/default.html.
       over.title = "Put the lesson's starter back in the editor — 💾 to keep it; 🕘 keeps every version you saved";
       over.addEventListener("click", function () {
         if (!confirm("Put the lesson's starter back in the editor? Your saved versions stay in 🕘.")) return;
-        var fresh = JSON.parse(JSON.stringify(seed));
+        var fresh = JSON.parse(JSON.stringify(starter || opts.getData() || {}));
         Object.keys(opts.getData() || {}).forEach(function (k) { if (!(k in fresh)) fresh[k] = ""; });
         load(fresh);
       });

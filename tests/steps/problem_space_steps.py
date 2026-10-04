@@ -239,3 +239,28 @@ def step_imap_not_collects(context, cid, ref):
     context.page.wait_for_timeout(1500)
     found = _card(context, "imap", cid).locator(f'.lc-imap-found a[href="#{ref}"]')
     assert found.count() == 0, "the map listed a lesson check as an app feature"
+
+
+@given("the editor's grid library arrives late")
+def step_ag_grid_late(context):
+    """The live site's order of arrival, made deterministic: AG Grid (the
+    editor form's library) lands 2.5 s after everything else, so a document
+    card is wired before its source form has published. A sandbox serving AG
+    from disk (AG_GRID_DIR) keeps doing so, only late; CI lets the CDN answer
+    after the pause. The pause pumps Playwright's loop, so nothing else waits."""
+    import os
+    ag_dir = os.environ.get("AG_GRID_DIR") or ""
+    path = os.path.join(ag_dir, "dist", "ag-grid-community.min.js") if ag_dir else ""
+    body = open(path, "rb").read() if path and os.path.isfile(path) else None
+
+    def late(route):
+        context.page.wait_for_timeout(2500)
+        if body is not None:
+            route.fulfill(status=200, body=body,
+                          content_type="application/javascript; charset=utf-8")
+        else:
+            route.continue_()
+
+    context.page.route(
+        "https://cdn.jsdelivr.net/npm/ag-grid-community@*/dist/ag-grid-community.min.js",
+        late)
