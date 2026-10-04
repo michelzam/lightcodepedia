@@ -28,14 +28,22 @@ def step_stub_model_desk(context, v1, v2):
 
 @when('I brief the "{desk_id}" desk with "{text}"')
 def step_brief_named_desk(context, desk_id, text):
-    # the real flow is x-ray Keep → the block re-renders with the new yaml
-    # and the panel republishes data-system; the step reproduces that final
-    # state directly, which is exactly what the audit reads
+    # the real flow is x-ray Keep → the block re-renders with the new yaml,
+    # the panel's live config carries the new sheet and republishes
+    # data-system. The step reproduces that final state directly — BOTH the
+    # live config (what the next ask runs under, and what `desk.system` reads
+    # first since the runtime made it settable) and the mirrored attribute.
+    # Setting the attribute alone fooled the old reader and reddened pedia's
+    # full suite for days once the reader looked at the config (2026-10-04).
     sel = '[data-lc-id="' + desk_id + '"]'
     panel = context.page.locator(sel)
     panel.wait_for(state="attached", timeout=15_000)
     context.page.evaluate(
-        """([sel, t]) => document.querySelector(sel).setAttribute('data-system', t)""",
+        """([sel, t]) => {
+          var el = document.querySelector(sel);
+          if (el._lcCfg) el._lcCfg.system = t;
+          el.setAttribute('data-system', t);
+        }""",
         [sel, text],
     )
 
