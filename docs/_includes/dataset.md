@@ -406,6 +406,11 @@ Auto-included by docs/_layouts/default.html.
        (Canvas writes "Last, First", so that is by last name), a work
        table by module (Michel, 2026-09-11). A header click still re-sorts. */
     var sortAttr = el.getAttribute("sort") || null;
+    /* columns="topic, title": the table SHOWS these, in this order, and still
+       PUBLISHES the whole row — a narrow list on the left of a bound card that
+       reads every field (Michel, 2026-10-04, the stories example). */
+    var shownCols = (el.getAttribute("columns") || "").split(",")
+      .map(function (c) { return c.trim(); }).filter(Boolean);
     var wrap = document.createElement("div");
     wrap.className = "lc-datagrid";
     wrap.setAttribute("data-bind", bindId);
@@ -453,6 +458,7 @@ Auto-included by docs/_layouts/default.html.
       var allCols = Object.keys(data[0]);
       var urlCol  = allCols.indexOf("url") >= 0 ? "url" : null;
       var cols    = allCols.filter(function (c) { return c !== "url"; });
+      if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
 
       var sorted = data.slice();
       if (sortCol !== null) {

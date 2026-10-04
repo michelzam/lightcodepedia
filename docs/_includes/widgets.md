@@ -821,6 +821,23 @@ Auto-included by docs/_layouts/default.html.
     if (!a && el.getAttribute("save")) { upgradeBenchSlot(el); return; }
     if (!a) return;
     var href = a.getAttribute("href");
+    /* master="<grid id>": the frame FOLLOWS the selection — the link's own
+       href is what shows before a click (an issue page), the clicked row's
+       field="page" afterwards (that story's page). A "#" href starts blank.
+       (Michel, 2026-10-04, the stories example.) */
+    var masterId = el.getAttribute("master") || "";
+    if (masterId) {
+      var field = el.getAttribute("field") || "page";
+      var start = (href && href !== "#") ? href : "about:blank";
+      var frame = _iframeEl(start, el.getAttribute("height") || "600", "lc-embed-page");
+      frame.setAttribute("data-master", masterId);
+      el.parentNode.replaceChild(frame, el);
+      if (window.lcMasterDetail) window.lcMasterDetail.subscribe(masterId, function (row) {
+        var u = row && row[field];
+        if (typeof u === "string" && /^(https?:\/\/|\/)/i.test(u) && frame.src !== u) frame.src = u;
+      });
+      return;
+    }
     // External URLs → iframe — EXCEPT images: a photo is a picture, not a
     // page, and hotlinks as an <img> further down (all sizing knobs apply).
     // URL-API images carry no extension (placedog, unsplash source…) —

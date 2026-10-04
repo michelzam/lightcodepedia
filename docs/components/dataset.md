@@ -178,6 +178,60 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 [Sites](#)
 {: .datagrid source="links" }
 
+## A few columns shown, the whole row published
+
+`columns="topic, title"` on a bound grid shows those columns, in that order,
+and nothing else — the row it publishes on a click is still the whole row.
+So a narrow list can sit beside a card that reads every field.
+
+```json
+[
+  {"topic":"Chipmaking","title":"India brings five new plants into production","summary":"Twelve projects approved, five producing.","quote":"We can jump ahead."},
+  {"topic":"Diabetes","title":"Lilly wins approval for one dose each week","summary":"A weekly insulin shot.","quote":"Fewer injections."}
+]
+```
+{: .dataset #stories_few }
+
+[Two columns, click one](#)
+{: .datagrid source="stories_few" #few_grid columns="topic, title" }
+
+[The whole story](#)
+{: .form master="few_grid" #few_card }
+
+```gherkin
+Feature: A grid shows a few columns and publishes the whole row
+  As an author
+  I want a narrow list beside a card that reads every field
+  So that the list stays scannable and the detail stays complete
+
+  Scenario: Only the named columns are drawn
+    Given the grid with columns="topic, title"
+    :::python
+    self.grid: Datagrid = self.page.few_grid
+    :::
+    Then it draws two headers, in the order named
+    :::python
+    heads = [h._el.textContent.strip() for h in self.grid._qq("thead th")]
+    assert heads == ["Topic", "Title"], heads
+    :::
+
+  Scenario: The published row keeps the hidden fields
+    Given the grid and its bound card
+    :::python
+    self.trs: list = self.page.few_grid._qq("tbody tr")
+    :::
+    When I click the second row
+    :::python
+    self.trs[1]._el.click()
+    :::
+    Then the card holds the summary the grid never drew
+    :::python
+    card: Form = self.page.few_card
+    assert card.data.summary == "A weekly insulin shot.", card.data.summary
+    :::
+```
+{: .feature #columns_proof tags="data" visible="true" status="passing" }
+
 ## 🥸 How to write one
 
 ````markdown
@@ -210,6 +264,7 @@ Add a `url` field to any row — the column is **hidden** and the whole row beco
 | `.dataset` | `refresh="…"` | seconds (≥10) | Live mode: re-fetch on a timer (cache-busted); every bound grid/stat/chart repaints itself — no page reload |
 | `.datagrid` | `source="…"` | dataset id | Which dataset to display |
 | `.datagrid` | `rows="…"` | number | Rows per page (0 = all) |
+| `.datagrid` | `columns="…"` | `a, b, c` | Draw only these columns, in this order; the published row is still whole (bound grids) |
 | `.datagrid` | `height="…"` | px | A scrolling table with a sticky header instead of pages — wins over `rows` |
 | `.datagrid` | `url` column | URL string | Hidden column; makes rows clickable links |
 | `.datagrid` | UTC stamp cells | `…T…Z` strings | Print in the reader's local time, UTC on hover (data unchanged) |

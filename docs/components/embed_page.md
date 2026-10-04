@@ -49,6 +49,61 @@ Feature: A link becomes an embedded page
 - [ ] Nothing — the site ignores `?embed=true`.
 {: .quiz }
 
+## 🔗 A frame that follows a selection
+
+`master="<grid id>"` on an embed makes the frame follow the grid's selected
+row — its `page` field, or the column `field="…"` names. A grid with rows
+selects its first row at once, so the frame shows that page at once; the
+link's own page shows only while the grid has no row yet (data still
+loading). One list, one frame, no second page.
+
+```json
+[
+  {"component":"Run","page":"/components/run"},
+  {"component":"Form","page":"/components/form"}
+]
+```
+{: .dataset #frame_pages }
+
+[Pick a component](#)
+{: .datagrid source="frame_pages" #frame_grid columns="component" }
+
+[The gallery](/components/)
+{: .embed master="frame_grid" height="300" }
+
+```gherkin
+Feature: An embedded frame follows a grid's selection
+  As an author
+  I want the frame under a list to show the row I clicked
+  So that a list and a page make one master/detail pair
+
+  Scenario: The frame opens on the first row's page
+    Given the frame bound to the grid, which selected its first row at load
+    :::python
+    self.frame: Object = Object._all("iframe[data-master='frame_grid']")[0]
+    :::
+    Then it shows the first component's page
+    :::python
+    assert (self.frame._attr("src") or "").endswith("/components/run"), self.frame._attr("src")
+    :::
+
+  Scenario: A click moves the frame to that row's page
+    Given the frame and its grid
+    :::python
+    self.frame: Object = Object._all("iframe[data-master='frame_grid']")[0]
+    self.trs: list = self.page.frame_grid._qq("tbody tr")
+    :::
+    When I click the second row
+    :::python
+    self.trs[1]._el.click()
+    :::
+    Then the frame shows that component's page
+    :::python
+    assert (self.frame._attr("src") or "").endswith("/components/form"), self.frame._attr("src")
+    :::
+```
+{: .feature #frame_follows_proof tags="ui" visible="true" status="passing" }
+
 ## 🗺️ Embed a local module
 
 `{: .embed }` on a local path fetches the HTML fragment and inlines it — no iframe.
