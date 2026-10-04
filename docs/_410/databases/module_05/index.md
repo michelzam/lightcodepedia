@@ -710,6 +710,7 @@ Feature: One table, two tables, three tables
     self.customers: Dataset = Dataset("Customers")
     self.one: Query = self.page.q_one
     :::
+    When the query per country runs
     Then each country is one group
     :::python
     countries: set = set(self.customers.values("Country"))
@@ -722,6 +723,7 @@ Feature: One table, two tables, three tables
     self.orders: Dataset = Dataset("Orders")
     self.two: Query = self.page.q_two
     :::
+    When the orders are joined to their customers
     Then there are as many rows as orders
     :::python
     assert self.two.count == self.orders.count, self.two.count
@@ -733,6 +735,7 @@ Feature: One table, two tables, three tables
     self.lines: Dataset = Dataset("OrderDetails")
     self.north: Query = self.page.q_north
     :::
+    When each line climbs north to its product and category
     Then there are as many rows as lines, each with its category
     :::python
     assert self.north.count == self.lines.count, self.north.count
@@ -746,6 +749,7 @@ Feature: One table, two tables, three tables
     self.lines: Dataset = Dataset("OrderDetails")
     self.per_order: Query = self.page.q_per_order
     :::
+    When the lines are summed per order
     Then each order is one group, with its revenue
     :::python
     order_ids: set = set(self.lines.values("OrderID"))
@@ -767,6 +771,7 @@ Feature: Your move — one row per customer
     self.mine: Query = self.page.q_mine
     self.orders: Dataset = Dataset("Orders")
     :::
+    When you press Run on your query
     Then it groups by the customer
     :::python
     flat: str = " ".join(self.mine.query.upper().split())

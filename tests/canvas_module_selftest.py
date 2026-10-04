@@ -175,6 +175,22 @@ def test_the_intro_page_is_found_by_number_and_named_when_new():
     assert standing is None and "merge them" in clash
 
 
+def test_an_intro_filed_in_the_module_is_found_whatever_its_title():
+    """410's intro pages say "Week 6", not "Module 06" (Michel, 2026-10-04).
+    The title alone found nothing and a twin intro was about to be created;
+    the one ℹ️ page already filed in the module is the intro."""
+    titles = ["ℹ️ Instructions - Week 5", "ℹ️ Instructions - Week 6", "🧩 Module 05 — Activity"]
+    filed = ["ℹ️ Instructions - Week 6"]
+    assert cm.intro_for("06", titles, filed) == ("ℹ️ Instructions - Week 6", None)
+    # a title that names the module still wins, as before
+    assert cm.intro_for("06", titles + ["ℹ️ Module 06 — Intro"], filed) == ("ℹ️ Module 06 — Intro", None)
+    # nothing named, nothing filed: a new page, as before
+    assert cm.intro_for("07", titles, []) == (None, None)
+    # two ℹ️ pages filed in the module: stop, never guess
+    standing, clash = cm.intro_for("06", titles, ["ℹ️ Instructions - Week 6", "ℹ️ Old notes"])
+    assert standing is None and "2 intro pages are filed" in clash, clash
+
+
 def test_the_little_markdown_an_intro_needs():
     html = cm.md_html("# Title\n\nHope **all** is *well* — see [the map](x).\n\n## Parts\n\n- one\n- two & three\n\n<iframe src=\"u\"></iframe>\n\nBye.")
     assert "Title" not in html.replace("<h2>", ""), html          # the title is the page's name
