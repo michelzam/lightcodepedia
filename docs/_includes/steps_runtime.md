@@ -1880,6 +1880,50 @@ class Mdpad(Block):
                     out.append(c)
         return out
 
+    # ── 🎞 replay: the saved versions as frames, read-only ──
+    def replay(self):
+        """Press 🎞 — the frames load (a promise the page resolves), the
+        pane turns into a diff pane and the slider appears."""
+        r = getattr(self._el, "_lcReplay", None) if self._el is not None else None
+        return r.start() if r is not None else None
+
+    def stop(self):
+        r = getattr(self._el, "_lcReplay", None) if self._el is not None else None
+        if r is not None:
+            r.stop()
+
+    @property
+    def replaying(self):
+        return self._attr("data-lc-replay") == "1"
+
+    @property
+    def frames(self):
+        v = self._attr("data-lc-frames")
+        return int(v) if v else 0
+
+    @property
+    def frame(self):
+        """The frame shown, counted from zero (the starter); None when not replaying."""
+        v = self._attr("data-lc-frame")
+        return int(v) if v not in (None, "") else None
+
+    @frame.setter
+    def frame(self, n):
+        r = getattr(self._el, "_lcReplay", None) if self._el is not None else None
+        if r is not None:
+            r.go(int(n))
+
+    @property
+    def diff(self):
+        """The diff pane, one (sign, line) per row: '+' came, '-' went, ' ' stayed."""
+        nl = self._el.querySelectorAll(".lc-mdpad-diff > span") if self._el is not None else None
+        out = []
+        if nl is not None:
+            for i in range(int(nl.length)):
+                sp = nl.item(i); c = str(sp.className or ""); t = str(sp.textContent or "")
+                out.append(("+" if "add" in c else "-" if "del" in c else " ", t[2:]))
+        return out
+
     @property
     def numbers(self):
         """The line numbers the gutter shows, in order."""

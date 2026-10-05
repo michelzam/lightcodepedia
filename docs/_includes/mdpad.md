@@ -31,6 +31,8 @@ IAL knobs:
   piano="true"   consecutive blocks banded in two shades of the source pane, the
               caret's block in a third — the "piano"
   numbers="true" a line number per source line in a gutter (wrapped lines keep one)
+  replay="1.5"  seconds per frame when 🎞 Replay plays the saved versions (default 1.5);
+              the button itself comes with save="<path>", once a version exists
   decorations="true"
               the preview renders the page the way the site does: block
               decorations ({: .red} under a paragraph, {: .pitch} under a
@@ -137,6 +139,26 @@ Auto-included by docs/_layouts/default.html.
   content: attr(data-n); position: absolute; left: -2.9em; width: 2.2em; text-align: right;
   color: #6c7086; font-size: 0.85em; line-height: inherit; }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln.here::before { color: #cdd6f4; }
+/* the gutter itself: a grayer column, so numbers never read as text (Michel, 2026-10-05) */
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3em; background: #2a2a38; border-right: 1px solid #3c3c50; }
+/* 🎞 REPLAY — the source pane becomes a diff pane: + green, − red, the
+   usual cues; a slider is the cursor; play runs forward, the moonwalk back */
+.lc-mdpad-replay, .lc-mdpad-hist { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px;
+  border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
+.lc-mdpad-replay:hover { border-color: #888; color: #222; }
+.lc-mdpad-replay:disabled { opacity: 0.6; cursor: default; }
+.lc-mdpad-diff { flex: 1; min-width: 0; margin: 0; padding: 0.8em; overflow: auto; box-sizing: border-box;
+  border: 1px solid #d0d0d0; border-radius: 6px; background: #1e1e2e; color: #9399b2;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; }
+.lc-mdpad-diff span { display: block; }
+.lc-mdpad-diff .add { background: #1f3b2a; color: #a6e3a1; }
+.lc-mdpad-diff .del { background: #3b1f26; color: #f38ba8; }
+.lc-mdpad-replaybar { display: flex; gap: 0.6em; align-items: center; margin: -0.4em 0 0.6em; font-size: 0.85em; color: #555; }
+.lc-mdpad-replaybar button { font: inherit; padding: 0.3em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #444; cursor: pointer; }
+.lc-mdpad-replaybar button:hover { border-color: #888; color: #222; }
+.lc-mdpad-replaybar input[type=range] { flex: 1; min-width: 80px; accent-color: #0066cc; }
+.lc-mdpad-replaybar .lc-mdpad-frame { white-space: nowrap; font-variant-numeric: tabular-nums; }
 </style>
 
 <script>
@@ -235,7 +257,8 @@ Auto-included by docs/_layouts/default.html.
     var saveKnob = el.getAttribute("save") || "";
     var benchPath = saveKnob && saveKnob !== "true" ? saveKnob : "";
     if (benchPath) wrap.setAttribute("data-lc-save", benchPath);   /* named in a proof's verdict */
-    var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null;
+    var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null, replayBtn = null;
+    var pace = parseFloat(el.getAttribute("replay")) || 1.5;   /* seconds per replay frame */
     /* AN APP SCREEN (Michel, 2026-10-02): saved to the bench AND decorated,
        the pad is a page of the learner's own app — so the preview wears app
        chrome, a title bar that mirrors the page's # line (the file's name
@@ -276,8 +299,15 @@ Auto-included by docs/_layouts/default.html.
         resetBtn.className = "lc-mdpad-reset";
         resetBtn.textContent = "↺ Start over";
         resetBtn.title = "Bring back the lesson's starter — your saved copy stays until you 💾 again";
+        replayBtn = document.createElement("button");
+        replayBtn.type = "button";
+        replayBtn.className = "lc-mdpad-replay";
+        replayBtn.hidden = true;        /* nothing to replay until a first save */
+        replayBtn.textContent = "🎞 Replay";
+        replayBtn.title = "Watch your document grow, version by version — read-only, nothing is written";
         saveWrap.appendChild(mineTag);
         saveWrap.appendChild(histBtn);
+        saveWrap.appendChild(replayBtn);
         saveWrap.appendChild(resetBtn);
       }
       saveBtn = document.createElement("button");
@@ -376,20 +406,149 @@ Auto-included by docs/_layouts/default.html.
       }) : null;
       if (vers) histBtn.parentNode.replaceChild(vers.button, histBtn);
       function closeVersions() { if (vers) vers.close(); }
-      function revealVersions() { if (vers) vers.reveal(); }
+      function revealVersions() { if (vers) vers.reveal(); if (replayBtn) replayBtn.hidden = false; }
+
+      /* ── 🎞 REPLAY (Michel, 2026-10-05): every saved version as a frame, the
+         author's starter first (the first save writes it, above), read-only.
+         The source pane becomes a diff pane with the usual cues (+ green,
+         − red) against the frame before; the block that changed pulses in
+         the preview; a slider is the cursor; ▶ plays forward, ◀ backward
+         (the moonwalk), replay="1.5" seconds per frame. Nothing is written:
+         the learner's text waits under the pane, untouched. */
+      var rp = { frames: null, at: 0, timer: null, dir: 1, ui: null, diffEl: null, on: false };
+      function rpLoad() {
+        if (rp.frames) return Promise.resolve(rp.frames);
+        return window.lcBench.history(benchPath, wrap, 100).then(function (list) {
+          list = list.slice().reverse();              /* oldest first: frame zero is the starter */
+          return Promise.all(list.map(function (c) {
+            return window.lcBench.readAt(benchPath, c.sha, wrap).then(function (t) {
+              return { sha: c.sha, when: c.when, message: c.message, text: t == null ? "" : String(t),
+                       starter: String(c.message || "").indexOf(window.lcStarterMsg || "📄 starter") === 0 };
+            });
+          }));
+        }).then(function (frames) { rp.frames = frames; return frames; });
+      }
+      function rpShow(n) {
+        var f = rp.frames && rp.frames[n]; if (!f) return;
+        rp.at = n;
+        var prev = n > 0 ? rp.frames[n - 1].text : f.text;
+        var rows = window.lcDiffLines ? window.lcDiffLines(prev, f.text)
+                 : f.text.split("\n").map(function (l) { return ["same", l]; });
+        rp.diffEl.innerHTML = rows.map(function (r) {
+          return "<span class='" + r[0] + "'>" + (r[0] === "add" ? "+ " : r[0] === "del" ? "− " : "  ") + escHtml(r[1]) + "</span>";
+        }).join("");
+        /* the first changed line, as the NEW text counts lines */
+        var changed = -1, firstRow = -1;
+        for (var i = 0, ln = 0; i < rows.length; i++) {
+          if (rows[i][0] !== "same") { changed = ln; firstRow = i; break; }
+          ln++;
+        }
+        render(f.text);
+        var fb = blocksOf(f.text), idx = changed < 0 ? -1 : blockAt(fb, changed);
+        if (changed >= 0 && idx < 0) { for (var k = 0; k < fb.length; k++) if (fb[k].start > changed) { idx = k; break; } }
+        if (changed >= 0 && idx < 0) idx = fb.length - 1;
+        focusPreview(idx, fb);
+        var sp = firstRow >= 0 ? rp.diffEl.children[firstRow] : null;
+        rp.diffEl.scrollTop = sp ? Math.max(0, sp.offsetTop - rp.diffEl.offsetTop - 40) : 0;
+        rp.ui.slider.value = String(n);
+        rp.ui.label.textContent = (n + 1) + " / " + rp.frames.length + " · " +
+          (f.starter ? "the lesson's starter" : (f.when ? new Date(f.when).toLocaleString() : "saved"));
+        wrap.setAttribute("data-lc-frame", String(n));
+      }
+      function rpPause() {
+        if (rp.timer) clearInterval(rp.timer);
+        rp.timer = null;
+        if (rp.ui) { rp.ui.play.textContent = "▶ Play"; rp.ui.back.textContent = "◀ Moonwalk"; }
+        wrap.removeAttribute("data-lc-playing");
+      }
+      function rpStep() {
+        var n = rp.at + rp.dir;
+        if (n < 0 || n >= rp.frames.length) { rpPause(); return; }
+        rpShow(n);
+        /* landed on an end: stop there, now, not one silent tick later */
+        if (n === 0 || n === rp.frames.length - 1) rpPause();
+      }
+      function rpPlay(dir) {
+        rpPause();
+        rp.dir = dir;
+        /* pressed at an end: start again from the other end */
+        if (dir > 0 && rp.at >= rp.frames.length - 1) rpShow(0);
+        if (dir < 0 && rp.at <= 0) rpShow(rp.frames.length - 1);
+        rp.timer = setInterval(rpStep, pace * 1000);
+        if (dir > 0) rp.ui.play.textContent = "⏸ Pause"; else rp.ui.back.textContent = "⏸ Pause";
+        wrap.setAttribute("data-lc-playing", dir > 0 ? "forward" : "backward");
+      }
+      function rpStart() {
+        if (rp.on || !window.lcBench) return Promise.resolve();
+        replayBtn.disabled = true; replayBtn.textContent = "⏳ reading your versions…";
+        return rpLoad().then(function (frames) {
+          replayBtn.disabled = false;
+          if (!frames.length) {
+            replayBtn.textContent = "🎞 Replay";
+            if (window.lcxToast) window.lcxToast("No versions yet — 💾 writes the first one.", true);
+            return;
+          }
+          rp.on = true;
+          replayBtn.textContent = "■ Stop";
+          wrap.setAttribute("data-lc-replay", "1");
+          wrap.setAttribute("data-lc-frames", String(frames.length));
+          closeVersions();
+          [saveBtn, resetBtn, vers && vers.button].forEach(function (b) { if (b) b.disabled = true; });
+          var pane = src || ta;
+          rp.diffEl = document.createElement("pre");
+          rp.diffEl.className = "lc-mdpad-diff";
+          rp.diffEl.setAttribute("aria-label", "This version, with what changed since the one before");
+          wrap.insertBefore(rp.diffEl, pane);
+          pane.style.display = "none";
+          var box = document.createElement("div");
+          box.className = "lc-mdpad-replaybar";
+          function mk(text, cls) { var b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; return b; }
+          rp.ui = { box: box, back: mk("◀ Moonwalk", "lc-mdpad-back"), play: mk("▶ Play", "lc-mdpad-play"),
+                    slider: document.createElement("input"), label: document.createElement("span") };
+          rp.ui.slider.type = "range"; rp.ui.slider.min = "0"; rp.ui.slider.max = String(frames.length - 1);
+          rp.ui.slider.step = "1"; rp.ui.slider.setAttribute("aria-label", "Version");
+          rp.ui.label.className = "lc-mdpad-frame";
+          box.appendChild(rp.ui.back); box.appendChild(rp.ui.play); box.appendChild(rp.ui.slider); box.appendChild(rp.ui.label);
+          saveWrap.parentNode.insertBefore(box, saveWrap);
+          rp.ui.slider.addEventListener("input", function () { rpPause(); rpShow(+rp.ui.slider.value); });
+          rp.ui.play.addEventListener("click", function () { rp.timer && rp.dir > 0 ? rpPause() : rpPlay(1); });
+          rp.ui.back.addEventListener("click", function () { rp.timer && rp.dir < 0 ? rpPause() : rpPlay(-1); });
+          rpShow(0);
+        });
+      }
+      function rpStop() {
+        if (!rp.on) return;
+        rpPause();
+        rp.on = false;
+        replayBtn.textContent = "🎞 Replay";
+        ["data-lc-replay", "data-lc-frame", "data-lc-frames"].forEach(function (a) { wrap.removeAttribute(a); });
+        if (rp.diffEl && rp.diffEl.parentNode) rp.diffEl.parentNode.removeChild(rp.diffEl);
+        if (rp.ui && rp.ui.box.parentNode) rp.ui.box.parentNode.removeChild(rp.ui.box);
+        rp.diffEl = null; rp.ui = null;
+        (src || ta).style.display = "";
+        [resetBtn, vers && vers.button].forEach(function (b) { if (b) b.disabled = false; });
+        refreshBench();                 /* 💾 decides its own state again */
+        rp.frames = null;               /* a save in between adds a frame: read again next time */
+        lastFocus = -2; render(); focusNow();
+      }
+      if (replayBtn) replayBtn.addEventListener("click", function () { if (rp.on) rpStop(); else rpStart(); });
+      /* a proof drives it as a person would: pad.replay(), pad.frame = n, pad.stop() */
+      wrap._lcReplay = { start: rpStart, stop: rpStop, play: rpPlay, pause: rpPause,
+                         go: function (n) { if (rp.on) { rpPause(); rpShow(n); } } };
     }
 
-    function render() {
+    function render(text) {
+      var v = typeof text === "string" ? text : ta.value;   /* a replay frame, else the editor */
       if (!window.marked) {
-        body.innerHTML = "<pre>" + ta.value.replace(/[&<]/g, function (c) { return c === "&" ? "&amp;" : "&lt;"; }) + "</pre>";
+        body.innerHTML = "<pre>" + v.replace(/[&<]/g, function (c) { return c === "&" ? "&amp;" : "&lt;"; }) + "</pre>";
         return;
       }
       var inline = window.lcInlineIAL || function (h) { return h; };
-      if (!deco) { body.innerHTML = inline(window.marked.parse(ta.value)); return; }
+      if (!deco) { body.innerHTML = inline(window.marked.parse(v)); return; }
       /* decorations: the runner's pipeline on the preview — IAL on its own
          paragraph, block IAL applied, then the same scan that upgrades a
          page's fences into components, and the cells inside them */
-      var norm = ta.value.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+      var norm = v.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
       body.innerHTML = inline(window.marked.parse(norm));
       if (window.lcApplyIAL) window.lcApplyIAL(body);
       if (window.lcScanElement) window.lcScanElement(body);
@@ -403,10 +562,11 @@ Auto-included by docs/_layouts/default.html.
     var blocks = blocksOf(ta.value), lastFocus = -2;
     function caretLine() { return ta.value.slice(0, ta.selectionStart || 0).split("\n").length - 1; }
     function caretBlock() { return blockAt(blocks, caretLine()); }
-    function focusPreview(idx) {
+    function focusPreview(idx, bl) {
+      bl = bl || blocks;
       body.querySelectorAll(".lc-mdpad-focus").forEach(function (e) { e.classList.remove("lc-mdpad-focus"); });
-      if (idx < 0) return;
-      var target = null, hm = blocks[idx].head.match(/^\s*#{1,6}\s+(.*)$/);
+      if (idx < 0 || !bl[idx]) return;
+      var target = null, hm = bl[idx].head.match(/^\s*#{1,6}\s+(.*)$/);
       if (hm) {
         var want = hm[1].replace(/[*_`#]/g, "").trim().toLowerCase();
         var hs = body.querySelectorAll("h1,h2,h3,h4,h5,h6");

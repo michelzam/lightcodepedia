@@ -811,3 +811,66 @@ def step_source_untouched(context):
 def step_bench_no_commit_under(context, prefix):
     hits = [c["path"] for c in context.bench_commits if c["path"].startswith(prefix)]
     assert not hits, "a learner's save went under %s: %r" % (prefix, hits)
+
+
+
+# ── 🎞 replay ──────────────────────────────────────────────────────────
+PAD = '[data-lc-id="cv"]'
+
+
+@when("I press the pad's replay button")
+def step_press_replay(context):
+    btn = context.page.locator(".lc-mdpad-bar .lc-mdpad-replay").first
+    expect(btn).to_be_visible(timeout=15_000)
+    btn.click()
+    context.page.wait_for_selector(PAD + "[data-lc-replay]", timeout=10_000)
+
+
+@then("the replay holds {n:d} frames and opens on the first")
+def step_replay_frames(context, n):
+    pad = context.page.locator(PAD)
+    expect(pad).to_have_attribute("data-lc-frames", str(n), timeout=10_000)
+    expect(pad).to_have_attribute("data-lc-frame", "0", timeout=10_000)
+    expect(context.page.locator(".lc-mdpad-replaybar input[type=range]")).to_be_visible(timeout=5_000)
+
+
+@then("the pad's editor is hidden behind the diff pane")
+def step_editor_hidden(context):
+    expect(context.page.locator(PAD + " .lc-mdpad-diff")).to_be_visible(timeout=5_000)
+    expect(context.page.locator(PAD + " .lc-mdpad-in")).to_be_hidden(timeout=5_000)
+
+
+@when("I scrub the replay to frame {n:d}")
+def step_scrub(context, n):
+    s = context.page.locator(".lc-mdpad-replaybar input[type=range]")
+    s.evaluate("(e, v) => { e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); }", str(n - 1))
+    expect(context.page.locator(PAD)).to_have_attribute("data-lc-frame", str(n - 1), timeout=5_000)
+
+
+@then('the diff pane marks "{added}" as added and "{removed}" as removed')
+def step_diff_cues(context, added, removed):
+    diff = context.page.locator(PAD + " .lc-mdpad-diff")
+    expect(diff.locator(".add")).to_contain_text(added, timeout=5_000)
+    expect(diff.locator(".del")).to_contain_text(removed, timeout=5_000)
+
+
+@then('the pad\'s preview shows "{text}"')
+def step_preview_shows(context, text):
+    expect(context.page.locator(PAD + " .lc-mdpad-out")).to_contain_text(text, timeout=5_000)
+
+
+@when("I press the moonwalk")
+def step_moonwalk(context):
+    context.page.locator(".lc-mdpad-replaybar .lc-mdpad-back").click()
+
+
+@then("the replay lands on frame {n:d}")
+def step_lands(context, n):
+    expect(context.page.locator(PAD)).to_have_attribute("data-lc-frame", str(n - 1), timeout=10_000)
+
+
+@when("I stop the replay")
+def step_stop_replay(context):
+    context.page.locator(".lc-mdpad-bar .lc-mdpad-replay").first.click()
+    context.page.wait_for_selector(PAD + ":not([data-lc-replay])", timeout=5_000)
+    expect(context.page.locator(PAD + " .lc-mdpad-in")).to_be_visible(timeout=5_000)

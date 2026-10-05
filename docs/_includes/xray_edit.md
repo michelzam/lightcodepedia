@@ -1208,6 +1208,26 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
      GitHub too, not only in our list */
   window.lcStarterMsg = "📄 starter — before my first change";
 
+  /* line diff by longest-common-subsequence — small enough to stay honest,
+     and readable: what that version said vs what you hold now. ONE diff:
+     the versions panel's compare and the pad's 🎞 replay both read it. */
+  window.lcDiffLines = function (a, b) {
+    var A = String(a).split("\n"), B = String(b).split("\n");
+    var m = A.length, n = B.length, i, j, L = [];
+    for (i = 0; i <= m; i++) L.push(new Array(n + 1).fill(0));
+    for (i = m - 1; i >= 0; i--)
+      for (j = n - 1; j >= 0; j--)
+        L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    var out = []; i = 0; j = 0;
+    while (i < m && j < n) {
+      if (A[i] === B[j]) { out.push(["same", A[i]]); i++; j++; }
+      else if (L[i + 1][j] >= L[i][j + 1]) { out.push(["del", A[i]]); i++; }
+      else { out.push(["add", B[j]]); j++; }
+    }
+    while (i < m) { out.push(["del", A[i]]); i++; }
+    while (j < n) { out.push(["add", B[j]]); j++; }
+    return out;
+  };
   window.lcVersions = {
     attach: function (o) {
       /* o = { path, el, anchor, current(), apply(text), css, diff? }
@@ -1231,25 +1251,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         var d = new Date(iso);
         return isNaN(d) ? iso : d.toLocaleString();
       }
-      /* line diff by longest-common-subsequence — small enough to stay
-         honest, and readable: what that version said vs what you hold now */
-      function diffLines(a, b) {
-        var A = String(a).split("\n"), B = String(b).split("\n");
-        var m = A.length, n = B.length, i, j, L = [];
-        for (i = 0; i <= m; i++) L.push(new Array(n + 1).fill(0));
-        for (i = m - 1; i >= 0; i--)
-          for (j = n - 1; j >= 0; j--)
-            L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
-        var out = []; i = 0; j = 0;
-        while (i < m && j < n) {
-          if (A[i] === B[j]) { out.push(["same", A[i]]); i++; j++; }
-          else if (L[i + 1][j] >= L[i][j + 1]) { out.push(["del", A[i]]); i++; }
-          else { out.push(["add", B[j]]); j++; }
-        }
-        while (i < m) { out.push(["del", A[i]]); i++; }
-        while (j < n) { out.push(["add", B[j]]); j++; }
-        return out;
-      }
+      var diffLines = window.lcDiffLines;   /* the one line diff, shared with the pad's replay */
       function showDiff(box, older) {
         var rows = diffLines(older, o.current());
         box.innerHTML = "";
