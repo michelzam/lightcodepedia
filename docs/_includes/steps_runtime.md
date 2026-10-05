@@ -1841,6 +1841,52 @@ class Mdpad(Block):
         return str(ta.value) if ta is not None else ""
 
     @property
+    def caret(self):
+        """Where the caret is in the source, as a character offset."""
+        ta = self._el.querySelector(".lc-mdpad-in") if self._el is not None else None
+        return int(ta.selectionStart) if ta is not None else 0
+
+    @caret.setter
+    def caret(self, pos):
+        """Move the caret the way a person would — the pad then shows the
+        caret's block on both sides (pad.focus, pad.focused, pad.keys)."""
+        f = getattr(self._el, "_lcCaret", None) if self._el is not None else None
+        if f is not None:
+            f(int(pos))
+
+    @property
+    def focus(self):
+        """The block the caret is in, counted as the preview counts them;
+        None on a blank line."""
+        v = self._attr("data-lc-focus")
+        return int(v) if v not in (None, "") else None
+
+    @property
+    def focused(self):
+        """The preview element wearing the pulse, or None."""
+        o = self._el.querySelector(".lc-mdpad-out .lc-mdpad-focus") if self._el is not None else None
+        return _wrap(o) if o is not None else None
+
+    @property
+    def keys(self):
+        """The piano: one class string per block ('k0' / 'k1', the caret's
+        block with ' now'), in source order. Empty without piano= or numbers=."""
+        nl = self._el.querySelectorAll(".lc-mdpad-piano > div") if self._el is not None else None
+        out = []
+        if nl is not None:
+            for i in range(int(nl.length)):
+                c = str(nl.item(i).className or "")
+                if not c.startswith("ln"):
+                    out.append(c)
+        return out
+
+    @property
+    def numbers(self):
+        """The line numbers the gutter shows, in order."""
+        nl = self._el.querySelectorAll(".lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln") if self._el is not None else None
+        return [int(nl.item(i).getAttribute("data-n")) for i in range(int(nl.length))] if nl is not None else []
+
+    @property
     def titles(self):
         """The # lines — a page opens with exactly one."""
         return self._preview_texts("h1")

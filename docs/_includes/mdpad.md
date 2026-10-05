@@ -28,6 +28,9 @@ IAL knobs:
               it). The author can republish the page forever: seed and
               saved copy are different files in different repos, so
               nothing ever collides.
+  piano="true"   consecutive blocks banded in two shades of the source pane, the
+              caret's block in a third — the "piano"
+  numbers="true" a line number per source line in a gutter (wrapped lines keep one)
   decorations="true"
               the preview renders the page the way the site does: block
               decorations ({: .red} under a paragraph, {: .pitch} under a
@@ -105,12 +108,69 @@ Auto-included by docs/_layouts/default.html.
   border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
 .lc-mdpad-save:hover:not(:disabled) { background: #0052a3; }
 .lc-mdpad-save:disabled { opacity: 0.45; cursor: default; }
+/* FOCUS — the caret's block, pulsed in the preview (Michel, 2026-10-05: "help
+   students see where to focus when they make a change", as the page editor does) */
+.lc-mdpad-out .lc-mdpad-focus { animation: lc-mdpad-pulse 1.4s ease-out; border-radius: 4px; }
+@keyframes lc-mdpad-pulse {
+  0%   { background: #dbeafe; box-shadow: 0 0 0 4px #dbeafe; }
+  100% { background: transparent; box-shadow: 0 0 0 4px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-mdpad-out .lc-mdpad-focus { animation: none; box-shadow: 0 0 0 3px #bfdbfe; }
+}
+/* PIANO + NUMBERS — a backdrop behind the source mirrors it line for line:
+   consecutive blocks banded in two shades of the dark pane, the caret's block
+   in a third; a gutter with one number per source line (wrapped lines keep
+   theirs). The textarea goes transparent over it. */
+.lc-mdpad-src { flex: 1; min-width: 0; position: relative; display: flex; }
+.lc-mdpad-src .lc-mdpad-in { flex: 1; min-width: 0; background: transparent; position: relative; z-index: 1; }
+.lc-mdpad-src[data-numbers] .lc-mdpad-in { padding-left: 3.4em; }
+.lc-mdpad-piano { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;
+  box-sizing: border-box; background: #1e1e2e; border: 1px solid transparent; border-radius: 6px;
+  color: transparent; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; }
+.lc-mdpad-piano .k1 { background: #26263a; }
+.lc-mdpad-piano .now { background: #30304c; box-shadow: inset 3px 0 0 #89b4fa; }
+.lc-mdpad-piano[data-plain] .k1 { background: transparent; }
+.lc-mdpad-piano[data-plain] .now { background: transparent; box-shadow: none; }
+.lc-mdpad-piano .ln { position: relative; }
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln::before {
+  content: attr(data-n); position: absolute; left: -2.9em; width: 2.2em; text-align: right;
+  color: #6c7086; font-size: 0.85em; line-height: inherit; }
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln.here::before { color: #cdd6f4; }
 </style>
 
 <script>
 (function () {
   if (window._lcMdpadReady) return;
   window._lcMdpadReady = true;
+
+  /* ── BLOCKS: the source as the preview counts it. Split at blank lines;
+     a fence runs to its closing fence whatever it holds; a run of IAL lines
+     ({: … }) belongs to the block above, as the preview merges it into that
+     element. One block = one top-level element in the preview, which is
+     what the focus below relies on; a heading is found by its words. */
+  function blocksOf(src) {
+    var lines = src.split("\n"), blocks = [], cur = null, fence = null;
+    for (var i = 0; i < lines.length; i++) {
+      var ln = lines[i], t = ln.trim();
+      if (fence) {
+        cur.end = i;
+        if (t.charAt(0) === fence.charAt(0) && /^(`{3,}|~{3,})$/.test(t) && t.length >= fence.length) fence = null;
+        continue;
+      }
+      if (t === "") { cur = null; continue; }
+      if (!cur && blocks.length && /^\{:.*\}$/.test(t)) { blocks[blocks.length - 1].end = i; continue; }
+      if (!cur) { cur = { start: i, end: i, head: ln }; blocks.push(cur); } else cur.end = i;
+      var m = t.match(/^(`{3,}|~{3,})/);
+      if (m) fence = m[1];
+    }
+    return blocks;
+  }
+  function blockAt(blocks, line) {
+    for (var i = 0; i < blocks.length; i++) if (line >= blocks[i].start && line <= blocks[i].end) return i;
+    return -1;
+  }
+  function escHtml(s) { return s.replace(/[&<>]/g, function (c) { return c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"; }); }
 
   function upgradeMdpad(el) {
     if (el.dataset.lcMdpadDone) return;
@@ -140,6 +200,19 @@ Auto-included by docs/_layouts/default.html.
 
     var ta = document.createElement("textarea");
     ta.className = "lc-mdpad-in";
+    var piano = el.getAttribute("piano") === "true", numbers = el.getAttribute("numbers") === "true";
+    var src = null, keysEl = null;
+    if (piano || numbers) {
+      src = document.createElement("div");
+      src.className = "lc-mdpad-src";
+      if (numbers) src.setAttribute("data-numbers", "1");
+      keysEl = document.createElement("div");
+      keysEl.className = "lc-mdpad-piano";
+      keysEl.setAttribute("aria-hidden", "true");
+      if (!piano) keysEl.setAttribute("data-plain", "1");
+      src.appendChild(keysEl);
+      src.appendChild(ta);
+    }
     ta.setAttribute("aria-label", "Markdown editor");
     ta.spellcheck = false;
     ta.rows = rows;
@@ -218,7 +291,7 @@ Auto-included by docs/_layouts/default.html.
        order matches what the eye sees. Reversing this with CSS alone would
        leave a keyboard and a screen reader walking it the other way round. */
     wrap.appendChild(out);
-    wrap.appendChild(ta);
+    wrap.appendChild(src || ta);
     el.parentNode.replaceChild(wrap, el);
     if (saveWrap) wrap.parentNode.insertBefore(saveWrap, wrap.nextSibling);
     /* the stripe goes round BOTH the pad and its keep bar, so the frame
@@ -326,6 +399,73 @@ Auto-included by docs/_layouts/default.html.
         appTitle.textContent = (h1 && h1.textContent.trim()) || benchPath;
       }
     }
+    /* ── FOCUS: the block under the caret, shown on both sides ── */
+    var blocks = blocksOf(ta.value), lastFocus = -2;
+    function caretLine() { return ta.value.slice(0, ta.selectionStart || 0).split("\n").length - 1; }
+    function caretBlock() { return blockAt(blocks, caretLine()); }
+    function focusPreview(idx) {
+      body.querySelectorAll(".lc-mdpad-focus").forEach(function (e) { e.classList.remove("lc-mdpad-focus"); });
+      if (idx < 0) return;
+      var target = null, hm = blocks[idx].head.match(/^\s*#{1,6}\s+(.*)$/);
+      if (hm) {
+        var want = hm[1].replace(/[*_`#]/g, "").trim().toLowerCase();
+        var hs = body.querySelectorAll("h1,h2,h3,h4,h5,h6");
+        for (var i = 0; i < hs.length && !target; i++)
+          if (hs[i].textContent.trim().toLowerCase() === want) target = hs[i];
+      }
+      if (!target) target = body.children[idx] || null;
+      if (!target) return;
+      void target.offsetWidth;
+      target.classList.add("lc-mdpad-focus");
+      /* bring it into the preview's own view — never scroll the page */
+      var scroller = body === out ? out : body;
+      var box = scroller.getBoundingClientRect(), r = target.getBoundingClientRect();
+      if (r.top < box.top) scroller.scrollTop -= (box.top - r.top) + 8;
+      else if (r.bottom > box.bottom) scroller.scrollTop += (r.bottom - box.bottom) + 8;
+    }
+    function paintPiano() {
+      if (!keysEl) return;
+      var cs = getComputedStyle(ta);
+      ["fontFamily", "fontSize", "lineHeight", "letterSpacing", "tabSize", "paddingTop", "paddingLeft",
+       "paddingBottom", "borderTopWidth", "borderLeftWidth", "borderRightWidth", "borderBottomWidth"]
+        .forEach(function (k) { keysEl.style[k] = cs[k]; });
+      /* the textarea's scrollbar narrows ITS text; mirror that or long lines wrap apart */
+      var bar = ta.offsetWidth - ta.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+      keysEl.style.paddingRight = (parseFloat(cs.paddingRight) + Math.max(0, bar)) + "px";
+      var lines = ta.value.split("\n"), now = caretBlock(), here = caretLine(), html = "", li = 0;
+      function line(n) { return "<div class='ln" + (n === here ? " here" : "") + "' data-n='" + (n + 1) + "'>" + (escHtml(lines[n]) || "\u00a0") + "</div>"; }
+      blocks.forEach(function (b, i) {
+        for (; li < b.start; li++) html += line(li);
+        html += "<div class='" + (i % 2 ? "k1" : "k0") + (i === now ? " now" : "") + "'>";
+        for (; li <= b.end; li++) html += line(li);
+        html += "</div>";
+      });
+      for (; li < lines.length; li++) html += line(li);
+      keysEl.innerHTML = html;
+      keysEl.scrollTop = ta.scrollTop;
+    }
+    function focusNow() {
+      var idx = caretBlock();
+      if (idx !== lastFocus) {
+        lastFocus = idx;
+        focusPreview(idx);
+        if (idx >= 0) wrap.setAttribute("data-lc-focus", String(idx)); else wrap.removeAttribute("data-lc-focus");
+      }
+      paintPiano();
+    }
+    var _focT = null;
+    function focusSoon() { clearTimeout(_focT); _focT = setTimeout(focusNow, 150); }
+    ta.addEventListener("click", focusSoon);
+    ta.addEventListener("keyup", focusSoon);
+    ta.addEventListener("select", focusNow);
+    ta.addEventListener("input", function () { blocks = blocksOf(ta.value); paintPiano(); });
+    if (keysEl) {
+      ta.addEventListener("scroll", function () { keysEl.scrollTop = ta.scrollTop; });
+      if (window.ResizeObserver) new ResizeObserver(paintPiano).observe(ta);
+    }
+    /* a proof moves the caret the way a person would: pad.caret = n */
+    wrap._lcCaret = function (pos) { ta.focus(); ta.setSelectionRange(pos, pos); blocks = blocksOf(ta.value); focusNow(); };
+
     var _renT = null;
     ta.addEventListener("input", deco
       ? function () { clearTimeout(_renT); _renT = setTimeout(render, 350); }
@@ -342,6 +482,7 @@ Auto-included by docs/_layouts/default.html.
     publish(false);  /* the seed is data too — no recompute storm on load */
     render();  /* show the seed immediately (escaped) … */
     if (window.lcLoadMarked) window.lcLoadMarked(render);  /* … then with marked */
+    if (keysEl) paintPiano();
   }
 
   /* code_chrome.md provides the scan registry; one registration covers the

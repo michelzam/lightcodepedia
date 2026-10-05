@@ -51,11 +51,82 @@ def greet(name):
 
 Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The preview updates on every keystroke — no server, just JavaScript[^marked] in the browser.
 
+### 🎯 Focus — the caret's block, on both sides
+
+Put the caret in a block on the right and that block **pulses** on the left,
+so a learner changing a line sees where the change lands. With
+`piano="true"` the source pane bands consecutive blocks in two shades and
+marks the caret's block in a third; with `numbers="true"` a gutter numbers
+the lines. Both off by default, both pure rendering: the text is untouched.
+
+`````
+# Sam, volunteer coordinator
+
+Answers families without guessing. Three years at the shelter.
+
+## Skills
+
+- Talks to people
+- Reads the data
+- Writes the page
+`````
+{: .mdpad #cv_focus piano="true" numbers="true" rows="10" }
+
+```gherkin
+Feature: The caret's block shows on both sides of the pad
+  As a learner editing a page
+  I want the block I am in to light up in the preview
+  So that I see where my change lands before I make it
+
+  Scenario: The caret in a paragraph pulses that paragraph, and the piano marks it
+    Given the piano pad above
+    :::python
+    self.pad: Mdpad = self.page.cv_focus
+    :::
+    When the caret lands in the second block
+    :::python
+    self.pad.caret = self.pad.source.index("Three years")
+    :::
+    Then the preview pulses that block and the piano marks it
+    :::python
+    assert self.pad.focus == 1, self.pad.focus
+    assert self.pad.focused is not None, "nothing pulsed"
+    assert "Three years" in self.pad.focused._el.textContent
+    keys = self.pad.keys
+    assert keys[0].startswith("k0") and keys[1].startswith("k1"), keys
+    assert keys[1].endswith(" now") and not keys[0].endswith(" now"), keys
+    :::
+
+  Scenario: A heading is found by its words, and the gutter counts the lines
+    Given the piano pad above
+    :::python
+    self.pad: Mdpad = self.page.cv_focus
+    :::
+    When the caret lands on the Skills heading
+    :::python
+    self.pad.caret = self.pad.source.index("## Skills") + 3
+    :::
+    Then the pulse is on that heading
+    :::python
+    assert self.pad.focus == 2, self.pad.focus
+    assert self.pad.focused._el.tagName.lower() == "h2", self.pad.focused._el.tagName
+    assert self.pad.focused._el.textContent.strip() == "Skills"
+    :::
+    And the gutter numbers every source line once
+    :::python
+    n = len(self.pad.source.split("\n"))
+    assert self.pad.numbers == list(range(1, n + 1)), self.pad.numbers
+    :::
+```
+{: .feature #focus_proof tags="ui" visible="true" status="passing" }
+
 ### 🔧 Knobs
 
 | Attribute | What it does |
 |---|---|
 | `rows="14"` | Editor height in text rows (default 12) |
+| `piano="true"` | The **piano**: consecutive blocks banded in two shades of the source pane, the caret's block in a third — see *Focus* below |
+| `numbers="true"` | A line number per source line in a gutter; wrapped lines keep one number. Off by default |
 | `save="true"` | Adds a 💾 **Save** button that commits the block straight back to the page source — no x-ray, no page editor |
 | `save="cv.md"` | The **two-repo contract**: the fence stays the author's seed; the reader's copy persists in *their own* connected repo — relative lands beside the lesson, `/my/cv.md` at the bench root — see below |
 | `decorations="true"` | The preview renders the way the site does: block decorations apply and component fences come alive — see below |
