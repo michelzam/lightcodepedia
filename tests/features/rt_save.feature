@@ -241,9 +241,14 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the pad's editor is hidden behind the diff pane
     When I scrub the replay to frame 2
     Then the diff pane marks "# Draft two" as added and "# Draft one" as removed
+    And the word "two" is marked inside the added line
     And the pad's preview shows "Draft two"
     When I press the moonwalk
     Then the replay lands on frame 1
+    When I press play
+    Then the replay lands on frame 2
+    And every added line has finished unfolding
+    And the pad kept its height
     When I stop the replay
     Then the pad shows "# Draft three"
     And the bench received no commit

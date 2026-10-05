@@ -154,6 +154,20 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-diff span { display: block; }
 .lc-mdpad-diff .add { background: #1f3b2a; color: #a6e3a1; }
 .lc-mdpad-diff .del { background: #3b1f26; color: #f38ba8; }
+/* word level: inside an edited line, the words that actually differ */
+.lc-mdpad-diff .add b { font-weight: inherit; background: #2f6b3f; color: #d9ffd9; border-radius: 3px; }
+.lc-mdpad-diff .del b { font-weight: inherit; background: #7a2f3f; color: #ffd9e0; border-radius: 3px; }
+/* line by line, during play: removed lines fold away, added lines unfold, one after the other */
+.lc-mdpad-diff .fold, .lc-mdpad-diff .unfold { overflow: hidden; transition: max-height .35s ease, opacity .35s ease; transition-delay: var(--d, 0s); max-height: 14em; }
+.lc-mdpad-diff .unfold { max-height: 0; opacity: 0; }
+.lc-mdpad-diff .unfold.go { max-height: 14em; opacity: 1; }
+.lc-mdpad-diff .fold.go { max-height: 0; opacity: 0; }
+/* the preview cross-fades: a ghost of the old render fades over the new one */
+.lc-mdpad-ghost { position: absolute; pointer-events: none; opacity: 1; transition: opacity .3s ease; z-index: 2; }
+.lc-mdpad-ghost.go { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .lc-mdpad-diff .fold, .lc-mdpad-diff .unfold, .lc-mdpad-ghost { transition: none; }
+}
 .lc-mdpad-replaybar { display: flex; gap: 0.6em; align-items: center; margin: -0.4em 0 0.6em; font-size: 0.85em; color: #555; }
 .lc-mdpad-replaybar button { font: inherit; padding: 0.3em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #444; cursor: pointer; }
 .lc-mdpad-replaybar button:hover { border-color: #888; color: #222; }
@@ -428,14 +442,50 @@ Auto-included by docs/_layouts/default.html.
           }));
         }).then(function (frames) { rp.frames = frames; return frames; });
       }
-      function rpShow(n) {
+      /* WORD LEVEL: an edited line is a − / + pair; the words that differ are
+         the middle once the common head and tail are peeled off, backed off to
+         word boundaries so a mark never starts mid-word. */
+      function wordMarks(a, b) {
+        var i = 0, n = Math.min(a.length, b.length);
+        while (i < n && a.charAt(i) === b.charAt(i)) i++;
+        while (i > 0 && /\S/.test(a.charAt(i - 1)) && /\S/.test(a.charAt(i) || " ")) i--;
+        var j = 0;
+        while (j < n - i && a.charAt(a.length - 1 - j) === b.charAt(b.length - 1 - j)) j++;
+        while (j > 0 && /\S/.test(a.charAt(a.length - j)) && /\S/.test(a.charAt(a.length - j - 1) || " ")) j--;
+        if (i + j < 2) return null;            /* nothing in common: a different line, not an edit */
+        function mark(t) {
+          var mid = t.slice(i, t.length - j);
+          return escHtml(t.slice(0, i)) + (mid ? "<b>" + escHtml(mid) + "</b>" : "") + escHtml(t.slice(t.length - j));
+        }
+        return [mark(a), mark(b)];
+      }
+      var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var rpAnimT = null;
+      function rpShow(n, animate) {
         var f = rp.frames && rp.frames[n]; if (!f) return;
         rp.at = n;
+        animate = !!animate && !reduced;
+        clearTimeout(rpAnimT);
         var prev = n > 0 ? rp.frames[n - 1].text : f.text;
         var rows = window.lcDiffLines ? window.lcDiffLines(prev, f.text)
                  : f.text.split("\n").map(function (l) { return ["same", l]; });
-        rp.diffEl.innerHTML = rows.map(function (r) {
-          return "<span class='" + r[0] + "'>" + (r[0] === "add" ? "+ " : r[0] === "del" ? "− " : "  ") + escHtml(r[1]) + "</span>";
+        /* pair each run of − with the run of + right after it, line by line */
+        var html = rows.map(function (r) { return escHtml(r[1]); });
+        for (var a = 0; a < rows.length; a++) {
+          if (rows[a][0] !== "del") continue;
+          var d0 = a; while (a < rows.length && rows[a][0] === "del") a++;
+          var p0 = a; while (a < rows.length && rows[a][0] === "add") a++;
+          for (var q = 0; q < Math.min(p0 - d0, a - p0); q++) {
+            var m = wordMarks(rows[d0 + q][1], rows[p0 + q][1]);
+            if (m) { html[d0 + q] = m[0]; html[p0 + q] = m[1]; }
+          }
+          a--;
+        }
+        var changedRows = [];
+        rp.diffEl.innerHTML = rows.map(function (r, i) {
+          var cls = r[0];
+          if (animate && r[0] !== "same") { cls += r[0] === "add" ? " unfold" : " fold"; changedRows.push(i); }
+          return "<span class='" + cls + "'>" + (r[0] === "add" ? "+ " : r[0] === "del" ? "− " : "  ") + html[i] + "</span>";
         }).join("");
         /* the first changed line, as the NEW text counts lines */
         var changed = -1, firstRow = -1;
@@ -443,11 +493,38 @@ Auto-included by docs/_layouts/default.html.
           if (rows[i][0] !== "same") { changed = ln; firstRow = i; break; }
           ln++;
         }
+        /* the preview: a ghost of the old render fades over the new one */
+        var total = 0;
+        if (animate && out.parentNode) {
+          var ghost = out.cloneNode(true);
+          ghost.classList.add("lc-mdpad-ghost");
+          ghost.style.left = out.offsetLeft + "px"; ghost.style.top = out.offsetTop + "px";
+          ghost.style.width = out.offsetWidth + "px"; ghost.style.height = out.offsetHeight + "px";
+          wrap.style.position = "relative";
+          wrap.appendChild(ghost);
+          requestAnimationFrame(function () { ghost.classList.add("go"); });
+          setTimeout(function () { if (ghost.parentNode) ghost.parentNode.removeChild(ghost); }, 400);
+        }
         render(f.text);
         var fb = blocksOf(f.text), idx = changed < 0 ? -1 : blockAt(fb, changed);
         if (changed >= 0 && idx < 0) { for (var k = 0; k < fb.length; k++) if (fb[k].start > changed) { idx = k; break; } }
         if (changed >= 0 && idx < 0) idx = fb.length - 1;
-        focusPreview(idx, fb);
+        if (animate && changedRows.length) {
+          /* one line after the other, the whole run inside half the frame */
+          var step = Math.max(15, Math.min(80, (pace * 1000 * 0.5) / changedRows.length));
+          changedRows.forEach(function (ri, k) { rp.diffEl.children[ri].style.setProperty("--d", (k * step / 1000) + "s"); });
+          total = changedRows.length * step + 350;
+          wrap.setAttribute("data-lc-animating", "1");
+          requestAnimationFrame(function () {
+            changedRows.forEach(function (ri) { var e = rp.diffEl.children[ri]; if (e) e.classList.add("go"); });
+          });
+          rpAnimT = setTimeout(function () {
+            wrap.removeAttribute("data-lc-animating");
+            focusPreview(idx, fb);                  /* the pulse lands as the last line settles */
+          }, total);
+        } else {
+          focusPreview(idx, fb);
+        }
         var sp = firstRow >= 0 ? rp.diffEl.children[firstRow] : null;
         rp.diffEl.scrollTop = sp ? Math.max(0, sp.offsetTop - rp.diffEl.offsetTop - 40) : 0;
         rp.ui.slider.value = String(n);
@@ -464,7 +541,7 @@ Auto-included by docs/_layouts/default.html.
       function rpStep() {
         var n = rp.at + rp.dir;
         if (n < 0 || n >= rp.frames.length) { rpPause(); return; }
-        rpShow(n);
+        rpShow(n, true);
         /* landed on an end: stop there, now, not one silent tick later */
         if (n === 0 || n === rp.frames.length - 1) rpPause();
       }
@@ -498,6 +575,11 @@ Auto-included by docs/_layouts/default.html.
           rp.diffEl = document.createElement("pre");
           rp.diffEl.className = "lc-mdpad-diff";
           rp.diffEl.setAttribute("aria-label", "This version, with what changed since the one before");
+          /* THE PANE KEEPS THE EDITOR'S HEIGHT (Michel, 2026-10-05): a frame's
+             length must not move the bar under the pad — the pane scrolls
+             inside, to the first change, as the editor would. */
+          rp.diffEl.style.height = pane.offsetHeight + "px";
+          rp.diffEl.style.flex = "1 1 0";
           wrap.insertBefore(rp.diffEl, pane);
           pane.style.display = "none";
           var box = document.createElement("div");
@@ -519,6 +601,9 @@ Auto-included by docs/_layouts/default.html.
       function rpStop() {
         if (!rp.on) return;
         rpPause();
+        clearTimeout(rpAnimT);
+        wrap.removeAttribute("data-lc-animating");
+        wrap.querySelectorAll(".lc-mdpad-ghost").forEach(function (g) { g.parentNode.removeChild(g); });
         rp.on = false;
         replayBtn.textContent = "🎞 Replay";
         ["data-lc-replay", "data-lc-frame", "data-lc-frames"].forEach(function (a) { wrap.removeAttribute(a); });

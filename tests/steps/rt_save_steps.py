@@ -859,9 +859,36 @@ def step_preview_shows(context, text):
     expect(context.page.locator(PAD + " .lc-mdpad-out")).to_contain_text(text, timeout=5_000)
 
 
+@then('the word "{word}" is marked inside the added line')
+def step_word_marked(context, word):
+    expect(context.page.locator(PAD + " .lc-mdpad-diff .add b")).to_have_text(word, timeout=5_000)
+
+
 @when("I press the moonwalk")
 def step_moonwalk(context):
     context.page.locator(".lc-mdpad-replaybar .lc-mdpad-back").click()
+
+
+@when("I press play")
+def step_play(context):
+    context.pad_height = context.page.locator(PAD).bounding_box()["height"]
+    context.page.locator(".lc-mdpad-replaybar .lc-mdpad-play").click()
+
+
+@then("every added line has finished unfolding")
+def step_unfolded(context):
+    expect(context.page.locator(PAD)).not_to_have_attribute("data-lc-animating", "1", timeout=10_000)
+    adds = context.page.locator(PAD + " .lc-mdpad-diff .add")
+    assert adds.count() > 0, "no added line in the frame"
+    for i in range(adds.count()):
+        expect(adds.nth(i)).to_have_css("opacity", "1", timeout=5_000)
+        assert adds.nth(i).bounding_box()["height"] > 4, "an added line is still folded"
+
+
+@then("the pad kept its height")
+def step_height_kept(context):
+    h = context.page.locator(PAD).bounding_box()["height"]
+    assert abs(h - context.pad_height) < 2, (h, context.pad_height)
 
 
 @then("the replay lands on frame {n:d}")
