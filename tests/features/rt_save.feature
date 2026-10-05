@@ -242,6 +242,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I scrub the replay to frame 2
     Then the diff pane marks "# Draft two" as added and "# Draft one" as removed
     And the word "two" is marked inside the added line
+    And the diff pane's text carries no sign
     And the pad's preview shows "Draft two"
     When I press the moonwalk
     Then the replay lands on frame 1

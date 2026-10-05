@@ -135,13 +135,17 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-piano[data-plain] .k1 { background: transparent; }
 .lc-mdpad-piano[data-plain] .now { background: transparent; box-shadow: none; }
 .lc-mdpad-piano .ln { position: relative; }
+/* the gutter: a grayer column so numbers never read as text (Michel, 2026-10-05) —
+   painted as the pane's background, so it stays put while the text scrolls; each
+   row's cell then carries the piano into the gutter in its own grayer shades */
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano { background:
+  linear-gradient(90deg, #2a2a38 0, #2a2a38 3em, #3c3c50 3em, #3c3c50 calc(3em + 1px), #1e1e2e calc(3em + 1px)); }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln::before {
-  content: attr(data-n); position: absolute; left: -2.9em; width: 2.2em; text-align: right;
-  color: #6c7086; font-size: 0.85em; line-height: inherit; }
+  content: attr(data-n); position: absolute; left: -3.4em; top: 0; bottom: 0; width: 3em; box-sizing: border-box;
+  text-align: right; padding-right: 0.45em; color: #6c7086; font-size: 0.85em; line-height: inherit; }
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .k1 .ln::before { background: #30303f; }
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .now .ln::before { background: #3a3a54; }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln.here::before { color: #cdd6f4; }
-/* the gutter itself: a grayer column, so numbers never read as text (Michel, 2026-10-05) */
-.lc-mdpad-src[data-numbers] .lc-mdpad-piano::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3em; background: #2a2a38; border-right: 1px solid #3c3c50; }
 /* 🎞 REPLAY — the source pane becomes a diff pane: + green, − red, the
    usual cues; a slider is the cursor; play runs forward, the moonwalk back */
 .lc-mdpad-replay, .lc-mdpad-hist { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px;
@@ -151,9 +155,26 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-diff { flex: 1; min-width: 0; margin: 0; padding: 0.8em; overflow: auto; box-sizing: border-box;
   border: 1px solid #d0d0d0; border-radius: 6px; background: #1e1e2e; color: #9399b2;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; }
-.lc-mdpad-diff span { display: block; }
+.lc-mdpad-diff .ln { display: block; position: relative; }
 .lc-mdpad-diff .add { background: #1f3b2a; color: #a6e3a1; }
 .lc-mdpad-diff .del { background: #3b1f26; color: #f38ba8; }
+/* THE SIGNS LIVE IN THE GUTTER (Michel, 2026-10-05): + and − are drawn beside the
+   line, never typed into it — select and copy a section, the signs stay behind.
+   With numbers="true" the gutter also counts the frame's lines. */
+.lc-mdpad-diff { padding-left: 2.6em; background:
+  linear-gradient(90deg, #2a2a38 0, #2a2a38 2.1em, #3c3c50 2.1em, #3c3c50 calc(2.1em + 1px), #1e1e2e calc(2.1em + 1px)); }
+.lc-mdpad-diff .ln::before { content: attr(data-s); position: absolute; left: -2.6em; top: 0; bottom: 0; width: 2.1em;
+  box-sizing: border-box; text-align: right; padding-right: 0.45em; color: #6c7086; }
+.lc-mdpad-diff[data-numbers] { padding-left: 4.4em; background:
+  linear-gradient(90deg, #2a2a38 0, #2a2a38 3.9em, #3c3c50 3.9em, #3c3c50 calc(3.9em + 1px), #1e1e2e calc(3.9em + 1px)); }
+.lc-mdpad-diff[data-numbers] .ln::before { content: attr(data-s) " " attr(data-n); left: -4.4em; width: 3.9em; }
+.lc-mdpad-diff .add::before { color: #a6e3a1; }
+.lc-mdpad-diff .del::before { color: #f38ba8; }
+/* the piano, in the pane and in its gutter */
+.lc-mdpad-diff .k1 .ln::before { background: #30303f; }
+.lc-mdpad-diff .now .ln::before { background: #3a3a54; }
+.lc-mdpad-diff[data-piano] .k1 { background: #26263a; }
+.lc-mdpad-diff[data-piano] .now { background: #30304c; box-shadow: inset 3px 0 0 #89b4fa; }
 /* word level: inside an edited line, the words that actually differ */
 .lc-mdpad-diff .add b { font-weight: inherit; background: #2f6b3f; color: #d9ffd9; border-radius: 3px; }
 .lc-mdpad-diff .del b { font-weight: inherit; background: #7a2f3f; color: #ffd9e0; border-radius: 3px; }
@@ -481,18 +502,32 @@ Auto-included by docs/_layouts/default.html.
           }
           a--;
         }
-        var changedRows = [];
-        rp.diffEl.innerHTML = rows.map(function (r, i) {
-          var cls = r[0];
-          if (animate && r[0] !== "same") { cls += r[0] === "add" ? " unfold" : " fold"; changedRows.push(i); }
-          return "<span class='" + cls + "'>" + (r[0] === "add" ? "+ " : r[0] === "del" ? "− " : "  ") + html[i] + "</span>";
-        }).join("");
-        /* the first changed line, as the NEW text counts lines */
-        var changed = -1, firstRow = -1;
+        /* the first changed line, as the NEW text counts lines; and each
+           row's block in the frame's text, a removed line joining the block
+           that follows it — the piano bands the pane and its gutter by block */
+        var fb = blocksOf(f.text), changed = -1, firstRow = -1, keys = [], nums = [];
         for (var i = 0, ln = 0; i < rows.length; i++) {
-          if (rows[i][0] !== "same") { changed = ln; firstRow = i; break; }
-          ln++;
+          if (rows[i][0] !== "same" && firstRow < 0) { changed = ln; firstRow = i; }
+          if (rows[i][0] === "del") { keys.push(null); nums.push(""); }
+          else { keys.push(blockAt(fb, ln)); nums.push(String(ln + 1)); ln++; }
         }
+        for (var i2 = rows.length - 1, nextKey = -1; i2 >= 0; i2--) {
+          if (keys[i2] === null) keys[i2] = nextKey; else nextKey = keys[i2];
+        }
+        var changedRows = [], parts = [], open = null;
+        var idx = changed < 0 ? -1 : blockAt(fb, changed);
+        if (changed >= 0 && idx < 0) { for (var k = 0; k < fb.length; k++) if (fb[k].start > changed) { idx = k; break; } }
+        if (changed >= 0 && idx < 0) idx = fb.length - 1;
+        rows.forEach(function (r, i) {
+          var cls = "ln " + r[0];
+          if (animate && r[0] !== "same") { cls += r[0] === "add" ? " unfold" : " fold"; changedRows.push(i); }
+          var band = keys[i] < 0 ? "gap" : ((keys[i] % 2 ? "k1" : "k0") + (keys[i] === idx ? " now" : ""));
+          if (band !== open) { if (open !== null) parts.push("</div>"); parts.push("<div class='" + band + "'>"); open = band; }
+          parts.push("<span class='" + cls + "' data-s='" + (r[0] === "add" ? "+" : r[0] === "del" ? "−" : " ") + "' data-n='" + nums[i] + "'>" + (html[i] || "\u00a0") + "</span>");
+        });
+        if (open !== null) parts.push("</div>");
+        rp.diffEl.innerHTML = parts.join("");
+        var rowEls = Array.prototype.slice.call(rp.diffEl.querySelectorAll(".ln"));
         /* the preview: a ghost of the old render fades over the new one */
         var total = 0;
         if (animate && out.parentNode) {
@@ -506,17 +541,14 @@ Auto-included by docs/_layouts/default.html.
           setTimeout(function () { if (ghost.parentNode) ghost.parentNode.removeChild(ghost); }, 400);
         }
         render(f.text);
-        var fb = blocksOf(f.text), idx = changed < 0 ? -1 : blockAt(fb, changed);
-        if (changed >= 0 && idx < 0) { for (var k = 0; k < fb.length; k++) if (fb[k].start > changed) { idx = k; break; } }
-        if (changed >= 0 && idx < 0) idx = fb.length - 1;
         if (animate && changedRows.length) {
           /* one line after the other, the whole run inside half the frame */
           var step = Math.max(15, Math.min(80, (pace * 1000 * 0.5) / changedRows.length));
-          changedRows.forEach(function (ri, k) { rp.diffEl.children[ri].style.setProperty("--d", (k * step / 1000) + "s"); });
+          changedRows.forEach(function (ri, k) { rowEls[ri].style.setProperty("--d", (k * step / 1000) + "s"); });
           total = changedRows.length * step + 350;
           wrap.setAttribute("data-lc-animating", "1");
           requestAnimationFrame(function () {
-            changedRows.forEach(function (ri) { var e = rp.diffEl.children[ri]; if (e) e.classList.add("go"); });
+            changedRows.forEach(function (ri) { var e = rowEls[ri]; if (e) e.classList.add("go"); });
           });
           rpAnimT = setTimeout(function () {
             wrap.removeAttribute("data-lc-animating");
@@ -525,7 +557,7 @@ Auto-included by docs/_layouts/default.html.
         } else {
           focusPreview(idx, fb);
         }
-        var sp = firstRow >= 0 ? rp.diffEl.children[firstRow] : null;
+        var sp = firstRow >= 0 ? rowEls[firstRow] : null;
         rp.diffEl.scrollTop = sp ? Math.max(0, sp.offsetTop - rp.diffEl.offsetTop - 40) : 0;
         rp.ui.slider.value = String(n);
         rp.ui.label.textContent = (n + 1) + " / " + rp.frames.length + " · " +
@@ -578,6 +610,8 @@ Auto-included by docs/_layouts/default.html.
           /* THE PANE KEEPS THE EDITOR'S HEIGHT (Michel, 2026-10-05): a frame's
              length must not move the bar under the pad — the pane scrolls
              inside, to the first change, as the editor would. */
+          if (numbers) rp.diffEl.setAttribute("data-numbers", "1");
+          if (piano) rp.diffEl.setAttribute("data-piano", "1");
           rp.diffEl.style.height = pane.offsetHeight + "px";
           rp.diffEl.style.flex = "1 1 0";
           wrap.insertBefore(rp.diffEl, pane);

@@ -1916,12 +1916,12 @@ class Mdpad(Block):
     @property
     def diff(self):
         """The diff pane, one (sign, line) per row: '+' came, '-' went, ' ' stayed."""
-        nl = self._el.querySelectorAll(".lc-mdpad-diff > span") if self._el is not None else None
+        nl = self._el.querySelectorAll(".lc-mdpad-diff .ln") if self._el is not None else None
         out = []
         if nl is not None:
             for i in range(int(nl.length)):
                 sp = nl.item(i); c = str(sp.className or ""); t = str(sp.textContent or "")
-                out.append(("+" if "add" in c else "-" if "del" in c else " ", t[2:]))
+                out.append(("+" if " add" in c else "-" if " del" in c else " ", t))
         return out
 
     @property

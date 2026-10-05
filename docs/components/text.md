@@ -125,7 +125,8 @@ Feature: The caret's block shows on both sides of the pad
 A pad saved to the bench keeps every version (🕘). **🎞 Replay** plays them
 as frames: the lesson's starter first, then each save in order. The source
 pane becomes a **diff pane** with the usual cues — `+` green where a line
-came, `−` red where one went — the block that changed pulses in the preview,
+came, `−` red where one went, the signs in a gutter so a copied selection is
+clean text — the block that changed pulses in the preview,
 and a slider is the cursor. ▶ plays forward, ◀ plays backward (the
 moonwalk), `replay="0.8"` sets the seconds per frame. Read-only: nothing is
 written, and ■ Stop puts the editor back exactly as it was. The button

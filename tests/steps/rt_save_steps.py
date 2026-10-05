@@ -864,6 +864,15 @@ def step_word_marked(context, word):
     expect(context.page.locator(PAD + " .lc-mdpad-diff .add b")).to_have_text(word, timeout=5_000)
 
 
+@then("the diff pane's text carries no sign")
+def step_no_sign_in_text(context):
+    """The + and − live in the gutter as drawn marks: what a reader selects
+    and copies is the frame's text, nothing else."""
+    text = context.page.locator(PAD + " .lc-mdpad-diff").inner_text()
+    lines = [l for l in text.split("\n") if l.strip()]
+    assert lines and all(not l.lstrip().startswith(("+", "−", "-")) for l in lines), lines
+
+
 @when("I press the moonwalk")
 def step_moonwalk(context):
     context.page.locator(".lc-mdpad-replaybar .lc-mdpad-back").click()
