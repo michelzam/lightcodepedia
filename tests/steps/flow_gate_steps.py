@@ -444,3 +444,44 @@ def step_card_number(context):
     text = form.inner_text()
     assert "101" in text, "the card does not show the first dog's pic number: %r" % text[:300]
     assert form.locator("img").count() == 0, "the plain card already wears a picture — the lesson's second step has nothing left to teach"
+
+
+@when('I run the lesson\'s check "{fid}"')
+def step_run_named_check(context, fid):
+    """A named card — a page may carry a Definition of Done beside its proof."""
+    context.page.evaluate(
+        """() => {
+             document.querySelectorAll('.lc-prereq').forEach(g => g.remove());
+             document.querySelectorAll('.lc-prereq-hidden').forEach(h => h.classList.remove('lc-prereq-hidden'));
+             document.querySelectorAll('.lc-slide').forEach(s => { s.removeAttribute('hidden'); s.style.display = 'block'; s.setAttribute('data-active', 'true'); });
+             document.querySelectorAll('.lc-feature').forEach(c => { c.classList.remove('lc-feature-hidden'); c.style.display = 'block'; });
+           }""")
+    card = context.page.locator('.lc-feature[data-lc-id="' + fid + '"]').first
+    card.wait_for(state="attached", timeout=30_000)
+    btn = card.locator(".lc-feature-run").first
+    btn.wait_for(state="visible", timeout=30_000)
+    btn.scroll_into_view_if_needed(timeout=10_000)
+    btn.click(timeout=20_000)
+
+
+def _named_status(context, fid, want):
+    import time
+    card = context.page.locator('.lc-feature[data-lc-id="' + fid + '"]').first
+    deadline, got = time.time() + 90, ""
+    while time.time() < deadline:
+        got = card.get_attribute("data-status") or ""
+        if got in ("passing", "failing"):
+            break
+        context.page.wait_for_timeout(500)
+    if got != want:
+        raise AssertionError("check %s is %r, expected %r — the card says:\n%s" % (fid, got, want, (card.inner_text() or "")[:900]))
+
+
+@then('the lesson\'s check "{fid}" is green')
+def step_named_green(context, fid):
+    _named_status(context, fid, "passing")
+
+
+@then('the lesson\'s check "{fid}" is red')
+def step_named_red(context, fid):
+    _named_status(context, fid, "failing")

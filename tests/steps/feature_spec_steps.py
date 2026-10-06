@@ -102,3 +102,19 @@ def step_run_open_features(context):
         btn = btns.nth(i)
         btn.scroll_into_view_if_needed(timeout=10_000)
         btn.click(timeout=20_000)
+
+
+@then('the card "{fid}" comes out {verdict}')
+def step_feature_verdict(context, fid, verdict):
+    """One card's own verdict — a page may carry a check that is RED by
+    design on its starter (a Definition of Done), beside proofs that pass."""
+    want = {"green": "passing", "passing": "passing", "red": "failing", "failing": "failing"}[verdict]
+    card = context.page.locator('.lc-feature[data-lc-id="' + fid + '"]').first
+    card.wait_for(state="attached", timeout=20_000)
+    got = ""
+    for _ in range(120):
+        got = card.get_attribute("data-status") or ""
+        if got in ("passing", "failing"):
+            break
+        context.page.wait_for_timeout(500)
+    assert got == want, "feature %s is %r, expected %r — the card says:\n%s" % (fid, got, want, (card.inner_text() or "")[:700])

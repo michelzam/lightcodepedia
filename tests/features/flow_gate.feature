@@ -263,5 +263,7 @@ Feature: 🚦 A workflow ordered by its own values
     When I navigate to "/run.html#src=gh:acme/demo/courses/python/assignment_06a/index.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
-    And I run the lesson's proof
-    Then the lesson's proof is green
+    And I run the lesson's check "assignment_proof"
+    And I run the lesson's check "dod"
+    Then the lesson's check "assignment_proof" is green
+    And the lesson's check "dod" is red

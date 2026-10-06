@@ -514,10 +514,12 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
       """
     When I navigate to "/components/agent"
     And I wait for the page to be interactive
+    And I run the check "coach_check"
     And I connect the "coach" agent with key "test-key"
     And I ask the "coach" agent "how do I start the shift?"
     Then the model request carried the editor code "# TODO: shift one letter"
     And the model request named the TODO lines "# TODO: shift one letter" and "# TODO: wrap z to a"
+    And the model request carried the check "coach_check" as GREEN
     And the "coach" agent offers no Apply button
     And the "coach" agent offers to add the piece under "shift one letter"
     When I add the agent's piece to the editor

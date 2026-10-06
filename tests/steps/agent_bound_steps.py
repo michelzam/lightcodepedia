@@ -565,3 +565,33 @@ def step_editor_order(context, run_id, a, b, c, d):
 def step_editor_still(context, run_id, line):
     code = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code").input_value()
     assert line in code, "a line of the student's was lost: %r\n%s" % (line, code)
+
+
+@when('I run the check "{fid}"')
+def step_run_check(context, fid):
+    """Press ▶ on one feature card and wait for its verdict — the learner's act."""
+    card = context.page.locator('.lc-feature[data-lc-id="' + fid + '"]').first
+    card.wait_for(state="attached", timeout=20_000)
+    context.page.evaluate("""() => document.querySelectorAll('.lc-slide').forEach(s => { s.removeAttribute('hidden'); s.style.display='block'; })""")
+    card.locator(".lc-feature-run, .lc-feature-run-btn").first.click(timeout=10_000)
+    import time
+    for _ in range(60):
+        if (card.get_attribute("data-status") or "") in ("passing", "failing"):
+            return
+        context.page.wait_for_timeout(500)
+    raise AssertionError("the check never settled: %r" % card.get_attribute("data-status"))
+
+
+@then('the model request carried the check "{fid}" as RED with the step "{needle}"')
+def step_request_carried_check(context, fid, needle):
+    assert context.model_asks, "no request reached the model"
+    ask = context.model_asks[-1]
+    assert ("check (#" + fid + "): RED") in ask, ask[-900:]
+    assert needle in ask, "the red step's message is not in the request: " + ask[-900:]
+
+
+@then('the model request carried the check "{fid}" as GREEN')
+def step_request_carried_green(context, fid):
+    assert context.model_asks, "no request reached the model"
+    ask = context.model_asks[-1]
+    assert ("check (#" + fid + "): GREEN") in ask, ask[-900:]

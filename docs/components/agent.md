@@ -386,17 +386,22 @@ Code > 4000 chars is truncated. Empty editor and no-run-yet silently drop those 
 - [ ] File a strongly-worded bug report against your own PAT.
 {: .quiz }
 
-## 🎯 TODO-driven — the tutor aims at the program's TODOs
+## 🎯 A tutor — two elements, no new knob
 
-A tutor should aim, not type over. With `todos="true"` on a bound agent,
-the learner asks in their own words and the program's `# TODO` lines ride
-along with the code and the last output, named as such, so the tutor scans
-them. The tutor suggests in its own bubble; when its python fence **opens
-with one of those TODO lines**, quoted exactly, the piece under it — a line
-or two, with new `# TODO` lines for what remains — gets **⬇ Add under «that
-TODO»**: inserted below it in the editor, with its indentation, if the
-learner wants it. Nothing of the learner's is deleted or replaced; there is
-no Apply (Michel, 2026-10-06).
+A tutor should aim, not type over. The teacher names two elements with
+words the agent already has: `bound="<run id>"`, the editor, and
+`target="<feature id>"`, the check. That pair makes the agent a tutor:
+
+- the learner asks in their own words; the program, its last output, its
+  `# TODO` lines named, and the check's status with its red steps ride
+  along, so the tutor aims at the step that fails;
+- the tutor suggests in its own bubble; when its python fence **opens with
+  one of the program's TODO lines**, quoted exactly, the piece under it — a
+  line or two, with new `# TODO` lines for what remains — gets **⬇ Add
+  under «that TODO»**: inserted below it with its indentation, if the
+  learner wants it. Nothing deleted, nothing replaced, no Apply.
+- the check stays the learner's to run; the tutor only reads it
+  (Michel, 2026-10-06).
 
 ````markdown
 ```python
@@ -416,7 +421,7 @@ system: |
   followed by a piece: one or two lines, with a new "# TODO:" for what
   remains. Never the whole, never a replacement.
 ```
-{: .agent bound="todo_editor" todos="true" #coach }
+{: .agent bound="todo_editor" target="coach_check" #coach }
 ````
 
 Renders to:
@@ -438,7 +443,28 @@ system: |
   followed by a piece: one or two lines, with a new "# TODO:" for what
   remains. Never the whole, never a replacement.
 ```
-{: .agent bound="todo_editor" todos="true" #coach }
+{: .agent bound="todo_editor" target="coach_check" #coach }
+
+The check the coach reads:
+
+```gherkin
+Feature: The shift is written
+  As a learner on the coach's example
+  I want to know what is left
+  So that the coach aims at it
+
+  Scenario: The shift keeps its contract
+    Given the editor
+    :::python
+    self.src = str(Object._all("#lc-pyrun-todo_editor .lc-pyrun-code")[0]._el.value)
+    :::
+    When the learner works on the shift
+    Then the function is still there, one letter in, one letter out
+    :::python
+    assert "def shift(letter: str) -> str:" in self.src, "shift's signature changed — one letter in, one letter out"
+    :::
+```
+{: .feature #coach_check visible="true" status="pending" tags="ai" }
 
 ```gherkin
 Feature: A TODO-driven agent sees the program's TODOs

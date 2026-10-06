@@ -43,15 +43,19 @@ IAL knobs:
               auto-appended to every prompt, and the first python
               code block in the response gets an "⬇ Apply to #X"
               button.
-  todos="true" with bound="X": TODO-DRIVEN (Michel, 2026-10-06). The student
-              asks in their own words; the program's "# TODO" lines ride along
-              with the code and the last output, named as such, so the tutor
-              scans them. When the reply's python fence OPENS with one of
-              those TODO lines, quoted exactly, the piece under it (a line or
-              two, with new "# TODO" lines for what remains) gets "⬇ Add under
-              «that TODO»": inserted below it in the editor, with its
-              indentation, nothing deleted. No fence that quotes a TODO →
-              "⬇ Add at the end". Never a replacement of the student's code.
+  target="<feature id>"  with bound="X": THE TUTOR (Michel, 2026-10-06 — no
+              new knobs: the teacher names two elements, the editor with
+              bound= and the check with target=, and that pair makes a
+              tutor). The named .feature card's status and red steps ride
+              along with every question, with the program's "# TODO" lines
+              named, so the tutor aims. The student asks in their own words;
+              the tutor suggests in its own bubble; when its python fence
+              OPENS with one of the program's TODO lines quoted exactly, the
+              piece under it (a line or two, new "# TODO" lines for what
+              remains) gets "⬇ Add under «that TODO»" — inserted below it
+              with its indentation, if the student wants; nothing deleted,
+              nothing replaced, no Apply. The check stays the student's to
+              run; the tutor only reads it. Also accepted in the yaml: target:.
   bound="{=expr}"  the second grammar (told apart by syntax — the legacy
               editor binding is untouched): evaluate a CELL expression at
               Ask time and hand the value to the model. {=cv1.source}
@@ -246,10 +250,34 @@ Auto-included by docs/_layouts/default.html.
     return true;
   }
 
-  function buildAugmentedPrompt(boundId, userQuestion) {
-    if (!boundId) return userQuestion;
+  /* the named .feature card, as a tutor reads it: its status and the red
+     steps with their messages — never run by the tutor, only read */
+  function proofSummary(proofId) {
+    if (!proofId) return null;
+    var card = document.querySelector('.lc-feature[data-lc-id="' + proofId + '"]') ||
+               document.getElementById(proofId);
+    if (!card) return null;
+    var status = card.getAttribute('data-status') || '';
+    var lines = ["The assignment's check (#" + proofId + '): ' +
+                 (status === 'passing' ? 'GREEN — every step passes.' :
+                  status === 'failing' ? 'RED.' : 'not run yet.')];
+    var steps = card.querySelectorAll('.lc-feature-step');
+    for (var i = 0; i < steps.length; i++) {
+      var ic = steps[i].querySelector('.lc-feature-step-icon');
+      var txt = (steps[i].querySelector('.lc-feature-step-text') || {}).textContent || '';
+      var kw = (steps[i].querySelector('.lc-feature-step-keyword') || {}).textContent || '';
+      var err = (steps[i].querySelector('.lc-feature-step-err') || {}).textContent || '';
+      if (ic && ic.classList.contains('fail'))
+        lines.push('✗ ' + (kw + ' ' + txt).replace(/\s+/g, ' ').trim() + (err ? ' — ' + err.replace(/\s+/g, ' ').trim() : ''));
+    }
+    return lines.join('\n');
+  }
+
+  function buildAugmentedPrompt(boundId, userQuestion, proofId) {
+    var proof = proofSummary(proofId);
+    if (!boundId) return proof ? proof + '\n\nThe learner asks:\n\n' + userQuestion : userQuestion;
     var code = getBoundCode(boundId);
-    if (code == null) return userQuestion;
+    if (code == null) return proof ? proof + '\n\nThe learner asks:\n\n' + userQuestion : userQuestion;
     var output = getBoundOutput(boundId);
     var trimmedCode = code.length > 4000 ? code.substring(0, 4000) + '\n# ...[truncated]' : code;
     var parts = [
@@ -267,6 +295,7 @@ Auto-included by docs/_layouts/default.html.
     var todos = [];
     code.split('\n').forEach(function (l) { if (/^\s*#\s*TODO\b/i.test(l)) todos.push(l.trim()); });
     if (todos.length) parts.push('', 'The TODO lines in the program:', '', todos.join('\n'));
+    if (proof) parts.push('', proof);
     parts.push('', 'The learner asks:', '', userQuestion);
     return parts.join('\n');
   }
@@ -1214,7 +1243,7 @@ Auto-included by docs/_layouts/default.html.
         ? window.lcCellEval(boundExpr).then(function (v) {
             return 'The document under review:\n\n```\n' + String(v) + '\n```\n\nThe request:\n\n' + question;
           }).catch(function () { return question; })
-        : Promise.resolve(buildAugmentedPrompt(boundId, question));
+        : Promise.resolve(buildAugmentedPrompt(boundId, question, cfg.proof));
 
       promptP.then(function (fullPrompt) {
         return ask(myToken(), cfg, fullPrompt, function (eng, failure) {
@@ -1410,7 +1439,10 @@ Auto-included by docs/_layouts/default.html.
     if (botCfg) Object.keys(botCfg).forEach(function(k){ cfg[k] = botCfg[k]; });
     Object.keys(pageCfg).forEach(function(k){ if (k !== 'bot') cfg[k] = pageCfg[k]; });
     if (botName && !botCfg) cfg.intro = '⚠ bot "' + botName + '" could not be loaded — answering with defaults. ' + (cfg.intro || '');
-    cfg.todos = el.getAttribute('todos') === 'true' && !!boundId;
+    /* one word, two elements: bound= the editor, target= the check → a tutor */
+    cfg.target = el.getAttribute('target') || cfg.target || null;
+    cfg.todos = !!(boundId && cfg.target);
+    cfg.proof = cfg.target;
     var panel = buildPanel(id, cfg, rows, boundId, boundExpr);
     // Slides partition runs before agent upgrade (it has to wait for js-yaml).
     // Carry the fragment marking from the original code-block to the new panel
