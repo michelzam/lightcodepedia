@@ -504,7 +504,8 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And a builder key is connected
     And the recording model endpoint replies with this text:
       """
-      One letter first: a ruler of the alphabet tells you where 'a' sits.
+      🧭 One letter first: a ruler of the alphabet tells you where 'a' sits (Module 6).
+      ❓ Do you remember how to write a for loop over the letters? (Module 3)
 
       ```python
       # TODO: shift one letter
@@ -521,6 +522,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And the model request named the TODO lines "# TODO: shift one letter" and "# TODO: wrap z to a"
     And the model request carried the check "coach_check" as GREEN
     And the "coach" agent offers no Apply button
+    And the "coach" agent's answer shows three areas: a direction, a question back, an example
     And the "coach" agent offers to add the piece under "shift one letter"
     When I add the agent's piece to the editor
     Then the "todo_editor" editor holds, in order, "# TODO: shift one letter", "alphabet = 'abcdefghijklmnopqrstuvwxyz'", "# TODO: find the letter's position with .find, then take the next one", "return letter"

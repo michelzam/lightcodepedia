@@ -56,6 +56,10 @@ IAL knobs:
               with its indentation, if the student wants; nothing deleted,
               nothing replaced, no Apply. The check stays the student's to
               run; the tutor only reads it. Also accepted in the yaml: target:.
+              The answer renders in THREE AREAS — 🧭 direction, ❓ question
+              back, 🧩 example (the fence, with its ⬇ Add) — the sheet asks
+              for the 🧭/❓ markers; without them a trailing question is the
+              question.
   bound="{=expr}"  the second grammar (told apart by syntax — the legacy
               editor binding is untouched): evaluate a CELL expression at
               Ask time and hand the value to the model. {=cv1.source}
@@ -136,6 +140,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-msg-bot pre.lc-agent-code code { background: transparent; padding: 0; font-size: inherit; color: inherit; }
 .lc-agent-msg-bot code { background: #eef; padding: 0.1em 0.35em; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
 /* 🎯 TODO-driven: the reply's piece goes under the TODO it quotes */
+/* the tutor's answer in three areas: direction · question · example */
+.lc-agent-tutor .lc-agent-direction { margin: 0 0 0.5em; }
+.lc-agent-tutor .lc-agent-question { margin: 0 0 0.5em; padding: 0.5em 0.8em; border-left: 3px solid #4f46e5; background: #eef2ff; border-radius: 0 6px 6px 0; }
+.lc-agent-tutor .lc-agent-example { margin: 0.4em 0 0; }
+.lc-agent-tutor .lc-agent-example > .lc-agent-area-label, .lc-agent-tutor .lc-agent-question > .lc-agent-area-label, .lc-agent-tutor .lc-agent-direction > .lc-agent-area-label { display: block; font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 0.2em; }
 .lc-agent-add-todos { font: inherit; font-size: 0.9em; padding: 0.35em 0.8em; border-radius: 6px; border: 1px solid #4f46e5; background: #4f46e5; color: #fff; cursor: pointer; }
 .lc-agent-apply-bar { display: flex; gap: 0.5em; align-items: center; margin: -0.2em 0 0.5em; font-size: 0.85em; color: #555; }
 .lc-agent-apply { background: #2e7d32; color: white; border: none; padding: 0.35em 0.85em; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.85em; }
@@ -1127,6 +1136,36 @@ Auto-included by docs/_layouts/default.html.
       var m = String(text || '').match(/```(?:python|py)?[ \t]*\n([\s\S]*?)```/);
       return m ? m[1].replace(/\s+$/, '') : null;
     }
+    /* THREE AREAS (Michel, 2026-10-06): a tutor's answer is a direction, a
+       question back, and an example — each in its own area, the example
+       with its ⬇ Add button. The sheet asks for 🧭 and ❓ markers; without
+       them, the prose is the direction and a trailing question is the
+       question. The first fence is the example. */
+    function tutorParts(text) {
+      var t = String(text || '');
+      var fence = t.match(/```[\s\S]*?```/);
+      var prose = t.replace(/```[\s\S]*?```/g, '').trim();
+      var direction = [], question = [];
+      prose.split('\n').forEach(function (l) {
+        if (/^\s*❓/.test(l)) question.push(l.replace(/^\s*❓\s*/, ''));
+        else if (question.length && l.trim() && !/^\s*🧭/.test(l)) question.push(l);
+        else direction.push(l.replace(/^\s*🧭\s*/, ''));
+      });
+      var d = direction.join('\n').trim(), q = question.join('\n').trim();
+      if (!q) {
+        var m = d.match(/(?:^|\n)([^\n]*\?)\s*$/);
+        if (m) { q = m[1].trim(); d = d.slice(0, d.length - m[0].length).trim(); }
+      }
+      return { direction: d, question: q, example: fence ? fence[0] : '' };
+    }
+    function renderTutor(text) {
+      var parts = tutorParts(text);
+      var html = '';
+      if (parts.direction) html += '<div class="lc-agent-direction"><span class="lc-agent-area-label">🧭 direction</span>' + renderMarkdown(parts.direction) + '</div>';
+      if (parts.question) html += '<div class="lc-agent-question"><span class="lc-agent-area-label">❓ your turn</span>' + renderMarkdown(parts.question) + '</div>';
+      if (parts.example) html += '<div class="lc-agent-example"><span class="lc-agent-area-label">🧩 example — yours to add</span>' + renderMarkdown(parts.example) + '</div>';
+      return html || renderMarkdown(text);
+    }
     function offerPiece(text) {
       var fence = firstFence(text);
       if (fence == null || !fence.trim()) return;
@@ -1155,7 +1194,7 @@ Auto-included by docs/_layouts/default.html.
       var where = target ? ' under «' + escapeHtml(target.text) + '»' : ' at the end';
       bar.innerHTML = '<button class="lc-agent-add-todos" type="button">⬇ Add to #' + escapeHtml(boundId) + where +
         '</button> <span class="lc-agent-note">nothing of yours is replaced</span>';
-      response.appendChild(bar);
+      (response.querySelector('.lc-agent-example') || response).appendChild(bar);
       bar.querySelector('.lc-agent-add-todos').addEventListener('click', function () {
         var code = getBoundCode(boundId);
         if (code == null) return;
@@ -1327,7 +1366,9 @@ Auto-included by docs/_layouts/default.html.
           '<div class="lc-agent-msg-user">💬 ' + escapeHtml(question) +
             ' <button type="button" class="lc-agent-again" title="Put this question back in the box">↩</button>' +
             ' <button type="button" class="lc-agent-followup" title="Ask a follow-up — this question and its answer travel with the next one">⤵</button></div>' +
-          '<div class="lc-agent-msg-bot">🤖 ' + renderMarkdown(result.text) + '</div>';
+          (cfg.todos
+            ? '<div class="lc-agent-msg-bot lc-agent-tutor">🤖 ' + renderTutor(result.text) + '</div>'
+            : '<div class="lc-agent-msg-bot">🤖 ' + renderMarkdown(result.text) + '</div>');
         var againBtn = response.querySelector('.lc-agent-again');
         if (againBtn) againBtn.addEventListener('click', function () {
           var pe = panel.querySelector('.lc-agent-prompt');

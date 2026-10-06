@@ -403,7 +403,11 @@ words the agent already has: `bound="<run id>"`, the editor, and
   line or two, with new `# TODO` lines for what remains — gets **⬇ Add
   under «that TODO»**: inserted below it with its indentation, if the
   learner wants it. Nothing deleted, nothing replaced, no Apply.
-- the check stays the learner's to run; the tutor only reads it
+- the check stays the learner's to run; the tutor only reads it;
+- the answer renders in **three areas**: 🧭 the direction, ❓ the question
+  back (a tutor asks more than it tells), 🧩 the example with its ⬇ Add
+  button. The sheet asks for the 🧭 and ❓ markers; without them, the prose
+  is the direction and a trailing question is the question
   (Michel, 2026-10-06).
 
 ````markdown
@@ -419,10 +423,11 @@ print(shift('a'))
 
 ```yaml
 system: |
-  You are a coach. One direction (two sentences at most), then a python
-  fence that OPENS with the student's TODO line you are on, quoted exactly,
-  followed by a piece: one or two lines, with a new "# TODO:" for what
-  remains. Never the whole, never a replacement.
+  You are a coach. Answer in three parts: "🧭" one direction (two sentences
+  at most); "❓" one question back that points at the solution; then a
+  python fence that OPENS with the student's TODO line you are on, quoted
+  exactly, followed by a piece: one or two lines, with a new "# TODO:" for
+  what remains. Never the whole, never a replacement.
 ```
 {: .agent bound="todo_editor" target="coach_check" #coach }
 ````
@@ -441,10 +446,11 @@ print(shift('a'))
 
 ```yaml
 system: |
-  You are a coach. One direction (two sentences at most), then a python
-  fence that OPENS with the student's TODO line you are on, quoted exactly,
-  followed by a piece: one or two lines, with a new "# TODO:" for what
-  remains. Never the whole, never a replacement.
+  You are a coach. Answer in three parts: "🧭" one direction (two sentences
+  at most); "❓" one question back that points at the solution; then a
+  python fence that OPENS with the student's TODO line you are on, quoted
+  exactly, followed by a piece: one or two lines, with a new "# TODO:" for
+  what remains. Never the whole, never a replacement.
 ```
 {: .agent bound="todo_editor" target="coach_check" #coach }
 

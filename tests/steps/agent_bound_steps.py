@@ -618,3 +618,15 @@ def step_request_followup(context, q, a, n):
 @then("the follow-up chip is gone")
 def step_followup_gone(context):
     assert context.page.locator(".lc-agent-followup-note").count() == 0, "the follow-up chip is still armed"
+
+
+@then('the "{agent_id}" agent\'s answer shows three areas: a direction, a question back, an example')
+def step_three_areas(context, agent_id):
+    bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot.lc-agent-tutor').first
+    expect(bot).to_be_visible(timeout=10_000)
+    d = bot.locator(".lc-agent-direction"); q = bot.locator(".lc-agent-question"); x = bot.locator(".lc-agent-example")
+    assert d.count() == 1 and "ruler" in d.inner_text(), "no direction area: %r" % bot.inner_text()[:300]
+    assert q.count() == 1 and "for loop" in q.inner_text(), "no question area: %r" % bot.inner_text()[:300]
+    assert x.count() == 1 and "alphabet" in x.inner_text(), "no example area: %r" % bot.inner_text()[:300]
+    # the ⬇ Add button sits inside the example area, not under the whole bubble
+    assert x.locator(".lc-agent-add-todos").count() == 1, "the add button is not in the example area"
