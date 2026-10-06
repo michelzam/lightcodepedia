@@ -174,7 +174,7 @@ def step_faces_fix(context):
     def fix(body):
         line = '{: .datagrid #dog_grid source="dogs" rows="5" }\n'
         assert line in body, "the faces seed no longer carries the named table the lesson builds on"
-        card = '{: .form master="dog_grid" compute="photo = \'https://placedog.net/400/240?id=\' + str(pic)" }\n'
+        card = '{: .form master="dog_grid" compute="photo = f\'https://placedog.net/400/240?id={pic}\'" }\n'
         return body.replace(line, line + '\n[The dog](#)\n' + card +
                                          '\n[Fees](#)\n{: .chart source="dogs" x="name" y="fee" }\n')
     _serve_course_page(context, context.lesson_path, fix)
@@ -414,6 +414,33 @@ def step_type_card(context):
     ta = context.page.locator("[data-lc-id='faces_screen'] .lc-mdpad-in")
     ta.wait_for(state="visible", timeout=20_000)
     card = ('\n[The dog](#)\n{: .form master="dog_grid" '
-            'compute="photo = \'https://placedog.net/400/240?id=\' + str(pic)" }\n')
+            'compute="photo = f\'https://placedog.net/400/240?id={pic}\'" }\n')
     ta.fill(ta.input_value().rstrip("\n") + "\n" + card)
     context.page.wait_for_timeout(4000)      # debounce, re-render, the formula's run
+
+
+@when("the learner types the plain card under the table")
+def step_type_plain_card(context):
+    """Step one of the lesson: master= only. The card follows, shows the
+    pic NUMBER, and has no face yet — the beat the next step answers."""
+    context.page.evaluate(
+        """() => {
+             document.querySelectorAll('.lc-prereq').forEach(g => g.remove());
+             document.querySelectorAll('.lc-prereq-hidden').forEach(h => h.classList.remove('lc-prereq-hidden'));
+             document.querySelectorAll('.lc-slide').forEach(s => {
+               s.removeAttribute('hidden'); s.style.display = 'block'; s.setAttribute('data-active', 'true');
+             });
+           }""")
+    ta = context.page.locator("[data-lc-id='faces_screen'] .lc-mdpad-in")
+    ta.wait_for(state="visible", timeout=20_000)
+    ta.fill(ta.input_value().rstrip("\n") + '\n\n[The dog](#)\n{: .form master="dog_grid" }\n')
+    context.page.wait_for_timeout(3000)
+
+
+@then("the card shows the pic number and no face")
+def step_card_number(context):
+    form = context.page.locator("[data-lc-id='faces_screen'] .lc-form").first
+    form.wait_for(state="attached", timeout=15_000)
+    text = form.inner_text()
+    assert "101" in text, "the card does not show the first dog's pic number: %r" % text[:300]
+    assert form.locator("img").count() == 0, "the plain card already wears a picture — the lesson's second step has nothing left to teach"

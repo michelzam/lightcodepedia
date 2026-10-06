@@ -226,6 +226,12 @@ Combined with `master="<grid-id>"`, clicking a row shows that row's photo
 — the Adoption Day pattern, the table untouched: a list is a list, a face
 is the detail's business.
 
+A formula is any Python expression — an f-string reads best:
+`compute="photo = f'https://placedog.net/400/240?id={pic}'"`. In a pad or
+the runner that is the whole story. On a page built by the site, write the
+closing brace as `\}` — the decoration's own `}` would otherwise end at
+the f-string's.
+
 ```gherkin
 Feature: A photo field shows the photo
   As a reader

@@ -244,3 +244,12 @@ Feature: 🚦 A workflow ordered by its own values
     And I wait for the cells to settle
     And the learner types the card under the table, compute= on it
     Then the card shows that dog's photo
+
+  Scenario: Module 04's plain card shows the pic number, no face yet
+    Given the runner serves the course page "courses/micro_build_ai/module_04/03_faces.md"
+    And the runner serves the course file "courses/micro_build_ai/module_00/dogs.yaml"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/03_faces.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And the learner types the plain card under the table
+    Then the card shows the pic number and no face
