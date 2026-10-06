@@ -145,6 +145,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-tutor .lc-agent-question { margin: 0 0 0.5em; padding: 0.5em 0.8em; border-left: 3px solid #4f46e5; background: #eef2ff; border-radius: 0 6px 6px 0; }
 .lc-agent-tutor .lc-agent-example { margin: 0.4em 0 0; }
 .lc-agent-tutor .lc-agent-example > .lc-agent-area-label, .lc-agent-tutor .lc-agent-question > .lc-agent-area-label, .lc-agent-tutor .lc-agent-direction > .lc-agent-area-label { display: block; font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 0.2em; }
+.lc-agent-quota { font-size: 0.78em; color: var(--lc-ink-mute, #616161); padding: 0 1em 0.6em; }
 .lc-agent-add-todos { font: inherit; font-size: 0.9em; padding: 0.35em 0.8em; border-radius: 6px; border: 1px solid #4f46e5; background: #4f46e5; color: #fff; cursor: pointer; }
 .lc-agent-apply-bar { display: flex; gap: 0.5em; align-items: center; margin: -0.2em 0 0.5em; font-size: 0.85em; color: #555; }
 .lc-agent-apply { background: #2e7d32; color: white; border: none; padding: 0.35em 0.85em; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.85em; }
@@ -375,7 +376,8 @@ Auto-included by docs/_layouts/default.html.
           ring[id] = { name: p.name || id, base: String(p.base).replace(/\/+$/, ''),
                        model: p.model || '', models: Array.isArray(p.models) ? p.models.map(String) : [],
                        key_name: p.key_name || ((p.name || id) + ' key'),
-                       key_url: p.key_url || '', key_hint: p.key_hint || 'sk-...', free: !!p.free };
+                       key_url: p.key_url || '', key_hint: p.key_hint || 'sk-...', free: !!p.free,
+                       limits: (p.limits && typeof p.limits === 'object') ? p.limits : null };
         });
         if (Object.keys(ring).length) {
           Object.keys(PROVIDERS).forEach(function (id) { if (id !== 'custom') delete PROVIDERS[id]; });
@@ -756,6 +758,81 @@ Auto-included by docs/_layouts/default.html.
     };
   })();
 
+  /* ── what is LEFT, and when it refills ────────────────────────────────
+     Michel, 2026-10-06: "store and display the remaining credit and the
+     time until reset with the consumption". A free tier is rate limits,
+     not a credit: Groq answers every call with headers — requests left
+     today and when they reset, tokens left this minute and when they
+     reset. The desk reads them, keeps the last reading per engine on this
+     device, and says so under the usage line; a provider that hides its
+     headers gets the day's ledger instead, with the ring's known limits. */
+  window.lcQuota = (function () {
+    var KEY = 'lc_quota';
+    function secs(v) {              /* "2h10m5.3s" · "59.5s" · "1m" → seconds */
+      if (v == null) return null;
+      var str = String(v).trim(), m = str.match(/^(\d+(?:\.\d+)?)$/);
+      if (m) return parseFloat(m[1]);
+      var t = 0, found = false;
+      str.replace(/(\d+(?:\.\d+)?)\s*(ms|h|m|s)/g, function (_, n, u) {
+        found = true; n = parseFloat(n);
+        t += u === 'h' ? n * 3600 : u === 'm' ? n * 60 : u === 'ms' ? n / 1000 : n;
+      });
+      return found ? t : null;
+    }
+    function num(h, k) { var v = h && h.get ? h.get(k) : null; return v == null || v === '' ? null : Number(v); }
+    function readAll() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
+    function write(all) { try { localStorage.setItem(KEY, JSON.stringify(all)); } catch (e) {} }
+    function read(pid, headers) {
+      if (!headers || !headers.get) return null;
+      var now = Date.now();
+      var q = { at: now,
+        asks_limit: num(headers, 'x-ratelimit-limit-requests'),
+        asks_left: num(headers, 'x-ratelimit-remaining-requests'),
+        asks_reset: secs(headers.get('x-ratelimit-reset-requests')),
+        tokens_limit: num(headers, 'x-ratelimit-limit-tokens'),
+        tokens_left: num(headers, 'x-ratelimit-remaining-tokens'),
+        tokens_reset: secs(headers.get('x-ratelimit-reset-tokens')) };
+      if (q.asks_left == null && q.tokens_left == null) return null;   /* headers not exposed */
+      if (q.asks_reset != null) q.asks_reset_at = now + q.asks_reset * 1000;
+      if (q.tokens_reset != null) q.tokens_reset_at = now + q.tokens_reset * 1000;
+      var all = readAll(); all[pid] = q; write(all);
+      return q;
+    }
+    function last(pid) { return readAll()[pid] || null; }
+    function inWords(ms) {
+      var s = Math.max(0, Math.round(ms / 1000));
+      if (s < 60) return s + 's';
+      var m = Math.round(s / 60);
+      if (m < 60) return m + 'm';
+      var h = Math.floor(m / 60); m = m % 60;
+      return h + 'h' + (m ? ' ' + m + 'm' : '');
+    }
+    function fmt(n) { return n == null ? '?' : (n >= 10000 ? Math.round(n / 1000) + 'k' : String(n)); }
+    /* the sentence under the usage line */
+    function line(pid, name, limits) {
+      var q = last(pid), now = Date.now(), parts = [];
+      if (q) {
+        if (q.asks_left != null)
+          parts.push(fmt(q.asks_left) + (q.asks_limit ? ' of ' + fmt(q.asks_limit) : '') + ' asks left today' +
+            (q.asks_reset_at ? (q.asks_reset_at > now ? ' · refills in ' + inWords(q.asks_reset_at - now) : ' · refilled') : ''));
+        if (q.tokens_left != null)
+          parts.push(fmt(q.tokens_left) + (q.tokens_limit ? ' of ' + fmt(q.tokens_limit) : '') + ' tokens left this minute' +
+            (q.tokens_reset_at ? (q.tokens_reset_at > now ? ' · refills in ' + inWords(q.tokens_reset_at - now) : ' · refilled') : ''));
+        return '🔋 ' + (name || pid) + ': ' + parts.join(' · ') + ' (read ' + inWords(now - q.at) + ' ago).';
+      }
+      /* no headers from this engine: the day's ledger, with the limits the ring knows */
+      var d = window.lcTokens ? window.lcTokens.today() : null;
+      if (d && d.asks) {
+        var l = limits || {};
+        return '🔋 ' + (name || pid) + ': ' + d.asks + ' ask' + (d.asks > 1 ? 's' : '') + ' today' +
+          (l.rpd ? ' of ' + fmt(l.rpd) + ' (free day)' : '') + ' · about ' + fmt(d.tokens) + ' tokens' +
+          (l.tpd ? ' of ' + fmt(l.tpd) : '') + ' — this browser\'s count; the engine does not say what is left.';
+      }
+      return '';
+    }
+    return { read: read, last: last, line: line, secs: secs };
+  })();
+
   var KNOB_RE = /^(system|intro|placeholder|placeholder_next|name|model|model_fallback|provider|base_url|fallback|temperature|max_tokens|bot|knowledge|knowledge_budget)\s*:\s?(.*)$/;
   function lenientCfg(raw) {
     var out = {}, key = null, buf = [];
@@ -877,8 +954,9 @@ Auto-included by docs/_layouts/default.html.
       },
       body: JSON.stringify(body)
     }).then(function(r){
-      return r.json().then(function(data){ return { status: r.status, data: data }; })
-        .catch(function(){ return { status: r.status, data: {} }; });
+      var quota = window.lcQuota ? window.lcQuota.read(eng.id, r.headers) : null;
+      return r.json().then(function(data){ return { status: r.status, data: data, quota: quota }; })
+        .catch(function(){ return { status: r.status, data: {}, quota: quota }; });
     }).then(function(result){
       /* 401 and 403 are NOT the same answer, and treating them alike used to
          DELETE a perfectly good key.
@@ -960,6 +1038,7 @@ Auto-included by docs/_layouts/default.html.
       if (truncated) text = (text ? text + '\n\n' : '') + TRUNCATED_NOTE;
       return { text: text, clean: clean, truncated: truncated,
                usage: result.data.usage || null,
+               quota: result.quota || null,
                /* WHO ANSWERED (Michel, 2026-09-19): agents are not
                   deterministic and engines change hands — two verdicts
                   from two engines are not a difference of sheets. The
@@ -1114,6 +1193,22 @@ Auto-included by docs/_layouts/default.html.
     var usage = panel.querySelector('.lc-agent-usage');
     var keyBtn = panel.querySelector('.lc-agent-key');
     var authMsg = panel.querySelector('.lc-agent-authmsg');
+    /* 🔋 what is left on this engine, and when it refills — under the usage line */
+    var quotaEl = document.createElement('div');
+    quotaEl.className = 'lc-agent-quota';
+    quotaEl.hidden = true;
+    usage.parentNode.insertBefore(quotaEl, usage.nextSibling);
+    function showQuota(pid) {
+      if (!window.lcQuota) return;
+      var eng = resolveEngine(cfg);
+      pid = pid || eng.id;
+      var ring = PROVIDERS[pid] || {};
+      var text = window.lcQuota.line(pid, ring.name || eng.name, ring.limits);
+      quotaEl.textContent = text;
+      quotaEl.hidden = !text;
+      if (text) { quotaEl.setAttribute('data-provider', pid); }
+    }
+    showQuota();
 
     /* ===== 🎯 TODO-DRIVEN (Michel, 2026-10-06) =============================
        No list of tasks in the tutor: the student asks in their own words,
@@ -1466,6 +1561,7 @@ Auto-included by docs/_layouts/default.html.
           usage.textContent = 'This ask: ' + who + '.';
         }
         if (result.engine) { usage.setAttribute('data-provider', result.engine.pid || ''); usage.setAttribute('data-model', result.engine.model || ''); }
+        showQuota(result.engine ? result.engine.pid : engineId());
         prompt.value = '';
       });
     });

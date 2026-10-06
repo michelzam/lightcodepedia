@@ -630,3 +630,42 @@ def step_three_areas(context, agent_id):
     assert x.count() == 1 and "alphabet" in x.inner_text(), "no example area: %r" % bot.inner_text()[:300]
     # the ⬇ Add button sits inside the example area, not under the whole bubble
     assert x.locator(".lc-agent-add-todos").count() == 1, "the add button is not in the example area"
+
+
+# ── 🔋 what is left, and when it refills ─────────────────────────────────
+
+@given('a quota-telling model endpoint replies with a python fix "{code}", "{asks}" and "{tokens}"')
+def step_recording_model_quota(context, code, asks, tokens):
+    """asks = "987/1000 asks, 2h10m5s" · tokens = "6400/8000 tokens, 42.5s" — Groq's headers."""
+    import re as _re
+    a = _re.match(r"(\d+)/(\d+) asks, (\S+)", asks); t = _re.match(r"(\d+)/(\d+) tokens, (\S+)", tokens)
+    headers = {
+        "x-ratelimit-remaining-requests": a.group(1), "x-ratelimit-limit-requests": a.group(2), "x-ratelimit-reset-requests": a.group(3),
+        "x-ratelimit-remaining-tokens": t.group(1), "x-ratelimit-limit-tokens": t.group(2), "x-ratelimit-reset-tokens": t.group(3),
+        "access-control-expose-headers": "x-ratelimit-remaining-requests, x-ratelimit-limit-requests, x-ratelimit-reset-requests, x-ratelimit-remaining-tokens, x-ratelimit-limit-tokens, x-ratelimit-reset-tokens",
+    }
+    context.model_asks = []
+
+    def fulfill(route):
+        context.model_asks.append(route.request.post_data or "")
+        body = json.dumps({"choices": [{"message": {"content": "Try this:\n\n```python\n" + code + "\n```"}}],
+                           "usage": {"total_tokens": 7}, "model": "stub-model-9"})
+        route.fulfill(status=200, content_type="application/json", headers=headers, body=body)
+
+    context.page.route("**/chat/completions*", fulfill)
+
+
+@then('the "{agent_id}" desk says "{a}" and "{b}"')
+def step_desk_quota(context, agent_id, a, b):
+    line = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-quota').first
+    expect(line).to_be_visible(timeout=10_000)
+    text = line.inner_text()
+    assert a in text and b in text, "quota line: %r" % text
+
+
+@then("the last quota reading is kept on this device for the engine")
+def step_quota_kept(context):
+    kept = context.page.evaluate("() => JSON.parse(localStorage.getItem('lc_quota') || '{}')")
+    assert kept, "nothing kept"
+    q = list(kept.values())[0]
+    assert q.get("asks_left") == 987 and q.get("tokens_left") == 6400 and q.get("asks_reset_at"), q

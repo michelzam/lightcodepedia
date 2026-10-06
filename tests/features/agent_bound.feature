@@ -544,3 +544,19 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I ask the "tutor" agent "and how do I loop over it?"
     Then the model request carried the follow-up "help me fix it" with its answer "print('fixed')" and the new question "and how do I loop over it?"
     And the follow-up chip is gone
+
+  Scenario: The desk says what is left on the engine, and when it refills
+    Michel, 2026-10-06: "store and display the remaining credit and the
+    time until reset with the consumption". Groq's reply headers carry the
+    numbers; the desk keeps the last reading on this device.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And a quota-telling model endpoint replies with a python fix "print('fixed')", "987/1000 asks, 2h10m5s" and "6400/8000 tokens, 42.5s"
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "tutor" agent with key "test-key"
+    And I ask the "tutor" agent "help me fix it"
+    Then the "tutor" desk says "987 of 1000 asks left today" and "refills in 2h 10m"
+    And the "tutor" desk says "6400 of 8000 tokens left this minute" and "refills in 4"
+    And the last quota reading is kept on this device for the engine

@@ -52,3 +52,7 @@ providers:
     key_url: https://console.groq.com/keys
     key_hint: gsk_...
     free: true
+    # the free day, as Groq publishes it (2026-10): rate limits, not a credit —
+    # the desk reads the live numbers from Groq's reply headers; these are
+    # the fallback words when an engine hides its headers
+    limits: { rpd: 1000, tpm: 8000, tpd: 200000 }
