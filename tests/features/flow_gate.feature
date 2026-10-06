@@ -253,3 +253,15 @@ Feature: 🚦 A workflow ordered by its own values
     And I wait for the cells to settle
     And the learner types the plain card under the table
     Then the card shows the pic number and no face
+
+  Scenario: The Python class's first assignment opens with a tutor beside the program
+    Michel, 2026-10-06: account-free pages for the Python class — a tutor in
+    student mode bound to a run block, the student's own engine key. The
+    page's proof is structural until the sealed brief lands.
+
+    Given the runner serves the course page "courses/python/assignment_01/index.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/python/assignment_01/index.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's proof
+    Then the lesson's proof is green
