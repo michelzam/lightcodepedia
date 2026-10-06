@@ -504,8 +504,13 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And a builder key is connected
     And the recording model endpoint replies with this text:
       """
-      🧭 One letter first: a ruler of the alphabet tells you where 'a' sits (Module 6).
-      ❓ Do you remember how to write a for loop over the letters? (Module 3)
+      ## 🧭 Direction
+      One letter first: a ruler of the alphabet tells you where 'a' sits (Module 6).
+
+      ## ❓ Question back
+      Do you remember how to write a for loop over the letters? (Module 3)
+
+      **Example**
 
       ```python
       # TODO: shift one letter
@@ -560,3 +565,34 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     Then the "tutor" desk says "987 of 1000 asks left today" and "refills in 2h 10m"
     And the "tutor" desk says "6400 of 8000 tokens left this minute" and "refills in 4"
     And the last quota reading is kept on this device for the engine
+
+  Scenario: The piece goes where the cursor is, or over the selection
+    Michel, 2026-10-06: "ask students to put the cursor where they want the
+    example added, or replaced if there is a selection."
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with this text:
+      """
+      🧭 One letter first.
+      ❓ Where does 'a' sit? (Module 6)
+
+      ```python
+      alphabet = 'abcdefghijklmnopqrstuvwxyz'
+      # TODO: find the letter's position
+      ```
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "coach" agent with key "test-key"
+    And I ask the "coach" agent "how do I start?"
+    And I put the cursor on the line "return letter" of the "todo_editor" editor
+    Then the "coach" agent's button reads "⬇ Add at the cursor"
+    When I add the agent's piece to the editor
+    Then the "todo_editor" editor holds, in order, "# TODO: shift one letter", "return letter", "alphabet = 'abcdefghijklmnopqrstuvwxyz'", "# TODO: find the letter's position"
+    When I ask the "coach" agent "and now?"
+    And I select the line "# TODO: wrap z to a" of the "todo_editor" editor
+    Then the "coach" agent's button reads "⇄ Replace the selection"
+    When I add the agent's piece to the editor
+    Then the "todo_editor" editor no longer holds "# TODO: wrap z to a"
+    And the "todo_editor" editor still holds "print(shift('a'))"

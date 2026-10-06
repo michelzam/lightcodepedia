@@ -630,6 +630,8 @@ def step_three_areas(context, agent_id):
     assert x.count() == 1 and "alphabet" in x.inner_text(), "no example area: %r" % bot.inner_text()[:300]
     # the ⬇ Add button sits inside the example area, not under the whole bubble
     assert x.locator(".lc-agent-add-todos").count() == 1, "the add button is not in the example area"
+    # the model's own "## Direction" headings are the areas' labels — never shown twice
+    assert bot.locator("h1, h2, h3, h4").count() == 0, "a heading survived inside an area: %r" % bot.inner_text()[:300]
 
 
 # ── 🔋 what is left, and when it refills ─────────────────────────────────
@@ -669,3 +671,42 @@ def step_quota_kept(context):
     assert kept, "nothing kept"
     q = list(kept.values())[0]
     assert q.get("asks_left") == 987 and q.get("tokens_left") == 6400 and q.get("asks_reset_at"), q
+
+
+# ── where the piece goes: the cursor, or the selection ───────────────────
+
+def _place(context, run_id, line, select):
+    context.page.evaluate(
+        """([rid, line, select]) => {
+             const ta = document.querySelector('#lc-pyrun-' + rid + ' .lc-pyrun-code');
+             const i = ta.value.indexOf(line);
+             if (i < 0) throw new Error('line not found: ' + line);
+             const ls = ta.value.lastIndexOf('\\n', i) + 1, le = ta.value.indexOf('\\n', i);
+             ta.focus();
+             if (select) ta.setSelectionRange(ls, le < 0 ? ta.value.length : le);
+             else ta.setSelectionRange(i + line.length, i + line.length);
+             ta.dispatchEvent(new Event('select')); ta.dispatchEvent(new Event('keyup'));
+           }""", [run_id, line, select])
+    context.page.wait_for_timeout(200)
+
+
+@when('I put the cursor on the line "{line}" of the "{run_id}" editor')
+def step_cursor_on(context, line, run_id):
+    _place(context, run_id, line, False)
+
+
+@when('I select the line "{line}" of the "{run_id}" editor')
+def step_select_line(context, line, run_id):
+    _place(context, run_id, line, True)
+
+
+@then('the "{agent_id}" agent\'s button reads "{label}"')
+def step_button_reads(context, agent_id, label):
+    btn = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-add-todos').first
+    expect(btn).to_contain_text(label, timeout=5_000)
+
+
+@then('the "{run_id}" editor no longer holds "{line}"')
+def step_editor_lost(context, run_id, line):
+    code = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code").input_value()
+    assert line not in code, "still there: %r\n%s" % (line, code)

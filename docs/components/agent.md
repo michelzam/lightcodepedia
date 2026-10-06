@@ -400,15 +400,11 @@ words the agent already has: `bound="<run id>"`, the editor, and
   along, so the tutor aims at the step that fails;
 - the tutor suggests in its own bubble; when its python fence **opens with
   one of the program's TODO lines**, quoted exactly, the piece under it — a
-  line or two, with new `# TODO` lines for what remains — gets **⬇ Add
-  under «that TODO»**: inserted below it with its indentation, if the
-  learner wants it. Nothing deleted, nothing replaced, no Apply.
-- the check stays the learner's to run; the tutor only reads it;
-- the answer renders in **three areas**: 🧭 the direction, ❓ the question
-  back (a tutor asks more than it tells), 🧩 the example with its ⬇ Add
-  button. The sheet asks for the 🧭 and ❓ markers; without them, the prose
-  is the direction and a trailing question is the question
-  (Michel, 2026-10-06).
+  line or two, with new `# TODO` lines for what remains — gets a button
+  that goes **where the learner says**: at the cursor (after its line, with
+  its indentation) or over the selection; with no cursor placed yet, under
+  the TODO the piece quotes, else at the end. The label says which before
+  the click. There is no Apply (Michel, 2026-10-06).
 
 ````markdown
 ```python

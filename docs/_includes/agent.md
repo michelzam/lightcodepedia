@@ -1241,10 +1241,15 @@ Auto-included by docs/_layouts/default.html.
       var fence = t.match(/```[\s\S]*?```/);
       var prose = t.replace(/```[\s\S]*?```/g, '').trim();
       var direction = [], question = [];
+      /* a model often writes the markers as headings ("## 🧭 Direction",
+         "**Example**"): the heading is the area's own label, so it goes */
+      var LABEL = /^\s*(?:#{1,6}\s*|\*\*)?\s*(?:🧭|❓|🧩)?\s*(?:Direction|Question back|Question|Example|Your turn)\s*:?\s*(?:\*\*)?\s*$/i;
       prose.split('\n').forEach(function (l) {
-        if (/^\s*❓/.test(l)) question.push(l.replace(/^\s*❓\s*/, ''));
-        else if (question.length && l.trim() && !/^\s*🧭/.test(l)) question.push(l);
-        else direction.push(l.replace(/^\s*🧭\s*/, ''));
+        if (LABEL.test(l)) { if (/❓|Question/i.test(l)) question.push(''); return; }
+        var bare = l.replace(/^\s*(?:#{1,6}\s*|\*\*\s*)?/, '');
+        if (/^❓/.test(bare)) question.push(bare.replace(/^❓\s*/, ''));
+        else if (question.length && l.trim() && !/^🧭/.test(bare)) question.push(l);
+        else direction.push(bare.replace(/^🧭\s*/, ''));
       });
       var d = direction.join('\n').trim(), q = question.join('\n').trim();
       if (!q) {
@@ -1284,26 +1289,64 @@ Auto-included by docs/_layouts/default.html.
         common = common == null ? ind : Math.min(common, ind);
       });
       common = common || 0;
+      /* WHERE IT GOES (Michel, 2026-10-06): where the student put the cursor —
+         a selection is replaced, a caret gets the piece after its line, with
+         that line's indentation. No cursor placed yet: under the TODO the
+         piece quotes, else at the end. The label says which, before the click. */
+      var runner = findRunner(boundId), ta = runner && runner.querySelector('.lc-pyrun-code');
+      if (ta && !ta._lcCaretWatched) {
+        ta._lcCaretWatched = true;
+        ['click', 'keyup', 'select', 'focus'].forEach(function (ev) { ta.addEventListener(ev, function () { ta._lcCaretSeen = true; }); });
+      }
+      function placement() {
+        if (ta && ta._lcCaretSeen) {
+          var a = ta.selectionStart, b = ta.selectionEnd;
+          if (b > a) return { mode: 'replace', a: a, b: b, label: '⇄ Replace the selection in #' + escapeHtml(boundId) };
+          return { mode: 'caret', a: a, label: '⬇ Add at the cursor in #' + escapeHtml(boundId) };
+        }
+        if (target) return { mode: 'todo', label: '⬇ Add to #' + escapeHtml(boundId) + ' under «' + escapeHtml(target.text) + '»' };
+        return { mode: 'end', label: '⬇ Add to #' + escapeHtml(boundId) + ' at the end' };
+      }
       var bar = document.createElement('div');
       bar.className = 'lc-agent-apply-bar';
-      var where = target ? ' under «' + escapeHtml(target.text) + '»' : ' at the end';
-      bar.innerHTML = '<button class="lc-agent-add-todos" type="button">⬇ Add to #' + escapeHtml(boundId) + where +
-        '</button> <span class="lc-agent-note">nothing of yours is replaced</span>';
+      var btn = document.createElement('button');
+      btn.className = 'lc-agent-add-todos'; btn.type = 'button';
+      var hint = document.createElement('span'); hint.className = 'lc-agent-note';
+      hint.textContent = 'put the cursor where it goes, or select what it replaces — nothing else of yours changes';
+      bar.appendChild(btn); bar.appendChild(document.createTextNode(' ')); bar.appendChild(hint);
+      function relabel() { btn.textContent = placement().label; }
+      relabel();
+      if (ta) ['click', 'keyup', 'select', 'focus', 'blur'].forEach(function (ev) { ta.addEventListener(ev, relabel); });
       (response.querySelector('.lc-agent-example') || response).appendChild(bar);
-      bar.querySelector('.lc-agent-add-todos').addEventListener('click', function () {
+      function reindented(indent) { return piece.map(function (l) { return l.trim() ? indent + l.slice(common) : ''; }); }
+      btn.addEventListener('click', function () {
         var code = getBoundCode(boundId);
         if (code == null) return;
-        var all = code.split('\n'), at = all.length, indent = '';
-        if (target) {
-          for (var i = 0; i < all.length; i++) {
-            var m = all[i].match(TODO_RE);
-            if (m && m[2].trim() === target.text) { at = i + 1; indent = m[1]; break; }
+        var pl = placement(), all = code.split('\n'), out;
+        if (pl.mode === 'replace') {
+          var before = code.slice(0, pl.a), after = code.slice(pl.b);
+          var lineStart = before.lastIndexOf('\n') + 1;
+          var indent = (before.slice(lineStart).match(/^\s*/) || [''])[0];
+          out = before.slice(0, lineStart) + reindented(indent).join('\n') + after;
+        } else if (pl.mode === 'caret') {
+          var head = code.slice(0, pl.a), lineEnd = code.indexOf('\n', pl.a);
+          if (lineEnd < 0) lineEnd = code.length;
+          var ls = head.lastIndexOf('\n') + 1;
+          var ind = (code.slice(ls, lineEnd).match(/^\s*/) || [''])[0];
+          out = code.slice(0, lineEnd) + '\n' + reindented(ind).join('\n') + code.slice(lineEnd);
+        } else {
+          var at = all.length, ind2 = '';
+          if (pl.mode === 'todo') {
+            for (var i = 0; i < all.length; i++) {
+              var m = all[i].match(TODO_RE);
+              if (m && m[2].trim() === target.text) { at = i + 1; ind2 = m[1]; break; }
+            }
           }
+          Array.prototype.splice.apply(all, [at, 0].concat(reindented(ind2)));
+          out = all.join('\n');
         }
-        var add = piece.map(function (l) { return l.trim() ? indent + l.slice(common) : ''; });
-        Array.prototype.splice.apply(all, [at, 0].concat(add));
-        if (!setBoundCode(boundId, all.join('\n'))) return;
-        bar.innerHTML = '<span style="color:#2e7d32; font-weight:600">✓ Added' + where + ' — now make it yours</span>';
+        if (!setBoundCode(boundId, out)) return;
+        bar.innerHTML = '<span style="color:#2e7d32; font-weight:600">✓ ' + (pl.mode === 'replace' ? 'Replaced' : 'Added') + ' — now make it yours</span>';
       });
     }
 
