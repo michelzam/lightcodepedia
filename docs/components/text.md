@@ -129,9 +129,12 @@ came, `−` red where one went, the signs in a gutter so a copied selection is
 clean text — the block that changed pulses in the preview,
 and a slider is the cursor. ▶ plays forward, ◀ plays backward (the
 moonwalk), `replay="0.8"` sets the seconds per frame. Read-only: nothing is
-written, and ■ Stop puts the editor back exactly as it was. The button
-appears under the pad once a first version exists — it needs a connected
-bench, so it shows here only with your key.
+written, and ■ Stop puts the editor back exactly as it was. The button sits
+at the head of the **🕘 Versions** list — one place for the history — and
+every row of that list can be clicked to show that one version the same
+way; the list follows the replay, lighting the row of the frame on screen.
+Folding the list stops the replay. It needs a connected bench, so it shows
+here only with your key.
 
 ### 🔧 Knobs
 
@@ -140,7 +143,8 @@ bench, so it shows here only with your key.
 | `rows="14"` | Editor height in text rows (default 12) |
 | `piano="true"` | The **piano**: consecutive blocks banded in two shades of the source pane, the caret's block in a third — see *Focus* below |
 | `numbers="true"` | A line number per source line in a gutter; wrapped lines keep one number. Off by default |
-| `replay="1.5"` | Seconds per frame when 🎞 **Replay** plays the saved versions (default 1.5). The button itself comes with `save="<path>"`, once a version exists |
+| `replay="1.5"` | Seconds per frame when 🎞 **Replay** plays the saved versions (default 1.5). The button sits at the head of 🕘 **Versions**; any row of that list, clicked, shows that version |
+| `comment="true"` | 💾 **Save…** asks for one line — what you just did — and the line names the version in 🕘 Versions. An empty line keeps nothing |
 | `save="true"` | Adds a 💾 **Save** button that commits the block straight back to the page source — no x-ray, no page editor |
 | `save="cv.md"` | The **two-repo contract**: the fence stays the author's seed; the reader's copy persists in *their own* connected repo — relative lands beside the lesson, `/my/cv.md` at the bench root — see below |
 | `decorations="true"` | The preview renders the way the site does: block decorations apply and component fences come alive — see below |

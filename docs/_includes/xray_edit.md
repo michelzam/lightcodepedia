@@ -1230,10 +1230,15 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
   };
   window.lcVersions = {
     attach: function (o) {
-      /* o = { path, el, anchor, current(), apply(text), css, diff? }
+      /* o = { path, el, anchor, current(), apply(text), css, diff?, play?, onSelect?, onClose? }
          o.diff(box, olderText) is OPTIONAL: a component that knows its data
          is not lines (a grid's rows) renders the difference its own way.
-         Without it, the line diff below is used. */
+         Without it, the line diff below is used.
+         o.play() OPTIONAL: the panel then carries a 🎞 play button at its
+         head (the pad's replay lives HERE, not in the bar — Michel,
+         2026-10-06: one place for the history). o.onSelect(commit): every
+         row is then selectable, a click shows that version read-only.
+         o.onClose(): told when the list folds, so a replay can stop. */
       var css = o.css || "lc-ver";
       var btn = document.createElement("button");
       btn.type = "button";
@@ -1243,10 +1248,19 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
       btn.title = "Every version you saved — read it, compare it, bring it back";
       var panel = null;
       btn.setAttribute("aria-pressed", "false");   /* an on/off button says which */
+      var playBtn = null;
       function close() {
         if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
-        panel = null;
+        panel = null; playBtn = null;
         btn.setAttribute("aria-pressed", "false");
+        if (o.onClose) { try { o.onClose(); } catch (e) {} }
+      }
+      /* the row of the version being shown (a replay frame, a picked row) */
+      function mark(sha) {
+        if (!panel) return;
+        panel.querySelectorAll("li[data-sha]").forEach(function (li) {
+          li.classList.toggle("selected", !!sha && li.getAttribute("data-sha") === sha);
+        });
       }
       function whenLabel(iso) {
         if (!iso) return "saved";
@@ -1285,10 +1299,24 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
           box.className = css + "-diff"; box.hidden = true;
           list.forEach(function (c, n) {
             var li = document.createElement("li");
+            li.setAttribute("data-sha", String(c.sha));
             /* the starter is the AUTHOR's text, not the learner's first
                draft — say so, or the oldest row misattributes the lesson */
             var isStarter = String(c.message || "").indexOf(window.lcStarterMsg) === 0;
             li.className = isStarter ? "starter" : (n === 0 ? "now" : "");
+            if (o.onSelect) {
+              li.classList.add("pick");
+              li.tabIndex = 0;
+              li.title = "Show this version — read-only, nothing is written";
+              var pick = function (e) {
+                if (e.target && e.target.tagName === "BUTTON") return;
+                e.preventDefault();
+                mark(String(c.sha));
+                o.onSelect(c);
+              };
+              li.addEventListener("click", pick);
+              li.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") pick(e); });
+            }
             var when = document.createElement("span");
             when.className = css + "-when";
             when.textContent = isStarter
@@ -1327,10 +1355,27 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
             li.appendChild(cmp); li.appendChild(use);
             ol.appendChild(li);
           });
-          panel.innerHTML = ""; panel.appendChild(ol); panel.appendChild(box);
+          panel.innerHTML = "";
+          if (o.play) {
+            var head = document.createElement("div");
+            head.className = css + "-head";
+            playBtn = document.createElement("button");
+            playBtn.type = "button"; playBtn.className = css + "-play";
+            playBtn.textContent = "🎞 Replay";
+            playBtn.title = "Watch your document grow, version by version — read-only, nothing is written";
+            playBtn.addEventListener("click", function () { o.play(); });
+            var hint = document.createElement("span");
+            hint.className = css + "-hint";
+            hint.textContent = list.length + " version" + (list.length === 1 ? "" : "s") + " · click one to see it";
+            head.appendChild(playBtn); head.appendChild(hint);
+            panel.appendChild(head);
+          }
+          panel.appendChild(ol); panel.appendChild(box);
         });
       });
-      return { button: btn, close: close,
+      return { button: btn, close: close, mark: mark,
+               playButton: function () { return playBtn; },
+               isOpen: function () { return !!panel; },
                reveal: function () { btn.hidden = false; } };
     }
   };

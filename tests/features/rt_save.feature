@@ -241,8 +241,10 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       """
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
-    And I press the pad's replay button
+    Then the pad's bar carries no replay button
+    When I press the pad's replay button
     Then the replay holds 2 frames and opens on the first
+    And the list is still open
     And the pad's editor is hidden behind the diff pane
     When I scrub the replay to frame 2
     Then the diff pane marks "# Draft two" as added and "# Draft one" as removed
@@ -854,3 +856,19 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And every version row shows its name
     When I close the pad's version list
     Then the pad's versions button reads off
+
+  Scenario: A version row, clicked, shows that version
+    Michel, 2026-10-06: the rows of 🕘 Versions are the frames — pick one,
+    read it through the same pane the replay uses; nothing is written.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I open the pad's version list
+    And I click the version row named "cv"
+    Then the version row named "cv" is the selected one
+    And the pad's editor is hidden behind the diff pane
+    When I close the pad's version list
+    Then the pad shows "# Draft three"
+    And the bench received no commit

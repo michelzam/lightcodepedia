@@ -32,7 +32,8 @@ IAL knobs:
               caret's block in a third — the "piano"
   numbers="true" a line number per source line in a gutter (wrapped lines keep one)
   replay="1.5"  seconds per frame when 🎞 Replay plays the saved versions (default 1.5);
-              the button itself comes with save="<path>", once a version exists
+              the button sits at the head of 🕘 Versions, and any row of that
+              list, clicked, shows that version the same way — read-only
   comment="true"
               💾 Save… asks for one line — what you just did — before it writes;
               the line is the version's name in 🕘 Versions (a diary, not
@@ -109,8 +110,16 @@ Auto-included by docs/_layouts/default.html.
 .lc-ver-panel li.now { background: #eef6ff; }
 .lc-ver-panel li.starter { background: #fffbeb; }
 .lc-ver-panel li.starter .lc-ver-when { color: #92400e; font-style: italic; }
-.lc-ver-when { flex: 1; color: #444; }
-.lc-ver-msg { color: #222; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-ver-when { color: #444; white-space: nowrap; }
+/* the name is the row's text, so it reads first and takes the room */
+.lc-ver-msg { flex: 1; color: #222; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-ver-panel li.pick { cursor: pointer; }
+.lc-ver-panel li.pick:hover { background: #f1f5f9; }
+.lc-ver-panel li.selected { background: #dbeafe !important; box-shadow: inset 3px 0 0 #0066cc; }
+.lc-ver-head { display: flex; align-items: center; gap: 0.8em; padding: 0.45em 0.9em; border-bottom: 1px solid #e5e7eb; background: #f3f4f6; }
+.lc-ver-head .lc-ver-play { font: inherit; font-size: 0.9em; padding: 0.3em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #444; cursor: pointer; }
+.lc-ver-head .lc-ver-play:disabled { opacity: 0.6; cursor: default; }
+.lc-ver-hint { color: var(--lc-ink-mute, #616161); font-size: 0.85em; }
 .lc-ver-sha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #94a3b8; font-size: 0.85em; }
 .lc-ver-panel button { font: inherit; font-size: 0.85em; padding: 0.2em 0.6em; border-radius: 5px;
   border: 1px solid #cbd5e1; background: #fff; color: #334155; cursor: pointer; }
@@ -307,7 +316,7 @@ Auto-included by docs/_layouts/default.html.
     var saveKnob = el.getAttribute("save") || "";
     var benchPath = saveKnob && saveKnob !== "true" ? saveKnob : "";
     if (benchPath) wrap.setAttribute("data-lc-save", benchPath);   /* named in a proof's verdict */
-    var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null, replayBtn = null;
+    var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null;
     var pace = parseFloat(el.getAttribute("replay")) || 1.5;   /* seconds per replay frame */
     /* comment="true": 💾 Save… — the ellipsis promises a question, one line
        about what was just done; it becomes the version's name. */
@@ -352,15 +361,10 @@ Auto-included by docs/_layouts/default.html.
         resetBtn.className = "lc-mdpad-reset";
         resetBtn.textContent = "↺ Start over";
         resetBtn.title = "Bring back the lesson's starter — your saved copy stays until you 💾 again";
-        replayBtn = document.createElement("button");
-        replayBtn.type = "button";
-        replayBtn.className = "lc-mdpad-replay";
-        replayBtn.hidden = true;        /* nothing to replay until a first save */
-        replayBtn.textContent = "🎞 Replay";
-        replayBtn.title = "Watch your document grow, version by version — read-only, nothing is written";
+        /* 🎞 Replay lives INSIDE 🕘 Versions (its head), not in this bar —
+           one place for the history (Michel, 2026-10-06) */
         saveWrap.appendChild(mineTag);
         saveWrap.appendChild(histBtn);
-        saveWrap.appendChild(replayBtn);
         saveWrap.appendChild(resetBtn);
       }
       saveBtn = document.createElement("button");
@@ -500,11 +504,27 @@ Auto-included by docs/_layouts/default.html.
       var vers = window.lcVersions ? window.lcVersions.attach({
         path: benchPath, el: wrap, anchor: saveWrap,
         current: function () { return ta.value; },
-        apply: function (t) { ta.value = t; render(); publish(true); refreshBench(); }
+        apply: function (t) { ta.value = t; render(); publish(true); refreshBench(); },
+        /* the panel's head carries 🎞; a row click shows that version */
+        play: function () { if (rp.on) rpStop(); else rpStart(); },
+        onSelect: function (c) {
+          (rp.on ? Promise.resolve() : rpStart()).then(function () {
+            var i = -1;
+            (rp.frames || []).forEach(function (f, k) { if (f.sha === c.sha) i = k; });
+            if (i >= 0) { rpPause(); rpShow(i); }
+          });
+        },
+        onClose: function () { if (rp.on) rpStop(); }
       }) : null;
       if (vers) histBtn.parentNode.replaceChild(vers.button, histBtn);
       function closeVersions() { if (vers) vers.close(); }
-      function revealVersions() { if (vers) vers.reveal(); if (replayBtn) replayBtn.hidden = false; }
+      function revealVersions() { if (vers) vers.reveal(); }
+      /* the play button is the panel's — it exists only while the list is open */
+      function setPlay(text, disabled) {
+        var b = vers && vers.playButton ? vers.playButton() : null;
+        if (!b) return;
+        b.textContent = text; b.disabled = !!disabled;
+      }
 
       /* ── 🎞 REPLAY (Michel, 2026-10-05): every saved version as a frame, the
          author's starter first (the first save writes it, above), read-only.
@@ -548,6 +568,7 @@ Auto-included by docs/_layouts/default.html.
       function rpShow(n, animate) {
         var f = rp.frames && rp.frames[n]; if (!f) return;
         rp.at = n;
+        if (vers && vers.mark) vers.mark(f.sha);      /* the list follows the frame */
         animate = !!animate && !reduced;
         clearTimeout(rpAnimT);
         var prev = n > 0 ? rp.frames[n - 1].text : f.text;
@@ -652,20 +673,19 @@ Auto-included by docs/_layouts/default.html.
       }
       function rpStart() {
         if (rp.on || !window.lcBench) return Promise.resolve();
-        replayBtn.disabled = true; replayBtn.textContent = "⏳ reading your versions…";
+        setPlay("⏳ reading your versions…", true);
         return rpLoad().then(function (frames) {
-          replayBtn.disabled = false;
           if (!frames.length) {
-            replayBtn.textContent = "🎞 Replay";
+            setPlay("🎞 Replay", false);
             if (window.lcxToast) window.lcxToast("No versions yet — 💾 writes the first one.", true);
             return;
           }
           rp.on = true;
-          replayBtn.textContent = "■ Stop";
+          setPlay("■ Stop", false);
           wrap.setAttribute("data-lc-replay", "1");
           wrap.setAttribute("data-lc-frames", String(frames.length));
-          closeVersions();
-          [saveBtn, resetBtn, vers && vers.button].forEach(function (b) { if (b) b.disabled = true; });
+          /* the list stays open: its rows are the frames, and 🕘 keeps working */
+          [saveBtn, resetBtn].forEach(function (b) { if (b) b.disabled = true; });
           var pane = src || ta;
           rp.diffEl = document.createElement("pre");
           rp.diffEl.className = "lc-mdpad-diff";
@@ -702,18 +722,17 @@ Auto-included by docs/_layouts/default.html.
         wrap.removeAttribute("data-lc-animating");
         wrap.querySelectorAll(".lc-mdpad-ghost").forEach(function (g) { g.parentNode.removeChild(g); });
         rp.on = false;
-        replayBtn.textContent = "🎞 Replay";
+        setPlay("🎞 Replay", false);
+        if (vers && vers.mark) vers.mark(null);
         ["data-lc-replay", "data-lc-frame", "data-lc-frames"].forEach(function (a) { wrap.removeAttribute(a); });
         if (rp.diffEl && rp.diffEl.parentNode) rp.diffEl.parentNode.removeChild(rp.diffEl);
         if (rp.ui && rp.ui.box.parentNode) rp.ui.box.parentNode.removeChild(rp.ui.box);
         rp.diffEl = null; rp.ui = null;
         (src || ta).style.display = "";
-        [resetBtn, vers && vers.button].forEach(function (b) { if (b) b.disabled = false; });
-        refreshBench();                 /* 💾 decides its own state again */
+        refreshBench();                 /* 💾 and ↺ decide their own state again */
         rp.frames = null;               /* a save in between adds a frame: read again next time */
         lastFocus = -2; render(); focusNow();
       }
-      if (replayBtn) replayBtn.addEventListener("click", function () { if (rp.on) rpStop(); else rpStart(); });
       /* a proof drives it as a person would: pad.replay(), pad.frame = n, pad.stop() */
       wrap._lcReplay = { start: rpStart, stop: rpStop, play: rpPlay, pause: rpPause,
                          go: function (n) { if (rp.on) { rpPause(); rpShow(n); } } };

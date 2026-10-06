@@ -820,7 +820,13 @@ PAD = '[data-lc-id="cv"]'
 
 @when("I press the pad's replay button")
 def step_press_replay(context):
-    btn = context.page.locator(".lc-mdpad-bar .lc-mdpad-replay").first
+    """🎞 lives at the head of the 🕘 Versions list (Michel, 2026-10-06):
+    open the list if it is folded, then press."""
+    if context.page.locator(".lc-ver-panel").count() == 0:
+        hist = context.page.locator(".lc-mdpad-bar .lc-ver-btn").first
+        expect(hist).to_be_visible(timeout=15_000)
+        hist.click()
+    btn = context.page.locator(".lc-ver-panel .lc-ver-play").first
     expect(btn).to_be_visible(timeout=15_000)
     btn.click()
     context.page.wait_for_selector(PAD + "[data-lc-replay]", timeout=10_000)
@@ -907,7 +913,7 @@ def step_lands(context, n):
 
 @when("I stop the replay")
 def step_stop_replay(context):
-    context.page.locator(".lc-mdpad-bar .lc-mdpad-replay").first.click()
+    context.page.locator(".lc-ver-panel .lc-ver-play").first.click()
     context.page.wait_for_selector(PAD + ":not([data-lc-replay])", timeout=5_000)
     expect(context.page.locator(PAD + " .lc-mdpad-in")).to_be_visible(timeout=5_000)
 
@@ -1031,3 +1037,31 @@ def step_close_versions(context):
     btn.click()
     context.page.wait_for_timeout(300)
     assert context.page.locator(".lc-ver-panel").count() == 0, "the list is still open"
+
+
+@then("the pad's bar carries no replay button")
+def step_no_replay_in_bar(context):
+    assert context.page.locator(".lc-mdpad-bar .lc-mdpad-replay").count() == 0, \
+        "🎞 is still in the bar — it belongs at the head of 🕘 Versions"
+
+
+@when('I click the version row named "{name}"')
+def step_click_version_row(context, name):
+    row = context.page.locator(".lc-ver-panel li", has=context.page.locator(".lc-ver-msg", has_text=name)).first
+    expect(row).to_be_visible(timeout=10_000)
+    row.click()
+    context.page.wait_for_selector(PAD + "[data-lc-replay]", timeout=10_000)
+    context.page.wait_for_timeout(600)
+
+
+@then('the version row named "{name}" is the selected one')
+def step_version_row_selected(context, name):
+    sel = context.page.locator(".lc-ver-panel li.selected")
+    expect(sel).to_have_count(1, timeout=5_000)
+    expect(sel.locator(".lc-ver-msg")).to_have_text(name)
+
+
+@then("the list is still open")
+def step_list_open(context):
+    assert context.page.locator(".lc-ver-panel").count() == 1, "the list folded"
+    expect(context.page.locator(".lc-mdpad-bar .lc-ver-btn").first).to_have_attribute("aria-pressed", "true")

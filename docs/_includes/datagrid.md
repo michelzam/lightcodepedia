@@ -57,7 +57,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
 .lc-ver-btn:hover { border-color: #888; color: #222; }
 .lc-ver-btn[aria-pressed="true"] { background: #333; border-color: #333; color: #fff; }
-.lc-ver-msg { color: #222; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-ver-msg { flex: 1; color: #222; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lc-ver-panel { border-top: 1px solid #e5e7eb; background: #fafafa; font-size: 0.88em; }
 .lc-ver-panel ol { list-style: none; margin: 0; padding: 0; max-height: 200px; overflow: auto; }
 .lc-ver-panel li { display: flex; align-items: center; gap: 0.6em; padding: 0.4em 0.9em;
@@ -66,7 +66,9 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
 .lc-ver-panel li.now { background: #eef6ff; }
 .lc-ver-panel li.starter { background: #fffbeb; }
 .lc-ver-panel li.starter .lc-ver-when { color: #92400e; font-style: italic; }
-.lc-ver-when { flex: 1; color: #444; }
+.lc-ver-when { color: #444; white-space: nowrap; }
+.lc-ver-panel li.pick { cursor: pointer; }
+.lc-ver-panel li.selected { background: #dbeafe !important; box-shadow: inset 3px 0 0 #0066cc; }
 .lc-ver-sha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #94a3b8; font-size: 0.85em; }
 .lc-ver-panel button { font: inherit; font-size: 0.85em; padding: 0.2em 0.6em; border-radius: 5px;
   border: 1px solid #cbd5e1; background: #fff; color: #334155; cursor: pointer; }
