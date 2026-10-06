@@ -54,10 +54,12 @@ few words, including `decrypt(encrypt("hello")) == "hello"`.
 
 ## 🎓 Ari, your tutor
 
-Your program's `# TODO` lines are listed here as buttons. Name the one you
-are on: Ari reads your program and what it last printed, answers with one
-direction and the next `# TODO` steps, which you can add under yours. It
-never writes the program for you; that is yours.
+Ask in your own words — *how do I start encrypt?* Ari reads your program,
+what it last printed and your `# TODO` lines, and suggests in its own
+bubble: one direction and, when your question lands on one of your TODOs,
+a small piece — a line or two, with a new `# TODO` for what remains. A
+button adds that piece under your TODO, if you want it. Nothing of yours
+is replaced; the program stays yours.
 
 ```yaml
 provider: groq

@@ -386,16 +386,17 @@ Code > 4000 chars is truncated. Empty editor and no-run-yet silently drop those 
 - [ ] File a strongly-worded bug report against your own PAT.
 {: .quiz }
 
-## 🎯 TODO-driven — the editor's TODOs are the questions
+## 🎯 TODO-driven — the tutor aims at the program's TODOs
 
-A tutor should aim, not type. With `todos="true"` on a bound agent, the
-editor's `# TODO` lines become chips above the box: the learner names the
-one they are on, and the question carries the code and the last output as
-always. The reply's own `# TODO` lines get **⬇ Add TODOs**, which writes
-them into the editor under the TODO that was named, as comments, with its
-indentation. There is no Apply: the tutor never writes a line of code
-(Michel, 2026-10-06: "drive students using the last result and the
-current TODOs; the student has to name one and ask").
+A tutor should aim, not type over. With `todos="true"` on a bound agent,
+the learner asks in their own words and the program's `# TODO` lines ride
+along with the code and the last output, named as such, so the tutor scans
+them. The tutor suggests in its own bubble; when its python fence **opens
+with one of those TODO lines**, quoted exactly, the piece under it — a line
+or two, with new `# TODO` lines for what remains — gets **⬇ Add under «that
+TODO»**: inserted below it in the editor, with its indentation, if the
+learner wants it. Nothing of the learner's is deleted or replaced; there is
+no Apply (Michel, 2026-10-06).
 
 ````markdown
 ```python
@@ -410,9 +411,10 @@ print(shift('a'))
 
 ```yaml
 system: |
-  You are a coach. Answer with ONE direction (two sentences at most),
-  then the next one to three steps as "# TODO:" lines in a python fence.
-  Never a line of code that is not a comment.
+  You are a coach. One direction (two sentences at most), then a python
+  fence that OPENS with the student's TODO line you are on, quoted exactly,
+  followed by a piece: one or two lines, with a new "# TODO:" for what
+  remains. Never the whole, never a replacement.
 ```
 {: .agent bound="todo_editor" todos="true" #coach }
 ````
@@ -431,25 +433,26 @@ print(shift('a'))
 
 ```yaml
 system: |
-  You are a coach. Answer with ONE direction (two sentences at most),
-  then the next one to three steps as "# TODO:" lines in a python fence.
-  Never a line of code that is not a comment.
+  You are a coach. One direction (two sentences at most), then a python
+  fence that OPENS with the student's TODO line you are on, quoted exactly,
+  followed by a piece: one or two lines, with a new "# TODO:" for what
+  remains. Never the whole, never a replacement.
 ```
 {: .agent bound="todo_editor" todos="true" #coach }
 
 ```gherkin
-Feature: A TODO-driven agent reads the editor's TODOs
+Feature: A TODO-driven agent sees the program's TODOs
   As a learner with a program full of TODOs
-  I want the tutor to list them and take the one I name
-  So that I ask about the step I am on, not about everything
+  I want the tutor to know them without my listing them
+  So that my question in plain words lands on the step I am on
 
-  Scenario: The editor's TODOs are listed as chips
+  Scenario: The agent sees the editor's TODOs
     Given the coach bound to the TODO editor
     :::python
     self.coach: Agent = self.page.coach
     :::
     When the page has settled
-    Then the coach lists the two TODOs of the editor
+    Then the coach sees the two TODOs of the editor
     :::python
     assert self.coach.todos == ["shift one letter", "wrap z to a"], self.coach.todos
     :::

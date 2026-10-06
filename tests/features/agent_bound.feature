@@ -494,30 +494,32 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     Then the feature "askread" is green
     And the model request carried the instruction "'visit': 'Thu'"
 
-  Scenario: TODO-driven — the editor's TODOs are the questions, the reply's TODOs go back in
-    Michel, 2026-10-06: a tutor that aims instead of typing. The editor's
-    "# TODO" lines are chips; naming one asks about it; the reply's TODOs
-    are added under it as comments; no Apply, ever.
+  Scenario: TODO-driven — the tutor scans the TODOs, its piece goes under the one it quotes
+    Michel, 2026-10-06: no list of tasks in the tutor. The student asks in
+    their own words; the program's TODOs ride along; the tutor suggests in
+    its own bubble; when its fence opens with one of the TODOs, the piece
+    under it is added below that TODO — nothing deleted, nothing replaced.
 
     Given I have a clean browser page
     And a builder key is connected
     And the recording model endpoint replies with this text:
       """
-      Start with one letter. Where does 'a' sit on a ruler of the alphabet?
+      One letter first: a ruler of the alphabet tells you where 'a' sits.
 
       ```python
-      # TODO: write the alphabet as a string
-      # TODO: find the letter's position with .find
+      # TODO: shift one letter
+      alphabet = 'abcdefghijklmnopqrstuvwxyz'
+      # TODO: find the letter's position with .find, then take the next one
       ```
       """
     When I navigate to "/components/agent"
     And I wait for the page to be interactive
     And I connect the "coach" agent with key "test-key"
-    Then the "coach" agent lists the TODOs "shift one letter, wrap z to a"
-    When I name the "coach" agent's TODO "shift one letter"
+    And I ask the "coach" agent "how do I start the shift?"
     Then the model request carried the editor code "# TODO: shift one letter"
-    And the model request named the TODO "shift one letter"
+    And the model request named the TODO lines "# TODO: shift one letter" and "# TODO: wrap z to a"
     And the "coach" agent offers no Apply button
-    When I add the agent's TODOs to the editor
-    Then the "todo_editor" editor holds, in order, "# TODO: shift one letter", "# TODO: write the alphabet as a string", "# TODO: find the letter's position with .find", "return letter"
-    And the "coach" agent lists the TODOs "shift one letter, write the alphabet as a string, find the letter's position with .find, wrap z to a"
+    And the "coach" agent offers to add the piece under "shift one letter"
+    When I add the agent's piece to the editor
+    Then the "todo_editor" editor holds, in order, "# TODO: shift one letter", "alphabet = 'abcdefghijklmnopqrstuvwxyz'", "# TODO: find the letter's position with .find, then take the next one", "return letter"
+    And the "todo_editor" editor still holds "# TODO: wrap z to a"

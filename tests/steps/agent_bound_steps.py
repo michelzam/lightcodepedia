@@ -523,37 +523,28 @@ def step_recording_model_text(context):
     context.page.route("**/chat/completions*", fulfill)
 
 
-@then('the "{agent_id}" agent lists the TODOs "{todos}"')
-def step_agent_lists_todos(context, agent_id, todos):
-    chips = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-todo')
-    want = [t.strip() for t in todos.split(",")]
-    expect(chips).to_have_count(len(want), timeout=15_000)
-    got = chips.all_inner_texts()
-    assert got == want, "chips %r, expected %r" % (got, want)
-
-
-@when('I name the "{agent_id}" agent\'s TODO "{todo}"')
-def step_name_todo(context, agent_id, todo):
-    chip = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-todo', has_text=todo).first
-    chip.click()
-    expect(context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot')).to_be_visible(timeout=15_000)
-
-
-@then('the model request named the TODO "{todo}"')
-def step_request_named_todo(context, todo):
+@then('the model request named the TODO lines "{a}" and "{b}"')
+def step_request_named_todos(context, a, b):
     assert context.model_asks, "no request reached the model"
-    assert ("I am on this TODO" in context.model_asks[-1]) and (todo in context.model_asks[-1]), \
-        context.model_asks[-1][-600:]
+    ask = context.model_asks[-1]
+    assert "The TODO lines in the program" in ask and a in ask and b in ask, ask[-700:]
 
 
 @then('the "{agent_id}" agent offers no Apply button')
 def step_no_apply(context, agent_id):
     assert context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-apply').count() == 0, \
-        "an Apply button — a TODO-driven tutor never writes code"
+        "an Apply button — a TODO-driven tutor never replaces code"
 
 
-@when("I add the agent's TODOs to the editor")
-def step_add_todos(context):
+@then('the "{agent_id}" agent offers to add the piece under "{todo}"')
+def step_offers_piece(context, agent_id, todo):
+    btn = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-add-todos').first
+    expect(btn).to_be_visible(timeout=10_000)
+    expect(btn).to_contain_text("under «" + todo + "»")
+
+
+@when("I add the agent's piece to the editor")
+def step_add_piece(context):
     btn = context.page.locator(".lc-agent-add-todos").first
     btn.wait_for(state="visible", timeout=10_000)
     btn.click()
@@ -567,5 +558,10 @@ def step_editor_order(context, run_id, a, b, c, d):
     pos = [code.find(x) for x in (a, b, c, d)]
     assert all(p >= 0 for p in pos), "missing line(s): %r in\n%s" % ([x for x, p in zip((a, b, c, d), pos) if p < 0], code)
     assert pos == sorted(pos), "lines out of order: %r in\n%s" % (pos, code)
-    # the added TODOs took the named TODO's indentation
-    assert ("\n    " + b) in code, "the added TODO did not take the indentation of the one named:\n" + code
+    assert ("\n    " + b) in code, "the piece did not take the indentation of the TODO it quotes:\n" + code
+
+
+@then('the "{run_id}" editor still holds "{line}"')
+def step_editor_still(context, run_id, line):
+    code = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code").input_value()
+    assert line in code, "a line of the student's was lost: %r\n%s" % (line, code)

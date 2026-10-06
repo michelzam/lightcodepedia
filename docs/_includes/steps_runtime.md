@@ -23,6 +23,7 @@ Auto-included by docs/_layouts/default.html.
 <script id="lc-steps-preamble" type="text/plain">
 import js
 import json
+import re
 
 # Inspector-widget registries survive preamble re-runs (buttons re-run it on
 # every click): bound instances and the new-instance capture list must persist.
@@ -1479,9 +1480,21 @@ class Agent(Block):
 
     @property
     def todos(self):
-        """The editor's TODOs this agent lists as chips (todos="true"), in
-        source order — what a learner can name and ask about."""
-        return [str(b._el.textContent or "").strip() for b in self._qq(".lc-agent-todo")]
+        """The "# TODO" lines of the editor this agent is bound to, in source
+        order — what the tutor scans when asked (todos="true")."""
+        label = self._q(".lc-agent-bound")
+        m = re.search(r"#([\w-]+)", str(label._el.textContent or "")) if label._el is not None else None
+        if not m:
+            return []
+        ta = js.window.document.querySelector("#lc-pyrun-" + m.group(1) + " .lc-pyrun-code")
+        if ta is None:
+            return []
+        out = []
+        for line in str(ta.value).split("\n"):
+            mm = re.match(r"^\s*#\s*[Tt][Oo][Dd][Oo][:\s-]*(.*)$", line)   # MicroPython re: no flags, no \b
+            if mm:
+                out.append(mm.group(1).strip())
+        return out
 
     @property
     def system(self):

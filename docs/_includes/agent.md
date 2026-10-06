@@ -43,13 +43,15 @@ IAL knobs:
               auto-appended to every prompt, and the first python
               code block in the response gets an "⬇ Apply to #X"
               button.
-  todos="true" with bound="X": TODO-DRIVEN (Michel, 2026-10-06). The
-              editor's "# TODO" lines are the questions: one chip each above
-              the box, a click asks for the next direction on that one (the
-              code and the last output ride along as always). The reply's own
-              "# TODO" lines get "⬇ Add TODOs": they go into the editor under
-              the TODO the student named, as comments. No Apply, ever — the
-              tutor aims, the student writes.
+  todos="true" with bound="X": TODO-DRIVEN (Michel, 2026-10-06). The student
+              asks in their own words; the program's "# TODO" lines ride along
+              with the code and the last output, named as such, so the tutor
+              scans them. When the reply's python fence OPENS with one of
+              those TODO lines, quoted exactly, the piece under it (a line or
+              two, with new "# TODO" lines for what remains) gets "⬇ Add under
+              «that TODO»": inserted below it in the editor, with its
+              indentation, nothing deleted. No fence that quotes a TODO →
+              "⬇ Add at the end". Never a replacement of the student's code.
   bound="{=expr}"  the second grammar (told apart by syntax — the legacy
               editor binding is untouched): evaluate a CELL expression at
               Ask time and hand the value to the model. {=cv1.source}
@@ -120,13 +122,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-msg-bot pre.lc-agent-code { background: #1e1e1e; color: #d4d4d4; padding: 0.7em 0.9em; border-radius: 4px; overflow-x: auto; font-size: 0.84em; margin: 0.5em 0; }
 .lc-agent-msg-bot pre.lc-agent-code code { background: transparent; padding: 0; font-size: inherit; color: inherit; }
 .lc-agent-msg-bot code { background: #eef; padding: 0.1em 0.35em; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
-/* 🎯 TODO-driven: the editor's TODOs as chips, the student names one */
-.lc-agent-todos { display: flex; flex-wrap: wrap; gap: 0.4em; align-items: center; margin: 0 0 0.6em; font-size: 0.88em; }
-.lc-agent-todos-label { color: #555; font-weight: 600; margin-right: 0.2em; }
-.lc-agent-todos-none { color: var(--lc-ink-mute, #616161); font-style: italic; }
-.lc-agent-todo { font: inherit; font-size: 0.92em; padding: 0.3em 0.7em; border-radius: 999px; border: 1px solid #c7d2fe; background: #eef2ff; color: #3730a3; cursor: pointer; text-align: left; }
-.lc-agent-todo:hover { border-color: #818cf8; }
-.lc-agent-todo.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+/* 🎯 TODO-driven: the reply's piece goes under the TODO it quotes */
 .lc-agent-add-todos { font: inherit; font-size: 0.9em; padding: 0.35em 0.8em; border-radius: 6px; border: 1px solid #4f46e5; background: #4f46e5; color: #fff; cursor: pointer; }
 .lc-agent-apply-bar { display: flex; gap: 0.5em; align-items: center; margin: -0.2em 0 0.5em; font-size: 0.85em; color: #555; }
 .lc-agent-apply { background: #2e7d32; color: white; border: none; padding: 0.35em 0.85em; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.85em; }
@@ -266,6 +262,11 @@ Auto-included by docs/_layouts/default.html.
     if (output) {
       parts.push('', 'The last run produced this output:', '', '```', output, '```');
     }
+    /* the program's own TODO lines, named: a tutor that aims scans them and
+       quotes the one it is on at the head of its fence (todos="true") */
+    var todos = [];
+    code.split('\n').forEach(function (l) { if (/^\s*#\s*TODO\b/i.test(l)) todos.push(l.trim()); });
+    if (todos.length) parts.push('', 'The TODO lines in the program:', '', todos.join('\n'));
     parts.push('', 'The learner asks:', '', userQuestion);
     return parts.join('\n');
   }
@@ -747,7 +748,6 @@ Auto-included by docs/_layouts/default.html.
       '</div>' +
       '<div class="lc-agent-body" hidden>' +
         introHtml +
-        (cfg.todos && boundId ? '<div class="lc-agent-todos" hidden></div>' : '') +
         '<form class="lc-agent-ask">' +
           '<textarea class="lc-agent-prompt" rows="' + rows + '" placeholder="' + escapeHtml(cfg.placeholder) + '" aria-label="Ask ' + escapeHtml(cfg.name || 'Agent') + '"></textarea>' +
           '<button type="submit" class="lc-agent-send">▶ Ask</button>' +
@@ -1069,13 +1069,13 @@ Auto-included by docs/_layouts/default.html.
     var authMsg = panel.querySelector('.lc-agent-authmsg');
 
     /* ===== 🎯 TODO-DRIVEN (Michel, 2026-10-06) =============================
-       Instead of a long chat: the editor's "# TODO" lines are the questions.
-       The student names one (a chip), the question carries the code and the
-       last output as always, and the tutor answers with a direction and the
-       NEXT TODOs — which go back into the editor as comments, under the one
-       named. The tutor aims; the student writes. Never a line of code. */
-    var todosEl = panel.querySelector('.lc-agent-todos');
-    var activeTodo = null;
+       No list of tasks in the tutor: the student asks in their own words,
+       and the program's "# TODO" lines ride along with the code (named as
+       such, see buildAugmentedPrompt) so the tutor scans them. When the
+       reply's fence OPENS with one of those TODO lines quoted exactly, the
+       piece under it — a line or two, with new TODOs for what remains — is
+       offered: "⬇ Add under «that TODO»", inserted below it with its
+       indentation. Nothing of the student's is ever deleted or replaced. */
     var TODO_RE = /^(\s*)#\s*TODO\b[:\s-]*(.*)$/i;
     function todoLines(text) {
       var out = [];
@@ -1085,77 +1085,53 @@ Auto-included by docs/_layouts/default.html.
       });
       return out;
     }
-    function refreshTodos() {
-      if (!todosEl || !boundId) return;
-      var code = getBoundCode(boundId);
-      var todos = code == null ? [] : todoLines(code);
-      todosEl.hidden = false;
-      todosEl.innerHTML = '<span class="lc-agent-todos-label">🎯 TODOs in #' + escapeHtml(boundId) + '</span>';
-      panel.setAttribute('data-todos', String(todos.length));
-      if (!todos.length) {
-        var none = document.createElement('span');
-        none.className = 'lc-agent-todos-none';
-        none.textContent = 'none left — run it, then ask what you see';
-        todosEl.appendChild(none);
-        return;
+    function firstFence(text) {
+      var m = String(text || '').match(/```(?:python|py)?[ \t]*\n([\s\S]*?)```/);
+      return m ? m[1].replace(/\s+$/, '') : null;
+    }
+    function offerPiece(text) {
+      var fence = firstFence(text);
+      if (fence == null || !fence.trim()) return;
+      var lines = fence.split('\n');
+      while (lines.length && !lines[0].trim()) lines.shift();
+      var head = lines.length ? lines[0].match(TODO_RE) : null;
+      var target = null, piece = lines;
+      if (head) {
+        var code0 = getBoundCode(boundId) || '';
+        var want = head[2].trim();
+        todoLines(code0).forEach(function (t) { if (!target && t.text === want) target = t; });
+        if (target) piece = lines.slice(1);           /* the quoted TODO stays the student's */
       }
-      todos.forEach(function (t) {
-        var b = document.createElement('button');
-        b.type = 'button'; b.className = 'lc-agent-todo';
-        b.textContent = t.text;
-        b.title = 'Ask for the next direction on this TODO (line ' + (t.line + 1) + ')';
-        b.setAttribute('data-line', String(t.line));
-        if (activeTodo && activeTodo.text === t.text) b.classList.add('active');
-        b.addEventListener('click', function () {
-          activeTodo = t;
-          todosEl.querySelectorAll('.lc-agent-todo').forEach(function (x) { x.classList.toggle('active', x === b); });
-          prompt.value = 'I am on this TODO (line ' + (t.line + 1) + '): ' + t.text + '. What is the next direction?';
-          if (typeof askForm.requestSubmit === 'function') askForm.requestSubmit();
-          else askForm.dispatchEvent(new Event('submit', { cancelable: true }));
-        });
-        todosEl.appendChild(b);
+      while (piece.length && !piece[piece.length - 1].trim()) piece.pop();
+      if (!piece.length) return;
+      /* the piece keeps its own shape, re-based on the TODO's indentation */
+      var common = null;
+      piece.forEach(function (l) {
+        if (!l.trim()) return;
+        var ind = l.match(/^\s*/)[0].length;
+        common = common == null ? ind : Math.min(common, ind);
       });
-    }
-    function wireTodos(tries) {
-      if (!todosEl || !boundId) return;
-      var runner = findRunner(boundId);
-      if (!runner) { if (tries > 0) setTimeout(function () { wireTodos(tries - 1); }, 600); return; }
-      refreshTodos();
-      var _tt = null;
-      function soon() { clearTimeout(_tt); _tt = setTimeout(refreshTodos, 300); }
-      var ta = runner.querySelector('.lc-pyrun-code');
-      if (ta) ta.addEventListener('input', soon);
-      var out = runner.querySelector('.lc-pyrun-out');
-      if (out && window.MutationObserver)
-        new MutationObserver(soon).observe(out, { childList: true, characterData: true, subtree: true });
-    }
-    wireTodos(10);
-    /* the reply's TODOs, offered back: under the TODO the student named,
-       with its indentation; at the end when none was named */
-    function offerTodos(text) {
-      var proposed = todoLines(text).map(function (t) { return t.text; });
-      if (!proposed.length) return;
+      common = common || 0;
       var bar = document.createElement('div');
       bar.className = 'lc-agent-apply-bar';
-      var where = activeTodo ? ' under «' + escapeHtml(activeTodo.text) + '»' : ' at the end';
-      bar.innerHTML = '<button class="lc-agent-add-todos" type="button">⬇ Add ' + proposed.length +
-        ' TODO' + (proposed.length > 1 ? 's' : '') + ' to #' + escapeHtml(boundId) + where + '</button>';
+      var where = target ? ' under «' + escapeHtml(target.text) + '»' : ' at the end';
+      bar.innerHTML = '<button class="lc-agent-add-todos" type="button">⬇ Add to #' + escapeHtml(boundId) + where +
+        '</button> <span class="lc-agent-note">nothing of yours is replaced</span>';
       response.appendChild(bar);
       bar.querySelector('.lc-agent-add-todos').addEventListener('click', function () {
         var code = getBoundCode(boundId);
         if (code == null) return;
-        var lines = code.split('\n'), at = lines.length, indent = '';
-        if (activeTodo) {
-          for (var i = 0; i < lines.length; i++) {
-            var m = lines[i].match(TODO_RE);
-            if (m && m[2].trim() === activeTodo.text) { at = i + 1; indent = m[1]; break; }
+        var all = code.split('\n'), at = all.length, indent = '';
+        if (target) {
+          for (var i = 0; i < all.length; i++) {
+            var m = all[i].match(TODO_RE);
+            if (m && m[2].trim() === target.text) { at = i + 1; indent = m[1]; break; }
           }
         }
-        var add = proposed.map(function (t) { return indent + '# TODO: ' + t; });
-        Array.prototype.splice.apply(lines, [at, 0].concat(add));
-        if (!setBoundCode(boundId, lines.join('\n'))) return;
-        bar.innerHTML = '<span style="color:#2e7d32; font-weight:600">✓ Added — the TODOs are yours now</span>';
-        refreshTodos();
+        var add = piece.map(function (l) { return l.trim() ? indent + l.slice(common) : ''; });
+        Array.prototype.splice.apply(all, [at, 0].concat(add));
+        if (!setBoundCode(boundId, all.join('\n'))) return;
+        bar.innerHTML = '<span style="color:#2e7d32; font-weight:600">✓ Added' + where + ' — now make it yours</span>';
       });
     }
 
@@ -1327,7 +1303,7 @@ Auto-included by docs/_layouts/default.html.
         } catch (e) {}
 
         // If bound and TODO-driven: the reply's TODOs are offered back — never code.
-        if (boundId && cfg.todos) offerTodos(result.text);
+        if (boundId && cfg.todos) offerPiece(result.text);
         // If bound (and not TODO-driven): add an Apply button to the first python code block.
         if (boundId && !cfg.todos) {
           var bot = response.querySelector('.lc-agent-msg-bot');

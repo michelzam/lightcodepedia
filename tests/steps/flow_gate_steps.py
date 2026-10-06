@@ -387,7 +387,7 @@ def step_card_photo(context):
             """() => {
                  const pad = document.querySelector("[data-lc-id='faces_screen']");
                  const f = pad && pad.querySelector(".lc-form");
-                 return f ? (f.querySelector('.lc-form-body') || f).innerText.replace(/\s+/g, ' ').slice(0, 400) : "NO FORM";
+                 return f ? (f.querySelector('.lc-form-body') || f).innerText.replace(/\\s+/g, ' ').slice(0, 400) : "NO FORM";
                }""")
         raise AssertionError("the card shows no photo — the card reads: %r" % (info,))
     heads = context.page.locator(
