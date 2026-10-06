@@ -595,3 +595,26 @@ def step_request_carried_green(context, fid):
     assert context.model_asks, "no request reached the model"
     ask = context.model_asks[-1]
     assert ("check (#" + fid + "): GREEN") in ask, ask[-900:]
+
+
+# ── ⤵ follow-up ──────────────────────────────────────────────────────────
+
+@when('I follow up on the "{agent_id}" agent\'s answer')
+def step_follow_up(context, agent_id):
+    btn = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-followup').first
+    btn.wait_for(state="visible", timeout=10_000)
+    btn.click()
+    expect(context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-followup-note')).to_be_visible(timeout=5_000)
+
+
+@then('the model request carried the follow-up "{q}" with its answer "{a}" and the new question "{n}"')
+def step_request_followup(context, q, a, n):
+    assert len(context.model_asks) >= 2, "two requests were expected, got %d" % len(context.model_asks)
+    ask = context.model_asks[-1]
+    for needle in ("Earlier I asked: " + q, "You answered:", a, "Now I ask: " + n):
+        assert needle in ask, "missing %r in the request:\n%s" % (needle, ask[-900:])
+
+
+@then("the follow-up chip is gone")
+def step_followup_gone(context):
+    assert context.page.locator(".lc-agent-followup-note").count() == 0, "the follow-up chip is still armed"

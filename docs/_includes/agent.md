@@ -61,6 +61,10 @@ IAL knobs:
               Ask time and hand the value to the model. {=cv1.source}
               reads a pad, {=inputs.field} a form — anything cells see.
 
+Every answer carries two small buttons: ↩ puts the question back in the
+box; ⤵ arms a FOLLOW-UP — that question and that answer travel with the
+next question, once, so a sub-question keeps its context on a single-shot
+desk (Michel, 2026-10-06).
 The learner's key is asked ONCE — per device, not per page. It is
 persisted per provider (like the course key) and offered to the
 browser's password manager via the hidden-username form trick, so
@@ -120,6 +124,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-msg-user { background: #e3f2fd; color: #1565c0; padding: 0.55em 0.85em; border-radius: 8px 8px 8px 2px; margin-bottom: 0.6em; font-size: 0.9em; white-space: pre-wrap; word-break: break-word; }
 .lc-agent-again { font: inherit; font-size: 0.8em; margin-left: 0.4em; padding: 0 0.4em; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; color: #334155; cursor: pointer; vertical-align: middle; }
 .lc-agent-again:hover { border-color: #0066cc; color: #0066cc; }
+/* ⤵ follow-up: the last question and its answer ride with the next one */
+.lc-agent-followup { font: inherit; font-size: 0.8em; margin-left: 0.3em; padding: 0 0.4em; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; color: #334155; cursor: pointer; vertical-align: middle; }
+.lc-agent-followup:hover { border-color: #0066cc; color: #0066cc; }
+.lc-agent-followup-note { display: flex; gap: 0.5em; align-items: center; margin: 0 0 0.5em; font-size: 0.85em; color: #3730a3; background: #eef2ff; border-radius: 6px; padding: 0.3em 0.7em; }
+.lc-agent-followup-note button { font: inherit; border: none; background: none; color: #64748b; cursor: pointer; margin-left: auto; }
 .lc-agent-msg-bot { background: #f5f5f5; color: #222; padding: 0.7em 0.95em; border-radius: 8px 8px 2px 8px; font-size: 0.94em; line-height: 1.55; word-break: break-word; }
 .lc-agent-msg-bot p:first-child { margin-top: 0; }
 .lc-agent-msg-bot p:last-child { margin-bottom: 0; }
@@ -1228,10 +1237,37 @@ Auto-included by docs/_layouts/default.html.
       else if (myToken()) authForm.hidden = true;
     });
 
+    /* ⤵ FOLLOW-UP (Michel, 2026-10-06): a desk is single-shot, so a
+       sub-question ("and how do I iterate?") lost its context. The learner
+       presses ⤵ on an answer: that question and that answer travel with the
+       next one, once, as part of the learner's text. A chip above the box
+       says so, with an × to drop it. */
+    var followup = null, followupNote = null;
+    function dropFollowup() {
+      followup = null;
+      if (followupNote && followupNote.parentNode) followupNote.parentNode.removeChild(followupNote);
+      followupNote = null;
+    }
+    function armFollowup(q, a) {
+      dropFollowup();
+      followup = { q: q, a: a };
+      followupNote = document.createElement('div');
+      followupNote.className = 'lc-agent-followup-note';
+      followupNote.innerHTML = '↳ following up on «' + escapeHtml(q.length > 60 ? q.slice(0, 57) + '…' : q) + '» — that answer travels with your next question' +
+        '<button type="button" title="Drop the follow-up">×</button>';
+      followupNote.querySelector('button').addEventListener('click', dropFollowup);
+      askForm.parentNode.insertBefore(followupNote, askForm);
+      prompt.placeholder = 'Your follow-up — then press Ask';
+      prompt.focus();
+    }
     askForm.addEventListener('submit', function(e){
       e.preventDefault();
       var question = (prompt.value || '').trim();
       if (!myToken() || !question) return;
+      var userText = followup
+        ? 'Earlier I asked: ' + followup.q + '\n\nYou answered:\n' + followup.a + '\n\nNow I ask: ' + question
+        : question;
+      dropFollowup();
       sendBtn.disabled = true;
       sendBtn.textContent = '… thinking';
       status.innerHTML = '';
@@ -1241,9 +1277,9 @@ Auto-included by docs/_layouts/default.html.
          as it stands at Ask time, not as it was on page load */
       var promptP = (boundExpr && window.lcCellEval)
         ? window.lcCellEval(boundExpr).then(function (v) {
-            return 'The document under review:\n\n```\n' + String(v) + '\n```\n\nThe request:\n\n' + question;
-          }).catch(function () { return question; })
-        : Promise.resolve(buildAugmentedPrompt(boundId, question, cfg.proof));
+            return 'The document under review:\n\n```\n' + String(v) + '\n```\n\nThe request:\n\n' + userText;
+          }).catch(function () { return userText; })
+        : Promise.resolve(buildAugmentedPrompt(boundId, userText, cfg.proof));
 
       promptP.then(function (fullPrompt) {
         return ask(myToken(), cfg, fullPrompt, function (eng, failure) {
@@ -1289,13 +1325,16 @@ Auto-included by docs/_layouts/default.html.
            again without retyping it (Michel, 2026-10-03) */
         response.innerHTML =
           '<div class="lc-agent-msg-user">💬 ' + escapeHtml(question) +
-            ' <button type="button" class="lc-agent-again" title="Put this question back in the box">↩</button></div>' +
+            ' <button type="button" class="lc-agent-again" title="Put this question back in the box">↩</button>' +
+            ' <button type="button" class="lc-agent-followup" title="Ask a follow-up — this question and its answer travel with the next one">⤵</button></div>' +
           '<div class="lc-agent-msg-bot">🤖 ' + renderMarkdown(result.text) + '</div>';
         var againBtn = response.querySelector('.lc-agent-again');
         if (againBtn) againBtn.addEventListener('click', function () {
           var pe = panel.querySelector('.lc-agent-prompt');
           if (pe) { pe.value = question; pe.focus(); }
         });
+        var fuBtn = response.querySelector('.lc-agent-followup');
+        if (fuBtn) fuBtn.addEventListener('click', function () { armFollowup(question, String(result.text || '')); });
         /* THE BOX STOPS INVITING THE OPENING LINE ONCE IT HAS BEEN SAID.
            A placeholder that reads Ask "what still drifts?" after the first
            reply told a student to ask it again (Michel, 2026-09-18). From

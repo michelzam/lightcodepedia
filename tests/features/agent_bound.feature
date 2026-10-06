@@ -525,3 +525,20 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I add the agent's piece to the editor
     Then the "todo_editor" editor holds, in order, "# TODO: shift one letter", "alphabet = 'abcdefghijklmnopqrstuvwxyz'", "# TODO: find the letter's position with .find, then take the next one", "return letter"
     And the "todo_editor" editor still holds "# TODO: wrap z to a"
+
+  Scenario: ⤵ carries the last question and its answer into the next one
+    Michel, 2026-10-06: a desk is single-shot, so "and how do I iterate?"
+    lost its context. ⤵ on an answer makes that exchange travel with the
+    next question, once.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with a python fix "print('fixed')"
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "tutor" agent with key "test-key"
+    And I ask the "tutor" agent "help me fix it"
+    And I follow up on the "tutor" agent's answer
+    And I ask the "tutor" agent "and how do I loop over it?"
+    Then the model request carried the follow-up "help me fix it" with its answer "print('fixed')" and the new question "and how do I loop over it?"
+    And the follow-up chip is gone

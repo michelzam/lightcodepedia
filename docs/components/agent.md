@@ -108,6 +108,9 @@ by construction.
 Drop `{: .agent }` after a fenced YAML block. That's the whole syntax.
 
 The panel shows the last exchange — 💬 your question, 🤖 the answer — and
+**⤵** on an answer arms a **follow-up**: that question and that answer travel
+with your next question, once, so a sub-question ("and how do I iterate?")
+keeps its context on a single-shot desk. A chip above the box says so; × drops it.
 **↩** on the question puts it back in the box, so you can change something
 on the page and ask the same thing again without retyping it.
 
