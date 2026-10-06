@@ -50,6 +50,40 @@ Feature: A fenced block becomes a Python runner
 - [ ] A terminal opens and asks for your password.
 {: .quiz }
 
+```gherkin
+Feature: The editor numbers lines, not wrapped rows
+  As a learner reading my program on a phone
+  I want line 16 to be line 16
+  So that a tutor's "line 16" and my gutter agree
+
+  Scenario: A long line keeps one number and scrolls sideways
+    Given the first editor above
+    :::python
+    self.ta = Object._all("#lc-pyrun-first_run .lc-pyrun-code")[0]
+    self.gutter = Object._all("#lc-pyrun-first_run .lc-pyrun-gutter-inner")[0]
+    self.was = str(self.ta._el.value)
+    :::
+    When a line longer than the editor is typed
+    :::python
+    self.ta._el.value = "x = 1\n" + "# " + "a very long comment line, " * 12 + "\ny = 2"
+    self.ta._el.dispatchEvent(js.Event.new("input"))
+    :::
+    Then the gutter counts three lines, one per newline
+    :::python
+    rows = str(self.gutter._el.textContent).split("\n")
+    assert rows == ["1", "2", "3"], f"gutter rows {rows}"
+    :::
+    And the editor does not wrap — the long line scrolls sideways
+    :::python
+    cs = js.window.getComputedStyle(self.ta._el)
+    assert str(cs.whiteSpace) == "pre", f"white-space is {cs.whiteSpace}"
+    assert int(self.ta._el.scrollWidth) > int(self.ta._el.clientWidth), "the long line did not overflow sideways"
+    self.ta._el.value = self.was
+    self.ta._el.dispatchEvent(js.Event.new("input"))
+    :::
+```
+{: .feature tags="ui" status="pending" }
+
 ## 🛠️ How to make a runner
 
 Write a Python fenced block, then put `{: .run }` on the very next line:

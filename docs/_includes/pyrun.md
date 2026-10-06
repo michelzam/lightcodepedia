@@ -33,6 +33,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun .token.comment { color: #59636e; font-style: italic; }
 .lc-pyrun .token.function, .lc-pyrun .token.class-name, .lc-pyrun .token.builtin, .lc-pyrun .token.decorator { color: #8250df; }
 .lc-pyrun .token.operator, .lc-pyrun .token.punctuation { color: #24292f; }
+/* CODE DOES NOT WRAP (Michel, 2026-10-06, on the phone: the gutter numbered
+   wrapped rows, not lines). One number per line, a long line scrolls
+   sideways — the overlay already follows scrollLeft. */
+.lc-pyrun-code { white-space: pre; overflow: auto; word-wrap: normal; overflow-wrap: normal; }
+.lc-pyrun-hl { white-space: pre; word-wrap: normal; overflow-wrap: normal; }
 .lc-pyrun-gutter { position: relative; overflow: hidden; background: #f3f4f6; border-right: 1px solid #e8e8e8; user-select: none; min-width: 2.5em; }
 .lc-pyrun-gutter-inner { padding: 0.9em 0.5em 0.9em 0.6em; color: var(--lc-ink-mute, #616161); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; text-align: right; white-space: pre; pointer-events: none; will-change: transform; }
 .lc-pyrun-bar { display: flex; align-items: center; gap: 0.6em; padding: 0.5em 0.9em; background: #f3f4f6; border-top: 1px solid #e0e0e0; }
@@ -682,7 +687,7 @@ Auto-included by docs/_layouts/default.html.
     } else {
       html += '<div class="lc-pyrun-title">🐍 <span>Python runner</span><span class="lc-pyrun-lang">python</span></div>';
     }
-    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false" aria-label="Python editor"></textarea></div></div>';
+    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" wrap="off" spellcheck="false" aria-label="Python editor"></textarea></div></div>';
     html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-test">🧪 Test</button><button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
     html += '<pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>';
     html += '<div class="lc-pyrun-view" id="lc-pyrun-' + id + '-view"></div>';
