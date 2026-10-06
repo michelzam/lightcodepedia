@@ -695,8 +695,22 @@ Auto-included by docs/_layouts/default.html.
              inside, to the first change, as the editor would. */
           if (numbers) rp.diffEl.setAttribute("data-numbers", "1");
           if (piano) rp.diffEl.setAttribute("data-piano", "1");
+          /* ON A PHONE the pad stacks (column): a basis of 0 would squeeze
+             the pane to a strip (Michel, 2026-10-06, "time travelling
+             squeezes the editor"), so there it keeps its own height; side
+             by side it shares the width as the editor did. */
+          var column = getComputedStyle(wrap).flexDirection === "column";
           rp.diffEl.style.height = pane.offsetHeight + "px";
-          rp.diffEl.style.flex = "1 1 0";
+          rp.diffEl.style.flex = column ? "0 0 auto" : "1 1 0";
+          /* THE PREVIEW KEEPS ITS SIZE TOO: a frame's length must not grow
+             the pad and push the page around — the preview scrolls to the
+             change instead (focusPreview). On a phone, at most a screen's
+             worth, so the pad, the slider and the list stay in reach. */
+          var oh = out.offsetHeight;
+          if (column) oh = Math.min(oh, Math.round(window.innerHeight * 0.6));
+          out.style.boxSizing = "border-box";       /* the measured height is the padded one */
+          out.style.height = oh + "px";
+          if (column) out.style.flex = "0 0 auto";
           wrap.insertBefore(rp.diffEl, pane);
           pane.style.display = "none";
           var box = document.createElement("div");
@@ -729,6 +743,7 @@ Auto-included by docs/_layouts/default.html.
         if (rp.ui && rp.ui.box.parentNode) rp.ui.box.parentNode.removeChild(rp.ui.box);
         rp.diffEl = null; rp.ui = null;
         (src || ta).style.display = "";
+        out.style.height = ""; out.style.flex = ""; out.style.boxSizing = "";   /* the preview breathes again */
         refreshBench();                 /* 💾 and ↺ decide their own state again */
         rp.frames = null;               /* a save in between adds a frame: read again next time */
         lastFocus = -2; render(); focusNow();

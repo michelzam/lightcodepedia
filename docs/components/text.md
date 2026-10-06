@@ -133,8 +133,10 @@ written, and ■ Stop puts the editor back exactly as it was. The button sits
 at the head of the **🕘 Versions** list — one place for the history — and
 every row of that list can be clicked to show that one version the same
 way; the list follows the replay, lighting the row of the frame on screen.
-Folding the list stops the replay. It needs a connected bench, so it shows
-here only with your key.
+Folding the list stops the replay. While it plays, the pad keeps the size it
+had — on a phone at most a screen's worth — and the preview scrolls to the
+change rather than growing with the frame. It needs a connected bench, so it
+shows here only with your key.
 
 ### 🔧 Knobs
 

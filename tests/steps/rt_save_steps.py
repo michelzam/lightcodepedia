@@ -1065,3 +1065,47 @@ def step_version_row_selected(context, name):
 def step_list_open(context):
     assert context.page.locator(".lc-ver-panel").count() == 1, "the list folded"
     expect(context.page.locator(".lc-mdpad-bar .lc-ver-btn").first).to_have_attribute("aria-pressed", "true")
+
+
+# ── 📱 a phone: the pad stacks, preview above source ─────────────────────
+
+@given("the screen is a phone")
+def step_phone_screen(context):
+    context.page.set_viewport_size({"width": 390, "height": 844})
+
+
+def _geometry(context):
+    return context.page.evaluate(
+        """() => {
+             const pad = document.querySelector('[data-lc-id="cv"]');
+             const r = el => el ? Math.round(el.getBoundingClientRect().height) : 0;
+             return { pad: r(pad), out: r(pad.querySelector('.lc-mdpad-out')),
+                      diff: r(pad.querySelector('.lc-mdpad-diff')),
+                      src: r(pad.querySelector('.lc-mdpad-src') || pad.querySelector('.lc-mdpad-in')),
+                      outStyle: pad.querySelector('.lc-mdpad-out').style.height };
+           }""")
+
+
+@when("I note the pad's geometry")
+def step_note_geometry(context):
+    context.geo = _geometry(context)
+
+
+@then("the diff pane is as tall as the editor was")
+def step_diff_tall(context):
+    now = _geometry(context)
+    assert now["diff"] >= context.geo["src"] - 2, \
+        "the diff pane is %d px tall, the editor was %d — squeezed" % (now["diff"], context.geo["src"])
+
+
+@then("the preview kept its height")
+def step_preview_kept(context):
+    now = _geometry(context)
+    assert abs(now["out"] - context.geo["out"]) < 2, \
+        "the preview is %d px, it was %d — the pad jumped" % (now["out"], context.geo["out"])
+
+
+@then("the preview breathes again")
+def step_preview_free(context):
+    now = _geometry(context)
+    assert now["outStyle"] == "", "the preview is still pinned at %r" % now["outStyle"]

@@ -872,3 +872,31 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I close the pad's version list
     Then the pad shows "# Draft three"
     And the bench received no commit
+
+  Scenario: On a phone the replay keeps the pad's size and brings the change into view
+    Michel, 2026-10-06: time travelling squeezed the editor on the phone and
+    let the preview grow with the frame — the pad jumped. In replay the pad
+    keeps the size it had; the preview scrolls to the change instead.
+
+    Given the screen is a phone
+    And a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
+      """
+      # Work page
+
+      ```markdown
+      # Starter résumé — replace me
+      ```
+      {: .mdpad #cv save="cv.md" rows="6" replay="0.3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I note the pad's geometry
+    And I press the pad's replay button
+    Then the diff pane is as tall as the editor was
+    And the preview kept its height
+    When I scrub the replay to frame 2
+    Then the preview kept its height
+    When I stop the replay
+    Then the preview breathes again
