@@ -1,0 +1,69 @@
+name: Canvas collect
+
+# Pull a course's PUBLISHED material out of Canvas into the lab's private
+# sources folder — courses/<dir>/__sources/canvas/ — so a session can read
+# it when drafting a tutor's brief (Michel, 2026-10-06, the Python class).
+# Manual only. STRUCTURE AND THE AUTHOR'S OWN TEXT: modules and their items,
+# page bodies, assignment descriptions, quiz settings and questions, the
+# PDFs among the course files. No enrollments, no submissions, no student
+# anything, ever. Dunders never travel, so nothing collected leaves the lab.
+#
+# The course id and host come from the course's __course.yml
+# (canvas_course / canvas_host); the token from the secret it names.
+
+on:
+  workflow_dispatch:
+    inputs:
+      course:
+        description: "course dir under courses/, e.g. python"
+        required: true
+        default: "python"
+      canvas_course:
+        description: "Canvas course id — empty = the one in __course.yml"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    if: github.repository == 'michelzam/lightcodelab'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the course's wiring
+        id: wiring
+        run: |
+          cfg="courses/${{ inputs.course }}/__course.yml"
+          [ -f "$cfg" ] || { echo "::error::$cfg not found"; exit 1; }
+          val() { sed -n "s/^$1:[[:space:]]*\([^[:space:]#]*\).*/\1/p" "$cfg"; }
+          id="${{ inputs.canvas_course }}"; [ -n "$id" ] || id="$(val canvas_course)"
+          [ -n "$id" ] && [ "$id" != "0" ] || { echo "::error::no Canvas course id — pass one or set canvas_course in $cfg"; exit 1; }
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "host=$(val canvas_host)" >> "$GITHUB_OUTPUT"
+          echo "token=$(val canvas_token)" >> "$GITHUB_OUTPUT"
+
+      - name: Collect
+        env:
+          TOK: ${{ secrets[steps.wiring.outputs.token] }}
+          HOST: ${{ steps.wiring.outputs.host }}
+          COURSE: ${{ steps.wiring.outputs.id }}
+          OUT: courses/${{ inputs.course }}/__sources/canvas
+        run: |
+          [ -n "$TOK" ] || { echo "::error::secret '${{ steps.wiring.outputs.token }}' is empty"; exit 1; }
+          python3 tools/canvas_collect.py
+
+      - name: Commit as KarmicSoft (rebase-and-retry)
+        run: |
+          git config user.name  "KarmicSoft"
+          git config user.email "67806901+michelzam@users.noreply.github.com"
+          git add -A "courses/${{ inputs.course }}/__sources/canvas"
+          if git diff --cached --quiet; then echo "Nothing new from Canvas."; exit 0; fi
+          git commit -m "📚 canvas: ${{ inputs.course }} sources collected (published material only)"
+          for i in 1 2 3 4; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main && git rebase origin/main || { git rebase --abort; exit 1; }
+            sleep $((2 ** i))
+          done
+          echo "::error::could not push after 4 attempts"; exit 1

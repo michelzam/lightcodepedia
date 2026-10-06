@@ -13,7 +13,7 @@ How it works, every week:
    answer.
 4. Submit in Canvas, as the assignment says.
 
-- [📍 Assignment 01](assignment_01/index.md)
+- [📍 Assignment 6a — Hidden Gems: Crypto](assignment_06a/index.md)
 
 [Browse](#)
 {: .folder }
