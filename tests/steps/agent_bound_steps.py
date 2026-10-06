@@ -499,3 +499,73 @@ def step_request_carried_system(context, text):
             return
         context.page.wait_for_timeout(250)
     assert False, "no model request carried %r: %r" % (text, [a[:300] for a in context.model_asks])
+
+
+# ── 🎯 TODO-driven (Michel, 2026-10-06) ──────────────────────────────────
+
+@given("the recording model endpoint replies with this text:")
+def step_recording_model_text(context):
+    text = context.text
+    context.model_asks = []
+
+    def fulfill(route):
+        try:
+            context.model_asks.append(route.request.post_data or "")
+        except Exception:
+            context.model_asks.append("")
+        body = json.dumps({
+            "choices": [{"message": {"content": text}}],
+            "usage": {"total_tokens": 7},
+            "model": "stub-model-9",
+        })
+        route.fulfill(status=200, content_type="application/json", body=body)
+
+    context.page.route("**/chat/completions*", fulfill)
+
+
+@then('the "{agent_id}" agent lists the TODOs "{todos}"')
+def step_agent_lists_todos(context, agent_id, todos):
+    chips = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-todo')
+    want = [t.strip() for t in todos.split(",")]
+    expect(chips).to_have_count(len(want), timeout=15_000)
+    got = chips.all_inner_texts()
+    assert got == want, "chips %r, expected %r" % (got, want)
+
+
+@when('I name the "{agent_id}" agent\'s TODO "{todo}"')
+def step_name_todo(context, agent_id, todo):
+    chip = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-todo', has_text=todo).first
+    chip.click()
+    expect(context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot')).to_be_visible(timeout=15_000)
+
+
+@then('the model request named the TODO "{todo}"')
+def step_request_named_todo(context, todo):
+    assert context.model_asks, "no request reached the model"
+    assert ("I am on this TODO" in context.model_asks[-1]) and (todo in context.model_asks[-1]), \
+        context.model_asks[-1][-600:]
+
+
+@then('the "{agent_id}" agent offers no Apply button')
+def step_no_apply(context, agent_id):
+    assert context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-apply').count() == 0, \
+        "an Apply button — a TODO-driven tutor never writes code"
+
+
+@when("I add the agent's TODOs to the editor")
+def step_add_todos(context):
+    btn = context.page.locator(".lc-agent-add-todos").first
+    btn.wait_for(state="visible", timeout=10_000)
+    btn.click()
+    context.page.wait_for_timeout(500)
+
+
+@then('the "{run_id}" editor holds, in order, "{a}", "{b}", "{c}", "{d}"')
+def step_editor_order(context, run_id, a, b, c, d):
+    ta = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code")
+    code = ta.input_value()
+    pos = [code.find(x) for x in (a, b, c, d)]
+    assert all(p >= 0 for p in pos), "missing line(s): %r in\n%s" % ([x for x, p in zip((a, b, c, d), pos) if p < 0], code)
+    assert pos == sorted(pos), "lines out of order: %r in\n%s" % (pos, code)
+    # the added TODOs took the named TODO's indentation
+    assert ("\n    " + b) in code, "the added TODO did not take the indentation of the one named:\n" + code

@@ -4,25 +4,6 @@ Some values contain hidden gems — characters inside strings. Two functions
 this week: **encrypt** hides a word, **decrypt** brings it back, and the
 program proves nothing was lost on the way.
 
-## 🎓 Ari, your tutor
-
-Stuck? Say where. Ari reads your program and what it printed, then points —
-to the week's table, to one line to try. It never writes the program for
-you; that is yours.
-
-```yaml
-provider: groq
-model: openai/gpt-oss-120b
-intro: "Stuck? Tell me where. I point, you write."
-placeholder: "What are you trying to do, and what happens instead?"
-system: |
-  You are Ari, the tutor of INFOST 350, Assignment 6a (Hidden Gems — Crypto,
-  Module 6). Directions only, never the answer: one idea per message, one
-  line or a blank to fill at most, only what Module 6 and before have taught.
-  (Placeholder — the sealed brief replaces this.)
-```
-{: .agent #tutor bound="program" rows="3" }
-
 ## 🐍 Your program
 
 Every program opens on its **elevator pitch**, in the docstring — four
@@ -70,6 +51,26 @@ print(f'Consistency check: {cleared == word2hide}')
 Suggested rule, or invent your own: replace each lowercase letter with the
 next one in the alphabet — a → b, b → c, … z → a (wrap around!). Test with a
 few words, including `decrypt(encrypt("hello")) == "hello"`.
+
+## 🎓 Ari, your tutor
+
+Your program's `# TODO` lines are listed here as buttons. Name the one you
+are on: Ari reads your program and what it last printed, answers with one
+direction and the next `# TODO` steps, which you can add under yours. It
+never writes the program for you; that is yours.
+
+```yaml
+provider: groq
+model: openai/gpt-oss-120b
+intro: "Stuck? Tell me where. I point, you write."
+placeholder: "What are you trying to do, and what happens instead?"
+system: |
+  You are Ari, the tutor of INFOST 350, Assignment 6a (Hidden Gems — Crypto,
+  Module 6). Directions only, never the answer: one idea per message, one
+  line or a blank to fill at most, only what Module 6 and before have taught.
+  (Placeholder — the sealed brief replaces this.)
+```
+{: .agent #tutor bound="program" todos="true" rows="3" }
 
 ## 💎 This week's key concepts
 

@@ -493,3 +493,31 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I run the feature "askread"
     Then the feature "askread" is green
     And the model request carried the instruction "'visit': 'Thu'"
+
+  Scenario: TODO-driven — the editor's TODOs are the questions, the reply's TODOs go back in
+    Michel, 2026-10-06: a tutor that aims instead of typing. The editor's
+    "# TODO" lines are chips; naming one asks about it; the reply's TODOs
+    are added under it as comments; no Apply, ever.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with this text:
+      """
+      Start with one letter. Where does 'a' sit on a ruler of the alphabet?
+
+      ```python
+      # TODO: write the alphabet as a string
+      # TODO: find the letter's position with .find
+      ```
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "coach" agent with key "test-key"
+    Then the "coach" agent lists the TODOs "shift one letter, wrap z to a"
+    When I name the "coach" agent's TODO "shift one letter"
+    Then the model request carried the editor code "# TODO: shift one letter"
+    And the model request named the TODO "shift one letter"
+    And the "coach" agent offers no Apply button
+    When I add the agent's TODOs to the editor
+    Then the "todo_editor" editor holds, in order, "# TODO: shift one letter", "# TODO: write the alphabet as a string", "# TODO: find the letter's position with .find", "return letter"
+    And the "coach" agent lists the TODOs "shift one letter, write the alphabet as a string, find the letter's position with .find, wrap z to a"

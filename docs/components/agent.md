@@ -386,6 +386,76 @@ Code > 4000 chars is truncated. Empty editor and no-run-yet silently drop those 
 - [ ] File a strongly-worded bug report against your own PAT.
 {: .quiz }
 
+## 🎯 TODO-driven — the editor's TODOs are the questions
+
+A tutor should aim, not type. With `todos="true"` on a bound agent, the
+editor's `# TODO` lines become chips above the box: the learner names the
+one they are on, and the question carries the code and the last output as
+always. The reply's own `# TODO` lines get **⬇ Add TODOs**, which writes
+them into the editor under the TODO that was named, as comments, with its
+indentation. There is no Apply: the tutor never writes a line of code
+(Michel, 2026-10-06: "drive students using the last result and the
+current TODOs; the student has to name one and ask").
+
+````markdown
+```python
+def shift(letter: str) -> str:
+    # TODO: shift one letter
+    return letter
+
+# TODO: wrap z to a
+print(shift('a'))
+```
+{: .run #todo_editor rows="7" }
+
+```yaml
+system: |
+  You are a coach. Answer with ONE direction (two sentences at most),
+  then the next one to three steps as "# TODO:" lines in a python fence.
+  Never a line of code that is not a comment.
+```
+{: .agent bound="todo_editor" todos="true" #coach }
+````
+
+Renders to:
+
+```python
+def shift(letter: str) -> str:
+    # TODO: shift one letter
+    return letter
+
+# TODO: wrap z to a
+print(shift('a'))
+```
+{: .run #todo_editor rows="7" }
+
+```yaml
+system: |
+  You are a coach. Answer with ONE direction (two sentences at most),
+  then the next one to three steps as "# TODO:" lines in a python fence.
+  Never a line of code that is not a comment.
+```
+{: .agent bound="todo_editor" todos="true" #coach }
+
+```gherkin
+Feature: A TODO-driven agent reads the editor's TODOs
+  As a learner with a program full of TODOs
+  I want the tutor to list them and take the one I name
+  So that I ask about the step I am on, not about everything
+
+  Scenario: The editor's TODOs are listed as chips
+    Given the coach bound to the TODO editor
+    :::python
+    self.coach: Agent = self.page.coach
+    :::
+    When the page has settled
+    Then the coach lists the two TODOs of the editor
+    :::python
+    assert self.coach.todos == ["shift one letter", "wrap z to a"], self.coach.todos
+    :::
+```
+{: .feature tags="ai" status="pending" }
+
 ## 💍 The keyring — engines declared in one file
 
 The 🔑 on any desk opens the **ring**: one row per engine, each with where

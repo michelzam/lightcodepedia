@@ -1476,6 +1476,13 @@ class Agent(Block):
     """A page agent (.agent) — a part a proof, a guide or another agent can
     act on: read or rewrite its brain (system), ask it, read what it said."""
     _lc_keep = ("system",)
+
+    @property
+    def todos(self):
+        """The editor's TODOs this agent lists as chips (todos="true"), in
+        source order — what a learner can name and ask about."""
+        return [str(b._el.textContent or "").strip() for b in self._qq(".lc-agent-todo")]
+
     @property
     def system(self):
         cfg = getattr(self._el, "_lcCfg", None) if self._el is not None else None
