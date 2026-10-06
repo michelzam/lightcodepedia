@@ -394,3 +394,26 @@ def step_card_photo(context):
         "[data-lc-id='faces_screen'] .lc-datagrid[data-lc-id='dog_grid'] th").all_inner_texts()
     assert not any("photo" in h.lower() for h in heads), \
         "the table grew a photo column — the card computes, the list stays a list: %r" % (heads,)
+
+
+@when("the learner types the card under the table, compute= on it")
+def step_type_card(context):
+    """The learner's own path — the lines typed into the pad's source, the
+    preview re-rendering live — not a file served with the lines already in.
+    No click afterwards: the table publishes its first row when it paints,
+    and a card subscribing later receives that row (Michel, 2026-10-06:
+    'the form has still no picture')."""
+    context.page.evaluate(
+        """() => {
+             document.querySelectorAll('.lc-prereq').forEach(g => g.remove());
+             document.querySelectorAll('.lc-prereq-hidden').forEach(h => h.classList.remove('lc-prereq-hidden'));
+             document.querySelectorAll('.lc-slide').forEach(s => {
+               s.removeAttribute('hidden'); s.style.display = 'block'; s.setAttribute('data-active', 'true');
+             });
+           }""")
+    ta = context.page.locator("[data-lc-id='faces_screen'] .lc-mdpad-in")
+    ta.wait_for(state="visible", timeout=20_000)
+    card = ('\n[The dog](#)\n{: .form master="dog_grid" '
+            'compute="photo = \'https://placedog.net/400/240?id=\' + str(pic)" }\n')
+    ta.fill(ta.input_value().rstrip("\n") + "\n" + card)
+    context.page.wait_for_timeout(4000)      # debounce, re-render, the formula's run
