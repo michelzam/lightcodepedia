@@ -166,6 +166,43 @@ Whatever you write here is **yours** — saved in your repo, not this page's.
 ````
 {: .mdpad #my_scratch save="/my/scratch.md" rows="8" }
 
+**Say what you did.** Add `comment="true"` and the button reads **💾 Save…** —
+the ellipsis promises a question. One line, *what did you just do?*, and
+that line becomes the version's name in 🕘 Versions: a diary of your work
+instead of twelve identical saves. An empty line keeps nothing. Buttons that
+would do nothing are off: 💾 until something changed, ↺ while the pad already
+holds the starter; and 🕘 Versions shows whether it is open.
+
+````markdown
+## Diary
+Each save, one line about the step you just took.
+````
+{: .mdpad #my_diary save="/my/diary.md" comment="true" rows="5" }
+
+```gherkin
+Feature: A save can carry one line about what was done
+  As a learner keeping my pages in my own space
+  I want each save to be named by what I just did
+  So that my versions read as a diary, not a count
+
+  Scenario: The button promises the question
+    Given the diary pad above
+    :::python
+    self.save: Object = Object._all("[data-lc-id='my_diary'] ~ .lc-mdpad-bar .lc-mdpad-save")[0]
+    self.reset: Object = Object._all("[data-lc-id='my_diary'] ~ .lc-mdpad-bar .lc-mdpad-reset")[0]
+    :::
+    When the pad asks for a comment
+    Then the save button reads Save with an ellipsis
+    :::python
+    assert self.save.text.strip() == "💾 Save…", f"button reads {self.save.text!r}"
+    :::
+    And start over is off while the pad holds the starter
+    :::python
+    assert self.reset._el.disabled, "↺ is on, yet the pad holds the lesson's starter"
+    :::
+```
+{: .feature tags="ui" status="pending" }
+
 ### 🎨 Decorations — the page, not only the text
 
 By default the preview shows the **text**: headings, bold, lists, inline

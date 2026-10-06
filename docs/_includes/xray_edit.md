@@ -1242,9 +1242,11 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
       btn.textContent = "🕘 Versions";
       btn.title = "Every version you saved — read it, compare it, bring it back";
       var panel = null;
+      btn.setAttribute("aria-pressed", "false");   /* an on/off button says which */
       function close() {
         if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
         panel = null;
+        btn.setAttribute("aria-pressed", "false");
       }
       function whenLabel(iso) {
         if (!iso) return "saved";
@@ -1268,6 +1270,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         if (panel) { close(); return; }
         panel = document.createElement("div");
         panel.className = css + "-panel";
+        btn.setAttribute("aria-pressed", "true");
         panel.innerHTML = "<ol><li>⏳ reading your history…</li></ol>";
         var at = o.anchor || btn.parentNode;
         at.parentNode.insertBefore(panel, at.nextSibling);
@@ -1291,6 +1294,11 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
             when.textContent = isStarter
               ? "the lesson's starter · " + whenLabel(c.when)
               : whenLabel(c.when) + (n === 0 ? " · latest" : "");
+            /* the version's name — what the learner said they did when a pad
+               asked (comment="true"); a plain save shows its pad's name */
+            var msg = document.createElement("span");
+            msg.className = css + "-msg";
+            msg.textContent = isStarter ? "" : String(c.message || "").replace(/^✍️\s*/, "").split("\n")[0];
             var sha = document.createElement("span");
             sha.className = css + "-sha";
             sha.textContent = String(c.sha).slice(0, 7);
@@ -1315,7 +1323,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
                 window.lcxToast && window.lcxToast("Older version loaded — 💾 to keep it", true);
               });
             });
-            li.appendChild(when); li.appendChild(sha);
+            li.appendChild(when); li.appendChild(msg); li.appendChild(sha);
             li.appendChild(cmp); li.appendChild(use);
             ol.appendChild(li);
           });

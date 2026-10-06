@@ -22,6 +22,11 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
         campus: Milwauke
       ```
       {: .datagrid #dogs editable="true" save="dogs.yaml" height="160" }
+
+      ```markdown
+      # Diary — one line per save
+      ```
+      {: .mdpad #diary save="diary.md" comment="true" rows="4" }
       """
 
   Scenario: Without a key the page still teaches, and says how to join
@@ -807,3 +812,45 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I press Save in the editor
     Then the bench received a commit to "courses/demo/mod/tally.md" containing "visited.count"
     And the bench received a commit to "courses/demo/mod/tally.md" without "NAME.count"
+
+  Scenario: Save… asks for one line, and the line names the version
+    Michel, 2026-10-06: students say what they just did when they save —
+    the versions list becomes a diary of the work, not "pad" twelve times.
+
+    Given a connected bench whose "courses/demo/mod/diary.md" does not exist yet
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    Then the diary pad's save button reads "💾 Save…"
+    When I type "# Diary — the card follows the table" into the diary pad and press Save…
+    Then the diary pad asks what I just did
+    When I answer "the card follows the table" and keep
+    Then the bench received a commit to "courses/demo/mod/diary.md" with the message "✍️ the card follows the table"
+
+  Scenario: An empty line keeps nothing
+    Given a connected bench whose "courses/demo/mod/diary.md" does not exist yet
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I type "# Diary — nothing worth a line" into the diary pad and press Save…
+    And I cancel the question
+    Then the bench received no commit
+    And the diary pad's save button is on again
+
+  Scenario: Buttons that would do nothing are off
+    Given a connected bench whose "courses/demo/mod/diary.md" does not exist yet
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    Then the diary pad's save and start-over buttons are off, each saying why
+    When I type "# Diary — changed" into the diary pad
+    Then the diary pad's save and start-over buttons are on
+
+  Scenario: The versions button shows whether the list is open
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    Then the pad's versions button reads off
+    When I open the pad's version list
+    Then the pad's versions button reads on
+    And every version row shows its name
+    When I close the pad's version list
+    Then the pad's versions button reads off

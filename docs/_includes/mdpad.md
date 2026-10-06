@@ -33,6 +33,10 @@ IAL knobs:
   numbers="true" a line number per source line in a gutter (wrapped lines keep one)
   replay="1.5"  seconds per frame when 🎞 Replay plays the saved versions (default 1.5);
               the button itself comes with save="<path>", once a version exists
+  comment="true"
+              💾 Save… asks for one line — what you just did — before it writes;
+              the line is the version's name in 🕘 Versions (a diary, not
+              "✍️ pad" ×12). Empty line = nothing written. Default off: one click.
   decorations="true"
               the preview renders the page the way the site does: block
               decorations ({: .red} under a paragraph, {: .pitch} under a
@@ -86,6 +90,16 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-bar .lc-ver-btn { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em;
   border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
 .lc-mdpad-bar .lc-ver-btn:hover { border-color: #888; color: #222; }
+/* an ON/OFF button looks on: pressed = inverted, so the open list reads as a
+   state and not as a second click's surprise (Michel, 2026-10-06) */
+.lc-mdpad-bar .lc-ver-btn[aria-pressed="true"] { background: #333; border-color: #333; color: #fff; }
+.lc-mdpad-bar button:disabled { opacity: 0.45; cursor: default; }
+/* 💾 Save… — the one-line box: what did you just do? */
+.lc-mdpad-commentbar { display: flex; gap: 0.5em; align-items: center; margin: -0.4em 0 0.8em; font-size: 0.9em; }
+.lc-mdpad-commentbar input { flex: 1; min-width: 120px; font: inherit; padding: 0.35em 0.6em; border: 1px solid #bbb; border-radius: 6px; }
+.lc-mdpad-commentbar button { font: inherit; font-size: 0.9em; padding: 0.35em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #444; cursor: pointer; }
+.lc-mdpad-commentbar button.lc-mdpad-keep { background: #0066cc; border-color: #0066cc; color: #fff; }
+.lc-mdpad-commentbar button:disabled { opacity: 0.45; cursor: default; }
 .lc-ver-panel { border: 1px solid #d0d0d0; border-radius: 8px; margin: -0.6em 0 1em;
   background: #fafafa; overflow: hidden; font-size: 0.88em; }
 .lc-ver-panel ol { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow: auto; }
@@ -96,6 +110,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-ver-panel li.starter { background: #fffbeb; }
 .lc-ver-panel li.starter .lc-ver-when { color: #92400e; font-style: italic; }
 .lc-ver-when { flex: 1; color: #444; }
+.lc-ver-msg { color: #222; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lc-ver-sha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #94a3b8; font-size: 0.85em; }
 .lc-ver-panel button { font: inherit; font-size: 0.85em; padding: 0.2em 0.6em; border-radius: 5px;
   border: 1px solid #cbd5e1; background: #fff; color: #334155; cursor: pointer; }
@@ -294,6 +309,9 @@ Auto-included by docs/_layouts/default.html.
     if (benchPath) wrap.setAttribute("data-lc-save", benchPath);   /* named in a proof's verdict */
     var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null, replayBtn = null;
     var pace = parseFloat(el.getAttribute("replay")) || 1.5;   /* seconds per replay frame */
+    /* comment="true": 💾 Save… — the ellipsis promises a question, one line
+       about what was just done; it becomes the version's name. */
+    var askComment = el.getAttribute("comment") === "true";
     /* AN APP SCREEN (Michel, 2026-10-02): saved to the bench AND decorated,
        the pad is a page of the learner's own app — so the preview wears app
        chrome, a title bar that mirrors the page's # line (the file's name
@@ -348,7 +366,7 @@ Auto-included by docs/_layouts/default.html.
       saveBtn = document.createElement("button");
       saveBtn.type = "button";
       saveBtn.className = "lc-mdpad-save";
-      saveBtn.textContent = "💾 Save";
+      saveBtn.textContent = askComment ? "💾 Save…" : "💾 Save";
       saveWrap.appendChild(saveBtn);
     }
 
@@ -368,14 +386,26 @@ Auto-included by docs/_layouts/default.html.
 
     if (saveBtn && benchPath) {
       var bOrigin = seed, bSha = null;
+      /* A BUTTON THAT WOULD DO NOTHING IS OFF (Michel, 2026-10-06): 💾 with
+         nothing changed, ↺ while the editor already holds the starter. The
+         title says why, so off is never mute. */
       var refreshBench = function () {
         var t = window.lcBench ? window.lcBench.target(wrap) : {};
         var why = !window.lcBench ? "Saving needs a newer engine"
-                : !t.pat || !t.repo ? "Join the course (connect your key) to keep your work" : "";
-        saveBtn.disabled = !!why;
-        saveBtn.title = why || "Keep this in your own space (" +
-          (window.lcBench ? window.lcBench.resolve(benchPath, wrap) : benchPath) + ")";
+                : !t.pat || !t.repo ? "Join the course (connect your key) to keep your work"
+                : ta.value === bOrigin ? "Nothing changed since your last save" : "";
+        saveBtn.disabled = !!why || !!commentBox;
+        saveBtn.title = why || (askComment ? "Keep this in your own space — and say in one line what you just did"
+                              : "Keep this in your own space (" +
+          (window.lcBench ? window.lcBench.resolve(benchPath, wrap) : benchPath) + ")");
+        if (resetBtn) {
+          var onSeed = ta.value === seed;
+          resetBtn.disabled = onSeed;
+          resetBtn.title = onSeed ? "This is the lesson's starter already"
+                         : "Bring back the lesson's starter — your saved copy stays until you 💾 again";
+        }
       };
+      var commentBox = null;
       refreshBench();
       if (window.lcBench) {
         window.lcBench.read(benchPath, wrap).then(function (f) {
@@ -386,13 +416,10 @@ Auto-included by docs/_layouts/default.html.
           if (mineTag) mineTag.hidden = false;
           if (frame) frame.setMine(true);
           revealVersions();                      /* a saved file HAS a history */
-          render(); publish(true);
+          render(); publish(true); refreshBench();   /* the text moved: ↺ and 💾 decide again */
         }).catch(function () {});
       }
-      saveBtn.addEventListener("click", function () {
-        refreshBench();
-        if (saveBtn.disabled) return;
-        if (ta.value === bOrigin) { window.lcxToast && window.lcxToast("Nothing changed.", true); return; }
+      function doSave(message) {
         saveBtn.disabled = true; saveBtn.textContent = "💾 Saving…";
         /* FIRST save writes the author's starter first, so the learner's
            opening change has something to compare against — otherwise
@@ -407,7 +434,7 @@ Auto-included by docs/_layouts/default.html.
               .catch(function () {})
           : Promise.resolve()
         ).then(function () {
-        return window.lcBench.write(benchPath, ta.value, "✍️ " + (id || benchPath), bSha, wrap)
+        return window.lcBench.write(benchPath, ta.value, message, bSha, wrap)
           .then(function (sha) {
             bOrigin = ta.value; bSha = sha || bSha;
             wrap.setAttribute("data-lc-mine", "1");
@@ -422,12 +449,48 @@ Auto-included by docs/_layouts/default.html.
           .catch(function (e) {
             window.lcxToast && window.lcxToast("Save failed: " + (e.message || e), false);
           })
-          .finally(function () { saveBtn.textContent = "💾 Save"; refreshBench(); });
+          .finally(function () { saveBtn.textContent = askComment ? "💾 Save…" : "💾 Save"; refreshBench(); });
         });
+      }
+      /* the one-line box under the pad: Enter keeps, Esc or an empty line
+         keeps nothing. The line is the commit message — the diary entry. */
+      function askThenSave() {
+        if (commentBox) return;
+        var box = document.createElement("div");
+        box.className = "lc-mdpad-commentbar";
+        var inp = document.createElement("input");
+        inp.type = "text"; inp.maxLength = 120;
+        inp.placeholder = "What did you just do? — one line, e.g. the card follows the table";
+        inp.setAttribute("aria-label", "What did you just do?");
+        var keep = document.createElement("button");
+        keep.type = "button"; keep.className = "lc-mdpad-keep"; keep.textContent = "💾 Keep"; keep.disabled = true;
+        var cancel = document.createElement("button");
+        cancel.type = "button"; cancel.className = "lc-mdpad-cancel"; cancel.textContent = "Cancel";
+        box.appendChild(inp); box.appendChild(keep); box.appendChild(cancel);
+        saveWrap.parentNode.insertBefore(box, saveWrap);
+        commentBox = box; refreshBench();
+        function close() {
+          if (box.parentNode) box.parentNode.removeChild(box);
+          commentBox = null; refreshBench();
+        }
+        inp.addEventListener("input", function () { keep.disabled = !inp.value.trim(); });
+        inp.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && inp.value.trim()) { e.preventDefault(); go(); }
+          if (e.key === "Escape") { e.preventDefault(); close(); }
+        });
+        function go() { var line = inp.value.trim(); if (!line) return; close(); doSave("✍️ " + line); }
+        keep.addEventListener("click", go);
+        cancel.addEventListener("click", close);
+        inp.focus();
+      }
+      saveBtn.addEventListener("click", function () {
+        refreshBench();
+        if (saveBtn.disabled) return;
+        if (askComment) askThenSave(); else doSave("✍️ " + (id || benchPath));
       });
       resetBtn.addEventListener("click", function () {
         ta.value = seed;
-        render(); publish(true);
+        render(); publish(true); refreshBench();
         window.lcxToast && window.lcxToast("Starter restored — 💾 to make it yours", true);
       });
 
@@ -437,7 +500,7 @@ Auto-included by docs/_layouts/default.html.
       var vers = window.lcVersions ? window.lcVersions.attach({
         path: benchPath, el: wrap, anchor: saveWrap,
         current: function () { return ta.value; },
-        apply: function (t) { ta.value = t; render(); publish(true); }
+        apply: function (t) { ta.value = t; render(); publish(true); refreshBench(); }
       }) : null;
       if (vers) histBtn.parentNode.replaceChild(vers.button, histBtn);
       function closeVersions() { if (vers) vers.close(); }
@@ -754,6 +817,7 @@ Auto-included by docs/_layouts/default.html.
       if (benchPath) {
         if (ta.value !== bOrigin) wrap.setAttribute("data-lc-dirty", "1");
         else wrap.removeAttribute("data-lc-dirty");
+        if (typeof refreshBench === "function") refreshBench();
       }
       clearTimeout(_pubT);
       _pubT = setTimeout(function () { publish(true); }, 400);

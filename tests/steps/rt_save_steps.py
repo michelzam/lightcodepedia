@@ -910,3 +910,124 @@ def step_stop_replay(context):
     context.page.locator(".lc-mdpad-bar .lc-mdpad-replay").first.click()
     context.page.wait_for_selector(PAD + ":not([data-lc-replay])", timeout=5_000)
     expect(context.page.locator(PAD + " .lc-mdpad-in")).to_be_visible(timeout=5_000)
+
+
+# ── 💾 Save… (comment="true"), and buttons that are off when they would do
+#    nothing (Michel, 2026-10-06) ─────────────────────────────────────────
+
+def _diary_pad(context):
+    return context.page.locator(".lc-mdpad[data-lc-id='diary']").first
+
+
+def _diary_bar(context):
+    return context.page.locator(".lc-mdpad[data-lc-id='diary'] ~ .lc-mdpad-bar").first
+
+
+@then('the diary pad\'s save button reads "{text}"')
+def step_diary_save_reads(context, text):
+    btn = _diary_bar(context).locator(".lc-mdpad-save")
+    expect(btn).to_have_text(text, timeout=10_000)
+
+
+@when('I type "{text}" into the diary pad and press Save…')
+def step_diary_type_save(context, text):
+    ta = _diary_pad(context).locator(".lc-mdpad-in")
+    ta.wait_for(state="visible", timeout=15_000)
+    ta.fill(text)
+    btn = _diary_bar(context).locator(".lc-mdpad-save")
+    expect(btn).to_be_enabled(timeout=10_000)
+    btn.click()
+    context.page.wait_for_timeout(300)
+
+
+@when('I type "{text}" into the diary pad')
+def step_diary_type(context, text):
+    ta = _diary_pad(context).locator(".lc-mdpad-in")
+    ta.wait_for(state="visible", timeout=15_000)
+    ta.fill(text)
+    context.page.wait_for_timeout(300)
+
+
+@then("the diary pad asks what I just did")
+def step_diary_asks(context):
+    box = context.page.locator(".lc-mdpad-commentbar input").first
+    expect(box).to_be_visible(timeout=10_000)
+    expect(box).to_be_focused()
+    # the question is open: a second 💾 would make no sense, so it is off
+    expect(_diary_bar(context).locator(".lc-mdpad-save")).to_be_disabled()
+    # and nothing has been written yet
+    assert not context.bench_commits, "the question is still open, yet something was written"
+
+
+@when('I answer "{line}" and keep')
+def step_diary_answer(context, line):
+    box = context.page.locator(".lc-mdpad-commentbar input").first
+    box.fill(line)
+    box.press("Enter")
+    context.page.wait_for_timeout(1000)
+
+
+@when("I cancel the question")
+def step_diary_cancel(context):
+    box = context.page.locator(".lc-mdpad-commentbar input").first
+    box.press("Escape")
+    context.page.wait_for_timeout(300)
+    assert context.page.locator(".lc-mdpad-commentbar").count() == 0, "the question did not close"
+
+
+@then('the bench received a commit to "{path}" with the message "{message}"')
+def step_bench_commit_message(context, path, message):
+    hits = [c for c in context.bench_commits if c["path"] == path]
+    assert hits, "no commit to %s — bench saw: %r" % (path, [c["path"] for c in context.bench_commits])
+    got = hits[-1]["message"]
+    assert got == message, "the version is named %r, expected %r" % (got, message)
+
+
+@then("the diary pad's save button is on again")
+def step_diary_save_on(context):
+    expect(_diary_bar(context).locator(".lc-mdpad-save")).to_be_enabled(timeout=5_000)
+
+
+@then("the diary pad's save and start-over buttons are off, each saying why")
+def step_diary_buttons_off(context):
+    bar = _diary_bar(context)
+    save, reset = bar.locator(".lc-mdpad-save"), bar.locator(".lc-mdpad-reset")
+    expect(save).to_be_disabled(timeout=10_000)
+    expect(reset).to_be_disabled()
+    assert "nothing changed" in (save.get_attribute("title") or "").lower(), save.get_attribute("title")
+    assert "starter" in (reset.get_attribute("title") or "").lower(), reset.get_attribute("title")
+
+
+@then("the diary pad's save and start-over buttons are on")
+def step_diary_buttons_on(context):
+    bar = _diary_bar(context)
+    expect(bar.locator(".lc-mdpad-save")).to_be_enabled(timeout=5_000)
+    expect(bar.locator(".lc-mdpad-reset")).to_be_enabled()
+
+
+@then("the pad's versions button reads {state}")
+def step_versions_pressed(context, state):
+    btn = context.page.locator(".lc-mdpad-bar .lc-ver-btn").first
+    btn.wait_for(state="visible", timeout=15_000)
+    want = "true" if state == "on" else "false"
+    expect(btn).to_have_attribute("aria-pressed", want, timeout=5_000)
+
+
+@then("every version row shows its name")
+def step_versions_names(context):
+    rows = context.page.locator(".lc-ver-panel li")
+    expect(rows.first).to_be_visible(timeout=15_000)
+    n = rows.count()
+    for i in range(n):
+        li = rows.nth(i)
+        if "starter" in (li.get_attribute("class") or ""):
+            continue
+        assert li.locator(".lc-ver-msg").count() == 1, "row %d has no name column" % i
+
+
+@when("I close the pad's version list")
+def step_close_versions(context):
+    btn = context.page.locator(".lc-mdpad-bar .lc-ver-btn").first
+    btn.click()
+    context.page.wait_for_timeout(300)
+    assert context.page.locator(".lc-ver-panel").count() == 0, "the list is still open"

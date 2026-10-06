@@ -56,6 +56,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
 .lc-ver-btn { font: inherit; font-size: 0.85em; padding: 0.3em 0.6em; border-radius: 6px;
   border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
 .lc-ver-btn:hover { border-color: #888; color: #222; }
+.lc-ver-btn[aria-pressed="true"] { background: #333; border-color: #333; color: #fff; }
+.lc-ver-msg { color: #222; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lc-ver-panel { border-top: 1px solid #e5e7eb; background: #fafafa; font-size: 0.88em; }
 .lc-ver-panel ol { list-style: none; margin: 0; padding: 0; max-height: 200px; overflow: auto; }
 .lc-ver-panel li { display: flex; align-items: center; gap: 0.6em; padding: 0.4em 0.9em;
