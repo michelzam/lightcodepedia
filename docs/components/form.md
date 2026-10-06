@@ -62,6 +62,7 @@ Keys become the left-column labels (auto-prettified: `weight_kg` → **Weight Kg
 | `format="yaml"` | `yaml` (default) or `json` |
 | `master="<grid-id>"` | Link to a datagrid — form fills when a row is selected |
 | `editable="true"` | Make primitive fields editable — see below |
+| `compute="photo = '…' + str(pic)"` | ƒ fields the form derives from the row it shows — `col = expr; col2 = expr2`, the grid's spelling; the row it reads is never changed |
 
 **Q:** You put two forms on a page and only one shows up. What did you forget?
 
@@ -209,9 +210,21 @@ photo: https://placedog.net/400/240?id=17
 ```
 {: .form #photo_form }
 
-Combined with `master="<grid-id>"` and a ƒ computed column building the URL
-(see [📊 Datagrid](/components/datagrid)), clicking a row shows that row's
-photo — the Adoption Day pattern.
+A dataset rarely carries the address itself — a `pic` number, say, and a
+site that serves pictures by number. `compute=` lets the card build the
+address from the row it shows, in the grid's own formula spelling: the
+`photo` below exists only on the card, never on the row.
+
+```yaml
+name: Scout
+breed: Husky mix
+pic: 17
+```
+{: .form #computed_photo_form compute="photo = 'https://placedog.net/400/240?id=' + str(pic)" }
+
+Combined with `master="<grid-id>"`, clicking a row shows that row's photo
+— the Adoption Day pattern, the table untouched: a list is a list, a face
+is the detail's business.
 
 ```gherkin
 Feature: A photo field shows the photo
@@ -227,6 +240,19 @@ Feature: A photo field shows the photo
     Then the photo field holds a real image element
     :::python
     assert self.form._q("img")._el is not None
+    :::
+
+  Scenario: A computed photo is worn too
+    Given the form that computes its photo from a number
+    :::python
+    self.computed: Object = Object._all("#computed_photo_form, [data-lc-id='computed_photo_form']")[0]
+    :::
+    When the formula has run
+    Then the card shows the picture the formula built
+    :::python
+    img = self.computed._q("img")
+    assert img._el is not None, "no picture — compute= did not derive a photo from pic"
+    assert "placedog.net/400/240?id=17" in str(img._attr("src")), f"wrong address: {img._attr('src')}"
     :::
 ```
 {: .feature tags="ui" status="pending" }

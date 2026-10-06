@@ -12,6 +12,11 @@ Inline, data in the code block (YAML or JSON per format=""):
 Master/detail: {: .form bound="grid-id" } renders whichever row the bound
 datagrid publishes, and republishes edits back to it.
 
+compute="photo = 'https://…?id=' + str(pic)" — ƒ fields the card derives from
+the row it shows (same spelling as the grid's ƒ columns, "col = expr; …"),
+evaluated in the page runtime. The row it reads stays as it is: the table a
+card follows never grows a column it was not asked for.
+
 File-backed (div.lc-form-src emitted by the code include): fetches
 data-raw / data-cdn and renders the same form.
 
@@ -452,6 +457,17 @@ Auto-included by docs/_layouts/default.html.
     var title = el.getAttribute("title") || "";
     var bound = el.getAttribute("master") || el.getAttribute("bound") || "";
     var editable = el.getAttribute("editable") === "true";
+    /* compute="photo = '…' + str(pic)" — the grid's formula engine on ONE
+       row (datagrid.md, lcComputeRows), run on a COPY: the card derives,
+       the row it follows is never written (Michel, 2026-10-06: the photo
+       belongs on the card, not on the table). */
+    var compute = el.getAttribute("compute") || "";
+    function derive(obj) {
+      if (!compute || !obj || typeof obj !== "object" || Array.isArray(obj) || !window.lcComputeRows)
+        return Promise.resolve(obj);
+      return window.lcComputeRows([Object.assign({}, obj)], compute)
+        .then(function (rows) { return rows[0]; }, function () { return obj; });
+    }
     var id = el.id || ("frm" + (++FORM_ID));
     /* persist="true" -> keyed by this page's slug; persist="scope" -> a stable
        top segment (e.g. build_ai). Learner edits save to the Store under
@@ -498,6 +514,7 @@ Auto-included by docs/_layouts/default.html.
       fetch(fileCdn ? srcs.cdn : srcs.raw)
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + fileRef); return r.text(); })
         .then(function (text) { return parseDatagridText(text, fileFmt); })
+        .then(derive)
         .then(function (obj) { renderFormBody(fbody, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap, options: optionsMap }); })
         .catch(function (e) { fbody.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>'; });
       return;
@@ -511,17 +528,27 @@ Auto-included by docs/_layouts/default.html.
 
     if (bound) {
       body.innerHTML = '<div class="lc-form-empty">click a row in <code>#' + escapeHtml(bound) + '</code> to see details</div>';
+      var turn = 0;   /* a derive still in flight never paints over a later click */
       window.lcMasterDetail.subscribe(bound, function(row){
+        var mine = ++turn;
         if (!row) {
           renderFormBody(body, null);
           setFormTitle(wrapper, title || "Form");
           return;
         }
-        renderFormBody(body, row, {
-          editable: editable,
-          onChange: function(){ window.lcMasterDetail.refreshGrid(bound); }
+        derive(row).then(function (shown) {
+          if (mine !== turn) return;
+          renderFormBody(body, shown, {
+            editable: editable,
+            /* an edit lands on the master's own row (the shown object may be
+               the derived copy), then the grid repaints */
+            onChange: function(o, k, v){
+              if (shown !== row && k) row[k] = v;
+              window.lcMasterDetail.refreshGrid(bound);
+            }
+          });
+          setFormTitle(wrapper, title || inferFormTitle(shown) || "Form");
         });
-        setFormTitle(wrapper, title || inferFormTitle(row) || "Form");
       });
       return;
     }
@@ -533,7 +560,7 @@ Auto-included by docs/_layouts/default.html.
     var dataPromise;
     try { dataPromise = parseDatagridText(raw, format); }
     catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
-    dataPromise.then(function(obj){
+    dataPromise.then(derive).then(function(obj){
       renderFormBody(body, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap, options: optionsMap });
       if (!title) setFormTitle(wrapper, inferFormTitle(obj) || "Form");
     }).catch(function(e){

@@ -27,6 +27,33 @@ Pug,15,98
 Try it: drop **Pug**'s `top_speed_kmh` or bump its `cute` — `score` follows, and
 `tier` flips when `score` crosses 40.
 
+```gherkin
+Feature: A grid's ƒ columns are formulas over each row
+  As a lowcoder
+  I want a column declared by a formula to fill itself from the row's own fields
+  So that a table computes like a spreadsheet, with no Python block of my own
+
+  Scenario: Every ƒ cell holds a value the formula produced
+    Given the dogs sheet above, two ƒ columns on eight rows
+    :::python
+    self.sheet: Datagrid = self.page.dogs
+    self.cells = self.sheet._qq(".ag-cell.lc-dg-computed")
+    :::
+    When the page runtime has run the formulas
+    Then no ƒ cell is still waiting
+    :::python
+    assert self.cells, "no ƒ cells — the compute= knob declared no column"
+    pending = [c for c in self.cells if c.text.strip() in ("", "…")]
+    assert not pending, f"{len(pending)} ƒ cell(s) never computed"
+    :::
+    And the Greyhound's score is 72 × 70 / 100
+    :::python
+    texts = [c.text.strip() for c in self.cells]
+    assert "50.4" in texts, f"50.4 not among the ƒ values: {texts[:6]}"
+    :::
+```
+{: .feature #sheet_proof tags="data" status="pending" }
+
 ## ✍️ How it's written {#how}
 
 One knob, one formula per column, separated by `;`:

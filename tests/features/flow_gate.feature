@@ -225,3 +225,13 @@ Feature: 🚦 A workflow ordered by its own values
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/late.md"
     And I wait for the page to be interactive
     Then the tally reads "Late 2."
+
+  Scenario: Module 04's card shows the dog's photo once a family clicks a row
+    Given the runner serves the course page "courses/micro_build_ai/module_04/03_faces.md"
+    And the runner serves the course file "courses/micro_build_ai/module_00/dogs.yaml"
+    And the learner has given the pile a card and a chart
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_04/03_faces.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And a family clicks the first dog in the pad's table
+    Then the card shows that dog's photo

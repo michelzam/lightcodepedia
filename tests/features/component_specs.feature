@@ -208,6 +208,14 @@ Feature: Component specs run green
     And I run the page's embedded features
     Then every embedded feature passes
 
+  Scenario: Spreadsheet example spec passes
+    Given I have a clean browser page
+    When I navigate to "/components/examples/spreadsheet"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='dogs'] .ag-cell.lc-dg-computed"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
   Scenario: Datagrid spec passes
     Given I have a clean browser page
     When I navigate to "/components/datagrid"

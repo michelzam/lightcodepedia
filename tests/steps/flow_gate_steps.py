@@ -172,9 +172,10 @@ def step_serve_course_file(context, path):
 @given("the learner has given the pile a card and a chart")
 def step_faces_fix(context):
     def fix(body):
-        line = '{: .datagrid #dog_grid source="dogs" rows="5" compute="photo = \'https://placedog.net/400/240?id=\' + str(pic)" }\n'
+        line = '{: .datagrid #dog_grid source="dogs" rows="5" }\n'
         assert line in body, "the faces seed no longer carries the named table the lesson builds on"
-        return body.replace(line, line + '\n[The dog](#)\n{: .form master="dog_grid" }\n'
+        card = '{: .form master="dog_grid" compute="photo = \'https://placedog.net/400/240?id=\' + str(pic)" }\n'
+        return body.replace(line, line + '\n[The dog](#)\n' + card +
                                          '\n[Fees](#)\n{: .chart source="dogs" x="name" y="fee" }\n')
     _serve_course_page(context, context.lesson_path, fix)
 
@@ -352,3 +353,44 @@ def step_late_csv(context, path, secs, n):
         route.fulfill(status=200, content_type="text/csv", body=body)
 
     context.page.route("**" + path + "*", slow)
+
+
+@when("a family clicks the first dog in the pad's table")
+def step_click_pad_dog(context):
+    """The pad's own table — a dataset-bound grid is the light table of
+    dataset.md (plain <tr>s, not AG rows). The first dog, clicked as a family
+    would; the slides revealed first, as the proof step does."""
+    context.page.evaluate(
+        """() => {
+             document.querySelectorAll('.lc-prereq').forEach(g => g.remove());
+             document.querySelectorAll('.lc-prereq-hidden').forEach(h => h.classList.remove('lc-prereq-hidden'));
+             document.querySelectorAll('.lc-slide').forEach(s => {
+               s.removeAttribute('hidden'); s.style.display = 'block'; s.setAttribute('data-active', 'true');
+             });
+           }""")
+    row = context.page.locator(
+        "[data-lc-id='faces_screen'] .lc-datagrid[data-lc-id='dog_grid'] tbody tr").first
+    row.wait_for(state="visible", timeout=30_000)
+    row.click()
+    context.page.wait_for_timeout(3000)      # the bus -> the card, and the formula's first run
+
+
+@then("the card shows that dog's photo")
+def step_card_photo(context):
+    """A photo the CARD computed (compute= on the form): an <img> from the
+    pictures site, while the table it follows still shows its own columns."""
+    img = context.page.locator("[data-lc-id='faces_screen'] .lc-form img[src*='placedog']").first
+    try:
+        img.wait_for(state="attached", timeout=15_000)
+    except Exception:
+        info = context.page.evaluate(
+            """() => {
+                 const pad = document.querySelector("[data-lc-id='faces_screen']");
+                 const f = pad && pad.querySelector(".lc-form");
+                 return f ? (f.querySelector('.lc-form-body') || f).innerText.replace(/\s+/g, ' ').slice(0, 400) : "NO FORM";
+               }""")
+        raise AssertionError("the card shows no photo — the card reads: %r" % (info,))
+    heads = context.page.locator(
+        "[data-lc-id='faces_screen'] .lc-datagrid[data-lc-id='dog_grid'] th").all_inner_texts()
+    assert not any("photo" in h.lower() for h in heads), \
+        "the table grew a photo column — the card computes, the list stays a list: %r" % (heads,)

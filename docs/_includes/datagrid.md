@@ -128,6 +128,54 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     }).filter(Boolean);
   }
 
+  /* ONE formula engine for every face. Rows in, the same rows out with every
+     ƒ column filled: each formula is eval'd per row in the shared page runtime
+     with the row's fields as locals (so it can also call a .run silent model);
+     eval, not exec — a bad formula shows ⚠ in its own cell, never a frozen
+     component. The grid's ƒ columns and the form's compute= both read it
+     (Michel, 2026-10-06: the card derives the photo; the table it follows
+     stays as it is). */
+  function computeRows(rows, specs) {
+    specs = typeof specs === "string" ? parseComputeSpecs(specs) : (specs || []);
+    if (!specs.length || !Array.isArray(rows) || !rows.length || !window.lcPageRuntime)
+      return Promise.resolve(rows);
+    var txt;
+    try { txt = JSON.stringify(rows); } catch (e) { return Promise.resolve(rows); }
+    return window.lcPageRuntime().then(function (mp) {
+      try {
+        /* set right before the run, never earlier: two faces computing at
+           once would otherwise overwrite each other's rows */
+        window._lcDgRows = txt;
+        window._lcDgSpecs = JSON.stringify(specs);
+        (mp.runPython || mp.run).call(mp,
+          "import js, json\n" +
+          "_rows = json.loads(str(js.window._lcDgRows))\n" +
+          "_specs = json.loads(str(js.window._lcDgSpecs))\n" +
+          "def _num(v):\n" +               // AG Grid edits come back as strings; a
+          "    if not isinstance(v, str): return v\n" +   // numeric-looking one becomes a number
+          "    s = v.strip()\n" +          // just for the formula (input cells are untouched)
+          "    try: return int(s) if s.lstrip('+-').isdigit() else float(s)\n" +
+          "    except (ValueError, TypeError): return v\n" +
+          "for _r in _rows:\n" +
+          "    for _k in list(_r.keys()): _r[_k] = _num(_r[_k])\n" +
+          "    for _s in _specs:\n" +
+          "        try:\n" +
+          "            _r[_s['col']] = eval(_s['expr'], globals(), _r)\n" +
+          "        except Exception as _e:\n" +
+          "            _r[_s['col']] = '\\u26a0 ' + str(_e)\n" +
+          "js.window._lcDgOut = json.dumps(_rows)\n");
+        var out = JSON.parse(window._lcDgOut);
+        rows.forEach(function (row, i) {
+          var o = out[i]; if (!o || !row || typeof row !== "object") return;
+          specs.forEach(function (s) { row[s.col] = o[s.col]; });
+        });
+      } catch (e) { if (window.console) console.warn("[lc compute]", e.message || e); }
+      return rows;
+    });
+  }
+  window.lcParseComputeSpecs = parseComputeSpecs;
+  window.lcComputeRows = computeRows;
+
   function inferColumns(rows) {
     var seen = {}, cols = [];
     for (var r = 0; r < rows.length; r++) {
@@ -330,42 +378,13 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         if (window.lcDatasets) adopt(window.lcDatasets[opts.bindId]);
       }
 
-      /* Recompute every ƒ column: eval each formula per row with that row's
-         fields as locals, in the shared page runtime (so a formula can also
-         call a .run silent model). eval, not exec — a bad formula shows ⚠ in
-         its own cell, never a frozen grid. */
+      /* Recompute every ƒ column — the shared formula engine above, then a
+         repaint. Busy-guarded: a run in flight is never doubled. */
       function recompute() {
         if (!computeSpecs.length || recompute._busy || !window.lcPageRuntime) return;
         recompute._busy = true;
-        try { window._lcDgRows = JSON.stringify(data); }
-        catch (e) { recompute._busy = false; return; }
-        window._lcDgSpecs = JSON.stringify(computeSpecs);
-        window.lcPageRuntime().then(function (mp) {
-          try {
-            (mp.runPython || mp.run).call(mp,
-              "import js, json\n" +
-              "_rows = json.loads(str(js.window._lcDgRows))\n" +
-              "_specs = json.loads(str(js.window._lcDgSpecs))\n" +
-              "def _num(v):\n" +               // AG Grid edits come back as strings; a
-              "    if not isinstance(v, str): return v\n" +   // numeric-looking one becomes a number
-              "    s = v.strip()\n" +          // just for the formula (input cells are untouched)
-              "    try: return int(s) if s.lstrip('+-').isdigit() else float(s)\n" +
-              "    except (ValueError, TypeError): return v\n" +
-              "for _r in _rows:\n" +
-              "    for _k in list(_r.keys()): _r[_k] = _num(_r[_k])\n" +
-              "    for _s in _specs:\n" +
-              "        try:\n" +
-              "            _r[_s['col']] = eval(_s['expr'], globals(), _r)\n" +
-              "        except Exception as _e:\n" +
-              "            _r[_s['col']] = '\\u26a0 ' + str(_e)\n" +
-              "js.window._lcDgOut = json.dumps(_rows)\n");
-            var out = JSON.parse(window._lcDgOut);
-            data.forEach(function (row, i) {
-              var o = out[i]; if (!o) return;
-              computeSpecs.forEach(function (s) { row[s.col] = o[s.col]; });
-            });
-            api.refreshCells({ force: true });
-          } catch (e) { if (window.console) console.warn("[lc datagrid compute]", e.message || e); }
+        computeRows(data, computeSpecs).then(function () {
+          try { api.refreshCells({ force: true }); } catch (e) {}
           recompute._busy = false;
         }).catch(function () { recompute._busy = false; });
       }
