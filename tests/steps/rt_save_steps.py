@@ -1109,3 +1109,23 @@ def step_preview_kept(context):
 def step_preview_free(context):
     now = _geometry(context)
     assert now["outStyle"] == "", "the preview is still pinned at %r" % now["outStyle"]
+
+
+@when("I pick two version rows one right after the other")
+def step_pick_two_rows(context):
+    rows = context.page.locator(".lc-ver-panel li.pick")
+    expect(rows.nth(1)).to_be_visible(timeout=10_000)
+    rows.nth(0).click()
+    rows.nth(1).click()           # no wait between: the frames are still loading
+    context.page.wait_for_selector(PAD + "[data-lc-replay]", timeout=10_000)
+    context.page.wait_for_timeout(1200)
+
+
+@then("there is one replay, one diff pane, one slider")
+def step_one_replay(context):
+    pad = context.page.locator(PAD)
+    assert pad.locator(".lc-mdpad-diff").count() == 1, "%d diff panes" % pad.locator(".lc-mdpad-diff").count()
+    assert context.page.locator(".lc-mdpad-replaybar").count() == 1, \
+        "%d slider bars" % context.page.locator(".lc-mdpad-replaybar").count()
+    h = pad.locator(".lc-mdpad-diff").bounding_box()["height"]
+    assert h > 60, "the diff pane is a %d px strip" % h

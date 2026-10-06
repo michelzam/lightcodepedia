@@ -673,8 +673,13 @@ Auto-included by docs/_layouts/default.html.
       }
       function rpStart() {
         if (rp.on || !window.lcBench) return Promise.resolve();
+        /* ONE replay, however many clicks: a row picked while the frames
+           are still loading joins the start in flight instead of starting
+           a second one — two slider bars and a strip-high second diff pane,
+           measured on an already hidden editor (Michel, 2026-10-06). */
+        if (rp.starting) return rp.starting;
         setPlay("⏳ reading your versions…", true);
-        return rpLoad().then(function (frames) {
+        rp.starting = rpLoad().then(function (frames) {
           if (!frames.length) {
             setPlay("🎞 Replay", false);
             if (window.lcxToast) window.lcxToast("No versions yet — 💾 writes the first one.", true);
@@ -727,7 +732,8 @@ Auto-included by docs/_layouts/default.html.
           rp.ui.play.addEventListener("click", function () { rp.timer && rp.dir > 0 ? rpPause() : rpPlay(1); });
           rp.ui.back.addEventListener("click", function () { rp.timer && rp.dir < 0 ? rpPause() : rpPlay(-1); });
           rpShow(0);
-        });
+        }).then(function () { rp.starting = null; }, function (e) { rp.starting = null; throw e; });
+        return rp.starting;
       }
       function rpStop() {
         if (!rp.on) return;

@@ -900,3 +900,17 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     Then the preview kept its height
     When I stop the replay
     Then the preview breathes again
+
+  Scenario: Two quick picks start one replay, not two
+    Michel, 2026-10-06: a row picked while the frames were still loading
+    started a second replay — two sliders, a second pane squeezed to a
+    strip. However many clicks, one replay.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I open the pad's version list
+    And I pick two version rows one right after the other
+    Then there is one replay, one diff pane, one slider
+    And the replay lands on frame 1
