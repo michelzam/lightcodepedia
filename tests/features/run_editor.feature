@@ -32,3 +32,22 @@ Feature: The run editor types like a text field
       """
     And I click Run in the "first_run" editor
     Then the "first_run" editor's output reads "a = 5, True, a =   5, {a}, a=5" then "5="
+
+  Scenario: Tab on a selection indents the lines, Shift+Tab brings them back
+    Michel, 2026-10-07: "when a text is selected, if I type a tab, it deletes
+    it instead of indenting".
+
+    When I replace the "first_run" editor's program with:
+      """
+      a = 1
+      b = 2
+      c = 3
+      """
+    And I select the lines "b = 2" to "c = 3" of the "first_run" editor
+    And I press Tab in the "first_run" editor
+    Then the "first_run" editor reads "a = 1\n    b = 2\n    c = 3"
+    And the "first_run" editor's selection reads "    b = 2\n    c = 3"
+    When I press Shift+Tab in the "first_run" editor
+    Then the "first_run" editor reads "a = 1\nb = 2\nc = 3"
+    When I undo in the "first_run" editor
+    Then the "first_run" editor reads "a = 1\n    b = 2\n    c = 3"

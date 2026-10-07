@@ -613,7 +613,8 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I wait for the page to be interactive
     And I connect the "coach" agent with key "test-key"
     And I ask the "coach" agent "how do I start?"
-    And I put the cursor on the line "return letter" of the "todo_editor" editor
+    Then the "coach" agent's answer wears its face "🧑‍🏫"
+    When I put the cursor on the line "return letter" of the "todo_editor" editor
     Then the "coach" agent's button reads "⬇ Add at the cursor"
     When I add the agent's piece to the editor
     Then the "todo_editor" editor holds, in order, "# TODO: shift one letter", "return letter", "alphabet = 'abcdefghijklmnopqrstuvwxyz'", "# TODO: find the letter's position"

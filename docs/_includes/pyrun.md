@@ -570,12 +570,28 @@ Auto-included by docs/_layouts/default.html.
       codeEl.addEventListener("scroll", syncHlScroll);
     }
 
+    /* TAB INDENTS, SHIFT+TAB DEDENTS (Michel, 2026-10-07: "when a text is
+       selected, a tab deletes it"). No selection: four spaces at the caret
+       (Shift+Tab: up to four off the line's start). A selection: every line
+       it touches moves, as one undoable edit, and stays selected. */
     codeEl.addEventListener("keydown", function(e){
       if (e.key !== "Tab") return;
       e.preventDefault();
-      editRange(codeEl, codeEl.selectionStart, codeEl.selectionEnd, "    ");
-      updateGutter();
-      syncHighlight();
+      var v = codeEl.value, a = codeEl.selectionStart, b = codeEl.selectionEnd;
+      if (a === b && !e.shiftKey) { editRange(codeEl, a, a, "    "); updateGutter(); syncHighlight(); return; }
+      var from = v.lastIndexOf("\n", a - 1) + 1;
+      var to = v.indexOf("\n", b === a ? b : b - 1); if (to < 0) to = v.length;
+      var lines = v.slice(from, to).split("\n"), moved = lines.map(function (l) {
+        if (!e.shiftKey) return "    " + l;
+        var m = /^ {1,4}/.exec(l); return m ? l.slice(m[0].length) : l;
+      });
+      var text = moved.join("\n");
+      if (text === v.slice(from, to)) return;
+      editRange(codeEl, from, to, text);
+      /* the lines stay selected (or the caret stays on its line) */
+      if (b > a) codeEl.setSelectionRange(from, from + text.length);
+      else { var d = moved[0].length - lines[0].length; codeEl.setSelectionRange(Math.max(from, a + d), Math.max(from, a + d)); }
+      updateGutter(); syncHighlight();
     });
 
     function loadMp() {

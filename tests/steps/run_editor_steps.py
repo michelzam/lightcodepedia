@@ -52,3 +52,33 @@ def step_not_contains(context, run_id, text):
 def step_output_reads(context, run_id, line1, line2):
     out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
     expect(out).to_have_text(line1 + "\n" + line2, timeout=30_000)
+
+
+@when('I select the lines "{first}" to "{last}" of the "{run_id}" editor')
+def step_select_lines(context, first, last, run_id):
+    ta = _ta(context, run_id)
+    v = ta.input_value()
+    a, b = v.index(first), v.index(last) + len(last)
+    ta.focus()
+    ta.evaluate("(el, r) => el.setSelectionRange(r[0], r[1])", [a, b])
+
+
+@when('I press Shift+Tab in the "{run_id}" editor')
+def step_press_shift_tab(context, run_id):
+    _ta(context, run_id).focus()
+    context.page.keyboard.press("Shift+Tab")
+
+
+@then('the "{run_id}" editor reads "{text}"')
+def step_editor_reads(context, run_id, text):
+    v = _ta(context, run_id).input_value()
+    want = text.replace("\\n", "\n")
+    assert v == want, "editor reads %r" % v
+
+
+@then('the "{run_id}" editor\'s selection reads "{text}"')
+def step_selection_reads(context, run_id, text):
+    ta = _ta(context, run_id)
+    sel = ta.evaluate("el => el.value.slice(el.selectionStart, el.selectionEnd)")
+    want = text.replace("\\n", "\n")
+    assert sel == want, "selection reads %r" % sel

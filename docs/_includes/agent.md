@@ -841,7 +841,7 @@ Auto-included by docs/_layouts/default.html.
     return { read: read, last: last, line: line, secs: secs };
   })();
 
-  var KNOB_RE = /^(system|intro|placeholder|placeholder_next|name|model|model_fallback|provider|base_url|fallback|temperature|max_tokens|bot|knowledge|knowledge_budget)\s*:\s?(.*)$/;
+  var KNOB_RE = /^(system|intro|placeholder|placeholder_next|name|icon|model|model_fallback|provider|base_url|fallback|temperature|max_tokens|bot|knowledge|knowledge_budget)\s*:\s?(.*)$/;
   function lenientCfg(raw) {
     var out = {}, key = null, buf = [];
     function flush() { if (key) out[key] = buf.join('\n').replace(/^\s*\|\s*\n?/, '').trim(); }
@@ -868,7 +868,7 @@ Auto-included by docs/_layouts/default.html.
       : boundExpr ? '<span class="lc-agent-bound">reads <code>{=' + escapeHtml(boundExpr) + '}</code></span>' : '';
     div.innerHTML =
       '<div class="lc-agent-head">' +
-        '<span class="lc-agent-icon" aria-hidden="true">🤖</span>' +
+        '<span class="lc-agent-icon" aria-hidden="true">' + escapeHtml(cfg.icon || '🤖') + '</span>' +
         '<span class="lc-agent-title">' + escapeHtml(cfg.name || 'Agent') + '</span>' +
         boundLabel +
         '<button type="button" class="lc-agent-key" title="Change token" aria-label="Change token">🔑</button>' +
@@ -1513,8 +1513,8 @@ Auto-included by docs/_layouts/default.html.
             ' <button type="button" class="lc-agent-again" title="Put this question back in the box">↩</button>' +
             ' <button type="button" class="lc-agent-followup" title="Ask a follow-up — this question and its answer travel with the next one">⤵</button></div>' +
           (cfg.todos
-            ? '<div class="lc-agent-msg-bot lc-agent-tutor">🤖 ' + renderTutor(result.text) + '</div>'
-            : '<div class="lc-agent-msg-bot">🤖 ' + renderMarkdown(result.text) + '</div>');
+            ? '<div class="lc-agent-msg-bot lc-agent-tutor">' + escapeHtml(cfg.icon || '🤖') + ' ' + renderTutor(result.text) + '</div>'
+            : '<div class="lc-agent-msg-bot">' + escapeHtml(cfg.icon || '🤖') + ' ' + renderMarkdown(result.text) + '</div>');
         var againBtn = response.querySelector('.lc-agent-again');
         if (againBtn) againBtn.addEventListener('click', function () {
           var pe = panel.querySelector('.lc-agent-prompt');

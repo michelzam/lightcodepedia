@@ -718,3 +718,10 @@ def step_undo_in_editor(context, run_id):
     ta.focus()
     context.page.keyboard.press("Control+z")
     context.page.wait_for_timeout(300)
+
+
+@then('the "{agent_id}" agent\'s answer wears its face "{icon}"')
+def step_answer_face(context, agent_id, icon):
+    bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot').first
+    expect(bot).to_be_visible(timeout=10_000)
+    assert bot.inner_text().lstrip().startswith(icon), "the answer opens with %r" % bot.inner_text()[:12]

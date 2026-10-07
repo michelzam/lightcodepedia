@@ -168,6 +168,8 @@ All configuration goes in the YAML block.
 | `temperature` | `0.7` | 0 = deterministic oracle, 1 = jazz improvisation |
 | `max_tokens` | `500` | Caps response length (and API cost) |
 | `fallback` | (the keys on the keyring) | Engines to offer when the first one is busy, in order — `fallback: openrouter`. Only engines the reader already has a key for are offered, and the switch is always **asked** first: another engine can be another bill. The answer is remembered for that sitting |
+| `name` | `Agent` | The panel's title — who answers |
+| `icon` | `🤖` | The face on every answer, one emoji — `icon: 🤓` |
 | `intro` | (none) | A hint rendered above the input |
 | `placeholder` | "Ask anything..." | Placeholder text in the prompt field |
 | `placeholder_next` | "Your answer — then press Ask" | What the prompt field invites from the second turn on — the opening line is said once, then the box asks for the next move |
@@ -418,6 +420,8 @@ print(shift('a'))
 {: .run #todo_editor rows="7" }
 
 ```yaml
+name: Coach
+icon: 🧑‍🏫
 system: |
   You are a coach. Answer in three parts: "🧭" one direction (two sentences
   at most); "❓" one question back that points at the solution; then a
@@ -441,6 +445,8 @@ print(shift('a'))
 {: .run #todo_editor rows="7" }
 
 ```yaml
+name: Coach
+icon: 🧑‍🏫
 system: |
   You are a coach. Answer in three parts: "🧭" one direction (two sentences
   at most); "❓" one question back that points at the solution; then a
