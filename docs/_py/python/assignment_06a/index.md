@@ -69,7 +69,7 @@ icon: 🤓
 provider: groq
 model: openai/gpt-oss-120b
 intro: "Stuck? Tell me where. I point, you write."
-max_tokens: 500
+max_tokens: 1500
 placeholder: "What are you trying to do, and what happens instead?"
 system: |
   # Ari — course TA for INFOST 350/350G, Introduction to Application Development (Michel Zam, UWM)
