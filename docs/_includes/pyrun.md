@@ -33,11 +33,15 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun .token.comment { color: #59636e; font-style: italic; }
 .lc-pyrun .token.function, .lc-pyrun .token.class-name, .lc-pyrun .token.builtin, .lc-pyrun .token.decorator { color: #8250df; }
 .lc-pyrun .token.operator, .lc-pyrun .token.punctuation { color: #24292f; }
-/* THE GUTTER NUMBERS LINES, NOT WRAPPED ROWS (Michel, 2026-10-06, on the
-   phone). The code still wraps — a non-wrapping textarea left the editor
-   read-only on the iPhone (2026-10-07) — so a mirror measures how many
-   rows each line takes and the gutter pads its number with blank rows. */
-.lc-pyrun-mirror { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; box-sizing: border-box; margin: 0; }
+/* CODE DOES NOT WRAP (Michel, 2026-10-06/07). An overlay editor can only
+   disagree with its caret where a line wraps, so a long line scrolls
+   sideways instead; the overlay follows scrollLeft. By CSS alone: the
+   first cut (wrap="off" + overflow:auto as well) left the editor
+   read-only on the iPhone (WebKit), and this is the smallest piece.
+   The gutter still measures rows through a mirror that copies the
+   editor's white-space: true either way, one number per line. */
+.lc-pyrun-code, .lc-pyrun-hl { white-space: pre; word-wrap: normal; overflow-wrap: normal; }
+.lc-pyrun-mirror { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; box-sizing: border-box; margin: 0; }
 .lc-pyrun-mirror div { min-height: 1.5em; }
 .lc-pyrun-gutter { position: relative; overflow: hidden; background: #f3f4f6; border-right: 1px solid #e8e8e8; user-select: none; min-width: 2.5em; }
 .lc-pyrun-gutter-inner { padding: 0.9em 0.5em 0.9em 0.6em; color: var(--lc-ink-mute, #616161); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; text-align: right; white-space: pre; pointer-events: none; will-change: transform; }
@@ -390,6 +394,7 @@ Auto-included by docs/_layouts/default.html.
       if (!mirror) { mirror = document.createElement("div"); mirror.className = "lc-pyrun-mirror"; mirror.setAttribute("aria-hidden", "true"); wrapEl.appendChild(mirror); }
       var cs = getComputedStyle(codeEl);
       ["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "tabSize",
+       "whiteSpace", "wordWrap", "overflowWrap",
        "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"].forEach(function (k) { mirror.style[k] = cs[k]; });
       mirror.style.width = codeEl.clientWidth + "px";    /* minus a scrollbar, as the text is laid out */
       var lh = parseFloat(cs.lineHeight);
