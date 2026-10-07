@@ -7,8 +7,9 @@ PyRun — the in-browser Python family, activated from md + IAL.
   link + {: .button }               styled button; an adjacent {: .onclick }
                                     Python block becomes its click handler
 
-Real CPython via Pyodide (lazy-loaded); buttons run on the shared
-MicroPython instance against the steps-runtime preamble. Exposes
+MicroPython (lazy-loaded, ~300 KB) runs the editor; buttons run on the
+shared page instance against the steps-runtime preamble. CPython's
+f'{x = }' is rewritten before the code reaches it (desugarFstrings). Exposes
 window.lcPyrun.attach for Liquid-rendered python_run.md blocks and
 flushes their lcPyrunQueue.
 
@@ -338,6 +339,75 @@ Auto-included by docs/_layouts/default.html.
   ].join("\n");
 
 
+  /* MICROPYTHON HAS NO f'{x = }' (Michel, 2026-10-07: his starters print
+     f'{secret = }'). CPython 3.8 reads {expr = } as the text "expr = "
+     followed by repr(expr) — or format(expr, spec) when a :spec follows.
+     The runner rewrites it that way before the code reaches MicroPython,
+     inside f-strings only, same line count, so a traceback still points
+     where the learner looks. Comparisons ({a == b}), keyword arguments
+     ({f(a=1)}) and doubled-brace escapes are left alone. */
+  function desugarFstrings(src) {
+    var out = "", i = 0, n = src.length;
+    while (i < n) {
+      var ch = src[i];
+      if (ch === "#") { var e = src.indexOf("\n", i); if (e < 0) e = n; out += src.slice(i, e); i = e; continue; }
+      var m = /^([rRbBuUfF]{0,2})('''|"""|'|")/.exec(src.slice(i, i + 5));
+      if (m && (i === 0 || !/[A-Za-z0-9_.]/.test(src[i - 1]))) {
+        var prefix = m[1], q = m[2], isF = /[fF]/.test(prefix);
+        var j = i + prefix.length + q.length, body = "";
+        while (j < n) {
+          if (src[j] === "\\") { body += src.slice(j, j + 2); j += 2; continue; }
+          if (src.startsWith(q, j)) break;
+          if (q.length === 1 && src[j] === "\n") break;
+          body += src[j]; j++;
+        }
+        var closed = src.startsWith(q, j);
+        out += prefix + q + (isF ? desugarFBody(body) : body) + (closed ? q : "");
+        i = j + (closed ? q.length : 0);
+        continue;
+      }
+      out += ch; i++;
+    }
+    return out;
+  }
+  function desugarFBody(body) {
+    return body.replace(/\{\{/g, "\u0001").replace(/\}\}/g, "\u0002")
+      .replace(/\{([^{}]*)\}/g, function (all, inner) {
+        var m = /^(\s*)(.*?[^=!<>])(\s*=\s*)(![rsa])?(:[^{}]*)?$/.exec(inner);
+        if (!m) return all;
+        var expr = m[2], conv = m[4] || (m[5] ? "" : "!r"), spec = m[5] || "";
+        return m[1] + expr + m[3] + "{" + expr + conv + spec + "}";
+      })
+      .replace(/\u0001/g, "{" + "{").replace(/\u0002/g, "}" + "}");   /* no literal doubled braces: Liquid eats them */
+  }
+
+  /* text into an element WITHOUT replacing its node — Chromium closes the
+     open typing (undo) group whenever a node is removed from the page */
+  function setText(el, s) {
+    var c = el.firstChild;
+    if (c && c.nodeType === 3 && !c.nextSibling) { if (c.data !== s) c.data = s; }
+    else el.textContent = s;
+  }
+
+  /* EVERY WRITE INTO THE EDITOR KEEPS UNDO (Michel, 2026-10-07: "undo does
+     NOT work"). Assigning .value wipes the browser's undo stack; typing
+     through insertText does not — so Tab, the tutor's piece, anything that
+     edits the program goes through here: ⌘Z takes it back, like typing.
+     Falls back to setRangeText where insertText is refused (old Firefox). */
+  function editRange(ta, start, end, text) {
+    var want = ta.value.slice(0, start) + text + ta.value.slice(end), ok = false;
+    try {
+      ta.focus();
+      ta.setSelectionRange(start, end);
+      ok = document.execCommand("insertText", false, text) && ta.value === want;
+    } catch (e) { ok = false; }
+    if (!ok) {
+      ta.setRangeText(text, start, end, "end");
+      try { ta.dispatchEvent(new Event("input", { bubbles: true })); } catch (e) {}
+    }
+    return ta.value === want;
+  }
+
   function attach(rootId, opts) {
     opts = opts || {};
     var ID = opts.id || rootId.replace(/^lc-pyrun-/, "");
@@ -399,9 +469,11 @@ Auto-included by docs/_layouts/default.html.
       mirror.style.width = codeEl.clientWidth + "px";    /* minus a scrollbar, as the text is laid out */
       var lh = parseFloat(cs.lineHeight);
       if (!(lh > 0)) lh = parseFloat(cs.fontSize) * 1.5;
-      mirror.textContent = "";
-      lines.forEach(function (ln) { var d = document.createElement("div"); d.textContent = ln || " "; mirror.appendChild(d); });
-      var out = [], kids = mirror.children;
+      var kids = mirror.children;
+      while (kids.length > lines.length) mirror.removeChild(mirror.lastChild);
+      while (kids.length < lines.length) { var d = document.createElement("div"); d.appendChild(document.createTextNode("")); mirror.appendChild(d); }
+      lines.forEach(function (ln, i) { setText(kids[i], ln || " "); });
+      var out = [];
       for (var i = 0; i < kids.length; i++) out.push(Math.max(1, Math.round(kids[i].offsetHeight / lh)));
       return out;
     }
@@ -426,7 +498,7 @@ Auto-included by docs/_layouts/default.html.
         var extra = rows ? rows[i] - 1 : 0;
         for (var k = 0; k < extra; k++) s += "\n";
       }
-      gutterInner.textContent = s;
+      setText(gutterInner, s);   /* no node swap: typing stays one undo step */
     }
     function syncGutter() {
       if (!gutterInner) return;
@@ -443,13 +515,48 @@ Auto-included by docs/_layouts/default.html.
 
     var hlPre = root.querySelector(".lc-pyrun-hl");
     var hlCode = hlPre ? hlPre.querySelector("code") : null;
-    function syncHighlight() {
-      if (!hlCode) return;
-      var text = codeEl.value;
-      hlCode.textContent = text + (text.slice(-1) === "\n" ? " " : "");
+    /* THE OVERLAY IS PATCHED, NOT REBUILT, WHILE TYPING (2026-10-07): a
+       rebuilt overlay removes nodes, and Chromium then closes the typing
+       group — ⌘Z took one character at a time. A keystroke changes one
+       text node in place (colours catch up on a pause); only a change
+       that crosses tokens rebuilds, as the recolour does. */
+    var hlText = null, hlTimer = null;
+    function hlPatch(next) {
+      if (hlText == null || !hlCode.firstChild) return false;
+      var prev = hlText, a = 0, pb = prev.length, nb = next.length;
+      while (a < pb && a < nb && prev[a] === next[a]) a++;
+      while (pb > a && nb > a && prev[pb - 1] === next[nb - 1]) { pb--; nb--; }
+      var walker = document.createTreeWalker(hlCode, NodeFilter.SHOW_TEXT), node, pos = 0, last = null;
+      while ((node = walker.nextNode())) {
+        var len = node.data.length;
+        if (a >= pos && pb <= pos + len && (a < pos + len || pb > a)) {
+          node.data = node.data.slice(0, a - pos) + next.slice(a, nb) + node.data.slice(pb - pos);
+          return true;
+        }
+        if (a < pos + len) return false;   /* the change crosses tokens */
+        pos += len; last = node;
+      }
+      if (last && a === pos && pb === pos) {   /* typed at the very end */
+        last.data += next.slice(a, nb);
+        return true;
+      }
+      return false;
+    }
+    function recolour() {
+      hlTimer = null;
+      if (!hlCode || hlText == null) return;
       if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
+        hlCode.textContent = hlText;
         try { window.Prism.highlightElement(hlCode); } catch (e) {}
       }
+    }
+    function syncHighlight() {
+      if (!hlCode) return;
+      var text = codeEl.value, shown = text + (text.slice(-1) === "\n" ? " " : "");
+      if (!hlPatch(shown)) setText(hlCode, shown);
+      hlText = shown;
+      clearTimeout(hlTimer);
+      hlTimer = setTimeout(recolour, 250);
       syncHlScroll();
     }
     function syncHlScroll() {
@@ -466,10 +573,7 @@ Auto-included by docs/_layouts/default.html.
     codeEl.addEventListener("keydown", function(e){
       if (e.key !== "Tab") return;
       e.preventDefault();
-      var start = codeEl.selectionStart, end = codeEl.selectionEnd;
-      var v = codeEl.value;
-      codeEl.value = v.substring(0, start) + "    " + v.substring(end);
-      codeEl.selectionStart = codeEl.selectionEnd = start + 4;
+      editRange(codeEl, codeEl.selectionStart, codeEl.selectionEnd, "    ");
       updateGutter();
       syncHighlight();
     });
@@ -581,7 +685,7 @@ Auto-included by docs/_layouts/default.html.
       try { m.runPython(BOOTSTRAP); } catch (e) { }
       try { m.runPython("_lc_load_answers()"); } catch (e) { }
       try {
-        m.runPython(codeEl.value);
+        m.runPython(desugarFstrings(codeEl.value));
         setOut(buf || "(no print output)", false);
         return true;
       } catch (e) {
@@ -681,7 +785,7 @@ Auto-included by docs/_layouts/default.html.
             "    _tests_el.appendChild(row)"
           ].join("\n");
           var calls = tests.map(function(t){
-            return "_doctest(" + JSON.stringify(t.expr) + ", " + JSON.stringify(t.expected) + ", " + t.lineno + ")";
+            return "_doctest(" + JSON.stringify(desugarFstrings(t.expr)) + ", " + JSON.stringify(t.expected) + ", " + t.lineno + ")";
           }).join("\n");
           var finish = "_summary.textContent = str(_pass) + ' passed, ' + str(_fail) + ' failed'";
           try {
@@ -840,7 +944,7 @@ Auto-included by docs/_layouts/default.html.
         window._lcMpyOut = function (t) { buf += t; };
         try { m.runPython(REPL_BOOTSTRAP); } catch (e0) { }
         try {
-          m.runPython("_repl_eval(" + JSON.stringify(line) + ")");
+          m.runPython("_repl_eval(" + JSON.stringify(desugarFstrings(line)) + ")");
           if (buf) {
             if (buf.charAt(buf.length - 1) !== "\n") buf += "\n";
             var isErr = /^(SyntaxError|NameError|TypeError|ValueError|ZeroDivisionError|IndexError|KeyError|AttributeError|ImportError|RuntimeError|Exception)/.test(buf);
@@ -975,7 +1079,7 @@ Auto-included by docs/_layouts/default.html.
   function runSilent(code) {
     pageRuntime()
       .then(function(mp){
-        try { mp.runPython(code); } catch (e) { if (window.console) console.warn("[lc silent code]", e.message || e); }
+        try { mp.runPython(desugarFstrings(code)); } catch (e) { if (window.console) console.warn("[lc silent code]", e.message || e); }
         /* the page model just changed — cells and diagrams recompute */
         try { document.dispatchEvent(new CustomEvent("lc-model-changed", { detail: { source: "run-silent" } })); } catch (e) {}
       })
@@ -984,7 +1088,7 @@ Auto-included by docs/_layouts/default.html.
 
   // Export the runner for Liquid-rendered python_run.md blocks, then flush
   // any attach calls they queued while this file was still parsing.
-  window.lcPyrun = { attach: attach };
+  window.lcPyrun = { attach: attach, edit: editRange };
   if (window.lcPyrunQueue) {
     window.lcPyrunQueue.forEach(function(fn){ try { fn(); } catch (e) {} });
     window.lcPyrunQueue = null;

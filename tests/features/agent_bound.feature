@@ -566,6 +566,33 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And the "tutor" desk says "6400 of 8000 tokens left this minute" and "refills in 4"
     And the last quota reading is kept on this device for the engine
 
+  Scenario: Undo takes the piece back, like typing
+    Michel, 2026-10-07: "undo does NOT work in that editor" — a piece written
+    by assignment wiped the browser's undo stack. It is typed in now.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with this text:
+      """
+      🧭 One letter first.
+      ❓ Where does 'a' sit? (Module 6)
+
+      ```python
+      alphabet = 'abcdefghijklmnopqrstuvwxyz'
+      # TODO: find the letter's position
+      ```
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "coach" agent with key "test-key"
+    And I ask the "coach" agent "how do I start?"
+    And I put the cursor on the line "return letter" of the "todo_editor" editor
+    And I add the agent's piece to the editor
+    Then the "todo_editor" editor still holds "alphabet = 'abcdefghijklmnopqrstuvwxyz'"
+    When I undo in the "todo_editor" editor
+    Then the "todo_editor" editor no longer holds "alphabet = 'abcdefghijklmnopqrstuvwxyz'"
+    And the "todo_editor" editor still holds "return letter"
+
   Scenario: The piece goes where the cursor is, or over the selection
     Michel, 2026-10-06: "ask students to put the cursor where they want the
     example added, or replaced if there is a selection."

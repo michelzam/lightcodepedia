@@ -17,7 +17,7 @@ greet("World")
 ```
 {: .run #first_run }
 
-That's it. The runner loads Python[^wasm] on first click (~300 KB, cached after). Next run is instant.
+That's it. The runner loads Python[^wasm] on first click (~300 KB, cached after). Next run is instant. CPython's `f'{x = }'` works here too — the runner rewrites it before MicroPython sees it.
 
 ```gherkin
 Feature: A fenced block becomes a Python runner
@@ -101,6 +101,26 @@ Feature: The editor numbers lines, not wrapped rows
     assert int(self.ta._el.scrollHeight) <= int(self.ta._el.clientHeight) + 2, "the editor scrolls inside"
     self.ta._el.value = self.was
     self.ta._el.dispatchEvent(js.Event.new("input"))
+    :::
+
+  Scenario: Tab indents, and undo takes it back like typing
+    Given the first editor above, with the caret at its start
+    :::python
+    self.ta = Object._all("#lc-pyrun-first_run .lc-pyrun-code")[0]
+    self.was = str(self.ta._el.value)
+    self.ta._el.focus()
+    self.ta._el.setSelectionRange(0, 0)
+    :::
+    When Tab is pressed
+    :::python
+    ev = js.KeyboardEvent.new("keydown", {"key": "Tab", "bubbles": True, "cancelable": True})
+    self.ta._el.dispatchEvent(ev)
+    assert str(self.ta._el.value) == "    " + self.was, "Tab did not indent"
+    :::
+    Then undo brings the line back — the edit was typed, not assigned
+    :::python
+    js.document.execCommand("undo")
+    assert str(self.ta._el.value) == self.was, f"undo left {self.ta._el.value[:20]!r}"
     :::
 ```
 {: .feature tags="ui" status="pending" }

@@ -264,6 +264,14 @@ Auto-included by docs/_layouts/default.html.
     if (!r) return false;
     var ta = r.querySelector('.lc-pyrun-code');
     if (!ta) return false;
+    /* only the changed middle is written, as typing, so ⌘Z takes the
+       piece back and the caret lands on it (lcPyrun.edit keeps undo) */
+    var old = ta.value, a = 0, b = old.length, c = code.length;
+    while (a < b && a < c && old[a] === code[a]) a++;
+    while (b > a && c > a && old[b - 1] === code[c - 1]) { b--; c--; }
+    if (window.lcPyrun && window.lcPyrun.edit && old !== code) {
+      if (window.lcPyrun.edit(ta, a, b, code.slice(a, c))) return true;
+    }
     ta.value = code;
     try { ta.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
     return true;

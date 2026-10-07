@@ -710,3 +710,11 @@ def step_button_reads(context, agent_id, label):
 def step_editor_lost(context, run_id, line):
     code = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code").input_value()
     assert line not in code, "still there: %r\n%s" % (line, code)
+
+
+@when('I undo in the "{run_id}" editor')
+def step_undo_in_editor(context, run_id):
+    ta = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code")
+    ta.focus()
+    context.page.keyboard.press("Control+z")
+    context.page.wait_for_timeout(300)
