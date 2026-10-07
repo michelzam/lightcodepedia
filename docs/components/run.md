@@ -83,6 +83,25 @@ Feature: The editor numbers lines, not wrapped rows
     self.ta._el.value = self.was
     self.ta._el.dispatchEvent(js.Event.new("input"))
     :::
+
+  Scenario: The editor grows with the program instead of scrolling inside
+    Given the first editor above, with no rows= of its own
+    :::python
+    self.ta = Object._all("#lc-pyrun-first_run .lc-pyrun-code")[0]
+    self.was = str(self.ta._el.value)
+    :::
+    When a twenty-line program is typed
+    :::python
+    self.ta._el.value = "\n".join(f"x{i} = {i}" for i in range(20))
+    self.ta._el.dispatchEvent(js.Event.new("input"))
+    :::
+    Then every line is in view — nothing to scroll inside the editor
+    :::python
+    assert int(self.ta._el.rows) >= 20, f"rows {self.ta._el.rows}"
+    assert int(self.ta._el.scrollHeight) <= int(self.ta._el.clientHeight) + 2, "the editor scrolls inside"
+    self.ta._el.value = self.was
+    self.ta._el.dispatchEvent(js.Event.new("input"))
+    :::
 ```
 {: .feature tags="ui" status="pending" }
 
@@ -116,7 +135,7 @@ That's the whole syntax. The page upgrades the static code block into a live edi
 | Attribute | What it does |
 |---|---|
 | `#id` | Optional — auto-assigned if omitted; add one only to reference this runner from elsewhere |
-| `rows="3"` | Editor height in lines (default 6) |
+| `rows="3"` | Pins the editor height in lines; it then scrolls inside. Without it the editor fits its program (6 lines at least) and the page scrolls instead |
 | `folded="true"` | Editor starts hidden behind a click-to-expand toggle — great for "here's the setup code" |
 | `bound="o"` | Mirror a variable `o` as a live card above the editor — see the card section below |
 | `init="…"` | One-liner Python that runs silently before the editor body |

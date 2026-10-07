@@ -405,8 +405,19 @@ Auto-included by docs/_layouts/default.html.
       for (var i = 0; i < kids.length; i++) out.push(Math.max(1, Math.round(kids[i].offsetHeight / lh)));
       return out;
     }
+    /* THE EDITOR FITS ITS PROGRAM (Michel, 2026-10-07, Safari: "the cursor
+       stays trapped in the first 7 lines"): without rows= the box grows
+       with the lines and never scrolls inside — the page scrolls, as it
+       does for any text. rows= pins the height, scrolling as before. */
+    var FIT = !opts.rows, MIN_ROWS = parseInt(codeEl.getAttribute("rows"), 10) || 6;
+    function fitRows() {
+      if (!FIT) return;
+      var n = Math.max(MIN_ROWS, codeEl.value.split("\n").length + 1);
+      if (codeEl.rows !== n) codeEl.rows = n;
+    }
     function updateGutter() {
       if (!gutterInner) return;
+      fitRows();
       var lines = codeEl.value.split("\n");
       var rows = codeEl.clientWidth ? rowsPerLine(lines) : null;
       var s = "";
@@ -928,7 +939,7 @@ Auto-included by docs/_layouts/default.html.
       code: code,
       bound: el.getAttribute("bound") || "",
       init: el.getAttribute("init") || initFromCode || "",
-      rows: parseInt(el.getAttribute("rows"), 10) || 6,
+      rows: parseInt(el.getAttribute("rows"), 10) || 0,   /* 0: the editor fits its program */
       folded: el.hasAttribute("folded") && el.getAttribute("folded") !== "false",
       expected: el.getAttribute("expected") || ""
     };
