@@ -6,7 +6,9 @@ renders it like any lab page — unlisted, noindex — at
 https://share.lightcodepedia.org/share/<id>/<name>. The id is random once
 and then belongs to the page: a share again refreshes the same folder, so
 the link never changes; Unshare deletes the folder. The dialog opens on the STATE (not shared / shared: link, iframe, QR) and
-acts on a press: Share · Refresh · Unshare. A page under /share/<id>/ wears
+acts on a press: Share · Refresh · Unshare. The iframe snippet embeds the page
+with ?focus=1&up=0 (bar blocked, no Up pill — an LMS has its own navigation);
+the link is the full page. A page under /share/<id>/ wears
 a reader's chrome — brand and menu to lightcodepedia.org, no Get started,
 no account, no modes. Existing shares are found by
 listing docs/share/ through the API (front matter lc_share_of) — no index
@@ -230,7 +232,10 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
     }
     function fill(url) {
       ov.querySelector(".lc-share-url").value = url;
-      ov.querySelector(".lc-share-iframe").value = '<iframe src="' + url + '" width="100%" height="720" style="border:0" loading="lazy" allow="display-capture; microphone; camera"></iframe>';
+      /* AN IFRAME IS AN EMBED (Michel, 2026-10-07, Canvas): the bar is blocked
+         (focus=1) and the ⬆️ Up pill is gone (up=0) — frame flags the layout
+         already honours; the bare link keeps the full page. */
+      ov.querySelector(".lc-share-iframe").value = '<iframe src="' + url + '?focus=1&up=0" width="100%" height="720" style="border:0" loading="lazy" allow="display-capture; microphone; camera"></iframe>';
       if (window.lcQrInto) window.lcQrInto(ov.querySelector(".lc-share-qr"), url, 180);
       body.style.display = "";
     }
