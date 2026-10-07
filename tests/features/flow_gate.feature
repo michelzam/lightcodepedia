@@ -259,8 +259,8 @@ Feature: 🚦 A workflow ordered by its own values
     student mode bound to a run block, the student's own engine key. The
     page's proof is structural until the sealed brief lands.
 
-    Given the runner serves the course page "courses/python/assignment_06a/index.md"
-    When I navigate to "/run.html#src=gh:acme/demo/courses/python/assignment_06a/index.md"
+    Given the runner serves the course page "courses/python/hidden_gems_activity.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/python/hidden_gems_activity.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
     And I run the lesson's check "assignment_proof"
