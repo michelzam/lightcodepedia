@@ -56,7 +56,7 @@ Feature: The editor numbers lines, not wrapped rows
   I want line 16 to be line 16
   So that a tutor's "line 16" and my gutter agree
 
-  Scenario: A long line keeps one number and scrolls sideways
+  Scenario: A long line wraps and keeps one number
     Given the first editor above
     :::python
     self.ta = Object._all("#lc-pyrun-first_run .lc-pyrun-code")[0]
@@ -70,14 +70,16 @@ Feature: The editor numbers lines, not wrapped rows
     :::
     Then the gutter counts three lines, one per newline
     :::python
-    rows = str(self.gutter._el.textContent).split("\n")
-    assert rows == ["1", "2", "3"], f"gutter rows {rows}"
+    self.rows = str(self.gutter._el.textContent).split("\n")
+    numbers = [r for r in self.rows if r]
+    assert numbers == ["1", "2", "3"], f"gutter numbers {numbers}"
     :::
-    And the editor does not wrap — the long line scrolls sideways
+    And the long line still wraps — the gutter leaves its extra rows blank
     :::python
     cs = js.window.getComputedStyle(self.ta._el)
-    assert str(cs.whiteSpace) == "pre", f"white-space is {cs.whiteSpace}"
-    assert int(self.ta._el.scrollWidth) > int(self.ta._el.clientWidth), "the long line did not overflow sideways"
+    assert str(cs.whiteSpace) == "pre-wrap", f"white-space is {cs.whiteSpace}"
+    assert int(self.ta._el.scrollWidth) <= int(self.ta._el.clientWidth), "the long line overflowed sideways"
+    assert len(self.rows) > 3 and self.rows[1] == "2" and self.rows[2] == "", f"gutter rows {self.rows}"
     self.ta._el.value = self.was
     self.ta._el.dispatchEvent(js.Event.new("input"))
     :::
