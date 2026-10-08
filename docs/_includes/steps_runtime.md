@@ -1860,6 +1860,29 @@ class Mdpad(Block):
         ta = self._el.querySelector(".lc-mdpad-in") if self._el is not None else None
         return str(ta.value) if ta is not None else ""
 
+    @source.setter
+    def source(self, text):
+        """Write the pad as a person would: one render, now — the preview,
+        its model and its wires follow (pad.broken says which hang)."""
+        f = getattr(self._el, "_lcApply", None) if self._el is not None else None
+        if f is not None:
+            f(str(text))
+
+    @property
+    def broken(self):
+        """The wires to nothing in the preview, as the pad draws them:
+        ['source «pets»'] — a renamed or deleted id shows here at once."""
+        o = self._el.querySelector(".lc-mdpad-out") if self._el is not None else None
+        if o is None:
+            return []
+        nl = o.querySelectorAll("[data-lc-broken]")
+        out = []
+        for i in range(int(nl.length)):
+            for part in str(nl.item(i).getAttribute("data-lc-broken") or "").split(", "):
+                if part:
+                    out.append(part)
+        return out
+
     @property
     def caret(self):
         """Where the caret is in the source, as a character offset."""

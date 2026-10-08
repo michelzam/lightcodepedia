@@ -276,6 +276,82 @@ without a face: it feeds a chart or a grid in the same pad. `.avatar`
 belongs to the page, not to a document. A `.prerequisite` gates only the
 preview, never the page around the pad.
 
+## 🔌 Wires — and when they break
+
+A decorated pad is a small page: a dataset feeds a grid through
+`source=`, a form follows a grid through `master=`, an agent reads an
+editor through `bound=`. Those are wires, and the preview draws them
+honestly. Delete the dataset fence below, or rename its id, and watch:
+
+`````markdown
+```
+name,legs
+Rex,4
+Tweety,2
+```
+{: .dataset #pets }
+
+[Pets](#)
+{: .datagrid source="pets" }
+`````
+{: .mdpad #wires_pad decorations="true" rows="10" }
+
+The preview's model is what the text declares, nothing more: a dataset the
+pad no longer writes leaves the page's registry with the render — no save,
+no reload. A wire to an id the page does not have is drawn as such: the
+block wears a dashed frame naming the missing id, and one chip over the
+preview counts them. Save stays what it is, persistence.
+
+```gherkin
+Feature: A wire to nothing is drawn broken
+  As a learner wiring a grid to a dataset
+  I want a deleted or renamed id to break visibly, at once
+  So that I fix the wire instead of trusting rows that are no longer there
+
+  Scenario: The dataset fence is deleted — the grid loses its rows and names the missing id
+    Given the wires pad, whole
+    :::python
+    self.pad: Mdpad = self.page.wires_pad
+    self.was = self.pad.source
+    assert self.pad.broken == [], self.pad.broken
+    :::
+    When the dataset fence is deleted from the pad
+    :::python
+    self.pad.source = "[Pets](#)\n{: .datagrid source=\"pets\" }"
+    :::
+    Then the registry no longer holds the dataset
+    :::python
+    assert "pets" not in [str(k) for k in js.Object.keys(js.window.lcDatasets)], "pets survived its fence"
+    :::
+    And the grid's block is drawn broken, naming the source
+    :::python
+    assert self.pad.broken == ["source «pets»"], self.pad.broken
+    :::
+
+  Scenario: The id is renamed — the old wire breaks on the spot
+    Given the wires pad, whole again
+    :::python
+    self.pad: Mdpad = self.page.wires_pad
+    self.pad.source = self.was
+    assert self.pad.broken == [], self.pad.broken
+    :::
+    When the dataset is renamed and the grid is not
+    :::python
+    self.pad.source = self.was.replace("#pets", "#cats")
+    :::
+    Then the wire to the old id is broken
+    :::python
+    assert self.pad.broken == ["source «pets»"], self.pad.broken
+    :::
+    And wiring the grid to the new id mends it
+    :::python
+    self.pad.source = self.was.replace("#pets", "#cats").replace('source="pets"', 'source="cats"')
+    assert self.pad.broken == [], self.pad.broken
+    self.pad.source = self.was
+    :::
+```
+{: .feature tags="code" status="passing" }
+
 ```gherkin
 Feature: Decorations turn the pad's preview into a page
   As a learner writing my résumé

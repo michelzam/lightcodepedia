@@ -46,6 +46,11 @@ IAL knobs:
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
   id="..."    optional — names the pad for X-ray
+  (decorations)  the preview's model is what the text declares: a dataset
+                 the pad no longer writes leaves the registry with the render,
+                 and a wire (source= master= bound= target=) to an id the page
+                 does not have is drawn broken — dashed frame, one chip,
+                 data-lc-broken on the pad (Michel, 2026-10-08)
   layout="rows"  preview ABOVE the source instead of beside it — for a
               landscape document (a story in colour) that would be squeezed
               in half a pane. DEFAULT: side by side (left/right).
@@ -137,6 +142,10 @@ Auto-included by docs/_layouts/default.html.
 /* FOCUS — the caret's block, pulsed in the preview (Michel, 2026-10-05: "help
    students see where to focus when they make a change", as the page editor does) */
 .lc-mdpad-out .lc-mdpad-focus { animation: lc-mdpad-pulse 1.4s ease-out; border-radius: 4px; }
+/* a wire to nothing: the block wears a dashed frame that names the missing id */
+.lc-mdpad-out .lc-mdpad-broken { outline: 2px dashed #c62828; outline-offset: 4px; border-radius: 4px; }
+.lc-mdpad-out .lc-mdpad-broken::before { content: "🔌 " attr(data-lc-broken) " — no such id on this page"; display: block; color: #c62828; font-size: .8em; font-family: ui-sans-serif, system-ui, sans-serif; margin-bottom: .35em; }
+.lc-mdpad-wires { color: #c62828; font-size: .85em; margin: 0 0 .6em; }
 @keyframes lc-mdpad-pulse {
   0%   { background: #dbeafe; box-shadow: 0 0 0 4px #dbeafe; }
   100% { background: transparent; box-shadow: 0 0 0 4px transparent; }
@@ -759,6 +768,69 @@ Auto-included by docs/_layouts/default.html.
                          go: function (n) { if (rp.on) { rpPause(); rpShow(n); } } };
     }
 
+    /* ── WIRES: the preview's model is what its text declares ──────────────
+       A student (Michel, 2026-10-08): the dataset fence deleted, the grid
+       still showed its rows; the id renamed, nothing visibly broke. The
+       registry is page-wide and forgot nothing, so a wire kept finding the
+       old object. Two rules now. (1) An id this pad declared and no longer
+       does leaves the registry with the render — no save, no reload.
+       (2) A wire (source= master= bound= target=) to an id the page does not
+       have is DRAWN broken: a dashed frame naming the missing id on the
+       block, one chip over the preview, data-lc-broken for a proof. */
+    var WIRE_RE = /\b(source|master|bound|target)\s*=\s*"([^"]*)"/g, ID_RE = /#([A-Za-z_][\w-]*)/g;
+    function wiresOf(text) {
+      var lines = text.split("\n"), bl = blocksOf(text), ids = {}, wires = [], fence = null;
+      for (var i = 0; i < lines.length; i++) {
+        var t = lines[i].trim(), fm = t.match(/^(`{3,}|~{3,})/);
+        if (fence) { if (fm && fm[1].charAt(0) === fence.charAt(0) && fm[1].length >= fence.length && /^(`{3,}|~{3,})$/.test(t)) fence = null; continue; }
+        if (fm) { fence = fm[1]; continue; }
+        var ial = t.match(/^\{:(.*)\}$/);
+        if (!ial) continue;
+        var m;
+        ID_RE.lastIndex = 0;
+        while ((m = ID_RE.exec(ial[1]))) ids[m[1]] = true;
+        WIRE_RE.lastIndex = 0;
+        while ((m = WIRE_RE.exec(ial[1]))) {
+          /* only a plain id is a wire to this page: an expression, a file or
+             a repo path names something else */
+          if (/^[A-Za-z_][\w-]*$/.test(m[2])) wires.push({ block: blockAt(bl, i), kind: m[1], id: m[2] });
+        }
+      }
+      return { ids: ids, wires: wires };
+    }
+    var prevIds = {}, wiresEl = null;
+    function forgetGone(cur) {
+      Object.keys(prevIds).forEach(function (id) {
+        if (cur.ids[id] || !window.lcDatasets || !(id in window.lcDatasets)) return;
+        delete window.lcDatasets[id];
+        if (window.lcDatasetListeners) delete window.lcDatasetListeners[id];
+      });
+      prevIds = cur.ids;
+    }
+    function markWires(cur) {
+      var broken = [];
+      cur.wires.forEach(function (w) {
+        if (cur.ids[w.id]) return;
+        if (window.lcDatasets && (w.id in window.lcDatasets)) return;   /* the page's own data */
+        var outside = document.getElementById(w.id) || document.getElementById("lc-pyrun-" + w.id);
+        if (outside && !wrap.contains(outside)) return;                  /* a part of the page around */
+        var label = w.kind + " «" + w.id + "»", el = body.children[w.block];
+        if (el && el.nodeType === 1) {
+          el.classList.add("lc-mdpad-broken");
+          el.setAttribute("data-lc-broken", (el.getAttribute("data-lc-broken") ? el.getAttribute("data-lc-broken") + ", " : "") + label);
+        }
+        broken.push(label);
+      });
+      if (broken.length) {
+        if (!wiresEl) { wiresEl = document.createElement("div"); wiresEl.className = "lc-mdpad-wires"; wiresEl.setAttribute("role", "status"); }
+        wiresEl.textContent = "⚠ " + broken.length + " broken wire" + (broken.length > 1 ? "s" : "") + ": " + broken.join(", ") + " — no such id on this page";
+        if (wiresEl.parentNode !== out) out.insertBefore(wiresEl, out.firstChild);
+        wrap.setAttribute("data-lc-broken", String(broken.length));
+      } else {
+        if (wiresEl && wiresEl.parentNode) wiresEl.parentNode.removeChild(wiresEl);
+        wrap.removeAttribute("data-lc-broken");
+      }
+    }
     function render(text) {
       var v = typeof text === "string" ? text : ta.value;   /* a replay frame, else the editor */
       if (!window.marked) {
@@ -771,10 +843,13 @@ Auto-included by docs/_layouts/default.html.
          paragraph, block IAL applied, then the same scan that upgrades a
          page's fences into components, and the cells inside them */
       var norm = v.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+      var cur = wiresOf(v);
+      forgetGone(cur);                      /* what the text no longer declares is gone */
       body.innerHTML = inline(window.marked.parse(norm));
       if (window.lcApplyIAL) window.lcApplyIAL(body);
       if (window.lcScanElement) window.lcScanElement(body);
       if (window.lcCellsRescan) window.lcCellsRescan();
+      markWires(cur);                       /* a wire to nothing is drawn as such */
       if (appTitle) {
         var h1 = body.querySelector("h1");
         appTitle.textContent = (h1 && h1.textContent.trim()) || benchPath;
@@ -847,6 +922,12 @@ Auto-included by docs/_layouts/default.html.
     }
     /* a proof moves the caret the way a person would: pad.caret = n */
     wrap._lcCaret = function (pos) { ta.focus(); ta.setSelectionRange(pos, pos); blocks = blocksOf(ta.value); focusNow(); };
+    /* a proof writes the pad as a person would (pad.source = "…"): one render, now */
+    wrap._lcApply = function (t) {
+      ta.value = t; render(); publish(true);
+      if (typeof refreshBench === "function") refreshBench();
+      blocks = blocksOf(ta.value);
+    };
 
     var _renT = null;
     ta.addEventListener("input", deco
