@@ -403,6 +403,31 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And the agent says "llama-3.3-70b-versatile is gone; using llama-3.1-8b-instant"
     And the device remembers "llama-3.1-8b-instant" for "groq"
 
+  Scenario: A remembered model that wants credits is forgotten, and the ring's free preset answers
+    A Build AI student, 2026-10-07: OpenRouter's stealth free model vanished,
+    the healing remembered a paid one, and every ask since was "Insufficient
+    credits" (402). The memory is forgotten on the spot; the preset is asked.
+
+    Given I have a clean browser page
+    And a key for "openrouter" is saved on this device
+    And the device remembered "inclusionai/ling-3.1-flash" for "openrouter"
+    And "openrouter.ai" wants credits for "inclusionai/ling-3.1-flash" and answers "free hello" on "meta-llama/llama-3.3-70b-instruct:free"
+    And the GitHub contents API serves "courses/demo/module_01/one.md" with the document:
+      """
+      # One desk
+
+      ```yaml
+      system: One.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
+    And I wait for the page to be interactive
+    And I ask the "desk" agent "hi"
+    Then the desk answered "free hello" with the model "meta-llama/llama-3.3-70b-instruct:free"
+    And the agent says "inclusionai/ling-3.1-flash is no longer served for free; back to meta-llama/llama-3.3-70b-instruct:free"
+    And the device no longer remembers a model for "openrouter"
+
   Scenario: A proof rewrites the agent's brain, asks it, and the model runs under the new one
     Michel, 2026-10-01: the agent is a part others act on — a verb to run,
     properties to set upfront. A page's proof sets desk.system, asks, and

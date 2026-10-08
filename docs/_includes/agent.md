@@ -440,6 +440,9 @@ Auto-included by docs/_layouts/default.html.
   function rememberModel(pid, model) {
     try { if (model) localStorage.setItem('lc_ai_model_' + pid, model); } catch (e) {}
   }
+  function forgetModel(pid) {
+    try { localStorage.removeItem('lc_ai_model_' + pid); } catch (e) {}
+  }
   /* THE PRESET IS GONE — ASK THE ENGINE. A 404 on chat/completions is the
      engine saying "no such model" (Michel, 2026-09-16: OpenRouter retired
      the free slug, Groq the 70b id, and the trail showed both). Every
@@ -469,6 +472,11 @@ Auto-included by docs/_layouts/default.html.
           }
         }
         for (var f = 0; f < list.length; f++) if (isFreeModel(list[f]) && ids[f] !== eng.model) return ids[f];
+        /* A RING THAT PROMISES FREE NEVER HEALS ONTO A PAID MODEL (a Build AI
+           student, 2026-10-07: OpenRouter's stealth free model vanished, the
+           healing took the first listed model, and the next ask was an
+           "insufficient credits" 402). Better no model than a bill. */
+        if (pv.free) return '';
         return ids[0] !== eng.model ? ids[0] : '';
       }).catch(function () { return ''; });
   }
@@ -1024,8 +1032,13 @@ Auto-included by docs/_layouts/default.html.
            code instead of the provider's own sentence */
         var eobj = Array.isArray(result.data) ? result.data[0] : result.data;
         var msg = (eobj && eobj.error && eobj.error.message) || ('HTTP ' + result.status);
+        /* 402 = this engine wants money for that model. Nothing to buy on a
+           free ring: another engine on the ring answers without credits. */
+        if (result.status === 402) msg = '💸 This engine wants credits for that model — ' + msg +
+          '. Nothing to buy: a free engine on the ring (Groq, 🔑) answers without them';
         return { error: msg + ' (HTTP ' + result.status + ' from ' + eng.host + ')',
                  status: result.status,
+                 elsewhere: result.status === 402,
                  /* 500/502/503/504 = the service wobbled, not the request:
                     the same call a moment later usually works */
                  retriable: result.status >= 500 };
@@ -1116,9 +1129,24 @@ Auto-included by docs/_layouts/default.html.
        should wait for the second engine, not for the first to feel better. */
     var RETRY_MS = [1500];
 
-    function tryEngine(eng, key, retries, healed) {
+    function tryEngine(eng, key, retries, healed, unremembered) {
       return askOnce(key, cfg, userText, eng).then(function (res) {
         if (!res.error) return res;
+        /* A REMEMBERED MODEL THAT FAILS IS FORGOTTEN FIRST (2026-10-07): the
+           memory is this device's, from a healing weeks ago — the ring's
+           preset is the author's word, and it may be back. Then the 404
+           path below may heal again, from a clean slate. */
+        var preset = (PROVIDERS[eng.id] || {}).model;
+        if ((res.status === 404 || res.status === 402) && !unremembered && preset &&
+            eng.model !== preset && rememberedModel(eng.id) === eng.model) {
+          var old = eng.model;
+          forgetModel(eng.id);
+          eng.model = preset;
+          return tryEngine(eng, key, retries, healed, true).then(function (r2) {
+            if (!r2.error) r2.healed = eng.host + ': ' + old + ' is no longer served for free; back to ' + eng.model;
+            return r2;
+          });
+        }
         /* "no such model": heal once — the engine names what it serves */
         if (res.status === 404 && !healed) {
           return discoverModel(eng, key).then(function (found) {
@@ -1126,7 +1154,7 @@ Auto-included by docs/_layouts/default.html.
             var was = eng.model;
             eng.model = found;
             rememberModel(eng.id, found);
-            return tryEngine(eng, key, retries, true).then(function (r2) {
+            return tryEngine(eng, key, retries, true, unremembered).then(function (r2) {
               if (!r2.error) r2.healed = eng.host + ': ' + was + ' is gone; using ' + found + ' (remembered on this device)';
               else r2.error = r2.error + ' — after ' + was + ' was gone and ' + found + ' was tried instead';
               return r2;
@@ -1135,7 +1163,7 @@ Auto-included by docs/_layouts/default.html.
         }
         if (!res.retriable || !retries.length) return res;
         return pause(retries[0]).then(function () {
-          return tryEngine(eng, key, retries.slice(1), healed);
+          return tryEngine(eng, key, retries.slice(1), healed, unremembered);
         });
       });
     }

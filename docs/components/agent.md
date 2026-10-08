@@ -177,6 +177,10 @@ All configuration goes in the YAML block.
 Every reply signs itself under the answer, beside the token count: the
 **provider and the model** that actually answered — the ring's fallback or a
 healed model included, and the provider's own model name when it says one.
+A healed model is this device's memory, not the author's word: the moment it
+fails (gone, or suddenly billed), it is forgotten and the ring's preset is
+asked again; a ring marked free never heals onto a paid model, and a
+"credits" answer (402) moves on to the next engine on the ring.
 Agents are not deterministic and engines change hands; two verdicts from
 two engines are not a difference of sheets. The hidden log keeps the same
 two facts on each entry, so a proof can tell who wrote a line.

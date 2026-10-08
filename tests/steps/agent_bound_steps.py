@@ -725,3 +725,47 @@ def step_answer_face(context, agent_id, icon):
     bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot').first
     expect(bot).to_be_visible(timeout=10_000)
     assert bot.inner_text().lstrip().startswith(icon), "the answer opens with %r" % bot.inner_text()[:12]
+
+
+@given('a key for "{pid}" is saved on this device')
+def step_one_key(context, pid):
+    context.page.add_init_script(
+        "localStorage.setItem('lc_ai_key_%s','k-%s'); localStorage.setItem('lc_ai_first','%s');" % (pid, pid, pid))
+
+
+@given('the device remembered "{model}" for "{pid}"')
+def step_remembered_model(context, model, pid):
+    context.page.add_init_script("localStorage.setItem('lc_ai_model_%s', %s);" % (pid, json.dumps(model)))
+
+
+@given('"{host}" wants credits for "{paid}" and answers "{text}" on "{free}"')
+def step_engine_bills_one(context, host, paid, text, free):
+    _record_hosts(context)
+    context.asked_models = []
+
+    def chat(route):
+        context.asked_hosts.append(route.request.url.split("/")[2])
+        body = json.loads(route.request.post_data or "{}")
+        context.asked_models.append(body.get("model"))
+        if body.get("model") == free:
+            route.fulfill(status=200, content_type="application/json", body=_ok_reply(text))
+        elif body.get("model") == paid:
+            route.fulfill(status=402, content_type="application/json",
+                          body=json.dumps({"error": {"message": "Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits", "code": 402}}))
+        else:
+            route.fulfill(status=404, content_type="application/json",
+                          body=json.dumps({"error": {"message": "No endpoints found for %s." % body.get("model")}}))
+
+    def models(route):
+        route.fulfill(status=200, content_type="application/json",
+                      body=json.dumps({"data": [{"id": paid, "pricing": {"prompt": "0.0000003", "completion": "0.0000012"}},
+                                                {"id": free, "pricing": {"prompt": "0", "completion": "0"}}]}))
+
+    context.page.route("https://" + host + "/**/chat/completions*", chat)
+    context.page.route("https://" + host + "/**/models*", models)
+
+
+@then('the device no longer remembers a model for "{pid}"')
+def step_forgot_model(context, pid):
+    got = context.page.evaluate("(k) => localStorage.getItem(k)", "lc_ai_model_" + pid)
+    assert got is None, got
