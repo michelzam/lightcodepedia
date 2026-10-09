@@ -174,6 +174,92 @@ Feature: 🚦 A workflow ordered by its own values
     Then the lesson's proof is green
     And the story pad stacks its preview above its source
 
+  Scenario: Module 05's builder page is red on arrival
+    Michel, 2026-10-09: Module 05 rebuilt in the pad — four pages, the builder
+    one of them. The scratch page opens with a checklist and no part.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "builder_check"
+    Then the lesson's check "builder_check" is red
+
+  Scenario: Module 05's builder page is green once the three parts are added and ticked
+    Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
+    And the learner has added the table, the counting line and the button
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "builder_check"
+    Then the lesson's check "builder_check" is green
+
+  Scenario: Module 05's follow-up list is red on arrival
+    The real page: the reason is there (persona, pitch, one row of the map),
+    the dataset is there, and the checklist waits for a question, a gated
+    table, a cell and a button.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/02_list.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "list_proof"
+    Then the lesson's check "list_proof" is red
+
+  Scenario: Module 05's follow-up list is green once the four parts are built
+    Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
+    And the learner has built the follow-up list
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/02_list.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "list_proof"
+    Then the lesson's check "list_proof" is green
+    And the pad's preview reads "14 families are waiting"
+
+  Scenario: Module 05's proof page is red while fourteen families are in the list
+    Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/03_proof.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "proof_proof"
+    Then the lesson's check "proof_proof" is red
+
+  Scenario: Module 05's proof page is green once the check is on the page and the question is fixed
+    The check the learner types runs INSIDE their page: red with the five
+    families who already met their dog, green after WHERE met = ''.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
+    And the learner has written the check at the bottom of the page
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/03_proof.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "proof_proof"
+    Then the lesson's check "proof_proof" is red
+    When the learner runs the check inside the pad
+    Then the check inside the pad is red
+    When the learner fixes the question with WHERE met = ''
+    And the learner runs the check inside the pad
+    Then the check inside the pad is green
+    When I run the lesson's check "proof_proof"
+    Then the lesson's check "proof_proof" is green
+
+  Scenario: Module 05's own slice is red on arrival
+    Given the runner serves the course page "courses/micro_build_ai/module_05/04_concepts.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/04_concepts.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "slice_proof"
+    Then the lesson's check "slice_proof" is red
+
+  Scenario: Module 05's own slice is green once its five floors are built
+    Given the runner serves the course page "courses/micro_build_ai/module_05/04_concepts.md"
+    And the learner has built a slice of their own
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/04_concepts.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "slice_proof"
+    Then the lesson's check "slice_proof" is green
+
   Scenario: A cell can count a table, so no component is needed for one number
     Michel, 2026-08-06: "I am totally surprised by stat. Could it be rather
     done with a cell?" It could not — a formula reached forms, mdpads and

@@ -485,3 +485,170 @@ def step_named_green(context, fid):
 @then('the lesson\'s check "{fid}" is red')
 def step_named_red(context, fid):
     _named_status(context, fid, "failing")
+
+
+# ── Module 05 in the pad (Michel, 2026-10-09) ────────────────────────────
+M05_CHECK = (
+    "```gherkin\n"
+    "Feature: Only families still waiting get a call\n"
+    "  Scenario: Nobody who already met their dog is in the list\n"
+    "    Given the list my page builds\n"
+    "    :::python\n"
+    "    self.list: Query = self.page.to_call\n"
+    "    :::\n"
+    "    When the coordinator reads it\n"
+    "    Then every family in it is still waiting\n"
+    "    :::python\n"
+    "    met: list[str] = [m for m in self.list.values(\"met\") if m]\n"
+    "    assert not met, f\"{len(met)} families already met their dog\"\n"
+    "    :::\n"
+    "```\n"
+    "{: .feature #call_check visible=\"true\" }\n")
+
+
+@given("the learner has added the table, the counting line and the button")
+def step_builder_fix(context):
+    """Module 05's scratch page: the three catalogue parts under their items,
+    placeholders swapped, items ticked. Loud if the seed drifts."""
+    def fix(body):
+        items = ("- [ ] a table of the families waiting\n"
+                 "- [ ] a line that says how many are waiting\n"
+                 "- [ ] a button to call the next family\n")
+        assert items in body, "the builder seed no longer carries the three checklist items"
+        return body.replace(items,
+            "- [x] a table of the families waiting\n\n"
+            "[Families](#)\n{: .datagrid source=\"reservations\" }\n\n"
+            "- [x] a line that says how many are waiting\n\n"
+            "{= reservations.count } families are waiting.\n\n"
+            "- [x] a button to call the next family\n\n"
+            "[📞 Call the next family](#)\n{: .button #call_btn }\n")
+    _serve_course_page(context, context.lesson_path, fix)
+
+
+M05_LIST_ITEMS = ("- [ ] a question: which families to call\n"
+                  "- [ ] a table on the answer, shown only when someone is waiting\n"
+                  "- [ ] a line that says how many are waiting\n"
+                  "- [ ] a button to call the next family\n")
+
+
+@given("the learner has built the follow-up list")
+def step_list_fix(context):
+    """Module 05's real page: a question, a gated table on its answer, a cell
+    and a button with its onclick — the lesson's own lines."""
+    def fix(body):
+        assert M05_LIST_ITEMS in body, "the follow-up seed no longer carries the four checklist items"
+        return body.replace(M05_LIST_ITEMS,
+            "- [x] a question: which families to call\n\n"
+            "```sql\nSELECT family, dog, asked, met FROM reservations\n```\n"
+            "{: .query bind=\"reservations\" #to_call }\n\n"
+            "- [x] a table on the answer, shown only when someone is waiting\n\n"
+            "[Families to call](#)\n{: .datagrid #call_list source=\"to_call\" visible=\"= to_call.count\" }\n\n"
+            "- [x] a line that says how many are waiting\n\n"
+            "{= to_call.count } families are waiting.\n\n"
+            "- [x] a button to call the next family\n\n"
+            "[📞 Call the next family](#)\n{: .button #call_btn }\n"
+            "```python\nbutton.text = \"✅ Called\"\n```\n{: .onclick }\n")
+    _serve_course_page(context, context.lesson_path, fix)
+
+
+@then('the pad\'s preview reads "{text}"')
+def step_pad_reads(context, text):
+    out = context.page.locator(".lc-mdpad-out").first
+    out.wait_for(state="attached", timeout=20_000)
+    expect(out).to_contain_text(text, timeout=10_000)
+
+
+@given("the learner has written the check at the bottom of the page")
+def step_proof_check(context):
+    """The check from the lesson, typed at the end of the learner's page —
+    inside the pad, where it runs."""
+    def fix(body):
+        tail = "{: .onclick }\n`````\n"
+        assert tail in body, "the proof seed no longer ends with the button's onclick"
+        return body.replace(tail, "{: .onclick }\n\n" + M05_CHECK + "`````\n", 1)
+    _serve_course_page(context, context.lesson_path, fix)
+
+
+def _pad_textarea(context):
+    ta = context.page.locator(".lc-mdpad .lc-mdpad-in").first
+    ta.wait_for(state="attached", timeout=20_000)
+    return ta
+
+
+@when("the learner runs the check inside the pad")
+def step_run_inner_check(context):
+    card = context.page.locator('.lc-mdpad-out .lc-feature[data-lc-id="call_check"]').first
+    card.wait_for(state="attached", timeout=30_000)
+    btn = card.locator(".lc-feature-run").first
+    btn.wait_for(state="visible", timeout=30_000)
+    btn.scroll_into_view_if_needed(timeout=10_000)
+    btn.click(timeout=20_000)
+
+
+def _inner_status(context, want):
+    import time
+    card = context.page.locator('.lc-mdpad-out .lc-feature[data-lc-id="call_check"]').first
+    deadline, got = time.time() + 90, ""
+    while time.time() < deadline:
+        got = card.get_attribute("data-status") or ""
+        if got in ("passing", "failing"):
+            break
+        context.page.wait_for_timeout(500)
+    if got != want:
+        raise AssertionError("the check inside the pad is %r, expected %r — the card says:\n%s"
+                             % (got, want, (card.inner_text() or "")[:900]))
+
+
+@then("the check inside the pad is red")
+def step_inner_red(context):
+    _inner_status(context, "failing")
+
+
+@then("the check inside the pad is green")
+def step_inner_green(context):
+    _inner_status(context, "passing")
+
+
+@when("the learner fixes the question with WHERE met = ''")
+def step_fix_question(context):
+    """Four words in the query, typed in the pad's text side; the preview
+    re-renders and the cell recounts."""
+    ta = _pad_textarea(context)
+    old = "SELECT family, dog, asked, met FROM reservations\n"
+    text = ta.input_value()
+    assert old in text, "the pad no longer carries the question the lesson asks to fix"
+    context.page.evaluate(
+        """([sel, t]) => { const ta = document.querySelector(sel); ta.focus(); ta.select();
+                          document.execCommand('insertText', false, t); }""",
+        [".lc-mdpad .lc-mdpad-in", text.replace(old, "SELECT family, dog, asked, met FROM reservations WHERE met = ''\n")])
+    context.page.wait_for_timeout(1500)
+
+
+@given("the learner has built a slice of their own")
+def step_slice_fix(context):
+    """Module 05's closing pad: the five floors, the lesson's own lines, ticked."""
+    def fix(body):
+        items = ("- [ ] who: a persona card\n"
+                 "- [ ] why: a pitch that reads it\n"
+                 "- [ ] the row: an impact map with one row\n"
+                 "- [ ] the thing: a dataset, and a face on it\n"
+                 "- [ ] the check: a proof that goes red before it goes green\n")
+        assert items in body, "the slice seed no longer carries the five checklist items"
+        return body.replace(items,
+            "- [x] who: a persona card\n\n"
+            "```yaml\nname: Sam\nrole: Club treasurer\ngoal: know who has paid\n```\n{: .persona #who }\n\n"
+            "- [x] why: a pitch that reads it\n\n"
+            "```yaml\nproduct: Dues Desk\nneed: nobody chases a payment twice\nbenefit: one list, one tick\n```\n"
+            "{: .pitch #why persona=\"who\" }\n\n"
+            "- [x] the row: an impact map with one row\n\n"
+            "```yaml\ngoal: Every member pays once\nimpacts:\n  - how: Sam sees who has not paid yet\n    what: A list of unpaid members\n```\n"
+            "{: .impact_map #row pitch=\"why\" }\n\n"
+            "- [x] the thing: a dataset, and a face on it\n\n"
+            "```\nmember,paid\nAva,yes\nBen,\n```\n{: .dataset #members }\n\n"
+            "[Members](#)\n{: .datagrid #member_grid source=\"members\" }\n\n"
+            "- [x] the check: a proof that goes red before it goes green\n\n"
+            "```gherkin\nFeature: The list shows members\n  Scenario: Rows are there\n    Given my page\n    :::python\n"
+            "    self.grid: Datagrid = self.page.member_grid\n    :::\n    When Sam opens it\n    Then it shows rows\n    :::python\n"
+            "    assert self.grid.rows, \"no rows yet\"\n    :::\n```\n{: .feature #my_check visible=\"true\" }\n")
+    _serve_course_page(context, context.lesson_path, fix)
+

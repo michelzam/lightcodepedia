@@ -97,8 +97,8 @@ feature:
         assert self.grid.rows, "no rows yet"
         :::
     ```
-    {: .feature #your_check }
-  adapt: self.page.<id> reaches any part by its id
+    {: .feature #your_check visible="true" }
+  adapt: self.page.<id> reaches any part by its id; visible="true" shows the check on the page
 persona:
   name: who this is for — a persona card
   module: Module 03 · Who
