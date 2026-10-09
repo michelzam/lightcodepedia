@@ -410,7 +410,15 @@
       var v = String(el.getAttribute("beside") || "").trim().toLowerCase();
       if (v === "false" || v === "0" || v === "off") return;
       el.dataset.lcBeside = "1";
-      var prev = el.previousElementSibling;
+      /* a dataset or a query has no face: "the block above" is the last one
+         that shows (Michel, 2026-10-09). The faceless ones ride along inside
+         the row, in source order, so a pad's block map stays exact. */
+      var faceless = function (n) {
+        return n.classList.contains("dataset") || n.classList.contains("lc-dataset") ||
+               (n.classList.contains("query") && n.getAttribute("editable") !== "true") || n.classList.contains("lc-query");
+      };
+      var between = [], prev = el.previousElementSibling;
+      while (prev && faceless(prev)) { between.unshift(prev); prev = prev.previousElementSibling; }
       if (!prev) return;
       var row;
       if (prev.classList.contains("lc-blocks") && prev.hasAttribute("data-lc-beside")) row = prev;
@@ -421,8 +429,10 @@
         prev.parentNode.insertBefore(row, prev);
         row.appendChild(prev);
       }
+      between.forEach(function (n) { row.appendChild(n); });
       row.appendChild(el);
-      row.style.gridTemplateColumns = "repeat(" + row.children.length + ", 1fr)";
+      var faces = Array.prototype.filter.call(row.children, function (n) { return !faceless(n); }).length;
+      row.style.gridTemplateColumns = "repeat(" + faces + ", 1fr)";
     });
   }
 

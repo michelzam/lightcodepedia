@@ -30,6 +30,11 @@ Auto-included by docs/_layouts/default.html.
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .lc-query.err { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+/* A QUERY HAS NO FACE (Michel, 2026-10-09: "just like the dataset") — the
+   chip stays in the page for proofs and the ⚙️, but shows only when it has
+   something to say: a wait, an error, or its place in the SQL editor's bar. */
+.lc-query { display: none; }
+.lc-query.err, .lc-query[data-waiting], .lc-query-bar .lc-query { display: inline-flex; }
 /* editable mode: a live SQL editor that publishes its result as a dataset */
 .lc-query-wrap { margin: 0.6em 0; }
 .lc-query-editor {

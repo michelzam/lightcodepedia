@@ -160,16 +160,30 @@ Nemo,0
 [Pets](#)
 {: .datagrid source="pets_row" }
 
+```sql
+SELECT name, legs FROM pets_row WHERE legs > 0
+```
+{: .query bind="pets_row" #walkers }
+
 [Legs](#)
-{: .chart source="pets_row" type="bar" x="name" y="legs" beside="true" }
+{: .chart source="walkers" type="bar" x="name" y="legs" beside="true" }
 
 ````markdown
 [Pets](#)
 {: .datagrid source="pets_row" }
 
+```sql
+SELECT name, legs FROM pets_row WHERE legs > 0
+```
+{: .query bind="pets_row" #walkers }
+
 [Legs](#)
-{: .chart source="pets_row" type="bar" x="name" y="legs" beside="true" }
+{: .chart source="walkers" type="bar" x="name" y="legs" beside="true" }
 ````
+
+A dataset or a query between them has no face, so "the block above" is
+the last one that shows: the chart lands beside the table, and the query
+rides along inside the row, unseen.
 
 ```gherkin
 Feature: beside= draws a part next to the one above
@@ -183,17 +197,19 @@ Feature: beside= draws a part next to the one above
     rows = Object._all(".lc-blocks[data-lc-beside]")
     self.row = rows[0]
     :::
-    Then they share one row of two equal columns
+    Then they share one row of two equal columns, the query riding along unseen
     :::python
-    assert int(self.row._el.children.length) == 2, int(self.row._el.children.length)
+    assert int(self.row._el.children.length) == 3, int(self.row._el.children.length)
     assert str(self.row._el.style.gridTemplateColumns) == "repeat(2, 1fr)", str(self.row._el.style.gridTemplateColumns)
+    chip = self.row._el.querySelector(".lc-query")
+    assert chip is not None and chip.offsetParent is None, "the query shows a face"
     :::
-    And the table is first, the chart second — source order is visual order
+    And the table is first, the chart last — source order is visual order
     :::python
     first = self.row._el.children.item(0)
-    second = self.row._el.children.item(1)
+    last = self.row._el.lastElementChild
     assert first.querySelector("table") is not None, "the table is not first"
-    assert "lc-chart" in str(second.className), "the chart is not second: " + str(second.className)
+    assert "lc-chart" in str(last.className), "the chart is not last: " + str(last.className)
     :::
 ```
 {: .feature #beside_proof tags="ui" status="passing" }

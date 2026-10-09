@@ -337,12 +337,13 @@ Feature: A wire to nothing is drawn broken
     :::python
     self.pad: Mdpad = self.page.wires_pad
     self.pad.source = self.was
-    self.pad.source = self.was + '\n\n[Legs](#)\n{: .chart source="pets" type="bar" x="name" y="legs" beside="true" }'
+    self.pad.source = self.was + '\n\n```sql\nSELECT name, legs FROM pets WHERE legs > 0\n```\n{: .query bind="pets" #walkers }\n\n[Legs](#)\n{: .chart source="walkers" type="bar" x="name" y="legs" beside="true" }'
     :::
-    Then the grid and the chart share one row, and no wire is broken
+    Then the grid and the chart share one row — the faceless query between them rides along — and no wire is broken
     :::python
     rows = Object._all('[data-lc-id="wires_pad"] .lc-blocks[data-lc-beside]')
-    assert len(rows) == 1 and int(rows[0]._el.children.length) == 2, len(rows)
+    assert len(rows) == 1 and int(rows[0]._el.children.length) == 3, len(rows)
+    assert str(rows[0]._el.style.gridTemplateColumns) == "repeat(2, 1fr)", str(rows[0]._el.style.gridTemplateColumns)
     assert self.pad.broken == [], self.pad.broken
     :::
     And the caret on the chart's line lights the chart, not the grid
