@@ -858,3 +858,42 @@ def step_cut_lines(context, agent_id, text):
 def step_request_key(context, key, value):
     body = context.sent_bodies[-1]
     assert str(body.get(key)) == value, "%s=%r in %r" % (key, body.get(key), sorted(body.keys()))
+
+
+@given('the "{name}" catalogue is served from the repo')
+def step_real_catalogue(context, name):
+    import pathlib
+    body = pathlib.Path("docs/bots/" + name + ".yml").read_text(encoding="utf-8")
+
+    def fulfill(route):
+        route.fulfill(status=200, content_type="text/plain; charset=utf-8", body=body)
+
+    context.page.route("**/raw.githubusercontent.com/**/docs/bots/" + name + ".yml*", fulfill)
+    context.page.route("**/api.github.com/repos/**/contents/docs/bots/" + name + ".yml*", fulfill)
+
+
+@then('the "{agent_id}" agent\'s lines are exactly the catalogue\'s "{key}" and the direction says where it was learned')
+def step_catalogue_lines(context, agent_id, key):
+    import pathlib, yaml
+    cat = yaml.safe_load(pathlib.Path("docs/bots/parts.yml").read_text(encoding="utf-8"))
+    want = cat[key]["lines"].rstrip()
+    bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot.lc-agent-tutor').first
+    expect(bot).to_be_visible(timeout=10_000)
+    got = bot.locator(".lc-agent-example pre").inner_text().rstrip()
+    assert got == want, "lines differ from the catalogue:\n%r\n!=\n%r" % (got, want)
+    d = bot.locator(".lc-agent-direction").inner_text()
+    assert cat[key]["module"] in d, "the module is not named: %r" % d[:200]
+    assert "part:" not in d.lower(), "the key line leaked: %r" % d[:200]
+
+
+@then('the "{pad_id}" pad\'s wires are "{label}"')
+def step_pad_wires(context, pad_id, label):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    expect(pad.locator(".lc-mdpad-wires")).to_contain_text(label, timeout=5_000)
+
+
+@then('the "{agent_id}" agent says "{text}" and offers no lines')
+def step_no_part(context, agent_id, text):
+    bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot').first
+    expect(bot).to_contain_text(text, timeout=10_000)
+    assert bot.locator(".lc-agent-example").count() == 0, "lines were offered for no part"

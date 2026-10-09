@@ -484,14 +484,15 @@ Feature: The shift is written
 
 ### 🧱 A builder for a page — the same two knobs, on a pad
 
-A learner's app is a pad. The **builder** is the maker beside it (Michel,
-2026-10-09: *"the learner designs — gives orders — and the builder does it
-while explaining; a helper, not an evaluator"*): `bot="builder"` for the
-role, `bound="<pad id>"` for the page, `target="<check id>"` for what the
-page should become. The page's checklist is markdown's own: `- [ ]`
-lines. The builder reads them, writes the part complete, says in two
-sentences what it wrote, and ⬇ puts the lines under the item or at the
-learner's cursor.
+A learner's app is a pad. The **builder** beside it holds the exact lines
+of every part the course has taught (Michel, 2026-10-09: *"students know
+what they want and ask for the syntax of a specific part; they adapt it —
+the syntax is not something they can learn by heart"*): `bot="builder"`
+for the role, `bound="<pad id>"` for the page, `target="<check id>"` for
+what the page should become. The model only **names** the part; the page
+shows its lines verbatim from `docs/bots/parts.yml`, with the module they
+were learned in, and ⬇ puts them at the learner's cursor. Placeholder ids
+show as broken wires until swapped.
 
 `````markdown
 # 📞 The Follow-Up List

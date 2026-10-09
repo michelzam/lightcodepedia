@@ -621,6 +621,45 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     Then the "my_app" pad holds, in order, "- [ ] a button to call the next family", "[📞 Call the next family](#)", "{: .button #call_btn }", "- [ ] a python fence under it"
     And the "my_app" pad's preview shows a button
 
+  Scenario: A builder names the part; the page shows its exact lines from the catalogue
+    Michel, 2026-10-09, after four phone tests: the model never wrote a
+    decoration line intact — so it names the part, and the page shows the
+    lines as the course taught them, with the module they were learned in.
+    The placeholder id is a broken wire until the learner puts their own.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the "builder" bot is served from the repo
+    And the "parts" catalogue is served from the repo
+    And the recording model endpoint replies with this text:
+      """
+      part: datagrid
+      Put waiting, your dataset's id, where your_dataset stands.
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "builder" agent with key "test-key"
+    And I ask the "builder" agent "a table on my dataset"
+    Then the "builder" agent's lines are exactly the catalogue's "datagrid" and the direction says where it was learned
+    When I add the agent's piece to the editor
+    Then the "my_app" pad's wires are "source «your_dataset»"
+
+  Scenario: A part the course has not taught is said so, with no lines
+    Given I have a clean browser page
+    And a builder key is connected
+    And the "builder" bot is served from the repo
+    And the "parts" catalogue is served from the repo
+    And the recording model endpoint replies with this text:
+      """
+      part: carousel
+      The nearest part the course has is a table.
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "builder" agent with key "test-key"
+    And I ask the "builder" agent "a carousel of the dogs"
+    Then the "builder" agent says "«carousel» is not a part the course has yet" and offers no lines
+
   Scenario: A builder builds what it is ordered — complete lines, no question back
     Michel, 2026-10-09: "less Socratic, more doer: the builder does it for us
     while explaining; students think and give orders". No blank, no quiz; a
@@ -671,7 +710,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I ask the "builder" agent "show the families in a table"
     Then the "builder" agent's lines hold "[Families waiting](#)" and the cut-off note shows once under them
     And the request asked for "reasoning_effort" "low"
-    And the request asked for "max_tokens" "3000"
+    And the request asked for "max_tokens" "400"
 
   Scenario: A builder's example may hold a fence of its own — nothing leaks into the question
     Michel, 2026-10-09, on the phone: the piece held a sql fence, the example

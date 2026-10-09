@@ -1,0 +1,123 @@
+# The parts catalogue — the exact lines of each part, as the course taught
+# them, with the module where the learner first typed it (Michel,
+# 2026-10-09: "offering code snippets based on lessons learned since
+# module 04"). The builder names a key; the page shows these lines
+# verbatim. Placeholders are plain ids (your_dataset, your_grid…): on the
+# page they show as broken wires until the learner puts their own id in.
+dataset:
+  name: a dataset — rows that every face reads
+  module: Module 04 · Dogs
+  lines: |
+    ```
+    name,fee
+    Rex,120
+    Mila,90
+    ```
+    {: .dataset #your_dataset }
+  adapt: the rows are yours; the word after # is the id every face names
+datagrid:
+  name: a table on a dataset
+  module: Module 04 · Dogs
+  lines: |
+    [Title](#)
+    {: .datagrid source="your_dataset" }
+  adapt: source names the dataset's id — the word after # in its decoration
+form:
+  name: a card that follows a table
+  module: Module 04 · Three Faces
+  lines: |
+    [Title](#)
+    {: .form master="your_grid" }
+  adapt: the table needs an id of its own — add #your_grid to its decoration, then name it here
+chart:
+  name: a chart on a dataset
+  module: Module 04 · Three Faces
+  lines: |
+    [Title](#)
+    {: .chart source="your_dataset" x="a_column" y="a_column" }
+  adapt: x and y name two columns of the dataset
+query:
+  name: a question asked of a dataset — its answer is a dataset too
+  module: Module 04 · Three Faces
+  lines: |
+    ```sql
+    SELECT * FROM your_dataset
+    ```
+    {: .query bind="your_dataset" #your_query }
+  adapt: bind names the dataset; the id after # is what a face reads next
+button:
+  name: a button — a link with one line under it
+  module: Module 04 · First Screen
+  lines: |
+    [Label](#)
+    {: .button #your_button }
+  adapt: the label is the link's text; the id lets Python find it
+onclick:
+  name: what a button does — a few lines of Python right under it
+  module: Module 05 · Slice
+  lines: |
+    ```python
+    button.text = "✅ Done"
+    ```
+    {: .onclick }
+  adapt: right under the button's decoration; button is the one pressed
+cell:
+  name: a live number inside a sentence
+  module: Module 05 · Slice
+  lines: |
+    {= your_dataset.count } families are waiting.
+  adapt: any dataset or query id, then .count
+visible:
+  name: a gate — the part shows only when there is something to show
+  module: Module 05 · Slice
+  lines: |
+    [Title](#)
+    {: .datagrid source="your_query" visible="= your_query.count" }
+  adapt: the same id twice — what it reads, and what must be more than zero
+beside:
+  name: a part drawn next to the one above
+  module: Module 04 · Three Faces
+  lines: |
+    [Title](#)
+    {: .chart source="your_dataset" x="a_column" y="a_column" beside="true" }
+  adapt: beside goes on the second part; the first stays as it is
+feature:
+  name: a check — Gherkin, steps in Python, reading your parts by id
+  module: Module 05 · Proof
+  lines: |
+    ```gherkin
+    Feature: The page does what it says
+      Scenario: The table shows rows
+        Given my page
+        :::python
+        self.grid = self.page.your_grid
+        :::
+        Then it shows rows
+        :::python
+        assert self.grid.rows, "no rows yet"
+        :::
+    ```
+    {: .feature #your_check }
+  adapt: self.page.<id> reaches any part by its id
+persona:
+  name: who this is for — a persona card
+  module: Module 03 · Who
+  lines: |
+    ```yaml
+    name: Sam
+    role: Shelter coordinator
+    goal: call every family back
+    ```
+    {: .persona #your_persona }
+  adapt: three lines at least — name, role, goal
+pitch:
+  name: why — a pitch that reads the persona
+  module: Module 03 · Why
+  lines: |
+    ```yaml
+    product: Shelter Desk
+    need: nobody is forgotten
+    benefit: one list, one button
+    ```
+    {: .pitch #your_pitch persona="your_persona" }
+  adapt: persona names the card it reads

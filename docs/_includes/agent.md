@@ -604,8 +604,24 @@ Auto-included by docs/_layouts/default.html.
       Object.keys(bot.cfg).forEach(function(k){ if (k !== 'knowledge' && k !== 'knowledge_budget') cfg[k] = bot.cfg[k]; });
       var know = bot.cfg.knowledge;
       var budget = parseInt(bot.cfg.knowledge_budget, 10) || 16000;
-      if (!Array.isArray(know) || !know.length) return cfg;
-      return Promise.all(know.map(function(k){
+      /* A CATALOGUE OF PARTS (Michel, 2026-10-09): the model names a part,
+         the page shows its exact lines — a model that cannot write a
+         decoration line intact (four phone tests) never has to. The keys
+         and names go to the model; the lines stay with the page. */
+      var catP = Promise.resolve();
+      if (bot.cfg.catalogue) {
+        catP = fetchText(rawUrl('docs/bots/' + String(bot.cfg.catalogue).replace(/[^\w-]/g, '') + '.yml')).then(function (y) {
+          var cat = window.jsyaml ? window.jsyaml.load(y) : null;
+          if (!cat || typeof cat !== 'object') return;
+          cfg._catalogue = cat;
+          cfg.system += '\n\nThe parts you may name, by key:\n' + Object.keys(cat).map(function (k) {
+            var e = cat[k] || {};
+            return '- ' + k + ': ' + (e.name || '') + (e.module ? ' (' + e.module + ')' : '');
+          }).join('\n');
+        }, function () {});
+      }
+      if (!Array.isArray(know) || !know.length) return catP.then(function () { return cfg; });
+      return catP.then(function () { return Promise.all(know.map(function(k){
         if (String(k) === 'self' && rt) {
           /* self = the RENDERED course file — and the fragments it embeds:
              a module composes from {: .embed } siblings, and a tutor focused
@@ -651,7 +667,7 @@ Auto-included by docs/_layouts/default.html.
           cfg._knowledge = { pages: chunks.length, chars: used, trimmed: trimmed };
         }
         return cfg;
-      });
+      }); });
     });
     return _botCache[key];
   }
@@ -1342,6 +1358,31 @@ Auto-included by docs/_layouts/default.html.
       }
       return { direction: d, question: q, example: fence ? fence.all : '', lines: fence ? fence.inner.replace(/\s+$/, '') : '' };
     }
+    /* part: <key> → the catalogue's lines, verbatim, between >>> and <<< —
+       the bubble and ⬇ Add then work as for any reply. The module the part
+       was learned in rides the direction; an unknown key says "not yet". */
+    function expandParts(text) {
+      var cat = cfg._catalogue;
+      if (!cat) return text;
+      var t = String(text || ''), m = /(^|\n)\s*parts?\s*:\s*([^\n]+)/i.exec(t);
+      if (!m) return t;
+      var keys = m[2].split(/[\s,;]+/).map(function (k) { return k.trim().toLowerCase(); }).filter(Boolean);
+      var lines = [], learned = [], unknown = [];
+      keys.forEach(function (k) {
+        if (k === 'none') return;
+        var e = cat[k];
+        if (!e || !e.lines) { unknown.push(k); return; }
+        lines.push(String(e.lines).replace(/\s+$/, ''));
+        if (e.module && learned.indexOf(e.module) < 0) learned.push(e.module);
+      });
+      var prose = t.slice(0, m.index) + t.slice(m.index + m[0].length);
+      var head = [];
+      if (learned.length) head.push('📚 Learned in ' + learned.join(' · ') + '.');
+      if (unknown.length) head.push('«' + unknown.join('», «') + '» is not a part the course has yet.');
+      var out = (head.length ? head.join(' ') + '\n' : '') + prose.trim();
+      if (lines.length) out += '\n\n>>>\n' + lines.join('\n\n') + '\n<<<';
+      return out;
+    }
     function renderTutor(text) {
       var t = String(text || ''), cut = t.indexOf(TRUNCATED_NOTE) >= 0;
       if (cut) t = t.replace(TRUNCATED_NOTE, '').replace(/\s+$/, '');
@@ -1595,7 +1636,7 @@ Auto-included by docs/_layouts/default.html.
             ' <button type="button" class="lc-agent-again" title="Put this question back in the box">↩</button>' +
             ' <button type="button" class="lc-agent-followup" title="Ask a follow-up — this question and its answer travel with the next one">⤵</button></div>' +
           (cfg.todos
-            ? '<div class="lc-agent-msg-bot lc-agent-tutor">' + escapeHtml(cfg.icon || '🤖') + ' ' + renderTutor(result.text) + '</div>'
+            ? '<div class="lc-agent-msg-bot lc-agent-tutor">' + escapeHtml(cfg.icon || '🤖') + ' ' + renderTutor(expandParts(result.text)) + '</div>'
             : '<div class="lc-agent-msg-bot">' + escapeHtml(cfg.icon || '🤖') + ' ' + renderMarkdown(result.text) + '</div>');
         var againBtn = response.querySelector('.lc-agent-again');
         if (againBtn) againBtn.addEventListener('click', function () {
@@ -1640,7 +1681,7 @@ Auto-included by docs/_layouts/default.html.
         } catch (e) {}
 
         // If bound and TODO-driven: the reply's TODOs are offered back — never code.
-        if (boundId && cfg.todos) offerPiece(result.text);
+        if (boundId && cfg.todos) offerPiece(expandParts(result.text));
         // If bound (and not TODO-driven): add an Apply button to the first python code block.
         if (boundId && !cfg.todos) {
           var bot = response.querySelector('.lc-agent-msg-bot');
