@@ -1277,9 +1277,26 @@ Auto-included by docs/_layouts/default.html.
       });
       return out;
     }
+    /* THE EXAMPLE IS ONE FENCE, INNER FENCES INCLUDED (Michel, 2026-10-09,
+       the builder on the phone: its piece held a sql fence, the example
+       came out empty and the leftovers leaked into the question). The fence
+       opens on the first run of backticks and closes on the LAST line that
+       is a run at least as long — so a markdown piece may carry a dataset,
+       a query or a handler fence of its own. */
+    function fenceOf(t) {
+      t = String(t || '');
+      var m = /(^|\n)(`{3,})([^\n]*)\n/.exec(t);
+      if (!m) return null;
+      var start = m.index + m[1].length, bodyStart = m.index + m[0].length, run = m[2].length;
+      var re = new RegExp('\\n(`{' + run + ',})[ \\t]*(?=\\n|$)', 'g'), last = -1, lastEnd = -1, mm;
+      re.lastIndex = bodyStart - 1;
+      while ((mm = re.exec(t))) { last = mm.index; lastEnd = mm.index + mm[0].length; }
+      var inner = last >= 0 ? t.slice(bodyStart, last) : t.slice(bodyStart);
+      return { all: t.slice(start, last >= 0 ? lastEnd : t.length), inner: inner, info: m[3].trim() };
+    }
     function firstFence(text) {
-      var m = String(text || '').match(/(`{3,4})(?:python|py|markdown|md)?[ \t]*\n([\s\S]*?)\1/);
-      return m ? m[2].replace(/\s+$/, '') : null;
+      var f = fenceOf(text);
+      return f ? f.inner.replace(/\s+$/, '') : null;
     }
     /* THREE AREAS (Michel, 2026-10-06): a tutor's answer is a direction, a
        question back, and an example — each in its own area, the example
@@ -1288,8 +1305,8 @@ Auto-included by docs/_layouts/default.html.
        question. The first fence is the example. */
     function tutorParts(text) {
       var t = String(text || '');
-      var fence = t.match(/```[\s\S]*?```/);
-      var prose = t.replace(/```[\s\S]*?```/g, '').trim();
+      var fence = fenceOf(t);
+      var prose = (fence ? t.replace(fence.all, '') : t).trim();
       var direction = [], question = [];
       /* a model often writes the markers as headings ("## 🧭 Direction",
          "**Example**"): the heading is the area's own label, so it goes */
@@ -1306,7 +1323,7 @@ Auto-included by docs/_layouts/default.html.
         var m = d.match(/(?:^|\n)([^\n]*\?)\s*$/);
         if (m) { q = m[1].trim(); d = d.slice(0, d.length - m[0].length).trim(); }
       }
-      return { direction: d, question: q, example: fence ? fence[0] : '' };
+      return { direction: d, question: q, example: fence ? fence.all : '' };
     }
     function renderTutor(text) {
       var parts = tutorParts(text);

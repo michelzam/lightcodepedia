@@ -798,3 +798,14 @@ def step_real_bot(context, name):
 
     context.page.route("**/raw.githubusercontent.com/**/docs/bots/" + name + ".md*", fulfill)
     context.page.route("**/api.github.com/repos/**/contents/docs/bots/" + name + ".md*", fulfill)
+
+
+@then('the "{agent_id}" agent\'s example holds "{text}" and its question does not')
+def step_example_holds(context, agent_id, text):
+    bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot.lc-agent-tutor').first
+    expect(bot).to_be_visible(timeout=10_000)
+    x = bot.locator(".lc-agent-example"); q = bot.locator(".lc-agent-question")
+    assert x.count() == 1 and text in x.inner_text(), "the example lost its fence: %r" % bot.inner_text()[:300]
+    assert "{: .query" in x.inner_text(), "the piece's decoration is not in the example: %r" % x.inner_text()[:200]
+    assert q.count() == 1 and text not in q.inner_text() and "```" not in q.inner_text(), \
+        "the fence leaked into the question: %r" % q.inner_text()[:200]

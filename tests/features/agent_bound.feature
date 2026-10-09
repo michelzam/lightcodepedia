@@ -621,6 +621,33 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     Then the "my_app" pad holds, in order, "- [ ] a button to call the next family", "[📞 Call the next family](#)", "{: .button #call_btn }", "- [ ] a python fence under it"
     And the "my_app" pad's preview shows a button
 
+  Scenario: A builder's example may hold a fence of its own — nothing leaks into the question
+    Michel, 2026-10-09, on the phone: the piece held a sql fence, the example
+    came out empty and its leftovers leaked into the question area.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the "builder" bot is served from the repo
+    And the recording model endpoint replies with this text:
+      """
+      🧭 A query asks the dataset a question; its answer is a dataset too, with its own id.
+      ❓ Which families should the list hold — all of them, or only those not called yet?
+
+      ````markdown
+      - [ ] a line that says how many are waiting
+      ```sql
+      SELECT * FROM reservations
+      ```
+      {: .query bind="reservations" #___ }
+      - [ ] give the query an id, then a line {= ___.count } in prose
+      ````
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "builder" agent with key "test-key"
+    And I ask the "builder" agent "how do I count them?"
+    Then the "builder" agent's example holds "SELECT * FROM reservations" and its question does not
+
   Scenario: Undo takes the piece back, like typing
     Michel, 2026-10-07: "undo does NOT work in that editor" — a piece written
     by assignment wiped the browser's undo stack. It is typed in now.
