@@ -240,14 +240,21 @@ Auto-included by docs/_layouts/default.html.
   }
 
   // ===== bound runner helpers =====
+  /* the bound part: a run editor (#lc-pyrun-<id>) or a PAD ({: .mdpad #id }) —
+     the builder (Michel, 2026-10-09) helps on a page, Ari on a program */
   function findRunner(boundId) {
     if (!boundId) return null;
-    return document.getElementById('lc-pyrun-' + boundId);
+    return document.getElementById('lc-pyrun-' + boundId) ||
+           document.querySelector('.lc-mdpad[data-lc-id="' + String(boundId).replace(/"/g, '') + '"]');
+  }
+  function boundIsPad(boundId) {
+    var r = findRunner(boundId);
+    return !!(r && r.classList && r.classList.contains('lc-mdpad'));
   }
   function getBoundCode(boundId) {
     var r = findRunner(boundId);
     if (!r) return null;
-    var ta = r.querySelector('.lc-pyrun-code');
+    var ta = r.querySelector('.lc-pyrun-code, .lc-mdpad-in');
     return ta ? ta.value : null;
   }
   function getBoundOutput(boundId) {
@@ -262,7 +269,7 @@ Auto-included by docs/_layouts/default.html.
   function setBoundCode(boundId, code) {
     var r = findRunner(boundId);
     if (!r) return false;
-    var ta = r.querySelector('.lc-pyrun-code');
+    var ta = r.querySelector('.lc-pyrun-code, .lc-mdpad-in');
     if (!ta) return false;
     /* only the changed middle is written, as typing, so ⌘Z takes the
        piece back and the caret lands on it (lcPyrun.edit keeps undo) */
@@ -307,7 +314,14 @@ Auto-included by docs/_layouts/default.html.
     if (code == null) return proof ? proof + '\n\nThe learner asks:\n\n' + userQuestion : userQuestion;
     var output = getBoundOutput(boundId);
     var trimmedCode = code.length > 4000 ? code.substring(0, 4000) + '\n# ...[truncated]' : code;
-    var parts = [
+    var pad = boundIsPad(boundId);
+    var parts = pad ? [
+      'The learner is writing this page in pad #' + boundId + ' (markdown, decorations under paragraphs):',
+      '',
+      '````markdown',
+      trimmedCode,
+      '````'
+    ] : [
       'The learner is editing this Python code in editor #' + boundId + ':',
       '',
       '```python',
@@ -320,8 +334,8 @@ Auto-included by docs/_layouts/default.html.
     /* the program's own TODO lines, named: a tutor that aims scans them and
        quotes the one it is on at the head of its fence (todos="true") */
     var todos = [];
-    code.split('\n').forEach(function (l) { if (/^\s*#\s*TODO\b/i.test(l)) todos.push(l.trim()); });
-    if (todos.length) parts.push('', 'The TODO lines in the program:', '', todos.join('\n'));
+    code.split('\n').forEach(function (l) { if (/^\s*#\s*TODO\b/i.test(l) || /^\s*-\s\[ \]/.test(l)) todos.push(l.trim()); });
+    if (todos.length) parts.push('', pad ? 'The open items on the page\'s checklist:' : 'The TODO lines in the program:', '', todos.join('\n'));
     if (proof) parts.push('', proof);
     parts.push('', 'The learner asks:', '', userQuestion);
     return parts.join('\n');
@@ -1254,7 +1268,7 @@ Auto-included by docs/_layouts/default.html.
        piece under it — a line or two, with new TODOs for what remains — is
        offered: "⬇ Add under «that TODO»", inserted below it with its
        indentation. Nothing of the student's is ever deleted or replaced. */
-    var TODO_RE = /^(\s*)#\s*TODO\b[:\s-]*(.*)$/i;
+    var TODO_RE = /^(\s*)(?:#\s*TODO\b[:\s-]*|-\s\[ \]\s*)(.*)$/i;   /* # TODO in a program, - [ ] on a page */
     function todoLines(text) {
       var out = [];
       String(text || '').split('\n').forEach(function (line, i) {
@@ -1264,8 +1278,8 @@ Auto-included by docs/_layouts/default.html.
       return out;
     }
     function firstFence(text) {
-      var m = String(text || '').match(/```(?:python|py)?[ \t]*\n([\s\S]*?)```/);
-      return m ? m[1].replace(/\s+$/, '') : null;
+      var m = String(text || '').match(/(`{3,4})(?:python|py|markdown|md)?[ \t]*\n([\s\S]*?)\1/);
+      return m ? m[2].replace(/\s+$/, '') : null;
     }
     /* THREE AREAS (Michel, 2026-10-06): a tutor's answer is a direction, a
        question back, and an example — each in its own area, the example

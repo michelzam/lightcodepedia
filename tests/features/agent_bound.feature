@@ -591,6 +591,36 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And the "tutor" desk says "6400 of 8000 tokens left this minute" and "refills in 4"
     And the last quota reading is kept on this device for the engine
 
+  Scenario: A builder bound to a pad scans its checklist and places the piece under the item
+    Michel, 2026-10-09: the builder — a helper beside a learner's page, not
+    an evaluator. Same two knobs as Ari, on a pad; the checklist is markdown's
+    own - [ ] lines; the example is a line with one knob blank.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the "builder" bot is served from the repo
+    And the recording model endpoint replies with this text:
+      """
+      🧭 A button is a link with one line under it; what it does comes next, as a fence right under it.
+      ❓ What should happen when it is pressed — which family is "the next" one?
+
+      ```markdown
+      - [ ] a button to call the next family
+      [📞 Call the next family](#)
+      {: .button #call_btn }
+      - [ ] a python fence under it, with {: .onclick }, that marks the family called
+      ```
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "builder" agent with key "test-key"
+    And I ask the "builder" agent "how do I add the call button?"
+    Then the "builder" agent's answer wears its face "🧱"
+    And the "builder" agent offers to add the piece under "a button to call the next family"
+    When I add the agent's piece to the editor
+    Then the "my_app" pad holds, in order, "- [ ] a button to call the next family", "[📞 Call the next family](#)", "{: .button #call_btn }", "- [ ] a python fence under it"
+    And the "my_app" pad's preview shows a button
+
   Scenario: Undo takes the piece back, like typing
     Michel, 2026-10-07: "undo does NOT work in that editor" — a piece written
     by assignment wiped the browser's undo stack. It is typed in now.

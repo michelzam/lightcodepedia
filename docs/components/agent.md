@@ -481,6 +481,54 @@ Feature: The shift is written
 ```
 {: .feature #coach_check visible="true" status="pending" tags="ai" }
 
+
+### 🧱 A builder for a page — the same two knobs, on a pad
+
+A learner's app is a pad. The **builder** is the helper beside it (Michel,
+2026-10-09: *"a helper, an assistant, not an evaluator — it can ask
+questions and teach by showing"*): `bot="builder"` for the role,
+`bound="<pad id>"` for the page, `target="<check id>"` for what the page
+should become. The page's checklist is markdown's own: `- [ ]` lines. The
+builder scans them, answers in three areas, and its example — a line with
+one knob left blank — lands at the learner's cursor.
+
+`````markdown
+# 📞 The Follow-Up List
+
+```
+family,dog,asked
+Kaur,Scout,Thu
+Mbeki,Biscuit,Fri
+```
+{: .dataset #waiting }
+
+[Families](#)
+{: .datagrid source="waiting" }
+
+- [ ] a button to call the next family
+`````
+{: .mdpad #my_app decorations="true" rows="12" }
+
+```yaml
+provider: groq
+```
+{: .agent bot="builder" bound="my_app" target="app_check" #builder rows="3" }
+
+```gherkin
+Feature: The families are on screen
+  Scenario: The page shows the waiting families
+    Given my page
+    :::python
+    self.pad: Mdpad = self.page.my_app
+    :::
+    Then a table reads the dataset
+    :::python
+    assert "datagrid" in self.pad.components, \
+        "no table yet — [Families](#) and {: .datagrid source=\"waiting\" } under the dataset"
+    :::
+```
+{: .feature #app_check visible="true" status="pending" tags="ai" }
+
 ```gherkin
 Feature: A TODO-driven agent sees the program's TODOs
   As a learner with a program full of TODOs

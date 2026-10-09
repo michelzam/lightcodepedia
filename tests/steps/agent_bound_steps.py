@@ -769,3 +769,32 @@ def step_engine_bills_one(context, host, paid, text, free):
 def step_forgot_model(context, pid):
     got = context.page.evaluate("(k) => localStorage.getItem(k)", "lc_ai_model_" + pid)
     assert got is None, got
+
+
+@then('the "{pad_id}" pad holds, in order, "{a}", "{b}", "{c}", "{d}"')
+def step_pad_order(context, pad_id, a, b, c, d):
+    ta = context.page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-in")
+    code = ta.input_value()
+    pos = [code.find(x) for x in (a, b, c, d)]
+    assert all(p >= 0 for p in pos), "missing line(s): %r in\n%s" % ([x for x, p in zip((a, b, c, d), pos) if p < 0], code)
+    assert pos == sorted(pos), "lines out of order: %r in\n%s" % (pos, code)
+
+
+@then('the "{pad_id}" pad\'s preview shows a button')
+def step_pad_button(context, pad_id):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    expect(pad.locator(".lc-mdpad-out .button, .lc-mdpad-out .lc-button").first).to_be_visible(timeout=5_000)
+
+
+@given('the "{name}" bot is served from the repo')
+def step_real_bot(context, name):
+    """loadBot fetches docs/bots/<name>.md from GitHub — serve the real file,
+    so the role's own words, face and ceiling are what the test reads."""
+    import pathlib
+    body = pathlib.Path("docs/bots/" + name + ".md").read_text(encoding="utf-8")
+
+    def fulfill(route):
+        route.fulfill(status=200, content_type="text/plain; charset=utf-8", body=body)
+
+    context.page.route("**/raw.githubusercontent.com/**/docs/bots/" + name + ".md*", fulfill)
+    context.page.route("**/api.github.com/repos/**/contents/docs/bots/" + name + ".md*", fulfill)

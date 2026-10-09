@@ -1487,11 +1487,15 @@ class Agent(Block):
         if not m:
             return []
         ta = js.window.document.querySelector("#lc-pyrun-" + m.group(1) + " .lc-pyrun-code")
+        if ta is None:   # a pad: the builder's checklist (- [ ] lines)
+            ta = js.window.document.querySelector('.lc-mdpad[data-lc-id="' + m.group(1) + '"] .lc-mdpad-in')
         if ta is None:
             return []
         out = []
         for line in str(ta.value).split("\n"):
             mm = re.match(r"^\s*#\s*[Tt][Oo][Dd][Oo][:\s-]*(.*)$", line)   # MicroPython re: no flags, no \b
+            if mm is None:
+                mm = re.match(r"^\s*-\s\[ \]\s*(.*)$", line)
             if mm:
                 out.append(mm.group(1).strip())
         return out
