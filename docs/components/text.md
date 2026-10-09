@@ -16,7 +16,7 @@ collapses into one entry (first definition wins).
 
 ## ✏️ Try it live — edit and see
 
-Read the result on the **left**, type the markdown on the **right** — instantly, as you type. The rendered page is what you are making, so it takes the reading position; the source sits beside it.
+Read the result on the **left**, type the markdown on the **right** — instantly, as you type. The rendered page is what you are making, so it takes the reading position; the source sits beside it. The small **✎ Hide** button folds the editor away so the preview takes the whole width — on a phone, the whole screen; **✎ Edit** brings it back.
 
 ````markdown
 ## Hello, Markdown!
@@ -495,6 +495,31 @@ Feature: A markdown block becomes a live editor and preview
     assert len(self.pad.links) >= 1, self.pad.links
     assert self.pad.images == 0, self.pad.images
     assert this_year() >= 2026, this_year()
+    :::
+
+  Scenario: ✎ Hide folds the editor away, and the preview takes the whole width
+    Given the playground pad, editor shown
+    :::python
+    self.pad: Mdpad = self.page.playground
+    self.pad.unfold()
+    self.before: float = float(self.pad._el.querySelector(".lc-mdpad-out").getBoundingClientRect().width)
+    :::
+    When the editor is folded
+    :::python
+    self.pad.fold()
+    :::
+    Then the preview is wider and the source is gone from view
+    :::python
+    assert self.pad.folded, "not folded"
+    after: float = float(self.pad._el.querySelector(".lc-mdpad-out").getBoundingClientRect().width)
+    assert after > self.before, f"preview {after} not wider than {self.before}"
+    assert self.pad._el.querySelector(".lc-mdpad-src").offsetParent is None, "the source is still shown"
+    :::
+    And ✎ Edit brings the editor back
+    :::python
+    self.pad.unfold()
+    assert not self.pad.folded, "still folded"
+    assert self.pad._el.querySelector(".lc-mdpad-src").offsetParent is not None, "the source did not come back"
     :::
 ```
 {: .feature tags="code" status="passing" }

@@ -16,3 +16,13 @@ Feature: The pad types like a text field, painted
     When I undo in the "playground" pad
     Then the "playground" pad does not contain "# hello"
     And the "playground" pad's mirror does not show "# hello"
+
+  Scenario: ✎ Hide folds the editor, ✎ Edit brings it back
+    Michel, 2026-10-09, on the phone: "a small button to fold the editor so we
+    can see the whole width of the preview side, and (un)fold".
+
+    When I press "✎ Hide" on the "playground" pad
+    Then the "playground" pad's source is folded away
+    And the "playground" pad's preview spans the pad
+    When I press "✎ Edit" on the "playground" pad
+    Then the "playground" pad's source is shown again

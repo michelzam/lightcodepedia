@@ -46,3 +46,29 @@ def step_mirror_shows(context, pad_id, text):
 @then('the "{pad_id}" pad\'s mirror does not show "{text}"')
 def step_mirror_not(context, pad_id, text):
     expect(_mirror(context, pad_id)).not_to_contain_text(text, timeout=5_000)
+
+
+@when('I press "{label}" on the "{pad_id}" pad')
+def step_pad_press(context, label, pad_id):
+    btn = context.page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-fold")
+    expect(btn).to_have_text(label)
+    btn.click()
+
+
+@then('the "{pad_id}" pad\'s source is folded away')
+def step_pad_folded(context, pad_id):
+    expect(context.page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-src")).to_be_hidden()
+    expect(context.page.locator("[data-lc-id='" + pad_id + "']")).to_have_attribute("data-lc-folded", "1")
+
+
+@then('the "{pad_id}" pad\'s preview spans the pad')
+def step_pad_preview_spans(context, pad_id):
+    w = context.page.evaluate(
+        "(id) => { const p = document.querySelector(`[data-lc-id='${id}']`); const o = p.querySelector('.lc-mdpad-out');"
+        " return [p.getBoundingClientRect().width, o.getBoundingClientRect().width]; }", pad_id)
+    assert w[1] >= w[0] - 2, "preview %s of pad %s" % (w[1], w[0])
+
+
+@then('the "{pad_id}" pad\'s source is shown again')
+def step_pad_unfolded(context, pad_id):
+    expect(context.page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-src")).to_be_visible()

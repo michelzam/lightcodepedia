@@ -1933,6 +1933,22 @@ class Mdpad(Block):
                     out.append(c)
         return out
 
+    # ── ✎ fold: the editor tucks away, the preview takes the whole width ──
+    @property
+    def folded(self):
+        """True while the editor is folded away and the preview alone shows."""
+        return self._attr("data-lc-folded") == "1"
+
+    def fold(self):
+        f = getattr(self._el, "_lcFold", None) if self._el is not None else None
+        if f is not None:
+            f(True)
+
+    def unfold(self):
+        f = getattr(self._el, "_lcFold", None) if self._el is not None else None
+        if f is not None:
+            f(False)
+
     # ── 🎞 replay: the saved versions as frames, read-only ──
     def replay(self):
         """Press 🎞 — the frames load (a promise the page resolves), the

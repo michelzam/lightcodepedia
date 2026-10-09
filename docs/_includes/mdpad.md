@@ -55,6 +55,9 @@ IAL knobs:
                  and a wire (source= master= bound= target=) to an id the page
                  does not have is drawn broken — dashed frame, one chip,
                  data-lc-broken on the pad (Michel, 2026-10-08)
+  ✎ Hide / Edit  one small button on every pad folds the editor away so the
+                 preview takes the whole width, and brings it back
+                 (Michel, 2026-10-09, on the phone); pad.fold()/unfold()
   layout="rows"  preview ABOVE the source instead of beside it — for a
               landscape document (a story in colour) that would be squeezed
               in half a pane. DEFAULT: side by side (left/right).
@@ -63,7 +66,14 @@ Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
 <style>
-.lc-mdpad { display: flex; gap: 0.75em; margin: 1em 0; min-height: 220px; }
+.lc-mdpad { display: flex; gap: 0.75em; margin: 1em 0; min-height: 220px; position: relative; }
+/* ✎ FOLD — the editor tucks away and the preview takes the whole width
+   (Michel, 2026-10-09, on the phone); the same button brings it back */
+.lc-mdpad-fold { position: absolute; top: 0.35em; right: 0.35em; z-index: 3; font: inherit; font-size: 0.72em;
+  padding: 0.2em 0.55em; border-radius: 6px; border: 1px solid #bbb; background: rgba(255, 255, 255, 0.92);
+  color: #555; cursor: pointer; line-height: 1.3; }
+.lc-mdpad-fold:hover { border-color: #888; color: #222; }
+.lc-mdpad.lc-mdpad-folded > .lc-mdpad-src { display: none !important; }
 .lc-mdpad-in {
   flex: 1; min-width: 0; resize: vertical;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -410,6 +420,20 @@ Auto-included by docs/_layouts/default.html.
        leave a keyboard and a screen reader walking it the other way round. */
     wrap.appendChild(out);
     wrap.appendChild(src || ta);
+    /* ✎ fold: the editor tucks away, the preview takes the whole width */
+    var foldBtn = document.createElement("button");
+    foldBtn.type = "button"; foldBtn.className = "lc-mdpad-fold";
+    function setFold(on) {
+      wrap.classList.toggle("lc-mdpad-folded", !!on);
+      if (on) wrap.setAttribute("data-lc-folded", "1"); else wrap.removeAttribute("data-lc-folded");
+      foldBtn.textContent = on ? "✎ Edit" : "✎ Hide";
+      foldBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      foldBtn.title = on ? "Bring the editor back" : "Fold the editor — the preview takes the whole width";
+    }
+    foldBtn.addEventListener("click", function () { setFold(!wrap.classList.contains("lc-mdpad-folded")); });
+    setFold(false);
+    wrap.appendChild(foldBtn);
+    wrap._lcFold = setFold;
     el.parentNode.replaceChild(wrap, el);
     if (saveWrap) wrap.parentNode.insertBefore(saveWrap, wrap.nextSibling);
     /* the stripe goes round BOTH the pad and its keep bar, so the frame
@@ -722,6 +746,7 @@ Auto-included by docs/_layouts/default.html.
           wrap.setAttribute("data-lc-frames", String(frames.length));
           /* the list stays open: its rows are the frames, and 🕘 keeps working */
           [saveBtn, resetBtn].forEach(function (b) { if (b) b.disabled = true; });
+          setFold(false);                 /* a replay needs the pane it measures */
           var pane = src || ta;
           rp.diffEl = document.createElement("pre");
           rp.diffEl.className = "lc-mdpad-diff";
