@@ -284,9 +284,23 @@ def step_no_paid_call(context):
 
 # ── the ring ──────────────────────────────────────────────────────────────
 
-def _ok_reply(text):
-    return json.dumps({"choices": [{"message": {"content": text}}], "usage": {"total_tokens": 3},
-                       "model": "stub-model-9"})
+def _ok_reply(text, finish=None):
+    choice = {"message": {"content": text}}
+    if finish:
+        choice["finish_reason"] = finish
+    return json.dumps({"choices": [choice], "usage": {"total_tokens": 3}, "model": "stub-model-9"})
+
+
+@given("the recording model endpoint replies, cut off, with this text:")
+def step_recording_model_cut(context):
+    text = context.text
+    context.sent_bodies = []
+
+    def fulfill(route):
+        context.sent_bodies.append(json.loads(route.request.post_data or "{}"))
+        route.fulfill(status=200, content_type="application/json", body=_ok_reply(text, "length"))
+
+    context.page.route("**/chat/completions*", fulfill)
 
 
 @then('the desk\'s ring offers "{a}", "{b}" and "{c}"')
@@ -827,3 +841,20 @@ def step_direction_clean(context, agent_id):
     d = bot.locator(".lc-agent-direction").inner_text()
     for bad in ("- [ ]", "](#)", "{:", ">>>", "<<<", "`"):
         assert bad not in d, "the direction leaked %r: %r" % (bad, d[:200])
+
+
+@then('the "{agent_id}" agent\'s lines hold "{text}" and the cut-off note shows once under them')
+def step_cut_lines(context, agent_id, text):
+    bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot.lc-agent-tutor').first
+    expect(bot).to_be_visible(timeout=10_000)
+    x = bot.locator(".lc-agent-example pre")
+    assert x.count() == 1 and text in x.inner_text(), "the lines that arrived are not shown: %r" % bot.inner_text()[:300]
+    assert ">>>" not in bot.locator(".lc-agent-direction").inner_text(), "the marker leaked into the direction"
+    assert bot.locator(".lc-agent-cut").count() == 1, "the cut-off note is not shown once"
+    assert "cut off" not in x.inner_text(), "the note leaked into the lines"
+
+
+@then('the request asked for "{key}" "{value}"')
+def step_request_key(context, key, value):
+    body = context.sent_bodies[-1]
+    assert str(body.get(key)) == value, "%s=%r in %r" % (key, body.get(key), sorted(body.keys()))

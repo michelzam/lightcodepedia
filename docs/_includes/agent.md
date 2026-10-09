@@ -976,6 +976,9 @@ Auto-included by docs/_layouts/default.html.
     };
     if (cfg.temperature != null) body.temperature = Number(cfg.temperature);
     if (cfg.max_tokens != null) body.max_tokens = parseInt(cfg.max_tokens, 10);
+    /* a reasoning model thinks inside max_tokens; a role that wants the
+       answer, not the thinking, says so (gpt-oss on Groq: low/medium/high) */
+    if (cfg.reasoning_effort) body.reasoning_effort = String(cfg.reasoning_effort);
     return fetch(url, {
       method: 'POST',
       headers: {
@@ -1301,10 +1304,11 @@ Auto-included by docs/_layouts/default.html.
        misread, braces and inner fences included. A fence still works, for
        Ari and for a model that forgets. */
     function linesBlock(text) {
-      var m = /(^|\n)>>>[^\n]*\n([\s\S]*?)\n<<<[^\n]*(?=\n|$)/.exec(String(text || ''));
+      var t = String(text || '');
+      var m = /(^|\n)>>>[^\n]*\n([\s\S]*?)(?:\n<<<[^\n]*(?=\n|$)|(?![\s\S]))/.exec(t);
       if (!m) return null;
       var start = m.index + m[1].length;
-      return { all: String(text).slice(start, m.index + m[0].length), inner: m[2], info: '' };
+      return { all: t.slice(start, m.index + m[0].length), inner: m[2], info: '' };
     }
     function pieceOf(text) { return linesBlock(text) || fenceOf(text); }
     function firstFence(text) {
@@ -1339,13 +1343,16 @@ Auto-included by docs/_layouts/default.html.
       return { direction: d, question: q, example: fence ? fence.all : '', lines: fence ? fence.inner.replace(/\s+$/, '') : '' };
     }
     function renderTutor(text) {
-      var parts = tutorParts(text);
+      var t = String(text || ''), cut = t.indexOf(TRUNCATED_NOTE) >= 0;
+      if (cut) t = t.replace(TRUNCATED_NOTE, '').replace(/\s+$/, '');
+      var parts = tutorParts(t);
       var html = '';
       if (parts.direction) html += '<div class="lc-agent-direction"><span class="lc-agent-area-label">🧭 direction</span>' + renderMarkdown(parts.direction) + '</div>';
       if (parts.question) html += '<div class="lc-agent-question"><span class="lc-agent-area-label">❓ your turn</span>' + renderMarkdown(parts.question) + '</div>';
       /* the lines are drawn as they are — a markdown piece may hold a fence of
          its own, which no bubble renderer should try to read (2026-10-09) */
       if (parts.example) html += '<div class="lc-agent-example"><span class="lc-agent-area-label">🧩 the lines — ⬇ puts them on your page</span><pre><code>' + escapeHtml(parts.lines) + '</code></pre></div>';
+      if (cut) html += '<div class="lc-agent-cut">' + renderMarkdown(TRUNCATED_NOTE) + '</div>';
       return html || renderMarkdown(text);
     }
     function offerPiece(text) {
@@ -1452,6 +1459,7 @@ Auto-included by docs/_layouts/default.html.
           { role: 'user', content: String(userText) } ] };
         if (cfg.temperature != null) body.temperature = parseFloat(cfg.temperature);
         if (cfg.max_tokens != null) body.max_tokens = parseInt(cfg.max_tokens, 10);
+        if (cfg.reasoning_effort) body.reasoning_effort = String(cfg.reasoning_effort);
         return { url: eng.base + '/chat/completions', token: tok,
                  pid: eng.id || '', model: eng.model || '', body: JSON.stringify(body) };
       },

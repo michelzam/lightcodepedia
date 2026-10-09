@@ -4,8 +4,11 @@
 name: Builder
 icon: 🧱
 temperature: 0.3
-# a ceiling, not a spend: gpt-oss and Gemini think inside this allowance
-max_tokens: 1500
+# a ceiling, not a spend: gpt-oss and Gemini think inside this allowance —
+# 1500 was spent on thinking alone and the lines came out cut (2026-10-09)
+max_tokens: 3000
+# the answer is two sentences and a few lines: think little (gpt-oss on Groq)
+reasoning_effort: low
 placeholder: What should the page do? Say it — I build it.
 intro: "Say what you want on the page. I write the part, explain it, you put it on the page. 🧱"
 placeholder_next: "The next thing the page should do"

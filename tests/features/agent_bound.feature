@@ -648,6 +648,31 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I add the agent's piece to the editor
     Then the "my_app" pad holds, in order, "- [ ] a button to call the next family", "[Families waiting](#)", "rows=", "height="
 
+  Scenario: A cut-off reply still shows the lines that arrived, and asks the engine to think little
+    Michel, 2026-10-09, fourth phone test: 1500 reply tokens, all spent on
+    thinking — the lines came out cut, the closing marker never arrived, and
+    the note landed inside the box.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the "builder" bot is served from the repo
+    And the recording model endpoint replies, cut off, with this text:
+      """
+      🧭 I added a table face under the dataset.
+
+      >>>
+      - [ ] a button to call the next family
+      [Families waiting](#)
+      {: .datagrid source="waiting"
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "builder" agent with key "test-key"
+    And I ask the "builder" agent "show the families in a table"
+    Then the "builder" agent's lines hold "[Families waiting](#)" and the cut-off note shows once under them
+    And the request asked for "reasoning_effort" "low"
+    And the request asked for "max_tokens" "3000"
+
   Scenario: A builder's example may hold a fence of its own — nothing leaks into the question
     Michel, 2026-10-09, on the phone: the piece held a sql fence, the example
     came out empty and its leftovers leaked into the question area.
