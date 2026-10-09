@@ -26,3 +26,31 @@ Feature: The pad types like a text field, painted
     And the "playground" pad's preview spans the pad
     When I press "✎ Edit" on the "playground" pad
     Then the "playground" pad's source is shown again
+
+  Scenario: A pad's seed keeps its decorations glued to their lines in the runner
+    Michel, 2026-10-09: the runner put a blank line above every decoration,
+    fences included, so a pad opened with a gap the lesson never had, and a
+    learner copying that shape left a datagrid's decoration alone — it landed
+    on the query above and the query vanished. Fences are verbatim now.
+
+    Given the GitHub contents API serves "courses/demo/module_05/glued.md" with the document:
+      """
+      # Glued
+
+      `````markdown
+      # App
+
+      ```
+      family,dog
+      Kaur,Scout
+      ```
+      {: .dataset #families }
+
+      [Families](#)
+      {: .datagrid source="families" }
+      `````
+      {: .mdpad #glued decorations="true" rows="10" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/glued.md"
+    And I wait for the page to be interactive
+    Then the "glued" pad's text keeps every decoration glued to its line

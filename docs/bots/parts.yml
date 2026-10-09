@@ -16,19 +16,19 @@ dataset:
     {: .dataset #your_dataset }
   adapt: the rows are yours; the word after # is the id every face names
 datagrid:
-  name: a table on a dataset
+  name: a datagrid on a dataset
   module: Module 04 · Dogs
   lines: |
     [Title](#)
     {: .datagrid source="your_dataset" }
   adapt: source names the dataset's id — the word after # in its decoration
 form:
-  name: a card that follows a table
+  name: a form that follows a datagrid — it shows the selected row
   module: Module 04 · Three Faces
   lines: |
     [Title](#)
     {: .form master="your_grid" }
-  adapt: the table needs an id of its own — add #your_grid to its decoration, then name it here
+  adapt: the datagrid needs an id of its own — add #your_grid to its decoration, then name it here
 chart:
   name: a chart on a dataset
   module: Module 04 · Three Faces
@@ -37,7 +37,7 @@ chart:
     {: .chart source="your_dataset" x="a_column" y="a_column" }
   adapt: x and y name two columns of the dataset
 query:
-  name: a question asked of a dataset — its answer is a dataset too
+  name: a query on a dataset — its answer is a dataset too
   module: Module 04 · Three Faces
   lines: |
     ```sql
@@ -54,22 +54,22 @@ button:
   adapt: the label is the link's text; the id lets Python find it
 onclick:
   name: what a button does — a few lines of Python right under it
-  module: Module 05 · Slice
+  module: Module 05 · The Follow-Up List
   lines: |
     ```python
     button.text = "✅ Done"
     ```
     {: .onclick }
-  adapt: right under the button's decoration; button is the one pressed
+  adapt: right under the button's decoration; button is the one pressed, button.page.<id> reaches any component
 cell:
   name: a live number inside a sentence
-  module: Module 05 · Slice
+  module: Module 05 · The Follow-Up List
   lines: |
     {= your_dataset.count } families are waiting.
   adapt: any dataset or query id, then .count
 visible:
   name: a gate — the part shows only when there is something to show
-  module: Module 05 · Slice
+  module: Module 02 · Gates
   lines: |
     [Title](#)
     {: .datagrid source="your_query" visible="= your_query.count" }
@@ -83,7 +83,7 @@ beside:
   adapt: beside goes on the second part; the first stays as it is
 feature:
   name: a check — Gherkin, steps in Python, reading your parts by id
-  module: Module 05 · Proof
+  module: Module 05 · The Proof
   lines: |
     ```gherkin
     Feature: The page does what it says

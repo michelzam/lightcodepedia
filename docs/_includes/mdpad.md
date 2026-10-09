@@ -899,7 +899,7 @@ Auto-included by docs/_layouts/default.html.
       /* decorations: the runner's pipeline on the preview — IAL on its own
          paragraph, block IAL applied, then the same scan that upgrades a
          page's fences into components, and the cells inside them */
-      var norm = v.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+      var norm = window.lcNormIAL ? window.lcNormIAL(v) : v.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
       var cur = wiresOf(v);
       forgetGone(cur);                      /* what the text no longer declares is gone */
       body.innerHTML = inline(window.marked.parse(norm));

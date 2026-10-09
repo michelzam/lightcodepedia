@@ -122,6 +122,28 @@ Auto-included by docs/_layouts/default.html.
 </style>
 
 <script>
+/* IAL on its own paragraph so block-IAL applies — the client-side twin of
+   kramdown's rule, OUTSIDE fences only. Inside a fence the text is verbatim:
+   a pad's seed is a fence, and normalising it showed learners a blank line
+   above every decoration the lesson had glued (Michel, 2026-10-09). A fence
+   closes on the same character, at least as long as the one that opened it,
+   so a `````markdown seed may hold ``` fences of its own. */
+window.lcNormIAL = window.lcNormIAL || function (md) {
+  var lines = String(md).split("\n"), out = [], fence = null;
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i], m = /^ {0,3}(`{3,}|~{3,})/.exec(l);
+    if (fence) {
+      if (m && m[1].charAt(0) === fence.charAt(0) && m[1].length >= fence.length &&
+          /^ {0,3}[`~]+\s*$/.test(l)) fence = null;
+    } else if (m) {
+      fence = m[1];
+    } else if (/^\{:/.test(l) && out.length && out[out.length - 1] !== "") {
+      out.push("");
+    }
+    out.push(l);
+  }
+  return out.join("\n");
+};
 (function () {
   if (window._lcWidgetsReady) return;
   window._lcWidgetsReady = true;
@@ -733,7 +755,7 @@ Auto-included by docs/_layouts/default.html.
       box.setAttribute("data-lc-src-path", path);
       if (isMine) box.setAttribute("data-lc-mine", "1");
       paintHead(path);
-      var norm = md.trim().replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+      var norm = window.lcNormIAL(md.trim());
       loadMarked(function () {
         if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
         body.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
@@ -1035,7 +1057,7 @@ Auto-included by docs/_layouts/default.html.
              blocks must upgrade too. Without normalise+apply+scan, a
              {: .quiz } marker rendered as literal text and the checkboxes
              stayed dead (module_00's settling quiz, 2026-07-30). */
-          var norm = text.trim().replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
+          var norm = window.lcNormIAL(text.trim());
           if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
           container.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
           if (window.lcApplyIAL)    window.lcApplyIAL(container);

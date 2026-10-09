@@ -506,49 +506,67 @@ M05_CHECK = (
     "{: .feature #call_check visible=\"true\" }\n")
 
 
-@given("the learner has added the table, the counting line and the button")
+@given("the learner has added the datagrid and the button")
 def step_builder_fix(context):
-    """Module 05's scratch page: the three catalogue parts under their items,
-    placeholders swapped, items ticked. Loud if the seed drifts."""
+    """Module 05's playground: the two catalogue components under their
+    items, placeholder swapped, items ticked. Loud if the seed drifts."""
     def fix(body):
-        items = ("- [ ] a table of the families waiting\n"
-                 "- [ ] a line that says how many are waiting\n"
+        items = ("- [ ] a datagrid of the families waiting\n"
                  "- [ ] a button to call the next family\n")
-        assert items in body, "the builder seed no longer carries the three checklist items"
+        assert items in body, "the playground seed no longer carries its two checklist items"
         return body.replace(items,
-            "- [x] a table of the families waiting\n\n"
+            "- [x] a datagrid of the families waiting\n\n"
             "[Families](#)\n{: .datagrid source=\"reservations\" }\n\n"
-            "- [x] a line that says how many are waiting\n\n"
-            "{= reservations.count } families are waiting.\n\n"
             "- [x] a button to call the next family\n\n"
             "[📞 Call the next family](#)\n{: .button #call_btn }\n")
     _serve_course_page(context, context.lesson_path, fix)
 
 
-M05_LIST_ITEMS = ("- [ ] a question: which families to call\n"
-                  "- [ ] a table on the answer, shown only when someone is waiting\n"
-                  "- [ ] a line that says how many are waiting\n"
-                  "- [ ] a button to call the next family\n")
+M05_LIST_ITEMS = ("- [ ] a query: the families to call\n"
+                  "- [ ] a datagrid on its answer\n"
+                  "- [ ] a line that counts them\n"
+                  "- [ ] a form: the next family to call\n"
+                  "- [ ] a button that calls them, one after the other\n")
+
+M05_APP = ("```sql\nSELECT family, dog, asked, met FROM reservations\n```\n"
+           "{: .query bind=\"reservations\" #to_call }\n\n"
+           "[Families to call](#)\n{: .datagrid #call_list source=\"to_call\" }\n\n"
+           "{= to_call.count } families are waiting.\n\n"
+           "[Next family](#)\n{: .form #next_family master=\"call_list\" title=\"📞 Next family\" }\n\n"
+           "[📞 Call the next family](#)\n{: .button #call_btn }\n"
+           "```python\n"
+           "family = button.page.next_family.data.family\n"
+           "names = button.page.to_call.values(\"family\")\n"
+           "button.text = \"✅ \" + family + \" called\"\n"
+           "button.page.call_list.select(names.index(family) + 2)\n"
+           "```\n{: .onclick }\n")
 
 
-@given("the learner has built the follow-up list")
+@given("the learner has built the follow-up app")
 def step_list_fix(context):
-    """Module 05's real page: a question, a gated table on its answer, a cell
-    and a button with its onclick — the lesson's own lines."""
+    """Module 05's real page: the lesson's own lines, the items ticked."""
     def fix(body):
-        assert M05_LIST_ITEMS in body, "the follow-up seed no longer carries the four checklist items"
-        return body.replace(M05_LIST_ITEMS,
-            "- [x] a question: which families to call\n\n"
-            "```sql\nSELECT family, dog, asked, met FROM reservations\n```\n"
-            "{: .query bind=\"reservations\" #to_call }\n\n"
-            "- [x] a table on the answer, shown only when someone is waiting\n\n"
-            "[Families to call](#)\n{: .datagrid #call_list source=\"to_call\" visible=\"= to_call.count\" }\n\n"
-            "- [x] a line that says how many are waiting\n\n"
-            "{= to_call.count } families are waiting.\n\n"
-            "- [x] a button to call the next family\n\n"
-            "[📞 Call the next family](#)\n{: .button #call_btn }\n"
-            "```python\nbutton.text = \"✅ Called\"\n```\n{: .onclick }\n")
+        assert M05_LIST_ITEMS in body, "the follow-up seed no longer carries the five checklist items"
+        return body.replace(M05_LIST_ITEMS, M05_LIST_ITEMS.replace("- [ ]", "- [x]") + "\n" + M05_APP)
     _serve_course_page(context, context.lesson_path, fix)
+
+
+@given("the learner has built the follow-up app with the datagrid's decoration alone")
+def step_list_fix_lone(context):
+    """Michel's pad, 2026-10-09: the datagrid's decoration alone after a blank
+    line lands on the query before it — the query becomes a grid of every
+    reservation and the proof finds no query. The proof must say why."""
+    def fix(body):
+        assert M05_LIST_ITEMS in body, "the follow-up seed no longer carries the five checklist items"
+        app = M05_APP.replace("[Families to call](#)\n{: .datagrid", "\n{: .datagrid")
+        return body.replace(M05_LIST_ITEMS, M05_LIST_ITEMS.replace("- [ ]", "- [x]") + "\n" + app)
+    _serve_course_page(context, context.lesson_path, fix)
+
+
+@then('the lesson\'s check "{fid}" says "{text}"')
+def step_named_says(context, fid, text):
+    card = context.page.locator('.lc-feature[data-lc-id="' + fid + '"]').first
+    expect(card).to_contain_text(text, timeout=20_000)
 
 
 @then('the pad\'s preview reads "{text}"')
@@ -624,31 +642,49 @@ def step_fix_question(context):
     context.page.wait_for_timeout(1500)
 
 
-@given("the learner has built a slice of their own")
-def step_slice_fix(context):
-    """Module 05's closing pad: the five floors, the lesson's own lines, ticked."""
+@given("the learner has built an app of their own")
+def step_own_app_fix(context):
+    """Module 05's closing pad: a purpose line and the five items, the
+    lesson's own vocabulary, ticked."""
     def fix(body):
-        items = ("- [ ] who: a persona card\n"
-                 "- [ ] why: a pitch that reads it\n"
-                 "- [ ] the row: an impact map with one row\n"
-                 "- [ ] the thing: a dataset, and a face on it\n"
-                 "- [ ] the check: a proof that goes red before it goes green\n")
-        assert items in body, "the slice seed no longer carries the five checklist items"
-        return body.replace(items,
-            "- [x] who: a persona card\n\n"
-            "```yaml\nname: Sam\nrole: Club treasurer\ngoal: know who has paid\n```\n{: .persona #who }\n\n"
-            "- [x] why: a pitch that reads it\n\n"
-            "```yaml\nproduct: Dues Desk\nneed: nobody chases a payment twice\nbenefit: one list, one tick\n```\n"
-            "{: .pitch #why persona=\"who\" }\n\n"
-            "- [x] the row: an impact map with one row\n\n"
-            "```yaml\ngoal: Every member pays once\nimpacts:\n  - how: Sam sees who has not paid yet\n    what: A list of unpaid members\n```\n"
-            "{: .impact_map #row pitch=\"why\" }\n\n"
-            "- [x] the thing: a dataset, and a face on it\n\n"
+        purpose = "(one sentence: what this app does, and for whom)\n"
+        items = ("- [ ] a dataset of your own\n"
+                 "- [ ] a datagrid on it\n"
+                 "- [ ] a line that counts something\n"
+                 "- [ ] a button with a job\n"
+                 "- [ ] a check that goes red before it goes green\n")
+        assert purpose in body and items in body, "the own-app seed no longer carries its purpose line and five items"
+        return body.replace(purpose, "Who has paid the club dues, for the treasurer.\n").replace(items,
+            "- [x] a dataset of your own\n\n"
             "```\nmember,paid\nAva,yes\nBen,\n```\n{: .dataset #members }\n\n"
+            "- [x] a datagrid on it\n\n"
             "[Members](#)\n{: .datagrid #member_grid source=\"members\" }\n\n"
-            "- [x] the check: a proof that goes red before it goes green\n\n"
+            "- [x] a line that counts something\n\n"
+            "{= members.count } members.\n\n"
+            "- [x] a button with a job\n\n"
+            "[💸 Remind](#)\n{: .button #remind_btn }\n```python\nbutton.text = \"✅ Reminded\"\n```\n{: .onclick }\n\n"
+            "- [x] a check that goes red before it goes green\n\n"
             "```gherkin\nFeature: The list shows members\n  Scenario: Rows are there\n    Given my page\n    :::python\n"
-            "    self.grid: Datagrid = self.page.member_grid\n    :::\n    When Sam opens it\n    Then it shows rows\n    :::python\n"
+            "    self.grid: Datagrid = self.page.member_grid\n    :::\n    When the treasurer opens it\n    Then it shows rows\n    :::python\n"
             "    assert self.grid.rows, \"no rows yet\"\n    :::\n```\n{: .feature #my_check visible=\"true\" }\n")
     _serve_course_page(context, context.lesson_path, fix)
 
+
+@when("the coordinator presses the call button {n:d} times")
+def step_press_call(context, n):
+    """The real button, as a person presses it: the form repaints a moment
+    after each press (its row is derived asynchronously), so wait between."""
+    btn = context.page.locator('.lc-mdpad-out [data-lc-id="call_btn"]').first
+    btn.wait_for(state="attached", timeout=30_000)
+    for _ in range(n):
+        context.page.wait_for_timeout(800)
+        btn.evaluate("e => e.click()")
+    context.page.wait_for_timeout(1500)
+
+
+@then('the form names "{family}"')
+def step_form_names(context, family):
+    import json
+    form = context.page.locator('.lc-mdpad-out [data-lc-id="next_family"]').first
+    got = json.loads(form.get_attribute("data-lc-value") or "{}").get("family")
+    assert got == family, "the form names %r, expected %r" % (got, family)

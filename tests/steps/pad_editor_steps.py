@@ -72,3 +72,14 @@ def step_pad_preview_spans(context, pad_id):
 @then('the "{pad_id}" pad\'s source is shown again')
 def step_pad_unfolded(context, pad_id):
     expect(context.page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-src")).to_be_visible()
+
+
+@then('the "{pad_id}" pad\'s text keeps every decoration glued to its line')
+def step_pad_glued(context, pad_id):
+    """A seed is a fence, and a fence is verbatim: the runner used to put a
+    blank line above every decoration in it (Michel, 2026-10-09)."""
+    ta = _ta(context, pad_id)
+    ta.wait_for(state="attached", timeout=20_000)
+    v = ta.input_value()
+    assert "{: .dataset" in v, "the pad lost its seed: %r" % v[:200]
+    assert "\n\n{:" not in v, "a blank line above a decoration: %r" % v[max(0, v.find("\n\n{:") - 40):v.find("\n\n{:") + 30]

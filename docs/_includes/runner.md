@@ -462,7 +462,7 @@ files a learner is already working in.
         window.lcLoadMarked(function () {
           /* IAL on its own paragraph so block-IAL applies — mirrors the
              server-side normalisation the editor preview also does */
-          var norm = md.replace(/([^\n])\n(\{:)/g, "$1\n\n$2").trim();
+          var norm = window.lcNormIAL(md).trim();   /* fences stay verbatim */
           if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
           root.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
           if (window.lcApplyIAL)    window.lcApplyIAL(root);

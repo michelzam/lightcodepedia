@@ -198,6 +198,15 @@ def check_page(path, text):
         elif lab.group(1).strip() not in SEAM_LABELS:
             problems.append(f'SEAM-LABEL    "{lab.group(1)}" — say one of: '
                             + " · ".join(sorted(SEAM_LABELS)))
+    # a decoration sticks to the line above it (Michel, 2026-10-03 and
+    # 2026-10-09): with a blank line between, it lands on the block BEFORE
+    # the blank — a datagrid line turned a learner's query into a grid and
+    # the proof found no query. Lessons, snippets and seeds show it glued.
+    lines = text.split("\n")
+    for n, line in enumerate(lines[1:], start=2):
+        if re.match(r"^\s*\{:", line) and not lines[n - 2].strip():
+            problems.append(f"DECORATION-ALONE  line {n}: {line.strip()[:50]} — glue it to the "
+                            f"line it decorates, no blank line above")
     return problems
 
 

@@ -174,9 +174,9 @@ Feature: 🚦 A workflow ordered by its own values
     Then the lesson's proof is green
     And the story pad stacks its preview above its source
 
-  Scenario: Module 05's builder page is red on arrival
+  Scenario: Module 05's playground is red on arrival
     Michel, 2026-10-09: Module 05 rebuilt in the pad — four pages, the builder
-    one of them. The scratch page opens with a checklist and no part.
+    one of them. The playground opens with a checklist and no component.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"
@@ -185,19 +185,18 @@ Feature: 🚦 A workflow ordered by its own values
     And I run the lesson's check "builder_check"
     Then the lesson's check "builder_check" is red
 
-  Scenario: Module 05's builder page is green once the three parts are added and ticked
+  Scenario: Module 05's playground is green once the datagrid and the button are added and ticked
     Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
-    And the learner has added the table, the counting line and the button
+    And the learner has added the datagrid and the button
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
     And I run the lesson's check "builder_check"
     Then the lesson's check "builder_check" is green
 
-  Scenario: Module 05's follow-up list is red on arrival
-    The real page: the reason is there (persona, pitch, one row of the map),
-    the dataset is there, and the checklist waits for a question, a gated
-    table, a cell and a button.
+  Scenario: Module 05's follow-up app is red on arrival
+    The coordinator's app: the dataset and a checklist; the reasons (persona,
+    pitch, map row) sit beside the pad, on the lesson page.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/02_list.md"
@@ -206,26 +205,51 @@ Feature: 🚦 A workflow ordered by its own values
     And I run the lesson's check "list_proof"
     Then the lesson's check "list_proof" is red
 
-  Scenario: Module 05's follow-up list is green once the four parts are built
+  Scenario: Module 05's follow-up app is green once its five components are built
+    The proof presses the button once (Nguyen called, the form moves to
+    Okafor); two more presses walk on to Alvarez, then Brooks.
+
     Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
-    And the learner has built the follow-up list
+    And the learner has built the follow-up app
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/02_list.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
     And I run the lesson's check "list_proof"
     Then the lesson's check "list_proof" is green
     And the pad's preview reads "14 families are waiting"
+    When the coordinator presses the call button 2 times
+    Then the form names "Brooks"
+
+  Scenario: Module 05's follow-up app names a decoration with nothing above it
+    Michel's pad, 2026-10-09: the datagrid's decoration typed alone after a
+    blank line, with no link above it, landed on the query — the query became
+    a grid of every reservation and the proof only said "no query yet". It
+    now names the decoration that has nothing above it.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
+    And the learner has built the follow-up app with the datagrid's decoration alone
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/02_list.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "list_proof"
+    Then the lesson's check "list_proof" is red
+    And the lesson's check "list_proof" says "nothing right above {: .datagrid"
 
   Scenario: Module 05's proof page is red while fourteen families are in the list
+    The story the page tells: two presses, and the form names Alvarez, who
+    took Scout home on Saturday.
+
     Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/03_proof.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
-    And I run the lesson's check "proof_proof"
+    And the coordinator presses the call button 2 times
+    Then the form names "Alvarez"
+    When I run the lesson's check "proof_proof"
     Then the lesson's check "proof_proof" is red
 
-  Scenario: Module 05's proof page is green once the check is on the page and the question is fixed
-    The check the learner types runs INSIDE their page: red with the five
+  Scenario: Module 05's proof page is green once the check is in the app and the query is fixed
+    The check the learner types runs INSIDE their app: red with the five
     families who already met their dog, green after WHERE met = ''.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
@@ -240,25 +264,27 @@ Feature: 🚦 A workflow ordered by its own values
     When the learner fixes the question with WHERE met = ''
     And the learner runs the check inside the pad
     Then the check inside the pad is green
+    When the coordinator presses the call button 2 times
+    Then the form names "Ferraro"
     When I run the lesson's check "proof_proof"
     Then the lesson's check "proof_proof" is green
 
-  Scenario: Module 05's own slice is red on arrival
+  Scenario: Module 05's own app is red on arrival
     Given the runner serves the course page "courses/micro_build_ai/module_05/04_concepts.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/04_concepts.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
-    And I run the lesson's check "slice_proof"
-    Then the lesson's check "slice_proof" is red
+    And I run the lesson's check "app_proof"
+    Then the lesson's check "app_proof" is red
 
-  Scenario: Module 05's own slice is green once its five floors are built
+  Scenario: Module 05's own app is green once its five items are built
     Given the runner serves the course page "courses/micro_build_ai/module_05/04_concepts.md"
-    And the learner has built a slice of their own
+    And the learner has built an app of their own
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/04_concepts.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
-    And I run the lesson's check "slice_proof"
-    Then the lesson's check "slice_proof" is green
+    And I run the lesson's check "app_proof"
+    Then the lesson's check "app_proof" is green
 
   Scenario: A cell can count a table, so no component is needed for one number
     Michel, 2026-08-06: "I am totally surprised by stat. Could it be rather
