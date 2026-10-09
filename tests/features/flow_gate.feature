@@ -205,9 +205,10 @@ Feature: 🚦 A workflow ordered by its own values
     And I run the lesson's check "list_proof"
     Then the lesson's check "list_proof" is red
 
-  Scenario: Module 05's follow-up app is green once its five components are built
-    The proof presses the button once (Nguyen called, the form moves to
-    Okafor); two more presses walk on to Alvarez, then Brooks.
+  Scenario: Module 05's follow-up app is green once its four components are built
+    The proof presses the button once (Nguyen gets today's day, Okafor is
+    selected); two more presses mark Okafor and Alvarez and select Brooks.
+    No WHERE yet, so the marked families stay: still fourteen.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
     And the learner has built the follow-up app
@@ -216,9 +217,9 @@ Feature: 🚦 A workflow ordered by its own values
     And I wait for the cells to settle
     And I run the lesson's check "list_proof"
     Then the lesson's check "list_proof" is green
-    And the pad's preview reads "14 families are waiting"
     When the coordinator presses the call button 2 times
-    Then the form names "Brooks"
+    Then the selected family is "Brooks"
+    And the pad's preview reads "14 families are waiting"
 
   Scenario: Module 05's follow-up app names a decoration with nothing above it
     Michel's pad, 2026-10-09: the datagrid's decoration typed alone after a
@@ -236,7 +237,7 @@ Feature: 🚦 A workflow ordered by its own values
     And the lesson's check "list_proof" says "nothing right above {: .datagrid"
 
   Scenario: Module 05's proof page is red while fourteen families are in the list
-    The story the page tells: two presses, and the form names Alvarez, who
+    The story the page tells: two presses, and Alvarez is selected, who
     took Scout home on Saturday.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
@@ -244,13 +245,14 @@ Feature: 🚦 A workflow ordered by its own values
     And I wait for the page to be interactive
     And I wait for the cells to settle
     And the coordinator presses the call button 2 times
-    Then the form names "Alvarez"
+    Then the selected family is "Alvarez"
     When I run the lesson's check "proof_proof"
     Then the lesson's check "proof_proof" is red
 
   Scenario: Module 05's proof page is green once the check is in the app and the query is fixed
     The check the learner types runs INSIDE their app: red with the five
-    families who already met their dog, green after WHERE met = ''.
+    families who already met their dog, green after WHERE met = ''. Then
+    each press takes the marked family out of the list: 9, 8, 7.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
     And the learner has written the check at the bottom of the page
@@ -265,7 +267,8 @@ Feature: 🚦 A workflow ordered by its own values
     And the learner runs the check inside the pad
     Then the check inside the pad is green
     When the coordinator presses the call button 2 times
-    Then the form names "Ferraro"
+    Then the selected family is "Ferraro"
+    And the pad's preview reads "7 families are waiting"
     When I run the lesson's check "proof_proof"
     Then the lesson's check "proof_proof" is green
 

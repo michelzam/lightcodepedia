@@ -525,20 +525,17 @@ def step_builder_fix(context):
 M05_LIST_ITEMS = ("- [ ] a query: the families to call\n"
                   "- [ ] a datagrid on its answer\n"
                   "- [ ] a line that counts them\n"
-                  "- [ ] a form: the next family to call\n"
-                  "- [ ] a button that calls them, one after the other\n")
+                  "- [ ] a button: mark the selected family, then the next\n")
 
 M05_APP = ("```sql\nSELECT family, dog, asked, met FROM reservations\n```\n"
            "{: .query bind=\"reservations\" #to_call }\n\n"
            "[Families to call](#)\n{: .datagrid #call_list source=\"to_call\" }\n\n"
            "{= to_call.count } families are waiting.\n\n"
-           "[Next family](#)\n{: .form #next_family master=\"call_list\" title=\"📞 Next family\" }\n\n"
            "[📞 Call the next family](#)\n{: .button #call_btn }\n"
            "```python\n"
-           "family = button.page.next_family.data.family\n"
-           "names = button.page.to_call.values(\"family\")\n"
-           "button.text = \"✅ \" + family + \" called\"\n"
-           "button.page.call_list.select(names.index(family) + 2)\n"
+           "grid = button.page.call_list\n"
+           "grid.row.met = weekday()\n"
+           "grid.next()\n"
            "```\n{: .onclick }\n")
 
 
@@ -682,9 +679,10 @@ def step_press_call(context, n):
     context.page.wait_for_timeout(1500)
 
 
-@then('the form names "{family}"')
-def step_form_names(context, family):
-    import json
-    form = context.page.locator('.lc-mdpad-out [data-lc-id="next_family"]').first
-    got = json.loads(form.get_attribute("data-lc-value") or "{}").get("family")
-    assert got == family, "the form names %r, expected %r" % (got, family)
+@then('the selected family is "{family}"')
+def step_selected_family(context, family):
+    """The datagrid's highlighted row — what the coordinator sees as next."""
+    tr = context.page.locator('.lc-mdpad-out [data-lc-id="call_list"] tr.lc-dg-selected').first
+    tr.wait_for(state="attached", timeout=20_000)
+    got = (tr.locator("td").first.inner_text() or "").strip()
+    assert got == family, "the selected family is %r, expected %r" % (got, family)

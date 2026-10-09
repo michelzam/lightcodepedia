@@ -240,6 +240,75 @@ the diagram shows `select()` on the grid for exactly this reason.
 - [ ] `filter="cities"` — one attribute covers everything
 {: .quiz }
 
+## ✅ A button writes the selected row
+
+A datagrid on a `source=` always has one row selected — the first, until a
+click picks another. A button's Python reaches it as `grid.row`: read a
+field, or write one. The write lands in the **dataset** behind the grid
+(through its query), so the query runs again, the grid repaints and every
+count follows. `grid.next()` selects the row after it. `weekday()` gives
+today's day as `Mon` … `Sun`.
+
+```csv
+task,done
+Feed the dogs,
+Walk Scout,
+Clean the yard,
+```
+{: .dataset #chores }
+
+```sql
+SELECT task, done FROM chores WHERE done = ''
+```
+{: .query bind="chores" #todo }
+
+[To do](#)
+{: .datagrid #todo_grid source="todo" }
+
+{= todo.count } chores to do.
+
+[✅ Done](#)
+{: .button #done_btn }
+```python
+grid = button.page.todo_grid
+grid.row.done = weekday()
+grid.next()
+```
+{: .onclick }
+
+Press ✅: the selected chore gets today's day, leaves the query's answer,
+the count drops by one, and the next chore is selected.
+
+```gherkin
+Feature: A button marks the selected row and moves on
+  As a coordinator working down a list
+  I want one press to mark the row I am on and take me to the next
+  So that I never lose my place or write anything twice
+
+  Scenario: The chore is done today, leaves the list, and the next one is selected
+    Given the to-do grid, its first chore selected
+    :::python
+    self.grid: Datagrid = self.page.todo_grid
+    self.first: str = self.grid.row.task
+    self.before: int = self.page.todo.count
+    :::
+    When the button is pressed
+    :::python
+    self.page.done_btn.click()
+    :::
+    Then the chore is marked with today's day in the dataset
+    :::python
+    done: list[str] = [d for t, d in zip(self.page.chores.values("task"), self.page.chores.values("done")) if t == self.first]
+    assert done == [weekday()], f"{self.first} is marked {done}, expected {weekday()}"
+    :::
+    And it left the list, and the next chore is selected
+    :::python
+    assert self.page.todo.count == self.before - 1, f"{self.page.todo.count} left, expected {self.before - 1}"
+    assert self.grid.row.task not in ("", None, self.first), f"still on {self.grid.row.task}"
+    :::
+```
+{: .feature #row_write_proof tags="data,code" visible="true" status="passing" }
+
 ## 📂 Loading from a repo file
 
 Point `source` at a repo file with the `file:` prefix and the grid loads it live — no fenced block, no copy-paste when the file changes:

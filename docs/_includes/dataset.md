@@ -427,6 +427,7 @@ Auto-included by docs/_layouts/default.html.
        same attributes — one selection bus for both roads. */
     var masterRow = null, lastData = null, publishedFirst = false;
     var selKey = null;   /* the selected row's identity (obj name, else its index) */
+    var touched = null;  /* the row a button just wrote — next() walks on from it */
     var filterKeys = null;
     if (masterId && filterExpr) {
       var fm = filterExpr.match(/^\s*([\w-]+)\s*=\s*([\w-]+)\s*$/);
@@ -599,6 +600,64 @@ Auto-included by docs/_layouts/default.html.
             return trs[i];
           }
           return null;
+        };
+        /* A BUTTON'S HANDS (Michel, 2026-10-09, Module 05: "currentline.met
+           = today's weekday, and select the next line"). current() is the
+           selected row; set() writes one field into the DATASET this table
+           shows — through a query, to the base row with the same values —
+           and republishes it, so the query re-runs, this table repaints and
+           every cell recounts, all in the same tick; next() selects the row
+           after the one just written, or the row that slid into its place
+           when the write took it out of the answer. */
+        function curIndex() {
+          if (!selKey) return 0;
+          if (selKey.indexOf("i:") === 0) return parseInt(selKey.slice(2), 10) || 0;
+          for (var i = 0; i < slice.length; i++) if (keyOf(slice[i]) === selKey) return i;
+          return 0;
+        }
+        function sameRow(a, b) {
+          if (!a || !b) return false;
+          for (var k in a) if (Object.prototype.hasOwnProperty.call(b, k) && String(b[k]) !== String(a[k])) return false;
+          return true;
+        }
+        function pick(i) {
+          trs.forEach(function (x) { x.classList.remove("lc-dg-selected"); });
+          if (trs[i]) trs[i].classList.add("lc-dg-selected");
+          selKey = keyOf(slice[i]) || "i:" + i;
+          if (lcId && window.lcMasterDetail) window.lcMasterDetail.publish(lcId, slice[i] || null);
+          return slice[i] || null;
+        }
+        el._lcRow = {
+          current: function () { return slice[curIndex()] || null; },
+          set: function (field, value) {
+            var cur = slice[curIndex()];
+            if (!cur) return false;
+            var baseId = bindId, target = cur;
+            var q = document.querySelector(".lc-query[data-lc-id='" + bindId + "']");
+            if (q) {
+              baseId = (q.getAttribute("data-bind") || "").split(",")[0].trim();
+              target = null;
+              (window.lcDatasets[baseId] || []).forEach(function (b) { if (!target && sameRow(cur, b)) target = b; });
+            }
+            if (!target || !window.lcDatasets[baseId]) return false;
+            touched = {};
+            for (var k in cur) touched[k] = cur[k];
+            touched[field] = value;
+            target[field] = value;
+            window.lcSetDataset(baseId, window.lcDatasets[baseId]);
+            return true;
+          },
+          next: function () {
+            var k = curIndex();
+            if (touched) {
+              var j = -1;
+              for (var i = 0; i < slice.length && j < 0; i++) if (sameRow(touched, slice[i])) j = i;
+              k = j >= 0 ? j + 1 : k;
+              touched = null;
+            } else k = k + 1;
+            if (k >= slice.length) return null;
+            return pick(k);
+          }
         };
         /* the selection survives a republish: a model's verb repaints the
            whole table, and the row you were on must stay lit (Michel,

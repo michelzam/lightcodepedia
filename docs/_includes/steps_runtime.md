@@ -866,8 +866,26 @@ class Bar(Object):
                   {"n": "headers", "t": "str", "list": True},
                   {"n": "rows", "t": "ref", "list": True}],
            assoc=[{"n": "source", "target": "Dataset"}],
-           methods=["header", "select"])
+           methods=["header", "select", "next"])
 class Datagrid(Block):
+    # THE SELECTED ROW, READ AND WRITTEN (Michel, 2026-10-09, Module 05:
+    # "currentline.met = today's weekday, and select the next line — KISS").
+    # `grid.row.met = weekday()` writes into the DATASET the grid shows
+    # (through its query, to the base row), so the query re-runs, the grid
+    # repaints and every count recounts; `grid.next()` selects the row after
+    # the one just written — or the one that slid into its place when the
+    # write took it out of the query's answer.
+    @property
+    def row(self):
+        return _Row(self)
+
+    def next(self):
+        door = getattr(self._el, "_lcRow", None) if self._el is not None else None
+        if door is None:
+            raise AssertionError("#" + str(self.id) + " has no rows to walk yet")
+        door.next()
+        return self
+
     @property
     def source(self):
         b = self._attr("data-bind") or ""
@@ -1348,6 +1366,36 @@ class Tabs(Block):
             if tabs is not None and int(tabs.length) > n:
                 tabs.item(n).click()
         return self
+
+
+class _Row(object):
+    """The datagrid's selected row: grid.row.family reads a field,
+    grid.row.met = "Fri" writes it into the dataset behind the grid."""
+    def __init__(self, grid):
+        object.__setattr__(self, "_grid", grid)
+
+    def _door(self):
+        g = self._grid
+        door = getattr(g._el, "_lcRow", None) if g._el is not None else None
+        if door is None:
+            raise AssertionError("#" + str(g.id) + " has no rows yet")
+        return door
+
+    def __getattr__(self, name):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        cur = self._door().current()
+        d = json.loads(str(js.JSON.stringify(cur))) if cur else {}
+        return d.get(name)
+
+    def __setattr__(self, name, value):
+        if not self._door().set(name, value):
+            raise AssertionError("#" + str(self._grid.id) + ": no selected row to write " + name + " into")
+
+
+def weekday():
+    """Today's weekday as the course's data writes it: Mon, Tue … Sun."""
+    return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][int(js.Date.new().getDay())]
 
 
 class _Attrs(object):

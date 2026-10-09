@@ -61,6 +61,19 @@ onclick:
     ```
     {: .onclick }
   adapt: right under the button's decoration; button is the one pressed, button.page.<id> reaches any component
+mark_row:
+  name: a button that writes today into the datagrid's selected row, then selects the next
+  module: Module 05 · The Follow-Up List
+  lines: |
+    [Label](#)
+    {: .button #your_button }
+    ```python
+    grid = button.page.your_grid
+    grid.row.a_column = weekday()
+    grid.next()
+    ```
+    {: .onclick }
+  adapt: your_grid is the datagrid's id, a_column the column that gets today's day
 cell:
   name: a live number inside a sentence
   module: Module 05 · The Follow-Up List
