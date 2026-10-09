@@ -633,17 +633,20 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
       """
       🧭 I added a table face under the dataset: a link line, and under it the .datagrid decoration whose source knob names your dataset's id, waiting.
 
-      ```markdown
+      >>>
       - [ ] a button to call the next family
       [Families waiting](#)
-      {: .datagrid source="waiting" }
-      ```
+      {: .datagrid source="waiting" rows="4" height="240" }
+      <<<
       """
     When I navigate to "/components/agent"
     And I wait for the page to be interactive
     And I connect the "builder" agent with key "test-key"
     And I ask the "builder" agent "show the families in a table"
     Then the "builder" agent's answer has no question area and its lines hold ".datagrid source="
+    And the "builder" agent's direction holds no line of the piece
+    When I add the agent's piece to the editor
+    Then the "my_app" pad holds, in order, "- [ ] a button to call the next family", "[Families waiting](#)", "rows=", "height="
 
   Scenario: A builder's example may hold a fence of its own — nothing leaks into the question
     Michel, 2026-10-09, on the phone: the piece held a sql fence, the example

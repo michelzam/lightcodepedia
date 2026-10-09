@@ -819,3 +819,11 @@ def step_doer_shape(context, agent_id, text):
     x = bot.locator(".lc-agent-example pre")
     assert x.count() == 1 and text in x.inner_text(), "the lines are not drawn whole: %r" % bot.inner_text()[:300]
     assert "`" not in x.inner_text(), "a backtick leaked into the lines: %r" % x.inner_text()[:200]
+
+
+@then('the "{agent_id}" agent\'s direction holds no line of the piece')
+def step_direction_clean(context, agent_id):
+    bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot.lc-agent-tutor').first
+    d = bot.locator(".lc-agent-direction").inner_text()
+    for bad in ("- [ ]", "](#)", "{:", ">>>", "<<<", "`"):
+        assert bad not in d, "the direction leaked %r: %r" % (bad, d[:200])

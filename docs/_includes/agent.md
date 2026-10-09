@@ -1294,8 +1294,21 @@ Auto-included by docs/_layouts/default.html.
       var inner = last >= 0 ? t.slice(bodyStart, last) : t.slice(bodyStart);
       return { all: t.slice(start, last >= 0 ? lastEnd : t.length), inner: inner, info: m[3].trim() };
     }
+    /* THE LINES BETWEEN TWO MARKERS (Michel, 2026-10-09, third phone test:
+       the model mangled its own fence twice — four backticks, then a
+       decoration turned into a fence). The builder writes the lines
+       between a line `>>>` and a line `<<<`: nothing for markdown to
+       misread, braces and inner fences included. A fence still works, for
+       Ari and for a model that forgets. */
+    function linesBlock(text) {
+      var m = /(^|\n)>>>[^\n]*\n([\s\S]*?)\n<<<[^\n]*(?=\n|$)/.exec(String(text || ''));
+      if (!m) return null;
+      var start = m.index + m[1].length;
+      return { all: String(text).slice(start, m.index + m[0].length), inner: m[2], info: '' };
+    }
+    function pieceOf(text) { return linesBlock(text) || fenceOf(text); }
     function firstFence(text) {
-      var f = fenceOf(text);
+      var f = pieceOf(text);
       return f ? f.inner.replace(/\s+$/, '') : null;
     }
     /* THREE AREAS (Michel, 2026-10-06): a tutor's answer is a direction, a
@@ -1305,7 +1318,7 @@ Auto-included by docs/_layouts/default.html.
        question. The first fence is the example. */
     function tutorParts(text) {
       var t = String(text || '');
-      var fence = fenceOf(t);
+      var fence = pieceOf(t);
       var prose = (fence ? t.replace(fence.all, '') : t).trim();
       var direction = [], question = [];
       /* a model often writes the markers as headings ("## 🧭 Direction",
