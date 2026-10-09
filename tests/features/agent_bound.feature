@@ -621,6 +621,30 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     Then the "my_app" pad holds, in order, "- [ ] a button to call the next family", "[📞 Call the next family](#)", "{: .button #call_btn }", "- [ ] a python fence under it"
     And the "my_app" pad's preview shows a button
 
+  Scenario: A builder builds what it is ordered — complete lines, no question back
+    Michel, 2026-10-09: "less Socratic, more doer: the builder does it for us
+    while explaining; students think and give orders". No blank, no quiz; a
+    question only for a real choice.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the "builder" bot is served from the repo
+    And the recording model endpoint replies with this text:
+      """
+      🧭 I added a table face under the dataset: a link line, and under it the .datagrid decoration whose source knob names your dataset's id, waiting.
+
+      ```markdown
+      - [ ] a button to call the next family
+      [Families waiting](#)
+      {: .datagrid source="waiting" }
+      ```
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "builder" agent with key "test-key"
+    And I ask the "builder" agent "show the families in a table"
+    Then the "builder" agent's answer has no question area and its lines hold ".datagrid source="
+
   Scenario: A builder's example may hold a fence of its own — nothing leaks into the question
     Michel, 2026-10-09, on the phone: the piece held a sql fence, the example
     came out empty and its leftovers leaked into the question area.

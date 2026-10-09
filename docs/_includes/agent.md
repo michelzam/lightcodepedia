@@ -1323,14 +1323,16 @@ Auto-included by docs/_layouts/default.html.
         var m = d.match(/(?:^|\n)([^\n]*\?)\s*$/);
         if (m) { q = m[1].trim(); d = d.slice(0, d.length - m[0].length).trim(); }
       }
-      return { direction: d, question: q, example: fence ? fence.all : '' };
+      return { direction: d, question: q, example: fence ? fence.all : '', lines: fence ? fence.inner.replace(/\s+$/, '') : '' };
     }
     function renderTutor(text) {
       var parts = tutorParts(text);
       var html = '';
       if (parts.direction) html += '<div class="lc-agent-direction"><span class="lc-agent-area-label">🧭 direction</span>' + renderMarkdown(parts.direction) + '</div>';
       if (parts.question) html += '<div class="lc-agent-question"><span class="lc-agent-area-label">❓ your turn</span>' + renderMarkdown(parts.question) + '</div>';
-      if (parts.example) html += '<div class="lc-agent-example"><span class="lc-agent-area-label">🧩 example — yours to add</span>' + renderMarkdown(parts.example) + '</div>';
+      /* the lines are drawn as they are — a markdown piece may hold a fence of
+         its own, which no bubble renderer should try to read (2026-10-09) */
+      if (parts.example) html += '<div class="lc-agent-example"><span class="lc-agent-area-label">🧩 the lines — ⬇ puts them on your page</span><pre><code>' + escapeHtml(parts.lines) + '</code></pre></div>';
       return html || renderMarkdown(text);
     }
     function offerPiece(text) {

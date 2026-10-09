@@ -809,3 +809,13 @@ def step_example_holds(context, agent_id, text):
     assert "{: .query" in x.inner_text(), "the piece's decoration is not in the example: %r" % x.inner_text()[:200]
     assert q.count() == 1 and text not in q.inner_text() and "```" not in q.inner_text(), \
         "the fence leaked into the question: %r" % q.inner_text()[:200]
+
+
+@then('the "{agent_id}" agent\'s answer has no question area and its lines hold "{text}"')
+def step_doer_shape(context, agent_id, text):
+    bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot.lc-agent-tutor').first
+    expect(bot).to_be_visible(timeout=10_000)
+    assert bot.locator(".lc-agent-question").count() == 0, "a question area appeared: %r" % bot.inner_text()[:300]
+    x = bot.locator(".lc-agent-example pre")
+    assert x.count() == 1 and text in x.inner_text(), "the lines are not drawn whole: %r" % bot.inner_text()[:300]
+    assert "`" not in x.inner_text(), "a backtick leaked into the lines: %r" % x.inner_text()[:200]
