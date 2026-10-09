@@ -21,6 +21,63 @@ Every step ends with a little quiz, just for you. Take your time. 🙂
 > Why did the student and the section start dating? They had a lot in
 > common — an Enrollment. 💞
 
+```python
+@component(icon="🏛️")
+class Department(Object):
+    DepartmentID   = Attr(int, hint="primary key")
+    DepartmentName = Attr(str)
+    DepartmentCode = Attr(str)
+
+@component(icon="🗓️")
+class Term(Object):
+    TermID   = Attr(int, hint="primary key")
+    TermName = Attr(str)
+
+@component(icon="📘")
+class Course(Object):
+    CourseID     = Attr(int, hint="primary key")
+    CourseNumber = Attr(str)
+    CourseTitle  = Attr(str)
+    Credits      = Attr(int)
+    DepartmentID = Attr("Department", hint="foreign key → Departments")
+
+@component(icon="🎓")
+class Major(Object):
+    MajorID      = Attr(int, hint="primary key")
+    MajorName    = Attr(str)
+    DepartmentID = Attr("Department", hint="foreign key → Departments")
+
+@component(icon="🧑‍🏫")
+class Instructor(Object):
+    InstructorID = Attr(int, hint="primary key")
+    FirstName    = Attr(str)
+    LastName     = Attr(str)
+    DepartmentID = Attr("Department", hint="foreign key → Departments")
+
+@component(icon="🧑‍🎓")
+class Student(Object):
+    StudentID = Attr(int, hint="primary key")
+    FirstName = Attr(str)
+    LastName  = Attr(str)
+    MajorID   = Attr("Major", hint="foreign key → Majors")
+
+@component(icon="🚪")
+class Section(Object):
+    SectionID     = Attr(int, hint="primary key")
+    SectionNumber = Attr(str)
+    CourseID      = Attr("Course", hint="foreign key → Courses")
+    TermID        = Attr("Term", hint="foreign key → Terms")
+    InstructorID  = Attr("Instructor", hint="foreign key → Instructors")
+
+@component(icon="📝")
+class Enrollment(Object):
+    EnrollmentID = Attr(int, hint="primary key")
+    StudentID    = Attr("Student", hint="foreign key → Students")
+    SectionID    = Attr("Section", hint="foreign key → Sections")
+    Grade        = Attr(str)
+```
+{: .model #uwm_model }
+
 ````
 ### 🔁 Step 1 · From week 3: ER, SQL, data — both ways
 
@@ -152,64 +209,7 @@ many products and a product appears in many orders. In the middle,
 **OrderDetails**, with an `OrderID` and a `ProductID` — and the
 Quantity, which belongs to neither alone. Same pattern, new topic.
 
-The whole map, written as entities:
-
-```python
-@component(icon="🏛️")
-class Department(Object):
-    DepartmentID   = Attr(int, hint="primary key")
-    DepartmentName = Attr(str)
-    DepartmentCode = Attr(str)
-
-@component(icon="🗓️")
-class Term(Object):
-    TermID   = Attr(int, hint="primary key")
-    TermName = Attr(str)
-
-@component(icon="📘")
-class Course(Object):
-    CourseID     = Attr(int, hint="primary key")
-    CourseNumber = Attr(str)
-    CourseTitle  = Attr(str)
-    Credits      = Attr(int)
-    DepartmentID = Attr("Department", hint="foreign key → Departments")
-
-@component(icon="🎓")
-class Major(Object):
-    MajorID      = Attr(int, hint="primary key")
-    MajorName    = Attr(str)
-    DepartmentID = Attr("Department", hint="foreign key → Departments")
-
-@component(icon="🧑‍🏫")
-class Instructor(Object):
-    InstructorID = Attr(int, hint="primary key")
-    FirstName    = Attr(str)
-    LastName     = Attr(str)
-    DepartmentID = Attr("Department", hint="foreign key → Departments")
-
-@component(icon="🧑‍🎓")
-class Student(Object):
-    StudentID = Attr(int, hint="primary key")
-    FirstName = Attr(str)
-    LastName  = Attr(str)
-    MajorID   = Attr("Major", hint="foreign key → Majors")
-
-@component(icon="🚪")
-class Section(Object):
-    SectionID     = Attr(int, hint="primary key")
-    SectionNumber = Attr(str)
-    CourseID      = Attr("Course", hint="foreign key → Courses")
-    TermID        = Attr("Term", hint="foreign key → Terms")
-    InstructorID  = Attr("Instructor", hint="foreign key → Instructors")
-
-@component(icon="📝")
-class Enrollment(Object):
-    EnrollmentID = Attr(int, hint="primary key")
-    StudentID    = Attr("Student", hint="foreign key → Students")
-    SectionID    = Attr("Section", hint="foreign key → Sections")
-    Grade        = Attr(str)
-```
-{: .model #uwm_model }
+The whole map, as entities:
 
 [UWM's whole map — Enrollments at the bottom](#)
 {: .diagram scope="Enrollment,Student,Section,Course,Major,Instructor,Term" states="false" }
