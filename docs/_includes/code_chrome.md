@@ -397,9 +397,39 @@
     });
   }
 
+  /* beside="true" — DRAW ME NEXT TO THE BLOCK ABOVE (Michel, 2026-10-09:
+     "simplify the way we express layout without having to nest fences").
+     Sugar over .blocks: consecutive beside= elements fold, with the block
+     before them, into the SAME .lc-blocks row the fence component makes —
+     equal columns, one gap, stacks on a phone — before any upgrader runs,
+     so each part is upgraded in place inside the row. Source order stays
+     visual order. data-lc-beside marks a row the pad's block map can see. */
+  function _foldBeside(root) {
+    root.querySelectorAll("[beside]").forEach(function (el) {
+      if (el.dataset.lcBeside) return;
+      var v = String(el.getAttribute("beside") || "").trim().toLowerCase();
+      if (v === "false" || v === "0" || v === "off") return;
+      el.dataset.lcBeside = "1";
+      var prev = el.previousElementSibling;
+      if (!prev) return;
+      var row;
+      if (prev.classList.contains("lc-blocks") && prev.hasAttribute("data-lc-beside")) row = prev;
+      else {
+        row = document.createElement("div");
+        row.className = "lc-blocks";
+        row.setAttribute("data-lc-beside", "1");
+        prev.parentNode.insertBefore(row, prev);
+        row.appendChild(prev);
+      }
+      row.appendChild(el);
+      row.style.gridTemplateColumns = "repeat(" + row.children.length + ", 1fr)";
+    });
+  }
+
   function scan() {
     _rehomeChrome();
     _applyIAL(document);
+    _foldBeside(document);
     _snapshotSources(document);
     _runUpgraders(document);
     _scanned = true;
@@ -409,6 +439,7 @@
   // Used by the live editor preview so the page-level scan() is not needed.
   function scanElement(root) {
     _applyIAL(root);
+    _foldBeside(root);
     /* Same order as scan(): snapshot BEFORE upgrading, or a component that
        arrives later — a bench slot's grid, an embedded fragment — has no
        source for the ⚙️ to open, and the editor falls back to showing its

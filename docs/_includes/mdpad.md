@@ -821,6 +821,16 @@ Auto-included by docs/_layouts/default.html.
       return { ids: ids, wires: wires };
     }
     var prevIds = {}, wiresEl = null;
+    /* one source block = one top-level element — except a beside= row, which
+       stands for as many blocks as it holds (the scan folded them) */
+    function blockEl(idx) {
+      for (var i = 0; i < body.children.length; i++) {
+        var c = body.children[i], n = (c.classList.contains("lc-blocks") && c.hasAttribute("data-lc-beside")) ? c.children.length : 1;
+        if (idx < n) return n === 1 ? c : c.children[idx];
+        idx -= n;
+      }
+      return null;
+    }
     function forgetGone(cur) {
       Object.keys(prevIds).forEach(function (id) {
         if (cur.ids[id] || !window.lcDatasets || !(id in window.lcDatasets)) return;
@@ -836,7 +846,7 @@ Auto-included by docs/_layouts/default.html.
         if (window.lcDatasets && (w.id in window.lcDatasets)) return;   /* the page's own data */
         var outside = document.getElementById(w.id) || document.getElementById("lc-pyrun-" + w.id);
         if (outside && !wrap.contains(outside)) return;                  /* a part of the page around */
-        var label = w.kind + " «" + w.id + "»", el = body.children[w.block];
+        var label = w.kind + " «" + w.id + "»", el = blockEl(w.block);
         if (el && el.nodeType === 1) {
           el.classList.add("lc-mdpad-broken");
           el.setAttribute("data-lc-broken", (el.getAttribute("data-lc-broken") ? el.getAttribute("data-lc-broken") + ", " : "") + label);
@@ -892,7 +902,7 @@ Auto-included by docs/_layouts/default.html.
         for (var i = 0; i < hs.length && !target; i++)
           if (hs[i].textContent.trim().toLowerCase() === want) target = hs[i];
       }
-      if (!target) target = body.children[idx] || null;
+      if (!target) target = blockEl(idx);
       if (!target) return;
       void target.offsetWidth;
       target.classList.add("lc-mdpad-focus");

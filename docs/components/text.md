@@ -332,6 +332,30 @@ Feature: A wire to nothing is drawn broken
     assert self.pad.broken == ["source «pets»"], self.pad.broken
     :::
 
+  Scenario: beside= works in the pad, and the caret still finds its block
+    Given the wires pad, whole, with a chart beside the grid
+    :::python
+    self.pad: Mdpad = self.page.wires_pad
+    self.pad.source = self.was
+    self.pad.source = self.was + '\n\n[Legs](#)\n{: .chart source="pets" type="bar" x="name" y="legs" beside="true" }'
+    :::
+    Then the grid and the chart share one row, and no wire is broken
+    :::python
+    rows = Object._all('[data-lc-id="wires_pad"] .lc-blocks[data-lc-beside]')
+    assert len(rows) == 1 and int(rows[0]._el.children.length) == 2, len(rows)
+    assert self.pad.broken == [], self.pad.broken
+    :::
+    And the caret on the chart's line lights the chart, not the grid
+    :::python
+    self.pad.caret = len(self.pad.source) - 1
+    lit = Object._all('[data-lc-id="wires_pad"] .lc-mdpad-focus')
+    assert len(lit) == 1, len(lit)
+    el = lit[0]._el
+    assert el.parentNode.hasAttribute("data-lc-beside"), "the focus missed the row"
+    assert el.isSameNode(el.parentNode.lastElementChild), "the focus lit the grid, not the chart"
+    self.pad.source = self.was
+    :::
+
   Scenario: The id is renamed — the old wire breaks on the spot
     Given the wires pad, whole again
     :::python

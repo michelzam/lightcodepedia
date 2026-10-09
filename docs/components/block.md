@@ -45,6 +45,7 @@ Content on the right.
 - `.block` is shorthand for `.blocks cols="1"` — same component.
 - Nested components work inside blocks: `{: .video }`, `{: .quiz }`, `{: .run }`, `{: .button }`.
 - On small screens columns collapse to a single column automatically.
+- `beside="true"` on any part's decoration draws it next to the block above — the same row, without a fence to nest (see below).
 
 ## 🖥 `title=` — the card becomes an app window
 
@@ -139,6 +140,63 @@ Feature: A fenced block becomes a bordered card
 - Nested `.video`, `.quiz`, `.run`
 ```
 {: .blocks cols="2" }
+
+## ↔️ `beside=` — next to the one above, no fence to nest
+
+Any part can take `beside="true"` on its decoration line: it is drawn
+**next to the block above** instead of under it. Two or three in a row
+fold into one row of equal columns, the same row `.blocks cols=` makes —
+same gap, same stacking on a phone — and source order stays visual
+order. Nothing to nest: three parts, three decorations.
+
+```
+name,legs
+Rex,4
+Tweety,2
+Nemo,0
+```
+{: .dataset #pets_row }
+
+[Pets](#)
+{: .datagrid source="pets_row" }
+
+[Legs](#)
+{: .chart source="pets_row" type="bar" x="name" y="legs" beside="true" }
+
+````markdown
+[Pets](#)
+{: .datagrid source="pets_row" }
+
+[Legs](#)
+{: .chart source="pets_row" type="bar" x="name" y="legs" beside="true" }
+````
+
+```gherkin
+Feature: beside= draws a part next to the one above
+  As a learner laying out two faces of one dataset
+  I want the chart beside the table with one word
+  So that a row needs no fence inside a fence
+
+  Scenario: The chart sits beside the table, in one row of two
+    Given the table and the chart above
+    :::python
+    rows = Object._all(".lc-blocks[data-lc-beside]")
+    self.row = rows[0]
+    :::
+    Then they share one row of two equal columns
+    :::python
+    assert int(self.row._el.children.length) == 2, int(self.row._el.children.length)
+    assert str(self.row._el.style.gridTemplateColumns) == "repeat(2, 1fr)", str(self.row._el.style.gridTemplateColumns)
+    :::
+    And the table is first, the chart second — source order is visual order
+    :::python
+    first = self.row._el.children.item(0)
+    second = self.row._el.children.item(1)
+    assert first.querySelector("table") is not None, "the table is not first"
+    assert "lc-chart" in str(second.className), "the chart is not second: " + str(second.className)
+    :::
+```
+{: .feature #beside_proof tags="ui" status="passing" }
 
 ## Example — weighted columns
 ```
