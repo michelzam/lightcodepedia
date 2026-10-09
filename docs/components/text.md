@@ -254,7 +254,11 @@ one question, one chart
 {: .mdpad #cv_deco decorations="true" rows="18" }
 
 Change `product:` to your own name, or break the `{: .cards }` line, and
-watch the component leave and come back. The preview waits for a short
+watch the component leave and come back. The source is painted to match:
+a decoration line sits on its own lighter band with the **class** in blue,
+the **#id** in pink and each **knob** green-and-orange; a fence and its
+body are muted; headings, links and emphasis have their colours. Every pad
+paints this way, with or without decorations. The preview waits for a short
 pause in your typing before it rebuilds, so a component is not rebuilt
 on every key. The pad also reports which components are alive:
 `components` lists them by kind.
@@ -377,6 +381,23 @@ Feature: Decorations turn the pad's preview into a page
     :::python
     assert "button" in self.pad.components, \
         "a {: .button } under a link is the learner's first part — it must be listed"
+    :::
+
+  Scenario: The source is painted to match the components
+    Given the résumé pad
+    :::python
+    self.pad: Mdpad = self.page.cv_deco
+    :::
+    Then each decoration line wears its band, with the class and the knobs coloured
+    :::python
+    assert ".pitch" in self.pad.painted("cls") and ".cards" in self.pad.painted("cls"), self.pad.painted("cls")
+    assert "cols" in self.pad.painted("key"), self.pad.painted("key")
+    assert len(self.pad.painted("ial")) >= 3, self.pad.painted("ial")
+    :::
+    And the fences are muted and the heading has its colour
+    :::python
+    assert any(f.startswith("```") for f in self.pad.painted("fence")), self.pad.painted("fence")
+    assert any("Ana Diaz" in h for h in self.pad.painted("h")), self.pad.painted("h")
     :::
 
   Scenario: A plain pad still previews text only

@@ -263,7 +263,7 @@ Feature: Component gallery behaviors
     And the tags sit inside the page title
 
   Scenario: A page with no tagged feature keeps a bare title
-    When I navigate to "/components/examples/spreadsheet"
+    When I navigate to "/components/examples/chart_datagrid"
     And I wait for the page to be interactive
     Then the page title shows no tags
 

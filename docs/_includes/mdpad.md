@@ -46,6 +46,10 @@ IAL knobs:
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
   id="..."    optional — names the pad for X-ray
+  (always)       the source is painted: a fence and its body muted, a {: … }
+                 decoration on a lighter band — class, #id and knobs in their
+                 own colours — headings, links, emphasis; keystrokes patch the
+                 mirror in place so ⌘Z stays whole (Michel, 2026-10-08)
   (decorations)  the preview's model is what the text declares: a dataset
                  the pad no longer writes leaves the registry with the render,
                  and a wire (source= master= bound= target=) to an id the page
@@ -158,11 +162,27 @@ Auto-included by docs/_layouts/default.html.
    in a third; a gutter with one number per source line (wrapped lines keep
    theirs). The textarea goes transparent over it. */
 .lc-mdpad-src { flex: 1; min-width: 0; position: relative; display: flex; }
-.lc-mdpad-src .lc-mdpad-in { flex: 1; min-width: 0; background: transparent; position: relative; z-index: 1; }
+.lc-mdpad-src .lc-mdpad-in { flex: 1; min-width: 0; background: transparent; position: relative; z-index: 1; color: transparent; caret-color: #cdd6f4; }
+.lc-mdpad-src .lc-mdpad-in::selection { background: rgba(137, 180, 250, 0.35); color: transparent; }
+/* the painted source: a fence and its body muted, a decoration on its own
+   lighter band — the class, the #id and each knob in their colours */
+.lc-mdpad-piano .ln { color: #cdd6f4; }
+.lc-mdpad-piano .md-h { color: #f9e2af; font-weight: 600; }
+.lc-mdpad-piano .md-fence { color: #6c7086; }
+.lc-mdpad-piano .md-code { color: #a6adc8; }
+.lc-mdpad-piano .md-ial { background: rgba(137, 180, 250, 0.12); box-shadow: inset 2px 0 0 #89b4fa; border-radius: 3px; color: #9399b2; }
+.lc-mdpad-piano .md-cls { color: #89b4fa; font-weight: 600; }
+.lc-mdpad-piano .md-id { color: #f38ba8; }
+.lc-mdpad-piano .md-key { color: #a6e3a1; }
+.lc-mdpad-piano .md-val { color: #fab387; }
+.lc-mdpad-piano .md-link { color: #89dceb; }
+.lc-mdpad-piano .md-em { color: #cba6f7; }
+.lc-mdpad-piano .md-quote { color: #94e2d5; }
+.lc-mdpad-piano .md-li { color: #f5c2e7; }
 .lc-mdpad-src[data-numbers] .lc-mdpad-in { padding-left: 3.4em; }
 .lc-mdpad-piano { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;
   box-sizing: border-box; background: #1e1e2e; border: 1px solid transparent; border-radius: 6px;
-  color: transparent; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; }
+  white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; }
 .lc-mdpad-piano .k1 { background: #26263a; }
 .lc-mdpad-piano .now { background: #30304c; box-shadow: inset 3px 0 0 #89b4fa; }
 .lc-mdpad-piano[data-plain] .k1 { background: transparent; }
@@ -292,7 +312,9 @@ Auto-included by docs/_layouts/default.html.
     ta.className = "lc-mdpad-in";
     var piano = el.getAttribute("piano") === "true", numbers = el.getAttribute("numbers") === "true";
     var src = null, keysEl = null;
-    if (piano || numbers) {
+    /* the mirror ALWAYS exists now: it carries the colours (2026-10-08);
+       the piano's bands and the numbers stay the knobs they were */
+    if (true) {
       src = document.createElement("div");
       src.className = "lc-mdpad-src";
       if (numbers) src.setAttribute("data-numbers", "1");
@@ -880,6 +902,39 @@ Auto-included by docs/_layouts/default.html.
       if (r.top < box.top) scroller.scrollTop -= (box.top - r.top) + 8;
       else if (r.bottom > box.bottom) scroller.scrollTop += (r.bottom - box.bottom) + 8;
     }
+    /* ── COLOURS IN THE SOURCE (Michel, 2026-10-08: "to help learners match
+       the components"). The mirror under the textarea already holds every
+       line (the piano); now the line is painted — a fence and its body
+       muted, a {: … } decoration on its own lighter band with the class,
+       the #id and each knob in their colours, headings, links, emphasis —
+       and the textarea's own text is transparent over it, caret kept.
+       One painter, line by line; the fence state carries across lines. */
+    var FENCE_RE = /^\s*(`{3,}|~{3,})/;
+    function paintIAL(s) {
+      return escHtml(s).replace(/(\.[A-Za-z_][\w-]*)|(#[A-Za-z_][\w-]*)|([A-Za-z_][\w-]*)=(&quot;[^&]*?&quot;|\S+)/g,
+        function (all, cls, id, key, val) {
+          if (cls) return "<span class='md-cls'>" + cls + "</span>";
+          if (id) return "<span class='md-id'>" + id + "</span>";
+          return "<span class='md-key'>" + key + "</span>=<span class='md-val'>" + val + "</span>";
+        });
+    }
+    function paintInline(raw) {
+      var h = escHtml(raw);
+      h = h.replace(/^(\s*)([-*+]|\d+\.)(\s)/, "$1<span class='md-li'>$2</span>$3");
+      h = h.replace(/\[([^\]]*)\]\(([^)]*)\)/g, "<span class='md-link'>[$1]($2)</span>");
+      h = h.replace(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|_[^_\n]+_|`[^`\n]+`)/g, "<span class='md-em'>$1</span>");
+      return h;
+    }
+    function paintLine(raw, inFence) {
+      if (!raw) return " ";
+      if (FENCE_RE.test(raw)) return "<span class='md-fence'>" + escHtml(raw) + "</span>";
+      if (inFence) return "<span class='md-code'>" + escHtml(raw) + "</span>";
+      var ial = raw.match(/^(\s*)\{:(.*)\}(\s*)$/);
+      if (ial) return escHtml(ial[1]) + "<span class='md-ial'>{:" + paintIAL(ial[2]) + "}</span>" + escHtml(ial[3]);
+      if (/^\s*#{1,6}\s/.test(raw)) return "<span class='md-h'>" + escHtml(raw) + "</span>";
+      if (/^\s*>/.test(raw)) return "<span class='md-quote'>" + escHtml(raw) + "</span>";
+      return paintInline(raw);
+    }
     function paintPiano() {
       if (!keysEl) return;
       var cs = getComputedStyle(ta);
@@ -889,8 +944,12 @@ Auto-included by docs/_layouts/default.html.
       /* the textarea's scrollbar narrows ITS text; mirror that or long lines wrap apart */
       var bar = ta.offsetWidth - ta.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
       keysEl.style.paddingRight = (parseFloat(cs.paddingRight) + Math.max(0, bar)) + "px";
-      var lines = ta.value.split("\n"), now = caretBlock(), here = caretLine(), html = "", li = 0;
-      function line(n) { return "<div class='ln" + (n === here ? " here" : "") + "' data-n='" + (n + 1) + "'>" + (escHtml(lines[n]) || "\u00a0") + "</div>"; }
+      var lines = ta.value.split("\n"), now = caretBlock(), here = caretLine(), html = "", li = 0, inFence = false;
+      function line(n) {
+        var h = "<div class='ln" + (n === here ? " here" : "") + "' data-n='" + (n + 1) + "'>" + paintLine(lines[n], inFence) + "</div>";
+        if (FENCE_RE.test(lines[n])) inFence = !inFence;
+        return h;
+      }
       blocks.forEach(function (b, i) {
         for (; li < b.start; li++) html += line(li);
         html += "<div class='" + (i % 2 ? "k1" : "k0") + (i === now ? " now" : "") + "'>";
@@ -901,6 +960,39 @@ Auto-included by docs/_layouts/default.html.
       keysEl.innerHTML = html;
       keysEl.scrollTop = ta.scrollTop;
     }
+    /* A KEYSTROKE PATCHES ONE TEXT NODE (2026-10-08): rebuilding the mirror
+       removes nodes, and Chromium then closes the typing group — ⌘Z took
+       one character at a time. The edit lands in the mirror's own text
+       node; the colours catch up on a pause. A change across lines, or a
+       line emptied, repaints at once — a fair place for undo to stop. */
+    var lastVal = ta.value, _paintT = null;
+    function paintSoon() { clearTimeout(_paintT); _paintT = setTimeout(paintPiano, 250); }
+    function patchOneLine(prev, next) {
+      var a = 0, pb = prev.length, nb = next.length;
+      while (a < pb && a < nb && prev[a] === next[a]) a++;
+      while (pb > a && nb > a && prev[pb - 1] === next[nb - 1]) { pb--; nb--; }
+      if (prev.slice(a, pb).indexOf("\n") >= 0 || next.slice(a, nb).indexOf("\n") >= 0) return false;
+      var li = next.slice(0, a).split("\n").length - 1;
+      var ls = next.lastIndexOf("\n", a - 1) + 1, le = next.indexOf("\n", a); if (le < 0) le = next.length;
+      var line = next.slice(ls, le), col = a - ls, removed = pb - a, inserted = next.slice(a, nb);
+      if (!line) return false;
+      var div = keysEl.querySelector(".ln[data-n='" + (li + 1) + "']");
+      if (!div) return false;
+      var walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT), node, nodes = [], pos = 0;
+      while ((node = walker.nextNode())) nodes.push(node);
+      if (nodes.length === 1 && nodes[0].data === " ") { nodes[0].data = line; return true; }
+      for (var i = 0; i < nodes.length; i++) {
+        var len = nodes[i].data.length;
+        if (col >= pos && col + removed <= pos + len && (col < pos + len || i === nodes.length - 1)) {
+          var d = nodes[i].data;
+          nodes[i].data = d.slice(0, col - pos) + inserted + d.slice(col - pos + removed);
+          return div.textContent === line;
+        }
+        if (col < pos + len) return false;
+        pos += len;
+      }
+      return false;
+    }
     function focusNow() {
       var idx = caretBlock();
       if (idx !== lastFocus) {
@@ -908,23 +1000,27 @@ Auto-included by docs/_layouts/default.html.
         focusPreview(idx);
         if (idx >= 0) wrap.setAttribute("data-lc-focus", String(idx)); else wrap.removeAttribute("data-lc-focus");
       }
-      paintPiano();
+      paintSoon();
     }
     var _focT = null;
     function focusSoon() { clearTimeout(_focT); _focT = setTimeout(focusNow, 150); }
     ta.addEventListener("click", focusSoon);
     ta.addEventListener("keyup", focusSoon);
     ta.addEventListener("select", focusNow);
-    ta.addEventListener("input", function () { blocks = blocksOf(ta.value); paintPiano(); });
+    ta.addEventListener("input", function () {
+      var next = ta.value, patched = patchOneLine(lastVal, next);
+      lastVal = next; blocks = blocksOf(next);
+      if (patched) paintSoon(); else paintPiano();
+    });
     if (keysEl) {
       ta.addEventListener("scroll", function () { keysEl.scrollTop = ta.scrollTop; });
       if (window.ResizeObserver) new ResizeObserver(paintPiano).observe(ta);
     }
     /* a proof moves the caret the way a person would: pad.caret = n */
-    wrap._lcCaret = function (pos) { ta.focus(); ta.setSelectionRange(pos, pos); blocks = blocksOf(ta.value); focusNow(); };
+    wrap._lcCaret = function (pos) { ta.focus(); ta.setSelectionRange(pos, pos); blocks = blocksOf(ta.value); focusNow(); paintPiano(); };
     /* a proof writes the pad as a person would (pad.source = "…"): one render, now */
     wrap._lcApply = function (t) {
-      ta.value = t; render(); publish(true);
+      ta.value = t; lastVal = t; render(); publish(true); paintPiano();
       if (typeof refreshBench === "function") refreshBench();
       blocks = blocksOf(ta.value);
     };

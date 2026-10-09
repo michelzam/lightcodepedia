@@ -985,7 +985,7 @@ def step_deco_live(context, kind):
 
 @when("I delete the cards decoration in the decorated mdpad")
 def step_deco_drop_cards(context):
-    ta = context.page.locator("[data-lc-id='cv_deco'] > .lc-mdpad-in")
+    ta = context.page.locator("[data-lc-id='cv_deco'] .lc-mdpad-in")
     text = ta.input_value()
     assert '{: .cards cols="3" }' in text, "the résumé seed lost its cards line"
     ta.fill(text.replace('{: .cards cols="3" }', ""))
@@ -1037,7 +1037,7 @@ _LIBRARY = {
 
 @when("I type every library component into the decorated mdpad")
 def step_deco_library(context):
-    ta = context.page.locator("[data-lc-id='cv_deco'] > .lc-mdpad-in")
+    ta = context.page.locator("[data-lc-id='cv_deco'] .lc-mdpad-in")
     context.deco_dead = []
     for name, (live, src) in sorted(_LIBRARY.items()):
         if not ta.is_visible():

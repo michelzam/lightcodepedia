@@ -1868,6 +1868,16 @@ class Mdpad(Block):
         if f is not None:
             f(str(text))
 
+    def painted(self, kind):
+        """The source's painted tokens of one kind, in order — 'cls' for the
+        decorations' classes ('.pitch'), 'id', 'key', 'val', 'fence', 'h',
+        'link', 'ial' (whole decoration lines)."""
+        k = self._el.querySelector(".lc-mdpad-piano") if self._el is not None else None
+        if k is None:
+            return []
+        nl = k.querySelectorAll(".md-" + str(kind))
+        return [str(nl.item(i).textContent or "") for i in range(int(nl.length))]
+
     @property
     def broken(self):
         """The wires to nothing in the preview, as the pad draws them:
