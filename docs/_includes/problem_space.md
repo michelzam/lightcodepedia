@@ -74,6 +74,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-imap-goal { font-weight: 700; color: #111827; }
 .lc-imap-who { font-weight: 600; color: #374151; }
 .lc-imap-what a { text-decoration: none; }
+.lc-imap-info { margin: 0.3em 0 0.2em; padding: 0.45em 0.7em; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 0.9em; font-weight: 400; }
 .lc-imap-found { margin-top: 0.7em; font-size: 0.85em; color: #6b7280; }
 
 /* save= — the learner's keep bar, same grammar as the datagrid's */
@@ -502,6 +503,10 @@ Auto-included by docs/_layouts/default.html.
     if (card.classList.contains("lc-feature-failing")) return "🔴";
     return "🟡";
   }
+  function leafName(s) {
+    s = String(s || "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  }
   function upgradeImpactMap(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
@@ -519,26 +524,29 @@ Auto-included by docs/_layouts/default.html.
         var who = m.who || (pitch && pitch.who) || "";
         var rows = Array.isArray(m.impacts) ? m.impacts : [];
         var html = "<ul><li class='lc-imap-goal'>🎯 " + (goal ? escapeHtml(goal) : "<span class='lc-pitch-blank'>＿＿＿</span>");
-        html += "<ul><li class='lc-imap-who'>👥 " + (who ? escapeHtml(who) : "<span class='lc-pitch-blank'>＿＿＿</span>") + "<ul>";
+        html += "<ul><li class='lc-imap-who'>👤 " + (who ? escapeHtml(who) : "<span class='lc-pitch-blank'>＿＿＿</span>") + "<ul>";
         html += rows.map(function (r) {
           /* THE LEAF READS ITS FEATURE. feature: names a card; the name on
              the leaf is the card's title (calculated, like the pitch's who)
-             and the glyph its state — 📝 wanted, 🔧 implemented, 🟢 proven,
-             🔴 failing. The feature is the link from the problem space to
-             the solution, so the map says where each one stands. */
+             and the glyph after it its state — 📝 wanted, 🔧 implemented,
+             🟢 proven, 🔴 failing, ⚪ not on this page. The feature is the
+             link from the problem space to the solution, so the map says
+             where each one stands. A leaf is a 🦄 — the feature's own icon —
+             and its name reads as words, never as an id (Michel,
+             2026-10-10: "Capitalized, underscores replaced by spaces"). */
           var what;
           if (r.feature) {
             var fc = document.querySelector(".lc-feature[data-lc-id='" + r.feature + "']");
             var st = fc ? (fc.getAttribute("data-status") || "") : "";
             var glyph = !fc ? "⚪" : st === "wanted" ? "📝" : st === "passing" ? "🟢" : st === "failing" ? "🔴" : "🔧";
-            var name = (fc && fc._lcFeatureName) || r.what || r.feature;
+            var name = leafName((fc && fc._lcFeatureName) || r.what || r.feature);
             what = "<a href='#" + escapeHtml(r.feature) + "' data-feature='" + escapeHtml(r.feature) +
-              "' data-state='" + escapeHtml(st || (fc ? "implemented" : "missing")) + "'>" + glyph + " " + escapeHtml(name) + "</a>";
+              "' data-state='" + escapeHtml(st || (fc ? "implemented" : "missing")) + "'>" + escapeHtml(name) + " " + glyph + "</a>";
           } else {
-            what = escapeHtml(r.what || "");
+            what = escapeHtml(leafName(r.what || ""));
           }
           return "<li class='lc-imap-how'>🔀 " + escapeHtml(r.how || "") +
-            "<ul><li class='lc-imap-what'>🧩 " + what + "</li></ul></li>";
+            "<ul><li class='lc-imap-what'>🦄 " + what + "</li></ul></li>";
         }).join("");
         html += "</ul></li></ul></li></ul>";
         if (pitchRef) html += "<div class='lc-pitch-meta'><a class='lc-pitch-chip' href='#" + escapeHtml(pitchRef) + "'>✨ reads #" + escapeHtml(pitchRef) + "</a></div>";
@@ -594,7 +602,7 @@ Auto-included by docs/_layouts/default.html.
         var slot = box.querySelector(".lc-imap-found");
         if (!slot) return;
         slot.hidden = !found.length;
-        if (found.length) slot.innerHTML = "🧩 app features on this page, not yet on the map: " + found.join(" · ");
+        if (found.length) slot.innerHTML = "🦄 app features on this page, not yet on the map: " + found.join(" · ");
       }
       setTimeout(function () { follow(); collect(); }, 1000);
       setTimeout(function () { follow(); collect(); }, 4000);
@@ -613,6 +621,22 @@ Auto-included by docs/_layouts/default.html.
     var id = (a.getAttribute("href") || "").slice(1);
     if (!id || /^src=/.test(id)) return;
     var t = document.getElementById(id) || document.querySelector("[data-lc-id='" + id + "']");
+    /* A LEAF WHOSE FEATURE IS ELSEWHERE (Michel, 2026-10-10: "clickable, but
+       it leads to an empty new page"). The map names features written on
+       other pages — Module 03's live in the bench, the map travels on — so
+       the click says so, under the leaf, instead of going nowhere. */
+    if (!t && a.hasAttribute("data-feature")) {
+      ev.preventDefault();
+      var li = a.closest("li"), info = li.querySelector(".lc-imap-info");
+      if (info) { info.remove(); return; }
+      info = document.createElement("div");
+      info.className = "lc-imap-info";
+      info.textContent = "ℹ️ " + a.textContent.replace(/\s*\S+$/, "") +
+        " is not on this page — its feature (#" + id + ") is written on another page. " +
+        "Here the map only names it.";
+      li.appendChild(info);
+      return;
+    }
     if (!t) return;
     ev.preventDefault();
     t.scrollIntoView({ behavior: "smooth", block: "center" });

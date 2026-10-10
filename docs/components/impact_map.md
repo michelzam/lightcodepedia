@@ -17,8 +17,12 @@ impacts:
 {: .impact_map #shelter_map pitch="map_pitch" }
 
 The first leaf typed no `what`: it names a feature, and the leaf's name is
-the card's title, calculated — the glyph is the card's state. 📝 wanted,
-🔧 implemented, 🟢 proven, 🔴 failing.
+the card's title, calculated — the glyph after it is the card's state. 📝
+wanted, 🔧 implemented, 🟢 proven, 🔴 failing, ⚪ not on this page. Every
+leaf is a 🦄, the feature's icon, and reads as words: a leaf whose card is
+elsewhere shows its id with spaces and a capital (`no_payment_before_visit`
+→ *No payment before visit*), and a click on it says, under the leaf, that
+the feature is written on another page.
 
 ```gherkin
 Feature: Families meet the dog before they pay
@@ -40,7 +44,7 @@ Feature: Families meet the dog before they pay
 |---|---|
 | `#id` | the map's id (default `impact_map`) |
 | `pitch="id"` | pulls `goal`/`who` from that pitch when your YAML leaves them empty; chip + x-ray wire |
-| `feature:` (row field) | the id of a `.feature` card — the leaf links to it, takes its title when `what` is empty, and wears its state (📝 wanted · 🔧 implemented · 🟢 proven · 🔴 failing) |
+| `feature:` (row field) | the id of a `.feature` card — the leaf links to it, takes its title when `what` is empty, and wears its state (📝 wanted · 🔧 implemented · 🟢 proven · 🔴 failing · ⚪ elsewhere) |
 
 ## The map reads the pitch
 

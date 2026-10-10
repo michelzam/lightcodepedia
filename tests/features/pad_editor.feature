@@ -54,3 +54,77 @@ Feature: The pad types like a text field, painted
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/glued.md"
     And I wait for the page to be interactive
     Then the "glued" pad's text keeps every decoration glued to its line
+
+  Scenario: A decoration's line wears its component's icon in the gutter
+    Michel, 2026-10-10: "to see the decoration's component emoji in the
+    gutter: 🛢️ for dataset". The icons are the component model's, the ones
+    the x-ray and the editor show; a decoration that names no component
+    (an id alone) wears none.
+
+    Given the GitHub contents API serves "courses/demo/module_04/icons.md" with the document:
+      """
+      # Icons
+
+      `````markdown
+      # App
+      {: #top }
+
+      ```
+      family,dog
+      Kaur,Scout
+      ```
+      {: .dataset #families }
+
+      [Families](#)
+      {: .datagrid #fam_grid source="families" }
+
+      [The family](#)
+      {: .form master="fam_grid" }
+      `````
+      {: .mdpad #icons decorations="true" rows="14" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_04/icons.md"
+    And I wait for the page to be interactive
+    Then the "icons" pad's gutter shows "🛢️" on line 8, "▦" on line 11 and "📝" on line 14
+    And the "icons" pad's gutter shows no icon on line 2
+
+  Scenario: A copy saved with the old gaps opens glued, ready to save
+    Michel, 2026-10-10: "no useless empty lines before decorations" (modules
+    4 and 5). Pads saved before the 2026-10-09 runner fix kept the gap above
+    every decoration, and a gap moves a decoration onto the next block. A
+    decorated pad glues them back on load, outside fences; the text differs
+    from the saved one, so 💾 offers to keep it.
+
+    Given a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/faces.md" with the document:
+      """
+      # Faces
+
+      `````markdown
+      # Meet a dog
+      `````
+      {: .mdpad #faces decorations="true" save="faces.md" rows="12" }
+      """
+    And a connected bench whose "courses/demo/mod/faces.md" holds the document
+      """
+      # Meet a dog
+
+      [dogs](dogs.yaml)
+
+      {: .dataset #dogs }
+
+      [The dogs](#)
+
+
+      {: .datagrid #dog_grid source="dogs" }
+
+      ```markdown
+      [kept](#)
+
+      {: .verbatim }
+      ```
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/faces.md"
+    And I wait for the page to be interactive
+    Then the pad is marked as the reader's own
+    And the "faces" pad's text keeps every decoration glued to its line, fences aside

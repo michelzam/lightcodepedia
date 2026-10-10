@@ -171,6 +171,26 @@ Click a dog in the grid above — the form fills. Click another dog — the form
 - [ ] Depends on the browser. Safari is always the exception.
 {: .quiz }
 
+## ↔️ Beside a datagrid — the labels fit, the line moves
+
+A card beside a datagrid has little room. Its label column fits the longest
+label — never more than half the card — so the values keep the rest. The
+line between labels and values is a grip: drag it, and it stays where you
+put it, row after row.
+
+```yaml
+- name: Lucky
+  breed: Beagle
+  campus: Milwaukee
+- name: Wanda
+  breed: Poodle
+  campus: Racine
+```
+{: .datagrid #narrow_grid beside="true" }
+
+[The dog](#)
+{: .form #narrow_form master="narrow_grid" beside="true" }
+
 ## ✏️🔗 Edit a grid row through the form
 
 Combine `editable="true"` AND `master="<id>"`: edits in the form flow back to the grid row immediately.

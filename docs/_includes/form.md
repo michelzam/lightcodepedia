@@ -31,7 +31,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-form-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
 .lc-form-title .lc-form-name { color: #222; font-weight: 600; }
 .lc-form-title .lc-form-meta { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute, #616161); letter-spacing: 0.05em; }
-.lc-form-grid { width: 100%; }
+.lc-form-grid { width: 100%; position: relative; }
+/* a form is a narrow thing — often beside a datagrid: half the theme's padding */
+.lc-form-grid.ag-theme-alpine { --ag-cell-horizontal-padding: 12px; }
+.lc-form-grip { position: absolute; top: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 3; touch-action: none; }
+.lc-form-grip:hover, .lc-form-grip.lc-form-grip-on { background: linear-gradient(90deg, transparent 2px, #0066cc 2px, #0066cc 4px, transparent 4px); }
 .lc-form-grid .ag-cell.lc-form-label-cell { color: #0066cc; font-weight: 600; background: #fafbfc; }
 .lc-form-grid .ag-cell.lc-form-label-cell:hover { background: #fafbfc !important; }
 .lc-form-grid .ag-row-hover .lc-form-label-cell { background: #fafbfc !important; }
@@ -63,6 +67,74 @@ Auto-included by docs/_layouts/default.html.
   var prettifyKey = window.lcPrettifyKey;
   var loadAgGrid  = window.lcAgGridReady;
   var parseDatagridText = window.lcParseDataText;
+
+  /* the width a label needs, in the label cell's own font (bold, the grid's size) */
+  var _measure = null;
+  function textWidth(text, el) {
+    _measure = _measure || document.createElement("canvas").getContext("2d");
+    var cs = getComputedStyle(el);
+    _measure.font = "600 " + (cs.fontSize || "14px") + " " + (cs.fontFamily || "sans-serif");
+    return _measure.measureText(String(text || "")).width;
+  }
+
+  /* THE GRIP: the form has no header row, so AG Grid's own resize handle never
+     shows. A thin bar on the line between label and value drags it; once
+     dragged, the learner's width holds, row after row — otherwise the column
+     re-fits when the form changes width (a pad's preview, a phone turned). */
+  function wireLabelGrip(gridDiv, api, keep) {
+    var grip = document.createElement("div");
+    grip.className = "lc-form-grip";
+    grip.title = "Drag to resize the labels";
+    gridDiv.appendChild(grip);
+    /* the learner's width outlives the row: a card that follows a datagrid
+       repaints on every click, and the line stays where they dragged it */
+    var mine = !!keep._lcLabelW;
+    if (mine) api.setColumnWidths([{ key: "label", newWidth: keep._lcLabelW }]);
+    function width() { var c = api.getColumn("label"); return c ? c.getActualWidth() : 0; }
+    function place() { grip.style.left = (width() - 3) + "px"; }
+    /* the canvas guess sized the first paint; the rendered cells have the
+       last word — AG Grid fits the column to them, the cap still holds */
+    function refit() {
+      if (mine) return;
+      api.autoSizeColumns(["label"], true);
+      var cap = Math.max(60, gridDiv.clientWidth * 0.5);
+      if (width() > cap) api.setColumnWidths([{ key: "label", newWidth: cap }]);
+      place();
+    }
+    api.addEventListener("columnResized", place);
+    api.addEventListener("firstDataRendered", refit);
+    api.addEventListener("rowDataUpdated", refit);
+    setTimeout(refit, 0);              /* the first render may already be done */
+    grip.addEventListener("pointerdown", function (ev) {
+      ev.preventDefault();
+      var x0 = ev.clientX, w0 = width();
+      grip.setPointerCapture(ev.pointerId);
+      grip.classList.add("lc-form-grip-on");
+      function move(e) {
+        var max = Math.max(60, gridDiv.clientWidth - 40);
+        keep._lcLabelW = Math.max(40, Math.min(max, w0 + e.clientX - x0));
+        api.setColumnWidths([{ key: "label", newWidth: keep._lcLabelW }]);
+        mine = true;
+      }
+      function up() {
+        grip.classList.remove("lc-form-grip-on");
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+        grip.removeEventListener("pointercancel", up);
+      }
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+      grip.addEventListener("pointercancel", up);
+    });
+    if (window.ResizeObserver) {
+      var lastW = gridDiv.clientWidth;
+      new ResizeObserver(function () {
+        if (mine || !gridDiv.isConnected || gridDiv.clientWidth === lastW) return;
+        lastW = gridDiv.clientWidth;
+        refit();
+      }).observe(gridDiv);
+    }
+  }
 
   function buildFormWrapper(opts) {
     var div = document.createElement("div");
@@ -359,16 +431,25 @@ Auto-included by docs/_layouts/default.html.
     bodyEl.appendChild(gridDiv);
 
     var cellRenderer = makeFormCellRenderer(opts);
+    function labelWidth() {
+      var longest = rows.reduce(function (m, r) { return Math.max(m, textWidth(r.label, gridDiv)); }, 0);
+      var cap = Math.max(60, (gridDiv.clientWidth || 600) * 0.5);
+      return Math.round(Math.min(cap, longest + 22));   /* the cell's own padding, both sides */
+    }
 
     loadAgGrid().then(function(){
       var columnDefs = [
         {
+          /* THE LABEL COLUMN FITS ITS LABELS (Michel, 2026-10-10: a form
+             beside a datagrid showed labels only — a fixed 160px left the
+             values 39). Sized to the longest label, never more than half of
+             the form, and the learner drags the grip to move the line. */
           field: "label",
+          colId: "label",
           headerName: "",
-          pinned: "left",
           editable: false,
           cellClass: "lc-form-label-cell",
-          width: 160,
+          width: labelWidth(),
           suppressMovable: true,
           sortable: false,
           filter: false
@@ -441,7 +522,8 @@ Auto-included by docs/_layouts/default.html.
         }
       };
 
-      bodyEl._lcGridApi = window.agGrid.createGrid(gridDiv, gridOptions);
+      var api = bodyEl._lcGridApi = window.agGrid.createGrid(gridDiv, gridOptions);
+      wireLabelGrip(gridDiv, api, bodyEl);
     }).catch(function(e){
       bodyEl.innerHTML = '<div class="lc-form-err">' + escapeHtml("Could not load AG Grid: " + (e.message || String(e))) + '</div>';
     });

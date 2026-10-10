@@ -260,7 +260,7 @@ Feature: Problem space — persona, pitch, impact map
     And I wait for the page to be interactive
     Then the page reads "The goal reads: No adoption fails after payment"
     And the agent "judge" is named "The judge" and reads "map.goal"
-    And the impact map "map" leaf "count_proof" reads "📝 The coordinator sees where families stop"
+    And the impact map "map" leaf "count_proof" reads "The coordinator sees where families stop 📝"
     When I run the feature "chain_proof"
     Then the feature "chain_proof" is green
     When I follow the impact map "map" leaf to "count_proof"
@@ -280,10 +280,39 @@ Feature: Problem space — persona, pitch, impact map
   Scenario: A map leaf wears its feature's title and state
     When I navigate to "/components/impact_map"
     And I wait for the page to be interactive
-    Then the impact map "shelter_map" leaf "visit_first" reads "📝 Families meet the dog before they pay"
+    Then the impact map "shelter_map" leaf "visit_first" reads "Families meet the dog before they pay 📝"
 
   Scenario: The map collects the app's features, never the lesson's checks
     When I navigate to "/components/impact_map"
     And I wait for the page to be interactive
     Then the impact map "pulled_map" collects the proof "weekly_proof"
     And the impact map "pulled_map" does not collect "impact_map_proof"
+
+  Scenario: A leaf whose feature lives elsewhere reads as words and says where it is
+    Michel, 2026-10-10: the leaves are features — 🦄, the feature's own
+    icon — named in words, not as ids; the person is 👤; and a leaf whose
+    feature is on another page "leads to an empty new page". It says so
+    under the leaf now, and the runner keeps its page.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the GitHub contents API serves "courses/demo/mod/elsewhere.md" with the document:
+      """
+      # Elsewhere
+
+      ```yaml
+      goal: No adoption fails after payment
+      who: The coordinator
+      impacts:
+        - how: She stops payments that come before a visit
+          feature: no_payment_before_visit
+      ```
+      {: .impact_map #map }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/elsewhere.md"
+    And I wait for the page to be interactive
+    Then the impact map "map" leaf "no_payment_before_visit" reads "No payment before visit ⚪"
+    And the impact map "map" shows "👤 The coordinator" and "🦄 No payment before visit"
+    When I follow the impact map "map" leaf to "no_payment_before_visit"
+    Then the page's address still names "courses/demo/mod/elsewhere.md"
+    And the impact map "map" says "is not on this page" under the leaf

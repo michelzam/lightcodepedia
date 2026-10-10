@@ -30,7 +30,8 @@ IAL knobs:
               nothing ever collides.
   piano="true"   consecutive blocks banded in two shades of the source pane, the
               caret's block in a third — the "piano"
-  numbers="true" a line number per source line in a gutter (wrapped lines keep one)
+  numbers="true" a line number per source line in a gutter (wrapped lines keep one);
+              a decoration's line also wears its component's icon there (🛢️ ▦ 📝)
   replay="1.5"  seconds per frame when 🎞 Replay plays the saved versions (default 1.5);
               the button sits at the head of 🕘 Versions, and any row of that
               list, clicked, shows that version the same way — read-only
@@ -189,7 +190,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-piano .md-em { color: #cba6f7; }
 .lc-mdpad-piano .md-quote { color: #94e2d5; }
 .lc-mdpad-piano .md-li { color: #f5c2e7; }
-.lc-mdpad-src[data-numbers] .lc-mdpad-in { padding-left: 3.4em; }
+.lc-mdpad-src[data-numbers] .lc-mdpad-in { padding-left: 4em; }
 .lc-mdpad-piano { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;
   box-sizing: border-box; background: #1e1e2e; border: 1px solid transparent; border-radius: 6px;
   white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; }
@@ -202,13 +203,16 @@ Auto-included by docs/_layouts/default.html.
    painted as the pane's background, so it stays put while the text scrolls; each
    row's cell then carries the piano into the gutter in its own grayer shades */
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano { background:
-  linear-gradient(90deg, #2a2a38 0, #2a2a38 3em, #3c3c50 3em, #3c3c50 calc(3em + 1px), #1e1e2e calc(3em + 1px)); }
+  linear-gradient(90deg, #2a2a38 0, #2a2a38 3.6em, #3c3c50 3.6em, #3c3c50 calc(3.6em + 1px), #1e1e2e calc(3.6em + 1px)); }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln::before {
-  content: attr(data-n); position: absolute; left: -3.4em; top: 0; bottom: 0; width: 3em; box-sizing: border-box;
+  content: attr(data-n); position: absolute; left: -4em; top: 0; bottom: 0; width: 3.6em; box-sizing: border-box;
   text-align: right; padding-right: 0.45em; color: #6c7086; font-size: 0.85em; line-height: inherit; }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .k1 .ln::before { background: #30303f; }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .now .ln::before { background: #3a3a54; }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln.here::before { color: #cdd6f4; }
+/* a decoration's line wears its component's icon at the gutter's left edge */
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln[data-ic]::after {
+  content: attr(data-ic); position: absolute; left: -4.6em; top: 0; font-size: 0.8em; line-height: inherit; }
 /* 🎞 REPLAY — the source pane becomes a diff pane: + green, − red, the
    usual cues; a slider is the cursor; play runs forward, the moonwalk back */
 .lc-mdpad-replay, .lc-mdpad-hist { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px;
@@ -291,6 +295,27 @@ Auto-included by docs/_layouts/default.html.
     return -1;
   }
   function escHtml(s) { return s.replace(/[&<>]/g, function (c) { return c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"; }); }
+  /* THE COMPONENT'S ICON IN THE GUTTER (Michel, 2026-10-10): a decoration line
+     carries its component's emoji beside its number — 🛢️ dataset, ▦ datagrid,
+     📝 form — the icons the x-ray and the editor already show, read from the
+     one component model. A class that is no component (.red, #top) gets none. */
+  function compIcons() {
+    if (window._lcCompIconsP) return window._lcCompIconsP;
+    window._lcCompIconsP = fetch("{{ "/assets/component-model.json" | relative_url }}")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var m = (d && d.model) || {}, out = {};
+        Object.keys(m).forEach(function (k) { if (m[k].icon) out[k.toLowerCase()] = m[k].icon; });
+        return out;
+      })
+      .catch(function () { return {}; });
+    return window._lcCompIconsP;
+  }
+  var _icons = {};
+  function ialIcon(body) {
+    var cls = (body.match(/(?:^|\s)\.([A-Za-z][\w-]*)/) || [])[1];
+    return cls ? (_icons[cls.replace(/[-_]/g, "").toLowerCase()] || "") : "";
+  }
 
   function upgradeMdpad(el) {
     if (el.dataset.lcMdpadDone) return;
@@ -470,7 +495,10 @@ Auto-included by docs/_layouts/default.html.
         window.lcBench.read(benchPath, wrap).then(function (f) {
           if (!f) return;
           bOrigin = f.text; bSha = f.sha;
-          ta.value = f.text;
+          /* a decorated pad glues a saved copy's decorations back to their
+             lines (old gaps, see lcGlueIAL); the healed text differs from
+             the saved one, so 💾 offers to keep it */
+          ta.value = deco && window.lcGlueIAL ? window.lcGlueIAL(f.text) : f.text;
           wrap.setAttribute("data-lc-mine", "1");
           if (mineTag) mineTag.hidden = false;
           if (frame) frame.setMine(true);
@@ -981,7 +1009,10 @@ Auto-included by docs/_layouts/default.html.
       keysEl.style.paddingRight = (parseFloat(cs.paddingRight) + Math.max(0, bar)) + "px";
       var lines = ta.value.split("\n"), now = caretBlock(), here = caretLine(), html = "", li = 0, inFence = false;
       function line(n) {
-        var h = "<div class='ln" + (n === here ? " here" : "") + "' data-n='" + (n + 1) + "'>" + paintLine(lines[n], inFence) + "</div>";
+        var ial = !inFence && numbers && lines[n].match(/^\s*\{:(.*)\}\s*$/);
+        var ic = ial ? ialIcon(ial[1]) : "";
+        var h = "<div class='ln" + (n === here ? " here" : "") + "' data-n='" + (n + 1) + "'" +
+          (ic ? " data-ic='" + ic + "'" : "") + ">" + paintLine(lines[n], inFence) + "</div>";
         if (FENCE_RE.test(lines[n])) inFence = !inFence;
         return h;
       }
@@ -1078,6 +1109,7 @@ Auto-included by docs/_layouts/default.html.
     render();  /* show the seed immediately (escaped) … */
     if (window.lcLoadMarked) window.lcLoadMarked(render);  /* … then with marked */
     if (keysEl) paintPiano();
+    if (keysEl && numbers) compIcons().then(function (m) { _icons = m; paintPiano(); });
   }
 
   /* code_chrome.md provides the scan registry; one registration covers the

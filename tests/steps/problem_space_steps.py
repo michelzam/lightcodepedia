@@ -264,3 +264,16 @@ def step_ag_grid_late(context):
     context.page.route(
         "https://cdn.jsdelivr.net/npm/ag-grid-community@*/dist/ag-grid-community.min.js",
         late)
+
+
+@then('the impact map "{cid}" shows "{a}" and "{b}"')
+def step_imap_shows(context, cid, a, b):
+    card = _card(context, "imap", cid)
+    for want in (a, b):
+        expect(card).to_contain_text(want, timeout=PS_TIMEOUT)
+
+
+@then('the impact map "{cid}" says "{text}" under the leaf')
+def step_imap_info(context, cid, text):
+    info = _card(context, "imap", cid).locator(".lc-imap-what .lc-imap-info")
+    expect(info).to_contain_text(text, timeout=PS_TIMEOUT)

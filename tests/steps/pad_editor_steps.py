@@ -83,3 +83,38 @@ def step_pad_glued(context, pad_id):
     v = ta.input_value()
     assert "{: .dataset" in v, "the pad lost its seed: %r" % v[:200]
     assert "\n\n{:" not in v, "a blank line above a decoration: %r" % v[max(0, v.find("\n\n{:") - 40):v.find("\n\n{:") + 30]
+
+
+def _gutter_icon(context, pad_id, n):
+    sel = "[data-lc-id='%s'] .lc-mdpad-piano .ln[data-n='%d']" % (pad_id, n)
+    context.page.wait_for_selector(sel, state="attached", timeout=20_000)
+    return context.page.eval_on_selector(sel, "l => l.getAttribute('data-ic') || ''")
+
+
+@then('the "{pad_id}" pad\'s gutter shows "{a}" on line {la:d}, "{b}" on line {lb:d} and "{c}" on line {lc:d}')
+def step_gutter_icons(context, pad_id, a, la, b, lb, c, lc):
+    # the icons arrive with the component model, a fetch after the first paint
+    context.page.wait_for_function(
+        "s => document.querySelector(s)",
+        arg="[data-lc-id='%s'] .lc-mdpad-piano .ln[data-ic]" % pad_id, timeout=20_000)
+    for want, n in ((a, la), (b, lb), (c, lc)):
+        got = _gutter_icon(context, pad_id, n)
+        assert got == want, "line %d wears %r, expected %r" % (n, got, want)
+
+
+@then('the "{pad_id}" pad\'s gutter shows no icon on line {n:d}')
+def step_gutter_none(context, pad_id, n):
+    got = _gutter_icon(context, pad_id, n)
+    assert not got, "line %d wears %r — an id alone names no component" % (n, got)
+
+
+@then('the "{pad_id}" pad\'s text keeps every decoration glued to its line, fences aside')
+def step_pad_glued_fences_aside(context, pad_id):
+    """A saved copy healed on load; a fence inside the learner's text stays
+    verbatim — code shown as code is not a decoration."""
+    ta = _ta(context, pad_id)
+    ta.wait_for(state="attached", timeout=20_000)
+    v = ta.input_value()
+    assert "[dogs](dogs.yaml)\n{: .dataset #dogs }" in v, "the dataset's decoration still floats: %r" % v
+    assert "[The dogs](#)\n{: .datagrid" in v, "the datagrid's decoration still floats: %r" % v
+    assert "[kept](#)\n\n{: .verbatim }" in v, "a fence's text was touched: %r" % v

@@ -144,6 +144,29 @@ window.lcNormIAL = window.lcNormIAL || function (md) {
   }
   return out.join("\n");
 };
+/* THE OTHER WAY ROUND, for a learner's own text: a decoration glued to the
+   line it decorates — the blank lines right above a {: … } line go, outside
+   fences. Pads saved before 2026-10-09 carry the runner's old gaps, and a
+   gap is not harmless: a lone decoration lands on the NEXT block (a
+   datagrid's turned the query below it into a grid — Michel, Module 05). */
+window.lcGlueIAL = window.lcGlueIAL || function (md) {
+  var lines = String(md).split("\n"), out = [], fence = null;
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i], m = /^ {0,3}(`{3,}|~{3,})/.exec(l);
+    if (fence) {
+      if (m && m[1].charAt(0) === fence.charAt(0) && m[1].length >= fence.length &&
+          /^ {0,3}[`~]+\s*$/.test(l)) fence = null;
+    } else if (m) {
+      fence = m[1];
+    } else if (/^\{:.*\}\s*$/.test(l)) {
+      var k = out.length;
+      while (k > 0 && /^\s*$/.test(out[k - 1])) k--;
+      if (k > 0) out.length = k;              /* never glue to the top of the text */
+    }
+    out.push(l);
+  }
+  return out.join("\n");
+};
 (function () {
   if (window._lcWidgetsReady) return;
   window._lcWidgetsReady = true;

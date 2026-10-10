@@ -57,7 +57,8 @@ Put the caret in a block on the right and that block **pulses** on the left,
 so a learner changing a line sees where the change lands. With
 `piano="true"` the source pane bands consecutive blocks in two shades and
 marks the caret's block in a third; with `numbers="true"` a gutter numbers
-the lines. Both off by default, both pure rendering: the text is untouched.
+the lines, and a decoration's line wears its component's icon there — 🛢️
+beside `{: .dataset }`, ▦ beside `{: .datagrid }`. Both off by default, both pure rendering: the text is untouched.
 
 `````
 # Sam, volunteer coordinator
@@ -144,7 +145,7 @@ shows here only with your key.
 |---|---|
 | `rows="14"` | Editor height in text rows (default 12) |
 | `piano="true"` | The **piano**: consecutive blocks banded in two shades of the source pane, the caret's block in a third — see *Focus* below |
-| `numbers="true"` | A line number per source line in a gutter; wrapped lines keep one number. Off by default |
+| `numbers="true"` | A line number per source line in a gutter; wrapped lines keep one number; a decoration's line also shows its component's icon. Off by default |
 | `replay="1.5"` | Seconds per frame when 🎞 **Replay** plays the saved versions (default 1.5). The button sits at the head of 🕘 **Versions**; any row of that list, clicked, shows that version |
 | `comment="true"` | 💾 **Save…** asks for one line — what you just did — and the line names the version in 🕘 Versions. An empty line keeps nothing |
 | `save="true"` | Adds a 💾 **Save** button that commits the block straight back to the page source — no x-ray, no page editor |
