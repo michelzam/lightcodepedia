@@ -178,18 +178,7 @@ Auto-included by docs/_layouts/default.html.
 /* the painted source: a fence and its body muted, a decoration on its own
    lighter band — the class, the #id and each knob in their colours */
 .lc-mdpad-piano .ln { color: #cdd6f4; }
-.lc-mdpad-piano .md-h { color: #f9e2af; font-weight: 600; }
-.lc-mdpad-piano .md-fence { color: #6c7086; }
-.lc-mdpad-piano .md-code { color: #a6adc8; }
-.lc-mdpad-piano .md-ial { background: rgba(137, 180, 250, 0.12); box-shadow: inset 2px 0 0 #89b4fa; border-radius: 3px; color: #9399b2; }
-.lc-mdpad-piano .md-cls { color: #89b4fa; font-weight: 600; }
-.lc-mdpad-piano .md-id { color: #f38ba8; }
-.lc-mdpad-piano .md-key { color: #a6e3a1; }
-.lc-mdpad-piano .md-val { color: #fab387; }
-.lc-mdpad-piano .md-link { color: #89dceb; }
-.lc-mdpad-piano .md-em { color: #cba6f7; }
-.lc-mdpad-piano .md-quote { color: #94e2d5; }
-.lc-mdpad-piano .md-li { color: #f5c2e7; }
+/* the token colours (.md-h, .md-ial …) live with the painter, in widgets.md */
 .lc-mdpad-src[data-numbers] .lc-mdpad-in { padding-left: 4em; }
 .lc-mdpad-piano { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;
   box-sizing: border-box; background: #1e1e2e; border: 1px solid transparent; border-radius: 6px;
@@ -297,20 +286,9 @@ Auto-included by docs/_layouts/default.html.
   function escHtml(s) { return s.replace(/[&<>]/g, function (c) { return c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"; }); }
   /* THE COMPONENT'S ICON IN THE GUTTER (Michel, 2026-10-10): a decoration line
      carries its component's emoji beside its number — 🛢️ dataset, ▦ datagrid,
-     📝 form — the icons the x-ray and the editor already show, read from the
+     ☷ form — the icons the x-ray and the editor already show, read from the
      one component model. A class that is no component (.red, #top) gets none. */
-  function compIcons() {
-    if (window._lcCompIconsP) return window._lcCompIconsP;
-    window._lcCompIconsP = fetch("{{ "/assets/component-model.json" | relative_url }}")
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        var m = (d && d.model) || {}, out = {};
-        Object.keys(m).forEach(function (k) { if (m[k].icon) out[k.toLowerCase()] = m[k].icon; });
-        return out;
-      })
-      .catch(function () { return {}; });
-    return window._lcCompIconsP;
-  }
+  function compIcons() { return window.lcComponentIcons(); }   /* widgets.md */
   var _icons = {};
   function ialIcon(body) {
     var cls = (body.match(/(?:^|\s)\.([A-Za-z][\w-]*)/) || [])[1];
@@ -354,7 +332,7 @@ Auto-included by docs/_layouts/default.html.
       src.className = "lc-mdpad-src";
       if (numbers) src.setAttribute("data-numbers", "1");
       keysEl = document.createElement("div");
-      keysEl.className = "lc-mdpad-piano";
+      keysEl.className = "lc-mdpad-piano lc-md-paint";
       keysEl.setAttribute("aria-hidden", "true");
       if (!piano) keysEl.setAttribute("data-plain", "1");
       src.appendChild(keysEl);
@@ -973,31 +951,9 @@ Auto-included by docs/_layouts/default.html.
        and the textarea's own text is transparent over it, caret kept.
        One painter, line by line; the fence state carries across lines. */
     var FENCE_RE = /^\s*(`{3,}|~{3,})/;
-    function paintIAL(s) {
-      return escHtml(s).replace(/(\.[A-Za-z_][\w-]*)|(#[A-Za-z_][\w-]*)|([A-Za-z_][\w-]*)=(&quot;[^&]*?&quot;|\S+)/g,
-        function (all, cls, id, key, val) {
-          if (cls) return "<span class='md-cls'>" + cls + "</span>";
-          if (id) return "<span class='md-id'>" + id + "</span>";
-          return "<span class='md-key'>" + key + "</span>=<span class='md-val'>" + val + "</span>";
-        });
-    }
-    function paintInline(raw) {
-      var h = escHtml(raw);
-      h = h.replace(/^(\s*)([-*+]|\d+\.)(\s)/, "$1<span class='md-li'>$2</span>$3");
-      h = h.replace(/\[([^\]]*)\]\(([^)]*)\)/g, "<span class='md-link'>[$1]($2)</span>");
-      h = h.replace(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|_[^_\n]+_|`[^`\n]+`)/g, "<span class='md-em'>$1</span>");
-      return h;
-    }
-    function paintLine(raw, inFence) {
-      if (!raw) return " ";
-      if (FENCE_RE.test(raw)) return "<span class='md-fence'>" + escHtml(raw) + "</span>";
-      if (inFence) return "<span class='md-code'>" + escHtml(raw) + "</span>";
-      var ial = raw.match(/^(\s*)\{:(.*)\}(\s*)$/);
-      if (ial) return escHtml(ial[1]) + "<span class='md-ial'>{:" + paintIAL(ial[2]) + "}</span>" + escHtml(ial[3]);
-      if (/^\s*#{1,6}\s/.test(raw)) return "<span class='md-h'>" + escHtml(raw) + "</span>";
-      if (/^\s*>/.test(raw)) return "<span class='md-quote'>" + escHtml(raw) + "</span>";
-      return paintInline(raw);
-    }
+    /* the painter is shared with the read-only .code snippets (widgets.md):
+       a snippet on the lesson and the pad beside it wear the same colours */
+    function paintLine(raw, fence) { return window.lcPaintMdLine(raw, fence); }
     function paintPiano() {
       if (!keysEl) return;
       var cs = getComputedStyle(ta);
@@ -1007,13 +963,16 @@ Auto-included by docs/_layouts/default.html.
       /* the textarea's scrollbar narrows ITS text; mirror that or long lines wrap apart */
       var bar = ta.offsetWidth - ta.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
       keysEl.style.paddingRight = (parseFloat(cs.paddingRight) + Math.max(0, bar)) + "px";
-      var lines = ta.value.split("\n"), now = caretBlock(), here = caretLine(), html = "", li = 0, inFence = false;
+      /* fence: null outside, else its info string ("csv", "" …) — a CSV
+         fence paints its columns in turns */
+      var lines = ta.value.split("\n"), now = caretBlock(), here = caretLine(), html = "", li = 0, fence = null;
       function line(n) {
-        var ial = !inFence && numbers && lines[n].match(/^\s*\{:(.*)\}\s*$/);
+        var ial = fence === null && numbers && lines[n].match(/^\s*\{:(.*)\}\s*$/);
         var ic = ial ? ialIcon(ial[1]) : "";
         var h = "<div class='ln" + (n === here ? " here" : "") + "' data-n='" + (n + 1) + "'" +
-          (ic ? " data-ic='" + ic + "'" : "") + ">" + paintLine(lines[n], inFence) + "</div>";
-        if (FENCE_RE.test(lines[n])) inFence = !inFence;
+          (ic ? " data-ic='" + ic + "'" : "") + ">" + paintLine(lines[n], fence) + "</div>";
+        var m = FENCE_RE.exec(lines[n]);
+        if (m) fence = fence === null ? lines[n].trim().slice(m[1].length).trim() : null;
         return h;
       }
       blocks.forEach(function (b, i) {

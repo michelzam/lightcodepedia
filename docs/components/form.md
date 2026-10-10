@@ -1,4 +1,4 @@
-# 📝 Form
+# ☷ Form
 
 Display a single object's attributes as a labeled two-column view. Pair it with a [📊 Datagrid](/components/datagrid) to drill into a selected row — click a row, the form fills. Works standalone too.
 

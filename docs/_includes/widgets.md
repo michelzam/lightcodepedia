@@ -68,12 +68,51 @@ Auto-included by docs/_layouts/default.html.
 /* a phone has no room for the path — the owner and the state are what matter */
 @media (max-width: 560px) { .lc-bench-path { display: none; } }
 
-.lc-code { border: 1px solid #d0d0d0; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #fafafa; }
-.lc-code-title { background: #f3f4f6; padding: 0.45em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #444; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; gap: 0.5em; }
-.lc-code-title .lc-code-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute,#616161); letter-spacing: 0.05em; }
-.lc-code > .highlighter-rouge, .lc-code > pre { margin: 0 !important; border-radius: 0 !important; background: transparent !important; }
+/* A SNIPPET IS ON GRAY (Michel, 2026-10-10: "dark mode for code", then "maybe
+   dark is too dark — a gray not too light"): the pad's token colours,
+   read-only, a copy button in its title bar; markdown painted by the pad's
+   own painter, CSV a piano by column, other languages in Rouge's classes;
+   the muted tokens lifted so they still read on the gray. */
+.lc-code { border: 1px solid #4a4e5c; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #3a3e4b; color: #e6e9f2; }
+.lc-code-title { background: #313542; padding: 0.4em 0.6em 0.4em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #e6e9f2; border-bottom: 1px solid #4a4e5c; display: flex; align-items: center; gap: 0.5em; }
+.lc-code-title .lc-code-icon { font-size: 1.1em; }
+.lc-code-title .lc-code-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #aab0c4; letter-spacing: 0.05em; }
+.lc-code-copy { font: inherit; font-size: 0.85em; padding: 0.15em 0.6em; border-radius: 5px; border: 1px solid #5b6070; background: #474b59; color: #e6e9f2; cursor: pointer; }
+.lc-code-copy:hover { background: #555a69; }
+.lc-code > .highlighter-rouge, .lc-code > pre { margin: 0 !important; border-radius: 0 !important; background: transparent !important; border: none !important; }
 .lc-code .highlight { background: transparent !important; }
-.lc-code .highlight pre, .lc-code > pre { padding: 0.9em 1em !important; margin: 0 !important; overflow-x: auto; font-size: 0.85em; line-height: 1.5; background: transparent !important; }
+.lc-code .highlight pre, .lc-code > pre { padding: 0.9em 1em !important; margin: 0 !important; overflow-x: auto; font-size: 0.85em; line-height: 1.5; background: transparent !important; color: #e6e9f2; }
+.lc-code pre code { background: transparent !important; color: inherit; white-space: pre; }
+.lc-code > pre, .lc-code .highlight pre { max-height: 32em; overflow: auto; }
+.lc-code .lc-code-md code { white-space: pre-wrap; overflow-wrap: break-word; }
+.lc-code .lc-code-md .ln { display: block; min-height: 1.5em; }
+.lc-code .highlight .c, .lc-code .highlight .c1, .lc-code .highlight .cm, .lc-code .highlight .cp { color: #a3a9bc; font-style: italic; }
+.lc-code .md-fence, .lc-code .md-comma { color: #a3a9bc; }
+.lc-code .md-code { color: #d0d5e3; }
+.lc-code .md-ial { background: rgba(137, 180, 250, 0.16); color: #b4bacb; }
+.lc-code .highlight .k, .lc-code .highlight .kd, .lc-code .highlight .kn, .lc-code .highlight .kc, .lc-code .highlight .kr, .lc-code .highlight .ow { color: #cba6f7; }
+.lc-code .highlight .s, .lc-code .highlight .s1, .lc-code .highlight .s2, .lc-code .highlight .sa, .lc-code .highlight .sd, .lc-code .highlight .si, .lc-code .highlight .dl { color: #a6e3a1; }
+.lc-code .highlight .m, .lc-code .highlight .mi, .lc-code .highlight .mf, .lc-code .highlight .kt { color: #fab387; }
+.lc-code .highlight .nf, .lc-code .highlight .nc, .lc-code .highlight .nb, .lc-code .highlight .bp { color: #89b4fa; }
+.lc-code .highlight .na, .lc-code .highlight .nt, .lc-code .highlight .py { color: #89dceb; }
+.lc-code .highlight .o, .lc-code .highlight .p { color: #9399b2; }
+.lc-code .highlight .err { color: #f38ba8; background: none; }
+/* the painter's tokens — the pad's source pane and the snippets alike */
+.lc-md-paint .md-h { color: #f9e2af; font-weight: 600; }
+.lc-md-paint .md-fence { color: #6c7086; }
+.lc-md-paint .md-code { color: #a6adc8; }
+.lc-md-paint .md-ial { background: rgba(137, 180, 250, 0.12); box-shadow: inset 2px 0 0 #89b4fa; border-radius: 3px; color: #9399b2; }
+.lc-md-paint .md-cls { color: #89b4fa; font-weight: 600; }
+.lc-md-paint .md-id { color: #f38ba8; }
+.lc-md-paint .md-key { color: #a6e3a1; }
+.lc-md-paint .md-val { color: #fab387; }
+.lc-md-paint .md-link { color: #89dceb; }
+.lc-md-paint .md-em { color: #cba6f7; }
+.lc-md-paint .md-quote { color: #94e2d5; }
+.lc-md-paint .md-li { color: #f5c2e7; }
+.lc-md-paint .md-c0 { color: #f9e2af; }
+.lc-md-paint .md-c1 { color: #89dceb; }
+.lc-md-paint .md-comma { color: #6c7086; }
 
 .lc-carousel { position: relative; padding: 1.2em 2em; min-height: 4em; background: #fafafa; border-left: 4px solid #0066cc; border-radius: 0 6px 6px 0; margin: 1em 0; }
 .lc-carousel-item { display: none; font-style: italic; color: #444; line-height: 1.5; }
@@ -144,6 +183,90 @@ window.lcNormIAL = window.lcNormIAL || function (md) {
   }
   return out.join("\n");
 };
+/* component class (lower case, no _ or -) → its icon, from the one component
+   model the x-ray and the editor read: 🛢️ dataset, ▦ datagrid, ☷ form … */
+window.lcComponentIcons = window.lcComponentIcons || function () {
+  if (window._lcCompIconsP) return window._lcCompIconsP;
+  window._lcCompIconsP = fetch("{{ "/assets/component-model.json" | relative_url }}")
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var m = (d && d.model) || {}, out = {};
+      Object.keys(m).forEach(function (k) { if (m[k].icon) out[k.toLowerCase()] = m[k].icon; });
+      return out;
+    })
+    .catch(function () { return {}; });
+  return window._lcCompIconsP;
+};
+/* THE MARKDOWN PAINTER — one line at a time, shared by the pad's source pane
+   and the read-only .code snippets, so a lesson's snippet and the pad beside
+   it wear the same colours (Michel, 2026-10-08 for the pad, 2026-10-10 for
+   the snippets). fence is null outside a fence, else the fence's info string
+   ("csv", "sql", "" …). A CSV fence — or an untagged one holding commas, a
+   dataset's rows — colours its columns in turns, a piano by column. */
+(function () {
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"; }); }
+  var FENCE = /^\s*(`{3,}|~{3,})/;
+  function ial(s) {
+    return esc(s).replace(/(\.[A-Za-z_][\w-]*)|(#[A-Za-z_][\w-]*)|([A-Za-z_][\w-]*)=(&quot;[^&]*?&quot;|\S+)/g,
+      function (all, cls, id, key, val) {
+        if (cls) return "<span class='md-cls'>" + cls + "</span>";
+        if (id) return "<span class='md-id'>" + id + "</span>";
+        return "<span class='md-key'>" + key + "</span>=<span class='md-val'>" + val + "</span>";
+      });
+  }
+  function inline(raw) {
+    var h = esc(raw);
+    h = h.replace(/^(\s*)([-*+]|\d+\.)(\s)/, "$1<span class='md-li'>$2</span>$3");
+    h = h.replace(/\[([^\]]*)\]\(([^)]*)\)/g, "<span class='md-link'>[$1]($2)</span>");
+    h = h.replace(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|_[^_\n]+_|`[^`\n]+`)/g, "<span class='md-em'>$1</span>");
+    return h;
+  }
+  /* one CSV line: each cell in its column's colour, two colours in turn;
+     a quoted cell keeps its commas */
+  window.lcPaintCsvLine = function (raw) {
+    if (!raw) return " ";
+    var cells = [], cur = "", q = false;
+    for (var i = 0; i < raw.length; i++) {
+      var c = raw.charAt(i);
+      if (c === '"') q = !q;
+      if (c === "," && !q) { cells.push(cur); cur = ""; } else cur += c;
+    }
+    cells.push(cur);
+    return cells.map(function (v, k) {
+      return "<span class='md-c" + (k % 2) + "'>" + esc(v) + "</span>";
+    }).join("<span class='md-comma'>,</span>");
+  };
+  function isCsv(fence, raw) {
+    var info = String(fence || "").trim().toLowerCase();
+    return info === "csv" || (info === "" && raw.indexOf(",") >= 0);
+  }
+  window.lcPaintMdLine = function (raw, fence) {
+    if (!raw) return " ";
+    if (FENCE.test(raw)) return "<span class='md-fence'>" + esc(raw) + "</span>";
+    if (fence !== null && fence !== undefined && fence !== false) {
+      if (fence === true) fence = "";
+      return isCsv(fence, raw) ? window.lcPaintCsvLine(raw) : "<span class='md-code'>" + esc(raw) + "</span>";
+    }
+    var m = raw.match(/^(\s*)\{:(.*)\}(\s*)$/);
+    if (m) return esc(m[1]) + "<span class='md-ial'>{:" + ial(m[2]) + "}</span>" + esc(m[3]);
+    if (/^\s*#{1,6}\s/.test(raw)) return "<span class='md-h'>" + esc(raw) + "</span>";
+    if (/^\s*>/.test(raw)) return "<span class='md-quote'>" + esc(raw) + "</span>";
+    return inline(raw);
+  };
+  /* a whole text, fences tracked: one painted line per source line */
+  window.lcPaintMd = function (text) {
+    var fence = null, close = null;
+    return String(text).split("\n").map(function (l) {
+      var h = window.lcPaintMdLine(l, fence);
+      var m = FENCE.exec(l);
+      if (m) {
+        if (fence === null) { fence = l.trim().slice(m[1].length).trim(); close = m[1]; }
+        else if (m[1].charAt(0) === close.charAt(0) && m[1].length >= close.length) { fence = null; close = null; }
+      }
+      return h;
+    });
+  };
+})();
 /* THE OTHER WAY ROUND, for a learner's own text: a decoration glued to the
    line it decorates — the blank lines right above a {: … } line go, outside
    fences. Pads saved before 2026-10-09 carry the runner's old gaps, and a
@@ -1277,29 +1400,126 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
     return _lcMediaCmd(el, "seekTo", [Number(arg) || 0, true]);
   }, _lcMedia);
 
+  /* .code — a READ-ONLY SNIPPET (Michel, 2026-10-10: "the snippets should
+     also be in dark mode, syntax coloured, still R/O with a copy button …
+     a title with the nice emoji"). Dark, a title bar with an icon, the title
+     and the language, and 📋 Copy. Markdown is painted by the pad's own
+     painter, so the lesson's snippet and the pad beside it match; CSV is a
+     piano by column; other languages keep Rouge's classes. The icon is the
+     title's own emoji when it starts with one, else the component the
+     snippet's first decoration makes (☷ for {: .form }), else 📄.
+     A LINK decorated .code shows the file it points to, live:
+       [dogs.csv](../module_00/dogs.csv)
+       {: .code }                                                       */
+  var LANG_OF_EXT = { md: "markdown", markdown: "markdown", csv: "csv", yml: "yaml", yaml: "yaml",
+                      py: "python", json: "json", js: "javascript", sql: "sql", feature: "gherkin" };
+  function codeText(el) {
+    var c = el.querySelector("code") || el;
+    return String(c.textContent || "").replace(/\n$/, "");
+  }
+  function fetchCodeFile(el, href) {
+    if (/^(https?:)?\/\//.test(href) || href.charAt(0) === "/")
+      return fetch(href).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); });
+    var srcEl = el.closest ? el.closest("[data-lc-src-path]") : null;
+    if (!srcEl) srcEl = document.querySelector(".lc-run[data-lc-src-path]");
+    if (!srcEl) return fetch(href).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); });
+    var srcPath = srcEl.getAttribute("data-lc-src-path") || "";
+    var dir = srcPath.indexOf("/") >= 0 ? srcPath.replace(/\/[^\/]*$/, "") : "";
+    var parts = [];
+    (dir ? dir + "/" + href : href).split("/").forEach(function (p) {
+      if (!p || p === ".") return;
+      if (p === "..") parts.pop(); else parts.push(p);
+    });
+    var repo = srcEl.getAttribute("data-lc-src-repo") || _lcSiteRepo;
+    var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+    var h = { Accept: "application/vnd.github.v3.raw" };
+    if (pat) h.Authorization = "Bearer " + pat;
+    return fetch("https://api.github.com/repos/" + repo + "/contents/" + parts.join("/"), { headers: h })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); });
+  }
   function upgradeCode(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
-    var title = el.getAttribute("title") || "";
-    var m = el.className.match(/language-([\w+-]+)/);
-    var lang = m ? m[1] : "text";
+    var link = el.tagName === "P" ? el.querySelector("a[href]") : null;
+    var href = link ? link.getAttribute("href") : "";
+    var cls = el.className + " " + ((el.querySelector("code") || {}).className || "");
+    var m = cls.match(/language-([\w+-]+)/);
+    var ext = (href.split(/[?#]/)[0].match(/\.(\w+)$/) || [])[1];
+    var lang = (el.getAttribute("lang") || (m ? m[1] : "") || (ext ? (LANG_OF_EXT[ext.toLowerCase()] || ext) : "") || "text").toLowerCase();
+    if (lang === "md") lang = "markdown";
+    var title = el.getAttribute("title") || (link ? (link.textContent || href).trim() : "");
+    var text = link ? "" : codeText(el);
+
     var wrap = document.createElement("div");
     wrap.className = "lc-code";
-    if (title) {
-      var bar = document.createElement("div");
-      bar.className = "lc-code-title";
-      bar.appendChild(document.createTextNode("📄 "));
-      var t = document.createElement("span");
-      t.textContent = title;
-      bar.appendChild(t);
-      var lg = document.createElement("span");
-      lg.className = "lc-code-lang";
-      lg.textContent = lang;
-      bar.appendChild(lg);
-      wrap.appendChild(bar);
+    wrap.setAttribute("data-lang", lang);
+    if (el.id) { wrap.setAttribute("data-lc-id", el.id); }
+    var bar = document.createElement("div");
+    bar.className = "lc-code-title";
+    var icon = document.createElement("span");
+    icon.className = "lc-code-icon";
+    var lead = title.match(/^(\p{Extended_Pictographic}️?|[☀-➿■-◿]️?)\s*/u);
+    icon.textContent = lead ? lead[1] : "📄";
+    var t = document.createElement("span");
+    t.className = "lc-code-name";
+    t.textContent = lead ? title.slice(lead[0].length) : title;
+    var lg = document.createElement("span");
+    lg.className = "lc-code-lang";
+    lg.textContent = lang;
+    var copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "lc-code-copy";
+    copy.textContent = "📋 Copy";
+    copy.title = "Copy the snippet";
+    bar.appendChild(icon); bar.appendChild(t); bar.appendChild(lg); bar.appendChild(copy);
+    wrap.appendChild(bar);
+
+    var painted = lang === "markdown" || lang === "csv";
+    var body = el;
+    function fill(txt) {
+      text = txt;
+      wrap.setAttribute("data-lc-value", JSON.stringify({ text: txt, lang: lang }));
+      if (!painted && !link) return;
+      var pre = document.createElement("pre");
+      pre.className = "lc-code-md lc-md-paint";
+      var code = document.createElement("code");
+      var lines = lang === "csv"
+        ? txt.split("\n").map(function (l) { return window.lcPaintCsvLine(l); })
+        : (painted ? window.lcPaintMd(txt) : txt.split("\n").map(function (l) { return escapeHtml(l) || " "; }));
+      code.innerHTML = lines.map(function (h) { return "<span class='ln'>" + h + "</span>"; }).join("");
+      pre.appendChild(code);
+      if (body.parentNode === wrap) wrap.replaceChild(pre, body); else wrap.appendChild(pre);
+      body = pre;
     }
+    copy.addEventListener("click", function () {
+      var done = function () { copy.textContent = "✓ Copied"; setTimeout(function () { copy.textContent = "📋 Copy"; }, 1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(text).then(done, function () { copy.textContent = "⚠️ Copy failed"; });
+    });
+
     el.parentNode.insertBefore(wrap, el);
-    wrap.appendChild(el);
+    if (link) {
+      el.parentNode.removeChild(el);
+      body = document.createElement("pre");
+      body.textContent = "…";
+      wrap.appendChild(body);
+      fetchCodeFile(el, href).then(fill, function (e) {
+        body.textContent = "⚠️ could not read " + href + " — " + ((e && e.message) || e);
+      });
+    } else {
+      wrap.appendChild(el);
+      fill(text);
+    }
+    /* the icon of the component the snippet makes, when the title brought none */
+    if (!lead && lang === "markdown" && window.lcComponentIcons) {
+      window.lcComponentIcons().then(function (icons) {
+        var re = /^\s*\{:\s*(?:[^}]*?\s)?\.([A-Za-z][\w-]*)/gm, mm;
+        while ((mm = re.exec(text))) {
+          var ic = icons[mm[1].replace(/[-_]/g, "").toLowerCase()];
+          if (ic) { icon.textContent = ic; return; }
+        }
+      });
+    }
   }
 
   /* ── boot ────────────────────────────────────────────────────── */
@@ -1315,7 +1535,7 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
     /* fenced form: kramdown wraps a fence in .highlighter-rouge / pre */
     window.lcRegisterUpgrader(".highlighter-rouge.embed, pre.embed", upgradeBenchSlot);
     window.lcRegisterUpgrader("p.video", upgradeVideo);
-    window.lcRegisterUpgrader(".highlighter-rouge.code, pre.code", upgradeCode);
+    window.lcRegisterUpgrader(".highlighter-rouge.code, pre.code, p.code", upgradeCode);
   }
 
 })();

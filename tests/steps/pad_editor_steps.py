@@ -118,3 +118,13 @@ def step_pad_glued_fences_aside(context, pad_id):
     assert "[dogs](dogs.yaml)\n{: .dataset #dogs }" in v, "the dataset's decoration still floats: %r" % v
     assert "[The dogs](#)\n{: .datagrid" in v, "the datagrid's decoration still floats: %r" % v
     assert "[kept](#)\n\n{: .verbatim }" in v, "a fence's text was touched: %r" % v
+
+
+@then('the "{pad_id}" pad paints the dataset\'s columns in turns')
+def step_pad_csv_piano(context, pad_id):
+    """Michel, 2026-10-10: "a csv snippet should be displayed in alternate
+    colors every column (kinda piano)" — the pad's rows fence included."""
+    sel = "[data-lc-id='%s'] .lc-mdpad-piano" % pad_id
+    got = context.page.eval_on_selector(
+        sel, "p => [...p.querySelectorAll('.md-c0, .md-c1')].slice(0, 4).map(s => s.className + ':' + s.textContent)")
+    assert got[:2] == ["md-c0:family", "md-c1:dog"], "columns not painted in turns: %r" % got

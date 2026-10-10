@@ -45,7 +45,7 @@ digraph component_model {
     Dropdown [label="{🔽 Dropdown ➭ 🧩|🔤 label\l|▸ open\l▸ close\l}"]
     EmbedPage [label="{🖼️ EmbedPage ➭ 🧩|🔢 height\l}"]
     Folder [label="{📁 Folder ➭ 🧩|🔤 cols\l🔘 show private\l}"]
-    Form [label="{📝 Form ➭ 🧩|🔤 title\l🔤 format\l🔘 editable\l|▸ submit\l}"]
+    Form [label="{☷ Form ➭ 🧩|🔤 title\l🔤 format\l🔘 editable\l|▸ submit\l}"]
     Grid [label="{▤ Grid ➭ 🧩|🔤 cols\l🔢 gap\l🔤 headings\l}"]
     Map [label="{🗺️ Map ➭ 🧩|🔢 lat\l🔢 lng\l🔢 zoom\l🔢 height\l|▸ pan to\l▸ set zoom\l}"]
     Mdpad [label="{✍️ Mdpad ➭ 🧩|🔢 rows\l}"]

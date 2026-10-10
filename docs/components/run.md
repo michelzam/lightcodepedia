@@ -400,7 +400,7 @@ Type `3`, Enter, `4`, Enter, then just Enter. Three questions, one transcript, `
 | `show(obj, title=None)` | Renders `obj` as a card below the output |
 | `show.clear()` | Removes all cards |
 | `show.grid(rows, title=None, height=300)` | Renders a sortable/filterable [📊 Datagrid](/components/datagrid) |
-| `show.form(obj, title=None)` | Renders a [📝 Form](/components/form) |
+| `show.form(obj, title=None)` | Renders a [☷ Form](/components/form) |
 | `yaml.load(s)` | Parses a YAML string into Python objects |
 
 ## ⚠️ Limits worth knowing

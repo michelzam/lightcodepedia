@@ -87,6 +87,7 @@ Feature: The pad types like a text field, painted
     And I wait for the page to be interactive
     Then the "icons" pad's gutter shows "🛢️" on line 8, "▦" on line 11 and "☷" on line 14
     And the "icons" pad's gutter shows no icon on line 2
+    And the "icons" pad paints the dataset's columns in turns
 
   Scenario: A copy saved with the old gaps opens glued, ready to save
     Michel, 2026-10-10: "no useless empty lines before decorations" (modules

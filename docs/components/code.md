@@ -6,7 +6,7 @@ Display source code with syntax highlighting and an optional file-viewer chrome.
 
 ## 👀 Try it now
 
-Here's a code block with full file-viewer chrome — language badge, title bar, copy button:
+Here's a code block with full file-viewer chrome — dark, a title bar with its language, and a copy button:
 
 ```python
 def greet(name):
@@ -71,7 +71,7 @@ breed: Beagle
 
 - [x] Plain fenced block — zero setup, inline highlighting, no chrome overhead.
 - [ ] `{: .code }` — you should always add chrome for professionalism.
-- [ ] `code_file.md` — even for inline snippets, the file-loader is more future-proof.
+- [ ] A `.code` link — even for inline snippets, the file-loader is more future-proof.
 - [ ] Put it in a `<pre>` tag. Classic HTML never lets you down.
 {: .quiz }
 
@@ -98,7 +98,7 @@ Same block without a title — just the border and language badge:
 
 Works for any language Rouge[^rouge] knows: `python`, `yaml`, `json`, `markdown`, `bash`, `liquid`, `csv`, and many more.
 
-✅ Pure markdown — no Liquid `{% raw %}{% capture %}{% endraw %}` needed. Server-side highlighting preserved.
+✅ Pure markdown — one decoration line, nothing else. Server-side highlighting preserved.
 ⚠️ The `{: .code }` must be on the line directly after the closing fence. A blank line before it is tolerated; no line at all means the IAL attaches to the wrong block.
 
 **Q:** You add `{: .code title="config.yaml" }` but the title bar never shows up. What's the most likely cause?
@@ -109,37 +109,89 @@ Works for any language Rouge[^rouge] knows: `python`, `yaml`, `json`, `markdown`
 - [ ] You need `format="yaml"` alongside `title=`.
 {: .quiz }
 
-## 📂 Option 3 — live from a repo file
+## 📂 Option 3 — live from a file
 
-`{% raw %}{% include code_file.md path="…" %}{% endraw %}` fetches the current content of a file from the repo at page load. The page becomes a live mirror — no copy-paste, always in sync.
+A link, decorated `.code`, shows the file it points to — fetched at page
+load, so the page is a live mirror: no copy-paste, always in sync.
 
-{% raw %}
-```liquid
-{% include code_file.md path="modules/dog_ui.yaml" lang="yaml" %}
-```
-{% endraw %}
+````markdown
+[bots/parts.yml](/bots/parts.yml)
+{: .code }
+````
 
 Renders to:
 
-{% include code_file.md path="modules/dog_ui.yaml" lang="yaml" %}
+[bots/parts.yml](/bots/parts.yml)
+{: .code }
 
-By default the page fetches from `raw.githubusercontent.com` (fresh after every push, ~1 s latency). When viewed on the canonical host[^cdn] or with `?cdn=1`, it switches to jsDelivr (edge-cached, faster for end users).
+A relative link reads the file beside the page — in a course, the lesson's
+own folder (`[dogs.yaml](../module_00/dogs.yaml)`). The language comes from
+the extension; `lang="…"` overrides it, `title="…"` renames the bar.
 
-The mode — *(live)* or *(cdn)* — is shown in italics in the title bar.
+## 🌙 Snippets are dark, painted, and copyable
 
-### File-loader knobs
+Every `.code` card is read-only, dark like the pad, with **📋 Copy** in its
+title bar. A **markdown** snippet is painted by the pad's own painter — the
+decoration on its band, the class, the `#id` and each knob in their colours —
+so a lesson's snippet and the pad beside it look alike. Its icon is the
+component its decoration makes, unless the title starts with an emoji of its own:
 
-| Knob | What it does |
-|---|---|
-| `path="…"` | Repo-relative path — auto-builds raw + jsDelivr URLs from the repo metadata |
-| `src="https://…"` | External URL escape hatch — use for files outside the repo |
-| `repo="org/repo"` `branch="…"` | Override repo + branch (defaults: current site, `main`) |
-| `lang="…"` | Language badge: `yaml`, `python`, `json`, etc. Defaults to `text` |
-| `title="…"` | File label in the title bar; defaults to `path` (or `src`) |
+`````markdown
+````markdown
+[The dog](#)
+{: .form master="dog_grid" }
+````
+{: .code title="A card that follows the table" }
+`````
 
-An example loading a CSV from the repo:
+````markdown
+[The dog](#)
+{: .form master="dog_grid" }
+````
+{: .code title="A card that follows the table" #form_snippet }
 
-{% include code_file.md path="data/dogs.csv" lang="csv" title="data/dogs.csv" %}
+A **CSV** snippet colours its columns in turns, a piano by column:
+
+```csv
+name,breed,age,campus
+Lucky,Beagle,3,Milwaukee
+Wanda,Poodle,5,Racine
+```
+{: .code title="🐕 dogs.csv" #csv_snippet }
+
+```gherkin
+Feature: A snippet is dark, painted and copyable
+  As a learner
+  I want a lesson's snippet to look like the pad I type it into
+  So that I recognise the decoration and copy it whole
+
+  Scenario: A markdown snippet wears its component's icon and the pad's colours
+    Given the form snippet
+    :::python
+    self.card: Object = Object._all("[data-lc-id='form_snippet']")[0]
+    :::
+    When the page has painted it
+    Then the decoration is painted and the bar offers a copy
+    :::python
+    assert self.card._q(".md-ial")._el is not None, "the decoration is not painted"
+    assert self.card._q(".lc-code-copy")._el is not None, "no copy button"
+    icon: str = str(self.card._q(".lc-code-icon")._el.textContent)
+    assert "☷" in icon, f"the bar wears {icon}, not the form's icon"
+    :::
+
+  Scenario: A CSV snippet colours its columns in turns
+    Given the CSV snippet
+    :::python
+    self.card: Object = Object._all("[data-lc-id='csv_snippet']")[0]
+    :::
+    When the page has painted it
+    Then its columns alternate
+    :::python
+    assert self.card._q(".md-c1")._el is not None, "no second-column colour"
+    assert "🐕" in str(self.card._q(".lc-code-icon")._el.textContent), "the title's own emoji is the icon"
+    :::
+```
+{: .feature tags="code" status="pending" }
 
 ## 🤔 Which option to pick
 
@@ -147,8 +199,8 @@ An example loading a CSV from the repo:
 |---|---|
 | Short snippet inside a tutorial paragraph | Plain fenced block |
 | Snippet that deserves a title / file-viewer look | `{: .code title="…" }` |
-| Full source file you want to keep in sync | `code_file.md path="…"` |
-| External file from another repo | `code_file.md src="…"` |
+| Full source file you want to keep in sync | `[file](path)` + `{: .code }` |
+| External file from another site | `[file](https://…)` + `{: .code }` |
 | Python code the learner should **run** | `{: .run }` — see [🐍 Run](/components/run) |
 
 > Rule of thumb: start with Option 1 (plain fenced). Upgrade to Option 2 when you want chrome.
@@ -159,7 +211,7 @@ An example loading a CSV from the repo:
 
 - [ ] Copy-paste into a plain fenced block. 200 lines is fine, you'll remember to update it.
 - [ ] `{: .code title="parser.py" }` — the chrome makes it look like a real file.
-- [x] `code_file.md path="src/parser.py"` — the page fetches the live file; no copy-paste ever.
+- [x] `[parser.py](src/parser.py)` + `{: .code }` — the page fetches the live file; no copy-paste ever.
 - [ ] A hyperlink to the GitHub file view. Let GitHub's UI do the heavy lifting.
 {: .quiz }
 
@@ -169,8 +221,8 @@ An example loading a CSV from the repo:
 
 - [x] Plain fenced blocks use server-side highlighting via Rouge — no JS needed.
 - [x] `{: .code }` without a `title=` still adds the border and language badge.
-- [ ] `code_file.md` only works for files smaller than 100 KB.
-- [x] `?cdn=1` in the URL switches `code_file.md` to the jsDelivr edge-cached version.
+- [ ] A `.code` link only works for files smaller than 100 KB.
+- [x] A `.code` card has a 📋 Copy button in its title bar.
 - [ ] All three options require JavaScript to render.
 {: .quiz multi="true" }
 

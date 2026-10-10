@@ -73,7 +73,7 @@ Sortable, filterable, resizable tables via `{: .datagrid }` — AG Grid Communit
 
 [Open →](datagrid)
 
-### 📝 Form
+### ☷ Form
 Single-object attribute view via `{: .form }`. Pair with a datagrid via `bound=` for master/detail.
 
 [Open →](form)

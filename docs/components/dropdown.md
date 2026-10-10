@@ -8,7 +8,7 @@ Too many links crowding your page? Tuck them behind a button! **Dropdown is your
 
 - [🐍 Run](/components/run)
 - [📊 Datagrid](/components/datagrid)
-- [📝 Form](/components/form)
+- [☷ Form](/components/form)
 - [🧪 Quiz](/components/quiz)
 {: .dropdown label="Components ▾" }
 
@@ -70,7 +70,7 @@ A bullet list of markdown links with `{: .dropdown label="…" }` on the next li
 ```markdown
 - [🐍 Run](/components/run)
 - [📊 Datagrid](/components/datagrid)
-- [📝 Form](/components/form)
+- [☷ Form](/components/form)
 {: .dropdown label="Components ▾" }
 ```
 

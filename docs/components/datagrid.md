@@ -133,7 +133,7 @@ How you open a cell depends on which grid you are looking at: a grid built from 
 ```
 {: .datagrid #editable_dogs editable="true" height="200" }
 
-When a [📝 Form](/components/form) is bound to this grid (`master="editable_dogs"`), edits here repaint the form automatically.
+When a [☷ Form](/components/form) is bound to this grid (`master="editable_dogs"`), edits here repaint the form automatically.
 
 ## 💾 Keeping edits — the two-repo contract
 
