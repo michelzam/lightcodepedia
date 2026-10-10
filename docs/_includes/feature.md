@@ -172,8 +172,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-step-impl .token.punctuation{ color: #94a3b8; }
 .lc-feature-step-impl .token.function   { color: #93c5fd; }
 .lc-feature-step-impl .token.boolean    { color: #fda4af; }
-.lc-feature-step-impl pre               { background: #1e1e2e !important; }
-.lc-feature-step-impl pre code          { color: #cdd6f4; }
+.lc-feature-step-impl pre               { background: #f2f4f7 !important; padding: 0.6em 1em !important; }
+.lc-feature-step-impl pre code          { color: #262a36; background: transparent !important; white-space: pre; }
 
 /* ── fallback plain body (display-only) ──────────────────────────────────── */
 .lc-feature-body pre { margin: 0; border-radius: 0; border: none; box-shadow: none; }
@@ -760,9 +760,21 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     });
   }
 
+  /* A STEP'S PYTHON ON THE CODE CARDS' GRAY, painted by the shared painter
+     (Michel, 2026-10-10: "the feature's stepdefs in python should also be in
+     grayed background with colored syntax") — no CDN to wait for. Prism
+     stays the fallback for a page without the painter. */
   function buildPyPre(code) {
     var pre = document.createElement("pre");
     var codeEl = document.createElement("code");
+    if (window.lcPaintCodeLine) {
+      pre.className = "lc-md-paint";
+      codeEl.innerHTML = String(code).split("\n").map(function (l) {
+        return "<span class='ln'>" + window.lcPaintCodeLine(l, "python") + "</span>";
+      }).join("\n");
+      pre.appendChild(codeEl);
+      return pre;
+    }
     codeEl.className = "language-python";
     codeEl.textContent = code;
     pre.appendChild(codeEl);

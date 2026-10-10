@@ -1129,3 +1129,15 @@ def step_one_replay(context):
         "%d slider bars" % context.page.locator(".lc-mdpad-replaybar").count()
     h = pad.locator(".lc-mdpad-diff").bounding_box()["height"]
     assert h > 60, "the diff pane is a %d px strip" % h
+
+
+@then('the diff pane paints "{text}" as the editor does')
+def step_diff_painted(context, text):
+    diff = context.page.locator(PAD + " .lc-mdpad-diff")
+    expect(diff.locator(".md-h")).to_contain_text(text, timeout=5_000)
+
+
+@then('the replay\'s subtitle reads "{text}"')
+def step_replay_subtitle(context, text):
+    sub = context.page.locator(PAD + " .lc-mdpad-sub.on")
+    expect(sub).to_have_text(text, timeout=5_000)

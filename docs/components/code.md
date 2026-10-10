@@ -6,7 +6,7 @@ Display source code with syntax highlighting and an optional file-viewer chrome.
 
 ## 👀 Try it now
 
-Here's a code block with full file-viewer chrome — dark, a title bar with its language, and a copy button:
+Here's a code block with full file-viewer chrome — a title bar with its language, and a copy button:
 
 ```python
 def greet(name):
@@ -115,22 +115,22 @@ A link, decorated `.code`, shows the file it points to — fetched at page
 load, so the page is a live mirror: no copy-paste, always in sync.
 
 ````markdown
-[bots/parts.yml](/bots/parts.yml)
+[examples/dogs.csv](/components/examples/dogs.csv)
 {: .code }
 ````
 
 Renders to:
 
-[bots/parts.yml](/bots/parts.yml)
+[examples/dogs.csv](/components/examples/dogs.csv)
 {: .code }
 
 A relative link reads the file beside the page — in a course, the lesson's
 own folder (`[dogs.yaml](../module_00/dogs.yaml)`). The language comes from
 the extension; `lang="…"` overrides it, `title="…"` renames the bar.
 
-## 🌙 Snippets are dark, painted, and copyable
+## 🎨 Snippets are painted, and copyable
 
-Every `.code` card is read-only, dark like the pad, with **📋 Copy** in its
+Every `.code` card is read-only, on a soft gray, with **📋 Copy** in its
 title bar. A **markdown** snippet is painted by the pad's own painter — the
 decoration on its band, the class, the `#id` and each knob in their colours —
 so a lesson's snippet and the pad beside it look alike. Its icon is the
@@ -150,7 +150,8 @@ component its decoration makes, unless the title starts with an emoji of its own
 ````
 {: .code title="A card that follows the table" #form_snippet }
 
-A **CSV** snippet colours its columns in turns, a piano by column:
+A **CSV** snippet colours its columns in turns, a piano by column — the live
+file above does too:
 
 ```csv
 name,breed,age,campus
@@ -160,7 +161,7 @@ Wanda,Poodle,5,Racine
 {: .code title="🐕 dogs.csv" #csv_snippet }
 
 ```gherkin
-Feature: A snippet is dark, painted and copyable
+Feature: A snippet is painted and copyable
   As a learner
   I want a lesson's snippet to look like the pad I type it into
   So that I recognise the decoration and copy it whole

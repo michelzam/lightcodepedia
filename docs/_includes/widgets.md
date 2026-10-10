@@ -68,40 +68,60 @@ Auto-included by docs/_layouts/default.html.
 /* a phone has no room for the path — the owner and the state are what matter */
 @media (max-width: 560px) { .lc-bench-path { display: none; } }
 
-/* A SNIPPET IS ON GRAY (Michel, 2026-10-10: "dark mode for code", then "maybe
-   dark is too dark — a gray not too light"): the pad's token colours,
-   read-only, a copy button in its title bar; markdown painted by the pad's
-   own painter, CSV a piano by column, other languages in Rouge's classes;
-   the muted tokens lifted so they still read on the gray. */
-.lc-code { border: 1px solid #4a4e5c; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #3a3e4b; color: #e6e9f2; }
-.lc-code-title { background: #313542; padding: 0.4em 0.6em 0.4em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #e6e9f2; border-bottom: 1px solid #4a4e5c; display: flex; align-items: center; gap: 0.5em; }
+/* A SNIPPET IS ON GRAY (Michel, 2026-10-10: "dark mode for code", then "a
+   gray not too light", then "too dark!", then "a way lighter gray"): a pale
+   gray, read-only, a copy
+   button in its title bar; markdown painted by the pad's own painter, CSV a
+   piano by column, other languages in Rouge's classes. The pad's tokens are
+   pastel for its dark pane; on the gray the same roles take darker inks —
+   every one at least 6:1. */
+.lc-code { border: 1px solid #dde1e8; border-radius: 8px; overflow: hidden; margin: 1em 0; background: #f2f4f7; color: #262a36; }
+.lc-code-title { background: #e7eaf0; padding: 0.4em 0.6em 0.4em 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #262a36; border-bottom: 1px solid #dde1e8; display: flex; align-items: center; gap: 0.5em; }
 .lc-code-title .lc-code-icon { font-size: 1.1em; }
-.lc-code-title .lc-code-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #aab0c4; letter-spacing: 0.05em; }
-.lc-code-copy { font: inherit; font-size: 0.85em; padding: 0.15em 0.6em; border-radius: 5px; border: 1px solid #5b6070; background: #474b59; color: #e6e9f2; cursor: pointer; }
-.lc-code-copy:hover { background: #555a69; }
+.lc-code-title .lc-code-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: #454b5c; letter-spacing: 0.05em; }
+.lc-code-copy { font: inherit; font-size: 0.85em; padding: 0.15em 0.6em; border-radius: 5px; border: 1px solid #cfd4dd; background: #ffffff; color: #262a36; cursor: pointer; }
+.lc-code-copy:hover { background: #f6f7f9; }
 .lc-code > .highlighter-rouge, .lc-code > pre { margin: 0 !important; border-radius: 0 !important; background: transparent !important; border: none !important; }
 .lc-code .highlight { background: transparent !important; }
-.lc-code .highlight pre, .lc-code > pre { padding: 0.9em 1em !important; margin: 0 !important; overflow-x: auto; font-size: 0.85em; line-height: 1.5; background: transparent !important; color: #e6e9f2; }
+.lc-code .highlight pre, .lc-code > pre { padding: 0.9em 1em !important; margin: 0 !important; overflow-x: auto; font-size: 0.85em; line-height: 1.5; background: transparent !important; color: #262a36; }
 .lc-code pre code { background: transparent !important; color: inherit; white-space: pre; }
 .lc-code > pre, .lc-code .highlight pre { max-height: 32em; overflow: auto; }
 .lc-code .lc-code-md code { white-space: pre-wrap; overflow-wrap: break-word; }
 .lc-code .lc-code-md .ln { display: block; min-height: 1.5em; }
-.lc-code .highlight .c, .lc-code .highlight .c1, .lc-code .highlight .cm, .lc-code .highlight .cp { color: #a3a9bc; font-style: italic; }
-.lc-code .md-fence, .lc-code .md-comma { color: #a3a9bc; }
-.lc-code .md-code { color: #d0d5e3; }
-.lc-code .md-ial { background: rgba(137, 180, 250, 0.16); color: #b4bacb; }
-.lc-code .highlight .k, .lc-code .highlight .kd, .lc-code .highlight .kn, .lc-code .highlight .kc, .lc-code .highlight .kr, .lc-code .highlight .ow { color: #cba6f7; }
-.lc-code .highlight .s, .lc-code .highlight .s1, .lc-code .highlight .s2, .lc-code .highlight .sa, .lc-code .highlight .sd, .lc-code .highlight .si, .lc-code .highlight .dl { color: #a6e3a1; }
-.lc-code .highlight .m, .lc-code .highlight .mi, .lc-code .highlight .mf, .lc-code .highlight .kt { color: #fab387; }
-.lc-code .highlight .nf, .lc-code .highlight .nc, .lc-code .highlight .nb, .lc-code .highlight .bp { color: #89b4fa; }
-.lc-code .highlight .na, .lc-code .highlight .nt, .lc-code .highlight .py { color: #89dceb; }
-.lc-code .highlight .o, .lc-code .highlight .p { color: #9399b2; }
-.lc-code .highlight .err { color: #f38ba8; background: none; }
+.lc-code .highlight .c, .lc-code .highlight .c1, .lc-code .highlight .cm, .lc-code .highlight .cp, .lc-code .highlight .ch { color: #545a6b; font-style: italic; }
+.lc-code .highlight .k, .lc-code .highlight .kd, .lc-code .highlight .kn, .lc-code .highlight .kc, .lc-code .highlight .kr, .lc-code .highlight .ow { color: #6b21a8; }
+.lc-code .highlight .s, .lc-code .highlight .s1, .lc-code .highlight .s2, .lc-code .highlight .sa, .lc-code .highlight .sd, .lc-code .highlight .si, .lc-code .highlight .dl { color: #166534; }
+.lc-code .highlight .m, .lc-code .highlight .mi, .lc-code .highlight .mf, .lc-code .highlight .kt, .lc-code .highlight .l { color: #9a3412; }
+.lc-code .highlight .nf, .lc-code .highlight .nc, .lc-code .highlight .nb, .lc-code .highlight .bp { color: #1d4ed8; }
+.lc-code .highlight .na, .lc-code .highlight .nt, .lc-code .highlight .py, .lc-code .highlight .n { color: #0e6377; }
+.lc-code .highlight .o, .lc-code .highlight .p, .lc-code .highlight .w { color: #3a3f4d; }
+.lc-code .highlight .err { color: #b0124f; background: none; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-h { color: #7c2d12; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-fence, .lc-code .md-comma { color: #545a6b; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-code { color: #262a36; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-ial { background: rgba(29, 78, 216, 0.07); color: #454b5c; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-cls { color: #1d4ed8; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-id { color: #b0124f; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-key { color: #166534; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-val { color: #9a3412; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-link { color: #0e6377; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-em { color: #6b21a8; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-quote { color: #0e6377; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-li { color: #b0124f; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-c0 { color: #7c3a00; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-c1 { color: #1d4ed8; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-kw { color: #6b21a8; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-str { color: #166534; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-num { color: #9a3412; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-com { color: #545a6b; font-style: italic; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-fn { color: #1d4ed8; }
 /* the painter's tokens — the pad's source pane and the snippets alike */
 .lc-md-paint .md-h { color: #f9e2af; font-weight: 600; }
 .lc-md-paint .md-fence { color: #6c7086; }
 .lc-md-paint .md-code { color: #a6adc8; }
-.lc-md-paint .md-ial { background: rgba(137, 180, 250, 0.12); box-shadow: inset 2px 0 0 #89b4fa; border-radius: 3px; color: #9399b2; }
+/* no bar of its own: in the pad the blue bar marks the CURRENT block, from its
+   link or fence down to its decoration (Michel, 2026-10-10) */
+.lc-md-paint .md-ial { background: rgba(137, 180, 250, 0.12); border-radius: 3px; color: #9399b2; }
 .lc-md-paint .md-cls { color: #89b4fa; font-weight: 600; }
 .lc-md-paint .md-id { color: #f38ba8; }
 .lc-md-paint .md-key { color: #a6e3a1; }
@@ -113,6 +133,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-md-paint .md-c0 { color: #f9e2af; }
 .lc-md-paint .md-c1 { color: #89dceb; }
 .lc-md-paint .md-comma { color: #6c7086; }
+.lc-md-paint .md-kw { color: #cba6f7; }
+.lc-md-paint .md-str { color: #a6e3a1; }
+.lc-md-paint .md-num { color: #fab387; }
+.lc-md-paint .md-com { color: #7f849c; font-style: italic; }
+.lc-md-paint .md-fn { color: #89b4fa; }
 
 .lc-carousel { position: relative; padding: 1.2em 2em; min-height: 4em; background: #fafafa; border-left: 4px solid #0066cc; border-radius: 0 6px 6px 0; margin: 1em 0; }
 .lc-carousel-item { display: none; font-style: italic; color: #444; line-height: 1.5; }
@@ -236,6 +261,70 @@ window.lcComponentIcons = window.lcComponentIcons || function () {
       return "<span class='md-c" + (k % 2) + "'>" + esc(v) + "</span>";
     }).join("<span class='md-comma'>,</span>");
   };
+  /* CODE INSIDE A FENCE (Michel, 2026-10-10: "inside the editor, the sql
+     should also be in colored syntax, and so on"): one small tokenizer per
+     line — keywords, strings, numbers, comments, a name called with ( —
+     for python, sql, yaml, json and gherkin (whose :::python step bodies
+     are python). No library, so the runner, the pad and a card paint alike. */
+  var KW = {
+    python: "False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield self",
+    sql: "select from where group by order as count sum avg min max join left right inner outer full on and or not in is null limit offset distinct having insert into values update set delete like between case when then else end asc desc union all create table drop alter",
+    json: "true false null"
+  };
+  var KWSET = {};
+  Object.keys(KW).forEach(function (k) { KWSET[k] = {}; KW[k].split(" ").forEach(function (w) { KWSET[k][w] = 1; }); });
+  var COMMENT = { python: "#", sql: "--", yaml: "#" };
+  function langOf(info) {
+    var l = String(info || "").trim().toLowerCase().split(/\s+/)[0];
+    if (l === "py") return "python";
+    if (l === "yml") return "yaml";
+    if (l === "feature") return "gherkin";
+    if (l === "md") return "markdown";
+    return l;
+  }
+  function tokens(raw, lang) {
+    var kw = KWSET[lang] || {}, com = COMMENT[lang] || "", out = "";
+    var re = /("(?:[^"\\]|\\.)*"?|'(?:[^'\\]|\\.)*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)|(\s+|[^\w\s"'])/g, m;
+    while ((m = re.exec(raw))) {
+      if (com && !m[1] && raw.substr(m.index, com.length) === com) {
+        out += "<span class='md-com'>" + esc(raw.slice(m.index)) + "</span>";
+        break;
+      }
+      if (m[1]) out += "<span class='md-str'>" + esc(m[1]) + "</span>";
+      else if (m[2]) out += "<span class='md-num'>" + m[2] + "</span>";
+      else if (m[3]) {
+        var w = m[3], low = lang === "sql" ? w.toLowerCase() : w;
+        if (kw[low]) out += "<span class='md-kw'>" + esc(w) + "</span>";
+        else if (raw.charAt(re.lastIndex) === "(") out += "<span class='md-fn'>" + esc(w) + "</span>";
+        else out += esc(w);
+      } else out += esc(m[4]);
+    }
+    return out || " ";
+  }
+  window.lcPaintCodeLine = function (raw, info) {
+    if (!raw) return " ";
+    var lang = langOf(info);
+    if (lang === "csv") return window.lcPaintCsvLine(raw);
+    if (lang === "yaml") {
+      var c = raw.match(/^(\s*)#.*$/);
+      if (c) return "<span class='md-com'>" + esc(raw) + "</span>";
+      var y = raw.match(/^(\s*(?:-\s+)?)([^\s:#][^:#]*?)(:)(\s.*|)$/);
+      if (y) return esc(y[1]) + "<span class='md-key'>" + esc(y[2]) + "</span>" + y[3] + tokens(y[4], "yaml");
+      return tokens(raw, "yaml");
+    }
+    if (lang === "gherkin") {
+      if (/^\s*:::/.test(raw)) return "<span class='md-fence'>" + esc(raw) + "</span>";
+      var g = raw.match(/^(\s*)(Feature|Scenario Outline|Scenario|Background|Examples|Rule|Given|When|Then|And|But|As an?|I want|So that)\b(.*)$/);
+      if (g) return esc(g[1]) + "<span class='md-kw'>" + esc(g[2]) + "</span>" + esc(g[3]);
+      if (/^\s*#/.test(raw)) return "<span class='md-com'>" + esc(raw) + "</span>";
+      /* a step body: python, read as python */
+      if (/^\s{4,}\S/.test(raw) && /[=()\[\]]|\bself\b|\bassert\b|\bimport\b/.test(raw)) return tokens(raw, "python");
+      return esc(raw);
+    }
+    if (KWSET[lang]) return tokens(raw, lang);
+    return esc(raw);
+  };
+  window.lcPaintCodeLang = langOf;
   function isCsv(fence, raw) {
     var info = String(fence || "").trim().toLowerCase();
     return info === "csv" || (info === "" && raw.indexOf(",") >= 0);
@@ -245,7 +334,7 @@ window.lcComponentIcons = window.lcComponentIcons || function () {
     if (FENCE.test(raw)) return "<span class='md-fence'>" + esc(raw) + "</span>";
     if (fence !== null && fence !== undefined && fence !== false) {
       if (fence === true) fence = "";
-      return isCsv(fence, raw) ? window.lcPaintCsvLine(raw) : "<span class='md-code'>" + esc(raw) + "</span>";
+      return isCsv(fence, raw) ? window.lcPaintCsvLine(raw) : "<span class='md-code'>" + window.lcPaintCodeLine(raw, fence) + "</span>";
     }
     var m = raw.match(/^(\s*)\{:(.*)\}(\s*)$/);
     if (m) return esc(m[1]) + "<span class='md-ial'>{:" + ial(m[2]) + "}</span>" + esc(m[3]);
@@ -1474,7 +1563,9 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
     bar.appendChild(icon); bar.appendChild(t); bar.appendChild(lg); bar.appendChild(copy);
     wrap.appendChild(bar);
 
-    var painted = lang === "markdown" || lang === "csv";
+    /* every language the painter knows is painted by it — the same colours
+       on the built site and in the runner, where Rouge never ran */
+    var painted = /^(markdown|csv|python|sql|yaml|json|gherkin)$/.test(window.lcPaintCodeLang(lang));
     var body = el;
     function fill(txt) {
       text = txt;
@@ -1483,9 +1574,8 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
       var pre = document.createElement("pre");
       pre.className = "lc-code-md lc-md-paint";
       var code = document.createElement("code");
-      var lines = lang === "csv"
-        ? txt.split("\n").map(function (l) { return window.lcPaintCsvLine(l); })
-        : (painted ? window.lcPaintMd(txt) : txt.split("\n").map(function (l) { return escapeHtml(l) || " "; }));
+      var lines = lang === "markdown" ? window.lcPaintMd(txt)
+        : txt.split("\n").map(function (l) { return painted ? window.lcPaintCodeLine(l, lang) : (escapeHtml(l) || " "); });
       code.innerHTML = lines.map(function (h) { return "<span class='ln'>" + h + "</span>"; }).join("");
       pre.appendChild(code);
       if (body.parentNode === wrap) wrap.replaceChild(pre, body); else wrap.appendChild(pre);

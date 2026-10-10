@@ -224,6 +224,13 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-diff[data-numbers] { padding-left: 4.4em; background:
   linear-gradient(90deg, #2a2a38 0, #2a2a38 3.9em, #3c3c50 3.9em, #3c3c50 calc(3.9em + 1px), #1e1e2e calc(3.9em + 1px)); }
 .lc-mdpad-diff[data-numbers] .ln::before { content: attr(data-s) " " attr(data-n); left: -4.4em; width: 3.9em; }
+.lc-mdpad-diff[data-numbers] .ln[data-ic]::after { content: attr(data-ic); position: absolute; left: -4.35em; top: 0; font-size: 0.8em; }
+/* the commit's line, floating over the preview while the versions play */
+.lc-mdpad-sub { position: absolute; transform: translate(-50%, -100%); max-width: 80%; z-index: 3; pointer-events: none;
+  background: rgba(17, 17, 27, 0.62); color: #fff; padding: 0.45em 0.9em; border-radius: 12px; font-size: 0.92em;
+  line-height: 1.35; text-align: center; opacity: 0; transition: opacity .35s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+.lc-mdpad-sub.on { opacity: 0.88; }
+@media (prefers-reduced-motion: reduce) { .lc-mdpad-sub { transition: none; } }
 .lc-mdpad-diff .add::before { color: #a6e3a1; }
 .lc-mdpad-diff .del::before { color: #f38ba8; }
 /* the piano, in the pane and in its gutter */
@@ -594,7 +601,7 @@ Auto-included by docs/_layouts/default.html.
          the preview; a slider is the cursor; ▶ plays forward, ◀ backward
          (the moonwalk), replay="1.5" seconds per frame. Nothing is written:
          the learner's text waits under the pane, untouched. */
-      var rp = { frames: null, at: 0, timer: null, dir: 1, ui: null, diffEl: null, on: false };
+      var rp = { frames: null, at: 0, timer: null, dir: 1, ui: null, diffEl: null, on: false, sub: null };
       function rpLoad() {
         if (rp.frames) return Promise.resolve(rp.frames);
         return window.lcBench.history(benchPath, wrap, 100).then(function (list) {
@@ -636,16 +643,29 @@ Auto-included by docs/_layouts/default.html.
         var rows = window.lcDiffLines ? window.lcDiffLines(prev, f.text)
                  : f.text.split("\n").map(function (l) { return ["same", l]; });
         /* pair each run of − with the run of + right after it, line by line */
-        var html = rows.map(function (r) { return escHtml(r[1]); });
+        var html = rows.map(function (r) { return escHtml(r[1]); }), marked = [];
         for (var a = 0; a < rows.length; a++) {
           if (rows[a][0] !== "del") continue;
           var d0 = a; while (a < rows.length && rows[a][0] === "del") a++;
           var p0 = a; while (a < rows.length && rows[a][0] === "add") a++;
           for (var q = 0; q < Math.min(p0 - d0, a - p0); q++) {
             var m = wordMarks(rows[d0 + q][1], rows[p0 + q][1]);
-            if (m) { html[d0 + q] = m[0]; html[p0 + q] = m[1]; }
+            if (m) { html[d0 + q] = m[0]; html[p0 + q] = m[1]; marked[d0 + q] = marked[p0 + q] = true; }
           }
           a--;
+        }
+        /* TIME TRAVEL KEEPS THE COLOURS (Michel, 2026-10-10): every line not
+           word-marked is painted as the editor paints it, and a decoration
+           wears its component's icon in the gutter. The fence state follows
+           the frame's own text — a removed line never opens or closes one. */
+        var ics = [];
+        for (var pf = 0, fenceP = null; pf < rows.length; pf++) {
+          var rl = rows[pf][1];
+          if (!marked[pf]) html[pf] = window.lcPaintMdLine(rl, fenceP);
+          var dm = fenceP === null && numbers && rl.match(/^\s*\{:(.*)\}\s*$/);
+          ics.push(dm ? ialIcon(dm[1]) : "");
+          var fm = /^\s*(`{3,}|~{3,})/.exec(rl);
+          if (fm && rows[pf][0] !== "del") fenceP = fenceP === null ? rl.trim().slice(fm[1].length).trim() : null;
         }
         /* the first changed line, as the NEW text counts lines; and each
            row's block in the frame's text, a removed line joining the block
@@ -668,7 +688,8 @@ Auto-included by docs/_layouts/default.html.
           if (animate && r[0] !== "same") { cls += r[0] === "add" ? " unfold" : " fold"; changedRows.push(i); }
           var band = keys[i] < 0 ? "gap" : ((keys[i] % 2 ? "k1" : "k0") + (keys[i] === idx ? " now" : ""));
           if (band !== open) { if (open !== null) parts.push("</div>"); parts.push("<div class='" + band + "'>"); open = band; }
-          parts.push("<span class='" + cls + "' data-s='" + (r[0] === "add" ? "+" : r[0] === "del" ? "−" : " ") + "' data-n='" + nums[i] + "'>" + (html[i] || "\u00a0") + "</span>");
+          parts.push("<span class='" + cls + "' data-s='" + (r[0] === "add" ? "+" : r[0] === "del" ? "−" : " ") + "' data-n='" + nums[i] + "'" +
+            (ics[i] ? " data-ic='" + ics[i] + "'" : "") + ">" + (html[i] || "\u00a0") + "</span>");
         });
         if (open !== null) parts.push("</div>");
         rp.diffEl.innerHTML = parts.join("");
@@ -708,12 +729,39 @@ Auto-included by docs/_layouts/default.html.
         rp.ui.label.textContent = (n + 1) + " / " + rp.frames.length + " · " +
           (f.starter ? "the lesson's starter" : (f.when ? new Date(f.when).toLocaleString() : "saved"));
         wrap.setAttribute("data-lc-frame", String(n));
+        if (wrap.hasAttribute("data-lc-playing")) rpSay(f);
       }
+      /* THE COMMIT SPEAKS (Michel, 2026-10-10): while ▶ Play or ◀ Moonwalk
+         runs, the frame's own line — what the learner said they did — floats
+         over the preview as a subtitle, 🤓 first, capitalised, half-seen, the
+         way Doc's bubble walks a screen. Paused, it fades. */
+      function rpLine(f) {
+        if (f.starter) return "The lesson's starter";
+        var t = String(f.message || "").split("\n")[0].replace(/^[^\p{L}\p{N}]+/u, "").trim();
+        return t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
+      }
+      function rpSay(f) {
+        var line = rpLine(f);
+        if (!line) { rpHush(); return; }
+        if (!rp.sub) {
+          rp.sub = document.createElement("div");
+          rp.sub.className = "lc-mdpad-sub";
+          rp.sub.setAttribute("role", "status");
+          wrap.style.position = "relative";
+          wrap.appendChild(rp.sub);
+        }
+        rp.sub.textContent = "🤓 " + line;
+        rp.sub.style.left = (out.offsetLeft + out.offsetWidth / 2) + "px";
+        rp.sub.style.top = (out.offsetTop + out.offsetHeight - 16) + "px";
+        rp.sub.classList.add("on");
+      }
+      function rpHush() { if (rp.sub) rp.sub.classList.remove("on"); }
       function rpPause() {
         if (rp.timer) clearInterval(rp.timer);
         rp.timer = null;
         if (rp.ui) { rp.ui.play.textContent = "▶ Play"; rp.ui.back.textContent = "◀ Moonwalk"; }
         wrap.removeAttribute("data-lc-playing");
+        setTimeout(function () { if (!rp.timer) rpHush(); }, 1200);   /* the last line is read, then fades */
       }
       function rpStep() {
         var n = rp.at + rp.dir;
@@ -729,8 +777,9 @@ Auto-included by docs/_layouts/default.html.
         if (dir > 0 && rp.at >= rp.frames.length - 1) rpShow(0);
         if (dir < 0 && rp.at <= 0) rpShow(rp.frames.length - 1);
         rp.timer = setInterval(rpStep, pace * 1000);
-        if (dir > 0) rp.ui.play.textContent = "⏸ Pause"; else rp.ui.back.textContent = "⏸ Pause";
         wrap.setAttribute("data-lc-playing", dir > 0 ? "forward" : "backward");
+        rpSay(rp.frames[rp.at]);
+        if (dir > 0) rp.ui.play.textContent = "⏸ Pause"; else rp.ui.back.textContent = "⏸ Pause";
       }
       function rpStart() {
         if (rp.on || !window.lcBench) return Promise.resolve();
@@ -755,7 +804,7 @@ Auto-included by docs/_layouts/default.html.
           setFold(false);                 /* a replay needs the pane it measures */
           var pane = src || ta;
           rp.diffEl = document.createElement("pre");
-          rp.diffEl.className = "lc-mdpad-diff";
+          rp.diffEl.className = "lc-mdpad-diff lc-md-paint";
           rp.diffEl.setAttribute("aria-label", "This version, with what changed since the one before");
           /* THE PANE KEEPS THE EDITOR'S HEIGHT (Michel, 2026-10-05): a frame's
              length must not move the bar under the pad — the pane scrolls
@@ -808,6 +857,8 @@ Auto-included by docs/_layouts/default.html.
         if (vers && vers.mark) vers.mark(null);
         ["data-lc-replay", "data-lc-frame", "data-lc-frames"].forEach(function (a) { wrap.removeAttribute(a); });
         if (rp.diffEl && rp.diffEl.parentNode) rp.diffEl.parentNode.removeChild(rp.diffEl);
+        if (rp.sub && rp.sub.parentNode) rp.sub.parentNode.removeChild(rp.sub);
+        rp.sub = null;
         if (rp.ui && rp.ui.box.parentNode) rp.ui.box.parentNode.removeChild(rp.ui.box);
         rp.diffEl = null; rp.ui = null;
         (src || ta).style.display = "";

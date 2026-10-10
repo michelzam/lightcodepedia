@@ -227,6 +227,8 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     frame, the author's starter first, + and − where a line came or went,
     the changed block lit in the preview; the moonwalk runs it backwards.
     Read-only: nothing is written, the text in the editor waits untouched.
+    Michel, 2026-10-10: the frames keep the editor's colours, and while it
+    plays each commit's line floats over the preview, 🤓 first, capitalised.
 
     Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
     And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
@@ -244,6 +246,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     Then the pad's bar carries no replay button
     When I press the pad's replay button
     Then the replay holds 2 frames and opens on the first
+    And the diff pane paints "# Draft one" as the editor does
     And the list is still open
     And the pad's editor is hidden behind the diff pane
     When I scrub the replay to frame 2
@@ -254,7 +257,8 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I press the moonwalk
     Then the replay lands on frame 1
     When I press play
-    Then the replay lands on frame 2
+    Then the replay's subtitle reads "🤓 Cv"
+    And the replay lands on frame 2
     And every added line has finished unfolding
     And the pad kept its height
     When I stop the replay
