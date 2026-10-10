@@ -84,6 +84,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-title { flex: 1; }
 .lc-agent-bound { font-size: 0.78em; color: var(--lc-ink-mute, #616161); font-weight: 400; }
 .lc-agent-bound code { background: #eef; padding: 0.05em 0.4em; border-radius: 3px; font-size: 0.95em; }
+.lc-agent-reads { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+.lc-agent-reads b { font-weight: 600; color: #374151; }
+.lc-agent-peek { padding: 0.55em 1em; background: #f8f9fc; border-bottom: 1px solid #e0e0e0; font-size: 0.82em; color: #444; }
+.lc-agent-peek code { background: #eef; padding: 0.05em 0.4em; border-radius: 3px; word-break: break-word; }
+.lc-agent-peek pre { margin: 0.3em 0 0; max-height: 14em; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.95em; }
+.lc-agent-peek-now { margin-top: 0.4em; }
 .lc-agent-key { background: white; border: 1px solid #ddd; color: #777; padding: 0.2em 0.5em; cursor: pointer; border-radius: 4px; font-size: 0.95em; line-height: 1; }
 .lc-agent-key:hover { background: #f0f0f0; color: #444; }
 .lc-agent-auth, .lc-agent-body { padding: 0.9em 1em; }
@@ -895,6 +901,55 @@ Auto-included by docs/_layouts/default.html.
     return out;
   }
 
+  /* ONE LINE, DETAILS ON DEMAND (Michel, 2026-10-10, on the phone: the whole
+     expression filled the head). The line names what the agent reads — the
+     components the expression reaches (my_beat · map); hover, focus or a tap
+     opens the expression and its value right now, as the model would get it. */
+  function boundNames(expr) {
+    var seen = [], re = /(^|[^\w.'"])([A-Za-z_]\w*)\.[A-Za-z_]/g, m;
+    var noise = { str: 1, dict: 1, list: 1, len: 1, self: 1 };
+    while ((m = re.exec(expr))) if (!noise[m[2]] && seen.indexOf(m[2]) < 0) seen.push(m[2]);
+    return seen;
+  }
+  function boundLine(expr) {
+    var names = boundNames(expr);
+    return '<span class="lc-agent-bound lc-agent-reads" tabindex="0" role="button" aria-expanded="false" ' +
+      'data-expr="' + escapeHtml(expr) + '" title="What this agent reads — tap for details">🔗 reads <b>' +
+      escapeHtml(names.length ? names.join(' · ') : 'an expression') + '</b> ⓘ</span>';
+  }
+  function wireBoundPeek(div, expr) {
+    var chip = div.querySelector('.lc-agent-reads');
+    if (!chip) return;
+    var peek = document.createElement('div');
+    peek.className = 'lc-agent-peek';
+    peek.hidden = true;
+    div.querySelector('.lc-agent-head').insertAdjacentElement('afterend', peek);
+    var pinned = false;
+    function show() {
+      peek.hidden = false;
+      chip.setAttribute('aria-expanded', 'true');
+      peek.innerHTML = '<div><b>reads</b> <code>{=' + escapeHtml(expr) + '}</code></div>' +
+        '<div class="lc-agent-peek-now"><b>now</b> <span>…</span></div>';
+      var now = peek.querySelector('.lc-agent-peek-now span');
+      if (!window.lcCellEval) { now.textContent = '(the page is still loading)'; return; }
+      window.lcCellEval(expr).then(function (v) {
+        var t = String(v);
+        now.innerHTML = '<pre>' + escapeHtml(t.length > 1500 ? t.slice(0, 1500) + ' …' : t) + '</pre>';
+      }, function (e) { now.textContent = '⚠️ ' + ((e && e.message) || String(e)); });
+    }
+    function hide() { if (pinned) return; peek.hidden = true; chip.setAttribute('aria-expanded', 'false'); }
+    chip.addEventListener('mouseenter', show);
+    chip.addEventListener('mouseleave', hide);
+    chip.addEventListener('click', function () {
+      pinned = !pinned;
+      if (pinned) show(); else { peek.hidden = true; chip.setAttribute('aria-expanded', 'false'); }
+    });
+    chip.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); chip.click(); }
+      if (e.key === 'Escape') { pinned = false; hide(); }
+    });
+  }
+
   // ===== panel structure =====
   function buildPanel(id, cfg, rows, boundId, boundExpr) {
     var eng = resolveEngine(cfg);
@@ -903,7 +958,7 @@ Auto-included by docs/_layouts/default.html.
     div.id = 'lc-agent-' + id;
     var introHtml = cfg.intro ? '<p class="lc-agent-intro">' + escapeHtml(cfg.intro) + '</p>' : '';
     var boundLabel = boundId ? '<span class="lc-agent-bound">linked to <code>#' + escapeHtml(boundId) + '</code></span>'
-      : boundExpr ? '<span class="lc-agent-bound">reads <code>{=' + escapeHtml(boundExpr) + '}</code></span>' : '';
+      : boundExpr ? boundLine(boundExpr) : '';
     div.innerHTML =
       '<div class="lc-agent-head">' +
         '<span class="lc-agent-icon" aria-hidden="true">' + escapeHtml(cfg.icon || '🤖') + '</span>' +
@@ -1794,6 +1849,7 @@ Auto-included by docs/_layouts/default.html.
     cfg.todos = !!(boundId && cfg.target);
     cfg.proof = cfg.target;
     var panel = buildPanel(id, cfg, rows, boundId, boundExpr);
+    if (boundExpr && !boundId) wireBoundPeek(panel, boundExpr);
     // Slides partition runs before agent upgrade (it has to wait for js-yaml).
     // Carry the fragment marking from the original code-block to the new panel
     // so it stays in the slide reveal sequence.

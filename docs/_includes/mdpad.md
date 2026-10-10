@@ -31,7 +31,7 @@ IAL knobs:
   piano="true"   consecutive blocks banded in two shades of the source pane, the
               caret's block in a third — the "piano"
   numbers="true" a line number per source line in a gutter (wrapped lines keep one);
-              a decoration's line also wears its component's icon there (🛢️ ▦ 📝)
+              a decoration's line also wears its component's icon there (🛢️ ▦ ☷)
   replay="1.5"  seconds per frame when 🎞 Replay plays the saved versions (default 1.5);
               the button sits at the head of 🕘 Versions, and any row of that
               list, clicked, shows that version the same way — read-only

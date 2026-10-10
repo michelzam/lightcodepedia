@@ -217,7 +217,32 @@ def step_proof_in_view(context, fid):
 def step_agent_named_bound(context, aid, name, expr):
     panel = context.page.locator(f".lc-agent[data-lc-id='{aid}'], .lc-agent#{aid}, [data-lc-id='{aid}'] .lc-agent").first
     expect(panel.locator(".lc-agent-title")).to_have_text(name, timeout=PS_TIMEOUT)
-    expect(panel.locator(".lc-agent-bound")).to_contain_text(expr)
+    # one line names what it reads; the expression shows on demand
+    chip = panel.locator(".lc-agent-bound")
+    expect(chip).to_be_visible(timeout=PS_TIMEOUT)
+    chip.hover()
+    expect(panel.locator(".lc-agent-peek")).to_contain_text(expr, timeout=PS_TIMEOUT)
+
+
+@then('the agent "{aid}" reads in one line "{line}"')
+def step_agent_reads_line(context, aid, line):
+    panel = context.page.locator(f".lc-agent[data-lc-id='{aid}'], .lc-agent#{aid}, [data-lc-id='{aid}'] .lc-agent").first
+    chip = panel.locator(".lc-agent-bound")
+    expect(chip).to_have_text(line, timeout=PS_TIMEOUT)
+    box = chip.bounding_box()
+    assert box and box["height"] < 30, "the reads line wraps: %r" % box
+
+
+@when('I tap what the agent "{aid}" reads')
+def step_agent_tap_reads(context, aid):
+    panel = context.page.locator(f".lc-agent[data-lc-id='{aid}'], .lc-agent#{aid}, [data-lc-id='{aid}'] .lc-agent").first
+    panel.locator(".lc-agent-bound").click()
+
+
+@then('the agent "{aid}" shows its current input "{text}"')
+def step_agent_peek_now(context, aid, text):
+    panel = context.page.locator(f".lc-agent[data-lc-id='{aid}'], .lc-agent#{aid}, [data-lc-id='{aid}'] .lc-agent").first
+    expect(panel.locator(".lc-agent-peek-now")).to_contain_text(text, timeout=PS_TIMEOUT)
 
 
 @then('the impact map "{cid}" leaf "{ref}" reads "{text}"')

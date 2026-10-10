@@ -387,7 +387,7 @@ Auto-included by docs/_layouts/default.html.
 
   /* ── .pitch — the assembled two sentences, one emoji per blank ────── */
   var SHAPE = [
-    ["For", "who", "👥"], ["who", "need", "🎯"], ["our", "product", "📦"],
+    ["For", "who", "👤"], ["who", "need", "🎯"], ["our", "product", "📦"],
     ["is a", "category", "🗂️"], ["that", "benefit", "💎"],
     ["Unlike", "alternative", "🆚"], ["it", "difference", "⚡"]
   ];

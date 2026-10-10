@@ -144,7 +144,7 @@ Auto-included by docs/_layouts/default.html.
     var meta = "";
     if (opts.mode) meta = '<span class="lc-form-meta" style="font-style:italic; text-transform:none;">' + escapeHtml(opts.mode) + '</span>';
     else if (opts.format) meta = '<span class="lc-form-meta">' + escapeHtml(opts.format) + '</span>';
-    var html = '<div class="lc-form-title">📝 <span class="lc-form-name">' + escapeHtml(opts.title || "Form") + '</span>' + meta + '</div>';
+    var html = '<div class="lc-form-title">☷ <span class="lc-form-name">' + escapeHtml(opts.title || "Form") + '</span>' + meta + '</div>';
     html += '<div class="lc-form-body"></div>';
     div.innerHTML = html;
     return div;

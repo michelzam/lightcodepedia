@@ -260,6 +260,9 @@ Feature: Problem space — persona, pitch, impact map
     And I wait for the page to be interactive
     Then the page reads "The goal reads: No adoption fails after payment"
     And the agent "judge" is named "The judge" and reads "map.goal"
+    And the agent "judge" reads in one line "🔗 reads map ⓘ"
+    When I tap what the agent "judge" reads
+    Then the agent "judge" shows its current input "No adoption fails after payment"
     And the impact map "map" leaf "count_proof" reads "The coordinator sees where families stop 📝"
     When I run the feature "chain_proof"
     Then the feature "chain_proof" is green

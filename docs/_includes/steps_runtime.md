@@ -1408,7 +1408,7 @@ class _Attrs(object):
         return self._d.get(name)
 
 
-@component(icon="📝",
+@component(icon="☷",
            attrs=[{"n": "title", "t": "str", "data": True, "d": ""},
                   {"n": "format", "t": "str", "data": True, "d": "yaml"},
                   {"n": "editable", "t": "bool", "data": True, "d": False}],

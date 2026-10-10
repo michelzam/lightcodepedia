@@ -239,7 +239,9 @@ system: You are the coordinator. End with VERDICT: n/8.
 {: .agent #desk bound="{=cv1.source}" }
 ```
 
-The header says `reads {=cv1.source}`; every Ask hands the model the pad's
+The header says, in one line, what the agent reads — `🔗 reads cv1 ⓘ`, the
+components its expression reaches. Hover it, or tap it on a phone, and the
+expression opens with its value right now. Every Ask hands the model the pad's
 current text. Anything the page's [cells](/components/cells) can see works:
 a form field (`{=inputs.pitch}`), a pad, a store node.
 
