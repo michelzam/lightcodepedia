@@ -1141,3 +1141,19 @@ def step_diff_painted(context, text):
 def step_replay_subtitle(context, text):
     sub = context.page.locator(PAD + " .lc-mdpad-sub.on")
     expect(sub).to_have_text(text, timeout=5_000)
+
+
+@then("the subtitle floats on the editor, under the change")
+def step_subtitle_on_editor(context):
+    box = context.page.evaluate("""(pad) => {
+      const w = document.querySelector(pad), s = w.querySelector('.lc-mdpad-sub.on'),
+            d = w.querySelector('.lc-mdpad-diff'), c = d.querySelector('.ln.add, .ln.del');
+      if (!s || !d) return null;
+      const S = s.getBoundingClientRect(), D = d.getBoundingClientRect();
+      return { cx: S.left + S.width / 2, dl: D.left, dr: D.right, top: S.top,
+               change: c ? c.getBoundingClientRect().top : null };
+    }""", PAD)
+    assert box, "no subtitle over the pad"
+    assert box["dl"] <= box["cx"] <= box["dr"], "the subtitle is not over the editor: %r" % box
+    if box["change"] is not None:
+        assert box["top"] >= box["change"], "the subtitle sits above the change: %r" % box

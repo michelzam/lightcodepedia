@@ -128,3 +128,53 @@ def step_pad_csv_piano(context, pad_id):
     got = context.page.eval_on_selector(
         sel, "p => [...p.querySelectorAll('.md-c0, .md-c1')].slice(0, 4).map(s => s.className + ':' + s.textContent)")
     assert got[:2] == ["md-c0:family", "md-c1:dog"], "columns not painted in turns: %r" % got
+
+
+def _pad_heights(context, pad_id):
+    return context.page.evaluate("""(id) => {
+      const w = document.querySelector("[data-lc-id='" + id + "']");
+      const h = (s) => Math.round(w.querySelector(s).getBoundingClientRect().height);
+      return { pad: Math.round(w.getBoundingClientRect().height), editor: h('.lc-mdpad-in'), preview: h('.lc-mdpad-out') };
+    }""", pad_id)
+
+
+@when('I drag the "{pad_id}" pad\'s grip {dy:d}px {way}')
+def step_drag_grip(context, pad_id, dy, way):
+    if not hasattr(context, "pad_h0"):
+        context.pad_h0 = _pad_heights(context, pad_id)
+    grip = context.page.locator("[data-lc-id='%s'] .lc-mdpad-grip" % pad_id)
+    grip.scroll_into_view_if_needed()
+    box = grip.bounding_box()
+    assert box, "no grip under the pad"
+    x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+    d = dy if way == "down" else -dy
+    m = context.page.mouse
+    m.move(x, y); m.down(); m.move(x, y + d / 2); m.move(x, y + d); m.up()
+    context.page.wait_for_timeout(200)
+
+
+@then('the "{pad_id}" pad\'s editor and preview grew by about {dy:d}px')
+def step_pad_grew(context, pad_id, dy):
+    h = _pad_heights(context, pad_id)
+    for k in ("editor", "preview"):
+        grown = h[k] - context.pad_h0[k]
+        assert abs(grown - dy) <= 12, "%s grew %dpx, expected about %d (%r → %r)" % (k, grown, dy, context.pad_h0, h)
+
+
+@then('the "{pad_id}" pad\'s editor and preview are shorter than at first')
+def step_pad_shorter(context, pad_id):
+    h = _pad_heights(context, pad_id)
+    for k in ("editor", "preview"):
+        assert h[k] < context.pad_h0[k], "%s did not shrink: %r → %r" % (k, context.pad_h0, h)
+
+
+@when('I double-click the "{pad_id}" pad\'s grip')
+def step_dbl_grip(context, pad_id):
+    context.page.locator("[data-lc-id='%s'] .lc-mdpad-grip" % pad_id).dblclick()
+    context.page.wait_for_timeout(200)
+
+
+@then('the "{pad_id}" pad is back to its own height')
+def step_pad_back(context, pad_id):
+    h = _pad_heights(context, pad_id)
+    assert abs(h["pad"] - context.pad_h0["pad"]) <= 2, "%r → %r" % (context.pad_h0, h)

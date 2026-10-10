@@ -498,3 +498,23 @@ def step_tap_card_link(context):
 def step_followed(context):
     assert context.page.url != context.lc_before_url, \
         "the lens ate the tap — still on %s" % context.page.url
+
+
+@then("the query's panel sits below its dataset's panel")
+def step_query_below_dataset(context):
+    """Michel, 2026-10-10: the query is declared after the dataset and the
+    data flows down with gravity — so its docked panel sits under it."""
+    context.page.wait_for_timeout(500)
+    tops = context.page.evaluate("""() => {
+      const out = {};
+      document.querySelectorAll('.lcx-xray').forEach(p => {
+        if (getComputedStyle(p).display === 'none') return;
+        const head = (p.textContent || '').slice(0, 40);
+        const top = p.getBoundingClientRect().top;
+        if (/Query/.test(head)) out.query = top;
+        else if (/Dataset/.test(head)) out.dataset = top;
+      });
+      return out;
+    }""")
+    assert "query" in tops and "dataset" in tops, "panels not found: %r" % tops
+    assert tops["query"] > tops["dataset"], "the query floats above its dataset: %r" % tops

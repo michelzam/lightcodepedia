@@ -202,7 +202,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     if (opts.id) div.setAttribute("data-lc-id", opts.id);
     var html = "";
     if (opts.title) {
-      html += '<div class="lc-datagrid-title">📊 <span>' + escapeHtml(opts.title) + '</span>';
+      html += '<div class="lc-datagrid-title">▦ <span>' + escapeHtml(opts.title) + '</span>';
       if (opts.mode) html += '<span class="lc-datagrid-lang" style="font-style:italic; text-transform:none;">' + escapeHtml(opts.mode) + '</span>';
       if (opts.format) html += '<span class="lc-datagrid-lang">' + escapeHtml(opts.format) + '</span>';
       /* AN EDITABLE GRID THAT LOOKS READ-ONLY IS READ-ONLY. Editing needs a

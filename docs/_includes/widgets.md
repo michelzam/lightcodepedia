@@ -99,7 +99,7 @@ Auto-included by docs/_layouts/default.html.
 :is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-h { color: #7c2d12; }
 :is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-fence, .lc-code .md-comma { color: #545a6b; }
 :is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-code { color: #262a36; }
-:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-ial { background: rgba(29, 78, 216, 0.07); color: #454b5c; }
+:is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-ial { color: #454b5c; }
 :is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-cls { color: #1d4ed8; }
 :is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-id { color: #b0124f; }
 :is(.lc-code, .lc-feature-step-impl) .lc-md-paint .md-key { color: #166534; }
@@ -119,9 +119,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-md-paint .md-h { color: #f9e2af; font-weight: 600; }
 .lc-md-paint .md-fence { color: #6c7086; }
 .lc-md-paint .md-code { color: #a6adc8; }
-/* no bar of its own: in the pad the blue bar marks the CURRENT block, from its
-   link or fence down to its decoration (Michel, 2026-10-10) */
-.lc-md-paint .md-ial { background: rgba(137, 180, 250, 0.12); border-radius: 3px; color: #9399b2; }
+/* no bar and no shade of its own: the decoration is part of its block, and in
+   the pad the blue bar marks the CURRENT block, from its link or fence down to
+   its decoration (Michel, 2026-10-10) */
+.lc-md-paint .md-ial { color: #9399b2; }
 .lc-md-paint .md-cls { color: #89b4fa; font-weight: 600; }
 .lc-md-paint .md-id { color: #f38ba8; }
 .lc-md-paint .md-key { color: #a6e3a1; }

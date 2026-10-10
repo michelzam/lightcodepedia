@@ -75,6 +75,15 @@ Auto-included by docs/_layouts/default.html.
   color: #555; cursor: pointer; line-height: 1.3; }
 .lc-mdpad-fold:hover { border-color: #888; color: #222; }
 .lc-mdpad.lc-mdpad-folded > .lc-mdpad-src { display: none !important; }
+/* ↕ the grip under the pad: drag to resize, for this visit only */
+.lc-mdpad-grip { position: absolute; left: 0; right: 0; bottom: -0.75em; height: 0.75em; cursor: ns-resize;
+  touch-action: none; z-index: 2; display: flex; align-items: center; justify-content: center; }
+.lc-mdpad-grip::before { content: ""; width: 3.2em; height: 4px; border-radius: 3px; background: #c4c9d4; }
+.lc-mdpad-grip:hover::before, .lc-mdpad[data-lc-resizing] .lc-mdpad-grip::before { background: #0066cc; }
+/* a dragged height wins over rows=: both panes may shrink below their content and scroll */
+.lc-mdpad[style*="height"] > .lc-mdpad-out, .lc-mdpad[style*="height"] > .lc-mdpad-src,
+.lc-mdpad[style*="height"] .lc-mdpad-in { min-height: 0; }
+.lc-mdpad[style*="height"] .lc-mdpad-in { height: auto; align-self: stretch; }
 .lc-mdpad-in {
   flex: 1; min-width: 0; resize: vertical;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -179,29 +188,39 @@ Auto-included by docs/_layouts/default.html.
    lighter band — the class, the #id and each knob in their colours */
 .lc-mdpad-piano .ln { color: #cdd6f4; }
 /* the token colours (.md-h, .md-ial …) live with the painter, in widgets.md */
-.lc-mdpad-src[data-numbers] .lc-mdpad-in { padding-left: 4em; }
+.lc-mdpad-src[data-numbers] .lc-mdpad-in { padding-left: 4.4em; }
 .lc-mdpad-piano { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;
   box-sizing: border-box; background: #1e1e2e; border: 1px solid transparent; border-radius: 6px;
   white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; }
 .lc-mdpad-piano .k1 { background: #26263a; }
 .lc-mdpad-piano .now { background: #30304c; box-shadow: inset 3px 0 0 #89b4fa; }
+/* with a gutter, the current block's bar moves into it, clear of the first letters */
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .now { box-shadow: none; }
 .lc-mdpad-piano[data-plain] .k1 { background: transparent; }
 .lc-mdpad-piano[data-plain] .now { background: transparent; box-shadow: none; }
 .lc-mdpad-piano .ln { position: relative; }
 /* the gutter: a grayer column so numbers never read as text (Michel, 2026-10-05) —
    painted as the pane's background, so it stays put while the text scrolls; each
-   row's cell then carries the piano into the gutter in its own grayer shades */
+   row's cell then carries the piano into the gutter in its own grayer shades.
+   2026-10-10 (Michel): the block's shade fills the WHOLE gutter for its height,
+   to the pane's left edge; the current block's blue bar is drawn in the gutter,
+   just left of the text, never over the first letters; the icons sit centred in
+   a column of their own, an emoji and a glyph (▦ ☷) brought to one size. The
+   pseudo-elements keep the line's font size, so every offset is in its units. */
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano { background:
-  linear-gradient(90deg, #2a2a38 0, #2a2a38 3.6em, #3c3c50 3.6em, #3c3c50 calc(3.6em + 1px), #1e1e2e calc(3.6em + 1px)); }
+  linear-gradient(90deg, #2a2a38 0, #2a2a38 4em, #1e1e2e 4em); }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln::before {
-  content: attr(data-n); position: absolute; left: -4em; top: 0; bottom: 0; width: 3.6em; box-sizing: border-box;
-  text-align: right; padding-right: 0.45em; color: #6c7086; font-size: 0.85em; line-height: inherit; }
-.lc-mdpad-src[data-numbers] .lc-mdpad-piano .k1 .ln::before { background: #30303f; }
-.lc-mdpad-src[data-numbers] .lc-mdpad-piano .now .ln::before { background: #3a3a54; }
+  content: attr(data-n); position: absolute; left: -4.4em; top: 0; bottom: 0; width: 4.4em; box-sizing: border-box;
+  text-align: right; padding-right: 0.95em; color: #6c7086; line-height: inherit; font-variant-numeric: tabular-nums;
+  background: linear-gradient(90deg, transparent 4em, #3c3c50 4em, #3c3c50 calc(4em + 1px), transparent calc(4em + 1px)); }
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .k1 .ln::before { background-color: #30303f; }
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .now .ln::before { background: #3a3a54
+  linear-gradient(90deg, transparent 3.85em, #89b4fa 3.85em, #89b4fa calc(3.85em + 3px), transparent calc(3.85em + 3px)); }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln.here::before { color: #cdd6f4; }
-/* a decoration's line wears its component's icon at the gutter's left edge */
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln[data-ic]::after {
-  content: attr(data-ic); position: absolute; left: -4.6em; top: 0; font-size: 0.8em; line-height: inherit; }
+  content: attr(data-ic); position: absolute; left: -4.25em; top: 0; width: 1.5em; text-align: center;
+  line-height: inherit; transform: scale(0.82); }
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln[data-ick="g"]::after { transform: scale(1.3); color: #cdd6f4; }
 /* 🎞 REPLAY — the source pane becomes a diff pane: + green, − red, the
    usual cues; a slider is the cursor; play runs forward, the moonwalk back */
 .lc-mdpad-replay, .lc-mdpad-hist { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px;
@@ -224,11 +243,13 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-diff[data-numbers] { padding-left: 4.4em; background:
   linear-gradient(90deg, #2a2a38 0, #2a2a38 3.9em, #3c3c50 3.9em, #3c3c50 calc(3.9em + 1px), #1e1e2e calc(3.9em + 1px)); }
 .lc-mdpad-diff[data-numbers] .ln::before { content: attr(data-s) " " attr(data-n); left: -4.4em; width: 3.9em; }
-.lc-mdpad-diff[data-numbers] .ln[data-ic]::after { content: attr(data-ic); position: absolute; left: -4.35em; top: 0; font-size: 0.8em; }
-/* the commit's line, floating over the preview while the versions play */
-.lc-mdpad-sub { position: absolute; transform: translate(-50%, -100%); max-width: 80%; z-index: 3; pointer-events: none;
+.lc-mdpad-diff[data-numbers] .ln[data-ic]::after { content: attr(data-ic); position: absolute; left: -4.35em; top: 0; width: 1.5em;
+  text-align: center; transform: scale(0.82); }
+.lc-mdpad-diff[data-numbers] .ln[data-ick="g"]::after { transform: scale(1.3); color: #cdd6f4; }
+/* the commit's line, floating on the editor under the change while the versions play */
+.lc-mdpad-sub { position: absolute; transform: translate(-50%, 0); max-width: 46%; z-index: 3; pointer-events: none;
   background: rgba(17, 17, 27, 0.62); color: #fff; padding: 0.45em 0.9em; border-radius: 12px; font-size: 0.92em;
-  line-height: 1.35; text-align: center; opacity: 0; transition: opacity .35s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+  line-height: 1.35; text-align: center; opacity: 0; transition: opacity .35s ease, top .35s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
 .lc-mdpad-sub.on { opacity: 0.88; }
 @media (prefers-reduced-motion: reduce) { .lc-mdpad-sub { transition: none; } }
 .lc-mdpad-diff .add::before { color: #a6e3a1; }
@@ -297,6 +318,8 @@ Auto-included by docs/_layouts/default.html.
      one component model. A class that is no component (.red, #top) gets none. */
   function compIcons() { return window.lcComponentIcons(); }   /* widgets.md */
   var _icons = {};
+  /* a text glyph (▦ ☷ ▤) draws smaller than a colour emoji (🛢️ 📈): marked, then scaled up */
+  function icGlyph(ic) { return !(ic.codePointAt(0) > 0xFFFF || ic.indexOf("\uFE0F") >= 0); }
   function ialIcon(body) {
     var cls = (body.match(/(?:^|\s)\.([A-Za-z][\w-]*)/) || [])[1];
     return cls ? (_icons[cls.replace(/[-_]/g, "").toLowerCase()] || "") : "";
@@ -444,6 +467,37 @@ Auto-included by docs/_layouts/default.html.
     setFold(false);
     wrap.appendChild(foldBtn);
     wrap._lcFold = setFold;
+    /* ↕ THE GRIP (Michel, 2026-10-10: "a non persistent way to be resized
+       vertically, so during work or demos we can decide different layouts"):
+       a bar under the pad, dragged, sets the pad's height — editor and
+       preview together, side by side or stacked. Nothing is kept: the next
+       visit opens at the lesson's rows=. Double-click gives that back now. */
+    var grip = document.createElement("div");
+    grip.className = "lc-mdpad-grip";
+    grip.setAttribute("role", "separator");
+    grip.setAttribute("aria-orientation", "horizontal");
+    grip.title = "Drag to make the pad taller or shorter — double-click to reset";
+    wrap.appendChild(grip);
+    grip.addEventListener("pointerdown", function (ev) {
+      ev.preventDefault();
+      var y0 = ev.clientY, h0 = wrap.getBoundingClientRect().height;
+      grip.setPointerCapture(ev.pointerId);
+      wrap.setAttribute("data-lc-resizing", "1");
+      function move(e) {
+        wrap.style.height = Math.max(160, Math.round(h0 + e.clientY - y0)) + "px";
+        if (keysEl) paintSoon();
+      }
+      function up() {
+        wrap.removeAttribute("data-lc-resizing");
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+        grip.removeEventListener("pointercancel", up);
+      }
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+      grip.addEventListener("pointercancel", up);
+    });
+    grip.addEventListener("dblclick", function () { wrap.style.height = ""; if (keysEl) paintSoon(); });
     el.parentNode.replaceChild(wrap, el);
     if (saveWrap) wrap.parentNode.insertBefore(saveWrap, wrap.nextSibling);
     /* the stripe goes round BOTH the pad and its keep bar, so the frame
@@ -689,7 +743,7 @@ Auto-included by docs/_layouts/default.html.
           var band = keys[i] < 0 ? "gap" : ((keys[i] % 2 ? "k1" : "k0") + (keys[i] === idx ? " now" : ""));
           if (band !== open) { if (open !== null) parts.push("</div>"); parts.push("<div class='" + band + "'>"); open = band; }
           parts.push("<span class='" + cls + "' data-s='" + (r[0] === "add" ? "+" : r[0] === "del" ? "−" : " ") + "' data-n='" + nums[i] + "'" +
-            (ics[i] ? " data-ic='" + ics[i] + "'" : "") + ">" + (html[i] || "\u00a0") + "</span>");
+            (ics[i] ? " data-ic='" + ics[i] + "'" + (icGlyph(ics[i]) ? " data-ick='g'" : "") : "") + ">" + (html[i] || "\u00a0") + "</span>");
         });
         if (open !== null) parts.push("</div>");
         rp.diffEl.innerHTML = parts.join("");
@@ -729,12 +783,15 @@ Auto-included by docs/_layouts/default.html.
         rp.ui.label.textContent = (n + 1) + " / " + rp.frames.length + " · " +
           (f.starter ? "the lesson's starter" : (f.when ? new Date(f.when).toLocaleString() : "saved"));
         wrap.setAttribute("data-lc-frame", String(n));
-        if (wrap.hasAttribute("data-lc-playing")) rpSay(f);
+        rp.changedEl = sp;
+        if (wrap.hasAttribute("data-lc-playing")) { rpSay(f); setTimeout(rpPlace, total + 30); }
       }
       /* THE COMMIT SPEAKS (Michel, 2026-10-10): while ▶ Play or ◀ Moonwalk
          runs, the frame's own line — what the learner said they did — floats
-         over the preview as a subtitle, 🤓 first, capitalised, half-seen, the
-         way Doc's bubble walks a screen. Paused, it fades. */
+         as a subtitle, 🤓 first, capitalised, half-seen, the way Doc's bubble
+         walks a screen. It sits on the EDITOR, right under the lines that
+         changed, and follows them frame to frame: the words beside the
+         syntax they name, for students to recognise it. Paused, it fades. */
       function rpLine(f) {
         if (f.starter) return "The lesson's starter";
         var t = String(f.message || "").split("\n")[0].replace(/^[^\p{L}\p{N}]+/u, "").trim();
@@ -751,9 +808,23 @@ Auto-included by docs/_layouts/default.html.
           wrap.appendChild(rp.sub);
         }
         rp.sub.textContent = "🤓 " + line;
-        rp.sub.style.left = (out.offsetLeft + out.offsetWidth / 2) + "px";
-        rp.sub.style.top = (out.offsetTop + out.offsetHeight - 16) + "px";
+        rpPlace();
         rp.sub.classList.add("on");
+      }
+      function rpPlace() {
+        if (!rp.sub || !rp.diffEl) return;
+        var W = wrap.getBoundingClientRect(), D = rp.diffEl.getBoundingClientRect();
+        var y = D.top + 24;
+        if (rp.changedEl && rp.changedEl.isConnected) {
+          /* the last changed row of the run, so the words sit under the change */
+          var last = rp.changedEl, nx = last.nextElementSibling;
+          while (nx && /\b(add|del)\b/.test(nx.className)) { last = nx; nx = nx.nextElementSibling; }
+          y = last.getBoundingClientRect().bottom + 6;
+        }
+        y = Math.max(D.top + 8, Math.min(y, D.bottom - 40));
+        rp.sub.style.maxWidth = Math.round(D.width * 0.9) + "px";
+        rp.sub.style.left = (D.left - W.left + D.width / 2) + "px";
+        rp.sub.style.top = (y - W.top) + "px";
       }
       function rpHush() { if (rp.sub) rp.sub.classList.remove("on"); }
       function rpPause() {
@@ -1021,7 +1092,7 @@ Auto-included by docs/_layouts/default.html.
         var ial = fence === null && numbers && lines[n].match(/^\s*\{:(.*)\}\s*$/);
         var ic = ial ? ialIcon(ial[1]) : "";
         var h = "<div class='ln" + (n === here ? " here" : "") + "' data-n='" + (n + 1) + "'" +
-          (ic ? " data-ic='" + ic + "'" : "") + ">" + paintLine(lines[n], fence) + "</div>";
+          (ic ? " data-ic='" + ic + "'" + (icGlyph(ic) ? " data-ick='g'" : "") : "") + ">" + paintLine(lines[n], fence) + "</div>";
         var m = FENCE_RE.exec(lines[n]);
         if (m) fence = fence === null ? lines[n].trim().slice(m[1].length).trim() : null;
         return h;

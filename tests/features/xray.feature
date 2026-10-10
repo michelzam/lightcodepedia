@@ -145,6 +145,7 @@ Feature: X-ray inspector
     And I wait for the page to be interactive
     And I shift-hover over the chart component
     Then the x-ray scene mentions "Query"
+    And the query's panel sits below its dataset's panel
 
   Scenario: Resizing the editor keeps it open, and the text field grows with it
     A dialog's own resize corner and its backdrop both report the dialog as

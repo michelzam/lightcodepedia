@@ -27,6 +27,9 @@ Auto-included by docs/_layouts/default.html.
 
 /* ── datagrid ──────────────────────────────────────── */
 .lc-datagrid { margin: 1em 0; font-size: 0.88em; overflow-x: auto; }
+/* a titled grid: the form's bar at the form's size (the grid's text is 0.88em) */
+.lc-datagrid .lc-dg-titlebar { font-size: 0.966em; }
+.lc-datagrid .lc-dg-titlebar .lc-datagrid-name { color: #222; font-weight: 600; }
 .lc-dg-table { width: 100%; border-collapse: collapse; }
 .lc-dg-table th, .lc-dg-table td { padding: 0.4em 0.75em; border: 1px solid #e5e7eb; text-align: left; white-space: nowrap; }
 .lc-dg-table th { background: #f9fafb; font-weight: 600; color: #374151; cursor: pointer; user-select: none; }
@@ -411,12 +414,32 @@ Auto-included by docs/_layouts/default.html.
        reads every field (Michel, 2026-10-04, the stories example). */
     var shownCols = (el.getAttribute("columns") || "").split(",")
       .map(function (c) { return c.trim(); }).filter(Boolean);
+    /* A TITLE BAR LIKE THE FORM'S (Michel, 2026-10-10: "the grid's header
+       should be as big as the Form one"): ▦ and the words of the link that
+       declared it — [The dogs](#) — or title="…". The table goes under it. */
+    var link = el.querySelector ? el.querySelector("a") : null;
+    var gridTitle = el.getAttribute("title") || (link ? (link.textContent || "").trim() : "");
     var wrap = document.createElement("div");
     wrap.className = "lc-datagrid";
     wrap.setAttribute("data-bind", bindId);
     if (lcId) wrap.setAttribute("data-lc-id", lcId);
     el.parentNode.replaceChild(wrap, el);
     el = wrap;
+    var bodyEl = el;
+    if (gridTitle) {
+      var bar = document.createElement("div");
+      bar.className = "lc-datagrid-title lc-dg-titlebar";
+      bar.appendChild(document.createTextNode("▦ "));
+      var tn = document.createElement("span");
+      tn.className = "lc-datagrid-name";
+      tn.textContent = gridTitle;
+      bar.appendChild(tn);
+      bodyEl = document.createElement("div");
+      bodyEl.className = "lc-dg-body";
+      el.appendChild(bar);
+      el.appendChild(bodyEl);
+      el.classList.add("lc-dg-titled");
+    }
 
     var sortCol = sortAttr, sortAsc = true, page = 0;
 
@@ -451,7 +474,7 @@ Auto-included by docs/_layouts/default.html.
         });
       }
       if (!data || !data.length) {
-        el.innerHTML = emptyMsg
+        bodyEl.innerHTML = emptyMsg
           ? "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>" + emptyMsg + "</p>"
           : "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ No data: <code>" + bindId + "</code></p>";
         return;
@@ -519,10 +542,10 @@ Auto-included by docs/_layouts/default.html.
          the new rows: the selection was kept (below), the scroll was not —
          the box came back at the top and the picked row sat out of view
          (Michel, 2026-09-15, the desk's roster). Keep where the reader was. */
-      var scrollBox = el.querySelector(".lc-dg-scroll");
+      var scrollBox = bodyEl.querySelector(".lc-dg-scroll");
       var keepTop = scrollBox ? scrollBox.scrollTop : 0;
-      el.innerHTML = html;
-      if (keepTop) { var nb = el.querySelector(".lc-dg-scroll"); if (nb) nb.scrollTop = keepTop; }
+      bodyEl.innerHTML = html;
+      if (keepTop) { var nb = bodyEl.querySelector(".lc-dg-scroll"); if (nb) nb.scrollTop = keepTop; }
       if (editable) {
         el.querySelectorAll("td.lc-dg-edit").forEach(function (td) {
           /* commit on blur and on Enter — never on every keystroke, or the
@@ -558,7 +581,13 @@ Auto-included by docs/_layouts/default.html.
       });
       el.querySelectorAll("[data-pg]").forEach(function (btn) {
         btn.addEventListener("click", function () {
-          page = +btn.getAttribute("data-pg"); render(window.lcDatasets[bindId] || data);
+          /* A NEW PAGE SELECTS ITS FIRST ROW, AND SAYS SO (Michel, 2026-10-10:
+             "when the grid goes to the next page and the first line gets
+             selected, any detail form should follow"): the selection is
+             dropped and the first-row rule below picks and publishes again. */
+          page = +btn.getAttribute("data-pg");
+          selKey = null; publishedFirst = false;
+          render(window.lcDatasets[bindId] || data);
         });
       });
       if (urlCol) {
@@ -682,14 +711,14 @@ Auto-included by docs/_layouts/default.html.
 
     /* repo-file source: fetch once and render (no dataset listener) */
     if (fileRef) {
-      el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
+      bodyEl.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
       var useCdn = window.lcUseCdn ? window.lcUseCdn() : false;
       var srcs = window.lcFileSrc(fileRef);
       fetch(useCdn ? srcs.cdn : srcs.raw)
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + fileRef); return r.text(); })
         .then(function (text) { return window.lcParseDataText(text, fileFmt); })
         .then(function (data) { render(Array.isArray(data) ? data : [data]); })
-        .catch(function (e) { el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ " + e.message + "</p>"; });
+        .catch(function (e) { bodyEl.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ " + e.message + "</p>"; });
       return;
     }
 
@@ -699,7 +728,7 @@ Auto-included by docs/_layouts/default.html.
 
     if (window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);
     else {
-      el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
+      bodyEl.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>⏳ Loading…</p>";
       /* a source that is merely slow arrives inside the grace; one that will
          never arrive — a name that matches nothing, a query still waiting
          for ITS source — stops pretending to load and says what the author
@@ -709,7 +738,7 @@ Auto-included by docs/_layouts/default.html.
       if (grace == null) grace = 4000;
       setTimeout(function () {
         if (window.lcDatasets[bindId] === undefined)
-          el.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>"
+          bodyEl.innerHTML = "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>"
             + (emptyMsg || "Nothing arrives here yet.") + "</p>";
       }, grace);
     }
