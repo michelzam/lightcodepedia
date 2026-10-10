@@ -129,3 +129,14 @@ Feature: The pad types like a text field, painted
     And I wait for the page to be interactive
     Then the pad is marked as the reader's own
     And the "faces" pad's text keeps every decoration glued to its line, fences aside
+
+  Scenario: The pad's grip resizes it for the visit, and a double-click gives the height back
+    Michel, 2026-10-10: "a non persistent way to be resized vertically (by
+    drag & drop), so, during work or demos we can decide different layouts".
+
+    When I drag the "playground" pad's grip 150px down
+    Then the "playground" pad's editor and preview grew by about 150px
+    When I drag the "playground" pad's grip 300px up
+    Then the "playground" pad's editor and preview are shorter than at first
+    When I double-click the "playground" pad's grip
+    Then the "playground" pad is back to its own height

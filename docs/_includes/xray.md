@@ -445,6 +445,24 @@ Auto-included by docs/_layouts/default.html.
         if (!isFinite(yTop)) yTop = rect.top;
         const mx = window.innerWidth - 16;
         let y = yTop;
+        /* GRAVITY (Michel, 2026-10-10: "query should be lower than the dataset —
+           it's declared later and the data flows with the gravitation"): a
+           docked node that reads another docked node sits BELOW it. Each one's
+           depth is its chain of docked sources; the deepest is placed first,
+           nearest the components, and the column climbs to the first source. */
+        const depth = new Map();
+        const depthOf = (n, seen) => {
+          if (depth.has(n)) return depth.get(n);
+          let d = 0;
+          edges.forEach(eg => {
+            if (eg.a === n && eg.b !== n && docked.indexOf(eg.b) >= 0 && !seen.has(eg.b))
+              d = Math.max(d, 1 + depthOf(eg.b, new Set([...seen, n])));
+          });
+          depth.set(n, d);
+          return d;
+        };
+        docked.forEach(n => depthOf(n, new Set()));
+        docked.sort((m, n) => depth.get(n) - depth.get(m));
         docked.forEach(n => {
           const p = n.panel; p.style.display = "block";
           y -= p.offsetHeight + 90;            /* 90px of clear drop = label room */
