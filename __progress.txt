@@ -16,6 +16,7 @@
 /components/feature	1/1	5/5	2026-09-23T03:26:32.274Z
 /components/form	2/2	0/0	2026-06-22T21:20:06.139Z
 /components/grid	1/1	0/0	2026-06-23T05:29:36.653Z
+/components/impact_map	0/0	1/1	2026-10-10T19:47:43.480Z
 /components/query	1/1	0/0	2026-06-19T12:07:41.194Z
 /components/quiz	6/7	0/0	2026-06-22T22:07:57.470Z
 /components/radio	2/2	0/0	2026-06-22T13:38:11.049Z
@@ -34,4 +35,4 @@ gh:michelzam/lightcodepedia/docs/_410/databases/module_03/00_setup	2/2	1/1	2026-
 gh:uwm-build-ai/uwm-build-ai-vault/courses/micro_build_ai/_setup	1/1	0/0	2026-08-25T14:55:27.123Z
 gh:uwm-build-ai/uwm-build-ai-vault/courses/micro_build_ai/join	1/1	0/0	2026-08-01T19:22:58.067Z
 gh:uwm-build-ai/uwm-build-ai-vault/courses/micro_build_ai/module_00/00_welcome	2/2	0/0	2026-08-05T19:32:47.230Z
-crc 0c59a31a
+crc 00f48f32
