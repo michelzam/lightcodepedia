@@ -31,7 +31,20 @@ Auto-included by docs/_layouts/default.html.
                  border-bottom: 1px solid rgba(120,200,255,.25);
                  padding-bottom: 3px; margin-bottom: 3px; }
   .lcx-xray .r .ic { display: inline-block; width: 1.6em; }
-  .lcx-xray .v { color: #8effa6; }
+  .lcx-xray .v { color: #a6e3a1; }
+  .lcx-xray .r { color: #cdd6f4; }
+  .lcx-xray .lcx-str { color: #a6e3a1; }
+  .lcx-xray .lcx-num { color: #fab387; }
+  .lcx-xray .lcx-bool { color: #cba6f7; }
+  .lcx-xray .lcx-id { color: #f38ba8; }
+  .lcx-xray .lcx-ref { color: #89dceb; }
+  .lcx-xray .lcx-str[data-full], .lcx-xray .lcx-ref[data-full] { text-decoration: underline dotted rgba(205,214,244,.5); }
+  .lcx-xray .t { color: #89b4fa; }
+  /* the whole of a value cut short, under a resting pointer — half seen */
+  .lcx-full { position: absolute; z-index: 7; pointer-events: none; max-width: 46ch; white-space: pre-wrap;
+              word-break: break-word; padding: 4px 8px; border-radius: 6px; background: rgba(8,18,28,.72);
+              color: #cdd6f4; font: 11px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+              box-shadow: 0 0 0 1px rgba(120,200,255,.3); display: none; }
   .lcx-xray .as { color: #ffd479; }
   /* a reference that names nothing — red, and it stays ON the referrer */
   .lcx-xray .bad { color: #ff7b7b; }
@@ -90,6 +103,24 @@ Auto-included by docs/_layouts/default.html.
     scene.appendChild(svg);
     document.body.append(scene, ring);
     const panels = [];
+    const fullTip = scene.appendChild(Object.assign(document.createElement("div"), { className: "lcx-full" }));
+    /* the ghosts let the pointer through (the lens lives under them), so the
+       label for a cut value is found by position, not by hover events */
+    window.addEventListener("pointermove", e => {
+      if (scene.style.display === "none") { fullTip.style.display = "none"; return; }
+      let hit = null;
+      scene.querySelectorAll(".lcx-xray .v[data-full]").forEach(v => {
+        if (hit || v.closest(".lcx-xray").style.display === "none") return;
+        const r = v.getBoundingClientRect();
+        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) hit = v;
+      });
+      if (!hit) { fullTip.style.display = "none"; return; }
+      const r = hit.getBoundingClientRect(), S = scene.getBoundingClientRect(), k = (S.width / scene.offsetWidth) || 1;
+      fullTip.textContent = hit.getAttribute("data-full");
+      fullTip.style.left = ((r.left - S.left) / k) + "px";
+      fullTip.style.top = ((r.bottom - S.top) / k + 4) + "px";
+      fullTip.style.display = "block";
+    }, { passive: true });
     const panel = i => panels[i] || (panels[i] = scene.appendChild(
       Object.assign(document.createElement("div"), { className: "lcx-xray" })));
 
@@ -146,6 +177,20 @@ Auto-included by docs/_layouts/default.html.
       };
       return { attrs: pick("attrs"), events: pick("events"), methods: pick("methods") };
     }
+    /* A GHOST READS LIKE THE PAD (Michel, 2026-10-11): a value wears the
+       editor's colour for its kind — a text green, a number peach, a yes/no
+       mauve, an id pink, a reference sky — and a long one is cut short, the
+       ghost narrow; the whole value shows in a label when the pointer rests
+       on it. */
+    const VMAX = 26;
+    function valHtml(a, v) {
+      const t = String(v == null ? "" : v);
+      const kind = a.n === "id" ? "id" : (a.list || a.t === "ref" || a.t === "list") ? "ref"
+        : (a.t === "int" || a.t === "float") ? "num" : a.t === "bool" ? "bool" : "str";
+      const cut = t.length > VMAX ? t.slice(0, VMAX - 1) + "…" : t;
+      return '<span class="v lcx-' + kind + '"' + (cut !== t ? ' data-full="' + esc(t).replace(/"/g, "&quot;") + '"' : "") +
+        ">" + esc(cut) + "</span>";
+    }
     const rrow = (ic, html, cls) =>
       '<div class="r ' + (cls || "") + '"><span class="ic">' + ic + "</span>" + html + "</div>";
     /* Does anything on this page actually answer to this name? An element
@@ -179,8 +224,7 @@ Auto-included by docs/_layouts/default.html.
       let h = '<div class="t">' + (sp.icon ? sp.icon + " " : "") + esc(name) + "</div>";
       L.attrs.forEach(a => {
         const has = Object.prototype.hasOwnProperty.call(vals, a.n);
-        h += rrow(attrIcon(a), esc(disp(a.n)) +
-          (has ? '<span class="v"> = ' + esc(vals[a.n]) + "</span>" : ""));
+        h += rrow(attrIcon(a), esc(disp(a.n)) + (has ? " = " + valHtml(a, vals[a.n]) : ""));
       });
       (bad || []).forEach(lk => {
         h += rrow("💣", esc(disp(lk.role)) +
@@ -463,10 +507,15 @@ Auto-included by docs/_layouts/default.html.
         };
         docked.forEach(n => depthOf(n, new Set()));
         docked.sort((m, n) => depth.get(n) - depth.get(m));
+        /* A DERIVED SOURCE STEPS LEFT (Michel, 2026-10-11): a query that reads
+           a dataset sits under it, indented, so the dataset's drop comes down
+           and enters the query from the right — the flow drawn as it runs */
+        const widest = Math.max(...docked.map(n => { n.panel.style.display = "block"; return n.panel.offsetWidth; }));
         docked.forEach(n => {
           const p = n.panel; p.style.display = "block";
           y -= p.offsetHeight + 90;            /* 90px of clear drop = label room */
-          place(p, Math.max(8, mx - p.offsetWidth), Math.max(8, y));
+          const indent = depth.get(n) ? Math.round(widest / 2) + 34 : 0;
+          place(p, Math.max(8, mx - p.offsetWidth - indent), Math.max(8, y));
           n.docked = true;
         });
       }
@@ -495,6 +544,15 @@ Auto-included by docs/_layouts/default.html.
         }
         placedR.push({ x, y, w, h });
       });
+      /* LANES (Michel, 2026-10-11): two pipes never run at one height — a
+         horizontal run that would sit on another moves down a lane */
+      const lanes = [], LANE = 14;
+      const lane = (y, lo, hi) => {
+        let g = 0;
+        while (g++ < 12 && lanes.some(v => Math.abs(v - y) < LANE)) y += LANE;
+        if (hi != null && y > hi) { y = lo; g = 0; while (g++ < 12 && lanes.some(v => Math.abs(v - y) < LANE)) y += LANE; }
+        lanes.push(y); return y;
+      };
       edges.forEach(eg => {
         const r0 = eg.a.panel.getBoundingClientRect(), r1 = eg.b.panel.getBoundingClientRect();
         const dockN = eg.b.docked ? eg.b : (eg.a.docked ? eg.a : null);
@@ -504,13 +562,15 @@ Auto-included by docs/_layouts/default.html.
              covers it */
           const D = dockN === eg.a ? r0 : r1, T = dockN === eg.a ? r1 : r0;
           const sx = D.left + D.width / 2, sy = D.bottom,
-                tx = T.right, ty = T.top + Math.min(T.height / 2, 44);
+                tx = T.right, ty = lane(T.top + Math.min(T.height / 2, 44), T.top + 12, T.bottom - 10);
           dropPipe(sx, sy, tx, ty);
           plabel(sx, sy + Math.max(24, (ty - sy) * 0.45), (eg.list ? "⦙ " : "") + disp(eg.role));
           return;
         }
         const e0 = edgePoint(r0, center(r1).x, center(r1).y);
         const e1 = edgePoint(r1, center(r0).x, center(r0).y);
+        /* a level run (both ends at one height) takes a lane of its own */
+        if (Math.abs(e0.y - e1.y) < 2) { const yl = lane(e0.y); e0.y = e1.y = yl; }
         pipe(e0.x, e0.y, e1.x, e1.y);
         plabel((e0.x + e1.x) / 2, (e0.y + e1.y) / 2, (eg.list ? "⦙ " : "") + disp(eg.role));
       });
