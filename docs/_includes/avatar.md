@@ -1054,7 +1054,10 @@ Auto-included by docs/_layouts/default.html.
         playing: false, idx: 0, lottieDone: false, step: step, mute: mute,
         genVoice: genVoice, genModel: genModel,
         botName: (cfg.bot ? String(cfg.bot) : ""),
-        stories: storiesCfg
+        stories: storiesCfg,
+        /* steps: — what Doc types into a pad and the film it makes, one list
+           for both scripts (type with: n, save with: n, replay) */
+        steps: Array.isArray(cfg.steps) ? cfg.steps : []
       };
 
       /* init character graphic */
@@ -1513,7 +1516,7 @@ Auto-included by docs/_layouts/default.html.
     if (line.fn) { try { line.fn(); } catch (e) {} }   /* per-line action (demo replay re-applies the recorded value here) */
     if (line.do && window.lcVerbs) {
       /* presentation verbs only — the registry holds nothing consequential */
-      window.lcVerbs.act(line.do, line.at ? resolveRef(line.at) : null, line.arg);
+      window.lcVerbs.act(line.do, line.at ? resolveRef(line.at) : null, line.arg, { steps: av.steps });
     }
     /* an action-only line is a stage direction, not narration: no empty
        bubble hanging for a fake sentence — a short beat for the animation,
@@ -1624,6 +1627,20 @@ Auto-included by docs/_layouts/default.html.
     }
     var labelPlay = el.textContent.trim() || "▶ Play";
     var labelStop = el.getAttribute("label-stop") || "⏹ Stop";
+    /* story="Build it with me" — the button plays THAT story of the guide,
+       not the tour: a page can offer its scripts side by side */
+    var storyName = el.getAttribute("story") || "";
+    if (storyName) {
+      el.addEventListener("click", function (e) {
+        e.preventDefault();
+        var av = window._lcAvatars && window._lcAvatars[targetId];
+        if (!av || !av.stories || !av.stories[storyName]) return;
+        if (av.playing) { stopPlay(targetId); return; }
+        primeVoice(av);
+        performLines(targetId, av, av.stories[storyName]);
+      });
+      return;
+    }
     el.setAttribute("data-avt-target", targetId);
     el.setAttribute("data-avt-play", labelPlay);
     el.setAttribute("data-avt-stop", labelStop);

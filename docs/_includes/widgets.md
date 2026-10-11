@@ -432,10 +432,12 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
          to that section's own title, not the whole accordion */
       register: function (verb, fn, targetFn) { map[verb] = { fn: fn, target: targetFn || null }; },
       has: function (verb) { return !!map[verb]; },   /* a page's meta check asks before a tour promises */
-      act: function (verb, el, arg) {
+      /* ctx: what the caller knows that the element does not — Doc's
+         steps: list, so `type` with: 2 means HIS step two */
+      act: function (verb, el, arg, ctx) {
         var v = map[verb];
         if (!v) return false;
-        try { return v.fn(el || null, arg) !== false; } catch (e) { return false; }
+        try { return v.fn(el || null, arg, ctx || {}) !== false; } catch (e) { return false; }
       },
       target: function (verb, el, arg) {
         var v = map[verb];
@@ -1470,7 +1472,10 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
     if (!m.getAttribute("data-lc-yt")) return false;
     return _lcYtCmd(m, func, args);
   }
-  window.lcVerbs.register("play", function (el, arg) {
+  /* a PAD's film answers play and pause first (mdpad.md, lcPadVerb) */
+  function _lcPadOf(el) { return el && el.closest ? el.closest(".lc-mdpad") : null; }
+  window.lcVerbs.register("play", function (el, arg, ctx) {
+    if (_lcPadOf(el) && window.lcPadVerb) return window.lcPadVerb("play", _lcPadOf(el), arg, ctx);
     /* with: 12 → start from twelve seconds in, so a script can narrate one
        beat of a clip without replaying the whole thing */
     var at = (arg !== null && arg !== undefined && arg !== "") ? (Number(arg) || 0) : null;
@@ -1483,7 +1488,8 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
     if (!m.getAttribute("data-lc-yt")) return false;
     return _lcYtPlay(m, at);
   }, _lcMedia);
-  window.lcVerbs.register("pause", function (el) {
+  window.lcVerbs.register("pause", function (el, arg, ctx) {
+    if (_lcPadOf(el) && window.lcPadVerb) return window.lcPadVerb("pause", _lcPadOf(el), arg, ctx);
     return _lcMediaCmd(el, "pauseVideo");
   }, _lcMedia);
   window.lcVerbs.register("seek", function (el, arg) {

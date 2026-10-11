@@ -580,7 +580,7 @@ Auto-included by docs/_layouts/default.html.
       }
       /* the one-line box under the pad: Enter keeps, Esc or an empty line
          keeps nothing. The line is the commit message — the diary entry. */
-      function askThenSave() {
+      function askThenSave(prefill) {
         if (commentBox) return;
         var box = document.createElement("div");
         box.className = "lc-mdpad-commentbar";
@@ -595,9 +595,11 @@ Auto-included by docs/_layouts/default.html.
         box.appendChild(inp); box.appendChild(keep); box.appendChild(cancel);
         saveWrap.parentNode.insertBefore(box, saveWrap);
         commentBox = box; refreshBench();
+        if (prefill) { inp.value = String(prefill); keep.disabled = false; }
         function close() {
           if (box.parentNode) box.parentNode.removeChild(box);
           commentBox = null; refreshBench();
+          if (wrap._lcSaveDone) { var d = wrap._lcSaveDone; wrap._lcSaveDone = null; d(); }
         }
         inp.addEventListener("input", function () { keep.disabled = !inp.value.trim(); });
         inp.addEventListener("keydown", function (e) {
@@ -658,6 +660,14 @@ Auto-included by docs/_layouts/default.html.
       var rp = { frames: null, at: 0, timer: null, dir: 1, ui: null, diffEl: null, on: false, sub: null };
       function rpLoad() {
         if (rp.frames) return Promise.resolve(rp.frames);
+        /* the pad's OWN history when it has one (two versions at least);
+           else the film Doc's steps make — every learner sees it, no key */
+        var fallback = function (frames) {
+          frames = frames || [];
+          if (frames.length < 2 && wrap._lcSteps && wrap._lcSteps.length) frames = stepFrames(wrap._lcSteps);
+          rp.frames = frames; return frames;
+        };
+        if (!window.lcBench || !window.lcBench.history) return Promise.resolve(fallback([]));
         return window.lcBench.history(benchPath, wrap, 100).then(function (list) {
           list = list.slice().reverse();              /* oldest first: frame zero is the starter */
           return Promise.all(list.map(function (c) {
@@ -666,7 +676,7 @@ Auto-included by docs/_layouts/default.html.
                        starter: String(c.message || "").indexOf(window.lcStarterMsg || "📄 starter") === 0 };
             });
           }));
-        }).then(function (frames) { rp.frames = frames; return frames; });
+        }).then(fallback, function () { return fallback([]); });
       }
       /* WORD LEVEL: an edited line is a − / + pair; the words that differ are
          the middle once the common head and tail are peeled off, backed off to
@@ -784,7 +794,7 @@ Auto-included by docs/_layouts/default.html.
           (f.starter ? "the lesson's starter" : (f.when ? new Date(f.when).toLocaleString() : "saved"));
         wrap.setAttribute("data-lc-frame", String(n));
         rp.changedEl = sp;
-        if (wrap.hasAttribute("data-lc-playing")) { rpSay(f); setTimeout(rpPlace, total + 30); }
+        if (wrap.hasAttribute("data-lc-playing")) rpSay(f, total);
       }
       /* THE COMMIT SPEAKS (Michel, 2026-10-10): while ▶ Play or ◀ Moonwalk
          runs, the frame's own line — what the learner said they did — floats
@@ -797,7 +807,7 @@ Auto-included by docs/_layouts/default.html.
         var t = String(f.message || "").split("\n")[0].replace(/^[^\p{L}\p{N}]+/u, "").trim();
         return t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
       }
-      function rpSay(f) {
+      function rpSay(f, after) {
         var line = rpLine(f);
         if (!line) { rpHush(); return; }
         if (!rp.sub) {
@@ -807,9 +817,15 @@ Auto-included by docs/_layouts/default.html.
           wrap.style.position = "relative";
           wrap.appendChild(rp.sub);
         }
-        rp.sub.textContent = "🤓 " + line;
-        rpPlace();
-        rp.sub.classList.add("on");
+        /* the lines unfold first; the words land under them once they have */
+        clearTimeout(rp.subT);
+        if (after) rp.sub.classList.remove("on");     /* the old line fades while the new lines unfold */
+        rp.subT = setTimeout(function () {
+          if (!rp.sub) return;
+          rp.sub.textContent = "🤓 " + line;
+          rpPlace();
+          rp.sub.classList.add("on");
+        }, (after || 0) + 30);
       }
       function rpPlace() {
         if (!rp.sub || !rp.diffEl) return;
@@ -817,8 +833,9 @@ Auto-included by docs/_layouts/default.html.
         var y = D.top + 24;
         if (rp.changedEl && rp.changedEl.isConnected) {
           /* the last changed row of the run, so the words sit under the change */
-          var last = rp.changedEl, nx = last.nextElementSibling;
-          while (nx && /\b(add|del)\b/.test(nx.className)) { last = nx; nx = nx.nextElementSibling; }
+          var all = Array.prototype.slice.call(rp.diffEl.querySelectorAll(".ln"));
+          var at = all.indexOf(rp.changedEl), last = rp.changedEl;
+          while (at >= 0 && at + 1 < all.length && /\b(add|del)\b/.test(all[at + 1].className)) last = all[++at];
           y = last.getBoundingClientRect().bottom + 6;
         }
         y = Math.max(D.top + 8, Math.min(y, D.bottom - 40));
@@ -853,7 +870,7 @@ Auto-included by docs/_layouts/default.html.
         if (dir > 0) rp.ui.play.textContent = "⏸ Pause"; else rp.ui.back.textContent = "⏸ Pause";
       }
       function rpStart() {
-        if (rp.on || !window.lcBench) return Promise.resolve();
+        if (rp.on) return Promise.resolve();
         /* ONE replay, however many clicks: a row picked while the frames
            are still loading joins the start in flight instead of starting
            a second one — two slider bars and a strip-high second diff pane,
@@ -940,7 +957,32 @@ Auto-included by docs/_layouts/default.html.
       }
       /* a proof drives it as a person would: pad.replay(), pad.frame = n, pad.stop() */
       wrap._lcReplay = { start: rpStart, stop: rpStop, play: rpPlay, pause: rpPause,
-                         go: function (n) { if (rp.on) { rpPause(); rpShow(n); } } };
+                         go: function (n) { if (rp.on) { rpPause(); rpShow(n); } },
+                         on: function () { return rp.on; }, at: function () { return rp.at; },
+                         count: function () { return rp.frames ? rp.frames.length : 0; } };
+      /* DOC'S SAVE (Michel, 2026-10-10, "with author save too"): on a
+         learner's pad it OPENS 💾 Save… with the step's line filled in and
+         waits for their tap — Doc offers, the learner decides. On the
+         author's own pad (sandbox pairing) or a demo="true" pad it commits
+         at once, so a recording runs hands-free. */
+      wrap._lcSaveAs = function (comment) {
+        refreshBench();
+        if (saveBtn.disabled) {
+          if (window.lcxToast) window.lcxToast("💾 " + (saveBtn.title || "Saving needs your space"), true);
+          return false;
+        }
+        var line = String(comment || "").trim();
+        var direct = wrap.getAttribute("data-lc-demo") === "1" ||
+                     (window.lcBench && window.lcBench.sandboxed && window.lcBench.sandboxed());
+        if (direct) { doSave("✍️ " + (line || id || benchPath)); return true; }
+        if (askComment) {
+          /* the next step waits for this one to be kept (or cancelled): Doc
+             talks on, the pad never types over a save still on offer */
+          wrap._lcPending = new Promise(function (r) { wrap._lcSaveDone = r; });
+          askThenSave(line);
+        } else doSave("✍️ " + (line || id || benchPath));
+        return true;
+      };
     }
 
     /* ── WIRES: the preview's model is what its text declares ──────────────
@@ -1166,6 +1208,80 @@ Auto-included by docs/_layouts/default.html.
     /* a proof moves the caret the way a person would: pad.caret = n */
     wrap._lcCaret = function (pos) { ta.focus(); ta.setSelectionRange(pos, pos); blocks = blocksOf(ta.value); focusNow(); paintPiano(); };
     /* a proof writes the pad as a person would (pad.source = "…"): one render, now */
+    if (el.getAttribute("demo") === "true") wrap.setAttribute("data-lc-demo", "1");
+
+    /* ── DOC'S STEPS (Michel, 2026-10-10): one list of steps — a line said,
+       the lines typed — drives both of Doc's scripts. "Build it with me"
+       types them into the pad one by one; "Watch it grow" plays them as a
+       film when the pad has no history of its own. A step appends its lines
+       under the text, or, with find:, replaces the line that holds find. */
+    function stepText(st) { return String((st && (st.lines || st.text)) || "").replace(/\n+$/, ""); }
+    function applyStep(text, st) {
+      var lines = stepText(st), find = st && st.find ? String(st.find).trim() : "";
+      if (find) {
+        var at = text.indexOf(find);
+        if (at >= 0) {
+          var ls = text.lastIndexOf("\n", at) + 1, le = text.indexOf("\n", at);
+          if (le < 0) le = text.length;
+          return text.slice(0, ls) + lines + text.slice(le);
+        }
+      }
+      return text.replace(/\n+$/, "") + "\n\n" + lines;
+    }
+    function stepFrames(steps) {
+      var t = seed, fr = [{ text: seed, message: window.lcStarterMsg || "📄 starter", starter: true }];
+      steps.forEach(function (st) { t = applyStep(t, st); fr.push({ text: t, message: "✍️ " + (st.say || "") }); });
+      return fr;
+    }
+    /* the pad's place in the steps: k when its text IS frame k, else -1 (its own work) */
+    function stepIndex(steps) {
+      var fr = stepFrames(steps), now = ta.value.replace(/\n+$/, "");
+      for (var k = fr.length - 1; k >= 0; k--) if (fr[k].text.replace(/\n+$/, "") === now) return k;
+      return -1;
+    }
+    wrap._lcTyping = Promise.resolve();
+    /* type step n (1-based) — visibly, the inserted text arriving a few
+       letters at a time. RESUMES by itself: a step already in the pad is
+       not typed again. Never over the learner's own work: a pad whose text
+       is not one of the steps' frames keeps it, and Doc's toast shows the
+       lines to type instead. The demo pad and the author's take any text. */
+    wrap._lcTypeStep = function (n, steps) {
+      steps = steps || wrap._lcSteps || [];
+      if (steps.length) wrap._lcSteps = steps;
+      var st = steps[n - 1];
+      if (!st) return false;
+      var run = function () {
+        var k = stepIndex(steps);
+        if (k >= n) return;                                      /* done already: resume */
+        var free = wrap.getAttribute("data-lc-demo") === "1" ||
+                   (window.lcBench && window.lcBench.sandboxed && window.lcBench.sandboxed());
+        if (k < 0 && !free) {
+          if (window.lcxToast) window.lcxToast("✋ Your own work is in the pad — type it yourself:\n" + stepText(st), true);
+          return;
+        }
+        var from = ta.value, to = applyStep(from, st);
+        var a = 0; while (a < from.length && a < to.length && from[a] === to[a]) a++;
+        var b = 0; while (b < from.length - a && b < to.length - a && from[from.length - 1 - b] === to[to.length - 1 - b]) b++;
+        var head = to.slice(0, a), mid = to.slice(a, to.length - b), tail = to.slice(to.length - b);
+        var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        setFold(false);
+        return new Promise(function (done) {
+          if (reduced || !mid) { wrap._lcApply(to); done(); return; }
+          var i = 0, per = Math.max(1, Math.ceil(mid.length / 60));    /* about 60 beats, whatever the length */
+          (function tick() {
+            i = Math.min(mid.length, i + per);
+            ta.value = head + mid.slice(0, i) + tail;
+            try { ta.setSelectionRange(head.length + i, head.length + i); } catch (e) {}
+            blocks = blocksOf(ta.value); paintPiano();
+            if (i < mid.length) setTimeout(tick, 28);
+            else { wrap._lcApply(to); done(); }
+          })();
+        });
+      };
+      var before = Promise.all([wrap._lcTyping, wrap._lcPending || Promise.resolve()]);
+      wrap._lcTyping = before.then(run, run);
+      return true;
+    };
     wrap._lcApply = function (t) {
       ta.value = t; lastVal = t; render(); publish(true); paintPiano();
       if (typeof refreshBench === "function") refreshBench();
@@ -1198,5 +1314,55 @@ Auto-included by docs/_layouts/default.html.
   if (window.lcRegisterUpgrader) {
     window.lcRegisterUpgrader(".highlighter-rouge.mdpad, pre.mdpad", upgradeMdpad);
   }
+
+  /* ── DOC'S PAD VERBS (Michel, 2026-10-10) — a music player's words for
+     the film, and two for building:
+       replay            the film from the beginning, even if it is open
+       play / pause      on from here / hold on this frame
+       moonwalk          backwards from here
+       frame  with: n    jump to version n and hold (1 = the starter)
+       stop              close the film, give the editor back
+       type   with: n    type Doc's step n into the pad (resumes: a step
+                         already there is not typed again)
+       save   with: "…"  or with: n (step n's line) — 💾 Save… opened with
+                         the line filled in; the author's or a demo pad
+                         commits at once
+     at: names the pad; without it, the page's first pad. */
+  function padOf(el) {
+    var p = el && el.closest ? el.closest(".lc-mdpad") : null;
+    return p || document.querySelector(".lc-mdpad");
+  }
+  function film(pad, then) {
+    var r = pad && pad._lcReplay;
+    if (!r) return false;
+    (r.on() ? Promise.resolve() : r.start()).then(function () { if (r.on()) then(r); });
+    return true;
+  }
+  window.lcPadVerb = function (verb, el, arg, ctx) {
+    var pad = padOf(el);
+    if (!pad) return false;
+    var steps = ctx && Array.isArray(ctx.steps) ? ctx.steps : null;
+    if (steps && steps.length) pad._lcSteps = steps;
+    var n = parseInt(arg, 10);
+    switch (verb) {
+      case "replay":   return film(pad, function (r) { r.go(0); r.play(1); });
+      case "play":     return film(pad, function (r) { r.play(1); });
+      case "moonwalk": return film(pad, function (r) { r.play(-1); });
+      case "pause":    if (pad._lcReplay) pad._lcReplay.pause(); return !!pad._lcReplay;
+      case "frame":    return film(pad, function (r) { r.go(Math.max(0, Math.min(r.count() - 1, (n || 1) - 1))); });
+      case "stop":     if (pad._lcReplay) pad._lcReplay.stop(); return !!pad._lcReplay;
+      case "type":     return pad._lcTypeStep ? pad._lcTypeStep(n || 1, steps) : false;
+      case "save":
+        if (!pad._lcSaveAs) return false;
+        var list = steps || pad._lcSteps || [];
+        var line = !isNaN(n) && String(arg).trim() === String(n) ? ((list[n - 1] || {}).say || "") : String(arg == null ? "" : arg);
+        pad._lcTyping.then(function () { pad._lcSaveAs(line); });
+        return true;
+    }
+    return false;
+  };
+  if (window.lcVerbs) ["replay", "moonwalk", "frame", "stop", "type", "save"].forEach(function (v) {
+    window.lcVerbs.register(v, function (el, arg, ctx) { return window.lcPadVerb(v, el, arg, ctx); }, padOf);
+  });
 })();
 </script>
