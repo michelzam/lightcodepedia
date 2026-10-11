@@ -648,7 +648,19 @@ Registers with window.lcScanElement so the editor preview also renders cards.
          "books only once they are saved", caught 2026-09-24). */
       return new Promise(function(done) {
         (function reveal(i) {
-          if (i >= stepEls.length) { finish(); done(); return; }
+          if (i >= stepEls.length) {
+            finish();
+            /* what each step said, for whoever runs the card from code — Doc's
+               build reads the Then a step must turn green, and its message */
+            done(Array.prototype.map.call(stepEls, function (s, k) {
+              var r = userResults[k] || null, kw = (s.querySelector(".lc-feature-step-keyword") || {}).textContent || "";
+              var tx = (s.querySelector(".lc-feature-step-text") || {}).textContent || "";
+              var er = s.querySelector(".lc-feature-step-err");
+              return { label: (kw + " " + tx).trim(), text: tx.trim(), status: r ? r.status : "skip",
+                       message: er ? er.textContent : "" };
+            }));
+            return;
+          }
           paintStep(stepEls[i], i);
           if (bar) bar.firstChild.style.width = Math.round((i + 1) * 100 / stepEls.length) + "%";
           if (pace) setTimeout(function() { reveal(i + 1); }, pace); else reveal(i + 1);
@@ -659,6 +671,13 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
     });
   }
+
+  /* a card run from code, as a reader's ▶ would: resolves with its steps */
+  window.lcRunFeature = function (card) {
+    if (!card) return Promise.resolve([]);
+    var btn = card.querySelector(".lc-feature-run-btn");
+    return btn ? runFeatureNew(card, btn) : Promise.resolve([]);
+  };
 
   /* ── Run all step chunks for one card (returns Promise) ─────────────────────── */
   function runFeature(card, runBtn) {

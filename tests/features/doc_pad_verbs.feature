@@ -101,3 +101,27 @@ Feature: 🎬 Doc's pad verbs — type, save, and a music player's words for the
     Then the "faces" pad's film ends on frame 3
     When Doc does "stop" on the "faces" pad
     Then the "faces" pad's film is closed
+
+  Scenario: On The Builder, each step turns its Then green, and the build goes on
+    Michel, 2026-10-11: "features with steps containing assertions (thens)" —
+    the page's own check drives the build. Each step names the Then it must
+    turn green; typed, the check runs.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"
+    And I wait for the page to be interactive
+    And Doc does "type" with 1 on the "follow_up" pad
+    Then the check's step "a datagrid reads the reservations" is green
+    And the "follow_up" pad is not held
+    When Doc does "type" with 2 on the "follow_up" pad
+    Then the check's step "nothing on the page is wired to nothing" is green
+    When Doc does "type" with 3 on the "follow_up" pad
+    Then the check's step "the checklist is ticked" is green
+
+  Scenario: A step its check finds red stops the build — nothing more is typed
+    Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"
+    And I wait for the page to be interactive
+    And Doc types into the "follow_up" pad a step that forgets its decoration
+    Then the "follow_up" pad is held, saying "no datagrid yet"
+    And the "follow_up" pad does not hold "{: .button }"

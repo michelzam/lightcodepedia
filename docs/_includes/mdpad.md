@@ -1093,6 +1093,7 @@ Auto-included by docs/_layouts/default.html.
         var line = String(comment || "").trim();
         var direct = wrap.getAttribute("data-lc-demo") === "1" ||
                      (window.lcBench && window.lcBench.sandboxed && window.lcBench.sandboxed());
+        if (wrap._lcHeld) return false;                           /* never keep a red step */
         if (direct) { doSave("✍️ " + (line || id || benchPath)); return true; }
         if (askComment) {
           /* the next step waits for this one to be kept (or cancelled): Doc
@@ -1272,7 +1273,7 @@ Auto-included by docs/_layouts/default.html.
       });
       for (; li < lines.length; li++) html += line(li);
       keysEl.innerHTML = html;
-      markWires(lines);
+      lightWires(lines);
       keysEl.scrollTop = ta.scrollTop;
     }
     /* ── THE WIRES OF THE ID UNDER THE CARET (Michel, 2026-10-11: "highlight
@@ -1323,7 +1324,7 @@ Auto-included by docs/_layouts/default.html.
         span.appendChild(mid);
       });
     }
-    function markWires(lines) {
+    function lightWires(lines) {
       wrap.removeAttribute("data-lc-wire");
       if (document.activeElement !== ta) return;
       var w = caretWord();
@@ -1429,6 +1430,38 @@ Auto-included by docs/_layouts/default.html.
       return -1;
     }
     wrap._lcTyping = Promise.resolve();
+    wrap._lcHeld = null;
+    /* THE BUILD STOPS ON RED (Michel, 2026-10-11: "testing is missing there to
+       stop and fix before it continues" — "features with steps containing
+       assertions"). A step names the Then it must turn green (check:), on
+       the page's feature that grades this pad (proof:, else the one with
+       grades="<pad id>"). Typed, the feature runs; if that Then is not
+       green, Doc stops, says the failing Then's own message, and nothing
+       more is typed or saved until the learner changes the pad. */
+    function hold(msg) {
+      wrap._lcHeld = msg;
+      if (window.lcxToast) window.lcxToast(msg, true);
+      try { document.dispatchEvent(new CustomEvent("lc-guide-hold", { detail: { message: msg, pad: id } })); } catch (e) {}
+    }
+    function checkStep(st) {
+      if (!st || !st.check || !window.lcRunFeature) return;
+      var card = st.proof
+        ? document.querySelector(".lc-feature[data-lc-id='" + st.proof + "']")
+        : document.querySelector(".lc-feature[data-grades='" + id + "'], .lc-feature[grades='" + id + "']");
+      if (!card) { hold("✋ No check on this page grades the pad — I stop here."); return; }
+      var want = String(st.check).toLowerCase();
+      return new Promise(function (r) { setTimeout(r, 400); })     /* the preview re-renders first */
+        .then(function () { return window.lcRunFeature(card); })
+        .then(function (res) {
+          var at = -1;
+          (res || []).forEach(function (x, i) { if (at < 0 && x.text.toLowerCase().indexOf(want) >= 0) at = i; });
+          if (at >= 0 && res[at].status === "pass") return;
+          var bad = (res || []).filter(function (x) { return x.status === "fail"; })[0];
+          hold("🔴 " + (bad ? (bad.message || bad.label) : "the check did not reach “" + st.check + "”") +
+               "\nI stop here — fix it, then ask me again.");
+        });
+    }
+    ta.addEventListener("input", function () { wrap._lcHeld = null; });
     /* type step n (1-based) — visibly, the inserted text arriving a few
        letters at a time. RESUMES by itself: a step already in the pad is
        not typed again. Never over the learner's own work: a pad whose text
@@ -1440,12 +1473,16 @@ Auto-included by docs/_layouts/default.html.
       var st = steps[n - 1];
       if (!st) return false;
       var run = function () {
+        if (wrap._lcHeld) return;                                 /* a red step holds the build */
         var k = stepIndex(steps);
         if (k >= n) return;                                      /* done already: resume */
-        var free = wrap.getAttribute("data-lc-demo") === "1" ||
-                   (window.lcBench && window.lcBench.sandboxed && window.lcBench.sandboxed());
-        if (k < 0 && !free) {
-          if (window.lcxToast) window.lcxToast("✋ Your own work is in the pad — type it yourself:\n" + stepText(st), true);
+        /* ONE RULE FOR EVERYONE, the author included (Michel, 2026-10-11: his
+           own pad's #grid met a step naming dog_grid, the wire broke): Doc
+           types only into a pad that is the starter and his steps so far */
+        if (k < 0) {
+          var mine = !(window.lcBench && window.lcBench.sandboxed && window.lcBench.sandboxed());
+          hold(mine ? "✋ Your own work is in the pad — I won't type over it. The lines are:\n" + stepText(st)
+                    : "✋ This pad is not where my steps left it — ↺ Start over first, then ask me again.");
           return;
         }
         var from = ta.value, to = applyStep(from, st);
@@ -1465,7 +1502,7 @@ Auto-included by docs/_layouts/default.html.
             if (i < mid.length) setTimeout(tick, 28);
             else { wrap._lcApply(to); done(); }
           })();
-        });
+        }).then(function () { return checkStep(st); });
       };
       var before = Promise.all([wrap._lcTyping, wrap._lcPending || Promise.resolve()]);
       wrap._lcTyping = before.then(run, run);

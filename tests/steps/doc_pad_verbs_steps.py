@@ -114,3 +114,47 @@ def step_film_shows(context, pad_id, n):
 def step_film_closed(context, pad_id):
     f = _film(context, pad_id)
     assert not f["on"], f
+
+
+@then('the check\'s step "{text}" is green')
+def step_check_green(context, text):
+    step = context.page.locator(".lc-feature-step", has_text=text).first
+    expect(step.locator(".lc-feature-step-icon.pass")).to_be_attached(timeout=30_000)
+
+
+@then('the "{pad_id}" pad is not held')
+def step_not_held(context, pad_id):
+    held = context.page.evaluate("(id) => document.querySelector(\"[data-lc-id='\" + id + \"']\")._lcHeld", pad_id)
+    assert not held, held
+
+
+@when('Doc types into the "{pad_id}" pad a step that forgets its decoration')
+def step_type_bad(context, pad_id):
+    context.page.wait_for_selector("[data-lc-id='%s'] .lc-mdpad-in" % pad_id, state="attached", timeout=20_000)
+    context.page.evaluate("""(id) => {
+      const pad = document.querySelector("[data-lc-id='" + id + "']");
+      const steps = [
+        { say: "a grid without its decoration", find: "- [ ] a datagrid of the families waiting",
+          check: "a datagrid reads the reservations",
+          lines: "[Families](#)\\n\\n- [x] a datagrid of the families waiting" },
+        { say: "a button", find: "- [ ] a button to call the next family",
+          lines: "[Call](#)\\n{: .button }" }];
+      window.lcVerbs.act('type', pad, 1, { steps });
+      window.lcVerbs.act('type', pad, 2, { steps });
+    }""", pad_id)
+    context.page.wait_for_timeout(1500)
+
+
+@then('the "{pad_id}" pad is held, saying "{text}"')
+def step_held(context, pad_id, text):
+    try:
+        context.page.wait_for_function(
+            "(id) => document.querySelector(\"[data-lc-id='\" + id + \"']\")._lcHeld", arg=pad_id, timeout=30_000)
+    except Exception:
+        print("DBG", context.page.evaluate("""(id) => { const w = document.querySelector("[data-lc-id='" + id + "']");
+          return { val: w.querySelector('.lc-mdpad-in').value.slice(-300),
+                   steps: [...document.querySelectorAll('.lc-feature-step')].map(s => (s.querySelector('.lc-feature-step-icon')||{}).className + ' ' + (s.textContent||'').slice(0,50)) }; }""", pad_id))
+        raise
+    held = context.page.evaluate("(id) => document.querySelector(\"[data-lc-id='\" + id + \"']\")._lcHeld", pad_id)
+    assert held.startswith("🔴") and text in held, held
+    context.held_message = held

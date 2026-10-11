@@ -1827,10 +1827,29 @@ Auto-included by docs/_layouts/default.html.
     av.idx = 0;
     startPlay(elId);
   }
+  /* A BUILD THAT HOLDS (mdpad.md, a step's check went red): the guide who is
+     walking stops where he is and says why, in his own bubble — the next
+     lines are not his to play while the page is red. */
+  document.addEventListener("lc-guide-hold", function (ev) {
+    var msg = (ev.detail && ev.detail.message) || "";
+    Object.keys(window._lcAvatars || {}).forEach(function (id) {
+      var av = window._lcAvatars[id];
+      if (!av || !av.playing) return;
+      stopPlay(id);
+      if (msg) {
+        guideBubble(av, msg);
+        setTimeout(function () { if (!av.playing) guideIdle(av); }, 12000);
+      }
+    });
+  });
   function storyItems(elId, av, menu, item) {
     if (!av.stories) return;
     Object.keys(av.stories).forEach(function (tt) {
-      menu.appendChild(item('❓ ' + (tt.length > 44 ? tt.slice(0, 43) + '…' : tt), function () {
+      /* a story titled with its own emoji is one of the page's SCRIPTS
+         (🛠 Build it with me, 🎞 Watch it grow) — listed as it is; a kept
+         question wears ❓ */
+      var lead = /^[^\p{L}\p{N}\s]/u.test(tt) ? '' : '❓ ';
+      menu.appendChild(item(lead + (tt.length > 44 ? tt.slice(0, 43) + '…' : tt), function () {
         menu.classList.remove('open');
         logDoc(av, tt, av.stories[tt].map(function (l) { return l && l.say; }).filter(Boolean).join("\n"), "kept");
         performLines(elId, av, av.stories[tt]);
