@@ -1631,6 +1631,7 @@ Auto-included by docs/_layouts/default.html.
         ? 'Earlier I asked: ' + followup.q + '\n\nYou answered:\n' + followup.a + '\n\nNow I ask: ' + question
         : question;
       dropFollowup();
+      if (window.lcDid) window.lcDid.mark(panel.getAttribute('data-lc-id') || '', 'ask');
       sendBtn.disabled = true;
       sendBtn.textContent = '… thinking';
       status.innerHTML = '';

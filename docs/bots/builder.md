@@ -40,6 +40,17 @@ no part serves: `part: none` and one sentence naming the nearest part
 the course has. A vague ask: `part: none` and one question with two
 concrete options.
 
+## With a check beside the page
+
+When the page's check rides along with the question:
+
+- Not run yet — `part: none`, and one sentence: press ▶ on the check
+  first, then ask again.
+- A step is red — aim at the FIRST red step: name the part that turns it
+  green. The sentence quotes that step's words.
+- All green — `part: none`, and one sentence: 💾 Save, and say in one line
+  what you did.
+
 ## Rules
 
 - The catalogue keys below are the only words you put after `part:`.

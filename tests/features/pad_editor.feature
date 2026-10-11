@@ -24,8 +24,10 @@ Feature: The pad types like a text field, painted
     When I press "✎ Hide" on the "playground" pad
     Then the "playground" pad's source is folded away
     And the "playground" pad's preview spans the pad
+    And the "playground" pad shows no splitter
     When I press "✎ Edit" on the "playground" pad
     Then the "playground" pad's source is shown again
+    And the "playground" pad's splitter is back
 
   Scenario: A pad's seed keeps its decorations glued to their lines in the runner
     Michel, 2026-10-09: the runner put a blank line above every decoration,
@@ -190,6 +192,21 @@ Feature: The pad types like a text field, painted
     Then the "playground" pad's preview grew by about 120px
     When I double-click the "playground" pad's splitter
     Then the "playground" pad's preview is back to its own width
+
+  Scenario: ⌘F floats a finder; ↓ and ↑ walk the matches, Esc leaves the caret there
+    Michel, 2026-10-11: "a find function in the editor, with a floating
+    finder, and up/down arrows helping to find the values".
+
+    When I press ⌘F in the "playground" pad and look for "bullet"
+    Then the "playground" pad's finder counts more than 1 match
+    And the "playground" pad's mirror lights the current match
+    When I press ↓ in the "playground" pad's finder
+    Then the "playground" pad's finder is on match 2
+    When I press ↑ in the "playground" pad's finder
+    Then the "playground" pad's finder is on match 1
+    When I press Escape in the "playground" pad's finder
+    Then the "playground" pad's finder is gone
+    And the "playground" pad's selection reads "bullet"
 
   Scenario: Hovering a decoration's icon for a second names the component
     Michel, 2026-10-11: "hovering the gutter should show the component type

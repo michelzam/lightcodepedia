@@ -271,3 +271,72 @@ def step_now_block(context, pad_id, a, b):
     txt = context.page.eval_on_selector(
         "[data-lc-id='%s'] .lc-mdpad-piano .now" % pad_id, "e => e.textContent")
     assert a in txt and b in txt, "the lit block reads %r" % txt
+
+
+@then('the "{pad_id}" pad shows no splitter')
+def step_pad_no_splitter(context, pad_id):
+    """Michel, 2026-10-11: the handle stayed over the preview once the
+    editor was hidden — its own display beat [hidden]."""
+    expect(context.page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-split")).to_be_hidden(timeout=3_000)
+
+
+@then('the "{pad_id}" pad\'s splitter is back')
+def step_pad_splitter_back(context, pad_id):
+    expect(context.page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-split")).to_be_visible(timeout=3_000)
+
+
+def _pad(context, pad_id):
+    return context.page.locator("[data-lc-id='" + pad_id + "']")
+
+
+@when('I press ⌘F in the "{pad_id}" pad and look for "{q}"')
+def step_find_open(context, pad_id, q):
+    ta = _pad(context, pad_id).locator(".lc-mdpad-in")
+    ta.click()
+    ta.press("Control+f")
+    box = _pad(context, pad_id).locator(".lc-mdpad-find input")
+    expect(box).to_be_focused(timeout=3_000)
+    box.fill(q)
+    context.page.wait_for_timeout(300)
+
+
+def _find_count(context, pad_id):
+    t = _pad(context, pad_id).locator(".lc-mdpad-find .n").inner_text().strip()
+    at, n = t.split("/")
+    return int(at), int(n)
+
+
+@then('the "{pad_id}" pad\'s finder counts more than {k:d} match')
+def step_find_count(context, pad_id, k):
+    at, n = _find_count(context, pad_id)
+    assert n > k, "finder counts %d" % n
+
+
+@then('the "{pad_id}" pad\'s mirror lights the current match')
+def step_find_lit(context, pad_id):
+    expect(_pad(context, pad_id).locator(".lc-mdpad-piano .md-find-at")).to_have_count(1, timeout=3_000)
+
+
+@when('I press {key} in the "{pad_id}" pad\'s finder')
+def step_find_key(context, key, pad_id):
+    k = {"↓": "ArrowDown", "↑": "ArrowUp", "Escape": "Escape"}[key]
+    _pad(context, pad_id).locator(".lc-mdpad-find input").press(k)
+    context.page.wait_for_timeout(200)
+
+
+@then('the "{pad_id}" pad\'s finder is on match {k:d}')
+def step_find_on(context, pad_id, k):
+    at, n = _find_count(context, pad_id)
+    assert at == k, "finder on %d/%d" % (at, n)
+
+
+@then('the "{pad_id}" pad\'s finder is gone')
+def step_find_gone(context, pad_id):
+    expect(_pad(context, pad_id).locator(".lc-mdpad-find")).to_have_count(0)
+
+
+@then('the "{pad_id}" pad\'s selection reads "{text}"')
+def step_find_sel(context, pad_id, text):
+    got = _pad(context, pad_id).locator(".lc-mdpad-in").evaluate(
+        "t => t.value.slice(t.selectionStart, t.selectionEnd)")
+    assert got.lower() == text.lower(), "selection %r" % got

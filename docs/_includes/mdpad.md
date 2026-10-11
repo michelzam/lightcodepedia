@@ -79,6 +79,20 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-split { position: absolute; top: 0; bottom: 0; cursor: col-resize; z-index: 2; touch-action: none;
   display: flex; align-items: center; justify-content: center; }
 .lc-mdpad-split::before { content: ""; width: 4px; height: 3.2em; border-radius: 3px; background: #c4c9d4; }
+.lc-mdpad-split[hidden] { display: none; }
+/* 🔍 the finder: floats over the editor's top, semi-transparent like the tip */
+.lc-mdpad-findbtn { position: absolute; top: 0.35em; right: 4.6em; z-index: 3; font: inherit; font-size: 0.72em;
+  padding: 0.2em 0.5em; border-radius: 6px; border: 1px solid #ccc; background: rgba(255,255,255,0.85); cursor: pointer; }
+.lc-mdpad.lc-mdpad-folded > .lc-mdpad-findbtn { display: none; }
+.lc-mdpad-find { position: absolute; top: 2.1em; right: 0.8em; z-index: 4; display: flex; align-items: center; gap: 0.3em;
+  padding: 0.25em 0.4em; border-radius: 8px; background: rgba(248,250,252,0.86); border: 1px solid #c4c9d4;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18); font-size: 0.8em; color: #333; }
+.lc-mdpad-find input { width: 11em; font: inherit; border: 1px solid #c4c9d4; border-radius: 5px; padding: 0.15em 0.4em; background: #fff; }
+.lc-mdpad-find.none input { border-color: #e06c75; }
+.lc-mdpad-find .n { min-width: 2.6em; text-align: center; color: #666; font-variant-numeric: tabular-nums; }
+.lc-mdpad-find button { font: inherit; border: 1px solid #c4c9d4; background: #fff; border-radius: 5px; padding: 0.05em 0.45em; cursor: pointer; }
+.lc-mdpad-piano .md-find { background: rgba(250, 204, 21, 0.28); border-radius: 2px; }
+.lc-mdpad-piano .md-find-at { background: rgba(250, 204, 21, 0.75); box-shadow: 0 0 0 1px #facc15; color: #111; }   /* its own display:flex must not beat [hidden] */
 .lc-mdpad-split:hover::before, .lc-mdpad[data-lc-splitting] .lc-mdpad-split::before { background: #0066cc; }
 .lc-mdpad.lc-mdpad-folded > .lc-mdpad-out { flex: 1 1 auto !important; }
 /* the gutter's label: what a decoration makes */
@@ -158,6 +172,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-ver-head { display: flex; align-items: center; gap: 0.8em; padding: 0.45em 0.9em; border-bottom: 1px solid #e5e7eb; background: #f3f4f6; }
 .lc-ver-head .lc-ver-play { font: inherit; font-size: 0.9em; padding: 0.3em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #444; cursor: pointer; }
 .lc-ver-head .lc-ver-play:disabled { opacity: 0.6; cursor: default; }
+.lc-ver-head .lc-mdpad-reset { margin-left: auto; }   /* ↺ at the head of the history, on the right */
 .lc-ver-hint { color: var(--lc-ink-mute, #616161); font-size: 0.85em; }
 .lc-ver-sha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #94a3b8; font-size: 0.85em; }
 .lc-ver-panel button { font: inherit; font-size: 0.85em; padding: 0.2em 0.6em; border-radius: 5px;
@@ -451,7 +466,7 @@ Auto-included by docs/_layouts/default.html.
            one place for the history (Michel, 2026-10-06) */
         saveWrap.appendChild(mineTag);
         saveWrap.appendChild(histBtn);
-        saveWrap.appendChild(resetBtn);
+        saveWrap.appendChild(resetBtn);   /* moves into 🕘 Versions' head once that panel is attached */
       }
       saveBtn = document.createElement("button");
       saveBtn.type = "button";
@@ -493,6 +508,7 @@ Auto-included by docs/_layouts/default.html.
       }
       var ease = { duration: 380, easing: "cubic-bezier(.4,0,.2,1)" };
       if (on) {
+        split.hidden = true;                     /* the handle leaves with the editor */
         var w = pane.getBoundingClientRect().width;
         pane.style.flex = "0 0 " + w + "px"; pin(w);
         _drawer = pane.animate([{ flexBasis: w + "px", marginLeft: "0px" },
@@ -674,8 +690,22 @@ Auto-included by docs/_layouts/default.html.
           if (mineTag) mineTag.hidden = false;
           if (frame) frame.setMine(true);
           revealVersions();                      /* a saved file HAS a history */
+          readHist();
           render(); publish(true); refreshBench();   /* the text moved: ↺ and 💾 decide again */
         }).catch(function () {});
+      }
+      /* pad.versions — the names of the versions the learner kept (newest
+         first, the lesson's starter left out): a proof can ask whether the
+         work was kept, and said in words */
+      wrap._lcHist = [];
+      function readHist() {
+        if (!window.lcBench || !window.lcBench.history) return;
+        window.lcBench.history(benchPath, wrap).then(function (list) {
+          wrap._lcHist = (list || []).filter(function (c) {
+            return String(c.message || "").indexOf(window.lcStarterMsg) !== 0;
+          }).map(function (c) { return String(c.message || "").replace(/^✍️\s*/, ""); });
+          wrap.setAttribute("data-lc-versions", String(wrap._lcHist.length));
+        });
       }
       function doSave(message) {
         saveBtn.disabled = true; saveBtn.textContent = "💾 Saving…";
@@ -701,6 +731,9 @@ Auto-included by docs/_layouts/default.html.
             if (mineTag) mineTag.hidden = false;
             if (frame) frame.setMine(true);
             revealVersions();
+            if (first) wrap._lcHist = [];
+            wrap._lcHist.unshift(String(message || "").replace(/^✍️\s*/, ""));
+            wrap.setAttribute("data-lc-versions", String(wrap._lcHist.length));
             closeVersions();                     /* the list just grew — re-open it fresh */
             window.lcxToast && window.lcxToast("Saved to your space ✓", true);
           })
@@ -770,9 +803,20 @@ Auto-included by docs/_layouts/default.html.
             if (i >= 0) { rpPause(); rpShow(i); }
           });
         },
-        onClose: function () { if (rp.on) rpStop(); }
+        onClose: function () {
+          if (rp.on) rpStop();
+          resetBtn.hidden = true; saveWrap.appendChild(resetBtn);   /* back to rest, out of sight */
+        },
+        /* ↺ START OVER LIVES IN THE HISTORY (Michel, 2026-10-11): the
+           lesson's starter is the first version of all — so the door to the
+           versions is open from the start, saved or not */
+        head: [resetBtn]
       }) : null;
-      if (vers) histBtn.parentNode.replaceChild(vers.button, histBtn);
+      if (vers) {
+        histBtn.parentNode.replaceChild(vers.button, histBtn);
+        resetBtn.hidden = true;      /* rests in the bar, unseen; the panel's head shows it */
+        vers.reveal();
+      }
       function closeVersions() { if (vers) vers.close(); }
       function revealVersions() { if (vers) vers.reveal(); }
       /* the play button is the panel's — it exists only while the list is open */
@@ -1016,6 +1060,7 @@ Auto-included by docs/_layouts/default.html.
             return;
           }
           rp.on = true;
+          if (window.lcDid) window.lcDid.mark(id, "replay");   /* pad.replayed — the film was watched */
           setPlay("■ Stop", false);
           wrap.setAttribute("data-lc-replay", "1");
           wrap.setAttribute("data-lc-frames", String(frames.length));
@@ -1287,6 +1332,7 @@ Auto-included by docs/_layouts/default.html.
       for (; li < lines.length; li++) html += line(li);
       keysEl.innerHTML = html;
       lightWires(lines);
+      lightFinds(lines);
       keysEl.scrollTop = ta.scrollTop;
     }
     /* ── THE WIRES OF THE ID UNDER THE CARET (Michel, 2026-10-11: "highlight
@@ -1320,7 +1366,7 @@ Auto-included by docs/_layouts/default.html.
       var ls = v.lastIndexOf("\n", a - 1) + 1;
       return { tok: v.slice(a, b), line: v.slice(0, a).split("\n").length - 1, col: a - ls };
     }
-    function wrapRange(div, s0, s1) {
+    function wrapRange(div, s0, s1, cls) {
       var walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT), node, pos = 0, hits = [];
       while ((node = walker.nextNode())) {
         var len = node.data.length, a = Math.max(s0, pos), b = Math.min(s1, pos + len);
@@ -1332,7 +1378,7 @@ Auto-included by docs/_layouts/default.html.
         if (h[2] < n.data.length) n.splitText(h[2]);
         var mid = h[1] > 0 ? n.splitText(h[1]) : n;
         var span = document.createElement("span");
-        span.className = "md-wire";
+        span.className = cls || "md-wire";
         mid.parentNode.insertBefore(span, mid);
         span.appendChild(mid);
       });
@@ -1352,6 +1398,111 @@ Auto-included by docs/_layouts/default.html.
         if (div) rs.slice().reverse().forEach(function (r) { wrapRange(div, r[0], r[1]); });
       });
     }
+    /* ── 🔍 THE FINDER (Michel, 2026-10-11: "a find function in the editor,
+       with a floating finder, and up/down arrows"). ⌘F / Ctrl+F in the
+       editor, or the 🔍 at its corner, floats a box over the text: every
+       match glows, the current one brighter; ↑ ↓ (or Enter, ⇧Enter) walk
+       them, Esc closes and leaves the caret on the one you were on. */
+    var fnd = { q: "", hits: [], at: -1, box: null, input: null, count: null };
+    function findHits() {
+      fnd.hits = [];
+      if (!fnd.q) return;
+      var v = ta.value.toLowerCase(), q = fnd.q.toLowerCase(), i = v.indexOf(q);
+      while (i >= 0) { fnd.hits.push([i, i + q.length]); i = v.indexOf(q, i + Math.max(1, q.length)); }
+    }
+    function lightFinds(lines) {
+      if (!fnd.box || !fnd.hits.length || !keysEl) return;
+      var starts = [], pos = 0;
+      lines.forEach(function (l) { starts.push(pos); pos += l.length + 1; });
+      var byLine = {};
+      fnd.hits.forEach(function (h, k) {
+        var n = 0; while (n + 1 < starts.length && starts[n + 1] <= h[0]) n++;
+        (byLine[n] = byLine[n] || []).push([h[0] - starts[n], h[1] - starts[n], k === fnd.at]);
+      });
+      Object.keys(byLine).forEach(function (n) {
+        var div = keysEl.querySelector(".ln[data-n='" + (+n + 1) + "']");
+        if (!div) return;
+        byLine[n].slice().reverse().forEach(function (r) {
+          wrapRange(div, r[0], Math.min(r[1], div.textContent.length), r[2] ? "md-find md-find-at" : "md-find");
+        });
+      });
+    }
+    function findShow() {
+      var n = fnd.hits.length;
+      fnd.count.textContent = n ? (fnd.at + 1) + "/" + n : (fnd.q ? "0/0" : "");
+      fnd.box.classList.toggle("none", !!fnd.q && !n);
+      wrap.setAttribute("data-lc-find", fnd.q ? String(n) : "");
+      if (fnd.at >= 0 && n) {
+        var h = fnd.hits[fnd.at], line = ta.value.slice(0, h[0]).split("\n").length;
+        var div = keysEl && keysEl.querySelector(".ln[data-n='" + line + "']");
+        var lh = parseFloat(getComputedStyle(ta).lineHeight) || 18;
+        var y = div ? div.offsetTop : (line - 1) * lh;
+        if (y < ta.scrollTop + lh || y > ta.scrollTop + ta.clientHeight - 2 * lh)
+          ta.scrollTop = Math.max(0, y - ta.clientHeight / 3);
+        ta.setSelectionRange(h[0], h[1]);
+      }
+      if (keysEl) { paintPiano(); keysEl.scrollTop = ta.scrollTop; }
+    }
+    function findStep(d) {
+      var n = fnd.hits.length; if (!n) return;
+      fnd.at = ((fnd.at < 0 ? (d > 0 ? -1 : 0) : fnd.at) + d + n) % n;
+      findShow();
+    }
+    function findClose() {
+      if (!fnd.box) return;
+      var h = fnd.at >= 0 ? fnd.hits[fnd.at] : null;
+      fnd.box.remove(); fnd.box = null; fnd.hits = []; fnd.at = -1;
+      wrap.removeAttribute("data-lc-find");
+      ta.focus();
+      if (h) ta.setSelectionRange(h[0], h[1]);
+      if (keysEl) paintPiano();
+    }
+    function findOpen() {
+      if (wrap.classList.contains("lc-mdpad-folded")) setFold(false);
+      var pre = ta.selectionEnd > ta.selectionStart && ta.value.slice(ta.selectionStart, ta.selectionEnd).indexOf("\n") < 0
+        ? ta.value.slice(ta.selectionStart, ta.selectionEnd) : "";
+      if (!fnd.box) {
+        var box = document.createElement("div");
+        box.className = "lc-mdpad-find";
+        box.innerHTML = "<span class='ic'>🔍</span><input type='search' placeholder='Find' aria-label='Find in the text'>" +
+          "<span class='n'></span><button type='button' data-d='-1' title='Previous (⇧Enter)'>↑</button>" +
+          "<button type='button' data-d='1' title='Next (Enter)'>↓</button><button type='button' data-x title='Close (Esc)'>✕</button>";
+        (src || wrap).appendChild(box);
+        fnd.box = box; fnd.input = box.querySelector("input"); fnd.count = box.querySelector(".n");
+        fnd.input.addEventListener("input", function () {
+          fnd.q = fnd.input.value; findHits();
+          var c = ta.selectionStart || 0, k = 0;
+          while (k < fnd.hits.length && fnd.hits[k][0] < c) k++;
+          fnd.at = fnd.hits.length ? k % fnd.hits.length : -1;
+          findShow();
+        });
+        fnd.input.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); findStep(e.shiftKey ? -1 : 1); }
+          else if (e.key === "ArrowDown") { e.preventDefault(); findStep(1); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); findStep(-1); }
+          else if (e.key === "Escape") { e.preventDefault(); findClose(); }
+        });
+        box.addEventListener("click", function (e) {
+          var b = e.target.closest("button"); if (!b) return;
+          if (b.hasAttribute("data-x")) findClose(); else findStep(+b.getAttribute("data-d"));
+        });
+      }
+      if (pre) fnd.input.value = pre;
+      fnd.input.focus(); fnd.input.select();
+      fnd.input.dispatchEvent(new Event("input"));
+    }
+    ta.addEventListener("keydown", function (e) {
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "f" || e.key === "F")) { e.preventDefault(); findOpen(); }
+      else if (e.key === "Escape" && fnd.box) { e.preventDefault(); findClose(); }
+    });
+    var findBtn = document.createElement("button");
+    findBtn.type = "button"; findBtn.className = "lc-mdpad-findbtn";
+    findBtn.textContent = "🔍"; findBtn.title = "Find in the text (⌘F)";
+    findBtn.addEventListener("click", function () { if (fnd.box) findClose(); else findOpen(); });
+    wrap.appendChild(findBtn);
+    ta.addEventListener("input", function () { if (fnd.box && fnd.q) { findHits(); if (fnd.at >= fnd.hits.length) fnd.at = fnd.hits.length - 1; fnd.count.textContent = fnd.hits.length ? (fnd.at + 1) + "/" + fnd.hits.length : "0/0"; } });
+    wrap._lcFind = function (q) { findOpen(); fnd.input.value = q; fnd.input.dispatchEvent(new Event("input")); };
+
     /* A KEYSTROKE PATCHES ONE TEXT NODE (2026-10-08): rebuilding the mirror
        removes nodes, and Chromium then closes the typing group — ⌘Z took
        one character at a time. The edit lands in the mirror's own text

@@ -1292,6 +1292,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
           if (!panel) return;
           if (!list.length) {
             panel.innerHTML = "<ol><li>No versions yet — 💾 writes the first one.</li></ol>";
+            if (o.head && o.head.length) panel.insertBefore(makeHead(0), panel.firstChild);
             return;
           }
           var ol = document.createElement("ol");
@@ -1356,23 +1357,30 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
             ol.appendChild(li);
           });
           panel.innerHTML = "";
-          if (o.play) {
-            var head = document.createElement("div");
-            head.className = css + "-head";
-            playBtn = document.createElement("button");
-            playBtn.type = "button"; playBtn.className = css + "-play";
-            playBtn.textContent = "🎞 Replay";
-            playBtn.title = "Watch your document grow, version by version — read-only, nothing is written";
-            playBtn.addEventListener("click", function () { o.play(); });
-            var hint = document.createElement("span");
-            hint.className = css + "-hint";
-            hint.textContent = list.length + " version" + (list.length === 1 ? "" : "s") + " · click one to see it";
-            head.appendChild(playBtn); head.appendChild(hint);
-            panel.appendChild(head);
-          }
+          if (o.play || (o.head && o.head.length)) panel.appendChild(makeHead(list.length));
           panel.appendChild(ol); panel.appendChild(box);
         });
       });
+      /* the panel's head: 🎞 Replay when the component plays, then whatever
+         the component hands in (the pad's ↺ Start over — Michel, 2026-10-11:
+         "Start over should be inside the versions panel") */
+      function makeHead(count) {
+        var head = document.createElement("div");
+        head.className = css + "-head";
+        if (o.play && count) {
+          playBtn = document.createElement("button");
+          playBtn.type = "button"; playBtn.className = css + "-play";
+          playBtn.textContent = "🎞 Replay";
+          playBtn.title = "Watch your document grow, version by version — read-only, nothing is written";
+          playBtn.addEventListener("click", function () { o.play(); });
+          var hint = document.createElement("span");
+          hint.className = css + "-hint";
+          hint.textContent = count + " version" + (count === 1 ? "" : "s") + " · click one to see it";
+          head.appendChild(playBtn); head.appendChild(hint);
+        }
+        (o.head || []).forEach(function (el) { el.hidden = false; head.appendChild(el); });
+        return head;
+      }
       return { button: btn, close: close, mark: mark,
                playButton: function () { return playBtn; },
                isOpen: function () { return !!panel; },

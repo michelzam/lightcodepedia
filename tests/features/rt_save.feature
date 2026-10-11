@@ -58,10 +58,13 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the author's repo received no commit
 
   Scenario: Start over restores the seed without touching the saved file
+    Michel, 2026-10-11: "the Start over button should be inside the versions
+    panel" — the lesson's starter is the first version of all.
     Given a connected bench whose "courses/demo/mod/cv.md" holds "# Alice — WHS volunteer"
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
-    And I press the pad's start-over button
+    Then the pad's bar shows no start-over button
+    When I press the pad's start-over button
     Then the pad shows the author's starter
     And the bench received no commit
 
@@ -217,7 +220,8 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       """
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
-    And I open the pad's version list
+    Then the pad's proof word versions holds 2 names
+    When I open the pad's version list
     Then the list shows 2 saved versions
     When I compare the oldest version
     Then the difference is shown line by line
@@ -266,6 +270,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I stop the replay
     Then the pad shows "# Draft three"
     And the bench received no commit
+    And the pad's proof word replayed reads 1
 
   Scenario: Bringing back an old version loads it without losing the new one
     Restoring is not a rollback. It drops the old text into the editor, so

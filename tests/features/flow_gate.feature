@@ -176,7 +176,8 @@ Feature: 🚦 A workflow ordered by its own values
 
   Scenario: Module 05's playground is red on arrival
     Michel, 2026-10-09: Module 05 rebuilt in the pad — four pages, the builder
-    one of them. The playground opens with a checklist and no component.
+    one of them. The playground opens with its dataset and no component
+    (2026-10-11: no checklist — the check's steps are the list).
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"
@@ -185,7 +186,32 @@ Feature: 🚦 A workflow ordered by its own values
     And I run the lesson's check "builder_check"
     Then the lesson's check "builder_check" is red
 
-  Scenario: Module 05's playground is green once the datagrid and the button are added and ticked
+  Scenario: The Builder's last check reads how the page was built, and says what is missing
+    Michel, 2026-10-11: "a global final feature that checks the students did
+    a bit all of that, including saving their own versions".
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "builder_way"
+    Then the lesson's check "builder_way" is red
+    And the lesson's check "builder_way" says "run the check under the playground"
+
+  Scenario: The Builder's last check turns green once the loop was done
+    Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
+    And the learner has added the datagrid and the button
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "builder_check"
+    Then the lesson's check "builder_check" is green
+    When the learner asked the "builder" agent once and watched the "follow_up" pad's film
+    And the "follow_up" pad kept the versions "a grid of the families" and "a button to call them"
+    And I run the lesson's check "builder_way"
+    Then the lesson's check "builder_way" is green
+
+  Scenario: Module 05's playground is green once the datagrid and the button are added
     Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
     And the learner has added the datagrid and the button
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"

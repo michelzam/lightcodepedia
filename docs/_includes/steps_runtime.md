@@ -404,6 +404,15 @@ def _lc_harvest(cls):
     return fields, statef
 
 
+def _lc_did(part, verb):
+    """What the learner did with a part, counted by the page (lcDid)."""
+    d = getattr(js.window, "lcDid", None)
+    pid = part._attr("data-lc-id") if part._el is not None else None
+    if d is None or not pid:
+        return 0
+    return int(d.count(str(pid), verb))
+
+
 def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
     """Class decorator: generate data-* knob properties and register the spec.
 
@@ -1519,12 +1528,18 @@ class Code(Block):
                   {"n": "intro", "t": "str", "data": True, "d": ""},
                   {"n": "placeholder", "t": "str", "data": True, "d": "Ask anything..."},
                   {"n": "replies", "t": "list"},
-                  {"n": "last", "t": "str"}],
+                  {"n": "last", "t": "str"},
+                  {"n": "asked", "t": "int"}],
            methods=["ask", "clear"])
 class Agent(Block):
     """A page agent (.agent) — a part a proof, a guide or another agent can
     act on: read or rewrite its brain (system), ask it, read what it said."""
     _lc_keep = ("system",)
+
+    @property
+    def asked(self):
+        """How many questions the learner asked this agent, on this page."""
+        return _lc_did(self, "ask")
 
     @property
     def todos(self):
@@ -1888,7 +1903,9 @@ class Vitals(Block):
                              {"n": "numbered", "t": "list"},
                              {"n": "links", "t": "list"},
                              {"n": "images", "t": "int"},
-                             {"n": "components", "t": "list"}])
+                             {"n": "components", "t": "list"},
+                             {"n": "versions", "t": "list"},
+                             {"n": "replayed", "t": "int"}])
 class Mdpad(Block):
     # The preview half IS the document being made — every property reads it,
     # so a rubric feature can grade what the learner typed without any js.
@@ -1899,6 +1916,20 @@ class Mdpad(Block):
         nl = o.querySelectorAll(css)
         return [str(nl.item(i).textContent or "").strip()
                 for i in range(int(nl.length))]
+
+    @property
+    def versions(self):
+        """The names of the versions the learner kept, newest first — what
+        each 💾 said it did. The lesson's starter is not one of them."""
+        h = getattr(self._el, "_lcHist", None) if self._el is not None else None
+        if h is None:
+            return []
+        return [str(h[i]) for i in range(int(h.length))]
+
+    @property
+    def replayed(self):
+        """How many times the film of this pad was played (🎞 / Watch it grow)."""
+        return _lc_did(self, "replay")
 
     @property
     def rendered(self):

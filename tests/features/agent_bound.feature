@@ -36,6 +36,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I ask the "tutor" agent "help me fix it"
     Then the "tutor" agent's box invites the next move instead
     And the "tutor" agent's reply is signed by its provider and the model "stub-model-9"
+    And the "tutor" agent counts 1 question asked
 
   Scenario: Expression — bound reads a pad through a cell expression
     Given I have a clean browser page

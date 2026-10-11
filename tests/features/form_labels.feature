@@ -21,3 +21,12 @@ Feature: ↔️ A form's labels fit, and the learner moves the line
     When I click row 2 of the "narrow_grid" grid
     Then the "narrow_form" form shows "Wanda"
     And the "narrow_form" form's label column kept its width
+
+  Scenario: The card wears its link's words, not the row's name
+    Michel, 2026-10-11: "the form's title is Lucky. Why not 'The dog' as in
+    the link?" — [The dog](#) titles the card the way [The dogs](#) titles
+    the grid.
+
+    Then the "narrow_form" form is titled "The dog"
+    When I click row 2 of the "narrow_grid" grid
+    Then the "narrow_form" form is titled "The dog"

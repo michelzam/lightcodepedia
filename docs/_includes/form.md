@@ -536,7 +536,11 @@ Auto-included by docs/_layouts/default.html.
     var codeNode = el.querySelector("code");
     var raw = codeNode ? codeNode.textContent : "";
     var format = (el.getAttribute("format") || (window.lcFenceFormat && window.lcFenceFormat(el)) || "yaml").toLowerCase();
-    var title = el.getAttribute("title") || "";
+    /* THE LINK NAMES THE CARD (Michel, 2026-10-11: "the form's title is Lucky.
+       Why not 'The dog' as in the link?") — [The dog](#) titles the form the
+       way [The dogs](#) titles the grid; the row's name only when nothing does */
+    var link = !codeNode && el.querySelector ? el.querySelector("a") : null;
+    var title = el.getAttribute("title") || (link ? (link.textContent || "").trim() : "");
     var bound = el.getAttribute("master") || el.getAttribute("bound") || "";
     var editable = el.getAttribute("editable") === "true";
     /* compute="photo = '…' + str(pic)" — the grid's formula engine on ONE

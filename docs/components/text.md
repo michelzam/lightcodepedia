@@ -210,6 +210,19 @@ Feature: A save can carry one line about what was done
 ```
 {: .feature tags="ui" status="pending" }
 
+### 🕘 Versions, ↺ Start over, 🔍 Find
+
+**🕘 Versions** lists every version the pad kept, the lesson's starter
+first of all; its head carries 🎞 Replay and **↺ Start over** (the
+starter back in the editor — your saved copy stays until you 💾 again).
+**🔍** at the editor's corner, or ⌘F / Ctrl+F in it, floats a finder:
+every match glows, ↑ ↓ (or Enter, ⇧Enter) walk them, Esc leaves the
+caret on the one you were on.
+
+A proof can read how the work was kept: `pad.versions` — the names of
+the versions kept, newest first; `pad.replayed` — how many times its
+film was played.
+
 ### 🎨 Decorations — the page, not only the text
 
 By default the preview shows the **text**: headings, bold, lists, inline

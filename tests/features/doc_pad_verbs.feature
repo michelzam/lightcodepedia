@@ -114,9 +114,8 @@ Feature: 🎬 Doc's pad verbs — type, save, and a music player's words for the
     Then the check's step "a datagrid reads the reservations" is green
     And the "follow_up" pad is not held
     When Doc does "type" with 2 on the "follow_up" pad
-    Then the check's step "nothing on the page is wired to nothing" is green
-    When Doc does "type" with 3 on the "follow_up" pad
-    Then the check's step "the checklist is ticked" is green
+    Then the check's step "a button is there to call the next family" is green
+    And the check's step "nothing on the page is wired to nothing" is green
 
   Scenario: A step its check finds red stops the build — nothing more is typed
     Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"

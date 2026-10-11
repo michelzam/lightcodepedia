@@ -266,6 +266,7 @@ read it, set it and run it. In a `.feature`, `self.page.<id>` is an `Agent`:
 | `ask(text)` | send a message, as a person would, and wait for the answer; `ask(text, wait=False)` only presses Ask |
 | `replies` · `last` | every answer this sitting, or the latest one |
 | `clear()` | forget the sitting, so the next verdict is read alone |
+| `asked` | how many questions a learner asked it on this page, on this device — a lesson's last check can ask whether the helper was used |
 
 That is the shape of an assignment: disturb the agent with an edge case,
 rewrite its brain, ask again, and let the scenario say whether the change

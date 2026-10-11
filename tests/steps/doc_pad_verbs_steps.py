@@ -134,10 +134,10 @@ def step_type_bad(context, pad_id):
     context.page.evaluate("""(id) => {
       const pad = document.querySelector("[data-lc-id='" + id + "']");
       const steps = [
-        { say: "a grid without its decoration", find: "- [ ] a datagrid of the families waiting",
+        { say: "a grid without its decoration",
           check: "a datagrid reads the reservations",
-          lines: "[Families](#)\\n\\n- [x] a datagrid of the families waiting" },
-        { say: "a button", find: "- [ ] a button to call the next family",
+          lines: "[Families](#)" },
+        { say: "a button",
           lines: "[Call](#)\\n{: .button }" }];
       window.lcVerbs.act('type', pad, 1, { steps });
       window.lcVerbs.act('type', pad, 2, { steps });

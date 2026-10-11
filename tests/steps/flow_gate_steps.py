@@ -508,17 +508,15 @@ M05_CHECK = (
 
 @given("the learner has added the datagrid and the button")
 def step_builder_fix(context):
-    """Module 05's playground: the two catalogue components under their
-    items, placeholder swapped, items ticked. Loud if the seed drifts."""
+    """Module 05's playground: the two catalogue components under the
+    dataset, placeholder swapped. Loud if the seed drifts."""
     def fix(body):
-        items = ("- [ ] a datagrid of the families waiting\n"
-                 "- [ ] a button to call the next family\n")
-        assert items in body, "the playground seed no longer carries its two checklist items"
-        return body.replace(items,
-            "- [x] a datagrid of the families waiting\n\n"
+        tail = "{: .dataset #reservations }\n`````"
+        assert tail in body, "the playground seed no longer ends on its dataset"
+        return body.replace(tail,
+            "{: .dataset #reservations }\n\n"
             "[Families](#)\n{: .datagrid source=\"reservations\" }\n\n"
-            "- [x] a button to call the next family\n\n"
-            "[📞 Call the next family](#)\n{: .button #call_btn }\n")
+            "[📞 Call the next family](#)\n{: .button #call_btn }\n`````", 1)
     _serve_course_page(context, context.lesson_path, fix)
 
 
@@ -686,3 +684,18 @@ def step_selected_family(context, family):
     tr.wait_for(state="attached", timeout=20_000)
     got = (tr.locator("td").first.inner_text() or "").strip()
     assert got == family, "the selected family is %r, expected %r" % (got, family)
+
+
+@when('the learner asked the "{aid}" agent once and watched the "{pid}" pad\'s film')
+def step_did_ask_and_watch(context, aid, pid):
+    """The two counts the page keeps (lcDid); the moves that write them are
+    proven on their own components (rt_agent, rt_save)."""
+    context.page.evaluate("([a, p]) => { window.lcDid.mark(a, 'ask'); window.lcDid.mark(p, 'replay'); }", [aid, pid])
+
+
+@when('the "{pid}" pad kept the versions "{a}" and "{b}"')
+def step_pad_kept(context, pid, a, b):
+    context.page.evaluate("""([p, a, b]) => {
+      const w = document.querySelector(".lc-mdpad[data-lc-id='" + p + "']");
+      w._lcHist = [b, a];
+    }""", [pid, a, b])

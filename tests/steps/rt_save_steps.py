@@ -152,10 +152,21 @@ def step_type_and_save(context, text):
     context.page.wait_for_timeout(800)
 
 
+def _open_versions(context, pad_sel=".lc-mdpad"):
+    """↺ Start over lives at the head of 🕘 Versions (Michel, 2026-10-11) —
+    open the panel when it is not open yet, and wait for its head."""
+    vbtn = context.page.locator(pad_sel + " ~ .lc-mdpad-bar .lc-ver-btn").first
+    vbtn.wait_for(state="visible", timeout=15_000)
+    if vbtn.get_attribute("aria-pressed") != "true":
+        vbtn.click()
+    context.page.locator(pad_sel + " ~ .lc-ver-panel .lc-mdpad-reset").first.wait_for(state="attached", timeout=15_000)
+    return context.page.locator(pad_sel + " ~ .lc-ver-panel .lc-mdpad-reset").first
+
+
 @when("I press the pad's start-over button")
 def step_pad_reset(context):
-    btn = context.page.locator(".lc-mdpad-reset").first
-    btn.wait_for(state="visible", timeout=15_000)
+    btn = _open_versions(context)
+    expect(btn).to_be_visible(timeout=15_000)
     btn.click()
     context.page.wait_for_timeout(400)
 
@@ -997,7 +1008,7 @@ def step_diary_save_on(context):
 @then("the diary pad's save and start-over buttons are off, each saying why")
 def step_diary_buttons_off(context):
     bar = _diary_bar(context)
-    save, reset = bar.locator(".lc-mdpad-save"), bar.locator(".lc-mdpad-reset")
+    save, reset = bar.locator(".lc-mdpad-save"), _open_versions(context, ".lc-mdpad[data-lc-id='diary']")
     expect(save).to_be_disabled(timeout=10_000)
     expect(reset).to_be_disabled()
     assert "nothing changed" in (save.get_attribute("title") or "").lower(), save.get_attribute("title")
@@ -1008,7 +1019,7 @@ def step_diary_buttons_off(context):
 def step_diary_buttons_on(context):
     bar = _diary_bar(context)
     expect(bar.locator(".lc-mdpad-save")).to_be_enabled(timeout=5_000)
-    expect(bar.locator(".lc-mdpad-reset")).to_be_enabled()
+    expect(_open_versions(context, ".lc-mdpad[data-lc-id='diary']")).to_be_enabled()
 
 
 @then("the pad's versions button reads {state}")
@@ -1157,3 +1168,32 @@ def step_subtitle_on_editor(context):
     assert box["dl"] <= box["cx"] <= box["dr"], "the subtitle is not over the editor: %r" % box
     if box["change"] is not None:
         assert box["top"] >= box["change"], "the subtitle sits above the change: %r" % box
+
+
+@then("the pad's bar shows no start-over button")
+def step_bar_no_reset(context):
+    bar = context.page.locator(".lc-mdpad ~ .lc-mdpad-bar").first
+    bar.wait_for(state="visible", timeout=15_000)
+    expect(bar.locator(".lc-mdpad-reset")).to_be_hidden()
+
+
+def _pad_word(context, word):
+    """The Python model's word, read as a proof would (Mdpad.versions /
+    .replayed — Michel, 2026-10-11: the final check reads what was done)."""
+    return context.page.evaluate("""(w) => {
+      const pad = document.querySelector('.lc-mdpad');
+      if (w === 'versions') return (pad._lcHist || []).length;
+      return window.lcDid ? window.lcDid.count(pad.getAttribute('data-lc-id'), 'replay') : -1;
+    }""", word)
+
+
+@then("the pad's proof word versions holds {n:d} names")
+def step_pad_versions(context, n):
+    context.page.wait_for_function(
+        "(n) => (document.querySelector('.lc-mdpad')._lcHist || []).length === n", arg=n, timeout=10_000)
+
+
+@then("the pad's proof word replayed reads {n:d}")
+def step_pad_replayed(context, n):
+    got = _pad_word(context, "replayed")
+    assert got == n, "replayed = %r" % got

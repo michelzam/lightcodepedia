@@ -1,5 +1,6 @@
 """A form's label column: fitted to its labels, moved by its grip."""
 from behave import when, then
+from playwright.sync_api import expect
 
 
 def _form(context, fid):
@@ -76,3 +77,8 @@ def step_kept(context, fid):
     now = _label_width(context, sel)
     assert abs(now - context.label_dragged) <= 1, \
         "the line went back: %d after the drag, %d on the next row" % (context.label_dragged, now)
+
+
+@then('the "{fid}" form is titled "{title}"')
+def step_titled(context, fid, title):
+    expect(context.page.locator(_form(context, fid) + " .lc-form-name")).to_have_text(title, timeout=5_000)

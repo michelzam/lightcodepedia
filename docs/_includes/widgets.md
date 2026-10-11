@@ -427,6 +427,30 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
     return out;
   };
 
+  /* ── WHAT THE LEARNER DID (Michel, 2026-10-11: "a global final feature
+     that checks the students did a bit all of that"). A component counts
+     the moves that make a habit — asked the builder, watched the film —
+     per page and per part, on this device; a proof reads them back
+     (agent.asked, pad.replayed). Counted, never scored. */
+  window.lcDid = (function () {
+    var K = "lc_did";
+    function page() {
+      var h = location.hash || "", m = h.match(/src=[^&]+/);
+      return location.pathname + (m ? "#" + m[0] : "");
+    }
+    function all() { try { return JSON.parse(localStorage.getItem(K) || "{}") || {}; } catch (e) { return {}; } }
+    return {
+      mark: function (id, verb) {
+        if (!id) return 0;
+        var a = all(), k = page() + "|" + id + "|" + verb;
+        a[k] = (a[k] || 0) + 1;
+        try { localStorage.setItem(K, JSON.stringify(a)); } catch (e) {}
+        return a[k];
+      },
+      count: function (id, verb) { return all()[page() + "|" + id + "|" + verb] || 0; }
+    };
+  })();
+
   /* ── Component verbs — the page's PRESENTATION vocabulary ──────────────
      Components expose what can be DONE to them; avatar stories and demo
      replay call verbs by name instead of poking the DOM. Only presentation

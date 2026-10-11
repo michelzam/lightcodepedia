@@ -897,3 +897,11 @@ def step_no_part(context, agent_id, text):
     bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot').first
     expect(bot).to_contain_text(text, timeout=10_000)
     assert bot.locator(".lc-agent-example").count() == 0, "lines were offered for no part"
+
+
+@then('the "{aid}" agent counts {n:d} question asked')
+def step_agent_asked(context, aid, n):
+    """Agent.asked — what the final check of a lesson reads (Michel,
+    2026-10-11: "checks the students did a bit all of that")."""
+    got = context.page.evaluate("(a) => window.lcDid ? window.lcDid.count(a, 'ask') : -1", aid)
+    assert got == n, "asked = %r" % got
