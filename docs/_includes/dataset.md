@@ -264,7 +264,7 @@ Auto-included by docs/_layouts/default.html.
     /* inline code block variant */
     var code = el.querySelector("code") || el;
     var seed = code.textContent.trim();
-    var fmt = (el.getAttribute("format") || "").toLowerCase();
+    var fmt = (el.getAttribute("format") || window.lcFenceFormat(el) || "").toLowerCase();
 
     /* save="…" — the same contract every other component with a save= knob
        already follows: the fence is the AUTHOR'S seed, the learner's file is

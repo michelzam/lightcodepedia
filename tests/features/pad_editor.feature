@@ -181,3 +181,68 @@ Feature: The pad types like a text field, painted
     Then the "wires" pad lights 2 wires of "dog_grid"
     When I put the caret in "campus" of 'Dogs per campus' in the "wires" pad
     Then the "wires" pad lights no wire
+
+  Scenario: Side by side, the splitter shares the width for the visit; a double-click gives the halves back
+    Michel, 2026-10-11: "a resizable splitter between preview and editor,
+    similar to the vertical one".
+
+    When I drag the "playground" pad's splitter 120px to the right
+    Then the "playground" pad's preview grew by about 120px
+    When I double-click the "playground" pad's splitter
+    Then the "playground" pad's preview is back to its own width
+
+  Scenario: Hovering a decoration's icon for a second names the component
+    Michel, 2026-10-11: "hovering the gutter should show the component type
+    (emoji and type name) after one second in a tooltip".
+
+    Given the GitHub contents API serves "courses/demo/module_05/tip.md" with the document:
+      """
+      # Tip
+
+      `````markdown
+      # App
+
+      ```csv
+      family,dog
+      Kaur,Scout
+      ```
+      {: .dataset #families }
+
+      [Families](#)
+      {: .datagrid source="families" }
+      `````
+      {: .mdpad #tip decorations="true" rows="12" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/tip.md"
+    And I wait for the page to be interactive
+    And I rest the pointer on the gutter of line 10 in the "tip" pad
+    Then after a second the "tip" pad's gutter says "▦ datagrid"
+
+  Scenario: A saved copy longer than the starter still lights its current block
+    Michel, 2026-10-11: the blue bar "works well in some cases but not in
+    others" — the blocks were mapped from the lesson's starter, so a saved
+    copy's later blocks never lit.
+
+    Given the GitHub contents API serves "courses/demo/mod/longer.md" with the document:
+      """
+      # Longer
+
+      `````markdown
+      # Meet a dog
+      `````
+      {: .mdpad #longer decorations="true" save="longer.md" rows="12" numbers="true" }
+      """
+    And a connected bench whose "courses/demo/mod/longer.md" holds the document
+      """
+      # Meet a dog
+
+      [The dogs](#)
+      {: .datagrid #grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="grid" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/longer.md"
+    And I wait for the page to be interactive
+    And I put the caret in "form" of '.form master' in the "longer" pad
+    Then the "longer" pad's current block holds "[The dog](#)" and ".form"

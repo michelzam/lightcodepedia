@@ -149,7 +149,7 @@ fold into one row of equal columns, the same row `.blocks cols=` makes —
 same gap, same stacking on a phone — and source order stays visual
 order. Nothing to nest: three parts, three decorations.
 
-```
+```csv
 name,legs
 Rex,4
 Tweety,2

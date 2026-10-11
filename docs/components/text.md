@@ -289,7 +289,7 @@ editor through `bound=`. Those are wires, and the preview draws them
 honestly. Delete the dataset fence below, or rename its id, and watch:
 
 `````markdown
-```
+```csv
 name,legs
 Rex,4
 Tweety,2

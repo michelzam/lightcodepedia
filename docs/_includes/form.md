@@ -535,7 +535,7 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcUpgraded = "1";
     var codeNode = el.querySelector("code");
     var raw = codeNode ? codeNode.textContent : "";
-    var format = (el.getAttribute("format") || "yaml").toLowerCase();
+    var format = (el.getAttribute("format") || (window.lcFenceFormat && window.lcFenceFormat(el)) || "yaml").toLowerCase();
     var title = el.getAttribute("title") || "";
     var bound = el.getAttribute("master") || el.getAttribute("bound") || "";
     var editable = el.getAttribute("editable") === "true";

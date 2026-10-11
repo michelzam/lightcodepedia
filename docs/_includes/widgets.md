@@ -223,6 +223,18 @@ window.lcComponentIcons = window.lcComponentIcons || function () {
     .catch(function () { return {}; });
   return window._lcCompIconsP;
 };
+/* A DATA FENCE NAMES ITS FORMAT (Michel, 2026-10-11: "wherever there is some
+   data in a fence, explicit the name of the format — csv, yaml"): ```csv,
+   ```yaml, ```json mean what they say, for a dataset, a grid and a form
+   alike; format="…" still wins. Read from the fence's language class, the
+   one the site's build and the runner both write. */
+window.lcFenceFormat = window.lcFenceFormat || function (el) {
+  var code = el && el.querySelector ? el.querySelector("code") : null;
+  var m = ((el && el.className) + " " + ((code && code.className) || "")).match(/language-(csv|tsv|ya?ml|json)\b/i);
+  if (!m) return "";
+  var f = m[1].toLowerCase();
+  return f === "yml" ? "yaml" : f;
+};
 /* THE MARKDOWN PAINTER — one line at a time, shared by the pad's source pane
    and the read-only .code snippets, so a lesson's snippet and the pad beside
    it wear the same colours (Michel, 2026-10-08 for the pad, 2026-10-10 for

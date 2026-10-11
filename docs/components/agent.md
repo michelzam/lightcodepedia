@@ -297,11 +297,9 @@ card in Given, ask in When, read the verdict in Then.
 
 ## 🧑‍⚕️ Bots — one persona, many pages
 
-A **bot** is a markdown file in `docs/bots/` — the file's text *is* the
-superprompt (readable by anyone, like every LC page), and one small fence
-inside it sets the model, the name, and its **knowledge**: a list of course
-pages whose own markdown is folded into every answer. `self` means *the page
-the learner is on*. One line summons it anywhere:
+A **bot** is a persona many pages share: its name, its engine and its
+**knowledge** — the course pages it reads along with every question, `self`
+being *the page the learner is on*. One line summons it anywhere:
 
 ````markdown
 Ask Doc — he knows this page.
@@ -315,7 +313,7 @@ Ask Doc — he knows this page.
 
 - The page can still override any knob (`model:`, `temperature:`…) in a fence
   next to `bot=` — the page wins, the bot provides the defaults.
-- Improve `docs/bots/doc.md` once and every lesson using `bot="doc"` levels up.
+- Improve the bot once and every lesson that summons it levels up.
 - Knowledge is honest **context-stuffing**, not embeddings: listed pages ride
   along with every question (trimmed to a budget — `knowledge_budget:` chars,
   default 16000 — with a visible "(trimmed)" note). Keep a bot's list to a few
@@ -403,16 +401,11 @@ A tutor should aim, not type over. The teacher names two elements with
 words the agent already has: `bound="<run id>"`, the editor, and
 `target="<feature id>"`, the check. That pair makes the agent a tutor:
 
-- the learner asks in their own words; the program, its last output, its
-  `# TODO` lines named, and the check's status with its red steps ride
-  along, so the tutor aims at the step that fails;
-- the tutor suggests in its own bubble; when its python fence **opens with
-  one of the program's TODO lines**, quoted exactly, the piece under it — a
-  line or two, with new `# TODO` lines for what remains — gets a button
-  that goes **where the learner says**: at the cursor (after its line, with
-  its indentation) or over the selection; with no cursor placed yet, under
-  the TODO the piece quotes, else at the end. The label says which before
-  the click. There is no Apply (Michel, 2026-10-06).
+- the learner asks in their own words; the program, its last output and
+  the check's status ride along, so the tutor aims at the step that fails;
+- a piece of code the tutor suggests gets a button that puts it **where the
+  learner says** — at the cursor, or over the selection. The label says
+  which before the click; nothing is applied behind the learner's back.
 
 ````markdown
 ```python
@@ -428,12 +421,7 @@ print(shift('a'))
 ```yaml
 name: Coach
 icon: 🧑‍🏫
-system: |
-  You are a coach. Answer in three parts: "🧭" one direction (two sentences
-  at most); "❓" one question back that points at the solution; then a
-  python fence that OPENS with the student's TODO line you are on, quoted
-  exactly, followed by a piece: one or two lines, with a new "# TODO:" for
-  what remains. Never the whole, never a replacement.
+system: You are a coach for this exercise. Point the way; never the whole answer.
 ```
 {: .agent bound="todo_editor" target="coach_check" #coach }
 ````
@@ -453,12 +441,7 @@ print(shift('a'))
 ```yaml
 name: Coach
 icon: 🧑‍🏫
-system: |
-  You are a coach. Answer in three parts: "🧭" one direction (two sentences
-  at most); "❓" one question back that points at the solution; then a
-  python fence that OPENS with the student's TODO line you are on, quoted
-  exactly, followed by a piece: one or two lines, with a new "# TODO:" for
-  what remains. Never the whole, never a replacement.
+system: You are a coach for this exercise. Point the way; never the whole answer.
 ```
 {: .agent bound="todo_editor" target="coach_check" #coach }
 
@@ -486,20 +469,16 @@ Feature: The shift is written
 
 ### 🧱 A builder for a page — the same two knobs, on a pad
 
-A learner's app is a pad. The **builder** beside it holds the exact lines
-of every part the course has taught (Michel, 2026-10-09: *"students know
-what they want and ask for the syntax of a specific part; they adapt it —
-the syntax is not something they can learn by heart"*): `bot="builder"`
-for the role, `bound="<pad id>"` for the page, `target="<check id>"` for
-what the page should become. The model only **names** the part; the page
-shows its lines verbatim from `docs/bots/parts.yml`, with the module they
-were learned in, and ⬇ puts them at the learner's cursor. Placeholder ids
-show as broken wires until swapped.
+A learner's app is a pad. The **builder** beside it hands out the lines of
+a part the course has taught: `bot="builder"` for the role, `bound="<pad
+id>"` for the page, `target="<check id>"` for what the page should become.
+⬇ puts the lines at the learner's cursor; placeholder ids show as broken
+wires until the learner puts their own in.
 
 `````markdown
 # 📞 The Follow-Up List
 
-```
+```csv
 family,dog,asked
 Kaur,Scout,Thu
 Mbeki,Biscuit,Fri

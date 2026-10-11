@@ -658,7 +658,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     var codeNode = el.querySelector("code");
     var raw = codeNode ? codeNode.textContent : "";
     var height = parseInt(el.getAttribute("height"), 10) || 400;
-    var format = (el.getAttribute("format") || "yaml").toLowerCase();
+    var format = (el.getAttribute("format") || (window.lcFenceFormat && window.lcFenceFormat(el)) || "yaml").toLowerCase();
     var title = el.getAttribute("title") || "";
     var id = el.id || ("dg" + (++DG_ID));
     var opts = readDatagridOpts(el, "");

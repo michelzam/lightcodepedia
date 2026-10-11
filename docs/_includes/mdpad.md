@@ -75,6 +75,16 @@ Auto-included by docs/_layouts/default.html.
   color: #555; cursor: pointer; line-height: 1.3; }
 .lc-mdpad-fold:hover { border-color: #888; color: #222; }
 .lc-mdpad.lc-mdpad-folded > .lc-mdpad-src { display: none !important; }
+/* ↔ the splitter in the gap between preview and editor */
+.lc-mdpad-split { position: absolute; top: 0; bottom: 0; cursor: col-resize; z-index: 2; touch-action: none;
+  display: flex; align-items: center; justify-content: center; }
+.lc-mdpad-split::before { content: ""; width: 4px; height: 3.2em; border-radius: 3px; background: #c4c9d4; }
+.lc-mdpad-split:hover::before, .lc-mdpad[data-lc-splitting] .lc-mdpad-split::before { background: #0066cc; }
+.lc-mdpad.lc-mdpad-folded > .lc-mdpad-out { flex: 1 1 auto !important; }
+/* the gutter's label: what a decoration makes */
+.lc-mdpad-tip { position: absolute; z-index: 4; pointer-events: none; padding: 0.2em 0.6em; border-radius: 6px;
+  background: #f8fafc; color: #1e293b; font-size: 0.8em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25); white-space: nowrap; }
 /* ↕ the grip under the pad: drag to resize, for this visit only */
 .lc-mdpad-grip { position: absolute; left: 0; right: 0; bottom: -0.75em; height: 0.75em; cursor: ns-resize;
   touch-action: none; z-index: 2; display: flex; align-items: center; justify-content: center; }
@@ -458,14 +468,42 @@ Auto-included by docs/_layouts/default.html.
     /* ✎ fold: the editor tucks away, the preview takes the whole width */
     var foldBtn = document.createElement("button");
     foldBtn.type = "button"; foldBtn.className = "lc-mdpad-fold";
+    /* THE DRAWER (Michel, 2026-10-11: "the Hide/Edit button should work with
+       a smooth animation, like a drawer"): the editor slides shut, the
+       preview widening as it goes, and slides open again the same way. */
+    var _drawer = null;
+    function drawer(on) {
+      var pane = src || ta, column = getComputedStyle(wrap).flexDirection === "column";
+      var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (_drawer) { _drawer.cancel(); _drawer = null; }
+      if (reduced || column || !pane.animate) { setFold(on); return; }
+      var gap = parseFloat(getComputedStyle(wrap).columnGap) || 0;
+      if (on) {
+        var w = pane.getBoundingClientRect().width;
+        pane.style.flex = "0 0 " + w + "px"; pane.style.overflow = "hidden";
+        _drawer = pane.animate([{ flexBasis: w + "px", opacity: 1, marginLeft: "0px" },
+                                { flexBasis: "0px", opacity: 0, marginLeft: (-gap) + "px" }],
+                               { duration: 380, easing: "cubic-bezier(.4,0,.2,1)" });
+        _drawer.onfinish = function () { _drawer = null; pane.style.flex = ""; pane.style.overflow = ""; setFold(true); };
+      } else {
+        setFold(false);
+        var target = pane.getBoundingClientRect().width;
+        pane.style.overflow = "hidden";
+        _drawer = pane.animate([{ flexBasis: "0px", opacity: 0, marginLeft: (-gap) + "px", flexGrow: 0 },
+                                { flexBasis: target + "px", opacity: 1, marginLeft: "0px", flexGrow: 0 }],
+                               { duration: 380, easing: "cubic-bezier(.4,0,.2,1)" });
+        _drawer.onfinish = function () { _drawer = null; pane.style.overflow = ""; if (keysEl) paintSoon(); };
+      }
+    }
     function setFold(on) {
       wrap.classList.toggle("lc-mdpad-folded", !!on);
       if (on) wrap.setAttribute("data-lc-folded", "1"); else wrap.removeAttribute("data-lc-folded");
       foldBtn.textContent = on ? "✎ Edit" : "✎ Hide";
       foldBtn.setAttribute("aria-pressed", on ? "true" : "false");
       foldBtn.title = on ? "Bring the editor back" : "Fold the editor — the preview takes the whole width";
+      if (split) placeSplit();
     }
-    foldBtn.addEventListener("click", function () { setFold(!wrap.classList.contains("lc-mdpad-folded")); });
+    foldBtn.addEventListener("click", function () { drawer(!wrap.classList.contains("lc-mdpad-folded")); });
     setFold(false);
     wrap.appendChild(foldBtn);
     wrap._lcFold = setFold;
@@ -500,6 +538,85 @@ Auto-included by docs/_layouts/default.html.
       grip.addEventListener("pointercancel", up);
     });
     grip.addEventListener("dblclick", function () { wrap.style.height = ""; if (keysEl) paintSoon(); });
+
+    /* ↔ THE SPLITTER (Michel, 2026-10-11: "a resizable splitter between preview
+       and editor, similar to the vertical one"): the gap between the two is a
+       handle; dragged, it sets the preview's width — for this visit only.
+       Double-click gives the halves back. Side by side only; stacked, the
+       grip under the pad does the job. */
+    var split = document.createElement("div");
+    split.className = "lc-mdpad-split";
+    split.setAttribute("role", "separator");
+    split.setAttribute("aria-orientation", "vertical");
+    split.title = "Drag to share the width — double-click for halves";
+    wrap.appendChild(split);
+    function placeSplit() {
+      var column = getComputedStyle(wrap).flexDirection === "column";
+      var pane = src || ta;
+      split.hidden = column || wrap.classList.contains("lc-mdpad-folded") || !pane.offsetWidth;
+      if (split.hidden) return;
+      var gap = pane.offsetLeft - (out.offsetLeft + out.offsetWidth);
+      split.style.left = (out.offsetLeft + out.offsetWidth) + "px";
+      split.style.width = Math.max(8, gap) + "px";
+    }
+    split.addEventListener("pointerdown", function (ev) {
+      ev.preventDefault();
+      var x0 = ev.clientX, w0 = out.getBoundingClientRect().width, W = wrap.getBoundingClientRect().width;
+      split.setPointerCapture(ev.pointerId);
+      wrap.setAttribute("data-lc-splitting", "1");
+      function move(e) {
+        var w = Math.max(W * 0.15, Math.min(W * 0.85, w0 + e.clientX - x0));
+        out.style.boxSizing = "border-box";              /* the width dragged is the width seen */
+        out.style.flex = "0 0 " + Math.round(w) + "px";
+        placeSplit();
+        if (keysEl) paintSoon();
+      }
+      function up() {
+        wrap.removeAttribute("data-lc-splitting");
+        split.removeEventListener("pointermove", move);
+        split.removeEventListener("pointerup", up);
+        split.removeEventListener("pointercancel", up);
+      }
+      split.addEventListener("pointermove", move);
+      split.addEventListener("pointerup", up);
+      split.addEventListener("pointercancel", up);
+    });
+    split.addEventListener("dblclick", function () { out.style.flex = ""; out.style.boxSizing = ""; placeSplit(); if (keysEl) paintSoon(); });
+    if (window.ResizeObserver) new ResizeObserver(placeSplit).observe(wrap);
+    setTimeout(placeSplit, 0);
+
+    /* THE GUTTER SAYS WHAT A DECORATION MAKES (Michel, 2026-10-11: "hovering
+       the gutter should show the component type, emoji and type name, after
+       one second"): a still pointer on a decoration's icon, one second, and
+       a small label — "▦ datagrid" — appears beside it. */
+    var tip = document.createElement("div");
+    tip.className = "lc-mdpad-tip";
+    tip.hidden = true;
+    wrap.appendChild(tip);
+    var _tipT = null, _tipLine = null;
+    function hideTip() { clearTimeout(_tipT); _tipT = null; _tipLine = null; tip.hidden = true; }
+    ta.addEventListener("mousemove", function (e) {
+      if (!keysEl || !numbers) return;
+      var r = ta.getBoundingClientRect(), gut = parseFloat(getComputedStyle(ta).paddingLeft) || 0;
+      if (e.clientX - r.left > gut) { hideTip(); return; }
+      var hit = null;
+      keysEl.querySelectorAll(".ln[data-ic]").forEach(function (l) {
+        var b = l.getBoundingClientRect();
+        if (e.clientY >= b.top && e.clientY < b.bottom) hit = l;
+      });
+      if (!hit) { hideTip(); return; }
+      if (hit === _tipLine) return;
+      hideTip(); _tipLine = hit;
+      _tipT = setTimeout(function () {
+        var W = wrap.getBoundingClientRect(), b = hit.getBoundingClientRect();
+        tip.textContent = hit.getAttribute("data-ic") + " " + (hit.getAttribute("data-icn") || "");
+        tip.style.left = (r.left - W.left + gut + 4) + "px";
+        tip.style.top = (b.top - W.top - 2) + "px";
+        tip.hidden = false;
+      }, 1000);
+    });
+    ta.addEventListener("mouseleave", hideTip);
+    ta.addEventListener("input", hideTip);
     el.parentNode.replaceChild(wrap, el);
     if (saveWrap) wrap.parentNode.insertBefore(saveWrap, wrap.nextSibling);
     /* the stripe goes round BOTH the pad and its keep bar, so the frame
@@ -1087,7 +1204,11 @@ Auto-included by docs/_layouts/default.html.
     /* ── FOCUS: the block under the caret, shown on both sides ── */
     var blocks = blocksOf(ta.value), lastFocus = -2;
     function caretLine() { return ta.value.slice(0, ta.selectionStart || 0).split("\n").length - 1; }
-    function caretBlock() { return blockAt(blocks, caretLine()); }
+    /* the blocks are read from the text AS IT IS — a saved copy, a version
+       brought back or a step Doc typed replaces the text without a keystroke,
+       and a map kept from the starter left the later blocks with no bar
+       (Michel, 2026-10-11: "works in some cases, not in others") */
+    function caretBlock() { blocks = blocksOf(ta.value); return blockAt(blocks, caretLine()); }
     function focusPreview(idx, bl) {
       bl = bl || blocks;
       body.querySelectorAll(".lc-mdpad-focus").forEach(function (e) { e.classList.remove("lc-mdpad-focus"); });
@@ -1136,7 +1257,9 @@ Auto-included by docs/_layouts/default.html.
         var ial = fence === null && numbers && lines[n].match(/^\s*\{:(.*)\}\s*$/);
         var ic = ial ? ialIcon(ial[1]) : "";
         var h = "<div class='ln" + (n === here ? " here" : "") + "' data-n='" + (n + 1) + "'" +
-          (ic ? " data-ic='" + ic + "'" + (icGlyph(ic) ? " data-ick='g'" : "") : "") + ">" + paintLine(lines[n], fence) + "</div>";
+          (ic ? " data-ic='" + ic + "'" + (icGlyph(ic) ? " data-ick='g'" : "") +
+                " data-icn='" + ((ial[1].match(/(?:^|\s)\.([A-Za-z][\w-]*)/) || [])[1] || "") + "'" : "") +
+          ">" + paintLine(lines[n], fence) + "</div>";
         var m = FENCE_RE.exec(lines[n]);
         if (m) fence = fence === null ? lines[n].trim().slice(m[1].length).trim() : null;
         return h;

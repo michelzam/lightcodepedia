@@ -208,3 +208,66 @@ def step_no_wire(context, pad_id):
     got = context.page.eval_on_selector_all(
         "[data-lc-id='%s'] .lc-mdpad-piano .md-wire" % pad_id, "ws => ws.map(w => w.textContent)")
     assert not got, "lit %r for a word that is only prose" % got
+
+
+def _out_w(context, pad_id):
+    return context.page.evaluate(
+        "(id) => Math.round(document.querySelector(\"[data-lc-id='\" + id + \"'] .lc-mdpad-out\").getBoundingClientRect().width)", pad_id)
+
+
+@when('I drag the "{pad_id}" pad\'s splitter {dx:d}px to the right')
+def step_drag_split(context, pad_id, dx):
+    context.out_w0 = _out_w(context, pad_id)
+    sp = context.page.locator("[data-lc-id='%s'] .lc-mdpad-split" % pad_id)
+    sp.scroll_into_view_if_needed()
+    box = sp.bounding_box()
+    assert box, "no splitter between preview and editor"
+    x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+    m = context.page.mouse
+    m.move(x, y); m.down(); m.move(x + dx / 2, y); m.move(x + dx, y); m.up()
+    context.page.wait_for_timeout(200)
+
+
+@then('the "{pad_id}" pad\'s preview grew by about {dx:d}px')
+def step_out_grew(context, pad_id, dx):
+    w = _out_w(context, pad_id)
+    assert abs(w - context.out_w0 - dx) <= 12, "preview %d → %d, expected +%d" % (context.out_w0, w, dx)
+
+
+@when('I double-click the "{pad_id}" pad\'s splitter')
+def step_dbl_split(context, pad_id):
+    context.page.locator("[data-lc-id='%s'] .lc-mdpad-split" % pad_id).dblclick()
+    context.page.wait_for_timeout(200)
+
+
+@then('the "{pad_id}" pad\'s preview is back to its own width')
+def step_out_back(context, pad_id):
+    w = _out_w(context, pad_id)
+    assert abs(w - context.out_w0) <= 2, "preview %d, was %d" % (w, context.out_w0)
+
+
+@when('I rest the pointer on the gutter of line {n:d} in the "{pad_id}" pad')
+def step_rest_gutter(context, n, pad_id):
+    sel = "[data-lc-id='%s'] .lc-mdpad-piano .ln[data-n='%d']" % (pad_id, n)
+    context.page.wait_for_selector(sel + "[data-ic]", state="attached", timeout=20_000)
+    ta = _ta(context, pad_id)
+    ta.scroll_into_view_if_needed()
+    ln = context.page.locator(sel).bounding_box()
+    tb = ta.bounding_box()
+    context.page.mouse.move(tb["x"] + 8, ln["y"] + ln["height"] / 2)
+    context.page.mouse.move(tb["x"] + 10, ln["y"] + ln["height"] / 2)
+
+
+@then('after a second the "{pad_id}" pad\'s gutter says "{text}"')
+def step_tip(context, pad_id, text):
+    tip = context.page.locator("[data-lc-id='%s'] .lc-mdpad-tip" % pad_id)
+    context.page.wait_for_timeout(500)
+    assert tip.is_hidden(), "the label showed before the second was up"
+    expect(tip).to_have_text(text, timeout=2_000)
+
+
+@then('the "{pad_id}" pad\'s current block holds "{a}" and "{b}"')
+def step_now_block(context, pad_id, a, b):
+    txt = context.page.eval_on_selector(
+        "[data-lc-id='%s'] .lc-mdpad-piano .now" % pad_id, "e => e.textContent")
+    assert a in txt and b in txt, "the lit block reads %r" % txt
