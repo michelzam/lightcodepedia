@@ -178,3 +178,33 @@ def step_dbl_grip(context, pad_id):
 def step_pad_back(context, pad_id):
     h = _pad_heights(context, pad_id)
     assert abs(h["pad"] - context.pad_h0["pad"]) <= 2, "%r → %r" % (context.pad_h0, h)
+
+
+@when('I put the caret in "{word}" of \'{context_text}\' in the "{pad_id}" pad')
+def step_caret_in(context, word, context_text, pad_id):
+    ta = _ta(context, pad_id)
+    ta.wait_for(state="attached", timeout=20_000)
+    ok = context.page.evaluate("""([id, ctx, word]) => {
+      const t = document.querySelector("[data-lc-id='" + id + "'] .lc-mdpad-in");
+      const i = t.value.indexOf(ctx); if (i < 0) return false;
+      const at = i + ctx.indexOf(word) + 1;
+      t.focus(); t.setSelectionRange(at, at);
+      t.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+      return true;
+    }""", [pad_id, context_text, word])
+    assert ok, "%r is not in the pad" % context_text
+    context.page.wait_for_timeout(700)
+
+
+@then('the "{pad_id}" pad lights {n:d} wires of "{word}"')
+def step_wires(context, pad_id, n, word):
+    got = context.page.eval_on_selector_all(
+        "[data-lc-id='%s'] .lc-mdpad-piano .md-wire" % pad_id, "ws => ws.map(w => w.textContent)")
+    assert got == [word] * n, "lit %r, expected %d × %r" % (got, n, word)
+
+
+@then('the "{pad_id}" pad lights no wire')
+def step_no_wire(context, pad_id):
+    got = context.page.eval_on_selector_all(
+        "[data-lc-id='%s'] .lc-mdpad-piano .md-wire" % pad_id, "ws => ws.map(w => w.textContent)")
+    assert not got, "lit %r for a word that is only prose" % got

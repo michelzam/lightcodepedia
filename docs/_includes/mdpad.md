@@ -199,6 +199,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-piano[data-plain] .k1 { background: transparent; }
 .lc-mdpad-piano[data-plain] .now { background: transparent; box-shadow: none; }
 .lc-mdpad-piano .ln { position: relative; }
+/* the id under the caret, everywhere it is wired */
+.lc-mdpad-piano .md-wire { background: rgba(249, 226, 175, 0.22); box-shadow: 0 0 0 1px rgba(249, 226, 175, 0.55); border-radius: 3px; }
 /* the gutter: a grayer column so numbers never read as text (Michel, 2026-10-05) —
    painted as the pane's background, so it stays put while the text scrolls; each
    row's cell then carries the piano into the gutter in its own grayer shades.
@@ -1147,7 +1149,71 @@ Auto-included by docs/_layouts/default.html.
       });
       for (; li < lines.length; li++) html += line(li);
       keysEl.innerHTML = html;
+      markWires(lines);
       keysEl.scrollTop = ta.scrollTop;
+    }
+    /* ── THE WIRES OF THE ID UNDER THE CARET (Michel, 2026-10-11: "highlight
+       all occurrences of an id when the cursor is there — prefixed by #, or
+       inside quotes, or even inside a sql from/join clause — so learners see
+       the wires faster"). An id is wired where the page connects by it:
+       #dogs declares, source="dogs" reads, FROM dogs queries, {= dogs.count }
+       counts, button.page.dogs reaches. With the caret on one of those, all
+       of them light up; a word that is only prose lights nothing. */
+    function wireRanges(line, tok) {
+      var e = tok.replace(/[-]/g, "\\-"), out = [], m, re;
+      var pats = [new RegExp("#(" + e + ")(?![\\w-])", "g"),
+                  new RegExp("([\"'])(" + e + ")\\1", "g"),
+                  new RegExp("\\b(?:from|join)\\s+(" + e + ")(?![\\w-])", "gi"),
+                  new RegExp("\\{=\\s*(" + e + ")(?![\\w-])", "g"),
+                  new RegExp("\\.page\\.(" + e + ")(?![\\w-])", "g")];
+      pats.forEach(function (re) {
+        while ((m = re.exec(line))) {
+          var at = m.index + m[0].lastIndexOf(tok);
+          if (!out.some(function (r) { return r[0] === at; })) out.push([at, at + tok.length]);
+        }
+      });
+      return out;
+    }
+    function caretWord() {
+      var v = ta.value, p = ta.selectionStart || 0, a = p, b = p;
+      if (ta.selectionEnd !== ta.selectionStart) return null;
+      while (a > 0 && /[\w-]/.test(v.charAt(a - 1))) a--;
+      while (b < v.length && /[\w-]/.test(v.charAt(b))) b++;
+      if (b <= a) return null;
+      var ls = v.lastIndexOf("\n", a - 1) + 1;
+      return { tok: v.slice(a, b), line: v.slice(0, a).split("\n").length - 1, col: a - ls };
+    }
+    function wrapRange(div, s0, s1) {
+      var walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT), node, pos = 0, hits = [];
+      while ((node = walker.nextNode())) {
+        var len = node.data.length, a = Math.max(s0, pos), b = Math.min(s1, pos + len);
+        if (a < b) hits.push([node, a - pos, b - pos]);
+        pos += len;
+      }
+      hits.forEach(function (h) {
+        var n = h[0];
+        if (h[2] < n.data.length) n.splitText(h[2]);
+        var mid = h[1] > 0 ? n.splitText(h[1]) : n;
+        var span = document.createElement("span");
+        span.className = "md-wire";
+        mid.parentNode.insertBefore(span, mid);
+        span.appendChild(mid);
+      });
+    }
+    function markWires(lines) {
+      wrap.removeAttribute("data-lc-wire");
+      if (document.activeElement !== ta) return;
+      var w = caretWord();
+      if (!w || !/^[A-Za-z_]/.test(w.tok)) return;
+      var own = wireRanges(lines[w.line] || "", w.tok);
+      if (!own.some(function (r) { return r[0] === w.col; })) return;
+      wrap.setAttribute("data-lc-wire", w.tok);
+      lines.forEach(function (l, n) {
+        var rs = wireRanges(l, w.tok);
+        if (!rs.length) return;
+        var div = keysEl.querySelector(".ln[data-n='" + (n + 1) + "']");
+        if (div) rs.slice().reverse().forEach(function (r) { wrapRange(div, r[0], r[1]); });
+      });
     }
     /* A KEYSTROKE PATCHES ONE TEXT NODE (2026-10-08): rebuilding the mirror
        removes nodes, and Chromium then closes the typing group — ⌘Z took

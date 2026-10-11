@@ -140,3 +140,44 @@ Feature: The pad types like a text field, painted
     Then the "playground" pad's editor and preview are shorter than at first
     When I double-click the "playground" pad's grip
     Then the "playground" pad is back to its own height
+
+  Scenario: The caret on an id lights every wire that names it
+    Michel, 2026-10-11: "highlight all occurrences of an id when the cursor is
+    there (prefixed by # or inside quotes or even inside a sql from/join
+    clause) so learners can see the wires faster". A word that is only prose
+    lights nothing.
+
+    Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
+      """
+      # Wires
+
+      `````markdown
+      # Dogs per campus
+
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      `````
+      {: .mdpad #wires decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/wires.md"
+    And I wait for the page to be interactive
+    And I put the caret in "dogs" of 'source="dogs"' in the "wires" pad
+    Then the "wires" pad lights 4 wires of "dogs"
+    When I put the caret in "dog_grid" of 'master="dog_grid"' in the "wires" pad
+    Then the "wires" pad lights 2 wires of "dog_grid"
+    When I put the caret in "campus" of 'Dogs per campus' in the "wires" pad
+    Then the "wires" pad lights no wire
