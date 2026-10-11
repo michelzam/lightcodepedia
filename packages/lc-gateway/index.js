@@ -19,7 +19,7 @@ import { createHmac, createSign, randomBytes, createHash, timingSafeEqual } from
 import { patch } from '@karmicsoft/lc-patch';
 import { load, dump } from '@karmicsoft/lc-serialize';
 
-export const GATEWAY_VERSION = '0.2.0';
+export const GATEWAY_VERSION = '0.2.1';
 
 const DEFAULTS = {
   baseBranch: 'main',

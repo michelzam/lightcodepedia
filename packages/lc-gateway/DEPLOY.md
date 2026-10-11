@@ -40,11 +40,12 @@ address. The gateway sends plain-text mail through `POST /v3/smtp/email`.
 | `GITHUB_REPO` | yes | `owner/name` |
 | `CONTENT_DIRS` | yes | Folders a contribution may write, comma-separated, e.g. `src/content/persons,src/content/events` |
 | `GITHUB_APP_ID` | yes | The App ID |
-| `GITHUB_APP_PRIVATE_KEY` | yes | The `.pem`, literal newlines or `\n` |
+| `GITHUB_APP_PRIVATE_KEY` | yes¹ | The `.pem`: real line breaks, or one line with `\n`; surrounding quotes are dropped |
+| `GITHUB_APP_PRIVATE_KEY_FILE` | yes¹ | Path to the `.pem` mounted in the container — the cleanest for Docker |
 | `GITHUB_INSTALLATION_ID` | no | Resolved from the repo when absent |
 | `BREVO_API_KEY` | yes | Transactional key |
 | `MAIL_FROM` | yes | Verified sender address |
-| `MAIL_FROM_NAME`, `MAIL_SUBJECT`, `MAIL_TEXT` | no | Sender name, subject, plain-text body (`{name}`, `{minutes}`, `{link}`) |
+| `MAIL_FROM_NAME`, `MAIL_SUBJECT`, `MAIL_TEXT` | no | Sender name, subject, plain-text body (`{name}`, `{minutes}`, `{link}`); in `MAIL_TEXT`, `\n` starts a new line |
 | `ALLOWLIST` | yes | JSON: `[{"email":"…","name":"…","role":"contributor"}, …]`; roles `contributor` or `trusted`. Store it as a secret, never in the repo |
 | `SESSION_SECRET` | yes | 32+ random bytes; rotating it signs everyone out |
 | `BASE_BRANCH` | no | `main` |
@@ -63,7 +64,15 @@ address. The gateway sends plain-text mail through `POST /v3/smtp/email`.
 | `MERGE_METHOD` | no | `SQUASH`, `MERGE` or `REBASE` for auto-merge |
 | `PORT` | no | 8080 |
 
-Everything in this table is a value, not code.
+¹ One of the two, never both: the gateway refuses to start if both are set,
+or if the key does not read as a private key (the message names the
+variable, never the key).
+
+Everything in this table is a value, not code. An env file (`--env-file`)
+takes each value literally — the quotes stay, `\n` is two characters — so
+the gateway forgives both: one pair of surrounding quotes is dropped
+(`GITHUB_APP_PRIVATE_KEY`, `MAIL_SUBJECT`, `MAIL_TEXT`, `VERIFY_*`), and in
+the key and `MAIL_TEXT` a written `\n` becomes a line break.
 
 ## 3. OVH VPS (Docker)
 
@@ -78,20 +87,33 @@ docker run -d --name lc-gateway --restart unless-stopped \
   --env-file /etc/lc-gateway.env -p 127.0.0.1:8080:8080 lc-gateway
 ```
 
+The key as a file, mounted read-only — no key in the env file at all
+(`GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/app.pem` in it instead):
+
+```sh
+sudo install -m 600 app.pem /etc/lc-gateway/app.pem
+docker run -d --name lc-gateway --restart unless-stopped \
+  --env-file /etc/lc-gateway.env \
+  -v /etc/lc-gateway/app.pem:/run/secrets/app.pem:ro \
+  -p 127.0.0.1:8080:8080 lc-gateway
+```
+
 Put it behind the VPS's reverse proxy with TLS (Caddy: `contrib.example.org {
 reverse_proxy 127.0.0.1:8080 }`). `PUBLIC_URL` is that HTTPS address.
-Sessions and sign-in links live in memory: one container, and a restart
-signs everyone out (they ask for a new link). Fine for a pilot.
+A restart keeps everyone signed in: a session is a signed cookie, valid
+as long as `SESSION_SECRET` is unchanged (rotating it signs everyone out).
+What a restart loses is the sign-in links not yet used — they live in
+memory; the person simply asks for a new one.
 
 ## 4. Scaleway Serverless Containers (fr-par)
 
 ```sh
 scw registry namespace create name=lc region=fr-par
-docker tag lc-gateway rg.fr-par.scw.cloud/lc/lc-gateway:0.2.0
-docker push rg.fr-par.scw.cloud/lc/lc-gateway:0.2.0
+docker tag lc-gateway rg.fr-par.scw.cloud/lc/lc-gateway:0.2.1
+docker push rg.fr-par.scw.cloud/lc/lc-gateway:0.2.1
 scw container namespace create name=contrib region=fr-par
 scw container container create namespace-id=<ns> name=lc-gateway \
-  registry-image=rg.fr-par.scw.cloud/lc/lc-gateway:0.2.0 port=8080 \
+  registry-image=rg.fr-par.scw.cloud/lc/lc-gateway:0.2.1 port=8080 \
   min-scale=1 max-scale=1 memory-limit=256 \
   environment-variables.PUBLIC_URL=https://… environment-variables.APP_URL=https://… \
   secret-environment-variables.GITHUB_APP_PRIVATE_KEY="$(cat app.pem)" \
@@ -99,15 +121,17 @@ scw container container create namespace-id=<ns> name=lc-gateway \
 scw container container deploy <id>
 ```
 
-`min-scale=1` and `max-scale=1`: the pilot keeps sessions in memory, so one
-instance, always warm. Secrets go through `secret-environment-variables`,
+`min-scale=1` and `max-scale=1`: one instance, always warm. A sign-in link
+is known only to the instance that mailed it, and the rate limits are
+counted per instance — two instances would let a link fail and double the
+limits. (Sessions would survive either way: they are signed cookies.) Secrets go through `secret-environment-variables`,
 never plain ones. The console offers the same fields under Containers →
 Settings → Environment variables / Secrets.
 
 ## 5. Check it runs
 
 ```sh
-curl https://contrib.example.org/health          # {"ok":true,"version":"0.2.0"}
+curl https://contrib.example.org/health          # {"ok":true,"version":"0.2.1"}
 curl -X POST https://contrib.example.org/auth/request -H 'content-type: application/json' \
      -d '{"email":"you@example.org"}'             # 202, and a mail if you are allowlisted
 ```
@@ -129,6 +153,10 @@ is accepted for this mode only; production always uses the App.
 
 ## 7. Since 0.1.0
 
+0.2.1 (Toni's report, 2026-10-11): an env file's quotes and written `\n`
+are forgiven in the key and the mail texts; `GITHUB_APP_PRIVATE_KEY_FILE`;
+the key is checked at startup; this guide is right about restarts.
+
 0.2.0 (after the partner's first replay): `GET /fiche?path=` for a private
 repository; `baseSha` required on `/contrib`; protected fields refused by the
 gateway itself, for every role; the mailed link opens a page whose button
@@ -136,10 +164,10 @@ does the one use, so mail scanners consume nothing; an hourly limit per
 address and a daily mail quota for everyone; memory swept on every sign-in
 request; constant-time signature comparison.
 
-## 8. What is not in 0.2.0
+## 8. What is not in 0.2.1
 
-- Persistent sessions across restarts or instances (a store would come with
-  a second instance).
+- Sign-in links and rate limits shared across instances (a store would come
+  with a second instance). Sessions already are: signed cookies.
 - A web UI: the form is the host's, built on lc-record.
 - Any write outside `CONTENT_DIRS`, any commit to `BASE_BRANCH`, any merge by
   the gateway itself. These are refusals by design, not gaps.

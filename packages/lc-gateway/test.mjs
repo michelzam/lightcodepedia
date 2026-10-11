@@ -11,9 +11,11 @@
  * (see DEPLOY.md § live test) — off by default, never in CI.
  */
 import { createGateway, slugify } from './index.js';
+import { configFromEnv } from './config.js';
 import { load } from '@karmicsoft/lc-serialize';
 import assert from 'node:assert';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { generateKeyPairSync, createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -401,6 +403,51 @@ await scenario('The installation token is minted once and reused', async () => {
   const cookie = await signIn('ada@example.org');
   await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, cookie);
   eq(gh.tokens, 1);
+});
+
+feature('The gateway reads an env file the way docker run --env-file writes it (0.2.1, Toni)');
+const ENV = { PUBLIC_URL: 'https://contrib.example.org', GITHUB_REPO: 'acme/fiches', CONTENT_DIRS: 'fiches/persons',
+              SESSION_SECRET: 's3cret', COAUTHOR_EMAIL: 'contrib@example.org' };
+const oneLine = (pem) => pem.trim().split('\n').join('\\n');      // the PEM on one line, \n written out
+await scenario('A quoted key with written \\n loads as a valid PEM', async () => {
+  const cfg = configFromEnv({ ...ENV, GITHUB_APP_PRIVATE_KEY: '"' + oneLine(PEM) + '"' });
+  eq(cfg.privateKey, PEM.trim());
+  ok(cfg.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----\n'));
+});
+await scenario('An unquoted key with real line breaks loads unchanged', async () => {
+  eq(configFromEnv({ ...ENV, GITHUB_APP_PRIVATE_KEY: PEM }).privateKey, PEM);
+});
+await scenario('GITHUB_APP_PRIVATE_KEY_FILE loads the key; setting both refuses to start', async () => {
+  const f = join(mkdtempSync(join(tmpdir(), 'lcgw-')), 'app.pem');
+  writeFileSync(f, PEM);
+  eq(configFromEnv({ ...ENV, GITHUB_APP_PRIVATE_KEY_FILE: f }).privateKey, PEM);
+  assert.throws(() => configFromEnv({ ...ENV, GITHUB_APP_PRIVATE_KEY_FILE: f, GITHUB_APP_PRIVATE_KEY: PEM }), /not both/);
+});
+await scenario('An invalid key refuses to start, naming the variable and never the key', async () => {
+  const secret = '-----BEGIN RSA PRIVATE KEY-----\\nnot-a-key-SECRET-BYTES\\n-----END RSA PRIVATE KEY-----';
+  let msg = '';
+  try { configFromEnv({ ...ENV, GITHUB_APP_PRIVATE_KEY: secret }); } catch (e) { msg = e.message; }
+  ok(/GITHUB_APP_PRIVATE_KEY/.test(msg), 'no refusal: ' + msg);
+  ok(!/SECRET-BYTES|not-a-key/.test(msg), 'the message leaks the key: ' + msg);
+});
+await scenario('A quoted MAIL_TEXT with written \\n mails several lines', async () => {
+  const env = configFromEnv({ ...ENV, GITHUB_APP_PRIVATE_KEY: PEM, MAIL_SUBJECT: '"Votre lien"',
+    MAIL_TEXT: '"Bonjour {name},\\n\\n{link}\\n\\nÀ bientôt"' });
+  eq(env.mailSubject, 'Votre lien');
+  const { call, mailbox } = rig({ mailText: env.mailText, mailSubject: env.mailSubject });
+  await call('POST', '/auth/request', { email: 'ada@example.org' });
+  const body = mailbox[0].textContent;
+  ok(body.startsWith('Bonjour Ada Test,\n\nhttps://'), JSON.stringify(body));
+  ok(!body.includes('\\n') && !body.includes('"'), JSON.stringify(body));
+});
+await scenario('After a restart, a session still holds; a link mailed before it is refused', async () => {
+  const before = rig();
+  const cookie = await before.signIn('ada@example.org');
+  await before.call('POST', '/auth/request', { email: 'zoe@example.org' });
+  const pending = new URL(before.mailbox[before.mailbox.length - 1].textContent.match(/https:\S+/)[0]).searchParams.get('t');
+  const after = rig();                                   // a new instance, the same SESSION_SECRET
+  eq((await after.call('GET', '/me', null, cookie)).status, 200);
+  eq((await after.press(pending)).status, 401);
 });
 })();
 
