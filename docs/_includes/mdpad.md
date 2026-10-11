@@ -83,7 +83,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad.lc-mdpad-folded > .lc-mdpad-out { flex: 1 1 auto !important; }
 /* the gutter's label: what a decoration makes */
 .lc-mdpad-tip { position: absolute; z-index: 4; pointer-events: none; padding: 0.2em 0.6em; border-radius: 6px;
-  background: #f8fafc; color: #1e293b; font-size: 0.8em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgba(248, 250, 252, 0.72); color: #1e293b; backdrop-filter: blur(2px); font-size: 0.8em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25); white-space: nowrap; }
 /* ↕ the grip under the pad: drag to resize, for this visit only */
 .lc-mdpad-grip { position: absolute; left: 0; right: 0; bottom: -0.75em; height: 0.75em; cursor: ns-resize;
@@ -478,21 +478,33 @@ Auto-included by docs/_layouts/default.html.
       if (_drawer) { _drawer.cancel(); _drawer = null; }
       if (reduced || column || !pane.animate) { setFold(on); return; }
       var gap = parseFloat(getComputedStyle(wrap).columnGap) || 0;
+      /* THE LEFT EDGE MOVES (Michel, 2026-10-11): the editor's text stays
+         pinned to the right while its left margin slides — a drawer going
+         into the wall, not a page being cropped */
+      function pin(w) {
+        pane.style.overflow = "hidden"; pane.style.justifyContent = "flex-end";
+        ta.style.flex = "0 0 " + w + "px";
+        if (keysEl) { keysEl.style.left = "auto"; keysEl.style.width = w + "px"; }
+      }
+      function unpin() {
+        pane.style.overflow = ""; pane.style.justifyContent = ""; pane.style.flex = "";
+        ta.style.flex = "";
+        if (keysEl) { keysEl.style.left = ""; keysEl.style.width = ""; }
+      }
+      var ease = { duration: 380, easing: "cubic-bezier(.4,0,.2,1)" };
       if (on) {
         var w = pane.getBoundingClientRect().width;
-        pane.style.flex = "0 0 " + w + "px"; pane.style.overflow = "hidden";
-        _drawer = pane.animate([{ flexBasis: w + "px", opacity: 1, marginLeft: "0px" },
-                                { flexBasis: "0px", opacity: 0, marginLeft: (-gap) + "px" }],
-                               { duration: 380, easing: "cubic-bezier(.4,0,.2,1)" });
-        _drawer.onfinish = function () { _drawer = null; pane.style.flex = ""; pane.style.overflow = ""; setFold(true); };
+        pane.style.flex = "0 0 " + w + "px"; pin(w);
+        _drawer = pane.animate([{ flexBasis: w + "px", marginLeft: "0px" },
+                                { flexBasis: "0px", marginLeft: (-gap) + "px" }], ease);
+        _drawer.onfinish = function () { _drawer = null; unpin(); setFold(true); };
       } else {
         setFold(false);
         var target = pane.getBoundingClientRect().width;
-        pane.style.overflow = "hidden";
-        _drawer = pane.animate([{ flexBasis: "0px", opacity: 0, marginLeft: (-gap) + "px", flexGrow: 0 },
-                                { flexBasis: target + "px", opacity: 1, marginLeft: "0px", flexGrow: 0 }],
-                               { duration: 380, easing: "cubic-bezier(.4,0,.2,1)" });
-        _drawer.onfinish = function () { _drawer = null; pane.style.overflow = ""; if (keysEl) paintSoon(); };
+        pin(target);
+        _drawer = pane.animate([{ flexBasis: "0px", marginLeft: (-gap) + "px", flexGrow: 0 },
+                                { flexBasis: target + "px", marginLeft: "0px", flexGrow: 0 }], ease);
+        _drawer.onfinish = function () { _drawer = null; unpin(); if (keysEl) paintSoon(); };
       }
     }
     function setFold(on) {
@@ -610,8 +622,9 @@ Auto-included by docs/_layouts/default.html.
       _tipT = setTimeout(function () {
         var W = wrap.getBoundingClientRect(), b = hit.getBoundingClientRect();
         tip.textContent = hit.getAttribute("data-ic") + " " + (hit.getAttribute("data-icn") || "");
-        tip.style.left = (r.left - W.left + gut + 4) + "px";
-        tip.style.top = (b.top - W.top - 2) + "px";
+        /* in the gutter's own column, above its line — never over the code it names */
+        tip.style.left = (r.left - W.left + 4) + "px";
+        tip.style.top = (b.top - W.top - b.height - 4) + "px";
         tip.hidden = false;
       }, 1000);
     });
