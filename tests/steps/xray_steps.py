@@ -518,3 +518,46 @@ def step_query_below_dataset(context):
     }""")
     assert "query" in tops and "dataset" in tops, "panels not found: %r" % tops
     assert tops["query"] > tops["dataset"], "the query floats above its dataset: %r" % tops
+
+
+_PIPE_ENDS_JS = """() => {
+  const boxes = [...document.querySelectorAll('#lcx-scene .lcx-xray')]
+    .filter(p => getComputedStyle(p).display !== 'none')
+    .map(p => ({ name: (p.querySelector('.t') || p).textContent.slice(0, 24),
+                 r: p.getBoundingClientRect() }));
+  const ends = [...document.querySelectorAll('#lcx-scene svg circle[r="7"]')]
+    .map(c => { const r = c.getBoundingClientRect();
+                return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  const T = 3;
+  const onEdge = (e, r) => {
+    const inX = e.x >= r.left - T && e.x <= r.right + T,
+          inY = e.y >= r.top - T && e.y <= r.bottom + T;
+    return (inY && (Math.abs(e.x - r.left) <= T || Math.abs(e.x - r.right) <= T)) ||
+           (inX && (Math.abs(e.y - r.top) <= T || Math.abs(e.y - r.bottom) <= T));
+  };
+  const loose = ends.filter(e => !boxes.some(b => onEdge(e, b.r)))
+    .map(e => Math.round(e.x) + ',' + Math.round(e.y));
+  return { ends: ends.length,
+           boxes: boxes.map(b => b.name + ' ' + [b.r.left, b.r.top, b.r.right, b.r.bottom].map(Math.round).join(',')),
+           loose };
+}"""
+
+
+@then("every pipe ends on a ghost's edge")
+def step_pipes_on_edges(context):
+    context.page.wait_for_timeout(600)
+    got = context.page.evaluate(_PIPE_ENDS_JS)
+    assert got["ends"] >= 2, "no pipes drawn: %r" % got
+    assert not got["loose"], "pipe ends off every ghost's edge: %r" % got
+
+
+@when("the dataset's ghost grows by a few lines")
+def step_dataset_ghost_grows(context):
+    grew = context.page.evaluate("""() => {
+      const p = [...document.querySelectorAll('#lcx-scene .lcx-xray')]
+        .find(p => getComputedStyle(p).display !== 'none' && /Dataset/.test((p.querySelector('.t') || p).textContent));
+      if (!p) return false;
+      for (let i = 0; i < 4; i++) p.appendChild(Object.assign(document.createElement('div'), { className: 'r', textContent: 'late line ' + i }));
+      return true;
+    }""")
+    assert grew, "no dataset ghost on the scene"

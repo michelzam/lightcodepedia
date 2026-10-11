@@ -364,6 +364,18 @@ Auto-included by docs/_layouts/default.html.
 
     // ── scene assembly ───────────────────────────────────────────────────────
     let cur = null, lastHit = null, lastXY = { x: 0, y: 0 }, lastShift = null, liveCache = null;
+    /* a ghost's box in SCENE coordinates — what place() wrote, untouched by
+       the fit's scale or by how a browser reports a scaled, fixed layer */
+    const box = p => { const left = p.offsetLeft, top = p.offsetTop, width = p.offsetWidth, height = p.offsetHeight;
+      return { left, top, width, height, right: left + width, bottom: top + height }; };
+    let redrawPipes = null;
+    const sizes = new WeakMap();
+    const sizeWatch = window.ResizeObserver ? new ResizeObserver(list => {
+      let grew = false;
+      list.forEach(en => { const p = en.target, k = p.offsetWidth + "x" + p.offsetHeight;
+        if (sizes.has(p) && sizes.get(p) !== k) grew = true; sizes.set(p, k); });
+      if (grew && redrawPipes) requestAnimationFrame(() => redrawPipes && redrawPipes());
+    }) : null;
     function fitScene() {
       const vw = window.innerWidth, vh = window.innerHeight;
       const vis = panels.filter(p => p.style.display !== "none");
@@ -383,7 +395,7 @@ Auto-included by docs/_layouts/default.html.
     }
     function hideAll() {
       panels.forEach(p => p.style.display = "none");
-      ring.style.display = "none"; svg.style.display = "none"; clearPipes();
+      ring.style.display = "none"; svg.style.display = "none"; clearPipes(); redrawPipes = null;
       scene.style.display = "none"; scene.style.transform = "";
       document.body.classList.remove("lcx-on"); cur = null;
     }
@@ -392,7 +404,7 @@ Auto-included by docs/_layouts/default.html.
       p.style.clipPath = p.style.webkitClipPath = "none";
     }
     function buildScene(hit, data, shift) {
-      clearPipes(); panels.forEach(p => p.style.display = "none");
+      clearPipes(); redrawPipes = null; panels.forEach(p => p.style.display = "none");
       scene.style.transform = "";                          // reset scale before re-measuring
       scene.style.display = "block";
       const rect = hit.el.getBoundingClientRect();
@@ -546,15 +558,22 @@ Auto-included by docs/_layouts/default.html.
       });
       /* LANES (Michel, 2026-10-11): two pipes never run at one height — a
          horizontal run that would sit on another moves down a lane */
-      const lanes = [], LANE = 14;
+      let lanes = [];
+      const LANE = 14;
       const lane = (y, lo, hi) => {
         let g = 0;
         while (g++ < 12 && lanes.some(v => Math.abs(v - y) < LANE)) y += LANE;
         if (hi != null && y > hi) { y = lo; g = 0; while (g++ < 12 && lanes.some(v => Math.abs(v - y) < LANE)) y += LANE; }
         lanes.push(y); return y;
       };
+      /* PIPES READ THE GHOSTS' OWN BOXES (Michel, 2026-10-11: "where the
+         pipes connect the ghosts") — scene coordinates, the very ones the
+         ghosts were placed with, never the screen's; and a ghost that changes
+         size after (a late font, an emoji) redraws its pipes */
+      const drawPipes = () => {
+      clearPipes(); lanes = [];
       edges.forEach(eg => {
-        const r0 = eg.a.panel.getBoundingClientRect(), r1 = eg.b.panel.getBoundingClientRect();
+        const r0 = box(eg.a.panel), r1 = box(eg.b.panel);
         const dockN = eg.b.docked ? eg.b : (eg.a.docked ? eg.a : null);
         if (dockN) {
           /* docked source → down its own column, one elbow, into the user's
@@ -574,6 +593,10 @@ Auto-included by docs/_layouts/default.html.
         pipe(e0.x, e0.y, e1.x, e1.y);
         plabel((e0.x + e1.x) / 2, (e0.y + e1.y) / 2, (eg.list ? "⦙ " : "") + disp(eg.role));
       });
+      };
+      drawPipes();
+      redrawPipes = drawPipes;
+      panels.forEach(p => sizeWatch && sizeWatch.observe(p));
       requestAnimationFrame(fitScene);                     // fit after browser lays out panels
     }
     function lensClip(hit, xy) {

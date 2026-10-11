@@ -147,6 +147,19 @@ Feature: X-ray inspector
     Then the x-ray scene mentions "Query"
     And the query's panel sits below its dataset's panel
 
+  Scenario: Every pipe ends on a ghost's edge, even after a ghost grows
+    Michel, 2026-10-11: "where the pipes connect the ghosts" — a drop
+    started inside the dataset's ghost and the query's pipe arrived above
+    it. A pipe's both ends sit on a ghost's border, and stay there when a
+    ghost changes size after the scene was drawn.
+
+    When I navigate to "/components/query"
+    And I wait for the page to be interactive
+    And I shift-hover over the chart component
+    Then every pipe ends on a ghost's edge
+    When the dataset's ghost grows by a few lines
+    Then every pipe ends on a ghost's edge
+
   Scenario: Resizing the editor keeps it open, and the text field grows with it
     A dialog's own resize corner and its backdrop both report the dialog as
     the click target, so letting go of the corner closed the editor, the
