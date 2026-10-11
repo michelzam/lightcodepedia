@@ -91,6 +91,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-find.none input { border-color: #e06c75; }
 .lc-mdpad-find .n { min-width: 2.6em; text-align: center; color: #666; font-variant-numeric: tabular-nums; }
 .lc-mdpad-find button { font: inherit; border: 1px solid #c4c9d4; background: #fff; border-radius: 5px; padding: 0.05em 0.45em; cursor: pointer; }
+.lc-mdpad-piano .ln.md-flash { animation: lcMdFlash 0.9s ease-out; }
+@keyframes lcMdFlash { from { background: rgba(250, 204, 21, 0.45); } to { background: transparent; } }
+.lc-mdpad[data-lc-cmd] .lc-mdpad-in { cursor: pointer; }
+.lc-mdpad-rename .from { font-family: ui-monospace, monospace; color: #b4232f; }
+.lc-mdpad-rename .n { min-width: 4em; white-space: nowrap; }
 .lc-mdpad-piano .md-find { background: rgba(250, 204, 21, 0.28); border-radius: 2px; }
 .lc-mdpad-piano .md-find-at { background: rgba(250, 204, 21, 0.75); box-shadow: 0 0 0 1px #facc15; color: #111; }   /* its own display:flex must not beat [hidden] */
 .lc-mdpad-split:hover::before, .lc-mdpad[data-lc-splitting] .lc-mdpad-split::before { background: #0066cc; }
@@ -1495,6 +1500,188 @@ Auto-included by docs/_layouts/default.html.
       if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "f" || e.key === "F")) { e.preventDefault(); findOpen(); }
       else if (e.key === "Escape" && fnd.box) { e.preventDefault(); findClose(); }
     });
+    /* ── THE TEXT AS A PROGRAM (Michel, 2026-10-11: "ctrl-click on an id ref
+       to jump to the id · a rename with propagation · shortcuts to move
+       blocks up/down and to put one beside the next"). Every move is ONE
+       edit — one ⌘Z undoes it — and only wires count: prose never moves. */
+    function editSpan(a, b, text, selA, selB) {
+      ta.focus();
+      ta.setSelectionRange(a, b);
+      var ok = false;
+      try { ok = document.execCommand && document.execCommand("insertText", false, text); } catch (e) {}
+      if (!ok) {
+        ta.value = ta.value.slice(0, a) + text + ta.value.slice(b);
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      if (selA != null) ta.setSelectionRange(selA, selB == null ? selA : selB);
+      blocks = blocksOf(ta.value); focusNow();
+    }
+    function lineStarts(v) { var st = [0]; for (var i = 0; i < v.length; i++) if (v.charAt(i) === "\n") st.push(i + 1); return st; }
+    /* every wire of tok in the text, as absolute [from, to] */
+    function placesOf(tok) {
+      var v = ta.value, st = lineStarts(v), out = [];
+      v.split("\n").forEach(function (l, n) {
+        wireRanges(l, tok).forEach(function (r) { out.push([st[n] + r[0], st[n] + r[1], /^#/.test(l.slice(r[0] - 1, r[0])) ]); });
+      });
+      return out.sort(function (x, y) { return x[0] - y[0]; });
+    }
+    /* the wire under the caret, or null when the caret is on prose */
+    function wireHere() {
+      var w = caretWord();
+      if (!w || !/^[A-Za-z_]/.test(w.tok)) return null;
+      var lines = ta.value.split("\n");
+      if (!wireRanges(lines[w.line] || "", w.tok).some(function (r) { return r[0] === w.col; })) return null;
+      return w;
+    }
+    function flashAt(pos) {
+      var line = ta.value.slice(0, pos).split("\n").length;
+      var lh = parseFloat(getComputedStyle(ta).lineHeight) || 18;
+      var div = keysEl && keysEl.querySelector(".ln[data-n='" + line + "']");
+      var y = div ? div.offsetTop : (line - 1) * lh;
+      if (y < ta.scrollTop || y > ta.scrollTop + ta.clientHeight - 2 * lh) ta.scrollTop = Math.max(0, y - ta.clientHeight / 3);
+      if (keysEl) {
+        keysEl.scrollTop = ta.scrollTop;
+        setTimeout(function () {
+          var d = keysEl.querySelector(".ln[data-n='" + line + "']");
+          if (d) { d.classList.add("md-flash"); setTimeout(function () { d.classList.remove("md-flash"); }, 900); }
+        }, 300);
+      }
+    }
+    /* ⌘-click (Ctrl-click): a use jumps to its #declaration; on the
+       declaration, it walks the uses one by one */
+    function jumpWire() {
+      if (ta.selectionEnd !== ta.selectionStart) ta.setSelectionRange(ta.selectionStart, ta.selectionStart);
+      var w = wireHere(); if (!w) return false;
+      var all = placesOf(w.tok), here = ta.selectionStart;
+      var decl = all.filter(function (r) { return r[2]; })[0];
+      var target;
+      if (decl && !(here >= decl[0] && here <= decl[1])) target = decl;
+      else {
+        var uses = all.filter(function (r) { return !r[2]; });
+        target = uses.filter(function (r) { return r[0] > here; })[0] || uses[0];
+      }
+      if (!target) return false;
+      ta.focus(); ta.setSelectionRange(target[0], target[1]);
+      flashAt(target[0]); focusNow();
+      wrap.setAttribute("data-lc-jumped", ta.value.slice(0, target[0]).split("\n").length);
+      return true;
+    }
+    ta.addEventListener("click", function (e) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      setTimeout(jumpWire, 0);              /* after the browser placed the caret */
+    });
+    function cmdHeld(e) { wrap.toggleAttribute("data-lc-cmd", !!(e.metaKey || e.ctrlKey)); }
+    ta.addEventListener("mousemove", cmdHeld);
+    ta.addEventListener("keyup", cmdHeld);
+    ta.addEventListener("mouseleave", function () { wrap.removeAttribute("data-lc-cmd"); });
+
+    /* F2: rename an id — every wire that names it, nothing else */
+    var ren = null;
+    function renameClose() { if (ren) { ren.box.remove(); ren = null; ta.focus(); } }
+    function renameOpen() {
+      var w = wireHere();
+      if (!w) { window.lcxToast && window.lcxToast("Put the caret on an id first — #dogs, source=\"dogs\", FROM dogs…", false); return; }
+      renameClose();
+      var places = placesOf(w.tok);
+      var box = document.createElement("div");
+      box.className = "lc-mdpad-find lc-mdpad-rename";
+      box.innerHTML = "<span class='ic'>✏️</span><span class='from'></span><span>→</span>" +
+        "<input type='text' aria-label='New id' spellcheck='false'><span class='n'></span>" +
+        "<button type='button' data-ok title='Rename (Enter)'>↵</button><button type='button' data-x title='Cancel (Esc)'>✕</button>";
+      box.querySelector(".from").textContent = w.tok;
+      (src || wrap).appendChild(box);
+      var inp = box.querySelector("input"), n = box.querySelector(".n"), okBtn = box.querySelector("[data-ok]");
+      ren = { box: box, tok: w.tok };
+      function why(v) {
+        if (!/^[a-z_][a-z0-9_]*$/.test(v)) return "snake_case: small letters, digits, _";
+        if (v !== w.tok && placesOf(v).length) return "#" + v + " is taken";
+        return "";
+      }
+      function check() {
+        var v = inp.value.trim(), bad = v === w.tok ? "" : why(v);
+        box.classList.toggle("none", !!bad);
+        n.textContent = bad || (places.length + " place" + (places.length === 1 ? "" : "s"));
+        okBtn.disabled = !!bad || v === w.tok;
+      }
+      function go() {
+        var v = inp.value.trim();
+        if (v === w.tok || why(v)) return;
+        var text = ta.value, out = "", at = 0, caret = ta.selectionStart, shift = 0;
+        places.forEach(function (r) {
+          out += text.slice(at, r[0]) + v; at = r[1];
+          if (r[1] <= caret) shift += v.length - w.tok.length;
+        });
+        out += text.slice(at);
+        /* one edit, from the first place to the last: one ⌘Z */
+        var a = places[0][0], b = places[places.length - 1][1];
+        var tail = text.length - b;
+        renameClose();
+        editSpan(a, b, out.slice(a, out.length - tail), caret + shift);
+        wrap.setAttribute("data-lc-renamed", w.tok + ">" + v);
+        window.lcxToast && window.lcxToast("✏️ " + w.tok + " → " + v + " · " + places.length + " place" + (places.length === 1 ? "" : "s"), true);
+      }
+      inp.value = w.tok; check();
+      inp.addEventListener("input", check);
+      inp.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); go(); }
+        else if (e.key === "Escape") { e.preventDefault(); renameClose(); }
+      });
+      box.addEventListener("click", function (e) {
+        var b = e.target.closest("button"); if (!b) return;
+        if (b.hasAttribute("data-x")) renameClose(); else go();
+      });
+      inp.focus(); inp.select();
+    }
+
+    /* ⌥↑ ⌥↓ move the block under the caret past its neighbour — words and
+       decoration together, the gap kept; ⌥⇧→ puts it beside the block
+       before (beside="true" on its decoration), ⌥⇧← takes it out */
+    function moveBlock(dir) {
+      var v = ta.value, L = v.split("\n"), bs = blocksOf(v), st = lineStarts(v);
+      var line = v.slice(0, ta.selectionStart).split("\n").length - 1;
+      var i = blockAt(bs, line); if (i < 0) return false;
+      var j = i + dir; if (j < 0 || j >= bs.length) return false;
+      var A = dir < 0 ? bs[j] : bs[i], B = dir < 0 ? bs[i] : bs[j];   /* A above B */
+      var a = st[A.start], b = B.end + 1 < st.length ? st[B.end + 1] - 1 : v.length;
+      var la = L.slice(A.start, A.end + 1), gap = L.slice(A.end + 1, B.start), lb = L.slice(B.start, B.end + 1);
+      var off = ta.selectionStart - st[bs[i].start];
+      var text = lb.concat(gap, la).join("\n");
+      /* where the moved block now starts */
+      var mine = dir < 0 ? a : a + lb.concat(gap).join("\n").length + 1;
+      editSpan(a, b, text, mine + off);
+      flashAt(mine);
+      return true;
+    }
+    function besideBlock(on) {
+      var v = ta.value, L = v.split("\n"), bs = blocksOf(v), st = lineStarts(v);
+      var line = v.slice(0, ta.selectionStart).split("\n").length - 1;
+      var i = blockAt(bs, line); if (i < 0) return false;
+      var k = -1;
+      for (var n = bs[i].end; n >= bs[i].start; n--) if (/^\s*\{:.*\}\s*$/.test(L[n])) { k = n; break; }
+      if (k < 0) { window.lcxToast && window.lcxToast("Beside needs a decoration — this block has none", false); return true; }
+      var d = L[k], nd;
+      if (on) {
+        if (i === 0) { window.lcxToast && window.lcxToast("Nothing above to stand beside", false); return true; }
+        nd = /\bbeside=/.test(d) ? d.replace(/\bbeside=("[^"]*"|\S+)/, 'beside="true"') : d.replace(/\s*\}\s*$/, ' beside="true" }');
+      } else nd = d.replace(/\s+beside=("[^"]*"|\S+)/, "");
+      if (nd === d) return true;
+      var caret = ta.selectionStart, delta = caret > st[k] + d.length ? nd.length - d.length : 0;
+      editSpan(st[k], st[k] + d.length, nd, caret + delta);
+      return true;
+    }
+    ta.addEventListener("keydown", function (e) {
+      if (e.key === "F2") { e.preventDefault(); renameOpen(); return; }
+      if (!e.altKey || e.metaKey || e.ctrlKey) return;
+      var done = false;
+      if (!e.shiftKey && e.key === "ArrowUp") done = moveBlock(-1);
+      else if (!e.shiftKey && e.key === "ArrowDown") done = moveBlock(1);
+      else if (e.shiftKey && e.key === "ArrowRight") done = besideBlock(true);
+      else if (e.shiftKey && e.key === "ArrowLeft") done = besideBlock(false);
+      else return;
+      e.preventDefault();      /* a block at the edge stays put, the caret too */
+    });
+    wrap._lcRename = function (to) { renameOpen(); if (ren) { var i = ren.box.querySelector("input"); i.value = to; i.dispatchEvent(new Event("input")); i.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); } };
+
     var findBtn = document.createElement("button");
     findBtn.type = "button"; findBtn.className = "lc-mdpad-findbtn";
     findBtn.textContent = "🔍"; findBtn.title = "Find in the text (⌘F)";

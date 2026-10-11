@@ -340,3 +340,87 @@ def step_find_sel(context, pad_id, text):
     got = _pad(context, pad_id).locator(".lc-mdpad-in").evaluate(
         "t => t.value.slice(t.selectionStart, t.selectionEnd)")
     assert got.lower() == text.lower(), "selection %r" % got
+
+
+def _val(context, pad_id):
+    return _pad(context, pad_id).locator(".lc-mdpad-in").evaluate("t => t.value")
+
+
+@when('I ⌘-click the caret in the "{pad_id}" pad')
+def step_cmd_click(context, pad_id):
+    _pad(context, pad_id).locator(".lc-mdpad-in").evaluate(
+        "t => t.dispatchEvent(new MouseEvent('click', {bubbles: true, ctrlKey: true, metaKey: true}))")
+    context.page.wait_for_timeout(300)
+
+
+@then('the "{pad_id}" pad selects "{text}" on the line "{line}"')
+@then('the "{pad_id}" pad selects "{text}" on the line \'{line}\'')
+def step_sel_on_line(context, pad_id, text, line):
+    got = _pad(context, pad_id).locator(".lc-mdpad-in").evaluate("""t => {
+      const v = t.value, a = t.selectionStart, b = t.selectionEnd;
+      const ls = v.lastIndexOf("\\n", a - 1) + 1, le = v.indexOf("\\n", a);
+      return [v.slice(a, b), v.slice(ls, le < 0 ? v.length : le)];
+    }""")
+    assert got[0] == text and got[1].strip() == line, "selection %r on line %r" % tuple(got)
+
+
+def _f2(context, pad_id, to, enter=True):
+    ta = _pad(context, pad_id).locator(".lc-mdpad-in")
+    ta.press("F2")
+    inp = _pad(context, pad_id).locator(".lc-mdpad-rename input")
+    expect(inp).to_be_focused(timeout=3_000)
+    inp.fill(to)
+    if enter:
+        inp.press("Enter")
+    context.page.wait_for_timeout(300)
+
+
+@when('I rename it to "{to}" with F2 in the "{pad_id}" pad')
+def step_f2(context, to, pad_id):
+    _f2(context, pad_id, to)
+
+
+@when('I try F2 to "{to}" in the "{pad_id}" pad')
+def step_f2_try(context, to, pad_id):
+    _f2(context, pad_id, to, enter=False)
+
+
+@then('the "{pad_id}" pad\'s rename box says "{text}"')
+def step_f2_says(context, pad_id, text):
+    expect(_pad(context, pad_id).locator(".lc-mdpad-rename .n")).to_have_text(text)
+    expect(_pad(context, pad_id).locator(".lc-mdpad-rename [data-ok]")).to_be_disabled()
+
+
+@then('the "{pad_id}" pad holds "{a}", \'{b}\', "{c}" and \'{d}\'')
+def step_holds4(context, pad_id, a, b, c, d):
+    v = _val(context, pad_id)
+    for t in (a, b, c, d):
+        assert t in v, "%r not in the pad" % t
+
+
+@then('the "{pad_id}" pad holds {q}')
+def step_holds(context, pad_id, q):
+    t = q[1:-1] if q[:1] in "\"'" and q[-1:] == q[:1] else q
+    v = _val(context, pad_id)
+    assert t in v, "%r not in the pad:\n%s" % (t, v)
+
+
+@when('I press "{keys}" in the "{pad_id}" pad')
+def step_press(context, keys, pad_id):
+    _pad(context, pad_id).locator(".lc-mdpad-in").press(keys)
+    context.page.wait_for_timeout(300)
+
+
+@then('in the "{pad_id}" pad "{a}" comes before "{b}"')
+def step_before(context, pad_id, a, b):
+    v = _val(context, pad_id)
+    assert a in v and b in v and v.index(a) < v.index(b), "order wrong:\n" + v
+
+
+@then('the "{pad_id}" pad\'s caret is still in "{t}"')
+def step_caret_in_t(context, pad_id, t):
+    ok = context.page.evaluate("""([id, t]) => {
+      const ta = document.querySelector("[data-lc-id='" + id + "'] .lc-mdpad-in");
+      const i = ta.value.indexOf(t); return ta.selectionStart >= i && ta.selectionStart <= i + t.length;
+    }""", [pad_id, t])
+    assert ok, "the caret left " + t

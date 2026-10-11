@@ -219,6 +219,15 @@ starter back in the editor — your saved copy stays until you 💾 again).
 every match glows, ↑ ↓ (or Enter, ⇧Enter) walk them, Esc leaves the
 caret on the one you were on.
 
+**The text as a program.** In the editor, the wires are live:
+
+| key | what it does |
+|---|---|
+| ⌘-click (Ctrl-click) on a wire | jumps to its `#id`; on the `#id`, walks its uses one by one |
+| F2 on a wire | renames the id everywhere it is wired — `#id`, `source="id"`, `FROM id`, `{= id… }` — prose untouched, one ⌘Z |
+| ⌥↑ / ⌥↓ | moves the block under the caret past its neighbour — words and decoration together |
+| ⌥⇧→ / ⌥⇧← | puts the block beside the one above (`beside="true"`), or takes it out |
+
 A proof can read how the work was kept: `pad.versions` — the names of
 the versions kept, newest first; `pad.replayed` — how many times its
 film was played.

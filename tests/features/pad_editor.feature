@@ -208,6 +208,130 @@ Feature: The pad types like a text field, painted
     Then the "playground" pad's finder is gone
     And the "playground" pad's selection reads "bullet"
 
+  Scenario: ⌘-click on a wire jumps to its id; on the id, it walks the uses
+    Michel, 2026-10-11: "ctrl-click on an id ref to jump to the id".
+
+    Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
+      """
+      # Wires
+
+      `````markdown
+      # Dogs per campus
+
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      `````
+      {: .mdpad #wires decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/wires.md"
+    And I wait for the page to be interactive
+    And I put the caret in "dogs" of 'source="dogs"' in the "wires" pad
+    And I ⌘-click the caret in the "wires" pad
+    Then the "wires" pad selects "dogs" on the line "{: .dataset #dogs }"
+    When I ⌘-click the caret in the "wires" pad
+    Then the "wires" pad selects "dogs" on the line "SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus"
+
+  Scenario: F2 renames an id in every wire, prose untouched, one undo
+    Michel, 2026-10-11: "a refactor/rename of an ID with propagation to
+    other usages".
+
+    Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
+      """
+      # Wires
+
+      `````markdown
+      # Dogs per campus
+
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      `````
+      {: .mdpad #wires decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/wires.md"
+    And I wait for the page to be interactive
+    And I put the caret in "dogs" of '#dogs' in the "wires" pad
+    And I rename it to "pets" with F2 in the "wires" pad
+    Then the "wires" pad holds "#pets", 'bind="pets"', "FROM pets" and 'source="pets"'
+    And the "wires" pad holds "AS dogs"
+    And the "wires" pad does not contain "#dogs"
+    When I undo in the "wires" pad
+    Then the "wires" pad holds "#dogs", 'bind="dogs"', "FROM dogs" and 'source="dogs"'
+    When I put the caret in "dogs" of '#dogs' in the "wires" pad
+    And I try F2 to "dog_grid" in the "wires" pad
+    Then the "wires" pad's rename box says "#dog_grid is taken"
+
+  Scenario: ⌥↓ and ⌥↑ move a whole block; ⌥⇧→ puts it beside the one above, ⌥⇧← takes it out
+    Michel, 2026-10-11: "shortcuts to move/jump up/down (reverse order) and
+    another to put it beside next/previous" — for all blocks.
+
+    Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
+      """
+      # Wires
+
+      `````markdown
+      # Dogs per campus
+
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      `````
+      {: .mdpad #wires decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/wires.md"
+    And I wait for the page to be interactive
+    And I put the caret in "by_campus" of '#by_campus' in the "wires" pad
+    And I press "Alt+ArrowDown" in the "wires" pad
+    Then in the "wires" pad "#dog_grid" comes before "#by_campus"
+    And the "wires" pad's caret is still in "#by_campus"
+    When I press "Alt+ArrowUp" in the "wires" pad
+    Then in the "wires" pad "#by_campus" comes before "#dog_grid"
+    When I put the caret in "dog_grid" of 'master="dog_grid"' in the "wires" pad
+    And I press "Alt+Shift+ArrowRight" in the "wires" pad
+    Then the "wires" pad holds '{: .form master="dog_grid" beside="true" }'
+    When I press "Alt+Shift+ArrowLeft" in the "wires" pad
+    Then the "wires" pad holds '{: .form master="dog_grid" }'
+
   Scenario: Hovering a decoration's icon for a second names the component
     Michel, 2026-10-11: "hovering the gutter should show the component type
     (emoji and type name) after one second in a tooltip".
