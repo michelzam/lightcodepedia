@@ -506,3 +506,17 @@ def step_help_mentions(context, pad_id, a, b):
     card = _pad(context, pad_id).locator(".lc-mdpad-help")
     expect(card).to_contain_text(a)
     expect(card).to_contain_text(b)
+
+
+@when('I put the caret at the start of the line holding "{text}" in the "{pad_id}" pad')
+def step_caret_line(context, text, pad_id):
+    ok = _pad(context, pad_id).locator(".lc-mdpad-in").evaluate("""(t, x) => {
+      const i = t.value.indexOf(x); if (i < 0) return false;
+      const ls = t.value.lastIndexOf("\\n", i - 1) + 1; t.focus(); t.setSelectionRange(ls, ls); return true; }""", text)
+    assert ok, "%r is not in the pad" % text
+
+
+@then('the "{pad_id}" pad\'s editor has let the focus go')
+def step_focus_left(context, pad_id):
+    still = _pad(context, pad_id).locator(".lc-mdpad-in").evaluate("t => document.activeElement === t")
+    assert not still, "the editor kept the focus"

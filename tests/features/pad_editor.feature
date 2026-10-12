@@ -470,6 +470,67 @@ Feature: The pad types like a text field, painted
     When I press the "playground" pad's ? pill
     Then the "playground" pad's help mentions "F2" and "complete"
 
+  Scenario: Tab walks what can be customized, like a form; in a fence it indents; Esc then Tab leaves
+    Michel, 2026-10-12: "unless the cursor is in a fence, tab should jump
+    between knobs and ids, just like in a form … and the class names too,
+    everything that can be customized".
+
+    Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
+      """
+      # Wires
+
+      `````markdown
+      # Dogs per campus
+
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      `````
+      {: .mdpad #wires decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/wires.md"
+    And I wait for the page to be interactive
+    And I put the caret at the start of the "wires" pad
+    And I press "Tab" in the "wires" pad
+    Then the "wires" pad selects "dataset"
+    When I press "Escape" in the "wires" pad
+    And I put the caret at the start of the "wires" pad
+    And I press "Tab" in the "wires" pad
+    And I press "Tab" in the "wires" pad
+    Then the "wires" pad selects "dogs"
+    When I press "Tab" in the "wires" pad
+    Then the "wires" pad selects "query"
+    When I press "Tab" in the "wires" pad
+    Then the "wires" pad selects "dogs"
+    And the "wires" pad offers "dogs" and "by_campus"
+    When I press "Tab" in the "wires" pad
+    Then the "wires" pad selects "by_campus"
+    When I press "Tab" in the "wires" pad
+    Then the "wires" pad selects "The dogs"
+    When I press "Shift+Tab" in the "wires" pad
+    Then the "wires" pad selects "by_campus"
+    When I put the caret at the start of the line holding "SELECT campus" in the "wires" pad
+    And I press "Tab" in the "wires" pad
+    Then the "wires" pad holds "    SELECT campus"
+    When I press "Shift+Tab" in the "wires" pad
+    Then the "wires" pad does not contain "    SELECT campus"
+    When I press "Escape" in the "wires" pad
+    And I press "Tab" in the "wires" pad
+    Then the "wires" pad's editor has let the focus go
+
   Scenario: Hovering a decoration's icon for a second names the component
     Michel, 2026-10-11: "hovering the gutter should show the component type
     (emoji and type name) after one second in a tooltip".

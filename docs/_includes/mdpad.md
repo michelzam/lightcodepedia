@@ -424,6 +424,7 @@ Auto-included by docs/_layouts/default.html.
       src.appendChild(ta);
     }
     ta.setAttribute("aria-label", "Markdown editor");
+    ta.setAttribute("aria-description", "Tab moves to the next thing you can change; Escape then Tab leaves the editor");
     ta.spellcheck = false;
     ta.rows = rows;
     ta.value = seed;
@@ -1972,8 +1973,12 @@ Auto-included by docs/_layouts/default.html.
       setTimeout(function () { complete(true); }, 0);   /* a blank inside a knob offers its values at once */
     }
     function accept(it) {
-      var cx = pop.cx, a = ta.selectionEnd > ta.selectionStart && cx.kind === "value" ? ta.selectionStart : cx.at;
-      var b = ta.selectionEnd > ta.selectionStart && cx.kind === "value" ? ta.selectionEnd : ta.selectionStart;
+      /* a selection that starts where the list was asked (a value, a class
+         Tab selected) is replaced, not pushed aside */
+      var sel = ta.selectionEnd > ta.selectionStart && (cx0() === "value" || ta.selectionStart === pop.cx.at);
+      var cx = pop.cx, a = sel ? ta.selectionStart : cx.at;
+      var b = sel ? ta.selectionEnd : ta.selectionStart;
+      if (sel && it.close && /^\s/.test(ta.value.charAt(b))) it = { insert: it.insert.replace(/\s+$/, ""), label: it.label };
       popClose();
       if (it.part) {
         var v0 = ta.value, start = cx.at, end = cx.end;
@@ -1993,6 +1998,71 @@ Auto-included by docs/_layouts/default.html.
       }
       if (it.reopen) setTimeout(function () { complete(true); }, 0);
     }
+    function cx0() { return pop.cx ? pop.cx.kind : ""; }
+    /* ⇥ TAB WALKS WHAT CAN BE CUSTOMIZED (Michel, 2026-10-12: "tab should jump
+       between knobs and ids, just like in a form … and the class names too,
+       everything that can be customized"): a part's link text, its class,
+       its #id, each knob's value — Tab the next, ⇧Tab the one before, a value
+       or a class opening its pick list. Inside a fence Tab indents (two
+       spaces in yaml, four elsewhere). Esc, then Tab, leaves the editor. */
+    var escArmed = false, walkSel = null;
+    function fields() {
+      var v = ta.value, st = lineStarts(v), L = v.split("\n"), out = [], f = null;
+      L.forEach(function (l, n) {
+        var m = l.match(/^\s*(`{3,}|~{3,})/);
+        if (m) { f = f ? null : m[1]; return; }
+        if (f) return;
+        var s0 = st[n], r, re;
+        if (/^\s*\{:/.test(l)) {
+          re = /(^|\s)\.([\w-]+)/g; while ((r = re.exec(l))) { var a = r.index + r[1].length + 1; out.push({ a: s0 + a, b: s0 + a + r[2].length, k: "class" }); }
+          re = /#([\w-]+)/g; while ((r = re.exec(l))) out.push({ a: s0 + r.index + 1, b: s0 + r.index + 1 + r[1].length, k: "id" });
+          re = /([\w-]+)="([^"]*)"/g; while ((r = re.exec(l))) { var va = r.index + r[1].length + 2; out.push({ a: s0 + va, b: s0 + va + r[2].length, k: "value" }); }
+        } else if ((m = l.match(/^(\s*\[)([^\]]*)\]\(/)) && /^\s*\{:/.test(L[n + 1] || "")) {
+          out.push({ a: s0 + m[1].length, b: s0 + m[1].length + m[2].length, k: "text" });
+        }
+      });
+      return out.sort(function (x, y) { return x.a - y.a; });
+    }
+    function walk(back) {
+      var fs = fields(); if (!fs.length) return false;
+      var from = back ? ta.selectionStart : ta.selectionEnd, t = null;
+      if (back) { for (var i = fs.length - 1; i >= 0; i--) if (fs[i].a < ta.selectionStart) { t = fs[i]; break; } if (!t) t = fs[fs.length - 1]; }
+      else { for (var j = 0; j < fs.length; j++) if (fs[j].a >= from && !(fs[j].a === ta.selectionStart && fs[j].b === ta.selectionEnd)) { t = fs[j]; break; } if (!t) t = fs[0]; }
+      popClose();
+      ta.setSelectionRange(t.a, t.b); walkSel = [t.a, t.b];
+      blocks = blocksOf(ta.value); focusNow();
+      wrap.setAttribute("data-lc-field", t.k);
+      if (t.k === "value" || t.k === "class") setTimeout(function () { complete(true); }, 0);
+      return true;
+    }
+    function indent(back) {
+      var v = ta.value, a = ta.selectionStart, b = ta.selectionEnd;
+      var lines = v.split("\n"), n = v.slice(0, a).split("\n").length - 1, lang = "";
+      for (var i = n; i >= 0; i--) { var m = lines[i].match(/^\s*(?:`{3,}|~{3,})\s*(\w*)/); if (m) { lang = m[1].toLowerCase(); break; } }
+      var unit = /^ya?ml$/.test(lang) ? "  " : "    ";
+      var ls = v.lastIndexOf("\n", a - 1) + 1, le = v.indexOf("\n", Math.max(a, b - 1)); if (le < 0) le = v.length;
+      if (!back && a === b) { editSpan(a, a, unit, a + unit.length); return; }
+      var block = v.slice(ls, le), out = block.split("\n").map(function (l) {
+        return back ? l.replace(new RegExp("^ {1," + unit.length + "}"), "") : unit + l; }).join("\n");
+      editSpan(ls, le, out, ls); ta.setSelectionRange(ls, ls + out.length);
+    }
+    function inFenceAt(pos) {
+      var v = ta.value, n = v.slice(0, pos).split("\n").length - 1, L = v.split("\n"), f = null;
+      for (var i = 0; i < n; i++) { var m = L[i].match(/^\s*(`{3,}|~{3,})/); if (m) f = f ? null : m[1]; }
+      return !!f;
+    }
+    ta.addEventListener("keydown", function (e) {
+      /* Esc arms the way out only when it has nothing else to close */
+      if (e.key === "Escape") { escArmed = !pop.el && !fnd.box && !ren && !helpCard && !snip; return; }
+      if (e.key !== "Tab") { if (!/^(Shift|Control|Alt|Meta)$/.test(e.key)) escArmed = false; return; }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (escArmed) { escArmed = false; return; }              /* Esc, then Tab: out of the editor */
+      if (pop.el && !(walkSel && ta.selectionStart === walkSel[0] && ta.selectionEnd === walkSel[1])) return;   /* the list's own Tab */
+      if (snip) return;                                         /* a part's blanks first */
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (inFenceAt(ta.selectionStart)) { popClose(); indent(e.shiftKey); return; }
+      walk(e.shiftKey);
+    }, true);
     ta.addEventListener("keydown", function (e) {
       if (e.ctrlKey && (e.key === " " || e.code === "Space")) { e.preventDefault(); complete(true); return; }
       if (pop.el) {
@@ -2040,7 +2110,8 @@ Auto-included by docs/_layouts/default.html.
       var rows = [
         ["✍️", "Type markdown on the right, the page draws on the left"],
         ["🔍", K.cmd + "F — find; ↑ ↓ or Enter walk the matches; Esc"],
-        ["💡", "Ctrl+Space — complete: a component, a knob, a value, an id; on an empty line, a whole part. Tab jumps to the next blank"],
+        ["💡", "Ctrl+Space — complete: a component, a knob, a value, an id; on an empty line, a whole part"],
+        ["⇥", "Tab — the next thing you can change: a title, a class, an #id, a knob's value (its list opens); ⇧Tab — back. In a fence, Tab indents. Esc then Tab leaves the editor"],
         ["🔗", K.cmd.replace(/\+$/, "") + "-click on an id — jump to where it is declared; again — its uses"],
         ["✏️", "F2 on an id — rename it everywhere it is wired"],
         ["↕️", K.alt + "↑ " + K.alt + "↓ — move the block under the caret"],

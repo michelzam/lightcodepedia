@@ -227,6 +227,7 @@ caret on the one you were on.
 | F2 on a wire | renames the id everywhere it is wired — `#id`, `source="id"`, `FROM id`, `{= id… }` — prose untouched, one ⌘Z |
 | ⌥↑ / ⌥↓ | moves the block under the caret past its neighbour — words and decoration together |
 | ⌃⌥→ / ⌃⌥← | puts the block beside the one above (`beside="true"`), or takes it out |
+| Tab / ⇧Tab | outside a fence, the next (or previous) thing you can change — a part's title, its class, its `#id`, each knob's value; a value or a class opens its pick list. Inside a fence, Tab indents (two spaces in yaml). Esc, then Tab, leaves the editor |
 | Ctrl+Space | completes what fits the caret: a component after `{: .`, a knob, a knob's value (a `source=` offers the pad's datasets, an `x=` the source's columns); on an empty line, a whole part from the course's catalogue — Tab then jumps over its blanks |
 
 The editor's corner carries small pills: **?** lists all of this, **🔍**
