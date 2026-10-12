@@ -1911,7 +1911,7 @@ Auto-included by docs/_layouts/default.html.
           if (starts(k) || (p && String(pt.name || "").toLowerCase().indexOf(p) >= 0))
             out.push({ icon: ic, label: k, detail: pt.name || "", insert: pt.lines, part: true });
         });
-        return out.slice(0, 12);
+        return out.slice(0, 60);          /* the list scrolls; every component fits */
       });
     }
     var pop = { el: null, items: [], i: 0, cx: null };
@@ -2063,6 +2063,20 @@ Auto-included by docs/_layouts/default.html.
 
     ta.addEventListener("input", function () { if (fnd.box && fnd.q) { findHits(); if (fnd.at >= fnd.hits.length) fnd.at = fnd.hits.length - 1; fnd.count.textContent = fnd.hits.length ? (fnd.at + 1) + "/" + fnd.hits.length : "0/0"; } });
     wrap._lcFind = function (q) { findOpen(); fnd.input.value = q; fnd.input.dispatchEvent(new Event("input")); };
+    /* ✍️ DOC'S TOUR OF THE PAD (Michel, 2026-10-12: "a little tour/demo by Doc
+       of the pad features listed in the help box") — show-only hands: open
+       the help, find, put the caret somewhere, open the completion list,
+       close it all. None of them writes a character of the learner's text. */
+    wrap._lcHelp = function (on) { if (on === false) helpClose(); else if (!helpCard) helpBtn.click(); return true; };
+    wrap._lcCaretAt = function (text) {
+      var i = ta.value.indexOf(String(text || ""));
+      if (i < 0) return false;
+      var at = i + String(text).length;
+      ta.focus(); ta.setSelectionRange(at, at); caretPlaced = true;
+      blocks = blocksOf(ta.value); focusNow(); paintPiano();
+      return true;
+    };
+    wrap._lcCloseAll = function () { helpClose(); popClose(); findClose(); renameClose(); return true; };
 
     /* A KEYSTROKE PATCHES ONE TEXT NODE (2026-10-08): rebuilding the mirror
        removes nodes, and Chromium then closes the typing group — ⌘Z took
@@ -2303,6 +2317,11 @@ Auto-included by docs/_layouts/default.html.
       case "frame":    return film(pad, function (r) { r.go(Math.max(0, Math.min(r.count() - 1, (n || 1) - 1))); });
       case "stop":     if (pad._lcReplay) pad._lcReplay.stop(); return !!pad._lcReplay;
       case "type":     return pad._lcTypeStep ? pad._lcTypeStep(n || 1, steps) : false;
+      case "help":     return pad._lcHelp ? pad._lcHelp(true) : false;
+      case "find":     if (!pad._lcFind) return false; pad._lcFind(String(arg == null ? "" : arg)); return true;
+      case "caret_at": return pad._lcCaretAt ? pad._lcCaretAt(arg) : false;
+      case "complete": if (!pad._lcComplete) return false; pad._lcComplete(); return true;
+      case "dismiss":  return pad._lcCloseAll ? pad._lcCloseAll() : false;   /* not "close": the accordion owns it */
       case "fold":     if (!pad._lcDrawer) return false; if (!pad.classList.contains("lc-mdpad-folded")) pad._lcDrawer(true); return true;
       case "show":     if (!pad._lcDrawer) return false; if (pad.classList.contains("lc-mdpad-folded")) pad._lcDrawer(false); return true;
       case "save":
@@ -2314,7 +2333,7 @@ Auto-included by docs/_layouts/default.html.
     }
     return false;
   };
-  if (window.lcVerbs) ["replay", "moonwalk", "frame", "stop", "type", "save", "fold", "show"].forEach(function (v) {
+  if (window.lcVerbs) ["replay", "moonwalk", "frame", "stop", "type", "save", "fold", "show", "help", "find", "caret_at", "complete", "dismiss"].forEach(function (v) {
     window.lcVerbs.register(v, function (el, arg, ctx) { return window.lcPadVerb(v, el, arg, ctx); }, padOf);
   });
 })();

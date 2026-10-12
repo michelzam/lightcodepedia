@@ -135,3 +135,24 @@ Feature: 🎬 Doc's pad verbs — type, save, and a music player's words for the
     Then the "faces" pad's source is folded away
     When Doc does "show" on the "faces" pad
     Then the "faces" pad's source is shown again
+
+  Scenario: Doc's tour shows the pad's help, finder, list and fold — and changes nothing
+    Michel, 2026-10-12: "a little tour/demo by Doc of the generic mdpad
+    features listed in the help box" — show-only: the learner is working
+    in that pad.
+
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/faces.md"
+    And I wait for the page to be interactive
+    And I note the "faces" pad's text
+    And Doc does "help" on the "faces" pad
+    Then the "faces" pad's help mentions "F2" and "complete"
+    When Doc does "dismiss" on the "faces" pad
+    And Doc does "find" on 'dog' in the "faces" pad
+    Then the "faces" pad's finder counts more than 1 match
+    When Doc does "dismiss" on the "faces" pad
+    And Doc does "caret_at" on '{: .' in the "faces" pad
+    And Doc does "complete" on the "faces" pad
+    Then the "faces" pad offers "datagrid" and "form"
+    When Doc does "dismiss" on the "faces" pad
+    Then the "faces" pad shows no help, no finder and no list
+    And the "faces" pad's text is unchanged by the tour

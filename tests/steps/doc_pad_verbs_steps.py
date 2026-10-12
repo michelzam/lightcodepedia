@@ -158,3 +158,26 @@ def step_held(context, pad_id, text):
     held = context.page.evaluate("(id) => document.querySelector(\"[data-lc-id='\" + id + \"']\")._lcHeld", pad_id)
     assert held.startswith("🔴") and text in held, held
     context.held_message = held
+
+
+@when('Doc does "{verb}" on \'{text}\' in the "{pad_id}" pad')
+def step_do_text(context, verb, text, pad_id):
+    _act(context, verb, pad_id, text)
+
+
+@then('the "{pad_id}" pad shows no help, no finder and no list')
+def step_all_closed(context, pad_id):
+    for sel in (".lc-mdpad-help", ".lc-mdpad-find", ".lc-mdpad-comp"):
+        expect(context.page.locator("[data-lc-id='%s'] %s" % (pad_id, sel))).to_have_count(0)
+
+
+@then('the "{pad_id}" pad\'s text is unchanged by the tour')
+def step_unchanged(context, pad_id):
+    v = _ta(context, pad_id).input_value()
+    assert v == context.tour_before, "the tour changed the pad:\n" + v
+
+
+@when('I note the "{pad_id}" pad\'s text')
+def step_note(context, pad_id):
+    context.page.wait_for_selector("[data-lc-id='%s'] .lc-mdpad-in" % pad_id, state="attached", timeout=20_000)
+    context.tour_before = _ta(context, pad_id).input_value()
