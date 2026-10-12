@@ -124,3 +124,14 @@ Feature: 🎬 Doc's pad verbs — type, save, and a music player's words for the
     And Doc types into the "follow_up" pad a step that forgets its decoration
     Then the "follow_up" pad is held, saying "no datagrid yet"
     And the "follow_up" pad does not hold "{: .button }"
+
+  Scenario: Doc folds the editor away and shows it again
+    Michel, 2026-10-11: "Fold/Show should also have verbs so the Doc can
+    use them to demonstrate".
+
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/faces.md"
+    And I wait for the page to be interactive
+    And Doc does "fold" on the "faces" pad
+    Then the "faces" pad's source is folded away
+    When Doc does "show" on the "faces" pad
+    Then the "faces" pad's source is shown again

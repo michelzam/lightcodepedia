@@ -1145,6 +1145,7 @@ Auto-included by docs/_layouts/default.html.
        style-variant, so every kind="outline" silently rendered default
        (module 05's 🏠 button, 2026-08-18). Both spellings work; kind wins. */
     var style = el.getAttribute("kind") || el.getAttribute("style-variant") || "";
+    stayHere(a);
     a.classList.add("button");
     if (style) a.classList.add("button-" + style);
     el.classList.remove("button");
@@ -1187,12 +1188,21 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
+  /* A BUTTON THAT GOES NOWHERE STAYS HERE (Michel, 2026-10-11: "the empty
+     button, once clicked, leads elsewhere"): [📞 Call](#) has no job yet —
+     its "#" would rewrite the runner's address (#src=…) and lose the page. */
+  function stayHere(a) {
+    var h = (a.getAttribute("href") || "").trim();
+    if (h === "#" || h === "") a.addEventListener("click", function (e) { e.preventDefault(); });
+  }
+
   /* ── boot ────────────────────────────────────────────────────── */
   /* code_chrome.md (loaded first, via topbar) provides the scan registry. */
 
   /* the inline form — [x](y){: .button kind="…" } — tags the <a> itself,
      so the paragraph upgrader above never sees it; map the knob here too */
   function upgradeButtonLink(a) {
+    stayHere(a);
     var k = a.getAttribute("kind") || a.getAttribute("style-variant") || "";
     if (k) a.classList.add("button-" + k);
   }

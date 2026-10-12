@@ -424,3 +424,85 @@ def step_caret_in_t(context, pad_id, t):
       const i = ta.value.indexOf(t); return ta.selectionStart >= i && ta.selectionStart <= i + t.length;
     }""", [pad_id, t])
     assert ok, "the caret left " + t
+
+
+@then('the "{pad_id}" pad shows no 🔍 pill')
+def step_no_find_pill(context, pad_id):
+    expect(_pad(context, pad_id).locator(".lc-mdpad-findbtn")).to_be_hidden()
+
+
+@when('I put the caret at the start of the "{pad_id}" pad')
+def step_caret_start(context, pad_id):
+    ta = _pad(context, pad_id).locator(".lc-mdpad-in")
+    ta.focus()
+    ta.evaluate("t => t.setSelectionRange(0, 0)")
+
+
+@then('the "{pad_id}" pad shows its 🔍 pill')
+def step_find_pill(context, pad_id):
+    expect(_pad(context, pad_id).locator(".lc-mdpad-findbtn")).to_be_visible()
+
+
+@when('I type "{text}" on a new line at the end of the "{pad_id}" pad')
+def step_type_newline(context, text, pad_id):
+    ta = _pad(context, pad_id).locator(".lc-mdpad-in")
+    ta.click()
+    ta.press("Control+End")
+    ta.press("Enter")
+    ta.press("Enter")
+    ta.type(text, delay=40)
+    context.page.wait_for_timeout(500)
+
+
+@when('I type "{text}" in the "{pad_id}" pad')
+def step_type_here(context, text, pad_id):
+    _pad(context, pad_id).locator(".lc-mdpad-in").type(text, delay=40)
+    context.page.wait_for_timeout(500)
+
+
+def _offers(context, pad_id):
+    loc = _pad(context, pad_id).locator(".lc-mdpad-comp .l")
+    expect(loc.first).to_be_visible(timeout=3_000)
+    return loc.all_inner_texts()
+
+
+@then('the "{pad_id}" pad offers "{first}" first')
+def step_offers_first(context, pad_id, first):
+    got = _offers(context, pad_id)
+    assert got and got[0] == first, "offers %r" % got
+
+
+@then('the "{pad_id}" pad offers "{a}" and "{b}"')
+def step_offers_two(context, pad_id, a, b):
+    got = _offers(context, pad_id)
+    assert a in got and b in got, "offers %r" % got
+
+
+@when('I accept the offer in the "{pad_id}" pad')
+def step_accept(context, pad_id):
+    _pad(context, pad_id).locator(".lc-mdpad-in").press("Enter")
+    context.page.wait_for_timeout(500)
+
+
+@then('the "{pad_id}" pad selects "{text}"')
+def step_selects(context, pad_id, text):
+    got = _pad(context, pad_id).locator(".lc-mdpad-in").evaluate("t => t.value.slice(t.selectionStart, t.selectionEnd)")
+    assert got == text, "selection %r" % got
+
+
+@then('the "{pad_id}" pad\'s preview marks "{text}"')
+def step_ghost(context, pad_id, text):
+    expect(_pad(context, pad_id).locator(".lc-mdpad-ghost span")).to_have_text(text, timeout=5_000)
+
+
+@when('I press the "{pad_id}" pad\'s ? pill')
+def step_help_pill(context, pad_id):
+    _pad(context, pad_id).hover()
+    _pad(context, pad_id).locator(".lc-mdpad-helpbtn").click()
+
+
+@then('the "{pad_id}" pad\'s help mentions "{a}" and "{b}"')
+def step_help_mentions(context, pad_id, a, b):
+    card = _pad(context, pad_id).locator(".lc-mdpad-help")
+    expect(card).to_contain_text(a)
+    expect(card).to_contain_text(b)

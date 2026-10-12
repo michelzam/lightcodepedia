@@ -476,3 +476,19 @@ Feature: The instant runner (RT) — Phase A parity
     When I open the runner page on "gh:acme/demo-vault/courses/demo/mod/lesson.md"
     Then the runner says the key itself is the problem
     And the runner names the Get started door
+
+  Scenario: A button with no job yet stays on the page when pressed
+    Michel, 2026-10-11: "the empty button, once clicked, leads elsewhere" —
+    its "#" rewrote the runner's address and lost the page.
+
+    Given the GitHub contents API serves "courses/demo/module_05/call.md" with the document:
+      """
+      # Call
+
+      [📞 Call the next family](#)
+      {: .button }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/call.md"
+    And I wait for the page to be interactive
+    And I press the "📞 Call the next family" button
+    Then the address still reads "src=gh:acme/demo/courses/demo/module_05/call.md"

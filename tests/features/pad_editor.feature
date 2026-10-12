@@ -17,15 +17,22 @@ Feature: The pad types like a text field, painted
     Then the "playground" pad does not contain "# hello"
     And the "playground" pad's mirror does not show "# hello"
 
-  Scenario: ✎ Hide folds the editor, ✎ Edit brings it back
+  Scenario: ⇥ hides the editor, ✎ brings it back — small pills, 🔍 only while editing
+    Michel, 2026-10-11: "Hide/Edit are displayed on top of the text. They
+    should be more like an icon on a semi-transparent small pill", and the
+    search button "visible only when the cursor is in the editor".
+
     Michel, 2026-10-09, on the phone: "a small button to fold the editor so we
     can see the whole width of the preview side, and (un)fold".
 
-    When I press "✎ Hide" on the "playground" pad
+    Then the "playground" pad shows no 🔍 pill
+    When I put the caret at the start of the "playground" pad
+    Then the "playground" pad shows its 🔍 pill
+    When I press "⇥" on the "playground" pad
     Then the "playground" pad's source is folded away
     And the "playground" pad's preview spans the pad
     And the "playground" pad shows no splitter
-    When I press "✎ Edit" on the "playground" pad
+    When I press "✎" on the "playground" pad
     Then the "playground" pad's source is shown again
     And the "playground" pad's splitter is back
 
@@ -331,6 +338,137 @@ Feature: The pad types like a text field, painted
     Then the "wires" pad holds '{: .form master="dog_grid" beside="true" }'
     When I press "Alt+Shift+ArrowLeft" in the "wires" pad
     Then the "wires" pad holds '{: .form master="dog_grid" }'
+
+  Scenario: On an empty line, a part completes; Tab flies over its blanks, each offering what fits
+    Michel, 2026-10-11: "if it's an empty line and I start typing 'for', it
+    should propose a {: .form }, and suggest with tabs to fly over all the
+    sections". The part is the catalogue's; the ids offered are the pad's.
+
+    Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
+      """
+      # Wires
+
+      `````markdown
+      # Dogs per campus
+
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      `````
+      {: .mdpad #wires decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/wires.md"
+    And I wait for the page to be interactive
+    And I type "fo" on a new line at the end of the "wires" pad
+    Then the "wires" pad offers "form" first
+    When I accept the offer in the "wires" pad
+    Then the "wires" pad selects "Title"
+    When I press "Tab" in the "wires" pad
+    Then the "wires" pad selects "your_grid"
+    And the "wires" pad offers "dog_grid" first
+    When I accept the offer in the "wires" pad
+    Then the "wires" pad holds '{: .form master="dog_grid" }'
+
+  Scenario: In a decoration, the class, its knobs and their values complete
+    Michel, 2026-10-11: "for component type names, for attribute names, for
+    values inside knobs, with picklist" — and a source offers the pad's
+    datasets, an x the source's columns.
+
+    Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
+      """
+      # Wires
+
+      `````markdown
+      # Dogs per campus
+
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      `````
+      {: .mdpad #wires decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/wires.md"
+    And I wait for the page to be interactive
+    And I type "{: .ch" on a new line at the end of the "wires" pad
+    Then the "wires" pad offers "chart" first
+    When I accept the offer in the "wires" pad
+    And I type "sou" in the "wires" pad
+    Then the "wires" pad offers "source" first
+    When I accept the offer in the "wires" pad
+    Then the "wires" pad offers "dogs" and "by_campus"
+    When I accept the offer in the "wires" pad
+    And I type " x" in the "wires" pad
+    And I accept the offer in the "wires" pad
+    Then the "wires" pad offers "name" and "campus"
+    When I accept the offer in the "wires" pad
+    Then the "wires" pad holds '{: .chart source="dogs" x="name"}'
+
+  Scenario: The caret in a part the page does not show marks where it sits
+    Michel, 2026-10-11: "an horizontal line with a short semi-transparent
+    caption saying '🛢️ Dataset (invisible)'".
+
+    Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
+      """
+      # Wires
+
+      `````markdown
+      # Dogs per campus
+
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      `````
+      {: .mdpad #wires decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/wires.md"
+    And I wait for the page to be interactive
+    And I put the caret in "Lucky" of 'Lucky,Milwaukee' in the "wires" pad
+    Then the "wires" pad's preview marks "🛢️ Dataset (invisible)"
+
+  Scenario: ? lists what the editor can do
+    Michel, 2026-10-11: "a small help button to list all the features".
+
+    When I press the "playground" pad's ? pill
+    Then the "playground" pad's help mentions "F2" and "complete"
 
   Scenario: Hovering a decoration's icon for a second names the component
     Michel, 2026-10-11: "hovering the gutter should show the component type

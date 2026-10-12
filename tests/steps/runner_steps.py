@@ -801,3 +801,15 @@ def step_points_to_setup(context, href):
     link = status.locator('a[href$="' + href + '"]')
     expect(link).to_have_count(1, timeout=5_000)
     assert "Get started" not in status.inner_text(), "the hidden menu is still named on the class road"
+
+
+@when('I press the "{label}" button')
+def step_press_button_label(context, label):
+    context.page.get_by_text(label, exact=True).first.click()
+    context.page.wait_for_timeout(800)
+
+
+@then('the address still reads "{part}"')
+def step_address_reads(context, part):
+    url = context.page.url
+    assert part in url, "the page went elsewhere: " + url

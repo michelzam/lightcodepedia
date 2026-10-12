@@ -227,6 +227,13 @@ caret on the one you were on.
 | F2 on a wire | renames the id everywhere it is wired — `#id`, `source="id"`, `FROM id`, `{= id… }` — prose untouched, one ⌘Z |
 | ⌥↑ / ⌥↓ | moves the block under the caret past its neighbour — words and decoration together |
 | ⌥⇧→ / ⌥⇧← | puts the block beside the one above (`beside="true"`), or takes it out |
+| Ctrl+Space | completes what fits the caret: a component after `{: .`, a knob, a knob's value (a `source=` offers the pad's datasets, an `x=` the source's columns); on an empty line, a whole part from the course's catalogue — Tab then jumps over its blanks |
+
+The editor's corner carries small pills: **?** lists all of this, **🔍**
+(while you edit) finds, **⇥** hides the editor and **✎** brings it back —
+Doc says `fold` and `show`. The caret in a part the page does not show (a
+dataset, a query) draws a dashed line in the preview where it sits:
+*🛢️ Dataset (invisible)*.
 
 A proof can read how the work was kept: `pad.versions` — the names of
 the versions kept, newest first; `pad.replayed` — how many times its

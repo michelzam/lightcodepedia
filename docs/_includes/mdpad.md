@@ -70,10 +70,36 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad { display: flex; gap: 0.75em; margin: 1em 0; min-height: 220px; position: relative; }
 /* ✎ FOLD — the editor tucks away and the preview takes the whole width
    (Michel, 2026-10-09, on the phone); the same button brings it back */
-.lc-mdpad-fold { position: absolute; top: 0.35em; right: 0.35em; z-index: 3; font: inherit; font-size: 0.72em;
-  padding: 0.2em 0.55em; border-radius: 6px; border: 1px solid #bbb; background: rgba(255, 255, 255, 0.92);
-  color: #555; cursor: pointer; line-height: 1.3; }
-.lc-mdpad-fold:hover { border-color: #888; color: #222; }
+.lc-mdpad-pills { position: absolute; top: 0.4em; right: 0.45em; z-index: 3; display: flex; gap: 0.3em; align-items: center; }
+/* small icon pills, half-transparent: the text under them stays readable (Michel, 2026-10-11) */
+.lc-mdpad-pills > button { font: inherit; font-size: 0.72em; line-height: 1; height: 1.9em; min-width: 1.9em; padding: 0 0.45em;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 999px;
+  border: 1px solid rgba(160, 170, 185, 0.55); background: rgba(255, 255, 255, 0.42); color: #444; cursor: pointer;
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); opacity: 0.75; transition: opacity 0.15s, background 0.15s; }
+.lc-mdpad-pills > button:hover, .lc-mdpad-pills > button:focus-visible { opacity: 1; background: rgba(255, 255, 255, 0.85); }
+/* 🔍 only while the caret is in the editor; ? while the pad is hovered or worked in */
+.lc-mdpad-pills > .lc-mdpad-findbtn, .lc-mdpad-pills > .lc-mdpad-helpbtn { display: none; }
+.lc-mdpad:focus-within .lc-mdpad-pills > .lc-mdpad-findbtn { display: inline-flex; }
+.lc-mdpad:hover .lc-mdpad-pills > .lc-mdpad-helpbtn, .lc-mdpad:focus-within .lc-mdpad-pills > .lc-mdpad-helpbtn { display: inline-flex; }
+.lc-mdpad.lc-mdpad-folded .lc-mdpad-pills > .lc-mdpad-findbtn { display: none; }
+.lc-mdpad-ghost { position: absolute; left: 0.6em; right: 0.6em; height: 0; border-top: 1.5px dashed rgba(100, 116, 139, 0.55);
+  pointer-events: none; z-index: 2; }
+.lc-mdpad-ghost span { position: absolute; right: 0; top: -0.75em; font-size: 0.72em; padding: 0.05em 0.5em; border-radius: 999px;
+  background: rgba(241, 245, 249, 0.85); color: #475569; border: 1px solid rgba(148, 163, 184, 0.5); }
+.lc-mdpad-comp { position: absolute; z-index: 6; min-width: 15em; max-width: 26em; max-height: 15em; overflow: auto;
+  border-radius: 8px; background: rgba(248, 250, 252, 0.97); border: 1px solid #c4c9d4; box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+  font-size: 0.8em; padding: 0.2em 0; color: #333; }
+.lc-mdpad-comp .o { display: flex; gap: 0.5em; align-items: baseline; padding: 0.2em 0.6em; cursor: pointer; white-space: nowrap; }
+.lc-mdpad-comp .o.on { background: #dbeafe; }
+.lc-mdpad-comp .i { flex: 0 0 1.3em; text-align: center; }
+.lc-mdpad-comp .l { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; }
+.lc-mdpad-comp .d { color: #777; overflow: hidden; text-overflow: ellipsis; }
+.lc-mdpad-help { position: absolute; top: 2.3em; right: 0.45em; z-index: 5; max-width: 26em; padding: 0.6em 0.8em;
+  border-radius: 10px; background: rgba(248, 250, 252, 0.94); border: 1px solid #c4c9d4; box-shadow: 0 6px 22px rgba(0,0,0,0.18);
+  font-size: 0.8em; line-height: 1.45; color: #333; }
+.lc-mdpad-help b { display: block; margin-bottom: 0.35em; }
+.lc-mdpad-help .r { display: flex; gap: 0.55em; padding: 0.12em 0; }
+.lc-mdpad-help .i { flex: 0 0 1.4em; text-align: center; }
 .lc-mdpad.lc-mdpad-folded > .lc-mdpad-src { display: none !important; }
 /* ↔ the splitter in the gap between preview and editor */
 .lc-mdpad-split { position: absolute; top: 0; bottom: 0; cursor: col-resize; z-index: 2; touch-action: none;
@@ -81,9 +107,6 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-split::before { content: ""; width: 4px; height: 3.2em; border-radius: 3px; background: #c4c9d4; }
 .lc-mdpad-split[hidden] { display: none; }
 /* 🔍 the finder: floats over the editor's top, semi-transparent like the tip */
-.lc-mdpad-findbtn { position: absolute; top: 0.35em; right: 4.6em; z-index: 3; font: inherit; font-size: 0.72em;
-  padding: 0.2em 0.5em; border-radius: 6px; border: 1px solid #ccc; background: rgba(255,255,255,0.85); cursor: pointer; }
-.lc-mdpad.lc-mdpad-folded > .lc-mdpad-findbtn { display: none; }
 .lc-mdpad-find { position: absolute; top: 2.1em; right: 0.8em; z-index: 4; display: flex; align-items: center; gap: 0.3em;
   padding: 0.25em 0.4em; border-radius: 8px; background: rgba(248,250,252,0.86); border: 1px solid #c4c9d4;
   box-shadow: 0 4px 14px rgba(0,0,0,0.18); font-size: 0.8em; color: #333; }
@@ -531,15 +554,20 @@ Auto-included by docs/_layouts/default.html.
     function setFold(on) {
       wrap.classList.toggle("lc-mdpad-folded", !!on);
       if (on) wrap.setAttribute("data-lc-folded", "1"); else wrap.removeAttribute("data-lc-folded");
-      foldBtn.textContent = on ? "✎ Edit" : "✎ Hide";
+      foldBtn.textContent = on ? "✎" : "⇥";
       foldBtn.setAttribute("aria-pressed", on ? "true" : "false");
-      foldBtn.title = on ? "Bring the editor back" : "Fold the editor — the preview takes the whole width";
+      foldBtn.setAttribute("aria-label", on ? "Edit — bring the editor back" : "Hide the editor");
+      foldBtn.title = on ? "Edit — bring the editor back" : "Hide the editor — the preview takes the whole width";
       if (split) placeSplit();
     }
     foldBtn.addEventListener("click", function () { drawer(!wrap.classList.contains("lc-mdpad-folded")); });
     setFold(false);
-    wrap.appendChild(foldBtn);
+    var pills = document.createElement("div");
+    pills.className = "lc-mdpad-pills";
+    pills.appendChild(foldBtn);
+    wrap.appendChild(pills);
     wrap._lcFold = setFold;
+    wrap._lcDrawer = drawer;                 /* Doc's fold / show */
     /* ↕ THE GRIP (Michel, 2026-10-10: "a non persistent way to be resized
        vertically, so during work or demos we can decide different layouts"):
        a bar under the pad, dragged, sets the pad's height — editor and
@@ -1273,6 +1301,45 @@ Auto-included by docs/_layouts/default.html.
        and a map kept from the starter left the later blocks with no bar
        (Michel, 2026-10-11: "works in some cases, not in others") */
     function caretBlock() { blocks = blocksOf(ta.value); return blockAt(blocks, caretLine()); }
+    /* 👻 A PART THE PAGE DOES NOT SHOW (Michel, 2026-10-11: "in the editor,
+       in an invisible component, an horizontal line with a short caption
+       '🛢️ Dataset (invisible)'"): a dataset, a query — the caret is in it,
+       the preview marks where it sits, so the reader still sees it exists. */
+    var ghost = null;
+    function cmpModel() {
+      var c = window._lcPadComp || (window._lcPadComp = {});
+      if (!c.model) c.model = fetch("{{ '/assets/component-model.json' | relative_url }}").then(function (r) { return r.json(); })
+        .then(function (d) { return d.model || {}; }).catch(function () { return {}; });
+      return c.model;
+    }
+    function ghostLine(idx, bl, el) {
+      if (ghost) { ghost.remove(); ghost = null; }
+      wrap.removeAttribute("data-lc-ghost");
+      if (idx < 0 || !bl[idx] || !el) return;
+      if (el.getBoundingClientRect().height > 2 && getComputedStyle(el).display !== "none") return;
+      var L = ta.value.split("\n"), cls = "";
+      for (var n = bl[idx].end; n >= bl[idx].start && !cls; n--) cls = ((L[n] || "").match(/^\s*\{:[^}]*?\.([\w-]+)/) || [])[1] || "";
+      if (!cls) return;
+      /* where it sits: the top of the next part that shows, else under the last */
+      var y = null, nx = el.nextElementSibling;
+      while (nx && !(nx.getBoundingClientRect().height > 2)) nx = nx.nextElementSibling;
+      var pv = el.previousElementSibling;
+      while (pv && !(pv.getBoundingClientRect().height > 2)) pv = pv.previousElementSibling;
+      if (getComputedStyle(body).position === "static") body.style.position = "relative";
+      if (nx) y = nx.offsetTop - 6; else if (pv) y = pv.offsetTop + pv.offsetHeight + 4; else y = 4;
+      ghost = document.createElement("div");
+      ghost.className = "lc-mdpad-ghost";
+      ghost.style.top = y + "px";
+      var cap = document.createElement("span");
+      ghost.appendChild(cap);
+      body.appendChild(ghost);
+      cap.textContent = cls + " (invisible)";
+      wrap.setAttribute("data-lc-ghost", cls);
+      cmpModel().then(function (model) {
+        var m = null; Object.keys(model).forEach(function (k) { if (k.replace(/[-_]/g, "").toLowerCase() === cls.replace(/[-_]/g, "").toLowerCase()) m = k; });
+        if (m && ghost) cap.textContent = (model[m].icon ? model[m].icon + " " : "") + m + " (invisible)";
+      });
+    }
     function focusPreview(idx, bl) {
       bl = bl || blocks;
       body.querySelectorAll(".lc-mdpad-focus").forEach(function (e) { e.classList.remove("lc-mdpad-focus"); });
@@ -1285,6 +1352,7 @@ Auto-included by docs/_layouts/default.html.
           if (hs[i].textContent.trim().toLowerCase() === want) target = hs[i];
       }
       if (!target) target = blockEl(idx);
+      ghostLine(idx, bl, target);
       if (!target) return;
       void target.offsetWidth;
       target.classList.add("lc-mdpad-focus");
@@ -1684,9 +1752,299 @@ Auto-included by docs/_layouts/default.html.
 
     var findBtn = document.createElement("button");
     findBtn.type = "button"; findBtn.className = "lc-mdpad-findbtn";
-    findBtn.textContent = "🔍"; findBtn.title = "Find in the text (⌘F)";
+    findBtn.textContent = "🔍"; findBtn.title = "Find in the text (⌘F)"; findBtn.setAttribute("aria-label", "Find in the text");
+    findBtn.addEventListener("mousedown", function (e) { e.preventDefault(); });   /* keep the caret where it is */
     findBtn.addEventListener("click", function () { if (fnd.box) findClose(); else findOpen(); });
-    wrap.appendChild(findBtn);
+    pills.insertBefore(findBtn, pills.firstChild);
+    /* ── 💡 COMPLETION (Michel, 2026-10-11: "code completion in the context —
+       for sources (the id), component type names, knob names, knob values,
+       with a picklist; on an empty line, 'for' proposes a form, and Tab
+       flies over its blanks"). Everything it offers is read, not invented:
+       the component model (classes, knobs, kinds), the pad's own text (ids,
+       a dataset's columns) and the parts catalogue (the lines the course
+       taught). Ctrl+Space opens it anywhere; typing opens it where it helps. */
+    var MODEL_URL = "{{ '/assets/component-model.json' | relative_url }}";
+    var PARTS_URL = "{{ '/bots/parts.yml' | relative_url }}";
+    var cmp = window._lcPadComp || (window._lcPadComp = {});
+    if (!cmp.model) cmp.model = fetch(MODEL_URL).then(function (r) { return r.json(); }).then(function (d) { return d.model || {}; }).catch(function () { return {}; });
+    if (!cmp.parts) cmp.parts = fetch(PARTS_URL).then(function (r) { return r.ok ? r.text() : ""; }).then(parseParts).catch(function () { return {}; });
+    function parseParts(y) {                 /* the catalogue's simple shape: key: / name: / lines: | */
+      var out = {}, cur = null, inLines = false;
+      String(y || "").split("\n").forEach(function (l) {
+        var k = l.match(/^([a-z][\w]*):\s*$/);
+        if (k) { cur = out[k[1]] = { key: k[1], lines: "" }; inLines = false; return; }
+        if (!cur) return;
+        if (inLines && (/^    /.test(l) || !l.trim())) { cur.lines += l.slice(4) + "\n"; return; }
+        inLines = false;
+        var f = l.match(/^  (\w+):\s*(.*)$/);
+        if (!f) return;
+        if (f[1] === "lines") inLines = true; else cur[f[1]] = f[2];
+      });
+      Object.keys(out).forEach(function (k) { out[k].lines = out[k].lines.replace(/\n+$/, ""); });
+      return out;
+    }
+    var NOT_IAL = { object: 1, block: 1, page: 1, bar: 1, knowledgenode: 1, "class": 1 };
+    var ALIAS = { embedpage: "embed" };
+    var VALUES = { type: ["bar", "line", "pie", "doughnut"], format: ["csv", "yaml", "json"],
+                   kind: ["secondary", "success", "danger", "outline"] };
+    var ASSOC = { source: ["dataset", "query"], bind: ["dataset", "query"], master: ["datagrid"], target: ["avatar"] };
+    function snake(n) { return n.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase(); }
+    function classes(model) {
+      var out = [];
+      Object.keys(model).forEach(function (n) {
+        var low = n.toLowerCase(); if (NOT_IAL[low]) return;
+        out.push({ cls: ALIAS[low] || snake(n), name: n, icon: model[n].icon || "" });
+      });
+      return out.sort(function (a, b) { return a.cls < b.cls ? -1 : 1; });
+    }
+    function modelOf(model, cls) {
+      var hit = null;
+      Object.keys(model).forEach(function (n) { if ((ALIAS[n.toLowerCase()] || snake(n)) === cls) hit = model[n]; });
+      return hit;
+    }
+    function knobsOf(model, cls) {
+      var m = modelOf(model, cls), out = [];
+      if (m) {
+        (m.attrs || []).forEach(function (a) { if (a.data) out.push({ n: a.n, t: a.t, d: a.d }); });
+        (m.assoc || []).forEach(function (a) {
+          if (NOT_IAL[String(a.target || "").toLowerCase()]) return;          /* a chart's bars are not a knob */
+          out.push({ n: cls === "query" && a.n === "source" ? "bind" : a.n, t: "ref" });
+        });
+      }
+      out.push({ n: "beside", t: "bool" });
+      return out;
+    }
+    /* the pad's ids, with the class that declares each */
+    function idsInPad() {
+      var out = [];
+      ta.value.split("\n").forEach(function (l, i) {
+        if (!/^\s*\{:/.test(l)) return;
+        var c = (l.match(/(?:^|\s)\.([\w-]+)/) || [])[1] || "", id = (l.match(/#([\w-]+)/) || [])[1];
+        if (id) out.push({ id: id, cls: c, line: i });
+      });
+      return out;
+    }
+    /* a dataset's columns: the first row of its csv, or the keys of its yaml */
+    function columnsOf(id) {
+      var L = ta.value.split("\n"), at = -1;
+      for (var i = 0; i < L.length; i++) if (/^\s*\{:/.test(L[i]) && new RegExp("#" + id + "(?![\\w-])").test(L[i])) at = i;
+      if (at < 1 || !/^\s*(`{3,}|~{3,})\s*$/.test(L[at - 1])) return [];
+      var open = -1;
+      for (var j = at - 2; j >= 0; j--) if (/^\s*(`{3,}|~{3,})/.test(L[j])) { open = j; break; }
+      if (open < 0) return [];
+      var body = L.slice(open + 1, at - 1);
+      if (/^\s*-\s/.test(body[0] || "") || /^\s*\w+:/.test(body[0] || "")) {
+        var keys = [];
+        body.forEach(function (l) { var k = l.match(/^\s*-?\s*([\w-]+):/); if (k && keys.indexOf(k[1]) < 0) keys.push(k[1]); });
+        return keys;
+      }
+      return String(body[0] || "").split(/[,\t]/).map(function (c) { return c.trim(); }).filter(Boolean);
+    }
+    function inFence(lines, n) {
+      var f = null;
+      for (var i = 0; i < n; i++) { var m = lines[i].match(/^\s*(`{3,}|~{3,})/); if (m) f = f ? null : m[1]; }
+      return !!f;
+    }
+    /* what is being typed, and what fits there */
+    function context(force) {
+      var v = ta.value, c = ta.selectionStart, ls = v.lastIndexOf("\n", c - 1) + 1, le = v.indexOf("\n", c);
+      if (le < 0) le = v.length;
+      var line = v.slice(ls, le), pre = v.slice(ls, c), lines = v.split("\n"), n = v.slice(0, ls).split("\n").length - 1;
+      if (inFence(lines, n)) return null;
+      var m;
+      if (/^\s*\{:/.test(line)) {
+        var cls = (line.match(/(?:^|\s)\.([\w-]+)/) || [])[1] || "";
+        if ((m = pre.match(/\{:\s*(?:[^}]*\s)?\.([\w-]*)$/))) return { kind: "class", prefix: m[1], at: c - m[1].length };
+        if ((m = pre.match(/([\w-]+)="([^"]*)$/))) return { kind: "value", knob: m[1], cls: cls, line: line, prefix: m[2], at: c - m[2].length };
+        if (cls && (m = pre.match(/\s([\w-]*)$/)) && (force || m[1].length)) return { kind: "knob", cls: cls, line: line, prefix: m[1], at: c - m[1].length };
+        return null;
+      }
+      /* a part pops up by itself only on a lowercase start — a capital is prose ("For example…") */
+      if ((m = pre.match(/^\s*([A-Za-z_]*)$/)) && line.trim() === pre.trim() && (force || (m[1].length >= 2 && /^[a-z_]+$/.test(m[1]))))
+        return { kind: "part", prefix: m[1], at: ls, end: le };
+      return null;
+    }
+    function itemsFor(cx) {
+      return Promise.all([cmp.model, cmp.parts]).then(function (r) {
+        var model = r[0], parts = r[1], p = cx.prefix.toLowerCase(), out = [];
+        var starts = function (x) { return String(x).toLowerCase().indexOf(p) === 0; };
+        if (cx.kind === "class") classes(model).forEach(function (c) {
+          if (starts(c.cls)) out.push({ icon: c.icon, label: c.cls, detail: c.name, insert: c.cls + " ", close: true });
+        });
+        else if (cx.kind === "knob") {
+          var have = {}; (cx.line.match(/([\w-]+)=/g) || []).forEach(function (k) { have[k.slice(0, -1)] = 1; });
+          knobsOf(model, cx.cls).forEach(function (k) {
+            if (!have[k.n] && starts(k.n)) out.push({ icon: "🎛️", label: k.n, detail: k.t === "ref" ? "an id" : (k.d != null && k.d !== "" ? "default " + k.d : k.t || ""), insert: k.n + '=""', back: 1, reopen: true });
+          });
+        } else if (cx.kind === "value") {
+          var vals = [], kb = cx.knob;
+          if (ASSOC[kb] || kb === "source" || kb === "bind" || kb === "master" || kb === "target") {
+            var want = ASSOC[kb] || [];
+            idsInPad().forEach(function (d) { if (!want.length || want.indexOf(d.cls) >= 0) vals.push({ v: d.id, icon: "#", detail: d.cls }); });
+          } else if ((kb === "x" || kb === "y") && /source="([\w-]+)"/.test(cx.line)) {
+            columnsOf(cx.line.match(/source="([\w-]+)"/)[1]).forEach(function (c) { vals.push({ v: c, icon: "▥", detail: "a column" }); });
+          } else if (VALUES[kb]) VALUES[kb].forEach(function (x) { vals.push({ v: x, icon: "•" }); });
+          else {
+            var k = (knobsOf(model, cx.cls).filter(function (k) { return k.n === kb; })[0]) || {};
+            if (k.t === "bool") ["true", "false"].forEach(function (x) { vals.push({ v: x, icon: "🔘" }); });
+            else if (k.d != null && k.d !== "") vals.push({ v: String(k.d), icon: "•", detail: "default" });
+          }
+          vals.forEach(function (x) { if (starts(x.v)) out.push({ icon: x.icon, label: x.v, detail: x.detail || "", insert: x.v, value: true }); });
+        } else if (cx.kind === "part") Object.keys(parts).forEach(function (k) {
+          var pt = parts[k], ic = (modelOf(model, k) || {}).icon || "🧩";
+          if (starts(k) || (p && String(pt.name || "").toLowerCase().indexOf(p) >= 0))
+            out.push({ icon: ic, label: k, detail: pt.name || "", insert: pt.lines, part: true });
+        });
+        return out.slice(0, 12);
+      });
+    }
+    var pop = { el: null, items: [], i: 0, cx: null };
+    function popClose() { if (pop.el) { pop.el.remove(); pop.el = null; } pop.items = []; pop.cx = null; wrap.removeAttribute("data-lc-comp"); }
+    function caretRect() {
+      var v = ta.value, c = ta.selectionStart, n = v.slice(0, c).split("\n").length, col = c - (v.lastIndexOf("\n", c - 1) + 1);
+      var div = keysEl && keysEl.querySelector(".ln[data-n='" + n + "']");
+      if (div) {
+        var walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT), node, pos = 0;
+        while ((node = walker.nextNode())) {
+          if (col <= pos + node.data.length) {
+            var rg = document.createRange(); rg.setStart(node, Math.max(0, col - pos)); rg.collapse(true);
+            var r = rg.getBoundingClientRect(); if (r.height) return r;
+            break;
+          }
+          pos += node.data.length;
+        }
+        var d = div.getBoundingClientRect(); return { left: d.left, bottom: d.bottom, top: d.top };
+      }
+      var t = ta.getBoundingClientRect(), lh = parseFloat(getComputedStyle(ta).lineHeight) || 18;
+      return { left: t.left + 8, top: t.top + (n - 1) * lh - ta.scrollTop, bottom: t.top + n * lh - ta.scrollTop };
+    }
+    function popShow() {
+      var host = src || wrap;
+      if (!pop.el) { pop.el = document.createElement("div"); pop.el.className = "lc-mdpad-comp"; pop.el.setAttribute("role", "listbox"); host.appendChild(pop.el); }
+      pop.el.innerHTML = pop.items.map(function (it, k) {
+        return "<div class='o" + (k === pop.i ? " on" : "") + "' role='option' data-k='" + k + "'><span class='i'>" + escHtml(it.icon || "") + "</span><span class='l'>" +
+          escHtml(it.label) + "</span><span class='d'>" + escHtml(it.detail || "") + "</span></div>";
+      }).join("");
+      var r = caretRect(), h = host.getBoundingClientRect();
+      pop.el.style.left = Math.max(0, Math.min(r.left - h.left, h.width - 240)) + "px";
+      pop.el.style.top = (r.bottom - h.top + 2) + "px";
+      wrap.setAttribute("data-lc-comp", pop.cx.kind);
+    }
+    function complete(force) {
+      var cx = context(force);
+      if (!cx) { popClose(); return; }
+      itemsFor(cx).then(function (items) {
+        if (!items.length || (items.length === 1 && items[0].label === cx.prefix && cx.kind !== "knob" && !items[0].part)) { popClose(); return; }
+        pop.items = items; pop.i = 0; pop.cx = cx; popShow();
+      });
+    }
+    /* ⇥ the blanks of an inserted part: Tab goes to the next, ⇧Tab back */
+    var BLANK = /\byour_[a-z_]+\b|\ba_column\b|\bTitle\b/g;
+    var snip = null;                          /* { start, tail } — the part's span, its end kept from the text's end */
+    function blankAfter(from, back) {
+      if (!snip) return null;
+      var v = ta.value, end = v.length - snip.tail, seg = v.slice(snip.start, end), m, all = [];
+      BLANK.lastIndex = 0;
+      while ((m = BLANK.exec(seg))) all.push([snip.start + m.index, snip.start + m.index + m[0].length]);
+      if (!all.length) return null;
+      if (back) { for (var i = all.length - 1; i >= 0; i--) if (all[i][1] < from) return all[i]; return null; }
+      for (var j = 0; j < all.length; j++) if (all[j][0] >= from) return all[j];
+      return null;
+    }
+    function goBlank(r) {
+      ta.setSelectionRange(r[0], r[1]); focusNow();
+      setTimeout(function () { complete(true); }, 0);   /* a blank inside a knob offers its values at once */
+    }
+    function accept(it) {
+      var cx = pop.cx, a = ta.selectionEnd > ta.selectionStart && cx.kind === "value" ? ta.selectionStart : cx.at;
+      var b = ta.selectionEnd > ta.selectionStart && cx.kind === "value" ? ta.selectionEnd : ta.selectionStart;
+      popClose();
+      if (it.part) {
+        var v0 = ta.value, start = cx.at, end = cx.end;
+        editSpan(start, end, it.insert, start);
+        snip = { start: start, tail: ta.value.length - (start + it.insert.length) };
+        var first = blankAfter(start);
+        if (first) goBlank(first); else { snip = null; ta.setSelectionRange(start + it.insert.length, start + it.insert.length); }
+        return;
+      }
+      var ins = it.insert, v = ta.value, le = v.indexOf("\n", b); if (le < 0) le = v.length;
+      if (it.close && v.slice(b, le).indexOf("}") < 0) ins += "}";             /* a fresh {: .x gets its } */
+      var caret = a + it.insert.length - (it.back || 0);
+      editSpan(a, b, ins, caret);
+      if (it.value) {                                                           /* past the closing quote, ready for the next knob */
+        var c2 = ta.selectionStart; if (ta.value.charAt(c2) === '"') ta.setSelectionRange(c2 + 1, c2 + 1);
+        if (snip) { var nx = blankAfter(ta.selectionStart); if (nx) goBlank(nx); }
+      }
+      if (it.reopen) setTimeout(function () { complete(true); }, 0);
+    }
+    ta.addEventListener("keydown", function (e) {
+      if (e.ctrlKey && (e.key === " " || e.code === "Space")) { e.preventDefault(); complete(true); return; }
+      if (pop.el) {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault(); e.stopImmediatePropagation();
+          pop.i = (pop.i + (e.key === "ArrowDown" ? 1 : -1) + pop.items.length) % pop.items.length; popShow(); return;
+        }
+        if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); e.stopImmediatePropagation(); accept(pop.items[pop.i]); return; }
+        if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); popClose(); return; }
+      }
+      if (e.key === "Tab" && snip) {
+        var nx = blankAfter(e.shiftKey ? ta.selectionStart : ta.selectionEnd, e.shiftKey);
+        e.preventDefault();
+        if (nx) goBlank(nx); else { var endAt = ta.value.length - snip.tail; snip = null; ta.setSelectionRange(endAt, endAt); }
+      } else if (e.key === "Escape" && snip) snip = null;
+    }, true);
+    ta.addEventListener("input", function (e) {
+      if (e && e.inputType && /^insert/.test(e.inputType) && !/Paste/.test(e.inputType)) complete(false);
+      else if (pop.el) complete(false);
+    });
+    ta.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== ta) popClose(); }, 150); });
+    ta.addEventListener("click", popClose);
+    wrap.addEventListener("mousedown", function (e) {
+      var o = e.target.closest && e.target.closest(".lc-mdpad-comp .o");
+      if (!o) return;
+      e.preventDefault(); pop.i = +o.getAttribute("data-k"); accept(pop.items[pop.i]);
+    });
+    wrap._lcComplete = function () { complete(true); return pop.items.map(function (x) { return x.label; }); };
+
+    /* ? THE PAD'S OWN HELP (Michel, 2026-10-11: "a small help button to list
+       all the features") — one card, the keys of this computer */
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
+    var K = mac ? { cmd: "⌘", alt: "⌥", sh: "⇧" } : { cmd: "Ctrl+", alt: "Alt+", sh: "Shift+" };
+    var helpBtn = document.createElement("button");
+    helpBtn.type = "button"; helpBtn.className = "lc-mdpad-helpbtn";
+    helpBtn.textContent = "?"; helpBtn.title = "What this editor can do"; helpBtn.setAttribute("aria-label", "What this editor can do");
+    /* order, right to left: ⇥ always, ? on hover, 🔍 while editing — what
+       appears late sits leftmost, so nothing jumps under a pointer */
+    pills.insertBefore(helpBtn, foldBtn);
+    helpBtn.addEventListener("mousedown", function (e) { e.preventDefault(); });   /* the caret stays put */
+    var helpCard = null;
+    function helpClose() { if (helpCard) { helpCard.remove(); helpCard = null; } }
+    helpBtn.addEventListener("click", function () {
+      if (helpCard) { helpClose(); return; }
+      var rows = [
+        ["✍️", "Type markdown on the right, the page draws on the left"],
+        ["🔍", K.cmd + "F — find; ↑ ↓ or Enter walk the matches; Esc"],
+        ["💡", "Ctrl+Space — complete: a component, a knob, a value, an id; on an empty line, a whole part. Tab jumps to the next blank"],
+        ["🔗", K.cmd.replace(/\+$/, "") + "-click on an id — jump to where it is declared; again — its uses"],
+        ["✏️", "F2 on an id — rename it everywhere it is wired"],
+        ["↕️", K.alt + "↑ " + K.alt + "↓ — move the block under the caret"],
+        ["◫", K.alt + K.sh + "→ — beside the block above; " + K.alt + K.sh + "← — back under it"],
+        ["↩️", K.cmd + "Z — undo, one move at a time"],
+        ["🧩", "Hover an icon in the gutter — the component's name"],
+        ["⇥", "Hide the editor; ✎ brings it back. Drag the line between the halves, or the bar under the pad"],
+        ["🕘", "Versions — every save; 🎞 Replay, ↺ Start over"],
+        ["💾", "Save — with one line saying what you did"]
+      ];
+      helpCard = document.createElement("div");
+      helpCard.className = "lc-mdpad-help";
+      helpCard.setAttribute("role", "dialog"); helpCard.setAttribute("aria-label", "What this editor can do");
+      helpCard.innerHTML = "<b>✍️ The pad</b>" + rows.map(function (r) {
+        return "<div class='r'><span class='i'>" + r[0] + "</span><span>" + escHtml(r[1]) + "</span></div>"; }).join("");
+      wrap.appendChild(helpCard);
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") helpClose(); });
+    document.addEventListener("click", function (e) { if (helpCard && !helpCard.contains(e.target) && e.target !== helpBtn) helpClose(); });
+
     ta.addEventListener("input", function () { if (fnd.box && fnd.q) { findHits(); if (fnd.at >= fnd.hits.length) fnd.at = fnd.hits.length - 1; fnd.count.textContent = fnd.hits.length ? (fnd.at + 1) + "/" + fnd.hits.length : "0/0"; } });
     wrap._lcFind = function (q) { findOpen(); fnd.input.value = q; fnd.input.dispatchEvent(new Event("input")); };
 
@@ -1929,6 +2287,8 @@ Auto-included by docs/_layouts/default.html.
       case "frame":    return film(pad, function (r) { r.go(Math.max(0, Math.min(r.count() - 1, (n || 1) - 1))); });
       case "stop":     if (pad._lcReplay) pad._lcReplay.stop(); return !!pad._lcReplay;
       case "type":     return pad._lcTypeStep ? pad._lcTypeStep(n || 1, steps) : false;
+      case "fold":     if (!pad._lcDrawer) return false; if (!pad.classList.contains("lc-mdpad-folded")) pad._lcDrawer(true); return true;
+      case "show":     if (!pad._lcDrawer) return false; if (pad.classList.contains("lc-mdpad-folded")) pad._lcDrawer(false); return true;
       case "save":
         if (!pad._lcSaveAs) return false;
         var list = steps || pad._lcSteps || [];
@@ -1938,7 +2298,7 @@ Auto-included by docs/_layouts/default.html.
     }
     return false;
   };
-  if (window.lcVerbs) ["replay", "moonwalk", "frame", "stop", "type", "save"].forEach(function (v) {
+  if (window.lcVerbs) ["replay", "moonwalk", "frame", "stop", "type", "save", "fold", "show"].forEach(function (v) {
     window.lcVerbs.register(v, function (el, arg, ctx) { return window.lcPadVerb(v, el, arg, ctx); }, padOf);
   });
 })();
