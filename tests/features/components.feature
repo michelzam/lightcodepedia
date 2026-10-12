@@ -409,6 +409,31 @@ Feature: Component gallery behaviors
     Then the "eat" verb on the "lucky_widget" inspector explains "Reads the bowl. Writes weight — and the mood turns fed. · → fed"
     And the "bark" verb on the "lucky_widget" inspector explains "Reads nothing. Writes last_said and adopted — and celebrates. · needs: fed"
 
+  Scenario: A verb that prints shows it in the inspector's console
+    Michel, 2026-10-12, on the Pets activity: "I see nothing when I click
+    on come … I would expect a console, like the one the code editor has"
+    — and the card's head as a type hint, "lucky: Pet". The console echoes
+    the call, then its prints.
+
+    When I navigate to "/components/examples/model"
+    And I wait for the page to be interactive
+    And I press "eat" on the "lucky_widget" inspector
+    And I press "bark" on the "lucky_widget" inspector
+    Then the "lucky_widget" inspector's console shows ">>> lucky.bark()"
+    And the "lucky_widget" inspector's console shows "Woof!"
+    And the "lucky_widget" inspector's first card is headed "lucky: Dog"
+
+  Scenario: names="code" shows the names as the class writes them
+    Michel, 2026-10-12: "should we display the attribute and methods
+    names non capitalized to keep it closer to the code? … a knob for
+    this option". Default stays capitalized; the Pet example wears it.
+
+    When I navigate to "/components/examples/model"
+    And I wait for the page to be interactive
+    Then the "pet_widget" inspector's first card shows "bestie"
+    And the "play" verb on the "pet_widget" inspector reads "play()"
+    And the "eat" verb on the "lucky_widget" inspector reads "Eat"
+
   Scenario: The folder page's recap example folds a built folder into facts
     The recap view also runs on a built site (manifest road, no key): the
     component page's own example lists the examples folder.

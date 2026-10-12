@@ -3157,6 +3157,10 @@ _inject_store()
 .lc-ins-err { flex-basis: 100%; font-family: monospace; font-size: 0.85em; color: #b91c1c; background: #fef2f2;
   border: 1px solid #fecaca; border-radius: 6px; padding: 5px 10px; }
 .lc-ins-loading { color: #94a3b8; font-size: 0.9em; padding: 8px 0; }
+/* the console under the cards — the editor's own, so a verb that prints
+   shows it, prompt and all (Michel, 2026-10-12: "I see nothing when I
+   click on come … I would expect a console") */
+.lc-ins-console { border-radius: 8px; margin: -0.4em 0 1em; }
 /* a MODEL block is invisible on the page — like a dataset: structure, not
    ink. The widgets that use it show it; the x-ray docks it (2026-08-24).
    The pre-upgrade selectors too, so the code never flashes before hiding. */
@@ -3233,10 +3237,15 @@ _inject_store()
     (d.cards || []).forEach(function (c) {
       h += "<div class='lc-ins-card' data-card='" + esc(c.name) + "'>";
       h += "<div class='lc-ins-head'>" + esc(c.icon) + " " + esc(c.name)
-        + " <span class='lc-ins-cls'>· " + esc(c.cls) + "</span></div>";
+        + "<span class='lc-ins-cls'>: " + esc(c.cls) + "</span></div>";
       if (c.doc) h += "<div class='lc-ins-doc'>" + esc(c.doc) + "</div>";
       /* labels speak the diagram's dialect: Capitalized, type-emoji prefixed */
       function cap(n) { n = String(n).replace(/_/g, " "); return n.charAt(0).toUpperCase() + n.slice(1); }
+      /* names="code": the names as the class writes them — `distance`,
+         `come()` — so a card reads like the code it stands for (Michel,
+         2026-10-12: "non capitalized to keep it closer to the code") */
+      var codeNames = host.getAttribute("data-lc-names") === "code";
+      function label(n) { return codeNames ? String(n) : cap(n); }
       function tmoji(f) {
         if (f.ref) return "📦";
         if (f.secret) return "🔒";
@@ -3246,7 +3255,7 @@ _inject_store()
         if (f.state) return;
         var unit = f.unit ? " <span class='lc-ins-unit'>(" + esc(f.unit) + ")</span>" : "";
         h += "<div class='lc-ins-row'" + (f.hint ? " title='" + esc(f.hint) + "'" : "") + ">"
-          + "<label>" + tmoji(f) + " " + esc(cap(f.n)) + unit + "</label><div class='lc-ins-ctl'>";
+          + "<label>" + tmoji(f) + " " + esc(label(f.n)) + unit + "</label><div class='lc-ins-ctl'>";
         var dis = (f.ro || allRo) ? " disabled" : "";
         if (f.ref) {
           /* typed reference → picklist of live, type-compatible instances */
@@ -3283,7 +3292,7 @@ _inject_store()
       });
       (c.fields || []).forEach(function (f) {          /* the state axis closes the card */
         if (!f.state) return;
-        h += "<div class='lc-ins-chips'><span class='lc-ins-axis'>🎛️ " + esc(cap(f.n)) + "</span>";
+        h += "<div class='lc-ins-chips'><span class='lc-ins-axis'>🎛️ " + esc(label(f.n)) + "</span>";
         (f.enum || []).forEach(function (s) {
           h += "<span class='lc-ins-chip" + (s === f.v ? " active" : "") + "'>" + esc(String(s).replace(/_/g, " ")) + "</span>";
         });
@@ -3299,7 +3308,7 @@ _inject_store()
           var doc = m.doc || docs[c.cls + "." + m.n] || "";
           var tip = doc ? (doc + (gate ? " · " + gate : "")) : gate;
           h += "<button data-m='" + esc(m.n) + "'" + (m.enabled ? "" : " disabled")
-            + (tip ? " title='" + esc(tip) + "'" : "") + ">" + esc(cap(m.n)) + "</button>";
+            + (tip ? " title='" + esc(tip) + "'" : "") + ">" + esc(codeNames ? m.n + "()" : cap(m.n)) + "</button>";
         });
         h += "</div>";
       }
@@ -3309,7 +3318,24 @@ _inject_store()
     host.innerHTML = h;
   };
 
-  function pySend(code) { mpReady().then(function (mp) { try { runPy(mp, code); } catch (e) { console.error("[lc-inspector]", e); } }); }
+  /* run code with stdout routed to this widget's console; `echo` is the
+     line the learner would have typed — `>>> lucky.come()` — so the card
+     teaches the call it stands for */
+  function runIn(host, mp, code, echo) {
+    var buf = "";
+    window._lcMpyOut = function (t) { buf += t; };
+    try { runPy(mp, code); } finally { window._lcMpyOut = null; }
+    var con = host && host._lcCon;
+    if (!con || (!buf && !echo)) return;
+    if (con.classList.contains("lc-empty")) { con.textContent = ""; con.classList.remove("lc-empty"); }
+    con.textContent += (echo ? ">>> " + echo + "\n" : "") + buf;
+    con.scrollTop = con.scrollHeight;
+  }
+  function pySend(code, host, echo) {
+    mpReady().then(function (mp) {
+      try { runIn(host, mp, code, echo); } catch (e) { console.error("[lc-inspector]", e); }
+    });
+  }
 
   /* {: .dataset of="Learner" } — the bottom-up on-ramp meeting the contract:
      a values-only csv/yaml fence, hydrated into instances by the class,
@@ -3372,8 +3398,17 @@ _inject_store()
        (Canvas owns them), so nothing here is typable; verbs stay live
        (Michel, 2026-08-24: the join wizard must not let name/email move) */
     if (el.getAttribute("readonly") === "true") host.setAttribute("data-lc-ro", "1");
+    if (el.getAttribute("names") === "code") host.setAttribute("data-lc-names", "code");
     host.innerHTML = "<div class='lc-ins-loading'>⏳ Building the model widget…</div>";
     el.parentNode.replaceChild(host, el);
+    var con = document.createElement("pre");
+    con.className = "lc-pyrun-out lc-ins-console lc-empty";
+    con.setAttribute("data-lc-console", elid);
+    con.setAttribute("aria-live", "polite");
+    con.textContent = "Press a button — what it prints lands here.";
+    host.parentNode.insertBefore(con, host.nextSibling);
+    if (el.getAttribute("readonly") === "true") con.hidden = true;   /* a monitor prints nothing */
+    host._lcCon = con;
 
     /* widget edits → Python setters (validation lives there) */
     host.addEventListener("change", function (ev) {
@@ -3381,8 +3416,10 @@ _inject_store()
       if (!f) return;
       var card = t.closest("[data-card]"); if (!card) return;
       var v = t.type === "checkbox" ? t.checked : (t.getAttribute("data-t") === "num" ? Number(t.value) : t.value);
+      var shown = typeof v === "string" ? JSON.stringify(v) : (v === true ? "True" : v === false ? "False" : String(v));
       pySend("_lc_inspect_set(" + JSON.stringify(elid) + "," + JSON.stringify(card.getAttribute("data-card"))
-        + "," + JSON.stringify(f) + "," + JSON.stringify(JSON.stringify(v)) + ")");
+        + "," + JSON.stringify(f) + "," + JSON.stringify(JSON.stringify(v)) + ")",
+        host, card.getAttribute("data-card") + "." + f + " = " + shown);
     });
     host.addEventListener("input", function (ev) {   /* live slider label */
       var t = ev.target;
@@ -3393,7 +3430,8 @@ _inject_store()
       if (!b || b.disabled) return;
       var card = b.closest("[data-card]"); if (!card) return;
       pySend("_lc_inspect_call(" + JSON.stringify(elid) + "," + JSON.stringify(card.getAttribute("data-card"))
-        + "," + JSON.stringify(b.getAttribute("data-m")) + ")");
+        + "," + JSON.stringify(b.getAttribute("data-m")) + ")",
+        host, card.getAttribute("data-card") + "." + b.getAttribute("data-m") + "()");
     });
 
     var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
@@ -3429,7 +3467,7 @@ _inject_store()
       : "\n_lc_inspect_bind_new(" + JSON.stringify(elid) + ")\n";
     mpReady().then(function (mp) {
       try {
-        runPy(mp, preamble + "\n_LC_NEW[:] = []\n_LC_CLS_SNAP = set(_CLASSES)\n" + code + tail);
+        runIn(host, mp, preamble + "\n_LC_NEW[:] = []\n_LC_CLS_SNAP = set(_CLASSES)\n" + code + tail);
         if (follow) {
           host.innerHTML = "<div class='lc-ins-loading'>👉 click a row to open its object</div>";
           if (window.lcMasterDetail) window.lcMasterDetail.subscribe(follow, function (row) {

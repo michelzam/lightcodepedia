@@ -82,6 +82,14 @@ export interface AbstractResponse {
   body: any;
 }
 
+/** A contribution waiting on a fiche (GET /fiche, a 409 on /contrib) — 0.3.0. */
+export interface Pending {
+  number: number;
+  url: string;
+  /** true: the signed-in volunteer's own; GET /fiche then returns their waiting version. */
+  mine: boolean;
+}
+
 export interface Gateway {
   /** The whole service as a function: routes /health, /auth/request, /auth/verify (GET page, POST use), /me, /fiche, /contrib, /contrib/new. */
   request(req: AbstractRequest): Promise<AbstractResponse>;

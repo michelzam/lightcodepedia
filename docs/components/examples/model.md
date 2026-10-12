@@ -26,6 +26,7 @@ class Dog(Object):
     def bark(self):
         """Reads nothing. Writes last_said and adopted — and celebrates."""
         self.last_said = "Woof!"
+        print(self.last_said)
         self.adopted = True
         self.confetti()
 
@@ -41,7 +42,8 @@ lucky = Dog()
 
 Try it: drag the **weight** slider past 60 (it clamps), pick a **colour**
 (only the declared ones exist), and follow the machine — `bark()` stays locked
-until `eat()` moves the mood to **fed**. The `adopted` checkbox can't be
+until `eat()` moves the mood to **fed**. Every press lands in the console under
+the card — `>>> lucky.bark()`, then the `Woof!` it prints. The `adopted` checkbox can't be
 clicked at all: *state is never set, it's reached*.
 
 ## 🍖 The same object, from anywhere {#shared_runtime}
@@ -95,7 +97,7 @@ class Fish(Pet):
 rex   = Dog()
 wanda = Fish()
 ```
-{: .inspector #pet_widget }
+{: .inspector #pet_widget names="code" }
 
 Open **rex**'s `bestie` picklist: it offers `wanda` — a Fish *is a* Pet, so the
 cross-species friendship type-checks. In code, `rex.bestie = wanda` works too,
@@ -130,6 +132,8 @@ association, and the mood statechart hangs below:
 | `Attr("Pet")` | a **picklist** of live, type-compatible instances (subclasses count); wrong types raise |
 | `@transition(pre=["hungry"], post="fed")` | a gated button — disabled outside `pre`, moves the state to `post` |
 | `def run(self): …` | **every public method is a button** — no decorator needed; `_underscore` methods stay internal |
+| `print(…)` in a method | the **console** under the cards — the call first, as typed (`>>> lucky.bark()`), then what it printed; a field edit echoes as `>>> lucky.colour = "Black"` |
+| `names="code"` on the widget | labels and buttons as the class writes them — `weight_kg`, `play()` — instead of *Weight kg*, *Play*; the Pet below wears it |
 | `self.confetti()` | a behaviour celebrates — the burst lands on the card that shows the object |
 | `"""Reads the bowl. Writes weight…"""` | a docstring's **first line is the button's tooltip** — say what the verb reads and writes; the gate (→ fed, needs: …) follows it |
 

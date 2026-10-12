@@ -1,5 +1,26 @@
 # Changelog — @karmicsoft/lc-gateway
 
+## 0.3.0 — 2026-10-12
+
+Asked by Toni (Blue Lion, for Mémoire des lieux) after the first tests on the
+real site; his answers: own waiting contribution → join it; someone else's →
+409 as before; "mine" by a fingerprint, not a name. Forms written for 0.2 keep
+working: the API only gains a field.
+
+- **Coming back to my waiting contribution.** `GET /fiche` returns the
+  volunteer's own version from its branch, with `pending: { number, url,
+  mine: true }`; `POST /contrib` with that `sha` adds a commit to the same
+  branch and answers `200 { updated: true, pr }`. One pull request, up to
+  date, for the reviewer. Protected fields are still judged against the
+  published record.
+- **Someone else's waiting contribution** still answers `409`, and `GET
+  /fiche` says so (`pending.mine: false`) so the form can tell the volunteer.
+- **Whose is it:** a mark in the pull request's description, a fingerprint
+  of the address keyed by `SESSION_SECRET`. The address is never written.
+  Pull requests opened before 0.3.0 carry no mark: nobody's, as before.
+- **Fixed:** a waiting contribution is matched by its fiche's exact branch
+  name — `louise-michel` no longer matches `louise-michel-bis`.
+
 ## 0.2.1 — 2026-10-11
 
 Three fixes reported by Toni (Blue Lion, for Mémoire des lieux) after the

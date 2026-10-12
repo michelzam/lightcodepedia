@@ -18,8 +18,8 @@ by name.
 | `/auth/verify?t=` | GET | the mailed link opens a page with one button; it reads nothing and consumes nothing, so a mail scanner that follows it does no harm |
 | `/auth/verify` | POST `t` (the button) | the one use of the link, 15 minutes; sets the session cookie (7 days) and redirects to the app |
 | `/me` | GET | `{ name, role }` of the signed-in volunteer |
-| `/fiche?path=` | GET | `{ path, sha, text, record }` of a record on `main`, for a form whose repository is private; content folders only |
-| `/contrib` | POST `{ path, baseSha, record, title?, type?, message? }` | one branch `contrib/<slug>-<yyyymmdd-hhmm>` + one pull request to `main`, the file written through **lc-patch**. `baseSha` is required |
+| `/fiche?path=` | GET | `{ path, sha, text, record, pending? }` of a record, for a form whose repository is private; content folders only. When a contribution on it is waiting: `pending: { number, url, mine }` — `mine: true` and the record is the volunteer's own waiting version, from its branch (0.3.0) |
+| `/contrib` | POST `{ path, baseSha, record, title?, type?, message? }` | one branch `contrib/<slug>-<yyyymmdd-hhmm>` + one pull request to `main`, the file written through **lc-patch**. `baseSha` is required. On the volunteer's own waiting contribution: one more commit on its branch, `200 { updated: true, pr }` (0.3.0) |
 | `/contrib/new` | POST `{ kind, title, record }` | a new record under the folder named by `kind`; `id`/`slug` derived from the title, never editable |
 
 Refusals the host must expect, each with `keep: true` so the form keeps the
@@ -34,8 +34,9 @@ edit in the browser:
   `periods`, `districts`, configurable); the answer names them. Refused for
   every role, so a trusted author's auto-merge cannot carry one either;
 - `409 stale` — the record moved on `main` since it was opened: reload it;
-- `409 open pull request` — someone's contribution on this fiche is already
-  waiting; the answer names it.
+- `409 open pull request` — someone else's contribution on this fiche is
+  already waiting; the answer names it (`pending.mine: false`). Your own
+  waiting contribution is never refused: the save joins it.
 
 Roles: `contributor` → the pull request waits for review. `trusted` → the
 gateway enables GitHub **auto-merge**; GitHub merges it only once the

@@ -19,7 +19,7 @@ import { createHmac, createSign, randomBytes, createHash, timingSafeEqual } from
 import { patch } from '@karmicsoft/lc-patch';
 import { load, dump } from '@karmicsoft/lc-serialize';
 
-export const GATEWAY_VERSION = '0.2.1';
+export const GATEWAY_VERSION = '0.3.0';
 
 const DEFAULTS = {
   baseBranch: 'main',
@@ -190,10 +190,23 @@ export function createGateway(config, deps = {}) {
   }
   const stamp = () => { const d = new Date(now()); const z = (n) => String(n).padStart(2, '0');
     return d.getUTCFullYear() + z(d.getUTCMonth() + 1) + z(d.getUTCDate()) + '-' + z(d.getUTCHours()) + z(d.getUTCMinutes()); };
+  /* WHOSE CONTRIBUTION IS WAITING (0.3.0, Toni: "1 oui, 2a, 3a"). The App is
+     the only writer, so a pull request says who it is for by a mark in its
+     description: a fingerprint of the address, keyed by the gateway's own
+     secret — nobody can read the address back. A pull request without it
+     (opened before 0.3.0, or after the secret rotated) is nobody's: the
+     fiche answers as before. */
+  const ownerMark = (email) => '<!-- lc-gateway:owner=' +
+    createHmac('sha256', cfg.sessionSecret).update('owner:' + norm(email)).digest('base64url').slice(0, 22) + ' -->';
+  const isMine = (pr, sess) => !!(pr && sess && String(pr.body || '').includes(ownerMark(sess.email)));
+  const pendingOf = (pr, sess) => pr ? { number: pr.number, url: pr.html_url, mine: isMine(pr, sess) } : null;
   async function openPrOn(slug) {
     const r = await gh('/repos/' + cfg.repo + '/pulls?state=open&per_page=100');
-    const want = cfg.branchPrefix + '/' + slug + '-';
-    return (r.ok && Array.isArray(r.json) ? r.json : []).find((p) => p.head && String(p.head.ref).startsWith(want)) || null;
+    /* the exact shape <prefix>/<slug>-<yyyymmdd-hhmm>: louise-michel never
+       matches louise-michel-bis's pull request */
+    const esc = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const want = new RegExp('^' + esc(cfg.branchPrefix) + '/' + esc(slug) + '-\\d{8}-\\d{4}$');
+    return (r.ok && Array.isArray(r.json) ? r.json : []).find((p) => p.head && want.test(String(p.head.ref))) || null;
   }
   async function writeAsPr(sess, { path, text, sha, title, type, message }) {
     const slug = slugOf(path);
@@ -209,7 +222,7 @@ export function createGateway(config, deps = {}) {
     const prTitle = cfg.prTitle.replace('{type}', type).replace('{title}', title).replace('{name}', sess.name);
     const pr = await gh('/repos/' + cfg.repo + '/pulls', { method: 'POST',
       body: { title: prTitle, head: branch, base: cfg.baseBranch,
-              body: 'Contribution by ' + sess.name + ' through the gateway. File: `' + path + '`.' } });
+              body: 'Contribution by ' + sess.name + ' through the gateway. File: `' + path + '`.\n\n' + ownerMark(sess.email) } });
     if (!pr.ok) throw new Error('cannot open the pull request (' + pr.status + ')');
     let autoMerge = false;
     if (sess.role === 'trusted' && pr.json.node_id) {
@@ -266,10 +279,17 @@ export function createGateway(config, deps = {}) {
         if (!sess) return json(401, { error: 'not signed in' });
         const path = String(url.searchParams.get('path') || '');
         if (!insideContent(path)) return json(403, { error: 'reads are limited to ' + cfg.contentDirs.join(', ') });
-        const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
-        if (!cur.ok) return json(404, { error: 'no such record on ' + cfg.baseBranch });
+        /* a contribution of mine waiting on this fiche: the form reopens MY
+           version, from its branch, and says which pull request it is */
+        const open = await openPrOn(slugOf(path));
+        const mine = isMine(open, sess);
+        const ref = mine ? open.head.ref : cfg.baseBranch;
+        const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(ref));
+        if (!cur.ok) return json(404, { error: 'no such record on ' + ref });
         const text = Buffer.from(cur.json.content || '', 'base64').toString('utf8');
-        return json(200, { path, sha: cur.json.sha, text, record: load(text) }, { 'cache-control': 'no-store' });
+        const out = { path, sha: cur.json.sha, text, record: load(text) };
+        if (open) out.pending = pendingOf(open, sess);
+        return json(200, out, { 'cache-control': 'no-store' });
       }
       if (m === 'POST' && (p === '/contrib' || p === '/contrib/new')) {
         if (!sess) return json(401, { error: 'not signed in', keep: true });
@@ -291,11 +311,13 @@ export function createGateway(config, deps = {}) {
     const slug = slugOf(path);
     const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
     if (!cur.ok) return json(404, { error: 'no such record on ' + cfg.baseBranch, keep: true });
+    const open = await openPrOn(slug);
+    if (open && isMine(open, sess)) return await addToMine(sess, body, path, open, cur);
     if (body.baseSha !== cur.json.sha)
       return json(409, { error: 'stale', message: 'the record changed since it was opened — reload it', keep: true });
-    const open = await openPrOn(slug);
     if (open) return json(409, { error: 'open pull request', keep: true,
-      message: 'a contribution on this record is already waiting: #' + open.number, pr: { number: open.number, url: open.html_url } });
+      message: 'a contribution on this record is already waiting: #' + open.number,
+      pr: { number: open.number, url: open.html_url }, pending: pendingOf(open, sess) });
     const original = Buffer.from(cur.json.content || '', 'base64').toString('utf8');
     const touched = touchedProtected(load(original), body.record);
     if (touched.length) return json(403, { error: 'protected fields', fields: touched, keep: true,
@@ -306,6 +328,32 @@ export function createGateway(config, deps = {}) {
     const title = String(body.title || body.record.title || slug);
     const pr = await writeAsPr(sess, { path, text, sha: cur.json.sha, title: title, type: cap(type), message: body.message });
     return json(201, { ok: true, pr });
+  }
+
+  /* a second save of MY waiting contribution: one more commit on its
+     branch, the same pull request, kept up to date for the reviewer.
+     baseSha is the branch's (GET /fiche gave it); protected fields are
+     still judged against the published record. */
+  async function addToMine(sess, body, path, open, main) {
+    const branch = open.head.ref;
+    const mine = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(branch));
+    if (!mine.ok) return json(404, { error: 'no such record on ' + branch, keep: true });
+    if (body.baseSha !== mine.json.sha)
+      return json(409, { error: 'stale', message: 'your waiting version changed since it was opened — reload it', keep: true });
+    const published = Buffer.from(main.json.content || '', 'base64').toString('utf8');
+    const touched = touchedProtected(load(published), body.record);
+    if (touched.length) return json(403, { error: 'protected fields', fields: touched, keep: true,
+      message: 'these fields are not the form\'s to change: ' + touched.join(', ') });
+    const before = Buffer.from(mine.json.content || '', 'base64').toString('utf8');
+    const text = patch(before, body.record);
+    if (text === before) return json(400, { error: 'nothing changed', keep: true });
+    const title = String(body.title || body.record.title || slugOf(path));
+    const commitMsg = (body.message || ('Update: ' + title)) + '\n\nCo-authored-by: ' + sess.name + ' <' + cfg.coauthorEmail + '>';
+    const put = await gh('/repos/' + cfg.repo + '/contents/' + path, { method: 'PUT',
+      body: { message: commitMsg, content: Buffer.from(text, 'utf8').toString('base64'), branch, sha: mine.json.sha } });
+    if (!put.ok) throw new Error('cannot write the file (' + put.status + ')');
+    return json(200, { ok: true, updated: true,
+      pr: { number: open.number, url: open.html_url, branch, autoMerge: !!open.auto_merge } });
   }
 
   async function createNew(sess, body) {

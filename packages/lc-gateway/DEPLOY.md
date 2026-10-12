@@ -109,11 +109,11 @@ memory; the person simply asks for a new one.
 
 ```sh
 scw registry namespace create name=lc region=fr-par
-docker tag lc-gateway rg.fr-par.scw.cloud/lc/lc-gateway:0.2.1
-docker push rg.fr-par.scw.cloud/lc/lc-gateway:0.2.1
+docker tag lc-gateway rg.fr-par.scw.cloud/lc/lc-gateway:0.3.0
+docker push rg.fr-par.scw.cloud/lc/lc-gateway:0.3.0
 scw container namespace create name=contrib region=fr-par
 scw container container create namespace-id=<ns> name=lc-gateway \
-  registry-image=rg.fr-par.scw.cloud/lc/lc-gateway:0.2.1 port=8080 \
+  registry-image=rg.fr-par.scw.cloud/lc/lc-gateway:0.3.0 port=8080 \
   min-scale=1 max-scale=1 memory-limit=256 \
   environment-variables.PUBLIC_URL=https://… environment-variables.APP_URL=https://… \
   secret-environment-variables.GITHUB_APP_PRIVATE_KEY="$(cat app.pem)" \
@@ -131,7 +131,7 @@ Settings → Environment variables / Secrets.
 ## 5. Check it runs
 
 ```sh
-curl https://contrib.example.org/health          # {"ok":true,"version":"0.2.1"}
+curl https://contrib.example.org/health          # {"ok":true,"version":"0.3.0"}
 curl -X POST https://contrib.example.org/auth/request -H 'content-type: application/json' \
      -d '{"email":"you@example.org"}'             # 202, and a mail if you are allowlisted
 ```
@@ -153,6 +153,15 @@ is accepted for this mode only; production always uses the App.
 
 ## 7. Since 0.1.0
 
+0.3.0 (Toni, 2026-10-12): a volunteer coming back to a fiche whose contribution
+still waits reads their own version (`GET /fiche` → `pending: { number, url,
+mine: true }`), and a second save adds a commit to that same pull request.
+Someone else's waiting contribution still answers 409, and `GET /fiche` says
+so (`mine: false`). "Mine" is a mark in the pull request's description — a
+fingerprint of the address keyed by `SESSION_SECRET`, never the address;
+pull requests opened before 0.3.0, or before a rotation of the secret, are
+nobody's. A waiting contribution now matches its fiche's exact branch name.
+
 0.2.1 (Toni's report, 2026-10-11): an env file's quotes and written `\n`
 are forgiven in the key and the mail texts; `GITHUB_APP_PRIVATE_KEY_FILE`;
 the key is checked at startup; this guide is right about restarts.
@@ -164,7 +173,7 @@ does the one use, so mail scanners consume nothing; an hourly limit per
 address and a daily mail quota for everyone; memory swept on every sign-in
 request; constant-time signature comparison.
 
-## 8. What is not in 0.2.1
+## 8. What is not in 0.3.0
 
 - Sign-in links and rate limits shared across instances (a store would come
   with a second instance). Sessions already are: signed cookies.

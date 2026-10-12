@@ -679,6 +679,32 @@ def step_verb_disabled(context, verb, elid):
     expect(btn).to_be_disabled()
 
 
+@then('the "{elid}" inspector\'s console shows "{text}"')
+def step_inspector_console(context, elid, text):
+    con = context.page.locator('[data-lc-console="%s"]' % elid)
+    expect(con).to_be_visible(timeout=15_000)
+    expect(con).to_contain_text(text, timeout=15_000)
+
+
+@then('the "{elid}" inspector\'s first card is headed "{text}"')
+def step_inspector_head(context, elid, text):
+    head = context.page.locator('[data-lc-inspector="%s"] .lc-ins-head' % elid).first
+    expect(head).to_contain_text(text, timeout=45_000)
+
+
+@then('the "{elid}" inspector\'s first card shows "{text}"')
+def step_inspector_card_shows(context, elid, text):
+    card = context.page.locator('[data-lc-inspector="%s"] .lc-ins-card' % elid).first
+    expect(card).to_contain_text(text, timeout=45_000)
+
+
+@then('the "{verb}" verb on the "{elid}" inspector reads "{text}"')
+def step_verb_reads(context, verb, elid, text):
+    btn = context.page.locator(
+        '[data-lc-inspector="%s"] [data-card] button[data-m="%s"]' % (elid, verb)).first
+    expect(btn).to_have_text(text, timeout=45_000)
+
+
 @then('the "{elid}" inspector bursts with confetti')
 def step_inspector_confetti(context, elid):
     # the burst lands on the card's parent (the card itself redraws after a verb)

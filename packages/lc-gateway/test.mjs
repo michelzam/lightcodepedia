@@ -449,6 +449,86 @@ await scenario('After a restart, a session still holds; a link mailed before it 
   eq((await after.call('GET', '/me', null, cookie)).status, 200);
   eq((await after.press(pending)).status, 401);
 });
+
+feature('A volunteer comes back to a contribution still waiting (0.3.0, Toni: 1 oui, 2a, 3a)');
+const lmPath = encodeURIComponent(LM);
+await scenario('Reopening a fiche with my waiting contribution shows my version and its pull request', async () => {
+  const { call, gh, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  const first = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, ada);
+  eq(first.status, 201);
+  const r = await call('GET', '/fiche?path=' + lmPath, null, ada);
+  eq(r.status, 200);
+  eq(r.body.record.gender, 'femme', 'the published version came back');
+  deep(r.body.pending, { number: first.body.pr.number, url: first.body.pr.url, mine: true });
+  ok(!JSON.stringify(gh.prs).includes('ada@example.org'), 'the owner mark is the address itself');
+});
+await scenario('A second save adds a commit to my pull request, not a second one', async () => {
+  const { call, gh, signIn, clock } = rig();
+  const ada = await signIn('ada@example.org');
+  const first = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, ada);
+  clock.t += 60000;
+  const mine = await call('GET', '/fiche?path=' + lmPath, null, ada);
+  const rec = mine.body.record; rec.addresses[0].period = 1871;
+  const r = await call('POST', '/contrib', { path: LM, baseSha: mine.body.sha, record: rec }, ada);
+  eq(r.status, 200, JSON.stringify(r.body));
+  eq(r.body.updated, true); eq(r.body.pr.number, first.body.pr.number);
+  eq(gh.prs.length, 1, 'a second pull request was opened');
+  eq(gh.commits.length, 2); eq(gh.commits[1].branch, first.body.pr.branch);
+  ok(gh.commits[1].message.endsWith('Co-authored-by: Ada Test <contrib@example.org>'), gh.commits[1].message);
+  const now = load(gh.branches[first.body.pr.branch][LM]);
+  eq(now.gender, 'femme'); eq(now.addresses[0].period, 1871);
+  eq(gh.main[LM], fixtures[LM], 'main changed');
+});
+await scenario("Someone else's waiting contribution: the published version, and the same 409", async () => {
+  const { call, gh, signIn, clock } = rig();
+  const ada = await signIn('ada@example.org');
+  const first = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, ada);
+  clock.t += 60000;
+  const zoe = await signIn('zoe@example.org');
+  const r = await call('GET', '/fiche?path=' + lmPath, null, zoe);
+  eq(r.body.sha, gh.sha(LM)); eq(r.body.text, fixtures[LM]);
+  deep(r.body.pending, { number: first.body.pr.number, url: first.body.pr.url, mine: false });
+  const w = await call('POST', '/contrib', { path: LM, baseSha: r.body.sha, record: edit(LM, (o) => { o.gender = 'autre'; }) }, zoe);
+  eq(w.status, 409); eq(w.body.pending.mine, false); eq(gh.commits.length, 1);
+});
+await scenario('A pull request opened before 0.3.0 has no owner mark: it is nobody\'s, as before', async () => {
+  const { call, gh, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, ada);
+  gh.prs[0].body = 'Contribution by Ada Test through the gateway. File: `' + LM + '`.';   // a 0.2 pull request
+  const r = await call('GET', '/fiche?path=' + lmPath, null, ada);
+  eq(r.body.text, fixtures[LM]); eq(r.body.pending.mine, false);
+  eq((await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'autre'; }) }, ada)).status, 409);
+});
+await scenario('My second save is still refused protected fields, and a stale or empty save', async () => {
+  const { call, gh, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, ada);
+  const mine = await call('GET', '/fiche?path=' + lmPath, null, ada);
+  const bad = JSON.parse(JSON.stringify(mine.body.record)); bad.slug = 'someone-else';
+  eq((await call('POST', '/contrib', { path: LM, baseSha: mine.body.sha, record: bad }, ada)).status, 403);
+  eq((await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: mine.body.record }, ada)).body.error, 'stale');
+  eq((await call('POST', '/contrib', { path: LM, baseSha: mine.body.sha, record: mine.body.record }, ada)).body.error, 'nothing changed');
+  eq(gh.commits.length, 1);
+});
+await scenario('A waiting contribution on louise-michel-bis is not louise-michel\'s', async () => {
+  const { call, gh, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  gh.prs.push({ number: 7, node_id: 'PR_7', state: 'open', title: 'x', body: '', head: { ref: 'contrib/louise-michel-bis-20260926-0900' },
+                base: { ref: 'main' }, html_url: 'https://github.com/acme/fiches/pull/7' });
+  const r = await call('GET', '/fiche?path=' + lmPath, null, ada);
+  eq(r.body.pending, undefined, 'another fiche\'s pull request was taken for this one');
+  eq((await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, ada)).status, 201);
+});
+await scenario('A new record still waiting reads back for its author', async () => {
+  const { call, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  const c = await call('POST', '/contrib/new', { kind: 'persons', title: 'Jeanne Test', record: { type: 'person', gender: 'féminin' } }, ada);
+  eq(c.status, 201, JSON.stringify(c.body));
+  const r = await call('GET', '/fiche?path=' + encodeURIComponent('fiches/persons/jeanne-test.yaml'), null, ada);
+  eq(r.status, 200, JSON.stringify(r.body)); eq(r.body.record.title, 'Jeanne Test'); eq(r.body.pending.mine, true);
+});
 })();
 
 console.log(`\n${scen} scenarios, ${fail} failed.`);
