@@ -798,3 +798,70 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I add the agent's piece to the editor
     Then the "todo_editor" editor no longer holds "# TODO: wrap z to a"
     And the "todo_editor" editor still holds "print(shift('a'))"
+
+  Scenario: An agent's on_response lines put its example in a code card, and the card adds it to the pad
+    Michel, 2026-10-12: "the builder should suggest the code in a code
+    component, while keeping the add to mdpad button … on_response, and
+    expose not only verbs but also events".
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with a python fix "print('fixed')"
+    And the GitHub contents API serves "courses/demo/module_05/onresp.md" with the document:
+      """
+      # On response
+
+      ```markdown
+      # My page
+      ```
+      {: .mdpad #pad rows="4" }
+
+      ```yaml
+      system: Suggest lines.
+      ```
+      {: .agent #helper rows="3" }
+
+      ```python
+      agent.page.lines.text = agent.response.example
+      ```
+      {: .on_response }
+
+      ```python
+      ```
+      {: .code #lines title="🧩 Lines" bound="pad" placeholder="Nothing yet." }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/onresp.md"
+    And I wait for the page to be interactive
+    Then the "lines" card reads "Nothing yet."
+    When I connect the "helper" agent with key "test-key"
+    And I ask the "helper" agent "help"
+    Then the "lines" card shows "print('fixed')"
+    When I press the "lines" card's add button
+    Then the "pad" pad holds "print('fixed')"
+
+  Scenario: on_response lines that fail show ⚠️ beside the agent, and why
+    Michel, 2026-10-12: "if an error happens a ⚠️ should be displayed and a
+    semi-transparent tooltip over it should explain it".
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with a python fix "print('fixed')"
+    And the GitHub contents API serves "courses/demo/module_05/onfail.md" with the document:
+      """
+      # On fail
+
+      ```yaml
+      system: Suggest lines.
+      ```
+      {: .agent #helper rows="3" }
+
+      ```python
+      agent.page.nowhere_card.text = agent.response.example
+      ```
+      {: .on_response }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/onfail.md"
+    And I wait for the page to be interactive
+    And I connect the "helper" agent with key "test-key"
+    And I ask the "helper" agent "help"
+    Then the "helper" part shows ⚠️ explaining "on_response lines failed"

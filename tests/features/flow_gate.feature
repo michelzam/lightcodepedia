@@ -221,8 +221,8 @@ Feature: 🚦 A workflow ordered by its own values
     Then the lesson's check "builder_check" is green
 
   Scenario: Module 05's follow-up app is red on arrival
-    The coordinator's app: the dataset and a checklist; the reasons (persona,
-    pitch, map row) sit beside the pad, on the lesson page.
+    The coordinator's app: the dataset and a checklist; the reason (the
+    impact map's row) sits beside the pad, on the lesson page.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/02_list.md"

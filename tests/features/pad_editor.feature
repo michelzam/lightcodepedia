@@ -295,7 +295,7 @@ Feature: The pad types like a text field, painted
     And I try F2 to "dog_grid" in the "wires" pad
     Then the "wires" pad's rename box says "#dog_grid is taken"
 
-  Scenario: ⌥↓ and ⌥↑ move a whole block; ⌥⇧→ puts it beside the one above, ⌥⇧← takes it out
+  Scenario: ⌥↓ and ⌥↑ move a whole block; ⌃⌥→ puts it beside the one above, ⌃⌥← takes it out
     Michel, 2026-10-11: "shortcuts to move/jump up/down (reverse order) and
     another to put it beside next/previous" — for all blocks.
 
@@ -334,9 +334,9 @@ Feature: The pad types like a text field, painted
     When I press "Alt+ArrowUp" in the "wires" pad
     Then in the "wires" pad "#by_campus" comes before "#dog_grid"
     When I put the caret in "dog_grid" of 'master="dog_grid"' in the "wires" pad
-    And I press "Alt+Shift+ArrowRight" in the "wires" pad
+    And I press "Control+Alt+ArrowRight" in the "wires" pad
     Then the "wires" pad holds '{: .form master="dog_grid" beside="true" }'
-    When I press "Alt+Shift+ArrowLeft" in the "wires" pad
+    When I press "Control+Alt+ArrowLeft" in the "wires" pad
     Then the "wires" pad holds '{: .form master="dog_grid" }'
 
   Scenario: On an empty line, a part completes; Tab flies over its blanks, each offering what fits

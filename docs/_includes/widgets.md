@@ -184,6 +184,18 @@ Auto-included by docs/_layouts/default.html.
   to   { transform: scale(1.045); filter: brightness(1.07) saturate(1.08); }
 }
 @media (prefers-reduced-motion: reduce) { .lc-embed-ambient img { animation: none; } }
+.lc-code-add { font: inherit; font-size: 0.78em; padding: 0.15em 0.6em; border-radius: 6px; border: 1px solid #2e7d32;
+  background: #e8f5e9; color: #1b5e20; cursor: pointer; margin-right: 0.4em; }
+.lc-code-add:hover { background: #c8e6c9; }
+.lc-code-empty { padding: 0.8em 1em; color: #888; font-style: italic; font-size: 0.9em; }
+/* ⚠️ A PART THAT FAILED SAYS SO (Michel, 2026-10-12: "if an error happens a ⚠️
+   should be displayed and a semi-transparent tooltip over it should explain it") */
+.lc-warn { position: relative; display: inline-block; margin-left: 0.35em; cursor: help; font-size: 1em; vertical-align: middle; }
+.lc-warn .lc-warn-tip { display: none; position: absolute; left: -0.4em; bottom: calc(100% + 6px);
+  min-width: 14em; max-width: 26em; padding: 0.45em 0.65em; border-radius: 8px; z-index: 50;
+  background: rgba(30, 30, 46, 0.82); color: #f5f5f5; font-size: 0.78rem; line-height: 1.4; white-space: pre-wrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25); pointer-events: none; text-align: left; font-weight: 400; }
+.lc-warn:hover .lc-warn-tip, .lc-warn:focus .lc-warn-tip, .lc-warn.open .lc-warn-tip { display: block; }
 </style>
 
 <script>
@@ -432,6 +444,39 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
      the moves that make a habit — asked the builder, watched the film —
      per page and per part, on this device; a proof reads them back
      (agent.asked, pad.replayed). Counted, never scored. */
+  /* the ⚠️ beside a part, its explanation in a half-transparent tip on hover,
+     focus or tap; lcWarn(el, "") takes it away. One helper for every part. */
+  window.lcWarn = function (el, msg) {
+    if (!el) return null;
+    var old = el._lcWarn;
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    el._lcWarn = null;
+    el.removeAttribute && el.removeAttribute("data-lc-warn");
+    if (!msg) return null;
+    var w = document.createElement("span");
+    w.className = "lc-warn"; w.tabIndex = 0; w.setAttribute("role", "img");
+    w.setAttribute("aria-label", "⚠️ " + msg);
+    w.textContent = "⚠️";
+    var tip = document.createElement("span"); tip.className = "lc-warn-tip"; tip.textContent = msg;
+    w.appendChild(tip);
+    w.addEventListener("click", function (e) { e.stopPropagation(); w.classList.toggle("open"); });
+    if (el.parentNode) el.parentNode.insertBefore(w, el.nextSibling);
+    el._lcWarn = w;
+    el.setAttribute && el.setAttribute("data-lc-warn", msg);
+    return w;
+  };
+  /* a Python error, said for a learner: the last line of the trace, and the
+     line of THEIR lines it happened on (the engine's preamble subtracted) */
+  window.lcPyError = function (e, offset) {
+    var t = String((e && (e.message || e)) || "");
+    var lines = t.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+    var last = lines[lines.length - 1] || "error";
+    var at = null, re = /line (\d+)/g, m;
+    while ((m = re.exec(t))) at = parseInt(m[1], 10);
+    var n = at != null ? at - (offset || 0) : null;
+    return last + (n != null && n > 0 ? " — line " + n + " of these lines" : "");
+  };
+
   window.lcDid = (function () {
     var K = "lc_did";
     function page() {
@@ -1605,14 +1650,43 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
     copy.title = "Copy the snippet";
     bar.appendChild(icon); bar.appendChild(t); bar.appendChild(lg); bar.appendChild(copy);
     wrap.appendChild(bar);
+    /* a page event writes the card: code.text = … in Python */
+    wrap._lcSetText = function (txt) { fill(String(txt == null ? "" : txt).replace(/\n+$/, "")); };
 
     /* every language the painter knows is painted by it — the same colours
        on the built site and in the runner, where Rouge never ran */
     var painted = /^(markdown|csv|python|sql|yaml|json|gherkin)$/.test(window.lcPaintCodeLang(lang));
     var body = el;
+    /* bound="<pad id>": the card offers its lines to that pad — ⬇ Add puts
+       them under the pad's caret line (or at its end), one ⌘Z away. A card
+       filled by a page event (an agent's on_response) keeps that hand: the
+       lines are shown, the learner decides (Michel, 2026-10-12). */
+    var boundPad = el.getAttribute("bound") || "";
+    var addBtn = null;
+    if (boundPad) {
+      addBtn = document.createElement("button");
+      addBtn.type = "button"; addBtn.className = "lc-code-add";
+      addBtn.textContent = "⬇ Add to #" + boundPad;
+      addBtn.title = "Put these lines in your pad, under the caret's line";
+      addBtn.addEventListener("click", function () {
+        var pad = document.querySelector(".lc-mdpad[data-lc-id='" + boundPad + "']");
+        if (!pad || !pad._lcInsert || !text) return;
+        pad._lcInsert(text);
+        addBtn.textContent = "✓ Added — now make it yours";
+        setTimeout(function () { addBtn.textContent = "⬇ Add to #" + boundPad; }, 2200);
+      });
+    }
+    var hint = el.getAttribute("placeholder") || "";
     function fill(txt) {
       text = txt;
       wrap.setAttribute("data-lc-value", JSON.stringify({ text: txt, lang: lang }));
+      if (addBtn) addBtn.hidden = !txt;
+      if (!txt && hint) {
+        var e = document.createElement("div");
+        e.className = "lc-code-empty"; e.textContent = hint;
+        if (body.parentNode === wrap) wrap.replaceChild(e, body); else wrap.appendChild(e);
+        body = e; return;
+      }
       if (!painted && !link) return;
       var pre = document.createElement("pre");
       pre.className = "lc-code-md lc-md-paint";
@@ -1643,6 +1717,7 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
       wrap.appendChild(el);
       fill(text);
     }
+    if (addBtn) bar.insertBefore(addBtn, copy);
     /* the icon of the component the snippet makes, when the title brought none */
     if (!lead && lang === "markdown" && window.lcComponentIcons) {
       window.lcComponentIcons().then(function (icons) {

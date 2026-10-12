@@ -78,6 +78,8 @@ Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
 <style>
+/* an agent's on_response lines are the page's, not the reader's: never drawn */
+.on_response { display: none !important; }
 .lc-agent { border: 1px solid #e0e0e0; border-radius: 8px; margin: 1em 0; background: white; overflow: hidden; font-size: 0.95em; }
 .lc-agent-head { background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%); padding: 0.55em 1em; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 0.5em; font-weight: 600; color: #444; font-size: 0.92em; }
 .lc-agent-icon { font-size: 1.2em; }
@@ -1447,9 +1449,33 @@ Auto-included by docs/_layouts/default.html.
       if (parts.question) html += '<div class="lc-agent-question"><span class="lc-agent-area-label">❓ your turn</span>' + renderMarkdown(parts.question) + '</div>';
       /* the lines are drawn as they are — a markdown piece may hold a fence of
          its own, which no bubble renderer should try to read (2026-10-09) */
-      if (parts.example) html += '<div class="lc-agent-example"><span class="lc-agent-area-label">🧩 the lines — ⬇ puts them on your page</span><pre><code>' + escapeHtml(parts.lines) + '</code></pre></div>';
+      if (parts.example && !cfg._onResponse) html += '<div class="lc-agent-example"><span class="lc-agent-area-label">🧩 the lines — ⬇ puts them on your page</span><pre><code>' + escapeHtml(parts.lines) + '</code></pre></div>';
       if (cut) html += '<div class="lc-agent-cut">' + renderMarkdown(TRUNCATED_NOTE) + '</div>';
       return html || renderMarkdown(text);
+    }
+    /* the answer, cut in its areas, handed to the author's on_response lines */
+    function runOnResponse(text) {
+      var parts = tutorParts(expandParts(text));
+      panel._lcResponse = { text: String(text || ''), direction: parts.direction || '',
+                            question: parts.question || '', example: parts.lines || '' };
+      var lcId = panel.getAttribute('data-lc-id') || '';
+      var preamble = (document.getElementById('lc-steps-preamble') || {}).textContent || '';
+      var head = preamble + '\nagent = _wrap(js.window.document.querySelector("[data-lc-id=\'' + lcId + '\']"))\n';
+      var mpP = window._lcMpReady || (window.lcMpy ? (window._lcMpReady = window.lcMpy()) : null);
+      if (!mpP) return;
+      mpP.then(function (mp) {
+        var run = mp.runPython || mp.exec || mp.pyexec || mp.run;
+        try {
+          run.call(mp, head + cfg._onResponse + '\n');
+          if (window.lcWarn) window.lcWarn(panel, '');
+          panel.setAttribute('data-lc-responded', String((parseInt(panel.getAttribute('data-lc-responded'), 10) || 0) + 1));
+        } catch (e) {
+          console.error('[lc-agent on_response]', e);
+          if (window.lcWarn) window.lcWarn(panel, 'This agent\'s on_response lines failed: ' +
+            (window.lcPyError ? window.lcPyError(e, head.split('\n').length - 1) : (e.message || e)));
+        }
+        try { document.dispatchEvent(new CustomEvent('lc-model-changed', { detail: { source: 'on_response' } })); } catch (e2) {}
+      });
     }
     function offerPiece(text) {
       var fence = firstFence(text);
@@ -1737,7 +1763,8 @@ Auto-included by docs/_layouts/default.html.
         } catch (e) {}
 
         // If bound and TODO-driven: the reply's TODOs are offered back — never code.
-        if (boundId && cfg.todos) offerPiece(expandParts(result.text));
+        if (cfg._onResponse) runOnResponse(result.text);
+        else if (boundId && cfg.todos) offerPiece(expandParts(result.text));
         // If bound (and not TODO-driven): add an Apply button to the first python code block.
         if (boundId && !cfg.todos) {
           var bot = response.querySelector('.lc-agent-msg-bot');
@@ -1849,7 +1876,23 @@ Auto-included by docs/_layouts/default.html.
     cfg.target = el.getAttribute('target') || cfg.target || null;
     cfg.todos = !!(boundId && cfg.target);
     cfg.proof = cfg.target;
+    /* ⚡ ON_RESPONSE (Michel, 2026-10-12: "expose not only verbs but also
+       events"): a Python fence tagged {: .on_response } right under the agent
+       runs after every answer, with `agent` in scope — agent.response.text,
+       .direction, .question, .example. The agent acts on nothing itself; its
+       author's lines decide where an answer goes (a code card, a cell…). */
+    var onResp = '';
+    (function () {
+      var sib = el.nextElementSibling;
+      while (sib && !sib.textContent.trim()) sib = sib.nextElementSibling;
+      if (sib && sib.classList.contains('on_response') && sib.querySelector('code')) {
+        onResp = sib.querySelector('code').textContent;
+        sib.parentNode.removeChild(sib);
+      }
+    })();
+    cfg._onResponse = onResp;
     var panel = buildPanel(id, cfg, rows, boundId, boundExpr);
+    if (onResp) panel.setAttribute('data-lc-on-response', '1');
     if (boundExpr && !boundId) wireBoundPeek(panel, boundExpr);
     // Slides partition runs before agent upgrade (it has to wait for js-yaml).
     // Carry the fragment marking from the original code-block to the new panel

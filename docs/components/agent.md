@@ -396,6 +396,26 @@ Code > 4000 chars is truncated. Empty editor and no-run-yet silently drop those 
 - [ ] File a strongly-worded bug report against your own PAT.
 {: .quiz }
 
+## ⚡ An event: on_response
+
+A Python fence tagged `{: .on_response }`, right under the agent, runs
+after every answer, with `agent` in scope. `agent.response` is the answer
+in its areas — `.text`, `.direction`, `.question`, `.example` (the lines it
+offers). The agent itself acts on nothing; these lines, the page author's,
+decide where an answer goes — here, into a code card that offers it to a
+pad:
+
+````markdown
+```python
+agent.page.lines.text = agent.response.example
+```
+{: .on_response }
+````
+
+Verbs are what a page does to a part (`play`, `fold`, `type`); events are
+what a part says happened (`on_click`, `on_response`). Lines that fail show
+⚠️ beside the agent, and why, on hover.
+
 ## 🎯 A tutor — two elements, no new knob
 
 A tutor should aim, not type over. The teacher names two elements with

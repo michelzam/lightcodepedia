@@ -1174,13 +1174,19 @@ Auto-included by docs/_layouts/default.html.
        bound, so what the lines set, the page can read. An explicit
        `def on_click(…)` keeps Python's own rules: its locals stay local. */
     var bare = !/^\s*def\s+on_click\s*\(/m.test(pyCode);
-    var fullCode = preamble + "\n"
-      + "button = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n"
-      + (bare ? pyCode + "\n" : pyCode + "\non_click(button)\n");
+    var head = preamble + "\n"
+      + "button = _wrap(js.window.document.querySelector(\"[data-lc-id='" + lcId + "']\"))\n";
+    var fullCode = head + (bare ? pyCode + "\n" : pyCode + "\non_click(button)\n");
     if (!window._lcMpReady) window._lcMpReady = lcMpy();
     window._lcMpReady.then(function (mp) {
       var runFn = mp.runPython || mp.exec || mp.pyexec || mp.run;
-      try { if (runFn) runFn.call(mp, fullCode); } catch (e) { console.error("[lc-button]", e); }
+      /* a handler that fails shows ⚠️ beside its button, and why (Michel, 2026-10-12) */
+      try { if (runFn) runFn.call(mp, fullCode); if (window.lcWarn) window.lcWarn(btn, ""); }
+      catch (e) {
+        console.error("[lc-button]", e);
+        if (window.lcWarn) window.lcWarn(btn, "This button's lines failed: " +
+          (window.lcPyError ? window.lcPyError(e, head.split("\n").length - 1) : (e.message || e)));
+      }
       /* a click changed the page's data, exactly as a form edit does — so the
          page's cells recompute on the same bus, and never a second later */
       try { document.dispatchEvent(new CustomEvent("lc-model-changed",

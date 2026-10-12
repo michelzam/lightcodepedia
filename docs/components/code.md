@@ -194,6 +194,20 @@ Feature: A snippet is painted and copyable
 ```
 {: .feature tags="code" status="pending" }
 
+## ⬇ A card that offers its lines to a pad
+
+`bound="<pad id>"` gives the card a **⬇ Add to #pad** button: the lines go
+under the pad's caret line (or at its end), one ⌘Z away. A card can start
+empty with a `placeholder="…"`, and a page event can fill it in Python —
+`page.my_card.text = "…"` — the way an agent's `on_response` does (see
+[Agent](/components/agent)).
+
+````markdown
+```markdown
+```
+{: .code #lines title="🧩 Lines" bound="pad" placeholder="Nothing yet." }
+````
+
 ## 🤔 Which option to pick
 
 | Situation | Best choice |

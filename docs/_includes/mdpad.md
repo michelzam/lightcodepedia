@@ -1702,8 +1702,8 @@ Auto-included by docs/_layouts/default.html.
     }
 
     /* ⌥↑ ⌥↓ move the block under the caret past its neighbour — words and
-       decoration together, the gap kept; ⌥⇧→ puts it beside the block
-       before (beside="true" on its decoration), ⌥⇧← takes it out */
+       decoration together, the gap kept; ⌃⌥→ puts it beside the block
+       before (beside="true" on its decoration), ⌃⌥← takes it out */
     function moveBlock(dir) {
       var v = ta.value, L = v.split("\n"), bs = blocksOf(v), st = lineStarts(v);
       var line = v.slice(0, ta.selectionStart).split("\n").length - 1;
@@ -1739,15 +1739,31 @@ Auto-included by docs/_layouts/default.html.
     }
     ta.addEventListener("keydown", function (e) {
       if (e.key === "F2") { e.preventDefault(); renameOpen(); return; }
-      if (!e.altKey || e.metaKey || e.ctrlKey) return;
-      var done = false;
-      if (!e.shiftKey && e.key === "ArrowUp") done = moveBlock(-1);
-      else if (!e.shiftKey && e.key === "ArrowDown") done = moveBlock(1);
-      else if (e.shiftKey && e.key === "ArrowRight") done = besideBlock(true);
-      else if (e.shiftKey && e.key === "ArrowLeft") done = besideBlock(false);
+      if (!e.altKey || e.metaKey || e.shiftKey) return;
+      /* ⌥↑ ⌥↓ move; ⌃⌥→ ⌃⌥← beside — ⌥⇧ stays the system's word selection
+         (Michel, 2026-10-12: "they interfere with selecting words") */
+      if (!e.ctrlKey && e.key === "ArrowUp") moveBlock(-1);
+      else if (!e.ctrlKey && e.key === "ArrowDown") moveBlock(1);
+      else if (e.ctrlKey && e.key === "ArrowRight") besideBlock(true);
+      else if (e.ctrlKey && e.key === "ArrowLeft") besideBlock(false);
       else return;
       e.preventDefault();      /* a block at the edge stays put, the caret too */
     });
+    /* lines offered from outside the pad (a code card's ⬇ Add): under the
+       caret's line when the learner has placed one, else at the end — one
+       edit, one ⌘Z, a blank line around so a decoration never glues wrong */
+    var caretPlaced = false;
+    ["click", "keyup", "focus"].forEach(function (ev) { ta.addEventListener(ev, function () { caretPlaced = true; }); });
+    wrap._lcInsert = function (text) {
+      var v = ta.value, t = String(text).replace(/\n+$/, "");
+      var at = v.length;
+      if (caretPlaced) { at = v.indexOf("\n", ta.selectionEnd); if (at < 0) at = v.length; }
+      var before = v.slice(0, at), lead = !before.trim() ? "" : (/\n\n$/.test(before) ? "" : /\n$/.test(before) ? "\n" : "\n\n");
+      var after = v.slice(at), trail = !after.trim() ? "" : (/^\n\n/.test(after) ? "" : /^\n/.test(after) ? "\n" : "\n\n");
+      editSpan(at, at, lead + t + trail, at + lead.length + t.length);
+      flashAt(at + lead.length);
+      return true;
+    };
     wrap._lcRename = function (to) { renameOpen(); if (ren) { var i = ren.box.querySelector("input"); i.value = to; i.dispatchEvent(new Event("input")); i.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); } };
 
     var findBtn = document.createElement("button");
@@ -2009,7 +2025,7 @@ Auto-included by docs/_layouts/default.html.
     /* ? THE PAD'S OWN HELP (Michel, 2026-10-11: "a small help button to list
        all the features") — one card, the keys of this computer */
     var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
-    var K = mac ? { cmd: "⌘", alt: "⌥", sh: "⇧" } : { cmd: "Ctrl+", alt: "Alt+", sh: "Shift+" };
+    var K = mac ? { cmd: "⌘", alt: "⌥", sh: "⇧", ctl: "⌃" } : { cmd: "Ctrl+", alt: "Alt+", sh: "Shift+", ctl: "Ctrl+" };
     var helpBtn = document.createElement("button");
     helpBtn.type = "button"; helpBtn.className = "lc-mdpad-helpbtn";
     helpBtn.textContent = "?"; helpBtn.title = "What this editor can do"; helpBtn.setAttribute("aria-label", "What this editor can do");
@@ -2028,7 +2044,7 @@ Auto-included by docs/_layouts/default.html.
         ["🔗", K.cmd.replace(/\+$/, "") + "-click on an id — jump to where it is declared; again — its uses"],
         ["✏️", "F2 on an id — rename it everywhere it is wired"],
         ["↕️", K.alt + "↑ " + K.alt + "↓ — move the block under the caret"],
-        ["◫", K.alt + K.sh + "→ — beside the block above; " + K.alt + K.sh + "← — back under it"],
+        ["◫", K.ctl + K.alt + "→ — beside the block above; " + K.ctl + K.alt + "← — back under it"],
         ["↩️", K.cmd + "Z — undo, one move at a time"],
         ["🧩", "Hover an icon in the gutter — the component's name"],
         ["⇥", "Hide the editor; ✎ brings it back. Drag the line between the halves, or the bar under the pad"],

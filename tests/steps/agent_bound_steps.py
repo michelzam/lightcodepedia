@@ -905,3 +905,21 @@ def step_agent_asked(context, aid, n):
     2026-10-11: "checks the students did a bit all of that")."""
     got = context.page.evaluate("(a) => window.lcDid ? window.lcDid.count(a, 'ask') : -1", aid)
     assert got == n, "asked = %r" % got
+
+
+@then('the "{card_id}" card reads "{text}"')
+def step_card_reads(context, card_id, text):
+    from playwright.sync_api import expect
+    expect(context.page.locator("[data-lc-id='%s'] .lc-code-empty" % card_id)).to_have_text(text, timeout=10_000)
+
+
+@then('the "{card_id}" card shows "{text}"')
+def step_card_shows(context, card_id, text):
+    from playwright.sync_api import expect
+    expect(context.page.locator("[data-lc-id='%s'] .lc-code-md" % card_id)).to_contain_text(text, timeout=20_000)
+
+
+@when('I press the "{card_id}" card\'s add button')
+def step_card_add(context, card_id):
+    context.page.locator("[data-lc-id='%s'] .lc-code-add" % card_id).click()
+    context.page.wait_for_timeout(400)

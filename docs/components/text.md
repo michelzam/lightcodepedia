@@ -226,7 +226,7 @@ caret on the one you were on.
 | ⌘-click (Ctrl-click) on a wire | jumps to its `#id`; on the `#id`, walks its uses one by one |
 | F2 on a wire | renames the id everywhere it is wired — `#id`, `source="id"`, `FROM id`, `{= id… }` — prose untouched, one ⌘Z |
 | ⌥↑ / ⌥↓ | moves the block under the caret past its neighbour — words and decoration together |
-| ⌥⇧→ / ⌥⇧← | puts the block beside the one above (`beside="true"`), or takes it out |
+| ⌃⌥→ / ⌃⌥← | puts the block beside the one above (`beside="true"`), or takes it out |
 | Ctrl+Space | completes what fits the caret: a component after `{: .`, a knob, a knob's value (a `source=` offers the pad's datasets, an `x=` the source's columns); on an empty line, a whole part from the course's catalogue — Tab then jumps over its blanks |
 
 The editor's corner carries small pills: **?** lists all of this, **🔍**

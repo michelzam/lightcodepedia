@@ -404,6 +404,16 @@ def _lc_harvest(cls):
     return fields, statef
 
 
+class _AgentResponse:
+    """One answer of an agent, in the areas the page shows."""
+    def __init__(self, r):
+        g = (lambda k: str(getattr(r, k, "") or "")) if r is not None else (lambda k: "")
+        self.text, self.direction, self.question, self.example = g("text"), g("direction"), g("question"), g("example")
+
+    def __str__(self):
+        return self.text
+
+
 def _lc_did(part, verb):
     """What the learner did with a part, counted by the page (lcDid)."""
     d = getattr(js.window, "lcDid", None)
@@ -1514,9 +1524,26 @@ class Scrollable(Block):
                   {"n": "lang", "t": "str", "data": True, "d": "text"},
                   {"n": "title", "t": "str", "data": True, "d": ""},
                   {"n": "repo", "t": "str", "data": True, "d": ""},
-                  {"n": "branch", "t": "str", "data": True, "d": "main"}])
+                  {"n": "branch", "t": "str", "data": True, "d": "main"},
+                  {"n": "bound", "t": "str", "data": True, "d": ""},
+                  {"n": "placeholder", "t": "str", "data": True, "d": ""}])
 class Code(Block):
-    pass
+    @property
+    def text(self):
+        """The card's lines."""
+        v = self._attr("data-lc-value")
+        if not v:
+            return ""
+        return str(js.JSON.parse(v).text or "")
+
+    @text.setter
+    def text(self, v):
+        """Write the card's lines — an event's way to show code (an agent's
+        on_response: code.text = agent.response.example). The card repaints;
+        its ⬇ Add, if bound, offers the new lines."""
+        f = getattr(self._el, "_lcSetText", None) if self._el is not None else None
+        if f is not None:
+            f(str(v))
 
 
 @component(icon="🤖",
@@ -1530,6 +1557,7 @@ class Code(Block):
                   {"n": "replies", "t": "list"},
                   {"n": "last", "t": "str"},
                   {"n": "asked", "t": "int"}],
+           events=["on_response"],
            methods=["ask", "clear"])
 class Agent(Block):
     """A page agent (.agent) — a part a proof, a guide or another agent can
@@ -1540,6 +1568,14 @@ class Agent(Block):
     def asked(self):
         """How many questions the learner asked this agent, on this page."""
         return _lc_did(self, "ask")
+
+    @property
+    def response(self):
+        """The last answer, cut in its areas: .text (all of it), .direction,
+        .question, .example (the lines it offers, a catalogue part expanded).
+        What an on_response handler reads."""
+        r = getattr(self._el, "_lcResponse", None) if self._el is not None else None
+        return _AgentResponse(r)
 
     @property
     def todos(self):

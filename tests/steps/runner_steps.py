@@ -813,3 +813,27 @@ def step_press_button_label(context, label):
 def step_address_reads(context, part):
     url = context.page.url
     assert part in url, "the page went elsewhere: " + url
+
+
+def _warn(context, part_id):
+    sel = "[data-lc-id='%s'] + .lc-warn" % part_id
+    context.page.wait_for_selector(sel, timeout=20_000)
+    return context.page.locator(sel).first
+
+
+@then('the "{part_id}" part shows ⚠️ explaining "{text}"')
+def step_warn_explains(context, part_id, text):
+    w = _warn(context, part_id)
+    tip = w.locator(".lc-warn-tip")
+    assert text in (tip.text_content() or ""), "the tip says %r" % tip.text_content()
+    w.hover()
+    from playwright.sync_api import expect
+    expect(tip).to_be_visible()
+    op = tip.evaluate("t => getComputedStyle(t).backgroundColor")
+    assert "rgba" in op, "the tip is not half-transparent: " + op
+
+
+@then('the "{part_id}" part\'s ⚠️ names line {n:d}')
+def step_warn_line(context, part_id, n):
+    tip = _warn(context, part_id).locator(".lc-warn-tip").text_content() or ""
+    assert ("line %d" % n) in tip, "the tip says %r" % tip

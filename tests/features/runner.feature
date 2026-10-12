@@ -492,3 +492,25 @@ Feature: The instant runner (RT) — Phase A parity
     And I wait for the page to be interactive
     And I press the "📞 Call the next family" button
     Then the address still reads "src=gh:acme/demo/courses/demo/module_05/call.md"
+
+  Scenario: A button whose lines fail shows ⚠️ beside it, saying which line and why
+    Michel, 2026-10-12: "if an error happens a ⚠️ should be displayed and a
+    semi-transparent tooltip over it should explain it".
+
+    Given the GitHub contents API serves "courses/demo/module_05/oops.md" with the document:
+      """
+      # Oops
+
+      [Press me](#)
+      {: .button #oops_btn }
+      ```python
+      total = 1
+      total = total + missing_name
+      ```
+      {: .onclick }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/oops.md"
+    And I wait for the page to be interactive
+    And I press the "Press me" button
+    Then the "oops_btn" part shows ⚠️ explaining "NameError"
+    And the "oops_btn" part's ⚠️ names line 2
