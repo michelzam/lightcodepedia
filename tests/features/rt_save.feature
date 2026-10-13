@@ -272,6 +272,30 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the bench received no commit
     And the pad's proof word replayed reads 1
 
+  Scenario: Each frame stays as long as its line takes to read
+    Michel, 2026-10-13: "when play/moonwalk, the subtitle should be displayed
+    a bit longer so students can have time to read". A pad without replay=
+    holds a frame for its line's reading time, never less than the pace.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
+      """
+      # Work page
+
+      ```markdown
+      # Starter résumé — replace me
+      ```
+      {: .mdpad #cv save="cv.md" rows="6" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I press the pad's replay button
+    Then the replay holds 2 frames and opens on the first
+    When I press play
+    Then the replay is still on frame 1 after 1.8 seconds
+    And the replay lands on frame 2
+
   Scenario: Bringing back an old version loads it without losing the new one
     Restoring is not a rollback. It drops the old text into the editor, so
     the next save is simply another commit. Nothing is ever lost, which is

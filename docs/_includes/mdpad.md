@@ -448,6 +448,7 @@ Auto-included by docs/_layouts/default.html.
     if (benchPath) wrap.setAttribute("data-lc-save", benchPath);   /* named in a proof's verdict */
     var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null;
     var pace = parseFloat(el.getAttribute("replay")) || 1.5;   /* seconds per replay frame */
+    var paceSet = !!parseFloat(el.getAttribute("replay"));
     /* comment="true": 💾 Save… — the ellipsis promises a question, one line
        about what was just done; it becomes the version's name. */
     var askComment = el.getAttribute("comment") === "true";
@@ -1066,11 +1067,16 @@ Auto-included by docs/_layouts/default.html.
       }
       function rpHush() { if (rp.sub) rp.sub.classList.remove("on"); }
       function rpPause() {
-        if (rp.timer) clearInterval(rp.timer);
+        if (rp.timer) clearTimeout(rp.timer);
         rp.timer = null;
         if (rp.ui) { rp.ui.play.textContent = "▶ Play"; rp.ui.back.textContent = "◀ Moonwalk"; }
         wrap.removeAttribute("data-lc-playing");
         setTimeout(function () { if (!rp.timer) rpHush(); }, 1200);   /* the last line is read, then fades */
+      }
+      function holdFor(f) {
+        var line = f ? rpLine(f) : "", words = line ? line.split(/\s+/).length : 0;
+        if (paceSet) return pace;                      /* replay="…" on the pad: the author's pace, exactly */
+        return words ? Math.max(pace, 1.8 + words * 0.3) : pace;
       }
       function rpStep() {
         var n = rp.at + rp.dir;
@@ -1085,7 +1091,12 @@ Auto-included by docs/_layouts/default.html.
         /* pressed at an end: start again from the other end */
         if (dir > 0 && rp.at >= rp.frames.length - 1) rpShow(0);
         if (dir < 0 && rp.at <= 0) rpShow(rp.frames.length - 1);
-        rp.timer = setInterval(rpStep, pace * 1000);
+        /* each frame stays as long as its line takes to read (Michel,
+           2026-10-13: "the subtitle should be displayed a bit longer so
+           students can have time to read") — a silent frame keeps the pace */
+        (function next() {
+          rp.timer = setTimeout(function () { rpStep(); if (rp.timer) next(); }, holdFor(rp.frames[rp.at]) * 1000);
+        })();
         wrap.setAttribute("data-lc-playing", dir > 0 ? "forward" : "backward");
         rpSay(rp.frames[rp.at]);
         if (dir > 0) rp.ui.play.textContent = "⏸ Pause"; else rp.ui.back.textContent = "⏸ Pause";
@@ -1738,13 +1749,27 @@ Auto-included by docs/_layouts/default.html.
       var i = blockAt(bs, line); if (i < 0) return false;
       var k = -1;
       for (var n = bs[i].end; n >= bs[i].start; n--) if (/^\s*\{:.*\}\s*$/.test(L[n])) { k = n; break; }
-      if (k < 0) { window.lcxToast && window.lcxToast("Beside needs a decoration — this block has none", false); return true; }
+      /* a block with no decoration of its own (a sentence, a cell) gets one
+         that says only beside — and loses it again with ⌃⌥← (Michel,
+         2026-10-13: the red toast on a cell's sentence) */
+      if (k < 0) {
+        if (!on) return true;
+        if (i === 0) { window.lcxToast && window.lcxToast("Nothing above to stand beside", false); return true; }
+        var endAt = st[bs[i].end] + L[bs[i].end].length, c0 = ta.selectionStart;
+        editSpan(endAt, endAt, '\n{: beside="true" }', c0);
+        return true;
+      }
       var d = L[k], nd;
       if (on) {
         if (i === 0) { window.lcxToast && window.lcxToast("Nothing above to stand beside", false); return true; }
         nd = /\bbeside=/.test(d) ? d.replace(/\bbeside=("[^"]*"|\S+)/, 'beside="true"') : d.replace(/\s*\}\s*$/, ' beside="true" }');
       } else nd = d.replace(/\s+beside=("[^"]*"|\S+)/, "");
       if (nd === d) return true;
+      if (/^\s*\{:\s*\}\s*$/.test(nd)) {                       /* only beside was in it: the line goes */
+        var la = st[k] - 1, lb = st[k] + d.length, c1 = ta.selectionStart;
+        editSpan(la, lb, "", c1 > lb ? c1 - (lb - la) : Math.min(c1, la));
+        return true;
+      }
       var caret = ta.selectionStart, delta = caret > st[k] + d.length ? nd.length - d.length : 0;
       editSpan(st[k], st[k] + d.length, nd, caret + delta);
       return true;
@@ -1843,6 +1868,13 @@ Auto-included by docs/_layouts/default.html.
       return out;
     }
     /* the pad's ids, with the class that declares each */
+    /* what a cell can read of each id — the same list cells.md publishes */
+    var CELL_MEMBERS = {
+      dataset: [["count", "how many rows"], ["empty", "no row at all"]],
+      query: [["count", "how many rows"], ["empty", "no row at all"]],
+      feature: [["passing", "the check is green"], ["status", "passing, failing…"]],
+      quiz: [["passed", "answered right"], ["graded", "answered"]]
+    };
     function idsInPad() {
       var out = [];
       ta.value.split("\n").forEach(function (l, i) {
@@ -1887,6 +1919,13 @@ Auto-included by docs/_layouts/default.html.
         if (cls && (m = pre.match(/\s([\w-]*)$/)) && (force || m[1].length)) return { kind: "knob", cls: cls, line: line, prefix: m[1], at: c - m[1].length };
         return null;
       }
+      /* INSIDE A CELL {= … } the words are ids and what they offer (Michel,
+         2026-10-13: "code completion doesn't work there for cell expressions") */
+      if (/\{=[^}]*$/.test(pre)) {
+        if ((m = pre.match(/([\w-]+)\.(\w*)$/))) return { kind: "member", of: m[1], prefix: m[2], at: c - m[2].length };
+        if ((m = pre.match(/(?:\{=|[^\w.])\s*([\w-]*)$/)) && (force || m[1].length)) return { kind: "cellid", prefix: m[1], at: c - m[1].length };
+        return null;
+      }
       /* a part pops up by itself only on a lowercase start — a capital is prose ("For example…") */
       if ((m = pre.match(/^\s*([A-Za-z_]*)$/)) && line.trim() === pre.trim() && (force || (m[1].length >= 2 && /^[a-z_]+$/.test(m[1]))))
         return { kind: "part", prefix: m[1], at: ls, end: le };
@@ -1918,6 +1957,13 @@ Auto-included by docs/_layouts/default.html.
             else if (k.d != null && k.d !== "") vals.push({ v: String(k.d), icon: "•", detail: "default" });
           }
           vals.forEach(function (x) { if (starts(x.v)) out.push({ icon: x.icon, label: x.v, detail: x.detail || "", insert: x.v, value: true }); });
+        } else if (cx.kind === "cellid") {
+          idsInPad().forEach(function (d) { if (starts(d.id)) out.push({ icon: "#", label: d.id, detail: d.cls, insert: d.id }); });
+        } else if (cx.kind === "member") {
+          var of = idsInPad().filter(function (d) { return d.id === cx.of; })[0];
+          (CELL_MEMBERS[of ? of.cls : ""] || []).forEach(function (x) {
+            if (starts(x[0])) out.push({ icon: "•", label: x[0], detail: x[1], insert: x[0] });
+          });
         } else if (cx.kind === "part") Object.keys(parts).forEach(function (k) {
           var pt = parts[k], ic = (modelOf(model, k) || {}).icon || "🧩";
           if (starts(k) || (p && String(pt.name || "").toLowerCase().indexOf(p) >= 0))
@@ -2031,6 +2077,15 @@ Auto-included by docs/_layouts/default.html.
         } else if ((m = l.match(/^(\s*\[)([^\]]*)\]\(/)) && /^\s*\{:/.test(L[n + 1] || "")) {
           out.push({ a: s0 + m[1].length, b: s0 + m[1].length + m[2].length, k: "text" });
         }
+        /* a cell's ids are customizable too: Tab lands on each name in {= … } */
+        re = /\{=([^}]*)\}/g;
+        while ((r = re.exec(l))) {
+          var body = r[1], off = r.index + 2, w, rw = /[A-Za-z_][\w]*/g;
+          while ((w = rw.exec(body))) {
+            if (body.charAt(w.index - 1) === ".") continue;          /* .count is what it reads, not a name */
+            out.push({ a: s0 + off + w.index, b: s0 + off + w.index + w[0].length, k: "cellid" });
+          }
+        }
       });
       return out.sort(function (x, y) { return x.a - y.a; });
     }
@@ -2043,7 +2098,7 @@ Auto-included by docs/_layouts/default.html.
       ta.setSelectionRange(t.a, t.b); walkSel = [t.a, t.b];
       blocks = blocksOf(ta.value); focusNow();
       wrap.setAttribute("data-lc-field", t.k);
-      if (t.k === "value" || t.k === "class") setTimeout(function () { complete(true); }, 0);
+      if (t.k === "value" || t.k === "class" || t.k === "cellid") setTimeout(function () { complete(true); }, 0);
       return true;
     }
     function indent(back) {

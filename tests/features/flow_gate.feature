@@ -221,7 +221,7 @@ Feature: 🚦 A workflow ordered by its own values
     Then the lesson's check "builder_check" is green
 
   Scenario: Module 05's follow-up app is red on arrival
-    The coordinator's app: the dataset and a checklist; the reason (the
+    The coordinator's app: the dataset and her four TODOs; the reason (the
     impact map's row) sits beside the pad, on the lesson page.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
@@ -234,7 +234,8 @@ Feature: 🚦 A workflow ordered by its own values
   Scenario: Module 05's follow-up app is green once its four components are built
     The proof presses the button once (Nguyen gets today's day, Okafor is
     selected); two more presses mark Okafor and Alvarez and select Brooks.
-    No WHERE yet, so the marked families stay: still fourteen.
+    The table shows every family; the query counts the waiting ones: nine,
+    less Nguyen and Okafor — seven. (Michel, 2026-10-13)
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
     And the learner has built the follow-up app
@@ -245,7 +246,7 @@ Feature: 🚦 A workflow ordered by its own values
     Then the lesson's check "list_proof" is green
     When the coordinator presses the call button 2 times
     Then the selected family is "Brooks"
-    And the pad's preview reads "14 families are waiting"
+    And the pad's preview reads "7 families are waiting"
 
   Scenario: Module 05's follow-up app names a decoration with nothing above it
     Michel's pad, 2026-10-09: the datagrid's decoration typed alone after a

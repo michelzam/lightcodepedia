@@ -117,6 +117,26 @@ Feature: 🎬 Doc's pad verbs — type, save, and a music player's words for the
     Then the check's step "a button is there to call the next family" is green
     And the check's step "nothing on the page is wired to nothing" is green
 
+  Scenario: The Follow-Up List's TODOs, each replaced in place, turn its proof green
+    Michel, 2026-10-13: the coordinator's TODO notes on the screen, the proof
+    as the spec, and his app — every family in the table, one query that
+    counts only the waiting ones. Each TODO goes when its part comes.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/02_list.md"
+    And I wait for the page to be interactive
+    And Doc does "type" with 1 on the "follow_up" pad
+    Then the check's step "all the families are in one table" is green
+    When Doc does "type" with 2 on the "follow_up" pad
+    Then the check's step "a query counts the families nobody met yet" is green
+    When Doc does "type" with 3 on the "follow_up" pad
+    Then the check's step "a sentence says how many are waiting" is green
+    When Doc does "type" with 4 on the "follow_up" pad
+    Then the check's step "no TODO is left on the screen" is green
+    And the "follow_up" pad does not hold "TODO"
+    When I run the lesson's check "list_proof"
+    Then the lesson's check "list_proof" is green
+
   Scenario: A step its check finds red stops the build — nothing more is typed
     Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"

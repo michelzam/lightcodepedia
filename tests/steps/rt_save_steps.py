@@ -1236,3 +1236,10 @@ def step_pad_paints_saved(context, pad_id, text):
 def step_pad_paints_starter(context, pad_id):
     context.page.wait_for_function(
         "id => (" + _MIRROR_JS + ")(id).indexOf('…') >= 0", arg=pad_id, timeout=5_000)
+
+
+@then("the replay is still on frame {n:d} after {secs:f} seconds")
+def step_still_on_frame(context, n, secs):
+    context.page.wait_for_timeout(int(secs * 1000))
+    got = context.page.locator(PAD).get_attribute("data-lc-frame")
+    assert got == str(n - 1), "the frame moved on too soon — on frame %s after %ss" % (int(got) + 1, secs)

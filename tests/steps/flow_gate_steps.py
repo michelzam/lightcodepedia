@@ -520,14 +520,16 @@ def step_builder_fix(context):
     _serve_course_page(context, context.lesson_path, fix)
 
 
-M05_LIST_ITEMS = ("- [ ] a query: the families to call\n"
-                  "- [ ] a datagrid on its answer\n"
-                  "- [ ] a line that counts them\n"
-                  "- [ ] a button: mark the selected family, then the next\n")
+M05_TODOS = ("📝 TODO — all the families, in one table\n\n"
+             "📝 TODO — count the ones still waiting: nobody met them yet\n\n"
+             "📝 TODO — one line that says how many are waiting\n\n"
+             "📝 TODO — a button: mark the selected family, then go to the next\n")
 
-M05_APP = ("```sql\nSELECT family, dog, asked, met FROM reservations\n```\n"
+# Michel's app (2026-10-13): every family in the table, one query that
+# counts only the waiting ones.
+M05_APP = ("[Families to call](#)\n{: .datagrid #call_list source=\"reservations\" }\n\n"
+           "```sql\nSELECT family, dog, asked, met FROM reservations WHERE met = \"\"\n```\n"
            "{: .query bind=\"reservations\" #to_call }\n\n"
-           "[Families to call](#)\n{: .datagrid #call_list source=\"to_call\" }\n\n"
            "{= to_call.count } families are waiting.\n\n"
            "[📞 Call the next family](#)\n{: .button #call_btn }\n"
            "```python\n"
@@ -539,22 +541,21 @@ M05_APP = ("```sql\nSELECT family, dog, asked, met FROM reservations\n```\n"
 
 @given("the learner has built the follow-up app")
 def step_list_fix(context):
-    """Module 05's real page: the lesson's own lines, the items ticked."""
+    """Module 05's real page: every TODO replaced by the part it asked for."""
     def fix(body):
-        assert M05_LIST_ITEMS in body, "the follow-up seed no longer carries the five checklist items"
-        return body.replace(M05_LIST_ITEMS, M05_LIST_ITEMS.replace("- [ ]", "- [x]") + "\n" + M05_APP)
+        assert M05_TODOS in body, "the follow-up seed no longer carries the coordinator's four TODOs"
+        return body.replace(M05_TODOS, M05_APP)
     _serve_course_page(context, context.lesson_path, fix)
 
 
 @given("the learner has built the follow-up app with the datagrid's decoration alone")
 def step_list_fix_lone(context):
-    """Michel's pad, 2026-10-09: the datagrid's decoration alone after a blank
-    line lands on the query before it — the query becomes a grid of every
-    reservation and the proof finds no query. The proof must say why."""
+    """Michel's pad, 2026-10-09: a decoration alone after a blank line lands
+    on the block before it. The proof must say why."""
     def fix(body):
-        assert M05_LIST_ITEMS in body, "the follow-up seed no longer carries the five checklist items"
+        assert M05_TODOS in body, "the follow-up seed no longer carries the coordinator's four TODOs"
         app = M05_APP.replace("[Families to call](#)\n{: .datagrid", "\n{: .datagrid")
-        return body.replace(M05_LIST_ITEMS, M05_LIST_ITEMS.replace("- [ ]", "- [x]") + "\n" + app)
+        return body.replace(M05_TODOS, app)
     _serve_course_page(context, context.lesson_path, fix)
 
 

@@ -586,3 +586,52 @@ Feature: The pad types like a text field, painted
     And I wait for the page to be interactive
     And I put the caret in "form" of '.form master' in the "longer" pad
     Then the "longer" pad's current block holds "[The dog](#)" and ".form"
+
+  Scenario: In a cell, the ids complete, then what each one offers; Tab lands on its name; a sentence stands beside too
+    Michel, 2026-10-13: "the tab shortcut or code completion doesn't work
+    there for cell expressions" — and ⌃⌥→ on the cell's sentence said
+    "Beside needs a decoration" in red.
+
+    Given the GitHub contents API serves "courses/demo/module_05/cells.md" with the document:
+      """
+      # Cells
+
+      `````markdown
+      # Calls
+
+      ```
+      family,met
+      Nguyen,
+      Alvarez,Wed
+      ```
+      {: .dataset #reservations }
+
+      ```sql
+      SELECT family FROM reservations WHERE met = ""
+      ```
+      {: .query bind="reservations" #to_call }
+
+      [Families](#)
+      {: .datagrid #call_list source="reservations" }
+      `````
+      {: .mdpad #cells decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/cells.md"
+    And I wait for the page to be interactive
+    And I type "{= to" on a new line at the end of the "cells" pad
+    Then the "cells" pad offers "to_call" first
+    When I accept the offer in the "cells" pad
+    And I type "." in the "cells" pad
+    Then the "cells" pad offers "count" and "empty"
+    When I accept the offer in the "cells" pad
+    And I type " } families are waiting." in the "cells" pad
+    Then the "cells" pad holds "{= to_call.count } families are waiting."
+    When I put the caret at the start of the line holding "families are waiting" in the "cells" pad
+    And I press "Tab" in the "cells" pad
+    Then the "cells" pad selects "to_call"
+    When I press "Escape" in the "cells" pad
+    And I put the caret at the start of the line holding "families are waiting" in the "cells" pad
+    And I press "Control+Alt+ArrowRight" in the "cells" pad
+    Then the "cells" pad holds '{: beside="true" }'
+    When I press "Control+Alt+ArrowLeft" in the "cells" pad
+    Then the "cells" pad does not contain "beside"
