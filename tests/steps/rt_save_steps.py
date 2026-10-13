@@ -976,6 +976,21 @@ def step_diary_asks(context):
     assert not context.bench_commits, "the question is still open, yet something was written"
 
 
+@then("the question is not a sign-in for the password manager")
+def step_diary_not_signin(context):
+    # Michel 2026-10-13: Chrome offered to save "the password" after a
+    # Save… — the typed line sat loose beside the page's key box.
+    got = context.page.evaluate("""() => {
+      const i = document.querySelector('.lc-mdpad-commentbar input');
+      const f = i && i.form;
+      return { form: !!f, keys: f ? f.querySelectorAll('input[type=password]').length : -1,
+               ac: i ? i.getAttribute('autocomplete') : null };
+    }""")
+    assert got["form"], "the line is a loose field — the browser pairs it with the key box"
+    assert got["keys"] == 0, "the line's form holds a key field"
+    assert got["ac"] == "off", "the line is not marked as data (autocomplete=%r)" % got["ac"]
+
+
 @when('I answer "{line}" and keep')
 def step_diary_answer(context, line):
     box = context.page.locator(".lc-mdpad-commentbar input").first
@@ -1197,3 +1212,27 @@ def step_pad_versions(context, n):
 def step_pad_replayed(context, n):
     got = _pad_word(context, "replayed")
     assert got == n, "replayed = %r" % got
+
+
+_MIRROR_JS = """id => [...document.querySelector("[data-lc-id='" + id + "']")
+                 .querySelectorAll('.lc-mdpad-piano .ln')].map(l => l.textContent).join('\\n')"""
+
+
+@then('the "{pad_id}" pad shows its saved copy before any click, with "{text}"')
+def step_pad_paints_saved(context, pad_id, text):
+    ta = context.page.locator("[data-lc-id='%s'] .lc-mdpad-in" % pad_id)
+    expect(ta).to_have_value(re.compile(re.escape(text)), timeout=10_000)
+    # what the learner SEES is the painted mirror; the textarea's ink is transparent
+    context.page.wait_for_function(
+        "([id, t]) => { const m = (" + _MIRROR_JS + ")(id);"
+        " return m.indexOf(t) >= 0 && m.indexOf('…') < 0; }",
+        arg=[pad_id, text], timeout=5_000)
+    painted = context.page.evaluate(_MIRROR_JS, pad_id)
+    assert painted.rstrip() == ta.input_value().rstrip(), \
+        "the pad paints %r but holds %r" % (painted, ta.input_value())
+
+
+@then('the "{pad_id}" pad paints the starter')
+def step_pad_paints_starter(context, pad_id):
+    context.page.wait_for_function(
+        "id => (" + _MIRROR_JS + ")(id).indexOf('…') >= 0", arg=pad_id, timeout=5_000)

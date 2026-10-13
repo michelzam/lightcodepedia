@@ -295,9 +295,11 @@ Auto-included by docs/_layouts/default.html.
         chip.classList.toggle("lc-ef-off", off);
         chip.setAttribute("aria-pressed", off ? "false" : "true");
       });
+      if (!el.parentNode) return;   /* its pad re-rendered meanwhile: a newer flow stands */
       el.parentNode.replaceChild(box, el);
       if (window.lcSetDataset) window.lcSetDataset(id, steps);
     }).catch(function (e) {
+      if (!el.parentNode) return;
       var d = document.createElement("div");
       d.className = "lc-event-flow";
       d.innerHTML = "<div style='color:#c00'>" + escapeHtml(e.message || String(e)) + "</div>";

@@ -725,7 +725,10 @@ Auto-included by docs/_layouts/default.html.
           if (frame) frame.setMine(true);
           revealVersions();                      /* a saved file HAS a history */
           readHist();
-          render(); publish(true); refreshBench();   /* the text moved: ↺ and 💾 decide again */
+          /* the text moved: one door for it — the painted mirror is what the
+             learner READS, so it repaints with the preview, not on their first
+             click (Michel 2026-10-13: the starter's dots stayed over a saved story) */
+          wrap._lcApply(ta.value);
         }).catch(function () {});
       }
       /* pad.versions — the names of the versions the learner kept (newest
@@ -781,10 +784,19 @@ Auto-included by docs/_layouts/default.html.
          keeps nothing. The line is the commit message — the diary entry. */
       function askThenSave(prefill) {
         if (commentBox) return;
-        var box = document.createElement("div");
+        /* its OWN form, the line marked as data: the browser groups loose
+           fields with the page's key box (pre-filled from the keychain), so
+           a typed line that vanishes after a save read as a sign-in, and
+           Chrome offered to save "the password" (Michel 2026-10-13) */
+        var box = document.createElement("form");
         box.className = "lc-mdpad-commentbar";
+        box.setAttribute("autocomplete", "off");
+        box.addEventListener("submit", function (e) { e.preventDefault(); });
         var inp = document.createElement("input");
-        inp.type = "text"; inp.maxLength = 120;
+        inp.type = "text"; inp.maxLength = 120; inp.name = "lc-diary";
+        inp.setAttribute("autocomplete", "off");
+        inp.setAttribute("data-lpignore", "true");
+        inp.setAttribute("data-1p-ignore", "true");
         inp.placeholder = "What did you just do? — one line, e.g. the card follows the table";
         inp.setAttribute("aria-label", "What did you just do?");
         var keep = document.createElement("button");
@@ -816,8 +828,7 @@ Auto-included by docs/_layouts/default.html.
         if (askComment) askThenSave(); else doSave("✍️ " + (id || benchPath));
       });
       resetBtn.addEventListener("click", function () {
-        ta.value = seed;
-        render(); publish(true); refreshBench();
+        wrap._lcApply(seed);
         window.lcxToast && window.lcxToast("Starter restored — 💾 to make it yours", true);
       });
 
@@ -827,7 +838,7 @@ Auto-included by docs/_layouts/default.html.
       var vers = window.lcVersions ? window.lcVersions.attach({
         path: benchPath, el: wrap, anchor: saveWrap,
         current: function () { return ta.value; },
-        apply: function (t) { ta.value = t; render(); publish(true); refreshBench(); },
+        apply: function (t) { wrap._lcApply(t); },
         /* the panel's head carries 🎞; a row click shows that version */
         play: function () { if (rp.on) rpStop(); else rpStart(); },
         onSelect: function (c) {

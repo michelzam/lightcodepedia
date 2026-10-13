@@ -515,3 +515,28 @@ Feature: RT prerequisite gate — the key names the content, not the runner
     And I open the page editor
     Then the editor preview shows a prerequisite gate for "Basics"
     And the editor's tabs are on screen beside the preview
+
+  Scenario: A green proof with unanswered quizzes stays gated, and the gate says why
+    Michel, 2026-10-13: Module 05 sent him back to Three Faces, which looked
+    finished — its proof green — yet its quizzes were never recorded, and a
+    reopened quiz shows no mark. The gate names what is missing.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And the learner turned the proof "faces_proof" green on "gh:acme/demo/courses/demo/mod/faces" but answered none of its quizzes
+    And the GitHub contents API serves "courses/demo/mod/next.md" with the document:
+      """
+      # Next module
+
+      - [Three Faces](faces.md)
+      {: .prerequisite }
+
+      ## Deep content
+
+      Secret wisdom here.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/next.md"
+    And I wait for the page to be interactive
+    Then a prerequisite gate offers "Three Faces"
+    And the gated content "Secret wisdom here." is hidden
+    And the gate says "not answered yet" beside "Three Faces"

@@ -46,6 +46,7 @@ Knobs:
 .lc-prereq-sep { color: #9ca3af; }
 .lc-prereq li.ok a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .lc-prereq-hidden { display: none !important; }
+.lc-prereq .lc-prereq-why { color: #92600a; font-size: 0.9em; }
 /* (the lock itself is applied in JS — see lockAfter: a locked page has to
    stay locked while components replace their blocks AND while slides
    re-parent the whole body into sections) */
@@ -178,6 +179,19 @@ null]</script>
     if (passPct) return (s.won / s.total) * 100 >= passPct;
     return s.won > 0;
   }
+  /* SAY WHAT IS MISSING (2026-10-13). "Finish every point" over a page
+     whose proof is green and whose blocks all look done sent an author
+     back to a page that looked finished: the missing points were quizzes
+     that leave no mark once the page is reopened. The gate already holds
+     the record it judged by; it names the gap, in quizzes, beside the page. */
+  function why(s) {
+    var n = (s && (s.quizzes || s.total)) || 0;
+    if (!s || !s.total)
+      return " <span class='lc-prereq-why'>— " + (n ? n + " quiz" + (n > 1 ? "zes" : "") + " " : "quizzes ")
+        + "not answered yet</span>";
+    var left = Math.max(n - s.won, 0);
+    return left ? " <span class='lc-prereq-why'>— " + s.won + "/" + n + " quizzes right</span>" : "";
+  }
   function esc(t) {
     return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -266,7 +280,8 @@ null]</script>
          the title into plain text, so the one list a learner would use to go
          back and re-read something was the one place they could not click. */
       return "<li class='" + (ok ? "ok" : "todo") + "'>" + (ok ? "✅ " : "➜ ")
-        + "<a href='" + esc(linkHref(el, l.href)) + "'>" + esc(l.title) + "</a></li>";
+        + "<a href='" + esc(linkHref(el, l.href)) + "'>" + esc(l.title) + "</a>"
+        + (ok ? "" : why(sc[scoreKey(el, l.href)])) + "</li>";
     });
     var card = document.createElement("div");
     if (!missing.length) {

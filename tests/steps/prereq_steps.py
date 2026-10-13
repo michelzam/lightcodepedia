@@ -158,3 +158,18 @@ def step_preview_gate(context, title):
     gate = context.page.locator("#ed-preview .lc-prereq")
     expect(gate).to_be_visible(timeout=15_000)
     expect(gate).to_contain_text(title)
+
+
+@given('the learner turned the proof "{fid}" green on "{key}" but answered none of its quizzes')
+def step_green_proof_no_quiz(context, fid, key):
+    feats = json.dumps({key + "#" + fid: {"status": "passing", "ts": "2026-10-13T10:00:00Z"}})
+    context.page.add_init_script(
+        "try { localStorage.setItem('lc_features', %s); localStorage.removeItem('lc_scores'); } catch (e) {}"
+        % json.dumps(feats))
+
+
+@then('the gate says "{text}" beside "{title}"')
+def step_gate_says_beside(context, text, title):
+    li = context.page.locator(".lc-prereq li.todo", has=context.page.locator("a", has_text=title))
+    expect(li).to_be_visible(timeout=10_000)
+    expect(li).to_contain_text(text, timeout=5_000)

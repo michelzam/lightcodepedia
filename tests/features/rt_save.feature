@@ -836,8 +836,52 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     Then the diary pad's save button reads "💾 Save…"
     When I type "# Diary — the card follows the table" into the diary pad and press Save…
     Then the diary pad asks what I just did
+    And the question is not a sign-in for the password manager
     When I answer "the card follows the table" and keep
     Then the bench received a commit to "courses/demo/mod/diary.md" with the message "✍️ the card follows the table"
+
+  Scenario: A saved copy is what the pad shows, before any click
+    Michel, 2026-10-13: a student's saved story loaded into the pad's preview;
+    the editor kept painting the starter's dotted lines until a click.
+
+    Given a connected bench whose "courses/demo/mod/story.md" holds the document
+      """
+      ```yaml
+      - user: Tara
+      - ui: Meet a dog
+      - command: Select the family
+      - event: Form is displayed
+      ```
+      {: .event_flow #my_flow }
+      """
+    And the GitHub contents API serves "courses/demo/mod/beat.md" with the document:
+      """
+      # Beat
+
+      ```yaml
+      - user: The family
+      - ui: dog_grid — the list of dogs
+      - command: Pick a dog (click a row)
+      - event: The dog's card is shown
+      ```
+      {: .event_flow #one_beat legend="true" }
+
+      `````markdown
+      ```yaml
+      - user: …
+      - ui: …
+      - command: …
+      - event: …
+      ```
+      {: .event_flow #my_flow }
+      `````
+      {: .mdpad #my_beat decorations="true" layout="rows" rows="8" save="story.md" comment="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/beat.md"
+    And I wait for the page to be interactive
+    Then the "my_beat" pad shows its saved copy before any click, with "Tara"
+    When I press the pad's start-over button
+    Then the "my_beat" pad paints the starter
 
   Scenario: An empty line keeps nothing
     Given a connected bench whose "courses/demo/mod/diary.md" does not exist yet
