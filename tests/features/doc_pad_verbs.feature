@@ -137,6 +137,25 @@ Feature: 🎬 Doc's pad verbs — type, save, and a music player's words for the
     When I run the lesson's check "list_proof"
     Then the lesson's check "list_proof" is green
 
+  Scenario: The Proof — my own check goes red on Alvarez, the button's loop turns it green, the page's proof reads it
+    Michel, 2026-10-13 ("B"): the button walks every row, so three presses
+    select Alvarez, who already met Scout. The learner's own check, in the
+    app, names him; a first loop in the button skips the met ones; the
+    page's fixed proof checks the learner's check.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/03_proof.md"
+    And I wait for the page to be interactive
+    And Doc does "type" with 1 on the "follow_up" pad
+    And I run the lesson's check "call_check"
+    Then the lesson's check "call_check" is red
+    And the lesson's check "call_check" says "Alvarez already met their dog"
+    When Doc does "type" with 2 on the "follow_up" pad
+    And I run the lesson's check "call_check"
+    Then the lesson's check "call_check" is green
+    When I run the lesson's check "proof_proof"
+    Then the lesson's check "proof_proof" is green
+
   Scenario: A step its check finds red stops the build — nothing more is typed
     Given the runner serves the course page "courses/micro_build_ai/module_05/01_builder.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/01_builder.md"

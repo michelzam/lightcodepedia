@@ -263,9 +263,10 @@ Feature: 🚦 A workflow ordered by its own values
     Then the lesson's check "list_proof" is red
     And the lesson's check "list_proof" says "nothing right above {: .datagrid"
 
-  Scenario: Module 05's proof page is red while fourteen families are in the list
+  Scenario: Module 05's proof page is red while the button walks every row
     The story the page tells: two presses, and Alvarez is selected, who
-    took Scout home on Saturday.
+    took Scout home on Saturday. Its green road, the learner's own check
+    with the button's loop, lives in doc_pad_verbs.feature (Michel 2026-10-13).
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/03_proof.md"
@@ -275,29 +276,6 @@ Feature: 🚦 A workflow ordered by its own values
     Then the selected family is "Alvarez"
     When I run the lesson's check "proof_proof"
     Then the lesson's check "proof_proof" is red
-
-  Scenario: Module 05's proof page is green once the check is in the app and the query is fixed
-    The check the learner types runs INSIDE their app: red with the five
-    families who already met their dog, green after WHERE met = ''. Then
-    each press takes the marked family out of the list: 9, 8, 7.
-
-    Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
-    And the learner has written the check at the bottom of the page
-    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/03_proof.md"
-    And I wait for the page to be interactive
-    And I wait for the cells to settle
-    And I run the lesson's check "proof_proof"
-    Then the lesson's check "proof_proof" is red
-    When the learner runs the check inside the pad
-    Then the check inside the pad is red
-    When the learner fixes the question with WHERE met = ''
-    And the learner runs the check inside the pad
-    Then the check inside the pad is green
-    When the coordinator presses the call button 2 times
-    Then the selected family is "Ferraro"
-    And the pad's preview reads "7 families are waiting"
-    When I run the lesson's check "proof_proof"
-    Then the lesson's check "proof_proof" is green
 
   Scenario: Module 05's own app is red on arrival
     Given the runner serves the course page "courses/micro_build_ai/module_05/04_concepts.md"

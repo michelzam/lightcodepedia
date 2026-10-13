@@ -488,24 +488,6 @@ def step_named_red(context, fid):
 
 
 # ── Module 05 in the pad (Michel, 2026-10-09) ────────────────────────────
-M05_CHECK = (
-    "```gherkin\n"
-    "Feature: Only families still waiting get a call\n"
-    "  Scenario: Nobody who already met their dog is in the list\n"
-    "    Given the list my page builds\n"
-    "    :::python\n"
-    "    self.list: Query = self.page.to_call\n"
-    "    :::\n"
-    "    When the coordinator reads it\n"
-    "    Then every family in it is still waiting\n"
-    "    :::python\n"
-    "    met: list[str] = [m for m in self.list.values(\"met\") if m]\n"
-    "    assert not met, f\"{len(met)} families already met their dog\"\n"
-    "    :::\n"
-    "```\n"
-    "{: .feature #call_check visible=\"true\" }\n")
-
-
 @given("the learner has added the datagrid and the button")
 def step_builder_fix(context):
     """Module 05's playground: the two catalogue components under the
@@ -518,6 +500,27 @@ def step_builder_fix(context):
             "[Families](#)\n{: .datagrid source=\"reservations\" }\n\n"
             "[📞 Call the next family](#)\n{: .button #call_btn }\n`````", 1)
     _serve_course_page(context, context.lesson_path, fix)
+
+
+M05_TODOS = ("📝 TODO — all the families, in one table\n\n"
+             "📝 TODO — count the ones still waiting: nobody met them yet\n\n"
+             "📝 TODO — one line that says how many are waiting\n\n"
+             "📝 TODO — a button: mark the selected family, then go to the next\n")
+
+# Michel's app (2026-10-13): every family in the table, one query that
+# counts only the waiting ones.
+M05_APP = ("[Families to call](#)\n{: .datagrid #call_list source=\"reservations\" }\n\n"
+           "```sql\nSELECT family, dog, asked, met FROM reservations WHERE met = \"\"\n```\n"
+           "{: .query bind=\"reservations\" #to_call }\n\n"
+           "{= to_call.count } families are waiting.\n\n"
+           "[📞 Call the next family](#)\n{: .button #call_btn }\n"
+           "```python\n"
+           "grid = button.page.call_list\n"
+           "grid.row.met = weekday()\n"
+           "grid.next()\n"
+           "```\n{: .onclick }\n")
+
+
 
 
 M05_TODOS = ("📝 TODO — all the families, in one table\n\n"
@@ -570,72 +573,6 @@ def step_pad_reads(context, text):
     out = context.page.locator(".lc-mdpad-out").first
     out.wait_for(state="attached", timeout=20_000)
     expect(out).to_contain_text(text, timeout=10_000)
-
-
-@given("the learner has written the check at the bottom of the page")
-def step_proof_check(context):
-    """The check from the lesson, typed at the end of the learner's page —
-    inside the pad, where it runs."""
-    def fix(body):
-        tail = "{: .onclick }\n`````\n"
-        assert tail in body, "the proof seed no longer ends with the button's onclick"
-        return body.replace(tail, "{: .onclick }\n\n" + M05_CHECK + "`````\n", 1)
-    _serve_course_page(context, context.lesson_path, fix)
-
-
-def _pad_textarea(context):
-    ta = context.page.locator(".lc-mdpad .lc-mdpad-in").first
-    ta.wait_for(state="attached", timeout=20_000)
-    return ta
-
-
-@when("the learner runs the check inside the pad")
-def step_run_inner_check(context):
-    card = context.page.locator('.lc-mdpad-out .lc-feature[data-lc-id="call_check"]').first
-    card.wait_for(state="attached", timeout=30_000)
-    btn = card.locator(".lc-feature-run").first
-    btn.wait_for(state="visible", timeout=30_000)
-    btn.scroll_into_view_if_needed(timeout=10_000)
-    btn.click(timeout=20_000)
-
-
-def _inner_status(context, want):
-    import time
-    card = context.page.locator('.lc-mdpad-out .lc-feature[data-lc-id="call_check"]').first
-    deadline, got = time.time() + 90, ""
-    while time.time() < deadline:
-        got = card.get_attribute("data-status") or ""
-        if got in ("passing", "failing"):
-            break
-        context.page.wait_for_timeout(500)
-    if got != want:
-        raise AssertionError("the check inside the pad is %r, expected %r — the card says:\n%s"
-                             % (got, want, (card.inner_text() or "")[:900]))
-
-
-@then("the check inside the pad is red")
-def step_inner_red(context):
-    _inner_status(context, "failing")
-
-
-@then("the check inside the pad is green")
-def step_inner_green(context):
-    _inner_status(context, "passing")
-
-
-@when("the learner fixes the question with WHERE met = ''")
-def step_fix_question(context):
-    """Four words in the query, typed in the pad's text side; the preview
-    re-renders and the cell recounts."""
-    ta = _pad_textarea(context)
-    old = "SELECT family, dog, asked, met FROM reservations\n"
-    text = ta.input_value()
-    assert old in text, "the pad no longer carries the question the lesson asks to fix"
-    context.page.evaluate(
-        """([sel, t]) => { const ta = document.querySelector(sel); ta.focus(); ta.select();
-                          document.execCommand('insertText', false, t); }""",
-        [".lc-mdpad .lc-mdpad-in", text.replace(old, "SELECT family, dog, asked, met FROM reservations WHERE met = ''\n")])
-    context.page.wait_for_timeout(1500)
 
 
 @given("the learner has built an app of their own")

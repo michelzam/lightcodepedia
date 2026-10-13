@@ -899,11 +899,14 @@ class Datagrid(Block):
         return _Row(self)
 
     def next(self):
+        # True when it moved, False on the last row — so a loop can stop by
+        # itself: `while grid.next() and grid.row.met: pass` (Michel,
+        # 2026-10-13, Module 05's first loop: skip the families already met)
         door = getattr(self._el, "_lcRow", None) if self._el is not None else None
         if door is None:
             raise AssertionError("#" + str(self.id) + " has no rows to walk yet")
-        door.next()
-        return self
+        moved = door.next()
+        return moved is not None and bool(moved)
 
     @property
     def source(self):
