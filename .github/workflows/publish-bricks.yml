@@ -16,7 +16,7 @@ on:
 
 permissions:
   contents: write      # push version tags
-  id-token: write      # npm provenance (public repo)
+  id-token: write      # npm trusted publishing (OIDC) + provenance
 
 concurrency:
   group: "publish-bricks"
@@ -24,8 +24,8 @@ concurrency:
 
 jobs:
   test-and-publish:
-    # Public repo only — npm provenance requires a public repo, and the
-    # NPM_TOKEN secret lives there.
+    # Public repo only — npm provenance requires a public repo, and each
+    # package's npm trusted publisher names this repo and this file.
     if: github.repository == 'michelzam/lightcodepedia'
     runs-on: ubuntu-latest
     defaults:
@@ -41,12 +41,18 @@ jobs:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
 
+      # trusted publishing needs npm 11.5.1+; no token to expire (2026-10-13)
+      - name: npm with trusted publishing
+        run: npm install -g npm@11
+
       - name: Install
         run: npm install
 
       - name: Test (both bricks + SSOT drift guard)
         run: npm test
 
+      # OIDC first; NPM_TOKEN stays only as the fallback for a package
+      # whose trusted publisher is not set yet
       - name: Publish changed versions (semver-gated, idempotent)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
