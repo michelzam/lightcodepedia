@@ -43,7 +43,7 @@ jobs:
 
       # trusted publishing needs npm 11.5.1+; no token to expire (2026-10-13)
       - name: npm with trusted publishing
-        run: npm install -g npm@11
+        run: npm install -g npm@11 && npm --version
 
       - name: Install
         run: npm install
@@ -51,11 +51,9 @@ jobs:
       - name: Test (both bricks + SSOT drift guard)
         run: npm test
 
-      # OIDC first; NPM_TOKEN stays only as the fallback for a package
-      # whose trusted publisher is not set yet
+      # trusted publishing only: no token in the job, so a refused OIDC
+      # exchange says why instead of falling back to a dead token
       - name: Publish changed versions (semver-gated, idempotent)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -e
           published=""
@@ -75,7 +73,7 @@ jobs:
               echo "· $name@$ver already on npm — skip"
             else
               echo "↑ publishing $name@$ver"
-              ( cd "$pkg" && npm publish --provenance --access public )
+              ( cd "$pkg" && npm publish --provenance --access public --loglevel=verbose 2>&1 | grep -viE '^npm (verb|sill) (logfile|title|argv|cli|npm|node|config)' ; exit ${PIPESTATUS[0]} )
               git tag "$pkg-v$ver" || true
               published="$published $pkg-v$ver"
             fi
