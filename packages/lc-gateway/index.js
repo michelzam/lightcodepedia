@@ -19,7 +19,7 @@ import { createHmac, createSign, randomBytes, createHash, timingSafeEqual } from
 import { patch } from '@karmicsoft/lc-patch';
 import { load, dump } from '@karmicsoft/lc-serialize';
 
-export const GATEWAY_VERSION = '0.3.0';
+export const GATEWAY_VERSION = '0.3.1';
 
 const DEFAULTS = {
   baseBranch: 'main',
@@ -200,6 +200,18 @@ export function createGateway(config, deps = {}) {
     createHmac('sha256', cfg.sessionSecret).update('owner:' + norm(email)).digest('base64url').slice(0, 22) + ' -->';
   const isMine = (pr, sess) => !!(pr && sess && String(pr.body || '').includes(ownerMark(sess.email)));
   const pendingOf = (pr, sess) => pr ? { number: pr.number, url: pr.html_url, mine: isMine(pr, sess) } : null;
+  /* a bundle (0.3.1) names every file it carries in its description, so a
+     waiting contribution is found for each of them, not only the first */
+  const pathsMark = (paths) => '<!-- lc-gateway:paths=' + paths.join('|') + ' -->';
+  async function openPrFor(path) {
+    const byBranch = await openPrOn(slugOf(path));
+    if (byBranch) return byBranch;
+    const r = await gh('/repos/' + cfg.repo + '/pulls?state=open&per_page=100');
+    return (r.ok && Array.isArray(r.json) ? r.json : []).find((p) => {
+      const m = /<!-- lc-gateway:paths=([^>]*) -->/.exec(String(p.body || ''));
+      return m && m[1].split('|').indexOf(path) >= 0;
+    }) || null;
+  }
   async function openPrOn(slug) {
     const r = await gh('/repos/' + cfg.repo + '/pulls?state=open&per_page=100');
     /* the exact shape <prefix>/<slug>-<yyyymmdd-hhmm>: louise-michel never
@@ -208,21 +220,27 @@ export function createGateway(config, deps = {}) {
     const want = new RegExp('^' + esc(cfg.branchPrefix) + '/' + esc(slug) + '-\\d{8}-\\d{4}$');
     return (r.ok && Array.isArray(r.json) ? r.json : []).find((p) => p.head && want.test(String(p.head.ref))) || null;
   }
-  async function writeAsPr(sess, { path, text, sha, title, type, message }) {
-    const slug = slugOf(path);
+  async function writeAsPr(sess, { path, text, sha, title, type, message, files }) {
+    files = files || [{ path, text, sha, message }];
+    const slug = slugOf(files[0].path);
     const branch = cfg.branchPrefix + '/' + slug + '-' + stamp();
     const base = await gh('/repos/' + cfg.repo + '/git/ref/heads/' + cfg.baseBranch);
     if (!base.ok) throw new Error('cannot read ' + cfg.baseBranch);
     const mk = await gh('/repos/' + cfg.repo + '/git/refs', { method: 'POST', body: { ref: 'refs/heads/' + branch, sha: base.json.object.sha } });
     if (!mk.ok) throw new Error('cannot create the branch (' + mk.status + ')');
-    const commitMsg = (message || (type + ': ' + title)) + '\n\nCo-authored-by: ' + sess.name + ' <' + cfg.coauthorEmail + '>';
-    const put = await gh('/repos/' + cfg.repo + '/contents/' + path, { method: 'PUT',
-      body: { message: commitMsg, content: Buffer.from(text, 'utf8').toString('base64'), branch, ...(sha ? { sha } : {}) } });
-    if (!put.ok) throw new Error('cannot write the file (' + put.status + ')');
+    for (const f of files) {                          /* one commit per file, all on one branch */
+      const commitMsg = (f.message || message || (type + ': ' + title)) + '\n\nCo-authored-by: ' + sess.name + ' <' + cfg.coauthorEmail + '>';
+      const put = await gh('/repos/' + cfg.repo + '/contents/' + f.path, { method: 'PUT',
+        body: { message: commitMsg, content: Buffer.from(f.text, 'utf8').toString('base64'), branch, ...(f.sha ? { sha: f.sha } : {}) } });
+      if (!put.ok) throw new Error('cannot write ' + f.path + ' (' + put.status + ')');
+    }
     const prTitle = cfg.prTitle.replace('{type}', type).replace('{title}', title).replace('{name}', sess.name);
     const pr = await gh('/repos/' + cfg.repo + '/pulls', { method: 'POST',
       body: { title: prTitle, head: branch, base: cfg.baseBranch,
-              body: 'Contribution by ' + sess.name + ' through the gateway. File: `' + path + '`.\n\n' + ownerMark(sess.email) } });
+              body: 'Contribution by ' + sess.name + ' through the gateway. ' +
+                (files.length === 1 ? 'File: `' + files[0].path + '`.'
+                  : 'Files:\n' + files.map((f) => '- `' + f.path + '`').join('\n')) +
+                '\n\n' + ownerMark(sess.email) + (files.length > 1 ? '\n' + pathsMark(files.map((f) => f.path)) : '') } });
     if (!pr.ok) throw new Error('cannot open the pull request (' + pr.status + ')');
     let autoMerge = false;
     if (sess.role === 'trusted' && pr.json.node_id) {
@@ -281,7 +299,7 @@ export function createGateway(config, deps = {}) {
         if (!insideContent(path)) return json(403, { error: 'reads are limited to ' + cfg.contentDirs.join(', ') });
         /* a contribution of mine waiting on this fiche: the form reopens MY
            version, from its branch, and says which pull request it is */
-        const open = await openPrOn(slugOf(path));
+        const open = await openPrFor(path);
         const mine = isMine(open, sess);
         const ref = mine ? open.head.ref : cfg.baseBranch;
         const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(ref));
@@ -294,6 +312,7 @@ export function createGateway(config, deps = {}) {
       if (m === 'POST' && (p === '/contrib' || p === '/contrib/new')) {
         if (!sess) return json(401, { error: 'not signed in', keep: true });
         if (p === '/contrib/new') return await createNew(sess, body);
+        if (Array.isArray(body.files)) return await contributeMany(sess, body);
         return await contribute(sess, body);
       }
       return json(404, { error: 'no such route' });
@@ -311,7 +330,7 @@ export function createGateway(config, deps = {}) {
     const slug = slugOf(path);
     const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
     if (!cur.ok) return json(404, { error: 'no such record on ' + cfg.baseBranch, keep: true });
-    const open = await openPrOn(slug);
+    const open = await openPrFor(path);
     if (open && isMine(open, sess)) return await addToMine(sess, body, path, open, cur);
     if (body.baseSha !== cur.json.sha)
       return json(409, { error: 'stale', message: 'the record changed since it was opened — reload it', keep: true });
@@ -354,6 +373,72 @@ export function createGateway(config, deps = {}) {
     if (!put.ok) throw new Error('cannot write the file (' + put.status + ')');
     return json(200, { ok: true, updated: true,
       pr: { number: open.number, url: open.html_url, branch, autoMerge: !!open.auto_merge } });
+  }
+
+  /* SEVERAL FILES, ONE CONTRIBUTION (0.3.1, Toni: "the new address and the
+     event that points to it, in the same branch and the same pull request").
+     files: [{ path, baseSha, record }   an edit, as /contrib
+             { kind, title, record }]    a new record, as /contrib/new
+     Every file is checked first; one refusal and nothing is written. A file
+     already in a waiting contribution refuses the bundle (save it there). */
+  const MAX_FILES = 10;
+  async function contributeMany(sess, body) {
+    const items = body.files;
+    if (!items.length) return json(400, { error: 'files is empty', keep: true });
+    if (items.length > MAX_FILES) return json(400, { error: 'at most ' + MAX_FILES + ' files in one contribution', keep: true });
+    const files = [], seen = {}, out = [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i] || {}, where = { file: i };
+      if (!it.record || typeof it.record !== 'object') return json(400, { error: 'record required', ...where, keep: true });
+      if (it.kind != null) {                                       // a new record
+        if (!cfg.allowCreate) return json(403, { error: 'creating records is off', ...where, keep: true });
+        const dir = cfg.contentDirs.find((d) => d.replace(/\/$/, '').split('/').pop() === String(it.kind));
+        if (!dir) return json(403, { error: 'kind must be one of ' + cfg.contentDirs.map((d) => d.split('/').pop()).join(', '), ...where, keep: true });
+        const title = String(it.title || it.record.title || '').trim();
+        if (!title) return json(400, { error: 'title required', ...where, keep: true });
+        const slug = slugify(title), path = dir.replace(/\/$/, '') + '/' + slug + '.yaml';
+        if (seen[path]) return json(400, { error: 'the same file twice', path, ...where, keep: true });
+        const exists = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
+        if (exists.ok) return json(409, { error: 'a record with this slug already exists', path, ...where, keep: true });
+        const record = { id: slug, slug, ...it.record };
+        record.id = slug; record.slug = slug; record.title = title;
+        const touched = touchedProtected({ id: slug, slug }, record).filter((f) => f !== 'id' && f !== 'slug');
+        if (touched.length) return json(403, { error: 'protected fields', fields: touched, ...where, keep: true });
+        const text = dump(record); load(text);
+        const type = String(record.type || String(it.kind).replace(/s$/, ''));
+        seen[path] = 1;
+        files.push({ path, text, sha: null, message: cap(type) + ': ' + title, title, type });
+        out.push({ path, slug, created: true });
+      } else {                                                      // an edit
+        const path = String(it.path || '');
+        if (!insideContent(path)) return json(403, { error: 'writes are limited to ' + cfg.contentDirs.join(', '), ...where });
+        if (seen[path]) return json(400, { error: 'the same file twice', path, ...where, keep: true });
+        if (!it.baseSha) return json(400, { error: 'baseSha required', ...where, keep: true });
+        const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
+        if (!cur.ok) return json(404, { error: 'no such record on ' + cfg.baseBranch, path, ...where, keep: true });
+        if (it.baseSha !== cur.json.sha) return json(409, { error: 'stale', path, ...where, keep: true,
+          message: 'the record changed since it was opened — reload it' });
+        const open = await openPrFor(path);
+        if (open) return json(409, { error: 'open pull request', path, ...where, keep: true, pending: pendingOf(open, sess),
+          message: 'a contribution on ' + path + ' is already waiting: #' + open.number });
+        const original = Buffer.from(cur.json.content || '', 'base64').toString('utf8');
+        const touched = touchedProtected(load(original), it.record);
+        if (touched.length) return json(403, { error: 'protected fields', fields: touched, path, ...where, keep: true });
+        const text = patch(original, it.record);
+        if (text === original) return json(400, { error: 'nothing changed', path, ...where, keep: true });
+        const title = String(it.record.title || slugOf(path)), type = String(it.record.type || 'fiche');
+        seen[path] = 1;
+        files.push({ path, text, sha: cur.json.sha, message: cap(type) + ': ' + title, title, type });
+        out.push({ path, slug: slugOf(path), created: false });
+      }
+    }
+    /* new records first: what the others point to exists before them */
+    const order = files.map((f, i) => i).sort((a, b) => (files[a].sha ? 1 : 0) - (files[b].sha ? 1 : 0));
+    const sorted = order.map((i) => files[i]);
+    const head = sorted[0];
+    const title = String(body.title || (head.title + (sorted.length > 1 ? ' (+' + (sorted.length - 1) + ')' : '')));
+    const pr = await writeAsPr(sess, { files: sorted, title, type: cap(head.type), message: body.message });
+    return json(201, { ok: true, pr, files: out });            /* in the order the form sent them */
   }
 
   async function createNew(sess, body) {

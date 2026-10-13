@@ -73,7 +73,7 @@ jobs:
               echo "· $name@$ver already on npm — skip"
             else
               echo "↑ publishing $name@$ver"
-              ( cd "$pkg" && npm publish --provenance --access public --loglevel=verbose 2>&1 | grep -viE '^npm (verb|sill) (logfile|title|argv|cli|npm|node|config)' ; exit ${PIPESTATUS[0]} )
+              ( cd "$pkg" && npm publish --provenance --access public )
               git tag "$pkg-v$ver" || true
               published="$published $pkg-v$ver"
             fi

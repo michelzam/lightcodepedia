@@ -529,6 +529,76 @@ await scenario('A new record still waiting reads back for its author', async () 
   const r = await call('GET', '/fiche?path=' + encodeURIComponent('fiches/persons/jeanne-test.yaml'), null, ada);
   eq(r.status, 200, JSON.stringify(r.body)); eq(r.body.record.title, 'Jeanne Test'); eq(r.body.pending.mine, true);
 });
+
+feature('Several files, one contribution (0.3.1, Toni: the new address and the event that points to it)');
+const JT = 'fiches/persons/jeanne-test.yaml';
+await scenario('A new record and an edit pointing to it travel in one branch and one pull request', async () => {
+  const { call, gh, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  const r = await call('POST', '/contrib', { files: [
+    { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) },
+    { kind: 'persons', title: 'Jeanne Test', record: { type: 'person', gender: 'féminin' } },
+  ] }, ada);
+  eq(r.status, 201, JSON.stringify(r.body));
+  eq(gh.prs.length, 1); eq(gh.commits.length, 2);
+  eq(gh.commits[0].path, JT, 'the new record is written first');
+  eq(gh.commits[1].path, LM);
+  ok(gh.commits.every((c) => c.branch === r.body.pr.branch));
+  deep(r.body.files, [{ path: LM, slug: 'louise-michel', created: false }, { path: JT, slug: 'jeanne-test', created: true }]);
+  ok(gh.prs[0].body.includes('`' + JT + '`') && gh.prs[0].body.includes('`' + LM + '`'), gh.prs[0].body);
+  eq(gh.main[LM], fixtures[LM], 'main changed');
+  ok(!JSON.stringify(gh.prs).includes('ada@example.org'), 'the personal address leaked');
+});
+await scenario('One refusal and nothing is written', async () => {
+  const { call, gh, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  const r = await call('POST', '/contrib', { files: [
+    { kind: 'persons', title: 'Jeanne Test', record: { type: 'person' } },
+    { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.slug = 'elsewhere'; }) },
+  ] }, ada);
+  eq(r.status, 403); eq(r.body.file, 1); eq(r.body.keep, true);
+  eq(gh.commits.length, 0); eq(gh.prs.length, 0); eq(Object.keys(gh.branches).length, 0, 'a branch was created');
+});
+await scenario('A file already in a waiting contribution refuses the bundle, saying which', async () => {
+  const { call, gh, signIn, clock } = rig();
+  const zoe = await signIn('zoe@example.org');
+  const first = await call('POST', '/contrib', { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) }, zoe);
+  clock.t += 60000;
+  const ada = await signIn('ada@example.org');
+  const r = await call('POST', '/contrib', { files: [
+    { kind: 'persons', title: 'Jeanne Test', record: { type: 'person' } },
+    { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'autre'; }) },
+  ] }, ada);
+  eq(r.status, 409); eq(r.body.file, 1); eq(r.body.pending.number, first.body.pr.number);
+  eq(gh.prs.length, 1); eq(gh.commits.length, 1);
+});
+await scenario('Back on a file of my bundle, I read my version and my save joins the bundle', async () => {
+  const { call, gh, signIn, clock } = rig();
+  const ada = await signIn('ada@example.org');
+  const b = await call('POST', '/contrib', { files: [
+    { kind: 'persons', title: 'Jeanne Test', record: { type: 'person' } },
+    { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) },
+  ] }, ada);
+  clock.t += 60000;
+  const mine = await call('GET', '/fiche?path=' + encodeURIComponent(LM), null, ada);
+  eq(mine.body.pending.mine, true); eq(mine.body.pending.number, b.body.pr.number); eq(mine.body.record.gender, 'femme');
+  const rec = mine.body.record; rec.addresses[0].period = 1871;
+  const r = await call('POST', '/contrib', { path: LM, baseSha: mine.body.sha, record: rec }, ada);
+  eq(r.status, 200, JSON.stringify(r.body)); eq(r.body.pr.number, b.body.pr.number);
+  eq(gh.prs.length, 1); eq(gh.commits.length, 3);
+});
+await scenario('A bundle refuses the same file twice, and more than ten files', async () => {
+  const { call, gh, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  const twice = await call('POST', '/contrib', { files: [
+    { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) },
+    { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'autre'; }) },
+  ] }, ada);
+  eq(twice.status, 400); eq(twice.body.error, 'the same file twice');
+  const many = await call('POST', '/contrib', { files: Array.from({ length: 11 }, (_, i) => ({ kind: 'persons', title: 'P ' + i, record: {} })) }, ada);
+  eq(many.status, 400);
+  eq(gh.commits.length, 0);
+});
 })();
 
 console.log(`\n${scen} scenarios, ${fail} failed.`);

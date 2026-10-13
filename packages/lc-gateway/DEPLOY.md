@@ -109,11 +109,11 @@ memory; the person simply asks for a new one.
 
 ```sh
 scw registry namespace create name=lc region=fr-par
-docker tag lc-gateway rg.fr-par.scw.cloud/lc/lc-gateway:0.3.0
-docker push rg.fr-par.scw.cloud/lc/lc-gateway:0.3.0
+docker tag lc-gateway rg.fr-par.scw.cloud/lc/lc-gateway:0.3.1
+docker push rg.fr-par.scw.cloud/lc/lc-gateway:0.3.1
 scw container namespace create name=contrib region=fr-par
 scw container container create namespace-id=<ns> name=lc-gateway \
-  registry-image=rg.fr-par.scw.cloud/lc/lc-gateway:0.3.0 port=8080 \
+  registry-image=rg.fr-par.scw.cloud/lc/lc-gateway:0.3.1 port=8080 \
   min-scale=1 max-scale=1 memory-limit=256 \
   environment-variables.PUBLIC_URL=https://… environment-variables.APP_URL=https://… \
   secret-environment-variables.GITHUB_APP_PRIVATE_KEY="$(cat app.pem)" \
@@ -131,7 +131,7 @@ Settings → Environment variables / Secrets.
 ## 5. Check it runs
 
 ```sh
-curl https://contrib.example.org/health          # {"ok":true,"version":"0.3.0"}
+curl https://contrib.example.org/health          # {"ok":true,"version":"0.3.1"}
 curl -X POST https://contrib.example.org/auth/request -H 'content-type: application/json' \
      -d '{"email":"you@example.org"}'             # 202, and a mail if you are allowlisted
 ```
@@ -153,6 +153,11 @@ is accepted for this mode only; production always uses the App.
 
 ## 7. Since 0.1.0
 
+0.3.1 (Toni, 2026-10-12): `POST /contrib` takes `files: [...]` — edits and new
+records together (a new address and the event pointing to it) in one branch
+and one pull request; every file is checked before anything is written, new
+records are written first, and each file then finds its waiting contribution.
+
 0.3.0 (Toni, 2026-10-12): a volunteer coming back to a fiche whose contribution
 still waits reads their own version (`GET /fiche` → `pending: { number, url,
 mine: true }`), and a second save adds a commit to that same pull request.
@@ -173,7 +178,7 @@ does the one use, so mail scanners consume nothing; an hourly limit per
 address and a daily mail quota for everyone; memory swept on every sign-in
 request; constant-time signature comparison.
 
-## 8. What is not in 0.3.0
+## 8. What is not in 0.3.1
 
 - Sign-in links and rate limits shared across instances (a store would come
   with a second instance). Sessions already are: signed cookies.

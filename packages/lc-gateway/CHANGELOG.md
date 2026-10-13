@@ -1,5 +1,22 @@
 # Changelog — @karmicsoft/lc-gateway
 
+## 0.3.1 — 2026-10-12
+
+Asked by Toni with 0.3.0: "the new address and the event that points to it,
+in the same branch and the same pull request".
+
+- **Several files, one contribution.** `POST /contrib` with `files: [...]` —
+  edits (`{ path, baseSha, record }`) and new records (`{ kind, title,
+  record }`) together, at most 10. Every file passes the usual checks
+  (folders, baseSha, protected fields, a waiting contribution, an existing
+  slug) before anything is written; one refusal names the file
+  (`file: <index>`) and nothing is written. New records are written first;
+  one commit per file, one pull request listing them all. The answer gives
+  each file's `{ path, slug, created }`, in the order sent.
+- Each file of a bundle then finds its waiting contribution: `GET /fiche`
+  on any of them reads the volunteer's version, and a single save joins the
+  bundle (0.3.0's behaviour, per file).
+
 ## 0.3.0 — 2026-10-12
 
 Asked by Toni (Blue Lion, for Mémoire des lieux) after the first tests on the
