@@ -201,6 +201,29 @@ def step_ledger_line(context):
     assert "limited" in line.lower(), line
 
 
+@given('the model endpoint refuses on tokens per minute once, waiting {wait}, then answers "{message}"')
+def step_stub_tpm_then_ok(context, wait, message):
+    """Groq's free-tier wall (Michel, 2026-10-14): the first ask spent most
+    of the minute's tokens, the second is refused for a second or two."""
+    state = {"n": 0}
+
+    def fulfill(route):
+        state["n"] += 1
+        if state["n"] == 1:
+            route.fulfill(status=429, content_type="application/json",
+                          body=json.dumps({"error": {"code": "rate_limit_exceeded", "message":
+                              "Rate limit reached for model `openai/gpt-oss-120b` in organization `org_x` "
+                              "service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 5062, "
+                              "Requested 5063. Please try again in " + wait + ". Need more tokens?"}}))
+        else:
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps({"choices": [
+                              {"message": {"content": message},
+                               "finish_reason": "stop"}]}))
+
+    context.page.route("**/chat/completions*", fulfill)
+
+
 @given('the model endpoint 503s once, then answers "{message}"')
 def step_stub_503_then_ok(context, message):
     """A demand spike: the first call wobbles, the next one works."""

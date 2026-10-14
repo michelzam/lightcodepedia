@@ -83,6 +83,47 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I ask the desk agent into the void "hello"
     Then the desk relays "models/ghost is not found"
 
+  Scenario: A short tokens-per-minute wall is waited out, then answered
+    Michel, 2026-10-14, testing Ari: "It's only the second question of the
+    day" — and the desk said "too many questions too fast". The wall was
+    Groq's tokens a minute: the sheet rides every ask. A wall that names a
+    short wait is waited out, and the learner gets the answer.
+
+    Given I have a clean browser page
+    And the model endpoint refuses on tokens per minute once, waiting 1.2s, then answers "Where does name live? 🐾"
+    And the GitHub contents API serves "courses/demo/module_01/tpm.md" with the document:
+      """
+      # Tokens page
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/tpm.md"
+    And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
+    And I ask the desk agent into the void "hello"
+    Then the desk answers "Where does name live?"
+
+  Scenario: A long tokens-per-minute wall says tokens, not questions
+    Given I have a clean browser page
+    And the model endpoint answers 429 saying "Rate limit reached for model `openai/gpt-oss-120b` on tokens per minute (TPM): Limit 8000, Used 7900, Requested 5063. Please try again in 45.3s."
+    And the GitHub contents API serves "courses/demo/module_01/tpm2.md" with the document:
+      """
+      # Tokens page, long wait
+
+      ```yaml
+      system: Review.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/tpm2.md"
+    And I wait for the page to be interactive
+    And I connect the "desk" agent with key "test-key"
+    And I ask the desk agent into the void "hello"
+    Then the desk relays "8000 tokens a minute"
+
   Scenario: The two 429 walls are told apart
     A per-minute limit refills by itself; the day's free allowance does not.
     A learner must know which wall they hit. (The day's wall is believed

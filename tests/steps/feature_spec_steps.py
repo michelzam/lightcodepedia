@@ -118,3 +118,14 @@ def step_feature_verdict(context, fid, verdict):
             break
         context.page.wait_for_timeout(500)
     assert got == want, "feature %s is %r, expected %r — the card says:\n%s" % (fid, got, want, (card.inner_text() or "")[:700])
+
+
+@then('the card "{fid}" names no page bug')
+def step_card_no_page_bug(context, fid):
+    """A red Definition of Done must say what the learner does next — never
+    "this page's check could not run" (the Pets DoD, 2026-10-14: its second
+    step crashed on the starter instead of naming what to add)."""
+    card = context.page.locator('.lc-feature[data-lc-id="' + fid + '"]').first
+    card.wait_for(state="attached", timeout=20_000)
+    text = card.inner_text() or ""
+    assert "page's bug" not in text and "could not run" not in text, text[:800]

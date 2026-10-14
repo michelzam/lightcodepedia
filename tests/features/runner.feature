@@ -471,6 +471,21 @@ Feature: The instant runner (RT) — Phase A parity
     Then the runner says the key itself is the problem
     And the runner points to Setup at "/courses/join?hub=build-ai-fall26"
 
+  Scenario: Inside Canvas, the dead key is replaced right where it died
+    David, 2026-10-14: his new key, saved on Setup, never reached the copy
+    Module 4 reads inside Canvas — "Create a classic course key" was the
+    only thing to click, and reloading changed nothing. The dead-key line
+    now carries its own box: checked live, stored here, then reload.
+
+    Given a course key that GitHub rejects
+    And a fresh course key "ghp_fresh" that GitHub accepts
+    When I navigate to "/run?hub=build-ai-fall26#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the runner says the key itself is the problem
+    When I paste "ghp_fresh" in the runner's key box and save it
+    Then the runner says the key is saved
+    And this page now holds the course key "ghp_fresh"
+
   Scenario: On a visitor's tab, the dead key still names Get started
     Given a course key that GitHub rejects
     When I open the runner page on "gh:acme/demo-vault/courses/demo/mod/lesson.md"

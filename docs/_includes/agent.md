@@ -1108,6 +1108,27 @@ Auto-included by docs/_layouts/default.html.
           return { error: '🔋 The provider says the day\'s free allowance is spent — but this browser spent nothing today. Usually a demand spike on the free tier, or another device using the same key. Nothing is broken; worth trying again in a few minutes.',
                    status: 429, elsewhere: true, suspectSpike: true };
         }
+        /* …and the per-minute wall is often TOKENS, not questions (Michel,
+           2026-10-14: "it's only the second question of the day"). Groq's
+           free tier gives a model so many tokens a minute; a tutor whose
+           sheet rides every ask spends most of it in one question, so the
+           second one inside the minute is refused for seconds. The provider
+           names the limit, the ask and the wait — say THAT, and when the
+           wait is short, wait it out and ask again on our own. */
+        var tpm = !daily && /tokens per minute|\bTPM\b/i.test(m429);
+        if (tpm) {
+          var lim = /Limit\s+(\d+)/i.exec(m429), req = /Requested\s+(\d+)/i.exec(m429);
+          var wm = /try again in\s+(?:(\d+)m)?\s*([\d.]+)\s*(ms|s)\b/i.exec(m429);
+          var waitMs = wm ? (+(wm[1] || 0)) * 60000 + parseFloat(wm[2]) * (wm[3].toLowerCase() === 'ms' ? 1 : 1000) : 0;
+          var secs = waitMs ? Math.max(1, Math.ceil(waitMs / 1000)) : 0;
+          return { error: '⏳ Not too many questions — too many words a minute: ' + eng.host +
+                     '\'s free tier gives this model ' + (lim ? lim[1] + ' tokens' : 'a token budget') +
+                     ' a minute, and one question carries about ' + (req ? req[1] : 'a few thousand') +
+                     ' (the tutor\'s instructions included). ' +
+                     (secs ? 'It refills in about ' + secs + ' s — ask again then.' : 'It refills within a minute.'),
+                   status: 429, elsewhere: true,
+                   retriable: !!waitMs && waitMs <= 20000, waitMs: waitMs ? waitMs + 300 : 0 };
+        }
         return { error: daily
           ? '🔋 Out of free energy for today — the day\'s allowance is spent and refills on its own (around midnight US Pacific). Nothing is broken; come back tomorrow, or use a key with a paid plan.'
           : '⏳ Too many questions too fast (per-minute limit). Wait about a minute and ask again — this one refills by itself.',
@@ -1252,7 +1273,9 @@ Auto-included by docs/_layouts/default.html.
           });
         }
         if (!res.retriable || !retries.length) return res;
-        return pause(retries[0]).then(function () {
+        /* a wall that names its own wait (tokens a minute) is waited out
+           exactly, not guessed at */
+        return pause(res.waitMs || retries[0]).then(function () {
           return tryEngine(eng, key, retries.slice(1), healed, unremembered);
         });
       });

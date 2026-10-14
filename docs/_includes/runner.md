@@ -84,6 +84,50 @@ files a learner is already working in.
 (function () {
   /* the place a key is pasted, by road: the class door's ⚙️ Setup when the
      address names a class (hub= or crumb=), the Get started pill otherwise */
+  /* THE NEW KEY GOES WHERE THE OLD ONE DIED (David, 2026-10-14): inside
+     Canvas the course frame keeps its own copy of the key, and a key fixed
+     on another page — another tab, another door — never reached the copy
+     this page reads. So the dead-key line carries its own box: checked
+     live, stored HERE, read back, then the page reloads. A frame that
+     cannot store says so, with the browser's own setting to change. */
+  function keyHere() {
+    return "<form class=\"lc-key-here\" autocomplete=\"on\" style=\"display:flex;gap:0.4em;flex-wrap:wrap;align-items:center;margin:0.4em 0\">" +
+      "<input type=\"text\" name=\"username\" value=\"lc-course-key\" autocomplete=\"username\" tabindex=\"-1\" readonly aria-hidden=\"true\" style=\"position:absolute;left:-9999px\">" +
+      "<input type=\"password\" name=\"password\" autocomplete=\"current-password\" placeholder=\"ghp_…\" spellcheck=\"false\" aria-label=\"Your new course key\" style=\"flex:1;min-width:12em;padding:0.35em 0.6em;border:1px solid #d0d7de;border-radius:6px\">" +
+      "<button type=\"submit\" style=\"padding:0.35em 0.9em;border-radius:6px;border:1px solid #0066cc;background:#0066cc;color:#fff;font-weight:600;cursor:pointer\">Save my key ✓</button>" +
+      "<span class=\"lc-key-here-msg\" style=\"flex-basis:100%\"></span></form>";
+  }
+  function wireKeyHere(root) {
+    var f = root.querySelector(".lc-key-here"); if (!f) return;
+    var out = f.querySelector(".lc-key-here-msg");
+    f.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var val = (f.querySelector("input[type=password]").value || "").trim();
+      if (!val) return;
+      out.textContent = "Checking…";
+      fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + val, "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (u) {
+          if (!u) { out.textContent = "❌ GitHub does not recognise this key — expired, revoked, or mistyped."; return; }
+          var kept = false;
+          try {
+            localStorage.setItem("lc_ed_pat", val);
+            localStorage.setItem("lc_gh_user", JSON.stringify(u));
+            localStorage.setItem("lc_gh_user_for", val);
+            kept = localStorage.getItem("lc_ed_pat") === val;
+          } catch (e2) {}
+          if (!kept) {
+            out.innerHTML = "⚠️ Your browser does not let the course remember the key inside Canvas. " +
+              "Firefox: on the Canvas page, click the shield left of the address → turn Enhanced Tracking Protection off for this site. " +
+              "Chrome: Settings → Privacy and security → Third-party cookies → allow <b>" + location.hostname + "</b>. Then reload.";
+            return;
+          }
+          out.textContent = "✅ Key saved, @" + (u.login || "you") + " — reloading…";
+          setTimeout(function () { location.reload(); }, 600);
+        })
+        .catch(function () { out.textContent = "❌ Could not reach GitHub — check the connection and try again."; });
+    });
+  }
   function pasteWhere(verb) {
     var q = null; try { q = new URLSearchParams(location.search); } catch (e) {}
     var framed = q && (q.get("hub") || q.get("crumb"));
@@ -595,7 +639,9 @@ files a learner is already working in.
             .then(function (d) {
               var fine = pat.indexOf("github_pat_") === 0;
               if (!d.ok) {
-                status.innerHTML = "🔑 Your key isn’t valid anymore — generate a fresh one.<br>" + ladder + " → " + pasteWhere("paste it in") + ", reload.";
+                status.innerHTML = "🔑 Your key isn’t valid anymore — generate a fresh one.<br>" + ladder + " → paste it right here:" + keyHere() +
+                  "<div style=\"font-size:0.85em;color:#6b7280\">(or " + pasteWhere("in") + ", then reload)</div>";
+                wireKeyHere(status);
               } else if (!fine && (d.scopes || "").split(",").map(function (s) { return s.trim(); }).indexOf("repo") < 0) {
                 status.innerHTML = "🔑 Signed in as <b>@" + (d.login || "?") + "</b>, but your key is missing the <code>repo</code> scope.<br>" + ladder + " → " + pasteWhere("paste it in") + ", reload.";
               } else if (fine) {

@@ -837,3 +837,33 @@ def step_warn_explains(context, part_id, text):
 def step_warn_line(context, part_id, n):
     tip = _warn(context, part_id).locator(".lc-warn-tip").text_content() or ""
     assert ("line %d" % n) in tip, "the tip says %r" % tip
+
+
+@given('a fresh course key "{key}" that GitHub accepts')
+def step_fresh_key(context, key):
+    """Only /user answers the fresh key; everything else stays as set."""
+    def user(route):
+        if route.request.headers.get("authorization") == "Bearer " + key:
+            route.fulfill(status=200, content_type="application/json", body='{"login": "david"}')
+        else:
+            route.fulfill(status=401, content_type="application/json", body='{"message": "Bad credentials"}')
+    context.page.route("https://api.github.com/user", user)
+
+
+@when('I paste "{key}" in the runner\'s key box and save it')
+def step_paste_key_here(context, key):
+    box = context.page.locator(".lc-runner .lc-run-status .lc-key-here input[type=password]")
+    expect(box).to_be_visible(timeout=20_000)
+    box.fill(key)
+    context.page.locator(".lc-runner .lc-run-status .lc-key-here button[type=submit]").click()
+
+
+@then("the runner says the key is saved")
+def step_key_saved(context):
+    expect(context.page.locator(".lc-runner .lc-key-here-msg")).to_contain_text("Key saved", timeout=10_000)
+
+
+@then('this page now holds the course key "{key}"')
+def step_holds_key(context, key):
+    got = context.page.evaluate("() => localStorage.getItem('lc_ed_pat')")
+    assert got == key, "the page holds %r" % got
