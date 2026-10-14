@@ -2283,6 +2283,14 @@ Auto-included by docs/_layouts/default.html.
        under the text, or, with find:, replaces the line that holds find. */
     function stepText(st) { return String((st && (st.lines || st.text)) || "").replace(/\n+$/, ""); }
     function applyStep(text, st) {
+      /* tick: <words> — the checklist item holding those words is ticked as
+         the step lands (Michel, 2026-10-13: the TODO stays a checklist) */
+      if (st && st.tick) {
+        var tw = String(st.tick).trim();
+        text = text.split("\n").map(function (l) {
+          return /^\s*[-*] \[ \]/.test(l) && l.indexOf(tw) >= 0 ? l.replace("[ ]", "[x]") : l;
+        }).join("\n");
+      }
       var lines = stepText(st), find = st && st.find ? String(st.find).trim() : "";
       if (find) {
         var at = text.indexOf(find);

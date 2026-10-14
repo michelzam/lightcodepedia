@@ -420,3 +420,108 @@ Feature: Blocks gate on feature state through cells
     Then the card "home" is shut
     When I run the feature "proof"
     Then the feature "proof" is green
+
+  Scenario: A later page re-runs an earlier page's proof, against its own blocks
+    One source of truth: page B names page A's proof by src= instead of
+    copying it. The steps come from A; self.page is B. A green on B opens
+    B's own gate and is booked under the proof's id on B.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/module_01/a_list.md" with the document:
+      """
+      # The list
+
+      The list is empty.
+      {: #status_line }
+
+      ```gherkin
+      Feature: The list is ready
+        Scenario: Somebody filled it
+          Given the status line
+          :::python
+          self.line = self.page.status_line
+          :::
+          Then it says the list is ready
+          :::python
+          assert "ready" in self.line.text, "the status line says: " + self.line.text
+          :::
+      ```
+      {: .feature #list_proof visible="true" status="pending" }
+      """
+    And the GitHub contents API serves "courses/demo/module_02/b_follow.md" with the document:
+      """
+      # The follow-up
+
+      The list is ready.
+      {: #status_line }
+
+      [The list's proof](../module_01/a_list.md#list_proof)
+      {: .feature src="../module_01/a_list.md#list_proof" visible="true" }
+
+      Reward unlocked — the list still holds.
+      {: visible="= list_proof.passing" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_02/b_follow.md"
+    And I wait for the page to be interactive
+    Then the proof "list_proof" arrives from the other page
+    And the text "Reward unlocked" is hidden
+    When I run the feature "list_proof"
+    Then the feature "list_proof" is green
+    And the text "Reward unlocked" becomes visible
+    And the green for "list_proof" is booked
+
+  Scenario: The borrowed proof fails honestly on a page that does not hold
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/module_01/a_list.md" with the document:
+      """
+      # The list
+
+      ```gherkin
+      Feature: The list is ready
+        Scenario: Somebody filled it
+          Then it says the list is ready
+          :::python
+          assert "ready" in self.page.status_line.text, "the status line says: " + self.page.status_line.text
+          :::
+      ```
+      {: .feature #list_proof }
+      """
+    And the GitHub contents API serves "courses/demo/module_02/b_still.md" with the document:
+      """
+      # Still empty
+
+      The list is empty.
+      {: #status_line }
+
+      [The list's proof](../module_01/a_list.md#list_proof)
+      {: .feature #still_proof src="../module_01/a_list.md#list_proof" visible="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_02/b_still.md"
+    And I wait for the page to be interactive
+    Then the proof "still_proof" arrives from the other page
+    When I run the feature "still_proof"
+    Then the feature "still_proof" is red and names "the status line says: The list is empty."
+
+  Scenario: A proof id the other page does not have is one readable line
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/module_01/a_list.md" with the document:
+      """
+      # The list
+
+      ```gherkin
+      Feature: The list is ready
+        Scenario: Somebody filled it
+          Then nothing
+      ```
+      {: .feature #list_proof }
+      """
+    And the GitHub contents API serves "courses/demo/module_02/b_typo.md" with the document:
+      """
+      # Typo
+
+      [The list's proof](../module_01/a_list.md#lst_proof)
+      {: .feature src="../module_01/a_list.md#lst_proof" visible="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_02/b_typo.md"
+    And I wait for the page to be interactive
+    Then the page says, in one line, "No proof #lst_proof in ../module_01/a_list.md."

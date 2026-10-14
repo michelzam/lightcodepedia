@@ -349,6 +349,24 @@ Feature: No payment before a visit
 A cell reads it like any document — `{= wanted_demo.title }` says
 **{= wanted_demo.title }** — and so can an agent bound to it.
 
+## 🔁 Another lesson's proof, run here
+
+A later lesson can re-run an earlier lesson's proof without copying it —
+one source of truth. Name the page and the proof's id; the card is built
+from that page's `gherkin` fence exactly as if it were written here, and
+its steps read **this** page's blocks (`self.page.<id>`).
+
+```markdown
+[The list's proof](02_list.md#list_proof)
+{: .feature src="02_list.md#list_proof" visible="true" }
+```
+
+The path is relative to the current page, read with the same key as the
+page itself — so it works on course pages (opened through the runner).
+The card's id is `list_proof` unless the line gives its own `#id`; its
+knobs (`visible`, `tags`, `grades`, `celebration`…) are this line's. A
+missing page or id says so in one line instead of a card.
+
 ## 🎛️ Knobs
 
 | Block | Attribute | Values | What it does |
@@ -357,6 +375,7 @@ A cell reads it like any document — `{= wanted_demo.title }` says
 | `.feature` | `tags="app"` | | The app's own feature, as opposed to a lesson's check: an impact map lists these, never the checks |
 | `.feature` | `tags="…"` | comma-separated | Chips in the card header |
 | `.feature` | `#<id>` | Python-compatible id | Makes the card reachable as `self.page.<id>` in any step |
+| `.feature` | `src="page.md#proof_id"` | relative path + id | Embeds that page's proof (course pages): its steps, run against this page's blocks |
 | `.feature` | `saves="a, b"` | block ids | Data a step reads *indirectly* that a green still stands on — the direct case needs nothing |
 
 ## 🧠 Quick check

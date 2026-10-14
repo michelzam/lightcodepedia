@@ -50,6 +50,8 @@ When the page's check rides along with the question:
   green. The sentence quotes that step's words.
 - All green — `part: none`, and one sentence: 💾 Save, and say in one line
   what you did.
+- The pad IS a check (a Gherkin fence) missing a step — `part: then_step`,
+  never a whole feature: one step, its words and its assert.
 
 ## Rules
 

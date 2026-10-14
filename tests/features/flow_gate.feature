@@ -387,3 +387,25 @@ Feature: 🚦 A workflow ordered by its own values
     And I run the lesson's check "dod"
     Then the lesson's check "assignment_proof" is green
     And the lesson's check "dod" is red
+
+  Scenario: Module 05's Essentials reads the whole story — the embedded proofs and the lifecycle proof go green
+    Michel, 2026-10-14: the Essentials checks the whole lifecycle, from the
+    persona to the last proof, with the earlier pages' proofs run again in
+    an accordion — one source each, embedded by src.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/04_concepts.md"
+    And the learner's app and check are finished, as the Essentials page reads them
+    And the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
+    And the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/04_concepts.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "list_proof"
+    Then the lesson's check "list_proof" is green
+    When I run the lesson's check "call_check"
+    Then the lesson's check "call_check" is green
+    When I run the lesson's check "proof_proof"
+    Then the lesson's check "proof_proof" is green
+    When I run the lesson's check "story_proof"
+    Then the lesson's check "story_proof" is green
+

@@ -112,6 +112,15 @@ feature:
     ```
     {: .feature #your_check visible="true" }
   adapt: self.page.<id> reaches any part by its id; visible="true" shows the check on the page
+then_step:
+  name: one more step for a check — a Then, and the assert that proves it
+  module: Module 05 · The Proof
+  lines: |2
+        Then your_promise_in_plain_words
+        :::python
+        assert your_condition, "what is wrong, said in one sentence"
+        :::
+  adapt: inside the check's fence, under its last :::; the words say what must be true, the assert proves it
 persona:
   name: who this is for — a persona card
   module: Module 03 · Who

@@ -117,10 +117,10 @@ Feature: 🎬 Doc's pad verbs — type, save, and a music player's words for the
     Then the check's step "a button is there to call the next family" is green
     And the check's step "nothing on the page is wired to nothing" is green
 
-  Scenario: The Follow-Up List's TODOs, each replaced in place, turn its proof green
-    Michel, 2026-10-13: the coordinator's TODO notes on the screen, the proof
-    as the spec, and his app — every family in the table, one query that
-    counts only the waiting ones. Each TODO goes when its part comes.
+  Scenario: The Follow-Up List's TODO items, each built then ticked, turn its proof green
+    Michel, 2026-10-13: the coordinator's TODO checklist on the screen, the
+    proof as the spec, and his app — every family in the table, one query
+    that counts only the waiting ones. Each item is ticked when its part comes.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/02_list.md"
@@ -132,26 +132,28 @@ Feature: 🎬 Doc's pad verbs — type, save, and a music player's words for the
     When Doc does "type" with 3 on the "follow_up" pad
     Then the check's step "a sentence says how many are waiting" is green
     When Doc does "type" with 4 on the "follow_up" pad
-    Then the check's step "no TODO is left on the screen" is green
-    And the "follow_up" pad does not hold "TODO"
+    Then the check's step "every item of her TODO is ticked or gone" is green
+    And the "follow_up" pad does not hold "- [ ]"
     When I run the lesson's check "list_proof"
     Then the lesson's check "list_proof" is green
 
   Scenario: The Proof — my own check goes red on Alvarez, the button's loop turns it green, the page's proof reads it
-    Michel, 2026-10-13 ("B"): the button walks every row, so three presses
-    select Alvarez, who already met Scout. The learner's own check, in the
-    app, names him; a first loop in the button skips the met ones; the
-    page's fixed proof checks the learner's check.
+    Michel, 2026-10-13 ("B"): the button walks every row, so two presses
+    select Alvarez, who already met Scout. The learner's check, in its own
+    file with its last step to add, names him; a first loop in the button
+    skips the met ones; the page's fixed proof checks the learner's check.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/03_proof.md"
     And I wait for the page to be interactive
-    And Doc does "type" with 1 on the "follow_up" pad
-    And I run the lesson's check "call_check"
+    And Doc does "type" with 1 on the "my_check" pad
+    Then the "my_check" pad holds "Then the selected family is still waiting"
+    When I run the lesson's check "call_check"
     Then the lesson's check "call_check" is red
     And the lesson's check "call_check" says "Alvarez already met their dog"
     When Doc does "type" with 2 on the "follow_up" pad
-    And I run the lesson's check "call_check"
+    Then the "follow_up" pad holds "while grid.next() and grid.row.met"
+    When I run the lesson's check "call_check"
     Then the lesson's check "call_check" is green
     When I run the lesson's check "proof_proof"
     Then the lesson's check "proof_proof" is green

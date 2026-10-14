@@ -104,9 +104,10 @@ def _serve_course_page(context, path, transform=None):
         body = transform(body)
     context.lesson_body = body
 
-    def fulfill(route):
-        route.fulfill(status=200, content_type="text/plain; charset=utf-8",
-                      body=context.lesson_body)
+    # each page its own text: a later page can read an earlier one (src=)
+    def serve(text):
+        return lambda route, *_: route.fulfill(status=200, content_type="text/plain; charset=utf-8", body=text)
+    fulfill = serve(body)
     context.page.route("**/api.github.com/repos/**/contents/" + path + "*", fulfill)
     context.page.route("**/raw.githubusercontent.com/**/" + path + "*", fulfill)
 
@@ -502,10 +503,10 @@ def step_builder_fix(context):
     _serve_course_page(context, context.lesson_path, fix)
 
 
-M05_TODOS = ("📝 TODO — all the families, in one table\n\n"
-             "📝 TODO — count the ones still waiting: nobody met them yet\n\n"
-             "📝 TODO — one line that says how many are waiting\n\n"
-             "📝 TODO — a button: mark the selected family, then go to the next\n")
+M05_TODOS = ("- [ ] all the families, in one table\n"
+             "- [ ] count the ones still waiting: nobody met them yet\n"
+             "- [ ] one line that says how many are waiting\n"
+             "- [ ] a button: mark the selected family, then go to the next\n")
 
 # Michel's app (2026-10-13): every family in the table, one query that
 # counts only the waiting ones.
@@ -520,34 +521,14 @@ M05_APP = ("[Families to call](#)\n{: .datagrid #call_list source=\"reservations
            "grid.next()\n"
            "```\n{: .onclick }\n")
 
-
-
-
-M05_TODOS = ("📝 TODO — all the families, in one table\n\n"
-             "📝 TODO — count the ones still waiting: nobody met them yet\n\n"
-             "📝 TODO — one line that says how many are waiting\n\n"
-             "📝 TODO — a button: mark the selected family, then go to the next\n")
-
-# Michel's app (2026-10-13): every family in the table, one query that
-# counts only the waiting ones.
-M05_APP = ("[Families to call](#)\n{: .datagrid #call_list source=\"reservations\" }\n\n"
-           "```sql\nSELECT family, dog, asked, met FROM reservations WHERE met = \"\"\n```\n"
-           "{: .query bind=\"reservations\" #to_call }\n\n"
-           "{= to_call.count } families are waiting.\n\n"
-           "[📞 Call the next family](#)\n{: .button #call_btn }\n"
-           "```python\n"
-           "grid = button.page.call_list\n"
-           "grid.row.met = weekday()\n"
-           "grid.next()\n"
-           "```\n{: .onclick }\n")
 
 
 @given("the learner has built the follow-up app")
 def step_list_fix(context):
-    """Module 05's real page: every TODO replaced by the part it asked for."""
+    """Module 05's real page: every TODO item built, then ticked."""
     def fix(body):
-        assert M05_TODOS in body, "the follow-up seed no longer carries the coordinator's four TODOs"
-        return body.replace(M05_TODOS, M05_APP)
+        assert M05_TODOS in body, "the follow-up seed no longer carries the coordinator's four TODO items"
+        return body.replace(M05_TODOS, M05_TODOS.replace("- [ ]", "- [x]") + "\n" + M05_APP)
     _serve_course_page(context, context.lesson_path, fix)
 
 
@@ -556,9 +537,9 @@ def step_list_fix_lone(context):
     """Michel's pad, 2026-10-09: a decoration alone after a blank line lands
     on the block before it. The proof must say why."""
     def fix(body):
-        assert M05_TODOS in body, "the follow-up seed no longer carries the coordinator's four TODOs"
+        assert M05_TODOS in body, "the follow-up seed no longer carries the coordinator's four TODO items"
         app = M05_APP.replace("[Families to call](#)\n{: .datagrid", "\n{: .datagrid")
-        return body.replace(M05_TODOS, app)
+        return body.replace(M05_TODOS, M05_TODOS.replace("- [ ]", "- [x]") + "\n" + app)
     _serve_course_page(context, context.lesson_path, fix)
 
 
@@ -599,7 +580,7 @@ def step_own_app_fix(context):
             "- [x] a check that goes red before it goes green\n\n"
             "```gherkin\nFeature: The list shows members\n  Scenario: Rows are there\n    Given my page\n    :::python\n"
             "    self.grid: Datagrid = self.page.member_grid\n    :::\n    When the treasurer opens it\n    Then it shows rows\n    :::python\n"
-            "    assert self.grid.rows, \"no rows yet\"\n    :::\n```\n{: .feature #my_check visible=\"true\" }\n")
+            "    assert self.grid.rows, \"no rows yet\"\n    :::\n```\n{: .feature #own_check visible=\"true\" }\n")
     _serve_course_page(context, context.lesson_path, fix)
 
 
@@ -637,3 +618,43 @@ def step_pad_kept(context, pid, a, b):
       const w = document.querySelector(".lc-mdpad[data-lc-id='" + p + "']");
       w._lcHist = [b, a];
     }""", [pid, a, b])
+
+
+# ── Module 05's Essentials: the whole story (Michel, 2026-10-14) ─────────
+M05_FULL_APP = ("# 📞 The Follow-Up List\n\n"
+                "Families who asked about a dog. Call the ones still waiting.\n\n"
+                "```csv\nfamily,dog,asked,met,home\nNguyen,Biscuit,Tue,,\nOkafor,Biscuit,Tue,,\n"
+                "Alvarez,Scout,Mon,Wed,Sat\nBrooks,Nova,Mon,Tue,Wed\nFerraro,Biscuit,Tue,,\n"
+                "Haddad,Scout,Wed,,\nIvanov,Biscuit,Wed,,\nKaur,Scout,Thu,,\n```\n"
+                "{: .dataset #reservations }\n\n"
+                "### 📝 TODO\n\n" + M05_TODOS.replace("- [ ]", "- [x]") + "\n" +
+                M05_APP.replace("grid.next()\n```", "while grid.next() and grid.row.met:\n    pass\n```"))
+
+M05_FULL_CHECK = ("```gherkin\n"
+                  "Feature: The button only calls families still waiting\n"
+                  "  As a shelter coordinator\n"
+                  "  I want each press to land on a family still waiting\n"
+                  "  So that nobody who took their dog home gets a call\n\n"
+                  "  Scenario: After two calls, the selected family is still waiting\n"
+                  "    Given the table the coordinator calls from\n"
+                  "    :::python\n    self.grid: Datagrid = self.page.call_list\n    :::\n"
+                  "    When she presses the button twice\n"
+                  "    :::python\n    for _ in range(2):\n        self.page.call_btn.click()\n    :::\n"
+                  "    Then the selected family is still waiting, or nobody is left\n"
+                  "    :::python\n"
+                  "    assert self.grid.row.met == \"\" or self.page.to_call.count == 0, self.grid.row.family\n"
+                  "    :::\n"
+                  "```\n{: .feature #call_check visible=\"true\" }\n")
+
+
+@given("the learner's app and check are finished, as the Essentials page reads them")
+def step_essentials_fix(context):
+    """The two pads read the learner's files; here they carry what 02 and
+    03 leave behind — the app with its loop, the check with its last step."""
+    def fix(body):
+        app_stub = "`````markdown\n# 📞 The Follow-Up List\n`````"
+        chk_stub = "`````markdown\n```gherkin\nFeature: The button only calls families still waiting\n```\n`````"
+        assert app_stub in body and chk_stub in body, "the Essentials page no longer reads the app and the check"
+        body = body.replace(app_stub, "`````markdown\n" + M05_FULL_APP + "`````")
+        return body.replace(chk_stub, "`````markdown\n" + M05_FULL_CHECK + "`````")
+    _serve_course_page(context, context.lesson_path, fix)

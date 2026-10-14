@@ -60,6 +60,14 @@ Knobs for .feature:
                   not learner-facing content, so it stays out of sight unless
                   the author opts in (a ".visible" class works too). The editor
                   preview always shows features so they can be authored.
+  src="02_list.md#list_proof"
+                  EMBED another lesson's proof instead of writing one: the
+                  ```gherkin fence decorated #list_proof in that file (path
+                  relative to this page, course pages only), run against
+                  THIS page's blocks. The card's id is list_proof unless
+                  the line gives its own; the other knobs are this line's.
+                    [The list's proof](02_list.md#list_proof)
+                    {: .feature src="02_list.md#list_proof" visible="true" }
 
 Auto-included by docs/_layouts/default.html.
 Registers with window.lcScanElement so the editor preview also renders cards.
@@ -78,6 +86,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature-wanted   { border-left-color: #64748b; border-left-style: dashed; }
 /* hidden by default — a .feature is a spec/test, shown only with visible="true" */
 .lc-feature-hidden { display: none; }
+/* src= that could not be read or found: one honest line, no card */
+.lc-feature-embed-err { color: #b91c1c; font-size: 0.9em; }
 
 /* ── header ──────────────────────────────────────────────────── */
 .lc-feature-header { display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap; padding: 0.55em 1em 0.5em; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 0.88em; }
@@ -841,15 +851,71 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     h1.appendChild(span);
   }
 
+  /* ── src="other.md#proof_id" — ANOTHER LESSON'S PROOF, RUN HERE ─────────
+     A later page re-runs an earlier page's proof without a copy that could
+     drift from it: one source of truth. The file is read through the
+     runner's own road (relative to the file on screen, same keys), the
+     ```gherkin fence whose decoration carries #proof_id is lifted out, and
+     the card is built from it exactly as if it were written here — so its
+     steps' self.page.<id> are THIS page's blocks. The embedding line's
+     knobs (visible, grades, tags, celebration…) are the card's knobs; its
+     id is the proof's own unless the line names another. */
+  function gherkinById(md, fid) {
+    var lines = md.split("\n"), want = new RegExp("(^|\\s)#" + fid + "(?=[\\s}])");
+    for (var i = 0; i < lines.length; i++) {
+      var open = /^\s*(`{3,}|~{3,})\s*gherkin\b/.exec(lines[i]);
+      if (!open) continue;
+      var fence = open[1].charAt(0), j = i + 1;
+      for (; j < lines.length; j++) {
+        var c = lines[j].trim();
+        if (c.length >= open[1].length && c === fence.repeat(c.length)) break;
+      }
+      var ial = (lines[j + 1] || "").trim();
+      /* blank quoted values first: the # in title="Step #1" names nothing */
+      if (/^\{:.*\}$/.test(ial) && want.test(ial.replace(/"[^"]*"/g, '""')))
+        return lines.slice(i + 1, j).join("\n");
+      i = j;
+    }
+    return null;
+  }
+  function embedFeature(el) {
+    var ref = el.getAttribute("src"), hash = ref.indexOf("#");
+    var file = hash >= 0 ? ref.slice(0, hash) : ref, fid = hash >= 0 ? ref.slice(hash + 1) : "";
+    function fail(msg) {
+      el.className = "lc-feature-embed-err";
+      el.textContent = "⚠️ " + msg;
+    }
+    if (!file || !/^[A-Za-z][\w-]*$/.test(fid))
+      return fail("src=\"" + ref + "\" should name a page and a proof: other.md#proof_id");
+    if (!window.lcLoadRelMd || !el.closest("[data-lc-src]"))
+      return fail("The proof " + ref + " can only be read on a course page.");
+    window.lcLoadRelMd(el, file).then(function (md) {
+      var text = gherkinById(md, fid);
+      if (text == null) return fail("No proof #" + fid + " in " + file + ".");
+      if (!el.id) el.id = fid;
+      el._lcText = text;
+      delete el.dataset.lcFeatureUpgraded;
+      var root = el.closest("[data-lc-src]");
+      upgradeFeature(el);
+      /* it arrived after the page's census: recount the suite, republish
+         the page's feature scopes to the cells */
+      buildSuite(root);
+      if (window.lcCellsRescan) window.lcCellsRescan();
+    }, function (err) {
+      fail("Could not read " + file + (err && err.status ? " (" + err.status + ")" : "") + " for the proof #" + fid + ".");
+    });
+  }
+
   /* ── Upgrade a .feature element into a card ──────────────────────────────────────────── */
   function upgradeFeature(el) {
     if (el.dataset.lcFeatureUpgraded) return;
     el.dataset.lcFeatureUpgraded = "1";
+    if (el.getAttribute("src") && el._lcText == null) return embedFeature(el);
 
     var status  = el.getAttribute("status") || "";
     var tagsRaw = el.getAttribute("tags") || "";
     var code    = el.querySelector("code");
-    var text    = code ? code.textContent : el.textContent;
+    var text    = el._lcText != null ? el._lcText : (code ? code.textContent : el.textContent);
     var rows    = parseGherkinRows(text);
 
     var featureName = "";
@@ -1058,6 +1124,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 
   /* ── Build the suite dashboard ───────────────────────────────────────────────────────────── */
   function buildSuite(root) {
+    /* a late card (src=) rebuilds the root's suite — never a second one */
+    if (root && root._lcSuite) { root._lcSuite.remove(); root._lcSuite = null; }
     /* collect all runnable cards in DOM order within this root */
     var allCards = (root || document).querySelectorAll(".lc-feature");
     var runnable = [];
@@ -1137,6 +1205,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 
     /* insert before the first runnable card */
     runnable[0].parentNode.insertBefore(suite, runnable[0]);
+    if (root) root._lcSuite = suite;
     updateSuiteSummary(suite);
   }
 

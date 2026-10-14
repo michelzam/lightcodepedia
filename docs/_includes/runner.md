@@ -376,43 +376,13 @@ files a learner is already working in.
       .catch(function () { return null; });
   }
 
-  /* src comes from the IAL attribute (embedded examples) or the page hash
-     (the /run page). Attribute wins, so a component page can host a live demo. */
-  function render(status, root, fixedSrc, bar) {
-    var shipM = fixedSrc && /^ship:(.+)$/.exec(fixedSrc);
-    if (shipM) {
-      status.style.display = ""; status.textContent = "Looking up your latest ship…";
-      resolveShip(shipM[1], root.dataset.lcShipBay, root.dataset.lcShipHost).then(function (real) {
-        if (real) return render(status, root, real, bar);
-        root.innerHTML = "";
-        status.textContent = "🚀 Nothing shipped yet for “" + shipM[1] +
-          "” — press Ship above and this window fills with your deployed app.";
-      });
-      return;
-    }
-    var src = fixedSrc || hashSrc();
-    if (bar) _pageSrc = src;   /* the page-level runner: what "here" means */
-    if (!src) {
-      status.style.display = ""; status.textContent = "No source. Open with #src=<url to markdown>."; root.innerHTML = "";
-      if (bar) { bar.style.display = "none"; pageTitle(bar.parentNode, false); }
-      return;
-    }
-    status.style.display = ""; status.textContent = "Loading…"; root.innerHTML = "";
+  /* ── ONE ROAD TO A MARKDOWN FILE ─────────────────────────────────────────
+     The page render, and anything on the page that needs ANOTHER file of
+     the same course (a .feature embedding a sibling lesson's proof), read
+     through here — the author key, the cockpit's org key, the keyless
+     retry, the JSON-envelope unwrap. Rejects with {status, gh}. */
+  function loadMd(src) {
     var spec = resolveSrc(src);
-    /* Advertise the source on the render root so editors (xray) commit to the
-       RENDERED file, not the /run page. gh:/raw carry their repo; a same-origin
-       path implies the connected repo (docs/ is the Pages source root). */
-    var gm = /^gh:([^\/]+)\/([^\/]+)\/(.+?)(?:@[^@]+)?$/.exec(src),
-        rw = /^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/[^\/]+\/(.+)$/.exec(src);
-    root.dataset.lcSrcRepo = gm ? gm[1] + "/" + gm[2] : (rw ? rw[1] + "/" + rw[2] : "");
-    root.dataset.lcSrcPath = gm ? gm[3] : (rw ? rw[3] : (src.charAt(0) === "/" ? "docs" + src : ""));
-    /* the vault is the LIBRARY — read-only for everyone. Mark the render so
-       xray refuses to edit it (a learner has no write access anyway, but the
-       editor must not even offer it). */
-    if (/-vault$/.test(root.dataset.lcSrcRepo)) root.dataset.lcReadonly = "1";
-    else delete root.dataset.lcReadonly;
-    var barSt = { repo: root.dataset.lcSrcRepo, path: root.dataset.lcSrcPath, src: src, loading: true };
-    if (bar) { pageTitle(bar.parentNode, true); paintBar(bar, barSt); }
     function fetchMd(headers) {
       /* no-store: api.github.com answers carry max-age=60 — after a Keep, a
          reload within the minute would render the STALE cached body ("my
@@ -420,7 +390,7 @@ files a learner is already working in.
       return fetch(spec.url, headers ? { headers: headers, cache: "no-store" } : { cache: "no-store" })
         .then(function (r) { if (!r.ok) throw { status: r.status, gh: spec.gh }; return r.text(); });
     }
-    fetchMd(spec.headers)
+    return fetchMd(spec.headers)
       .catch(function (err) {
         /* educator fallback: the cockpit's org key may read what the author
            key can't — a learner's bench lives in the org, not under the
@@ -454,6 +424,71 @@ files a learner is already working in.
               md = decodeURIComponent(escape(atob(env.content.replace(/\n/g, ""))));
           } catch (e) {}
         }
+        return md;
+      });
+  }
+
+  /* a path RELATIVE to the file a render shows → a src loadMd reads. gh:
+     keeps its repo and @ref; a plain URL resolves the way a browser would. */
+  function relSrc(node, rel) {
+    var root = node && node.closest ? node.closest("[data-lc-src]") : null;
+    var base = root && root.dataset.lcSrc;
+    if (!base) return "";
+    var file = rel.split("#")[0].split("?")[0];
+    var gm = /^gh:([^\/]+\/[^\/]+)\/(.+?)(@[^@]+)?$/.exec(base);
+    if (!gm) return new URL(file, new URL(window.lcHref ? window.lcHref(base) : base, location.href)).href;
+    var parts = gm[2].split("/").slice(0, -1);
+    file.split("/").forEach(function (seg) {
+      if (!seg || seg === ".") return;
+      if (seg === "..") parts.pop(); else parts.push(seg);
+    });
+    return "gh:" + gm[1] + "/" + parts.join("/") + (gm[3] || "");
+  }
+  window.lcLoadRelMd = function (node, rel) {
+    var src = relSrc(node, rel);
+    return src ? loadMd(src) : Promise.reject({ status: 0 });
+  };
+
+  /* src comes from the IAL attribute (embedded examples) or the page hash
+     (the /run page). Attribute wins, so a component page can host a live demo. */
+  function render(status, root, fixedSrc, bar) {
+    var shipM = fixedSrc && /^ship:(.+)$/.exec(fixedSrc);
+    if (shipM) {
+      status.style.display = ""; status.textContent = "Looking up your latest ship…";
+      resolveShip(shipM[1], root.dataset.lcShipBay, root.dataset.lcShipHost).then(function (real) {
+        if (real) return render(status, root, real, bar);
+        root.innerHTML = "";
+        status.textContent = "🚀 Nothing shipped yet for “" + shipM[1] +
+          "” — press Ship above and this window fills with your deployed app.";
+      });
+      return;
+    }
+    var src = fixedSrc || hashSrc();
+    if (bar) _pageSrc = src;   /* the page-level runner: what "here" means */
+    if (!src) {
+      status.style.display = ""; status.textContent = "No source. Open with #src=<url to markdown>."; root.innerHTML = "";
+      if (bar) { bar.style.display = "none"; pageTitle(bar.parentNode, false); }
+      return;
+    }
+    status.style.display = ""; status.textContent = "Loading…"; root.innerHTML = "";
+    var spec = resolveSrc(src);
+    root.dataset.lcSrc = src;   /* what a relative path on this page means (relSrc) */
+    /* Advertise the source on the render root so editors (xray) commit to the
+       RENDERED file, not the /run page. gh:/raw carry their repo; a same-origin
+       path implies the connected repo (docs/ is the Pages source root). */
+    var gm = /^gh:([^\/]+)\/([^\/]+)\/(.+?)(?:@[^@]+)?$/.exec(src),
+        rw = /^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/[^\/]+\/(.+)$/.exec(src);
+    root.dataset.lcSrcRepo = gm ? gm[1] + "/" + gm[2] : (rw ? rw[1] + "/" + rw[2] : "");
+    root.dataset.lcSrcPath = gm ? gm[3] : (rw ? rw[3] : (src.charAt(0) === "/" ? "docs" + src : ""));
+    /* the vault is the LIBRARY — read-only for everyone. Mark the render so
+       xray refuses to edit it (a learner has no write access anyway, but the
+       editor must not even offer it). */
+    if (/-vault$/.test(root.dataset.lcSrcRepo)) root.dataset.lcReadonly = "1";
+    else delete root.dataset.lcReadonly;
+    var barSt = { repo: root.dataset.lcSrcRepo, path: root.dataset.lcSrcPath, src: src, loading: true };
+    if (bar) { pageTitle(bar.parentNode, true); paintBar(bar, barSt); }
+    loadMd(src)
+      .then(function (md) {
         /* strip optional YAML front matter */
         if (md.indexOf("---") === 0) {
           var e = md.indexOf("\n---", 3);

@@ -173,6 +173,9 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
          Blank the quoted values first: the # in title="Step #1" names
          nothing. */
       var im = fm[1].replace(/"[^"]*"/g, '""').match(/#([A-Za-z][\w-]*)/);
+      /* an embedded proof (src="other.md#proof") is filed under the
+         proof's own id, as its card is (feature.md, embedFeature) */
+      if (!im) im = fm[1].match(/\bsrc="[^"#]*#([A-Za-z][\w-]*)"/);
       features.push({ status: sm ? sm[1] : "", tags: tm ? tm[1] : "",
                       id: im ? im[1] : "" });
     }
