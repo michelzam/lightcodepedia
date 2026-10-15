@@ -1,76 +1,87 @@
-# LightCode Platform License – Community, Educational, and Partnership Use  
-**Version 1.0 – 2021**
+# LightCode Platform License
+**Version 2.0 – 2026**
+
+This version supersedes Version 1.0 (2021), which covered an earlier codebase.
 
 ---
 
-## 1. License Scope
+## 1. Scope
 
-This license applies to the LightCode Platform software components developed by **KarmicSoft** as part of the Erasmus+ project _“Strengthening the Digital Transformation of Higher Education Through Low-Code”_ (Project No. **2022-1-FR01-KA220-HED-000086863**).
-
-This license grants the right to **freely access and use the platform** under the following strict conditions:
-
-- For **educational purposes only**, within the framework of Erasmus+ and higher education institutions.  
-- **Primarily for students and faculty members affiliated with recognized LightCode partner universities.**  
-- For **non-commercial academic research activities**.
-
-> *Use outside this scope, including access by non-affiliated individuals or organizations, commercial activities, professional services, or proprietary integrations, requires a separate commercial agreement.*
+This license applies to the **LightCode Platform** developed by **KarmicSoft**:
+its runtime and engine, editor, runner, components, tooling, and the course and
+cohort management tools that operate it. The `@karmicsoft/lc-*` bricks published
+on npm carry their own license (see §6).
 
 ---
 
-## 2. Usage Rights
+## 2. Free use — community and education
 
-- The platform is provided **free of charge** for the purposes outlined above.  
-- Educational content produced using the platform must comply with the Erasmus+ open access policy (**Creative Commons CC BY 4.0** or equivalent for teaching materials).  
-- The LightCode Platform software, its core components, and all associated intellectual property remain the **exclusive property of KarmicSoft**.
+You may access and use the published platform (lightcodepedia.org) **free of
+charge** for:
 
----
+- personal learning;
+- teaching in courses for which learners pay **no fee** to access the platform's
+  content or a credential delivered through it;
+- **non-commercial** research.
 
-## 3. Access Restrictions
-
-- This license **does not grant universal access**.  
-- Access is strictly limited to students, researchers, and faculty members of officially recognized **LightCode partner universities**.  
-- **To inquire about becoming a partner institution, please contact KarmicSoft Sales at [sales@karmicsoft.com](mailto:sales@karmicsoft.com).**
-
----
-
-## 4. Prohibited Uses Without a Commercial License
-
-- Use in or for **commercial services, paid applications, or training programs**.  
-- **Installation or deployment on private or corporate servers** for business purposes.  
-- Use by individuals **not directly affiliated** with a partner university.  
-- **Redistribution, sublicensing, or reverse engineering** of the platform’s core software.
+Content you create with the platform is yours. KarmicSoft's own course material
+is © KarmicSoft unless a page states another license.
 
 ---
 
-## 5. Commercial Licensing and Private Deployment
+## 3. Uses that require a commercial license
 
-Organizations interested in:
-
-- On-premise deployment and self-hosted runtime environments.  
-- Enterprise-grade features and premium proprietary plugins.  
-- Dedicated technical support and SLA agreements.  
-- White-label solutions or OEM licensing.  
-
-Are invited to contact **KarmicSoft Sales** at [sales@karmicsoft.com](mailto:sales@karmicsoft.com) for a customized licensing package.
-
----
-
-## 6. Licensing Model and Compatibility
-
-The LightCode Platform is distributed under a **multi-licensing model**:
-
-- **Core platform**: Proprietary License – *KarmicSoft All Rights Reserved*.  
-- **Educational Content**: Creative Commons **CC BY 4.0**.  
-- **Select Plugins and Extensions**: May be distributed under **MIT**, **Apache 2.0**, or proprietary licenses, as explicitly specified in their documentation.
-
-> *Note: The LightCode Platform is intentionally **GPL-incompatible**. Integration of GPL-licensed code into the core platform is prohibited to protect proprietary intellectual property.*
+- **Paid training**: courses, programs, bootcamps or micro-credentials for which
+  learners or their sponsors pay, whatever the provider (company, school or
+  university, including continuing education).
+- **Commercial services** built on the platform, or its use within a paid
+  offering.
+- **Deployment** of the runtime on private, corporate or cloud infrastructure.
+- **White-label or OEM** use, and integration into proprietary products.
+- Use of the **course and cohort management tools** (provisioning, rosters,
+  learning-management delivery, gates).
 
 ---
 
-## 7. Disclaimer
+## 4. Commercial offers
 
-This software is provided **“as is”** without warranties of any kind. KarmicSoft disclaims all liability for any direct, indirect, or consequential damages arising from its use under this community, educational, or partnership license.
+KarmicSoft offers, under a written agreement:
+
+- a **managed cohort service**: provisioning, operation and closing of a cohort,
+  with a service-level agreement (SLA);
+- **private deployment** of the runtime in the customer's own infrastructure;
+- technical **support**, maintenance and enterprise features.
+
+Contact **KarmicSoft** at [sales@karmicsoft.com](mailto:sales@karmicsoft.com).
 
 ---
 
-**© 2021–2026 KarmicSoft. All Rights Reserved.**
+## 5. Restrictions
+
+Without a written agreement you may not redistribute, sublicense, sell, rent,
+or host the platform's core for others; reverse engineer it beyond what
+applicable law expressly permits; or remove its copyright and license notices.
+
+---
+
+## 6. Licensing model
+
+- **Core platform**: proprietary — © KarmicSoft, all rights reserved.
+- **Bricks** (`@karmicsoft/lc-*` on npm): **MIT**, as stated in each package.
+- **Third-party libraries**: under their own licenses.
+
+The core platform is intentionally **GPL-incompatible**: GPL-licensed code may
+not be integrated into it.
+
+---
+
+## 7. No warranty without an agreement
+
+Under the free use of §2 the platform is provided **"as is"**, without warranty
+of any kind, and KarmicSoft disclaims all liability for any damages arising from
+its use. Warranties, availability and response commitments exist only in a
+commercial agreement (§4).
+
+---
+
+**© 2021–2026 KarmicSoft. All rights reserved.**
