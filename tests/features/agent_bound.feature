@@ -686,6 +686,28 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I add the agent's piece to the editor
     Then the "my_app" pad's wires are "source «TODO_YOUR_DATASET»"
 
+  Scenario: A part added to a folded pad opens the pad
+    Michel, 2026-10-15: the learner's check opens folded on the Proof page;
+    the builder's ⬇ Add must not drop its lines into a pad nobody sees.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the "builder" bot is served from the repo
+    And the "parts" catalogue is served from the repo
+    And the recording model endpoint replies with this text:
+      """
+      part: datagrid
+      Put waiting, your dataset's id, where TODO_YOUR_DATASET stands.
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I fold the "my_app" pad
+    And I connect the "builder" agent with key "test-key"
+    And I ask the "builder" agent "a table on my dataset"
+    And I add the agent's piece to the editor
+    Then the "my_app" pad's editor is open
+    And the "my_app" pad's wires are "source «TODO_YOUR_DATASET»"
+
   Scenario: A part the course has not taught is said so, with no lines
     Given I have a clean browser page
     And a builder key is connected
