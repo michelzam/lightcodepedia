@@ -499,3 +499,56 @@ Feature: X-ray inspector
     Then the x-ray scene mentions "Mdpad"
     And the x-ray scene mentions "Feature"
 
+
+  Scenario: Shift x-ray pipes a cell to the form its formula reads
+    Michel, 2026-10-15: "how about adding the cells in the xray and their
+    connections in the pipes too?"
+
+    Given the GitHub contents API serves "courses/demo/module_05/cells.md" with the document:
+      """
+      # Cells
+
+      ```yaml
+      price: 4
+      ```
+      {: .form #order editable="true" title="Order" }
+
+      Twice the price is {= order.price * 2 } today.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/cells.md"
+    And I wait for the page to be interactive
+    And I shift-hover over the first cell
+    Then the x-ray scene mentions "Cell"
+    And the x-ray scene mentions "Form"
+    And the x-ray scene mentions "reads"
+
+  Scenario: Shift x-ray on the app shows the avatar that walks to it and the cell that reads it
+    Michel, 2026-10-15: "don't forget the pipes avatar->app for instance".
+
+    Given the GitHub contents API serves "courses/demo/module_05/app.md" with the document:
+      """
+      # App
+
+      ```markdown
+      # Calls
+      ```
+      {: .mdpad #app rows="4" }
+
+      The app holds {= len(str(app)) } characters.
+
+      ```yaml
+      bot: doc
+      script:
+        - at: app
+          say: "Here is your app."
+      stories: {}
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/app.md"
+    And I wait for the page to be interactive
+    And I shift-hover over the part "app"
+    Then the x-ray scene mentions "Avatar"
+    And the x-ray scene mentions "points"
+    And the x-ray scene mentions "Cell"
+    And the x-ray scene mentions "reads"

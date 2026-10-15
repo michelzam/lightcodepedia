@@ -1855,6 +1855,7 @@ class Scene3d(Block):
            attrs=[{"n": "size", "t": "int"},
                   {"n": "playing", "t": "bool"},
                   {"n": "speech", "t": "str"}],
+           assoc=[{"n": "points", "target": "Block", "list": True}],
            methods=["play", "stop", "video"],
            states=["idle", "speaking"])
 class Avatar(Block):
@@ -1867,6 +1868,32 @@ class Avatar(Block):
     def playing(self):
         av = self._reg()
         return bool(av.playing) if av is not None else False
+
+    @property
+    def points(self):
+        """Every part its scripts walk to (at:) — the app it shows, the
+        check it runs: the x-ray draws one pipe each."""
+        av = self._reg()
+        if av is None:
+            return []
+        scripts = [getattr(av, "script", None), getattr(av, "_tourScript", None)]
+        st = getattr(av, "stories", None)
+        if st:
+            for k in js.window.Object.keys(st):
+                scripts.append(getattr(st, k, None))
+        out, seen = [], set()
+        for sc in scripts:
+            if not sc:
+                continue
+            for i in range(int(sc.length or 0)):
+                at = str(getattr(sc[i], "at", "") or "")
+                el = js.window.lcAvatarResolve(at) if at else None
+                w = _wrap(el) if el else None
+                if w is None or type(w) is Block or not w.id or w.id in seen:
+                    continue
+                seen.add(w.id)
+                out.append(w)
+        return out
 
     @property
     def speech(self):
@@ -2379,6 +2406,56 @@ class Inspector(Block):
         return Model(el) if el is not None else None
 
 
+def _lc_named(expr):
+    """The parts a formula names by id — a component on the page, or a
+    dataset registered under that name. `form.field` names the form only."""
+    out, seen, i, n = [], set(), 0, len(expr)
+    ds = getattr(js.window, "lcDatasets", None)
+    while i < n:
+        ch = expr[i]
+        if ch.isalpha() or ch == "_":
+            j = i
+            while j < n and (expr[j].isalpha() or expr[j].isdigit() or expr[j] == "_"):
+                j += 1
+            tok, after_dot = expr[i:j], i > 0 and expr[i - 1] == "."
+            i = j
+            if after_dot or tok in seen:
+                continue
+            seen.add(tok)
+            el = js.window.document.querySelector("[data-lc-id='" + tok + "']")
+            if el is not None:
+                w = _wrap(el)
+                if type(w) is not Block:
+                    out.append(w)
+            elif ds is not None and getattr(ds, tok, None) is not None:
+                out.append(Dataset(tok))
+        elif ch in "'\"":                      # a string literal names nothing
+            j = expr.find(ch, i + 1)
+            i = n if j < 0 else j + 1
+        else:
+            i += 1
+    return out
+
+
+@component(icon="🧮",
+           attrs=[{"n": "formula", "t": "str"}, {"n": "value", "t": "str"}],
+           assoc=[{"n": "reads", "target": "Block", "list": True}])
+class Cell(Block):
+    """An inline cell {= expr } — its formula, its value, and every part
+    the formula reads (the x-ray draws one pipe each)."""
+    @property
+    def formula(self):
+        return self._attr("data-expr") or ""
+
+    @property
+    def value(self):
+        return self.text
+
+    @property
+    def reads(self):
+        return _lc_named(self.formula)
+
+
 # ════════════════════════ resolver ══════════════════════════════════════════
 
 _WRAP = [
@@ -2399,7 +2476,7 @@ _WRAP = [
     ("lc-avatar-trigger", AvatarTrigger),
     ("lc-persona", Persona), ("lc-pitch", Pitch), ("lc-imap", ImpactMap),
     ("lc-event-flow", EventFlow), ("lc-inspector", Inspector),
-    ("lc-model", Model),
+    ("lc-model", Model), ("lc-cell", Cell),
 ]
 
 
@@ -2469,9 +2546,17 @@ def _lcx_dump(obj):
     links = []
     for role, target, is_list in roles:
         try:
-            tid = _lcx_target_id(getattr(obj, role))
+            v = getattr(obj, role)
         except Exception:
-            tid = ""
+            v = None
+        if is_list and isinstance(v, (list, tuple)):
+            for it in v:                       # one pipe per item, its live class
+                tid = _lcx_target_id(it)
+                if tid:
+                    links.append({"role": role, "target": type(it).__name__,
+                                  "id": tid, "list": True})
+            continue
+        tid = _lcx_target_id(v)
         if tid:
             links.append({"role": role, "target": target, "id": tid, "list": is_list})
     sp = _MODEL.get(cn, {})

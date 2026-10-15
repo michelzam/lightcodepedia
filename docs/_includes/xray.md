@@ -473,6 +473,29 @@ Auto-included by docs/_layouts/default.html.
             addEdge(r, n, role, false);
           });
         });
+        /* named without an attribute (Michel, 2026-10-15): a cell's formula
+           reads a part by its id, an avatar's script walks to it (at:) —
+           both pipes are drawn from the part's side too */
+        if (n.id) {
+          const word = new RegExp("(^|[^.\\w])" + n.id.replace(/[^\w]/g, "\\$&") + "(?!\\w)");
+          document.querySelectorAll(".lc-cell[data-expr]").forEach(c => {
+            if (!word.test(c.getAttribute("data-expr") || "")) return;
+            const r = addNode("Cell", "", c, null);
+            if (r.fresh) { r.fresh = false; r.dump = inspect(c); queue.push(r); }
+            addEdge(r, n, "reads", true);
+          });
+          const avs = window._lcAvatars || {}, find = window.lcAvatarResolve;
+          if (find && n.el) Object.keys(avs).forEach(aid => {
+            const av = avs[aid];
+            if (!av || !av.host || av.host === n.el) return;
+            const lines = [].concat(av.script || [], av._tourScript || [],
+              ...Object.values(av.stories || {}));
+            if (!lines.some(l => l && l.at && find(String(l.at)) === n.el)) return;
+            const r = addNode("Avatar", aid, av.host, null);
+            if (r.fresh) { r.fresh = false; r.dump = inspect(av.host); queue.push(r); }
+            addEdge(r, n, "points", true);
+          });
+        }
       }
       let pi = 0;
       const docked = [];

@@ -290,23 +290,6 @@ Feature: 🚦 A workflow ordered by its own values
     When I run the lesson's check "proof_proof"
     Then the lesson's check "proof_proof" is red
 
-  Scenario: Module 05's own app is red on arrival
-    Given the runner serves the course page "courses/micro_build_ai/module_05/04_concepts.md"
-    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/04_concepts.md"
-    And I wait for the page to be interactive
-    And I wait for the cells to settle
-    And I run the lesson's check "app_proof"
-    Then the lesson's check "app_proof" is red
-
-  Scenario: Module 05's own app is green once its five items are built
-    Given the runner serves the course page "courses/micro_build_ai/module_05/04_concepts.md"
-    And the learner has built an app of their own
-    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/04_concepts.md"
-    And I wait for the page to be interactive
-    And I wait for the cells to settle
-    And I run the lesson's check "app_proof"
-    Then the lesson's check "app_proof" is green
-
   Scenario: A cell can count a table, so no component is needed for one number
     Michel, 2026-08-06: "I am totally surprised by stat. Could it be rather
     done with a cell?" It could not — a formula reached forms, mdpads and
@@ -401,15 +384,14 @@ Feature: 🚦 A workflow ordered by its own values
     Then the lesson's check "assignment_proof" is green
     And the lesson's check "dod" is red
 
-  Scenario: Module 05's Essentials reads the whole story — the embedded proofs and the lifecycle proof go green
-    Michel, 2026-10-14: the Essentials checks the whole lifecycle, from the
-    persona to the last proof, with the earlier pages' proofs run again in
-    an accordion — one source each, embedded by src.
+  Scenario: Module 05's Essentials holds in one look — the list's proof, the learner's check, the module's proof
+    Michel, 2026-10-15: the essentials was quite complex; he asked for a
+    KISS, representative conclusion. The app and the check as saved, the
+    follow-up list's proof embedded by src, one module proof reading both.
 
     Given the runner serves the course page "courses/micro_build_ai/module_05/04_concepts.md"
     And the learner's app and check are finished, as the Essentials page reads them
     And the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
-    And the runner serves the course page "courses/micro_build_ai/module_05/03_proof.md"
     When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/04_concepts.md"
     And I wait for the page to be interactive
     And I wait for the cells to settle
@@ -417,8 +399,5 @@ Feature: 🚦 A workflow ordered by its own values
     Then the lesson's check "list_proof" is green
     When I run the lesson's check "call_check"
     Then the lesson's check "call_check" is green
-    When I run the lesson's check "proof_proof"
-    Then the lesson's check "proof_proof" is green
-    When I run the lesson's check "story_proof"
-    Then the lesson's check "story_proof" is green
-
+    When I run the lesson's check "module_proof"
+    Then the lesson's check "module_proof" is green

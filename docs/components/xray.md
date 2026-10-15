@@ -23,6 +23,18 @@ Everything works by touch — ⚙️ pill → **🔬 X-ray**, then:
 A toast reminds you of both gestures every time you enter X-ray by touch.
 Tap the pill again to leave.
 
+## 🧮 Names are wires too
+
+A part can name another without any knob. Each one gets its own pipe:
+
+- a **cell** `{= order.price * 2 }` *reads* every part its formula names: a
+  form, a pad, a check, a dataset or a query;
+- an **avatar** *points* at every part its scripts walk to (`at:`), such as
+  the app it shows or the check it runs.
+
+The pipes show from either end. Shift on the app shows the avatar and the
+cells that lean on it.
+
 ## Keep, honestly
 
 **💾 Keep changes** has two paths, decided by who you are:

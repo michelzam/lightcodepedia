@@ -568,3 +568,10 @@ def step_shift_hover_part(context, lc_id):
     el = context.page.locator("[data-lc-id='%s']" % lc_id).first
     el.wait_for(state="visible", timeout=25_000)
     _shift_alt_hover(context.page, el)
+
+
+@when("I shift-hover over the first cell")
+def step_shift_hover_cell(context):
+    cell = context.page.locator(".lc-cell").first
+    cell.wait_for(state="visible", timeout=25_000)
+    _shift_alt_hover(context.page, cell)
