@@ -280,6 +280,8 @@ Auto-included by docs/_layouts/default.html.
     if (!r) return false;
     var ta = r.querySelector('.lc-pyrun-code, .lc-mdpad-in');
     if (!ta) return false;
+    /* a folded pad opens: lines added where nobody sees them were never added */
+    if (r.classList.contains('lc-mdpad-folded') && r._lcDrawer) r._lcDrawer(false);
     /* only the changed middle is written, as typing, so ⌘Z takes the
        piece back and the caret lands on it (lcPyrun.edit keeps undo) */
     var old = ta.value, a = 0, b = old.length, c = code.length;

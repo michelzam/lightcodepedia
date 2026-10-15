@@ -520,3 +520,18 @@ def step_caret_line(context, text, pad_id):
 def step_focus_left(context, pad_id):
     still = _pad(context, pad_id).locator(".lc-mdpad-in").evaluate("t => document.activeElement === t")
     assert not still, "the editor kept the focus"
+
+
+@when('I fold the "{pad_id}" pad')
+def step_fold_pad(context, pad_id):
+    ok = context.page.evaluate(
+        "id => window.lcVerbs.act('fold', document.querySelector(\"[data-lc-id='\" + id + \"']\"))", pad_id)
+    assert ok, "the fold verb did not answer"
+    expect(context.page.locator("[data-lc-id='" + pad_id + "']")).to_have_attribute("data-lc-folded", "1")
+
+
+@then('the "{pad_id}" pad\'s editor is open')
+def step_pad_open(context, pad_id):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    expect(pad).not_to_have_attribute("data-lc-folded", "1", timeout=5_000)
+    expect(pad.locator(".lc-mdpad-src")).to_be_visible()
