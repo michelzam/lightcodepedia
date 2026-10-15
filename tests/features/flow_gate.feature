@@ -248,6 +248,19 @@ Feature: 🚦 A workflow ordered by its own values
     Then the selected family is "Brooks"
     And the pad's preview reads "7 families are waiting"
 
+  Scenario: Module 05's follow-up app names the COUNT(*) trap
+    Michel's pad, 2026-10-15: "why my query returns 1 family instead of 9?"
+    COUNT(*) answers one row — the number — and the cell counts rows.
+
+    Given the runner serves the course page "courses/micro_build_ai/module_05/02_list.md"
+    And the learner has built the follow-up app, counting inside the query
+    When I navigate to "/run.html#src=gh:acme/demo/courses/micro_build_ai/module_05/02_list.md"
+    And I wait for the page to be interactive
+    And I wait for the cells to settle
+    And I run the lesson's check "list_proof"
+    Then the lesson's check "list_proof" is red
+    And the lesson's check "list_proof" says "COUNT(*) answers ONE row"
+
   Scenario: Module 05's follow-up app names a decoration with nothing above it
     Michel's pad, 2026-10-09: the datagrid's decoration typed alone after a
     blank line, with no link above it, landed on the query — the query became

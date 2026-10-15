@@ -532,6 +532,19 @@ def step_list_fix(context):
     _serve_course_page(context, context.lesson_path, fix)
 
 
+@given("the learner has built the follow-up app, counting inside the query")
+def step_list_count_star(context):
+    """Michel's pad, 2026-10-15: SELECT COUNT(*) … WHERE met = '' — one row,
+    the number; the cell counts that row and says 1. The proof must say why."""
+    def fix(body):
+        assert M05_TODOS in body, "the follow-up seed no longer carries the coordinator's four TODO items"
+        app = M05_APP.replace('SELECT family, dog, asked, met FROM reservations WHERE met = ""',
+                              "SELECT COUNT(*) FROM reservations WHERE met = ''")
+        assert app != M05_APP, "the app's query line moved"
+        return body.replace(M05_TODOS, M05_TODOS.replace("- [ ]", "- [x]") + "\n" + app)
+    _serve_course_page(context, context.lesson_path, fix)
+
+
 @given("the learner has built the follow-up app with the datagrid's decoration alone")
 def step_list_fix_lone(context):
     """Michel's pad, 2026-10-09: a decoration alone after a blank line lands
