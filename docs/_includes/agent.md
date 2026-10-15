@@ -1931,6 +1931,10 @@ Auto-included by docs/_layouts/default.html.
        the page model (auto ids aren't python names). */
     if (givenId) panel.setAttribute('data-lc-id', givenId);
     panel.setAttribute('data-system', cfg.system || '');
+    /* its wires, named where the x-ray reads them (Michel, 2026-10-15:
+       "the agent has a knob bound, but in xray, there is no pipe") */
+    if (boundId) panel.setAttribute('data-lc-bound', boundId);
+    if (cfg.target) panel.setAttribute('data-lc-target', cfg.target);
     /* THE AGENT IS A PART OTHERS ACT ON (Michel, 2026-10-01: "a verb to run
        and properties to be customized upfront, and other agents, avatars or
        humans can act on them"). The live configuration hangs on the panel:

@@ -2019,7 +2019,7 @@ Auto-included by docs/_layouts/default.html.
       });
     }
     /* ⇥ the blanks of an inserted part: Tab goes to the next, ⇧Tab back */
-    var BLANK = /\byour_[a-z_]+\b|\ba_column\b|\bTitle\b/g;
+    var BLANK = /\bTODO_[A-Z_]+\b|\byour_[a-z_]+\b|\ba_column\b|\bTitle\b/g;   /* TODO_YOUR_… shouts "customize me" (Michel, 2026-10-15) */
     var snip = null;                          /* { start, tail } — the part's span, its end kept from the text's end */
     function blankAfter(from, back) {
       if (!snip) return null;

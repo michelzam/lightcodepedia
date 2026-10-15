@@ -377,7 +377,7 @@ Feature: The pad types like a text field, painted
     When I accept the offer in the "wires" pad
     Then the "wires" pad selects "Title"
     When I press "Tab" in the "wires" pad
-    Then the "wires" pad selects "your_grid"
+    Then the "wires" pad selects "TODO_YOUR_GRID"
     And the "wires" pad offers "dog_grid" first
     When I accept the offer in the "wires" pad
     Then the "wires" pad holds '{: .form master="dog_grid" }'

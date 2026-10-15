@@ -676,7 +676,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And the recording model endpoint replies with this text:
       """
       part: datagrid
-      Put waiting, your dataset's id, where your_dataset stands.
+      Put waiting, your dataset's id, where TODO_YOUR_DATASET stands.
       """
     When I navigate to "/components/agent"
     And I wait for the page to be interactive
@@ -684,7 +684,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I ask the "builder" agent "a table on my dataset"
     Then the "builder" agent's lines are exactly the catalogue's "datagrid" and the direction says where it was learned
     When I add the agent's piece to the editor
-    Then the "my_app" pad's wires are "source «your_dataset»"
+    Then the "my_app" pad's wires are "source «TODO_YOUR_DATASET»"
 
   Scenario: A part the course has not taught is said so, with no lines
     Given I have a clean browser page

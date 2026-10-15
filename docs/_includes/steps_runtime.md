@@ -1560,12 +1560,23 @@ class Code(Block):
                   {"n": "replies", "t": "list"},
                   {"n": "last", "t": "str"},
                   {"n": "asked", "t": "int"}],
+           assoc=[{"n": "bound", "target": "Mdpad"}, {"n": "target", "target": "Feature"}],
            events=["on_response"],
            methods=["ask", "clear"])
 class Agent(Block):
     """A page agent (.agent) — a part a proof, a guide or another agent can
     act on: read or rewrite its brain (system), ask it, read what it said."""
     _lc_keep = ("system",)
+
+    @property
+    def bound(self):
+        """The pad it reads (bound=) — the x-ray draws the pipe."""
+        return _lc_ref(self, "data-lc-bound")
+
+    @property
+    def target(self):
+        """The check it aims at (target=)."""
+        return _lc_ref(self, "data-lc-target")
 
     @property
     def asked(self):

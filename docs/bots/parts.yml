@@ -2,7 +2,7 @@
 # them, with the module where the learner first typed it (Michel,
 # 2026-10-09: "offering code snippets based on lessons learned since
 # module 04"). The builder names a key; the page shows these lines
-# verbatim. Placeholders are plain ids (your_dataset, your_grid…): on the
+# verbatim. Placeholders are plain ids (TODO_YOUR_DATASET, TODO_YOUR_GRID…): on the
 # page they show as broken wires until the learner puts their own id in.
 dataset:
   name: a dataset — rows that every face reads
@@ -13,44 +13,44 @@ dataset:
     Rex,120
     Mila,90
     ```
-    {: .dataset #your_dataset }
+    {: .dataset #TODO_YOUR_DATASET }
   adapt: the rows are yours; the word after # is the id every face names
 datagrid:
   name: a datagrid on a dataset
   module: Module 04 · Dogs
   lines: |
     [Title](#)
-    {: .datagrid source="your_dataset" }
+    {: .datagrid source="TODO_YOUR_DATASET" }
   adapt: source names the dataset's id — the word after # in its decoration
 form:
   name: a form that follows a datagrid — it shows the selected row
   module: Module 04 · Three Faces
   lines: |
     [Title](#)
-    {: .form master="your_grid" }
-  adapt: the datagrid needs an id of its own — add #your_grid to its decoration, then name it here
+    {: .form master="TODO_YOUR_GRID" }
+  adapt: the datagrid needs an id of its own — add #TODO_YOUR_GRID to its decoration, then name it here
 chart:
   name: a chart on a dataset
   module: Module 04 · Three Faces
   lines: |
     [Title](#)
-    {: .chart source="your_dataset" x="a_column" y="a_column" }
+    {: .chart source="TODO_YOUR_DATASET" x="TODO_A_COLUMN" y="TODO_A_COLUMN" }
   adapt: x and y name two columns of the dataset
 query:
   name: a query on a dataset — its answer is a dataset too
   module: Module 04 · Three Faces
   lines: |
     ```sql
-    SELECT * FROM your_dataset
+    SELECT * FROM TODO_YOUR_DATASET
     ```
-    {: .query bind="your_dataset" #your_query }
+    {: .query bind="TODO_YOUR_DATASET" #TODO_YOUR_QUERY }
   adapt: bind names the dataset; the id after # is what a face reads next
 button:
   name: a button — a link with one line under it
   module: Module 04 · First Screen
   lines: |
     [Label](#)
-    {: .button #your_button }
+    {: .button #TODO_YOUR_BUTTON }
   adapt: the label is the link's text; the id lets Python find it
 onclick:
   name: what a button does — a few lines of Python right under it
@@ -66,33 +66,33 @@ mark_row:
   module: Module 05 · The Follow-Up List
   lines: |
     [Label](#)
-    {: .button #your_button }
+    {: .button #TODO_YOUR_BUTTON }
     ```python
-    grid = button.page.your_grid
-    grid.row.a_column = weekday()
+    grid = button.page.TODO_YOUR_GRID
+    grid.row.TODO_A_COLUMN = weekday()
     grid.next()
     ```
     {: .onclick }
-  adapt: your_grid is the datagrid's id, a_column the column that gets today's day
+  adapt: TODO_YOUR_GRID is the datagrid's id, TODO_A_COLUMN the column that gets today's day
 cell:
   name: a live number inside a sentence
   module: Module 05 · The Follow-Up List
   lines: |
-    {= your_dataset.count } families are waiting.
+    {= TODO_YOUR_DATASET.count } families are waiting.
   adapt: any dataset or query id, then .count
 visible:
   name: a gate — the part shows only when there is something to show
   module: Module 02 · Gates
   lines: |
     [Title](#)
-    {: .datagrid source="your_query" visible="= your_query.count" }
+    {: .datagrid source="TODO_YOUR_QUERY" visible="= TODO_YOUR_QUERY.count" }
   adapt: the same id twice — what it reads, and what must be more than zero
 beside:
   name: a part drawn next to the one above
   module: Module 04 · Three Faces
   lines: |
     [Title](#)
-    {: .chart source="your_dataset" x="a_column" y="a_column" beside="true" }
+    {: .chart source="TODO_YOUR_DATASET" x="TODO_A_COLUMN" y="TODO_A_COLUMN" beside="true" }
   adapt: beside goes on the second part; the first stays as it is
 feature:
   name: a check — Gherkin, steps in Python, reading your parts by id
@@ -103,22 +103,22 @@ feature:
       Scenario: The table shows rows
         Given my page
         :::python
-        self.grid = self.page.your_grid
+        self.grid = self.page.TODO_YOUR_GRID
         :::
         Then it shows rows
         :::python
         assert self.grid.rows, "no rows yet"
         :::
     ```
-    {: .feature #your_check visible="true" }
+    {: .feature #TODO_YOUR_CHECK visible="true" }
   adapt: self.page.<id> reaches any part by its id; visible="true" shows the check on the page
 then_step:
   name: one more step for a check — a Then, and the assert that proves it
   module: Module 05 · The Proof
   lines: |2
-        Then your_promise_in_plain_words
+        Then TODO_YOUR_PROMISE_IN_PLAIN_WORDS
         :::python
-        assert your_condition, "what is wrong, said in one sentence"
+        assert TODO_YOUR_CONDITION, "what is wrong, said in one sentence"
         :::
   adapt: inside the check's fence, under its last :::; the words say what must be true, the assert proves it
 persona:
@@ -130,7 +130,7 @@ persona:
     role: Shelter coordinator
     goal: call every family back
     ```
-    {: .persona #your_persona }
+    {: .persona #TODO_YOUR_PERSONA }
   adapt: three lines at least — name, role, goal
 pitch:
   name: why — a pitch that reads the persona
@@ -141,5 +141,5 @@ pitch:
     need: nobody is forgotten
     benefit: one list, one button
     ```
-    {: .pitch #your_pitch persona="your_persona" }
+    {: .pitch #TODO_YOUR_PITCH persona="TODO_YOUR_PERSONA" }
   adapt: persona names the card it reads

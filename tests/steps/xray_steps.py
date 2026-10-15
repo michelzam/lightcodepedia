@@ -561,3 +561,10 @@ def step_dataset_ghost_grows(context):
       return true;
     }""")
     assert grew, "no dataset ghost on the scene"
+
+
+@when('I shift-hover over the part "{lc_id}"')
+def step_shift_hover_part(context, lc_id):
+    el = context.page.locator("[data-lc-id='%s']" % lc_id).first
+    el.wait_for(state="visible", timeout=25_000)
+    _shift_alt_hover(context.page, el)

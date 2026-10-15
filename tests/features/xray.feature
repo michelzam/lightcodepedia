@@ -466,3 +466,36 @@ Feature: X-ray inspector
     Then an x-ray panel is visible
     And the x-ray panel mentions "on_click"
     And the x-ray panel shows a locked def line
+
+  Scenario: Shift x-ray pipes an agent to the pad it reads and the check it aims at
+    Michel, 2026-10-15: "the agent has a knob bound, but in xray, there is no
+    pipe with the bounded component".
+
+    Given the GitHub contents API serves "courses/demo/module_05/tutor.md" with the document:
+      """
+      # Tutor
+
+      ```markdown
+      # Calls
+      ```
+      {: .mdpad #wires rows="4" }
+
+      ```gherkin
+      Feature: The pad holds a title
+        Scenario: A title
+          Given the pad
+          Then it holds a title
+      ```
+      {: .feature #check visible="true" }
+
+      ```yaml
+      name: The builder
+      ```
+      {: .agent #builder bound="wires" target="check" rows="2" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/tutor.md"
+    And I wait for the page to be interactive
+    And I shift-hover over the part "builder"
+    Then the x-ray scene mentions "Mdpad"
+    And the x-ray scene mentions "Feature"
+
