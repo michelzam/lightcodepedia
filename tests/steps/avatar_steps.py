@@ -344,7 +344,7 @@ def step_never_says(context, snippet):
 
 @given('the "{name}" bot is available')
 def step_stub_bot(context, name):
-    """loadBot fetches docs/bots/<name>.md from raw.githubusercontent — stub it
+    """loadBot fetches <name>.md (course _bots/, lab bots/, site docs/bots/) — stub it
     or the guide answers 'bot could not be loaded' and never reaches the model."""
     body = (
         "# Stub bot\n\n"
@@ -360,10 +360,9 @@ def step_stub_bot(context, name):
         route.fulfill(status=200, content_type="text/plain; charset=utf-8",
                       body=body)
 
-    context.page.route(
-        "**/raw.githubusercontent.com/**/docs/bots/" + name + ".md*", fulfill)
-    context.page.route(
-        "**/api.github.com/repos/**/contents/docs/bots/" + name + ".md*", fulfill)
+    # every place the engine looks: a course's _bots/, the lab's bots/, docs/bots/
+    context.page.route(re.compile(r".*(raw\.githubusercontent\.com|api\.github\.com/repos)/.*\b_?bots/"
+                                  + re.escape(name) + r"\.md([?#].*)?$"), fulfill)
 
 
 # ── studio voice resolution across mounts ─────────────────────────────────

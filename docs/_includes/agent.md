@@ -31,7 +31,8 @@ YAML knobs (optional):
 IAL knobs:
   id="..."    required when there are multiple agents on a page
   rows="3"    prompt input height
-  bot="doc"   load persona + settings from docs/bots/doc.md — the file's
+  bot="doc"   load persona + settings from doc.md (a course's own _bots/,
+              else the site's docs/bots/) — the file's
               markdown IS the system prompt; its yaml fence sets model/name/
               intro/placeholder and knowledge: [self, /page, …] (those pages'
               raw markdown is stuffed into the system prompt, trimmed to
@@ -557,6 +558,24 @@ Auto-included by docs/_layouts/default.html.
           .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status + ' (contents) for ' + m[3]); return r.text(); });
       });
   }
+  /* BOTS LIVE WITH THE COURSE (Michel, 2026-10-15: "my directions for bots
+     should not be exposed!"). A course page reads its bots from its own
+     course's _bots/ in the vault (the course key opens it), the lab reads its
+     private bots/, and the public site reads docs/bots/: a short, generic
+     stand-in. The first that answers wins. */
+  var _lcIsLab = {% if site.github.repository_name == "lightcodelab" %}true{% else %}false{% endif %};
+  function botText(file) {
+    var c = [], rt = rtSrc();
+    var m = rt && /^(.*?\bcourses\/[^\/]+)\//.exec(rt.path);
+    if (m) c.push('https://raw.githubusercontent.com/' + rt.repo + '/HEAD/' + m[1] + '/_bots/' + file);
+    if (_lcIsLab) c.push(rawUrl('bots/' + file));
+    c.push(location.origin + {{ '/bots/' | relative_url | jsonify }} + file);   /* the site's own copy */
+    c.push(rawUrl('docs/bots/' + file));
+    var i = 0;
+    function next(err) { return i < c.length ? fetchText(c[i++]).catch(next) : Promise.reject(err); }
+    return next(new Error('no bot ' + file));
+  }
+  window.lcBotText = botText;
   function parseBot(md) {
     var m = /```yaml\r?\n([\s\S]*?)```/.exec(md);
     var cfg = {};
@@ -606,7 +625,7 @@ Auto-included by docs/_layouts/default.html.
        next module with the previous module's material */
     if (rt) key += '|' + rt.repo + '/' + rt.path;
     if (_botCache[key]) return _botCache[key];
-    _botCache[key] = fetchText(rawUrl('docs/bots/' + String(name || '').replace(/[^\w-]/g, '') + '.md')).then(function(md){
+    _botCache[key] = botText(String(name || '').replace(/[^\w-]/g, '') + '.md').then(function(md){
       var bot = parseBot(md);
       var cfg = { system: bot.system || DEFAULTS.system };
       Object.keys(bot.cfg).forEach(function(k){ if (k !== 'knowledge' && k !== 'knowledge_budget') cfg[k] = bot.cfg[k]; });
@@ -618,7 +637,7 @@ Auto-included by docs/_layouts/default.html.
          and names go to the model; the lines stay with the page. */
       var catP = Promise.resolve();
       if (bot.cfg.catalogue) {
-        catP = fetchText(rawUrl('docs/bots/' + String(bot.cfg.catalogue).replace(/[^\w-]/g, '') + '.yml')).then(function (y) {
+        catP = botText(String(bot.cfg.catalogue).replace(/[^\w-]/g, '') + '.yml').then(function (y) {
           var cat = window.jsyaml ? window.jsyaml.load(y) : null;
           if (!cat || typeof cat !== 'object') return;
           cfg._catalogue = cat;

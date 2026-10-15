@@ -45,3 +45,27 @@ Feature: The tutor on a runner render studies the course, not the runner
     When I navigate to "/components/agent"
     And I wait for the page to be interactive
     Then course material for a tutor keeps the question and drops the answer
+
+  Scenario: A course page reads its bot from its own course in the vault, not the site
+    Michel, 2026-10-15: "my directions for bots should not be exposed!" — the
+    real bots ride with each course into the vault; the public site holds
+    only a short stand-in.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/_bots/builder.md" with the document:
+      """
+      You are the course's own builder.
+      """
+    And the GitHub contents API serves "docs/bots/builder.md" with the document:
+      """
+      You are the site's stand-in.
+      """
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Course
+
+      Alpha.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    Then the page's bot "builder.md" reads "the course's own builder"

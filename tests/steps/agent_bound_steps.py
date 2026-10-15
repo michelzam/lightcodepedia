@@ -823,6 +823,14 @@ def step_pad_button(context, pad_id):
     expect(pad.locator(".lc-mdpad-out .button, .lc-mdpad-out .lc-button").first).to_be_visible(timeout=5_000)
 
 
+def _bot_route(file):
+    """Every place the engine looks for a bot (agent.md botText): a course's
+    _bots/, the lab's private bots/, the site's docs/bots/ — raw or contents."""
+    import re as _re
+    return _re.compile(r".*(raw\.githubusercontent\.com|api\.github\.com/repos)/.*\b_?bots/"
+                       + _re.escape(file) + r"([?#].*)?$")
+
+
 @given('the "{name}" bot is served from the repo')
 def step_real_bot(context, name):
     """loadBot fetches docs/bots/<name>.md from GitHub — serve the real file,
@@ -833,8 +841,7 @@ def step_real_bot(context, name):
     def fulfill(route):
         route.fulfill(status=200, content_type="text/plain; charset=utf-8", body=body)
 
-    context.page.route("**/raw.githubusercontent.com/**/docs/bots/" + name + ".md*", fulfill)
-    context.page.route("**/api.github.com/repos/**/contents/docs/bots/" + name + ".md*", fulfill)
+    context.page.route(_bot_route(name + ".md"), fulfill)
 
 
 @then('the "{agent_id}" agent\'s example holds "{text}" and its question does not')
@@ -891,8 +898,7 @@ def step_real_catalogue(context, name):
     def fulfill(route):
         route.fulfill(status=200, content_type="text/plain; charset=utf-8", body=body)
 
-    context.page.route("**/raw.githubusercontent.com/**/docs/bots/" + name + ".yml*", fulfill)
-    context.page.route("**/api.github.com/repos/**/contents/docs/bots/" + name + ".yml*", fulfill)
+    context.page.route(_bot_route(name + ".yml"), fulfill)
 
 
 @then('the "{agent_id}" agent\'s lines are exactly the catalogue\'s "{key}" and the direction says where it was learned')
@@ -946,3 +952,9 @@ def step_card_shows(context, card_id, text):
 def step_card_add(context, card_id):
     context.page.locator("[data-lc-id='%s'] .lc-code-add" % card_id).click()
     context.page.wait_for_timeout(400)
+
+
+@then('the page\'s bot "{file}" reads "{text}"')
+def step_bot_reads(context, file, text):
+    got = context.page.evaluate("f => window.lcBotText(f)", file)
+    assert text in got, "the bot came from elsewhere: %r" % got[:200]

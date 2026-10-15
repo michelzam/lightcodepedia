@@ -1826,7 +1826,10 @@ Auto-included by docs/_layouts/default.html.
     var PARTS_URL = "{{ '/bots/parts.yml' | relative_url }}";
     var cmp = window._lcPadComp || (window._lcPadComp = {});
     if (!cmp.model) cmp.model = fetch(MODEL_URL).then(function (r) { return r.json(); }).then(function (d) { return d.model || {}; }).catch(function () { return {}; });
-    if (!cmp.parts) cmp.parts = fetch(PARTS_URL).then(function (r) { return r.ok ? r.text() : ""; }).then(parseParts).catch(function () { return {}; });
+    /* the course's own catalogue when the page is a course (agent.md reads it
+       from the vault), else the site's */
+    if (!cmp.parts) cmp.parts = (window.lcBotText ? window.lcBotText("parts.yml")
+      : fetch(PARTS_URL).then(function (r) { return r.ok ? r.text() : ""; })).then(parseParts).catch(function () { return {}; });
     function parseParts(y) {                 /* the catalogue's simple shape: key: / name: / lines: | */
       var out = {}, cur = null, inLines = false;
       String(y || "").split("\n").forEach(function (l) {
