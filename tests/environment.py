@@ -233,7 +233,30 @@ def _stub_maplibre(page):
 MERMAID_STUB = os.environ.get("MERMAID_STUB") == "1"
 
 
+# LOCAL HARNESS ONLY: or the real bundle, served from a local copy of the
+# package (its dist/ with every chunk) — tests/local_rig.sh fetches it into
+# .libs/mermaid. Wins over the stub when both are set.
+MERMAID_DIR = os.environ.get("MERMAID_DIR") or None
+if MERMAID_DIR and not os.path.isfile(
+        os.path.join(MERMAID_DIR, "dist", "mermaid.esm.min.mjs")):
+    MERMAID_DIR = None
+
+
+def _serve_mermaid(page):
+    def serve(route):
+        rel = route.request.url.split("/dist/", 1)[1].split("?", 1)[0]
+        path = os.path.join(MERMAID_DIR, "dist", rel)
+        if not os.path.isfile(path):
+            return route.fulfill(status=404, body=b"")
+        with open(path, "rb") as f:
+            route.fulfill(status=200, body=f.read(),
+                          content_type="application/javascript; charset=utf-8")
+    page.route("https://cdn.jsdelivr.net/npm/mermaid@*/dist/**", serve)
+
+
 def _stub_mermaid(page):
+    if MERMAID_DIR:
+        return _serve_mermaid(page)
     if not MERMAID_STUB:
         return
     page.route(

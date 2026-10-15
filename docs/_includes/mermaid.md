@@ -38,10 +38,24 @@ Auto-included by docs/_layouts/default.html.
     box.parentNode.replaceChild(pre, box);
     return pre;
   }
+  // One id per diagram, ours. mermaid.run() names each diagram after
+  // Date.now(): two fences the runner hands over in the same millisecond got
+  // the same id, and the second drew into the first — the HQ's Sodexo page
+  // showed two sequence diagrams mixed in one frame (Michel, 2026-10-15).
+  // mermaid.render() takes the id and queues renders itself.
+  let _seq = 0;
   async function render(nodes) {
     if (!nodes.length) return;
-    try { await (await ensure()).run({ nodes }); }
-    catch (e) { console.error("[mermaid]", e); }
+    const m = await ensure();
+    for (const node of nodes) {
+      if (node.getAttribute("data-processed")) continue;
+      node.setAttribute("data-processed", "true");
+      try {
+        const out = await m.render("lc-mermaid-" + (++_seq), node.textContent.trim());
+        node.innerHTML = out.svg;
+        if (out.bindFunctions) out.bindFunctions(node);
+      } catch (e) { console.error("[mermaid]", e); }
+    }
   }
 
   function collect(root) {

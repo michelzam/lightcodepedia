@@ -72,3 +72,15 @@ Feature: Solution space — the event flow
     And I wait for the page to be interactive
     And a mermaid fence is injected the way the runner renders one
     Then the injected fence becomes a diagram
+
+  Scenario: Diagrams injected in the same millisecond each keep their own frame
+    The HQ's Sodexo page drew "A user opens an app" and "Georges' loop"
+    in one frame, actors and arrows mixed (Michel, 2026-10-15): mermaid
+    named each diagram after the current millisecond, and two fences the
+    runner hands over in the same one drew into the same frame. Each
+    diagram must hold only its own words.
+
+    When I navigate to "/components/event_flow"
+    And I wait for the page to be interactive
+    And four diagram fences are injected in the same millisecond
+    Then each injected diagram holds only its own words

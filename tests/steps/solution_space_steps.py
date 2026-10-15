@@ -99,6 +99,44 @@ def step_inject_mermaid(context):
     )
 
 
+MERMAID_FOUR = (  # box id, its own word, the fence — as the Sodexo page: flowcharts, then sequences
+    ("mm-flow-one", "Xone", "flowchart LR\n  x1[Xone] --> x2[Xtwo]"),
+    ("mm-flow-two", "Yone", "flowchart LR\n  y1[Yone] --> y2[Ytwo]"),
+    ("mm-seq-one", "Alpha", "sequenceDiagram\n  participant Alpha\n  participant Beta\n  Alpha->>Beta: hello"),
+    ("mm-seq-two", "Gamma", "sequenceDiagram\n  participant Gamma\n  participant Delta\n  Gamma->>Delta: hi"),
+)
+
+
+@when("four diagram fences are injected in the same millisecond")
+def step_inject_four_diagrams(context):
+    context.page.evaluate(
+        """four => {
+            /* the same millisecond for all, as on a fast machine */
+            const frozen = Date.now(); Date.now = () => frozen;
+            const host = document.createElement('div');
+            host.id = 'mermaid-bdd-four';
+            host.innerHTML = four.map(([id]) =>
+                '<div id="' + id + '"><pre><code class="language-mermaid"></code></pre></div>').join('');
+            host.querySelectorAll('code').forEach((c, i) => { c.textContent = four[i][2]; });
+            document.querySelector('.markdown-body').appendChild(host);
+            window.lcScanElement(host);
+        }""",
+        [list(f) for f in MERMAID_FOUR],
+    )
+
+
+@then("each injected diagram holds only its own words")
+def step_four_diagrams_apart(context):
+    words = [w for _, w, _ in MERMAID_FOUR]
+    for box, mine, _ in MERMAID_FOUR:
+        svg = context.page.locator("#" + box + " svg")
+        expect(svg).to_have_count(1, timeout=EF_TIMEOUT)
+        text = svg.text_content()
+        assert mine in text, f"{box} lost its own diagram ({mine})"
+        other = [w for w in words if w != mine and w in text]
+        assert not other, f"{box} drew another diagram's words: {', '.join(other)}"
+
+
 @then("the injected fence becomes a diagram")
 def step_mermaid_upgraded(context):
     host = context.page.locator("#mermaid-bdd")
