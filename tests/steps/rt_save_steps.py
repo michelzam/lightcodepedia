@@ -1243,3 +1243,26 @@ def step_still_on_frame(context, n, secs):
     context.page.wait_for_timeout(int(secs * 1000))
     got = context.page.locator(PAD).get_attribute("data-lc-frame")
     assert got == str(n - 1), "the frame moved on too soon — on frame %s after %ss" % (int(got) + 1, secs)
+
+
+@then('the "{pad_id}" pad opens folded, its save bar hidden')
+def step_opens_folded(context, pad_id):
+    pad = context.page.locator("[data-lc-id='%s']" % pad_id)
+    expect(pad).to_have_attribute("data-lc-folded", "1", timeout=15_000)
+    expect(pad.locator(".lc-mdpad-in")).to_be_hidden()
+    bar = context.page.locator("[data-lc-id='%s'] ~ .lc-mdpad-bar, [data-lc-id='%s'] .lc-mdpad-bar" % (pad_id, pad_id)).first
+    expect(bar).to_be_hidden()
+
+
+@when('I press ✎ on the "{pad_id}" pad')
+def step_press_pen(context, pad_id):
+    context.page.locator("[data-lc-id='%s'] .lc-mdpad-fold" % pad_id).click()
+    context.page.wait_for_timeout(700)
+
+
+@then('the "{pad_id}" pad shows its editor and its save bar')
+def step_shows_editor(context, pad_id):
+    pad = context.page.locator("[data-lc-id='%s']" % pad_id)
+    expect(pad.locator(".lc-mdpad-in")).to_be_visible(timeout=5_000)
+    bar = context.page.locator("[data-lc-id='%s'] ~ .lc-mdpad-bar, [data-lc-id='%s'] .lc-mdpad-bar" % (pad_id, pad_id)).first
+    expect(bar).to_be_visible()

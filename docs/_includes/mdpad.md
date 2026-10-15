@@ -30,6 +30,8 @@ IAL knobs:
               nothing ever collides.
   piano="true"   consecutive blocks banded in two shades of the source pane, the
               caret's block in a third — the "piano"
+  folded="true" the pad opens folded — the screen alone, ✎ brings the editor
+              (and its 💾 / 🕘 bar, hidden while folded)
   numbers="true" a line number per source line in a gutter (wrapped lines keep one);
               a decoration's line also wears its component's icon there (🛢️ ▦ ☷)
   replay="1.5"  seconds per frame when 🎞 Replay plays the saved versions (default 1.5);
@@ -163,6 +165,7 @@ Auto-included by docs/_layouts/default.html.
 @media (max-width: 640px) { .lc-mdpad { flex-direction: column; } }
 /* layout="rows": the same stacking on every screen, for a landscape document */
 .lc-mdpad.lc-mdpad-rows { flex-direction: column; }
+.lc-mdpad-bar[hidden] { display: none; }
 .lc-mdpad-bar { margin: -0.4em 0 1em; display: flex; justify-content: flex-end; gap: 0.5em; align-items: center; }
 .lc-mdpad-mine { margin-right: auto; font-size: 0.78em; color: #2e7d32; }
 .lc-mdpad-reset { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px;
@@ -560,10 +563,13 @@ Auto-included by docs/_layouts/default.html.
       foldBtn.setAttribute("aria-pressed", on ? "true" : "false");
       foldBtn.setAttribute("aria-label", on ? "Edit — bring the editor back" : "Hide the editor");
       foldBtn.title = on ? "Edit — bring the editor back" : "Hide the editor — the preview takes the whole width";
+      /* folded, there is nothing to save or replay (Michel, 2026-10-15) */
+      if (saveWrap) saveWrap.hidden = !!on;
       if (split) placeSplit();
     }
     foldBtn.addEventListener("click", function () { drawer(!wrap.classList.contains("lc-mdpad-folded")); });
-    setFold(false);
+    /* folded="true": the pad opens on its screen alone; ✎ brings the editor */
+    setFold(el.getAttribute("folded") === "true");
     var pills = document.createElement("div");
     pills.className = "lc-mdpad-pills";
     pills.appendChild(foldBtn);

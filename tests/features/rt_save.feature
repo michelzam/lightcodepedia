@@ -907,6 +907,26 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I press the pad's start-over button
     Then the "my_beat" pad paints the starter
 
+  Scenario: A folded pad opens on its screen, with nothing to save until ✎
+    Michel, 2026-10-15: the Builder starts with the pad folded, the text
+    one ✎ away — and folded, there is nothing to save or replay.
+
+    Given a connected bench whose "courses/demo/mod/diary.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/folded.md" with the document:
+      """
+      # Folded
+
+      ```markdown
+      # Diary
+      ```
+      {: .mdpad #diary save="diary.md" comment="true" rows="4" folded="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/folded.md"
+    And I wait for the page to be interactive
+    Then the "diary" pad opens folded, its save bar hidden
+    When I press ✎ on the "diary" pad
+    Then the "diary" pad shows its editor and its save bar
+
   Scenario: An empty line keeps nothing
     Given a connected bench whose "courses/demo/mod/diary.md" does not exist yet
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
