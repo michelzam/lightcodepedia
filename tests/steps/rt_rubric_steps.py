@@ -34,6 +34,7 @@ def step_error_blames_engine(context):
 
 @when("I retype the pad with")
 @when("I retype the pad with:")
+@when("I retype the pad with")   # behave 1.2.6 (pedia) strips a docstring step's colon; both spellings
 def step_retype_pad(context):
     # fill() replaces the textarea's value and fires the input event — the
     # same path a typing learner takes, so the preview re-renders live

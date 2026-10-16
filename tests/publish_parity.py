@@ -117,6 +117,23 @@ def bot_assets_that_travel():
     return sorted(n for n in written if ("assets/" + n) not in listed)
 
 
+def colon_steps_without_twin():
+    """A docstring step written "…with this text:" matches on behave 1.3 (the
+    rig) and is UNDEFINED on behave 1.2.6 (pedia pins it): 1.2.6 strips the
+    trailing colon before a docstring, 1.3 keeps it. 12 scenarios red on every
+    pedia run, green on the rig, until 2026-10-16. Both spellings must be
+    registered — this names any colon step that lacks its twin."""
+    lonely = []
+    for name in sorted(os.listdir(STEPS)):
+        if not name.endswith(".py"):
+            continue
+        ps = phrases(os.path.join(STEPS, name))
+        for p in ps:
+            if p.endswith(":") and p[:-1] not in ps:
+                lonely.append((name, p))
+    return lonely
+
+
 def main():
     excluded = excluded_names()
     if excluded is None:
@@ -149,6 +166,12 @@ def main():
               "private tree the gate never copies) — every scenario in it "
               "fails in pedia. List it and its steps in tests.txt." % name)
 
+    lonely = colon_steps_without_twin()
+    for mod, phrase in lonely:
+        print("%s defines \"%s\" with a trailing colon and no colon-free twin — "
+              "behave 1.2.6 (pedia's) strips the colon before a docstring, 1.3 "
+              "keeps it: stack both decorators." % (mod, phrase))
+
     strays = bot_assets_that_travel()
     for name in strays:
         print("docs/assets/%s is written by the test bot but is not in "
@@ -159,7 +182,7 @@ def main():
         print("\n%d published step(s) with no definition in pedia. "
               "Move the step to a module that ships (e.g. common_steps.py)."
               % len(problems))
-    if problems or travellers or strays:
+    if problems or travellers or strays or lonely:
         return 1
     print("publish parity: every published feature's steps ship with it, "
           "no lab-only page is tested abroad, and no verdict travels")

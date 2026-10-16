@@ -68,6 +68,7 @@ def step_bay_no_manifest(context):
 
 @given('the bay serves "{path}" with the document')
 @given('the bay serves "{path}" with the document:')
+@given('the bay serves "{path}" with the document')   # behave 1.2.6 (pedia) strips a docstring step's colon; both spellings
 def step_bay_serves(context, path):
     body = context.text
 

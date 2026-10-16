@@ -71,6 +71,7 @@ def step_desk_blames_road(context):
 
 @when('I retype the pad "{pad_id}" with')
 @when('I retype the pad "{pad_id}" with:')
+@when('I retype the pad "{pad_id}" with')   # behave 1.2.6 (pedia) strips a docstring step's colon; both spellings
 def step_retype_named_pad(context, pad_id):
     ta = context.page.locator(
         '[data-lc-id="' + pad_id + '"] .lc-mdpad-in')

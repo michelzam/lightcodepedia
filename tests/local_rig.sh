@@ -7,6 +7,9 @@
 set -e
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 LIBS="$REPO/.libs"
+# pedia's behave, not the latest: 1.2.6 strips a docstring step's trailing colon,
+# 1.3 keeps it — an unpinned rig matched steps pedia calls undefined (2026-10-16)
+python3 -m behave --version 2>/dev/null | grep -q "behave 1.2.6" || pip install -q -r "$REPO/tests/requirements.txt" 2>/dev/null || true
 mkdir -p "$LIBS"
 grep -qx ".libs/" "$REPO/.git/info/exclude" 2>/dev/null || echo ".libs/" >> "$REPO/.git/info/exclude"
 cd "$LIBS"

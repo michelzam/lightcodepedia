@@ -167,6 +167,7 @@ def step_stub_model(context):
 
 @when("the editor content is")
 @when("the editor content is:")
+@when("the editor content is")   # behave 1.2.6 (pedia) strips a docstring step's colon; both spellings
 def step_set_editor_content(context):
     context.page.evaluate(
         "(text) => { const i = document.getElementById('ed-input'); "

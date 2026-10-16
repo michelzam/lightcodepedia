@@ -23,6 +23,7 @@ def step_press_tab(context, run_id):
 
 
 @when('I replace the "{run_id}" editor\'s program with:')
+@when('I replace the "{run_id}" editor\'s program with')   # behave 1.2.6 (pedia) strips the colon before a docstring; 1.3 keeps it
 def step_replace_program(context, run_id):
     ta = _ta(context, run_id)
     ta.focus()

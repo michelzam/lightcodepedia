@@ -43,6 +43,7 @@ def step_marked_shim(context):
 
 @given('the GitHub contents API serves "{path}" with the document')
 @given('the GitHub contents API serves "{path}" with the document:')
+@given('the GitHub contents API serves "{path}" with the document')   # behave 1.2.6 (pedia) strips a docstring step's colon; both spellings
 def step_stub_contents_doc(context, path):
     body = context.text
 
@@ -182,6 +183,7 @@ def step_key_and_repo(context):
 
 @given('the committable GitHub page "{path}" serves')
 @given('the committable GitHub page "{path}" serves:')
+@given('the committable GitHub page "{path}" serves')   # behave 1.2.6 (pedia) strips a docstring step's colon; both spellings
 def step_committable_page(context, path):
     import base64 as _b64
     import json as _json
@@ -286,6 +288,7 @@ def step_generic_guide_on(context):
 
 @given('the GitHub contents API slowly serves "{path}" with the document')
 @given('the GitHub contents API slowly serves "{path}" with the document:')
+@given('the GitHub contents API slowly serves "{path}" with the document')   # behave 1.2.6 (pedia) strips a docstring step's colon; both spellings
 def step_stub_contents_slow(context, path):
     import time as _time
     body = context.text

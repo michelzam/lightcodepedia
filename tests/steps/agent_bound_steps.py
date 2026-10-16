@@ -315,6 +315,7 @@ def _ok_reply(text, finish=None):
 
 
 @given("the recording model endpoint replies, cut off, with this text:")
+@given("the recording model endpoint replies, cut off, with this text")   # behave 1.2.6 (pedia) strips the colon before a docstring; 1.3 keeps it
 def step_recording_model_cut(context):
     text = context.text
     context.sent_bodies = []
@@ -541,6 +542,7 @@ def step_request_carried_system(context, text):
 # ── 🎯 TODO-driven (Michel, 2026-10-06) ──────────────────────────────────
 
 @given("the recording model endpoint replies with this text:")
+@given("the recording model endpoint replies with this text")   # behave 1.2.6 (pedia) strips the colon before a docstring; 1.3 keeps it
 def step_recording_model_text(context):
     text = context.text
     context.model_asks = []
