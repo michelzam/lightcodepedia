@@ -369,6 +369,7 @@ Auto-included by docs/_layouts/default.html.
     const box = p => { const left = p.offsetLeft, top = p.offsetTop, width = p.offsetWidth, height = p.offsetHeight;
       return { left, top, width, height, right: left + width, bottom: top + height }; };
     let redrawPipes = null;
+    let madeRoom = false;   /* one scroll per reveal, to dock the sources above their users */
     const sizes = new WeakMap();
     const sizeWatch = window.ResizeObserver ? new ResizeObserver(list => {
       let grew = false;
@@ -397,7 +398,7 @@ Auto-included by docs/_layouts/default.html.
       panels.forEach(p => p.style.display = "none");
       ring.style.display = "none"; svg.style.display = "none"; clearPipes(); redrawPipes = null;
       scene.style.display = "none"; scene.style.transform = "";
-      document.body.classList.remove("lcx-on"); cur = null;
+      document.body.classList.remove("lcx-on"); cur = null; madeRoom = false;
     }
     function place(p, x, y) {
       p.style.left = x + "px"; p.style.top = y + "px"; p.style.display = "block";
@@ -522,6 +523,18 @@ Auto-included by docs/_layouts/default.html.
             yTop = Math.min(yTop, n.panel.offsetTop);
         });
         if (!isFinite(yTop)) yTop = rect.top;
+        /* ROOM ABOVE (2026-10-16): the sources dock above the top-most user,
+           and the scene is the viewport — a user scrolled past the top
+           (negative) or sitting near it left no room, so the source was
+           clamped BELOW its user and its drop ran up (the Dataset page's
+           first cluster, red on every pedia run since 2026-10-08). Make the
+           room once: scroll up by what is missing and rebuild the scene. */
+        const need = docked.reduce((s, n) => { n.panel.style.display = "block"; return s + n.panel.offsetHeight + 90; }, 8);
+        if (yTop < need && !madeRoom && window.scrollY > 0) {
+          madeRoom = true;
+          window.scrollBy(0, -Math.min(window.scrollY, need - yTop));
+          return buildScene(hit, data, shift);
+        }
         const mx = window.innerWidth - 16;
         let y = yTop;
         /* GRAVITY (Michel, 2026-10-10: "query should be lower than the dataset —
