@@ -56,9 +56,9 @@ Auto-included by docs/_layouts/default.html.
 .lc-form-empty { padding: 0.9em 1em; color: var(--lc-ink-mute, #616161); font-style: italic; font-size: 0.9em; }
 .lc-form-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 .lc-form-verbs { display: flex; flex-wrap: wrap; gap: .4em; padding: .5em .75em .6em; border-top: 1px solid #eee; }
-.lc-form-verb { font: inherit; font-size: .9em; padding: .25em .8em; border-radius: 1em; border: 1px solid #c7d2fe; background: #eef2ff; color: #3730a3; cursor: pointer; }
-.lc-form-verb:hover { background: #e0e7ff; }
-.lc-form-verb.lc-form-verb-off { border-color: #e5e7eb; background: #f9fafb; color: #9ca3af; }
+.lc-form-verb { font: inherit; font-size: .9em; padding: .3em .9em; border-radius: 6px; border: 1px solid #9ca3af; background: #fff; color: #111827; cursor: pointer; box-shadow: 0 1px 0 rgba(0,0,0,.06); }
+.lc-form-verb:hover { background: #f3f4f6; }
+.lc-form-verb.lc-form-verb-off { border-color: #e5e7eb; background: #f9fafb; color: #b0b5bd; box-shadow: none; cursor: default; }
 </style>
 
 <script>
@@ -294,6 +294,14 @@ Auto-included by docs/_layouts/default.html.
         return w;
       }
 
+      /* a state reads as a chip, as in the grid */
+      if (opts.chips && opts.chips.indexOf(params.data._key) >= 0) {
+        var ch = document.createElement("span");
+        ch.className = "lc-dg-chip";
+        ch.textContent = (v == null ? "" : String(v));
+        return ch;
+      }
+
       if (t === "null" || v === null || v === undefined) {
         var ns = document.createElement("span");
         ns.textContent = "—";
@@ -499,6 +507,7 @@ Auto-included by docs/_layouts/default.html.
           // Arrays and objects are read-only in v1.
           editable: function(params){
             if (!opts.editable) return false;
+            if (opts.locked && opts.locked.indexOf(params.data._key) >= 0) return false;
             if (opts.sliders && opts.sliders[params.data._key]) return false; // slider handles it
             if (opts.options && opts.options[params.data._key]) return false; // dropdown handles it
             var t = params.data._type;
@@ -576,6 +585,7 @@ Auto-included by docs/_layouts/default.html.
     var title = el.getAttribute("title") || (link ? (link.textContent || "").trim() : "");
     var bound = el.getAttribute("master") || el.getAttribute("bound") || "";
     var editable = el.getAttribute("editable") === "true";
+    var editableSaid = el.getAttribute("editable");   /* a class-bound card edits unless told "false" */
     /* compute="photo = '…' + str(pic)" — the grid's formula engine on ONE
        row (datagrid.md, lcComputeRows), run on a COPY: the card derives,
        the row it follows is never written (Michel, 2026-10-06: the photo
@@ -662,11 +672,27 @@ Auto-included by docs/_layouts/default.html.
         var gridEl = document.querySelector(".lc-datagrid[data-lc-id='" + bound + "']");
         var cls = gridEl ? gridEl.getAttribute("data-bind") : "";
         var model = cls && row.obj != null ? (window.lcModels || {})[cls] : null;
-        if (model) { row = Object.assign({}, row); delete row.obj; }
+        var locked = [], chips = [], picks = {};
+        if (model) {
+          /* the object's card: the state LAST, as a chip, beside its verbs;
+             locked and state fields read-only; enum fields pick lists; the
+             rest editable through the object unless editable="false" */
+          var copy = {};
+          Object.keys(row).forEach(function (k) { if (k !== "obj" && k !== model.state) copy[k] = row[k]; });
+          if (model.state && model.state in row) copy[model.state] = row[model.state];
+          row = copy;
+          Object.keys(model.fields).forEach(function (k) {
+            var f = model.fields[k];
+            if (f.ro || f.state) locked.push(k);
+            if (f.enum && !f.ro && !f.state) picks[k] = f.enum.map(String);
+          });
+          if (model.state) chips.push(model.state);
+        }
         derive(row).then(function (shown) {
           if (mine !== turn) return;
           renderFormBody(body, shown, {
-            editable: editable,
+            editable: model ? editableSaid !== "false" : editable,
+            locked: locked, chips: chips, options: model ? picks : undefined,
             /* an edit lands on the master's own row (the shown object may be
                the derived copy), then the grid repaints */
             onChange: function(o, k, v){

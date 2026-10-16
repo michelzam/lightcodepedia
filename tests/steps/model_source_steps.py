@@ -32,7 +32,7 @@ def step_chip(context, name, gid):
 @when('I open the verbs of "{name}" in "{gid}"')
 def step_open(context, name, gid):
     row_of(context, gid, name).locator("td.lc-dg-state").click()
-    expect(grid(context, gid).locator(".lc-dg-menu")).to_be_visible(timeout=T)
+    expect(context.page.locator(".lc-dg-menu")).to_be_visible(timeout=T)   # on the body, never clipped
 
 
 @then('the verb "{live}" is live and "{grey}" is grey, needing "{need}"')
@@ -131,3 +131,43 @@ def step_pad_dressed_no_broken(context, pad_id, gid):
     expect(pad.locator(".lc-mdpad-wires")).to_have_count(0)
     expect(pad.locator(".lc-mdpad-broken")).to_have_count(0)
     assert not pad.get_attribute("data-lc-broken"), pad.get_attribute("data-lc-broken")
+
+
+@then('the form "{fid}" shows the state "{state}" as a chip, in its last row')
+def step_form_state_chip(context, fid, state):
+    form = context.page.locator(".lc-form[data-lc-id='" + fid + "']")
+    chip = form.locator(".lc-form-body .lc-dg-chip")
+    expect(chip).to_have_text(state, timeout=T)
+    labels = [l.strip().lower() for l in form.locator(".lc-form-label-cell").all_inner_texts() if l.strip()]
+    assert labels and labels[-1] == "stage", labels
+
+
+@when('the selected object of "{gid}" is deleted in code')
+def step_delete_selected(context, gid):
+    obj = context.page.evaluate(
+        "g => { const tr = document.querySelector('.lc-datagrid[data-lc-id=\"' + g + '\"] tbody tr.lc-dg-selected');"
+        " const b = document.querySelector('.lc-datagrid[data-lc-id=\"' + g + '\"]').getAttribute('data-bind');"
+        " const name = tr.querySelector('td').textContent.trim();"
+        " const row = (window.lcDatasets[b] || []).find(r => String(r.family) === name); return row ? row.obj : null; }", gid)
+    assert obj, "no selected object"
+    context.page.evaluate("o => window.lcPySend(o + '.delete()')", obj)
+
+
+@then('the selected row of "{gid}" is "{name}", and the form "{fid}" shows "{text}"')
+def step_selected_and_form(context, gid, name, fid, text):
+    sel = grid(context, gid).locator("tbody tr.lc-dg-selected")
+    expect(sel).to_have_count(1, timeout=T)
+    expect(sel).to_contain_text(name)
+    expect(context.page.locator(".lc-form[data-lc-id='" + fid + "'] .lc-form-body")).to_contain_text(text, timeout=T)
+
+
+@then("the verbs menu is fully on screen")
+def step_menu_on_screen(context):
+    menu = context.page.locator(".lc-dg-menu")
+    expect(menu).to_be_visible(timeout=T)
+    ok = context.page.evaluate(
+        "() => { const r = document.querySelector('.lc-dg-menu').getBoundingClientRect();"
+        " const g = document.querySelector('.lc-datagrid[data-lc-id=\"family_grid\"]').getBoundingClientRect();"
+        " return { inViewport: r.top >= 0 && r.bottom <= window.innerHeight && r.left >= 0 && r.right <= window.innerWidth,"
+        "          belowGrid: r.bottom > g.bottom, h: r.height }; }")
+    assert ok["inViewport"] and ok["h"] > 40, ok

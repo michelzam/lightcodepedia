@@ -58,10 +58,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-table td.lc-dg-typed:focus { outline: 2px solid #0066cc; outline-offset: -2px; background: #fff; }
 .lc-dg-table td.lc-dg-state { cursor: pointer; white-space: nowrap; }
 .lc-dg-chip { display: inline-block; background: #eef2ff; color: #3730a3; border-radius: 1em; padding: 0 .6em; font-size: .92em; }
-.lc-dg-caret { margin-left: .3em; color: #6b7280; font-size: .9em; }
+.lc-dg-caret { float: right; margin-left: .6em; color: #6b7280; font-size: .9em; }
 .lc-dg-state:hover .lc-dg-caret { color: #0066cc; }
 .lc-dg-pick { font: inherit; font-size: .95em; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; padding: .1em .3em; }
-.lc-dg-menu { position: absolute; z-index: 40; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.14); padding: .25em; min-width: 11em; }
+.lc-dg-menu { position: absolute; z-index: 1000; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.14); padding: .25em; min-width: 11em; }
 .lc-dg-verb { display: flex; justify-content: space-between; gap: 1em; width: 100%; text-align: left; background: none; border: 0; padding: .4em .7em; cursor: pointer; font: inherit; color: #111827; border-radius: 5px; }
 .lc-dg-verb:hover { background: #f3f4f6; }
 .lc-dg-verb small { color: #6b7280; }
@@ -508,6 +508,7 @@ Auto-included by docs/_layouts/default.html.
         });
       }
       if (!data || !data.length) {
+        if (selKey && lcId && window.lcMasterDetail) { selKey = null; window.lcMasterDetail.publish(lcId, null); }
         bodyEl.innerHTML = emptyMsg
           ? "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>" + emptyMsg + "</p>"
           : "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ No data: <code>" + bindId + "</code></p>";
@@ -528,7 +529,10 @@ Auto-included by docs/_layouts/default.html.
         if (f && f.state)
           return "<td class='lc-dg-state' data-row='" + idx + "' title='what this one can do'>"
             + "<span class='lc-dg-chip'>" + esc(v) + "</span><span class='lc-dg-caret'>⌄</span></td>";
-        if (!f || f.ro) return "<td>" + esc(v) + "</td>";
+        /* a tap on a row SELECTS it; cells open for typing only when the
+           grid says editable="true" — the detail form is where one edits
+           (Michel, 2026-10-16) */
+        if (!f || f.ro || !editable) return "<td>" + esc(v) + "</td>";
         if (f.enum)
           return "<td><select class='lc-dg-pick' data-col='" + c + "' data-row='" + idx + "'>"
             + [""].concat(f.enum).map(function (o) { return "<option" + (String(o) === String(v) ? " selected" : "") + ">" + esc(o) + "</option>"; }).join("")
@@ -655,11 +659,11 @@ Auto-included by docs/_layouts/default.html.
         /* the ⌄: the row's verbs — a transition is live when the row's state
            is in its pre, grey otherwise (pressing a grey one says what it
            needs); plain verbs always; Delete last, born of Object */
-        var closeMenu = function () { var m = el.querySelector(".lc-dg-menu"); if (m) m.parentNode.removeChild(m); };
+        var closeMenu = function () { document.querySelectorAll(".lc-dg-menu").forEach(function (m) { m.parentNode.removeChild(m); }); };
         el.querySelectorAll("td.lc-dg-state").forEach(function (td) {
           td.addEventListener("click", function (e) {
             e.stopPropagation();
-            var open = el.querySelector(".lc-dg-menu");
+            var open = document.querySelector(".lc-dg-menu");
             closeMenu();
             if (open && open._lcFor === td) return;
             var row = sorted[parseInt(td.getAttribute("data-row"), 10)];
@@ -687,10 +691,14 @@ Auto-included by docs/_layouts/default.html.
                 + "' data-verb='" + it.n + "' data-ok='" + (it.ok ? 1 : 0) + "' title='" + esc(it.hint) + "'>"
                 + "<span>" + esc(label) + "</span>" + (it.hint ? "<small>" + esc(it.hint) + "</small>" : "") + "</button>";
             }).join("");
-            var r = td.getBoundingClientRect(), er = el.getBoundingClientRect();
-            menu.style.left = Math.max(0, r.left - er.left) + "px";
-            menu.style.top = (r.bottom - er.top) + "px";
-            el.appendChild(menu);
+            /* on the body, fixed: a scrolling grid clipped the last row's
+               menu under its frame (Michel, 2026-10-16) */
+            var r = td.getBoundingClientRect();
+            menu.style.left = (Math.max(4, Math.min(r.left, window.innerWidth - 200)) + window.scrollX) + "px";
+            menu.style.top = (r.bottom + window.scrollY) + "px";
+            document.body.appendChild(menu);
+            var box = el.querySelector(".lc-dg-scroll");
+            if (box) box.addEventListener("scroll", closeMenu, { once: true, passive: true });
             menu.querySelectorAll("button[data-verb]").forEach(function (b) {
               b.addEventListener("click", function (ev) {
                 ev.stopPropagation();
@@ -830,8 +838,10 @@ Auto-included by docs/_layouts/default.html.
            whole table, and the row you were on must stay lit (Michel,
            2026-08-22: "the datagrid does not show the selected row") */
         if (selKey) {
+          var stillThere = false;
           slice.forEach(function (r, i) {
             if ((keyOf(r) || "i:" + i) === selKey && trs[i]) {
+              stillThere = true;
               trs[i].classList.add("lc-dg-selected");
               /* a verb moved the object and the table repainted: the bound
                  form must show the row as it is now, not as it was clicked.
@@ -844,6 +854,9 @@ Auto-included by docs/_layouts/default.html.
               }
             }
           });
+          /* the selected row is gone (deleted): the first row takes the
+             selection and the bound card follows, never a ghost */
+          if (!stillThere) { selKey = null; publishedFirst = false; lastPubJson = null; }
         }
         /* a master with data selects its first row at once, like the AG
            road — a bound form should never sit empty waiting for a click */

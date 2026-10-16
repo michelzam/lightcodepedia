@@ -32,11 +32,22 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I type "Wed" in the "since" cell of "Nguyen" in "family_grid"
     Then the dataset "calls" has "Nguyen" since "Wed"
 
-  Scenario: New adds a row at its first stage; the form shows the verbs
+  Scenario: New adds a row at its first stage; the form shows the object, its state last as a chip, the verbs as buttons
     When I press New under "family_grid"
     Then the grid "family_grid" has 4 rows and the dataset "calls" has 4 rows
     When I click the row "Nguyen" in "family_grid"
     Then the form "family_card" shows the verbs "meet, adopt" with "adopt" grey
+    And the form "family_card" shows the state "asked" as a chip, in its last row
+
+  Scenario: Deleting the selected row moves the selection on, and the form follows
+    When I click the row "Nguyen" in "family_grid"
+    And the selected object of "family_grid" is deleted in code
+    Then the grid "family_grid" has 2 rows and the dataset "calls" has 2 rows
+    And the selected row of "family_grid" is "Diallo", and the form "family_card" shows "Diallo"
+
+  Scenario: The last row's verbs are not clipped by the grid's frame
+    When I open the verbs of "Alvarez" in "family_grid"
+    Then the verbs menu is fully on screen
 
   Scenario: The page's own proof is green
     When I run the feature "class_source_proof"

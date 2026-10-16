@@ -262,18 +262,20 @@ class Family(Object, source="calls"):
 {: .model }
 
 [the families](#)
-{: .datagrid source="Family" #family_grid }
+{: .datagrid source="Family" editable="true" #family_grid }
 
 [the family](#)
 {: .form master="family_grid" #family_card }
 
 Three things to see: the `stage` cell wears a **⌄** — click it, the verbs
-this stage allows are live, the others grey and say what they need; the
-other cells are typed by the list (a text, a number) and an edit goes
-through the object; **➕ New** and **🗑 Delete** are there without a line of
-yours, every object is born with them. Click a row: the form shows the
-object with the same verbs as buttons. And the class *is* the list: a cell
-counts **{= Family.count }** families, the same **{= calls.count }** rows.
+this stage allows are live, the others grey and say what they need; a tap
+on a row selects it, and with `editable="true"` the other cells are typed
+by the list and an edit goes through the object; **➕ New** and
+**🗑 Delete** are there without a line of yours, every object is born with
+them. Click a row: the form shows the object, its state as a chip beside
+the same verbs as buttons, the rest editable through the object. And the
+class *is* the list: a cell counts **{= Family.count }** families, the
+same **{= calls.count }** rows.
 
 ```gherkin
 Feature: A class wears a dataset
@@ -298,15 +300,17 @@ Feature: A class wears a dataset
     :::
 
   Scenario: What the stage forbids is refused, in code as in the grid
-    Given a family nobody met
+    Given a fresh family, nobody met it yet
     :::python
-    self.nguyen: Family = self.page.Family.row(family="Nguyen")
+    self.fam: Family = Family.new()
+    self.fam.family = "Proof"
+    assert self.fam.stage == "asked"
     :::
     When the dog is sent home too early
     :::python
     self.refused: str = ""
     try:
-        self.nguyen.adopt()
+        self.fam.adopt()
     except PreconditionError as e:
         self.refused = str(e)
     :::
@@ -316,8 +320,9 @@ Feature: A class wears a dataset
     :::
     And after meeting, the list itself moved
     :::python
-    self.nguyen.meet()
-    assert self.page.calls.row(family="Nguyen")["stage"] == "met", "the class moved, the list did not"
+    self.fam.meet()
+    assert self.page.calls.row(family="Proof")["stage"] == "met", "the class moved, the list did not"
+    self.fam.delete()
     :::
 
   Scenario: Born verbs — the list grows and shrinks
