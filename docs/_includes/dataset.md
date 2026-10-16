@@ -60,7 +60,9 @@ Auto-included by docs/_layouts/default.html.
 /* the chip and the ⌄ sit on the row's own text line: an inline chip (its
    padding never lifts the line), the ⌄ nudged up to the x-height — a block
    chip rode high and a floated ⌄ sank (Michel, 2026-10-16) */
-.lc-dg-chip { display: inline; background: #eef2ff; color: #3730a3; border-radius: 1em; padding: .12em .6em; line-height: inherit; }
+.lc-dg-chip { display: inline-block; vertical-align: baseline; background: #eef2ff; color: #3730a3; border-radius: 1em; padding: 0 .6em; line-height: 1.45; }
+/* every stage's chip as wide as the longest stage: the ⌄ line up in one column (Michel, 2026-10-16) */
+.lc-dg-state .lc-dg-chip { box-sizing: content-box; }
 .lc-dg-caret { display: inline-block; margin-left: .45em; color: #6b7280; position: relative; top: -.22em; line-height: 1; }
 .lc-dg-table td.lc-dg-typed.lc-dg-typing { background: #fff; outline: 2px solid #0066cc; outline-offset: -2px; cursor: text; }
 .lc-dg-state:hover .lc-dg-caret { color: #0066cc; }
@@ -101,7 +103,21 @@ Auto-included by docs/_layouts/default.html.
   if (!window.lcSetDataset) {
     window.lcSetDataset = function (id, data) {
       window.lcDatasets[id] = data;
-      (window.lcDatasetListeners[id] || []).forEach(function (fn) { try { fn(data); } catch (e) {} });
+      /* A LISTENER DIES WITH ITS PART. A pad re-renders its preview on every
+         pause in typing; each new grid, chart or class added a listener and
+         the replaced ones kept repainting off-screen — one more per pause, the
+         freeze growing with it (Michel, 2026-10-16: "typing is slow"). A
+         listener tagged with its element (_lcEl) is dropped once that element
+         has left the page. */
+      var L = window.lcDatasetListeners[id] || [];
+      var live = L.filter(function (fn) {
+        var e = fn._lcEl;
+        if (!e) return true;
+        if (e.isConnected) { fn._lcSeen = 1; return true; }
+        return !fn._lcSeen;
+      });
+      if (live.length !== L.length) window.lcDatasetListeners[id] = live;
+      live.forEach(function (fn) { try { fn(data); } catch (e) {} });
     };
   }
   /* what a class's grid says when a verb or an edit is refused: one line
@@ -443,7 +459,7 @@ Auto-included by docs/_layouts/default.html.
        on the selected row) opens a cell; editable="false" says otherwise
        (Michel, 2026-10-16) */
     var editSaid = el.getAttribute("editable") || "";
-    var pendingNew = null;   /* the objects before ➕ New: the one that is not among them gets selected */
+    var pendingNew = null, typeNew = null;   /* the objects before ➕ New: the one that is not among them gets selected */
     var lcId = el.getAttribute("id") || "";
     var masterId = el.getAttribute("master") || el.getAttribute("detail-of") || "";
     var filterExpr = el.getAttribute("filter") || "";
@@ -518,6 +534,10 @@ Auto-included by docs/_layouts/default.html.
       }
       if (!data || !data.length) {
         if (selKey && lcId && window.lcMasterDetail) { selKey = null; window.lcMasterDetail.publish(lcId, null); }
+        /* empty for a moment (a class publishes before its rows arrive):
+           when rows come, the first one is selected AND announced again —
+           the card said "(no data)" over a lit row (Michel, 2026-10-16) */
+        publishedFirst = false; lastPubJson = null;
         bodyEl.innerHTML = emptyMsg
           ? "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em;padding:.5em 0'>" + emptyMsg + "</p>"
           : "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ No data: <code>" + bindId + "</code></p>";
@@ -529,15 +549,17 @@ Auto-included by docs/_layouts/default.html.
          is the state, which are typed, which are locked; obj is the object's
          name, the grid's own business, never a column */
       var model = (window.lcModels || {})[bindId] || null;
-      var cols    = allCols.filter(function (c) { return c !== "url" && !(model && (c === "obj" || c.charAt(0) === "_")); });
+      var cols    = allCols.filter(function (c) { return c !== "url" && !(model && (c === "obj" || c.charAt(0) === "_" || !model.fields[c])); });
       if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
       function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/'/g, "&#39;"); }
       function dressedCell(row, c, idx) {
         var v = row[c] !== undefined && row[c] !== null ? row[c] : "";
         var f = model.fields[c];
-        if (f && f.state)
+        if (f && f.state) {
+          var wide = (f.enum || []).reduce(function (m, s) { return Math.max(m, String(s).length); }, String(v).length);
           return "<td class='lc-dg-state' data-row='" + idx + "' title='what this one can do'>"
-            + "<span class='lc-dg-chip'>" + esc(v) + "</span><span class='lc-dg-caret'>⌄</span></td>";
+            + "<span class='lc-dg-chip' style='min-width:" + wide + "ch'>" + esc(v) + "</span><span class='lc-dg-caret'>⌄</span></td>";
+        }
         /* a tap on a row SELECTS it; cells open for typing only when the
            grid says editable="true" — the detail form is where one edits
            (Michel, 2026-10-16) */
@@ -680,6 +702,7 @@ Auto-included by docs/_layouts/default.html.
           td.addEventListener("blur", commit);
           td.addEventListener("keydown", function (e) {
             if (!td.isContentEditable) return;
+            typeNew = null;   /* typing has begun: no repaint re-opens a fresh cell over it */
             if (e.key === "Enter") { e.preventDefault(); td.blur(); }
             else if (e.key === "Escape") { e.preventDefault(); td.textContent = was; shut(); }
           });
@@ -915,10 +938,21 @@ Auto-included by docs/_layouts/default.html.
               trs.forEach(function (x) { x.classList.remove("lc-dg-selected"); });
               if (trs[ni]) { trs[ni].classList.add("lc-dg-selected"); try { trs[ni].scrollIntoView({ block: "nearest" }); } catch (e) {} }
               if (lcId && window.lcMasterDetail) window.lcMasterDetail.publish(lcId, slice[ni]);
+              typeNew = { key: selKey, until: Date.now() + 1500 };
               break;
             }
           }
         }
+        /* ➕ New leaves the caret in the new row's first cell, ready to type
+           (Michel, 2026-10-16) — again after the repaints that follow it */
+        if (typeNew && Date.now() < typeNew.until) {
+          for (var ti = 0; ti < slice.length; ti++) {
+            if (keyOf(slice[ti]) !== typeNew.key || !trs[ti]) continue;
+            var first = trs[ti].querySelector("td.lc-dg-typed");
+            if (first && !first.isContentEditable) first.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+            break;
+          }
+        } else typeNew = null;
         /* the selection survives a republish: a model's verb repaints the
            whole table, and the row you were on must stay lit (Michel,
            2026-08-22: "the datagrid does not show the selected row") */
@@ -951,7 +985,9 @@ Auto-included by docs/_layouts/default.html.
             selKey = keyOf(slice[0]) || "i:0";
             if (trs[0]) trs[0].classList.add("lc-dg-selected");
           }
-          if (lcId && window.lcMasterDetail) window.lcMasterDetail.publish(lcId, slice[0]);
+          var firstRow = slice[curIndex()] || slice[0];   /* the lit row, which is not always the first */
+          lastPubJson = JSON.stringify(firstRow);
+          if (lcId && window.lcMasterDetail) window.lcMasterDetail.publish(lcId, firstRow);
         }
         /* never a grid with rows and nothing lit (Michel, 2026-10-16: "a
            line should always be selected, after a refresh, on opening") */
@@ -975,6 +1011,7 @@ Auto-included by docs/_layouts/default.html.
 
     /* register as persistent listener so auto-refresh re-renders */
     window.lcDatasetListeners[bindId] = window.lcDatasetListeners[bindId] || [];
+    render._lcEl = el;
     window.lcDatasetListeners[bindId].push(render);
 
     if (window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);

@@ -268,6 +268,7 @@ Auto-included by docs/_layouts/default.html.
        gear — the repair is one knob away, not a lost fence */
     if (!bindId) { paintTitle(); note(emptyMsg || "This chart names no source — open ⚙️ and set source to the part it should read."); return; }
     window.lcDatasetListeners[bindId] = window.lcDatasetListeners[bindId] || [];
+    render._lcEl = wrap;
     window.lcDatasetListeners[bindId].push(render);
     if (masterId && window.lcMasterDetail)
       window.lcMasterDetail.subscribe(masterId, function (row) { masterRow = row || null; render(window.lcDatasets[bindId] || []); });

@@ -125,6 +125,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     window.lcDatasetListeners[bindId] = window.lcDatasetListeners[bindId] || [];
+    render._lcEl = chip;
     window.lcDatasetListeners[bindId].push(render);
     if (window.lcDatasets && window.lcDatasets[bindId]) render(window.lcDatasets[bindId]);
   }

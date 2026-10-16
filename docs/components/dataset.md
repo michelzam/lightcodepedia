@@ -261,6 +261,8 @@ class Family(Object, source="calls"):
 
 
 class Foster(Family):
+    until = Attr(str)
+
     def give_back(self):
         self.since = weekday()
 ```
@@ -281,7 +283,7 @@ the old value selected, the edit going through the object
 without a line of yours, every object is born with them. A class with
 subclasses on the page — `Foster(Family)` here — makes ➕ New a pick: a
 Family or a Foster, and the new row is selected. A Foster's ⌄ carries its
-own verb, *give back*. `State("asked", "met", "home")` lists the stages in
+own verb, *give back*, and its card its own field, *until*. `State("asked", "met", "home")` lists the stages in
 order, `@transition("asked", "met")` goes from one to the other: no
 brackets needed for one state. Click a row: the form shows the object, its state as a chip beside
 the same verbs as buttons, the rest editable through the object. And the

@@ -158,7 +158,7 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/broken.md"
     And I wait for the page to be interactive
     Then the "broken" pad marks lines "13, 19" as errors
-    And under the "broken" pad it says "line 13: python" and "line 19: a decoration closes with }"
+    And the "broken" pad's line 19 says "a decoration closes with }" on itself, in no column of its own
 
   Scenario: A click on a TODO blank takes it whole, and typing replaces it
     Michel, 2026-10-16: "when a todo value is selected, the editor should
@@ -178,3 +178,138 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I wait for the page to be interactive
     And I click inside "TODO_YOUR_LIST" in the "blank" pad and type "calls"
     Then the "blank" pad reads 'source="calls"'
+
+  Scenario: New leaves the caret in the new row's first cell, ready to type
+    Michel, 2026-10-16: "when new is clicked in the grid, the cursor should
+    be in the first cell ready to type a value".
+
+    When I add a "Family" with New under "family_grid"
+    And I type "Proof" and press Enter, without clicking
+    Then the dataset "calls" has "Proof" at stage "asked"
+
+  Scenario: Every stage chip has the same width, so the carets line up
+    Then the stage chips of "family_grid" are all as wide, their carets in one column
+
+  Scenario: A card on a dressed grid in a pad shows the lit row from the start
+    Michel, 2026-10-16: the card said "(no data)" under a lit row — the
+    class published an empty list first, and the grid never announced its
+    first row again once the rows came.
+
+    Given the GitHub contents API serves "courses/demo/module_06/card.md" with the document:
+      """
+      # Card
+
+      `````markdown
+      ```csv
+      family,dog,stage
+      Nguyen,Biscuit,asked
+      Diallo,Scout,met
+      ```
+      {: .dataset #reservations }
+
+      ```python
+      class Family(Object, source="reservations"):
+          stage = State("asked", "met", "home")
+
+          @transition("asked", "met")
+          def meet(self):
+              pass
+      ```
+      {: .model }
+
+      [the families](#)
+      {: .datagrid source="Family" #families }
+
+      [Title](#)
+      {: .form master="families" }
+      `````
+      {: .mdpad #card decorations="true" rows="20" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/card.md"
+    And I wait for the page to be interactive
+    Then the card in the "card" pad shows "Nguyen"
+
+  Scenario: Typing in a pad does not pile up listeners
+    Michel, 2026-10-16: "when I have multiple classes and code, the typing
+    is slow" — every pause re-rendered the preview, while each replaced
+    grid or class kept its dataset listener: one more per pause.
+
+    Given the GitHub contents API serves "courses/demo/module_06/card.md" with the document:
+      """
+      # Card
+
+      `````markdown
+      Families.
+
+      ```csv
+      family,dog,stage
+      Nguyen,Biscuit,asked
+      ```
+      {: .dataset #reservations }
+
+      ```python
+      class Family(Object, source="reservations"):
+          stage = State("asked", "met")
+      ```
+      {: .model }
+
+      [the families](#)
+      {: .datagrid source="Family" #families }
+      `````
+      {: .mdpad #card decorations="true" rows="20" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/card.md"
+    And I wait for the page to be interactive
+    And I type in the "card" pad three times, pausing after each
+    Then the lists "reservations, Family" keep at most 2 listeners each
+
+  Scenario: A subclass's card shows its own fields too
+    Michel, 2026-10-16: "when an instance of a subclass is selected in the
+    form, all the attributes should be displayed".
+
+    When I add a "Foster" with New under "family_grid"
+    And I type "Proof" and press Enter, without clicking
+    Then the form "family_card" shows a field "Until"
+    And the grid "family_grid" has the columns "family, dog, stage, since"
+
+  Scenario: A diagram in a section accordion draws the class the pad declares
+    Michel, 2026-10-16: "a diagram scoped to the Family class in an
+    accordion later in the page" — a heading accordion moves its parts, so
+    the diagram stays live and redraws when the pad's class runs.
+
+    Given the GitHub contents API serves "courses/demo/module_06/drawn.md" with the document:
+      """
+      # Drawn
+
+      `````markdown
+      ```csv
+      family,stage
+      Nguyen,asked
+      ```
+      {: .dataset #reservations }
+
+      ```python
+      class Family(Object, source="reservations"):
+          stage = State("asked", "met")
+
+          @transition("asked", "met")
+          def meet(self):
+              pass
+
+
+      class Company(Family):
+          address = Attr(str)
+      ```
+      {: .model }
+      `````
+      {: .mdpad #drawn_pad decorations="true" rows="20" }
+
+      ## The class, drawn
+      {: .accordion }
+
+      [the families, drawn](#)
+      {: .diagram scope="Family" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/drawn.md"
+    And I wait for the page to be interactive
+    Then the diagram in the section accordion names "Family, Company, address, meet"

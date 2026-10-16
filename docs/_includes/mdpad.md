@@ -226,10 +226,24 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-out .lc-mdpad-broken { outline: 2px dashed #c62828; outline-offset: 4px; border-radius: 4px; }
 .lc-mdpad-out .lc-mdpad-broken::before { content: "🔌 " attr(data-lc-broken) " — no such id on this page"; display: block; color: #c62828; font-size: .8em; font-family: ui-sans-serif, system-ui, sans-serif; margin-bottom: .35em; }
 .lc-mdpad-wires { color: #c62828; font-size: .85em; margin: 0 0 .6em; }
+/* the preview is catching up with the typing */
+.lc-mdpad[data-lc-busy] .lc-mdpad-out { position: relative; }
+.lc-mdpad[data-lc-busy] .lc-mdpad-out::after { content: "⟳"; position: absolute; top: .35em; right: .5em; z-index: 5;
+  font-size: .85em; color: #6b7280; opacity: .7; animation: lc-pad-spin 1s linear infinite; pointer-events: none; }
+@keyframes lc-pad-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .lc-mdpad[data-lc-busy] .lc-mdpad-out::after { animation: none; } }
 /* ⚠️ an error's line: a red tint, ⚠ in the gutter, the message under the pad */
 .lc-mdpad-piano .ln.err { background: rgba(243, 139, 168, 0.16); box-shadow: inset 0 -2px 0 rgba(243, 139, 168, 0.7); }
 .lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln.err::before { content: "⚠ " attr(data-n); color: #f38ba8; }
-.lc-mdpad-errs { color: #c62828; font-size: .85em; margin: .35em 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+/* the words: under the line the caret is on, a small label over the next
+   line — never on the code itself, never in a column of their own */
+.lc-mdpad-piano .ln.err.here::after { content: "⚠ " attr(data-err); position: absolute; left: 0; top: 100%; z-index: 4;
+  max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: ui-sans-serif, system-ui, sans-serif; font-size: .78em; line-height: 1.5;
+  background: #45273a; color: #f5c2d0; border-radius: 4px; padding: 0 .5em; pointer-events: none; }
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln.err.here[data-ic]::after { content: "⚠ " attr(data-err); left: 0; width: auto; transform: none; }
+/* the same words for a screen reader — never a column of their own */
+.lc-mdpad-errs { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @keyframes lc-mdpad-pulse {
   0%   { background: #dbeafe; box-shadow: 0 0 0 4px #dbeafe; }
   100% { background: transparent; box-shadow: 0 0 0 4px transparent; }
@@ -1468,9 +1482,12 @@ Auto-included by docs/_layouts/default.html.
         wrap.removeAttribute("data-lc-errors");
         return;
       }
+      /* the words stay with the editor (Michel, 2026-10-16: "in the gutter,
+         not in a third column"): ⚠ beside the number, the message on its own
+         line's right end; a screen reader hears them from the pad's status */
       if (!errsEl) { errsEl = document.createElement("div"); errsEl.className = "lc-mdpad-errs"; errsEl.setAttribute("role", "status"); }
-      errsEl.textContent = ns.map(function (n) { return "⚠️ line " + (n + 1) + ": " + e[n]; }).join(" · ");
-      if (src && errsEl.parentNode !== src.parentNode) src.parentNode.insertBefore(errsEl, src.nextSibling);
+      errsEl.textContent = ns.map(function (n) { return "line " + (n + 1) + ": " + e[n]; }).join(" · ");
+      if (errsEl.parentNode !== wrap) wrap.appendChild(errsEl);
       wrap.setAttribute("data-lc-errors", ns.map(function (n) { return n + 1; }).join(","));
     }
     function paintPiano() {
@@ -1490,6 +1507,7 @@ Auto-included by docs/_layouts/default.html.
         var ial = fence === null && numbers && lines[n].match(/^\s*\{:(.*)\}\s*$/);
         var ic = ial ? ialIcon(ial[1]) : "";
         var h = "<div class='ln" + (n === here ? " here" : "") + (errs[n] ? " err" : "") + "' data-n='" + (n + 1) + "'" +
+          (errs[n] ? " data-err='" + escHtml(errs[n]).replace(/'/g, "&#39;") + "'" : "") +
           (ic ? " data-ic='" + ic + "'" + (icGlyph(ic) ? " data-ick='g'" : "") +
                 " data-icn='" + ((ial[1].match(/(?:^|\s)\.([A-Za-z][\w-]*)/) || [])[1] || "") + "'" : "") +
           ">" + paintLine(lines[n], fence) + "</div>";
@@ -2493,9 +2511,19 @@ Auto-included by docs/_layouts/default.html.
       blocks = blocksOf(ta.value);
     };
 
+    /* the preview catches up AFTER the typing: a small ⟳ at its top-right
+       corner says it is behind, gone once it has caught up (Michel,
+       2026-10-16: "async, with a discreet progression top right") */
     var _renT = null;
     ta.addEventListener("input", deco
-      ? function () { clearTimeout(_renT); _renT = setTimeout(render, 350); }
+      ? function () {
+          clearTimeout(_renT);
+          wrap.setAttribute("data-lc-busy", "1");
+          _renT = setTimeout(function () {
+            var go = function () { try { render(); } finally { wrap.removeAttribute("data-lc-busy"); } };
+            if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 600 }); else go();
+          }, 450);
+        }
       : render);
     ta.addEventListener("input", function () {
       /* edited since the last save: a proof reading this pad says so */

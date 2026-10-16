@@ -2816,9 +2816,11 @@ def _lc_rows_of(cls):
                 continue
             row = _ODict()
             row["obj"] = nm
+            fields = cls._lc_fields
             if type(o) is not cls:
-                row["_kind"] = type(o).__name__   # a subclass rides in its parent's list
-            for f in cls._lc_fields:
+                row["_kind"] = type(o).__name__   # a subclass rides in its parent's list,
+                fields = getattr(type(o), "_lc_fields", None) or fields   # with its own fields too
+            for f in fields:
                 v = o._v.get(f.n)
                 row[f.n] = (_lc_name_of(v) or "?") if f.ref and v is not None else v
             rows.append(row)
@@ -3913,21 +3915,43 @@ _inject_store()
     var bind = sourced.map(function (p) { return "\n_lc_source_bind(" + JSON.stringify(p[0]) + ", " + JSON.stringify(p[1]) + ")"; }).join("");
     sourced.forEach(function (p) {
       var L = window.lcDatasetListeners = window.lcDatasetListeners || {};
-      (L[p[1]] = L[p[1]] || []).push(function () {
+      var sync = function () {
         if (window._lcModelWriting) return;   /* our own write-back, not a move */
         pySend("_lc_source_sync(" + JSON.stringify(p[1]) + ")");
-      });
+      };
+      sync._lcEl = el;                        /* gone with its block (dataset.md) */
+      (L[p[1]] = L[p[1]] || []).push(sync);
     });
     var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
+    /* THE SAME CLASSES ARE NOT RE-RUN. A pad re-renders on every pause in
+       typing; re-running the runtime and the classes each time froze the
+       typing (Michel, 2026-10-16). When every class this block declares was
+       last declared by this very text, the classes stand: only the lists are
+       re-bound (their rows were re-read) and the page republished. */
+    var names = [], nm, reCls = /^[ \t]*class\s+(\w+)/mg;
+    while ((nm = reCls.exec(code))) names.push(nm[1]);
+    var by = window._lcClassBy = window._lcClassBy || {};
+    var same = names.length && names.every(function (n) { return by[n] === code; });
     mpReady().then(function (mp) {
+      if (same) {
+        try {
+          runPy(mp, "_LC_DECL[" + JSON.stringify(mid) + "] = " + JSON.stringify(names) + bind + "\n_lc_publish_all()\n");
+          (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
+          document.dispatchEvent(new CustomEvent("lc-model-changed"));
+          if (window.lcWarn) window.lcWarn(el, "");
+          return;
+        } catch (e) { names.forEach(function (n) { delete by[n]; }); }
+      }
       try {
         runPy(mp, preamble + "\n_LC_SNAP_M = set(_CLASSES)\n" + code + bind +
           "\n_LC_DECL[" + JSON.stringify(mid) + "] = [n for n in _CLASSES if n not in _LC_SNAP_M]\n" +
           "_LC_NEW[:] = []\n_lc_publish_all()\n");
         (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
+        names.forEach(function (n) { by[n] = code; });
         document.dispatchEvent(new CustomEvent("lc-model-changed"));
         if (window.lcWarn) window.lcWarn(el, "");
       } catch (e) {
+        names.forEach(function (n) { delete by[n]; });
         console.error("[lc-model]", e);
         /* a class that does not run says so beside itself, on ITS line —
            not only in the console (Michel, 2026-10-16) */

@@ -287,3 +287,79 @@ def step_pad_reads(context, pad_id, text):
     ta = context.page.locator("[data-lc-id='" + pad_id + "'] textarea.lc-mdpad-in")
     v = ta.input_value()
     assert text in v, v
+
+
+@then('the "{pad_id}" pad\'s line {n:d} says "{text}" on itself, in no column of its own')
+def step_err_on_line(context, pad_id, n, text):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    ln = pad.locator(".lc-mdpad-piano .ln.err[data-n='" + str(n) + "']")
+    expect(ln).to_have_attribute("data-err", text, timeout=T)
+    # the words never stand as a column beside the editor
+    side = context.page.evaluate(
+        "p => { const w = document.querySelector(\"[data-lc-id='\" + p + \"']\"), e = w.querySelector('.lc-mdpad-errs');"
+        " return e ? e.getBoundingClientRect().width : 0; }", pad_id)
+    assert side <= 2, "the error text takes room beside the pad: %spx" % side
+
+
+@when('I type "{text}" and press Enter, without clicking')
+def step_type_blind(context, text):
+    cell = context.page.locator("td.lc-dg-typed.lc-dg-typing")
+    expect(cell).to_have_count(1, timeout=T)
+    expect(cell).to_be_focused()
+    context.page.keyboard.type(text)
+    context.page.keyboard.press("Enter")
+
+
+@then('the stage chips of "{gid}" are all as wide, their carets in one column')
+def step_chips_wide(context, gid):
+    expect(grid(context, gid).locator(".lc-dg-chip").first).to_be_visible(timeout=T)
+    got = context.page.evaluate(
+        "g => [...document.querySelectorAll(\".lc-datagrid[data-lc-id='\" + g + \"'] td.lc-dg-state\")].map(td =>"
+        " [Math.round(td.querySelector('.lc-dg-chip').getBoundingClientRect().width), Math.round(td.querySelector('.lc-dg-caret').getBoundingClientRect().left)])", gid)
+    widths = {w for w, _ in got}
+    lefts = {l for _, l in got}
+    assert len(widths) == 1 and len(lefts) == 1, got
+
+
+@then('the card in the "{pad_id}" pad shows "{text}"')
+def step_card_shows(context, pad_id, text):
+    form = context.page.locator("[data-lc-id='" + pad_id + "'] .lc-form .lc-form-body")
+    expect(form).to_contain_text(text, timeout=T)
+
+
+@when('I type in the "{pad_id}" pad three times, pausing after each')
+def step_type_pause(context, pad_id):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    expect(pad.locator(".lc-dg-chip").first).to_be_attached(timeout=T)
+    ta = pad.locator("textarea.lc-mdpad-in")
+    ta.focus()
+    context.page.evaluate("t => t.setSelectionRange(t.value.indexOf('Families.') + 9, t.value.indexOf('Families.') + 9)", ta.element_handle())
+    for _ in range(3):
+        context.page.keyboard.type(" more")
+        context.page.wait_for_timeout(1200)
+    expect(pad.locator(".lc-dg-chip").first).to_be_attached(timeout=T)
+
+
+@then('the lists "{ids}" keep at most {n:d} listeners each')
+def step_listeners(context, ids, n):
+    for i in [x.strip() for x in ids.split(",")]:
+        # a list change prunes the listeners of parts that have left the page
+        context.page.evaluate("i => window.lcSetDataset(i, window.lcDatasets[i])", i)
+        k = context.page.evaluate("i => (window.lcDatasetListeners[i] || []).length", i)
+        assert k <= n, "%s has %d listeners" % (i, k)
+
+
+@then('the form "{fid}" shows a field "{label}"')
+def step_form_field(context, fid, label):
+    form = context.page.locator(".lc-form[data-lc-id='" + fid + "'] .lc-form-body")
+    expect(form).to_contain_text(label, timeout=T)
+
+
+@then('the diagram in the section accordion names "{words}"')
+def step_diagram_names(context, words):
+    d = context.page.locator(".lc-acc-section .lc-diagram svg")
+    expect(d).to_be_attached(timeout=30000)
+    for w in [x.strip() for x in words.split(",")]:
+        context.page.wait_for_function(
+            "w => { const s = document.querySelector('.lc-acc-section .lc-diagram'); return s && s.textContent.indexOf(w) >= 0; }",
+            arg=w, timeout=30000)
