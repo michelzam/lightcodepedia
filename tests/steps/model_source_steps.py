@@ -121,3 +121,13 @@ def step_form_verbs(context, fid, verbs, grey):
     off = bar.locator("button.lc-form-verb-off")
     expect(off).to_have_count(1)
     assert off.first.inner_text().strip().lower() == grey.lower()
+
+
+@then('the "{pad_id}" pad shows the grid "{gid}" dressed, with no broken wire')
+def step_pad_dressed_no_broken(context, pad_id, gid):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    chip = pad.locator(".lc-datagrid[data-lc-id='" + gid + "'] .lc-dg-chip").first
+    expect(chip).to_be_visible(timeout=T)
+    expect(pad.locator(".lc-mdpad-wires")).to_have_count(0)
+    expect(pad.locator(".lc-mdpad-broken")).to_have_count(0)
+    assert not pad.get_attribute("data-lc-broken"), pad.get_attribute("data-lc-broken")

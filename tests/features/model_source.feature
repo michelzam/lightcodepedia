@@ -41,3 +41,42 @@ Feature: A class wears a dataset — the grid dresses the rows
   Scenario: The page's own proof is green
     When I run the feature "class_source_proof"
     Then the feature "class_source_proof" is green
+
+  Scenario: A grid on a class declared in the pad is wired, not broken
+    Module 06 · 1bis on the live lab: the pad's broken-wire scan said
+    "source «Family» — no such id on this page" over a working grid
+    (Michel, 2026-10-16) — a class declared in the pad's own python is a
+    dataset, so a wire to it holds.
+
+    Given the GitHub contents API serves "courses/demo/module_06/dress.md" with the document:
+      """
+      # Dress
+
+      `````markdown
+      # The list, dressed
+
+      ```csv
+      family,dog,stage
+      Nguyen,Biscuit,asked
+      Diallo,Scout,met
+      ```
+      {: .dataset #calls }
+
+      ```python
+      class Family(Object, source="calls"):
+          stage = State(["asked", "met", "home"])
+
+          @transition(pre=["asked"], post="met")
+          def meet(self):
+              pass
+      ```
+      {: .model }
+
+      [the families](#)
+      {: .datagrid source="Family" #families }
+      `````
+      {: .mdpad #dress decorations="true" rows="20" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/dress.md"
+    And I wait for the page to be interactive
+    Then the "dress" pad shows the grid "families" dressed, with no broken wire

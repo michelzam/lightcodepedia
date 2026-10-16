@@ -1239,7 +1239,14 @@ Auto-included by docs/_layouts/default.html.
       var lines = text.split("\n"), bl = blocksOf(text), ids = {}, wires = [], fence = null;
       for (var i = 0; i < lines.length; i++) {
         var t = lines[i].trim(), fm = t.match(/^(`{3,}|~{3,})/);
-        if (fence) { if (fm && fm[1].charAt(0) === fence.charAt(0) && fm[1].length >= fence.length && /^(`{3,}|~{3,})$/.test(t)) fence = null; continue; }
+        if (fence) {
+          if (fm && fm[1].charAt(0) === fence.charAt(0) && fm[1].length >= fence.length && /^(`{3,}|~{3,})$/.test(t)) { fence = null; continue; }
+          /* A CLASS IS A DATASET: a class declared in the pad's own python is
+             a legal source — the grid on it is wired, not broken (2026-10-16) */
+          var cm = t.match(/^class\s+([A-Za-z_]\w*)\s*\(/);
+          if (cm) ids[cm[1]] = true;
+          continue;
+        }
         if (fm) { fence = fm[1]; continue; }
         var ial = t.match(/^\{:(.*)\}$/);
         if (!ial) continue;
