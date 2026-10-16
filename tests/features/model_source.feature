@@ -33,7 +33,7 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the dataset "calls" has "Nguyen" since "Wed"
 
   Scenario: New adds a row at its first stage; the form shows the object, its state last as a chip, the verbs as buttons
-    When I press New under "family_grid"
+    When I add a "Family" with New under "family_grid"
     Then the grid "family_grid" has 4 rows and the dataset "calls" has 4 rows
     When I click the row "Nguyen" in "family_grid"
     Then the form "family_card" shows the verbs "meet, adopt" with "adopt" grey
@@ -91,3 +91,90 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/dress.md"
     And I wait for the page to be interactive
     Then the "dress" pad shows the grid "families" dressed, with no broken wire
+
+  Scenario: A row is always selected, from the first paint on
+    Michel, 2026-10-16: "a line should always be selected in a grid after
+    refresh, on opening, etc." — a grid with no id selected nothing.
+
+    Then the grid "family_grid" has exactly one selected row
+
+  Scenario: New offers the class and its subclasses, and selects the one it made
+    Michel, 2026-10-16: "+New should select the new created line" and
+    "+New should propose all subclasses of the grid's source class".
+
+    When I press New under "family_grid"
+    Then the New menu offers "Family, Foster"
+    When I pick "Foster" in the New menu
+    Then the grid "family_grid" has 4 rows and the dataset "calls" has 4 rows
+    And the selected row of "family_grid" is the new one, at stage "asked"
+    And its verbs offer "give_back" beside "meet"
+
+  Scenario: A double click opens a cell with its value selected, and typing replaces it
+    Michel, 2026-10-16: "data should be updatable in the grid (double click
+    to enter a field?)" — a class grid edits by default; a single tap only
+    selects.
+
+    When I click the row "Diallo" in "family_grid"
+    Then the "since" cell of "Nguyen" in "family_grid" is closed for typing
+    When I double click the "since" cell of "Diallo" in "family_grid" and type "Mon"
+    Then the dataset "calls" has "Diallo" since "Mon"
+
+  Scenario: The stage chip and its caret sit on the row's text line
+    Michel, 2026-10-16: the pill rode high, the ⌄ sank below the line.
+
+    Then the chip, the caret and the family name of "Nguyen" in "family_grid" share one middle line
+
+  Scenario: The pad marks errors in its gutter, the python fence's included
+    Michel, 2026-10-16: "check that errors (syntax, etc) are detected and
+    displayed in the gutter, including inside the py fence".
+
+    Given the GitHub contents API serves "courses/demo/module_06/broken.md" with the document:
+      """
+      # Broken
+
+      `````markdown
+      # The list
+
+      ```csv
+      family,stage
+      Nguyen,asked
+      ```
+      {: .dataset #calls }
+
+      ```python
+      class Family(Object, source="calls"):
+          stage = State("asked", "met")
+
+          def meet(self)
+              pass
+      ```
+      {: .model }
+
+      [the families](#)
+      {: .datagrid source="Family" #families
+      `````
+      {: .mdpad #broken decorations="true" numbers="true" rows="20" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/broken.md"
+    And I wait for the page to be interactive
+    Then the "broken" pad marks lines "13, 19" as errors
+    And under the "broken" pad it says "line 13: python" and "line 19: a decoration closes with }"
+
+  Scenario: A click on a TODO blank takes it whole, and typing replaces it
+    Michel, 2026-10-16: "when a todo value is selected, the editor should
+    replace it when the learner types, not insert characters".
+
+    Given the GitHub contents API serves "courses/demo/module_06/blank.md" with the document:
+      """
+      # Blank
+
+      `````markdown
+      [the families](#)
+      {: .datagrid source="TODO_YOUR_LIST" }
+      `````
+      {: .mdpad #blank rows="6" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/blank.md"
+    And I wait for the page to be interactive
+    And I click inside "TODO_YOUR_LIST" in the "blank" pad and type "calls"
+    Then the "blank" pad reads 'source="calls"'

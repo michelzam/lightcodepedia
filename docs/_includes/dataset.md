@@ -54,11 +54,15 @@ Auto-included by docs/_layouts/default.html.
    rows — the state cell wears a ⌄ that drops the row's verbs, legal ones
    live and the others grey; typed cells; ➕ New under the list. */
 .lc-datagrid { position: relative; }
-.lc-dg-table td.lc-dg-typed { cursor: text; background: #fcfdff; border-bottom: 1px dashed #9db6d0; }
+.lc-dg-table td.lc-dg-typed { border-bottom: 1px dashed #9db6d0; }
 .lc-dg-table td.lc-dg-typed:focus { outline: 2px solid #0066cc; outline-offset: -2px; background: #fff; }
 .lc-dg-table td.lc-dg-state { cursor: pointer; white-space: nowrap; }
-.lc-dg-chip { display: inline-block; background: #eef2ff; color: #3730a3; border-radius: 1em; padding: 0 .6em; font-size: .92em; }
-.lc-dg-caret { float: right; margin-left: .6em; color: #6b7280; font-size: .9em; }
+/* the chip and the ⌄ sit on the row's own text line: an inline chip (its
+   padding never lifts the line), the ⌄ nudged up to the x-height — a block
+   chip rode high and a floated ⌄ sank (Michel, 2026-10-16) */
+.lc-dg-chip { display: inline; background: #eef2ff; color: #3730a3; border-radius: 1em; padding: .12em .6em; line-height: inherit; }
+.lc-dg-caret { display: inline-block; margin-left: .45em; color: #6b7280; position: relative; top: -.22em; line-height: 1; }
+.lc-dg-table td.lc-dg-typed.lc-dg-typing { background: #fff; outline: 2px solid #0066cc; outline-offset: -2px; cursor: text; }
 .lc-dg-state:hover .lc-dg-caret { color: #0066cc; }
 .lc-dg-pick { font: inherit; font-size: .95em; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; padding: .1em .3em; }
 .lc-dg-menu { position: absolute; z-index: 1000; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.14); padding: .25em; min-width: 11em; }
@@ -435,6 +439,11 @@ Auto-included by docs/_layouts/default.html.
        device this course is read on: a contenteditable cell takes ONE tap,
        where AG needs a double-click that phones barely deliver. */
     var editable = el.getAttribute("editable") === "true";
+    /* a grid on a CLASS edits by default — a double click (or a second tap
+       on the selected row) opens a cell; editable="false" says otherwise
+       (Michel, 2026-10-16) */
+    var editSaid = el.getAttribute("editable") || "";
+    var pendingNew = null;   /* the objects before ➕ New: the one that is not among them gets selected */
     var lcId = el.getAttribute("id") || "";
     var masterId = el.getAttribute("master") || el.getAttribute("detail-of") || "";
     var filterExpr = el.getAttribute("filter") || "";
@@ -520,7 +529,7 @@ Auto-included by docs/_layouts/default.html.
          is the state, which are typed, which are locked; obj is the object's
          name, the grid's own business, never a column */
       var model = (window.lcModels || {})[bindId] || null;
-      var cols    = allCols.filter(function (c) { return c !== "url" && !(model && c === "obj"); });
+      var cols    = allCols.filter(function (c) { return c !== "url" && !(model && (c === "obj" || c.charAt(0) === "_")); });
       if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
       function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/'/g, "&#39;"); }
       function dressedCell(row, c, idx) {
@@ -532,12 +541,12 @@ Auto-included by docs/_layouts/default.html.
         /* a tap on a row SELECTS it; cells open for typing only when the
            grid says editable="true" — the detail form is where one edits
            (Michel, 2026-10-16) */
-        if (!f || f.ro || !editable) return "<td>" + esc(v) + "</td>";
+        if (!f || f.ro || editSaid === "false") return "<td>" + esc(v) + "</td>";
         if (f.enum)
           return "<td><select class='lc-dg-pick' data-col='" + c + "' data-row='" + idx + "'>"
             + [""].concat(f.enum).map(function (o) { return "<option" + (String(o) === String(v) ? " selected" : "") + ">" + esc(o) + "</option>"; }).join("")
             + "</select></td>";
-        return "<td contenteditable='true' class='lc-dg-typed' data-col='" + c + "' data-row='" + idx + "'"
+        return "<td class='lc-dg-typed' title='double click to edit' data-col='" + c + "' data-row='" + idx + "'"
           + " inputmode='" + (f.t === "int" || f.t === "float" ? "decimal" : "text") + "'>" + esc(v) + "</td>";
       }
 
@@ -587,7 +596,7 @@ Auto-included by docs/_layouts/default.html.
                 }).join("") + "</tr>";
           }).join("") + "</tbody></table>" + (height ? "</div>" : "");
 
-      if (model) html += "<div class='lc-dg-foot'><button class='lc-dg-new' type='button' title='a new " + esc(bindId) + ", at its first stage'>➕ New</button></div>";
+      if (model) html += "<div class='lc-dg-foot'><button class='lc-dg-new' type='button' title='a new " + esc(bindId) + ", at its first stage'>➕ New" + ((model.subs || []).length ? " ⌄" : "") + "</button></div>";
       if (pages > 1) {
         html += "<div class='lc-dg-pages'>";
         if (page > 0)         html += "<button data-pg='" + (page - 1) + "'>←</button>";
@@ -636,16 +645,44 @@ Auto-included by docs/_layouts/default.html.
         var objOf = function (td) { var r = sorted[parseInt(td.getAttribute("data-row"), 10)]; return r ? String(r.obj) : ""; };
         /* a typed cell: the value goes through the object — type, enum and
            lock apply there, and a refused value says why under the grid */
+        /* a tap SELECTS the row; a double click — or a second tap on the
+           row already selected, which a phone can deliver — opens the cell,
+           its text selected so typing replaces it; Enter or leaving commits,
+           Escape gives up (Michel, 2026-10-16) */
         el.querySelectorAll("td.lc-dg-typed").forEach(function (td) {
+          var was = "";
+          var open = function () {
+            if (td.isContentEditable) return;
+            was = td.textContent;
+            td.setAttribute("contenteditable", "true");
+            td.classList.add("lc-dg-typing");
+            td.focus();
+            try {
+              var r = document.createRange(); r.selectNodeContents(td);
+              var sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(r);
+            } catch (e) {}
+          };
+          var shut = function () { td.removeAttribute("contenteditable"); td.classList.remove("lc-dg-typing"); };
           var commit = function () {
+            if (!td.isContentEditable) return;
+            shut();
             var row = sorted[parseInt(td.getAttribute("data-row"), 10)];
             if (!row) return;
             var col = td.getAttribute("data-col"), txt = (td.textContent || "").trim();
             if (String(row[col] == null ? "" : row[col]) === txt) return;
             py("_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(col) + "," + JSON.stringify(txt) + ")");
           };
+          td.addEventListener("click", function () {
+            var tr = td.parentNode;
+            if (tr && tr.classList.contains("lc-dg-selected")) open();
+          });
+          td.addEventListener("dblclick", open);
           td.addEventListener("blur", commit);
-          td.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); td.blur(); } });
+          td.addEventListener("keydown", function (e) {
+            if (!td.isContentEditable) return;
+            if (e.key === "Enter") { e.preventDefault(); td.blur(); }
+            else if (e.key === "Escape") { e.preventDefault(); td.textContent = was; shut(); }
+          });
         });
         /* a click in a typed cell or a picklist still selects its row — the
            bound card follows the row being edited (a swallowed click left
@@ -674,13 +711,15 @@ Auto-included by docs/_layouts/default.html.
             el.querySelectorAll("tbody tr").forEach(function (x) { x.classList.remove("lc-dg-selected"); });
             tr.classList.add("lc-dg-selected");
             selKey = row.obj != null ? "o:" + row.obj : "i:" + parseInt(td.getAttribute("data-row"), 10);
-            var cur = String(row[model.state] == null ? "" : row[model.state]);
+            /* a subclass's row wears its own verbs */
+            var rm = (row._kind && (window.lcModels || {})[row._kind]) || model;
+            var cur = String(row[rm.state] == null ? "" : row[rm.state]);
             var items = [];
-            Object.keys(model.transitions).forEach(function (n) {
-              var tr = model.transitions[n], ok = !tr.pre.length || tr.pre.indexOf(cur) >= 0;
+            Object.keys(rm.transitions).forEach(function (n) {
+              var tr = rm.transitions[n], ok = !tr.pre.length || tr.pre.indexOf(cur) >= 0;
               items.push({ n: n, ok: ok, hint: ok ? ("→ " + (tr.post || cur)) : ("needs " + tr.pre.join(" / ")) });
             });
-            model.verbs.forEach(function (n) { items.push({ n: n, ok: true, hint: "" }); });
+            rm.verbs.forEach(function (n) { items.push({ n: n, ok: true, hint: "" }); });
             items.push({ n: "delete", ok: true, hint: "", label: "🗑 Delete", danger: true });
             var menu = document.createElement("div");
             menu.className = "lc-dg-menu";
@@ -715,8 +754,38 @@ Auto-included by docs/_layouts/default.html.
             setTimeout(function () { document.addEventListener("click", closeMenu, { once: true }); }, 0);
           });
         });
+        /* ➕ New: the class itself, or — when the page declares subclasses —
+           a pick of the class and each one; the new row gets selected
+           (Michel, 2026-10-16) */
         var nb = el.querySelector(".lc-dg-new");
-        if (nb) nb.addEventListener("click", function (e) { e.stopPropagation(); py("_lc_new(" + JSON.stringify(bindId) + ")"); });
+        var make = function (kind) {
+          pendingNew = {};
+          (window.lcDatasets[bindId] || []).forEach(function (r) { pendingNew[String(r.obj)] = 1; });
+          setTimeout(function () { pendingNew = null; }, 4000);
+          py("_lc_new(" + JSON.stringify(bindId) + (kind && kind !== bindId ? "," + JSON.stringify(kind) : "") + ")");
+        };
+        if (nb) nb.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var subs = model.subs || [];
+          var open = document.querySelector(".lc-dg-menu");
+          closeMenu();
+          if (!subs.length) { make(bindId); return; }
+          if (open && open._lcFor === nb) return;
+          var menu = document.createElement("div");
+          menu.className = "lc-dg-menu lc-dg-kinds";
+          menu._lcFor = nb;
+          menu.innerHTML = [bindId].concat(subs).map(function (k) {
+            return "<button type='button' class='lc-dg-verb' data-kind='" + esc(k) + "'><span>" + esc(k) + "</span></button>";
+          }).join("");
+          var r = nb.getBoundingClientRect();
+          menu.style.left = (Math.max(4, Math.min(r.left, window.innerWidth - 200)) + window.scrollX) + "px";
+          menu.style.top = (r.bottom + window.scrollY) + "px";
+          document.body.appendChild(menu);
+          menu.querySelectorAll("button[data-kind]").forEach(function (b) {
+            b.addEventListener("click", function (ev) { ev.stopPropagation(); closeMenu(); make(b.getAttribute("data-kind")); });
+          });
+          setTimeout(function () { document.addEventListener("click", closeMenu, { once: true }); }, 0);
+        });
       }
       el.querySelectorAll("th[data-col]").forEach(function (th) {
         th.addEventListener("click", function () {
@@ -834,6 +903,22 @@ Auto-included by docs/_layouts/default.html.
             return pick(k);
           }
         };
+        /* ➕ New just made one: it is the row nobody had before — select it,
+           show it, and the bound card follows */
+        if (pendingNew) {
+          for (var ni = 0; ni < slice.length; ni++) {
+            if (slice[ni].obj != null && !pendingNew[String(slice[ni].obj)]) {
+              pendingNew = null;
+              selKey = keyOf(slice[ni]);
+              lastPubJson = JSON.stringify(slice[ni]);
+              publishedFirst = true;
+              trs.forEach(function (x) { x.classList.remove("lc-dg-selected"); });
+              if (trs[ni]) { trs[ni].classList.add("lc-dg-selected"); try { trs[ni].scrollIntoView({ block: "nearest" }); } catch (e) {} }
+              if (lcId && window.lcMasterDetail) window.lcMasterDetail.publish(lcId, slice[ni]);
+              break;
+            }
+          }
+        }
         /* the selection survives a republish: a model's verb repaints the
            whole table, and the row you were on must stay lit (Michel,
            2026-08-22: "the datagrid does not show the selected row") */
@@ -860,14 +945,18 @@ Auto-included by docs/_layouts/default.html.
         }
         /* a master with data selects its first row at once, like the AG
            road — a bound form should never sit empty waiting for a click */
-        if (lcId && !publishedFirst && slice.length && window.lcMasterDetail) {
+        if (!publishedFirst && slice.length) {
           publishedFirst = true;
           if (!selKey) {
             selKey = keyOf(slice[0]) || "i:0";
             if (trs[0]) trs[0].classList.add("lc-dg-selected");
           }
-          window.lcMasterDetail.publish(lcId, slice[0]);
+          if (lcId && window.lcMasterDetail) window.lcMasterDetail.publish(lcId, slice[0]);
         }
+        /* never a grid with rows and nothing lit (Michel, 2026-10-16: "a
+           line should always be selected, after a refresh, on opening") */
+        if (slice.length && !el.querySelector("tbody tr.lc-dg-selected") && trs[curIndex()])
+          trs[curIndex()].classList.add("lc-dg-selected");
       }
     }
 

@@ -89,7 +89,8 @@ def step_ds_since(context, ds, name, day):
 def step_type_cell(context, text, col, name, gid):
     cell = row_of(context, gid, name).locator("td.lc-dg-typed[data-col='" + col + "']")
     expect(cell).to_be_visible(timeout=T)
-    cell.click()
+    cell.dblclick()      # a class grid opens a cell on a double click
+    expect(cell).to_have_attribute("contenteditable", "true", timeout=T)
     context.page.keyboard.press("Control+A")
     context.page.keyboard.type(text)
     context.page.keyboard.press("Enter")
@@ -171,3 +172,118 @@ def step_menu_on_screen(context):
         " return { inViewport: r.top >= 0 && r.bottom <= window.innerHeight && r.left >= 0 && r.right <= window.innerWidth,"
         "          belowGrid: r.bottom > g.bottom, h: r.height }; }")
     assert ok["inViewport"] and ok["h"] > 40, ok
+
+
+@when('I add a "{kind}" with New under "{gid}"')
+def step_new_pick(context, gid, kind):
+    grid(context, gid).locator("button.lc-dg-new").click()
+    menu = context.page.locator(".lc-dg-kinds")
+    if menu.count():      # a class with subclasses asks which one
+        menu.locator("button[data-kind='" + kind + "']").click()
+
+
+@then('the grid "{gid}" has exactly one selected row')
+def step_one_selected(context, gid):
+    expect(grid(context, gid).locator("tbody tr").first).to_be_visible(timeout=T)
+    expect(grid(context, gid).locator("tbody tr.lc-dg-selected")).to_have_count(1, timeout=T)
+
+
+@then('the New menu offers "{kinds}"')
+def step_new_menu(context, kinds):
+    menu = context.page.locator(".lc-dg-kinds")
+    expect(menu).to_be_visible(timeout=T)
+    got = [k.strip() for k in menu.locator("button").all_inner_texts()]
+    assert got == [k.strip() for k in kinds.split(",")], got
+
+
+@when('I pick "{kind}" in the New menu')
+def step_pick_kind(context, kind):
+    context.page.locator(".lc-dg-kinds button[data-kind='" + kind + "']").click()
+
+
+@then('the selected row of "{gid}" is the new one, at stage "{stage}"')
+def step_selected_new(context, gid, stage):
+    sel = grid(context, gid).locator("tbody tr.lc-dg-selected")
+    expect(sel).to_have_count(1, timeout=T)
+    expect(sel.locator(".lc-dg-chip")).to_have_text(stage)
+    for old in ("Nguyen", "Diallo", "Alvarez"):
+        assert old not in sel.inner_text(), sel.inner_text()
+    context.new_row = sel
+
+
+@then('its verbs offer "{own}" beside "{inherited}"')
+def step_own_verbs(context, own, inherited):
+    context.new_row.locator("td.lc-dg-state").click()
+    menu = context.page.locator(".lc-dg-menu")
+    expect(menu.locator("button[data-verb='" + own + "']")).to_be_visible(timeout=T)
+    expect(menu.locator("button[data-verb='" + inherited + "']")).to_be_visible()
+
+
+@then('the "{col}" cell of "{name}" in "{gid}" is closed for typing')
+def step_cell_closed(context, col, name, gid):
+    cell = row_of(context, gid, name).locator("td.lc-dg-typed[data-col='" + col + "']")
+    expect(cell).to_be_visible(timeout=T)
+    cell.click()     # a tap on a row that is not selected only selects it
+    assert cell.get_attribute("contenteditable") is None, "a single tap opened the cell"
+    expect(row_of(context, gid, name)).to_have_class(re.compile("lc-dg-selected"))
+
+
+@when('I double click the "{col}" cell of "{name}" in "{gid}" and type "{text}"')
+def step_dbl_type(context, col, name, gid, text):
+    cell = row_of(context, gid, name).locator("td.lc-dg-typed[data-col='" + col + "']")
+    cell.dblclick()
+    expect(cell).to_have_attribute("contenteditable", "true", timeout=T)
+    sel = context.page.evaluate("() => String(window.getSelection())")
+    assert sel.strip() == cell.inner_text().strip(), "the old value is not selected: " + repr(sel)
+    context.page.keyboard.type(text)
+    context.page.keyboard.press("Enter")
+
+
+@then('the chip, the caret and the family name of "{name}" in "{gid}" share one middle line')
+def step_chip_aligned(context, name, gid):
+    r = row_of(context, gid, name)
+    expect(r.locator(".lc-dg-chip")).to_be_visible(timeout=T)
+    mids = context.page.evaluate(
+        """tr => { const mid = e => { const b = e.getBoundingClientRect(); return (b.top + b.bottom) / 2; };
+           const name = document.createRange(); name.selectNodeContents(tr.querySelector('td'));
+           const nb = name.getBoundingClientRect();
+           return { name: (nb.top + nb.bottom) / 2, chip: mid(tr.querySelector('.lc-dg-chip')), caret: mid(tr.querySelector('.lc-dg-caret')) }; }""",
+        r.element_handle())
+    assert abs(mids["chip"] - mids["name"]) <= 2.5 and abs(mids["caret"] - mids["name"]) <= 3.5, mids
+
+
+@then('the "{pad_id}" pad marks lines "{lines}" as errors')
+def step_pad_errs(context, pad_id, lines):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    want = ",".join(l.strip() for l in lines.split(","))
+    context.page.wait_for_function(
+        "([p, w]) => { const e = document.querySelector(\"[data-lc-id='\" + p + \"']\"); return e && e.getAttribute('data-lc-errors') === w; }",
+        arg=[pad_id, want], timeout=T)
+    for n in want.split(","):
+        expect(pad.locator(".lc-mdpad-piano .ln.err[data-n='" + n + "']")).to_have_count(1)
+
+
+@then('under the "{pad_id}" pad it says "{a}" and "{b}"')
+def step_pad_errs_said(context, pad_id, a, b):
+    strip = context.page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-errs")
+    expect(strip).to_contain_text(a, timeout=T)
+    expect(strip).to_contain_text(b)
+
+
+@when('I click inside "{blank}" in the "{pad_id}" pad and type "{text}"')
+def step_click_blank(context, blank, pad_id, text):
+    ta = context.page.locator("[data-lc-id='" + pad_id + "'] textarea.lc-mdpad-in")
+    expect(ta).to_be_visible(timeout=T)
+    at = context.page.evaluate("([t, b]) => t.value.indexOf(b) + 3", [ta.element_handle(), blank])
+    assert at >= 3, "no " + blank + " in the pad"
+    ta.focus()
+    context.page.evaluate("([t, i]) => { t.setSelectionRange(i, i); t.dispatchEvent(new MouseEvent('click', {bubbles: true})); }",
+                          [ta.element_handle(), at])
+    context.page.keyboard.type(text)
+
+
+@then("the \"{pad_id}\" pad reads '{text}'")
+def step_pad_reads(context, pad_id, text):
+    ta = context.page.locator("[data-lc-id='" + pad_id + "'] textarea.lc-mdpad-in")
+    v = ta.input_value()
+    assert text in v, v

@@ -38,7 +38,13 @@ Every check here exists because something slipped through once:
                               margin: an author's bench IS this repo, so
                               anything a lesson saves lands beside it.
 
-    python3 tests/course_audit.py [courses/micro_build_ai]
+  QUIZ-NO-WHY / QUIZ-LONGEST  a quiz option with no "> why" under it, and a
+                              right answer that is the longest one: a reader
+                              learns from every wrong option, and the longest
+                              option is the one a guesser picks (Michel,
+                              2026-10-16)
+
+    python3 tests/course_audit.py [courses/micro_build_ai | a page.md]
 """
 import glob
 import os
@@ -168,6 +174,7 @@ def check_page(path, text):
     problems.extend(hint_problems(text))
     problems.extend(cross_step_problems(text))
     problems.extend(gherkin_problems(text))
+    problems.extend(quiz_problems(text))
 
     m = re.search(r"^```yaml\n(bot:.*?)^```", text, re.S | re.M)
     if m:
@@ -234,6 +241,35 @@ _DECLARED = re.compile(r"^\s*((?:self\.)?[a-z_][a-z_0-9]*)\s*:\s*[^=]+=")
 # And every scenario carries a When, even one with no body yet: Given →
 # When → Then is the beat a check writes down, and a scenario without the
 # command in the middle is a state asserted twice.
+def quiz_problems(text):
+    """Every option of a {: .quiz } says why under it (> …), and the right
+    answer is never strictly the longest."""
+    out = []
+    spans = fenced_spans(text)
+    for m in re.finditer(r"^\*\*Q:\*\*(.*)\n((?:.*\n)*?)\{:\s*\.quiz\b", text, re.M):
+        if in_fence(m.start(), spans):
+            continue
+        q = m.group(1).strip()[:50]
+        opts, cur = [], None
+        for line in m.group(2).split("\n"):
+            o = re.match(r"^- \[( |x)\]\s*(.*)$", line)
+            if o:
+                cur = {"right": o.group(1) == "x", "text": o.group(2).strip(), "why": False}
+                opts.append(cur)
+            elif cur is not None and re.match(r"^\s+>", line):
+                cur["why"] = True
+        if not opts:
+            continue
+        bare = [o["text"][:30] for o in opts if not o["why"]]
+        if bare:
+            out.append(f"QUIZ-NO-WHY    \"{q}\": {len(bare)} option(s) say no why (\"  > …\" under each): {bare[0]}…")
+        rights = [o for o in opts if o["right"]]
+        wrongs = [o for o in opts if not o["right"]]
+        if rights and wrongs and len(rights[0]["text"]) > max(len(o["text"]) for o in wrongs):
+            out.append(f"QUIZ-LONGEST   \"{q}\": the right answer is the longest option")
+    return out
+
+
 def gherkin_problems(text):
     out = []
     for m in re.finditer(r"^```gherkin\n(.*?)^```", text, re.S | re.M):
@@ -491,6 +527,12 @@ def key_placement_problems(root):
 
 def main():
     course = sys.argv[1] if len(sys.argv) > 1 else "courses/micro_build_ai"
+    if os.path.isfile(course):            # one page, dunder drafts included
+        problems = check_page(course, open(course).read())
+        for p in problems:
+            print(f"  x {p}")
+        print(f"{course}  " + ("ok" if not problems else f"{len(problems)} problem(s)"))
+        return 1 if problems else 0
     bench = bench_targets(course)
     bad = 0
 

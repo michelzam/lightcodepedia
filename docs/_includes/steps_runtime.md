@@ -88,6 +88,7 @@ def transition(pre=(), post=None, state=None):
     @transition(["pending", "placed"], "paid")
     def pay(self): ...
 
+    One state needs no list: @transition("asked", "met") (Michel, 2026-10-16).
     `pre` lists the states the method may be called from (guard); `post` is the
     single state it moves the object to. Read back by @component for the diagram.
     On Model classes the method is also wrapped: calling it outside `pre` raises
@@ -96,7 +97,7 @@ def transition(pre=(), post=None, state=None):
     """
     def deco(fn):
         _T_ORD[0] += 1
-        _TRANSITIONS[fn] = (list(pre), post, state, _T_ORD[0])
+        _TRANSITIONS[fn] = ([pre] if isinstance(pre, str) else list(pre), post, state, _T_ORD[0])
         return fn
     return deco
 
@@ -227,7 +228,14 @@ class State(Attr):
     initial one. Read-only — only behaviours move it. The first State field is
     the class's canonical state. (Legacy two-arg form still accepted.)"""
 
-    def __init__(self, initial, states=None, hint=""):
+    def __init__(self, initial, *more, **kw):
+        # State("asked", "met", "home") — the stages in order, no list needed
+        # (Michel, 2026-10-16); State([...]) and State(initial, [...]) still hold
+        states, hint = kw.get("states"), kw.get("hint", "")
+        if more and isinstance(more[0], (list, tuple)):
+            states = list(more[0])
+        elif more:
+            states = [initial] + [m for m in more if isinstance(m, str)]
         if states is None and isinstance(initial, (list, tuple)):
             states = list(initial)
             initial = states[0]
@@ -2802,12 +2810,14 @@ def _lc_rows_of(cls):
     fields included), plus obj = the instance's bound name."""
     rows = []
     for o in _LC_OBJS:
-        if type(o) is cls:
+        if isinstance(o, cls):
             nm = _lc_name_of(o)
             if not nm:
                 continue
             row = _ODict()
             row["obj"] = nm
+            if type(o) is not cls:
+                row["_kind"] = type(o).__name__   # a subclass rides in its parent's list
             for f in cls._lc_fields:
                 v = o._v.get(f.n)
                 row[f.n] = (_lc_name_of(v) or "?") if f.ref and v is not None else v
@@ -2830,7 +2840,7 @@ def _lc_publish_class(cls):
         arr = getattr(js.window.lcDatasets, src, None)
         if arr is not None:
             for o in _LC_OBJS:
-                if type(o) is cls and getattr(o, "_js", None) is not None:
+                if isinstance(o, cls) and getattr(o, "_js", None) is not None:
                     for f in cls._lc_fields:
                         v = o._v.get(f.n, f.d)
                         setattr(o._js, f.n, (_lc_name_of(v) or "") if f.ref and v is not None else v)
@@ -2844,13 +2854,40 @@ def _lc_publish_class(cls):
     rows = _lc_rows_of(cls)
     if rows or src:
         fn(cls.__name__, js.window.JSON.parse(json.dumps(rows)))
+    # a subclass's object lives in its parent's list: the parent's grid recounts
+    owner = globals().get(_LC_SOURCED.get(src, "")) if src else None
+    if isinstance(owner, type) and owner is not cls and issubclass(cls, owner):
+        _lc_publish_class(owner)
 
 
-def _lc_model_spec_push(cls):
+def _lc_subs(cls):
+    """The page's subclasses of cls, harvested — ➕ New offers each one
+    (Michel, 2026-10-16)."""
+    out = []
+    for k, v in list(globals().items()):
+        if k.startswith("_") or not isinstance(v, type) or v is cls:
+            continue
+        try:
+            if not issubclass(v, cls):
+                continue
+        except Exception:
+            continue
+        if getattr(v, "_lc_harvested_for", None) is not v:
+            component(icon="📦")(v)
+        out.append(v)
+    out.sort(key=lambda c: c.__name__)
+    return out
+
+
+def _lc_model_spec_push(cls, subs=True):
     """What a grid needs to dress a class's rows: the fields with their type
-    and lock, the state axis and its transitions, the plain verbs."""
+    and lock, the state axis and its transitions, the plain verbs, and the
+    subclasses ➕ New may make."""
     if getattr(js.window, "lcModels", None) is None:
         js.window.lcModels = js.window.JSON.parse("{}")
+    kids = _lc_subs(cls) if subs else []
+    for k in kids:
+        _lc_model_spec_push(k, False)
     statef = getattr(cls, "_lc_statef", None)
     tmeta = getattr(cls, "_lc_tmeta", {}) or {}
     fields = {}
@@ -2864,7 +2901,8 @@ def _lc_model_spec_push(cls):
     verbs = [n for n in sorted(getattr(cls, "_lc_pub", {}) or {}) if n not in tmeta]
     spec = {"fields": fields, "state": statef.n if statef else None,
             "states": list(statef.enum) if statef else [], "transitions": trans,
-            "verbs": verbs, "src": getattr(cls, "_lc_source", None) or ""}
+            "verbs": verbs, "src": getattr(cls, "_lc_source", None) or "",
+            "subs": [k.__name__ for k in kids]}
     setattr(js.window.lcModels, cls.__name__, js.window.JSON.parse(json.dumps(spec)))
 
 
@@ -2966,7 +3004,7 @@ def _lc_source_sync(src):
         row = arr[i]
         nm = _lc_row_mark(row)
         inst = g.get(nm) if nm else None
-        if inst is None or type(inst) is not cls:
+        if inst is None or not isinstance(inst, cls):
             inst = cls()
             cls._lc_seq += 1
             nm = cls_name.lower() + "_" + str(cls._lc_seq)
@@ -2983,7 +3021,7 @@ def _lc_source_sync(src):
                 inst._v[f.n] = v
         kept.append(inst)
     for o in list(_LC_OBJS):
-        if type(o) is cls and getattr(o, "_js", None) is not None and not any(o is k for k in kept):
+        if isinstance(o, cls) and getattr(o, "_js", None) is not None and not any(o is k for k in kept):
             _lc_forget(o)
     _lc_publish_class(cls)
 
@@ -3020,10 +3058,14 @@ def _lc_set(cls_name, nm, field, value):
         _lc_publish_class(type(inst))
 
 
-def _lc_new(cls_name):
+def _lc_new(cls_name, kind=None):
+    """➕ New under a class's grid: the class itself, or one of its subclasses."""
     cls = globals().get(cls_name)
-    if isinstance(cls, type):
-        cls.new()
+    if not isinstance(cls, type):
+        return
+    k = globals().get(kind) if kind else cls
+    if isinstance(k, type) and issubclass(k, cls):
+        k.new()
 
 
 def _lc_publish_all():
@@ -3884,7 +3926,13 @@ _inject_store()
           "_LC_NEW[:] = []\n_lc_publish_all()\n");
         (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
         document.dispatchEvent(new CustomEvent("lc-model-changed"));
-      } catch (e) { console.error("[lc-model]", e); }
+        if (window.lcWarn) window.lcWarn(el, "");
+      } catch (e) {
+        console.error("[lc-model]", e);
+        /* a class that does not run says so beside itself, on ITS line —
+           not only in the console (Michel, 2026-10-16) */
+        if (window.lcWarn) window.lcWarn(el, window.lcPyError ? window.lcPyError(e, preamble.split("\n").length + 1) : String(e));
+      }
     }).catch(function (e) { console.error("[lc-model]", e); });
   }
 

@@ -226,6 +226,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-out .lc-mdpad-broken { outline: 2px dashed #c62828; outline-offset: 4px; border-radius: 4px; }
 .lc-mdpad-out .lc-mdpad-broken::before { content: "🔌 " attr(data-lc-broken) " — no such id on this page"; display: block; color: #c62828; font-size: .8em; font-family: ui-sans-serif, system-ui, sans-serif; margin-bottom: .35em; }
 .lc-mdpad-wires { color: #c62828; font-size: .85em; margin: 0 0 .6em; }
+/* ⚠️ an error's line: a red tint, ⚠ in the gutter, the message under the pad */
+.lc-mdpad-piano .ln.err { background: rgba(243, 139, 168, 0.16); box-shadow: inset 0 -2px 0 rgba(243, 139, 168, 0.7); }
+.lc-mdpad-src[data-numbers] .lc-mdpad-piano .ln.err::before { content: "⚠ " attr(data-n); color: #f38ba8; }
+.lc-mdpad-errs { color: #c62828; font-size: .85em; margin: .35em 0; font-family: ui-sans-serif, system-ui, sans-serif; }
 @keyframes lc-mdpad-pulse {
   0%   { background: #dbeafe; box-shadow: 0 0 0 4px #dbeafe; }
   100% { background: transparent; box-shadow: 0 0 0 4px transparent; }
@@ -1409,6 +1413,66 @@ Auto-included by docs/_layouts/default.html.
     /* the painter is shared with the read-only .code snippets (widgets.md):
        a snippet on the lesson and the pad beside it wear the same colours */
     function paintLine(raw, fence) { return window.lcPaintMdLine(raw, fence); }
+    /* ── ⚠️ ERRORS IN THE GUTTER (Michel, 2026-10-16: "check that errors —
+       syntax, etc — are detected and displayed in the gutter, including
+       inside the py fence"). The markdown is read line by line (a fence that
+       never closes, a decoration without its }, a knob without its closing
+       quote); each python fence is compiled by the page's own MicroPython —
+       compile only, nothing runs. The line wears ⚠ in the gutter and a red
+       tint; one line under the pad says what and where. */
+    var pyLint = {}, errsEl = null;
+    function lintLines(lines) {
+      var e = {}, fence = null, at = -1, info = "", body = [];
+      lines.forEach(function (l, n) {
+        var m = FENCE_RE.exec(l), t = l.trim();
+        if (fence === null && m) { fence = m[1]; at = n; info = t.slice(m[1].length).trim().toLowerCase(); body = []; return; }
+        if (fence !== null) {
+          if (m && t.indexOf(fence) === 0 && /^[`~]+$/.test(t)) {
+            if (/^py(thon)?\b/.test(info) || /^\{:.*\.model\b/.test((lines[n + 1] || "").trim())) pyCheck(body, at + 1, e);
+            fence = null;
+          } else body.push(l);
+          return;
+        }
+        if (/^\s*\{:/.test(l)) {
+          if (!/\}\s*$/.test(l)) e[n] = "a decoration closes with }";
+          else if ((l.match(/"/g) || []).length % 2) e[n] = "a knob's value is missing its closing quote";
+        }
+      });
+      if (fence !== null) e[at] = "this fence never closes: " + fence + " alone on a line ends it";
+      return e;
+    }
+    function pyCheck(body, first, e) {
+      /* the class line's source= is lifted as the runner lifts it */
+      var code = body.join("\n").replace(/^([ \t]*class\s+\w+\s*\([^)]*?),\s*source\s*=\s*(["'])[^"']+\2\s*\)/mg, "$1)");
+      var r = pyLint[code];
+      if (r === undefined) {
+        pyLint[code] = null;
+        var mpP = window.lcMpy ? window.lcMpy() : window._lcMpReady;
+        if (mpP) mpP.then(function (mp) {
+          try { (mp.runPython || mp.exec).call(mp, "compile(" + JSON.stringify(code) + ", 'pad', 'exec')"); pyLint[code] = false; }
+          catch (x) {
+            var t = String((x && (x.message || x)) || ""), ln = /File "pad", line (\d+)/.exec(t);
+            var last = t.split("\n").map(function (s) { return s.trim(); }).filter(Boolean).pop() || "SyntaxError";
+            pyLint[code] = { line: ln ? parseInt(ln[1], 10) : 1, msg: last.replace(/^SyntaxError: /, "python: ") };
+          }
+          paintPiano();
+        });
+        return;
+      }
+      if (r) e[first + Math.min(Math.max(r.line, 1), Math.max(body.length, 1)) - 1] = r.msg;
+    }
+    function showErrs(e) {
+      var ns = Object.keys(e).map(Number).sort(function (a, b) { return a - b; });
+      if (!ns.length) {
+        if (errsEl && errsEl.parentNode) errsEl.parentNode.removeChild(errsEl);
+        wrap.removeAttribute("data-lc-errors");
+        return;
+      }
+      if (!errsEl) { errsEl = document.createElement("div"); errsEl.className = "lc-mdpad-errs"; errsEl.setAttribute("role", "status"); }
+      errsEl.textContent = ns.map(function (n) { return "⚠️ line " + (n + 1) + ": " + e[n]; }).join(" · ");
+      if (src && errsEl.parentNode !== src.parentNode) src.parentNode.insertBefore(errsEl, src.nextSibling);
+      wrap.setAttribute("data-lc-errors", ns.map(function (n) { return n + 1; }).join(","));
+    }
     function paintPiano() {
       if (!keysEl) return;
       var cs = getComputedStyle(ta);
@@ -1421,10 +1485,11 @@ Auto-included by docs/_layouts/default.html.
       /* fence: null outside, else its info string ("csv", "" …) — a CSV
          fence paints its columns in turns */
       var lines = ta.value.split("\n"), now = caretBlock(), here = caretLine(), html = "", li = 0, fence = null;
+      var errs = lintLines(lines);
       function line(n) {
         var ial = fence === null && numbers && lines[n].match(/^\s*\{:(.*)\}\s*$/);
         var ic = ial ? ialIcon(ial[1]) : "";
-        var h = "<div class='ln" + (n === here ? " here" : "") + "' data-n='" + (n + 1) + "'" +
+        var h = "<div class='ln" + (n === here ? " here" : "") + (errs[n] ? " err" : "") + "' data-n='" + (n + 1) + "'" +
           (ic ? " data-ic='" + ic + "'" + (icGlyph(ic) ? " data-ick='g'" : "") +
                 " data-icn='" + ((ial[1].match(/(?:^|\s)\.([A-Za-z][\w-]*)/) || [])[1] || "") + "'" : "") +
           ">" + paintLine(lines[n], fence) + "</div>";
@@ -1442,6 +1507,7 @@ Auto-included by docs/_layouts/default.html.
       keysEl.innerHTML = html;
       lightWires(lines);
       lightFinds(lines);
+      showErrs(errs);
       keysEl.scrollTop = ta.scrollTop;
     }
     /* ── THE WIRES OF THE ID UNDER THE CARET (Michel, 2026-10-11: "highlight
@@ -2167,6 +2233,19 @@ Auto-included by docs/_layouts/default.html.
     });
     ta.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== ta) popClose(); }, 150); });
     ta.addEventListener("click", popClose);
+    /* A BLANK IS TAKEN WHOLE (Michel, 2026-10-16: "when a todo value is
+       selected, typing should replace it, not insert characters"): a click
+       inside TODO_YOUR_… or your_… selects the whole blank, so the first
+       key typed replaces it */
+    ta.addEventListener("click", function () {
+      if (ta.selectionStart !== ta.selectionEnd) return;
+      var v = ta.value, at = ta.selectionStart, ls = v.lastIndexOf("\n", at - 1) + 1, le = v.indexOf("\n", at);
+      if (le < 0) le = v.length;
+      var re = /\bTODO_[A-Z0-9_]+\b|\byour_[a-z0-9_]+\b/g, line = v.slice(ls, le), m;
+      while ((m = re.exec(line))) {
+        if (ls + m.index <= at && at <= ls + m.index + m[0].length) { ta.setSelectionRange(ls + m.index, ls + m.index + m[0].length); return; }
+      }
+    });
     wrap.addEventListener("mousedown", function (e) {
       var o = e.target.closest && e.target.closest(".lc-mdpad-comp .o");
       if (!o) return;

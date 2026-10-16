@@ -249,30 +249,41 @@ Alvarez,Scout,home,Sat
 
 ```python
 class Family(Object, source="calls"):
-    stage = State(["asked", "met", "home"])
+    stage = State("asked", "met", "home")
 
-    @transition(pre=["asked"], post="met")
+    @transition("asked", "met")
     def meet(self):
         self.since = weekday()
 
-    @transition(pre=["met"], post="home")
+    @transition("met", "home")
     def adopt(self):
+        self.since = weekday()
+
+
+class Foster(Family):
+    def give_back(self):
         self.since = weekday()
 ```
 {: .model }
 
 [the families](#)
-{: .datagrid source="Family" editable="true" #family_grid }
+{: .datagrid source="Family" #family_grid }
 
 [the family](#)
 {: .form master="family_grid" #family_card }
 
 Three things to see: the `stage` cell wears a **⌄** — click it, the verbs
 this stage allows are live, the others grey and say what they need; a tap
-on a row selects it, and with `editable="true"` the other cells are typed
-by the list and an edit goes through the object; **➕ New** and
-**🗑 Delete** are there without a line of yours, every object is born with
-them. Click a row: the form shows the object, its state as a chip beside
+on a row selects it (a row is always selected), and a **double click** on
+another cell — or a second tap on the selected row — opens it for typing,
+the old value selected, the edit going through the object
+(`editable="false"` closes them); **➕ New** and **🗑 Delete** are there
+without a line of yours, every object is born with them. A class with
+subclasses on the page — `Foster(Family)` here — makes ➕ New a pick: a
+Family or a Foster, and the new row is selected. A Foster's ⌄ carries its
+own verb, *give back*. `State("asked", "met", "home")` lists the stages in
+order, `@transition("asked", "met")` goes from one to the other: no
+brackets needed for one state. Click a row: the form shows the object, its state as a chip beside
 the same verbs as buttons, the rest editable through the object. And the
 class *is* the list: a cell counts **{= Family.count }** families, the
 same **{= calls.count }** rows.

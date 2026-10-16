@@ -672,13 +672,15 @@ Auto-included by docs/_layouts/default.html.
         var gridEl = document.querySelector(".lc-datagrid[data-lc-id='" + bound + "']");
         var cls = gridEl ? gridEl.getAttribute("data-bind") : "";
         var model = cls && row.obj != null ? (window.lcModels || {})[cls] : null;
+        /* a subclass's object shows its own fields' rules and verbs */
+        if (model && row._kind && (window.lcModels || {})[row._kind]) { cls = row._kind; model = window.lcModels[cls]; }
         var locked = [], chips = [], picks = {};
         if (model) {
           /* the object's card: the state LAST, as a chip, beside its verbs;
              locked and state fields read-only; enum fields pick lists; the
              rest editable through the object unless editable="false" */
           var copy = {};
-          Object.keys(row).forEach(function (k) { if (k !== "obj" && k !== model.state) copy[k] = row[k]; });
+          Object.keys(row).forEach(function (k) { if (k !== "obj" && k.charAt(0) !== "_" && k !== model.state) copy[k] = row[k]; });
           if (model.state && model.state in row) copy[model.state] = row[model.state];
           row = copy;
           Object.keys(model.fields).forEach(function (k) {
