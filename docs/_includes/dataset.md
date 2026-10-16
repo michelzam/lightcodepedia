@@ -90,6 +90,9 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-foot { margin-top: .4em; }
 .lc-dg-new { font: inherit; font-size: .85em; font-weight: 500; padding: .35em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
 .lc-dg-new:hover { background: #0052a3; border-color: #0052a3; }
+.lc-dg-reload { float: right; font: inherit; font-size: 1em; line-height: 1; padding: .1em .45em; border-radius: 6px;
+  border: 1px solid #cbd5e1; background: #fff; color: #0066cc; cursor: pointer; }
+.lc-dg-reload:hover { background: #eff6ff; border-color: #0066cc; }
 .lc-ds-key { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; margin: .6em 0; padding: .55em .8em;
   border: 1px dashed #93c5fd; border-radius: 8px; background: #f8fbff; font-size: .9em; color: #1e3a8a; }
 .lc-ds-key input { flex: 1 1 16em; font: inherit; padding: .3em .5em; border: 1px solid #cbd5e1; border-radius: 6px; }
@@ -155,6 +158,28 @@ Auto-included by docs/_layouts/default.html.
      it POSTed — a simple request, so no preflight — then is read back, the
      sheet's truth replacing the guess. */
   window.lcRemote = window.lcRemote || {};
+  /* A LIST THAT LIVES ELSEWHERE IS READ AGAIN (Michel, 2026-10-16: "how to
+     refresh the grid after a change made directly in the sheet?"): coming
+     back to the page — from the sheet's tab — re-reads every such list once
+     (not more often than every 5 s); its grid's ↻ re-reads it on demand;
+     refresh="30" on the dataset re-reads it every 30 s. */
+  window.lcRemoteReload = function (id) {
+    var r = window.lcRemote[id];
+    if (!r) return false;
+    r.at = performance.now();
+    r.pull();
+    return true;
+  };
+  if (!window._lcRemoteVis) {
+    window._lcRemoteVis = 1;
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState !== "visible") return;
+      Object.keys(window.lcRemote).forEach(function (id) {
+        var r = window.lcRemote[id];
+        if (r && performance.now() - (r.at || 0) > 5000) window.lcRemoteReload(id);
+      });
+    });
+  }
   window.lcDatasetAppend = function (id, rowJson) {
     var row = typeof rowJson === "string" ? JSON.parse(rowJson) : rowJson;
     var arr = Array.isArray(window.lcDatasets[id]) ? window.lcDatasets[id].filter(function (r) { return !r["⚠️"]; }) : [];
@@ -339,7 +364,7 @@ Auto-included by docs/_layouts/default.html.
                 ? "this link cannot be read from a page (not shared, or not a data link)" : e.message }]);
             });
         };
-        window.lcRemote[id] = { href: href, pull: pull, write: !!keyName || el.getAttribute("write") === "true" };
+        window.lcRemote[id] = { href: href, pull: pull, write: !!keyName || el.getAttribute("write") === "true", at: performance.now() };
         pull();
         /* refresh="30" → live mode: re-pull every N seconds. Republishing to
            the bus repaints every bound grid/stat/chart with no page reload —
@@ -617,6 +642,15 @@ Auto-included by docs/_layouts/default.html.
 
     function render(data) {
       lastData = data;
+      /* a list read from elsewhere: a ↻ in the title bar reads it again */
+      if (window.lcRemote && window.lcRemote[bindId] && el.querySelector(".lc-dg-titlebar") && !el.querySelector(".lc-dg-reload")) {
+        var rb = document.createElement("button");
+        rb.type = "button"; rb.className = "lc-dg-reload"; rb.textContent = "↻";
+        rb.title = "read it again — the list lives elsewhere";
+        rb.setAttribute("aria-label", "read the list again");
+        rb.addEventListener("click", function (e) { e.stopPropagation(); window.lcRemoteReload(bindId); });
+        el.querySelector(".lc-dg-titlebar").appendChild(rb);
+      }
       if (data && filterKeys && masterRow) {
         data = data.filter(function (r) {
           return r[filterKeys.local] === masterRow[filterKeys.master];

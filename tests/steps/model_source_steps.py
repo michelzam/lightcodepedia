@@ -497,11 +497,15 @@ def step_walks(context, ds, name, n):
         arg=[ds, name, n], timeout=T)
 
 
+def _sheet_csv(rows):
+    return '"dog","walker","at"\n' + "\n".join('"' + x.split(", ")[0] + '","' + x.split(", ")[1] + '","1:00 PM"' for x in rows) + "\n"
+
+
 @given('a Google Sheet "{sid}" holds the walks "{a}" and "{b}"')
 def step_gsheet(context, sid, a, b):
-    csv = '"dog","walker","at"\n' + "\n".join('"' + x.split(", ")[0] + '","' + x.split(", ")[1] + '","1:00 PM"' for x in (a, b)) + "\n"
+    context.sheet_walks = [a, b]
     context.page.route("**/docs.google.com/spreadsheets/d/" + sid + "/gviz/**", lambda r: r.fulfill(
-        status=200, content_type="text/csv", headers={"Access-Control-Allow-Origin": "*"}, body=csv))
+        status=200, content_type="text/csv", headers={"Access-Control-Allow-Origin": "*"}, body=_sheet_csv(context.sheet_walks)))
     context.page.route("**/example.org/page.html*", lambda r: r.fulfill(
         status=200, content_type="text/html", headers={"Access-Control-Allow-Origin": "*"},
         body="<!DOCTYPE html><html><body>hello</body></html>"))
@@ -517,3 +521,16 @@ def step_grid_shows(context, gid, a, b):
 @then('the grid "{gid}" reads "{text}"')
 def step_grid_text(context, gid, text):
     expect(grid(context, gid)).to_contain_text(text, timeout=T)
+
+
+@when('the sheet "{sid}" gains the walk "{w}" and I press ↻ on "{gid}"')
+def step_gain_reload(context, sid, w, gid):
+    context.sheet_walks.append(w)
+    grid(context, gid).locator("button.lc-dg-reload").click()
+
+
+@when('the sheet "{sid}" gains the walk "{w}" and I come back to the page')
+def step_gain_visible(context, sid, w):
+    context.sheet_walks.append(w)
+    context.page.wait_for_timeout(5200)   # a re-read is never more often than every 5 s
+    context.page.evaluate("() => { document.dispatchEvent(new Event('visibilitychange')); }")

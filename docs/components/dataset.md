@@ -188,6 +188,12 @@ small Apps Script web app for instance. Module 06's *Who Walked Whom*
 uses one. `clock()` gives the time as a person writes it (`16:05`),
 the way `weekday()` gives the day.
 
+A list read from elsewhere is read again when the reader comes back to the
+page (from the sheet's tab, say), on its grid's **↻**, and every N seconds
+with `refresh="N"` on the dataset. A Google Sheet's own link
+(`…/spreadsheets/d/<id>/edit…`) reads as rows when the sheet is shared
+"anyone with the link can view"; writing still goes through its script.
+
 A sentence can also read the **first** row of any list, not only count
 them: **{= todos.first.title }** is the first todo above
 (`{= todos.first.title }`).

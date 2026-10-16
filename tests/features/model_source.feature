@@ -485,3 +485,26 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the grid "walk_list" shows "Fern" and "Scout"
     And the grid "page_list" reads "a web page, not rows"
 
+  Scenario: A list read from a sheet is read again by its ↻, and on coming back to the page
+    Michel, 2026-10-16: "how to refresh the grid after a change made
+    directly in the sheet?"
+
+    Given a Google Sheet "SHEETID" holds the walks "Fern, Michel" and "Scout, Ada"
+    And the GitHub contents API serves "courses/demo/module_06/gsheet.md" with the document:
+      """
+      # Sheet
+
+      [the walk sheet](https://docs.google.com/spreadsheets/d/SHEETID/edit?usp=sharing)
+      {: .dataset #walks }
+
+      [the walks so far](#)
+      {: .datagrid source="walks" #walk_list }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/gsheet.md"
+    And I wait for the page to be interactive
+    Then the grid "walk_list" shows "Fern" and "Scout"
+    When the sheet "SHEETID" gains the walk "Nova, Cleo" and I press ↻ on "walk_list"
+    Then the grid "walk_list" shows "Nova" and "Fern"
+    When the sheet "SHEETID" gains the walk "Biscuit, Ben" and I come back to the page
+    Then the grid "walk_list" shows "Biscuit" and "Nova"
+
