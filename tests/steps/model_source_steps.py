@@ -495,3 +495,25 @@ def step_walks(context, ds, name, n):
     context.page.wait_for_function(
         "([d, nm, k]) => { const r = (window.lcDatasets[d] || []).find(r => String(r.name) === nm); return !!r && Number(r.walks) === k; }",
         arg=[ds, name, n], timeout=T)
+
+
+@given('a Google Sheet "{sid}" holds the walks "{a}" and "{b}"')
+def step_gsheet(context, sid, a, b):
+    csv = '"dog","walker","at"\n' + "\n".join('"' + x.split(", ")[0] + '","' + x.split(", ")[1] + '","1:00 PM"' for x in (a, b)) + "\n"
+    context.page.route("**/docs.google.com/spreadsheets/d/" + sid + "/gviz/**", lambda r: r.fulfill(
+        status=200, content_type="text/csv", headers={"Access-Control-Allow-Origin": "*"}, body=csv))
+    context.page.route("**/example.org/page.html*", lambda r: r.fulfill(
+        status=200, content_type="text/html", headers={"Access-Control-Allow-Origin": "*"},
+        body="<!DOCTYPE html><html><body>hello</body></html>"))
+
+
+@then('the grid "{gid}" shows "{a}" and "{b}"')
+def step_grid_shows(context, gid, a, b):
+    g = grid(context, gid)
+    expect(g).to_contain_text(a, timeout=T)
+    expect(g).to_contain_text(b)
+
+
+@then('the grid "{gid}" reads "{text}"')
+def step_grid_text(context, gid, text):
+    expect(grid(context, gid)).to_contain_text(text, timeout=T)

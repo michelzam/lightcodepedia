@@ -297,6 +297,15 @@ Auto-included by docs/_layouts/default.html.
         href = linkKey(keyName);
         if (!href) { askLink(el, id, keyName, (link.textContent || "").trim()); return; }
       }
+      /* A GOOGLE SHEET'S OWN LINK READS AS ROWS (Michel, 2026-10-16: the grid
+         stayed empty on a …/edit?usp=sharing link — that address sends the
+         editor's web page, which a page may not read). Its CSV door does,
+         for a sheet shared "anyone with the link can view"; #gid= keeps the tab. */
+      var gsh = /^https:\/\/docs\.google\.com\/spreadsheets\/d\/([\w-]+)/.exec(href);
+      if (gsh && !/\/gviz\/|\/export|output=csv|\/pub/.test(href)) {
+        var gid = (/[#&?]gid=(\d+)/.exec(href) || [])[1];
+        href = "https://docs.google.com/spreadsheets/d/" + gsh[1] + "/gviz/tq?tqx=out:csv" + (gid ? "&gid=" + gid : "");
+      }
       if (/^(https?:\/\/|\/)/.test(href)) {
         var fmt = (el.getAttribute("format") || "").toLowerCase();
         if (!fmt && /\.ya?ml($|\?)/i.test(href)) fmt = "yaml";
@@ -317,8 +326,18 @@ Auto-included by docs/_layouts/default.html.
               if (!r.ok) throw new Error("HTTP " + r.status);
               return r.text();
             })
-            .then(function (text) { if (text !== null) setFromText(text, fmt, el, id); })
-            .catch(function (e) { if (!window.lcDatasets[id]) window.lcSetDataset(id, [{ "⚠️": e.message }]); });
+            .then(function (text) {
+              if (text === null) return;
+              /* a web page is not rows: say so, instead of an empty table */
+              if (/^\s*<(!doctype|html|head|body)/i.test(text))
+                throw new Error("this link sends a web page, not rows — use the sheet's data link");
+              setFromText(text, fmt, el, id);
+            })
+            .catch(function (e) {
+              var cur = window.lcDatasets[id];
+              if (!cur || !cur.length) window.lcSetDataset(id, [{ "⚠️": e.message === "Failed to fetch"
+                ? "this link cannot be read from a page (not shared, or not a data link)" : e.message }]);
+            });
         };
         window.lcRemote[id] = { href: href, pull: pull, write: !!keyName || el.getAttribute("write") === "true" };
         pull();

@@ -459,3 +459,29 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I press the verb "walk"
     Then the dataset "volunteers" has "Ada" with 1 walks
 
+  Scenario: A Google Sheet's own link reads as rows; a web page says it is not rows
+    Michel, 2026-10-16: the grid stayed empty on a sheet's …/edit?usp=sharing
+    link — the editor's web page, not the rows.
+
+    Given a Google Sheet "SHEETID" holds the walks "Fern, Michel" and "Scout, Ada"
+    And the GitHub contents API serves "courses/demo/module_06/gsheet.md" with the document:
+      """
+      # Sheet
+
+      [the walk sheet](https://docs.google.com/spreadsheets/d/SHEETID/edit?usp=sharing)
+      {: .dataset #walks }
+
+      [the walks so far](#)
+      {: .datagrid source="walks" #walk_list }
+
+      [a web page](https://example.org/page.html)
+      {: .dataset #page }
+
+      [not rows](#)
+      {: .datagrid source="page" #page_list }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/gsheet.md"
+    And I wait for the page to be interactive
+    Then the grid "walk_list" shows "Fern" and "Scout"
+    And the grid "page_list" reads "a web page, not rows"
+
