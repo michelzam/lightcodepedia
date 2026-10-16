@@ -230,8 +230,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-pad-blk { display: contents; }
 /* the preview is catching up with the typing */
 .lc-mdpad[data-lc-busy] .lc-mdpad-out { position: relative; }
-.lc-mdpad[data-lc-busy] .lc-mdpad-out::after { content: "⟳"; position: absolute; top: .35em; right: .5em; z-index: 5;
-  font-size: .85em; color: #6b7280; opacity: .7; animation: lc-pad-spin 1s linear infinite; pointer-events: none; }
+/* its own small white disc: readable on a white page AND on the app's dark
+   title bar (Michel, 2026-10-16: "when the title is black the sign is not visible") */
+.lc-mdpad[data-lc-busy] .lc-mdpad-out::after { content: "⟳"; position: absolute; top: .4em; right: .5em; z-index: 5;
+  width: 1.5em; height: 1.5em; line-height: 1.5em; text-align: center; border-radius: 50%;
+  background: #fff; color: #0066cc; box-shadow: 0 1px 4px rgba(0,0,0,.35); font-size: .85em;
+  animation: lc-pad-spin 1s linear infinite; pointer-events: none; }
 @keyframes lc-pad-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .lc-mdpad[data-lc-busy] .lc-mdpad-out::after { animation: none; } }
 /* ⚠️ an error's line: a red tint, ⚠ in the gutter, the message under the pad */

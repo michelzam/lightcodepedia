@@ -162,6 +162,36 @@ Apply `{: .dataset }` to a **link** — the href is fetched and parsed as JSON o
 {: .datagrid source="todos" rows="5" }
 ````
 
+## A list that writes back — a sheet, by its key
+
+A link can also **take** rows. Write `key:<name>` instead of an address:
+the real address of a sheet that takes writes is a key, so it lives on
+the device, never in the page. The first time, the page asks for it in a
+small field and keeps it. In Python, `append` adds one row: the row shows
+at once, is sent to the sheet, and the sheet is read back.
+
+````markdown
+[the walk sheet](key:walk_sheet)
+{: .dataset #walks }
+
+[🐾 I walked a dog](#)
+{: .button }
+```python
+button.page.walks.append({"dog": "Biscuit", "walker": "Ada", "at": weekday() + " " + clock()})
+```
+{: .onclick }
+````
+
+The sheet itself is any service that answers a GET with the rows (JSON
+or CSV) and takes a POST of `{"append": {…}}`, a Google Sheet with a
+small Apps Script web app for instance. Module 06's *Who Walked Whom*
+uses one. `clock()` gives the time as a person writes it (`16:05`),
+the way `weekday()` gives the day.
+
+A sentence can also read the **first** row of any list, not only count
+them: **{= todos.first.title }** is the first todo above
+(`{= todos.first.title }`).
+
 ## Clickable rows
 
 Add a `url` field to any row — the column is **hidden** and the whole row becomes a clickable link (opens in a new tab).

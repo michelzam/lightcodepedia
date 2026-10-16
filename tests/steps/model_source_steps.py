@@ -435,3 +435,63 @@ def step_mark_type(context, gid, pad_id):
 def step_grid_marked(context, gid):
     ok = context.page.evaluate("g => !!document.querySelector(\".lc-datagrid[data-lc-id='\" + g + \"']\")._lcMark", gid)
     assert ok, "typing prose rebuilt the grid"
+
+
+@then('the stage labels of "{gid}" are centred')
+def step_chips_centred(context, gid):
+    expect(grid(context, gid).locator(".lc-dg-chip").first).to_have_css("text-align", "center", timeout=T)
+
+
+@when('I widen the column "{col}" of "{gid}" by {px:d} pixels')
+def step_widen(context, col, gid, px):
+    th = grid(context, gid).locator("th[data-col='" + col + "']")
+    expect(th).to_be_visible(timeout=T)
+    th.scroll_into_view_if_needed()
+    context.page.wait_for_timeout(300)
+    context.w0 = th.bounding_box()["width"]
+    g = th.locator(".lc-dg-grip").bounding_box()
+    x, y = g["x"] + g["width"] / 2, g["y"] + g["height"] / 2
+    context.page.mouse.move(x, y)
+    context.page.mouse.down()
+    context.page.mouse.move(x + px / 2, y)
+    context.page.mouse.move(x + px, y)
+    context.page.mouse.up()
+
+
+@then('the column "{col}" of "{gid}" is still at least {px:d} pixels wider')
+def step_wider(context, col, gid, px):
+    context.page.wait_for_timeout(800)   # the verb repainted the table
+    w = grid(context, gid).locator("th[data-col='" + col + "']").bounding_box()["width"]
+    assert w >= context.w0 + px, "was %s, now %s" % (context.w0, w)
+
+
+@then('the "{pad_id}" pad\'s busy mark is a white disc')
+def step_busy_disc(context, pad_id):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    expect(pad.locator(".lc-mdpad-out")).to_be_attached(timeout=T)
+    bg = context.page.evaluate(
+        "p => { const w = document.querySelector(\"[data-lc-id='\" + p + \"']\"); w.setAttribute('data-lc-busy', '1');"
+        " return getComputedStyle(w.querySelector('.lc-mdpad-out'), '::after').backgroundColor; }", pad_id)
+    assert bg == "rgb(255, 255, 255)", bg
+
+
+@when('I open the first-cell verbs of "{name}" in "{gid}"')
+def step_first_cell_menu(context, name, gid):
+    td = row_of(context, gid, name).locator("td.lc-dg-rowmenu")
+    expect(td).to_be_visible(timeout=T)
+    b = td.bounding_box()
+    context.page.mouse.click(b["x"] + b["width"] - 10, b["y"] + b["height"] / 2)
+    expect(context.page.locator(".lc-dg-menu")).to_be_visible(timeout=T)
+
+
+@then('the menu offers "{verb}" and ends with "{label}"')
+def step_menu_offers(context, verb, label):
+    expect(context.page.locator(".lc-dg-menu button[data-verb='" + verb + "']")).to_be_visible(timeout=T)
+    step_menu_last(context, label)
+
+
+@then('the dataset "{ds}" has "{name}" with {n:d} walks')
+def step_walks(context, ds, name, n):
+    context.page.wait_for_function(
+        "([d, nm, k]) => { const r = (window.lcDatasets[d] || []).find(r => String(r.name) === nm); return !!r && Number(r.walks) === k; }",
+        arg=[ds, name, n], timeout=T)

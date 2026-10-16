@@ -864,6 +864,15 @@ class Dataset(Object):
         raise AssertionError("no row in " + self.id + " with " +
                              ", ".join(k + "=" + str(v) for k, v in kw.items()))
 
+    def append(self, row):
+        """One more row: on the page at once, and — when the list lives in a
+        sheet that takes writes — in the sheet too, then read back
+        (Michel, 2026-10-16: "an API where data is read but also written")."""
+        fn = getattr(js.window, "lcDatasetAppend", None)
+        if fn is None:
+            raise RuntimeError("this page cannot add rows")
+        fn(self._id, json.dumps(row))
+
     def values(self, field):
         """Every row's value for one field, in order, as strings.
 
@@ -1488,6 +1497,13 @@ class _Row(object):
 def weekday():
     """Today's weekday as the course's data writes it: Mon, Tue … Sun."""
     return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][int(js.Date.new().getDay())]
+
+
+def clock():
+    """The time now, as a person writes it: "16:05"."""
+    d = js.Date.new()
+    h, m = int(d.getHours()), int(d.getMinutes())
+    return ("0" if h < 10 else "") + str(h) + ":" + ("0" if m < 10 else "") + str(m)
 
 
 class _Attrs(object):

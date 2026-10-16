@@ -153,7 +153,10 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
       if (!id || scopes[id]) return;
       var arr = ds[id];
       var n = (arr && typeof arr.length === "number") ? arr.length : 0;
-      scopes[id] = { count: n, empty: n === 0 };
+      /* .first — the first row, so a sentence can say WHICH, not only how
+         many: {= walk_when.first.time } (Michel, 2026-10-16, module 06) */
+      var first = n && arr[0] && typeof arr[0] === "object" ? JSON.parse(JSON.stringify(arr[0])) : {};
+      scopes[id] = { count: n, empty: n === 0, first: first };
     });
     var bare = {};
     for (var k in counts) if (counts[k] === 1) bare[k] = vals[k];

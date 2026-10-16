@@ -64,6 +64,15 @@ Auto-included by docs/_layouts/default.html.
 /* every stage's chip as wide as the longest stage: the ⌄ line up in one column (Michel, 2026-10-16) */
 .lc-dg-state .lc-dg-chip { box-sizing: content-box; }
 .lc-dg-caret { display: inline-block; margin-left: .45em; color: #6b7280; position: relative; top: -.22em; line-height: 1; }
+.lc-dg-state .lc-dg-chip { text-align: center; }
+.lc-dg-table th { position: relative; }
+.lc-dg-grip { position: absolute; top: 0; right: 0; width: 7px; height: 100%; cursor: col-resize; z-index: 2; touch-action: none; }
+.lc-dg-grip:hover { background: rgba(0, 102, 204, .25); }
+.lc-dg-table td.lc-dg-rowmenu { position: relative; padding-right: 1.8em; }
+.lc-dg-table td.lc-dg-rowmenu::after { content: "⌄"; position: absolute; right: .55em; top: 50%; transform: translateY(-62%);
+  color: #6b7280; cursor: pointer; line-height: 1; }
+.lc-dg-table td.lc-dg-rowmenu:hover::after { color: #0066cc; }
+.lc-dg-table td.lc-dg-rowmenu.lc-dg-typing::after { display: none; }
 .lc-dg-table td.lc-dg-typed.lc-dg-typing { background: #fff; outline: 2px solid #0066cc; outline-offset: -2px; cursor: text; }
 .lc-dg-state:hover .lc-dg-caret { color: #0066cc; }
 .lc-dg-pick { font: inherit; font-size: .95em; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; padding: .1em .3em; }
@@ -77,6 +86,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-foot { margin-top: .4em; }
 .lc-dg-new { font: inherit; font-size: .85em; font-weight: 500; padding: .35em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
 .lc-dg-new:hover { background: #0052a3; border-color: #0052a3; }
+.lc-ds-key { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; margin: .6em 0; padding: .55em .8em;
+  border: 1px dashed #93c5fd; border-radius: 8px; background: #f8fbff; font-size: .9em; color: #1e3a8a; }
+.lc-ds-key input { flex: 1 1 16em; font: inherit; padding: .3em .5em; border: 1px solid #cbd5e1; border-radius: 6px; }
+.lc-ds-key button { font: inherit; font-weight: 500; padding: .3em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
 .lc-dg-say { margin-top: .4em; padding: .35em .7em; border-radius: 6px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; font-size: .9em; }
 
 /* ── button ─────────────────────────────────────────── */
@@ -131,6 +144,53 @@ Auto-included by docs/_layouts/default.html.
       s._t = setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 4500);
     });
   };
+
+  /* ONE MORE ROW (Michel, 2026-10-16: "an API where data is read but also
+     written"). dataset.append(row) from Python lands here: the row shows at
+     once; a list read from a sheet that takes writes (a key: link) also gets
+     it POSTed — a simple request, so no preflight — then is read back, the
+     sheet's truth replacing the guess. */
+  window.lcRemote = window.lcRemote || {};
+  window.lcDatasetAppend = function (id, rowJson) {
+    var row = typeof rowJson === "string" ? JSON.parse(rowJson) : rowJson;
+    var arr = Array.isArray(window.lcDatasets[id]) ? window.lcDatasets[id].filter(function (r) { return !r["⚠️"]; }) : [];
+    arr.push(row);
+    window.lcSetDataset(id, arr);
+    var r = window.lcRemote[id];
+    if (!r || !r.write) return;
+    fetch(r.href, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ append: row }) })
+      .then(function () { setTimeout(r.pull, 1200); })
+      .catch(function (e) {
+        if (window.lcGridSay) window.lcGridSay(id, "⚠️ the sheet did not take the row: " + e.message);
+      });
+  };
+  /* A LINK THAT IS A KEY. [the walk sheet](key:walk_sheet) — the address of a
+     sheet that takes writes is a key: it lives on the device, never in the
+     page or the repo (the keys-in-browser ruling). Missing, the page asks
+     for it once, in a small field under where the list would be. */
+  function linkKey(name) { try { return localStorage.getItem("lc_link_" + name) || ""; } catch (e) { return ""; } }
+  function askLink(el, id, name, label) {
+    var box = document.createElement("div");
+    box.className = "lc-ds-key";
+    box.setAttribute("data-lc-key", name);
+    box.innerHTML = "<span>🔑 " + (label || name).replace(/</g, "&lt;") + " — paste its link (kept on this device only)</span>"
+      + "<input type='url' placeholder='https://…' aria-label='the link of " + (label || name).replace(/'/g, "") + "'>"
+      + "<button type='button'>Connect</button>";
+    el.parentNode.insertBefore(box, el.nextSibling);
+    var inp = box.querySelector("input"), go = box.querySelector("button");
+    var done = function () {
+      var v = (inp.value || "").trim();
+      if (!/^https:\/\//.test(v)) { inp.focus(); return; }
+      try { localStorage.setItem("lc_link_" + name, v); } catch (e) {}
+      box.parentNode.removeChild(box);
+      delete el.dataset.lcDsDone;
+      upgradeDataset(el);
+    };
+    go.addEventListener("click", done);
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); done(); } });
+    window.lcSetDataset(id, []);
+  }
 
   /* ── CSV parser ─────────────────────────────────── */
   function parseCSV(text) {
@@ -228,6 +288,11 @@ Auto-included by docs/_layouts/default.html.
       if (!/^(https?:\/\/|\/)/.test(href) && /^https?:\/\//.test((link.textContent || "").trim())) {
         href = link.textContent.trim();
       }
+      var keyName = (/^key:([A-Za-z_][\w-]*)$/.exec(href) || [])[1] || "";
+      if (keyName) {
+        href = linkKey(keyName);
+        if (!href) { askLink(el, id, keyName, (link.textContent || "").trim()); return; }
+      }
       if (/^(https?:\/\/|\/)/.test(href)) {
         var fmt = (el.getAttribute("format") || "").toLowerCase();
         if (!fmt && /\.ya?ml($|\?)/i.test(href)) fmt = "yaml";
@@ -251,6 +316,7 @@ Auto-included by docs/_layouts/default.html.
             .then(function (text) { if (text !== null) setFromText(text, fmt, el, id); })
             .catch(function (e) { if (!window.lcDatasets[id]) window.lcSetDataset(id, [{ "⚠️": e.message }]); });
         };
+        window.lcRemote[id] = { href: href, pull: pull, write: !!keyName || el.getAttribute("write") === "true" };
         pull();
         /* refresh="30" → live mode: re-pull every N seconds. Republishing to
            the bus repaints every bound grid/stat/chart with no page reload —
@@ -500,6 +566,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     var sortCol = sortAttr, sortAsc = true, page = 0;
+    var colW = {};   /* a column's width the reader dragged, kept across repaints */
 
     /* grid-to-grid master/detail, the light-table half: the AG road had
        master= + filter="local=masterKey" and this road silently ignored
@@ -553,6 +620,13 @@ Auto-included by docs/_layouts/default.html.
       if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
       function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/'/g, "&#39;"); }
       function dressedCell(row, c, idx) {
+        var html = dressedCell0(row, c, idx);
+        if (model.state || c !== cols[0]) return html;
+        return html.replace(/^<td( class='([^']*)')?/, function (_, k, cls) {
+          return "<td class='" + (cls ? cls + " " : "") + "lc-dg-rowmenu' data-row='" + idx + "'";
+        });
+      }
+      function dressedCell0(row, c, idx) {
         var v = row[c] !== undefined && row[c] !== null ? row[c] : "";
         var f = model.fields[c];
         if (f && f.state) {
@@ -594,7 +668,8 @@ Auto-included by docs/_layouts/default.html.
             var arrow = sortCol === c ? (sortAsc ? " ↑" : " ↓") : "";
             var hint = hints[c] ? " title='" + hints[c].replace(/'/g, "&#39;") + "' class='lc-th-hint'" : "";
             var label = window.lcPrettifyKey ? window.lcPrettifyKey(c) : c;
-            return "<th data-col='" + c + "'" + hint + ">" + label + arrow + "</th>";
+            var cw = colW[c] ? " style='width:" + colW[c] + "px;min-width:" + colW[c] + "px'" : "";
+            return "<th data-col='" + c + "'" + hint + cw + ">" + label + arrow + "<span class='lc-dg-grip' title='drag to resize'></span></th>";
           }).join("") + "</tr></thead><tbody>"
         + slice.map(function (row) {
             var urlVal = urlCol ? (row[urlCol] || "") : "";
@@ -720,8 +795,8 @@ Auto-included by docs/_layouts/default.html.
            is in its pre, grey otherwise (pressing a grey one says what it
            needs); plain verbs always; Delete last, born of Object */
         var closeMenu = function () { document.querySelectorAll(".lc-dg-menu").forEach(function (m) { m.parentNode.removeChild(m); }); };
-        el.querySelectorAll("td.lc-dg-state").forEach(function (td) {
-          td.addEventListener("click", function (e) {
+        var verbsMenu = function (td, e) {
+          {
             e.stopPropagation();
             var open = document.querySelector(".lc-dg-menu");
             closeMenu();
@@ -775,7 +850,24 @@ Auto-included by docs/_layouts/default.html.
               });
             });
             setTimeout(function () { document.addEventListener("click", closeMenu, { once: true }); }, 0);
-          });
+          }
+        };
+        el.querySelectorAll("td.lc-dg-state").forEach(function (td) {
+          td.addEventListener("click", function (e) { verbsMenu(td, e); });
+        });
+        /* A CLASS WITH NO STATE STILL HAS VERBS (Michel, 2026-10-16) — and
+           Delete always: the ⌄ sits in the row's first cell, drawn by CSS
+           (never part of the value), and only the ⌄ opens the menu; the rest
+           of the cell selects and edits as before */
+        el.querySelectorAll("td.lc-dg-rowmenu").forEach(function (td) {
+          /* capture: the ⌄ wins over the second-tap edit of a selected row */
+          td.addEventListener("click", function (e) {
+            if (td.classList.contains("lc-dg-typing")) return;
+            var r = td.getBoundingClientRect();
+            if (e.clientX < r.right - 26) return;
+            e.stopImmediatePropagation();
+            verbsMenu(td, e);
+          }, true);
         });
         /* ➕ New: the class itself, or — when the page declares subclasses —
            a pick of the class and each one; the new row gets selected
@@ -810,6 +902,23 @@ Auto-included by docs/_layouts/default.html.
           setTimeout(function () { document.addEventListener("click", closeMenu, { once: true }); }, 0);
         });
       }
+      /* COLUMNS RESIZE (Michel, 2026-10-16): drag the right edge of a header */
+      el.querySelectorAll("th[data-col] .lc-dg-grip").forEach(function (g) {
+        g.addEventListener("click", function (e) { e.stopPropagation(); });
+        g.addEventListener("pointerdown", function (e) {
+          e.preventDefault(); e.stopPropagation();
+          var th = g.parentNode, c = th.getAttribute("data-col"), x0 = e.clientX, w0 = th.getBoundingClientRect().width;
+          try { g.setPointerCapture(e.pointerId); } catch (x) {}
+          var move = function (ev) {
+            var w = Math.max(40, Math.round(w0 + ev.clientX - x0));
+            colW[c] = w; th.style.width = w + "px"; th.style.minWidth = w + "px";
+          };
+          var up = function () { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); g.removeEventListener("pointercancel", up); };
+          g.addEventListener("pointermove", move);
+          g.addEventListener("pointerup", up);
+          g.addEventListener("pointercancel", up);
+        });
+      });
       el.querySelectorAll("th[data-col]").forEach(function (th) {
         th.addEventListener("click", function () {
           var col = th.getAttribute("data-col");

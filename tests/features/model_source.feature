@@ -395,3 +395,67 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I mark the grid "families" and type in the "card" pad three times, pausing after each
     Then the grid "families" is the one I marked
 
+  Scenario: Stage labels sit centred in pills of one width; a column resizes and stays
+    Michel, 2026-10-16: "state labels justified in the pill", "columns
+    should be resizable".
+
+    Then the stage labels of "family_grid" are centred
+    When I widen the column "dog" of "family_grid" by 80 pixels
+    And I open the verbs of "Nguyen" in "family_grid"
+    And I press the verb "meet"
+    Then the column "dog" of "family_grid" is still at least 70 pixels wider
+
+  Scenario: The pad's busy mark shows on a dark title too
+    Michel, 2026-10-16: "when the preview's title is black, the temporary
+    refresh sign is not visible".
+
+    Given the GitHub contents API serves "courses/demo/module_06/card.md" with the document:
+      """
+      # Card
+
+      `````markdown
+      # A title
+
+      Families.
+      `````
+      {: .mdpad #card decorations="true" rows="8" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/card.md"
+    And I wait for the page to be interactive
+    Then the "card" pad's busy mark is a white disc
+
+  Scenario: A class with no state still offers its verbs, from the row's first cell
+    Michel, 2026-10-16: "if there is no state, there still should be
+    actions to call — maybe the first column should have the ⌄".
+
+    Given the GitHub contents API serves "courses/demo/module_06/walkers.md" with the document:
+      """
+      # Walkers
+
+      `````markdown
+      ```csv
+      name,walks
+      Ada,0
+      Ben,2
+      ```
+      {: .dataset #volunteers }
+
+      ```python
+      class Walker(Object, source="volunteers"):
+          def walk(self):
+              self.walks = self.walks + 1
+      ```
+      {: .model }
+
+      [the walkers](#)
+      {: .datagrid source="Walker" #walkers }
+      `````
+      {: .mdpad #walk_pad decorations="true" rows="20" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/walkers.md"
+    And I wait for the page to be interactive
+    And I open the first-cell verbs of "Ada" in "walkers"
+    Then the menu offers "walk" and ends with "Delete"
+    When I press the verb "walk"
+    Then the dataset "volunteers" has "Ada" with 1 walks
+
