@@ -688,7 +688,10 @@ Auto-included by docs/_layouts/default.html.
           });
           if (model.state) chips.push(model.state);
         }
-        derive(row).then(function (shown) {
+        /* no compute= → paint NOW, in the click's own tick: a check that
+           clicks a row and reads the card at once found the previous row
+           behind a promise (the Dataset page's card, red since 2026-10-08) */
+        var paint = function (shown) {
           if (mine !== turn) return;
           renderFormBody(body, shown, {
             editable: model ? editableSaid !== "false" : editable,
@@ -703,7 +706,8 @@ Auto-included by docs/_layouts/default.html.
           });
           setFormTitle(wrapper, title || inferFormTitle(shown) || "Form");
           if (model) renderVerbs(body, model, shown, cls, objName);
-        });
+        };
+        if (compute) derive(row).then(paint); else paint(row);
       });
       return;
     }
