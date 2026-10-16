@@ -24,6 +24,10 @@ Auto-included by docs/_layouts/default.html.
 import js
 import json
 import re
+try:
+    from collections import OrderedDict as _ODict   # a row's columns keep the list's order
+except ImportError:
+    _ODict = dict
 
 # Inspector-widget registries survive preamble re-runs (buttons re-run it on
 # every click): bound instances and the new-instance capture list must persist.
@@ -43,6 +47,10 @@ try:
     _LC_DECL          # model blocks: block id → the class names it declared
 except NameError:
     _LC_DECL = {}
+try:
+    _LC_SOURCED       # a class is a dataset: source dataset id → the class wearing it
+except NameError:
+    _LC_SOURCED = {}
 
 # ════════════════════════ model metadata (single source) ═════════════════════
 # Type → icon. Mirrors usecases/module_manager/backend/module_decorator.py.
@@ -501,8 +509,40 @@ class Object:
             for f in cls._lc_fields:
                 self._v[f.n] = f.d
             self._lc_elid = None
+            self._js = None          # the list's own row, when the class wears a dataset
             _LC_NEW.append(self)
             _LC_OBJS.append(self)
+
+    # ── born verbs: every object can be made and unmade; a class that wears a
+    # dataset adds and removes the row itself (Michel, 2026-10-16: "Delete being
+    # a generic implicit method, inherited from Object") ──
+    @classmethod
+    def new(cls):
+        """A fresh one, named, on the bus — a sourced class adds a row to its list."""
+        inst = cls()
+        if not getattr(cls, "_lc_fields", None):
+            return inst
+        cls._lc_seq = getattr(cls, "_lc_seq", 0) + 1
+        nm = cls.__name__.lower() + "_" + str(cls._lc_seq)
+        src = getattr(cls, "_lc_source", None)
+        if src:
+            arr = getattr(js.window.lcDatasets, src, None)
+            if arr is not None:
+                row = js.window.JSON.parse("{}")
+                for f in cls._lc_fields:
+                    v = inst._v.get(f.n, f.d)
+                    setattr(row, f.n, "" if f.ref else v)
+                _lc_row_mark(row, nm)
+                arr.push(row)
+                inst._js = row
+        globals()[nm] = inst
+        _lc_push_obj(inst)
+        return inst
+
+    def delete(self):
+        """Gone: from the page, the bus and its list."""
+        _lc_forget(self)
+        _lc_publish_class(type(self))
 
     @classmethod
     def _all(cls, css):
@@ -793,6 +833,28 @@ class Dataset(Object):
             return 0
         arr = getattr(ds, self._id, None)
         return int(arr.length) if arr else 0
+
+    def row(self, **kw):
+        """The first row whose fields match: the object itself when the dataset
+        is a class (a class is a dataset), a dict when it is a list —
+        self.page.Family.row(family="Nguyen").adopt(),
+        self.page.reservations.row(family="Nguyen")["stage"]."""
+        ds = getattr(js.window, "lcDatasets", None)
+        arr = getattr(ds, self._id, None) if ds else None
+        n = int(arr.length) if arr else 0
+        for i in range(n):
+            r = arr[i]
+            if all(str(getattr(r, k, "") if getattr(r, k, None) is not None else "") == str(v)
+                   for k, v in kw.items()):
+                cls = _CLASSES.get(self._id)
+                nm = getattr(r, "obj", None)
+                if cls is not None and nm:
+                    inst = globals().get(str(nm))
+                    if inst is not None:
+                        return inst
+                return json.loads(str(js.window.JSON.stringify(r)))
+        raise AssertionError("no row in " + self.id + " with " +
+                             ", ".join(k + "=" + str(v) for k, v in kw.items()))
 
     def values(self, field):
         """Every row's value for one field, in order, as strings.
@@ -2744,7 +2806,8 @@ def _lc_rows_of(cls):
             nm = _lc_name_of(o)
             if not nm:
                 continue
-            row = {"obj": nm}
+            row = _ODict()
+            row["obj"] = nm
             for f in cls._lc_fields:
                 v = o._v.get(f.n)
                 row[f.n] = (_lc_name_of(v) or "?") if f.ref and v is not None else v
@@ -2755,13 +2818,212 @@ def _lc_rows_of(cls):
 def _lc_publish_class(cls):
     """SSOT projection: the dataset bus carries the class's live collection
     under the class name, so every dataset consumer — grids, charts, forms —
-    works on models with zero column declarations (Michel, 2026-08-22)."""
+    works on models with zero column declarations (Michel, 2026-08-22).
+    A class that WEARS a dataset (source=) writes its objects back into the
+    list's own rows first, so the list and the class are one set of rows
+    and every consumer of either recounts (Michel, 2026-10-15)."""
     fn = getattr(js.window, "lcSetDataset", None)
     if fn is None or not getattr(cls, "_lc_fields", None):
         return
+    src = getattr(cls, "_lc_source", None)
+    if src:
+        arr = getattr(js.window.lcDatasets, src, None)
+        if arr is not None:
+            for o in _LC_OBJS:
+                if type(o) is cls and getattr(o, "_js", None) is not None:
+                    for f in cls._lc_fields:
+                        v = o._v.get(f.n, f.d)
+                        setattr(o._js, f.n, (_lc_name_of(v) or "") if f.ref and v is not None else v)
+            # the bus listener that adopts rows must not re-adopt our own write
+            js.window._lcModelWriting = 1
+            try:
+                fn(src, arr)
+            finally:
+                js.window._lcModelWriting = 0
+    _lc_model_spec_push(cls)
     rows = _lc_rows_of(cls)
-    if rows:
+    if rows or src:
         fn(cls.__name__, js.window.JSON.parse(json.dumps(rows)))
+
+
+def _lc_model_spec_push(cls):
+    """What a grid needs to dress a class's rows: the fields with their type
+    and lock, the state axis and its transitions, the plain verbs."""
+    if getattr(js.window, "lcModels", None) is None:
+        js.window.lcModels = js.window.JSON.parse("{}")
+    statef = getattr(cls, "_lc_statef", None)
+    tmeta = getattr(cls, "_lc_tmeta", {}) or {}
+    fields = {}
+    for f in cls._lc_fields:
+        fields[f.n] = {"t": f.t, "enum": f.enum, "ro": f.ro, "state": f.is_state,
+                       "src": bool(getattr(f, "src", False))}
+    trans = {}
+    for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
+        pre, post, sfn, _o = tmeta[n]
+        trans[n] = {"pre": list(pre), "post": post}
+    verbs = [n for n in sorted(getattr(cls, "_lc_pub", {}) or {}) if n not in tmeta]
+    spec = {"fields": fields, "state": statef.n if statef else None,
+            "states": list(statef.enum) if statef else [], "transitions": trans,
+            "verbs": verbs, "src": getattr(cls, "_lc_source", None) or ""}
+    setattr(js.window.lcModels, cls.__name__, js.window.JSON.parse(json.dumps(spec)))
+
+
+# ── a class is a dataset (Michel, 2026-10-15) ────────────────────────────────
+# class Family(Object, source="reservations"): the list's rows become Family
+# objects, its columns Family's fields, nothing redeclared; the class adds the
+# state and the verbs. The runner rewrites the class line (MicroPython takes no
+# keyword there) and calls _lc_source_bind after the body.
+
+def _lc_row_mark(row, nm=None):
+    """The object's name on its js row — a non-enumerable property, so no
+    grid ever shows it as a column."""
+    if nm is None:
+        v = getattr(row, "_lcObj", None)
+        return str(v) if v else ""
+    js.window.Object.defineProperty(row, "_lcObj",
+        js.window.JSON.parse(json.dumps({"value": nm, "configurable": True})))
+    return nm
+
+
+def _lc_source_fields(cls, row0, src):
+    """Columns the class does not declare become its fields, typed by the
+    first row — the source brings what it knows. Declared fields keep their
+    column's place; the list's order is the class's order."""
+    keys = js.window.Object.keys(row0)
+    order = [str(keys[i]) for i in range(int(keys.length))]
+    fmap = cls._lc_fmap
+    for c in order:
+        if c == "obj" or c in fmap:
+            continue
+        v = getattr(row0, c, None)
+        t = "bool" if isinstance(v, bool) else ("int" if isinstance(v, int)
+            else "float" if isinstance(v, float) else "str")
+        f = Attr(t, None, hint="a column of " + src)
+        f.n = c
+        f.src = True
+        setattr(cls, c, _lc_field_prop(f))
+        cls._lc_fields.append(f)
+        fmap[c] = f
+        d = f._spec_dict()
+        d["src"] = True
+        cls._spec["attrs"].append(d)
+    cls._lc_fields = ([fmap[c] for c in order if c in fmap]
+                      + [f for f in cls._lc_fields if f.n not in order])
+
+
+def _lc_forget(o):
+    cls = type(o)
+    while o in _LC_OBJS:
+        _LC_OBJS.remove(o)
+    g = globals()
+    for k in list(g):
+        if g[k] is o and not k.startswith("_"):
+            del g[k]
+    for elid, pairs in list(_LC_INSPECT.items()):
+        _LC_INSPECT[elid] = [(n, i) for n, i in pairs if i is not o]
+    row = getattr(o, "_js", None)
+    src = getattr(cls, "_lc_source", None)
+    if row is not None and src:
+        arr = getattr(js.window.lcDatasets, src, None)
+        nm = _lc_row_mark(row)
+        if arr is not None and nm:
+            for i in range(int(arr.length)):
+                if _lc_row_mark(arr[i]) == nm:
+                    arr.splice(i, 1)
+                    break
+        o._js = None
+
+
+def _lc_source_bind(cls_name, src):
+    cls = globals().get(cls_name)
+    if not isinstance(cls, type):
+        raise NameError(cls_name + " is not a class on this page")
+    if getattr(cls, "_lc_harvested_for", None) is not cls:
+        component(icon="📦")(cls)
+    cls._lc_source = src
+    cls._lc_seq = getattr(cls, "_lc_seq", 0)
+    _LC_SOURCED[src] = cls_name
+    _lc_source_sync(src)
+
+
+def _lc_source_sync(src):
+    """The list moved (arrived, a bare edit, a new row): wrap the rows that
+    have no object yet, refresh the ones that do, forget the ones that went.
+    A raw cell wins over the type here — the bare list has no manners."""
+    cls_name = _LC_SOURCED.get(src)
+    cls = globals().get(cls_name) if cls_name else None
+    if cls is None:
+        return
+    arr = getattr(js.window.lcDatasets, src, None)
+    if arr is None:
+        return
+    n = int(arr.length)
+    if n:
+        _lc_source_fields(cls, arr[0], src)
+    g = globals()
+    kept = []
+    for i in range(n):
+        row = arr[i]
+        nm = _lc_row_mark(row)
+        inst = g.get(nm) if nm else None
+        if inst is None or type(inst) is not cls:
+            inst = cls()
+            cls._lc_seq += 1
+            nm = cls_name.lower() + "_" + str(cls._lc_seq)
+            _lc_row_mark(row, nm)
+            g[nm] = inst
+        inst._js = row
+        for f in cls._lc_fields:
+            v = getattr(row, f.n, None)
+            if v is None:
+                continue
+            try:
+                inst._v[f.n] = f._coerce(v)
+            except Exception:
+                inst._v[f.n] = v
+        kept.append(inst)
+    for o in list(_LC_OBJS):
+        if type(o) is cls and getattr(o, "_js", None) is not None and not any(o is k for k in kept):
+            _lc_forget(o)
+    _lc_publish_class(cls)
+
+
+def _lc_say(cls_name, msg):
+    fn = getattr(js.window, "lcGridSay", None)
+    if fn is not None:
+        fn(cls_name, msg)
+
+
+def _lc_verb(cls_name, nm, verb):
+    """A verb pressed on a row — the object acts, the gate decides, the grid is told."""
+    inst = globals().get(nm)
+    if inst is None:
+        return _lc_say(cls_name, "⚠️ " + nm + " is gone")
+    try:
+        getattr(inst, verb)()
+    except PreconditionError as e:
+        _lc_say(cls_name, "⛔ " + str(e))
+    except Exception as e:
+        _lc_say(cls_name, "⚠️ " + verb + "(): " + str(e))
+
+
+def _lc_set(cls_name, nm, field, value):
+    """A cell edited on a class-bound grid goes through the object: the type,
+    the enum and the lock apply, and a refused value says why."""
+    inst = globals().get(nm)
+    if inst is None:
+        return _lc_say(cls_name, "⚠️ " + nm + " is gone")
+    try:
+        setattr(inst, field, value)
+    except Exception as e:
+        _lc_say(cls_name, "⛔ " + str(e))
+        _lc_publish_class(type(inst))
+
+
+def _lc_new(cls_name):
+    cls = globals().get(cls_name)
+    if isinstance(cls, type):
+        cls.new()
 
 
 def _lc_publish_all():
@@ -3599,10 +3861,25 @@ _inject_store()
     var mid = el.id || ("model" + (++INS_N));
     el.setAttribute("data-lc-id", mid);
     el.classList.add("lc-model");
+    /* A CLASS IS A DATASET (Michel, 2026-10-15): class Family(Object,
+       source="reservations") — MicroPython takes no keyword on a class line,
+       so the runner lifts it: the class is declared plain, then bound to its
+       list; the list's later moves (arrival, a bare edit) re-sync the objects. */
+    var sourced = [];
+    code = code.replace(/^([ \t]*)class\s+(\w+)\s*\(([^)]*?),\s*source\s*=\s*(["'])([^"']+)\4\s*\)\s*:/mg,
+      function (_, ind, name, bases, q, src) { sourced.push([name, src]); return ind + "class " + name + "(" + bases + "):"; });
+    var bind = sourced.map(function (p) { return "\n_lc_source_bind(" + JSON.stringify(p[0]) + ", " + JSON.stringify(p[1]) + ")"; }).join("");
+    sourced.forEach(function (p) {
+      var L = window.lcDatasetListeners = window.lcDatasetListeners || {};
+      (L[p[1]] = L[p[1]] || []).push(function () {
+        if (window._lcModelWriting) return;   /* our own write-back, not a move */
+        pySend("_lc_source_sync(" + JSON.stringify(p[1]) + ")");
+      });
+    });
     var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
     mpReady().then(function (mp) {
       try {
-        runPy(mp, preamble + "\n_LC_SNAP_M = set(_CLASSES)\n" + code +
+        runPy(mp, preamble + "\n_LC_SNAP_M = set(_CLASSES)\n" + code + bind +
           "\n_LC_DECL[" + JSON.stringify(mid) + "] = [n for n in _CLASSES if n not in _LC_SNAP_M]\n" +
           "_LC_NEW[:] = []\n_lc_publish_all()\n");
         (window._lcModelReady = window._lcModelReady || {})[mid] = 1;

@@ -232,6 +232,112 @@ Feature: A grid shows a few columns and publishes the whole row
 ```
 {: .feature #columns_proof tags="data" visible="true" status="passing" }
 
+## 🧥 A class as source — the list, dressed
+
+A class **is** a dataset: its name is a dataset id. Say `source="<dataset>"`
+on the class and the list's rows become its objects, the list's columns its
+fields, nothing redeclared. The class adds what a list cannot say: a
+**state**, and the **verbs** that move it.
+
+```csv
+family,dog,stage,since
+Nguyen,Biscuit,asked,Tue
+Diallo,Scout,met,Tue
+Alvarez,Scout,home,Sat
+```
+{: .dataset #calls }
+
+```python
+class Family(Object, source="calls"):
+    stage = State(["asked", "met", "home"])
+
+    @transition(pre=["asked"], post="met")
+    def meet(self):
+        self.since = weekday()
+
+    @transition(pre=["met"], post="home")
+    def adopt(self):
+        self.since = weekday()
+```
+{: .model }
+
+[the families](#)
+{: .datagrid source="Family" #family_grid }
+
+[the family](#)
+{: .form master="family_grid" #family_card }
+
+Three things to see: the `stage` cell wears a **⌄** — click it, the verbs
+this stage allows are live, the others grey and say what they need; the
+other cells are typed by the list (a text, a number) and an edit goes
+through the object; **➕ New** and **🗑 Delete** are there without a line of
+yours, every object is born with them. Click a row: the form shows the
+object with the same verbs as buttons. And the class *is* the list: a cell
+counts **{= Family.count }** families, the same **{= calls.count }** rows.
+
+```gherkin
+Feature: A class wears a dataset
+  As a page author
+  I want a class over my list, with a state and verbs, without redeclaring its columns
+  So that a grid on the class refuses what the stage forbids and counts what the list counts
+
+  Scenario: The rows are the objects, the columns their fields
+    Given the dressed list
+    :::python
+    self.fam: Dataset = self.page.Family
+    self.calls: Dataset = self.page.calls
+    :::
+    Then the class counts what the list counts
+    :::python
+    assert self.fam.count == self.calls.count == 3, (self.fam.count, self.calls.count)
+    :::
+    And a row is an object with the list's columns and the class's state
+    :::python
+    self.nguyen: Family = self.fam.row(family="Nguyen")
+    assert self.nguyen.dog == "Biscuit" and self.nguyen.stage == "asked"
+    :::
+
+  Scenario: What the stage forbids is refused, in code as in the grid
+    Given a family nobody met
+    :::python
+    self.nguyen: Family = self.page.Family.row(family="Nguyen")
+    :::
+    When the dog is sent home too early
+    :::python
+    self.refused: str = ""
+    try:
+        self.nguyen.adopt()
+    except PreconditionError as e:
+        self.refused = str(e)
+    :::
+    Then the verb is refused and names the missing stage
+    :::python
+    assert "met" in self.refused, self.refused
+    :::
+    And after meeting, the list itself moved
+    :::python
+    self.nguyen.meet()
+    assert self.page.calls.row(family="Nguyen")["stage"] == "met", "the class moved, the list did not"
+    :::
+
+  Scenario: Born verbs — the list grows and shrinks
+    Given the families as they are
+    :::python
+    self.n: int = self.page.Family.count
+    :::
+    When one is added, then removed
+    :::python
+    self.fresh: Family = Family.new()
+    assert self.page.calls.count == self.n + 1 and self.fresh.stage == "asked"
+    self.fresh.delete()
+    :::
+    Then the count is back
+    :::python
+    assert self.page.Family.count == self.n == self.page.calls.count
+    :::
+```
+{: .feature #class_source_proof visible="true" status="pending" tags="model" }
+
 ## 🥸 How to write one
 
 ````markdown
@@ -251,6 +357,7 @@ Feature: A grid shows a few columns and publishes the whole row
 - Apply to a **link** (`[Label](https://…)`) to fetch from a URL instead.
 - A **relative** link (`[dogs](../module_00/dogs.yaml)`) names a file beside the page: the reader's own bench copy when they saved one, the page's repository copy otherwise — a pile declared by its file, no rows retyped.
 - `source="id"` wires a view to the dataset; multiple views can share one dataset.
+- `class X(Object, source="id")` makes the dataset a class: a grid on `X` dresses the same rows (see above).
 - Click any **column header** to sort. Sorting persists through pagination.
 - Add a **`url` column** to make rows clickable links.
 
@@ -262,7 +369,8 @@ Feature: A grid shows a few columns and publishes the whole row
 | `.dataset` | _(applied to a link)_ | `https://…` href | Fetches JSON or CSV from the URL |
 | `.dataset` | `dbx="…"` + `host="…"` | warehouse id, proxy root (default `/dbx`) | The fence is a SQL statement run on a Databricks warehouse with this device's token — see above |
 | `.dataset` | `refresh="…"` | seconds (≥10) | Live mode: re-fetch on a timer (cache-busted); every bound grid/stat/chart repaints itself — no page reload |
-| `.datagrid` | `source="…"` | dataset id | Which dataset to display |
+| `.model` | `class X(Object, source="…")` | dataset id | The dataset's rows become X's objects, its columns X's fields; X adds a `State` and verbs — and X is a dataset id itself |
+| `.datagrid` | `source="…"` | dataset id, or a class | Which dataset to display; a class dresses its rows: the state cell's ⌄ drops the row's verbs, typed cells, ➕ New |
 | `.datagrid` | `rows="…"` | number | Rows per page (0 = all) |
 | `.datagrid` | `columns="…"` | `a, b, c` | Draw only these columns, in this order; the published row is still whole (bound grids) |
 | `.datagrid` | `height="…"` | px | A scrolling table with a sticky header instead of pages — wins over `rows` |

@@ -55,6 +55,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-form-selectbox-arrow { color: #6892c4; font-size: 0.85em; }
 .lc-form-empty { padding: 0.9em 1em; color: var(--lc-ink-mute, #616161); font-style: italic; font-size: 0.9em; }
 .lc-form-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
+.lc-form-verbs { display: flex; flex-wrap: wrap; gap: .4em; padding: .5em .75em .6em; border-top: 1px solid #eee; }
+.lc-form-verb { font: inherit; font-size: .9em; padding: .25em .8em; border-radius: 1em; border: 1px solid #c7d2fe; background: #eef2ff; color: #3730a3; cursor: pointer; }
+.lc-form-verb:hover { background: #e0e7ff; }
+.lc-form-verb.lc-form-verb-off { border-color: #e5e7eb; background: #f9fafb; color: #9ca3af; }
 </style>
 
 <script>
@@ -384,6 +388,35 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
+  /* the object's verbs under its card: a transition is live when the
+     object's state is in its pre, grey (and says what it needs) otherwise */
+  function renderVerbs(bodyEl, model, row, cls, objName) {
+    var old = bodyEl.parentNode.querySelector(".lc-form-verbs");
+    if (old) old.parentNode.removeChild(old);
+    var cur = String(row[model.state] == null ? "" : row[model.state]);
+    var bar = document.createElement("div");
+    bar.className = "lc-form-verbs";
+    var items = [];
+    Object.keys(model.transitions).forEach(function (n) {
+      var t = model.transitions[n], ok = !t.pre.length || t.pre.indexOf(cur) >= 0;
+      items.push({ n: n, ok: ok, hint: ok ? "→ " + (t.post || cur) : "needs " + t.pre.join(" / ") });
+    });
+    model.verbs.forEach(function (n) { items.push({ n: n, ok: true, hint: "" }); });
+    items.forEach(function (it) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "lc-form-verb" + (it.ok ? "" : " lc-form-verb-off");
+      b.textContent = prettifyKey(it.n);
+      b.title = it.hint;
+      b.addEventListener("click", function () {
+        if (!it.ok) { if (window.lcGridSay) window.lcGridSay(cls, "⛔ " + it.n + " " + it.hint); return; }
+        if (window.lcPySend) window.lcPySend("_lc_verb(" + JSON.stringify(cls) + "," + JSON.stringify(objName) + "," + JSON.stringify(it.n) + ")");
+      });
+      bar.appendChild(b);
+    });
+    bodyEl.parentNode.appendChild(bar);
+  }
+
   function renderFormBody(bodyEl, obj, opts) {
     opts = opts || {};
     // Tear down any previous AG Grid instance attached here
@@ -617,11 +650,19 @@ Auto-included by docs/_layouts/default.html.
       var turn = 0;   /* a derive still in flight never paints over a later click */
       window.lcMasterDetail.subscribe(bound, function(row){
         var mine = ++turn;
+        var objName = row && row.obj != null ? String(row.obj) : "";
         if (!row) {
           renderFormBody(body, null);
           setFormTitle(wrapper, title || "Form");
           return;
         }
+        /* the master is a grid on a CLASS (a class is a dataset): the row is
+           an object — its verbs come as buttons under the card, live or grey
+           by its state, and an edit goes through the object, not the row */
+        var gridEl = document.querySelector(".lc-datagrid[data-lc-id='" + bound + "']");
+        var cls = gridEl ? gridEl.getAttribute("data-bind") : "";
+        var model = cls && row.obj != null ? (window.lcModels || {})[cls] : null;
+        if (model) { row = Object.assign({}, row); delete row.obj; }
         derive(row).then(function (shown) {
           if (mine !== turn) return;
           renderFormBody(body, shown, {
@@ -629,11 +670,13 @@ Auto-included by docs/_layouts/default.html.
             /* an edit lands on the master's own row (the shown object may be
                the derived copy), then the grid repaints */
             onChange: function(o, k, v){
+              if (model) { if (window.lcPySend) window.lcPySend("_lc_set(" + JSON.stringify(cls) + "," + JSON.stringify(String(objName)) + "," + JSON.stringify(k) + "," + JSON.stringify(v) + ")"); return; }
               if (shown !== row && k) row[k] = v;
               window.lcMasterDetail.refreshGrid(bound);
             }
           });
           setFormTitle(wrapper, title || inferFormTitle(shown) || "Form");
+          if (model) renderVerbs(body, model, shown, cls, objName);
         });
       });
       return;

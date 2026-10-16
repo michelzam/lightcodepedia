@@ -31,6 +31,7 @@ YAML knobs (optional):
 IAL knobs:
   id="..."    required when there are multiple agents on a page
   rows="3"    prompt input height
+  name="Bill" the name shown over the agent, instead of the bot's
   bot="doc"   load persona + settings from doc.md (a course's own _bots/,
               else the site's docs/bots/) — the file's
               markdown IS the system prompt; its yaml fence sets model/name/
@@ -1918,6 +1919,9 @@ Auto-included by docs/_layouts/default.html.
     if (botName && !botCfg) cfg.intro = '⚠ bot "' + botName + '" could not be loaded — answering with defaults. ' + (cfg.intro || '');
     /* one word, two elements: bound= the editor, target= the check → a tutor */
     cfg.target = el.getAttribute('target') || cfg.target || null;
+    /* name="Bill" — a persona name over a bot: Bill the Builder, Chuck the
+       Checker, Rey the Reviewer (Michel, 2026-10-16); the bot id stays */
+    if (el.getAttribute('name')) cfg.name = el.getAttribute('name');
     cfg.todos = !!(boundId && cfg.target);
     cfg.proof = cfg.target;
     /* ⚡ ON_RESPONSE (Michel, 2026-10-12: "expose not only verbs but also

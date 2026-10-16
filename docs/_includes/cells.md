@@ -183,29 +183,35 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
       /* node variables (code_chrome fetches them into store node.*): gentle
          by design — unset never errors, it renders the default */
       "def get_var(_name, default='🌱 To be defined'):\n" +
-      "    _s = globals().get('node')\n" +
+      "    _s = _g.get('node')\n" +
       "    _v = getattr(_s, _name, None) if _s is not None else None\n" +
       "    return default if (_v is None or _v == '') else _v\n" +
+      /* THE CELLS READ IN A COPY OF THE PAGE'S PYTHON, NEVER WRITE INTO IT.
+         Scopes, store nodes and bare dataset names used to land in the shared
+         globals — and a dataset named like a class (a class IS a dataset:
+         {= Family.count }) overwrote the class Family itself, so the page's
+         own proof found an empty scope where it expected a class (2026-10-16). */
+      "_g = dict(globals())\n" +
       "try:\n" +                                 // site-wide persisted state (Store)
       "    _st = json.loads(str(js.window.lcStore.tree()))\n" +
       "except Exception:\n" +
       "    _st = {}\n" +
       "for _sk, _sv in _st.items():\n" +
-      "    globals()[_sk] = _Scope(_sv) if isinstance(_sv, dict) else _sv\n" +
+      "    _g[_sk] = _Scope(_sv) if isinstance(_sv, dict) else _sv\n" +
       "_sc = json.loads(str(js.window._lcCellScopes))\n" +   // this page's form scopes
-      "for _sid in _sc: globals()[_sid] = _Scope(_sc[_sid])\n" +
+      "for _sid in _sc: _g[_sid] = _Scope(_sc[_sid])\n" +
       "_bare = json.loads(str(js.window._lcCellBare))\n" +
-      "for _k in _bare: globals()[_k] = _bare[_k]\n" +
+      "for _k in _bare: _g[_k] = _bare[_k]\n" +
       "_out = []\n" +
       "for _e in json.loads(str(js.window._lcCellExprs)):\n" +
       "    _tries = 0\n" +
       "    while True:\n" +
       "        try:\n" +
-      "            _out.append(str(eval(_e))); break\n" +
+      "            _out.append(str(eval(_e, _g))); break\n" +
       "        except NameError as _ne:\n" +      // undefined scope (e.g. an unset store node)
       "            _p = str(_ne).split(chr(39)); _tries += 1\n" +
       "            if len(_p) > 1 and _tries < 6:\n" +
-      "                globals()[_p[1]] = _Empty()\n" +
+      "                _g[_p[1]] = _Empty()\n" +
       "            else:\n" +
       "                _out.append('\\u26a0 ' + str(_ne)); break\n" +
       "        except Exception as _err:\n" +
