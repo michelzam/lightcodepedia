@@ -2974,6 +2974,32 @@ def _lc_forget(o):
         o._js = None
 
 
+def _lc_forget_class(name):
+    """A class whose block left the page (renamed, deleted, retyped): gone
+    from the registries, the globals, the bus and the diagrams — a renamed
+    Company left a ghost per keystroke (Michel, 2026-10-16)."""
+    cls = globals().get(name)
+    for reg in (_MODEL, _CLASSES):
+        if name in reg:
+            del reg[name]
+    if isinstance(cls, type):
+        for o in list(_LC_OBJS):
+            if type(o) is cls:
+                _lc_forget(o)
+        for src in list(_LC_SOURCED):
+            if _LC_SOURCED[src] == name:
+                del _LC_SOURCED[src]
+        if globals().get(name) is cls:
+            del globals()[name]
+    for k in list(_LC_DECL):
+        _LC_DECL[k] = [n for n in _LC_DECL[k] if n != name]
+    w = js.window
+    if getattr(w, "lcModels", None) is not None and getattr(w.lcModels, name, None) is not None:
+        js.Reflect.deleteProperty(w.lcModels, name)
+    if getattr(w.lcDatasets, name, None) is not None:
+        js.Reflect.deleteProperty(w.lcDatasets, name)
+
+
 def _lc_source_bind(cls_name, src):
     cls = globals().get(cls_name)
     if not isinstance(cls, type):
@@ -3788,7 +3814,7 @@ _inject_store()
     if (el.dataset.lcInsDone) return;
     el.dataset.lcInsDone = "1";
     var code = (el.querySelector("code") || el).textContent;
-    var elid = el.id || ("insp" + (++INS_N));
+    var elid = el.id || ("_insp" + (++INS_N));
     var bind = el.getAttribute("bind") || "";
     var follow = el.getAttribute("follow") || "";
     var host = document.createElement("div");
@@ -3902,7 +3928,7 @@ _inject_store()
     if (el.dataset.lcModelDone) return;
     el.dataset.lcModelDone = "1";
     var code = (el.querySelector("code") || el).textContent;
-    var mid = el.id || ("model" + (++INS_N));
+    var mid = el.id || ("_model" + (++INS_N));
     el.setAttribute("data-lc-id", mid);
     el.classList.add("lc-model");
     /* A CLASS IS A DATASET (Michel, 2026-10-15): class Family(Object,
@@ -3932,20 +3958,45 @@ _inject_store()
     while ((nm = reCls.exec(code))) names.push(nm[1]);
     var by = window._lcClassBy = window._lcClassBy || {};
     var same = names.length && names.every(function (n) { return by[n] === code; });
+    el.setAttribute("data-lc-classes", names.join(" "));
+    if (sourced.length) el.setAttribute("data-bind", sourced[0][1]);   /* the x-ray's source pipe */
+    /* the classes of a block that has left the page — and that no block on
+       the page declares any more — are forgotten before this one runs */
+    var blocks = window._lcModelEls = (window._lcModelEls || []).filter(function (b) { return b.el !== el; });
+    var gone = [];
+    blocks = blocks.filter(function (b) {
+      if (b.el.isConnected) return true;
+      b.names.forEach(function (n) { if (gone.indexOf(n) < 0) gone.push(n); });
+      return false;
+    });
+    blocks.push({ el: el, names: names });
+    window._lcModelEls = blocks;
+    gone = gone.filter(function (n) {
+      return names.indexOf(n) < 0 && !blocks.some(function (b) { return b.el.isConnected && b.names.indexOf(n) >= 0; });
+    });
+    var purge = gone.length ? gone.map(function (n) { delete by[n]; return "_lc_forget_class(" + JSON.stringify(n) + ")\n"; }).join("") : "";
     mpReady().then(function (mp) {
       if (same) {
         try {
-          runPy(mp, "_LC_DECL[" + JSON.stringify(mid) + "] = " + JSON.stringify(names) + bind + "\n_lc_publish_all()\n");
+          runPy(mp, purge + "_LC_DECL[" + JSON.stringify(mid) + "] = " + JSON.stringify(names) + bind + "\n_lc_publish_all()\n");
           (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
           document.dispatchEvent(new CustomEvent("lc-model-changed"));
           if (window.lcWarn) window.lcWarn(el, "");
           return;
         } catch (e) { names.forEach(function (n) { delete by[n]; }); }
       }
+      /* THE RUNTIME LOADS ONCE PER INTERPRETER (Michel, 2026-10-16: "a
+         syntax error in the editor blocks the page"): each class edit in a
+         pad re-ran the whole engine before the class — 0.7–1 s frozen per
+         pause. Its registries survive anyway; the class runs alone after
+         the first time. */
+      var pre = window._lcModelPreIn === mp ? "" : preamble;
       try {
-        runPy(mp, preamble + "\n_LC_SNAP_M = set(_CLASSES)\n" + code + bind +
+        if (purge) runPy(mp, purge);
+        runPy(mp, pre + "\n_LC_SNAP_M = set(_CLASSES)\n" + code + bind +
           "\n_LC_DECL[" + JSON.stringify(mid) + "] = [n for n in _CLASSES if n not in _LC_SNAP_M]\n" +
           "_LC_NEW[:] = []\n_lc_publish_all()\n");
+        window._lcModelPreIn = mp;
         (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
         names.forEach(function (n) { by[n] = code; });
         document.dispatchEvent(new CustomEvent("lc-model-changed"));
@@ -3955,7 +4006,8 @@ _inject_store()
         console.error("[lc-model]", e);
         /* a class that does not run says so beside itself, on ITS line —
            not only in the console (Michel, 2026-10-16) */
-        if (window.lcWarn) window.lcWarn(el, window.lcPyError ? window.lcPyError(e, preamble.split("\n").length + 1) : String(e));
+        if (pre) window._lcModelPreIn = null;
+        if (window.lcWarn) window.lcWarn(el, window.lcPyError ? window.lcPyError(e, pre ? pre.split("\n").length + 1 : 2) : String(e));
       }
     }).catch(function (e) { console.error("[lc-model]", e); });
   }

@@ -56,9 +56,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-form-empty { padding: 0.9em 1em; color: var(--lc-ink-mute, #616161); font-style: italic; font-size: 0.9em; }
 .lc-form-err { padding: 0.9em 1em; color: #b00; background: #fff5f5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; white-space: pre-wrap; }
 .lc-form-verbs { display: flex; flex-wrap: wrap; gap: .4em; padding: .5em .75em .6em; border-top: 1px solid #eee; }
-.lc-form-verb { font: inherit; font-size: .9em; padding: .3em .9em; border-radius: 6px; border: 1px solid #9ca3af; background: #fff; color: #111827; cursor: pointer; box-shadow: 0 1px 0 rgba(0,0,0,.06); }
-.lc-form-verb:hover { background: #f3f4f6; }
-.lc-form-verb.lc-form-verb-off { border-color: #e5e7eb; background: #f9fafb; color: #b0b5bd; box-shadow: none; cursor: default; }
+/* the verbs wear the page's action blue — Save, ▶ Run, ➕ New — one family
+   of buttons (Michel, 2026-10-16: "elegant and homogeneous"); a verb the
+   stage forbids is a quiet grey */
+.lc-form-verb { font: inherit; font-size: .85em; font-weight: 500; padding: .35em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
+.lc-form-verb:hover { background: #0052a3; border-color: #0052a3; }
+.lc-form-verb.lc-form-verb-off { border-color: #e5e7eb; background: #f3f4f6; color: #9ca3af; cursor: default; }
 </style>
 
 <script>
@@ -425,8 +428,31 @@ Auto-included by docs/_layouts/default.html.
     bodyEl.parentNode.appendChild(bar);
   }
 
+  /* what the card's grid was built for: the same fields under the same
+     rules reuse it, only the values change */
+  function formSig(obj, opts) {
+    var o = opts || {};
+    return JSON.stringify([Object.keys(obj), !!o.editable, o.locked || [], o.chips || [],
+      o.options ? Object.keys(o.options) : [], o.sliders ? Object.keys(o.sliders) : []]);
+  }
   function renderFormBody(bodyEl, obj, opts) {
     opts = opts || {};
+    /* A NEW ROW, THE SAME CARD (Michel, 2026-10-16: "changing lines in the
+       grid is too slow — it rebuilds the form?"): it did, a whole grid per
+       click. The same fields under the same rules now keep the grid and only
+       swap its values; the handlers read the current object. */
+    if (bodyEl._lcGridApi && obj && typeof obj === "object" && !Array.isArray(obj) && !opts.persist
+        && bodyEl._lcSig === formSig(obj, opts) && bodyEl.querySelector(".lc-form-grid")) {
+      bodyEl._lcCur = { obj: obj, opts: opts };
+      var api0 = bodyEl._lcGridApi, rows0 = Object.keys(obj).map(function (k) {
+        return { _key: k, label: prettifyKey(k), value: obj[k], _type: typeOfValue(obj[k]) };
+      });
+      if (api0.setGridOption) api0.setGridOption("rowData", rows0); else api0.setRowData(rows0);
+      var w0 = bodyEl.closest(".lc-form");
+      if (w0) { try { w0.setAttribute("data-lc-value", JSON.stringify(obj)); } catch (e) {} }
+      return;
+    }
+    bodyEl._lcCur = { obj: obj, opts: opts };
     // Tear down any previous AG Grid instance attached here
     if (bodyEl._lcGridApi) {
       try { bodyEl._lcGridApi.destroy(); } catch (e) {}
@@ -547,12 +573,14 @@ Auto-included by docs/_layouts/default.html.
         defaultColDef: { sortable: false, filter: false, suppressHeaderMenuButton: true, resizable: true },
 
         onCellValueChanged: function(event) {
+          var cur = bodyEl._lcCur || {}, obj = cur.obj || {}, opts = cur.opts || {};   /* the row shown NOW */
           var k = event.data._key;
           var nv = event.newValue;
           obj[k] = nv;
           // Re-derive type from the new value
           event.data._type = typeOfValue(nv);
-          _publishFormValue();
+          var wv = bodyEl.closest(".lc-form");
+          if (wv) { try { wv.setAttribute("data-lc-value", JSON.stringify(obj)); } catch (e) {} }
           // persist the learner's edit to the browser Store (also fires the bus)
           if (opts.persist && opts.formId && window.lcStore) {
             window.lcStore.set(opts.persist + "." + opts.formId + "." + k, nv);
@@ -565,6 +593,7 @@ Auto-included by docs/_layouts/default.html.
       };
 
       var api = bodyEl._lcGridApi = window.agGrid.createGrid(gridDiv, gridOptions);
+      bodyEl._lcSig = formSig(obj, opts);
       wireLabelGrip(gridDiv, api, bodyEl);
     }).catch(function(e){
       bodyEl.innerHTML = '<div class="lc-form-err">' + escapeHtml("Could not load AG Grid: " + (e.message || String(e))) + '</div>';
@@ -597,7 +626,7 @@ Auto-included by docs/_layouts/default.html.
       return window.lcComputeRows([Object.assign({}, obj)], compute)
         .then(function (rows) { return rows[0]; }, function () { return obj; });
     }
-    var id = el.id || ("frm" + (++FORM_ID));
+    var id = el.id || ("_frm" + (++FORM_ID));
     /* persist="true" -> keyed by this page's slug; persist="scope" -> a stable
        top segment (e.g. build_ai). Learner edits save to the Store under
        <scope>.<id>.<field>; seeds hydrate only where the Store is unset. */
@@ -740,7 +769,7 @@ Auto-included by docs/_layouts/default.html.
     var editable = el.getAttribute("data-editable") === "true";
     var useCdn = (canonical && location.hostname === canonical) || location.search.indexOf("cdn=1") >= 0;
     var url = useCdn ? cdn : raw;
-    var id = el.id || ("frm" + (++FORM_ID));
+    var id = el.id || ("_frm" + (++FORM_ID));
     var wrapper = buildFormWrapper({ id: id, title: title || "Form", mode: useCdn ? "cdn" : "live" });
     if (window.lcCarryCellKnobs) window.lcCarryCellKnobs(el, wrapper);
     el.parentNode.replaceChild(wrapper, el);

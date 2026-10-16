@@ -873,7 +873,7 @@ Auto-included by docs/_layouts/default.html.
 
     var raw  = (el.querySelector("code") || el).textContent.trim();
     var size = parseInt(el.getAttribute("size") || "140", 10);
-    var elId = el.id || ("avt" + (++AVT_ID));
+    var elId = el.id || ("_avt" + (++AVT_ID));
     var slot = AVT_SLOT++;
     el.style.display = "none"; /* hide source block */
 

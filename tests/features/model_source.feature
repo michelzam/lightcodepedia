@@ -313,3 +313,85 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/drawn.md"
     And I wait for the page to be interactive
     Then the diagram in the section accordion names "Family, Company, address, meet"
+
+  Scenario: The x-ray draws the grid, its class and the class's list together
+    Michel, 2026-10-16: "sometimes we see the model, other times the
+    dataset — they should both be there (the model has Family using the
+    dataset)".
+
+    When I shift-hover over the grid "family_grid"
+    Then the x-ray scene mentions "Model"
+    And the x-ray scene mentions "calls"
+
+  Scenario: A class renamed in a pad leaves no ghost behind
+    Michel, 2026-10-16: the diagram kept Compan, Company, Companyy… one
+    ghost per pause — the registries kept every class ever declared.
+
+    Given the GitHub contents API serves "courses/demo/module_06/ghost.md" with the document:
+      """
+      # Ghost
+
+      `````markdown
+      ```csv
+      family,stage
+      Nguyen,asked
+      ```
+      {: .dataset #reservations }
+
+      ```python
+      class Family(Object, source="reservations"):
+          stage = State("asked", "met")
+
+
+      class Company(Family):
+          address = Attr(str)
+      ```
+      {: .model }
+      `````
+      {: .mdpad #ghost_pad decorations="true" rows="20" }
+
+      [the families, drawn](#)
+      {: .diagram scope="Family" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/ghost.md"
+    And I wait for the page to be interactive
+    And in the "ghost_pad" pad I rename "Company" to "Partner", a letter at a time
+    Then the class "Company" is gone from the page, "Partner" is there
+
+  Scenario: A new row in the card swaps its values, not its table
+    Michel, 2026-10-16: "changing lines in the grid is too slow — it
+    rebuilds the form?" — it did, a whole table per click.
+
+    When I click the row "Diallo" in "family_grid"
+    Then the card "family_card" shows "Diallo" in the same table after I click the row "Alvarez"
+
+  Scenario: The verbs and New wear the page's action blue
+    Then the button New under "family_grid" and the verbs of "family_card" are filled blue
+
+  Scenario: Typing prose in a pad keeps its live parts
+    Michel, 2026-10-16: "never slow down interaction" — the preview now
+    rebuilds only the block that changed.
+
+    Given the GitHub contents API serves "courses/demo/module_06/card.md" with the document:
+      """
+      # Card
+
+      `````markdown
+      Families.
+
+      ```csv
+      family,stage
+      Nguyen,asked
+      ```
+      {: .dataset #reservations }
+
+      [the families](#)
+      {: .datagrid source="reservations" #families }
+      `````
+      {: .mdpad #card decorations="true" rows="20" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/card.md"
+    And I wait for the page to be interactive
+    And I mark the grid "families" and type in the "card" pad three times, pausing after each
+    Then the grid "families" is the one I marked
+

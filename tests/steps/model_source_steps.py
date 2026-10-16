@@ -330,14 +330,14 @@ def step_card_shows(context, pad_id, text):
 @when('I type in the "{pad_id}" pad three times, pausing after each')
 def step_type_pause(context, pad_id):
     pad = context.page.locator("[data-lc-id='" + pad_id + "']")
-    expect(pad.locator(".lc-dg-chip").first).to_be_attached(timeout=T)
+    expect(pad.locator(".lc-datagrid tbody tr").first).to_be_attached(timeout=T)
     ta = pad.locator("textarea.lc-mdpad-in")
     ta.focus()
     context.page.evaluate("t => t.setSelectionRange(t.value.indexOf('Families.') + 9, t.value.indexOf('Families.') + 9)", ta.element_handle())
     for _ in range(3):
         context.page.keyboard.type(" more")
         context.page.wait_for_timeout(1200)
-    expect(pad.locator(".lc-dg-chip").first).to_be_attached(timeout=T)
+    expect(pad.locator(".lc-datagrid tbody tr").first).to_be_attached(timeout=T)
 
 
 @then('the lists "{ids}" keep at most {n:d} listeners each')
@@ -363,3 +363,75 @@ def step_diagram_names(context, words):
         context.page.wait_for_function(
             "w => { const s = document.querySelector('.lc-acc-section .lc-diagram'); return s && s.textContent.indexOf(w) >= 0; }",
             arg=w, timeout=30000)
+
+
+@when('I shift-hover over the grid "{gid}"')
+def step_shift_hover_grid(context, gid):
+    g = grid(context, gid)
+    expect(g.locator(".lc-dg-chip").first).to_be_visible(timeout=T)
+    g.scroll_into_view_if_needed()
+    context.page.wait_for_timeout(300)
+    box = g.bounding_box()
+    context.page.evaluate(   # Alt+Shift pointermove: the x-ray's connected scene
+        "([x, y]) => window.dispatchEvent(new PointerEvent('pointermove',"
+        " {clientX: x, clientY: y, altKey: true, shiftKey: true, bubbles: true, cancelable: true}))",
+        [box["x"] + box["width"] / 2, box["y"] + 20])
+    context.page.wait_for_timeout(800)
+
+
+@when('in the "{pad_id}" pad I rename "{old}" to "{new}", a letter at a time')
+def step_rename_class(context, pad_id, old, new):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    context.page.wait_for_function("n => !!(window.lcModels && window.lcModels[n])", arg=old, timeout=30000)
+    ta = pad.locator("textarea.lc-mdpad-in")
+    ta.focus()
+    at = context.page.evaluate("([t, o]) => t.value.indexOf('class ' + o) + 6", [ta.element_handle(), old])
+    context.page.evaluate("([t, a, n]) => t.setSelectionRange(a, a + n)", [ta.element_handle(), at, len(old)])
+    for i, ch in enumerate(new):
+        context.page.keyboard.type(ch)
+        context.page.wait_for_timeout(900)   # a pause: the preview catches up between letters
+
+
+@then('the class "{old}" is gone from the page, "{new}" is there')
+def step_class_gone(context, old, new):
+    context.page.wait_for_function("n => !!(window.lcModels && window.lcModels[n])", arg=new, timeout=30000)
+    context.page.wait_for_function(
+        "n => { const d = document.querySelector('.lc-diagram'); return d && d.textContent.indexOf(n) >= 0; }",
+        arg=new, timeout=30000)
+    left = context.page.evaluate(
+        "o => Object.keys(window.lcModels || {}).filter(k => k !== 'Family' && k !== 'Partner')", old)
+    assert not left, "ghost classes left: %s" % left
+    txt = context.page.evaluate("() => document.querySelector('.lc-diagram').textContent")
+    assert old not in txt.replace(new, ""), "the diagram still draws " + old
+
+
+@then('the card "{fid}" shows "{a}" in the same table after I click the row "{b}"')
+def step_card_same_table(context, fid, a, b):
+    body = context.page.locator(".lc-form[data-lc-id='" + fid + "'] .lc-form-body")
+    expect(body).to_contain_text(a, timeout=T)
+    context.page.evaluate("f => { document.querySelector(\".lc-form[data-lc-id='\" + f + \"'] .lc-form-grid\")._lcMark = 1; }", fid)
+    step_click_row(context, b, "family_grid")
+    expect(body).to_contain_text(b, timeout=T)
+    same = context.page.evaluate("f => !!document.querySelector(\".lc-form[data-lc-id='\" + f + \"'] .lc-form-grid\")._lcMark", fid)
+    assert same, "the card built a new table for the new row"
+
+
+@then('the button New under "{gid}" and the verbs of "{fid}" are filled blue')
+def step_blue(context, gid, fid):
+    expect(grid(context, gid).locator("button.lc-dg-new")).to_have_css("background-color", "rgb(0, 102, 204)", timeout=T)
+    step_click_row(context, "Nguyen", gid)
+    live = context.page.locator(".lc-form[data-lc-id='" + fid + "'] .lc-form-verb:not(.lc-form-verb-off)").first
+    expect(live).to_have_css("background-color", "rgb(0, 102, 204)", timeout=T)
+
+
+@when('I mark the grid "{gid}" and type in the "{pad_id}" pad three times, pausing after each')
+def step_mark_type(context, gid, pad_id):
+    expect(grid(context, gid).locator("tbody tr").first).to_be_attached(timeout=T)
+    context.page.evaluate("g => { document.querySelector(\".lc-datagrid[data-lc-id='\" + g + \"']\")._lcMark = 1; }", gid)
+    step_type_pause(context, pad_id)
+
+
+@then('the grid "{gid}" is the one I marked')
+def step_grid_marked(context, gid):
+    ok = context.page.evaluate("g => !!document.querySelector(\".lc-datagrid[data-lc-id='\" + g + \"']\")._lcMark", gid)
+    assert ok, "typing prose rebuilt the grid"

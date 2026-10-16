@@ -75,8 +75,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-verb.lc-dg-off small { color: #c4c7cc; }
 .lc-dg-verb.lc-dg-danger { color: #b91c1c; border-top: 1px solid #eee; border-radius: 0 0 5px 5px; }
 .lc-dg-foot { margin-top: .4em; }
-.lc-dg-new { background: none; border: 1px solid #d1d5db; border-radius: 4px; padding: .2em .7em; cursor: pointer; color: #374151; font: inherit; font-size: .9em; }
-.lc-dg-new:hover { background: #f3f4f6; }
+.lc-dg-new { font: inherit; font-size: .85em; font-weight: 500; padding: .35em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
+.lc-dg-new:hover { background: #0052a3; border-color: #0052a3; }
 .lc-dg-say { margin-top: .4em; padding: .35em .7em; border-radius: 6px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; font-size: .9em; }
 
 /* ── button ─────────────────────────────────────────── */

@@ -445,6 +445,8 @@ Auto-included by docs/_layouts/default.html.
         if (eSeen.has(k)) return;
         eSeen.add(k); edges.push({ a, b, role, list });
       }
+      const modelOf = name => [...document.querySelectorAll(".lc-model[data-lc-classes]")]
+        .find(m => (" " + m.getAttribute("data-lc-classes") + " ").indexOf(" " + name + " ") >= 0) || null;
       const REF_ATTRS = [["data-bind", "source"], ["data-bound-to", "master"], ["data-bound", "master"], ["data-avt-target", "target"], ["data-flow", "flow"], ["data-map", "map"], ["data-lc-bound", "bound"], ["data-lc-target", "target"]];
       const wrapName = el => { if (el && el.classList) for (const [t, n] of WRAP)
         if (el.classList.contains(t)) return n; return null; };
@@ -457,15 +459,40 @@ Auto-included by docs/_layouts/default.html.
           /* names nothing → no node, no wire. The referrer's 💣 row says it,
              and a pipe to a fabricated panel would say the opposite. */
           if (!resolves(lk.id, lk.target)) return;
-          const tEl = document.querySelector("[data-lc-id='" + lk.id + "']");
+          /* a CLASS is a dataset id: its node is the model block that declares
+             it, never a bare "Dataset" one time and the block another
+             (Michel, 2026-10-16: "they should both be there") */
+          const tEl = document.querySelector("[data-lc-id='" + lk.id + "']") || modelOf(lk.id);
           // the live element's actual class wins over the declared association
           // target — a bind says "Dataset", but the element may be a Query
           // (which IS a Dataset). Without this the proxy shows as its base.
           const nm = (tEl && wrapName(tEl)) || lk.target;
           const t = addNode(nm, lk.id, tEl, null);
-          if (t.fresh) { t.fresh = false; t.dump = inspectTarget(nm, lk.id); queue.push(t); }
+          if (t.fresh) { t.fresh = false; t.dump = tEl && tEl.classList.contains("lc-model") ? inspect(tEl) : inspectTarget(nm, lk.id); queue.push(t); }
           addEdge(n, t, lk.role, lk.list);
         });
+        /* a model block reads its list (class Family(Object, source="…")):
+           its own source pipe, and the parts bound to its classes */
+        if (n.el && n.el.classList && n.el.classList.contains("lc-model")) {
+          const src = n.el.getAttribute("data-bind");
+          if (src && resolves(src, "Dataset")) {
+            const sEl = document.querySelector("[data-lc-id='" + src + "']");
+            const s = addNode((sEl && wrapName(sEl)) || "Dataset", src, sEl, null);
+            if (s.fresh) { s.fresh = false; s.dump = inspectTarget(s.name, src); queue.push(s); }
+            addEdge(n, s, "source", false);
+          }
+          (n.el.getAttribute("data-lc-classes") || "").split(/\s+/).filter(Boolean).forEach(cn => {
+            REF_ATTRS.forEach(([attr, role]) => {
+              document.querySelectorAll("[" + attr + "='" + cn + "']").forEach(rEl => {
+                if (rEl === n.el) return;
+                const rn = wrapName(rEl); if (!rn) return;
+                const r = addNode(rn, rEl.getAttribute("data-lc-id") || "", rEl, null);
+                if (r.fresh) { r.fresh = false; r.dump = inspect(rEl); queue.push(r); }
+                addEdge(r, n, role, false);
+              });
+            });
+          });
+        }
         if (n.id) REF_ATTRS.forEach(([attr, role]) => {
           document.querySelectorAll("[" + attr + "='" + n.id + "']").forEach(rEl => {
             const rn = wrapName(rEl); if (!rn) return;

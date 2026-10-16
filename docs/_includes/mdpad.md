@@ -226,6 +226,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-out .lc-mdpad-broken { outline: 2px dashed #c62828; outline-offset: 4px; border-radius: 4px; }
 .lc-mdpad-out .lc-mdpad-broken::before { content: "🔌 " attr(data-lc-broken) " — no such id on this page"; display: block; color: #c62828; font-size: .8em; font-family: ui-sans-serif, system-ui, sans-serif; margin-bottom: .35em; }
 .lc-mdpad-wires { color: #c62828; font-size: .85em; margin: 0 0 .6em; }
+/* one container per block of the text: invisible to the layout */
+.lc-pad-blk { display: contents; }
 /* the preview is catching up with the typing */
 .lc-mdpad[data-lc-busy] .lc-mdpad-out { position: relative; }
 .lc-mdpad[data-lc-busy] .lc-mdpad-out::after { content: "⟳"; position: absolute; top: .35em; right: .5em; z-index: 5;
@@ -1284,6 +1286,9 @@ Auto-included by docs/_layouts/default.html.
     /* one source block = one top-level element — except a beside= row, which
        stands for as many blocks as it holds (the scan folded them) */
     function blockEl(idx) {
+      /* an incremental preview: one container per block (display: contents) */
+      var bk = body.querySelectorAll(":scope > .lc-pad-blk");
+      if (bk.length) { var c0 = bk[idx]; return c0 ? (c0.firstElementChild || c0) : null; }
       for (var i = 0; i < body.children.length; i++) {
         var c = body.children[i], n = (c.classList.contains("lc-blocks") && c.hasAttribute("data-lc-beside")) ? c.children.length : 1;
         if (idx < n) return n === 1 ? c : c.children[idx];
@@ -1301,6 +1306,8 @@ Auto-included by docs/_layouts/default.html.
     }
     function markWires(cur) {
       var broken = [];
+      /* a reused block may still wear the last render's mark */
+      body.querySelectorAll(".lc-mdpad-broken").forEach(function (e) { e.classList.remove("lc-mdpad-broken"); e.removeAttribute("data-lc-broken"); });
       cur.wires.forEach(function (w) {
         if (cur.ids[w.id]) return;
         if (window.lcDatasets && (w.id in window.lcDatasets)) return;   /* the page's own data */
@@ -1323,6 +1330,7 @@ Auto-included by docs/_layouts/default.html.
         wrap.removeAttribute("data-lc-broken");
       }
     }
+    var padCache = [];   /* [{ key: a block's text, el: its container }] — the last preview */
     function render(text) {
       var v = typeof text === "string" ? text : ta.value;   /* a replay frame, else the editor */
       if (!window.marked) {
@@ -1337,8 +1345,44 @@ Auto-included by docs/_layouts/default.html.
       var norm = window.lcNormIAL ? window.lcNormIAL(v) : v.replace(/([^\n])\n(\{:)/g, "$1\n\n$2");
       var cur = wiresOf(v);
       forgetGone(cur);                      /* what the text no longer declares is gone */
-      body.innerHTML = inline(window.marked.parse(norm));
-      if (window.lcApplyIAL) window.lcApplyIAL(body);
+      /* ONLY WHAT CHANGED IS REBUILT (Michel, 2026-10-16: "never slow down
+         interaction"). Each block of the text renders into its own container
+         (display: contents — the layout sees its children), keyed by its
+         text; a block whose text did not change keeps its container and
+         every live part in it — the grid, the card, the class, the list.
+         What spans blocks (a beside= row, a section accordion, footnotes,
+         reference links) renders whole, as before. */
+      var whole = typeof text === "string" || /beside=|\.accordion|\.tabs\b|\[\^|^\s{0,3}\[[^\]]+\]:\s/m.test(v);
+      if (whole) {
+        padCache = [];
+        body.innerHTML = inline(window.marked.parse(norm));
+        if (window.lcApplyIAL) window.lcApplyIAL(body);
+      } else {
+        var lines = v.split("\n"), fresh = [], used = [];
+        if (!body.querySelector(":scope > .lc-pad-blk")) { padCache = []; body.innerHTML = ""; }
+        blocksOf(v).forEach(function (bk) {
+          var key = lines.slice(bk.start, bk.end + 1).join("\n"), hit = null;
+          for (var i = 0; i < padCache.length && !hit; i++)
+            if (!used[i] && padCache[i].key === key && padCache[i].el.parentNode === body) { hit = padCache[i]; used[i] = 1; }
+          if (!hit) {
+            var c = document.createElement("div");
+            c.className = "lc-pad-blk";
+            var src0 = window.lcNormIAL ? window.lcNormIAL(key) : key;
+            c.innerHTML = inline(window.marked.parse(src0));
+            if (window.lcApplyIAL) window.lcApplyIAL(c);
+            hit = { key: key, el: c };
+          }
+          fresh.push(hit);
+        });
+        padCache.forEach(function (o, i) { if (!used[i] && o.el.parentNode) o.el.parentNode.removeChild(o.el); });
+        var ref = body.firstChild;
+        while (ref && !(ref.classList && ref.classList.contains("lc-pad-blk"))) ref = ref.nextSibling;
+        fresh.forEach(function (o) {
+          if (o.el === ref) { ref = ref.nextSibling; return; }
+          body.insertBefore(o.el, ref);
+        });
+        padCache = fresh;
+      }
       if (window.lcScanElement) window.lcScanElement(body);
       if (window.lcCellsRescan) window.lcCellsRescan();
       markWires(cur);                       /* a wire to nothing is drawn as such */

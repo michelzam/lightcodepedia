@@ -660,7 +660,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     var height = parseInt(el.getAttribute("height"), 10) || 400;
     var format = (el.getAttribute("format") || (window.lcFenceFormat && window.lcFenceFormat(el)) || "yaml").toLowerCase();
     var title = el.getAttribute("title") || "";
-    var id = el.id || ("dg" + (++DG_ID));
+    var id = el.id || ("_dg" + (++DG_ID));
     var opts = readDatagridOpts(el, "");
     var bindId = el.getAttribute("source") || el.getAttribute("bind") || "";
     var wrapper = buildDatagridWrapper({ id: id, title: title, format: bindId ? "" : format,
@@ -739,7 +739,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     var title = el.getAttribute("data-title") || "";
     var useCdn = (canonical && location.hostname === canonical) || location.search.indexOf("cdn=1") >= 0;
     var url = useCdn ? cdn : raw;
-    var id = el.id || ("dg" + (++DG_ID));
+    var id = el.id || ("_dg" + (++DG_ID));
     var opts = readDatagridOpts(el, "data-");
     var wrapper = buildDatagridWrapper({ id: id, title: title, format: format, height: height,
                                         mode: useCdn ? "cdn" : "live", editable: opts.editable });

@@ -1022,7 +1022,7 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcUpgraded = "1";
     var codeNode = el.querySelector("code");
     var raw = codeNode ? codeNode.textContent.replace(/\n+$/, "") : "";
-    var id = el.id || ("repl" + (++REPL_ID));
+    var id = el.id || ("_repl" + (++REPL_ID));
     var opts = {
       id: id,
       init: el.getAttribute("init") || raw || ""

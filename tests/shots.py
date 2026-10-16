@@ -75,11 +75,11 @@ def _stub_chart_js(page):
 # the catalog pages are the SAME components with the same data, so the pipeline
 # can be proven now and the lesson-page shots done properly after.
 SHOTS = [
-    ("grid_dogs",   "/components/datagrid", '[data-lc-id="dg1"]',   "datagrid"),
+    ("grid_dogs",   "/components/datagrid", '[data-lc-id="_dg1"]',   "datagrid"),
     ("grid_edit",   "/components/datagrid", '[data-lc-id="editable_dogs"]', "datagrid"),
     ("chart_bar",   "/components/chart",    ".lc-chart >> nth=0",   "chart"),
     ("chart_line",  "/components/chart",    ".lc-chart >> nth=1",   "chart"),
-    ("form_dog",    "/components/form",     '[data-lc-id="frm1"]',  "form"),
+    ("form_dog",    "/components/form",     '[data-lc-id="_frm1"]',  "form"),
     ("dataset_grid", "/components/dataset", '[data-lc-id="monthly_grid"]', "dataset"),
 ]
 
