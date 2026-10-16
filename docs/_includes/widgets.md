@@ -1698,10 +1698,33 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
       if (body.parentNode === wrap) wrap.replaceChild(pre, body); else wrap.appendChild(pre);
       body = pre;
     }
+    /* IN A FRAME THE CLIPBOARD API IS SHUT (Michel, 2026-10-16: Canvas,
+       module 05, "Copy failed"): Canvas frames the page without the
+       clipboard-write permission, so writeText rejects. The old road still
+       works from a click — a hidden textarea and execCommand("copy"); and if
+       even that is refused, the lines are selected, so ⌘C / Ctrl+C takes them. */
     copy.addEventListener("click", function () {
       var done = function () { copy.textContent = "✓ Copied"; setTimeout(function () { copy.textContent = "📋 Copy"; }, 1500); };
+      var legacy = function () {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.setAttribute("readonly", "");
+        ta.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;";
+        document.body.appendChild(ta);
+        ta.select(); ta.setSelectionRange(0, text.length);
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) {}
+        document.body.removeChild(ta);
+        if (ok) { done(); return; }
+        try {
+          var r = document.createRange(); r.selectNodeContents(body);
+          var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        } catch (e) {}
+        copy.textContent = "⌘C to copy";
+        setTimeout(function () { copy.textContent = "📋 Copy"; }, 3000);
+      };
       if (navigator.clipboard && navigator.clipboard.writeText)
-        navigator.clipboard.writeText(text).then(done, function () { copy.textContent = "⚠️ Copy failed"; });
+        navigator.clipboard.writeText(text).then(done, legacy);
+      else legacy();
     });
 
     el.parentNode.insertBefore(wrap, el);

@@ -173,6 +173,10 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
       "        if _n.startswith('_'): raise AttributeError(_n)\n" +
       "        return self\n" +
       "    def __bool__(self): return False\n" +
+      /* an empty list's first row, sliced or indexed, is still empty — not
+         an error: {= walk_when.first.time[11:16] } on a day with no good
+         hour reads '' (Michel, 2026-10-16) */
+      "    def __getitem__(self, _k): return self\n" +
       "    def __str__(self): return ''\n" +
       "    def __repr__(self): return ''\n" +
       "    def __eq__(self, _o): return _o == '' or _o is None or _o is self\n" +

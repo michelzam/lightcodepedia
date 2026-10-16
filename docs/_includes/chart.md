@@ -330,6 +330,13 @@ Auto-included by docs/_layouts/default.html.
     c.appendChild(el); return el;
   }
 
+  /* AN HOUR READS AS AN HOUR (Michel, 2026-10-16: "chart: show just hours
+     on the x axis"): an x value that is a date-time (2026-10-16T14:00) is
+     labelled by its time, 14:00; a plain date or a word is cut as before */
+  function xText(v, cut) {
+    var s = String(v), m = /^\d{4}-\d\d-\d\d[T ](\d\d:\d\d)/.exec(s);
+    return m ? m[1] : s.substring(0, cut);
+  }
   function renderBar(el, data, xCol, yCol) {
     var W = Math.max(el.offsetWidth || 0, 300), H = 220;
     var pL = 44, pB = 36, pT = 14, pR = 10;
@@ -355,7 +362,7 @@ Auto-included by docs/_layouts/default.html.
       svgEl(bar, NS, "title", {}).textContent = d[xCol] + " — " + yCol + ": " + val;
       /* x label */
       svgEl(svg, NS, "text", { x: bX + barW / 2, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
-        .textContent = String(d[xCol]).substring(0, 7);
+        .textContent = xText(d[xCol], 7);
     });
 
     /* y-axis label */
@@ -431,7 +438,7 @@ Auto-included by docs/_layouts/default.html.
     xs.forEach(function (x, i) {
       if (i % lblEvery === 0 || i === xs.length - 1)
         svgEl(svg, NS, "text", { x: pL + i * step, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
-          .textContent = String(x).substring(0, 10);
+          .textContent = xText(x, 10);
     });
 
     svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af",
