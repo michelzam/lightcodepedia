@@ -193,6 +193,8 @@ page (from the sheet's tab, say), on its grid's **↻**, and every N seconds
 with `refresh="N"` on the dataset. A Google Sheet's own link
 (`…/spreadsheets/d/<id>/edit…`) reads as rows when the sheet is shared
 "anyone with the link can view"; writing still goes through its script.
+`sheet="Sheet1"` on the dataset names the tab to read (and, through the
+script, to write); without it, the first tab.
 
 A sentence can also read the **first** row of any list, not only count
 them: **{= todos.first.title }** is the first todo above

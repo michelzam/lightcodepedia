@@ -504,6 +504,8 @@ def _sheet_csv(rows):
 @given('a Google Sheet "{sid}" holds the walks "{a}" and "{b}"')
 def step_gsheet(context, sid, a, b):
     context.sheet_walks = [a, b]
+    context.sheet_urls = []
+    context.page.on("request", lambda r: context.sheet_urls.append(r.url) if "/gviz/" in r.url else None)
     context.page.route("**/docs.google.com/spreadsheets/d/" + sid + "/gviz/**", lambda r: r.fulfill(
         status=200, content_type="text/csv", headers={"Access-Control-Allow-Origin": "*"}, body=_sheet_csv(context.sheet_walks)))
     context.page.route("**/example.org/page.html*", lambda r: r.fulfill(
@@ -534,3 +536,8 @@ def step_gain_visible(context, sid, w):
     context.sheet_walks.append(w)
     context.page.wait_for_timeout(5200)   # a re-read is never more often than every 5 s
     context.page.evaluate("() => { document.dispatchEvent(new Event('visibilitychange')); }")
+
+
+@then('the sheet was asked for its tab "{tab}"')
+def step_sheet_tab(context, tab):
+    assert any("sheet=" + tab in u for u in context.sheet_urls), context.sheet_urls

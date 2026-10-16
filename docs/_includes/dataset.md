@@ -331,6 +331,13 @@ Auto-included by docs/_layouts/default.html.
         var gid = (/[#&?]gid=(\d+)/.exec(href) || [])[1];
         href = "https://docs.google.com/spreadsheets/d/" + gsh[1] + "/gviz/tq?tqx=out:csv" + (gid ? "&gid=" + gid : "");
       }
+      /* sheet="Sheet1" — WHICH TAB (Michel, 2026-10-16: "why don't you use the
+         Sheet1 name anywhere?"): a sheet with no tab named sends its first
+         one; sheet= names it, for the CSV door and for the sheet's script
+         (both read ?sheet=, the script writes there too) */
+      var tab = el.getAttribute("sheet");
+      if (tab && /^https:\/\//.test(href) && !/[?&]sheet=/.test(href))
+        href += (href.indexOf("?") < 0 ? "?" : "&") + "sheet=" + encodeURIComponent(tab);
       if (/^(https?:\/\/|\/)/.test(href)) {
         var fmt = (el.getAttribute("format") || "").toLowerCase();
         if (!fmt && /\.ya?ml($|\?)/i.test(href)) fmt = "yaml";

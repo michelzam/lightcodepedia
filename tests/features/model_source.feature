@@ -508,3 +508,22 @@ Feature: A class wears a dataset — the grid dresses the rows
     When the sheet "SHEETID" gains the walk "Biscuit, Ben" and I come back to the page
     Then the grid "walk_list" shows "Biscuit" and "Nova"
 
+  Scenario: sheet= names the tab the page reads
+    Michel, 2026-10-16: "why don't you use the Sheet1 name anywhere?"
+
+    Given a Google Sheet "SHEETID" holds the walks "Fern, Michel" and "Scout, Ada"
+    And the GitHub contents API serves "courses/demo/module_06/gsheet.md" with the document:
+      """
+      # Sheet
+
+      [the walk sheet](https://docs.google.com/spreadsheets/d/SHEETID/edit?usp=sharing)
+      {: .dataset #walks sheet="Sheet1" }
+
+      [the walks so far](#)
+      {: .datagrid source="walks" #walk_list }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/gsheet.md"
+    And I wait for the page to be interactive
+    Then the grid "walk_list" shows "Fern" and "Scout"
+    And the sheet was asked for its tab "Sheet1"
+
