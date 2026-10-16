@@ -486,7 +486,11 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
     var root = document.getElementById("lc-run");
     var repo = root && root.getAttribute("data-lc-src-repo");
     if (repo) lines.push("📚 content: " + repo);
-    lines.push("⚙️ platform: Lightcodepedia");
+    /* WHICH ENGINE IS THIS? (Michel, 2026-10-16: three fixes "still" missing
+       on his screen — a cached or another host's engine). The build's commit
+       and time, and the host that served it, one hover away. */
+    var rev = {{ site.github.build_revision | default: "" | slice: 0, 7 | jsonify }};
+    lines.push("⚙️ platform: Lightcodepedia · engine " + (rev || "local") + " · built {{ site.time | date: '%Y-%m-%d %H:%M' }} UTC · " + location.host);
     var eng = null;
     try { eng = window.lcBotAsk && window.lcBotAsk.engine && window.lcBotAsk.engine(); } catch (e) {}
     if (eng && eng.host) lines.push("🤖 AI: " + eng.host + " — your own key");

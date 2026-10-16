@@ -66,8 +66,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-caret { display: inline-block; margin-left: .45em; color: #6b7280; position: relative; top: -.22em; line-height: 1; }
 .lc-dg-state .lc-dg-chip { text-align: center; }
 .lc-dg-table th { position: relative; }
-.lc-dg-grip { position: absolute; top: 0; right: 0; width: 7px; height: 100%; cursor: col-resize; z-index: 2; touch-action: none; }
-.lc-dg-grip:hover { background: rgba(0, 102, 204, .25); }
+/* the grip SHOWS (Michel, 2026-10-16: "why can't the columns be resized?" —
+   an invisible 7 px strip, and a click beside it sorted instead): a thin bar
+   on every header's right edge, blue under the pointer, 10 px to grab */
+.lc-dg-grip { position: absolute; top: 15%; right: 0; width: 10px; height: 70%; cursor: col-resize; z-index: 2; touch-action: none;
+  background: linear-gradient(90deg, transparent 4px, #cbd5e1 4px, #cbd5e1 6px, transparent 6px); }
+.lc-dg-grip:hover, .lc-dg-grip:active { background: linear-gradient(90deg, transparent 3px, #0066cc 3px, #0066cc 7px, transparent 7px); }
 .lc-dg-table td.lc-dg-rowmenu { position: relative; padding-right: 1.8em; }
 .lc-dg-table td.lc-dg-rowmenu::after { content: "⌄"; position: absolute; right: .55em; top: 50%; transform: translateY(-62%);
   color: #6b7280; cursor: pointer; line-height: 1; }
