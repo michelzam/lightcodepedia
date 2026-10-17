@@ -36,6 +36,18 @@ Feature: The pad types like a text field, painted
     Then the "playground" pad's source is shown again
     And the "playground" pad's splitter is back
 
+  Scenario: ⇥ slides the preview over a still editor; ✎ slides it back
+    Michel, 2026-10-17 (register P1), after a regression nothing caught: "the
+    right edge of the editor stays still, while the left side slides to the
+    RIGHT to join the right edge, covering the md and bringing the preview on
+    top. Uncovering does the opposite, revealing the md." Measured during the
+    slide, not only at its end.
+
+    When I fold the "playground" pad, watching it slide
+    Then the editor stood still while the preview's right edge swept over it, left to right
+    When I unfold the "playground" pad, watching it slide
+    Then the editor stood still while the preview's right edge swept back, right to left
+
   Scenario: A pad's seed keeps its decorations glued to their lines in the runner
     Michel, 2026-10-09: the runner put a blank line above every decoration,
     fences included, so a pad opened with a gap the lesson never had, and a

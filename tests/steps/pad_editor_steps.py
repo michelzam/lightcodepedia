@@ -535,3 +535,52 @@ def step_pad_open(context, pad_id):
     pad = context.page.locator("[data-lc-id='" + pad_id + "']")
     expect(pad).not_to_have_attribute("data-lc-folded", "1", timeout=5_000)
     expect(pad.locator(".lc-mdpad-src")).to_be_visible()
+
+
+_WATCH = """(id) => { const w = document.querySelector(`[data-lc-id='${id}']`);
+  const src = w.querySelector('.lc-mdpad-src'), out = w.querySelector('.lc-mdpad-out'), ta = w.querySelector('.lc-mdpad-in');
+  const box = (e) => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)]; };
+  window._lcSlide = [];
+  const look = () => { if (src.offsetParent || src.getClientRects().length)
+      window._lcSlide.push({src: box(src), ta: box(ta), out: box(out)}); };
+  look(); const t = setInterval(look, 30); setTimeout(() => clearInterval(t), 700);
+  w.querySelector('.lc-mdpad-fold').click(); }"""
+
+
+def _slide(context, pad_id):
+    context.page.evaluate(_WATCH, pad_id)
+    context.page.wait_for_timeout(800)
+    return context.page.evaluate("() => window._lcSlide")
+
+
+@when('I fold the "{pad_id}" pad, watching it slide')
+def step_fold_watch(context, pad_id):
+    context.slide = _slide(context, pad_id)
+
+
+@when('I unfold the "{pad_id}" pad, watching it slide')
+def step_unfold_watch(context, pad_id):
+    context.slide = _slide(context, pad_id)
+
+
+def _still_and_swept(frames, forward):
+    assert len(frames) >= 5, "too few frames of the slide: %s" % frames
+    src0 = frames[0]["src"] if forward else frames[-1]["src"]
+    for f in frames:
+        assert abs(f["src"][1] - src0[1]) <= 1, "the editor's right edge moved: %s" % frames
+        assert abs(f["ta"][0] - src0[0]) <= 1 or abs(f["src"][0] - src0[0]) <= 1, "the editor's text moved: %s" % frames
+    rights = [f["out"][1] for f in frames]
+    mid = [r for r in rights if src0[0] + 5 < r < src0[1] - 5]
+    assert mid, "the preview never stood over the editor mid-slide: %s" % rights
+    pairs = list(zip(rights, rights[1:]))
+    assert all((b >= a - 1) if forward else (b <= a + 1) for a, b in pairs), "the preview's edge went back and forth: %s" % rights
+
+
+@then("the editor stood still while the preview's right edge swept over it, left to right")
+def step_swept_over(context):
+    _still_and_swept(context.slide, True)
+
+
+@then("the editor stood still while the preview's right edge swept back, right to left")
+def step_swept_back(context):
+    _still_and_swept(context.slide, False)

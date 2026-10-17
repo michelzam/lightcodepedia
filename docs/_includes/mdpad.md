@@ -548,36 +548,41 @@ Auto-included by docs/_layouts/default.html.
       var pane = src || ta, column = getComputedStyle(wrap).flexDirection === "column";
       var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (_drawer) { _drawer.cancel(); _drawer = null; }
-      if (reduced || column || !pane.animate) { setFold(on); return; }
-      var gap = parseFloat(getComputedStyle(wrap).columnGap) || 0;
-      /* THE LEFT EDGE MOVES (Michel, 2026-10-11): the editor's text stays
-         pinned to the right while its left margin slides — a drawer going
-         into the wall, not a page being cropped */
-      function pin(w) {
-        pane.style.overflow = "hidden"; pane.style.justifyContent = "flex-end";
-        ta.style.flex = "0 0 " + w + "px";
-        if (keysEl) { keysEl.style.left = "auto"; keysEl.style.width = w + "px"; }
+      if (reduced || column || !out.animate) { setFold(on); return; }
+      /* THE PREVIEW COVERS THE EDITOR (Michel, 2026-10-17, decision register
+         P1): the editor never moves — its right edge stays, its text stays —
+         while the preview's right edge slides over it, left to right, until
+         it meets the editor's right edge; unfolding slides it back, revealing
+         the md. The editor is held where it stands (out of the flow) for the
+         slide, so no browser's flex arithmetic can move its text. */
+      function hold(r) {
+        var wr = wrap.getBoundingClientRect();
+        pane.style.position = "absolute"; pane.style.top = (r.top - wr.top) + "px";
+        pane.style.left = (r.left - wr.left) + "px"; pane.style.width = r.width + "px";
+        pane.style.height = r.height + "px"; pane.style.zIndex = "0";
+        out.style.position = "relative"; out.style.zIndex = "1";
       }
-      function unpin() {
-        pane.style.overflow = ""; pane.style.justifyContent = ""; pane.style.flex = "";
-        ta.style.flex = "";
-        if (keysEl) { keysEl.style.left = ""; keysEl.style.width = ""; }
+      function release() {
+        ["position", "top", "left", "width", "height", "zIndex"].forEach(function (k) { pane.style[k] = ""; out.style[k] = ""; });
+        out.style.flex = "";
       }
       var ease = { duration: 380, easing: "cubic-bezier(.4,0,.2,1)" };
+      var full = wrap.getBoundingClientRect().width;
       if (on) {
         split.hidden = true;                     /* the handle leaves with the editor */
-        var w = pane.getBoundingClientRect().width;
-        pane.style.flex = "0 0 " + w + "px"; pin(w);
-        _drawer = pane.animate([{ flexBasis: w + "px", marginLeft: "0px" },
-                                { flexBasis: "0px", marginLeft: (-gap) + "px" }], ease);
-        _drawer.onfinish = function () { _drawer = null; unpin(); setFold(true); };
+        var r = pane.getBoundingClientRect(), w0 = out.getBoundingClientRect().width;
+        hold(r);
+        out.style.flex = "0 0 " + w0 + "px";
+        _drawer = out.animate([{ flexBasis: w0 + "px" }, { flexBasis: full + "px" }], ease);
+        _drawer.onfinish = function () { _drawer = null; release(); setFold(true); };
       } else {
         setFold(false);
-        var target = pane.getBoundingClientRect().width;
-        pin(target);
-        _drawer = pane.animate([{ flexBasis: "0px", marginLeft: (-gap) + "px", flexGrow: 0 },
-                                { flexBasis: target + "px", marginLeft: "0px", flexGrow: 0 }], ease);
-        _drawer.onfinish = function () { _drawer = null; unpin(); if (keysEl) paintSoon(); };
+        var r2 = pane.getBoundingClientRect(), w1 = out.getBoundingClientRect().width;
+        if (split) split.hidden = true;
+        hold(r2);
+        out.style.flex = "0 0 " + w1 + "px";
+        _drawer = out.animate([{ flexBasis: full + "px" }, { flexBasis: w1 + "px" }], ease);
+        _drawer.onfinish = function () { _drawer = null; release(); if (split) placeSplit(); if (keysEl) paintSoon(); };
       }
     }
     function setFold(on) {
