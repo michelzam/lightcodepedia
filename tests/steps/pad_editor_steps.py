@@ -584,3 +584,22 @@ def step_swept_over(context):
 @then("the editor stood still while the preview's right edge swept back, right to left")
 def step_swept_back(context):
     _still_and_swept(context.slide, False)
+
+
+@when('I click at the start of "{line}" in the "{pad_id}" pad and press Tab')
+def step_click_line_tab(context, line, pad_id):
+    p = context.page
+    sel = "[data-lc-id='" + pad_id + "'] .lc-mdpad-in"
+    p.evaluate("([s, l]) => { const ta = document.querySelector(s); const a = ta.value.indexOf(l); ta.focus(); ta.setSelectionRange(a, a); ta.dispatchEvent(new MouseEvent('click', { bubbles: true })); }", [sel, line])
+    p.keyboard.press("Tab")
+    p.wait_for_timeout(300)
+
+
+@then('the "{pad_id}" pad indented "{line}" by four spaces, nothing selected')
+def step_pad_indented(context, pad_id, line):
+    p = context.page
+    sel = "[data-lc-id='" + pad_id + "'] .lc-mdpad-in"
+    v = p.evaluate("s => document.querySelector(s).value", sel)
+    assert ("\n    " + line) in v, repr(v)
+    picked = p.evaluate("s => { const t = document.querySelector(s); return t.value.slice(t.selectionStart, t.selectionEnd); }", sel)
+    assert picked == "", "Tab jumped to " + repr(picked)

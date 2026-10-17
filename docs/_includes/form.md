@@ -40,6 +40,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-form-grid .ag-cell.lc-form-label-cell:hover { background: #fafbfc !important; }
 .lc-form-grid .ag-row-hover .lc-form-label-cell { background: #fafbfc !important; }
 .lc-form-bool { display: flex; align-items: center; gap: 0.5em; height: 100%; }
+.lc-form-refpick { display: flex; align-items: center; height: 100%; cursor: pointer; gap: .4em; }
+.lc-form-refpick .lc-form-refval { flex: 1; }
+.lc-form-refpick .lc-form-refcaret { color: var(--lc-ink-mute, #616161); }
+.lc-form-refpick:hover .lc-form-refcaret, .lc-form-refpick:focus-visible .lc-form-refcaret { color: #0066cc; }
 .lc-form-bool .lc-form-bool-cb { margin: 0; accent-color: #0066cc; cursor: pointer; }
 .lc-form-bool .lc-form-bool-cb:disabled { cursor: default; }
 .lc-form-bool .lc-form-bool-t { color: #2a7a2a; font-weight: 600; }
@@ -244,6 +248,28 @@ Auto-included by docs/_layouts/default.html.
         return sw;
       }
 
+      /* a reference (a walk's dog): the value, a ⌄, the grid's own picklist
+         (Michel, 2026-10-18: "in the form, the picklist for dogs is the old style") */
+      var rp = opts.refs && opts.refs[params.data._key];
+      if (rp && opts.editable && window.lcPickMenu) {
+        var rw = document.createElement("div");
+        rw.className = "lc-form-refpick";
+        rw.setAttribute("role", "button");
+        rw.setAttribute("tabindex", "0");
+        rw.setAttribute("aria-label", "pick " + String(params.data._key || "value"));
+        rw.innerHTML = "<span class='lc-form-refval'></span><span class='lc-form-refcaret'>⌄</span>";
+        rw.firstChild.textContent = v == null ? "" : String(v);
+        var openPick = function (e) {
+          e.stopPropagation();
+          window.lcPickMenu(rw, rp.map(function (n) { return { v: n, label: n, cur: n === String(v) }; }),
+            function (n) { params.node.setDataValue("value", n); });
+        };
+        rw.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+        rw.addEventListener("click", openPick);
+        rw.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPick(e); } });
+        return rw;
+      }
+
       /* pick list: a field named in options="field=a|b|c" renders as a dropdown */
       var picks = opts.options && opts.options[params.data._key];
       if (picks) {
@@ -435,7 +461,7 @@ Auto-included by docs/_layouts/default.html.
   function formSig(obj, opts) {
     var o = opts || {};
     return JSON.stringify([Object.keys(obj), !!o.editable, o.locked || [], o.chips || [],
-      o.options ? Object.keys(o.options) : [], o.sliders ? Object.keys(o.sliders) : []]);
+      o.options ? Object.keys(o.options) : [], o.sliders ? Object.keys(o.sliders) : [], o.refs || {}]);
   }
   function renderFormBody(bodyEl, obj, opts) {
     opts = opts || {};
@@ -705,7 +731,7 @@ Auto-included by docs/_layouts/default.html.
         var model = cls && row.obj != null ? (window.lcModels || {})[cls] : null;
         /* a subclass's object shows its own fields' rules and verbs */
         if (model && row._kind && (window.lcModels || {})[row._kind]) { cls = row._kind; model = window.lcModels[cls]; }
-        var locked = [], chips = [], picks = {}, refs = {};
+        var locked = [], chips = [], picks = {}, refs = {}, refNames = {};
         if (model) {
           /* the object's card: the state LAST, as a chip, beside its verbs;
              locked and state fields read-only; enum fields pick lists; the
@@ -726,7 +752,7 @@ Auto-included by docs/_layouts/default.html.
               rr.forEach(function (r) { refs[k][nm(r)] = String(r.obj); });
               var cur = rr.filter(function (r) { return String(r.obj) === String(row[k]); })[0];
               if (k in row) row[k] = cur ? nm(cur) : "";
-              if (!f.ro) picks[k] = [""].concat(Object.keys(refs[k]));
+              if (!f.ro) { picks[k] = [""].concat(Object.keys(refs[k])); refNames[k] = Object.keys(refs[k]); }
             }
           });
           if (model.state) chips.push(model.state);
@@ -739,6 +765,7 @@ Auto-included by docs/_layouts/default.html.
           renderFormBody(body, shown, {
             editable: model ? editableSaid !== "false" : editable,
             locked: locked, chips: chips, options: model ? picks : undefined,
+            refs: model ? refNames : undefined,
             /* an edit lands on the master's own row (the shown object may be
                the derived copy), then the grid repaints */
             onChange: function(o, k, v){

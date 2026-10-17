@@ -394,6 +394,48 @@ Feature: The pad types like a text field, painted
     When I accept the offer in the "wires" pad
     Then the "wires" pad holds '{: .form master="dog_grid" }'
 
+  Scenario: Once the caret leaves a part, Tab in a fence indents — it no longer flies to the part's blanks
+    Michel, 2026-10-18: "When I'm in the python code, a tab should add 4
+    spaces, not jump to the next knob… Fences should behave differently!"
+    — a form part inserted earlier kept its blanks for Tab, wherever the
+    caret went next.
+
+    Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
+      """
+      # Wires
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      `````markdown
+      # Dogs per campus
+
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      ```sql
+      SELECT campus, COUNT(*) AS dogs FROM dogs GROUP BY campus
+      ```
+      {: .query bind="dogs" #by_campus }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+      `````
+      {: .mdpad #wires decorations="true" rows="20" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/wires.md"
+    And I wait for the page to be interactive
+    And I type "fo" on a new line at the end of the "wires" pad
+    And I accept the offer in the "wires" pad
+    Then the "wires" pad selects "Title"
+    When I click at the start of "SELECT campus" in the "wires" pad and press Tab
+    Then the "wires" pad indented "SELECT campus" by four spaces, nothing selected
+
   Scenario: In a decoration, the class, its knobs and their values complete
     Michel, 2026-10-11: "for component type names, for attribute names, for
     values inside knobs, with picklist" — and a source offers the pad's

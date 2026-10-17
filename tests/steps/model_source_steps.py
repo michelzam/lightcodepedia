@@ -1373,3 +1373,47 @@ def step_form_says(context, fid, text):
     # said in the form's own frame (the one that holds its verbs), not only under a grid
     f = context.page.locator("[data-lc-say]:has([data-lc-id='" + fid + "']), [data-lc-id='" + fid + "'][data-lc-say]").first
     expect(f.locator(".lc-dg-say").first).to_contain_text(text, timeout=T)
+
+
+@given('the shelter database holds the dogs "{a}" and "{b}", a walk of "{d1}" by "{w1}" and one of "{d2}" by "{w2}"')
+def step_db_two_walks(context, a, b, d1, w1, d2, w2):
+    t = context.unl["tables"]
+    t["dog"] = {"cols": ["name"], "next": 3, "rows": [{"id": 1, "name": a}, {"id": 2, "name": b}]}
+    ids = {a: "1", b: "2"}
+    t["walk"] = {"cols": ["dog", "walker"], "next": 3,
+                 "rows": [{"id": 1, "dog": ids[d1], "walker": w1}, {"id": 2, "dog": ids[d2], "walker": w2}]}
+
+
+@when('I tap the dog of "{who}" in "{gid}"')
+def step_tap_dog(context, who, gid):
+    row_of(context, gid, who).locator("td.lc-dg-refcell").click()
+
+
+@then('the row of "{who}" is selected in "{gid}" and the dogs are offered')
+def step_dog_row_selected(context, who, gid):
+    expect(context.page.locator(".lc-dg-refmenu")).to_be_visible(timeout=T)
+    sel = grid(context, gid).locator("tbody tr.lc-dg-selected")
+    expect(sel).to_have_count(1, timeout=T)
+    expect(sel).to_contain_text(who)
+
+
+@when('I pick "{dog}" in the open list')
+def step_pick_open(context, dog):
+    context.page.locator(".lc-dg-refmenu button[data-obj]", has_text=dog).first.click()
+
+
+@then('the form "{fid}" shows "{text}"')
+def step_form_shows(context, fid, text):
+    expect(context.page.locator("[data-lc-id='" + fid + "']")).to_contain_text(text, timeout=T)
+
+
+@when('I pick the dog "{dog}" in the form "{fid}", from the same list as the grid\'s')
+def step_form_pick_dog(context, dog, fid):
+    form = context.page.locator("[data-lc-id='" + fid + "']")
+    pick = form.locator(".lc-form-refpick").first
+    expect(pick).to_be_visible(timeout=T)
+    assert form.locator("select").count() == 0, "the form still shows a native list"
+    pick.click()
+    menu = context.page.locator(".lc-dg-refmenu")
+    expect(menu).to_be_visible(timeout=T)
+    menu.locator("button[data-obj]", has_text=dog).first.click()

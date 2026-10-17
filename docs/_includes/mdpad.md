@@ -2277,6 +2277,9 @@ Auto-included by docs/_layouts/default.html.
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (escArmed) { escArmed = false; return; }              /* Esc, then Tab: out of the editor */
       if (pop.el && !(walkSel && ta.selectionStart === walkSel[0] && ta.selectionEnd === walkSel[1])) return;   /* the list's own Tab */
+      /* a part's blanks only while the caret is in the part (Michel, 2026-10-18:
+         "in the python code, a tab should add 4 spaces, not jump to the next knob") */
+      if (snip && (ta.selectionStart < snip.start || ta.selectionEnd > ta.value.length - snip.tail)) snip = null;
       if (snip) return;                                         /* a part's blanks first */
       e.preventDefault(); e.stopImmediatePropagation();
       if (inFenceAt(ta.selectionStart)) { popClose(); indent(e.shiftKey); return; }

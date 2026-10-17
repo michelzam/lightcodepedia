@@ -181,6 +181,55 @@ Auto-included by docs/_layouts/default.html.
   }
   /* what a class's grid says when a verb or an edit is refused: one line
      under every grid bound to that class, gone after a few seconds */
+  /* ONE PICKLIST (Michel, 2026-10-18: "in the form, the picklist for dogs
+     is the old style"): the grid's reference cells and the form's use the
+     same roomy list — a — to clear, a 🔍 when long, the current one marked */
+  window.lcPickMenu = function (anchor, items, onPick, onClose) {
+    var open = document.querySelector(".lc-dg-refmenu");
+    if (open) { var same = open._lcFor === anchor; open._lcClose(); if (same) return; }
+    var esc2 = function (t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+    var menu = document.createElement("div");
+    menu.className = "lc-dg-menu lc-dg-refmenu";
+    menu._lcFor = anchor;
+    menu.setAttribute("role", "listbox");
+    menu.innerHTML = (items.length > 8 ? "<input class='lc-dg-refsearch' type='search' placeholder='🔍 find' aria-label='find'>" : "")
+      + "<button type='button' class='lc-dg-verb' data-obj=''><span>—</span></button>"
+      + items.map(function (it) {
+          return "<button type='button' class='lc-dg-verb" + (it.cur ? " lc-dg-cur" : "") + "' role='option' data-obj='" + esc2(it.v) + "'>"
+            + "<span>" + esc2(it.label) + "</span></button>";
+        }).join("");
+    var rc = anchor.getBoundingClientRect();
+    menu.style.minWidth = Math.max(rc.width, 180) + "px";
+    menu.style.left = (Math.max(4, Math.min(rc.left, window.innerWidth - Math.max(rc.width, 180) - 8)) + window.scrollX) + "px";
+    menu.style.top = (rc.bottom + window.scrollY) + "px";
+    var closed = false;
+    menu._lcClose = function () {
+      if (closed) return; closed = true;
+      if (menu.parentNode) menu.parentNode.removeChild(menu);
+      document.removeEventListener("click", outside, true);
+      if (onClose) onClose();
+    };
+    var outside = function (e) { if (!menu.contains(e.target)) menu._lcClose(); };
+    document.body.appendChild(menu);
+    var find = menu.querySelector(".lc-dg-refsearch");
+    if (find) {
+      find.addEventListener("input", function () {
+        var q = find.value.toLowerCase();
+        menu.querySelectorAll("button[data-obj]").forEach(function (b) { b.hidden = q && b.textContent.toLowerCase().indexOf(q) < 0; });
+      });
+      find.focus();
+    }
+    menu.querySelectorAll("button[data-obj]").forEach(function (b) {
+      b.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        var v = b.getAttribute("data-obj");
+        menu._lcClose();
+        onPick(v);
+      });
+    });
+    setTimeout(function () { document.addEventListener("click", outside, true); }, 0);
+    return menu;
+  };
   window.lcGridSay = function (cls, msg) {
     /* …and under a grid of its base class (a Sprint in the walks), and under
        a form showing one (Michel, 2026-10-18: "when I click run in the form,
@@ -1327,7 +1376,10 @@ Auto-included by docs/_layouts/default.html.
         var known = [bindId].concat(model.subs || []), wases = (model.subs || []).map(function (k) { var m2 = (window.lcModels || {})[k]; return m2 && m2.was; });
         (window.lcDatasets[dbSrc] || []).forEach(function (r) {
           var k = r && r._sub;
-          if (k && known.indexOf(k) < 0 && wases.indexOf(k) < 0 && stale.indexOf(k) < 0) stale.push(k);
+          /* a class the page declared is never stale, even while the pad re-runs a
+             half-typed line (Michel, 2026-10-18: 🧹 offered to clear "Sprint") */
+          if (k && known.indexOf(k) < 0 && wases.indexOf(k) < 0 && stale.indexOf(k) < 0
+              && !(window.lcModels || {})[k]) stale.push(k);
         });
       }
       var st = dbR ? (dbR.state || (dbCh && dbCh.n ? "dirty" : "ok")) : "";
@@ -1480,46 +1532,26 @@ Auto-included by docs/_layouts/default.html.
           cell.addEventListener("click", function (e) {
             e.stopPropagation();
             var open = document.querySelector(".lc-dg-refmenu");
-            document.querySelectorAll(".lc-dg-menu").forEach(function (m) { m.remove(); });
-            if (open && open._lcFor === cell) return;
+            if (open && open._lcFor === cell) { open._lcClose(); return; }
+            document.querySelectorAll(".lc-dg-menu").forEach(function (m) { if (m._lcClose) m._lcClose(); else m.remove(); });
             var row = sorted[parseInt(cell.getAttribute("data-row"), 10)];
             if (!row) return;
             var ref = cell.getAttribute("data-ref"), col = cell.getAttribute("data-col");
             var rr = (window.lcDatasets || {})[ref] || [], lab = refLabel(ref);
-            var rd = window.lcDocOf ? window.lcDocOf(ref) : null, ic = rd && rd.icon ? rd.icon + " " : "";
             var nameOf = function (r) { return String(r[lab] != null && r[lab] !== "" ? r[lab] : r.obj); };
-            var menu = document.createElement("div");
-            menu.className = "lc-dg-menu lc-dg-refmenu";
-            menu._lcFor = cell;
-            menu.setAttribute("role", "listbox");
-            menu.innerHTML = (rr.length > 8 ? "<input class='lc-dg-refsearch' type='search' placeholder='🔍 find' aria-label='find'>" : "")
-              + "<button type='button' class='lc-dg-verb' data-obj=''><span>—</span></button>"
-              + rr.map(function (r) {
-                  return "<button type='button' class='lc-dg-verb" + (String(r.obj) === String(row[col]) ? " lc-dg-cur" : "") + "' role='option' data-obj='" + esc(r.obj) + "'>"
-                    + "<span>" + esc(nameOf(r)) + "</span></button>";
-                }).join("");
-            var rc = cell.getBoundingClientRect();
-            menu.style.minWidth = Math.max(rc.width, 180) + "px";
-            menu.style.left = (Math.max(4, Math.min(rc.left, window.innerWidth - Math.max(rc.width, 180) - 8)) + window.scrollX) + "px";
-            menu.style.top = (rc.bottom + window.scrollY) + "px";
-            document.body.appendChild(menu);
-            var find = menu.querySelector(".lc-dg-refsearch");
-            if (find) {
-              find.addEventListener("click", function (ev) { ev.stopPropagation(); });
-              find.addEventListener("input", function () {
-                var q = find.value.toLowerCase();
-                menu.querySelectorAll("button[data-obj]").forEach(function (b) { b.hidden = q && b.textContent.toLowerCase().indexOf(q) < 0; });
-              });
-              find.focus();
-            }
-            menu.querySelectorAll("button[data-obj]").forEach(function (b) {
-              b.addEventListener("click", function (ev) {
-                ev.stopPropagation();
-                menu.remove();
-                py("_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(col) + "," + JSON.stringify(b.getAttribute("data-obj")) + ")");
-              });
-            });
-            setTimeout(function () { document.addEventListener("click", function () { menu.remove(); }, { once: true }); }, 0);
+            /* the row a dog is picked for is the selection first (Michel,
+               2026-10-18: "that row should be selected first before the
+               picklist is open") — the form follows as the list closes */
+            var tr = cell.parentNode, key = row.obj != null ? "o:" + row.obj : "i:" + cell.getAttribute("data-row");
+            var pub = key !== selKey && lcId && window.lcMasterDetail ? row : null;
+            el.querySelectorAll("tbody tr").forEach(function (x) { x.classList.remove("lc-dg-selected"); });
+            tr.classList.add("lc-dg-selected");
+            selKey = key;
+            window.lcPickMenu(cell, rr.map(function (r) { return { v: String(r.obj), label: nameOf(r), cur: String(r.obj) === String(row[col]) }; }),
+              function (v) {
+                py("_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(col) + "," + JSON.stringify(v) + ")");
+              },
+              function () { if (pub) window.lcMasterDetail.publish(lcId, pub); });
           });
         });
         el.querySelectorAll("select.lc-dg-pick").forEach(function (sel) {

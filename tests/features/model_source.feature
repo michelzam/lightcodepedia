@@ -1081,6 +1081,53 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I tap "Run" in the form "walk_card"
     Then the form "walk_card" says "too fast for the dog"
 
+  Scenario: A dog picked on another row selects that row first; the form picks from the same list
+    Michel, 2026-10-18: "When I click in the grid/dog column on another
+    row, that row should be selected first before the picklist is open!" —
+    also "In the form, the picklist for dogs is the old style. Why?"
+
+    Given a database with the Lightcode setup and no author yet
+    And the shelter database holds the dogs "Biscuit" and "Scout", a walk of "Scout" by "Ben" and one of "Biscuit" by "Ana"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/pick.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Dog(Object):
+          '''🐕 A dog of the shelter.'''
+          name = Attr(str)
+
+      class Walk(Object):
+          dog = Attr(Dog)
+          walker = Attr(str)
+      ```
+      {: .model source="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+
+      [the walk](#)
+      {: .form master="walks" #walk_card }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/pick.md"
+    And I wait for the page to be interactive
+    And I click the row "Ana" in "walks"
+    And I tap the dog of "Ben" in "walks"
+    Then the row of "Ben" is selected in "walks" and the dogs are offered
+    When I pick "Scout" in the open list
+    Then the form "walk_card" shows "Ben"
+    When I pick the dog "Biscuit" in the form "walk_card", from the same list as the grid's
+    Then the table "walk" saved the walk of "Ben" with the dog's id 1
+
   Scenario: A table follows its class safely — a rename keeps its data, a leftover hides, 🧹 drops it
     Michel, 2026-10-17 (register P5): "what happens if an attribute is
     renamed? deleted? would that change the table's structure?" — never
