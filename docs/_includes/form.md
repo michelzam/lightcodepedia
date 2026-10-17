@@ -417,8 +417,9 @@ Auto-included by docs/_layouts/default.html.
       var b = document.createElement("button");
       b.type = "button";
       b.className = "lc-form-verb" + (it.ok ? "" : " lc-form-verb-off");
-      b.textContent = prettifyKey(it.n);
-      b.title = it.hint;
+      var dd = window.lcDocOf ? window.lcDocOf(cls, it.n) : null;   /* its docstring's icon and words */
+      b.textContent = (dd && dd.icon ? dd.icon + " " : "") + prettifyKey(it.n);
+      b.title = (dd && dd.text) || it.hint;
       b.addEventListener("click", function () {
         if (!it.ok) { if (window.lcGridSay) window.lcGridSay(cls, "⛔ " + it.n + " " + it.hint); return; }
         if (window.lcPySend) window.lcPySend("_lc_verb(" + JSON.stringify(cls) + "," + JSON.stringify(objName) + "," + JSON.stringify(it.n) + ")");

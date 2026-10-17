@@ -760,3 +760,42 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the author is told the database's name to put on the "shelter" line under "walks"
     When I write the name the grid gave on the "shelter" line of the "walk_pad" pad
     Then the grid "walks" says nothing more about names
+
+  Scenario: A docstring's emoji is the icon of its class and its methods
+    Michel, 2026-10-17 (register P4): "how to add icons/emojis to methods
+    without loading too much the code?" — a one-line docstring; "add it also
+    for the class, using it in button actions and in the grid's icon,
+    replacing the grid generic emoji".
+
+    Given the GitHub contents API serves "courses/demo/module_06/icons.md" with the document:
+      """
+      # Walkers
+
+      ```csv
+      name,walks
+      Ada,0
+      Ben,2
+      ```
+      {: .dataset #volunteers }
+
+      ```python
+      class Walker(Object, source="volunteers"):
+          '''🦮 A volunteer who walks the dogs.'''
+          def walk(self):
+              '''🐾 Count one more walk.'''
+              self.walks = self.walks + 1
+      ```
+      {: .model }
+
+      [the walkers](#)
+      {: .datagrid source="Walker" #walkers }
+
+      [the walker](#)
+      {: .form master="walkers" #walker_card }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/icons.md"
+    And I wait for the page to be interactive
+    Then the title of "walkers" wears "🦮" instead of "▦", saying "A volunteer who walks the dogs."
+    When I open the ⋯ of "Ada" in "walkers"
+    Then the menu's "walk" reads "🐾 Walk", saying "Count one more walk."
+    And the form "walker_card" has a button "🐾 Walk"

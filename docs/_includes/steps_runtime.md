@@ -3845,7 +3845,7 @@ _inject_store()
     }
     window.lcParseDataText(raw, fmt).then(function (data) {
       if (!Array.isArray(data)) { host.innerHTML = "<span style='font-size:.8em;color:#b00'>⚠ rows must be a list</span>"; return; }
-      var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
+    var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
       var tries = 0;
       (function attempt() {
         mpReady().then(function (mp) {
@@ -3976,6 +3976,50 @@ _inject_store()
      (it IS the declaration), runs once in the shared interpreter, and
      records what it declared so inspectors can point at it with source=
      and the Blocks tab shows it as a key piece (Michel, 2026-08-24). */
+  /* DOCSTRING ICONS (Michel, 2026-10-17, register P4): a one-line docstring
+     that starts with an emoji gives a class or a method its icon, the rest
+     its description — """🔔 Remind the walker.""". The menus, the form's
+     buttons and the grid's title wear them. MicroPython drops docstrings, so
+     they are read here, from the text, before it runs. */
+  var DOCS = window.lcDocs = window.lcDocs || {};
+  var EMOJI = /^((?:\p{Extended_Pictographic}|\p{Emoji_Presentation})(?:\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})|[\u{1F3FB}-\u{1F3FF}])*)\s*([\s\S]*)$/u;
+  function docSplit(t) {
+    var m = EMOJI.exec(t);
+    return m ? { icon: m[1], text: m[2].trim() } : { icon: "", text: t.trim() };
+  }
+  function readDocs(code) {
+    var lines = code.split("\n"), cur = null;
+    var docAfter = function (i) {
+      for (var k = i + 1; k < lines.length; k++) {
+        if (!lines[k].trim()) continue;
+        var m = /^\s*(?:\"\"\"|''')(.*?)(?:\"\"\"|''')\s*$/.exec(lines[k]);
+        return m ? m[1] : null;
+      }
+      return null;
+    };
+    lines.forEach(function (ln, i) {
+      var c = /^class\s+(\w+)\s*(?:\(([^)]*)\))?\s*:/.exec(ln);
+      if (c) {
+        cur = c[1];
+        var d = docAfter(i), sp = d == null ? { icon: "", text: "" } : docSplit(d);
+        DOCS[cur] = { icon: sp.icon, text: sp.text, base: ((c[2] || "").split(",")[0] || "").trim(), m: {} };
+        return;
+      }
+      var f = /^\s+def\s+(\w+)\s*\(/.exec(ln);
+      if (f && cur) { var d2 = docAfter(i); if (d2 != null) DOCS[cur].m[f[1]] = docSplit(d2); }
+    });
+  }
+  /* a class's doc, or a method's — found up the class's bases */
+  window.lcDocOf = function (cls, method) {
+    var d = DOCS[cls], n = 0;
+    while (d && n++ < 8) {
+      if (!method) return d;
+      if (d.m[method]) return d.m[method];
+      d = DOCS[d.base];
+    }
+    return null;
+  };
+
   function upgradeModel(el) {
     if (el.dataset.lcModelDone) return;
     el.dataset.lcModelDone = "1";
@@ -4017,6 +4061,7 @@ _inject_store()
       sync._lcEl = el;                        /* gone with its block (dataset.md) */
       (L[p[1]] = L[p[1]] || []).push(sync);
     });
+    readDocs(code);
     var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
     /* THE SAME CLASSES ARE NOT RE-RUN. A pad re-renders on every pause in
        typing; re-running the runtime and the classes each time froze the

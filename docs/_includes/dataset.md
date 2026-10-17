@@ -1020,6 +1020,14 @@ Auto-included by docs/_layouts/default.html.
 
     function render(data) {
       lastData = data;
+      /* the class's own icon and words on the grid's title (Michel, 2026-10-17:
+         "replacing the grid generic emoji") */
+      var cdoc = window.lcDocOf && (window.lcModels || {})[bindId] ? window.lcDocOf(bindId) : null;
+      var tbar = el.querySelector(".lc-dg-titlebar");
+      if (tbar && tbar.firstChild && tbar.firstChild.nodeType === 3) {
+        tbar.firstChild.nodeValue = (cdoc && cdoc.icon ? cdoc.icon : "▦") + " ";
+        if (cdoc && cdoc.text) tbar.title = cdoc.text; else tbar.removeAttribute("title");
+      }
       /* a list read from elsewhere: a ↻ in the title bar reads it again */
       if (window.lcRemote && window.lcRemote[bindId] && !window.lcRemote[bindId].db && el.querySelector(".lc-dg-titlebar") && !el.querySelector(".lc-dg-reload")) {
         var rb = document.createElement("button");
@@ -1331,9 +1339,10 @@ Auto-included by docs/_layouts/default.html.
             menu.className = "lc-dg-menu";
             menu._lcFor = td;
             menu.innerHTML = items.map(function (it) {
-              var label = it.label || (window.lcPrettifyKey ? window.lcPrettifyKey(it.n) : it.n);
+              var dd = !it.label && window.lcDocOf ? window.lcDocOf(row._kind || bindId, it.n) : null;
+              var label = it.label || ((dd && dd.icon ? dd.icon + " " : "") + (window.lcPrettifyKey ? window.lcPrettifyKey(it.n) : it.n));
               return "<button type='button' class='lc-dg-verb" + (it.ok ? "" : " lc-dg-off") + (it.danger ? " lc-dg-danger" : "")
-                + "' data-verb='" + it.n + "' data-ok='" + (it.ok ? 1 : 0) + "' title='" + esc(it.hint) + "'>"
+                + "' data-verb='" + it.n + "' data-ok='" + (it.ok ? 1 : 0) + "' title='" + esc((dd && dd.text) || it.hint) + "'>"
                 + "<span>" + esc(label) + "</span>" + (it.hint ? "<small>" + esc(it.hint) + "</small>" : "") + "</button>";
             }).join("");
             /* on the body, fixed: a scrolling grid clipped the last row's

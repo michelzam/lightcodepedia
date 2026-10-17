@@ -245,6 +245,20 @@ At the grid's top right: **＋** makes an object, the save state shows
 closed cell, a deletion, a new object once it holds a value. A class with no
 state opens its methods from a light **⋯** in each row's gutter.
 
+A class and its methods wear an icon from their one-line docstring: the
+emoji that starts it is the icon, the rest its description. The grid's
+title shows the class's icon instead of ▦, the row menu and the form's
+buttons show each method's.
+
+```python
+class Walk(Object):
+    """🦮 One walk of a shelter dog."""
+    dog = Attr(str)
+
+    def remind(self):
+        """🔔 Remind the walker."""
+```
+
 The table keeps its own notes on every line, in columns whose names start
 with `_` (when it last changed, how, from where): the page never shows
 them and never sends them. When the database cannot be reached, the grid

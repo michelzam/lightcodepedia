@@ -906,3 +906,24 @@ def step_no_names(context, gid):
     expect(g.locator(".lc-dg-unl")).to_have_count(0, timeout=T)
     reads = [a for f, a in context.unl["calls"] if f == "lc_read"]
     assert reads and reads[-1]["share"] == "5f2c9a01b7e3", reads
+
+
+
+@then('the title of "{gid}" wears "{icon}" instead of "▦", saying "{text}"')
+def step_title_icon(context, gid, icon, text):
+    bar = grid(context, gid).locator(".lc-dg-titlebar")
+    expect(bar).to_contain_text(icon, timeout=T)
+    assert "▦" not in bar.inner_text(), bar.inner_text()
+    expect(bar).to_have_attribute("title", text)
+
+
+@then('the menu\'s "{verb}" reads "{label}", saying "{text}"')
+def step_menu_label(context, verb, label, text):
+    b = context.page.locator(".lc-dg-menu button[data-verb='" + verb + "']")
+    expect(b.locator("span")).to_have_text(label, timeout=T)
+    expect(b).to_have_attribute("title", text)
+
+
+@then('the form "{fid}" has a button "{label}"')
+def step_form_button(context, fid, label):
+    expect(context.page.locator("[data-lc-id='" + fid + "'] .lc-form-verb, .lc-form[data-lc-id='" + fid + "'] ~ .lc-form-verbs .lc-form-verb").filter(has_text=label).first).to_be_visible(timeout=T)
