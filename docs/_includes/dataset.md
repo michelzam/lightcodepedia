@@ -445,8 +445,15 @@ Auto-included by docs/_layouts/default.html.
             })
             .catch(function (e) {
               var cur = window.lcDatasets[id];
-              if (!cur || !cur.length) window.lcSetDataset(id, [{ "⚠️": e.message === "Failed to fetch"
-                ? "this link cannot be read from a page (not shared, or not a data link)" : e.message }]);
+              /* Chrome says "Failed to fetch", Safari "Load failed", Firefox
+                 "NetworkError…": the same refusal, said one way */
+              var refused = e instanceof TypeError || /failed to fetch|load failed|networkerror/i.test(e.message || "");
+              var why = refused
+                ? (isDb ? "the database cannot be reached — check its address (…supabase.co/rest/v1/<table>)"
+                        : "this link cannot be read from a page (not shared, or not a data link)")
+                : e.message;
+              if (isDb && window.lcRemote[id]) window.lcRemote[id].error = why;
+              if (!cur || !cur.length) window.lcSetDataset(id, [{ "⚠️": why }]);
             });
         };
         window.lcRemote[id] = { href: href, pull: pull, write: !!keyName || el.getAttribute("write") === "true", at: performance.now(),
@@ -746,6 +753,10 @@ Auto-included by docs/_layouts/default.html.
          empty grid with the class, let students add new objects"): a grid on
          a class whose list is empty shows the class's fields as headers and
          ➕ New, never "No data" */
+      /* a class whose list failed to load: the list's own words, not a row */
+      var mdl0 = (window.lcModels || {})[bindId];
+      var srcErr = mdl0 && mdl0.src && (window.lcDatasets[mdl0.src] || [])[0] && window.lcDatasets[mdl0.src][0]["⚠️"];
+      if (srcErr) data = [];
       var emptyModel = (!data || !data.length) && (window.lcModels || {})[bindId];
       if ((!data || !data.length) && !emptyModel) {
         if (selKey && lcId && window.lcMasterDetail) { selKey = null; window.lcMasterDetail.publish(lcId, null); }
@@ -856,6 +867,7 @@ Auto-included by docs/_layouts/default.html.
       var dbBtns = dbR ? "<button class='lc-dg-btn lc-dg-save' type='button'" + (dbCh && dbCh.n ? "" : " disabled")
           + " title='send the changes to the database'>💾 Save" + (dbCh && dbCh.n ? " (" + dbCh.n + ")" : "") + "</button>"
           + "<button class='lc-dg-btn lc-dg-refresh' type='button' title='read the database again'>↻ Refresh</button>" : "";
+      if (srcErr) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(srcErr) + "</p>";
       if (model) html += "<div class='lc-dg-foot'><button class='lc-dg-new' type='button' title='a new " + esc(bindId) + ", at its first stage'>➕ New" + ((model.subs || []).length ? " ⌄" : "") + "</button>" + dbBtns + "</div>";
       else if (dbBtns) html += "<div class='lc-dg-foot'>" + dbBtns + "</div>";
       if (pages > 1) {

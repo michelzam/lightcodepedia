@@ -644,3 +644,21 @@ def step_delete_row(context, name, gid):
 def step_db_delete(context, table, rid):
     c = _db_new(context, "DELETE")[0]
     assert ("id=in.(%d)" % rid) in c["url"], c
+
+
+@given('a database "{table}" that cannot be reached')
+def step_db_down(context, table):
+    context.page.route("**/demo.supabase.co/rest/v1/" + table + "*", lambda route: route.abort())
+
+
+@then('the grid "{gid}" says "{text}", with no error column')
+def step_grid_says(context, gid, text):
+    expect(grid(context, gid).locator(".lc-dg-say")).to_contain_text(text, timeout=T)
+    expect(grid(context, gid).locator("thead th[data-col='⚠️']")).to_have_count(0)
+
+
+@then('the grid "{gid}" still offers New, Save and Refresh')
+def step_grid_offers(context, gid):
+    g = grid(context, gid)
+    for sel in ("button.lc-dg-new", "button.lc-dg-save", "button.lc-dg-refresh"):
+        expect(g.locator(sel)).to_have_count(1)

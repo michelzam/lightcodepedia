@@ -2969,12 +2969,14 @@ def _lc_row_mark(row, nm=None):
 def _lc_source_fields(cls, row0, src):
     """Columns the class does not declare become its fields, typed by the
     first row — the source brings what it knows. Declared fields keep their
-    column's place; the list's order is the class's order."""
+    column's place; the list's order is the class's order. A column whose
+    name starts with "_" is the source's own note (a database's stamp): it
+    never becomes a field."""
     keys = js.window.Object.keys(row0)
     order = [str(keys[i]) for i in range(int(keys.length))]
     fmap = cls._lc_fmap
     for c in order:
-        if c == "obj" or c in fmap:
+        if c == "obj" or c == "⚠️" or c in fmap or c.startswith("_"):
             continue
         v = getattr(row0, c, None)
         t = "bool" if isinstance(v, bool) else ("int" if isinstance(v, int)
@@ -3071,6 +3073,8 @@ def _lc_source_sync(src):
     kept = []
     for i in range(n):
         row = arr[i]
+        if getattr(row, "⚠️", None) is not None:
+            continue          # a list that failed to load says why; it is not an object
         nm = _lc_row_mark(row)
         inst = g.get(nm) if nm else None
         if inst is None or not isinstance(inst, cls):

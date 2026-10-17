@@ -577,3 +577,32 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I press Save under "families"
     Then the table "families" received a delete of row 1
 
+
+  Scenario: A database that cannot be reached says so under the class grid, never as a row
+    Michel, 2026-10-17 (page 3 before the real address): "Load failed"
+    became a family at stage asked, in a ⚠️ column.
+
+    Given a database "families" that cannot be reached
+    And the GitHub contents API serves "courses/demo/module_06/db_down.md" with the document:
+      """
+      # Families
+
+      [the families](https://demo.supabase.co/rest/v1/families)
+      {: .dataset #families_db apikey="sb_publishable_test" }
+
+      ```python
+      class Family(Object, source="families_db"):
+          family = Attr(str)
+          dog = Attr(str)
+          stage = State("asked", "met", "home")
+      ```
+      {: .model }
+
+      [the families](#)
+      {: .datagrid source="Family" #families }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/db_down.md"
+    And I wait for the page to be interactive
+    Then the grid "families" has the columns "family, dog, stage" and no row
+    And the grid "families" says "the database cannot be reached", with no error column
+    And the grid "families" still offers New, Save and Refresh
