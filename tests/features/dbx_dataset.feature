@@ -49,3 +49,27 @@ Feature: A dataset runs a SQL statement on a Databricks warehouse, with this dev
     When I navigate to "/run.html#src=gh:acme/demo/apps/arr.md"
     And I wait for the page to be interactive
     Then the bar of "arr" reads "token refused"
+
+  Scenario: A SQL fence on a databricks:// .database runs the same way, no dbx= on the fence
+    Michel, 2026-10-17 (register P3): "a schema to address multiple
+    datasources (databricks, etc) — unify this now in the database component."
+    Given a Databricks token "tok-3" on this device
+    And the GitHub contents API serves "apps/arr_db.md" with the document:
+      """
+      # ARR by region
+
+      [the warehouse](databricks://acme/wh-0123)
+      {: .database #warehouse }
+
+      ```sql
+      SELECT region, SUM(arr_kusd) AS arr_kusd FROM finance.accounts GROUP BY region
+      ```
+      {: .dataset #arr database="warehouse" }
+
+      [ARR by region](#)
+      {: .datagrid source="arr" #arr_grid height="200" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/apps/arr_db.md"
+    And I wait for the page to be interactive
+    Then the grid "arr_grid" shows 3 rows
+    And the warehouse was asked with the token "tok-3" for "wh-0123"

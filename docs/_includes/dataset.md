@@ -72,11 +72,36 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-grip { position: absolute; top: 15%; right: 0; width: 10px; height: 70%; cursor: col-resize; z-index: 2; touch-action: none;
   background: linear-gradient(90deg, transparent 4px, #cbd5e1 4px, #cbd5e1 6px, transparent 6px); }
 .lc-dg-grip:hover, .lc-dg-grip:active { background: linear-gradient(90deg, transparent 3px, #0066cc 3px, #0066cc 7px, transparent 7px); }
-.lc-dg-table td.lc-dg-rowmenu { position: relative; padding-right: 1.8em; }
-.lc-dg-table td.lc-dg-rowmenu::after { content: "⌄"; position: absolute; right: .55em; top: 50%; transform: translateY(-62%);
-  color: #6b7280; cursor: pointer; line-height: 1; }
-.lc-dg-table td.lc-dg-rowmenu:hover::after { color: #0066cc; }
-.lc-dg-table td.lc-dg-rowmenu.lc-dg-typing::after { display: none; }
+/* ⋯ THE GUTTER (Michel, 2026-10-17: "when there is no state, a gutter with
+   a simple discrete/light but intuitive way to open the method picklist") */
+.lc-dg-table th.lc-dg-gut, .lc-dg-table td.lc-dg-gut { width: 1.7em; min-width: 1.7em; padding: 0 .15em; text-align: center; }
+.lc-dg-table td.lc-dg-gut .lc-dg-rowmenu { border: 0; background: none; cursor: pointer; font: inherit; font-size: 1.05em; line-height: 1;
+  padding: .15em .3em; border-radius: 6px; color: #94a3b8; opacity: .45; transition: opacity .12s; }
+.lc-dg-table tr:hover td.lc-dg-gut .lc-dg-rowmenu, .lc-dg-table tr.lc-dg-selected td.lc-dg-gut .lc-dg-rowmenu,
+.lc-dg-table td.lc-dg-gut .lc-dg-rowmenu:focus-visible { opacity: 1; color: #0066cc; }
+.lc-dg-table td.lc-dg-gut .lc-dg-rowmenu:hover { background: #eff6ff; }
+/* THE CORNER (Michel, 2026-10-17: "a delicate refresh spiral arrow on top
+   right, better visible on hovering, a similar more stable one for save, and
+   a + round little button"): + always, ↻ on hover, the save state always */
+.lc-datagrid { position: relative; }
+.lc-dg-corner { position: absolute; top: .3em; right: .4em; z-index: 2; display: flex; gap: .3em; align-items: center; }
+.lc-dg-cbtn { width: 1.65em; height: 1.65em; border-radius: 50%; border: 1px solid #c7d2e0; background: #fff; color: #475569;
+  font: inherit; font-size: .9em; line-height: 1; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.lc-dg-cbtn:hover, .lc-dg-cbtn:focus-visible { border-color: #0066cc; color: #0066cc; background: #eff6ff; }
+.lc-dg-cbtn.lc-dg-new { background: #0066cc; border-color: #0066cc; color: #fff; font-size: 1em; }
+.lc-dg-cbtn.lc-dg-new:hover { background: #0052a3; color: #fff; }
+.lc-dg-cbtn.lc-dg-refresh { opacity: 0; transition: opacity .15s; }
+.lc-datagrid:hover .lc-dg-cbtn.lc-dg-refresh, .lc-dg-cbtn.lc-dg-refresh:focus-visible { opacity: 1; }
+@media (hover: none) { .lc-dg-cbtn.lc-dg-refresh { opacity: .6; } }
+.lc-dg-cbtn.lc-dg-save[disabled] { cursor: default; }
+.lc-dg-cbtn.lc-dg-st-ok { color: #16a34a; border-color: #bbf7d0; }
+.lc-dg-cbtn.lc-dg-st-dirty { color: #b45309; border-color: #fcd34d; }
+.lc-dg-cbtn.lc-dg-st-saving { color: #0066cc; }
+.lc-dg-cbtn.lc-dg-st-saving span { display: inline-block; animation: lc-dg-spin 1s linear infinite; }
+.lc-dg-cbtn.lc-dg-st-error { color: #b91c1c; border-color: #fca5a5; background: #fef2f2; }
+@keyframes lc-dg-spin { to { transform: rotate(360deg); } }
+.lc-datagrid.lc-dg-cornered:not(.lc-dg-titled) .lc-dg-body, .lc-datagrid.lc-dg-cornered:not(.lc-dg-titled) > .lc-dg-scroll,
+.lc-datagrid.lc-dg-cornered:not(.lc-dg-titled) > table { margin-top: 2.1em; }
 .lc-dg-table td.lc-dg-typed.lc-dg-typing { background: #fff; outline: 2px solid #0066cc; outline-offset: -2px; cursor: text; }
 .lc-dg-state:hover .lc-dg-caret { color: #0066cc; }
 .lc-dg-pick { font: inherit; font-size: .95em; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; padding: .1em .3em; }
@@ -87,12 +112,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-verb.lc-dg-off { color: #9ca3af; }
 .lc-dg-verb.lc-dg-off small { color: #c4c7cc; }
 .lc-dg-verb.lc-dg-danger { color: #b91c1c; border-top: 1px solid #eee; border-radius: 0 0 5px 5px; }
-.lc-dg-foot { margin-top: .4em; }
-.lc-dg-new { font: inherit; font-size: .85em; font-weight: 500; padding: .35em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
-.lc-dg-new:hover { background: #0052a3; border-color: #0052a3; }
 .lc-dg-btn { font: inherit; font-size: .85em; font-weight: 500; padding: .35em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #fff; color: #0066cc; cursor: pointer; }
 .lc-dg-btn:hover:not(:disabled) { background: #eff6ff; }
-.lc-dg-foot { display: flex; gap: .4em; flex-wrap: wrap; }
 .lc-dg-btn:disabled { opacity: .45; cursor: default; }
 .lc-dg-reload { float: right; font: inherit; font-size: 1em; line-height: 1; padding: .1em .45em; border-radius: 6px;
   border: 1px solid #cbd5e1; background: #fff; color: #0066cc; cursor: pointer; }
@@ -202,6 +223,94 @@ Auto-included by docs/_layouts/default.html.
     return o;
   }
   function dbKeyOf(r) { return JSON.stringify(dbSame(r)); }
+  /* ONE .database, ANY SOURCE (Michel, 2026-10-17, register P3): the link's
+     scheme says the kind — [the shelter](supabase://shelter)
+     {: .database #shelter unlisted="…" } — and the page holds no key: the
+     address and public key come from a databases.yml in the course folder
+     (or above it), name → {url, key}, read once per folder. A model on it
+     ({: .model database="shelter" }) gets a table per class; a lone dataset
+     may name its table itself: [walks](supabase://shelter/walk). */
+  window.lcDatabases = window.lcDatabases || {};
+  var _dbYml = {};
+  function ghText(repo, path) {
+    var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+    var h = { Accept: "application/vnd.github.v3.raw" };
+    if (pat) h.Authorization = "Bearer " + pat;
+    return fetch("https://api.github.com/repos/" + repo + "/contents/" + path, { headers: h })
+      .then(function (r) { return r.ok ? r.text() : null; }, function () { return null; });
+  }
+  function yamlOf(text) {
+    return new Promise(function (res) {
+      if (!text || !window.lcYaml) return res(null);
+      window.lcYaml.ready(function () { try { res(window.lcYaml.load(text)); } catch (e) { res(null); } });
+    });
+  }
+  function dbConf(name, el) {
+    var roots = [el.closest("[data-lc-src-path]"), document.querySelector(".lc-run[data-lc-src-path]")];
+    var tries = [];
+    roots.forEach(function (r) {
+      if (!r) return;
+      var repo = r.getAttribute("data-lc-src-repo") || _lcSiteRepo;
+      var parts = (r.getAttribute("data-lc-src-path") || "").split("/");
+      parts.pop();
+      for (;;) {
+        var p = (parts.length ? parts.join("/") + "/" : "") + "databases.yml";
+        if (!tries.some(function (t) { return t.repo === repo && t.path === p; })) tries.push({ repo: repo, path: p });
+        if (!parts.length) break;
+        parts.pop();
+      }
+    });
+    return (function next(i) {
+      if (i >= tries.length) return Promise.reject(new Error("no databases.yml names \"" + name + "\" — add it to the course folder"));
+      var k = tries[i].repo + ":" + tries[i].path;
+      var got = _dbYml[k] || (_dbYml[k] = ghText(tries[i].repo, tries[i].path).then(yamlOf));
+      return got.then(function (y) {
+        var c = y && y[name];
+        if (!c) return next(i + 1);
+        if (!c.url || !/^(https:\/\/|\/)/.test(c.url)) throw new Error("databases.yml: \"" + name + "\" has no https (or /proxy) url");
+        return { url: String(c.url).replace(/\/+$/, ""), key: c.key || "" };
+      });
+    })(0);
+  }
+  function upgradeDatabase(el) {
+    if (el.dataset.lcDbDone) return; el.dataset.lcDbDone = "1";
+    var id = el.id || el.getAttribute("id");
+    var a = el.querySelector("a[href]");
+    var m = /^(\w+):\/\/([\w-]+)/.exec(a ? a.getAttribute("href") || "" : "");
+    if (!id) return;
+    el.classList.add("lc-database");
+    el.hidden = true;
+    window.lcDatabases[id] = { el: el, kind: m ? m[1] : "", name: m ? m[2] : "",
+                               unlisted: el.getAttribute("unlisted") || "", title: a ? (a.textContent || "").trim() : id };
+    document.dispatchEvent(new CustomEvent("lc-database", { detail: id }));
+  }
+  /* a class's table on a database: a hidden dataset beside the model, named
+     <database>_<table>, read and written like any table of that database */
+  window.lcDatabaseTable = function (dbId, table, near) {
+    var dsid = dbId + "_" + table;
+    var ex = document.getElementById(dsid);
+    if (ex && ex.isConnected) return dsid;
+    var p = document.createElement("p");
+    p.className = "dataset lc-db-table"; p.id = dsid; p.hidden = true;
+    var a = document.createElement("a");
+    a.setAttribute("href", "db://" + dbId + "/" + table);
+    a.textContent = table;
+    p.appendChild(a);
+    if (near && near.parentNode) near.parentNode.insertBefore(p, near.nextSibling); else document.body.appendChild(p);
+    upgradeDataset(p);
+    return dsid;
+  };
+  function dbWhen(dbId, tries) {
+    return new Promise(function (res, rej) {
+      (function look(n) {
+        var d = window.lcDatabases[dbId];
+        if (d) return res(d);
+        if (n <= 0) return rej(new Error("no database #" + dbId + " on this page"));
+        setTimeout(function () { look(n - 1); }, 100);
+      })(tries);
+    });
+  }
+
   /* AN UNLISTED TABLE — the device's two secrets: the author key (makes
      tables) and each list's unlisted name (reads and writes it) */
   function lsGet(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
@@ -416,6 +525,27 @@ Auto-included by docs/_layouts/default.html.
       if (!/^(https?:\/\/|\/)/.test(href) && /^https?:\/\//.test((link.textContent || "").trim())) {
         href = link.textContent.trim();
       }
+      /* a table of a .database (db://<database>/<table>, made for a model's
+         class) or a lone dataset naming its database (supabase://<name>/<table>):
+         the address and key arrive from databases.yml, then the link is a
+         table like any other */
+      var dbm = /^db:\/\/([\w-]+)\/([\w-]+)$/.exec(href), sbm = /^supabase:\/\/([\w-]+)\/([\w-]+)$/.exec(href);
+      if (dbm || sbm) {
+        (dbm ? dbWhen(dbm[1], 50) : Promise.resolve({ kind: "supabase", name: sbm[1], unlisted: el.getAttribute("unlisted") || "" }))
+          .then(function (d) {
+            if (d.kind !== "supabase") throw new Error("a " + (d.kind || "?") + ":// database holds no tables here yet");
+            return dbConf(d.name, el).then(function (c) {
+              link.setAttribute("href", c.url + "/rest/v1/" + (dbm ? dbm[2] : sbm[2]));
+              if (c.key) el.setAttribute("apikey", c.key);
+              el.setAttribute("unlisted", d.unlisted || "true");
+              if (dbm) el.setAttribute("data-db", dbm[1]);
+              delete el.dataset.lcDsDone;
+              upgradeDataset(el);
+            });
+          })
+          .catch(function (e) { window.lcSetDataset(id, [{ "⚠️": e.message }]); });
+        return;
+      }
       var keyName = (/^key:([A-Za-z_][\w-]*)$/.exec(href) || [])[1] || "";
       if (keyName) {
         href = linkKey(keyName);
@@ -463,14 +593,18 @@ Auto-included by docs/_layouts/default.html.
            and adds the columns it gains, and the table's unlisted name shows
            under the grid, to share. Everyone else pastes that name once. Both
            stay on the device, never in the page. */
-        var unl = isDb && el.getAttribute("unlisted") === "true";
+        var unl = isDb && !!el.getAttribute("unlisted");
+        /* unlisted="<name>": the name is in the page, everyone reads and writes
+           with it, nothing to paste (Michel, 2026-10-17); "true": pasted once */
+        var unlFixed = unl && el.getAttribute("unlisted") !== "true" ? el.getAttribute("unlisted") : "";
         var unlPull = null;
         if (unl) {
           var uProj = (/^https:\/\/([\w-]+)\./.exec(href) || [])[1] || "";
           var uTbl = (/\/rest\/v1\/([\w-]+)/.exec(href) || [])[1] || "";
           var uBase = href.split("/rest/v1/")[0] + "/rest/v1";
           var U = { tbl: uTbl, akey: "lc_author_" + uProj, skey: "lc_unlisted_" + uProj + "_" + uTbl,
-                    share: "", author: false, need: false, newKey: "" };
+                    share: "", author: false, need: false, newKey: "", fixed: unlFixed, hint: "",
+                    db: el.getAttribute("data-db") || "" };
           U.rpc = function (fn, body) {
             return fetch(uBase + "/rpc/" + fn, { method: "POST", cache: "no-store",
                                                  headers: dbHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) })
@@ -489,12 +623,18 @@ Auto-included by docs/_layouts/default.html.
             var step = author
               ? unlColsSoon(id, 40).then(function (cols) {
                   return U.rpc("lc_ensure", { token: author, tbl: U.tbl, cols: cols || [] })
-                    .then(function (sh) { if (sh) lsSet(U.skey, sh); U.author = true; return sh; });
+                    .then(function (sh) {
+                      U.author = true;
+                      /* the page's name is not the database's: the author is told the right one */
+                      U.hint = sh && sh !== U.fixed ? sh : "";
+                      if (sh && !U.fixed) lsSet(U.skey, sh);
+                      return sh;
+                    });
                 })
-              : Promise.resolve(lsGet(U.skey));
+              : Promise.resolve(U.fixed || lsGet(U.skey));
             return step.then(function (sh) {
               U.share = sh || "";
-              U.need = !sh;
+              U.need = !sh && !U.fixed;
               if (!sh) { r.snap = {}; r.error = ""; window.lcSetDataset(id, []); return; }
               return U.rpc("lc_read", { share: sh, tbl: U.tbl }).then(function (rows) {
                 rows = Array.isArray(rows) ? rows : [];
@@ -625,6 +765,22 @@ Auto-included by docs/_layouts/default.html.
        server ever holds it (Michel, 2026-09-26: "the perfect match with
        the CFO's need to not share strategic data with anyone else"). */
     if (el.getAttribute("dbx")) { dbxDataset(el, id); return; }
+    /* A SQL FENCE ON A .database (Michel, 2026-10-17, register P3): the fence
+       holds the statement, database="warehouse" says where it runs, the
+       database's scheme says how — databricks://<name>/<warehouse id>; its
+       proxy root comes from databases.yml (url: /dbx by default) */
+    if (el.getAttribute("database")) {
+      dbWhen(el.getAttribute("database"), 50).then(function (d) {
+        var m = /^databricks:\/\/[\w.-]+\/([\w-]+)/.exec((d.el.querySelector("a[href]") || { getAttribute: function () { return ""; } }).getAttribute("href") || "");
+        if (d.kind !== "databricks" || !m) throw new Error("a SQL fence runs on a databricks://<name>/<warehouse> database — #" + el.getAttribute("database") + " is " + (d.kind || "?") + "://");
+        return dbConf(d.name, el).catch(function () { return { url: "/dbx" }; }).then(function (c) {
+          el.setAttribute("dbx", m[1]);
+          el.setAttribute("host", c.url || "/dbx");
+          dbxDataset(el, id);
+        });
+      }).catch(function (e) { window.lcSetDataset(id, [{ "⚠️": e.message }]); });
+      return;
+    }
 
     /* inline code block variant */
     var code = el.querySelector("code") || el;
@@ -889,13 +1045,12 @@ Auto-included by docs/_layouts/default.html.
       var cols    = allCols.filter(function (c) { return c !== "url" && !(model && (c === "obj" || c.charAt(0) === "_" || !model.fields[c] || model.fields[c].hidden)); });
       if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
       function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/'/g, "&#39;"); }
-      function dressedCell(row, c, idx) {
-        var html = dressedCell0(row, c, idx);
-        if (model.state || c !== cols[0]) return html;
-        return html.replace(/^<td( class='([^']*)')?/, function (_, k, cls) {
-          return "<td class='" + (cls ? cls + " " : "") + "lc-dg-rowmenu' data-row='" + idx + "'";
-        });
-      }
+      function dressedCell(row, c, idx) { return dressedCell0(row, c, idx); }
+      var gut = !!(model && !model.state);
+      var gutTd = function (idx) {
+        return "<td class='lc-dg-gut' data-row='" + idx + "'><button type='button' class='lc-dg-rowmenu'"
+          + " title='what this one can do' aria-label='what this one can do'>⋯</button></td>";
+      };
       function dressedCell0(row, c, idx) {
         var v = row[c] !== undefined && row[c] !== null ? row[c] : "";
         var f = model.fields[c];
@@ -936,6 +1091,7 @@ Auto-included by docs/_layouts/default.html.
 
       var html = (height ? "<div class='lc-dg-scroll' style='max-height:" + height + "px'>" : "")
         + "<table class='lc-dg-table'><thead><tr>"
+        + (gut ? "<th class='lc-dg-gut' aria-label='actions'></th>" : "")
         + cols.map(function (c) {
             var arrow = sortCol === c ? (sortAsc ? " ↑" : " ↓") : "";
             var hint = hints[c] ? " title='" + hints[c].replace(/'/g, "&#39;") + "' class='lc-th-hint'" : "";
@@ -947,6 +1103,7 @@ Auto-included by docs/_layouts/default.html.
             var urlVal = urlCol ? (row[urlCol] || "") : "";
             var trAttrs = urlVal ? " data-url='" + urlVal.replace(/'/g, "&#39;") + "' style='cursor:pointer'" : "";
             return "<tr" + trAttrs + ">"
+              + (gut ? gutTd(sorted.indexOf(row)) : "")
               + cols.map(function (c) {
                   if (model) return dressedCell(row, c, sorted.indexOf(row));
                   var v = row[c] !== undefined ? row[c] : "";
@@ -969,9 +1126,16 @@ Auto-included by docs/_layouts/default.html.
       var dbSrc = model ? model.src : bindId;
       var dbR = window.lcRemote && window.lcRemote[dbSrc] && window.lcRemote[dbSrc].db ? window.lcRemote[dbSrc] : null;
       var dbCh = dbR && window.lcDatasetChanges ? window.lcDatasetChanges(dbSrc) : null;
-      var dbBtns = dbR ? "<button class='lc-dg-btn lc-dg-save' type='button'" + (dbCh && dbCh.n ? "" : " disabled")
-          + " title='send the changes to the database'>💾 Save" + (dbCh && dbCh.n ? " (" + dbCh.n + ")" : "") + "</button>"
-          + "<button class='lc-dg-btn lc-dg-refresh' type='button' title='read the database again'>↻ Refresh</button>" : "";
+      var st = dbR ? (dbR.state || (dbCh && dbCh.n ? "dirty" : "ok")) : "";
+      var stTip = { ok: "saved", dirty: (dbCh && dbCh.n) + " change(s) to save — saving by itself, or tap", saving: "saving…",
+                    error: "not saved — " + (dbR && dbR.saveErr || "") + " — tap to try again" }[st] || "";
+      var corner = (dbR ? "<button class='lc-dg-cbtn lc-dg-save lc-dg-st-" + st + "' type='button'"
+            + (st === "dirty" || st === "error" ? "" : " disabled") + " title='" + esc(stTip) + "' aria-label='" + esc(stTip) + "'>"
+            + "<span>" + { ok: "✓", dirty: "●", saving: "⟳", error: "⚠" }[st] + "</span></button>"
+            + "<button class='lc-dg-cbtn lc-dg-refresh' type='button' title='read the database again' aria-label='read the database again'>↻</button>" : "")
+        + (model ? "<button class='lc-dg-cbtn lc-dg-new' type='button' title='a new " + esc(bindId) + "' aria-label='a new " + esc(bindId) + "'>＋</button>" : "");
+      el.classList.toggle("lc-dg-cornered", !!corner);
+      var dbBtns = "";
       /* an unlisted table: the name to paste, or — on the author's device —
          the name to share */
       var U = dbR && dbR.unl;
@@ -983,7 +1147,10 @@ Auto-included by docs/_layouts/default.html.
            author sees the name to share on one line; a new author key shows
            once and leaves when copied; a newcomer sees one field — the
            author's field takes its place, never sits beside it */
-        if (U.share && U.author)
+        if (U.hint && U.db)
+          unlBar += "<span>✍️ put <code class='lc-dg-unl-show'>unlisted=\"" + esc(U.hint) + "\"</code> on the <b>" + esc(U.db) + "</b> database line</span>"
+            + "<button class='lc-dg-btn lc-dg-unl-copy' type='button' data-copy='unlisted=\"" + esc(U.hint) + "\"'>📋 Copy</button>";
+        else if (U.share && U.author && !U.fixed)
           unlBar += "<span>🔗 <code class='lc-dg-unl-show' title='the unlisted name — share it with the class'>" + esc(U.share) + "</code></span>"
             + "<button class='lc-dg-btn lc-dg-unl-copy' type='button' data-copy='" + esc(U.share) + "' title='copy the name, to share it with the class'>📋 Copy</button>";
         if (U.newKey)
@@ -999,8 +1166,7 @@ Auto-included by docs/_layouts/default.html.
       }
       if (srcErr) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(srcErr) + "</p>";
       else if (U && dbR.error) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(dbR.error) + "</p>";
-      if (model) html += "<div class='lc-dg-foot'><button class='lc-dg-new' type='button' title='a new " + esc(bindId) + ", at its first stage'>➕ New" + ((model.subs || []).length ? " ⌄" : "") + "</button>" + dbBtns + "</div>";
-      else if (dbBtns) html += "<div class='lc-dg-foot'>" + dbBtns + "</div>";
+      if (corner) html = "<div class='lc-dg-corner'>" + corner + "</div>" + html;
       html += unlBar;
       if (pages > 1) {
         html += "<div class='lc-dg-pages'>";
@@ -1164,18 +1330,9 @@ Auto-included by docs/_layouts/default.html.
           td.addEventListener("click", function (e) { verbsMenu(td, e); });
         });
         /* A CLASS WITH NO STATE STILL HAS VERBS (Michel, 2026-10-16) — and
-           Delete always: the ⌄ sits in the row's first cell, drawn by CSS
-           (never part of the value), and only the ⌄ opens the menu; the rest
-           of the cell selects and edits as before */
-        el.querySelectorAll("td.lc-dg-rowmenu").forEach(function (td) {
-          /* capture: the ⌄ wins over the second-tap edit of a selected row */
-          td.addEventListener("click", function (e) {
-            if (td.classList.contains("lc-dg-typing")) return;
-            var r = td.getBoundingClientRect();
-            if (e.clientX < r.right - 26) return;
-            e.stopImmediatePropagation();
-            verbsMenu(td, e);
-          }, true);
+           Delete always: a light ⋯ in the row's gutter opens them (2026-10-17) */
+        el.querySelectorAll("td.lc-dg-gut").forEach(function (td) {
+          td.addEventListener("click", function (e) { verbsMenu(td, e); });
         });
         /* ➕ New: the class itself, or — when the page declares subclasses —
            a pick of the class and each one; the new row gets selected
@@ -1217,29 +1374,53 @@ Auto-included by docs/_layouts/default.html.
          the open cell, its commit redrew the grid, and the click landed on
          a button that was gone. The save now starts on the press, before
          the focus moves; a keyboard's click still works, never twice. */
+      var saveNow = function (typing) {
+        if (!dbR || dbR.state === "saving") return;
+        clearTimeout(dbR._auto);
+        dbR.state = "saving"; dbR.saveErr = "";
+        if (sv) { sv.disabled = true; sv.className = sv.className.replace(/lc-dg-st-\w+/, "lc-dg-st-saving"); sv.innerHTML = "<span>⟳</span>"; }
+        if (window.lcDid && lcId) window.lcDid.mark(lcId, "save");   /* grid.saved — a proof reads it */
+        /* a cell still open is committed first, and its value given a beat to
+           reach the object — a click on 💾 right after typing saved the blank */
+        if (typing) typing.blur();
+        new Promise(function (res) { setTimeout(res, typing ? 400 : 0); }).then(function () {
+          return window.lcDatasetSave(dbSrc);
+        }).then(function () {
+          dbR.state = "";                       /* the table is read again: the grid repaints ✓ */
+        }).catch(function (err) {
+          dbR.state = "error"; dbR.saveErr = err.message;
+          window.lcSetDataset(dbSrc, window.lcDatasets[dbSrc] || []);
+        });
+      };
       var doSave = function (e) {
         e.stopPropagation();
         /* the click that ends a press already saving is that same press */
         if (e.type === "click" && sv._lcPressed) { sv._lcPressed = false; return; }
         if (e.type === "pointerdown") { e.preventDefault(); sv._lcPressed = true; }
         if (sv.disabled) return;
-        sv.disabled = true; sv.textContent = "💾 Saving…";
-        if (window.lcDid && lcId) window.lcDid.mark(lcId, "save");   /* grid.saved — a proof reads it */
-        /* a cell still open is committed first, and its value given a beat to
-           reach the object — a click on 💾 right after typing saved the blank */
         var act = document.activeElement;
-        var typing = el.querySelector(".lc-dg-typing")
-          || (act && act !== document.body && el.contains(act) && act.isContentEditable ? act : null);
-        if (typing) typing.blur();
-        new Promise(function (res) { setTimeout(res, typing ? 400 : 0); }).then(function () {
-          return window.lcDatasetSave(dbSrc);
-        }).then(function (ch) {
-          if (window.lcGridSay && ch) window.lcGridSay(bindId, "✓ saved — " + ch.ins.length + " new, " + ch.upd.length + " changed, " + ch.del.length + " deleted");
-        }).catch(function (err) {
-          if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ not saved: " + err.message);
-          sv.disabled = false; sv.textContent = "💾 Save";
-        });
+        saveNow(el.querySelector(".lc-dg-typing")
+          || (act && act !== document.body && el.contains(act) && act.isContentEditable ? act : null));
       };
+      /* AUTOSAVE (Michel, 2026-10-17: "autosave should work as soon as it
+         looks reasonable"): a closed cell's change, a deletion, a new object
+         once it holds a value — a beat after the grid settles, never while a
+         cell is open; an empty new row waits for its first value */
+      if (dbR && st === "dirty" && dbCh) {
+        var act2 = document.activeElement;
+        var open = el.querySelector(".lc-dg-typing") || (act2 && act2 !== document.body && el.contains(act2) && act2.isContentEditable);
+        var blank = dbCh.ins.some(function (r) {
+          return !Object.keys(r).some(function (k) {
+            var f = model && model.fields[k];
+            return !(f && f.state) && k !== "_kind" && r[k] !== "" && r[k] != null;
+          });
+        });
+        clearTimeout(dbR._auto);
+        if (!open && !blank) dbR._auto = setTimeout(function () {
+          var c = window.lcDatasetChanges(dbSrc);
+          if (c && c.n && dbR.state !== "saving") saveNow(null);
+        }, 700);
+      }
       if (sv) { sv.addEventListener("pointerdown", doSave); sv.addEventListener("click", doSave); }
       if (U) {
         var uOk = el.querySelector(".lc-dg-unl-ok"), uName = el.querySelector(".lc-dg-unl-name");
@@ -1553,6 +1734,7 @@ Auto-included by docs/_layouts/default.html.
      it; the .chart variants live in chart.md. */
 
   if (window.lcRegisterUpgrader) {
+    window.lcRegisterUpgrader(".database", upgradeDatabase);
     window.lcRegisterUpgrader(".dataset", upgradeDataset);
     window.lcRegisterUpgrader(".datagrid", upgradeDatagridBound);
   }

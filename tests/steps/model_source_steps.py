@@ -15,7 +15,7 @@ def row_of(context, gid, name):
 
 @then('the grid "{gid}" has the columns "{cols}"')
 def step_cols(context, gid, cols):
-    ths = grid(context, gid).locator("thead th")
+    ths = grid(context, gid).locator("thead th[data-col]")   # the ⋯ gutter is no column
     expect(ths.first).to_be_visible(timeout=T)
     want = [c.strip() for c in cols.split(",")]
     got = [re.sub(r"\s*[↑↓]$", "", t.strip()).lower() for t in ths.all_inner_texts()]
@@ -176,6 +176,7 @@ def step_menu_on_screen(context):
 
 @when('I add a "{kind}" with New under "{gid}"')
 def step_new_pick(context, gid, kind):
+    context.db_mark = len(getattr(context, "db_calls", []))
     grid(context, gid).locator("button.lc-dg-new").click()
     menu = context.page.locator(".lc-dg-kinds")
     if menu.count():      # a class with subclasses asks which one
@@ -230,6 +231,7 @@ def step_cell_closed(context, col, name, gid):
 
 @when('I double click the "{col}" cell of "{name}" in "{gid}" and type "{text}"')
 def step_dbl_type(context, col, name, gid, text):
+    context.db_mark = len(getattr(context, "db_calls", []))
     cell = row_of(context, gid, name).locator("td.lc-dg-typed[data-col='" + col + "']")
     cell.dblclick()
     expect(cell).to_have_attribute("contenteditable", "true", timeout=T)
@@ -475,12 +477,21 @@ def step_busy_disc(context, pad_id):
     assert bg == "rgb(255, 255, 255)", bg
 
 
-@when('I open the first-cell verbs of "{name}" in "{gid}"')
-def step_first_cell_menu(context, name, gid):
-    td = row_of(context, gid, name).locator("td.lc-dg-rowmenu")
-    expect(td).to_be_visible(timeout=T)
-    b = td.bounding_box()
-    context.page.mouse.click(b["x"] + b["width"] - 10, b["y"] + b["height"] / 2)
+@then('the rows of "{gid}" wear a faint ⋯ in a gutter, and the first column holds only the name')
+def step_gutter(context, gid):
+    g = grid(context, gid)
+    b = g.locator("tbody tr").last.locator("td.lc-dg-gut .lc-dg-rowmenu")
+    expect(b).to_have_text("⋯", timeout=T)
+    context.page.mouse.move(0, 0)
+    op = float(b.evaluate("e => getComputedStyle(e).opacity"))
+    assert op < 0.7, "the ⋯ is not light: opacity %s" % op
+    first = g.locator("tbody tr").first.locator("td").nth(1)
+    assert "⌄" not in first.inner_text() and "⋯" not in first.inner_text(), first.inner_text()
+
+
+@when('I open the ⋯ of "{name}" in "{gid}"')
+def step_gutter_menu(context, name, gid):
+    row_of(context, gid, name).locator("td.lc-dg-gut .lc-dg-rowmenu").click()
     expect(context.page.locator(".lc-dg-menu")).to_be_visible(timeout=T)
 
 
@@ -636,6 +647,7 @@ def step_db_update(context, table, rid, dog):
 
 @when('I open the verbs of "{name}" in "{gid}" and delete it')
 def step_delete_row(context, name, gid):
+    context.db_mark = len(getattr(context, "db_calls", []))
     step_open(context, name, gid)
     context.page.locator(".lc-dg-menu button[data-verb='delete']").click()
 
@@ -668,13 +680,15 @@ def step_grid_offers(context, gid):
 @given("a database with the Lightcode setup and no author yet")
 def step_unl_db(context):
     import json as _j
-    st = context.unl = {"authors": [], "tables": {}, "calls": []}
+    st = context.unl = {"authors": [], "tables": {}, "calls": [], "space": "5f2c9a01b7e3",
+                        "keys": []}
 
     def handle(route):
         req = route.request
         fn = req.url.split("/rpc/")[-1].split("?")[0]
         a = _j.loads(req.post_data or "{}")
         st["calls"].append((fn, a))
+        st["keys"].append(req.headers.get("apikey"))
 
         def ok(v):
             route.fulfill(status=200, content_type="application/json",
@@ -690,14 +704,13 @@ def step_unl_db(context):
         if fn == "lc_ensure":
             if a["token"] not in st["authors"]:
                 return no("only the author makes tables")
-            t = st["tables"].setdefault(a["tbl"], {"cols": [], "rows": [], "next": 1,
-                                                    "share": a["tbl"] + "-5f2c9a01b7e3"})
+            t = st["tables"].setdefault(a["tbl"], {"cols": [], "rows": [], "next": 1})
             for c in a["cols"]:
                 if c["n"] not in t["cols"]:
                     t["cols"].append(c["n"])
-            return ok(t["share"])
+            return ok(st["space"])      # one unlisted name for the whole database
         t = st["tables"].get(a.get("tbl"))
-        if not t or t["share"] != a.get("share"):
+        if not t or a.get("share") not in (st["space"], t.get("share")):
             return no("no list by that name")
         if fn == "lc_read":
             return ok([dict(r, _change="insert") for r in t["rows"]])
@@ -748,7 +761,7 @@ def step_unl_made(context, tbl, cols):
 @then('the grid "{gid}" shows the name to share and my new author key')
 def step_unl_show(context, gid):
     g = grid(context, gid)
-    expect(g.locator("code.lc-dg-unl-show")).to_have_text("walks-5f2c9a01b7e3", timeout=T)
+    expect(g.locator("code.lc-dg-unl-show")).to_have_text("5f2c9a01b7e3", timeout=T)
     expect(g.locator(".lc-dg-unl-key code")).to_have_text(context.unl["authors"][0])
     expect(g.locator("input.lc-dg-unl-name")).to_have_count(0)
 
@@ -764,7 +777,7 @@ def step_unl_key_gone(context, gid):
     g = grid(context, gid)
     expect(g.locator(".lc-dg-unl-key")).to_have_count(0, timeout=T)
     expect(g.locator("button.lc-dg-unl-copy")).to_have_count(1)
-    expect(g.locator("code.lc-dg-unl-show")).to_have_text("walks-5f2c9a01b7e3")
+    expect(g.locator("code.lc-dg-unl-show")).to_have_text("5f2c9a01b7e3")
     assert context.page.evaluate("() => navigator.clipboard.readText()") == context.unl["authors"][0]
 
 
@@ -777,7 +790,7 @@ def step_unl_saved(context, tbl, dog):
     rows = context.unl["tables"][tbl]["rows"]
     assert [r["dog"] for r in rows] == [dog], rows
     saves = [a for f, a in context.unl["calls"] if f == "lc_save"]
-    assert saves and saves[-1]["share"] == "walks-5f2c9a01b7e3", saves
+    assert saves and saves[-1]["share"] == "5f2c9a01b7e3", saves
 
 
 def _unl_paste(context, gid, name):
@@ -792,7 +805,7 @@ def _unl_paste(context, gid, name):
 def step_unl_classmate(context, gid):
     context.page.evaluate("() => { localStorage.removeItem('lc_author_demo'); localStorage.removeItem('lc_unlisted_demo_walks'); }")
     context.page.reload(wait_until="domcontentloaded")
-    _unl_paste(context, gid, "walks-5f2c9a01b7e3")
+    _unl_paste(context, gid, "5f2c9a01b7e3")
 
 
 @then('the grid "{gid}" offers no name to share')
@@ -822,3 +835,56 @@ def step_save_once_mouse(context, gid):
     expect(b).to_be_enabled(timeout=T)
     box = b.bounding_box()
     context.page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+
+
+
+@given('the shelter database holds a "{tbl}" table with "{dog}"')
+def step_db_holds(context, tbl, dog):
+    context.unl["tables"][tbl] = {"cols": ["dog", "walker"], "next": 2,
+                                  "rows": [{"id": 1, "dog": dog, "walker": "Ana"}]}
+
+
+@then('the page asked for nothing under "{gid}"')
+def step_asked_nothing(context, gid):
+    g = grid(context, gid)
+    expect(g.locator("input.lc-dg-unl-name")).to_have_count(0)
+    expect(g.locator(".lc-dg-unl")).not_to_contain_text("unlisted")
+
+
+@then('the database was read with the page\'s name and the key from databases.yml, never from the page')
+def step_read_with(context):
+    reads = [a for f, a in context.unl["calls"] if f == "lc_read"]
+    assert reads and all(r["share"] == "5f2c9a01b7e3" and r["tbl"] == "walk" for r in reads), reads
+    assert context.unl["keys"] and all(k == "sb_publishable_yml" for k in context.unl["keys"]), context.unl["keys"]
+    src = context.page.evaluate("() => document.documentElement.outerHTML")
+    assert "apikey=\"sb_publishable_yml\"" not in src.split("lc-db-table")[0], "the key showed in the page"
+
+
+@then('the author is told the database\'s name to put on the "{db}" line under "{gid}"')
+def step_author_hint(context, db, gid):
+    g = grid(context, gid)
+    expect(g.locator("code.lc-dg-unl-show")).to_have_text('unlisted="5f2c9a01b7e3"', timeout=T)
+    expect(g.locator(".lc-dg-unl")).to_contain_text(db)
+
+
+
+@then('the corner of "{gid}" holds ＋, ↻ and the save state, and no footer')
+def step_corner(context, gid):
+    g = grid(context, gid)
+    c = g.locator(".lc-dg-corner")
+    expect(c.locator("button.lc-dg-new")).to_have_text("＋", timeout=T)
+    expect(c.locator("button.lc-dg-refresh")).to_have_count(1)
+    expect(c.locator("button.lc-dg-save")).to_have_count(1)
+    expect(g.locator(".lc-dg-foot")).to_have_count(0)
+    gb, cb = g.bounding_box(), c.bounding_box()
+    assert cb["y"] - gb["y"] < 20 and (gb["x"] + gb["width"]) - (cb["x"] + cb["width"]) < 20, (gb, cb)
+    context.page.mouse.move(0, 0)
+    op = float(c.locator("button.lc-dg-refresh").evaluate("e => getComputedStyle(e).opacity"))
+    assert op < 0.5, "↻ shows before hovering: %s" % op
+
+
+@then("nothing is sent while the new row is blank")
+def step_nothing_blank(context):
+    context.page.wait_for_timeout(1500)
+    sent = [c for c in context.db_calls[context.db_mark:] if c["method"] != "GET"]
+    assert not sent, sent

@@ -424,9 +424,10 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I wait for the page to be interactive
     Then the "card" pad's busy mark is a white disc
 
-  Scenario: A class with no state still offers its verbs, from the row's first cell
+  Scenario: A class with no state offers its verbs from a light ⋯ in the row's gutter
     Michel, 2026-10-16: "if there is no state, there still should be
-    actions to call — maybe the first column should have the ⌄".
+    actions to call". 2026-10-17: "I would prefer a gutter with a simple
+    discrete/light but intuitive way to open the method picklist."
 
     Given the GitHub contents API serves "courses/demo/module_06/walkers.md" with the document:
       """
@@ -454,7 +455,8 @@ Feature: A class wears a dataset — the grid dresses the rows
       """
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/walkers.md"
     And I wait for the page to be interactive
-    And I open the first-cell verbs of "Ada" in "walkers"
+    Then the rows of "walkers" wear a faint ⋯ in a gutter, and the first column holds only the name
+    When I open the ⋯ of "Ada" in "walkers"
     Then the menu offers "walk" and ends with "Delete"
     When I press the verb "walk"
     Then the dataset "volunteers" has "Ada" with 1 walks
@@ -527,10 +529,13 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the grid "walk_list" shows "Fern" and "Scout"
     And the sheet was asked for its tab "Sheet1"
 
-  Scenario: A class on a database table — empty grid, New, Save, edit, delete, each sent once
+  Scenario: A class on a database table — empty grid, New, edit, delete, each saved by itself, once
     Michel, 2026-10-17: "I create the db myself, define the Family class,
     read the empty grid with the class, students add new objects (+New and
-    a form), then save and refresh. They don't need to learn SQL."
+    a form), then save and refresh. They don't need to learn SQL." Then:
+    "autosave should work as soon as it looks reasonable", with "a + round
+    little button", a refresh "better visible on hovering" and "a similar,
+    more stable and visual one for save" at the grid's top right corner.
 
     Given a database table "families" that is empty
     And the GitHub contents API serves "courses/demo/module_06/db.md" with the document:
@@ -565,16 +570,15 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I wait for the page to be interactive
     Then the grid "families" has the columns "family, dog, stage" and no row
     And Save under "families" is off
+    And the corner of "families" holds ＋, ↻ and the save state, and no footer
     When I add a "Family" with New under "families"
-    And I type "Nguyen" and press Enter, without clicking
-    And I press Save under "families"
+    Then nothing is sent while the new row is blank
+    When I type "Nguyen" and press Enter, without clicking
     Then the table "families" received an insert of "Nguyen" at stage "asked", with its key
     And the grid "families" shows the row "Nguyen" read back from the table
     When I double click the "dog" cell of "Nguyen" in "families" and type "Biscuit"
-    And I press Save under "families"
     Then the table "families" received an update of row 1 with dog "Biscuit"
     When I open the verbs of "Nguyen" in "families" and delete it
-    And I press Save under "families"
     Then the table "families" received a delete of row 1
 
 
@@ -649,3 +653,70 @@ Feature: A class wears a dataset — the grid dresses the rows
     And the grid "walks" offers no name to share
     When a stranger pastes "walks-000000000000" under "walks"
     Then the grid "walks" says "no list by that name", with no error column
+
+  Scenario: A model on a .database — each class its table, the name in the page, the key in databases.yml
+    Michel, 2026-10-17 (register P3): ".database to set the connection; a model
+    with database= where class names match table names; the unlisted key in
+    the starter code, students use it directly; the api-key not in the md."
+
+    Given a database with the Lightcode setup and no author yet
+    And the shelter database holds a "walk" table with "Biscuit"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/model_db.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Walk(Object):
+          dog = Attr(str)
+          walker = Attr(str)
+      ```
+      {: .model database="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/model_db.md"
+    And I wait for the page to be interactive
+    Then the grid "walks" shows the row "Biscuit" read back from the table
+    And the page asked for nothing under "walks"
+    And the database was read with the page's name and the key from databases.yml, never from the page
+
+  Scenario: On the author's device, a .database without its name says which one to put
+    Given a database with the Lightcode setup and no author yet
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/model_new.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter }
+
+      ```python
+      class Walk(Object):
+          dog = Attr(str)
+          walker = Attr(str)
+      ```
+      {: .model database="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/model_new.md"
+    And I wait for the page to be interactive
+    And I say I am the author under "walks", with no key yet
+    Then the database has me as its author, and a table "walk" made of "dog, walker"
+    And the author is told the database's name to put on the "shelter" line under "walks"

@@ -3983,6 +3983,23 @@ _inject_store()
     var sourced = [];
     code = code.replace(/^([ \t]*)class\s+(\w+)\s*\(([^)]*?),\s*source\s*=\s*(["'])([^"']+)\4\s*\)\s*:/mg,
       function (_, ind, name, bases, q, src) { sourced.push([name, src]); return ind + "class " + name + "(" + bases + "):"; });
+    /* A MODEL ON A DATABASE (Michel, 2026-10-17, register P3):
+       {: .model database="shelter" } — each class of Object is its table
+       (Walk ↔ walk, FosterFamily ↔ foster_family); source= names the table
+       only when it is named otherwise. No dataset to declare. */
+    var dbAttr = el.getAttribute("database");
+    if (dbAttr && window.lcDatabaseTable) {
+      sourced = sourced.map(function (p) {
+        return document.getElementById(p[1]) ? p : [p[0], window.lcDatabaseTable(dbAttr, p[1], el)];
+      });
+      code.replace(/^class\s+(\w+)\s*\(\s*Object\s*\)\s*:/mg, function (_, name) {
+        if (!sourced.some(function (p) { return p[0] === name; })) {
+          var table = name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+          sourced.push([name, window.lcDatabaseTable(dbAttr, table, el)]);
+        }
+        return _;
+      });
+    }
     var bind = sourced.map(function (p) { return "\n_lc_source_bind(" + JSON.stringify(p[0]) + ", " + JSON.stringify(p[1]) + ")"; }).join("");
     sourced.forEach(function (p) {
       var L = window.lcDatasetListeners = window.lcDatasetListeners || {};

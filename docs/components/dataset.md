@@ -200,43 +200,61 @@ A sentence can also read the **first** row of any list, not only count
 them: **{= todos.first.title }** is the first todo above
 (`{= todos.first.title }`).
 
-## A list in a database — the class makes its table
+## A list in a database — one `.database`, a table per class
 
-A Supabase table's address, `https://<project>.supabase.co/rest/v1/<table>`,
-with the project's public key in `apikey="…"`, is a list kept in a
-database. Under a class's grid, **➕ New** makes an object, **💾 Save (n)**
-sends only what changed (new, edited, deleted), **↻ Refresh** reads the
-table again. Nobody writes a line of database code.
+A `.database` line names a database by a short name; the link's scheme
+says what kind it is. A model on it makes each class a table of the same
+name (`Walk` ↔ `walk`, `FosterFamily` ↔ `foster_family`; `source=` only
+when the table is named otherwise). Nobody writes a line of database code.
 
 ````markdown
-[the walks](https://<project>.supabase.co/rest/v1/walks)
-{: .dataset #walks_db apikey="sb_publishable_…" unlisted="true" }
+[the shelter](supabase://shelter)
+{: .database #shelter unlisted="…" }
 
 ```python
-class Walk(Object, source="walks_db"):
+class Walk(Object):
     dog = Attr(str)
     walker = Attr(str)
     hour = Attr(str)
 ```
-{: .model }
+{: .model database="shelter" }
 
 [the walks](#)
 {: .datagrid source="Walk" #walks }
 ````
 
-With `unlisted="true"` the table is shared by an **unlisted name**, like a
-document shared "anyone with the link". The database is set up once (one
-SQL script); after that, the class makes its own table: on the author's
-device, which holds the author key, the class creates the table if it does
-not exist and adds the columns it gains. The grid then shows the table's
-unlisted name, to share. Everyone else pastes that name once, under the
-grid. The key and the name stay on the device, never in the page; the
-tables answer nobody who lacks the name.
+No address and no key in the page: a `databases.yml` in the course folder
+(or any folder above the page) gives them, for every page below it.
+
+```yaml
+shelter:
+  url: https://<project>.supabase.co
+  key: sb_publishable_…
+```
+
+`unlisted="…"` is the database's unlisted name, like a document shared
+"anyone with the link": whoever has the page reads and writes, nobody else
+sees the tables. The database is set up once (one SQL script); after that
+the author's device, which holds the author key, lets each class create its
+table and add the columns it gains, and tells the author the name to write
+on the `.database` line.
+
+At the grid's top right: **＋** makes an object, the save state shows
+**✓** saved, **●** waiting, **⟳** saving, **⚠** refused (tap to retry), and
+**↻** (on hover) reads the tables again. Changes save **by themselves**: a
+closed cell, a deletion, a new object once it holds a value. A class with no
+state opens its methods from a light **⋯** in each row's gutter.
 
 The table keeps its own notes on every line, in columns whose names start
 with `_` (when it last changed, how, from where): the page never shows
 them and never sends them. When the database cannot be reached, the grid
 says so under its columns, and stays ready.
+
+The same line serves a warehouse: `[the warehouse](databricks://acme/<warehouse id>)`
+`{: .database #warehouse }`, and a SQL fence with `{: .dataset #arr database="warehouse" }`
+runs there (see Databricks above; the proxy root comes from `databases.yml`,
+`/dbx` by default). A lone dataset may also name its table itself:
+`[walks](supabase://shelter/walk)` `{: .dataset #walks unlisted="…" }`.
 
 ## Clickable rows
 
@@ -462,8 +480,10 @@ Feature: A class wears a dataset
 | `.dataset` | `#id` | snake_case | Registers data under this key |
 | `.dataset` | _(applied to a link)_ | `https://…` href | Fetches JSON or CSV from the URL |
 | `.dataset` | `dbx="…"` + `host="…"` | warehouse id, proxy root (default `/dbx`) | The fence is a SQL statement run on a Databricks warehouse with this device's token — see above |
-| `.dataset` | `apikey="…"` | a Supabase public key | The link is a database table: 💾 Save and ↻ Refresh under its class's grid |
-| `.dataset` | `unlisted="true"` | — | The table is made by the author's class and shared by an unlisted name, pasted once |
+| `.database` | _(applied to a link)_ | `supabase://<name>` · `databricks://<name>/<warehouse>` | A database by a short name; its address and key come from the folder's `databases.yml` |
+| `.database` | `unlisted="…"` | the database's unlisted name | Whoever has the page reads and writes its tables |
+| `.model` | `database="…"` | a `.database` id | Each class of the model is a table of the same name |
+| `.dataset` | `database="…"` | a `.database` id | A SQL fence runs on that database |
 | `.dataset` | `refresh="…"` | seconds (≥10) | Live mode: re-fetch on a timer (cache-busted); every bound grid/stat/chart repaints itself — no page reload |
 | `.model` | `class X(Object, source="…")` | dataset id | The dataset's rows become X's objects, its columns X's fields; X adds a `State` and verbs — and X is a dataset id itself |
 | `.datagrid` | `source="…"` | dataset id, or a class | Which dataset to display; a class dresses its rows: the state cell's ⌄ drops the row's verbs, typed cells, ➕ New |
