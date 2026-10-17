@@ -182,7 +182,14 @@ Auto-included by docs/_layouts/default.html.
   /* what a class's grid says when a verb or an edit is refused: one line
      under every grid bound to that class, gone after a few seconds */
   window.lcGridSay = function (cls, msg) {
-    document.querySelectorAll(".lc-datagrid[data-bind='" + cls + "']").forEach(function (g) {
+    /* …and under a grid of its base class (a Sprint in the walks), and under
+       a form showing one (Michel, 2026-10-18: "when I click run in the form,
+       there is no error message!") */
+    var at = [].slice.call(document.querySelectorAll(".lc-datagrid[data-bind], [data-lc-say]")).filter(function (g) {
+      var b = g.getAttribute("data-lc-say") || g.getAttribute("data-bind"), m = (window.lcModels || {})[b];
+      return b === cls || !!(m && (m.subs || []).indexOf(cls) >= 0);
+    });
+    at.forEach(function (g) {
       var s = g.querySelector(".lc-dg-say");
       if (!s) { s = document.createElement("div"); s.className = "lc-dg-say"; g.appendChild(s); }
       s.textContent = msg;
@@ -1524,7 +1531,12 @@ Auto-included by docs/_layouts/default.html.
         /* the ⌄: the row's verbs — a transition is live when the row's state
            is in its pre, grey otherwise (pressing a grey one says what it
            needs); plain verbs always; Delete last, born of Object */
-        var closeMenu = function () { document.querySelectorAll(".lc-dg-menu").forEach(function (m) { m.parentNode.removeChild(m); }); };
+        var closeMenu = function () {
+          document.querySelectorAll(".lc-dg-menu").forEach(function (m) {
+            m.parentNode.removeChild(m);
+            if (m._lcPub && lcId && window.lcMasterDetail) window.lcMasterDetail.publish(lcId, m._lcPub);
+          });
+        };
         var verbsMenu = function (td, e) {
           {
             e.stopPropagation();
@@ -1538,16 +1550,9 @@ Auto-included by docs/_layouts/default.html.
             var tr = td.parentNode;
             var key = row.obj != null ? "o:" + row.obj : "i:" + parseInt(td.getAttribute("data-row"), 10);
             /* A TAP IN THE GUTTER SELECTS FIRST (Michel, 2026-10-17): the row
-               becomes the selection — a bound form follows — then its verbs
-               open, on the row as redrawn */
-            if (!e._lcReopen && key !== selKey && lcId && window.lcMasterDetail) {
-              el.querySelectorAll("tbody tr").forEach(function (x) { x.classList.remove("lc-dg-selected"); });
-              tr.classList.add("lc-dg-selected");
-              selKey = key;
-              window.lcMasterDetail.publish(lcId, row);
-              setTimeout(function () { if (el._lcOpenVerbs) el._lcOpenVerbs(key); }, 150);
-              return;
-            }
+               becomes the selection at once; a bound form follows as the menu
+               closes (its repaint would take the menu with it) */
+            var pub = key !== selKey && lcId && window.lcMasterDetail ? row : null;
             el.querySelectorAll("tbody tr").forEach(function (x) { x.classList.remove("lc-dg-selected"); });
             tr.classList.add("lc-dg-selected");
             selKey = key;
@@ -1564,6 +1569,7 @@ Auto-included by docs/_layouts/default.html.
             var menu = document.createElement("div");
             menu.className = "lc-dg-menu";
             menu._lcFor = td;
+            menu._lcPub = pub;
             menu.innerHTML = items.map(function (it) {
               var dd = !it.label && window.lcDocOf ? window.lcDocOf(row._kind || bindId, it.n) : null;
               var label = it.label || ((dd && dd.icon ? dd.icon + " " : "") + (window.lcPrettifyKey ? window.lcPrettifyKey(it.n) : it.n));
@@ -1616,16 +1622,6 @@ Auto-included by docs/_layouts/default.html.
         el.querySelectorAll("td.lc-dg-gut").forEach(function (td) {
           td.addEventListener("click", function (e) { verbsMenu(td, e); });
         });
-        el._lcOpenVerbs = function (key) {
-          var tds = el.querySelectorAll("td.lc-dg-gut");
-          for (var i = 0; i < tds.length; i++) {
-            var ix = parseInt(tds[i].getAttribute("data-row"), 10), r = sorted[ix];
-            if (r && (r.obj != null ? "o:" + r.obj : "i:" + ix) === key) {
-              verbsMenu(tds[i], { _lcReopen: true, stopPropagation: function () {} });
-              return;
-            }
-          }
-        };
         /* ➕ New: the class itself, or — when the page declares subclasses —
            a pick of the class and each one; the new row gets selected
            (Michel, 2026-10-16) */

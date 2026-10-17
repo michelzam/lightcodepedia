@@ -945,6 +945,142 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I double click the "slot" cell of "Ben" in "walks" and type "Ana at 10:30"
     Then the table "walk" holds a walk by "Ana" at "10:30", and no "slot" column
 
+  Scenario: A setter under another name leaves the column read-only, and says how to name it
+    Michel, 2026-10-18, editing Who from the grid: "'Walk' object has no
+    attribute 'who'" — his setter was def setwho under @who.setter, which
+    Python makes a second property; who stayed read-only, yet its cells
+    opened. They stay closed now, and the grid says how to name it.
+
+    Given a database with the Lightcode setup and no author yet
+    And I am the shelter's author on this device
+    And the shelter's "walk" table holds a walk by "Ben" at "9:00"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/badset.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Walk(Object):
+          walker = Attr(str)
+          hour = Attr(str)
+
+          @property
+          def who(self):
+              return self.walker + " at " + self.hour
+
+          @who.setter
+          def setwho(self, value):
+              self.walker = value
+      ```
+      {: .model source="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/badset.md"
+    And I wait for the page to be interactive
+    Then the "who" cells of "walks" stay closed, and the grid says "who stays read-only: its setter is named setwho"
+
+  Scenario: A column made while its attribute was text follows the class to a number
+    Michel, 2026-10-18: "Refresh in a grid should also check the attribute
+    types and operate the refactoring… laps was a str for a second before I
+    made it int" — run() said "unsupported types for __add__: 'str', 'int'".
+    The author's table retypes the column (a blank becomes none, a value
+    that does not convert is named); a blank number reads as its default.
+
+    Given a database with the Lightcode setup and no author yet
+    And I am the shelter's author on this device
+    And the shelter's "walk" table holds a text "laps" column, blank for "Sp" and "3" for "Ann"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/laps.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Walk(Object):
+          walker = Attr(str)
+
+      class Sprint(Walk):
+          '''🏃 A run with the dog.'''
+          laps = Attr(int)
+
+          def run(self):
+              self.laps += 1
+      ```
+      {: .model source="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/laps.md"
+    And I wait for the page to be interactive
+    Then the table "walk" made "laps" a number: none for "Sp", 3 for "Ann"
+    When I run "run" on the walk by "Sp" in "walks"
+    Then the table "walk" saved 1 laps for "Sp", and the grid says nothing wrong
+
+  Scenario: A method that fails, pressed in the form, says why under the form
+    Michel, 2026-10-18: "and when I click run in the form, there is no
+    error message!" — the error went to grids bound to Sprint, and there
+    were none: the walks grid is Walk's. It is said under the form, and
+    under the base class's grid.
+
+    Given a database with the Lightcode setup and no author yet
+    And I am the shelter's author on this device
+    And the shelter's "walk" table holds a text "laps" column, blank for "Sp" and "3" for "Ann"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/fail.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Walk(Object):
+          walker = Attr(str)
+
+      class Sprint(Walk):
+          '''🏃 A run with the dog.'''
+          laps = Attr(int)
+
+          def run(self):
+              raise ValueError("too fast for the dog")
+      ```
+      {: .model source="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+
+      [the walk](#)
+      {: .form master="walks" #walk_card }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/fail.md"
+    And I wait for the page to be interactive
+    And I click the row "Sp" in "walks"
+    And I tap "Run" in the form "walk_card"
+    Then the form "walk_card" says "too fast for the dog"
+
   Scenario: A table follows its class safely — a rename keeps its data, a leftover hides, 🧹 drops it
     Michel, 2026-10-17 (register P5): "what happens if an attribute is
     renamed? deleted? would that change the table's structure?" — never

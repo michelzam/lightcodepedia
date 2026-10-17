@@ -3013,6 +3013,13 @@ def _lc_model_spec_push(cls, subs=True):
         if n not in fields:
             hs = getattr(js.window, "lcHasSetter", None)
             ro = not (hs is not None and bool(hs(cls.__name__, n)))
+            bs = getattr(js.window, "lcBadSetter", None)
+            bad = str(bs(cls.__name__, n) or "") if (ro and bs is not None) else ""
+            if bad and (cls.__name__, n, bad) not in _LC_SETTER_SAID:
+                # @who.setter over def setwho: who stays read-only — said once, plainly
+                _LC_SETTER_SAID.append((cls.__name__, n, bad))
+                _lc_say(cls.__name__, "⚠️ " + n + " stays read-only: its setter is named " + bad
+                        + " — under @" + n + ".setter write def " + n + "(self, value):")
             fields[n] = {"t": "str", "enum": None, "ro": ro, "state": False, "src": False,
                          "hidden": False, "ref": None, "was": None, "computed": True}
     trans = {}
@@ -3213,7 +3220,10 @@ def _lc_source_sync(src):
             _lc_row_mark(row, nm)
             g[nm] = inst
         inst._js = row
-        for f in cls._lc_fields:
+        # a subclass's row reads its own attributes too (a Sprint's laps) — on
+        # top of the base class's, which hold the table's id
+        own = [f for f in (getattr(k, "_lc_fields", None) or []) if not any(f.n == b.n for b in cls._lc_fields)]
+        for f in list(cls._lc_fields) + own:
             v = getattr(row, f.n, None)
             if v is None:
                 continue
@@ -3225,6 +3235,11 @@ def _lc_source_sync(src):
                 if raw is None:
                     raw = inst._lc_raw = {}
                 raw[f.n] = None if ref is not None else v
+                continue
+            if v == "" and f.t in ("int", "float", "bool"):
+                # a blank number is the attribute's default, never "" (Michel,
+                # 2026-10-18: laps read "" from a column made while it was str)
+                inst._v[f.n] = f.d
                 continue
             try:
                 inst._v[f.n] = f._coerce(v)
@@ -3245,6 +3260,9 @@ def _lc_source_sync(src):
                     _lc_source_sync(s2)
         finally:
             _LC_RESYNC[0] = False
+
+
+_LC_SETTER_SAID = []
 
 
 def _lc_say(cls_name, msg):
@@ -4160,8 +4178,12 @@ _inject_store()
         for (var b = i - 1; b >= 0 && /^\s*@/.test(lines[b]); b--) {
           if (/^\s*@property\s*$/.test(lines[b]) && DOCS[cur].props.indexOf(f[1]) < 0) DOCS[cur].props.push(f[1]);
           /* @who.setter: the column is typed in, through the setter */
+          /* …and only when its def keeps the property's name: @who.setter over
+             def setwho makes a second property, who stays read-only (Michel,
+             2026-10-18) — that slip is kept, to be said in plain words */
           var st = /^\s*@(\w+)\.setter\s*$/.exec(lines[b]);
-          if (st) (DOCS[cur].setters = DOCS[cur].setters || {})[st[1]] = 1;
+          if (st && st[1] === f[1]) (DOCS[cur].setters = DOCS[cur].setters || {})[st[1]] = 1;
+          else if (st) (DOCS[cur].badSetters = DOCS[cur].badSetters || {})[st[1]] = f[1];
         }
       }
     });
@@ -4176,6 +4198,12 @@ _inject_store()
   };
   /* does a property of the class (or a base) have a setter — MicroPython's
      property does not say, the source does */
+  /* a setter written under another name: what it was called, or "" */
+  window.lcBadSetter = function (cls, prop) {
+    var d = DOCS[cls], n = 0;
+    while (d && n++ < 8) { if (d.badSetters && d.badSetters[prop]) return d.badSetters[prop]; d = DOCS[d.base]; }
+    return "";
+  };
   window.lcHasSetter = function (cls, prop) {
     var d = DOCS[cls], n = 0;
     while (d && n++ < 8) { if (d.setters && d.setters[prop]) return true; d = DOCS[d.base]; }

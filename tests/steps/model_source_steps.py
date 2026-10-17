@@ -715,7 +715,20 @@ def step_unl_db(context):
                         r[c["n"]] = r.pop(c["was"], None)
                 if c["n"] not in t["cols"]:
                     t["cols"].append(c["n"])
-                t.setdefault("types", {})[c["n"]] = c.get("t", "str")
+                # as Postgres: a type changed in the class retypes the column
+                typ = c.get("t", "str") if c.get("t") in ("int", "float", "bool") else "str"
+                old_t = t.setdefault("types", {}).get(c["n"])
+                if old_t is not None and old_t != typ and typ in ("int", "float"):
+                    for r in t["rows"]:
+                        v = r.get(c["n"])
+                        if v is None or str(v).strip() == "":
+                            r[c["n"]] = None
+                            continue
+                        try:
+                            r[c["n"]] = int(v) if typ == "int" else float(v)
+                        except ValueError:
+                            return no(c["n"] + " holds a value that is not " + typ + ", fix it in the grid, then ↻")
+                t["types"][c["n"]] = typ
             return ok(st["space"])      # one unlisted name for the whole database
         if fn == "lc_drop":
             if a["token"] not in st["authors"]:
@@ -1298,3 +1311,65 @@ def step_db_walk_saved(context, tbl, who, hour, col):
     assert col not in t["cols"], t["cols"]
     saves = [a for f, a in context.unl["calls"] if f == "lc_save"]
     assert not any(col in r for x in saves for r in x["ins"] + x["upd"]), saves
+
+
+@then('the "{col}" cells of "{gid}" stay closed, and the grid says "{text}"')
+def step_cells_closed_say(context, col, gid, text):
+    g = grid(context, gid)
+    expect(g.locator("tbody tr").first).to_be_visible(timeout=T)
+    expect(g.locator(".lc-dg-say")).to_contain_text(text, timeout=T)
+    assert g.locator("td.lc-dg-typed[data-col='" + col + "']").count() == 0, "the cells open"
+
+
+@given('the shelter\'s "{tbl}" table holds a text "{col}" column, blank for "{who}" and "{b}" for "{who2}"')
+def step_db_text_col(context, tbl, col, who, b, who2):
+    a = ""
+    context.unl["tables"][tbl] = {"cols": ["walker", col, "_sub"], "next": 3,
+                                  "types": {"walker": "str", col: "str"},
+                                  "rows": [{"id": 1, "walker": who, col: a, "_sub": "Sprint"},
+                                           {"id": 2, "walker": who2, col: b, "_sub": "Sprint"}]}
+
+
+@then('the table "{tbl}" made "{col}" a number: none for "{who}", {n:d} for "{who2}"')
+def step_db_retyped(context, tbl, col, who, n, who2):
+    t = context.unl["tables"][tbl]
+    for _ in range(50):
+        if t["types"].get(col) == "int":
+            break
+        context.page.wait_for_timeout(200)
+    rows = {r["walker"]: r.get(col) for r in t["rows"]}
+    assert t["types"].get(col) == "int" and rows[who] is None and rows[who2] == n, (t["types"], rows)
+
+
+@when('I run "{verb}" on the walk by "{who}" in "{gid}"')
+def step_press_verb(context, verb, who, gid):
+    row_of(context, gid, who).locator("td.lc-dg-gut .lc-dg-rowmenu").click()
+    context.page.locator(".lc-dg-menu button[data-verb='" + verb + "']").click()
+
+
+@then('the table "{tbl}" saved {n:d} {col} for "{who}", and the grid says nothing wrong')
+def step_db_saved_n(context, tbl, n, col, who):
+    t = context.unl["tables"][tbl]
+    for _ in range(60):
+        r = [x for x in t["rows"] if x.get("walker") == who][0]
+        if r.get(col) == n:
+            break
+        context.page.wait_for_timeout(250)
+    else:
+        raise AssertionError(str(t["rows"]))
+    says = grid(context, "walks").locator(".lc-dg-say")
+    assert not says.count() or "⚠" not in says.first.inner_text(), says.first.inner_text()
+
+
+@when('I tap "{verb}" in the form "{fid}"')
+def step_form_press(context, verb, fid):
+    b = context.page.locator("[data-lc-id='" + fid + "']").locator("..").locator(".lc-form-verbs button", has_text=verb).first
+    expect(b).to_be_visible(timeout=T)
+    b.click()
+
+
+@then('the form "{fid}" says "{text}"')
+def step_form_says(context, fid, text):
+    # said in the form's own frame (the one that holds its verbs), not only under a grid
+    f = context.page.locator("[data-lc-say]:has([data-lc-id='" + fid + "']), [data-lc-id='" + fid + "'][data-lc-say]").first
+    expect(f.locator(".lc-dg-say").first).to_contain_text(text, timeout=T)

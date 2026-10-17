@@ -427,6 +427,7 @@ Auto-included by docs/_layouts/default.html.
       bar.appendChild(b);
     });
     bodyEl.parentNode.appendChild(bar);
+    bodyEl.parentNode.setAttribute("data-lc-say", cls);   /* a verb's refusal or error is said here too */
   }
 
   /* what the card's grid was built for: the same fields under the same
