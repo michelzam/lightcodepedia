@@ -3984,6 +3984,7 @@ _inject_store()
   var DOCS = window.lcDocs = window.lcDocs || {};
   var EMOJI = /^((?:\p{Extended_Pictographic}|\p{Emoji_Presentation})(?:\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})|[\u{1F3FB}-\u{1F3FF}])*)\s*([\s\S]*)$/u;
   function docSplit(t) {
+    t = String(t).trim();   /* """ 💰 Buys time""" — a space before the emoji is fine (Michel, 2026-10-17) */
     var m = EMOJI.exec(t);
     return m ? { icon: m[1], text: m[2].trim() } : { icon: "", text: t.trim() };
   }

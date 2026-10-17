@@ -765,7 +765,7 @@ Feature: A class wears a dataset — the grid dresses the rows
     Michel, 2026-10-17 (register P4): "how to add icons/emojis to methods
     without loading too much the code?" — a one-line docstring; "add it also
     for the class, using it in button actions and in the grid's icon,
-    replacing the grid generic emoji".
+    replacing the grid generic emoji". A space before the emoji is fine.
 
     Given the GitHub contents API serves "courses/demo/module_06/icons.md" with the document:
       """
@@ -782,7 +782,7 @@ Feature: A class wears a dataset — the grid dresses the rows
       class Walker(Object, source="volunteers"):
           '''🦮 A volunteer who walks the dogs.'''
           def walk(self):
-              '''🐾 Count one more walk.'''
+              ''' 🐾 Count one more walk.'''
               self.walks = self.walks + 1
       ```
       {: .model }
