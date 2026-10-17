@@ -438,7 +438,19 @@ Auto-included by docs/_layouts/default.html.
      gone ones by theirs — then the table is read again, its truth (ids,
      defaults) replacing the page's guess */
   window.lcDatasetSave = function (id) {
-    var r = window.lcRemote[id], ch = window.lcDatasetChanges(id);
+    var r = window.lcRemote[id];
+    /* a subclass's row needs _sub (Michel, 2026-10-17: a Sprint made from the
+       pad's class came back a Walk) — no name typed letter by letter, so the
+       author's save may add it */
+    var u0 = r && r.unl, a0 = u0 && lsGet(u0.akey);
+    if (a0 && u0.share && u0.tcols && !u0.tcols._sub && !u0._subTried
+        && (window.lcDatasets[id] || []).some(function (x) { return x && x._sub; })) {
+      u0._subTried = true;
+      return u0.rpc("lc_ensure", { token: a0, tbl: u0.tbl, cols: [{ n: "_sub", t: "str" }] })
+        .then(function () { u0.tcols._sub = 1; }, function () {})
+        .then(function () { return window.lcDatasetSave(id); });
+    }
+    var ch = window.lcDatasetChanges(id);
     if (!r || !ch) return Promise.resolve(null);
     /* a blank cell is the table's null (Michel, 2026-10-17: a new Sprint with
        its speed still blank sent "" to a number column — refused, and the

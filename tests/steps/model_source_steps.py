@@ -1277,3 +1277,24 @@ def step_gutter_selects(context, who, gid):
     expect(context.page.locator(".lc-dg-menu button[data-verb='delete']")).to_be_visible(timeout=T)
     context.page.keyboard.press("Escape")
     context.page.mouse.click(5, 5)
+
+
+@given('the shelter\'s "{tbl}" table holds a walk by "{who}" at "{hour}"')
+def step_db_walk_at(context, tbl, who, hour):
+    context.unl["tables"][tbl] = {"cols": ["walker", "hour"], "next": 2,
+                                  "types": {"walker": "str", "hour": "str"},
+                                  "rows": [{"id": 1, "walker": who, "hour": hour}]}
+
+
+@then('the table "{tbl}" holds a walk by "{who}" at "{hour}", and no "{col}" column')
+def step_db_walk_saved(context, tbl, who, hour, col):
+    t = context.unl["tables"][tbl]
+    for _ in range(50):
+        if any(r.get("walker") == who and r.get("hour") == hour for r in t["rows"]):
+            break
+        context.page.wait_for_timeout(200)
+    else:
+        raise AssertionError(str(t["rows"]))
+    assert col not in t["cols"], t["cols"]
+    saves = [a for f, a in context.unl["calls"] if f == "lc_save"]
+    assert not any(col in r for x in saves for r in x["ins"] + x["upd"]), saves

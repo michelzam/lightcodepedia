@@ -2924,6 +2924,12 @@ def _lc_publish_class(cls):
                 if isinstance(o, cls) and getattr(o, "_js", None) is not None:
                     for f in cls._lc_fields:
                         v = o._v.get(f.n, f.d)
+                        if f.n == "id" and db:
+                            # the table gives the id; a new object has none — never a
+                            # default (Michel, 2026-10-17: a new Sprint got id 0, read
+                            # as saved, never sent, gone on refresh)
+                            setattr(o._js, "id", o._v.get("id"))
+                            continue
                         if f.ref and db:
                             # the table keeps the id; an id not yet resolved stays as read
                             if v is not None and hasattr(v, "_v"):
@@ -3000,10 +3006,14 @@ def _lc_model_spec_push(cls, subs=True):
     # A COMPUTED COLUMN (Michel, 2026-10-17: "add an example of a computed
     # column — @property?"): each property is a read-only column, worked out
     # from the object, never stored
+    # — and one with a setter is edited through it (Michel, 2026-10-17:
+    # "go setter"): the setter writes the real attributes, those are saved
     props = _lc_props(cls)
     for n in props:
         if n not in fields:
-            fields[n] = {"t": "str", "enum": None, "ro": True, "state": False, "src": False,
+            hs = getattr(js.window, "lcHasSetter", None)
+            ro = not (hs is not None and bool(hs(cls.__name__, n)))
+            fields[n] = {"t": "str", "enum": None, "ro": ro, "state": False, "src": False,
                          "hidden": False, "ref": None, "was": None, "computed": True}
     trans = {}
     for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
@@ -4147,8 +4157,12 @@ _inject_store()
       if (f && cur) {
         var d2 = docAfter(i); if (d2 != null) DOCS[cur].m[f[1]] = docSplit(d2);
         /* @property on the line above: a computed column, in the order written */
-        for (var b = i - 1; b >= 0 && /^\s*@/.test(lines[b]); b--)
+        for (var b = i - 1; b >= 0 && /^\s*@/.test(lines[b]); b--) {
           if (/^\s*@property\s*$/.test(lines[b]) && DOCS[cur].props.indexOf(f[1]) < 0) DOCS[cur].props.push(f[1]);
+          /* @who.setter: the column is typed in, through the setter */
+          var st = /^\s*@(\w+)\.setter\s*$/.exec(lines[b]);
+          if (st) (DOCS[cur].setters = DOCS[cur].setters || {})[st[1]] = 1;
+        }
       }
     });
   }
@@ -4159,6 +4173,13 @@ _inject_store()
     while (d && n++ < 8) { chain.unshift(d); d = DOCS[d.base]; }
     chain.forEach(function (x) { (x.props || []).forEach(function (p) { if (out.indexOf(p) < 0) out.push(p); }); });
     return out;
+  };
+  /* does a property of the class (or a base) have a setter — MicroPython's
+     property does not say, the source does */
+  window.lcHasSetter = function (cls, prop) {
+    var d = DOCS[cls], n = 0;
+    while (d && n++ < 8) { if (d.setters && d.setters[prop]) return true; d = DOCS[d.base]; }
+    return false;
   };
   /* a class's doc, or a method's — found up the class's bases */
   window.lcDocOf = function (cls, method) {

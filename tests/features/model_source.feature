@@ -900,6 +900,51 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the question was "Delete this Walk: Biscuit · Ben · Biscuit & Ben?"
     And the table "walk" has no column "who"
 
+  Scenario: A property with a setter is a column you edit — the setter writes the real attributes
+    Michel, 2026-10-17: "what is happening if a property has a setter? Will
+    it still work in a column to be updated in a grid?" — "go setter". A
+    property alone stays read-only; with a setter its cell opens, the typed
+    value goes through the setter, and only the real attributes are saved.
+
+    Given a database with the Lightcode setup and no author yet
+    And I am the shelter's author on this device
+    And the shelter's "walk" table holds a walk by "Ben" at "9:00"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/slots.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Walk(Object):
+          walker = Attr(str)
+          hour = Attr(str)
+
+          @property
+          def slot(self):
+              return self.walker + " at " + self.hour
+
+          @slot.setter
+          def slot(self, text):
+              self.walker, _, self.hour = str(text).partition(" at ")
+      ```
+      {: .model source="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/slots.md"
+    And I wait for the page to be interactive
+    And I double click the "slot" cell of "Ben" in "walks" and type "Ana at 10:30"
+    Then the table "walk" holds a walk by "Ana" at "10:30", and no "slot" column
+
   Scenario: A table follows its class safely — a rename keeps its data, a leftover hides, 🧹 drops it
     Michel, 2026-10-17 (register P5): "what happens if an attribute is
     renamed? deleted? would that change the table's structure?" — never
