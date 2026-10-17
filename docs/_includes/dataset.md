@@ -979,21 +979,22 @@ Auto-included by docs/_layouts/default.html.
       var unlBar = "";
       if (U) {
         unlBar = "<div class='lc-dg-unl'>";
+        /* compact (Michel, 2026-10-17: "too many keys still there!!!"): the
+           author sees the name to share on one line; a new author key shows
+           once and leaves when copied; a newcomer sees one field — the
+           author's field takes its place, never sits beside it */
         if (U.share && U.author)
-          unlBar += "<span>🔗 unlisted name <code class='lc-dg-unl-show'>" + esc(U.share) + "</code></span>"
-            + "<button class='lc-dg-btn lc-dg-unl-copy' type='button' data-copy='" + esc(U.share) + "'>📋 Copy</button>"
-            + "<span class='lc-dg-unl-note'>✍️ you are the author: share this name with the class</span>";
+          unlBar += "<span>🔗 <code class='lc-dg-unl-show' title='the unlisted name — share it with the class'>" + esc(U.share) + "</code></span>"
+            + "<button class='lc-dg-btn lc-dg-unl-copy' type='button' data-copy='" + esc(U.share) + "' title='copy the name, to share it with the class'>📋 Copy</button>";
         if (U.newKey)
-          unlBar += "<span class='lc-dg-unl-key'>🔑 your author key <code>" + esc(U.newKey) + "</code></span>"
-            + "<button class='lc-dg-btn lc-dg-unl-copy' type='button' data-copy='" + esc(U.newKey) + "'>📋 Copy</button>"
-            + "<span class='lc-dg-unl-note'>keep it safe: it makes tables, from another device too</span>";
+          unlBar += "<span class='lc-dg-unl-key'>🔑 your author key, shown once — keep it: <code>" + esc(U.newKey) + "</code></span>"
+            + "<button class='lc-dg-btn lc-dg-unl-copy lc-dg-unl-keycopy' type='button' data-copy='" + esc(U.newKey) + "'>📋 Copy</button>";
         if (U.need)
-          unlBar += "<label>🔗 this list is shared by an unlisted name — paste it "
-            + "<input class='lc-dg-unl-name' type='text' autocomplete='off' spellcheck='false' aria-label='the list&#39;s unlisted name'></label>"
-            + "<button class='lc-dg-btn lc-dg-unl-ok' type='button'>OK</button>"
-            + "<button class='lc-dg-unl-me' type='button'>✍️ I'm the author</button>"
-            + "<span class='lc-dg-unl-auth' hidden><input class='lc-dg-unl-akey' type='password' autocomplete='off' placeholder='your author key — empty makes one' aria-label='author key'>"
-            + "<button class='lc-dg-btn lc-dg-unl-claim' type='button'>OK</button></span>";
+          unlBar += "<span class='lc-dg-unl-ask'><input class='lc-dg-unl-name' type='text' autocomplete='off' spellcheck='false' placeholder='🔗 the list&#39;s name' aria-label='the list&#39;s unlisted name'>"
+            + "<button class='lc-dg-btn lc-dg-unl-ok' type='button'>OK</button></span>"
+            + "<span class='lc-dg-unl-auth' hidden><input class='lc-dg-unl-akey' type='password' autocomplete='off' placeholder='🔑 author key — empty makes one' aria-label='author key'>"
+            + "<button class='lc-dg-btn lc-dg-unl-claim' type='button'>OK</button></span>"
+            + "<button class='lc-dg-unl-me' type='button'>✍️ I'm the author</button>";
         unlBar += "</div>";
       }
       if (srcErr) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(srcErr) + "</p>";
@@ -1240,7 +1241,13 @@ Auto-included by docs/_layouts/default.html.
         if (uOk) uOk.addEventListener("click", function (e) { e.stopPropagation(); take(); });
         if (uName) uName.addEventListener("keydown", function (e) { e.stopPropagation(); if (e.key === "Enter") take(); });
         var uMe = el.querySelector(".lc-dg-unl-me"), uAuth = el.querySelector(".lc-dg-unl-auth");
-        if (uMe) uMe.addEventListener("click", function (e) { e.stopPropagation(); uAuth.hidden = !uAuth.hidden; });
+        var uAsk = el.querySelector(".lc-dg-unl-ask");
+        if (uMe) uMe.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var author = uAuth.hidden;
+          uAuth.hidden = !author; uAsk.hidden = author;
+          uMe.textContent = author ? "🔗 I have the list's name" : "✍️ I'm the author";
+        });
         var uClaim = el.querySelector(".lc-dg-unl-claim"), uKey = el.querySelector(".lc-dg-unl-akey");
         if (uKey) uKey.addEventListener("keydown", function (e) { e.stopPropagation(); });
         if (uClaim) uClaim.addEventListener("click", function (e) {
@@ -1261,7 +1268,16 @@ Auto-included by docs/_layouts/default.html.
           b.addEventListener("click", function (e) {
             e.stopPropagation();
             var v = b.getAttribute("data-copy");
-            var done = function () { b.textContent = "✓ Copied"; };
+            var done = function () {
+              b.textContent = "✓ Copied";
+              /* the author key, once copied, leaves the screen */
+              if (b.classList.contains("lc-dg-unl-keycopy")) setTimeout(function () {
+                U.newKey = "";
+                var k = el.querySelector(".lc-dg-unl-key");
+                if (k) k.remove();
+                b.remove();
+              }, 900);
+            };
             var pick = function () {
               var c = b.previousElementSibling && b.previousElementSibling.querySelector("code");
               if (c) { var rg = document.createRange(); rg.selectNodeContents(c); var sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(rg); }

@@ -35,6 +35,11 @@
 <main class="markdown-body">
 {{ content }}
 </main>
+{%- comment -%} WHICH ENGINE IS THIS PAGE RUNNING? (Michel, 2026-10-17: "I don't see ℹ️!!!" —
+the ℹ️ card lives only in the classroom frame, and as a hover a phone cannot open.) Plain text
+at the foot of every page: the build's commit and time, and the host that served it. {%- endcomment %}
+<p id="lc-engine" style="margin:2.5em auto 1em;text-align:center;font:0.75em ui-monospace,SFMono-Regular,Menlo,monospace;color:#64748b">⚙️ engine {{ site.github.build_revision | default: "local" | slice: 0, 7 }} · built {{ site.time | date: '%Y-%m-%d %H:%M' }} UTC · <span class="lc-engine-host"></span></p>
+<script>(function () { var h = document.querySelector("#lc-engine .lc-engine-host"); if (h) h.textContent = location.host; })();</script>
 {% include edit_on_github.md %}
 {% include slides.md %}
 {% include footnote_tips.md %}

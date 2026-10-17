@@ -96,3 +96,14 @@ def step_signed_in_cached(context):
         "localStorage.setItem('lc_ed_repo','michelzam/lightcodelab');"
         "localStorage.setItem('lc_gh_user'," + json.dumps(face) + ");"
         "localStorage.setItem('lc_gh_user_for','ghp_author');")
+
+
+@then("the page's foot names its engine, its build time and its host")
+def step_engine_foot(context):
+    import re as _re
+    from playwright.sync_api import expect as _expect
+    foot = context.page.locator("#lc-engine")
+    _expect(foot).to_be_visible(timeout=10000)
+    txt = foot.inner_text()
+    host = context.page.evaluate("() => location.host")
+    assert _re.search(r"⚙️ engine \S+ · built \d{4}-\d\d-\d\d \d\d:\d\d UTC · " + _re.escape(host), txt), txt

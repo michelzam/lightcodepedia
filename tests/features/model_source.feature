@@ -638,6 +638,8 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I say I am the author under "walks", with no key yet
     Then the database has me as its author, and a table "walks" made of "dog, walker, hour"
     And the grid "walks" shows the name to share and my new author key
+    When I copy my author key under "walks"
+    Then the key leaves the grid "walks", and only the name to share stays
     When I add a "Walk" with New under "walks"
     And I type "Biscuit" and press Enter, without clicking
     And I press Save under "walks"

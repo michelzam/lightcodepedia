@@ -728,6 +728,9 @@ def step_unl_asks(context, gid):
 def step_unl_author(context, gid):
     g = grid(context, gid)
     g.locator("button.lc-dg-unl-me").click()
+    # the author's field takes the name field's place, never sits beside it
+    expect(g.locator("input.lc-dg-unl-name")).to_be_hidden()
+    expect(g.locator("input.lc-dg-unl-akey")).to_be_visible()
     g.locator("button.lc-dg-unl-claim").click()
 
 
@@ -748,6 +751,21 @@ def step_unl_show(context, gid):
     expect(g.locator("code.lc-dg-unl-show")).to_have_text("walks-5f2c9a01b7e3", timeout=T)
     expect(g.locator(".lc-dg-unl-key code")).to_have_text(context.unl["authors"][0])
     expect(g.locator("input.lc-dg-unl-name")).to_have_count(0)
+
+
+@when('I copy my author key under "{gid}"')
+def step_unl_copy_key(context, gid):
+    context.page.context.grant_permissions(["clipboard-read", "clipboard-write"])
+    grid(context, gid).locator("button.lc-dg-unl-keycopy").click()
+
+
+@then('the key leaves the grid "{gid}", and only the name to share stays')
+def step_unl_key_gone(context, gid):
+    g = grid(context, gid)
+    expect(g.locator(".lc-dg-unl-key")).to_have_count(0, timeout=T)
+    expect(g.locator("button.lc-dg-unl-copy")).to_have_count(1)
+    expect(g.locator("code.lc-dg-unl-show")).to_have_text("walks-5f2c9a01b7e3")
+    assert context.page.evaluate("() => navigator.clipboard.readText()") == context.unl["authors"][0]
 
 
 @then('the table "{tbl}" holds "{dog}", saved through its name')

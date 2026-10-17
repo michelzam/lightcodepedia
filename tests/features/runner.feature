@@ -18,6 +18,13 @@ Feature: The instant runner (RT) — Phase A parity
     Then the runner contains a ".lc-block" element
     And the rendered block mentions "Lucky"
 
+  Scenario: Every page names its engine at its foot, in plain text
+    Michel, 2026-10-17: "I don't see ℹ️!!!" — the ℹ️ card lives only in
+    the classroom frame, as a hover a phone cannot open.
+    When I open the runner page on "/run_samples/probe.txt"
+    And I wait for the runner to render
+    Then the page's foot names its engine, its build time and its host
+
   Scenario: A missing source shows a clear message, not a blank page
     When I open the runner page on "/run_samples/does-not-exist.txt"
     Then the runner reports it could not load
