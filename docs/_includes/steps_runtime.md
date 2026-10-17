@@ -4161,10 +4161,27 @@ _inject_store()
     code = code.replace(/^([ \t]*)class\s+(\w+)\s*\(([^)]*?),\s*source\s*=\s*(["'])([^"']+)\4\s*\)\s*:/mg,
       function (_, ind, name, bases, q, src) { sourced.push([name, src]); return ind + "class " + name + "(" + bases + "):"; });
     /* A MODEL ON A DATABASE (Michel, 2026-10-17, register P3):
-       {: .model database="shelter" } — each class of Object is its table
+       {: .model source="shelter" } — each class of Object is its table
        (Walk ↔ walk, FosterFamily ↔ foster_family); source= names the table
        only when it is named otherwise. No dataset to declare. */
-    var dbAttr = el.getAttribute("database");
+    /* ONE WORD, source= (Michel, 2026-10-17, register P6: "more polymorphic,
+       while reducing the cognitive load"): a .database → a table per class;
+       a list → the model's one class wears it (several: the page says which
+       question to answer); a class's own source= always wins */
+    var mSrc = el.getAttribute("source") || "";
+    var mEl = mSrc ? document.getElementById(mSrc) : null;
+    var isDbSrc = !!mSrc && (!!(window.lcDatabases || {})[mSrc] || !!(mEl && /(^|\s)(lc-)?database(\s|$)/.test(mEl.className)));
+    var dbAttr = isDbSrc ? mSrc : "";
+    var srcWarn = "";
+    if (mSrc && !isDbSrc) {
+      var plain = [];
+      code.replace(/^class\s+(\w+)\s*\(\s*Object\s*\)\s*:/mg, function (_, name) {
+        if (!sourced.some(function (p) { return p[0] === name; })) plain.push(name);
+        return _;
+      });
+      if (plain.length === 1) sourced.push([plain[0], mSrc]);
+      else if (plain.length > 1) srcWarn = "source=\"" + mSrc + "\" is one list — which class wears it? Put source= on that class.";
+    }
     if (dbAttr && window.lcDatabaseTable) {
       sourced = sourced.map(function (p) {
         return document.getElementById(p[1]) ? p : [p[0], window.lcDatabaseTable(dbAttr, p[1], el)];
@@ -4221,7 +4238,7 @@ _inject_store()
           runPy(mp, purge + "_LC_DECL[" + JSON.stringify(mid) + "] = " + JSON.stringify(names) + bind + "\n_lc_publish_all()\n");
           (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
           document.dispatchEvent(new CustomEvent("lc-model-changed"));
-          if (window.lcWarn) window.lcWarn(el, "");
+          if (window.lcWarn) window.lcWarn(el, srcWarn);
           return;
         } catch (e) { names.forEach(function (n) { delete by[n]; }); }
       }
@@ -4240,7 +4257,7 @@ _inject_store()
         (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
         names.forEach(function (n) { by[n] = code; });
         document.dispatchEvent(new CustomEvent("lc-model-changed"));
-        if (window.lcWarn) window.lcWarn(el, "");
+        if (window.lcWarn) window.lcWarn(el, srcWarn);
       } catch (e) {
         names.forEach(function (n) { delete by[n]; });
         console.error("[lc-model]", e);

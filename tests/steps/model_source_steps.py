@@ -1070,3 +1070,10 @@ def step_computed(context, walker, gid, text, col):
 @then('the table "{tbl}" has no column "{col}"')
 def step_no_column(context, tbl, col):
     assert col not in context.unl["tables"][tbl]["cols"], context.unl["tables"][tbl]
+
+
+
+@then('the model "{mid}" asks which class wears "{src}"')
+def step_model_asks(context, mid, src):
+    el = context.page.locator("[data-lc-id='" + mid + "']")
+    expect(el).to_have_attribute("data-lc-warn", re.compile("which class wears it"), timeout=T)

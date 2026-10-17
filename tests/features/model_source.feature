@@ -680,7 +680,7 @@ Feature: A class wears a dataset — the grid dresses the rows
           dog = Attr(str)
           walker = Attr(str)
       ```
-      {: .model database="shelter" }
+      {: .model source="shelter" }
 
       [the walks](#)
       {: .datagrid source="Walk" #walks }
@@ -711,7 +711,7 @@ Feature: A class wears a dataset — the grid dresses the rows
           dog = Attr(str)
           walker = Attr(str)
       ```
-      {: .model database="shelter" }
+      {: .model source="shelter" }
 
       [the walks](#)
       {: .datagrid source="Walk" #walks }
@@ -747,7 +747,7 @@ Feature: A class wears a dataset — the grid dresses the rows
           dog = Attr(str)
           walker = Attr(str)
       ```
-      {: .model database="shelter" }
+      {: .model source="shelter" }
 
       [the walks](#)
       {: .datagrid source="Walk" #walks }
@@ -868,7 +868,7 @@ Feature: A class wears a dataset — the grid dresses the rows
           def who(self):
               return (self.dog.name if self.dog else "?") + " & " + self.walker
       ```
-      {: .model database="shelter" }
+      {: .model source="shelter" }
 
       [the walks](#)
       {: .datagrid source="Walk" #walks }
@@ -912,7 +912,7 @@ Feature: A class wears a dataset — the grid dresses the rows
           dog = Attr(str)
           by = Attr(str, was="walker")
       ```
-      {: .model database="shelter" }
+      {: .model source="shelter" }
 
       [the walks](#)
       {: .datagrid source="Walk" #walks }
@@ -924,3 +924,43 @@ Feature: A class wears a dataset — the grid dresses the rows
     And the corner of "walks" offers 🧹 for "km"
     When I tidy the table under "walks", confirming
     Then the table "walk" has no column "km", and no 🧹 is left under "walks"
+
+  Scenario: A model's source= names a list or a database — one word
+    Michel, 2026-10-17 (register P6): ".model should have 'source' as knob
+    for db or dataset — more polymorphic, while reducing the cognitive load."
+
+    Given the GitHub contents API serves "courses/demo/module_06/one_list.md" with the document:
+      """
+      # Walks
+
+      ```csv
+      dog,walker
+      Lucky,Ana
+      Fern,Ben
+      ```
+      {: .dataset #walk_list }
+
+      ```python
+      class Walk(Object):
+          dog = Attr(str)
+          walker = Attr(str)
+      ```
+      {: .model source="walk_list" #one_model }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+
+      ```python
+      class Dog(Object):
+          name = Attr(str)
+
+      class Walker(Object):
+          name = Attr(str)
+      ```
+      {: .model source="walk_list" #two_model }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/one_list.md"
+    And I wait for the page to be interactive
+    Then the grid "walks" has the columns "dog, walker"
+    And the grid "walks" shows "Lucky" and "Fern"
+    And the model "two_model" asks which class wears "walk_list"

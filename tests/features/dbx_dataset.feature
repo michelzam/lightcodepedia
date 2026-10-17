@@ -64,7 +64,7 @@ Feature: A dataset runs a SQL statement on a Databricks warehouse, with this dev
       ```sql
       SELECT region, SUM(arr_kusd) AS arr_kusd FROM finance.accounts GROUP BY region
       ```
-      {: .dataset #arr database="warehouse" }
+      {: .dataset #arr source="warehouse" }
 
       [ARR by region](#)
       {: .datagrid source="arr" #arr_grid height="200" }

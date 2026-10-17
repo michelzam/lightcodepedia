@@ -217,7 +217,7 @@ class Walk(Object):
     walker = Attr(str)
     hour = Attr(str)
 ```
-{: .model database="shelter" }
+{: .model source="shelter" }
 
 [the walks](#)
 {: .datagrid source="Walk" #walks }
@@ -284,7 +284,7 @@ them and never sends them. When the database cannot be reached, the grid
 says so under its columns, and stays ready.
 
 The same line serves a warehouse: `[the warehouse](databricks://acme/<warehouse id>)`
-`{: .database #warehouse }`, and a SQL fence with `{: .dataset #arr database="warehouse" }`
+`{: .database #warehouse }`, and a SQL fence with `{: .dataset #arr source="warehouse" }`
 runs there (see Databricks above; the proxy root comes from `databases.yml`,
 `/dbx` by default). A lone dataset may also name its table itself:
 `[walks](supabase://shelter/walk)` `{: .dataset #walks unlisted="…" }`.
@@ -515,8 +515,8 @@ Feature: A class wears a dataset
 | `.dataset` | `dbx="…"` + `host="…"` | warehouse id, proxy root (default `/dbx`) | The fence is a SQL statement run on a Databricks warehouse with this device's token — see above |
 | `.database` | _(applied to a link)_ | `supabase://<name>` · `databricks://<name>/<warehouse>` | A database by a short name; its address and key come from the folder's `databases.yml` |
 | `.database` | `unlisted="…"` | the database's unlisted name | Whoever has the page reads and writes its tables |
-| `.model` | `database="…"` | a `.database` id | Each class of the model is a table of the same name |
-| `.dataset` | `database="…"` | a `.database` id | A SQL fence runs on that database |
+| `.model` | `source="…"` | a `.database` id, or a list | A database: each class is a table of the same name; a list: the model's class wears it |
+| `.dataset` | `source="…"` | a `.database` id | A SQL fence runs on that database |
 | `.dataset` | `refresh="…"` | seconds (≥10) | Live mode: re-fetch on a timer (cache-busted); every bound grid/stat/chart repaints itself — no page reload |
 | `.model` | `class X(Object, source="…")` | dataset id | The dataset's rows become X's objects, its columns X's fields; X adds a `State` and verbs — and X is a dataset id itself |
 | `.datagrid` | `source="…"` | dataset id, or a class | Which dataset to display; a class dresses its rows: the state cell's ⌄ drops the row's verbs, typed cells, ➕ New |

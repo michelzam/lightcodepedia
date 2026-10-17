@@ -251,7 +251,7 @@ Auto-included by docs/_layouts/default.html.
      {: .database #shelter unlisted="…" } — and the page holds no key: the
      address and public key come from a databases.yml in the course folder
      (or above it), name → {url, key}, read once per folder. A model on it
-     ({: .model database="shelter" }) gets a table per class; a lone dataset
+     ({: .model source="shelter" }) gets a table per class; a lone dataset
      may name its table itself: [walks](supabase://shelter/walk). */
   window.lcDatabases = window.lcDatabases || {};
   /* the attribute that names a class's objects: its first text attribute */
@@ -819,13 +819,13 @@ Auto-included by docs/_layouts/default.html.
        the CFO's need to not share strategic data with anyone else"). */
     if (el.getAttribute("dbx")) { dbxDataset(el, id); return; }
     /* A SQL FENCE ON A .database (Michel, 2026-10-17, register P3): the fence
-       holds the statement, database="warehouse" says where it runs, the
+       holds the statement, source="warehouse" says where it runs, the
        database's scheme says how — databricks://<name>/<warehouse id>; its
        proxy root comes from databases.yml (url: /dbx by default) */
-    if (el.getAttribute("database")) {
-      dbWhen(el.getAttribute("database"), 50).then(function (d) {
+    if (el.getAttribute("source")) {
+      dbWhen(el.getAttribute("source"), 50).then(function (d) {
         var m = /^databricks:\/\/[\w.-]+\/([\w-]+)/.exec((d.el.querySelector("a[href]") || { getAttribute: function () { return ""; } }).getAttribute("href") || "");
-        if (d.kind !== "databricks" || !m) throw new Error("a SQL fence runs on a databricks://<name>/<warehouse> database — #" + el.getAttribute("database") + " is " + (d.kind || "?") + "://");
+        if (d.kind !== "databricks" || !m) throw new Error("a SQL fence runs on a databricks://<name>/<warehouse> database — #" + el.getAttribute("source") + " is " + (d.kind || "?") + "://");
         return dbConf(d.name, el).catch(function () { return { url: "/dbx" }; }).then(function (c) {
           el.setAttribute("dbx", m[1]);
           el.setAttribute("host", c.url || "/dbx");
