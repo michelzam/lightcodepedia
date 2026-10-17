@@ -541,3 +541,106 @@ def step_gain_visible(context, sid, w):
 @then('the sheet was asked for its tab "{tab}"')
 def step_sheet_tab(context, tab):
     assert any("sheet=" + tab in u for u in context.sheet_urls), context.sheet_urls
+
+
+@given('a database table "{table}" that is empty')
+def step_db(context, table):
+    import json as _j
+    from urllib.parse import urlparse, parse_qs
+    context.db_rows, context.db_calls, context.db_next = [], [], [1]
+
+    def handle(route):
+        req = route.request
+        u = urlparse(req.url)
+        q = parse_qs(u.query)
+        context.db_calls.append({"method": req.method, "url": req.url, "body": req.post_data,
+                                 "apikey": req.headers.get("apikey")})
+        if req.method == "GET":
+            body = _j.dumps(sorted(context.db_rows, key=lambda r: r["id"]))
+        elif req.method == "POST":
+            for r in _j.loads(req.post_data or "[]"):
+                r = dict(r); r["id"] = context.db_next[0]; context.db_next[0] += 1
+                context.db_rows.append(r)
+            body = ""
+        elif req.method == "PATCH":
+            rid = int(q["id"][0].split(".")[1])
+            for r in context.db_rows:
+                if r["id"] == rid:
+                    r.update(_j.loads(req.post_data or "{}"))
+            body = ""
+        elif req.method == "DELETE":
+            ids = [int(x) for x in q["id"][0].split("(")[1].rstrip(")").split(",")]
+            context.db_rows[:] = [r for r in context.db_rows if r["id"] not in ids]
+            body = ""
+        else:
+            body = ""
+        route.fulfill(status=200 if req.method == "GET" else 201, content_type="application/json",
+                      headers={"Access-Control-Allow-Origin": "*"}, body=body)
+    context.page.route("**/demo.supabase.co/rest/v1/" + table + "*", handle)
+    context.page.on("dialog", lambda d: d.accept())
+
+
+@then('the grid "{gid}" has the columns "{cols}" and no row')
+def step_cols_empty(context, gid, cols):
+    step_cols(context, gid, cols)
+    expect(grid(context, gid).locator("tbody tr")).to_have_count(0)
+
+
+@then('Save under "{gid}" is off')
+def step_save_off(context, gid):
+    expect(grid(context, gid).locator("button.lc-dg-save")).to_be_disabled(timeout=T)
+
+
+@when('I press Save under "{gid}"')
+def step_press_save(context, gid):
+    b = grid(context, gid).locator("button.lc-dg-save")
+    expect(b).to_be_enabled(timeout=T)
+    context.db_mark = len(context.db_calls)
+    b.click()
+
+
+def _db_new(context, method):
+    for _ in range(50):
+        got = [c for c in context.db_calls[context.db_mark:] if c["method"] == method]
+        if got:
+            return got
+        context.page.wait_for_timeout(200)
+    raise AssertionError("no %s sent: %s" % (method, context.db_calls[context.db_mark:]))
+
+
+@then('the table "{table}" received an insert of "{name}" at stage "{stage}", with its key')
+def step_db_insert(context, table, name, stage):
+    import json as _j
+    c = _db_new(context, "POST")[0]
+    rows = _j.loads(c["body"])
+    assert len(rows) == 1 and rows[0].get("family") == name and rows[0].get("stage") == stage, rows
+    assert "id" not in rows[0], rows
+    assert c["apikey"] == "sb_publishable_test", c
+
+
+@then('the grid "{gid}" shows the row "{name}" read back from the table')
+def step_db_readback(context, gid, name):
+    expect(row_of(context, gid, name)).to_be_visible(timeout=T)
+    expect(grid(context, gid).locator("button.lc-dg-save")).to_be_disabled(timeout=T)
+    expect(grid(context, gid).locator("thead th[data-col='id']")).to_have_count(0)
+
+
+@then('the table "{table}" received an update of row {rid:d} with dog "{dog}"')
+def step_db_update(context, table, rid, dog):
+    import json as _j
+    c = _db_new(context, "PATCH")[0]
+    assert ("id=eq.%d" % rid) in c["url"], c
+    assert _j.loads(c["body"]).get("dog") == dog, c
+    assert not [x for x in context.db_calls[context.db_mark:] if x["method"] == "POST"], "an insert was sent for an edit"
+
+
+@when('I open the verbs of "{name}" in "{gid}" and delete it')
+def step_delete_row(context, name, gid):
+    step_open(context, name, gid)
+    context.page.locator(".lc-dg-menu button[data-verb='delete']").click()
+
+
+@then('the table "{table}" received a delete of row {rid:d}')
+def step_db_delete(context, table, rid):
+    c = _db_new(context, "DELETE")[0]
+    assert ("id=in.(%d)" % rid) in c["url"], c

@@ -709,7 +709,7 @@ Auto-included by docs/_layouts/default.html.
              locked and state fields read-only; enum fields pick lists; the
              rest editable through the object unless editable="false" */
           var copy = {};
-          Object.keys(row).forEach(function (k) { if (k !== "obj" && k.charAt(0) !== "_" && k !== model.state) copy[k] = row[k]; });
+          Object.keys(row).forEach(function (k) { if (k !== "obj" && k.charAt(0) !== "_" && k !== model.state && !(model.fields[k] && model.fields[k].hidden)) copy[k] = row[k]; });
           if (model.state && model.state in row) copy[model.state] = row[model.state];
           row = copy;
           Object.keys(model.fields).forEach(function (k) {

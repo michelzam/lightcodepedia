@@ -38,6 +38,7 @@ Every check here exists because something slipped through once:
                               margin: an author's bench IS this repo, so
                               anything a lesson saves lands beside it.
 
+  STEP-SYNTAX                 a proof's :::python step that does not compile
   QUIZ-NO-WHY / QUIZ-LONGEST  a quiz option with no "> why" under it, and a
                               right answer that is the longest one: a reader
                               learns from every wrong option, and the longest
@@ -175,6 +176,7 @@ def check_page(path, text):
     problems.extend(cross_step_problems(text))
     problems.extend(gherkin_problems(text))
     problems.extend(quiz_problems(text))
+    problems.extend(step_syntax_problems(text))
 
     m = re.search(r"^```yaml\n(bot:.*?)^```", text, re.S | re.M)
     if m:
@@ -241,6 +243,21 @@ _DECLARED = re.compile(r"^\s*((?:self\.)?[a-z_][a-z_0-9]*)\s*:\s*[^=]+=")
 # And every scenario carries a When, even one with no body yet: Given →
 # When → Then is the beat a check writes down, and a scenario without the
 # command in the middle is a state asserted twice.
+def step_syntax_problems(text):
+    """Every :::python step of a proof compiles — a typo there reached the
+    page as "this page's check could not run" (06 · 03, 2026-10-17)."""
+    out = []
+    for m in re.finditer(r"^(\s*):::python\n(.*?)^\s*:::\s*$", text, re.S | re.M):
+        ind = len(m.group(1))
+        body = "\n".join(l[ind:] if l[:ind].strip() == "" else l for l in m.group(2).split("\n"))
+        try:
+            compile("class _S:\n def _s(self):\n" + "\n".join("  " + l for l in body.split("\n")) + "\n  pass\n", "step", "exec")
+        except SyntaxError as e:
+            first = body.strip().split("\n")[0][:50]
+            out.append(f"STEP-SYNTAX   a proof step does not compile ({e.msg}): {first}…")
+    return out
+
+
 def quiz_problems(text):
     """Every option of a {: .quiz } says why under it (> …), and the right
     answer is never strictly the longest."""

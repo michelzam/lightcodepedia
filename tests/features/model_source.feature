@@ -527,3 +527,53 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the grid "walk_list" shows "Fern" and "Scout"
     And the sheet was asked for its tab "Sheet1"
 
+  Scenario: A class on a database table — empty grid, New, Save, edit, delete, each sent once
+    Michel, 2026-10-17: "I create the db myself, define the Family class,
+    read the empty grid with the class, students add new objects (+New and
+    a form), then save and refresh. They don't need to learn SQL."
+
+    Given a database table "families" that is empty
+    And the GitHub contents API serves "courses/demo/module_06/db.md" with the document:
+      """
+      # Families
+
+      `````markdown
+      [the families](https://demo.supabase.co/rest/v1/families)
+      {: .dataset #families_db apikey="sb_publishable_test" }
+
+      ```python
+      class Family(Object, source="families_db"):
+          family = Attr(str)
+          dog = Attr(str)
+          stage = State("asked", "met", "home")
+
+          @transition("asked", "met")
+          def meet(self):
+              pass
+      ```
+      {: .model }
+
+      [the families](#)
+      {: .datagrid source="Family" #families }
+
+      [the family](#)
+      {: .form master="families" }
+      `````
+      {: .mdpad #db_pad decorations="true" rows="20" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/db.md"
+    And I wait for the page to be interactive
+    Then the grid "families" has the columns "family, dog, stage" and no row
+    And Save under "families" is off
+    When I add a "Family" with New under "families"
+    And I type "Nguyen" and press Enter, without clicking
+    And I press Save under "families"
+    Then the table "families" received an insert of "Nguyen" at stage "asked", with its key
+    And the grid "families" shows the row "Nguyen" read back from the table
+    When I double click the "dog" cell of "Nguyen" in "families" and type "Biscuit"
+    And I press Save under "families"
+    Then the table "families" received an update of row 1 with dog "Biscuit"
+    When I open the verbs of "Nguyen" in "families" and delete it
+    And I press Save under "families"
+    Then the table "families" received a delete of row 1
+

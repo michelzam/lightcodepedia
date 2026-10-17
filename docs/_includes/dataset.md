@@ -90,6 +90,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-foot { margin-top: .4em; }
 .lc-dg-new { font: inherit; font-size: .85em; font-weight: 500; padding: .35em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
 .lc-dg-new:hover { background: #0052a3; border-color: #0052a3; }
+.lc-dg-btn { font: inherit; font-size: .85em; font-weight: 500; padding: .35em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #fff; color: #0066cc; cursor: pointer; }
+.lc-dg-btn:hover:not(:disabled) { background: #eff6ff; }
+.lc-dg-foot { display: flex; gap: .4em; flex-wrap: wrap; }
+.lc-dg-btn:disabled { opacity: .45; cursor: default; }
 .lc-dg-reload { float: right; font: inherit; font-size: 1em; line-height: 1; padding: .1em .45em; border-radius: 6px;
   border: 1px solid #cbd5e1; background: #fff; color: #0066cc; cursor: pointer; }
 .lc-dg-reload:hover { background: #eff6ff; border-color: #0066cc; }
@@ -180,6 +184,54 @@ Auto-included by docs/_layouts/default.html.
       });
     });
   }
+  /* a row as the table would hold it: no page-only fields, keys in order */
+  function dbRow(r) {
+    var o = {};
+    Object.keys(r || {}).sort().forEach(function (k) { if (k !== "obj" && k.charAt(0) !== "_" && k !== "⚠️") o[k] = r[k]; });
+    return o;
+  }
+  /* empty is empty: the table's null and the page's "" are the same blank */
+  function dbSame(r) {
+    var o = dbRow(r);
+    for (var k in o) if (o[k] === null || o[k] === undefined) o[k] = "";
+    return o;
+  }
+  function dbKeyOf(r) { return JSON.stringify(dbSame(r)); }
+  /* what changed since the table was read: new rows (no id yet), changed
+     rows, rows that are gone */
+  window.lcDatasetChanges = function (id) {
+    var r = window.lcRemote[id], arr = window.lcDatasets[id];
+    if (!r || !r.db || !Array.isArray(arr)) return null;
+    var snap = r.snap || {}, seen = {}, ins = [], upd = [];
+    arr.forEach(function (row) {
+      if (row["⚠️"]) return;
+      if (row.id == null || row.id === "" || !(String(row.id) in snap)) {
+        /* new — no id yet, or one the table never gave */
+        var c = dbRow(row); delete c.id; ins.push(c); return;
+      }
+      seen[String(row.id)] = 1;
+      if (snap[String(row.id)] !== dbKeyOf(row)) upd.push(dbRow(row));
+    });
+    var del = Object.keys(snap).filter(function (k) { return !seen[k]; });
+    return { ins: ins, upd: upd, del: del, n: ins.length + upd.length + del.length };
+  };
+  /* 💾 SAVE: the new rows in one insert, each changed row by its id, the
+     gone ones by theirs — then the table is read again, its truth (ids,
+     defaults) replacing the page's guess */
+  window.lcDatasetSave = function (id) {
+    var r = window.lcRemote[id], ch = window.lcDatasetChanges(id);
+    if (!r || !ch) return Promise.resolve(null);
+    var H = r.db.headers({ "Content-Type": "application/json", Prefer: "return=minimal" });
+    var ok = function (x) { if (!x.ok) return x.text().then(function (t) { throw new Error("HTTP " + x.status + " " + t.slice(0, 160)); }); return x; };
+    var calls = [];
+    if (ch.ins.length) calls.push(fetch(r.db.base, { method: "POST", headers: H, body: JSON.stringify(ch.ins) }).then(ok));
+    ch.upd.forEach(function (row) {
+      var body = {}; for (var k in row) if (k !== "id") body[k] = row[k];
+      calls.push(fetch(r.db.base + "?id=eq." + encodeURIComponent(row.id), { method: "PATCH", headers: H, body: JSON.stringify(body) }).then(ok));
+    });
+    if (ch.del.length) calls.push(fetch(r.db.base + "?id=in.(" + ch.del.map(encodeURIComponent).join(",") + ")", { method: "DELETE", headers: H }).then(ok));
+    return Promise.all(calls).then(function () { r.pull(); return ch; });
+  };
   window.lcDatasetAppend = function (id, rowJson) {
     var row = typeof rowJson === "string" ? JSON.parse(rowJson) : rowJson;
     var arr = Array.isArray(window.lcDatasets[id]) ? window.lcDatasets[id].filter(function (r) { return !r["⚠️"]; }) : [];
@@ -342,11 +394,26 @@ Auto-included by docs/_layouts/default.html.
         var fmt = (el.getAttribute("format") || "").toLowerCase();
         if (!fmt && /\.ya?ml($|\?)/i.test(href)) fmt = "yaml";
         var tick = 0;
+        /* A DATABASE TABLE (Michel, 2026-10-17: "I create the db myself, the
+           class reads it, students add objects, then save and refresh"):
+           a Supabase table's address, …supabase.co/rest/v1/<table>, with the
+           project's public key in apikey="…" — read here, written by
+           💾 Save (lcDatasetSave), only what changed since this read */
+        var dbKey = el.getAttribute("apikey") || "";
+        var isDb = /\.supabase\.co\/rest\/v1\/[\w-]+/.test(href);
+        var dbHeaders = function (extra) {
+          var h = { Accept: "application/json" };
+          if (dbKey) { h.apikey = dbKey; if (/^eyJ/.test(dbKey)) h.Authorization = "Bearer " + dbKey; }
+          for (var k in (extra || {})) h[k] = extra[k];
+          return h;
+        };
         var pull = function () {
           /* cache-bust so a just-landed file (results, fleet) is seen now,
              not from the 60s API/Pages cache — this is the whole point of
-             refresh= (a counter, since Date is engine-blocked) */
-          fetch(href + (href.indexOf("?") < 0 ? "?" : "&") + "_t=" + (tick++), { cache: "no-store" })
+             refresh= (a counter, since Date is engine-blocked); a database
+             reads every column it is not told to filter, so no _t there */
+          (isDb ? fetch(href + (href.indexOf("?") < 0 ? "?select=*&order=id" : ""), { cache: "no-store", headers: dbHeaders() })
+                : fetch(href + (href.indexOf("?") < 0 ? "?" : "&") + "_t=" + (tick++), { cache: "no-store" }))
             .then(function (r) {
               /* 404 is not a fault — it means this node carries no such data.
                  The fleet board and the backlog are lab-only instruments the
@@ -354,8 +421,12 @@ Auto-included by docs/_layouts/default.html.
                  the page already promises "an empty board". Showing ⚠️ HTTP 404
                  turned a by-design absence into what looks like a broken site.
                  Every other status stays an error, because those ARE faults. */
-              if (r.status === 404) { window.lcSetDataset(id, []); return null; }
-              if (!r.ok) throw new Error("HTTP " + r.status);
+              if (r.status === 404 && !isDb) { window.lcSetDataset(id, []); return null; }
+              if (!r.ok) {
+                if (isDb && (r.status === 401 || r.status === 403)) throw new Error("the table refused the key (HTTP " + r.status + ") — check apikey=\"…\" and the table's read rule");
+                if (isDb && r.status === 404) throw new Error("no such table (HTTP 404) — check the name after /rest/v1/");
+                throw new Error("HTTP " + r.status);
+              }
               return r.text();
             })
             .then(function (text) {
@@ -363,6 +434,13 @@ Auto-included by docs/_layouts/default.html.
               /* a web page is not rows: say so, instead of an empty table */
               if (/^\s*<(!doctype|html|head|body)/i.test(text))
                 throw new Error("this link sends a web page, not rows — use the sheet's data link");
+              if (isDb) {
+                /* what the table held when read: 💾 Save sends the difference */
+                var rows0 = []; try { rows0 = JSON.parse(text); } catch (e) {}
+                var snap = {};
+                (Array.isArray(rows0) ? rows0 : []).forEach(function (r) { if (r && r.id != null) snap[String(r.id)] = dbKeyOf(r); });
+                window.lcRemote[id].snap = snap;
+              }
               setFromText(text, fmt, el, id);
             })
             .catch(function (e) {
@@ -371,7 +449,8 @@ Auto-included by docs/_layouts/default.html.
                 ? "this link cannot be read from a page (not shared, or not a data link)" : e.message }]);
             });
         };
-        window.lcRemote[id] = { href: href, pull: pull, write: !!keyName || el.getAttribute("write") === "true", at: performance.now() };
+        window.lcRemote[id] = { href: href, pull: pull, write: !!keyName || el.getAttribute("write") === "true", at: performance.now(),
+                                db: isDb ? { base: href.split("?")[0], headers: dbHeaders } : null, snap: {} };
         pull();
         /* refresh="30" → live mode: re-pull every N seconds. Republishing to
            the bus repaints every bound grid/stat/chart with no page reload —
@@ -650,7 +729,7 @@ Auto-included by docs/_layouts/default.html.
     function render(data) {
       lastData = data;
       /* a list read from elsewhere: a ↻ in the title bar reads it again */
-      if (window.lcRemote && window.lcRemote[bindId] && el.querySelector(".lc-dg-titlebar") && !el.querySelector(".lc-dg-reload")) {
+      if (window.lcRemote && window.lcRemote[bindId] && !window.lcRemote[bindId].db && el.querySelector(".lc-dg-titlebar") && !el.querySelector(".lc-dg-reload")) {
         var rb = document.createElement("button");
         rb.type = "button"; rb.className = "lc-dg-reload"; rb.textContent = "↻";
         rb.title = "read it again — the list lives elsewhere";
@@ -663,7 +742,12 @@ Auto-included by docs/_layouts/default.html.
           return r[filterKeys.local] === masterRow[filterKeys.master];
         });
       }
-      if (!data || !data.length) {
+      /* AN EMPTY CLASS STILL HAS ITS COLUMNS (Michel, 2026-10-17: "read the
+         empty grid with the class, let students add new objects"): a grid on
+         a class whose list is empty shows the class's fields as headers and
+         ➕ New, never "No data" */
+      var emptyModel = (!data || !data.length) && (window.lcModels || {})[bindId];
+      if ((!data || !data.length) && !emptyModel) {
         if (selKey && lcId && window.lcMasterDetail) { selKey = null; window.lcMasterDetail.publish(lcId, null); }
         /* empty for a moment (a class publishes before its rows arrive):
            when rows come, the first one is selected AND announced again —
@@ -674,13 +758,19 @@ Auto-included by docs/_layouts/default.html.
           : "<p style='color:var(--lc-ink-mute,#616161);font-size:.85em'>⚠ No data: <code>" + bindId + "</code></p>";
         return;
       }
-      var allCols = Object.keys(data[0]);
+      if (emptyModel) {
+        data = [];
+        if (selKey && lcId && window.lcMasterDetail) { selKey = null; window.lcMasterDetail.publish(lcId, null); }
+        publishedFirst = false; lastPubJson = null;
+      }
+      var allCols = data.length ? Object.keys(data[0])
+        : (emptyModel.order || Object.keys(emptyModel.fields)).filter(function (c) { return !emptyModel.fields[c] || !emptyModel.fields[c].hidden; });
       var urlCol  = allCols.indexOf("url") >= 0 ? "url" : null;
       /* a grid on a CLASS (a class is a dataset): the model says which cell
          is the state, which are typed, which are locked; obj is the object's
          name, the grid's own business, never a column */
       var model = (window.lcModels || {})[bindId] || null;
-      var cols    = allCols.filter(function (c) { return c !== "url" && !(model && (c === "obj" || c.charAt(0) === "_" || !model.fields[c])); });
+      var cols    = allCols.filter(function (c) { return c !== "url" && !(model && (c === "obj" || c.charAt(0) === "_" || !model.fields[c] || model.fields[c].hidden)); });
       if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
       function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/'/g, "&#39;"); }
       function dressedCell(row, c, idx) {
@@ -721,9 +811,11 @@ Auto-included by docs/_layouts/default.html.
           return sortAsc ? diff : -diff;
         });
       }
-      var total = sorted.length, pp = perPage || total;
-      var pages = Math.ceil(total / pp);
-      page = Math.min(page, Math.max(0, pages - 1));
+      var total = sorted.length, pp = perPage || total || 1;
+      var pages = Math.max(1, Math.ceil(total / pp));
+      /* an empty list made 0 / 0 a page number that stuck, and no row ever
+         showed again — the page is always a number, the first one at worst */
+      page = Math.min(page || 0, pages - 1);
       var slice = sorted.slice(page * pp, (page + 1) * pp);
 
       var html = (height ? "<div class='lc-dg-scroll' style='max-height:" + height + "px'>" : "")
@@ -757,7 +849,15 @@ Auto-included by docs/_layouts/default.html.
                 }).join("") + "</tr>";
           }).join("") + "</tbody></table>" + (height ? "</div>" : "");
 
-      if (model) html += "<div class='lc-dg-foot'><button class='lc-dg-new' type='button' title='a new " + esc(bindId) + ", at its first stage'>➕ New" + ((model.subs || []).length ? " ⌄" : "") + "</button></div>";
+      /* a list kept in a database: 💾 Save sends what changed, ↻ reads it again */
+      var dbSrc = model ? model.src : bindId;
+      var dbR = window.lcRemote && window.lcRemote[dbSrc] && window.lcRemote[dbSrc].db ? window.lcRemote[dbSrc] : null;
+      var dbCh = dbR && window.lcDatasetChanges ? window.lcDatasetChanges(dbSrc) : null;
+      var dbBtns = dbR ? "<button class='lc-dg-btn lc-dg-save' type='button'" + (dbCh && dbCh.n ? "" : " disabled")
+          + " title='send the changes to the database'>💾 Save" + (dbCh && dbCh.n ? " (" + dbCh.n + ")" : "") + "</button>"
+          + "<button class='lc-dg-btn lc-dg-refresh' type='button' title='read the database again'>↻ Refresh</button>" : "";
+      if (model) html += "<div class='lc-dg-foot'><button class='lc-dg-new' type='button' title='a new " + esc(bindId) + ", at its first stage'>➕ New" + ((model.subs || []).length ? " ⌄" : "") + "</button>" + dbBtns + "</div>";
+      else if (dbBtns) html += "<div class='lc-dg-foot'>" + dbBtns + "</div>";
       if (pages > 1) {
         html += "<div class='lc-dg-pages'>";
         if (page > 0)         html += "<button data-pg='" + (page - 1) + "'>←</button>";
@@ -967,6 +1067,31 @@ Auto-included by docs/_layouts/default.html.
         });
       }
       /* COLUMNS RESIZE (Michel, 2026-10-16): drag the right edge of a header */
+      var sv = el.querySelector(".lc-dg-save"), rf = el.querySelector(".lc-dg-refresh");
+      if (sv) sv.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (sv.disabled) return;
+        sv.disabled = true; sv.textContent = "💾 Saving…";
+        if (window.lcDid && lcId) window.lcDid.mark(lcId, "save");   /* grid.saved — a proof reads it */
+        /* a cell still open is committed first, and its value given a beat to
+           reach the object — a click on 💾 right after typing saved the blank */
+        var typing = el.querySelector(".lc-dg-typing");
+        if (typing) typing.blur();
+        new Promise(function (res) { setTimeout(res, typing ? 400 : 0); }).then(function () {
+          return window.lcDatasetSave(dbSrc);
+        }).then(function (ch) {
+          if (window.lcGridSay && ch) window.lcGridSay(bindId, "✓ saved — " + ch.ins.length + " new, " + ch.upd.length + " changed, " + ch.del.length + " deleted");
+        }).catch(function (err) {
+          if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ not saved: " + err.message);
+          sv.disabled = false; sv.textContent = "💾 Save";
+        });
+      });
+      if (rf) rf.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var ch = window.lcDatasetChanges(dbSrc);
+        if (ch && ch.n && !window.confirm(ch.n + " change(s) not saved — read the database again and lose them?")) return;
+        window.lcRemoteReload(dbSrc);
+      });
       el.querySelectorAll("th[data-col] .lc-dg-grip").forEach(function (g) {
         g.addEventListener("click", function (e) { e.stopPropagation(); });
         g.addEventListener("pointerdown", function (e) {

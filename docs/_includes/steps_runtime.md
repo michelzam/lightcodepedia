@@ -538,6 +538,12 @@ class Object:
             if arr is not None:
                 row = js.window.JSON.parse("{}")
                 for f in cls._lc_fields:
+                    if f.n == "id" and getattr(f, "src", False):
+                        # the database gives the id on 💾 Save; a 0 here made a
+                        # new family look like an old one (Michel, 2026-10-17)
+                        inst._v["id"] = None
+                        setattr(row, "id", None)
+                        continue
                     v = inst._v.get(f.n, f.d)
                     setattr(row, f.n, "" if f.ref else v)
                 _lc_row_mark(row, nm)
@@ -864,6 +870,19 @@ class Dataset(Object):
         raise AssertionError("no row in " + self.id + " with " +
                              ", ".join(k + "=" + str(v) for k, v in kw.items()))
 
+    def save(self):
+        """Send what changed since the list was read — new, changed, gone —
+        to the database it lives in; then read it again (💾 Save)."""
+        fn = getattr(js.window, "lcDatasetSave", None)
+        if fn is not None:
+            fn(self._id)
+
+    def reload(self):
+        """Read the list again from where it lives (↻)."""
+        fn = getattr(js.window, "lcRemoteReload", None)
+        if fn is not None:
+            fn(self._id)
+
     def append(self, row):
         """One more row: on the page at once, and — when the list lives in a
         sheet that takes writes — in the sheet too, then read back
@@ -976,6 +995,11 @@ class Datagrid(Block):
     @property
     def row(self):
         return _Row(self)
+
+    @property
+    def saved(self):
+        """How many times the learner pressed 💾 Save on this grid (this device)."""
+        return _lc_did(self, "save")
 
     def next(self):
         # True when it moved, False on the last row — so a loop can stop by
@@ -2910,8 +2934,9 @@ def _lc_model_spec_push(cls, subs=True):
     tmeta = getattr(cls, "_lc_tmeta", {}) or {}
     fields = {}
     for f in cls._lc_fields:
-        fields[f.n] = {"t": f.t, "enum": f.enum, "ro": f.ro, "state": f.is_state,
-                       "src": bool(getattr(f, "src", False))}
+        dbid = f.n == "id" and bool(getattr(f, "src", False))   # the table's own id: kept, never shown
+        fields[f.n] = {"t": f.t, "enum": f.enum, "ro": f.ro or dbid, "state": f.is_state,
+                       "src": bool(getattr(f, "src", False)), "hidden": dbid}
     trans = {}
     for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
         pre, post, sfn, _o = tmeta[n]
@@ -2920,7 +2945,7 @@ def _lc_model_spec_push(cls, subs=True):
     spec = {"fields": fields, "state": statef.n if statef else None,
             "states": list(statef.enum) if statef else [], "transitions": trans,
             "verbs": verbs, "src": getattr(cls, "_lc_source", None) or "",
-            "subs": [k.__name__ for k in kids]}
+            "subs": [k.__name__ for k in kids], "order": [f.n for f in cls._lc_fields]}
     setattr(js.window.lcModels, cls.__name__, js.window.JSON.parse(json.dumps(spec)))
 
 
