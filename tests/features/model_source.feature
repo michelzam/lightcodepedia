@@ -641,8 +641,8 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I copy my author key under "walks"
     Then the key leaves the grid "walks", and only the name to share stays
     When I add a "Walk" with New under "walks"
-    And I type "Biscuit" and press Enter, without clicking
-    And I press Save under "walks"
+    And I type "Biscuit", the cell still open
+    And I press Save under "walks" once, with the mouse
     Then the table "walks" holds "Biscuit", saved through its name
     When a classmate opens the page on another device and pastes the name under "walks"
     Then the grid "walks" shows the row "Biscuit" read back from the table

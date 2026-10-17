@@ -1212,14 +1212,24 @@ Auto-included by docs/_layouts/default.html.
       }
       /* COLUMNS RESIZE (Michel, 2026-10-16): drag the right edge of a header */
       var sv = el.querySelector(".lc-dg-save"), rf = el.querySelector(".lc-dg-refresh");
-      if (sv) sv.addEventListener("click", function (e) {
+      /* ONE PRESS SAVES (Michel, 2026-10-17: "when I'm in a new line and
+         click on save, it only gets the focus away"): the press itself left
+         the open cell, its commit redrew the grid, and the click landed on
+         a button that was gone. The save now starts on the press, before
+         the focus moves; a keyboard's click still works, never twice. */
+      var doSave = function (e) {
         e.stopPropagation();
+        /* the click that ends a press already saving is that same press */
+        if (e.type === "click" && sv._lcPressed) { sv._lcPressed = false; return; }
+        if (e.type === "pointerdown") { e.preventDefault(); sv._lcPressed = true; }
         if (sv.disabled) return;
         sv.disabled = true; sv.textContent = "💾 Saving…";
         if (window.lcDid && lcId) window.lcDid.mark(lcId, "save");   /* grid.saved — a proof reads it */
         /* a cell still open is committed first, and its value given a beat to
            reach the object — a click on 💾 right after typing saved the blank */
-        var typing = el.querySelector(".lc-dg-typing");
+        var act = document.activeElement;
+        var typing = el.querySelector(".lc-dg-typing")
+          || (act && act !== document.body && el.contains(act) && act.isContentEditable ? act : null);
         if (typing) typing.blur();
         new Promise(function (res) { setTimeout(res, typing ? 400 : 0); }).then(function () {
           return window.lcDatasetSave(dbSrc);
@@ -1229,7 +1239,8 @@ Auto-included by docs/_layouts/default.html.
           if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ not saved: " + err.message);
           sv.disabled = false; sv.textContent = "💾 Save";
         });
-      });
+      };
+      if (sv) { sv.addEventListener("pointerdown", doSave); sv.addEventListener("click", doSave); }
       if (U) {
         var uOk = el.querySelector(".lc-dg-unl-ok"), uName = el.querySelector(".lc-dg-unl-name");
         var take = function () {

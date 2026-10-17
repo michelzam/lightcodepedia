@@ -806,3 +806,19 @@ def step_unl_stranger(context, name, gid):
     context.page.evaluate("() => { localStorage.removeItem('lc_unlisted_demo_walks'); }")
     context.page.reload(wait_until="domcontentloaded")
     _unl_paste(context, gid, name)
+
+
+
+@when('I type "{text}", the cell still open')
+def step_type_open(context, text):
+    cell = context.page.locator("td.lc-dg-typed.lc-dg-typing")
+    expect(cell).to_be_focused(timeout=T)
+    context.page.keyboard.type(text)
+
+
+@when('I press Save under "{gid}" once, with the mouse')
+def step_save_once_mouse(context, gid):
+    b = grid(context, gid).locator("button.lc-dg-save")
+    expect(b).to_be_enabled(timeout=T)
+    box = b.bounding_box()
+    context.page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
