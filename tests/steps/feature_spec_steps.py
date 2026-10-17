@@ -94,6 +94,18 @@ def step_open_only(context, label):
     context.page.wait_for_timeout(800)
 
 
+@when('I also open the "{label}" section')
+def step_also_open(context, label):
+    context.page.evaluate(
+        """(label) => {
+          document.querySelectorAll('details').forEach(function (d) {
+            var s = d.querySelector('summary');
+            if (s && (s.textContent || '').indexOf(label) >= 0) d.open = true;
+          });
+        }""", label)
+    context.page.wait_for_timeout(800)
+
+
 @when("I run the features in that section")
 def step_run_open_features(context):
     btns = context.page.locator("details[open] .lc-feature .lc-feature-run")

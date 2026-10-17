@@ -135,6 +135,51 @@ Feature: The instant runner (RT) — Phase A parity
     Then a class diagram is drawn naming "Customer" and "Order"
     And the model's code stays hidden
 
+  Scenario: A scoped diagram waits for a model folded further down
+    Michel, 2026-10-09, INFOST 410 Module 07: step 2's diagram, scoped to
+    UWM's tables, drew the whole Lightcode framework — the model sat in
+    step 3's closed fold and had not run yet. A scope naming classes the
+    page has not defined now draws nothing and says so; the author's
+    classes appear the moment the model's fold opens.
+
+    Given the GitHub contents API serves "courses/demo/mod/folded.md" with the document:
+      """
+      # Folded
+
+      ````
+      ### Step 1 · The picture
+
+      [the shop, as classes](#)
+      {: .diagram scope="Order,Customer" states="false" }
+      ````
+      {: .accordion #pic }
+
+      ````
+      ### Step 2 · The model
+
+      ```python
+      @component(icon="👤")
+      class Customer(Object):
+          CustomerID = Attr(int)
+
+      @component(icon="🧾")
+      class Order(Object):
+          OrderID = Attr(int)
+          CustomerID = Attr("Customer")
+      ```
+      {: .model #shop }
+      ````
+      {: .accordion #model_fold }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/folded.md"
+    And I wait for the page to be interactive
+    And I open only the "Step 1" section
+    Then the diagram in the open section waits for its classes
+    And the diagram in the open section names no framework class
+    When I also open the "Step 2" section
+    Then a class diagram is drawn naming "Customer" and "Order"
+    And the diagram in the open section names no framework class
+
   Scenario: A dot diagram fits the page instead of scrolling it
     A concept map wider than the page used to arrive at natural size and
     make the reader scroll sideways before reading anything. Fences fit by

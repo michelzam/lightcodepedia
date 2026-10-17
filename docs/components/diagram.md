@@ -18,6 +18,11 @@ A model block stays hidden, so a lesson can declare eight classes out of sight
 and show only their picture: `scope="OrderDetail,Order,Product"` names the
 classes nothing points into, and the closure brings the rest.
 
+A scope that names classes the page has not defined yet draws nothing: the
+diagram says it is waiting, and draws the author's classes the moment the
+model lands — a model folded further down the page never makes the diagram
+show the whole framework in the meantime.
+
 ## 🌍 Whole model
 
 [Component model](#)

@@ -54,10 +54,27 @@ Auto-included by docs/_layouts/default.html.
       return ready;
     }
 
+    /* A scope naming classes the model does not define yet draws nothing and
+       waits: the model may sit in a closed fold further down, and the first
+       draw used to fall back to the whole framework (Michel, 2026-10-09). */
     function renderOne(e, div, arg, sm) {
-      e.run.call(e.mp, "import js\njs.window._lcDiagramDot = to_dot(" + arg
-                       + ", statemachines=" + sm + ")\n");
-      div.innerHTML = e.viz.renderString(window._lcDiagramDot || "digraph{}", { format: "svg" });
+      e.run.call(e.mp, "import js\n_lc_dg_scope = " + arg
+                       + "\njs.window._lcDiagramDot = to_dot(_lc_dg_scope, statemachines=" + sm
+                       + ") if (not _lc_dg_scope or _scope_set(_lc_dg_scope)) else ''\n");
+      var dot = window._lcDiagramDot;
+      if (!dot) {
+        div.dataset.lcDiagramPending = "1";
+        div.innerHTML = "";
+        var p = document.createElement("p");
+        p.className = "lc-diagram-pending";
+        p.style.cssText = "color:gray;font-size:0.85em;font-style:italic;margin:0.5em 0";
+        p.textContent = "⏳ This diagram draws once its classes are defined ("
+                        + arg.replace(/"/g, "").split(",").join(", ") + ").";
+        div.appendChild(p);
+        return;
+      }
+      delete div.dataset.lcDiagramPending;
+      div.innerHTML = e.viz.renderString(dot, { format: "svg" });
     }
 
     function upgradeDiagram(el) {

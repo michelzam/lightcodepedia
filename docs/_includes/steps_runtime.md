@@ -3478,8 +3478,11 @@ def _scope_set(scope):
                         stack += _MODEL[b]["bases"]
         return sel
     # a class name → the class + ancestors + association targets + subclasses.
+    # A name the model does not (yet) define selects nothing — never the whole
+    # framework: the author's model may still sit in a closed fold further down
+    # (Michel, 2026-10-09, 410 Module 07). The diagram waits for it.
     if scope not in _MODEL:
-        return set(_MODEL.keys())
+        return set()
     sel, stack = set(), [scope]
     while stack:
         n = stack.pop()
