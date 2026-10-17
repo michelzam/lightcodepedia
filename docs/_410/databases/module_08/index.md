@@ -76,11 +76,9 @@ shrinks.
 ````
 ### 🎯 Step 2 · From designer to auditor
 
-[Auditing a DB model](_slides/m08_06.jpg)
-{: .embed image="true" width="100%" }
-
 You designed UWM's database. Now look at a design the way a reviewer
-does: from the **outside in**. An auditor does not ask "does it work on
+does: from the **outside in**. And the first design you audit is **your
+own** — the uwm model you built in module 07, then your project's. An auditor does not ask "does it work on
 my laptop?" but "does it follow the rules, and does it answer the
 questions?"
 
