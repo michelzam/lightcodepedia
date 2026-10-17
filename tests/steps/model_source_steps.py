@@ -595,7 +595,7 @@ def step_save_off(context, gid):
 def step_press_save(context, gid):
     b = grid(context, gid).locator("button.lc-dg-save")
     expect(b).to_be_enabled(timeout=T)
-    context.db_mark = len(context.db_calls)
+    context.db_mark = len(getattr(context, "db_calls", []))
     b.click()
 
 
@@ -662,3 +662,129 @@ def step_grid_offers(context, gid):
     g = grid(context, gid)
     for sel in ("button.lc-dg-new", "button.lc-dg-save", "button.lc-dg-refresh"):
         expect(g.locator(sel)).to_have_count(1)
+
+
+# ── an unlisted table: a stand-in for the setup SQL's four functions ──────────
+@given("a database with the Lightcode setup and no author yet")
+def step_unl_db(context):
+    import json as _j
+    st = context.unl = {"authors": [], "tables": {}, "calls": []}
+
+    def handle(route):
+        req = route.request
+        fn = req.url.split("/rpc/")[-1].split("?")[0]
+        a = _j.loads(req.post_data or "{}")
+        st["calls"].append((fn, a))
+
+        def ok(v):
+            route.fulfill(status=200, content_type="application/json",
+                          headers={"Access-Control-Allow-Origin": "*"}, body=_j.dumps(v))
+
+        def no(msg):
+            route.fulfill(status=400, content_type="application/json",
+                          headers={"Access-Control-Allow-Origin": "*"}, body=_j.dumps({"message": "lc: " + msg}))
+        if fn == "lc_claim":
+            if not st["authors"]:
+                st["authors"].append(a["token"])
+            return ok(a["token"] in st["authors"])
+        if fn == "lc_ensure":
+            if a["token"] not in st["authors"]:
+                return no("only the author makes tables")
+            t = st["tables"].setdefault(a["tbl"], {"cols": [], "rows": [], "next": 1,
+                                                    "share": a["tbl"] + "-5f2c9a01b7e3"})
+            for c in a["cols"]:
+                if c["n"] not in t["cols"]:
+                    t["cols"].append(c["n"])
+            return ok(t["share"])
+        t = st["tables"].get(a.get("tbl"))
+        if not t or t["share"] != a.get("share"):
+            return no("no list by that name")
+        if fn == "lc_read":
+            return ok([dict(r, _change="insert") for r in t["rows"]])
+        if fn == "lc_save":
+            for r in a["ins"]:
+                r = {k: v for k, v in r.items() if k in t["cols"]}
+                r["id"] = t["next"]; t["next"] += 1
+                t["rows"].append(r)
+            for u in a["upd"]:
+                for r in t["rows"]:
+                    if r["id"] == u["id"]:
+                        r.update({k: v for k, v in u.items() if k in t["cols"]})
+            t["rows"] = [r for r in t["rows"] if r["id"] not in a["del"]]
+            return ok({"ins": len(a["ins"]), "upd": len(a["upd"]), "del": len(a["del"])})
+        route.fulfill(status=404, body="")
+    context.page.route("**/demo.supabase.co/rest/v1/rpc/*", handle)
+    context.page.route("**/demo.supabase.co/rest/v1/walks*",
+                       lambda route: route.fulfill(status=404, body="{}"))   # never read directly
+
+
+@then("the grid \"{gid}\" asks for the list's unlisted name")
+def step_unl_asks(context, gid):
+    expect(grid(context, gid).locator("input.lc-dg-unl-name")).to_be_visible(timeout=T)
+    expect(grid(context, gid).locator("button.lc-dg-save")).to_be_disabled()
+
+
+@when('I say I am the author under "{gid}", with no key yet')
+def step_unl_author(context, gid):
+    g = grid(context, gid)
+    g.locator("button.lc-dg-unl-me").click()
+    g.locator("button.lc-dg-unl-claim").click()
+
+
+@then('the database has me as its author, and a table "{tbl}" made of "{cols}"')
+def step_unl_made(context, tbl, cols):
+    for _ in range(60):
+        if tbl in context.unl["tables"]:
+            break
+        context.page.wait_for_timeout(200)
+    assert len(context.unl["authors"]) == 1 and context.unl["authors"][0].startswith("lca_"), context.unl["authors"]
+    got = context.unl["tables"][tbl]["cols"]
+    assert got == [c.strip() for c in cols.split(",")], got
+
+
+@then('the grid "{gid}" shows the name to share and my new author key')
+def step_unl_show(context, gid):
+    g = grid(context, gid)
+    expect(g.locator("code.lc-dg-unl-show")).to_have_text("walks-5f2c9a01b7e3", timeout=T)
+    expect(g.locator(".lc-dg-unl-key code")).to_have_text(context.unl["authors"][0])
+    expect(g.locator("input.lc-dg-unl-name")).to_have_count(0)
+
+
+@then('the table "{tbl}" holds "{dog}", saved through its name')
+def step_unl_saved(context, tbl, dog):
+    for _ in range(50):
+        if any(r.get("dog") == dog for r in context.unl["tables"][tbl]["rows"]):
+            break
+        context.page.wait_for_timeout(200)
+    rows = context.unl["tables"][tbl]["rows"]
+    assert [r["dog"] for r in rows] == [dog], rows
+    saves = [a for f, a in context.unl["calls"] if f == "lc_save"]
+    assert saves and saves[-1]["share"] == "walks-5f2c9a01b7e3", saves
+
+
+def _unl_paste(context, gid, name):
+    g = grid(context, gid)
+    box = g.locator("input.lc-dg-unl-name")
+    expect(box).to_be_visible(timeout=T)
+    box.fill(name)
+    g.locator("button.lc-dg-unl-ok").click()
+
+
+@when('a classmate opens the page on another device and pastes the name under "{gid}"')
+def step_unl_classmate(context, gid):
+    context.page.evaluate("() => { localStorage.removeItem('lc_author_demo'); localStorage.removeItem('lc_unlisted_demo_walks'); }")
+    context.page.reload(wait_until="domcontentloaded")
+    _unl_paste(context, gid, "walks-5f2c9a01b7e3")
+
+
+@then('the grid "{gid}" offers no name to share')
+def step_unl_noshare(context, gid):
+    expect(grid(context, gid).locator("code.lc-dg-unl-show")).to_have_count(0)
+    expect(grid(context, gid).locator("input.lc-dg-unl-name")).to_have_count(0)
+
+
+@when('a stranger pastes "{name}" under "{gid}"')
+def step_unl_stranger(context, name, gid):
+    context.page.evaluate("() => { localStorage.removeItem('lc_unlisted_demo_walks'); }")
+    context.page.reload(wait_until="domcontentloaded")
+    _unl_paste(context, gid, name)

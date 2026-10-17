@@ -606,3 +606,44 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the grid "families" has the columns "family, dog, stage" and no row
     And the grid "families" says "the database cannot be reached", with no error column
     And the grid "families" still offers New, Save and Refresh
+
+  Scenario: An unlisted table — the author's class makes it, a classmate reads and writes it by its name
+    Michel, 2026-10-17: "I would like my class to create the table if not
+    exists, even if I need to add a token in my browser, while letting
+    others read or write data, just by sharing a special unlisted name."
+
+    Given a database with the Lightcode setup and no author yet
+    And the GitHub contents API serves "courses/demo/module_06/unl.md" with the document:
+      """
+      # Walks
+
+      [the walks](https://demo.supabase.co/rest/v1/walks)
+      {: .dataset #walks_db apikey="sb_publishable_test" unlisted="true" }
+
+      ```python
+      class Walk(Object, source="walks_db"):
+          dog = Attr(str)
+          walker = Attr(str)
+          hour = Attr(str)
+      ```
+      {: .model }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/unl.md"
+    And I wait for the page to be interactive
+    Then the grid "walks" has the columns "dog, walker, hour" and no row
+    And the grid "walks" asks for the list's unlisted name
+    When I say I am the author under "walks", with no key yet
+    Then the database has me as its author, and a table "walks" made of "dog, walker, hour"
+    And the grid "walks" shows the name to share and my new author key
+    When I add a "Walk" with New under "walks"
+    And I type "Biscuit" and press Enter, without clicking
+    And I press Save under "walks"
+    Then the table "walks" holds "Biscuit", saved through its name
+    When a classmate opens the page on another device and pastes the name under "walks"
+    Then the grid "walks" shows the row "Biscuit" read back from the table
+    And the grid "walks" offers no name to share
+    When a stranger pastes "walks-000000000000" under "walks"
+    Then the grid "walks" says "no list by that name", with no error column

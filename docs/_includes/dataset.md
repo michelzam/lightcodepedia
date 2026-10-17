@@ -101,6 +101,11 @@ Auto-included by docs/_layouts/default.html.
   border: 1px dashed #93c5fd; border-radius: 8px; background: #f8fbff; font-size: .9em; color: #1e3a8a; }
 .lc-ds-key input { flex: 1 1 16em; font: inherit; padding: .3em .5em; border: 1px solid #cbd5e1; border-radius: 6px; }
 .lc-ds-key button { font: inherit; font-weight: 500; padding: .3em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
+.lc-dg-unl { display: flex; flex-wrap: wrap; align-items: center; gap: .4em .6em; margin-top: .4em; font-size: .9em; }
+.lc-dg-unl code { user-select: all; }
+.lc-dg-unl input { font: inherit; padding: .2em .4em; border: 1px solid #cbd5e1; border-radius: 4px; min-width: 12em; }
+.lc-dg-unl-me { background: none; border: 0; color: #2563eb; cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
+.lc-dg-unl-note { color: #64748b; }
 .lc-dg-say { margin-top: .4em; padding: .35em .7em; border-radius: 6px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; font-size: .9em; }
 
 /* ── button ─────────────────────────────────────────── */
@@ -197,6 +202,37 @@ Auto-included by docs/_layouts/default.html.
     return o;
   }
   function dbKeyOf(r) { return JSON.stringify(dbSame(r)); }
+  /* AN UNLISTED TABLE — the device's two secrets: the author key (makes
+     tables) and each list's unlisted name (reads and writes it) */
+  function lsGet(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+  function lsSet(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
+  /* the columns a list's class declares, in its order, for the table it
+     makes: str, int, float, bool (a state is a str) — the columns the table
+     brought are not the class's to make */
+  function unlCols(id) {
+    var M = window.lcModels || {}, out = null;
+    Object.keys(M).forEach(function (n) {
+      var m = M[n];
+      if (!m || m.src !== id) return;
+      out = out || [];
+      (m.order || Object.keys(m.fields || {})).forEach(function (f) {
+        var d = (m.fields || {})[f];
+        if (!d || d.src || f === "id" || f.charAt(0) === "_" || !/^[a-z][a-z0-9_]{0,40}$/.test(f)) return;
+        if (!out.some(function (c) { return c.n === f; })) out.push({ n: f, t: d.state ? "str" : (d.t || "str") });
+      });
+    });
+    return out;
+  }
+  /* the class may not be read yet when the list is: wait for it a little */
+  function unlColsSoon(id, tries) {
+    return new Promise(function (res) {
+      (function look(n) {
+        var c = unlCols(id);
+        if (c || n <= 0) return res(c);
+        setTimeout(function () { look(n - 1); }, 250);
+      })(tries);
+    });
+  }
   /* what changed since the table was read: new rows (no id yet), changed
      rows, rows that are gone */
   window.lcDatasetChanges = function (id) {
@@ -221,6 +257,17 @@ Auto-included by docs/_layouts/default.html.
   window.lcDatasetSave = function (id) {
     var r = window.lcRemote[id], ch = window.lcDatasetChanges(id);
     if (!r || !ch) return Promise.resolve(null);
+    if (r.unl) {
+      var u = r.unl, author = lsGet(u.akey);
+      if (!u.share) return Promise.reject(new Error("paste the list's unlisted name first"));
+      /* the author's class may have gained a column since the table was read */
+      var pre = author ? unlColsSoon(id, 0).then(function (cols) {
+        return cols ? u.rpc("lc_ensure", { token: author, tbl: u.tbl, cols: cols }) : null;
+      }) : Promise.resolve(null);
+      return pre.then(function () {
+        return u.rpc("lc_save", { share: u.share, tbl: u.tbl, ins: ch.ins, upd: ch.upd, del: ch.del.map(Number) });
+      }).then(function () { r.pull(); return ch; });
+    }
     var H = r.db.headers({ "Content-Type": "application/json", Prefer: "return=minimal" });
     var ok = function (x) { if (!x.ok) return x.text().then(function (t) { throw new Error("HTTP " + x.status + " " + t.slice(0, 160)); }); return x; };
     var calls = [];
@@ -407,7 +454,63 @@ Auto-included by docs/_layouts/default.html.
           for (var k in (extra || {})) h[k] = extra[k];
           return h;
         };
+        /* AN UNLISTED TABLE (Michel, 2026-10-17: "my class creates the table
+           if not exists, even with a token in my browser, while others read
+           or write just by sharing a special unlisted name"): unlisted="true".
+           The tables sit in the database's private schema, no rule opens
+           them; four functions are the only door (the setup SQL, pasted once).
+           The author's device holds the author key: its class makes the table
+           and adds the columns it gains, and the table's unlisted name shows
+           under the grid, to share. Everyone else pastes that name once. Both
+           stay on the device, never in the page. */
+        var unl = isDb && el.getAttribute("unlisted") === "true";
+        var unlPull = null;
+        if (unl) {
+          var uProj = (/^https:\/\/([\w-]+)\./.exec(href) || [])[1] || "";
+          var uTbl = (/\/rest\/v1\/([\w-]+)/.exec(href) || [])[1] || "";
+          var uBase = href.split("/rest/v1/")[0] + "/rest/v1";
+          var U = { tbl: uTbl, akey: "lc_author_" + uProj, skey: "lc_unlisted_" + uProj + "_" + uTbl,
+                    share: "", author: false, need: false, newKey: "" };
+          U.rpc = function (fn, body) {
+            return fetch(uBase + "/rpc/" + fn, { method: "POST", cache: "no-store",
+                                                 headers: dbHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) })
+              .then(function (x) {
+                return x.text().then(function (t) {
+                  var j = null; try { j = JSON.parse(t); } catch (e) {}
+                  if (x.ok) return j;
+                  if (x.status === 404) throw new Error("this database has no Lightcode setup yet — run the setup SQL once");
+                  if (x.status === 401 || x.status === 403) throw new Error("the database refused the key — check apikey=\"…\"");
+                  throw new Error(((j && j.message) || ("HTTP " + x.status)).replace(/^lc: /, ""));
+                });
+              });
+          };
+          unlPull = function () {
+            var r = window.lcRemote[id], author = lsGet(U.akey);
+            var step = author
+              ? unlColsSoon(id, 40).then(function (cols) {
+                  return U.rpc("lc_ensure", { token: author, tbl: U.tbl, cols: cols || [] })
+                    .then(function (sh) { if (sh) lsSet(U.skey, sh); U.author = true; return sh; });
+                })
+              : Promise.resolve(lsGet(U.skey));
+            return step.then(function (sh) {
+              U.share = sh || "";
+              U.need = !sh;
+              if (!sh) { r.snap = {}; r.error = ""; window.lcSetDataset(id, []); return; }
+              return U.rpc("lc_read", { share: sh, tbl: U.tbl }).then(function (rows) {
+                rows = Array.isArray(rows) ? rows : [];
+                var snap = {};
+                rows.forEach(function (x) { if (x && x.id != null) snap[String(x.id)] = dbKeyOf(x); });
+                r.snap = snap; r.error = "";
+                window.lcSetDataset(id, shapeData(rows, el));
+              });
+            }).catch(function (e) {
+              if (/no list by that name/.test(e.message || "")) U.need = true;
+              fail(e);
+            });
+          };
+        }
         var pull = function () {
+          if (unlPull) return unlPull();
           /* cache-bust so a just-landed file (results, fleet) is seen now,
              not from the 60s API/Pages cache — this is the whole point of
              refresh= (a counter, since Date is engine-blocked); a database
@@ -443,7 +546,9 @@ Auto-included by docs/_layouts/default.html.
               }
               setFromText(text, fmt, el, id);
             })
-            .catch(function (e) {
+            .catch(fail);
+        };
+        var fail = function (e) {
               var cur = window.lcDatasets[id];
               /* Chrome says "Failed to fetch", Safari "Load failed", Firefox
                  "NetworkError…": the same refusal, said one way */
@@ -454,10 +559,10 @@ Auto-included by docs/_layouts/default.html.
                 : e.message;
               if (isDb && window.lcRemote[id]) window.lcRemote[id].error = why;
               if (!cur || !cur.length) window.lcSetDataset(id, [{ "⚠️": why }]);
-            });
+              else if (unl) window.lcSetDataset(id, cur);   /* the grid says why, under the rows */
         };
         window.lcRemote[id] = { href: href, pull: pull, write: !!keyName || el.getAttribute("write") === "true", at: performance.now(),
-                                db: isDb ? { base: href.split("?")[0], headers: dbHeaders } : null, snap: {} };
+                                db: isDb ? { base: href.split("?")[0], headers: dbHeaders } : null, snap: {}, unl: unl ? U : null };
         pull();
         /* refresh="30" → live mode: re-pull every N seconds. Republishing to
            the bus repaints every bound grid/stat/chart with no page reload —
@@ -867,9 +972,35 @@ Auto-included by docs/_layouts/default.html.
       var dbBtns = dbR ? "<button class='lc-dg-btn lc-dg-save' type='button'" + (dbCh && dbCh.n ? "" : " disabled")
           + " title='send the changes to the database'>💾 Save" + (dbCh && dbCh.n ? " (" + dbCh.n + ")" : "") + "</button>"
           + "<button class='lc-dg-btn lc-dg-refresh' type='button' title='read the database again'>↻ Refresh</button>" : "";
+      /* an unlisted table: the name to paste, or — on the author's device —
+         the name to share */
+      var U = dbR && dbR.unl;
+      if (U && !U.share) dbBtns = dbBtns.replace("lc-dg-save' type='button'", "lc-dg-save' type='button' disabled");
+      var unlBar = "";
+      if (U) {
+        unlBar = "<div class='lc-dg-unl'>";
+        if (U.share && U.author)
+          unlBar += "<span>🔗 unlisted name <code class='lc-dg-unl-show'>" + esc(U.share) + "</code></span>"
+            + "<button class='lc-dg-btn lc-dg-unl-copy' type='button' data-copy='" + esc(U.share) + "'>📋 Copy</button>"
+            + "<span class='lc-dg-unl-note'>✍️ you are the author: share this name with the class</span>";
+        if (U.newKey)
+          unlBar += "<span class='lc-dg-unl-key'>🔑 your author key <code>" + esc(U.newKey) + "</code></span>"
+            + "<button class='lc-dg-btn lc-dg-unl-copy' type='button' data-copy='" + esc(U.newKey) + "'>📋 Copy</button>"
+            + "<span class='lc-dg-unl-note'>keep it safe: it makes tables, from another device too</span>";
+        if (U.need)
+          unlBar += "<label>🔗 this list is shared by an unlisted name — paste it "
+            + "<input class='lc-dg-unl-name' type='text' autocomplete='off' spellcheck='false' aria-label='the list&#39;s unlisted name'></label>"
+            + "<button class='lc-dg-btn lc-dg-unl-ok' type='button'>OK</button>"
+            + "<button class='lc-dg-unl-me' type='button'>✍️ I'm the author</button>"
+            + "<span class='lc-dg-unl-auth' hidden><input class='lc-dg-unl-akey' type='password' autocomplete='off' placeholder='your author key — empty makes one' aria-label='author key'>"
+            + "<button class='lc-dg-btn lc-dg-unl-claim' type='button'>OK</button></span>";
+        unlBar += "</div>";
+      }
       if (srcErr) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(srcErr) + "</p>";
+      else if (U && dbR.error) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(dbR.error) + "</p>";
       if (model) html += "<div class='lc-dg-foot'><button class='lc-dg-new' type='button' title='a new " + esc(bindId) + ", at its first stage'>➕ New" + ((model.subs || []).length ? " ⌄" : "") + "</button>" + dbBtns + "</div>";
       else if (dbBtns) html += "<div class='lc-dg-foot'>" + dbBtns + "</div>";
+      html += unlBar;
       if (pages > 1) {
         html += "<div class='lc-dg-pages'>";
         if (page > 0)         html += "<button data-pg='" + (page - 1) + "'>←</button>";
@@ -1098,6 +1229,49 @@ Auto-included by docs/_layouts/default.html.
           sv.disabled = false; sv.textContent = "💾 Save";
         });
       });
+      if (U) {
+        var uOk = el.querySelector(".lc-dg-unl-ok"), uName = el.querySelector(".lc-dg-unl-name");
+        var take = function () {
+          var v = (uName.value || "").trim();
+          if (!v) return;
+          lsSet(U.skey, v); U.need = false;
+          window.lcRemoteReload(dbSrc);
+        };
+        if (uOk) uOk.addEventListener("click", function (e) { e.stopPropagation(); take(); });
+        if (uName) uName.addEventListener("keydown", function (e) { e.stopPropagation(); if (e.key === "Enter") take(); });
+        var uMe = el.querySelector(".lc-dg-unl-me"), uAuth = el.querySelector(".lc-dg-unl-auth");
+        if (uMe) uMe.addEventListener("click", function (e) { e.stopPropagation(); uAuth.hidden = !uAuth.hidden; });
+        var uClaim = el.querySelector(".lc-dg-unl-claim"), uKey = el.querySelector(".lc-dg-unl-akey");
+        if (uKey) uKey.addEventListener("keydown", function (e) { e.stopPropagation(); });
+        if (uClaim) uClaim.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var k = (uKey.value || "").trim(), made = !k;
+          if (made) {
+            var b = new Uint8Array(18); window.crypto.getRandomValues(b);
+            k = "lca_" + Array.prototype.map.call(b, function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+          }
+          U.rpc("lc_claim", { token: k }).then(function (ok) {
+            if (!ok) throw new Error("this database already has an author — paste that author key");
+            lsSet(U.akey, k);
+            if (made) U.newKey = k;
+            window.lcRemoteReload(dbSrc);
+          }).catch(function (err) { if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ " + err.message); });
+        });
+        el.querySelectorAll(".lc-dg-unl-copy").forEach(function (b) {
+          b.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var v = b.getAttribute("data-copy");
+            var done = function () { b.textContent = "✓ Copied"; };
+            var pick = function () {
+              var c = b.previousElementSibling && b.previousElementSibling.querySelector("code");
+              if (c) { var rg = document.createRange(); rg.selectNodeContents(c); var sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(rg); }
+              b.textContent = "⌘C to copy";
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(done, pick);
+            else pick();
+          });
+        });
+      }
       if (rf) rf.addEventListener("click", function (e) {
         e.stopPropagation();
         var ch = window.lcDatasetChanges(dbSrc);
