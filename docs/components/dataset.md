@@ -200,6 +200,44 @@ A sentence can also read the **first** row of any list, not only count
 them: **{= todos.first.title }** is the first todo above
 (`{= todos.first.title }`).
 
+## A list in a database — the class makes its table
+
+A Supabase table's address, `https://<project>.supabase.co/rest/v1/<table>`,
+with the project's public key in `apikey="…"`, is a list kept in a
+database. Under a class's grid, **➕ New** makes an object, **💾 Save (n)**
+sends only what changed (new, edited, deleted), **↻ Refresh** reads the
+table again. Nobody writes a line of database code.
+
+````markdown
+[the walks](https://<project>.supabase.co/rest/v1/walks)
+{: .dataset #walks_db apikey="sb_publishable_…" unlisted="true" }
+
+```python
+class Walk(Object, source="walks_db"):
+    dog = Attr(str)
+    walker = Attr(str)
+    hour = Attr(str)
+```
+{: .model }
+
+[the walks](#)
+{: .datagrid source="Walk" #walks }
+````
+
+With `unlisted="true"` the table is shared by an **unlisted name**, like a
+document shared "anyone with the link". The database is set up once (one
+SQL script); after that, the class makes its own table: on the author's
+device, which holds the author key, the class creates the table if it does
+not exist and adds the columns it gains. The grid then shows the table's
+unlisted name, to share. Everyone else pastes that name once, under the
+grid. The key and the name stay on the device, never in the page; the
+tables answer nobody who lacks the name.
+
+The table keeps its own notes on every line, in columns whose names start
+with `_` (when it last changed, how, from where): the page never shows
+them and never sends them. When the database cannot be reached, the grid
+says so under its columns, and stays ready.
+
 ## Clickable rows
 
 Add a `url` field to any row — the column is **hidden** and the whole row becomes a clickable link (opens in a new tab).
@@ -424,6 +462,8 @@ Feature: A class wears a dataset
 | `.dataset` | `#id` | snake_case | Registers data under this key |
 | `.dataset` | _(applied to a link)_ | `https://…` href | Fetches JSON or CSV from the URL |
 | `.dataset` | `dbx="…"` + `host="…"` | warehouse id, proxy root (default `/dbx`) | The fence is a SQL statement run on a Databricks warehouse with this device's token — see above |
+| `.dataset` | `apikey="…"` | a Supabase public key | The link is a database table: 💾 Save and ↻ Refresh under its class's grid |
+| `.dataset` | `unlisted="true"` | — | The table is made by the author's class and shared by an unlisted name, pasted once |
 | `.dataset` | `refresh="…"` | seconds (≥10) | Live mode: re-fetch on a timer (cache-busted); every bound grid/stat/chart repaints itself — no page reload |
 | `.model` | `class X(Object, source="…")` | dataset id | The dataset's rows become X's objects, its columns X's fields; X adds a `State` and verbs — and X is a dataset id itself |
 | `.datagrid` | `source="…"` | dataset id, or a class | Which dataset to display; a class dresses its rows: the state cell's ⌄ drops the row's verbs, typed cells, ➕ New |
