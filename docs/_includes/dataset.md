@@ -220,7 +220,8 @@ Auto-included by docs/_layouts/default.html.
   /* empty is empty: the table's null and the page's "" are the same blank */
   function dbSame(r) {
     var o = dbRow(r);
-    for (var k in o) if (o[k] === null || o[k] === undefined) o[k] = "";
+    /* a text column holding an id ("2") and the page's 2 are the same value */
+    for (var k in o) o[k] = (o[k] === null || o[k] === undefined) ? "" : (typeof o[k] === "number" ? String(o[k]) : o[k]);
     return o;
   }
   function dbKeyOf(r) { return JSON.stringify(dbSame(r)); }
@@ -232,6 +233,16 @@ Auto-included by docs/_layouts/default.html.
      ({: .model database="shelter" }) gets a table per class; a lone dataset
      may name its table itself: [walks](supabase://shelter/walk). */
   window.lcDatabases = window.lcDatabases || {};
+  /* the attribute that names a class's objects: its first text attribute */
+  function refLabel(cls) {
+    var m = (window.lcModels || {})[cls];
+    if (!m) return "obj";
+    var n = (m.order || Object.keys(m.fields || {})).filter(function (k) {
+      var f = m.fields[k]; return f && f.t === "str" && !f.hidden && !f.state;
+    })[0];
+    return n || "obj";
+  }
+  window.lcRefLabel = refLabel;
   var _dbYml = {};
   function ghText(repo, path) {
     var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
@@ -1018,8 +1029,23 @@ Auto-included by docs/_layouts/default.html.
     };
     document.addEventListener("lc-remote-state", onRemoteState);
 
+    var refWatch = {};
+    function watchRefs(m) {
+      if (!m) return;
+      Object.keys(m.fields || {}).forEach(function (k) {
+        var r = m.fields[k] && m.fields[k].ref;
+        if (!r || refWatch[r]) return;
+        refWatch[r] = 1;
+        var L = window.lcDatasetListeners = window.lcDatasetListeners || {};
+        var fn = function () { if (lastData) render(lastData); };
+        fn._lcEl = el;
+        (L[r] = L[r] || []).push(fn);
+      });
+    }
+
     function render(data) {
       lastData = data;
+      watchRefs((window.lcModels || {})[bindId]);
       /* the class's own icon and words on the grid's title (Michel, 2026-10-17:
          "replacing the grid generic emoji") */
       var cdoc = window.lcDocOf && (window.lcModels || {})[bindId] ? window.lcDocOf(bindId) : null;
@@ -1104,6 +1130,18 @@ Auto-included by docs/_layouts/default.html.
         /* a tap on a row SELECTS it; cells open for typing only when the
            grid says editable="true" — the detail form is where one edits
            (Michel, 2026-10-16) */
+        /* A REFERENCE (Michel, 2026-10-17: "a picklist in the grid"): the
+           cell names the referenced object by its first text attribute and
+           picks among the referenced class's objects */
+        if (f && f.ref) {
+          var rr = (window.lcDatasets || {})[f.ref] || [], lab = refLabel(f.ref);
+          var nameOf = function (r) { return r ? String(r[lab] != null && r[lab] !== "" ? r[lab] : r.obj) : ""; };
+          var curR = rr.filter(function (r) { return String(r.obj) === String(v); })[0];
+          if (f.ro || editSaid === "false") return "<td>" + esc(nameOf(curR)) + "</td>";
+          return "<td><select class='lc-dg-pick lc-dg-ref' data-col='" + c + "' data-row='" + idx + "'><option value=''></option>"
+            + rr.map(function (r) { return "<option value='" + esc(r.obj) + "'" + (String(r.obj) === String(v) ? " selected" : "") + ">" + esc(nameOf(r)) + "</option>"; }).join("")
+            + "</select></td>";
+        }
         if (!f || f.ro || editSaid === "false") return "<td>" + esc(v) + "</td>";
         if (f.enum)
           return "<td><select class='lc-dg-pick' data-col='" + c + "' data-row='" + idx + "'>"
@@ -1138,6 +1176,10 @@ Auto-included by docs/_layouts/default.html.
             var arrow = sortCol === c ? (sortAsc ? " ↑" : " ↓") : "";
             var hint = hints[c] ? " title='" + hints[c].replace(/'/g, "&#39;") + "' class='lc-th-hint'" : "";
             var label = window.lcPrettifyKey ? window.lcPrettifyKey(c) : c;
+            /* a reference's column wears its class's icon (its docstring) */
+            var rf = model && model.fields[c] && model.fields[c].ref;
+            var rdoc = rf && window.lcDocOf ? window.lcDocOf(rf) : null;
+            if (rdoc && rdoc.icon) label = rdoc.icon + " " + label;
             var cw = colW[c] ? " style='width:" + colW[c] + "px;min-width:" + colW[c] + "px'" : "";
             return "<th data-col='" + c + "'" + hint + cw + ">" + label + arrow + "<span class='lc-dg-grip' title='drag to resize'></span></th>";
           }).join("") + "</tr></thead><tbody>"

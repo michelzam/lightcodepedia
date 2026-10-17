@@ -799,3 +799,81 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I open the ⋯ of "Ada" in "walkers"
     Then the menu's "walk" reads "🐾 Walk", saying "Count one more walk."
     And the form "walker_card" has a button "🐾 Walk"
+
+  Scenario: An attribute declared hidden shows in no grid and no form
+    Michel, 2026-10-17: "when I declare an attribute as hidden, it should not
+    appear anymore in the grid" — hour = Attr(str, hidden=True).
+
+    Given the GitHub contents API serves "courses/demo/module_06/hidden.md" with the document:
+      """
+      # Walks
+
+      ```csv
+      dog,walker,hour
+      Biscuit,Ana,08:00
+      ```
+      {: .dataset #walk_list }
+
+      ```python
+      class Walk(Object, source="walk_list"):
+          dog = Attr(str)
+          walker = Attr(str)
+          hour = Attr(str, hidden=True)
+      ```
+      {: .model }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+
+      [the walk](#)
+      {: .form master="walks" #walk_card }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/hidden.md"
+    And I wait for the page to be interactive
+    Then the grid "walks" has the columns "dog, walker"
+    And the form "walk_card" shows no "hour" field
+
+  Scenario: A reference on a database — the walk's dog is picked from the dogs, by name, stored by id
+    Michel, 2026-10-17: "should we also add a reference table? For instance
+    for dogs? with a picklist in the grid and the proper icons in the column
+    title?" — the author seeds the dogs, a walk picks one.
+
+    Given a database with the Lightcode setup and no author yet
+    And the shelter database holds the dogs "Biscuit" and "Scout", and a walk of "Scout" by "Ben"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/refs.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Dog(Object):
+          '''🐕 A dog of the shelter.'''
+          name = Attr(str)
+
+      class Walk(Object):
+          dog = Attr(Dog)
+          walker = Attr(str)
+      ```
+      {: .model database="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+
+      [the walk](#)
+      {: .form master="walks" #walk_card }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/refs.md"
+    And I wait for the page to be interactive
+    Then the walk of "Ben" in "walks" names the dog "Scout", among "Biscuit, Scout"
+    And the column "dog" of "walks" wears "🐕"
+    When I pick the dog "Biscuit" for the walk of "Ben" in "walks"
+    Then the table "walk" saved the walk of "Ben" with the dog's id 1
+    And the form "walk_card" names the dog "Biscuit", never "dog_1"

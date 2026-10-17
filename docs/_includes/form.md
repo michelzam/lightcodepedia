@@ -704,7 +704,7 @@ Auto-included by docs/_layouts/default.html.
         var model = cls && row.obj != null ? (window.lcModels || {})[cls] : null;
         /* a subclass's object shows its own fields' rules and verbs */
         if (model && row._kind && (window.lcModels || {})[row._kind]) { cls = row._kind; model = window.lcModels[cls]; }
-        var locked = [], chips = [], picks = {};
+        var locked = [], chips = [], picks = {}, refs = {};
         if (model) {
           /* the object's card: the state LAST, as a chip, beside its verbs;
              locked and state fields read-only; enum fields pick lists; the
@@ -717,6 +717,16 @@ Auto-included by docs/_layouts/default.html.
             var f = model.fields[k];
             if (f.ro || f.state) locked.push(k);
             if (f.enum && !f.ro && !f.state) picks[k] = f.enum.map(String);
+            /* a reference picks among its class's objects, by their names */
+            if (f.ref) {
+              var rr = (window.lcDatasets || {})[f.ref] || [], lab = window.lcRefLabel ? window.lcRefLabel(f.ref) : "obj";
+              var nm = function (r) { return String(r[lab] != null && r[lab] !== "" ? r[lab] : r.obj); };
+              refs[k] = {};
+              rr.forEach(function (r) { refs[k][nm(r)] = String(r.obj); });
+              var cur = rr.filter(function (r) { return String(r.obj) === String(row[k]); })[0];
+              if (k in row) row[k] = cur ? nm(cur) : "";
+              if (!f.ro) picks[k] = [""].concat(Object.keys(refs[k]));
+            }
           });
           if (model.state) chips.push(model.state);
         }
@@ -731,6 +741,7 @@ Auto-included by docs/_layouts/default.html.
             /* an edit lands on the master's own row (the shown object may be
                the derived copy), then the grid repaints */
             onChange: function(o, k, v){
+              if (model && refs[k]) v = refs[k][v] || "";   /* a dog's name → the dog */
               if (model) { if (window.lcPySend) window.lcPySend("_lc_set(" + JSON.stringify(cls) + "," + JSON.stringify(String(objName)) + "," + JSON.stringify(k) + "," + JSON.stringify(v) + ")"); return; }
               if (shown !== row && k) row[k] = v;
               window.lcMasterDetail.refreshGrid(bound);

@@ -151,7 +151,7 @@ class Attr:
     _count = [0]
 
     def __init__(self, typ=str, default=None, min=None, max=None, step=None,
-                 enum=None, ro=False, unit="", hint="", secret=False):
+                 enum=None, ro=False, unit="", hint="", secret=False, hidden=False):
         Attr._count[0] += 1
         self._ord = Attr._count[0]
         self.t = typ if isinstance(typ, str) else getattr(typ, "__name__", "str")
@@ -172,6 +172,9 @@ class Attr:
         self.unit = unit
         self.hint = hint
         self.secret = bool(secret)
+        # hidden=True: kept by the class and its table, shown by no grid or
+        # form (Michel, 2026-10-17: "it should not appear anymore in the grid")
+        self.hidden = bool(hidden)
         self.is_state = False
         self.n = None
 
@@ -2881,10 +2884,19 @@ def _lc_publish_class(cls):
     if src:
         arr = getattr(js.window.lcDatasets, src, None)
         if arr is not None:
+            db = _lc_isdb(src)
             for o in _LC_OBJS:
                 if isinstance(o, cls) and getattr(o, "_js", None) is not None:
                     for f in cls._lc_fields:
                         v = o._v.get(f.n, f.d)
+                        if f.ref and db:
+                            # the table keeps the id; an id not yet resolved stays as read
+                            if v is not None and hasattr(v, "_v"):
+                                val = v._v.get("id")
+                            else:
+                                val = (getattr(o, "_lc_raw", None) or {}).get(f.n)
+                            setattr(o._js, f.n, "" if val is None else val)
+                            continue
                         setattr(o._js, f.n, (_lc_name_of(v) or "") if f.ref and v is not None else v)
             # the bus listener that adopts rows must not re-adopt our own write
             js.window._lcModelWriting = 1
@@ -2936,7 +2948,8 @@ def _lc_model_spec_push(cls, subs=True):
     for f in cls._lc_fields:
         dbid = f.n == "id" and bool(getattr(f, "src", False))   # the table's own id: kept, never shown
         fields[f.n] = {"t": f.t, "enum": f.enum, "ro": f.ro or dbid, "state": f.is_state,
-                       "src": bool(getattr(f, "src", False)), "hidden": dbid}
+                       "src": bool(getattr(f, "src", False)), "hidden": dbid or bool(getattr(f, "hidden", False)),
+                       "ref": f.t if f.ref else None}
     trans = {}
     for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
         pre, post, sfn, _o = tmeta[n]
@@ -3062,6 +3075,27 @@ def _lc_source_bind(cls_name, src):
     _lc_source_sync(src)
 
 
+def _lc_isdb(src):
+    fn = getattr(js.window, "lcIsDb", None)
+    return fn is not None and bool(fn(src))
+
+
+def _lc_ref_by_id(tname, v):
+    """A REFERENCE ON A DATABASE (Michel, 2026-10-17: a walk's dog, picked
+    from the shelter's dogs): the table keeps the dog's id; the object holds
+    the dog itself."""
+    rc = globals().get(tname)
+    if not isinstance(rc, type) or v is None or v == "":
+        return None
+    for o in _LC_OBJS:
+        if isinstance(o, rc) and str(o._v.get("id")) == str(v):
+            return o
+    return None
+
+
+_LC_RESYNC = [False]
+
+
 def _lc_source_sync(src):
     """The list moved (arrived, a bare edit, a new row): wrap the rows that
     have no object yet, refresh the ones that do, forget the ones that went.
@@ -3076,6 +3110,7 @@ def _lc_source_sync(src):
     n = int(arr.length)
     if n:
         _lc_source_fields(cls, arr[0], src)
+    db = _lc_isdb(src)
     g = globals()
     kept = []
     for i in range(n):
@@ -3095,6 +3130,15 @@ def _lc_source_sync(src):
             v = getattr(row, f.n, None)
             if v is None:
                 continue
+            if f.ref and db:
+                # the table holds the id; an id whose object is not read yet waits
+                ref = _lc_ref_by_id(f.t, v)
+                inst._v[f.n] = ref
+                raw = getattr(inst, "_lc_raw", None)
+                if raw is None:
+                    raw = inst._lc_raw = {}
+                raw[f.n] = None if ref is not None else v
+                continue
             try:
                 inst._v[f.n] = f._coerce(v)
             except Exception:
@@ -3104,6 +3148,16 @@ def _lc_source_sync(src):
         if isinstance(o, cls) and getattr(o, "_js", None) is not None and not any(o is k for k in kept):
             _lc_forget(o)
     _lc_publish_class(cls)
+    # the classes that point here find their objects now (dogs read after walks)
+    if not _LC_RESYNC[0]:
+        _LC_RESYNC[0] = True
+        try:
+            for s2, cn in list(_LC_SOURCED.items()):
+                c2 = globals().get(cn)
+                if s2 != src and isinstance(c2, type) and any(f.ref and f.t == cls_name for f in c2._lc_fields):
+                    _lc_source_sync(s2)
+        finally:
+            _LC_RESYNC[0] = False
 
 
 def _lc_say(cls_name, msg):
@@ -3131,6 +3185,9 @@ def _lc_set(cls_name, nm, field, value):
     inst = globals().get(nm)
     if inst is None:
         return _lc_say(cls_name, "⚠️ " + nm + " is gone")
+    raw = getattr(inst, "_lc_raw", None)
+    if raw:
+        raw.pop(field, None)        # a picked reference replaces the id read
     try:
         setattr(inst, field, value)
     except Exception as e:

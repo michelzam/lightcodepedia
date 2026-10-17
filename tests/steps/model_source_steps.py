@@ -927,3 +927,58 @@ def step_menu_label(context, verb, label, text):
 @then('the form "{fid}" has a button "{label}"')
 def step_form_button(context, fid, label):
     expect(context.page.locator("[data-lc-id='" + fid + "'] .lc-form-verb, .lc-form[data-lc-id='" + fid + "'] ~ .lc-form-verbs .lc-form-verb").filter(has_text=label).first).to_be_visible(timeout=T)
+
+
+
+@then('the form "{fid}" shows no "{field}" field')
+def step_form_no_field(context, fid, field):
+    form = context.page.locator("[data-lc-id='" + fid + "']")
+    expect(form).to_contain_text("Biscuit", timeout=T)
+    assert "hour" not in form.inner_text().lower(), form.inner_text()
+
+
+
+@given('the shelter database holds the dogs "{a}" and "{b}", and a walk of "{dog}" by "{walker}"')
+def step_db_dogs(context, a, b, dog, walker):
+    t = context.unl["tables"]
+    t["dog"] = {"cols": ["name"], "next": 3, "rows": [{"id": 1, "name": a}, {"id": 2, "name": b}]}
+    did = 1 if dog == a else 2
+    t["walk"] = {"cols": ["dog", "walker"], "next": 2, "rows": [{"id": 1, "dog": str(did), "walker": walker}]}
+
+
+@then('the walk of "{walker}" in "{gid}" names the dog "{dog}", among "{dogs}"')
+def step_walk_dog(context, walker, gid, dog, dogs):
+    sel = row_of(context, gid, walker).locator("select.lc-dg-ref")
+    expect(sel).to_have_count(1, timeout=T)
+    expect(sel.locator("option:checked")).to_have_text(dog, timeout=T)
+    assert not [c for c in context.unl["calls"] if c[0] == "lc_save"], "reading the walks saved them back"
+    opts = [o.strip() for o in sel.locator("option").all_inner_texts() if o.strip()]
+    assert opts == [d.strip() for d in dogs.split(",")], opts
+
+
+@then('the column "{col}" of "{gid}" wears "{icon}"')
+def step_col_icon(context, col, gid, icon):
+    expect(grid(context, gid).locator("thead th[data-col='" + col + "']")).to_contain_text(icon, timeout=T)
+
+
+@when('I pick the dog "{dog}" for the walk of "{walker}" in "{gid}"')
+def step_pick_dog(context, dog, walker, gid):
+    row_of(context, gid, walker).locator("select.lc-dg-ref").select_option(label=dog)
+
+
+@then('the table "{tbl}" saved the walk of "{walker}" with the dog\'s id {did:d}')
+def step_saved_ref(context, tbl, walker, did):
+    for _ in range(50):
+        rows = context.unl["tables"][tbl]["rows"]
+        if any(r.get("walker") == walker and str(r.get("dog")) == str(did) for r in rows):
+            return
+        context.page.wait_for_timeout(200)
+    raise AssertionError(str(context.unl["tables"][tbl]["rows"]) + " " + str([c for c in context.unl["calls"] if c[0] == "lc_save"]))
+
+
+
+@then('the form "{fid}" names the dog "{dog}", never "{internal}"')
+def step_form_dog(context, fid, dog, internal):
+    form = context.page.locator("[data-lc-id='" + fid + "']")
+    expect(form).to_contain_text(dog, timeout=T)
+    assert internal not in form.inner_text(), form.inner_text()
