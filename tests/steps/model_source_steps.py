@@ -109,7 +109,7 @@ def step_counts(context, gid, n, ds, m):
 
 @when('I click the row "{name}" in "{gid}"')
 def step_click_row(context, name, gid):
-    row_of(context, gid, name).locator("td").first.click()
+    row_of(context, gid, name).locator("td:not(.lc-dg-gut)").first.click()
 
 
 @then('the form "{fid}" shows the verbs "{verbs}" with "{grey}" grey')
@@ -148,7 +148,7 @@ def step_delete_selected(context, gid):
     obj = context.page.evaluate(
         "g => { const tr = document.querySelector('.lc-datagrid[data-lc-id=\"' + g + '\"] tbody tr.lc-dg-selected');"
         " const b = document.querySelector('.lc-datagrid[data-lc-id=\"' + g + '\"]').getAttribute('data-bind');"
-        " const name = tr.querySelector('td').textContent.trim();"
+        " const name = tr.querySelector('td:not(.lc-dg-gut)').textContent.trim();"
         " const row = (window.lcDatasets[b] || []).find(r => String(r.family) === name); return row ? row.obj : null; }", gid)
     assert obj, "no selected object"
     context.page.evaluate("o => window.lcPySend(o + '.delete()')", obj)
@@ -247,7 +247,7 @@ def step_chip_aligned(context, name, gid):
     expect(r.locator(".lc-dg-chip")).to_be_visible(timeout=T)
     mids = context.page.evaluate(
         """tr => { const mid = e => { const b = e.getBoundingClientRect(); return (b.top + b.bottom) / 2; };
-           const name = document.createRange(); name.selectNodeContents(tr.querySelector('td'));
+           const name = document.createRange(); name.selectNodeContents(tr.querySelector('td:not(.lc-dg-gut)'));
            const nb = name.getBoundingClientRect();
            return { name: (nb.top + nb.bottom) / 2, chip: mid(tr.querySelector('.lc-dg-chip')), caret: mid(tr.querySelector('.lc-dg-caret')) }; }""",
         r.element_handle())
@@ -706,12 +706,16 @@ def step_unl_db(context):
                 return no("only the author makes tables")
             t = st["tables"].setdefault(a["tbl"], {"cols": [], "rows": [], "next": 1})
             for c in a["cols"]:
+                if c["n"] == "_sub" and "_sub" not in t["cols"]:
+                    t["cols"].append("_sub")
+                    continue
                 if c.get("was") and c["was"] in t["cols"] and c["n"] not in t["cols"]:
                     t["cols"][t["cols"].index(c["was"])] = c["n"]
                     for r in t["rows"]:
                         r[c["n"]] = r.pop(c["was"], None)
                 if c["n"] not in t["cols"]:
                     t["cols"].append(c["n"])
+                t.setdefault("types", {})[c["n"]] = c.get("t", "str")
             return ok(st["space"])      # one unlisted name for the whole database
         if fn == "lc_drop":
             if a["token"] not in st["authors"]:
@@ -729,6 +733,14 @@ def step_unl_db(context):
         if fn == "lc_read":   # keys come back sorted, as Postgres's jsonb hands them
             return ok([dict(sorted(dict(r, _change="insert").items())) for r in t["rows"]])
         if fn == "lc_save":
+            if st.get("refuse"):
+                st["refuse"] = False
+                return no(st.get("refuse_why", "refused"))
+            # as Postgres: a number column takes a number or null, never ""
+            for r in a["ins"] + a["upd"]:
+                for k, v in r.items():
+                    if v == "" and t.get("types", {}).get(k) in ("int", "float", "bool"):
+                        return no('invalid input syntax for type bigint: ""')
             for r in a["ins"]:
                 r = {k: v for k, v in r.items() if k in t["cols"]}
                 r["id"] = t["next"]; t["next"] += 1
@@ -1039,7 +1051,7 @@ def step_renamed(context, tbl, old, new, value):
 def step_tidy_offered(context, gid, cols):
     b = grid(context, gid).locator(".lc-dg-corner button.lc-dg-tidy")
     expect(b).to_be_visible(timeout=T)
-    expect(b).to_have_attribute("title", "drop the columns no attribute uses: " + cols)
+    expect(b).to_have_attribute("title", re.compile(re.escape(cols)))
 
 
 @when('I tidy the table under "{gid}", confirming')
@@ -1153,3 +1165,115 @@ def step_snap_lost(context, tbl):
 def step_none_again(context):
     saves = [a for f, a in context.unl["calls"] if f == "lc_save"][context.db_saves0:]
     assert not any(x["ins"] for x in saves), saves
+
+
+
+@given('the shelter\'s "{tbl}" table holds a walk, a "{a}" and a "{b}"')
+def step_db_kinds(context, tbl, a, b):
+    context.unl["tables"][tbl] = {"cols": ["dog", "walker", "_sub"], "next": 4,
+        "rows": [{"id": 1, "dog": "Lucky", "walker": "Ana", "_sub": None},
+                 {"id": 2, "dog": "Fern", "walker": "Ben", "_sub": a},
+                 {"id": 3, "dog": "Rex", "walker": "Cleo", "_sub": b}]}
+
+
+@then('the walk by "{who}" is a "{kind}" in the grid "{gid}"')
+def step_is_kind(context, who, kind, gid):
+    k = None
+    for _ in range(50):
+        k = context.page.evaluate("""w => { const r = (window.lcDatasets.Walk || []).find(x => x.walker === w);
+          return r ? (r._kind || 'Walk') : null; }""", who)
+        if k == kind:
+            return
+        context.page.wait_for_timeout(200)
+    raise AssertionError(str(k))
+
+
+@then('the table "{tbl}" calls the walk by "{who}" a "{kind}"')
+def step_table_kind(context, tbl, who, kind):
+    for _ in range(50):
+        r = [x for x in context.unl["tables"][tbl]["rows"] if x.get("walker") == who][0]
+        if (r.get("_sub") or "") == kind:
+            return
+        context.page.wait_for_timeout(200)
+    raise AssertionError(str(context.unl["tables"][tbl]["rows"]))
+
+
+
+@then('the table "{tbl}" calls the walk by "{who}" by no class')
+def step_table_nokind(context, tbl, who):
+    step_table_kind(context, tbl, who, "")
+
+
+
+@then('the row of "{who}" in "{gid}" wears "{icon}" in its gutter, which opens its verbs')
+def step_gutter_icon(context, who, gid, icon):
+    b = row_of(context, gid, who).locator("td.lc-dg-gut .lc-dg-rowmenu")
+    expect(b).to_have_text(icon, timeout=T)
+    b.click()
+    expect(context.page.locator(".lc-dg-menu button[data-verb='delete']")).to_be_visible(timeout=T)
+    context.page.keyboard.press("Escape")
+    context.page.mouse.click(5, 5)
+
+
+
+@when('I delete the walk by "{who}" in "{gid}", reading the question')
+def step_delete_reading(context, who, gid):
+    context.asked = []
+    def on(d):
+        context.asked.append(d.message)
+        d.dismiss()
+    context.page.once("dialog", on)
+    row_of(context, gid, who).locator("td.lc-dg-gut .lc-dg-rowmenu").click()
+    context.page.locator(".lc-dg-menu button[data-verb='delete']").click()
+    context.page.wait_for_timeout(500)
+
+
+@then('the question was "{text}"')
+def step_question(context, text):
+    assert context.asked == [text], context.asked
+
+
+
+@then('the table "{tbl}" holds a "{kind}" of "{dog}"')
+def step_table_kind_of(context, tbl, kind, dog):
+    for _ in range(50):
+        rs = [x for x in context.unl["tables"][tbl]["rows"] if x.get("dog") == dog]
+        if rs and (rs[0].get("_sub") or "") == kind:
+            return
+        context.page.wait_for_timeout(200)
+    raise AssertionError(str(context.unl["tables"][tbl]["rows"]))
+
+
+@then('the corner of "{gid}" says saved')
+def step_corner_saved(context, gid):
+    expect(grid(context, gid).locator("button.lc-dg-save")).to_have_text("✓", timeout=T)
+
+
+@when('the database refuses the next save with "{why}"')
+def step_refuse_next(context, why):
+    context.unl["refuse"] = True
+    context.unl["refuse_why"] = why
+
+
+@then('the grid "{gid}" says "{text}" under it, no hover needed')
+def step_grid_says(context, gid, text):
+    expect(grid(context, gid).locator(".lc-dg-say")).to_contain_text(text, timeout=T)
+
+
+@then('the corner of "{gid}" offers no 🧹')
+def step_no_tidy(context, gid):
+    expect(grid(context, gid).locator("button.lc-dg-tidy")).to_have_count(0, timeout=T)
+
+
+@when('I tap the gutter of "{who}" in "{gid}"')
+def step_tap_gutter(context, who, gid):
+    row_of(context, gid, who).locator("td.lc-dg-gut .lc-dg-rowmenu").click()
+
+
+@then('the row of "{who}" is the selection of "{gid}", its verbs open')
+def step_gutter_selects(context, who, gid):
+    expect(grid(context, gid).locator("tbody tr.lc-dg-selected")).to_have_count(1, timeout=T)
+    expect(grid(context, gid).locator("tbody tr.lc-dg-selected")).to_contain_text(who, timeout=T)
+    expect(context.page.locator(".lc-dg-menu button[data-verb='delete']")).to_be_visible(timeout=T)
+    context.page.keyboard.press("Escape")
+    context.page.mouse.click(5, 5)

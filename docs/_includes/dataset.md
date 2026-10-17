@@ -80,6 +80,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-table tr:hover td.lc-dg-gut .lc-dg-rowmenu, .lc-dg-table tr.lc-dg-selected td.lc-dg-gut .lc-dg-rowmenu,
 .lc-dg-table td.lc-dg-gut .lc-dg-rowmenu:focus-visible { opacity: 1; color: #0066cc; }
 .lc-dg-table td.lc-dg-gut .lc-dg-rowmenu:hover { background: #eff6ff; }
+.lc-dg-table td.lc-dg-gut .lc-dg-rowmenu.lc-dg-kindmark { opacity: 1; color: inherit; }
 /* THE CORNER (Michel, 2026-10-17: "a delicate refresh spiral arrow on top
    right, better visible on hovering, a similar more stable one for save, and
    a + round little button"): + always, ↻ on hover, the save state always */
@@ -235,7 +236,7 @@ Auto-included by docs/_layouts/default.html.
   /* a row as the table would hold it: no page-only fields, keys in order */
   function dbRow(r) {
     var o = {};
-    Object.keys(r || {}).sort().forEach(function (k) { if (k !== "obj" && k.charAt(0) !== "_" && k !== "⚠️") o[k] = r[k]; });
+    Object.keys(r || {}).sort().forEach(function (k) { if (k !== "obj" && (k.charAt(0) !== "_" || k === "_sub") && k !== "⚠️") o[k] = r[k]; });
     return o;
   }
   /* empty is empty: the table's null and the page's "" are the same blank */
@@ -390,6 +391,8 @@ Auto-included by docs/_layouts/default.html.
           out.push(col);
         }
       });
+      /* a class with subclasses keeps, per row, which one it is */
+      if ((m.subs || []).length && !out.some(function (c) { return c.n === "_sub"; })) out.push({ n: "_sub", t: "str" });
     });
     return out;
   }
@@ -437,6 +440,11 @@ Auto-included by docs/_layouts/default.html.
   window.lcDatasetSave = function (id) {
     var r = window.lcRemote[id], ch = window.lcDatasetChanges(id);
     if (!r || !ch) return Promise.resolve(null);
+    /* a blank cell is the table's null (Michel, 2026-10-17: a new Sprint with
+       its speed still blank sent "" to a number column — refused, and the
+       Walk saved with it failed too) */
+    var blank = function (row) { var o = {}; for (var k in row) o[k] = row[k] === "" ? null : row[k]; return o; };
+    ch = { n: ch.n, ins: ch.ins.map(blank), upd: ch.upd.map(blank), del: ch.del };
     if (r.unl) {
       var u = r.unl, author = lsGet(u.akey);
       if (!u.share) return Promise.reject(new Error("paste the list's unlisted name first"));
@@ -697,7 +705,13 @@ Auto-included by docs/_layouts/default.html.
             var ensure = author && (!seen[id] || (opts && opts.ensure));
             var step = ensure
               ? unlColsSoon(id, 40).then(function (cols) {
+                  /* a database set up before _sub refuses it: the rest of the class still goes in */
                   return U.rpc("lc_ensure", { token: author, tbl: U.tbl, cols: cols || [] })
+                    .catch(function (e) {
+                      if (!/"_sub"/.test(e.message || "")) throw e;
+                      cols = (cols || []).filter(function (c) { return c.n !== "_sub"; });
+                      return U.rpc("lc_ensure", { token: author, tbl: U.tbl, cols: cols });
+                    })
                     .then(function (sh) {
                       U.tcols = { id: 1 };
                       (cols || []).forEach(function (c) { U.tcols[c.n] = 1; });
@@ -1177,10 +1191,14 @@ Auto-included by docs/_layouts/default.html.
       if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
       function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/'/g, "&#39;"); }
       function dressedCell(row, c, idx) { return dressedCell0(row, c, idx); }
-      var gut = !!(model && !model.state);
+      /* the gutter: ⋯ for a class with no state; a subclass's row wears its
+         class's icon there (Michel, 2026-10-17) — a tap still opens its verbs */
+      var gut = !!(model && (!model.state || (model.subs || []).length));
       var gutTd = function (idx) {
-        return "<td class='lc-dg-gut' data-row='" + idx + "'><button type='button' class='lc-dg-rowmenu'"
-          + " title='what this one can do' aria-label='what this one can do'>⋯</button></td>";
+        var r = sorted[idx] || {}, kd = r._kind && window.lcDocOf ? window.lcDocOf(r._kind) : null;
+        var mark = kd && kd.icon ? kd.icon : "⋯", tip = (r._kind ? "a " + r._kind + " — " : "") + "what this one can do";
+        return "<td class='lc-dg-gut' data-row='" + idx + "'><button type='button' class='lc-dg-rowmenu" + (kd && kd.icon ? " lc-dg-kindmark" : "") + "'"
+          + " title='" + esc(tip) + "' aria-label='" + esc(tip) + "'>" + esc(mark) + "</button></td>";
       };
       function dressedCell0(row, c, idx) {
         var v = row[c] !== undefined && row[c] !== null ? row[c] : "";
@@ -1275,12 +1293,22 @@ Auto-included by docs/_layouts/default.html.
       var dbSrc = model ? model.src : bindId;
       var dbR = window.lcRemote && window.lcRemote[dbSrc] && window.lcRemote[dbSrc].db ? window.lcRemote[dbSrc] : null;
       var dbCh = dbR && window.lcDatasetChanges ? window.lcDatasetChanges(dbSrc) : null;
-      /* 🧹 on the author's device: the table's columns no attribute declares */
-      var orphans = [];
+      /* 🧹 on the author's device: the table's columns no attribute declares,
+         and the class names no class (nor a was=) answers to any more */
+      var orphans = [], stale = [];
       if (dbR && dbR.unl && model && lsGet(dbR.unl.akey)) {
         var row0 = (window.lcDatasets[dbSrc] || [])[0] || {};
+        /* every class on the table declares its columns — a subclass's
+           own (Sprint's speed) is no leftover of the base class */
+        var declared = {};
+        (unlCols(dbSrc) || []).forEach(function (c) { declared[c.n] = 1; });
         orphans = Object.keys(row0).filter(function (k) {
-          return k !== "id" && k !== "obj" && k.charAt(0) !== "_" && k !== "⚠️" && (!model.fields[k] || model.fields[k].src);
+          return k !== "id" && k !== "obj" && k.charAt(0) !== "_" && k !== "⚠️" && !declared[k];
+        });
+        var known = [bindId].concat(model.subs || []), wases = (model.subs || []).map(function (k) { var m2 = (window.lcModels || {})[k]; return m2 && m2.was; });
+        (window.lcDatasets[dbSrc] || []).forEach(function (r) {
+          var k = r && r._sub;
+          if (k && known.indexOf(k) < 0 && wases.indexOf(k) < 0 && stale.indexOf(k) < 0) stale.push(k);
         });
       }
       var st = dbR ? (dbR.state || (dbCh && dbCh.n ? "dirty" : "ok")) : "";
@@ -1294,7 +1322,9 @@ Auto-included by docs/_layouts/default.html.
       var rfTip = pending.length ? "↻ adds the column" + (pending.length > 1 ? "s " : " ") + pending.join(", ") + " to the table, then reads it" : "read the database again";
       /* the corner, right to left (Michel, 2026-10-17): ＋, the save state
          (always there), ↻ (on hover) — so nothing leaves a hole */
-      var corner = (orphans.length ? "<button class='lc-dg-cbtn lc-dg-tidy' type='button' title='" + esc("drop the columns no attribute uses: " + orphans.join(", ")) + "' aria-label='tidy the table'>🧹</button>" : "")
+      var corner = (orphans.length || stale.length ? "<button class='lc-dg-cbtn lc-dg-tidy' type='button' title='" + esc(
+              [orphans.length ? "drop the columns no attribute uses: " + orphans.join(", ") : "",
+               stale.length ? "clear the class names no class answers to: " + stale.join(", ") : ""].filter(Boolean).join(" · ")) + "' aria-label='tidy the table'>🧹</button>" : "")
         + (dbR ? "<button class='lc-dg-cbtn lc-dg-refresh" + (pending.length ? " lc-dg-pending" : "") + "' type='button' title='" + esc(rfTip) + "' aria-label='" + esc(rfTip) + "'>↻</button>"
             + "<button class='lc-dg-cbtn lc-dg-save lc-dg-st-" + st + "' type='button'"
             + (st === "dirty" || st === "error" ? "" : " disabled") + " title='" + esc(stTip) + "' aria-label='" + esc(stTip) + "'>"
@@ -1332,6 +1362,8 @@ Auto-included by docs/_layouts/default.html.
       }
       if (srcErr) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(srcErr) + "</p>";
       else if (U && dbR.error) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(dbR.error) + "</p>";
+      /* why ⚠ — said under the grid, not in a tooltip a finger never sees */
+      else if (st === "error" && dbR.saveErr) html += "<p class='lc-dg-say' role='status'>⚠️ not saved: " + esc(dbR.saveErr) + "</p>";
       if (corner) html = "<div class='lc-dg-corner'>" + corner + "</div>" + html;
       html += unlBar;
       if (pages > 1) {
@@ -1492,9 +1524,21 @@ Auto-included by docs/_layouts/default.html.
             /* the row is marked as selected too (no publish: a follower's
                republish would repaint the table and take the menu with it) */
             var tr = td.parentNode;
+            var key = row.obj != null ? "o:" + row.obj : "i:" + parseInt(td.getAttribute("data-row"), 10);
+            /* A TAP IN THE GUTTER SELECTS FIRST (Michel, 2026-10-17): the row
+               becomes the selection — a bound form follows — then its verbs
+               open, on the row as redrawn */
+            if (!e._lcReopen && key !== selKey && lcId && window.lcMasterDetail) {
+              el.querySelectorAll("tbody tr").forEach(function (x) { x.classList.remove("lc-dg-selected"); });
+              tr.classList.add("lc-dg-selected");
+              selKey = key;
+              window.lcMasterDetail.publish(lcId, row);
+              setTimeout(function () { if (el._lcOpenVerbs) el._lcOpenVerbs(key); }, 150);
+              return;
+            }
             el.querySelectorAll("tbody tr").forEach(function (x) { x.classList.remove("lc-dg-selected"); });
             tr.classList.add("lc-dg-selected");
-            selKey = row.obj != null ? "o:" + row.obj : "i:" + parseInt(td.getAttribute("data-row"), 10);
+            selKey = key;
             /* a subclass's row wears its own verbs */
             var rm = (row._kind && (window.lcModels || {})[row._kind]) || model;
             var cur = String(row[rm.state] == null ? "" : row[rm.state]);
@@ -1529,8 +1573,21 @@ Auto-included by docs/_layouts/default.html.
                 var verb = b.getAttribute("data-verb");
                 if (b.getAttribute("data-ok") !== "1") { closeMenu(); window.lcGridSay(bindId, "⛔ " + verb + " " + b.getAttribute("title")); return; }
                 if (verb === "delete") {
-                  var who = cols.filter(function (c) { return c !== model.state; }).map(function (c) { return row[c]; }).filter(Boolean)[0];
-                  if (!window.confirm("Delete " + (who || "this one") + "?")) return;
+                  /* the row as the reader sees it (Michel, 2026-10-17: "Delete
+                     dog_1?" — an internal name, and not even the walk's own):
+                     the class's icon and name, then its first values, a
+                     reference by its name */
+                  var kind = row._kind || bindId, kdoc = window.lcDocOf ? window.lcDocOf(kind) : null;
+                  var seen = cols.filter(function (c) { return c !== model.state; }).map(function (c) {
+                    var f = model.fields[c], v = row[c];
+                    if (f && f.ref && v != null && v !== "") {
+                      var rr = ((window.lcDatasets || {})[f.ref] || []).filter(function (x) { return String(x.obj) === String(v); })[0];
+                      var lab = refLabel(f.ref);
+                      v = rr ? (rr[lab] != null && rr[lab] !== "" ? rr[lab] : "") : "";
+                    }
+                    return v == null ? "" : String(v);
+                  }).filter(Boolean).slice(0, 3);
+                  if (!window.confirm("Delete this " + (kdoc && kdoc.icon ? kdoc.icon + " " : "") + kind + (seen.length ? ": " + seen.join(" · ") : "") + "?")) return;
                 }
                 closeMenu();
                 py("_lc_verb(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(verb) + ")");
@@ -1547,6 +1604,16 @@ Auto-included by docs/_layouts/default.html.
         el.querySelectorAll("td.lc-dg-gut").forEach(function (td) {
           td.addEventListener("click", function (e) { verbsMenu(td, e); });
         });
+        el._lcOpenVerbs = function (key) {
+          var tds = el.querySelectorAll("td.lc-dg-gut");
+          for (var i = 0; i < tds.length; i++) {
+            var ix = parseInt(tds[i].getAttribute("data-row"), 10), r = sorted[ix];
+            if (r && (r.obj != null ? "o:" + r.obj : "i:" + ix) === key) {
+              verbsMenu(tds[i], { _lcReopen: true, stopPropagation: function () {} });
+              return;
+            }
+          }
+        };
         /* ➕ New: the class itself, or — when the page declares subclasses —
            a pick of the class and each one; the new row gets selected
            (Michel, 2026-10-16) */
@@ -1698,8 +1765,13 @@ Auto-included by docs/_layouts/default.html.
       if (tidyBtn) tidyBtn.addEventListener("click", function (e) {
         e.stopPropagation();
         var U2 = dbR.unl;
-        if (!window.confirm("Drop the column" + (orphans.length > 1 ? "s " : " ") + orphans.join(", ") + " from the table " + U2.tbl + "? Their data is lost.")) return;
-        U2.rpc("lc_drop", { token: lsGet(U2.akey), tbl: U2.tbl, cols: orphans })
+        var say = [orphans.length ? "drop the column" + (orphans.length > 1 ? "s " : " ") + orphans.join(", ") + " (their data is lost)" : "",
+                   stale.length ? "clear the class name" + (stale.length > 1 ? "s " : " ") + stale.join(", ") + " (those rows become " + bindId + ")" : ""].filter(Boolean).join(" and ");
+        if (!window.confirm("In the table " + U2.tbl + ": " + say + "?")) return;
+        var clearRows = (window.lcDatasets[dbSrc] || []).filter(function (r) { return r && r.id != null && stale.indexOf(r._sub) >= 0; })
+          .map(function (r) { return { id: r.id, _sub: null }; });
+        (orphans.length ? U2.rpc("lc_drop", { token: lsGet(U2.akey), tbl: U2.tbl, cols: orphans }) : Promise.resolve(0))
+          .then(function () { return clearRows.length ? U2.rpc("lc_save", { share: U2.share, tbl: U2.tbl, ins: [], upd: clearRows, del: [] }) : null; })
           .then(function () { window.lcRemoteReload(dbSrc, { ensure: true }); })
           .catch(function (err) { if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ " + err.message); });
       });

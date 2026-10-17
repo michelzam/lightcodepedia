@@ -896,6 +896,8 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the table "walk" saved the walk of "Ben" with the dog's id 1
     And the form "walk_card" names the dog "Biscuit", never "dog_1"
     And the walk of "Ben" in "walks" shows "Biscuit & Ben" in its computed "who" column, read-only
+    When I delete the walk by "Ben" in "walks", reading the question
+    Then the question was "Delete this Walk: Biscuit · Ben · Biscuit & Ben?"
     And the table "walk" has no column "who"
 
   Scenario: A table follows its class safely — a rename keeps its data, a leftover hides, 🧹 drops it
@@ -976,3 +978,106 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the grid "walks" has the columns "dog, walker"
     And the grid "walks" shows "Lucky" and "Fern"
     And the model "two_model" asks which class wears "walk_list"
+
+  Scenario: A new Sprint saves with its class — and a refused save says why, under the grid
+    Michel, 2026-10-17: "2 new rows. A walk and a sprint. They are not
+    saved. And refreshing would make them disappear" — the reason sat in
+    the ⚠'s tooltip, which an iPad never shows. A refusal is now said
+    under the grid; a blank cell goes to the table as null, never as ""
+    (a number column refuses ""), and 🧹 never offers to drop a
+    subclass's own column.
+
+    Given a database with the Lightcode setup and no author yet
+    And I am the shelter's author on this device
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/sprints.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Walk(Object):
+          dog = Attr(str)
+          walker = Attr(str)
+
+      class Sprint(Walk):
+          '''🏃 A run with the dog.'''
+          speed = Attr(int)
+      ```
+      {: .model source="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/sprints.md"
+    And I wait for the page to be interactive
+    And I add a "Sprint" with New under "walks"
+    And I type "Max", the cell still open
+    And I press "Enter"
+    Then the table "walk" holds a "Sprint" of "Max"
+    And the corner of "walks" says saved
+    # the Sprint's speed is its own column, never a leftover to drop
+    And the corner of "walks" offers no 🧹
+    When the database refuses the next save with "no list by that name"
+    And I add a "Walk" with New under "walks"
+    And I type "Rex", the cell still open
+    And I press "Enter"
+    Then the grid "walks" says "not saved: no list by that name" under it, no hover needed
+
+  Scenario: A subclass's rows keep their class in _sub — a renamed class takes its rows along, 🧹 clears the stale
+    Michel, 2026-10-17: "we DO have a problem with inheritance: rows are
+    twice! So maybe we need a _classname, including to be cleaned when the
+    class is renamed" — both: a was= on the renamed class, and the 🧹. Then:
+    "_sub, empty for the base class"; "the subclass icon in the grid's
+    gutter for the instances of subclasses", still opening the methods.
+
+    Given a database with the Lightcode setup and no author yet
+    And I am the shelter's author on this device
+    And the shelter's "walk" table holds a walk, a "Run" and a "Jog"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/kinds.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Walk(Object):
+          dog = Attr(str)
+          walker = Attr(str)
+
+      class Sprint(Walk):
+          '''🏃 A run with the dog.'''
+          was = "Run"
+      ```
+      {: .model source="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/kinds.md"
+    And I wait for the page to be interactive
+    Then the walk by "Ben" is a "Sprint" in the grid "walks"
+    And the row of "Ben" in "walks" wears "🏃" in its gutter, which opens its verbs
+    # a tap in the gutter selects the row first, then opens its verbs (Michel, 2026-10-17)
+    When I tap the gutter of "Cleo" in "walks"
+    Then the row of "Cleo" is the selection of "walks", its verbs open
+    And the table "walk" calls the walk by "Ben" a "Sprint"
+    And the walk by "Cleo" is a "Walk" in the grid "walks"
+    And the corner of "walks" offers 🧹 for "Jog"
+    When I tidy the table under "walks", confirming
+    Then the table "walk" calls the walk by "Cleo" by no class
+    And the table "walk" holds "Lucky" once

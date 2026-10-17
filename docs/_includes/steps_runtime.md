@@ -2933,6 +2933,17 @@ def _lc_publish_class(cls):
                             setattr(o._js, f.n, "" if val is None else val)
                             continue
                         setattr(o._js, f.n, (_lc_name_of(v) or "") if f.ref and v is not None else v)
+                    if db:
+                        # which subclass this row is; the base class writes none — but a
+                        # name no class answers to stays as read, for the author's 🧹
+                        base = _LC_SOURCED.get(src, "")
+                        if type(o).__name__ != base:
+                            setattr(o._js, "_sub", type(o).__name__)
+                        else:
+                            cur = getattr(o._js, "_sub", None)
+                            known = [c.__name__ for c in _lc_subs(type(o))] + [getattr(c, "was", None) for c in _lc_subs(type(o))]
+                            if not cur or str(cur) in known:
+                                setattr(o._js, "_sub", "")
             # the bus listener that adopts rows must not re-adopt our own write
             js.window._lcModelWriting = 1
             try:
@@ -3002,6 +3013,7 @@ def _lc_model_spec_push(cls, subs=True):
     spec = {"fields": fields, "state": statef.n if statef else None,
             "states": list(statef.enum) if statef else [], "transitions": trans,
             "verbs": verbs, "src": getattr(cls, "_lc_source", None) or "",
+            "was": getattr(cls, "was", None) if isinstance(getattr(cls, "was", None), str) else None,
             "subs": [k.__name__ for k in kids], "order": [f.n for f in cls._lc_fields] + [n for n in props if n not in fmap0]}
     setattr(js.window.lcModels, cls.__name__, js.window.JSON.parse(json.dumps(spec)))
 
@@ -3171,8 +3183,21 @@ def _lc_source_sync(src):
             continue          # a list that failed to load says why; it is not an object
         nm = _lc_row_mark(row)
         inst = g.get(nm) if nm else None
-        if inst is None or not isinstance(inst, cls):
-            inst = cls()
+        # a row's _sub names its subclass (empty for the base class) — or a former name (was = "Run")
+        k = cls
+        kn = getattr(row, "_sub", None) if db else None
+        if kn:
+            kn = str(kn)
+            k2 = g.get(kn)
+            if not (isinstance(k2, type) and issubclass(k2, cls)):
+                k2 = None
+                for sc in _lc_subs(cls):
+                    if getattr(sc, "was", None) == kn:
+                        k2 = sc
+            if k2 is not None:
+                k = k2
+        if inst is None or type(inst) is not k:
+            inst = k()
             cls._lc_seq += 1
             nm = cls_name.lower() + "_" + str(cls._lc_seq)
             _lc_row_mark(row, nm)
