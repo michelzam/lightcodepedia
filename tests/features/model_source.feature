@@ -836,7 +836,9 @@ Feature: A class wears a dataset — the grid dresses the rows
   Scenario: A reference on a database — the walk's dog is picked from the dogs, by name, stored by id
     Michel, 2026-10-17: "should we also add a reference table? For instance
     for dogs? with a picklist in the grid and the proper icons in the column
-    title?" — the author seeds the dogs, a walk picks one.
+    title?" — the author seeds the dogs, a walk picks one. The value shows
+    plain, a ⌄ opens the dogs ("the picklist is a bit narrow"). And "an
+    example of a computed column (@property?)".
 
     Given a database with the Lightcode setup and no author yet
     And the shelter database holds the dogs "Biscuit" and "Scout", and a walk of "Scout" by "Ben"
@@ -861,6 +863,10 @@ Feature: A class wears a dataset — the grid dresses the rows
       class Walk(Object):
           dog = Attr(Dog)
           walker = Attr(str)
+
+          @property
+          def who(self):
+              return (self.dog.name if self.dog else "?") + " & " + self.walker
       ```
       {: .model database="shelter" }
 
@@ -877,3 +883,44 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I pick the dog "Biscuit" for the walk of "Ben" in "walks"
     Then the table "walk" saved the walk of "Ben" with the dog's id 1
     And the form "walk_card" names the dog "Biscuit", never "dog_1"
+    And the walk of "Ben" in "walks" shows "Biscuit & Ben" in its computed "who" column, read-only
+    And the table "walk" has no column "who"
+
+  Scenario: A table follows its class safely — a rename keeps its data, a leftover hides, 🧹 drops it
+    Michel, 2026-10-17 (register P5): "what happens if an attribute is
+    renamed? deleted? would that change the table's structure?" — never
+    while typing; never dropped unasked; was= renames; 🧹 for the author.
+
+    Given a database with the Lightcode setup and no author yet
+    And I am the shelter's author on this device
+    And the shelter database holds a "walk" table with an old "km" column, and "Biscuit" walked by "Ana"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/tidy.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Walk(Object):
+          dog = Attr(str)
+          by = Attr(str, was="walker")
+      ```
+      {: .model database="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/tidy.md"
+    And I wait for the page to be interactive
+    Then the table "walk" renamed "walker" to "by", keeping "Ana"
+    And the grid "walks" has the columns "dog, by"
+    And the corner of "walks" offers 🧹 for "km"
+    When I tidy the table under "walks", confirming
+    Then the table "walk" has no column "km", and no 🧹 is left under "walks"

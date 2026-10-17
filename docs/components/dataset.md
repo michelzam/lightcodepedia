@@ -245,6 +245,25 @@ At the grid's top right: **＋** makes an object, the save state shows
 closed cell, a deletion, a new object once it holds a value. A class with no
 state opens its methods from a light **⋯** in each row's gutter.
 
+A reference — `dog = Attr(Dog)` — shows the referenced object's name
+(its first text attribute) and a ⌄ that opens the list of its class's
+objects; the table keeps its `id`. A `@property` is a computed column:
+read-only, worked out each time, never stored.
+
+```python
+class Walk(Object):
+    dog = Attr(Dog)
+    walker = Attr(str)
+
+    @property
+    def who(self):
+        return (self.dog.name if self.dog else "?") + " & " + self.walker
+```
+
+An attribute declared `hidden=True` shows in no grid or form; `was="old"`
+renames its column, data kept. A column no attribute declares any more is
+hidden, never dropped unasked — the author's 🧹 drops it.
+
 A class and its methods wear an icon from their one-line docstring: the
 emoji that starts it is the icon, the rest its description. The grid's
 title shows the class's icon instead of ▦, the row menu and the form's

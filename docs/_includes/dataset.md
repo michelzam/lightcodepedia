@@ -104,6 +104,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-datagrid.lc-dg-cornered:not(.lc-dg-titled) > table { margin-top: 2.1em; }
 .lc-dg-table td.lc-dg-typed.lc-dg-typing { background: #fff; outline: 2px solid #0066cc; outline-offset: -2px; cursor: text; }
 .lc-dg-state:hover .lc-dg-caret { color: #0066cc; }
+.lc-dg-table td.lc-dg-refcell { cursor: pointer; white-space: nowrap; position: relative; padding-right: 1.6em; }
+.lc-dg-table td.lc-dg-refcell .lc-dg-caret { position: absolute; right: .55em; top: 50%; transform: translateY(-62%); margin: 0; }
+.lc-dg-table td.lc-dg-refcell:hover .lc-dg-caret { color: #0066cc; }
+.lc-dg-refmenu { max-height: 16em; overflow-y: auto; }
+.lc-dg-refmenu .lc-dg-cur { background: #eff6ff; font-weight: 600; }
+.lc-dg-refsearch { display: block; width: calc(100% - .8em); margin: .3em .4em; font: inherit; padding: .25em .45em; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
 .lc-dg-pick { font: inherit; font-size: .95em; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; padding: .1em .3em; }
 .lc-dg-menu { position: absolute; z-index: 1000; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.14); padding: .25em; min-width: 11em; }
 .lc-dg-verb { display: flex; justify-content: space-between; gap: 1em; width: 100%; text-align: left; background: none; border: 0; padding: .4em .7em; cursor: pointer; font: inherit; color: #111827; border-radius: 5px; }
@@ -189,6 +195,21 @@ Auto-included by docs/_layouts/default.html.
      sheet's truth replacing the guess. */
   window.lcRemote = window.lcRemote || {};
   window.lcIsDb = function (id) { var r = window.lcRemote[id]; return !!(r && r.db); };
+  /* COLUMNS REACH THE TABLE WHEN IT IS SAFE (Michel, 2026-10-17, register P5):
+     on load and on save already; and when the author saves the pad — never
+     while typing, or "name" would leave n, na, nam behind */
+  if (!window._lcEnsureOnSave) {
+    window._lcEnsureOnSave = 1;
+    document.addEventListener("lc-saved", function () {
+      Object.keys(window.lcRemote).forEach(function (id) {
+        var r = window.lcRemote[id], U = r && r.unl;
+        if (!U || !U.rpc || !lsGet(U.akey)) return;
+        var cols = unlCols(id);
+        if (cols) U.rpc("lc_ensure", { token: lsGet(U.akey), tbl: U.tbl, cols: cols })
+          .then(function () { window.lcRemoteReload(id); }, function () {});
+      });
+    });
+  }
   /* A LIST THAT LIVES ELSEWHERE IS READ AGAIN (Michel, 2026-10-16: "how to
      refresh the grid after a change made directly in the sheet?"): coming
      back to the page — from the sheet's tab — re-reads every such list once
@@ -352,8 +373,12 @@ Auto-included by docs/_layouts/default.html.
       out = out || [];
       (m.order || Object.keys(m.fields || {})).forEach(function (f) {
         var d = (m.fields || {})[f];
-        if (!d || d.src || f === "id" || f.charAt(0) === "_" || !/^[a-z][a-z0-9_]{0,40}$/.test(f)) return;
-        if (!out.some(function (c) { return c.n === f; })) out.push({ n: f, t: d.state ? "str" : (d.t || "str") });
+        if (!d || d.src || d.computed || f === "id" || f.charAt(0) === "_" || !/^[a-z][a-z0-9_]{0,40}$/.test(f)) return;
+        if (!out.some(function (c) { return c.n === f; })) {
+          var col = { n: f, t: d.state ? "str" : (d.t || "str") };
+          if (d.was) col.was = d.was;
+          out.push(col);
+        }
       });
     });
     return out;
@@ -363,7 +388,7 @@ Auto-included by docs/_layouts/default.html.
     return new Promise(function (res) {
       (function look(n) {
         var c = unlCols(id);
-        if (c || n <= 0) return res(c);
+        if ((c && c.length) || n <= 0) return res(c);   /* a class not yet run has no attributes to send */
         setTimeout(function () { look(n - 1); }, 250);
       })(tries);
     });
@@ -1137,10 +1162,12 @@ Auto-included by docs/_layouts/default.html.
           var rr = (window.lcDatasets || {})[f.ref] || [], lab = refLabel(f.ref);
           var nameOf = function (r) { return r ? String(r[lab] != null && r[lab] !== "" ? r[lab] : r.obj) : ""; };
           var curR = rr.filter(function (r) { return String(r.obj) === String(v); })[0];
-          if (f.ro || editSaid === "false") return "<td>" + esc(nameOf(curR)) + "</td>";
-          return "<td><select class='lc-dg-pick lc-dg-ref' data-col='" + c + "' data-row='" + idx + "'><option value=''></option>"
-            + rr.map(function (r) { return "<option value='" + esc(r.obj) + "'" + (String(r.obj) === String(v) ? " selected" : "") + ">" + esc(nameOf(r)) + "</option>"; }).join("")
-            + "</select></td>";
+          var shown = curR ? nameOf(curR) : "";   /* plain, like any other cell; the icon is the column's */
+          if (f.ro || editSaid === "false") return "<td>" + esc(shown) + "</td>";
+          /* a rich pick, like AG Grid's (Michel, 2026-10-17: "the picklist is
+             a bit narrow"): the value and its icon, a ▾, a roomy list */
+          return "<td class='lc-dg-refcell' data-col='" + c + "' data-row='" + idx + "' data-ref='" + esc(f.ref) + "' title='pick a " + esc(f.ref) + "'>"
+            + "<span class='lc-dg-refval'>" + esc(shown) + "</span><span class='lc-dg-caret'>⌄</span></td>";
         }
         if (!f || f.ro || editSaid === "false") return "<td>" + esc(v) + "</td>";
         if (f.enum)
@@ -1210,6 +1237,14 @@ Auto-included by docs/_layouts/default.html.
       var dbSrc = model ? model.src : bindId;
       var dbR = window.lcRemote && window.lcRemote[dbSrc] && window.lcRemote[dbSrc].db ? window.lcRemote[dbSrc] : null;
       var dbCh = dbR && window.lcDatasetChanges ? window.lcDatasetChanges(dbSrc) : null;
+      /* 🧹 on the author's device: the table's columns no attribute declares */
+      var orphans = [];
+      if (dbR && dbR.unl && model && lsGet(dbR.unl.akey)) {
+        var row0 = (window.lcDatasets[dbSrc] || [])[0] || {};
+        orphans = Object.keys(row0).filter(function (k) {
+          return k !== "id" && k !== "obj" && k.charAt(0) !== "_" && k !== "⚠️" && (!model.fields[k] || model.fields[k].src);
+        });
+      }
       var st = dbR ? (dbR.state || (dbCh && dbCh.n ? "dirty" : "ok")) : "";
       var stTip = { ok: "saved", dirty: (dbCh && dbCh.n) + " change(s) to save — saving by itself, or tap", saving: "saving…",
                     error: "not saved — " + (dbR && dbR.saveErr || "") + " — tap to try again" }[st] || "";
@@ -1217,6 +1252,7 @@ Auto-included by docs/_layouts/default.html.
             + (st === "dirty" || st === "error" ? "" : " disabled") + " title='" + esc(stTip) + "' aria-label='" + esc(stTip) + "'>"
             + "<span>" + { ok: "✓", dirty: "●", saving: "⟳", error: "⚠" }[st] + "</span></button>"
             + "<button class='lc-dg-cbtn lc-dg-refresh' type='button' title='read the database again' aria-label='read the database again'>↻</button>" : "")
+        + (orphans.length ? "<button class='lc-dg-cbtn lc-dg-tidy' type='button' title='" + esc("drop the columns no attribute uses: " + orphans.join(", ")) + "' aria-label='tidy the table'>🧹</button>" : "")
         + (model ? "<button class='lc-dg-cbtn lc-dg-new' type='button' title='a new " + esc(bindId) + "' aria-label='a new " + esc(bindId) + "'>＋</button>" : "");
       el.classList.toggle("lc-dg-cornered", !!corner);
       var dbBtns = "";
@@ -1343,6 +1379,52 @@ Auto-included by docs/_layouts/default.html.
         /* a click in a typed cell or a picklist still selects its row — the
            bound card follows the row being edited (a swallowed click left
            the first row selected, classroom 4's roster, 2026-10-16) */
+        el.querySelectorAll("td.lc-dg-refcell").forEach(function (cell) {
+          cell.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var open = document.querySelector(".lc-dg-refmenu");
+            document.querySelectorAll(".lc-dg-menu").forEach(function (m) { m.remove(); });
+            if (open && open._lcFor === cell) return;
+            var row = sorted[parseInt(cell.getAttribute("data-row"), 10)];
+            if (!row) return;
+            var ref = cell.getAttribute("data-ref"), col = cell.getAttribute("data-col");
+            var rr = (window.lcDatasets || {})[ref] || [], lab = refLabel(ref);
+            var rd = window.lcDocOf ? window.lcDocOf(ref) : null, ic = rd && rd.icon ? rd.icon + " " : "";
+            var nameOf = function (r) { return String(r[lab] != null && r[lab] !== "" ? r[lab] : r.obj); };
+            var menu = document.createElement("div");
+            menu.className = "lc-dg-menu lc-dg-refmenu";
+            menu._lcFor = cell;
+            menu.setAttribute("role", "listbox");
+            menu.innerHTML = (rr.length > 8 ? "<input class='lc-dg-refsearch' type='search' placeholder='🔍 find' aria-label='find'>" : "")
+              + "<button type='button' class='lc-dg-verb' data-obj=''><span>—</span></button>"
+              + rr.map(function (r) {
+                  return "<button type='button' class='lc-dg-verb" + (String(r.obj) === String(row[col]) ? " lc-dg-cur" : "") + "' role='option' data-obj='" + esc(r.obj) + "'>"
+                    + "<span>" + esc(nameOf(r)) + "</span></button>";
+                }).join("");
+            var rc = cell.getBoundingClientRect();
+            menu.style.minWidth = Math.max(rc.width, 180) + "px";
+            menu.style.left = (Math.max(4, Math.min(rc.left, window.innerWidth - Math.max(rc.width, 180) - 8)) + window.scrollX) + "px";
+            menu.style.top = (rc.bottom + window.scrollY) + "px";
+            document.body.appendChild(menu);
+            var find = menu.querySelector(".lc-dg-refsearch");
+            if (find) {
+              find.addEventListener("click", function (ev) { ev.stopPropagation(); });
+              find.addEventListener("input", function () {
+                var q = find.value.toLowerCase();
+                menu.querySelectorAll("button[data-obj]").forEach(function (b) { b.hidden = q && b.textContent.toLowerCase().indexOf(q) < 0; });
+              });
+              find.focus();
+            }
+            menu.querySelectorAll("button[data-obj]").forEach(function (b) {
+              b.addEventListener("click", function (ev) {
+                ev.stopPropagation();
+                menu.remove();
+                py("_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(col) + "," + JSON.stringify(b.getAttribute("data-obj")) + ")");
+              });
+            });
+            setTimeout(function () { document.addEventListener("click", function () { menu.remove(); }, { once: true }); }, 0);
+          });
+        });
         el.querySelectorAll("select.lc-dg-pick").forEach(function (sel) {
           sel.addEventListener("change", function () {
             var row = sorted[parseInt(sel.getAttribute("data-row"), 10)];
@@ -1565,6 +1647,15 @@ Auto-included by docs/_layouts/default.html.
           });
         });
       }
+      var tidyBtn = el.querySelector(".lc-dg-tidy");
+      if (tidyBtn) tidyBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var U2 = dbR.unl;
+        if (!window.confirm("Drop the column" + (orphans.length > 1 ? "s " : " ") + orphans.join(", ") + " from the table " + U2.tbl + "? Their data is lost.")) return;
+        U2.rpc("lc_drop", { token: lsGet(U2.akey), tbl: U2.tbl, cols: orphans })
+          .then(function () { window.lcRemoteReload(dbSrc); })
+          .catch(function (err) { if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ " + err.message); });
+      });
       if (rf) rf.addEventListener("click", function (e) {
         e.stopPropagation();
         var ch = window.lcDatasetChanges(dbSrc);

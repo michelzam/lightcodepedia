@@ -706,9 +706,23 @@ def step_unl_db(context):
                 return no("only the author makes tables")
             t = st["tables"].setdefault(a["tbl"], {"cols": [], "rows": [], "next": 1})
             for c in a["cols"]:
+                if c.get("was") and c["was"] in t["cols"] and c["n"] not in t["cols"]:
+                    t["cols"][t["cols"].index(c["was"])] = c["n"]
+                    for r in t["rows"]:
+                        r[c["n"]] = r.pop(c["was"], None)
                 if c["n"] not in t["cols"]:
                     t["cols"].append(c["n"])
             return ok(st["space"])      # one unlisted name for the whole database
+        if fn == "lc_drop":
+            if a["token"] not in st["authors"]:
+                return no("only the author changes tables")
+            t = st["tables"][a["tbl"]]
+            for c in a["cols"]:
+                if c != "id" and not c.startswith("_") and c in t["cols"]:
+                    t["cols"].remove(c)
+                    for r in t["rows"]:
+                        r.pop(c, None)
+            return ok(len(a["cols"]))
         t = st["tables"].get(a.get("tbl"))
         if not t or a.get("share") not in (st["space"], t.get("share")):
             return no("no list by that name")
@@ -948,12 +962,21 @@ def step_db_dogs(context, a, b, dog, walker):
 
 @then('the walk of "{walker}" in "{gid}" names the dog "{dog}", among "{dogs}"')
 def step_walk_dog(context, walker, gid, dog, dogs):
-    sel = row_of(context, gid, walker).locator("select.lc-dg-ref")
-    expect(sel).to_have_count(1, timeout=T)
-    expect(sel.locator("option:checked")).to_have_text(dog, timeout=T)
+    cell = row_of(context, gid, walker).locator("td.lc-dg-refcell")
+    expect(cell.locator(".lc-dg-refval")).to_have_text(dog, timeout=T)          # plain, like any other cell
+    expect(cell.locator(".lc-dg-caret")).to_have_text("⌄")
+    assert cell.locator("select").count() == 0
     assert not [c for c in context.unl["calls"] if c[0] == "lc_save"], "reading the walks saved them back"
-    opts = [o.strip() for o in sel.locator("option").all_inner_texts() if o.strip()]
+    cell.click()
+    menu = context.page.locator(".lc-dg-refmenu")
+    expect(menu).to_be_visible(timeout=T)
+    opts = [o.strip() for o in menu.locator("button[data-obj]:not([data-obj=''])").all_inner_texts()]
     assert opts == [d.strip() for d in dogs.split(",")], opts
+    mb, cb = menu.bounding_box(), cell.bounding_box()
+    assert mb["width"] >= max(cb["width"], 180) - 1, (mb, cb)      # roomy, never narrower than its cell
+    expect(menu.locator(".lc-dg-cur")).to_contain_text(dog)
+    context.page.keyboard.press("Escape")
+    context.page.mouse.click(5, 5)
 
 
 @then('the column "{col}" of "{gid}" wears "{icon}"')
@@ -963,7 +986,8 @@ def step_col_icon(context, col, gid, icon):
 
 @when('I pick the dog "{dog}" for the walk of "{walker}" in "{gid}"')
 def step_pick_dog(context, dog, walker, gid):
-    row_of(context, gid, walker).locator("select.lc-dg-ref").select_option(label=dog)
+    row_of(context, gid, walker).locator("td.lc-dg-refcell").click()
+    context.page.locator(".lc-dg-refmenu button[data-obj]", has_text=dog).click()
 
 
 @then('the table "{tbl}" saved the walk of "{walker}" with the dog\'s id {did:d}')
@@ -982,3 +1006,67 @@ def step_form_dog(context, fid, dog, internal):
     form = context.page.locator("[data-lc-id='" + fid + "']")
     expect(form).to_contain_text(dog, timeout=T)
     assert internal not in form.inner_text(), form.inner_text()
+
+
+
+@given('the shelter database holds a "{tbl}" table with an old "{old}" column, and "{dog}" walked by "{who}"')
+def step_db_old(context, tbl, old, dog, who):
+    context.unl["tables"][tbl] = {"cols": ["dog", "walker", old], "next": 2,
+                                  "rows": [{"id": 1, "dog": dog, "walker": who, old: "2"}]}
+
+
+@given("I am the shelter's author on this device")
+def step_i_am_author(context):
+    key = "lca_" + "a" * 32
+    context.unl["authors"].append(key)
+    context.page.add_init_script("try { localStorage.setItem('lc_author_demo', '" + key + "'); } catch (e) {}")
+
+
+@then('the table "{tbl}" renamed "{old}" to "{new}", keeping "{value}"')
+def step_renamed(context, tbl, old, new, value):
+    for _ in range(50):
+        t = context.unl["tables"][tbl]
+        if new in t["cols"] and old not in t["cols"]:
+            assert any(r.get(new) == value for r in t["rows"]), t
+            return
+        context.page.wait_for_timeout(200)
+    raise AssertionError(str(context.unl["tables"][tbl]) + " " + str(context.unl["calls"]))
+
+
+@then('the corner of "{gid}" offers 🧹 for "{cols}"')
+def step_tidy_offered(context, gid, cols):
+    b = grid(context, gid).locator(".lc-dg-corner button.lc-dg-tidy")
+    expect(b).to_be_visible(timeout=T)
+    expect(b).to_have_attribute("title", "drop the columns no attribute uses: " + cols)
+
+
+@when('I tidy the table under "{gid}", confirming')
+def step_tidy(context, gid):
+    context.page.once("dialog", lambda d: d.accept())
+    grid(context, gid).locator(".lc-dg-corner button.lc-dg-tidy").click()
+
+
+@then('the table "{tbl}" has no column "{col}", and no 🧹 is left under "{gid}"')
+def step_no_col(context, tbl, col, gid):
+    for _ in range(50):
+        if col not in context.unl["tables"][tbl]["cols"]:
+            break
+        context.page.wait_for_timeout(200)
+    assert col not in context.unl["tables"][tbl]["cols"], context.unl["tables"][tbl]
+    expect(grid(context, gid).locator("button.lc-dg-tidy")).to_have_count(0, timeout=T)
+
+
+
+@then('the walk of "{walker}" in "{gid}" shows "{text}" in its computed "{col}" column, read-only')
+def step_computed(context, walker, gid, text, col):
+    cell = row_of(context, gid, walker).locator("td").nth(
+        [t.strip().lower() for t in grid(context, gid).locator("thead th").all_inner_texts()].index(col))
+    expect(cell).to_have_text(text, timeout=T)
+    assert cell.get_attribute("contenteditable") != "true" and "lc-dg-typed" not in (cell.get_attribute("class") or "")
+    saves = [a for f, a in context.unl["calls"] if f == "lc_save"]
+    assert not any(col in r for x in saves for r in x["ins"] + x["upd"]), saves
+
+
+@then('the table "{tbl}" has no column "{col}"')
+def step_no_column(context, tbl, col):
+    assert col not in context.unl["tables"][tbl]["cols"], context.unl["tables"][tbl]

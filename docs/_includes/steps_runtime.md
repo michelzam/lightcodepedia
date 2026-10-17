@@ -151,7 +151,7 @@ class Attr:
     _count = [0]
 
     def __init__(self, typ=str, default=None, min=None, max=None, step=None,
-                 enum=None, ro=False, unit="", hint="", secret=False, hidden=False):
+                 enum=None, ro=False, unit="", hint="", secret=False, hidden=False, was=None):
         Attr._count[0] += 1
         self._ord = Attr._count[0]
         self.t = typ if isinstance(typ, str) else getattr(typ, "__name__", "str")
@@ -175,6 +175,9 @@ class Attr:
         # hidden=True: kept by the class and its table, shown by no grid or
         # form (Michel, 2026-10-17: "it should not appear anymore in the grid")
         self.hidden = bool(hidden)
+        # was="old": the attribute's former name — its table column is renamed,
+        # its data kept (Michel, 2026-10-17, register P5)
+        self.was = was
         self.is_state = False
         self.n = None
 
@@ -2847,6 +2850,35 @@ def _lc_inspect_push(elid, err=""):
         fn(elid, json.dumps({"cards": cards, "error": err}))
 
 
+def _lc_props(cls):
+    """The class's computed columns: the @property methods its source (and
+    its bases') declares, in the order written — never the engine's own
+    properties (id, state, text…), which no page wrote."""
+    fn = getattr(js.window, "lcPropsOf", None)
+    if fn is None:
+        return []
+    arr = fn(cls.__name__)
+    out = []
+    for i in range(int(arr.length)):
+        n = str(arr[i])
+        try:
+            if isinstance(getattr(cls, n), property):
+                out.append(n)
+        except Exception:
+            pass
+    return out
+
+
+def _lc_prop_value(o, n):
+    try:
+        v = getattr(o, n)
+    except Exception:
+        return ""
+    if v is None or isinstance(v, (int, float, str, bool)):
+        return v
+    return _lc_name_of(v) or str(v)
+
+
 def _lc_rows_of(cls):
     """The class's collection as rows — NAMED instances only, so a feature's
     throwaway objects never pollute the roster. One column per Attr (state
@@ -2866,6 +2898,9 @@ def _lc_rows_of(cls):
             for f in fields:
                 v = o._v.get(f.n)
                 row[f.n] = (_lc_name_of(v) or "?") if f.ref and v is not None else v
+            for n in _lc_props(type(o)):
+                if n not in row:
+                    row[n] = _lc_prop_value(o, n)
             rows.append(row)
     return rows
 
@@ -2945,11 +2980,20 @@ def _lc_model_spec_push(cls, subs=True):
     statef = getattr(cls, "_lc_statef", None)
     tmeta = getattr(cls, "_lc_tmeta", {}) or {}
     fields = {}
+    fmap0 = set(f.n for f in cls._lc_fields)
     for f in cls._lc_fields:
         dbid = f.n == "id" and bool(getattr(f, "src", False))   # the table's own id: kept, never shown
         fields[f.n] = {"t": f.t, "enum": f.enum, "ro": f.ro or dbid, "state": f.is_state,
                        "src": bool(getattr(f, "src", False)), "hidden": dbid or bool(getattr(f, "hidden", False)),
-                       "ref": f.t if f.ref else None}
+                       "ref": f.t if f.ref else None, "was": getattr(f, "was", None)}
+    # A COMPUTED COLUMN (Michel, 2026-10-17: "add an example of a computed
+    # column — @property?"): each property is a read-only column, worked out
+    # from the object, never stored
+    props = _lc_props(cls)
+    for n in props:
+        if n not in fields:
+            fields[n] = {"t": "str", "enum": None, "ro": True, "state": False, "src": False,
+                         "hidden": False, "ref": None, "was": None, "computed": True}
     trans = {}
     for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
         pre, post, sfn, _o = tmeta[n]
@@ -2958,7 +3002,7 @@ def _lc_model_spec_push(cls, subs=True):
     spec = {"fields": fields, "state": statef.n if statef else None,
             "states": list(statef.enum) if statef else [], "transitions": trans,
             "verbs": verbs, "src": getattr(cls, "_lc_source", None) or "",
-            "subs": [k.__name__ for k in kids], "order": [f.n for f in cls._lc_fields]}
+            "subs": [k.__name__ for k in kids], "order": [f.n for f in cls._lc_fields] + [n for n in props if n not in fmap0]}
     setattr(js.window.lcModels, cls.__name__, js.window.JSON.parse(json.dumps(spec)))
 
 
@@ -3009,6 +3053,11 @@ def _lc_source_fields(cls, row0, src):
     if isdb is not None and bool(isdb(src)):
         cls._lc_fields = ([f for f in cls._lc_fields if not getattr(f, "src", False)]
                           + [fmap[c] for c in order if c in fmap and getattr(fmap[c], "src", False)])
+        # a column no attribute declares (a deleted or renamed one) is kept by
+        # the table and shown by no grid (register P5); 🧹 offers to drop it
+        for f in cls._lc_fields:
+            if getattr(f, "src", False) and f.n != "id":
+                f.hidden = True
         return
     cls._lc_fields = ([fmap[c] for c in order if c in fmap]
                       + [f for f in cls._lc_fields if f.n not in order])
@@ -3072,6 +3121,9 @@ def _lc_source_bind(cls_name, src):
     cls._lc_source = src
     cls._lc_seq = getattr(cls, "_lc_seq", 0)
     _LC_SOURCED[src] = cls_name
+    # the class says what it is before its rows arrive: a table that waits
+    # for the class's attributes (to make its columns) must not wait for rows
+    _lc_model_spec_push(cls)
     _lc_source_sync(src)
 
 
@@ -4063,13 +4115,26 @@ _inject_store()
       if (c) {
         cur = c[1];
         var d = docAfter(i), sp = d == null ? { icon: "", text: "" } : docSplit(d);
-        DOCS[cur] = { icon: sp.icon, text: sp.text, base: ((c[2] || "").split(",")[0] || "").trim(), m: {} };
+        DOCS[cur] = { icon: sp.icon, text: sp.text, base: ((c[2] || "").split(",")[0] || "").trim(), m: {}, props: [] };
         return;
       }
       var f = /^\s+def\s+(\w+)\s*\(/.exec(ln);
-      if (f && cur) { var d2 = docAfter(i); if (d2 != null) DOCS[cur].m[f[1]] = docSplit(d2); }
+      if (f && cur) {
+        var d2 = docAfter(i); if (d2 != null) DOCS[cur].m[f[1]] = docSplit(d2);
+        /* @property on the line above: a computed column, in the order written */
+        for (var b = i - 1; b >= 0 && /^\s*@/.test(lines[b]); b--)
+          if (/^\s*@property\s*$/.test(lines[b]) && DOCS[cur].props.indexOf(f[1]) < 0) DOCS[cur].props.push(f[1]);
+      }
     });
   }
+  /* the @property names a class (and its bases) declare, as written */
+  window.lcPropsOf = function (cls) {
+    var out = [], d = DOCS[cls], n = 0;
+    var chain = [];
+    while (d && n++ < 8) { chain.unshift(d); d = DOCS[d.base]; }
+    chain.forEach(function (x) { (x.props || []).forEach(function (p) { if (out.indexOf(p) < 0) out.push(p); }); });
+    return out;
+  };
   /* a class's doc, or a method's — found up the class's bases */
   window.lcDocOf = function (cls, method) {
     var d = DOCS[cls], n = 0;
