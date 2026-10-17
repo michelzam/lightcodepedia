@@ -3240,7 +3240,7 @@
     "url": "/assets/ux-report.html#scenario_359"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "A margin that still matches its block shows no lost panel",
     "feature": "💬 The reader's margin — one note per block, kept and versioned in the bench",
     "tags": "",
@@ -4266,7 +4266,7 @@
     "url": "/assets/ux-report.html#scenario_473"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "A gate rewritten from the x-ray keeps listening",
     "feature": "Blocks gate on feature state through cells",
     "tags": "",
