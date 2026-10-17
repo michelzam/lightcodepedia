@@ -650,6 +650,7 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the table "walks" holds "Biscuit", saved through its name
     When a classmate opens the page on another device and pastes the name under "walks"
     Then the grid "walks" shows the row "Biscuit" read back from the table
+    And the grid "walks" has the columns "dog, walker, hour"
     And the grid "walks" offers no name to share
     When a stranger pastes "walks-000000000000" under "walks"
     Then the grid "walks" says "no list by that name", with no error column
@@ -720,3 +721,42 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I say I am the author under "walks", with no key yet
     Then the database has me as its author, and a table "walk" made of "dog, walker"
     And the author is told the database's name to put on the "shelter" line under "walks"
+
+  Scenario: Writing the name on the .database line in a pad clears the author's hint
+    Michel, 2026-10-17: "did that, but the grid is dirty with the key! even
+    after copy!" — the pad redrew only the line he changed; the class's
+    table kept the old, nameless line.
+
+    Given a database with the Lightcode setup and no author yet
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/model_pad.md" with the document:
+      """
+      # Walks
+
+      `````markdown
+      [the shelter](supabase://shelter)
+      {: .database #shelter }
+
+      ```python
+      class Walk(Object):
+          dog = Attr(str)
+          walker = Attr(str)
+      ```
+      {: .model database="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+      `````
+      {: .mdpad #walk_pad decorations="true" rows="20" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/model_pad.md"
+    And I wait for the page to be interactive
+    And I say I am the author under "walks", with no key yet
+    Then the author is told the database's name to put on the "shelter" line under "walks"
+    When I write the name the grid gave on the "shelter" line of the "walk_pad" pad
+    Then the grid "walks" says nothing more about names

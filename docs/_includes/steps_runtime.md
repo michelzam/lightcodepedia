@@ -2990,6 +2990,13 @@ def _lc_source_fields(cls, row0, src):
         d = f._spec_dict()
         d["src"] = True
         cls._spec["attrs"].append(d)
+    # a database hands its columns back alphabetically: there the class's
+    # own order wins, the table's extra columns after (Michel, 2026-10-17)
+    isdb = getattr(js.window, "lcIsDb", None)
+    if isdb is not None and bool(isdb(src)):
+        cls._lc_fields = ([f for f in cls._lc_fields if not getattr(f, "src", False)]
+                          + [fmap[c] for c in order if c in fmap and getattr(fmap[c], "src", False)])
+        return
     cls._lc_fields = ([fmap[c] for c in order if c in fmap]
                       + [f for f in cls._lc_fields if f.n not in order])
 

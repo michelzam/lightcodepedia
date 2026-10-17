@@ -712,8 +712,8 @@ def step_unl_db(context):
         t = st["tables"].get(a.get("tbl"))
         if not t or a.get("share") not in (st["space"], t.get("share")):
             return no("no list by that name")
-        if fn == "lc_read":
-            return ok([dict(r, _change="insert") for r in t["rows"]])
+        if fn == "lc_read":   # keys come back sorted, as Postgres's jsonb hands them
+            return ok([dict(sorted(dict(r, _change="insert").items())) for r in t["rows"]])
         if fn == "lc_save":
             for r in a["ins"]:
                 r = {k: v for k, v in r.items() if k in t["cols"]}
@@ -848,7 +848,7 @@ def step_db_holds(context, tbl, dog):
 def step_asked_nothing(context, gid):
     g = grid(context, gid)
     expect(g.locator("input.lc-dg-unl-name")).to_have_count(0)
-    expect(g.locator(".lc-dg-unl")).not_to_contain_text("unlisted")
+    expect(g.locator(".lc-dg-unl")).to_have_count(0)      # nothing to say, no bar
 
 
 @then('the database was read with the page\'s name and the key from databases.yml, never from the page')
@@ -888,3 +888,21 @@ def step_nothing_blank(context):
     context.page.wait_for_timeout(1500)
     sent = [c for c in context.db_calls[context.db_mark:] if c["method"] != "GET"]
     assert not sent, sent
+
+
+
+@when('I write the name the grid gave on the "{db}" line of the "{pad_id}" pad')
+def step_write_name(context, db, pad_id):
+    context.page.evaluate("""([db, pid]) => {
+      const ta = document.querySelector(`[data-lc-id='${pid}'] .lc-mdpad-in`);
+      ta.value = ta.value.replace(`{: .database #${db} }`, `{: .database #${db} unlisted="5f2c9a01b7e3" }`);
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }""", [db, pad_id])
+
+
+@then('the grid "{gid}" says nothing more about names')
+def step_no_names(context, gid):
+    g = grid(context, gid)
+    expect(g.locator(".lc-dg-unl")).to_have_count(0, timeout=T)
+    reads = [a for f, a in context.unl["calls"] if f == "lc_read"]
+    assert reads and reads[-1]["share"] == "5f2c9a01b7e3", reads

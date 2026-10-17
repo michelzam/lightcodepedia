@@ -188,6 +188,7 @@ Auto-included by docs/_layouts/default.html.
      it POSTed — a simple request, so no preflight — then is read back, the
      sheet's truth replacing the guess. */
   window.lcRemote = window.lcRemote || {};
+  window.lcIsDb = function (id) { var r = window.lcRemote[id]; return !!(r && r.db); };
   /* A LIST THAT LIVES ELSEWHERE IS READ AGAIN (Michel, 2026-10-16: "how to
      refresh the grid after a change made directly in the sheet?"): coming
      back to the page — from the sheet's tab — re-reads every such list once
@@ -282,6 +283,19 @@ Auto-included by docs/_layouts/default.html.
     el.hidden = true;
     window.lcDatabases[id] = { el: el, kind: m ? m[1] : "", name: m ? m[2] : "",
                                unlisted: el.getAttribute("unlisted") || "", title: a ? (a.textContent || "").trim() : id };
+    /* THE LINE CHANGED, ITS TABLES FOLLOW (Michel, 2026-10-17: "did that,
+       but the grid is dirty with the key!"): a pad redraws only the block
+       that changed — the class's tables were read with the old line. Each
+       table of this database whose name differs is read again with the new. */
+    var nm = el.getAttribute("unlisted") || "true";
+    document.querySelectorAll("p.lc-db-table[data-db='" + id + "']").forEach(function (p) {
+      if ((p.getAttribute("unlisted") || "true") === nm) return;
+      var pa = p.querySelector("a");
+      if (pa) pa.setAttribute("href", "db://" + id + "/" + p.getAttribute("data-tbl"));
+      p.removeAttribute("unlisted");
+      delete p.dataset.lcDsDone;
+      upgradeDataset(p);
+    });
     document.dispatchEvent(new CustomEvent("lc-database", { detail: id }));
   }
   /* a class's table on a database: a hidden dataset beside the model, named
@@ -292,6 +306,7 @@ Auto-included by docs/_layouts/default.html.
     if (ex && ex.isConnected) return dsid;
     var p = document.createElement("p");
     p.className = "dataset lc-db-table"; p.id = dsid; p.hidden = true;
+    p.setAttribute("data-db", dbId); p.setAttribute("data-tbl", table);
     var a = document.createElement("a");
     a.setAttribute("href", "db://" + dbId + "/" + table);
     a.textContent = table;
@@ -642,6 +657,8 @@ Auto-included by docs/_layouts/default.html.
                 rows.forEach(function (x) { if (x && x.id != null) snap[String(x.id)] = dbKeyOf(x); });
                 r.snap = snap; r.error = "";
                 window.lcSetDataset(id, shapeData(rows, el));
+                /* same rows, other state (a name now known, a hint gone): the grids repaint */
+                document.dispatchEvent(new CustomEvent("lc-remote-state", { detail: id }));
               });
             }).catch(function (e) {
               if (/no list by that name/.test(e.message || "")) U.need = true;
@@ -994,6 +1011,13 @@ Auto-included by docs/_layouts/default.html.
       });
     }
 
+    var onRemoteState = function (e) {
+      if (!el.isConnected) { document.removeEventListener("lc-remote-state", onRemoteState); return; }
+      var m = (window.lcModels || {})[bindId];
+      if (lastData && e.detail === (m ? m.src : bindId)) render(lastData);
+    };
+    document.addEventListener("lc-remote-state", onRemoteState);
+
     function render(data) {
       lastData = data;
       /* a list read from elsewhere: a ↻ in the title bar reads it again */
@@ -1043,6 +1067,16 @@ Auto-included by docs/_layouts/default.html.
          name, the grid's own business, never a column */
       var model = (window.lcModels || {})[bindId] || null;
       var cols    = allCols.filter(function (c) { return c !== "url" && !(model && (c === "obj" || c.charAt(0) === "_" || !model.fields[c] || model.fields[c].hidden)); });
+      /* a class's columns in the class's order, whatever order the rows
+         bring them in — a database hands them back alphabetically (Michel,
+         2026-10-17: Dog, Hour, Walker for dog, walker, hour) */
+      if (model && model.order) {
+        var ord = model.order;
+        cols.sort(function (a, b) {
+          var i = ord.indexOf(a), j = ord.indexOf(b);
+          return (i < 0 ? 1e6 : i) - (j < 0 ? 1e6 : j);
+        });
+      }
       if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
       function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/'/g, "&#39;"); }
       function dressedCell(row, c, idx) { return dressedCell0(row, c, idx); }
@@ -1162,7 +1196,7 @@ Auto-included by docs/_layouts/default.html.
             + "<span class='lc-dg-unl-auth' hidden><input class='lc-dg-unl-akey' type='password' autocomplete='off' placeholder='🔑 author key — empty makes one' aria-label='author key'>"
             + "<button class='lc-dg-btn lc-dg-unl-claim' type='button'>OK</button></span>"
             + "<button class='lc-dg-unl-me' type='button'>✍️ I'm the author</button>";
-        unlBar += "</div>";
+        unlBar = unlBar === "<div class='lc-dg-unl'>" ? "" : unlBar + "</div>";   /* nothing to say, no bar */
       }
       if (srcErr) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(srcErr) + "</p>";
       else if (U && dbR.error) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(dbR.error) + "</p>";
