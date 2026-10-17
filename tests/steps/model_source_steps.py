@@ -890,6 +890,8 @@ def step_corner(context, gid):
     expect(c.locator("button.lc-dg-refresh")).to_have_count(1)
     expect(c.locator("button.lc-dg-save")).to_have_count(1)
     expect(g.locator(".lc-dg-foot")).to_have_count(0)
+    order = c.evaluate("e => [...e.querySelectorAll('button')].map(b => b.classList.contains('lc-dg-new') ? 'new' : b.classList.contains('lc-dg-save') ? 'save' : b.classList.contains('lc-dg-refresh') ? 'refresh' : 'other')")
+    assert order[-3:] == ["refresh", "save", "new"], "right to left must read ＋, status, ↻: " + str(order)
     gb, cb = g.bounding_box(), c.bounding_box()
     assert cb["y"] - gb["y"] < 20 and (gb["x"] + gb["width"]) - (cb["x"] + cb["width"]) < 20, (gb, cb)
     context.page.mouse.move(0, 0)
@@ -1077,3 +1079,77 @@ def step_no_column(context, tbl, col):
 def step_model_asks(context, mid, src):
     el = context.page.locator("[data-lc-id='" + mid + "']")
     expect(el).to_have_attribute("data-lc-warn", re.compile("which class wears it"), timeout=T)
+
+
+
+@when('I type the attribute "{line}" into the class in the "{pad_id}" pad, letter by letter')
+def step_type_attr(context, line, pad_id):
+    context.db_ensures0 = len([c for c in context.unl["calls"] if c[0] == "lc_ensure"])
+    sel = "[data-lc-id='" + pad_id + "'] .lc-mdpad-in"
+    base = context.page.evaluate("s => document.querySelector(s).value", sel)
+    anchor = "    walker = Attr(str)\n"
+    assert anchor in base, base
+    for i in range(1, len(line) + 1):
+        v = base.replace(anchor, anchor + "    " + line[:i] + "\n", 1)
+        context.page.evaluate("""([s, v]) => { const ta = document.querySelector(s); ta.value = v;
+          ta.dispatchEvent(new Event('input', { bubbles: true })); }""", [sel, v])
+        context.page.wait_for_timeout(250)
+    context.page.wait_for_timeout(2500)
+
+
+@then('no column was made while typing, and ↻ under "{gid}" offers "{col}"')
+def step_no_cols_typing(context, gid, col):
+    ens = [c for c in context.unl["calls"] if c[0] == "lc_ensure"][context.db_ensures0:]
+    assert not ens, "columns made while typing: " + str(ens)
+    rf = grid(context, gid).locator("button.lc-dg-refresh")
+    expect(rf).to_have_class(re.compile("lc-dg-pending"), timeout=T)
+    expect(rf).to_have_attribute("title", re.compile(col))
+
+
+@when('I press ↻ under "{gid}"')
+def step_press_refresh(context, gid):
+    grid(context, gid).locator("button.lc-dg-refresh").click()
+
+
+@then('the table "{tbl}" gained the column "{col}", and no other')
+def step_gained_only(context, tbl, col):
+    for _ in range(50):
+        cols = context.unl["tables"][tbl]["cols"]
+        if col in cols:
+            break
+        context.page.wait_for_timeout(200)
+    cols = context.unl["tables"][tbl]["cols"]
+    assert col in cols and not [c for c in cols if c != col and col.startswith(c[:1]) and c not in ("dog", "walker")], cols
+
+
+
+@when('the "{pad_id}" pad redraws its class twice while the walk is saving')
+def step_redraw_twice(context, pad_id):
+    sel = "[data-lc-id='" + pad_id + "'] .lc-mdpad-in"
+    for extra in ("\n", ""):
+        context.page.evaluate("""([s, x]) => { const ta = document.querySelector(s);
+          ta.value = ta.value.replace("    walker = Attr(str)\\n", "    walker = Attr(str)\\n" + x).replace("\\n\\n\\n", "\\n\\n");
+          ta.dispatchEvent(new Event('input', { bubbles: true })); }""", [sel, extra])
+        context.page.wait_for_timeout(300)
+    context.page.wait_for_timeout(3000)
+
+
+@then('the table "{tbl}" holds "{dog}" once')
+def step_holds_once(context, tbl, dog):
+    rows = [r for r in context.unl["tables"][tbl]["rows"] if dog in (str(r.get("dog")), str(r.get("walker")))]
+    assert len(rows) == 1, context.unl["tables"][tbl]["rows"]
+
+
+
+@when('the page\'s picture of the "{tbl}" table is lost, and the grid saves')
+def step_snap_lost(context, tbl):
+    context.db_saves0 = len([c for c in context.unl["calls"] if c[0] == "lc_save"])
+    context.page.evaluate("""t => { const r = window.lcRemote['shelter_' + t]; r.snap = {};
+      return window.lcDatasetSave('shelter_' + t); }""", tbl)
+    context.page.wait_for_timeout(1500)
+
+
+@then("no walk is sent again")
+def step_none_again(context):
+    saves = [a for f, a in context.unl["calls"] if f == "lc_save"][context.db_saves0:]
+    assert not any(x["ins"] for x in saves), saves

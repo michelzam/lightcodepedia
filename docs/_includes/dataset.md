@@ -94,6 +94,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-datagrid:hover .lc-dg-cbtn.lc-dg-refresh, .lc-dg-cbtn.lc-dg-refresh:focus-visible { opacity: 1; }
 @media (hover: none) { .lc-dg-cbtn.lc-dg-refresh { opacity: .6; } }
 .lc-dg-cbtn.lc-dg-save[disabled] { cursor: default; }
+.lc-dg-cbtn.lc-dg-refresh.lc-dg-pending { opacity: 1; position: relative; color: #0066cc; border-color: #93c5fd; }
+.lc-dg-cbtn.lc-dg-refresh.lc-dg-pending::after { content: ""; position: absolute; top: -2px; right: -2px; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
 .lc-dg-cbtn.lc-dg-st-ok { color: #16a34a; border-color: #bbf7d0; }
 .lc-dg-cbtn.lc-dg-st-dirty { color: #b45309; border-color: #fcd34d; }
 .lc-dg-cbtn.lc-dg-st-saving { color: #0066cc; }
@@ -204,9 +206,7 @@ Auto-included by docs/_layouts/default.html.
       Object.keys(window.lcRemote).forEach(function (id) {
         var r = window.lcRemote[id], U = r && r.unl;
         if (!U || !U.rpc || !lsGet(U.akey)) return;
-        var cols = unlCols(id);
-        if (cols) U.rpc("lc_ensure", { token: lsGet(U.akey), tbl: U.tbl, cols: cols })
-          .then(function () { window.lcRemoteReload(id); }, function () {});
+        window.lcRemoteReload(id, { ensure: true });
       });
     });
   }
@@ -215,11 +215,11 @@ Auto-included by docs/_layouts/default.html.
      back to the page — from the sheet's tab — re-reads every such list once
      (not more often than every 5 s); its grid's ↻ re-reads it on demand;
      refresh="30" on the dataset re-reads it every 30 s. */
-  window.lcRemoteReload = function (id) {
+  window.lcRemoteReload = function (id, opts) {
     var r = window.lcRemote[id];
     if (!r) return false;
     r.at = performance.now();
-    r.pull();
+    r.pull(opts);
     return true;
   };
   if (!window._lcRemoteVis) {
@@ -336,6 +336,15 @@ Auto-included by docs/_layouts/default.html.
     var dsid = dbId + "_" + table;
     var ex = document.getElementById(dsid);
     if (ex && ex.isConnected) return dsid;
+    /* ONE LINK PER TABLE PER VISIT (Michel, 2026-10-17: "rows are twice!"):
+       a pad redraws the class block on every pause; a rebuilt link sent a
+       walk still being saved a second, a third time. The same link is put
+       back where the class now stands, its save in flight and all. */
+    var keep = (window._lcDbTableEls = window._lcDbTableEls || {})[dsid];
+    if (keep) {
+      if (near && near.parentNode) near.parentNode.insertBefore(keep, near.nextSibling); else document.body.appendChild(keep);
+      return dsid;
+    }
     var p = document.createElement("p");
     p.className = "dataset lc-db-table"; p.id = dsid; p.hidden = true;
     p.setAttribute("data-db", dbId); p.setAttribute("data-tbl", table);
@@ -344,6 +353,7 @@ Auto-included by docs/_layouts/default.html.
     a.textContent = table;
     p.appendChild(a);
     if (near && near.parentNode) near.parentNode.insertBefore(p, near.nextSibling); else document.body.appendChild(p);
+    window._lcDbTableEls[dsid] = p;
     upgradeDataset(p);
     return dsid;
   };
@@ -399,14 +409,24 @@ Auto-included by docs/_layouts/default.html.
     var r = window.lcRemote[id], arr = window.lcDatasets[id];
     if (!r || !r.db || !Array.isArray(arr)) return null;
     var snap = r.snap || {}, seen = {}, ins = [], upd = [];
+    /* only the columns the table has: an attribute still being typed is not
+       a change to send (it reaches the table with ↻ or 🧹) */
+    var keep = r.unl && r.unl.tcols && Object.keys(r.unl.tcols).length ? r.unl.tcols : null;
+    var cut = function (o) { if (!keep) return o; var x = {}; for (var k in o) if (keep[k]) x[k] = o[k]; return x; };
+    var keyOf = function (row) { return JSON.stringify(dbSame(cut(dbRow(row)))); };
     arr.forEach(function (row) {
       if (row["⚠️"]) return;
-      if (row.id == null || row.id === "" || !(String(row.id) in snap)) {
-        /* new — no id yet, or one the table never gave */
-        var c = dbRow(row); delete c.id; ins.push(c); return;
+      if (row.id == null || row.id === "") {
+        /* new — no id yet: the table gives one */
+        var c = cut(dbRow(row)); delete c.id; ins.push(c); return;
       }
+      /* a row with an id came from the table: never inserted again, even
+         when this page's picture of the table is not read yet (Michel,
+         2026-10-17: "rows are twice!" — a fresh link's empty picture made
+         every row look new) */
+      if (!(String(row.id) in snap)) return;
       seen[String(row.id)] = 1;
-      if (snap[String(row.id)] !== dbKeyOf(row)) upd.push(dbRow(row));
+      if (snap[String(row.id)] !== keyOf(row)) upd.push(cut(dbRow(row)));
     });
     var del = Object.keys(snap).filter(function (k) { return !seen[k]; });
     return { ins: ins, upd: upd, del: del, n: ins.length + upd.length + del.length };
@@ -420,13 +440,10 @@ Auto-included by docs/_layouts/default.html.
     if (r.unl) {
       var u = r.unl, author = lsGet(u.akey);
       if (!u.share) return Promise.reject(new Error("paste the list's unlisted name first"));
-      /* the author's class may have gained a column since the table was read */
-      var pre = author ? unlColsSoon(id, 0).then(function (cols) {
-        return cols ? u.rpc("lc_ensure", { token: author, tbl: u.tbl, cols: cols }) : null;
-      }) : Promise.resolve(null);
-      return pre.then(function () {
-        return u.rpc("lc_save", { share: u.share, tbl: u.tbl, ins: ch.ins, upd: ch.upd, del: ch.del.map(Number) });
-      }).then(function () { r.pull(); return ch; });
+      /* a save never changes the table's columns (Michel, 2026-10-17: typing
+         "speed" left s, sp, spe… behind): ↻, 🧹 and the pad's save do */
+      return u.rpc("lc_save", { share: u.share, tbl: u.tbl, ins: ch.ins, upd: ch.upd, del: ch.del.map(Number) })
+        .then(function () { r.pull(); return ch; });
     }
     var H = r.db.headers({ "Content-Type": "application/json", Prefer: "return=minimal" });
     var ok = function (x) { if (!x.ok) return x.text().then(function (t) { throw new Error("HTTP " + x.status + " " + t.slice(0, 160)); }); return x; };
@@ -669,12 +686,22 @@ Auto-included by docs/_layouts/default.html.
                 });
               });
           };
-          unlPull = function () {
+          unlPull = function (opts) {
             var r = window.lcRemote[id], author = lsGet(U.akey);
-            var step = author
+            /* the table's columns change on the first read and when asked
+               (↻, 🧹, the pad's save) — never on a save or a re-read */
+            /* "first" is per visit, not per drawing: a pad redraws the class
+               block on every pause and rebuilds its table's link */
+            var seen = window._lcTblSeen = window._lcTblSeen || {};
+            if (!U.tcols && seen[id]) U.tcols = seen[id];
+            var ensure = author && (!seen[id] || (opts && opts.ensure));
+            var step = ensure
               ? unlColsSoon(id, 40).then(function (cols) {
                   return U.rpc("lc_ensure", { token: author, tbl: U.tbl, cols: cols || [] })
                     .then(function (sh) {
+                      U.tcols = { id: 1 };
+                      (cols || []).forEach(function (c) { U.tcols[c.n] = 1; });
+                      seen[id] = U.tcols;
                       U.author = true;
                       /* the page's name is not the database's: the author is told the right one */
                       U.hint = sh && sh !== U.fixed ? sh : "";
@@ -682,7 +709,8 @@ Auto-included by docs/_layouts/default.html.
                       return sh;
                     });
                 })
-              : Promise.resolve(U.fixed || lsGet(U.skey));
+              : Promise.resolve(U.fixed || lsGet(U.skey) || U.share);
+            if (author && !ensure) U.author = true;
             return step.then(function (sh) {
               U.share = sh || "";
               U.need = !sh && !U.fixed;
@@ -690,7 +718,17 @@ Auto-included by docs/_layouts/default.html.
               return U.rpc("lc_read", { share: sh, tbl: U.tbl }).then(function (rows) {
                 rows = Array.isArray(rows) ? rows : [];
                 var snap = {};
-                rows.forEach(function (x) { if (x && x.id != null) snap[String(x.id)] = dbKeyOf(x); });
+                U.read = true;
+                U.tcols = U.tcols || {};
+                seen[id] = U.tcols;
+                rows.forEach(function (x) { if (x) Object.keys(x).forEach(function (k) { U.tcols[k] = 1; }); });
+                var keep = Object.keys(U.tcols).length ? U.tcols : null;
+                rows.forEach(function (x) {
+                  if (!x || x.id == null) return;
+                  var o = dbRow(x), y = {};
+                  for (var k in o) if (!keep || keep[k]) y[k] = o[k];
+                  snap[String(x.id)] = JSON.stringify(dbSame(y));
+                });
                 r.snap = snap; r.error = "";
                 window.lcSetDataset(id, shapeData(rows, el));
                 /* same rows, other state (a name now known, a hint gone): the grids repaint */
@@ -702,8 +740,8 @@ Auto-included by docs/_layouts/default.html.
             });
           };
         }
-        var pull = function () {
-          if (unlPull) return unlPull();
+        var pull = function (opts) {
+          if (unlPull) return unlPull(opts);
           /* cache-bust so a just-landed file (results, fleet) is seen now,
              not from the 60s API/Pages cache — this is the whole point of
              refresh= (a counter, since Date is engine-blocked); a database
@@ -1248,11 +1286,19 @@ Auto-included by docs/_layouts/default.html.
       var st = dbR ? (dbR.state || (dbCh && dbCh.n ? "dirty" : "ok")) : "";
       var stTip = { ok: "saved", dirty: (dbCh && dbCh.n) + " change(s) to save — saving by itself, or tap", saving: "saving…",
                     error: "not saved — " + (dbR && dbR.saveErr || "") + " — tap to try again" }[st] || "";
-      var corner = (dbR ? "<button class='lc-dg-cbtn lc-dg-save lc-dg-st-" + st + "' type='button'"
+      /* columns the class has and the table not yet: ↻ adds them (author) */
+      var pending = [];
+      if (dbR && dbR.unl && dbR.unl.tcols && lsGet(dbR.unl.akey)) {
+        pending = (unlCols(dbSrc) || []).map(function (c) { return c.n; }).filter(function (n) { return !dbR.unl.tcols[n]; });
+      }
+      var rfTip = pending.length ? "↻ adds the column" + (pending.length > 1 ? "s " : " ") + pending.join(", ") + " to the table, then reads it" : "read the database again";
+      /* the corner, right to left (Michel, 2026-10-17): ＋, the save state
+         (always there), ↻ (on hover) — so nothing leaves a hole */
+      var corner = (orphans.length ? "<button class='lc-dg-cbtn lc-dg-tidy' type='button' title='" + esc("drop the columns no attribute uses: " + orphans.join(", ")) + "' aria-label='tidy the table'>🧹</button>" : "")
+        + (dbR ? "<button class='lc-dg-cbtn lc-dg-refresh" + (pending.length ? " lc-dg-pending" : "") + "' type='button' title='" + esc(rfTip) + "' aria-label='" + esc(rfTip) + "'>↻</button>"
+            + "<button class='lc-dg-cbtn lc-dg-save lc-dg-st-" + st + "' type='button'"
             + (st === "dirty" || st === "error" ? "" : " disabled") + " title='" + esc(stTip) + "' aria-label='" + esc(stTip) + "'>"
-            + "<span>" + { ok: "✓", dirty: "●", saving: "⟳", error: "⚠" }[st] + "</span></button>"
-            + "<button class='lc-dg-cbtn lc-dg-refresh' type='button' title='read the database again' aria-label='read the database again'>↻</button>" : "")
-        + (orphans.length ? "<button class='lc-dg-cbtn lc-dg-tidy' type='button' title='" + esc("drop the columns no attribute uses: " + orphans.join(", ")) + "' aria-label='tidy the table'>🧹</button>" : "")
+            + "<span>" + { ok: "✓", dirty: "●", saving: "⟳", error: "⚠" }[st] + "</span></button>" : "")
         + (model ? "<button class='lc-dg-cbtn lc-dg-new' type='button' title='a new " + esc(bindId) + "' aria-label='a new " + esc(bindId) + "'>＋</button>" : "");
       el.classList.toggle("lc-dg-cornered", !!corner);
       var dbBtns = "";
@@ -1522,7 +1568,8 @@ Auto-included by docs/_layouts/default.html.
           menu.className = "lc-dg-menu lc-dg-kinds";
           menu._lcFor = nb;
           menu.innerHTML = [bindId].concat(subs).map(function (k) {
-            return "<button type='button' class='lc-dg-verb' data-kind='" + esc(k) + "'><span>" + esc(k) + "</span></button>";
+            var kd = window.lcDocOf ? window.lcDocOf(k) : null;   /* each class wears its docstring's icon */
+            return "<button type='button' class='lc-dg-verb' data-kind='" + esc(k) + "'><span>" + esc((kd && kd.icon ? kd.icon + " " : "") + k) + "</span></button>";
           }).join("");
           var r = nb.getBoundingClientRect();
           menu.style.left = (Math.max(4, Math.min(r.left, window.innerWidth - 200)) + window.scrollX) + "px";
@@ -1620,7 +1667,7 @@ Auto-included by docs/_layouts/default.html.
             if (!ok) throw new Error("this database already has an author — paste that author key");
             lsSet(U.akey, k);
             if (made) U.newKey = k;
-            window.lcRemoteReload(dbSrc);
+            window.lcRemoteReload(dbSrc, { ensure: true });   /* the new author's class makes its table */
           }).catch(function (err) { if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ " + err.message); });
         });
         el.querySelectorAll(".lc-dg-unl-copy").forEach(function (b) {
@@ -1653,14 +1700,14 @@ Auto-included by docs/_layouts/default.html.
         var U2 = dbR.unl;
         if (!window.confirm("Drop the column" + (orphans.length > 1 ? "s " : " ") + orphans.join(", ") + " from the table " + U2.tbl + "? Their data is lost.")) return;
         U2.rpc("lc_drop", { token: lsGet(U2.akey), tbl: U2.tbl, cols: orphans })
-          .then(function () { window.lcRemoteReload(dbSrc); })
+          .then(function () { window.lcRemoteReload(dbSrc, { ensure: true }); })
           .catch(function (err) { if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ " + err.message); });
       });
       if (rf) rf.addEventListener("click", function (e) {
         e.stopPropagation();
         var ch = window.lcDatasetChanges(dbSrc);
         if (ch && ch.n && !window.confirm(ch.n + " change(s) not saved — read the database again and lose them?")) return;
-        window.lcRemoteReload(dbSrc);
+        window.lcRemoteReload(dbSrc, { ensure: true });
       });
       el.querySelectorAll("th[data-col] .lc-dg-grip").forEach(function (g) {
         g.addEventListener("click", function (e) { e.stopPropagation(); });

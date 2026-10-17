@@ -725,7 +725,9 @@ Feature: A class wears a dataset — the grid dresses the rows
   Scenario: Writing the name on the .database line in a pad clears the author's hint
     Michel, 2026-10-17: "did that, but the grid is dirty with the key! even
     after copy!" — the pad redrew only the line he changed; the class's
-    table kept the old, nameless line.
+    table kept the old, nameless line. And: "when I type speed, I would have
+    multiple columns s, sp, spe, spee and speed" — columns wait for ↻. And
+    "rows are twice!" — a redraw never sends a walk a second time.
 
     Given a database with the Lightcode setup and no author yet
     And the GitHub contents API serves "courses/demo/databases.yml" with the document:
@@ -760,6 +762,16 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then the author is told the database's name to put on the "shelter" line under "walks"
     When I write the name the grid gave on the "shelter" line of the "walk_pad" pad
     Then the grid "walks" says nothing more about names
+    When I add a "Walk" with New under "walks"
+    And I type "Rex" and press Enter, without clicking
+    And the "walk_pad" pad redraws its class twice while the walk is saving
+    Then the table "walk" holds "Rex" once
+    When the page's picture of the "walk" table is lost, and the grid saves
+    Then no walk is sent again
+    When I type the attribute "speed = Attr(str)" into the class in the "walk_pad" pad, letter by letter
+    Then no column was made while typing, and ↻ under "walks" offers "speed"
+    When I press ↻ under "walks"
+    Then the table "walk" gained the column "speed", and no other
 
   Scenario: A docstring's emoji is the icon of its class and its methods
     Michel, 2026-10-17 (register P4): "how to add icons/emojis to methods
