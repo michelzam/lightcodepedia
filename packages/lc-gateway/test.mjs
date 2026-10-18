@@ -529,6 +529,39 @@ await scenario('A new record still waiting reads back for its author', async () 
   const r = await call('GET', '/fiche?path=' + encodeURIComponent('fiches/persons/jeanne-test.yaml'), null, ada);
   eq(r.status, 200, JSON.stringify(r.body)); eq(r.body.record.title, 'Jeanne Test'); eq(r.body.pending.mine, true);
 });
+await scenario('A new record still waiting takes its author\'s next save — same pull request (0.3.2, Toni)', async () => {
+  /* Toni, 2026-10-18: "POST /contrib with this baseSha answers 404 no such
+     record on main: the fiche exists only in my branch" */
+  const { call, gh, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  const c = await call('POST', '/contrib/new', { kind: 'persons', title: 'Jeanne Test', record: { type: 'person', gender: 'féminin' } }, ada);
+  const path = 'fiches/persons/jeanne-test.yaml';
+  const mine = await call('GET', '/fiche?path=' + encodeURIComponent(path), null, ada);
+  const rec = mine.body.record; rec.gender = 'femme';
+  const r = await call('POST', '/contrib', { path, baseSha: mine.body.sha, record: rec }, ada);
+  eq(r.status, 200, JSON.stringify(r.body)); eq(r.body.updated, true); eq(r.body.pr.number, c.body.pr.number);
+  eq(gh.prs.length, 1); eq(gh.commits.length, 2);
+  eq(gh.main[path], undefined, 'main was written');
+  /* judged against the branch's version: its id and slug stay the gateway's */
+  const again = await call('GET', '/fiche?path=' + encodeURIComponent(path), null, ada);
+  const bad = again.body.record; bad.slug = 'elsewhere';
+  const p403 = await call('POST', '/contrib', { path, baseSha: again.body.sha, record: bad }, ada);
+  eq(p403.status, 403, JSON.stringify(p403.body)); deep(p403.body.fields, ['slug']);
+});
+await scenario('Someone else\'s new record still waiting says so — not "no such record"', async () => {
+  const { call, gh, signIn, clock } = rig();
+  const zoe = await signIn('zoe@example.org');
+  const c = await call('POST', '/contrib/new', { kind: 'persons', title: 'Jeanne Test', record: { type: 'person' } }, zoe);
+  clock.t += 60000;
+  const ada = await signIn('ada@example.org');
+  const path = 'fiches/persons/jeanne-test.yaml';
+  const r = await call('POST', '/contrib', { path, baseSha: 'whatever', record: { type: 'person', gender: 'x' } }, ada);
+  eq(r.status, 409, JSON.stringify(r.body)); eq(r.body.error, 'open pull request'); eq(r.body.pending.mine, false);
+  eq(r.body.pending.number, c.body.pr.number);
+  const b = await call('POST', '/contrib', { files: [{ path, baseSha: 'whatever', record: { type: 'person' } }] }, ada);
+  eq(b.status, 409, JSON.stringify(b.body)); eq(b.body.error, 'open pull request');
+  eq(gh.prs.length, 1);
+});
 
 feature('Several files, one contribution (0.3.1, Toni: the new address and the event that points to it)');
 const JT = 'fiches/persons/jeanne-test.yaml';

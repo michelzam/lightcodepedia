@@ -1,5 +1,22 @@
 # Changelog — @karmicsoft/lc-gateway
 
+## 0.3.2 — 2026-10-18
+
+Asked by Toni, first live test of 0.3.1: a new event fiche (contribution 6),
+`GET /fiche` gave his branch's version with `pending: { mine: true }`, but
+`POST /contrib` with that `baseSha` answered `404 no such record on main` —
+the fiche exists only on his branch until it is merged.
+
+- **My waiting contribution is looked for first.** `POST /contrib` finds the
+  volunteer's own open pull request before reading `main`; a record created
+  through the gateway and still waiting takes the next save on its branch,
+  same pull request (`200 { updated: true, pr }`).
+- Protected fields are judged against the published record, or — for a
+  record not published yet — against the branch's version, whose `id` and
+  `slug` the gateway wrote: they stay protected.
+- Someone else's new record still waiting answers `409 open pull request`
+  with `pending` (not `404`), for a single save and inside a bundle.
+
 ## 0.3.1 — 2026-10-12
 
 Asked by Toni with 0.3.0: "the new address and the event that points to it,

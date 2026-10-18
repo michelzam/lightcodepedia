@@ -19,7 +19,7 @@ import { createHmac, createSign, randomBytes, createHash, timingSafeEqual } from
 import { patch } from '@karmicsoft/lc-patch';
 import { load, dump } from '@karmicsoft/lc-serialize';
 
-export const GATEWAY_VERSION = '0.3.1';
+export const GATEWAY_VERSION = '0.3.2';
 
 const DEFAULTS = {
   baseBranch: 'main',
@@ -328,10 +328,18 @@ export function createGateway(config, deps = {}) {
     if (!body.record || typeof body.record !== 'object') return json(400, { error: 'record required', keep: true });
     if (!body.baseSha) return json(400, { error: 'baseSha required', message: 'send the sha of the record as it was opened (GET /fiche gives it)', keep: true });
     const slug = slugOf(path);
-    const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
-    if (!cur.ok) return json(404, { error: 'no such record on ' + cfg.baseBranch, keep: true });
+    /* MY WAITING CONTRIBUTION FIRST (0.3.2, Toni: "for a new fiche still
+       pending, the read of main fails before addToMine"): a record I
+       created lives only on my branch until it is merged */
     const open = await openPrFor(path);
-    if (open && isMine(open, sess)) return await addToMine(sess, body, path, open, cur);
+    const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
+    if (open && isMine(open, sess)) return await addToMine(sess, body, path, open, cur.ok ? cur : null);
+    if (!cur.ok) {
+      if (open) return json(409, { error: 'open pull request', keep: true,
+        message: 'this record is new and still waiting: #' + open.number,
+        pr: { number: open.number, url: open.html_url }, pending: pendingOf(open, sess) });
+      return json(404, { error: 'no such record on ' + cfg.baseBranch, keep: true });
+    }
     if (body.baseSha !== cur.json.sha)
       return json(409, { error: 'stale', message: 'the record changed since it was opened — reload it', keep: true });
     if (open) return json(409, { error: 'open pull request', keep: true,
@@ -352,14 +360,15 @@ export function createGateway(config, deps = {}) {
   /* a second save of MY waiting contribution: one more commit on its
      branch, the same pull request, kept up to date for the reviewer.
      baseSha is the branch's (GET /fiche gave it); protected fields are
-     still judged against the published record. */
+     judged against the published record — or, for a record not published
+     yet, against the branch's version, whose id and slug the gateway wrote */
   async function addToMine(sess, body, path, open, main) {
     const branch = open.head.ref;
     const mine = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(branch));
     if (!mine.ok) return json(404, { error: 'no such record on ' + branch, keep: true });
     if (body.baseSha !== mine.json.sha)
       return json(409, { error: 'stale', message: 'your waiting version changed since it was opened — reload it', keep: true });
-    const published = Buffer.from(main.json.content || '', 'base64').toString('utf8');
+    const published = Buffer.from((main || mine).json.content || '', 'base64').toString('utf8');
     const touched = touchedProtected(load(published), body.record);
     if (touched.length) return json(403, { error: 'protected fields', fields: touched, keep: true,
       message: 'these fields are not the form\'s to change: ' + touched.join(', ') });
@@ -415,7 +424,12 @@ export function createGateway(config, deps = {}) {
         if (seen[path]) return json(400, { error: 'the same file twice', path, ...where, keep: true });
         if (!it.baseSha) return json(400, { error: 'baseSha required', ...where, keep: true });
         const cur = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
-        if (!cur.ok) return json(404, { error: 'no such record on ' + cfg.baseBranch, path, ...where, keep: true });
+        if (!cur.ok) {
+          const waiting = await openPrFor(path);                  /* new, still waiting: save it there */
+          if (waiting) return json(409, { error: 'open pull request', path, ...where, keep: true, pending: pendingOf(waiting, sess),
+            message: 'this record is new and still waiting: #' + waiting.number });
+          return json(404, { error: 'no such record on ' + cfg.baseBranch, path, ...where, keep: true });
+        }
         if (it.baseSha !== cur.json.sha) return json(409, { error: 'stale', path, ...where, keep: true,
           message: 'the record changed since it was opened — reload it' });
         const open = await openPrFor(path);
