@@ -1438,11 +1438,25 @@ Auto-included by docs/_layouts/default.html.
       var L = ta.value.split("\n"), cls = "";
       for (var n = bl[idx].end; n >= bl[idx].start && !cls; n--) cls = ((L[n] || "").match(/^\s*\{:[^}]*?\.([\w-]+)/) || [])[1] || "";
       if (!cls) return;
-      /* where it sits: the top of the next part that shows, else under the last */
-      var y = null, nx = el.nextElementSibling;
-      while (nx && !(nx.getBoundingClientRect().height > 2)) nx = nx.nextElementSibling;
-      var pv = el.previousElementSibling;
-      while (pv && !(pv.getBoundingClientRect().height > 2)) pv = pv.previousElementSibling;
+      /* where it sits: the top of the next part that shows, else under the last.
+         The incremental preview keeps one container per block (display:
+         contents), so the neighbours are the other containers' children, not
+         the part's own siblings — else the ghost sat above the title (Michel,
+         2026-10-18: "not at the right place") */
+      var shows = function (e) { return e && e.getBoundingClientRect().height > 2; };
+      var hop = function (e, dir) {
+        var n = e[dir];
+        if (!n && e.parentElement && e.parentElement.classList.contains("lc-pad-blk")) {
+          var c = e.parentElement[dir];
+          while (c && !c.firstElementChild) c = c[dir];
+          n = c ? (dir === "nextElementSibling" ? c.firstElementChild : c.lastElementChild) : null;
+        }
+        return n;
+      };
+      var y = null, nx = hop(el, "nextElementSibling");
+      while (nx && !shows(nx)) nx = hop(nx, "nextElementSibling");
+      var pv = hop(el, "previousElementSibling");
+      while (pv && !shows(pv)) pv = hop(pv, "previousElementSibling");
       if (getComputedStyle(body).position === "static") body.style.position = "relative";
       if (nx) y = nx.offsetTop - 6; else if (pv) y = pv.offsetTop + pv.offsetHeight + 4; else y = 4;
       ghost = document.createElement("div");
