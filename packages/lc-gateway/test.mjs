@@ -582,6 +582,27 @@ await scenario('A new record and an edit pointing to it travel in one branch and
   eq(gh.main[LM], fixtures[LM], 'main changed');
   ok(!JSON.stringify(gh.prs).includes('ada@example.org'), 'the personal address leaked');
 });
+await scenario('A bundle\'s title wears the type of its main file, the last written — not the first (0.3.3, Toni)', async () => {
+  /* Toni, 2026-10-18: "the title takes the type of the first file written,
+     the address, while the main fiche is the event: Address: Événement : … (+2)" */
+  const { call, gh, signIn } = rig();
+  const ada = await signIn('ada@example.org');
+  const r = await call('POST', '/contrib', { title: 'Événement : la rue Houdon', files: [
+    { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) },
+    { kind: 'persons', title: 'Jeanne Test', record: { type: 'address' } },
+  ] }, ada);
+  eq(r.status, 201, JSON.stringify(r.body));
+  eq(gh.commits[0].path, JT, 'the new record is still written first');
+  eq(gh.prs[0].title, 'Person: Événement : la rue Houdon — Ada Test');
+  const { call: call2, gh: gh2, signIn: signIn2 } = rig();
+  const zoe = await signIn2('zoe@example.org');
+  const r2 = await call2('POST', '/contrib', { files: [
+    { path: LM, baseSha: gh2.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) },
+    { kind: 'persons', title: 'Jeanne Test', record: { type: 'address' } },
+  ] }, zoe);
+  eq(r2.status, 201, JSON.stringify(r2.body));
+  eq(gh2.prs[0].title, 'Person: Louise Michel (+1) — Zoé Test');
+});
 await scenario('One refusal and nothing is written', async () => {
   const { call, gh, signIn } = rig();
   const ada = await signIn('ada@example.org');
