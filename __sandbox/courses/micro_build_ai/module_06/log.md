@@ -30,3 +30,6 @@ class Walk(Object):
 
 - [ ] a form on the selected walk
 - [ ] my walk in the log: ＋, the dog, the form
+
+[Title](#)
+{: .form master="walks" }
