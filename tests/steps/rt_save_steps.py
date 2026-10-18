@@ -1266,3 +1266,20 @@ def step_shows_editor(context, pad_id):
     expect(pad.locator(".lc-mdpad-in")).to_be_visible(timeout=5_000)
     bar = context.page.locator("[data-lc-id='%s'] ~ .lc-mdpad-bar, [data-lc-id='%s'] .lc-mdpad-bar" % (pad_id, pad_id)).first
     expect(bar).to_be_visible()
+
+
+@when("I note the replay's preview and diff heights")
+def step_note_replay_heights(context):
+    context.page.wait_for_timeout(500)
+    context.rp_h0 = context.page.evaluate("""() => { const w = document.querySelector('.lc-mdpad[data-lc-replay]');
+      return [w.querySelector(':scope > .lc-mdpad-out').getBoundingClientRect().height,
+              w.querySelector(':scope > .lc-mdpad-diff').getBoundingClientRect().height]; }""")
+
+
+@then("the replay's preview and diff both grew by about {dy:d}px")
+def step_replay_grew(context, dy):
+    h1 = context.page.evaluate("""() => { const w = document.querySelector('.lc-mdpad[data-lc-replay]');
+      return [w.querySelector(':scope > .lc-mdpad-out').getBoundingClientRect().height,
+              w.querySelector(':scope > .lc-mdpad-diff').getBoundingClientRect().height]; }""")
+    for a, b in zip(context.rp_h0, h1):
+        assert b - a > dy * 0.6, (context.rp_h0, h1)

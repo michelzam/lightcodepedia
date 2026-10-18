@@ -621,6 +621,15 @@ Auto-included by docs/_layouts/default.html.
       var y0 = ev.clientY, h0 = wrap.getBoundingClientRect().height;
       grip.setPointerCapture(ev.pointerId);
       wrap.setAttribute("data-lc-resizing", "1");
+      /* the versions open: the diff and the preview kept their measured
+         heights — the grip lets them go, so both follow the pad (Michel,
+         2026-10-18: "when the version panel is open, the vertical resize
+         handle does not resize the preview and editor") */
+      if (wrap.hasAttribute("data-lc-replay") && getComputedStyle(wrap).flexDirection !== "column") {
+        [wrap.querySelector(":scope > .lc-mdpad-out"), wrap.querySelector(":scope > .lc-mdpad-diff")].forEach(function (p) {
+          if (p) { p.style.height = ""; p.style.minHeight = "0"; }
+        });
+      }
       function move(e) {
         wrap.style.height = Math.max(160, Math.round(h0 + e.clientY - y0)) + "px";
         if (keysEl) paintSoon();

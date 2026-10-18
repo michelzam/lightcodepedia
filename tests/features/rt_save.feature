@@ -226,6 +226,29 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When I compare the oldest version
     Then the difference is shown line by line
 
+  Scenario: With the versions open, the grip still resizes the preview and the editor
+    Michel, 2026-10-18 (page 3): "when the version panel is open, the
+    vertical resize handle does not resize the preview and editor".
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
+      """
+      # Work page
+
+      ```markdown
+      # Starter résumé — replace me
+      ```
+      {: .mdpad #cv save="cv.md" rows="6" replay="0.3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I press the pad's replay button
+    Then the replay holds 2 frames and opens on the first
+    When I note the replay's preview and diff heights
+    And I drag the "cv" pad's grip 200px down
+    Then the replay's preview and diff both grew by about 200px
+
   Scenario: Replay walks the saved versions forward and back, with the usual diff cues
     Michel, 2026-10-05: students watch their own document grow, frame by
     frame, the author's starter first, + and − where a line came or went,
