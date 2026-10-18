@@ -51,3 +51,10 @@ Now over **{= campus_grid.row.campus }**: {= forecast.first.icon } {= forecast.f
 
 - [ ] a query that keeps the good hours
 - [ ] a sentence that says when to go
+
+```sql
+SELECT time, temperature_2m, precipitation_probability FROM sky
+WHERE precipitation_probability <= 30 AND temperature_2m <= 28
+ORDER BY time
+```
+{: .query bind="sky" #walk_when }
