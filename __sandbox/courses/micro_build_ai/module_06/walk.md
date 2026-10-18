@@ -49,8 +49,8 @@ Now over **{= campus_grid.row.campus }**: {= forecast.first.icon } {= forecast.f
 
 ### 📝 TODO
 
-- [ ] a query that keeps the good hours
-- [ ] a sentence that says when to go
+- [x] a query that keeps the good hours
+- [x] a sentence that says when to go
 
 ```sql
 SELECT time, temperature_2m, precipitation_probability FROM sky
