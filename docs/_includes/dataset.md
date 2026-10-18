@@ -1588,10 +1588,11 @@ Auto-included by docs/_layouts/default.html.
                republish would repaint the table and take the menu with it) */
             var tr = td.parentNode;
             var key = row.obj != null ? "o:" + row.obj : "i:" + parseInt(td.getAttribute("data-row"), 10);
-            /* A TAP IN THE GUTTER SELECTS FIRST (Michel, 2026-10-17): the row
-               becomes the selection at once; a bound form follows as the menu
-               closes (its repaint would take the menu with it) */
+            /* A TAP IN THE GUTTER SELECTS FIRST (Michel, 2026-10-17) — and the
+               form follows at once (2026-10-18: "the form remains on the old
+               object"); the menu lives on the page, a repaint leaves it */
             var pub = key !== selKey && lcId && window.lcMasterDetail ? row : null;
+            if (pub) { selKey = key; window.lcMasterDetail.publish(lcId, pub); pub = null; }
             el.querySelectorAll("tbody tr").forEach(function (x) { x.classList.remove("lc-dg-selected"); });
             tr.classList.add("lc-dg-selected");
             selKey = key;
