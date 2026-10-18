@@ -1,5 +1,15 @@
 # Changelog — @karmicsoft/lc-gateway
 
+## 0.3.3 — 2026-10-18
+
+Asked by Toni, with 0.3.2 in service: a bundle's pull request took the type
+of the first file written — new records go first, so the address — while
+the main fiche is the event: "Address: Événement : … (+2)".
+
+- **A bundle's title wears its main file**, the last written (the one the
+  new records serve): its type, and its title when none is sent.
+  `type` in the request still wins.
+
 ## 0.3.2 — 2026-10-18
 
 Asked by Toni, first live test of 0.3.1: a new event fiche (contribution 6),

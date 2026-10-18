@@ -19,7 +19,7 @@ import { createHmac, createSign, randomBytes, createHash, timingSafeEqual } from
 import { patch } from '@karmicsoft/lc-patch';
 import { load, dump } from '@karmicsoft/lc-serialize';
 
-export const GATEWAY_VERSION = '0.3.2';
+export const GATEWAY_VERSION = '0.3.3';
 
 const DEFAULTS = {
   baseBranch: 'main',
@@ -449,9 +449,12 @@ export function createGateway(config, deps = {}) {
     /* new records first: what the others point to exists before them */
     const order = files.map((f, i) => i).sort((a, b) => (files[a].sha ? 1 : 0) - (files[b].sha ? 1 : 0));
     const sorted = order.map((i) => files[i]);
-    const head = sorted[0];
-    const title = String(body.title || (head.title + (sorted.length > 1 ? ' (+' + (sorted.length - 1) + ')' : '')));
-    const pr = await writeAsPr(sess, { files: sorted, title, type: cap(head.type), message: body.message });
+    /* the title wears the MAIN file: the last written, the one the new
+       records serve (0.3.3, Toni: "Address: Événement : … (+2)" — the event
+       is the fiche, the address its helper); body.type still wins */
+    const main = sorted[sorted.length - 1];
+    const title = String(body.title || (main.title + (sorted.length > 1 ? ' (+' + (sorted.length - 1) + ')' : '')));
+    const pr = await writeAsPr(sess, { files: sorted, title, type: cap(String(body.type || main.type)), message: body.message });
     return json(201, { ok: true, pr, files: out });            /* in the order the form sent them */
   }
 
