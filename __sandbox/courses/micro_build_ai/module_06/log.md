@@ -28,8 +28,8 @@ class Walk(Object):
 
 ### 📝 TODO
 
-- [ ] a form on the selected walk
-- [ ] my walk in the log: ＋, the dog, the form
+- [x] a form on the selected walk
+- [x] my walk in the log: ＋, the dog, the form
 
 [Title](#)
 {: .form master="walks" }
