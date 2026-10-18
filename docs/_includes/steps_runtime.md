@@ -3222,8 +3222,17 @@ def _lc_source_sync(src):
         inst._js = row
         # a subclass's row reads its own attributes too (a Sprint's laps) — on
         # top of the base class's, which hold the table's id
-        own = [f for f in (getattr(k, "_lc_fields", None) or []) if not any(f.n == b.n for b in cls._lc_fields)]
-        for f in list(cls._lc_fields) + own:
+        # …and what the subclass declares wins over a column the base only
+        # read from the table, typed by guess (Michel, 2026-10-18: laps read as
+        # text from rows where it was empty — run() added 1 to a str)
+        fl = list(cls._lc_fields)
+        for f in (getattr(k, "_lc_fields", None) or []):
+            at = [i for i, b in enumerate(fl) if b.n == f.n]
+            if not at:
+                fl.append(f)
+            elif getattr(fl[at[0]], "src", False) and not getattr(f, "src", False):
+                fl[at[0]] = f
+        for f in fl:
             v = getattr(row, f.n, None)
             if v is None:
                 continue

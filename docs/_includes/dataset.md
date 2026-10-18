@@ -432,6 +432,13 @@ Auto-included by docs/_layouts/default.html.
   /* the columns a list's class declares, in its order, for the table it
      makes: str, int, float, bool (a state is a str) — the columns the table
      brought are not the class's to make */
+  /* a column is never offered for dropping while any class on the page
+     declares an attribute of that name (Michel, 2026-10-18: laps declared
+     in the pad's Sprint, 🧹 still offered to drop it) */
+  function lcDeclaredAnywhere(k) {
+    var M = window.lcModels || {};
+    return Object.keys(M).some(function (n) { var m = M[n]; var f = m && m.fields && m.fields[k]; return !!(f && !f.computed && !f.src); });
+  }
   function unlCols(id) {
     var M = window.lcModels || {}, out = null;
     Object.keys(M).forEach(function (n) {
@@ -1371,7 +1378,7 @@ Auto-included by docs/_layouts/default.html.
         var declared = {};
         (unlCols(dbSrc) || []).forEach(function (c) { declared[c.n] = 1; });
         orphans = Object.keys(row0).filter(function (k) {
-          return k !== "id" && k !== "obj" && k.charAt(0) !== "_" && k !== "⚠️" && !declared[k];
+          return k !== "id" && k !== "obj" && k.charAt(0) !== "_" && k !== "⚠️" && !declared[k] && !lcDeclaredAnywhere(k);
         });
         var known = [bindId].concat(model.subs || []), wases = (model.subs || []).map(function (k) { var m2 = (window.lcModels || {})[k]; return m2 && m2.was; });
         (window.lcDatasets[dbSrc] || []).forEach(function (r) {
@@ -1581,10 +1588,11 @@ Auto-included by docs/_layouts/default.html.
                republish would repaint the table and take the menu with it) */
             var tr = td.parentNode;
             var key = row.obj != null ? "o:" + row.obj : "i:" + parseInt(td.getAttribute("data-row"), 10);
-            /* A TAP IN THE GUTTER SELECTS FIRST (Michel, 2026-10-17): the row
-               becomes the selection at once; a bound form follows as the menu
-               closes (its repaint would take the menu with it) */
+            /* A TAP IN THE GUTTER SELECTS FIRST (Michel, 2026-10-17) — and the
+               form follows at once (2026-10-18: "the form remains on the old
+               object"); the menu lives on the page, a repaint leaves it */
             var pub = key !== selKey && lcId && window.lcMasterDetail ? row : null;
+            if (pub) { selKey = key; window.lcMasterDetail.publish(lcId, pub); pub = null; }
             el.querySelectorAll("tbody tr").forEach(function (x) { x.classList.remove("lc-dg-selected"); });
             tr.classList.add("lc-dg-selected");
             selKey = key;
@@ -1805,6 +1813,10 @@ Auto-included by docs/_layouts/default.html.
       if (tidyBtn) tidyBtn.addEventListener("click", function (e) {
         e.stopPropagation();
         var U2 = dbR.unl;
+        /* asked again at the click: a class may have come since the grid was drawn */
+        orphans = orphans.filter(function (k) { return !lcDeclaredAnywhere(k); });
+        stale = stale.filter(function (k) { return !(window.lcModels || {})[k]; });
+        if (!orphans.length && !stale.length) { window.lcGridSay(bindId, "🧹 nothing to tidy: every column has its attribute"); return; }
         var say = [orphans.length ? "drop the column" + (orphans.length > 1 ? "s " : " ") + orphans.join(", ") + " (their data is lost)" : "",
                    stale.length ? "clear the class name" + (stale.length > 1 ? "s " : " ") + stale.join(", ") + " (those rows become " + bindId + ")" : ""].filter(Boolean).join(" and ");
         if (!window.confirm("In the table " + U2.tbl + ": " + say + "?")) return;
