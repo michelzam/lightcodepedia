@@ -13,6 +13,8 @@ Feature: A class wears a dataset — the grid dresses the rows
   Scenario: The dressed grid shows the list's columns, the state as a chip, no obj column
     Then the grid "family_grid" has the columns "family, dog, stage, since"
     And the stage cell of "Nguyen" in "family_grid" is a chip with a caret
+    # a class with stages wears the gutter too, as on page 3 (Michel, 2026-10-18: "Gutter?")
+    And every row of "family_grid" wears the gutter, which opens its verbs
 
   Scenario: The caret drops the row's verbs, legal ones live and the others grey
     When I open the verbs of "Nguyen" in "family_grid"

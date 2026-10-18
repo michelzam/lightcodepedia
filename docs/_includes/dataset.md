@@ -1572,7 +1572,9 @@ Auto-included by docs/_layouts/default.html.
       function dressedCell(row, c, idx) { return dressedCell0(row, c, idx); }
       /* the gutter: ⋯ for a class with no state; a subclass's row wears its
          class's icon there (Michel, 2026-10-17) — a tap still opens its verbs */
-      var gut = !!(model && (!model.state || (model.subs || []).length));
+      /* every class grid wears the gutter (Michel, 2026-10-18: "the grid in page 1 was not upgraded
+         to follow the UX decided in page 3" — "Gutter?") — stages or not */
+      var gut = !!model;
       var gutTd = function (idx) {
         var r = sorted[idx] || {}, kd = r._kind && window.lcDocOf ? window.lcDocOf(r._kind) : null;
         var mark = kd && kd.icon ? kd.icon : "⋯", tip = (r._kind ? "a " + r._kind + " — " : "") + "what this one can do";

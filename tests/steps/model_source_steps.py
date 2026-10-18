@@ -1440,3 +1440,15 @@ def step_form_pick_dog(context, dog, fid):
     menu = context.page.locator(".lc-dg-refmenu")
     expect(menu).to_be_visible(timeout=T)
     menu.locator("button[data-obj]", has_text=dog).first.click()
+
+
+@then('every row of "{gid}" wears the gutter, which opens its verbs')
+def step_every_gutter(context, gid):
+    g = grid(context, gid)
+    expect(g.locator("tbody tr").first).to_be_visible(timeout=T)
+    n = g.locator("tbody tr").count()
+    expect(g.locator("tbody tr td.lc-dg-gut .lc-dg-rowmenu")).to_have_count(n, timeout=T)
+    g.locator("tbody tr td.lc-dg-gut .lc-dg-rowmenu").first.click()
+    expect(context.page.locator(".lc-dg-menu button[data-verb='delete']")).to_be_visible(timeout=T)
+    context.page.keyboard.press("Escape")
+    context.page.mouse.click(5, 5)
