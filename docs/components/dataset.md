@@ -401,15 +401,16 @@ class Foster(Family):
 [the family](#)
 {: .form master="family_grid" #family_card }
 
-Three things to see: the `stage` cell wears a **⌄** — click it, the verbs
-this stage allows are live, the others grey and say what they need; a tap
+Three things to see: the `stage` cell wears a chip, and the row's gutter
+**⋯** opens the verbs — those this stage allows are live, the others grey
+and say what they need; a tap
 on a row selects it (a row is always selected), and a **double click** on
 another cell — or a second tap on the selected row — opens it for typing,
 the old value selected, the edit going through the object
 (`editable="false"` closes them); **➕ New** and **🗑 Delete** are there
 without a line of yours, every object is born with them. A class with
 subclasses on the page — `Foster(Family)` here — makes ➕ New a pick: a
-Family or a Foster, and the new row is selected. A Foster's ⌄ carries its
+Family or a Foster, and the new row is selected. A Foster's gutter carries its
 own verb, *give back*, and its card its own field, *until*. `State("asked", "met", "home")` lists the stages in
 order, `@transition("asked", "met")` goes from one to the other: no
 brackets needed for one state. Click a row: the form shows the object, its state as a chip beside
@@ -519,7 +520,7 @@ Feature: A class wears a dataset
 | `.dataset` | `source="…"` | a `.database` id | A SQL fence runs on that database |
 | `.dataset` | `refresh="…"` | seconds (≥10) | Live mode: re-fetch on a timer (cache-busted); every bound grid/stat/chart repaints itself — no page reload |
 | `.model` | `class X(Object, source="…")` | dataset id | The dataset's rows become X's objects, its columns X's fields; X adds a `State` and verbs — and X is a dataset id itself |
-| `.datagrid` | `source="…"` | dataset id, or a class | Which dataset to display; a class dresses its rows: the state cell's ⌄ drops the row's verbs, typed cells, ➕ New |
+| `.datagrid` | `source="…"` | dataset id, or a class | Which dataset to display; a class dresses its rows: a chip for the state, the gutter ⋯ drops the row's verbs, typed cells, ➕ New |
 | `.datagrid` | `rows="…"` | number | Rows per page (0 = all) |
 | `.datagrid` | `columns="…"` | `a, b, c` | Draw only these columns, in this order; the published row is still whole (bound grids) |
 | `.datagrid` | `height="…"` | px | A scrolling table with a sticky header instead of pages — wins over `rows` |

@@ -1,8 +1,9 @@
 Feature: A class wears a dataset — the grid dresses the rows
   A class is a dataset (Michel, 2026-10-15): class Family(Object,
   source="calls") wraps the list's rows as objects, its columns as fields,
-  and the grid on the class shows the state cell with a ⌄ of verbs, legal
-  ones live and the others grey; edits and verbs go through the object and
+  and the grid on the class shows the state as a chip, the gutter ⋯ with
+  the verbs, legal ones live and the others grey (the ⌄ on the chip went
+  with the gutter, Michel 2026-10-18); edits and verbs go through the object and
   land in the list; New and Delete are born of Object.
 
   Background:
@@ -12,11 +13,11 @@ Feature: A class wears a dataset — the grid dresses the rows
 
   Scenario: The dressed grid shows the list's columns, the state as a chip, no obj column
     Then the grid "family_grid" has the columns "family, dog, stage, since"
-    And the stage cell of "Nguyen" in "family_grid" is a chip with a caret
+    And the stage cell of "Nguyen" in "family_grid" is a chip, with no caret
     # a class with stages wears the gutter too, as on page 3 (Michel, 2026-10-18: "Gutter?")
     And every row of "family_grid" wears the gutter, which opens its verbs
 
-  Scenario: The caret drops the row's verbs, legal ones live and the others grey
+  Scenario: The gutter drops the row's verbs, legal ones live and the others grey
     When I open the verbs of "Nguyen" in "family_grid"
     Then the verb "meet" is live and "adopt" is grey, needing "met"
     And the menu ends with "Delete"
@@ -121,10 +122,10 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I double click the "since" cell of "Diallo" in "family_grid" and type "Mon"
     Then the dataset "calls" has "Diallo" since "Mon"
 
-  Scenario: The stage chip and its caret sit on the row's text line
+  Scenario: The stage chip sits on the row's text line
     Michel, 2026-10-16: the pill rode high, the ⌄ sank below the line.
 
-    Then the chip, the caret and the family name of "Nguyen" in "family_grid" share one middle line
+    Then the chip and the family name of "Nguyen" in "family_grid" share one middle line
 
   Scenario: The pad marks errors in its gutter, the python fence's included
     Michel, 2026-10-16: "check that errors (syntax, etc) are detected and
@@ -189,8 +190,8 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I type "Proof" and press Enter, without clicking
     Then the dataset "calls" has "Proof" at stage "asked"
 
-  Scenario: Every stage chip has the same width, so the carets line up
-    Then the stage chips of "family_grid" are all as wide, their carets in one column
+  Scenario: Every stage chip has the same width
+    Then the stage chips of "family_grid" are all as wide
 
   Scenario: A card on a dressed grid in a pad shows the lit row from the start
     Michel, 2026-10-16: the card said "(no data)" under a lit row — the

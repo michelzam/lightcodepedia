@@ -22,16 +22,16 @@ def step_cols(context, gid, cols):
     assert got == want, got
 
 
-@then('the stage cell of "{name}" in "{gid}" is a chip with a caret')
+@then('the stage cell of "{name}" in "{gid}" is a chip, with no caret')
 def step_chip(context, name, gid):
     cell = row_of(context, gid, name).locator("td.lc-dg-state")
     expect(cell.locator(".lc-dg-chip")).to_be_visible(timeout=T)
-    expect(cell.locator(".lc-dg-caret")).to_have_text("⌄")
+    expect(cell.locator(".lc-dg-caret")).to_have_count(0)
 
 
 @when('I open the verbs of "{name}" in "{gid}"')
 def step_open(context, name, gid):
-    row_of(context, gid, name).locator("td.lc-dg-state").click()
+    row_of(context, gid, name).locator("td.lc-dg-gut button").click()
     expect(context.page.locator(".lc-dg-menu")).to_be_visible(timeout=T)   # on the body, never clipped
 
 
@@ -214,7 +214,7 @@ def step_selected_new(context, gid, stage):
 
 @then('its verbs offer "{own}" beside "{inherited}"')
 def step_own_verbs(context, own, inherited):
-    context.new_row.locator("td.lc-dg-state").click()
+    context.new_row.locator("td.lc-dg-gut button").click()
     menu = context.page.locator(".lc-dg-menu")
     expect(menu.locator("button[data-verb='" + own + "']")).to_be_visible(timeout=T)
     expect(menu.locator("button[data-verb='" + inherited + "']")).to_be_visible()
@@ -241,7 +241,7 @@ def step_dbl_type(context, col, name, gid, text):
     context.page.keyboard.press("Enter")
 
 
-@then('the chip, the caret and the family name of "{name}" in "{gid}" share one middle line')
+@then('the chip and the family name of "{name}" in "{gid}" share one middle line')
 def step_chip_aligned(context, name, gid):
     r = row_of(context, gid, name)
     expect(r.locator(".lc-dg-chip")).to_be_visible(timeout=T)
@@ -249,9 +249,9 @@ def step_chip_aligned(context, name, gid):
         """tr => { const mid = e => { const b = e.getBoundingClientRect(); return (b.top + b.bottom) / 2; };
            const name = document.createRange(); name.selectNodeContents(tr.querySelector('td:not(.lc-dg-gut)'));
            const nb = name.getBoundingClientRect();
-           return { name: (nb.top + nb.bottom) / 2, chip: mid(tr.querySelector('.lc-dg-chip')), caret: mid(tr.querySelector('.lc-dg-caret')) }; }""",
+           return { name: (nb.top + nb.bottom) / 2, chip: mid(tr.querySelector('.lc-dg-chip')) }; }""",
         r.element_handle())
-    assert abs(mids["chip"] - mids["name"]) <= 2.5 and abs(mids["caret"] - mids["name"]) <= 3.5, mids
+    assert abs(mids["chip"] - mids["name"]) <= 2.5, mids
 
 
 @then('the "{pad_id}" pad marks lines "{lines}" as errors')
@@ -312,15 +312,13 @@ def step_type_blind(context, text):
     context.page.keyboard.press("Enter")
 
 
-@then('the stage chips of "{gid}" are all as wide, their carets in one column')
+@then('the stage chips of "{gid}" are all as wide')
 def step_chips_wide(context, gid):
     expect(grid(context, gid).locator(".lc-dg-chip").first).to_be_visible(timeout=T)
     got = context.page.evaluate(
         "g => [...document.querySelectorAll(\".lc-datagrid[data-lc-id='\" + g + \"'] td.lc-dg-state\")].map(td =>"
-        " [Math.round(td.querySelector('.lc-dg-chip').getBoundingClientRect().width), Math.round(td.querySelector('.lc-dg-caret').getBoundingClientRect().left)])", gid)
-    widths = {w for w, _ in got}
-    lefts = {l for _, l in got}
-    assert len(widths) == 1 and len(lefts) == 1, got
+        " Math.round(td.querySelector('.lc-dg-chip').getBoundingClientRect().width))", gid)
+    assert len(set(got)) == 1 and got, got
 
 
 @then('the card in the "{pad_id}" pad shows "{text}"')

@@ -51,12 +51,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-table tbody tr { cursor: pointer; }
 .lc-dg-table tr.lc-dg-selected td { background: #e8f0fe !important; }
 /* A CLASS IS A DATASET (Michel, 2026-10-15): a grid on a class dresses the
-   rows — the state cell wears a ⌄ that drops the row's verbs, legal ones
-   live and the others grey; typed cells; ➕ New under the list. */
+   rows — the state cell wears a chip, the gutter ⋯ drops the row's verbs,
+   legal ones live and the others grey; typed cells; ➕ New under the list. */
 .lc-datagrid { position: relative; }
 .lc-dg-table td.lc-dg-typed { border-bottom: 1px dashed #9db6d0; }
 .lc-dg-table td.lc-dg-typed:focus { outline: 2px solid #0066cc; outline-offset: -2px; background: #fff; }
-.lc-dg-table td.lc-dg-state { cursor: pointer; white-space: nowrap; }
+.lc-dg-table td.lc-dg-state { white-space: nowrap; }
 /* the chip and the ⌄ sit on the row's own text line: an inline chip (its
    padding never lifts the line), the ⌄ nudged up to the x-height — a block
    chip rode high and a floated ⌄ sank (Michel, 2026-10-16) */
@@ -106,7 +106,6 @@ Auto-included by docs/_layouts/default.html.
 .lc-datagrid.lc-dg-cornered:not(.lc-dg-titled) .lc-dg-body, .lc-datagrid.lc-dg-cornered:not(.lc-dg-titled) > .lc-dg-scroll,
 .lc-datagrid.lc-dg-cornered:not(.lc-dg-titled) > table { margin-top: 2.1em; }
 .lc-dg-table td.lc-dg-typed.lc-dg-typing { background: #fff; outline: 2px solid #0066cc; outline-offset: -2px; cursor: text; }
-.lc-dg-state:hover .lc-dg-caret { color: #0066cc; }
 .lc-dg-table td.lc-dg-refcell { cursor: pointer; white-space: nowrap; position: relative; padding-right: 1.6em; }
 .lc-dg-table td.lc-dg-refcell .lc-dg-caret { position: absolute; right: .55em; top: 50%; transform: translateY(-62%); margin: 0; }
 .lc-dg-table td.lc-dg-refcell:hover .lc-dg-caret { color: #0066cc; }
@@ -1586,8 +1585,10 @@ Auto-included by docs/_layouts/default.html.
         var f = model.fields[c];
         if (f && f.state) {
           var wide = (f.enum || []).reduce(function (m, s) { return Math.max(m, String(s).length); }, String(v).length);
-          return "<td class='lc-dg-state' data-row='" + idx + "' title='what this one can do'>"
-            + "<span class='lc-dg-chip' style='min-width:" + wide + "ch'>" + esc(v) + "</span><span class='lc-dg-caret'>⌄</span></td>";
+          /* the chip alone: the verbs live in the gutter, for every class
+             (Michel, 2026-10-18: "we replaced this by the gutter already") */
+          return "<td class='lc-dg-state' data-row='" + idx + "'>"
+            + "<span class='lc-dg-chip' style='min-width:" + wide + "ch'>" + esc(v) + "</span></td>";
         }
         /* a tap on a row SELECTS it; cells open for typing only when the
            grid says editable="true" — the detail form is where one edits
@@ -1944,9 +1945,6 @@ Auto-included by docs/_layouts/default.html.
             setTimeout(function () { document.addEventListener("click", closeMenu, { once: true }); }, 0);
           }
         };
-        el.querySelectorAll("td.lc-dg-state").forEach(function (td) {
-          td.addEventListener("click", function (e) { verbsMenu(td, e); });
-        });
         /* A CLASS WITH NO STATE STILL HAS VERBS (Michel, 2026-10-16) — and
            Delete always: a light ⋯ in the row's gutter opens them (2026-10-17) */
         el.querySelectorAll("td.lc-dg-gut").forEach(function (td) {
