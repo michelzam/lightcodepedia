@@ -561,6 +561,13 @@ class Object:
 
     def delete(self):
         """Gone: from the page, the bus and its list."""
+        # only a delete asked for leaves the table — never a row that merely
+        # vanished from the page (Michel, 2026-10-18: an empty grid after
+        # navigating away and back)
+        src, rid = getattr(type(self), "_lc_source", None), getattr(self, "_v", {}).get("id")
+        ok = getattr(js.window, "lcDeleteOk", None)
+        if src and rid is not None and ok is not None:
+            ok(src, str(rid))
         _lc_forget(self)
         _lc_publish_class(type(self))
 
@@ -3194,12 +3201,28 @@ def _lc_source_sync(src):
     db = _lc_isdb(src)
     g = globals()
     kept = []
+    # a table read again hands back new rows: the same id keeps its object —
+    # its name, and the grid's selection (Michel, 2026-10-18: after run() the
+    # grid went back to the first walk)
+    by_id = {}
+    if db:
+        for o in _LC_OBJS:
+            oid = o._v.get("id") if isinstance(o, cls) else None
+            if oid is not None and str(oid) != "":
+                by_id[str(oid)] = o
     for i in range(n):
         row = arr[i]
         if getattr(row, "⚠️", None) is not None:
             continue          # a list that failed to load says why; it is not an object
         nm = _lc_row_mark(row)
         inst = g.get(nm) if nm else None
+        if inst is None and db:
+            rid = getattr(row, "id", None)
+            old = by_id.get(str(rid)) if rid is not None else None
+            onm = _lc_name_of(old) if old is not None else ""
+            if onm:
+                inst, nm = old, onm
+                _lc_row_mark(row, nm)
         # a row's _sub names its subclass (empty for the base class) — or a former name (was = "Run")
         k = cls
         kn = getattr(row, "_sub", None) if db else None

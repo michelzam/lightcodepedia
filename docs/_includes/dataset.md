@@ -471,6 +471,10 @@ Auto-included by docs/_layouts/default.html.
   }
   /* what changed since the table was read: new rows (no id yet), changed
      rows, rows that are gone */
+  window.lcDeleteOk = function (id, rowId) {
+    var m = window._lcDelOk = window._lcDelOk || {};
+    (m[id] = m[id] || {})[String(rowId)] = 1;
+  };
   window.lcDatasetChanges = function (id) {
     var r = window.lcRemote[id], arr = window.lcDatasets[id];
     if (!r || !r.db || !Array.isArray(arr)) return null;
@@ -494,7 +498,12 @@ Auto-included by docs/_layouts/default.html.
       seen[String(row.id)] = 1;
       if (snap[String(row.id)] !== keyOf(row)) upd.push(cut(dbRow(row)));
     });
-    var del = Object.keys(snap).filter(function (k) { return !seen[k]; });
+    /* a row leaves the table only when it was deleted (obj.delete(), the
+       🗑 verb) — a row that merely vanished from the page (a redraw, a page
+       left, a class re-run) is never sent as a deletion (Michel, 2026-10-18:
+       "no data at all in the grid") */
+    var okDel = (window._lcDelOk || {})[id] || {};
+    var del = Object.keys(snap).filter(function (k) { return !seen[k] && okDel[k]; });
     return { ins: ins, upd: upd, del: del, n: ins.length + upd.length + del.length };
   };
   /* 💾 SAVE: the new rows in one insert, each changed row by its id, the
