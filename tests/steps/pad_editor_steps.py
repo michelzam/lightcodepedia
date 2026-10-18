@@ -495,6 +495,12 @@ def step_ghost(context, pad_id, text):
     expect(_pad(context, pad_id).locator(".lc-mdpad-ghost span")).to_have_text(text, timeout=5_000)
 
 
+@then('the "{pad_id}" pad shows no ? pill, even hovered')
+def step_no_help_pill(context, pad_id):
+    _pad(context, pad_id).hover()
+    expect(_pad(context, pad_id).locator(".lc-mdpad-helpbtn")).to_be_hidden()
+
+
 @when('I press the "{pad_id}" pad\'s ? pill')
 def step_help_pill(context, pad_id):
     _pad(context, pad_id).hover()

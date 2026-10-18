@@ -83,7 +83,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-pills > .lc-mdpad-findbtn, .lc-mdpad-pills > .lc-mdpad-helpbtn { display: none; }
 .lc-mdpad:focus-within .lc-mdpad-pills > .lc-mdpad-findbtn { display: inline-flex; }
 .lc-mdpad:hover .lc-mdpad-pills > .lc-mdpad-helpbtn, .lc-mdpad:focus-within .lc-mdpad-pills > .lc-mdpad-helpbtn { display: inline-flex; }
-.lc-mdpad.lc-mdpad-folded .lc-mdpad-pills > .lc-mdpad-findbtn { display: none; }
+/* a folded pad has no editor to explain: 🔍 and ? go with it (Michel, 2026-10-18) */
+.lc-mdpad.lc-mdpad-folded .lc-mdpad-pills > .lc-mdpad-findbtn, .lc-mdpad.lc-mdpad-folded .lc-mdpad-pills > .lc-mdpad-helpbtn { display: none !important; }
 .lc-mdpad-ghost { position: absolute; left: 0.6em; right: 0.6em; height: 0; border-top: 1.5px dashed rgba(100, 116, 139, 0.55);
   pointer-events: none; z-index: 2; }
 .lc-mdpad-ghost span { position: absolute; right: 0; top: -0.75em; font-size: 0.72em; padding: 0.05em 0.5em; border-radius: 999px;

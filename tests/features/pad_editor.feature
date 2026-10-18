@@ -32,6 +32,8 @@ Feature: The pad types like a text field, painted
     Then the "playground" pad's source is folded away
     And the "playground" pad's preview spans the pad
     And the "playground" pad shows no splitter
+    # no editor, nothing to explain (Michel, 2026-10-18: "no need to show the ? button")
+    And the "playground" pad shows no ? pill, even hovered
     When I press "✎" on the "playground" pad
     Then the "playground" pad's source is shown again
     And the "playground" pad's splitter is back
