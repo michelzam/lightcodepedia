@@ -769,8 +769,8 @@ Feature: A class wears a dataset — the grid dresses the rows
     When the page's picture of the "walk" table is lost, and the grid saves
     Then no walk is sent again
     When I type the attribute "speed = Attr(str)" into the class in the "walk_pad" pad, letter by letter
-    Then no column was made while typing, and ↻ under "walks" offers "speed"
-    When I press ↻ under "walks"
+    Then no column was made while typing, and 🔄 under "walks" offers "speed"
+    When I apply the structure under "walks"
     Then the table "walk" gained the column "speed", and no other
 
   Scenario: A docstring's emoji is the icon of its class and its methods

@@ -65,6 +65,9 @@
       if (!gridId) return;
       this._last[gridId] = row;
       (this._subs[gridId] || []).forEach(function(cb){ try { cb(row); } catch (e) {} });
+      /* a pick is news for every {= grid.row.x } on the page (Michel,
+         2026-10-18: "Now over …" kept the first shelter's name) */
+      try { document.dispatchEvent(new CustomEvent("lc-selection", { detail: gridId })); } catch (e) {}
     },
     registerGrid: function(gridId, api) {
       if (!gridId) return;

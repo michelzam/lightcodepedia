@@ -539,7 +539,7 @@ def step_grid_text(context, gid, text):
 @when('the sheet "{sid}" gains the walk "{w}" and I press ↻ on "{gid}"')
 def step_gain_reload(context, sid, w, gid):
     context.sheet_walks.append(w)
-    grid(context, gid).locator("button.lc-dg-reload").click()
+    grid(context, gid).locator("button.lc-dg-roreload").click()
 
 
 @when('the sheet "{sid}" gains the walk "{w}" and I come back to the page')
@@ -1060,17 +1060,32 @@ def step_renamed(context, tbl, old, new, value):
     raise AssertionError(str(context.unl["tables"][tbl]) + " " + str(context.unl["calls"]))
 
 
+def _open_panel(context, gid):
+    b = grid(context, gid).locator(".lc-dg-corner button.lc-dg-tidy, .lc-dg-corner button.lc-dg-struct").first
+    expect(b).to_be_visible(timeout=T)
+    b.click()
+    panel = context.page.locator(".lc-struct-panel")
+    expect(panel).to_be_visible(timeout=T)
+    return panel
+
+
 @then('the corner of "{gid}" offers 🧹 for "{cols}"')
 def step_tidy_offered(context, gid, cols):
-    b = grid(context, gid).locator(".lc-dg-corner button.lc-dg-tidy")
-    expect(b).to_be_visible(timeout=T)
-    expect(b).to_have_attribute("title", re.compile(re.escape(cols)))
+    # 🧹 lives in the structure panel (Michel, 2026-10-18): the corner opens it
+    panel = _open_panel(context, gid)
+    items = " ".join(panel.locator(".lc-struct-tidy li").all_inner_texts())
+    for c in cols.split(", "):
+        assert c in items, items
+    panel.locator(".lc-struct-later").click()
 
 
 @when('I tidy the table under "{gid}", confirming')
 def step_tidy(context, gid):
-    context.page.once("dialog", lambda d: d.accept())
-    grid(context, gid).locator(".lc-dg-corner button.lc-dg-tidy").click()
+    panel = _open_panel(context, gid)
+    for box in panel.locator(".lc-struct-tidy input[type=checkbox]").all():
+        box.check()
+    panel.locator(".lc-struct-apply").click()
+    expect(panel).to_have_count(0, timeout=T)
 
 
 @then('the table "{tbl}" has no column "{col}", and no 🧹 is left under "{gid}"')
@@ -1122,13 +1137,21 @@ def step_type_attr(context, line, pad_id):
     context.page.wait_for_timeout(2500)
 
 
-@then('no column was made while typing, and ↻ under "{gid}" offers "{col}"')
+@then('no column was made while typing, and 🔄 under "{gid}" offers "{col}"')
 def step_no_cols_typing(context, gid, col):
     ens = [c for c in context.unl["calls"] if c[0] == "lc_ensure"][context.db_ensures0:]
     assert not ens, "columns made while typing: " + str(ens)
-    rf = grid(context, gid).locator("button.lc-dg-refresh")
-    expect(rf).to_have_class(re.compile("lc-dg-pending"), timeout=T)
-    expect(rf).to_have_attribute("title", re.compile(col))
+    panel = _open_panel(context, gid)
+    plan = " ".join(panel.locator(".lc-struct-plan li").all_inner_texts())
+    assert col in plan, plan
+    panel.locator(".lc-struct-later").click()
+
+
+@when('I apply the structure under "{gid}"')
+def step_apply_under(context, gid):
+    panel = _open_panel(context, gid)
+    panel.locator(".lc-struct-apply").click()
+    expect(panel).to_have_count(0, timeout=T)
 
 
 @when('I press ↻ under "{gid}"')

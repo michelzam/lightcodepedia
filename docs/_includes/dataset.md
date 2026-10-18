@@ -136,6 +136,23 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-unl input { font: inherit; padding: .2em .4em; border: 1px solid #cbd5e1; border-radius: 4px; min-width: 12em; }
 .lc-dg-unl-me { background: none; border: 0; color: #2563eb; cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
 .lc-dg-unl-note { color: #64748b; }
+.lc-dg-struct { color: #b45309 !important; opacity: 1 !important; }
+.lc-dg-struct b, .lc-dg-tidy b { font-size: .7em; margin-left: 1px; }
+.lc-struct-btn.lc-struct-tidyonly { background: #e2e8f0; color: #334155; }
+.lc-struct-btn.lc-struct-idle { background: transparent; color: #94a3b8; padding: .1em .4em; }
+.lc-struct-btn.lc-struct-idle:hover { color: #f8fafc; }
+.lc-struct-panel .lc-struct-tidy { list-style: none; margin-left: 0; }
+.lc-struct-btn { margin-left: auto; border: 0; border-radius: 999px; padding: .15em .7em; font: inherit; font-size: .85em; cursor: pointer; background: #fef3c7; color: #92400e; }
+.lc-struct-btn.lc-struct-many { background: #fde68a; }
+.lc-struct-panel { position: fixed; z-index: 1000; left: 50%; top: 18%; transform: translateX(-50%); width: min(440px, calc(100vw - 32px)); max-height: 70vh; overflow: auto;
+  background: #fff; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 18px 50px rgba(15,23,42,.25); padding: 1em 1.2em; font-size: .95em; }
+.lc-struct-panel h4 { margin: 0 0 .6em; }
+.lc-struct-panel ol, .lc-struct-panel ul { margin: .2em 0 .8em 1.2em; padding: 0; }
+.lc-struct-nudge { color: #92400e; }
+.lc-struct-note { color: #475569; font-size: .9em; }
+.lc-struct-btns { display: flex; gap: .6em; justify-content: flex-end; }
+.lc-struct-btns button { border-radius: 8px; padding: .4em .9em; font: inherit; cursor: pointer; border: 1px solid #cbd5e1; background: #fff; }
+.lc-struct-btns .lc-struct-apply { background: #0066cc; border-color: #0066cc; color: #fff; }
 .lc-dg-say { margin-top: .4em; padding: .35em .7em; border-radius: 6px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; font-size: .9em; }
 
 /* ── button ─────────────────────────────────────────── */
@@ -262,7 +279,7 @@ Auto-included by docs/_layouts/default.html.
     document.addEventListener("lc-saved", function () {
       Object.keys(window.lcRemote).forEach(function (id) {
         var r = window.lcRemote[id], U = r && r.unl;
-        if (!U || !U.rpc || !lsGet(U.akey)) return;
+        if (!U || !U.rpc || !lsGet(U.akey) || ST.frozen(id)) return;   /* a changed structure waits for 🔄 */
         window.lcRemoteReload(id, { ensure: true });
       });
     });
@@ -279,6 +296,211 @@ Auto-included by docs/_layouts/default.html.
     r.pull(opts);
     return true;
   };
+  /* A STRUCTURE CHANGE FREEZES, THE OWNER RECONCILES (Michel, 2026-10-18,
+     after a Sprint(Walk2) typed for two seconds emptied the walk table:
+     "data structure changes should freeze the data refresh… and wait for
+     the explicit refresh with reconciliation… trace the intermediate
+     changes one by one… encourage small changes"). Each database table
+     keeps the structure its classes had when it was last read (the base);
+     every settled difference since is a step in a log; while the code
+     differs from the base the table neither saves nor reads, and the app's
+     title says 🔄 N. Back to the base: the freeze lifts by itself. */
+  var ST = window.lcStruct = window.lcStruct || { types: {}, seen: {}, log: {}, settle: {} };
+  function stColsOf(id) {
+    var M = window.lcModels || {}, cols = {}, subs = [];
+    (unlCols(id) || []).forEach(function (c) { cols[c.n] = { t: c.t, was: c.was || "" }; });
+    Object.keys(M).forEach(function (n) { var m = M[n]; if (m && m.src === id) (m.subs || []).forEach(function (k) { if (subs.indexOf(k) < 0) subs.push(k); }); });
+    subs.sort();
+    return { cols: cols, subs: subs };
+  }
+  function stSig(x) {
+    return JSON.stringify([Object.keys(x.cols).sort().map(function (k) { return k + ":" + x.cols[k].t + ":" + x.cols[k].was; }), x.subs]);
+  }
+  function stDiff(a, b) {
+    var out = [];
+    Object.keys(b.cols).forEach(function (k) {
+      var c = b.cols[k], o = a.cols[k];
+      if (k === "_sub") { if (!o) out.push("🏷 the rows will say which subclass they are"); return; }
+      if (!o && c.was && a.cols[c.was]) out.push("🔁 " + c.was + " → " + k + " (renamed, its data kept)");
+      else if (!o) out.push("➕ " + k + " (" + c.t + ")");
+      else if (o.t !== c.t) out.push("✏️ " + k + ": " + o.t + " → " + c.t);
+    });
+    Object.keys(a.cols).forEach(function (k) {
+      if (b.cols[k] || k === "_sub") return;
+      if (!Object.keys(b.cols).some(function (n) { return b.cols[n].was === k; })) out.push("➖ " + k + " (its column and data stay)");
+    });
+    b.subs.forEach(function (k) { if (a.subs.indexOf(k) < 0) out.push("➕ class " + k); });
+    a.subs.forEach(function (k) { if (b.subs.indexOf(k) < 0) out.push("➖ class " + k + " (its rows stay)"); });
+    return out;
+  }
+  /* what the table lacks for the code as it stands: the plan 🔄 applies */
+  ST.plan = function (id) {
+    var r = window.lcRemote[id], U = r && r.unl;
+    if (!U || !U.read || !U.tcols) return [];
+    var cur = stColsOf(id), tc = U.tcols, ty = ST.types[id] || {}, out = [];
+    Object.keys(cur.cols).forEach(function (k) {
+      var c = cur.cols[k];
+      if (tc[k]) { if (ty[k] && ty[k] !== c.t) out.push({ k: "retype", n: k, t: c.t, from: ty[k], say: "✏️ " + k + ": " + ty[k] + " → " + c.t }); return; }
+      if (k === "_sub") { out.push({ k: "add", n: k, say: "🏷 a column that says which subclass each row is" }); return; }
+      if (c.was && tc[c.was]) out.push({ k: "rename", n: k, from: c.was, say: "🔁 " + c.was + " → " + k + " (its data kept)" });
+      else out.push({ k: "add", n: k, t: c.t, say: "➕ " + k + " (" + c.t + ")" });
+    });
+    return out;
+  };
+  ST.frozen = function (id) { return ST.plan(id).length > 0; };
+  /* 🧹 IN THE SAME PANEL (Michel, 2026-10-18): on the owner's device, the
+     columns no class on the page declares and the class names no class
+     (nor a was=) answers to — offered unticked, never by themselves */
+  ST.tidy = function (id) {
+    var r = window.lcRemote[id], U = r && r.unl, out = { orphans: [], stale: [] };
+    if (!U || !U.read || !lsGet(U.akey)) return out;
+    var rows = window.lcDatasets[id] || [], row0 = rows[0] || {}, M = window.lcModels || {}, declared = {};
+    (unlCols(id) || []).forEach(function (c) { declared[c.n] = 1; });
+    out.orphans = Object.keys(row0).filter(function (k) {
+      return k !== "id" && k !== "obj" && k.charAt(0) !== "_" && k !== "⚠️" && !declared[k] && !lcDeclaredAnywhere(k);
+    });
+    var wases = Object.keys(M).map(function (n) { return M[n] && M[n].was; }).filter(Boolean);
+    rows.forEach(function (x) {
+      var k = x && x._sub;
+      if (k && !M[k] && wases.indexOf(k) < 0 && out.stale.indexOf(k) < 0) out.stale.push(k);
+    });
+    return out;
+  };
+  ST.tidyCount = function (id) { var t = ST.tidy(id); return t.orphans.length + t.stale.length; };
+  /* the table is as the code says (a read after 🔄, or a first read that
+     needed nothing): the types it now has, and a clean log */
+  ST.settled = function (id) {
+    var cur = stColsOf(id), ty = {};
+    Object.keys(cur.cols).forEach(function (k) { ty[k] = cur.cols[k].t; });
+    var U = (window.lcRemote[id] || {}).unl;
+    if (!ST.types[id] || !ST.plan(id).length) ST.types[id] = ty;
+    ST.seen[id] = cur; ST.log[id] = [];
+    ST.settle[id] = performance.now();
+    document.dispatchEvent(new CustomEvent("lc-struct", { detail: id }));
+  };
+  ST.check = function () {
+    Object.keys(window.lcRemote || {}).forEach(function (id) {
+      var r = window.lcRemote[id];
+      if (!r || !r.unl || !ST.seen[id]) return;
+      var cur = stColsOf(id);
+      if (stSig(cur) === stSig(ST.seen[id])) return;
+      /* the page's classes still arriving (a pad's after the page's): no step */
+      var quiet = performance.now() - (ST.settle[id] || 0) < 4000;
+      if (!quiet) stDiff(ST.seen[id], cur).forEach(function (t) { ST.log[id].push(t); });
+      ST.seen[id] = cur;
+      if (!ST.plan(id).length) ST.log[id] = [];      /* the code and the table agree again */
+      document.dispatchEvent(new CustomEvent("lc-struct", { detail: id }));
+      if (window.lcSetDataset) window.lcSetDataset(id, window.lcDatasets[id] || []);   /* the grids repaint their state */
+    });
+  };
+  /* the review: what you changed, step by step; what 🔄 does to the table;
+     the owner applies, anyone else is told to undo */
+  window.lcStructPanel = function (id) {
+    var old = document.querySelector(".lc-struct-panel");
+    if (old) old.parentNode.removeChild(old);
+    var r = window.lcRemote[id], U = r && r.unl, plan = ST.plan(id), log = ST.log[id] || [], tidy = ST.tidy(id);
+    var owner = !!(U && lsGet(U.akey));
+    var M = window.lcModels || {}, base = Object.keys(M).filter(function (n) { return M[n].src === id && (M[n].subs || []).length; })[0]
+      || Object.keys(M).filter(function (n) { return M[n].src === id; })[0] || id;
+    var e = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+    var box = document.createElement("div");
+    box.className = "lc-struct-panel";
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-label", "the table and your code");
+    var leftovers = tidy.orphans.map(function (c) {
+        return "<li><label><input type='checkbox' data-drop='" + e(c) + "'> drop the column <code>" + e(c) + "</code>, no class uses it (its data is lost)</label></li>"; })
+      .concat(tidy.stale.map(function (k) {
+        return "<li><label><input type='checkbox' data-clear='" + e(k) + "'> clear the old class name <code>" + e(k) + "</code> (those rows become " + e(base) + ")</label></li>"; }));
+    box.innerHTML = "<h4>" + (plan.length ? "🔄" : "🧹") + " The table <code>" + e(U ? U.tbl : id) + "</code> and your code</h4>"
+      + (log.length ? "<p>What you changed, step by step:</p><ol class='lc-struct-log'>" + log.map(function (t) { return "<li>" + e(t) + "</li>"; }).join("") + "</ol>" : "")
+      + (plan.length ? "<p>What the table needs now:</p><ul class='lc-struct-plan'>" + plan.map(function (x) { return "<li>" + e(x.say) + "</li>"; }).join("") + "</ul>"
+                     : "<p class='lc-struct-agree'>The table has what your code declares. Changed the database itself? Reconcile: the table is checked against the code again, then read.</p>")
+      + (log.length > 3 ? "<p class='lc-struct-nudge'>Many steps at once. Small steps, applied one by one, keep the data easy to follow.</p>" : "")
+      + (owner && leftovers.length ? "<p>Leftovers, only if you tick them:</p><ul class='lc-struct-tidy'>" + leftovers.join("") + "</ul>" : "")
+      + (owner ? (plan.length ? "<p class='lc-struct-note'>Rows wait meanwhile: nothing is saved or read until the table matches.</p>" : "")
+               : "<p class='lc-struct-note'>Only the database's owner changes its structure. Undo these changes in your code and your rows save again.</p>")
+      + "<div class='lc-struct-btns'>" + (owner ? "<button type='button' class='lc-struct-apply'>" + (plan.length ? "Apply to the table" : "Reconcile with the table") + "</button>" : "")
+      + "<button type='button' class='lc-struct-later'>" + (owner ? "Not yet" : "Close") + "</button></div>";
+    document.body.appendChild(box);
+    var close = function () { if (box.parentNode) box.parentNode.removeChild(box); };
+    box.querySelector(".lc-struct-later").addEventListener("click", close);
+    var ap = box.querySelector(".lc-struct-apply");
+    var ticks = function (a) { return [].slice.call(box.querySelectorAll("input[" + a + "]:checked")).map(function (x) { return x.getAttribute(a); }); };
+    var arm = function () {
+      if (!ap) return;
+      var t = ticks("data-drop").length + ticks("data-clear").length;
+      ap.textContent = plan.length || t ? "Apply to the table" : "Reconcile with the table";
+    };
+    box.querySelectorAll("input[type=checkbox]").forEach(function (x) { x.addEventListener("change", arm); });
+    arm();
+    if (ap) ap.addEventListener("click", function () {
+      var drop = ticks("data-drop"), clear = ticks("data-clear");
+      ap.disabled = true; ap.textContent = "Applying…";
+      var author = lsGet(U.akey);
+      /* the structure first, then the leftovers ticked, then the rows that waited */
+      var go = U.rpc("lc_ensure", { token: author, tbl: U.tbl, cols: unlCols(id) || [] }).then(function () {
+            (unlCols(id) || []).forEach(function (c) { U.tcols[c.n] = 1; (ST.types[id] = ST.types[id] || {})[c.n] = c.t; });
+          });
+      go.then(function () { return drop.length ? U.rpc("lc_drop", { token: author, tbl: U.tbl, cols: drop }) : null; })
+        .then(function () {
+          var rows = (window.lcDatasets[id] || []).filter(function (x) { return x && x.id != null && clear.indexOf(x._sub) >= 0; })
+            .map(function (x) { return { id: x.id, _sub: null }; });
+          return rows.length ? U.rpc("lc_save", { share: U.share, tbl: U.tbl, ins: [], upd: rows, del: [] }) : null;
+        })
+        .then(function () { drop.forEach(function (c) { delete U.tcols[c]; }); return r.pull({ ensure: true, keep: true }); })
+        .then(function () {
+          close();
+          if (ST.frozen(id) && window.lcGridSay) window.lcGridSay(base, "⚠️ the table did not take every change: " + ST.plan(id).map(function (x) { return x.n; }).join(", "));
+        })
+        .catch(function (err) { ap.disabled = false; ap.textContent = "Apply to the table"; if (window.lcGridSay) window.lcGridSay(base, "⚠️ " + err.message); });
+    });
+    return box;
+  };
+  /* THE APP'S TITLE SAYS IT (Michel, 2026-10-18: "a button in the app's
+     title to reconcile"): 🔄 N over every table its grids show */
+  function stPaintHeads() {
+    document.querySelectorAll(".lc-mdpad-app").forEach(function (app) {
+      var head = app.querySelector(".lc-mdpad-apphead");
+      if (!head) return;
+      var ids = [];
+      app.querySelectorAll(".lc-datagrid[data-bind]").forEach(function (g) {
+        var m = (window.lcModels || {})[g.getAttribute("data-bind")], sid = m && m.src;
+        if (sid && ids.indexOf(sid) < 0 && window.lcRemote[sid] && window.lcRemote[sid].unl) ids.push(sid);
+      });
+      var hot = ids.filter(function (sid) { return ST.frozen(sid); });
+      var n = hot.reduce(function (a, sid) { return a + ST.plan(sid).length; }, 0);
+      var tidyIds = ids.filter(function (sid) { return ST.tidyCount(sid) > 0; });
+      var m = tidyIds.reduce(function (a, sid) { return a + ST.tidyCount(sid); }, 0);
+      var btn = head.querySelector(".lc-struct-btn");
+      /* the owner always has it (Michel, 2026-10-18: "always available,
+         including when I changed the db directly") — faint when all agrees */
+      var mine = ids.filter(function (sid) { var U2 = window.lcRemote[sid].unl; return U2 && U2.read && lsGet(U2.akey); });
+      if (!n && !m && !mine.length) { if (btn) btn.parentNode.removeChild(btn); return; }
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.type = "button"; btn.className = "lc-struct-btn";
+        head.appendChild(btn);
+        btn.addEventListener("click", function (ev) { ev.stopPropagation(); window.lcStructPanel(btn._lcId); });
+      }
+      btn._lcId = n ? hot[0] : m ? tidyIds[0] : mine[0];
+      btn.classList.toggle("lc-struct-idle", !n && !m);
+      var steps = hot.reduce(function (a, sid) { return a + (ST.log[sid] || []).length; }, 0);
+      btn.classList.toggle("lc-struct-many", steps > 3);
+      btn.classList.toggle("lc-struct-tidyonly", !n);
+      btn.textContent = n ? "🔄 " + n + (n > 1 ? " changes" : " change") : m ? "🧹 " + m + " to tidy" : "🔄";
+      btn.title = n ? "the code changed a table's structure — review and apply" : m ? "leftovers in a table — review, tick what goes"
+        : "the table and the code agree — reconcile anyway (after a change made in the database itself)";
+      btn.setAttribute("aria-label", btn.title);
+    });
+  }
+  document.addEventListener("lc-struct", stPaintHeads);
+  document.addEventListener("lc-remote-state", stPaintHeads);
+  if (!window._lcStructWired) {
+    window._lcStructWired = 1;
+    var stT = null;
+    /* a step is what the code says once typing pauses — not every letter */
+    document.addEventListener("lc-model-changed", function () { clearTimeout(stT); stT = setTimeout(ST.check, 1200); });
+  }
   if (!window._lcRemoteVis) {
     window._lcRemoteVis = 1;
     document.addEventListener("visibilitychange", function () {
@@ -511,6 +733,7 @@ Auto-included by docs/_layouts/default.html.
      defaults) replacing the page's guess */
   window.lcDatasetSave = function (id) {
     var r = window.lcRemote[id];
+    if (r && r.unl && ST.frozen(id)) return Promise.reject(new Error("the structure changed — 🔄 applies it first, then the rows save"));
     /* a subclass's row needs _sub (Michel, 2026-10-17: a Sprint made from the
        pad's class came back a Walk) — no name typed letter by letter, so the
        author's save may add it */
@@ -780,6 +1003,8 @@ Auto-included by docs/_layouts/default.html.
           };
           unlPull = function (opts) {
             var r = window.lcRemote[id], author = lsGet(U.akey);
+            /* a structure that changed waits for 🔄: no read meanwhile */
+            if (U.read && ST.frozen(id) && !(opts && opts.ensure)) return Promise.resolve();
             /* the table's columns change on the first read and when asked
                (↻, 🧹, the pad's save) — never on a save or a re-read */
             /* "first" is per visit, not per drawing: a pad redraws the class
@@ -800,6 +1025,9 @@ Auto-included by docs/_layouts/default.html.
                       U.tcols = { id: 1 };
                       (cols || []).forEach(function (c) { U.tcols[c.n] = 1; });
                       seen[id] = U.tcols;
+                      /* the table now has the code's types too */
+                      var ty = {}; (cols || []).forEach(function (c) { ty[c.n] = c.t; });
+                      ST.types[id] = ty;
                       U.author = true;
                       /* the page's name is not the database's: the author is told the right one */
                       U.hint = sh && sh !== U.fixed ? sh : "";
@@ -813,6 +1041,11 @@ Auto-included by docs/_layouts/default.html.
               U.share = sh || "";
               U.need = !sh && !U.fixed;
               if (!sh) { r.snap = {}; r.error = ""; window.lcSetDataset(id, []); return; }
+              /* 🔄 applied: the rows that waited save now, then the table is read */
+              var waiting = opts && opts.keep && window.lcDatasetChanges(id);
+              if (waiting && waiting.n && !ST.frozen(id)) {
+                return window.lcDatasetSave(id).then(function () { ST.settled(id); });
+              }
               return U.rpc("lc_read", { share: sh, tbl: U.tbl }).then(function (rows) {
                 rows = Array.isArray(rows) ? rows : [];
                 var snap = {};
@@ -828,6 +1061,7 @@ Auto-included by docs/_layouts/default.html.
                   snap[String(x.id)] = JSON.stringify(dbSame(y));
                 });
                 r.snap = snap; r.error = "";
+                if (ensure || !ST.seen[id]) ST.settled(id);
                 window.lcSetDataset(id, shapeData(rows, el));
                 /* same rows, other state (a name now known, a hint gone): the grids repaint */
                 document.dispatchEvent(new CustomEvent("lc-remote-state", { detail: id }));
@@ -890,9 +1124,44 @@ Auto-included by docs/_layouts/default.html.
               if (!cur || !cur.length) window.lcSetDataset(id, [{ "⚠️": why }]);
               else if (unl) window.lcSetDataset(id, cur);   /* the grid says why, under the rows */
         };
+        /* AN ADDRESS THAT FOLLOWS A SELECTION (Michel, 2026-10-18, module 06
+           page 2: the sky over the shelter picked): {campus_grid.row.lat} in
+           the link is the grid's selected row — its first row until a pick —
+           written like a Python f-string; a new pick asks again */
+        var tplRe = /\{\s*(\w+)\.row\.(\w+)\s*\}/g, tpl = null;
+        try { if (/\{\s*\w+\.row\.\w+\s*\}/.test(decodeURI(href))) tpl = decodeURI(href); } catch (e) {}
+        var rowOfGrid = function (gidn) {
+          var md = window.lcMasterDetail, g = document.querySelector(".lc-datagrid[data-lc-id='" + gidn + "']");
+          var r = md && md._last && md._last[gidn];
+          if (!r && g) { var rr = (window.lcDatasets || {})[g.getAttribute("data-bind")]; r = Array.isArray(rr) ? rr[0] : null; }
+          return r;
+        };
+        var resolveHref = function () {
+          var ok = true;
+          var u = tpl.replace(tplRe, function (_, gn, col) {
+            var r = rowOfGrid(gn);
+            if (!r || r[col] == null || r[col] === "") { ok = false; return ""; }
+            return encodeURIComponent(String(r[col]));
+          });
+          return ok ? u : null;
+        };
         window.lcRemote[id] = { href: href, pull: pull, write: !!keyName || el.getAttribute("write") === "true", at: performance.now(),
                                 db: isDb ? { base: href.split("?")[0], headers: dbHeaders } : null, snap: {}, unl: unl ? U : null };
-        pull();
+        if (tpl && !isDb) {
+          var grids = [], m0;
+          tplRe.lastIndex = 0;
+          while ((m0 = tplRe.exec(tpl))) if (grids.indexOf(m0[1]) < 0) grids.push(m0[1]);
+          var askAgain = function () {
+            var u = resolveHref();
+            if (!u || u === href) return !!u;
+            href = u; window.lcRemote[id].href = u; pull(); return true;
+          };
+          (function first(tries) {
+            if (askAgain() || tries > 75) return;
+            setTimeout(function () { first(tries + 1); }, 200);
+          })(0);
+          grids.forEach(function (gn) { if (window.lcMasterDetail) window.lcMasterDetail.subscribe(gn, askAgain); });
+        } else pull();
         /* refresh="30" → live mode: re-pull every N seconds. Republishing to
            the bus repaints every bound grid/stat/chart with no page reload —
            the generic auto-refresh, not a dashboard special-case. */
@@ -1215,14 +1484,19 @@ Auto-included by docs/_layouts/default.html.
         tbar.firstChild.nodeValue = (cdoc && cdoc.icon ? cdoc.icon : "▦") + " ";
         if (cdoc && cdoc.text) tbar.title = cdoc.text; else tbar.removeAttribute("title");
       }
-      /* a list read from elsewhere: a ↻ in the title bar reads it again */
-      if (window.lcRemote && window.lcRemote[bindId] && !window.lcRemote[bindId].db && el.querySelector(".lc-dg-titlebar") && !el.querySelector(".lc-dg-reload")) {
-        var rb = document.createElement("button");
-        rb.type = "button"; rb.className = "lc-dg-reload"; rb.textContent = "↻";
-        rb.title = "read it again — the list lives elsewhere";
-        rb.setAttribute("aria-label", "read the list again");
-        rb.addEventListener("click", function (e) { e.stopPropagation(); window.lcRemoteReload(bindId); });
-        el.querySelector(".lc-dg-titlebar").appendChild(rb);
+      /* a list read from elsewhere — itself, or behind the query it shows:
+         the corner's ↻ reads it again (Michel, 2026-10-18: "keep the style
+         defined page 3… when data is R/O, there is no + and it starts from
+         right to left") */
+      var roRemote = null;
+      if (window.lcRemote && !(window.lcRemote[bindId] && window.lcRemote[bindId].db)) {
+        if (window.lcRemote[bindId]) roRemote = bindId;
+        else {
+          var qEl = document.querySelector(".lc-query[data-lc-id='" + bindId + "']");
+          ((qEl && qEl.getAttribute("data-bind")) || "").split(",").forEach(function (b) {
+            b = b.trim(); if (!roRemote && window.lcRemote[b] && !window.lcRemote[b].db) roRemote = b;
+          });
+        }
       }
       if (data && filterKeys && masterRow) {
         data = data.filter(function (r) {
@@ -1377,29 +1651,12 @@ Auto-included by docs/_layouts/default.html.
       var dbSrc = model ? model.src : bindId;
       var dbR = window.lcRemote && window.lcRemote[dbSrc] && window.lcRemote[dbSrc].db ? window.lcRemote[dbSrc] : null;
       var dbCh = dbR && window.lcDatasetChanges ? window.lcDatasetChanges(dbSrc) : null;
-      /* 🧹 on the author's device: the table's columns no attribute declares,
-         and the class names no class (nor a was=) answers to any more */
-      var orphans = [], stale = [];
-      if (dbR && dbR.unl && model && lsGet(dbR.unl.akey)) {
-        var row0 = (window.lcDatasets[dbSrc] || [])[0] || {};
-        /* every class on the table declares its columns — a subclass's
-           own (Sprint's speed) is no leftover of the base class */
-        var declared = {};
-        (unlCols(dbSrc) || []).forEach(function (c) { declared[c.n] = 1; });
-        orphans = Object.keys(row0).filter(function (k) {
-          return k !== "id" && k !== "obj" && k.charAt(0) !== "_" && k !== "⚠️" && !declared[k] && !lcDeclaredAnywhere(k);
-        });
-        var known = [bindId].concat(model.subs || []), wases = (model.subs || []).map(function (k) { var m2 = (window.lcModels || {})[k]; return m2 && m2.was; });
-        (window.lcDatasets[dbSrc] || []).forEach(function (r) {
-          var k = r && r._sub;
-          /* a class the page declared is never stale, even while the pad re-runs a
-             half-typed line (Michel, 2026-10-18: 🧹 offered to clear "Sprint") */
-          if (k && known.indexOf(k) < 0 && wases.indexOf(k) < 0 && stale.indexOf(k) < 0
-              && !(window.lcModels || {})[k]) stale.push(k);
-        });
-      }
+      /* 🧹 lives in the structure panel now (Michel, 2026-10-18) */
+      var tidyN = dbR && dbR.unl ? ST.tidyCount(dbSrc) : 0;
       var st = dbR ? (dbR.state || (dbCh && dbCh.n ? "dirty" : "ok")) : "";
-      var stTip = { ok: "saved", dirty: (dbCh && dbCh.n) + " change(s) to save — saving by itself, or tap", saving: "saving…",
+      /* the code changed the table's structure: saving waits for 🔄 */
+      var sPlan = dbR && dbR.unl ? ST.plan(dbSrc) : [], frozen = sPlan.length > 0;
+      var stTip = { ok: "saved", dirty: (dbCh && dbCh.n) + (frozen ? " change(s) waiting: the structure changed — 🔄 applies it, then they save" : " change(s) to save — saving by itself, or tap"), saving: "saving…",
                     error: "not saved — " + (dbR && dbR.saveErr || "") + " — tap to try again" }[st] || "";
       /* columns the class has and the table not yet: ↻ adds them (author) */
       var pending = [];
@@ -1409,13 +1666,14 @@ Auto-included by docs/_layouts/default.html.
       var rfTip = pending.length ? "↻ adds the column" + (pending.length > 1 ? "s " : " ") + pending.join(", ") + " to the table, then reads it" : "read the database again";
       /* the corner, right to left (Michel, 2026-10-17): ＋, the save state
          (always there), ↻ (on hover) — so nothing leaves a hole */
-      var corner = (orphans.length || stale.length ? "<button class='lc-dg-cbtn lc-dg-tidy' type='button' title='" + esc(
-              [orphans.length ? "drop the columns no attribute uses: " + orphans.join(", ") : "",
-               stale.length ? "clear the class names no class answers to: " + stale.join(", ") : ""].filter(Boolean).join(" · ")) + "' aria-label='tidy the table'>🧹</button>" : "")
-        + (dbR ? "<button class='lc-dg-cbtn lc-dg-refresh" + (pending.length ? " lc-dg-pending" : "") + "' type='button' title='" + esc(rfTip) + "' aria-label='" + esc(rfTip) + "'>↻</button>"
+      var corner = (dbR && !frozen && tidyN ? "<button class='lc-dg-cbtn lc-dg-tidy' type='button' title='" + esc(tidyN + " leftover(s) to tidy — tap to review") + "' aria-label='review the leftovers'>🧹<b>" + tidyN + "</b></button>" : "")
+        + (dbR && frozen ? "<button class='lc-dg-cbtn lc-dg-refresh lc-dg-struct' type='button' title='" + esc("the code changed the table: " + sPlan.length + " step(s) — tap to review and apply") + "' aria-label='review the structure changes'>🔄<b>" + sPlan.length + "</b></button>"
+           : dbR ? "<button class='lc-dg-cbtn lc-dg-refresh" + (pending.length ? " lc-dg-pending" : "") + "' type='button' title='" + esc(rfTip) + "' aria-label='" + esc(rfTip) + "'>↻</button>" : "")
+        + (dbR ? ""
             + "<button class='lc-dg-cbtn lc-dg-save lc-dg-st-" + st + "' type='button'"
             + (st === "dirty" || st === "error" ? "" : " disabled") + " title='" + esc(stTip) + "' aria-label='" + esc(stTip) + "'>"
             + "<span>" + { ok: "✓", dirty: "●", saving: "⟳", error: "⚠" }[st] + "</span></button>" : "")
+        + (!dbR && roRemote ? "<button class='lc-dg-cbtn lc-dg-refresh lc-dg-roreload' type='button' title='read it again — the list lives elsewhere' aria-label='read the list again'>↻</button>" : "")
         + (model ? "<button class='lc-dg-cbtn lc-dg-new' type='button' title='a new " + esc(bindId) + "' aria-label='a new " + esc(bindId) + "'>＋</button>" : "");
       el.classList.toggle("lc-dg-cornered", !!corner);
       var dbBtns = "";
@@ -1750,11 +2008,15 @@ Auto-included by docs/_layouts/default.html.
         var blank = dbCh.ins.some(function (r) {
           return !Object.keys(r).some(function (k) {
             var f = model && model.fields[k];
-            return !(f && f.state) && k !== "_kind" && r[k] !== "" && r[k] != null;
+            /* a default (0, False) is not a value typed: a new Sprint is blank until its first word */
+            return !(f && f.state) && k !== "_kind" && k !== "_sub" && r[k] !== "" && r[k] != null && r[k] !== 0 && r[k] !== false;
           });
         });
         clearTimeout(dbR._auto);
-        if (!open && !blank) dbR._auto = setTimeout(function () {
+        if (!open && !blank && !ST.frozen(dbSrc)) dbR._auto = setTimeout(function () {
+          /* a cell opened since (the caret New puts in the first one) waits too */
+          var a3 = document.activeElement;
+          if (el.querySelector(".lc-dg-typing") || (a3 && a3 !== document.body && el.contains(a3) && a3.isContentEditable)) return;
           var c = window.lcDatasetChanges(dbSrc);
           if (c && c.n && dbR.state !== "saving") saveNow(null);
         }, 700);
@@ -1818,26 +2080,13 @@ Auto-included by docs/_layouts/default.html.
           });
         });
       }
+      var roBtn = el.querySelector(".lc-dg-roreload");
+      if (roBtn) roBtn.addEventListener("click", function (e) { e.stopPropagation(); window.lcRemoteReload(roRemote); });
       var tidyBtn = el.querySelector(".lc-dg-tidy");
-      if (tidyBtn) tidyBtn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        var U2 = dbR.unl;
-        /* asked again at the click: a class may have come since the grid was drawn */
-        orphans = orphans.filter(function (k) { return !lcDeclaredAnywhere(k); });
-        stale = stale.filter(function (k) { return !(window.lcModels || {})[k]; });
-        if (!orphans.length && !stale.length) { window.lcGridSay(bindId, "🧹 nothing to tidy: every column has its attribute"); return; }
-        var say = [orphans.length ? "drop the column" + (orphans.length > 1 ? "s " : " ") + orphans.join(", ") + " (their data is lost)" : "",
-                   stale.length ? "clear the class name" + (stale.length > 1 ? "s " : " ") + stale.join(", ") + " (those rows become " + bindId + ")" : ""].filter(Boolean).join(" and ");
-        if (!window.confirm("In the table " + U2.tbl + ": " + say + "?")) return;
-        var clearRows = (window.lcDatasets[dbSrc] || []).filter(function (r) { return r && r.id != null && stale.indexOf(r._sub) >= 0; })
-          .map(function (r) { return { id: r.id, _sub: null }; });
-        (orphans.length ? U2.rpc("lc_drop", { token: lsGet(U2.akey), tbl: U2.tbl, cols: orphans }) : Promise.resolve(0))
-          .then(function () { return clearRows.length ? U2.rpc("lc_save", { share: U2.share, tbl: U2.tbl, ins: [], upd: clearRows, del: [] }) : null; })
-          .then(function () { window.lcRemoteReload(dbSrc, { ensure: true }); })
-          .catch(function (err) { if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ " + err.message); });
-      });
+      if (tidyBtn) tidyBtn.addEventListener("click", function (e) { e.stopPropagation(); window.lcStructPanel(dbSrc); });
       if (rf) rf.addEventListener("click", function (e) {
         e.stopPropagation();
+        if (ST.frozen(dbSrc)) { window.lcStructPanel(dbSrc); return; }
         var ch = window.lcDatasetChanges(dbSrc);
         if (ch && ch.n && !window.confirm(ch.n + " change(s) not saved — read the database again and lose them?")) return;
         window.lcRemoteReload(dbSrc, { ensure: true });
@@ -1903,6 +2152,11 @@ Auto-included by docs/_layouts/default.html.
            Selection belongs to whoever draws the rows, so this table hands
            the verb its own door instead of letting anyone guess from
            outside. Same effect as a finger, minus a link row's navigation. */
+        /* the grid's row exists now: a {= grid.row.x } written before it may read it */
+        if (lcId && !el._lcSelSaid) {
+          el._lcSelSaid = 1;
+          setTimeout(function () { document.dispatchEvent(new CustomEvent("lc-selection", { detail: lcId })); }, 0);
+        }
         el._lcSelectRow = function (text) {
           var t = String(text == null ? "" : text).toLowerCase();
           for (var i = 0; i < trs.length; i++) {

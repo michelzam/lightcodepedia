@@ -148,6 +148,18 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
       scopes[id] = { graded: q.getAttribute("data-graded") === "1",
                      passed: q.getAttribute("data-passed") === "1" };
     });
+    /* A GRID IS STATE TOO — its picked row (Michel, 2026-10-18, module 06:
+       "Now over {= campus_grid.row.campus }"): the row last picked, else the
+       grid's first, the same row Python's campus_grid.row reads */
+    document.querySelectorAll(".lc-datagrid[data-lc-id]").forEach(function (g) {
+      var id = g.getAttribute("data-lc-id");
+      if (!id || scopes[id]) return;
+      var md = window.lcMasterDetail, r = md && md._last && md._last[id];
+      if (!r && g._lcRow) { try { r = g._lcRow.current(); } catch (e) {} }
+      if (!r) { var rr = (window.lcDatasets || {})[g.getAttribute("data-bind")]; r = Array.isArray(rr) ? rr[0] : null; }
+      var row = r && typeof r === "object" ? JSON.parse(JSON.stringify(r)) : {};
+      scopes[id] = { row: row };
+    });
     var ds = window.lcDatasets || {};
     Object.keys(ds).forEach(function (id) {
       if (!id || scopes[id]) return;
@@ -275,6 +287,11 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
       // Listen first, then paint: if a `.run silent` model seeds the runtime
       // after this eval, its lc-model-changed still triggers a recompute.
       document.addEventListener("lc-model-changed", function () { evalAll(m); });
+      /* a grid drawn or a row picked: {= campus_grid.row.campus } reads it */
+      var selT = null;
+      document.addEventListener("lc-selection", function () {
+        clearTimeout(selT); selT = setTimeout(function () { evalAll(m); }, 30);
+      });
       evalAll(m);
     });
     /* DATA THAT LANDS LATE STILL COUNTS. A cell read a query's count once,

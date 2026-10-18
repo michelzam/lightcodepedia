@@ -88,16 +88,10 @@ Auto-included by docs/_layouts/default.html.
       });
       var bm = L.marker([centerLat, centerLon], { icon: bicon }).addTo(map);
       var moveBound = function () {
-        var f = document.querySelector(".lc-form[data-lc-id='" + bind + "']");
-        if (!f) return;
-        try {
-          var d = JSON.parse(f.getAttribute("data-lc-value") || "{}");
-          var la = parseFloat(d.lat), lo = parseFloat(d.lon != null ? d.lon : d.lng);
-          if (!isNaN(la) && !isNaN(lo)) bm.setLatLng([la, lo]);
-        } catch (e) {}
+        var p = boundPoint(bind);
+        if (p) bm.setLatLng([p.lat, p.lon]);
       };
-      document.addEventListener("lc-model-changed", moveBound);
-      if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function () { document.removeEventListener("lc-model-changed", moveBound); });
+      followBound(bind, moveBound, wrap);
       moveBound();
     }
 
@@ -106,7 +100,41 @@ Auto-included by docs/_layouts/default.html.
     setTimeout(function () { try { map.invalidateSize(); } catch (e) {} }, 0);
   }
 
+  /* where bind= points: a form's lat/lon, or — a grid's id — its selected row,
+     else its first (Michel, 2026-10-18, module 06 page 2: "the shelters and
+     the map", the sky following the shelter picked) */
+  function boundPoint(bind) {
+    var f = document.querySelector(".lc-form[data-lc-id='" + bind + "']"), d = null;
+    if (f) { try { d = JSON.parse(f.getAttribute("data-lc-value") || "{}"); } catch (e) {} }
+    if (!d || d.lat == null) {
+      var md = window.lcMasterDetail, g = document.querySelector(".lc-datagrid[data-lc-id='" + bind + "']");
+      d = md && md._last && md._last[bind];
+      if (!d && g) { var rows = (window.lcDatasets || {})[g.getAttribute("data-bind")]; d = Array.isArray(rows) ? rows[0] : null; }
+    }
+    if (!d) return null;
+    var la = parseFloat(d.lat), lo = parseFloat(d.lon != null ? d.lon : d.lng);
+    return isNaN(la) || isNaN(lo) ? null : { lat: la, lon: lo };
+  }
+  function followBound(bind, fn, wrap) {
+    document.addEventListener("lc-model-changed", fn);
+    if (window.lcMasterDetail) window.lcMasterDetail.subscribe(bind, fn);
+    if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function () { document.removeEventListener("lc-model-changed", fn); });
+  }
   function upgradeMap(el) {
+    /* source="shelters": the markers are a dataset's rows (lat, lng or lon,
+       a name) — no second list to keep in step with the grid */
+    var srcId = el.getAttribute("source");
+    if (srcId && !el._lcSrcRows) {
+      var srows = (window.lcDatasets || {})[srcId];
+      if (!Array.isArray(srows) || !srows.length || srows[0]["⚠️"]) {
+        el._lcSrcTries = (el._lcSrcTries || 0) + 1;
+        if (el._lcSrcTries < 75 && !el._lcSrcWait) {
+          el._lcSrcWait = setTimeout(function () { el._lcSrcWait = null; upgradeMap(el); }, 200);
+        }
+        return;
+      }
+      el._lcSrcRows = srows;
+    }
     var code = el.querySelector("code");
     var raw = (code ? code.textContent : el.textContent).trim();
     var zoom = parseInt(el.getAttribute("zoom") || "12", 10);
@@ -118,6 +146,14 @@ Auto-included by docs/_layouts/default.html.
     wrap.style.height = h + "px";
     el.parentNode.replaceChild(wrap, el);
     var markers = [];
+    if (el._lcSrcRows) {
+      el._lcSrcRows.forEach(function (r) {
+        var mlat = parseFloat(r.lat), mlon = parseFloat(r.lon != null ? r.lon : r.lng);
+        var lab = r.label || r.name || Object.keys(r).map(function (k) { return r[k]; }).filter(function (v) { return typeof v === "string" && isNaN(parseFloat(v)); })[0] || "";
+        if (!isNaN(mlat) && !isNaN(mlon)) markers.push({ lat: mlat, lon: mlon, label: lab });
+      });
+      raw = "[]";
+    }
     try {
       var parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
@@ -293,19 +329,11 @@ Auto-included by docs/_layouts/default.html.
         }
 
         function moveBound() {
-          var f = document.querySelector(".lc-form[data-lc-id='" + bind + "']");
-          if (!f) return;
-          try {
-            var d = JSON.parse(f.getAttribute("data-lc-value") || "{}");
-            var la = parseFloat(d.lat), lo = parseFloat(d.lon != null ? d.lon : d.lng);
-            if (!isNaN(la) && !isNaN(lo)) { ballLngLat = [lo, la]; bmarker.setLngLat(ballLngLat); if (!didFit) fitAll(); }
-          } catch (e) {}
+          var p = boundPoint(bind);
+          if (p) { ballLngLat = [p.lon, p.lat]; bmarker.setLngLat(ballLngLat); if (!didFit) fitAll(); }
           if (status) status.textContent = inPark() ? "🎯 In the park! Hit Fetch 🐕" : "Slide to move the ball 🎾";
         }
-        document.addEventListener("lc-model-changed", moveBound);
-        if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function () {
-          document.removeEventListener("lc-model-changed", moveBound);
-        });
+        followBound(bind, moveBound, wrap);
         moveBound();
         if (!didFit) fitAll();   // fit park + initial ball even before the form publishes
       }
@@ -324,7 +352,8 @@ Auto-included by docs/_layouts/default.html.
   /* code_chrome.md (loaded first, via topbar) provides the scan registry. */
 
   if (window.lcRegisterUpgrader) {
-    window.lcRegisterUpgrader(".highlighter-rouge.map, pre.map", upgradeMap);
+    /* a map of a dataset needs no fence: [where they are](#) {: .map source="shelters" } */
+    window.lcRegisterUpgrader(".highlighter-rouge.map, pre.map, p.map[source]", upgradeMap);
   }
 
 })();
