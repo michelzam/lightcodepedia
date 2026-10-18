@@ -60,3 +60,23 @@ Feature: A map frames its own markers
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/pinned.md"
     And I wait for the page to be interactive
     Then the map was never fitted
+
+  Scenario: tiles="liberty" asks the engine for the coloured style
+    Michel, 2026-10-18: "is there a way to add the colors in the map? green
+    to forests, blue for water, still for free?" — OpenFreeMap's liberty
+    style, the same free host as the grey default.
+
+    Given the GitHub contents API serves "courses/demo/mod/green.md" with the document:
+      """
+      # Green map
+
+      ```csv
+      name,lat,lng
+      Milwaukee,43.0530,-87.9720
+      Ozaukee,43.3839,-87.9403
+      ```
+      {: .map tiles="liberty" height="300" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/green.md"
+    And I wait for the page to be interactive
+    Then the map was made with the "liberty" style

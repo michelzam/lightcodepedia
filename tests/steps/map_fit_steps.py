@@ -25,6 +25,7 @@ def step_stub_maplibre(context):
         Marker.prototype.remove = function () { return this; };
         function Map(opts) {
           calls.made++;
+          (calls.styles = calls.styles || []).push(opts.style);
           this._h = {};
           this.opts = opts;
           var el = typeof opts.container === 'string'
@@ -85,3 +86,11 @@ def step_not_fitted(context):
         "() => (window.__lcMapCalls && window.__lcMapCalls.made) || 0")
     assert made > 0, "the map never rendered — the stub was not used"
     assert n == 0, "the map fitted anyway (%d call(s))" % n
+
+
+@then('the map was made with the "{name}" style')
+def step_style(context, name):
+    context.page.wait_for_function(
+        "() => window.__lcMapCalls && window.__lcMapCalls.made > 0", timeout=15_000)
+    style = context.page.evaluate("() => window.__lcMapCalls.styles[0]")
+    assert style == "https://tiles.openfreemap.org/styles/" + name, style

@@ -90,6 +90,7 @@ The fenced block rows become map markers. An empty fenced block (no rows after t
 | `lng="N"` | `2.35` | Initial map centre longitude |
 | `zoom="N"` | `12` | Initial zoom level (1 = world, 18 = street) |
 | `height="N"` | `350` | Map height in pixels |
+| `tiles="name"` | `positron` | The look of the tiles: `positron` is quiet grey; `liberty` and `bright` colour the woods green and the water blue. All free (OpenFreeMap). |
 
 **Street-level zoom on the Eiffel Tower:**
 

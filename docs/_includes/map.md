@@ -187,7 +187,9 @@ Auto-included by docs/_layouts/default.html.
     loadMapLibre(function() {
       var map = new maplibregl.Map({
         container: gid,
-        style: "https://tiles.openfreemap.org/styles/positron",
+        // tiles="liberty" (or "bright"): OpenFreeMap's coloured styles, green
+        // woods and blue water, as free as the grey default
+        style: "https://tiles.openfreemap.org/styles/" + (el.getAttribute("tiles") || "positron"),
         center: [centerLon, centerLat],
         zoom: zoom,
         pitch: parseFloat(el.getAttribute("pitch") || "0"),
