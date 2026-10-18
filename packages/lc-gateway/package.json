@@ -1,6 +1,6 @@
 {
   "name": "@karmicsoft/lc-gateway",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": false,
   "description": "E-mail sign-in and pull-request writer for git-backed content — one contribution, one branch, one pull request. A LightCode brick, shipped as a container.",
   "type": "module",
