@@ -333,10 +333,16 @@ Auto-included by docs/_layouts/default.html.
     a.subs.forEach(function (k) { if (b.subs.indexOf(k) < 0) out.push("➖ class " + k + " (its rows stay)"); });
     return out;
   }
+  /* TIME TRAVEL COMPARES NOTHING (Michel, 2026-10-18: "in timetravel,
+     since the editor is in R/O, that feature should be deactivated… we only
+     have 1 current updatable version: the topmost"): while a pad replays an
+     old version, no plan, no leftovers, no log — the database is not
+     versioned (yet: parked, Michel's Postgres recipe) */
+  ST.travelling = function () { return !!document.querySelector(".lc-mdpad[data-lc-replay]"); };
   /* what the table lacks for the code as it stands: the plan 🔄 applies */
   ST.plan = function (id) {
     var r = window.lcRemote[id], U = r && r.unl;
-    if (!U || !U.read || !U.tcols) return [];
+    if (!U || !U.read || !U.tcols || ST.travelling()) return [];
     var cur = stColsOf(id), tc = U.tcols, ty = ST.types[id] || {}, out = [];
     Object.keys(cur.cols).forEach(function (k) {
       var c = cur.cols[k];
@@ -353,7 +359,7 @@ Auto-included by docs/_layouts/default.html.
      (nor a was=) answers to — offered unticked, never by themselves */
   ST.tidy = function (id) {
     var r = window.lcRemote[id], U = r && r.unl, out = { orphans: [], stale: [] };
-    if (!U || !U.read || !lsGet(U.akey)) return out;
+    if (!U || !U.read || !lsGet(U.akey) || ST.travelling()) return out;
     var rows = window.lcDatasets[id] || [], row0 = rows[0] || {}, M = window.lcModels || {}, declared = {};
     (unlCols(id) || []).forEach(function (c) { declared[c.n] = 1; });
     out.orphans = Object.keys(row0).filter(function (k) {
@@ -384,8 +390,9 @@ Auto-included by docs/_layouts/default.html.
       if (!r || !r.unl || !ST.seen[id]) return;
       var cur = stColsOf(id);
       if (stSig(cur) === stSig(ST.seen[id])) return;
-      /* the page's classes still arriving (a pad's after the page's): no step */
-      var quiet = performance.now() - (ST.settle[id] || 0) < 4000;
+      /* the page's classes still arriving (a pad's after the page's), or an
+         old version replayed: no step */
+      var quiet = performance.now() - (ST.settle[id] || 0) < 4000 || ST.travelling();
       if (!quiet) stDiff(ST.seen[id], cur).forEach(function (t) { ST.log[id].push(t); });
       ST.seen[id] = cur;
       if (!ST.plan(id).length) ST.log[id] = [];      /* the code and the table agree again */
@@ -474,7 +481,7 @@ Auto-included by docs/_layouts/default.html.
       var btn = head.querySelector(".lc-struct-btn");
       /* the owner always has it (Michel, 2026-10-18: "always available,
          including when I changed the db directly") — faint when all agrees */
-      var mine = ids.filter(function (sid) { var U2 = window.lcRemote[sid].unl; return U2 && U2.read && lsGet(U2.akey); });
+      var mine = ST.travelling() ? [] : ids.filter(function (sid) { var U2 = window.lcRemote[sid].unl; return U2 && U2.read && lsGet(U2.akey); });
       if (!n && !m && !mine.length) { if (btn) btn.parentNode.removeChild(btn); return; }
       if (!btn) {
         btn = document.createElement("button");
@@ -494,6 +501,20 @@ Auto-included by docs/_layouts/default.html.
     });
   }
   document.addEventListener("lc-struct", stPaintHeads);
+  /* into an old version and back: the corners and the title repaint; coming
+     back to the topmost version is not a change of yours */
+  document.addEventListener("lc-travel", function () {
+    setTimeout(function () {
+      Object.keys(window.lcRemote || {}).forEach(function (id) {
+        var r = window.lcRemote[id];
+        if (!r || !r.unl) return;
+        /* the pad redraws the topmost code after this: a quiet moment, no step */
+        if (!ST.travelling() && ST.seen[id]) { ST.seen[id] = stColsOf(id); ST.settle[id] = performance.now(); }
+        if (window.lcSetDataset && window.lcDatasets[id]) window.lcSetDataset(id, window.lcDatasets[id]);
+      });
+      stPaintHeads();
+    }, 0);
+  });
   document.addEventListener("lc-remote-state", stPaintHeads);
   if (!window._lcStructWired) {
     window._lcStructWired = 1;

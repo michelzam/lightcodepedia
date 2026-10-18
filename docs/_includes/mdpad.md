@@ -1163,6 +1163,7 @@ Auto-included by docs/_layouts/default.html.
           if (window.lcDid) window.lcDid.mark(id, "replay");   /* pad.replayed — the film was watched */
           setPlay("■ Stop", false);
           wrap.setAttribute("data-lc-replay", "1");
+          document.dispatchEvent(new CustomEvent("lc-travel", { detail: true }));
           wrap.setAttribute("data-lc-frames", String(frames.length));
           /* the list stays open: its rows are the frames, and 🕘 keeps working */
           [saveBtn, resetBtn].forEach(function (b) { if (b) b.disabled = true; });
@@ -1221,6 +1222,7 @@ Auto-included by docs/_layouts/default.html.
         setPlay("🎞 Replay", false);
         if (vers && vers.mark) vers.mark(null);
         ["data-lc-replay", "data-lc-frame", "data-lc-frames"].forEach(function (a) { wrap.removeAttribute(a); });
+        document.dispatchEvent(new CustomEvent("lc-travel", { detail: false }));
         if (rp.diffEl && rp.diffEl.parentNode) rp.diffEl.parentNode.removeChild(rp.diffEl);
         if (rp.sub && rp.sub.parentNode) rp.sub.parentNode.removeChild(rp.sub);
         rp.sub = null;
