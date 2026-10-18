@@ -58,3 +58,5 @@ WHERE precipitation_probability <= 30 AND temperature_2m <= 28
 ORDER BY time
 ```
 {: .query bind="sky" #walk_when }
+
+Next walk: **{= walk_when.first.time[11:16] or "no good hour today" }**.
