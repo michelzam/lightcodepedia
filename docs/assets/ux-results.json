@@ -4833,7 +4833,7 @@
     "url": "/assets/ux-report.html#scenario_536"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "A dataset-backed repair keeps to the bench and re-derives the page",
     "feature": "One page, two repos — the fence seeds, the reader's bench persists",
     "tags": "",
