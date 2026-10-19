@@ -47,6 +47,11 @@ Scan to open this page on your phone
 Useful on a course page: the reader hands out their own page without typing
 a URL, and the code stays right when the page moves.
 
+On a page shared with **🔗 Share unlisted**, "this page" is its **short
+link** — `share.lightcodepedia.org/s/` and five characters: the code carries
+it, and the caption prints it, so a slide or a whiteboard can carry it too.
+The share door mints it once per share; Refresh keeps it, Unshare removes it.
+
 ## 🛠️ How to make one
 
 Put the URL (or any text) on the first line. An optional second line becomes a caption below the code.

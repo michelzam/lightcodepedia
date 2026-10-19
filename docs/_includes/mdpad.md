@@ -1105,19 +1105,34 @@ Auto-included by docs/_layouts/default.html.
       }
       function rpPlace() {
         if (!rp.sub || !rp.diffEl) return;
-        /* THE WORDS SIT ON THE PREVIEW, under the component that just
-           changed — or under its ghost line when the part is invisible, a
-           dataset, a model — and never above the app's title (Michel,
-           2026-10-19). Folded or not: the preview is where the change shows. */
-        var W = wrap.getBoundingClientRect(), D = out.getBoundingClientRect();
-        /* the mark that SHOWS: an invisible part (a model, a dataset) wears the
-           focus on a hidden element — its ghost line is where it sits */
-        var mark = [out.querySelector(".lc-mdpad-focus"), out.querySelector(".lc-mdpad-ghost")]
-          .filter(function (e) { return e && e.getBoundingClientRect().height > 0; })[0];
-        var y = mark ? mark.getBoundingClientRect().bottom + 6 : D.top + 24;
-        var head = out.querySelector(".lc-mdpad-apphead");
-        var floor = head ? head.getBoundingClientRect().bottom + 8 : D.top + 8;
-        y = Math.max(floor, Math.min(y, D.bottom - 40));
+        var W = wrap.getBoundingClientRect(), D = rp.diffEl.getBoundingClientRect();
+        var y = D.top + 24;
+        if (wrap.classList.contains("lc-mdpad-folded")) {
+          /* THE EDITOR FOLDED AWAY: the words sit on the PREVIEW, under the
+             component that just changed — or under its ghost line when the
+             part is invisible, a dataset, a model — and never above the app's
+             title (Michel, 2026-10-19). With the editor open they stay on the
+             editor, under the lines that changed (the 2026-10-10 ruling). */
+          D = out.getBoundingClientRect();
+          var mark = [out.querySelector(".lc-mdpad-focus"), out.querySelector(".lc-mdpad-ghost")]
+            .filter(function (e) { return e && e.getBoundingClientRect().height > 0; })[0];
+          y = mark ? mark.getBoundingClientRect().bottom + 6 : D.top + 24;
+          var head = out.querySelector(".lc-mdpad-apphead");
+          var floor = head ? head.getBoundingClientRect().bottom + 8 : D.top + 8;
+          y = Math.max(floor, Math.min(y, D.bottom - 40));
+          rp.sub.style.maxWidth = Math.round(D.width * 0.9) + "px";
+          rp.sub.style.left = (D.left - W.left + D.width / 2) + "px";
+          rp.sub.style.top = (y - W.top) + "px";
+          return;
+        }
+        if (rp.changedEl && rp.changedEl.isConnected) {
+          /* the last changed row of the run, so the words sit under the change */
+          var all = Array.prototype.slice.call(rp.diffEl.querySelectorAll(".ln"));
+          var at = all.indexOf(rp.changedEl), last = rp.changedEl;
+          while (at >= 0 && at + 1 < all.length && /\b(add|del)\b/.test(all[at + 1].className)) last = all[++at];
+          y = last.getBoundingClientRect().bottom + 6;
+        }
+        y = Math.max(D.top + 8, Math.min(y, D.bottom - 40));
         rp.sub.style.maxWidth = Math.round(D.width * 0.9) + "px";
         rp.sub.style.left = (D.left - W.left + D.width / 2) + "px";
         rp.sub.style.top = (y - W.top) + "px";
@@ -1390,7 +1405,11 @@ Auto-included by docs/_layouts/default.html.
          every live part in it — the grid, the card, the class, the list.
          What spans blocks (a beside= row, a section accordion, footnotes,
          reference links) renders whole, as before. */
-      var whole = typeof text === "string" || /beside=|\.accordion|\.tabs\b|\[\^|^\s{0,3}\[[^\]]+\]:\s/m.test(v);
+      /* a replay frame goes the same incremental way: a block the frame did
+         not touch keeps its container, so the preview changes where the
+         text changed and nowhere else (Michel, 2026-10-19: "avoid a visual
+         flick") */
+      var whole = /beside=|\.accordion|\.tabs\b|\[\^|^\s{0,3}\[[^\]]+\]:\s/m.test(v);
       if (whole) {
         padCache = [];
         body.innerHTML = inline(window.marked.parse(norm));

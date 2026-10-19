@@ -40,9 +40,13 @@ Auto-included by docs/_layouts/default.html.
        so does this. In the runner that href already carries #src=gh:…, so
        a course page hands out its own address without naming its vault —
        and it stays right when the course moves. */
-    var text = here ? location.href : (lines[0] || "");
+    /* on a shared page, "this page" is its short link — encoded and
+       printed, so a slide or a whiteboard can carry it (share.md) */
+    var short = here && window.lcShortHere ? window.lcShortHere : "";
+    var text = here ? (short || location.href) : (lines[0] || "");
     var label = here ? lines.join(" ").trim()
                      : (lines.length > 1 ? lines.slice(1).join(" ").trim() : "");
+    if (short) label = (label ? label + " · " : "") + short.replace(/^https?:\/\//, "");
     var size = parseInt(el.getAttribute("size") || "180", 10);
     if (!text) return;
     var wrap = document.createElement("div");

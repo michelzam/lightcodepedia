@@ -14,6 +14,15 @@ no account, no modes. Existing shares are found by
 listing docs/share/ through the API (front matter lc_share_of) — no index
 file, nothing public to leak. share/ sits in the publish excludes, so
 nothing under it ever reaches pedia (Michel, 2026-09-20).
+SHORT LINKS (Michel, 2026-10-19: "a tinyurl … I would prefer our own"):
+a share also gets share.lightcodepedia.org/s/<code> — five characters, no
+look-alikes (0/o, 1/l), drawn once and kept in the copy's front matter
+(lc_short), so Refresh keeps it. The code is one more tiny file,
+docs/s/<code>.html, that sends the reader on to the share; Unshare deletes
+it too. The dialog leads with it and its QR encodes it (a shorter address
+draws a coarser square, read faster from the back of a room); a
+{: .qr here="true" } on a shared page encodes it and prints it. s/ is
+publish-excluded like share/. No other storage: the repo is the store.
 -->
 <style>
 .lc-share-ov{position:fixed;inset:0;z-index:2147483645;background:rgba(10,10,20,.55);display:flex;align-items:center;justify-content:center;padding:20px}
@@ -47,6 +56,11 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
   function hdrs() { return { "Authorization": "token " + key(), "Accept": "application/vnd.github+json", "Content-Type": "application/json" }; }
   function b64(s) { return btoa(unescape(encodeURIComponent(s))); }
   function unb64(s) { return decodeURIComponent(escape(atob(String(s || "").replace(/\s/g, "")))); }
+  var SHORT_ABC = "23456789abcdefghjkmnpqrstuvwxyz";
+  function shortCode() {
+    var a = new Uint8Array(5); (window.crypto || window.msCrypto).getRandomValues(a);
+    return Array.prototype.map.call(a, function (b) { return SHORT_ABC.charAt(b % SHORT_ABC.length); }).join("");
+  }
   function hex(n) {
     var a = new Uint8Array(n); (window.crypto || window.msCrypto).getRandomValues(a);
     return Array.prototype.map.call(a, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
@@ -97,8 +111,10 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
                   c2 = c2.then(function (h2) {
                     if (h2) return h2;
                     return getFile(LAB, f.path).then(function (data) {
-                      var m = /^---[\s\S]*?\nlc_share_of:\s*(\S+)/.exec(unb64(data.content));
-                      return (m && m[1] === srcPath) ? { id: d.name, name: f.name, files: files } : null;
+                      var txt = unb64(data.content);
+                      var m = /^---[\s\S]*?\nlc_share_of:\s*(\S+)/.exec(txt);
+                      var sm = /^---[\s\S]*?\nlc_short:\s*([a-z0-9]+)/.exec(txt);
+                      return (m && m[1] === srcPath) ? { id: d.name, name: f.name, files: files, short: sm ? sm[1] : "" } : null;
                     }).catch(function () { return null; });
                   });
                 });
@@ -119,13 +135,32 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
     }
     return Object.keys(out);
   }
-  function withFrontMatter(md, srcPath) {
+  function withFrontMatter(md, srcPath, short) {
+    var tail = "lc_share_of: " + srcPath + "\n" + (short ? "lc_short: " + short + "\n" : "");
     var fm = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(md);
     if (fm) {
-      var body = fm[1].replace(/^lc_share_of:.*$/m, "").replace(/\n+$/, "");
-      return "---\n" + (body ? body + "\n" : "") + "lc_share_of: " + srcPath + "\n---\n" + md.slice(fm[0].length);
+      var body = fm[1].replace(/^lc_share_of:.*$/m, "").replace(/^lc_short:.*$/m, "").replace(/\n+/g, "\n").replace(/^\n|\n$/g, "");
+      return "---\n" + (body ? body + "\n" : "") + tail + "---\n" + md.slice(fm[0].length);
     }
-    return "---\nlc_share_of: " + srcPath + "\n---\n" + md;
+    return "---\n" + tail + "---\n" + md;
+  }
+  function siteUrl(path) {
+    return location.origin + (window.lcResolveUrl ? window.lcResolveUrl(path) : path);
+  }
+  function shortUrl(code) { return siteUrl("/s/" + code); }
+  /* the short page: a static file that sends the reader on, keeping any
+     ?query and #hash (an iframe's focus=1&up=0 survives the hop) */
+  function shortPage(id, name) {
+    var to = "../share/" + id + "/" + name.replace(/\.md$/, "");
+    return '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex">\n' +
+      '<title>Lightcodepedia</title>\n<meta http-equiv="refresh" content="0; url=' + to + '">\n' +
+      '<scr' + 'ipt>location.replace("' + to + '" + location.search + location.hash);<\/script>\n' +
+      '</head><body><a href="' + to + '">Open the page</a></body></html>\n';
+  }
+  function fileSha(path) {
+    return fetch(API + LAB + "/contents/" + path, { headers: hdrs() })
+      .then(function (r) { return r.ok ? r.json().then(function (d) { return d.sha || ""; }) : ""; })
+      .catch(function () { return ""; });
   }
   function shareUrl(id, name) {
     return location.origin + (window.lcResolveUrl ? window.lcResolveUrl("/share/" + id + "/" + name.replace(/\.md$/, "")) : "/share/" + id + "/" + name.replace(/\.md$/, ""));
@@ -145,12 +180,13 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
     status("Looking for an earlier share…");
     return findShare(src.path).then(function (hit) {
       var id = hit ? hit.id : hex(6);
+      var code = (hit && hit.short) || shortCode();
       var existing = {};
       (hit ? hit.files : []).forEach(function (f) { existing[f.name] = f.sha; });
       status(hit ? "Refreshing the share…" : "Sharing…");
       return getFile(src.repo, src.path).then(function (data) {
         var md = unb64(data.content);
-        var page = withFrontMatter(md, src.path);
+        var page = withFrontMatter(md, src.path, code);
         var when = new Date().toISOString().slice(0, 10);
         return putFile("docs/share/" + id + "/" + name, b64(page), existing[name], "share: " + name + " — " + when)
           .then(function () {
@@ -164,7 +200,13 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
                 }).catch(function () { /* a reference that is not a file of ours — leave it */ });
               });
             });
-            return chain.then(function () { return { id: id, name: name, url: shareUrl(id, name), rels: n, refreshed: !!hit }; });
+            /* the short page — written once; a refresh finds it there */
+            return chain.then(function () { return fileSha("docs/s/" + code + ".html"); })
+              .then(function (sha) {
+                if (sha) return null;
+                return putFile("docs/s/" + code + ".html", b64(shortPage(id, name)), "", "share: short link /s/" + code + " → " + name);
+              })
+              .then(function () { return { id: id, name: name, url: shareUrl(id, name), short: shortUrl(code), rels: n, refreshed: !!hit }; });
           });
       });
     });
@@ -176,6 +218,14 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
       if (!hit) return false;
       status("Unsharing…");
       var chain = Promise.resolve();
+      if (hit.short) {
+        var sp = "docs/s/" + hit.short + ".html";
+        chain = chain.then(function () { return fileSha(sp); }).then(function (sha) {
+          if (!sha) return null;
+          return fetch(API + LAB + "/contents/" + sp, { method: "DELETE", headers: hdrs(),
+            body: JSON.stringify({ message: "unshare: short link /s/" + hit.short, sha: sha }) });
+        });
+      }
       hit.files.forEach(function (f) {
         chain = chain.then(function () {
           return fetch(API + LAB + "/contents/" + f.path, { method: "DELETE", headers: hdrs(),
@@ -189,6 +239,10 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
   /* ── a shared page (under /share/<id>/) reads as pedia: brand and menu
      point at lightcodepedia.org, no Get started, no account, no modes ── */
   var SHARED = /\/share\/[0-9a-f]{12}\//.test(location.pathname);
+  /* a shared page knows its short link (front matter lc_short): a QR of
+     "this page" encodes it, and prints it (qr.md reads lcShortHere) */
+  var SHORT_HERE = {{ page.lc_short | default: "" | jsonify }};
+  if (SHARED && SHORT_HERE) window.lcShortHere = siteUrl("/s/" + SHORT_HERE);
   function readerChrome() {
     if (!SHARED) return;
     document.documentElement.classList.add("lc-shared");
@@ -210,6 +264,7 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
       '  <h3>🔗 Share unlisted</h3>',
       '  <div class="lc-share-status" aria-live="polite">Looking…</div>',
       '  <div class="lc-share-body" style="display:none">',
+      '    <div class="lc-share-shortbox"><label>Short link</label><div class="lc-share-row"><input class="lc-share-short" readonly aria-label="Short link"><button class="copy" data-for="lc-share-short">📋 Copy</button></div></div>',
       '    <label>Link</label><div class="lc-share-row"><input class="lc-share-url" readonly aria-label="Share link"><button class="copy" data-for="lc-share-url">📋 Copy</button></div>',
       '    <label>Iframe</label><div class="lc-share-row"><textarea class="lc-share-iframe" readonly aria-label="Iframe snippet"></textarea><button class="copy" data-for="lc-share-iframe">📋 Copy</button></div>',
       '    <label>QR code</label><div class="lc-share-qr"></div>',
@@ -230,13 +285,15 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
       goB.style.display = shared ? "none" : "";
       refB.style.display = offB.style.display = shared ? "" : "none";
     }
-    function fill(url) {
+    function fill(url, short) {
       ov.querySelector(".lc-share-url").value = url;
+      ov.querySelector(".lc-share-short").value = short || "";
+      ov.querySelector(".lc-share-shortbox").style.display = short ? "" : "none";
       /* AN IFRAME IS AN EMBED (Michel, 2026-10-07, Canvas): the bar is blocked
          (focus=1) and the ⬆️ Up pill is gone (up=0) — frame flags the layout
          already honours; the bare link keeps the full page. */
       ov.querySelector(".lc-share-iframe").value = '<iframe src="' + url + '?focus=1&up=0" width="100%" height="720" style="border:0" loading="lazy" allow="display-capture; microphone; camera"></iframe>';
-      if (window.lcQrInto) window.lcQrInto(ov.querySelector(".lc-share-qr"), url, 180);
+      if (window.lcQrInto) window.lcQrInto(ov.querySelector(".lc-share-qr"), short || url, 180);
       body.style.display = "";
     }
     function showState() {
@@ -244,7 +301,11 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
       goB.disabled = refB.disabled = offB.disabled = true;
       return findShare(source().path).then(function (hit) {
         goB.disabled = refB.disabled = offB.disabled = false;
-        if (hit) { fill(shareUrl(hit.id, hit.name)); buttons(true); status("✅ Shared — same link every time; Refresh after an edit."); }
+        if (hit) {
+          fill(shareUrl(hit.id, hit.name), hit.short ? shortUrl(hit.short) : "");
+          buttons(true);
+          status("✅ Shared — same link every time; Refresh after an edit" + (hit.short ? "." : " (it also mints a short link)."));
+        }
         else { buttons(false); status("Not shared. Share copies this page to an unlisted address."); }
       }).catch(function (e) { status("❌ " + e.message); });
     }
@@ -261,7 +322,7 @@ html.lc-shared #lc-start-pill,html.lc-shared #lc-user-pill,html.lc-shared .lc-sl
     function doShare() {
       goB.disabled = refB.disabled = offB.disabled = true;
       share(status).then(function (r) {
-        fill(r.url); buttons(true);
+        fill(r.url, r.short); buttons(true);
         goB.disabled = refB.disabled = offB.disabled = false;
         status((r.refreshed ? "✅ Refreshed" : "✅ Shared") + (r.rels ? " with " + r.rels + " file" + (r.rels > 1 ? "s" : "") : "") + " — live in about a minute, same link every time.");
       }).catch(function (e) { status("❌ " + e.message); goB.disabled = refB.disabled = offB.disabled = false; });

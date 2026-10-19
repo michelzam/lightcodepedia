@@ -289,7 +289,8 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the replay's subtitle reads "🤓 Cv ⏪"
     When I press play
     Then the replay's subtitle reads "🤓 Cv"
-    And the subtitle floats on the preview, under the lit block
+    # with the editor open the words stay on the editor (Michel, 2026-10-19: "WHY????")
+    And the subtitle floats on the editor, under the change
     And the replay lands on frame 2
     And every added line has finished unfolding
     And the pad kept its height
@@ -308,7 +309,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     title": this pad wears the app chrome (decorations="true").
 
     Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
-    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md", each with a kept paragraph
     And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
       """
       # Work page
@@ -322,6 +323,11 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I wait for the page to be interactive
     And I press the pad's replay button
     Then the replay holds 2 frames and opens on the first
+    # only the changed block is rebuilt per frame: the kept paragraph is the same element (Michel, 2026-10-19: "avoid a visual flick")
+    When I remember the kept paragraph's element in the pad's preview
+    And I scrub the replay to frame 2
+    Then the kept paragraph's element is still the one remembered
+    And the pad's preview shows "Draft two"
     When I press "⇥" on the "cv" pad
     Then the "cv" pad's source is folded away
     And the diff pane is hidden too

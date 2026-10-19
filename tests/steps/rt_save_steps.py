@@ -308,8 +308,13 @@ def step_editor_refuses_autofill(context):
     assert attrs["ac"] == "off" and attrs["name"] == "lc-cell" and attrs["lp"] == "true", attrs
 
 
+@given('the bench remembers two earlier versions of "{path}", each with a kept paragraph')
+def step_bench_history_kept(context, path):
+    step_bench_history(context, path, kept=True)
+
+
 @given('the bench remembers two earlier versions of "{path}"')
-def step_bench_history(context, path):
+def step_bench_history(context, path, kept=False):
     # the commit list and the by-ref reads that back it — the shape the
     # GitHub API answers with, so the panel exercises the real contract
     # a version's content follows the FILE's kind — prose for a pad, rows
@@ -317,6 +322,8 @@ def step_bench_history(context, path):
     if path.endswith((".yaml", ".yml", ".json")):
         VERSIONS = {"sha-old": "- name: Rex\n  campus: Milwauke\n",
                     "sha-mid": "- name: Rex\n  campus: MKE\n"}
+    elif kept:   # a second block the versions share: the replay must keep its element
+        VERSIONS = {"sha-old": "# Draft one\n\nKept line.\n", "sha-mid": "# Draft two\n\nKept line.\n"}
     else:
         VERSIONS = {"sha-old": "# Draft one\n", "sha-mid": "# Draft two\n"}
 
@@ -1313,3 +1320,17 @@ def step_subtitle_on_preview(context):
 @then('the words said are those of the frame left behind, "{sha}"')
 def step_said_sha(context, sha):
     expect(context.page.locator(PAD)).to_have_attribute("data-lc-said", sha, timeout=5_000)
+
+
+@when("I remember the kept paragraph's element in the pad's preview")
+def step_remember_kept(context):
+    p = context.page.locator(PAD + " .lc-mdpad-out p", has_text="Kept line.").first
+    expect(p).to_be_visible(timeout=10_000)
+    p.evaluate("e => { e.__lcKept = 1; }")
+
+
+@then("the kept paragraph's element is still the one remembered")
+def step_kept_same(context):
+    context.page.wait_for_timeout(800)
+    same = context.page.evaluate("pad => { const p = [...document.querySelectorAll(pad + ' .lc-mdpad-out p')].find(e => e.textContent.trim() === 'Kept line.'); return !!(p && p.__lcKept); }", PAD)
+    assert same, "the kept paragraph was rebuilt with the frame"
