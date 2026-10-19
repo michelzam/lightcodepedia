@@ -484,6 +484,65 @@ Feature: A class wears a dataset
 ```
 {: .feature #class_source_proof visible="true" status="pending" tags="model" }
 
+## 🕗 Born with a default — a value, or a function
+
+An attribute's default is what a newborn gets: `note = Attr(str, default="hello")`,
+or positional, `Attr(str, "hello")`. It may be a **function** — given by its
+name, not called — and the class calls it when the object is **born**: ➕ New,
+or `DropIn(note="by code")` in your own code, which is the same thing (the row is
+taken, the rest filled in, a database class saves by itself). A row read back
+from its list or its table is what it is: no default is ever applied on load —
+the rule `dataclasses` and Django follow. The result goes through the
+attribute's type like a typed-in value.
+
+`datetime` is on the page, the standard name on the device's clock
+(`now()`, the fields, `strftime("%H:%M")`, `isoformat()`; no f-string
+format spec — MicroPython has none); a `datetime` attribute shows as a time — `13:15` today, `Oct 18 13:15` before —
+and its column holds ISO text. `ro=True` keeps it stamped: born, displayed,
+never typed.
+
+```csv
+note,at
+first look,2026-10-18T09:30:00
+again,
+```
+{: .dataset #drop_ins }
+
+```python
+class DropIn(Object, source="drop_ins"):
+    note = Attr(str, default="hello")
+    at = Attr(datetime, datetime.now, ro=True)
+```
+{: .model }
+
+[the drop-ins](#)
+{: .datagrid source="DropIn" #drop_in_grid }
+
+```gherkin
+Feature: A default can be a function
+  As an author
+  I want a newborn stamped by the clock
+  So that nobody types the hour
+
+  Scenario: A drop-in made in code is born with the hour, and the row loaded without one stays blank
+    Given the drop-ins
+    :::python
+    self.n: int = self.page.DropIn.count
+    :::
+    When one is made in code
+    :::python
+    self.v: DropIn = DropIn(note="by code")
+    :::
+    Then it carries the clock and the note, and the list grew
+    :::python
+    assert self.v.at is not None and self.v.at.hour == datetime.now().hour
+    assert self.v.note == "by code" and self.page.drop_ins.count == self.n + 1
+    assert len(self.v.at.strftime("%H:%M")) == 5
+    self.v.delete()
+    :::
+```
+{: .feature #born_proof visible="true" status="pending" tags="model" }
+
 ## 🥸 How to write one
 
 ````markdown

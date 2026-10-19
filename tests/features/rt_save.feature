@@ -295,10 +295,13 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the bench received no commit
     And the pad's proof word replayed reads 1
 
-  Scenario: The editor folds and unfolds during a replay too
+  Scenario: The editor folds and unfolds during a replay too, and the words move to the preview
     Michel, 2026-10-18: "when the version pane is open, and in the replay
     pane, trying to close the editor will fail" — the fold slid the preview
     over an editor that was not there (the diff pane stood in its place).
+    2026-10-19: "if the editor is closed/folded, during timetravelling, the
+    commit comments / captions should be displayed on the preview side, with
+    the short highlighting of the changing thing".
 
     Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
     And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
@@ -319,6 +322,9 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     Then the "cv" pad's source is folded away
     And the diff pane is hidden too
     And the "cv" pad's preview spans the pad
+    When I press play
+    Then the replay's subtitle reads "🤓 Cv"
+    And the subtitle floats on the preview, under the lit block
     When I press "✎" on the "cv" pad
     Then the diff pane paints "# Draft one" as the editor does
 

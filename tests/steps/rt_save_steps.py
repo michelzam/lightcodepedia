@@ -1288,3 +1288,20 @@ def step_replay_grew(context, dy):
 @then("the diff pane is hidden too")
 def step_diff_hidden(context):
     expect(context.page.locator(PAD + " .lc-mdpad-diff")).to_be_hidden(timeout=5_000)
+
+
+@then("the subtitle floats on the preview, under the lit block")
+def step_subtitle_on_preview(context):
+    box = context.page.evaluate("""(pad) => {
+      const w = document.querySelector(pad), s = w.querySelector('.lc-mdpad-sub.on'),
+            o = w.querySelector('.lc-mdpad-out'), lit = o.querySelector('.lc-mdpad-focus');
+      if (!s || !o) return null;
+      const S = s.getBoundingClientRect(), O = o.getBoundingClientRect();
+      return { cx: S.left + S.width / 2, ol: O.left, or: O.right, top: S.top, ob: O.bottom,
+               litb: lit ? lit.getBoundingClientRect().bottom : null };
+    }""", PAD)
+    assert box, "no subtitle on"
+    assert box["ol"] < box["cx"] < box["or"], "the words are not over the preview: %s" % box
+    assert box["top"] <= box["ob"], box
+    if box["litb"] is not None:
+        assert box["top"] >= box["litb"] - 2, "the words sit above the lit block: %s" % box

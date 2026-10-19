@@ -1101,6 +1101,18 @@ Auto-included by docs/_layouts/default.html.
         if (!rp.sub || !rp.diffEl) return;
         var W = wrap.getBoundingClientRect(), D = rp.diffEl.getBoundingClientRect();
         var y = D.top + 24;
+        if (wrap.classList.contains("lc-mdpad-folded")) {
+          /* the editor is folded away: the words float on the PREVIEW, under
+             the block that just changed and pulses there (Michel, 2026-10-19) */
+          D = out.getBoundingClientRect();
+          var lit = out.querySelector(".lc-mdpad-focus"), L = lit ? lit.getBoundingClientRect() : null;
+          y = L ? L.bottom + 6 : D.top + 24;
+          y = Math.max(D.top + 8, Math.min(y, D.bottom - 40));
+          rp.sub.style.maxWidth = Math.round(D.width * 0.9) + "px";
+          rp.sub.style.left = (D.left - W.left + D.width / 2) + "px";
+          rp.sub.style.top = (y - W.top) + "px";
+          return;
+        }
         if (rp.changedEl && rp.changedEl.isConnected) {
           /* the last changed row of the run, so the words sit under the change */
           var all = Array.prototype.slice.call(rp.diffEl.querySelectorAll(".ln"));

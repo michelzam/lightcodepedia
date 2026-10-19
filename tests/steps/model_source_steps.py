@@ -1450,3 +1450,62 @@ def step_every_gutter(context, gid):
     expect(context.page.locator(".lc-dg-menu button[data-verb='delete']")).to_be_visible(timeout=T)
     context.page.keyboard.press("Escape")
     context.page.mouse.click(5, 5)
+
+
+def _hhmm(context):
+    return context.page.evaluate("() => { const d = new Date(); const p = n => String(n).padStart(2, '0'); return [p(d.getHours()) + ':' + p(d.getMinutes()), p(d.getHours()) + ':' + p((d.getMinutes() + 59) % 60)]; }")
+
+
+def _col(context, gid, name):
+    ths = grid(context, gid).locator("thead th").all_inner_texts()
+    cols = [re.sub(r"\s*[↑↓]$", "", t.strip()).lower() for t in ths]
+    return cols.index(name)
+
+
+@then('the row "{name}" of "{gid}" has an empty "{col}" cell')
+def step_empty_cell(context, name, gid, col):
+    r = row_of(context, gid, name)
+    expect(r).to_be_visible(timeout=T)
+    expect(r.locator("td").nth(_col(context, gid, col))).to_have_text("")
+
+
+@then('the row "{name}" of "{gid}" shows "{text}" in "{col}"')
+def step_cell_shows(context, name, gid, text, col):
+    r = row_of(context, gid, name)
+    expect(r).to_be_visible(timeout=T)
+    expect(r.locator("td").nth(_col(context, gid, col))).to_have_text(text, timeout=T)
+
+
+@then('the row "{name}" of "{gid}" shows the hour of this minute in "{col}"')
+def step_cell_now(context, name, gid, col):
+    r = row_of(context, gid, name)
+    expect(r).to_be_visible(timeout=T)
+    cell = r.locator("td").nth(_col(context, gid, col))
+    expect(cell).not_to_have_text("", timeout=T)
+    assert cell.inner_text().strip() in _hhmm(context), cell.inner_text()
+
+
+@then('the new row of "{gid}" says "{note}" and the hour of this minute')
+def step_new_row_born(context, gid, note):
+    r = grid(context, gid).locator("tbody tr.lc-dg-selected").first
+    expect(r.locator("td", has_text=note)).to_have_count(1, timeout=T)
+    cell = r.locator("td").nth(_col(context, gid, "at"))
+    assert cell.inner_text().strip() in _hhmm(context), cell.inner_text()
+
+
+@when('I run the python "{code}"')
+def step_run_py(context, code):
+    context.page.evaluate("c => window.lcPySend(c)", code)
+
+
+
+
+
+
+
+
+@then("DEBUG proof error")
+def step_debug_proof(context):
+    pg = context.page
+    pg.wait_for_timeout(1000)
+    print("ERR:", [t[:400] for t in pg.locator("[data-lc-id='born_proof'] .lc-feature-step-err").all_inner_texts()])

@@ -743,6 +743,8 @@ Auto-included by docs/_layouts/default.html.
           Object.keys(model.fields).forEach(function (k) {
             var f = model.fields[k];
             if (f.ro || f.state) locked.push(k);
+            /* a read-only datetime shows as the grid does: a time */
+            if (f.t === "datetime" && f.ro && k in row && window.lcTimeShort) row[k] = window.lcTimeShort(row[k]);
             if (f.enum && !f.ro && !f.state) picks[k] = f.enum.map(String);
             /* a reference picks among its class's objects, by their names */
             if (f.ref) {

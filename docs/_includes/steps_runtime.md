@@ -29,6 +29,98 @@ try:
 except ImportError:
     _ODict = dict
 
+
+class datetime:
+    """The standard name, on the device's clock (MicroPython ships no datetime,
+    the browser knows the local time). Enough of the real one for a page:
+    now(), the fields, isoformat(), strftime(), ordering (no __format__:
+    MicroPython gives an f-string no format spec on objects).
+    A datetime attribute — Attr(datetime, datetime.now) — reads and writes
+    its table column as ISO text (Michel, 2026-10-19)."""
+    _MON = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    _DAY = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+    def __init__(self, year, month, day, hour=0, minute=0, second=0):
+        self.year, self.month, self.day = int(year), int(month), int(day)
+        self.hour, self.minute, self.second = int(hour), int(minute), int(second)
+
+    @classmethod
+    def now(cls):
+        d = js.Date.new()
+        return cls(d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds())
+
+    @classmethod
+    def fromisoformat(cls, s):
+        s = str(s).strip().replace("T", " ")
+        d, _, t = s.partition(" ")
+        y, m, dd = d.split("-")
+        parts = (t.split("+")[0].split("Z")[0].split(".")[0].split(":") + ["0", "0", "0"])[:3] if t else ["0", "0", "0"]
+        return cls(y, m, dd, parts[0], parts[1], parts[2])
+
+    def _tuple(self):
+        return (self.year, self.month, self.day, self.hour, self.minute, self.second)
+
+    def weekday(self):
+        y, m, d = self.year, self.month, self.day      # Zeller, Monday = 0
+        if m < 3:
+            m += 12
+            y -= 1
+        return (d + (13 * (m + 1)) // 5 + y + y // 4 - y // 100 + y // 400 + 5) % 7
+
+    def date(self):
+        return datetime(self.year, self.month, self.day)
+
+    def isoformat(self):
+        return "%04d-%02d-%02dT%02d:%02d:%02d" % self._tuple()
+
+    def strftime(self, fmt):
+        h12 = self.hour % 12 or 12
+        tab = {"Y": "%04d" % self.year, "m": "%02d" % self.month, "d": "%02d" % self.day,
+               "H": "%02d" % self.hour, "M": "%02d" % self.minute, "S": "%02d" % self.second,
+               "y": "%02d" % (self.year % 100), "I": "%02d" % h12, "p": "AM" if self.hour < 12 else "PM",
+               "b": self._MON[self.month - 1], "a": self._DAY[self.weekday()], "%": "%"}
+        out, i = "", 0
+        while i < len(fmt):
+            c = fmt[i]
+            if c == "%" and i + 1 < len(fmt):
+                out += tab.get(fmt[i + 1], "%" + fmt[i + 1])
+                i += 2
+            else:
+                out += c
+                i += 1
+        return out
+
+    def __str__(self):
+        return "%04d-%02d-%02d %02d:%02d:%02d" % self._tuple()
+
+    def __repr__(self):
+        return "datetime(%d, %d, %d, %d, %d, %d)" % self._tuple()
+
+    def __eq__(self, o):
+        return _lc_isdt(o) and self._tuple() == o._tuple()
+
+    def __lt__(self, o):
+        return self._tuple() < o._tuple()
+
+    def __le__(self, o):
+        return self._tuple() <= o._tuple()
+
+    def __gt__(self, o):
+        return self._tuple() > o._tuple()
+
+    def __ge__(self, o):
+        return self._tuple() >= o._tuple()
+
+    def __hash__(self):
+        return hash(self._tuple())
+
+
+def _lc_isdt(v):
+    """A datetime by its shape: the preamble runs again before every feature
+    or button, so an object born earlier holds an instance of an earlier
+    class of the same name — isinstance would say no."""
+    return hasattr(v, "isoformat") and hasattr(v, "year")
+
 # Inspector-widget registries survive preamble re-runs (buttons re-run it on
 # every click): bound instances and the new-instance capture list must persist.
 try:
@@ -157,10 +249,14 @@ class Attr:
         self.t = typ if isinstance(typ, str) else getattr(typ, "__name__", "str")
         # a non-builtin type names a Model class → a typed reference. Use the
         # string form for forward/self references: bestie = Attr("Pet")
-        self.ref = self.t not in ("int", "float", "bool", "str")
+        self.ref = self.t not in ("int", "float", "bool", "str", "datetime")
         # Attr() with no default reads as "the empty one of its type" — a
         # blank string, a zero, a False — so name = Attr() is legal shorthand
         # (Michel, 2026-08-22). Refs keep None: an empty reference is real.
+        # A DEFAULT MAY BE A FUNCTION — Attr(datetime, datetime.now): called
+        # when the object is born (➕ New, Walk(...)), never when a row is read
+        # back, the result coerced like any typed-in value (Michel, 2026-10-19:
+        # standard Python, construction only, the attribute's type decides).
         if default is None and not self.ref:
             default = {"str": "", "int": 0, "float": 0.0, "bool": False}.get(self.t)
         self.d = default
@@ -181,6 +277,18 @@ class Attr:
         self.is_state = False
         self.n = None
 
+    def _default(self):
+        """The value a newborn gets: the default itself, or what the default
+        function returns, through the attribute's type."""
+        d = self.d
+        if callable(d):
+            d = d()
+            try:
+                d = self._coerce(d)
+            except Exception:
+                pass
+        return d
+
     def _coerce(self, v):
         if self.ref:
             # accept an instance, a bound global name, or None ("" from the widget)
@@ -191,6 +299,15 @@ class Attr:
             if v is None or not _lc_isa(v, self.t):
                 raise ValueError(str(self.n) + " expects a " + self.t)
             return v
+        if self.t == "datetime":
+            if v is None or v == "":
+                return None
+            if _lc_isdt(v):
+                return v
+            try:
+                return datetime.fromisoformat(v)
+            except Exception:
+                raise ValueError(str(self.n) + " expects a datetime")
         try:
             if self.t == "int":
                 v = int(v)
@@ -213,7 +330,15 @@ class Attr:
 
     def _spec_dict(self):
         t = "password" if self.secret else ("fsm" if self.is_state else self.t)
-        d = {"n": self.n, "t": t, "d": self.d,
+        # a function default is shown by its name (= datetime.now), a datetime as text
+        dv = self.d
+        if callable(dv):
+            dv = getattr(dv, "__name__", "…")
+            if dv == "now":
+                dv = "datetime.now"
+        elif _lc_isdt(dv):
+            dv = str(dv)
+        d = {"n": self.n, "t": t, "d": dv,
              "ro": self.ro, "unit": self.unit, "hint": self.hint, "secret": self.secret,
              "field": True, "state": self.is_state}
         if self.ref:
@@ -509,7 +634,7 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
 
 @component(icon="◻️", attrs=[{"n": "id", "t": "str"}])
 class Object:
-    def __init__(self, el=None):
+    def __init__(self, el=None, **kw):
         self._el = el
         # Everything is an Object — including author-defined domain classes,
         # which declare Attr/State fields. Undecorated subclasses self-register
@@ -521,11 +646,24 @@ class Object:
         if cls._lc_fields:
             self._v = {}
             for f in cls._lc_fields:
-                self._v[f.n] = f.d
+                self._v[f.n] = f._default()
             self._lc_elid = None
             self._js = None          # the list's own row, when the class wears a dataset
             _LC_NEW.append(self)
             _LC_OBJS.append(self)
+            # THE CONSTRUCTOR WITH KEYWORDS IS ➕ NEW (Michel, 2026-10-19: a walk
+            # made in a method "with the implicit intention to make it
+            # persistent"): Walk(dog=rex, walker="Ana") takes the row, the
+            # defaults fill the rest, a database class saves by itself. A bare
+            # Walk() is the engine's own path for rows read back.
+            if kw:
+                fmap = getattr(cls, "_lc_fmap", None) or {}
+                for k, v in kw.items():
+                    f = fmap.get(k)
+                    if f is None:
+                        raise TypeError(cls.__name__ + " has no attribute " + k)
+                    self._v[k] = f._coerce(v)
+                cls._lc_born(self)
 
     # ── born verbs: every object can be made and unmade; a class that wears a
     # dataset adds and removes the row itself (Michel, 2026-10-16: "Delete being
@@ -533,7 +671,10 @@ class Object:
     @classmethod
     def new(cls):
         """A fresh one, named, on the bus — a sourced class adds a row to its list."""
-        inst = cls()
+        return cls._lc_born(cls())
+
+    @classmethod
+    def _lc_born(cls, inst):
         if not getattr(cls, "_lc_fields", None):
             return inst
         cls._lc_seq = getattr(cls, "_lc_seq", 0) + 1
@@ -551,7 +692,7 @@ class Object:
                         setattr(row, "id", None)
                         continue
                     v = inst._v.get(f.n, f.d)
-                    setattr(row, f.n, "" if f.ref else v)
+                    setattr(row, f.n, "" if f.ref else _lc_cell(f, v))
                 _lc_row_mark(row, nm)
                 arr.push(row)
                 inst._js = row
@@ -2812,7 +2953,7 @@ def _lc_inspect_schema(obj):
             d["options"] = [_lc_name_of(o) for o in _LC_OBJS
                             if o is not obj and _lc_isa(o, f.t) and _lc_name_of(o)]
         else:
-            d["v"] = v
+            d["v"] = _lc_cell(f, v)
         fields.append(d)
     # the state axis is special — it carries the state, so it closes the card
     fields = ([f for f in fields if not f.get("state")]
@@ -2904,7 +3045,7 @@ def _lc_rows_of(cls):
                 fields = getattr(type(o), "_lc_fields", None) or fields   # with its own fields too
             for f in fields:
                 v = o._v.get(f.n)
-                row[f.n] = (_lc_name_of(v) or "?") if f.ref and v is not None else v
+                row[f.n] = (_lc_name_of(v) or "?") if f.ref and v is not None else _lc_cell(f, v)
             for n in _lc_props(type(o)):
                 if n not in row:
                     row[n] = _lc_prop_value(o, n)
@@ -2945,7 +3086,7 @@ def _lc_publish_class(cls):
                                 val = (getattr(o, "_lc_raw", None) or {}).get(f.n)
                             setattr(o._js, f.n, "" if val is None else val)
                             continue
-                        setattr(o._js, f.n, (_lc_name_of(v) or "") if f.ref and v is not None else v)
+                        setattr(o._js, f.n, (_lc_name_of(v) or "") if f.ref and v is not None else _lc_cell(f, v))
                     if db:
                         # which subclass this row is; the base class writes none — but a
                         # name no class answers to stays as read, for the author's 🧹
@@ -3379,6 +3520,13 @@ def _lc_rows_load(cls_name, rows_json):
             safe += ch if ("a" <= ch <= "z" or "0" <= ch <= "9") else "_"
         g[safe or (cls_name.lower() + str(i + 1))] = inst
     _lc_publish_all()
+
+
+def _lc_cell(f, v):
+    """What a row's cell holds for a value: a datetime travels as ISO text."""
+    if f.t == "datetime":
+        return v.isoformat() if _lc_isdt(v) else ("" if v is None else v)
+    return v
 
 
 def _lc_push_obj(obj):

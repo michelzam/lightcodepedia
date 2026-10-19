@@ -193,6 +193,23 @@ Feature: A class wears a dataset — the grid dresses the rows
   Scenario: Every stage chip has the same width
     Then the stage chips of "family_grid" are all as wide
 
+  Scenario: A default may be a function, called when the object is born — never on load
+    Michel, 2026-10-19: standard Python, "default value only after new (not
+    after load)", positional or default=, the result through the
+    attribute's type; datetime on the page, shown as a time; the keyword
+    constructor is New.
+
+    Then the row "again" of "drop_in_grid" has an empty "at" cell
+    And the row "first look" of "drop_in_grid" shows "Oct 18 09:30" in "at"
+    When I press New under "drop_in_grid"
+    Then the new row of "drop_in_grid" says "hello" and the hour of this minute
+    When I run the python "DropIn(note='by code')"
+    Then the row "by code" of "drop_in_grid" shows the hour of this minute in "at"
+    And the grid "drop_in_grid" has 4 rows and the dataset "drop_ins" has 4 rows
+    When I run the feature "born_proof"
+    Then DEBUG proof error
+    And the feature "born_proof" is green
+
   Scenario: A card on a dressed grid in a pad shows the lit row from the start
     Michel, 2026-10-16: the card said "(no data)" under a lit row — the
     class published an empty list first, and the grid never announced its
