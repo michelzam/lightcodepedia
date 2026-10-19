@@ -295,6 +295,33 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the bench received no commit
     And the pad's proof word replayed reads 1
 
+  Scenario: The editor folds and unfolds during a replay too
+    Michel, 2026-10-18: "when the version pane is open, and in the replay
+    pane, trying to close the editor will fail" — the fold slid the preview
+    over an editor that was not there (the diff pane stood in its place).
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
+    And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
+      """
+      # Work page
+
+      ```markdown
+      # Starter résumé — replace me
+      ```
+      {: .mdpad #cv save="cv.md" rows="6" replay="0.3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I press the pad's replay button
+    Then the replay holds 2 frames and opens on the first
+    When I press "⇥" on the "cv" pad
+    Then the "cv" pad's source is folded away
+    And the diff pane is hidden too
+    And the "cv" pad's preview spans the pad
+    When I press "✎" on the "cv" pad
+    Then the diff pane paints "# Draft one" as the editor does
+
   Scenario: Each frame stays as long as its line takes to read
     Michel, 2026-10-13: "when play/moonwalk, the subtitle should be displayed
     a bit longer so students can have time to read". A pad without replay=

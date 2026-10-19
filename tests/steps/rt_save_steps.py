@@ -1283,3 +1283,8 @@ def step_replay_grew(context, dy):
               w.querySelector(':scope > .lc-mdpad-diff').getBoundingClientRect().height]; }""")
     for a, b in zip(context.rp_h0, h1):
         assert b - a > dy * 0.6, (context.rp_h0, h1)
+
+
+@then("the diff pane is hidden too")
+def step_diff_hidden(context):
+    expect(context.page.locator(PAD + " .lc-mdpad-diff")).to_be_hidden(timeout=5_000)

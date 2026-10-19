@@ -103,7 +103,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-help b { display: block; margin-bottom: 0.35em; }
 .lc-mdpad-help .r { display: flex; gap: 0.55em; padding: 0.12em 0; }
 .lc-mdpad-help .i { flex: 0 0 1.4em; text-align: center; }
-.lc-mdpad.lc-mdpad-folded > .lc-mdpad-src { display: none !important; }
+.lc-mdpad.lc-mdpad-folded > .lc-mdpad-src, .lc-mdpad.lc-mdpad-folded > .lc-mdpad-diff { display: none !important; }
 /* ↔ the splitter in the gap between preview and editor */
 .lc-mdpad-split { position: absolute; top: 0; bottom: 0; cursor: col-resize; z-index: 2; touch-action: none;
   display: flex; align-items: center; justify-content: center; }
@@ -549,7 +549,10 @@ Auto-included by docs/_layouts/default.html.
       var pane = src || ta, column = getComputedStyle(wrap).flexDirection === "column";
       var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (_drawer) { _drawer.cancel(); _drawer = null; }
-      if (reduced || column || !out.animate) { setFold(on); return; }
+      /* in a replay the editor is already off screen, the diff pane in its
+         place: nothing to slide over, fold at once (Michel, 2026-10-18:
+         "trying to close the editor will fail") */
+      if (reduced || column || !out.animate || wrap.hasAttribute("data-lc-replay")) { setFold(on); return; }
       /* THE PREVIEW COVERS THE EDITOR (Michel, 2026-10-17, decision register
          P1): the editor never moves — its right edge stays, its text stays —
          while the preview's right edge slides over it, left to right, until
