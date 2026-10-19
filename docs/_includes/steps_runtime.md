@@ -139,6 +139,7 @@ try:
     _LC_DECL          # model blocks: block id → the class names it declared
 except NameError:
     _LC_DECL = {}
+    _LC_SRC = {}          # model blocks: block id → the fence's text (declaration order)
 try:
     _LC_SOURCED       # a class is a dataset: source dataset id → the class wearing it
 except NameError:
@@ -605,7 +606,7 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
                 listed.add(n)
         if fields:   # author models: own public plain methods join the node
             base = cls.__bases__[0] if cls.__bases__ else None
-            for n in sorted(getattr(cls, "_lc_pub", {}) or {}):
+            for n in _lc_verbs(cls):
                 if n not in listed and not (base is not None and hasattr(base, n)):
                     meth_specs.append({"n": n, "pre": [], "post": None})
         spec = {
@@ -2977,7 +2978,7 @@ def _lc_inspect_schema(obj):
         cur = obj._v.get(sfn) if sfn else None
         meths.append({"n": n, "pre": pre, "post": post, "doc": _doc1(n),
                       "enabled": (not pre) or (cur in pre)})
-    for n in sorted(getattr(cls, "_lc_pub", {}) or {}):
+    for n in _lc_verbs(cls):
         if n not in tmeta:
             meths.append({"n": n, "pre": [], "post": None, "doc": _doc1(n),
                           "enabled": True})
@@ -3174,7 +3175,7 @@ def _lc_model_spec_push(cls, subs=True):
     for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
         pre, post, sfn, _o = tmeta[n]
         trans[n] = {"pre": list(pre), "post": post}
-    verbs = [n for n in sorted(getattr(cls, "_lc_pub", {}) or {}) if n not in tmeta]
+    verbs = [n for n in _lc_verbs(cls) if n not in tmeta]
     spec = {"fields": fields, "state": statef.n if statef else None,
             "states": list(statef.enum) if statef else [], "transitions": trans,
             "verbs": verbs, "src": getattr(cls, "_lc_source", None) or "",
@@ -3520,6 +3521,53 @@ def _lc_rows_load(cls_name, rows_json):
             safe += ch if ("a" <= ch <= "z" or "0" <= ch <= "9") else "_"
         g[safe or (cls_name.lower() + str(i + 1))] = inst
     _lc_publish_all()
+
+
+def _lc_decl_order(cls):
+    """The names a class's own block declares with def, in the order written —
+    read from the fence's text (MicroPython keeps no line numbers)."""
+    name = cls.__name__
+    for mid in _LC_SRC:
+        src = _LC_SRC[mid]
+        lines = src.split("\n")
+        at = None
+        out = []
+        for ln in lines:
+            if ln.startswith("class "):
+                if at is not None:
+                    break
+                head = ln[6:].split("(")[0].split(":")[0].strip()
+                if head == name:
+                    at = True
+                continue
+            if at and ln.lstrip().startswith("def "):
+                out.append(ln.lstrip()[4:].split("(")[0].strip())
+        if at:
+            return out
+    return []
+
+
+def _lc_verbs(cls):
+    """The buttons under a card, base class first, each class's own verbs in
+    the order they were written (Michel, 2026-10-19: "from base class to the
+    closest one, so Start before Run"). Transitions are the state's and are
+    listed by the state; what is left is sorted, so nothing is lost."""
+    pub = getattr(cls, "_lc_pub", {}) or {}
+    tmeta = getattr(cls, "_lc_tmeta", {}) or {}
+    chain = []
+    k = cls
+    while isinstance(k, type) and k.__name__ != "Object":
+        chain.append(k)
+        k = k.__bases__[0] if k.__bases__ else None
+    out = []
+    for k in reversed(chain):
+        for n in _lc_decl_order(k):
+            if n in pub and n not in tmeta and n not in out:
+                out.append(n)
+    for n in sorted(pub):
+        if n not in tmeta and n not in out:
+            out.append(n)
+    return out
 
 
 def _lc_cell(f, v):
@@ -4489,7 +4537,7 @@ _inject_store()
     mpReady().then(function (mp) {
       if (same) {
         try {
-          runPy(mp, purge + "_LC_DECL[" + JSON.stringify(mid) + "] = " + JSON.stringify(names) + bind + "\n_lc_publish_all()\n");
+          runPy(mp, purge + "_LC_DECL[" + JSON.stringify(mid) + "] = " + JSON.stringify(names) + "\n_LC_SRC[" + JSON.stringify(mid) + "] = " + JSON.stringify(code) + bind + "\n_lc_publish_all()\n");
           (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
           document.dispatchEvent(new CustomEvent("lc-model-changed"));
           if (window.lcWarn) window.lcWarn(el, srcWarn);
@@ -4504,7 +4552,9 @@ _inject_store()
       var pre = window._lcModelPreIn === mp ? "" : preamble;
       try {
         if (purge) runPy(mp, purge);
-        runPy(mp, pre + "\n_LC_SNAP_M = set(_CLASSES)\n" + code + bind +
+        /* the fence's text is known BEFORE its classes run: the first publish
+           already orders the verbs as written */
+        runPy(mp, pre + "\n_LC_SNAP_M = set(_CLASSES)\n_LC_SRC[" + JSON.stringify(mid) + "] = " + JSON.stringify(code) + "\n" + code + bind +
           "\n_LC_DECL[" + JSON.stringify(mid) + "] = [n for n in _CLASSES if n not in _LC_SNAP_M]\n" +
           "_LC_NEW[:] = []\n_lc_publish_all()\n");
         window._lcModelPreIn = mp;

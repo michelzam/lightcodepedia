@@ -210,6 +210,52 @@ Feature: A class wears a dataset — the grid dresses the rows
     Then DEBUG proof error
     And the feature "born_proof" is green
 
+  Scenario: The verbs under a card come in the order written, the base class first
+    Michel, 2026-10-19: "the form's buttons/Methods displayed in the order
+    of their declaration: from base class to the closest one, so Start
+    before Run" — they came alphabetically.
+
+    Given the GitHub contents API serves "courses/demo/module_06/verbs.md" with the document:
+      """
+      # Verbs
+
+      ```csv
+      family,dog
+      Nguyen,Biscuit
+      ```
+      {: .dataset #reservations }
+
+      ```python
+      class Family(Object, source="reservations"):
+          def greet(self):
+              pass
+
+          def call(self):
+              pass
+
+      class Foster(Family):
+          until = Attr(str)
+
+          def visit(self):
+              pass
+
+          def adopt(self):
+              pass
+      ```
+      {: .model }
+
+      [the families](#)
+      {: .datagrid source="Family" #families }
+
+      [Title](#)
+      {: .form master="families" #card }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/verbs.md"
+    And I wait for the page to be interactive
+    Then the verbs of "card" read "Greet, Call"
+    When I add a "Foster" with New under "families"
+    Then the verbs of "card" read "Greet, Call, Visit, Adopt"
+
   Scenario: A card on a dressed grid in a pad shows the lit row from the start
     Michel, 2026-10-16: the card said "(no data)" under a lit row — the
     class published an empty list first, and the grid never announced its

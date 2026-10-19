@@ -1305,3 +1305,11 @@ def step_subtitle_on_preview(context):
     assert box["top"] <= box["ob"], box
     if box["litb"] is not None:
         assert box["top"] >= box["litb"] - 2, "the words sit above the lit block: %s" % box
+    head = context.page.locator(PAD + " .lc-mdpad-apphead")
+    if head.count():
+        assert box["top"] >= head.bounding_box()["y"] + head.bounding_box()["height"] - 1, "the words sit on the app's title: %s" % box
+
+
+@then('the words said are those of the frame left behind, "{sha}"')
+def step_said_sha(context, sha):
+    expect(context.page.locator(PAD)).to_have_attribute("data-lc-said", sha, timeout=5_000)

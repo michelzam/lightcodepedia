@@ -284,9 +284,11 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the pad's preview shows "Draft two"
     When I press the moonwalk
     Then the replay lands on frame 1
+    # the moonwalk speaks first: the line of the frame it leaves (Michel, 2026-10-19)
+    And the words said are those of the frame left behind, "sha-mid"
     When I press play
     Then the replay's subtitle reads "🤓 Cv"
-    And the subtitle floats on the editor, under the change
+    And the subtitle floats on the preview, under the lit block
     And the replay lands on frame 2
     And every added line has finished unfolding
     And the pad kept its height

@@ -1064,7 +1064,9 @@ Auto-included by docs/_layouts/default.html.
           (f.starter ? "the lesson's starter" : (f.when ? new Date(f.when).toLocaleString() : "saved"));
         wrap.setAttribute("data-lc-frame", String(n));
         rp.changedEl = sp;
-        if (wrap.hasAttribute("data-lc-playing")) rpSay(f, total);
+        /* forward, the words follow the lines; backward they came BEFORE the
+           lines (rpStep): what is leaving is what was once added */
+        if (wrap.hasAttribute("data-lc-playing") && rp.dir > 0) rpSay(f, total);
       }
       /* THE COMMIT SPEAKS (Michel, 2026-10-10): while ▶ Play or ◀ Moonwalk
          runs, the frame's own line — what the learner said they did — floats
@@ -1090,6 +1092,7 @@ Auto-included by docs/_layouts/default.html.
         /* the lines unfold first; the words land under them once they have */
         clearTimeout(rp.subT);
         if (after) rp.sub.classList.remove("on");     /* the old line fades while the new lines unfold */
+        wrap.setAttribute("data-lc-said", f.sha || (f.starter ? "starter" : ""));
         rp.subT = setTimeout(function () {
           if (!rp.sub) return;
           rp.sub.textContent = "🤓 " + line;
@@ -1099,28 +1102,16 @@ Auto-included by docs/_layouts/default.html.
       }
       function rpPlace() {
         if (!rp.sub || !rp.diffEl) return;
-        var W = wrap.getBoundingClientRect(), D = rp.diffEl.getBoundingClientRect();
-        var y = D.top + 24;
-        if (wrap.classList.contains("lc-mdpad-folded")) {
-          /* the editor is folded away: the words float on the PREVIEW, under
-             the block that just changed and pulses there (Michel, 2026-10-19) */
-          D = out.getBoundingClientRect();
-          var lit = out.querySelector(".lc-mdpad-focus"), L = lit ? lit.getBoundingClientRect() : null;
-          y = L ? L.bottom + 6 : D.top + 24;
-          y = Math.max(D.top + 8, Math.min(y, D.bottom - 40));
-          rp.sub.style.maxWidth = Math.round(D.width * 0.9) + "px";
-          rp.sub.style.left = (D.left - W.left + D.width / 2) + "px";
-          rp.sub.style.top = (y - W.top) + "px";
-          return;
-        }
-        if (rp.changedEl && rp.changedEl.isConnected) {
-          /* the last changed row of the run, so the words sit under the change */
-          var all = Array.prototype.slice.call(rp.diffEl.querySelectorAll(".ln"));
-          var at = all.indexOf(rp.changedEl), last = rp.changedEl;
-          while (at >= 0 && at + 1 < all.length && /\b(add|del)\b/.test(all[at + 1].className)) last = all[++at];
-          y = last.getBoundingClientRect().bottom + 6;
-        }
-        y = Math.max(D.top + 8, Math.min(y, D.bottom - 40));
+        /* THE WORDS SIT ON THE PREVIEW, under the component that just
+           changed — or under its ghost line when the part is invisible, a
+           dataset, a model — and never above the app's title (Michel,
+           2026-10-19). Folded or not: the preview is where the change shows. */
+        var W = wrap.getBoundingClientRect(), D = out.getBoundingClientRect();
+        var mark = out.querySelector(".lc-mdpad-focus") || out.querySelector(".lc-mdpad-ghost");
+        var y = mark ? mark.getBoundingClientRect().bottom + 6 : D.top + 24;
+        var head = out.querySelector(".lc-mdpad-apphead");
+        var floor = head ? head.getBoundingClientRect().bottom + 8 : D.top + 8;
+        y = Math.max(floor, Math.min(y, D.bottom - 40));
         rp.sub.style.maxWidth = Math.round(D.width * 0.9) + "px";
         rp.sub.style.left = (D.left - W.left + D.width / 2) + "px";
         rp.sub.style.top = (y - W.top) + "px";
@@ -1141,6 +1132,11 @@ Auto-included by docs/_layouts/default.html.
       function rpStep() {
         var n = rp.at + rp.dir;
         if (n < 0 || n >= rp.frames.length) { rpPause(); return; }
+        /* MOONWALK SPEAKS FIRST (Michel, 2026-10-19: "the comment should be
+           displayed before the previous step, because it represents what
+           was added initially"): the frame being left says its line, then
+           its lines fold away */
+        if (rp.dir < 0) rpSay(rp.frames[rp.at]);
         rpShow(n, true);
         /* landed on an end: stop there, now, not one silent tick later */
         if (n === 0 || n === rp.frames.length - 1) rpPause();

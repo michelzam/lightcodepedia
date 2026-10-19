@@ -1509,3 +1509,17 @@ def step_debug_proof(context):
     pg = context.page
     pg.wait_for_timeout(1000)
     print("ERR:", [t[:400] for t in pg.locator("[data-lc-id='born_proof'] .lc-feature-step-err").all_inner_texts()])
+
+
+@then('the verbs of "{fid}" read "{names}"')
+def step_verbs_order(context, fid, names):
+    bar = context.page.locator("#" + fid + " .lc-form-verbs, .lc-form[data-lc-id='" + fid + "'] .lc-form-verbs, [data-lc-id='" + fid + "'] ~ .lc-form-verbs").first
+    want = [n.strip() for n in names.split(",")]
+    expect(bar.locator("button.lc-form-verb")).to_have_count(len(want), timeout=T)
+    got = [re.sub(r"^\S+\s+", "", t.strip()) if not t.strip()[0].isalpha() else t.strip() for t in bar.locator("button.lc-form-verb").all_inner_texts()]
+    assert got == want, got
+
+
+
+
+
