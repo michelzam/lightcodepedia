@@ -1093,9 +1093,12 @@ Auto-included by docs/_layouts/default.html.
         clearTimeout(rp.subT);
         if (after) rp.sub.classList.remove("on");     /* the old line fades while the new lines unfold */
         wrap.setAttribute("data-lc-said", f.sha || (f.starter ? "starter" : ""));
+        /* backwards, the line says so: ⏪ (Michel, 2026-10-19) — read now: a
+           landing on the first frame pauses before the words appear */
+        var back = rp.dir < 0 && wrap.hasAttribute("data-lc-playing");
         rp.subT = setTimeout(function () {
           if (!rp.sub) return;
-          rp.sub.textContent = "🤓 " + line;
+          rp.sub.textContent = "🤓 " + line + (back ? " ⏪" : "");
           rpPlace();
           rp.sub.classList.add("on");
         }, (after || 0) + 30);
@@ -1107,7 +1110,10 @@ Auto-included by docs/_layouts/default.html.
            dataset, a model — and never above the app's title (Michel,
            2026-10-19). Folded or not: the preview is where the change shows. */
         var W = wrap.getBoundingClientRect(), D = out.getBoundingClientRect();
-        var mark = out.querySelector(".lc-mdpad-focus") || out.querySelector(".lc-mdpad-ghost");
+        /* the mark that SHOWS: an invisible part (a model, a dataset) wears the
+           focus on a hidden element — its ghost line is where it sits */
+        var mark = [out.querySelector(".lc-mdpad-focus"), out.querySelector(".lc-mdpad-ghost")]
+          .filter(function (e) { return e && e.getBoundingClientRect().height > 0; })[0];
         var y = mark ? mark.getBoundingClientRect().bottom + 6 : D.top + 24;
         var head = out.querySelector(".lc-mdpad-apphead");
         var floor = head ? head.getBoundingClientRect().bottom + 8 : D.top + 8;

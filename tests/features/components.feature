@@ -434,6 +434,18 @@ Feature: Component gallery behaviors
     And the "play" verb on the "pet_widget" inspector reads "play()"
     And the "eat" verb on the "lucky_widget" inspector reads "Eat"
 
+  Scenario: A terminal animation plays back, frame by frame
+    Michel, 2026-10-19, on the pet race: "Hope to show the animation of
+    pets getting closer to the finish line" — his loop sleeps and clears
+    the terminal. The run leaves frame marks; the console plays them back;
+    the last screen stays.
+
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    And I click Run in the "countdown" editor
+    Then the "countdown" console shows "🏁-----🐶" while it plays
+    And the "countdown" console ends on "🏁🐶" without "🏁-----🐶"
+
   Scenario: The folder page's recap example folds a built folder into facts
     The recap view also runs on a built site (manifest road, no key): the
     component page's own example lists the examples folder.

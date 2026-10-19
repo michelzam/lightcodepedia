@@ -205,6 +205,68 @@ Auto-included by docs/_layouts/default.html.
   }
   window.lcMpy = lcMpy;
 
+  /* FRAMES — a terminal animation, played back (Michel, 2026-10-19: the pet
+     race "for _ in range(10): time.sleep(.5); os.system('clear');
+     race.run()" should show the pets getting closer). runPython is
+     synchronous: nothing paints while it runs, so a real sleep would only
+     freeze the page. While a program runs, time.sleep(s) and
+     os.system('clear') leave MARKS in its output instead; the console then
+     plays the output back, frame by frame, with the same pauses. The marks
+     are installed for the run only and taken away after it. */
+  window.LC_FRAMES_ON = [
+    "import time as _lc_t, os as _lc_o",
+    "if not hasattr(_lc_t, '_lc_real_sleep'):",
+    "    _lc_t._lc_real_sleep = _lc_t.sleep",
+    "def _lc_fsleep(s=0):",
+    "    print('\\x1b[lc:sleep %s]' % s)",
+    "def _lc_fsystem(cmd=''):",
+    "    if str(cmd).strip() in ('clear', 'cls'):",
+    "        print('\\x1b[2J')",
+    "    return 0",
+    "_lc_t.sleep = _lc_fsleep",
+    "_lc_o.system = _lc_fsystem"
+  ].join("\n");
+  window.LC_FRAMES_OFF = "_lc_t.sleep = _lc_t._lc_real_sleep";
+  var FRAME_MARK = /\x1b\[lc:sleep ([\d.]+)\]\n?|\x1b\[2J\n?/g;
+  window.lcFrames = {
+    has: function (t) { return /\x1b\[(lc:sleep [\d.]+\]|2J)/.test(t || ""); },
+    /* what a terminal shows once the program is over: the last screen */
+    final: function (t, initial) {
+      var parts = String(t || "").split(/\x1b\[2J\n?/);
+      var last = parts.length > 1 ? parts[parts.length - 1] : (initial || "") + parts[0];
+      return last.replace(/\x1b\[lc:sleep [\d.]+\]\n?/g, "");
+    },
+    /* play the frames into render(screen); a newer play on the same
+       element cancels the older one. Pauses are capped (2 s each, 400
+       frames) so a slip like sleep(60) never hangs a lesson. */
+    play: function (el, t, render, initial, done) {
+      var frames = [], screen = initial || "", m, at = 0;
+      FRAME_MARK.lastIndex = 0;
+      while ((m = FRAME_MARK.exec(t)) !== null) {
+        screen += t.slice(at, m.index);
+        at = FRAME_MARK.lastIndex;
+        if (m[1] !== undefined) frames.push({ show: screen, wait: Math.min(parseFloat(m[1]) || 0, 2) });
+        else screen = "";
+      }
+      screen += t.slice(at);
+      frames.push({ show: screen, wait: 0 });
+      if (frames.length > 400) frames = frames.slice(frames.length - 400);
+      var token = {};
+      el._lcPlay = token;
+      el.setAttribute("data-lc-playing", "1");
+      (function step(i) {
+        if (el._lcPlay !== token) return;
+        render(frames[i].show);
+        if (i + 1 >= frames.length) {
+          el.removeAttribute("data-lc-playing");
+          if (done) done();
+          return;
+        }
+        setTimeout(function () { step(i + 1); }, frames[i].wait * 1000);
+      })(0);
+    }
+  };
+
   var BOOTSTRAP_TPL = [
     "from js import document",
     "class _Showable:",
@@ -700,17 +762,29 @@ Auto-included by docs/_layouts/default.html.
       window._lcMpyOut = function (t) { buf += t; };
       try { m.runPython(BOOTSTRAP); } catch (e) { }
       try { m.runPython("_lc_load_answers()"); } catch (e) { }
+      try { m.runPython(window.LC_FRAMES_ON); } catch (e) { }
       try {
         m.runPython(desugarFstrings(codeEl.value));
-        setOut(buf || "(no print output)", false);
+        if (window.lcFrames.has(buf)) {
+          /* an animation: play it, and keep the last screen as THE output */
+          var raw = buf;
+          buf = window.lcFrames.final(raw);
+          window.lcFrames.play(out, raw, function (scr) { setOut(scr, false); });
+        } else {
+          out._lcPlay = null;
+          setOut(buf || "(no print output)", false);
+        }
         return true;
       } catch (e) {
         /* an unanswered input() is not an error the reader should read: the
            driver is about to ask the question and run this again */
         if (window._lcInputWant) return false;
+        out._lcPlay = null;
+        buf = window.lcFrames.final(buf);
         setOut(buf + (buf ? "\n" : "") + (e.message || String(e)), true);
         return false;
       } finally {
+        try { m.runPython(window.LC_FRAMES_OFF); } catch (e) { }
         window._lcMpyOut = null;
       }
     }

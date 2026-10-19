@@ -4102,6 +4102,10 @@ _inject_store()
   window._lcInspectorRender = function (elid, payload) {
     var host = document.querySelector("[data-lc-inspector='" + elid + "']");
     if (!host) return;
+    /* while a verb's frames play, the cards wait for the last one — a card
+       showing the finish while the console still shows the start reads as
+       a bug (the race, 2026-10-19) */
+    if (host._lcHold) { host._lcPending = payload; return; }
     var d;
     try { d = JSON.parse(payload); } catch (e) { return; }
     /* source="…" points at a model block; without it the fence IS the model */
@@ -4198,13 +4202,34 @@ _inject_store()
      line the learner would have typed — `>>> lucky.come()` — so the card
      teaches the call it stands for */
   function runIn(host, mp, code, echo) {
-    var buf = "";
+    var buf = "", fr = window.lcFrames;
     window._lcMpyOut = function (t) { buf += t; };
-    try { runPy(mp, code); } finally { window._lcMpyOut = null; }
+    /* a verb may animate (time.sleep + os.system('clear')): the frames
+       play in this console, like the editor's (pyrun.md, FRAMES) */
+    if (fr && window.LC_FRAMES_ON) { try { runPy(mp, window.LC_FRAMES_ON); } catch (e) {} }
+    if (host) host._lcHold = true;
+    function release() {
+      if (!host) return;
+      host._lcHold = false;
+      var p = host._lcPending;
+      host._lcPending = null;
+      if (p) window._lcInspectorRender(host.getAttribute("data-lc-inspector"), p);
+    }
+    try { runPy(mp, code); } catch (e) { release(); throw e; } finally {
+      if (fr && window.LC_FRAMES_OFF) { try { runPy(mp, window.LC_FRAMES_OFF); } catch (e) {} }
+      window._lcMpyOut = null;
+    }
     var con = host && host._lcCon;
-    if (!con || (!buf && !echo)) return;
+    if (!con || (!buf && !echo)) { release(); return; }
     if (con.classList.contains("lc-empty")) { con.textContent = ""; con.classList.remove("lc-empty"); }
-    con.textContent += (echo ? ">>> " + echo + "\n" : "") + buf;
+    var before = con.textContent + (echo ? ">>> " + echo + "\n" : "");
+    if (fr && fr.has(buf)) {
+      fr.play(con, buf, function (scr) { con.textContent = scr; con.scrollTop = con.scrollHeight; }, before, release);
+      return;
+    }
+    release();
+    con._lcPlay = null;
+    con.textContent = before + buf;
     con.scrollTop = con.scrollHeight;
   }
   function pySend(code, host, echo) {

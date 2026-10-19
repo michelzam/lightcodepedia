@@ -83,3 +83,18 @@ def step_selection_reads(context, run_id, text):
     sel = ta.evaluate("el => el.value.slice(el.selectionStart, el.selectionEnd)")
     want = text.replace("\\n", "\n")
     assert sel == want, "selection reads %r" % sel
+
+
+@then('the "{run_id}" console shows "{text}" while it plays')
+def step_console_frame(context, run_id, text):
+    out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
+    expect(out).to_contain_text(text, timeout=15_000)
+
+
+@then('the "{run_id}" console ends on "{text}" without "{gone}"')
+def step_console_last_frame(context, run_id, text, gone):
+    out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
+    context.page.wait_for_function(
+        "el => !el.hasAttribute('data-lc-playing')", arg=out.element_handle(), timeout=20_000)
+    got = out.inner_text()
+    assert text in got and gone not in got, got

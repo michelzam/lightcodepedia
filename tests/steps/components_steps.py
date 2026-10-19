@@ -705,6 +705,45 @@ def step_verb_reads(context, verb, elid, text):
     expect(btn).to_have_text(text, timeout=45_000)
 
 
+def _first_card_distance(context, elid):
+    return context.page.evaluate(
+        "id => { const r = [...document.querySelectorAll('[data-lc-inspector=\"' + id + '\"] .lc-ins-card')][0]"
+        "  .querySelector('[data-f=\"distance\"]'); return r ? String(r.value) : null; }", elid)
+
+
+@then('the "{elid}" inspector\'s first card still reads distance "{value}" while the race plays')
+def step_card_holds(context, elid, value):
+    """The cards wait for the last frame (the race, 2026-10-19): mid-race
+    the console shows the pets running, the card still shows the start."""
+    con = context.page.locator('[data-lc-console="%s"]' % elid)
+    playing = con.get_attribute("data-lc-playing")
+    got = _first_card_distance(context, elid)
+    assert playing == "1", "the race was not playing any more — no frame to compare against"
+    assert got == value, "mid-race the card already reads distance %s" % got
+
+
+@then('the "{elid}" inspector\'s first card reads distance "{value}" once the race is over')
+def step_card_final(context, elid, value):
+    context.page.wait_for_function(
+        "id => !document.querySelector('[data-lc-console=\"' + id + '\"]').hasAttribute('data-lc-playing')",
+        arg=elid, timeout=30_000)
+    got = _first_card_distance(context, elid)
+    assert got == value, "after the race the card reads distance %s" % got
+
+
+@given("the engine plays no frames, like an engine from before 2026-10-19")
+@when("the engine plays no frames, like an engine from before 2026-10-19")
+def step_engine_without_frames(context):
+    context.page.evaluate("() => { window.LC_FRAMES_ON = undefined; window.LC_FRAMES_OFF = undefined; window.lcFrames = undefined; }")
+
+
+@then('the "{elid}" inspector shows no error')
+def step_inspector_no_error(context, elid):
+    context.page.wait_for_timeout(500)
+    err = context.page.locator('[data-lc-inspector="%s"] .lc-ins-err' % elid)
+    assert err.count() == 0, err.first.inner_text()
+
+
 @then('the "{elid}" inspector bursts with confetti')
 def step_inspector_confetti(context, elid):
     # the burst lands on the card's parent (the card itself redraws after a verb)

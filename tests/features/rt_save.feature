@@ -284,8 +284,9 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the pad's preview shows "Draft two"
     When I press the moonwalk
     Then the replay lands on frame 1
-    # the moonwalk speaks first: the line of the frame it leaves (Michel, 2026-10-19)
+    # the moonwalk speaks first: the line of the frame it leaves, ⏪ at the end (Michel, 2026-10-19)
     And the words said are those of the frame left behind, "sha-mid"
+    And the replay's subtitle reads "🤓 Cv ⏪"
     When I press play
     Then the replay's subtitle reads "🤓 Cv"
     And the subtitle floats on the preview, under the lit block
@@ -303,7 +304,8 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     over an editor that was not there (the diff pane stood in its place).
     2026-10-19: "if the editor is closed/folded, during timetravelling, the
     commit comments / captions should be displayed on the preview side, with
-    the short highlighting of the changing thing".
+    the short highlighting of the changing thing" — and "lower than the app's
+    title": this pad wears the app chrome (decorations="true").
 
     Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
     And the bench remembers two earlier versions of "courses/demo/mod/cv.md"
@@ -314,7 +316,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
       ```markdown
       # Starter résumé — replace me
       ```
-      {: .mdpad #cv save="cv.md" rows="6" replay="0.3" }
+      {: .mdpad #cv save="cv.md" rows="6" replay="0.3" decorations="true" }
       """
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive

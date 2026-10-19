@@ -390,12 +390,36 @@ Type `3`, Enter, `4`, Enter, then just Enter. Three questions, one transcript, `
 - [ ] It doesn't run at all; `input()` is refused.
 {: .quiz }
 
+## 🎞️ Animation — `time.sleep` and `os.system('clear')`
+
+A terminal animation runs as written: each `os.system('clear')` starts a
+new frame, each `time.sleep(s)` holds it on screen. The script itself runs
+in one go (the browser Python is single-threaded), then the console plays
+the frames back with the same pauses — the last screen stays.
+
+```python
+import os
+import time
+
+for left in range(5, -1, -1):
+    os.system('clear')
+    print("🏁" + "-" * left + "🐶")
+    time.sleep(0.3)
+print("Lucky made it! 🎉")
+```
+{: .run #countdown rows="8" }
+
+Pauses are capped at 2 s each, so a slip like `sleep(60)` never freezes a
+lesson. The same frames play in an [inspector](/components/examples/model)'s
+console when a verb animates.
+
 ## 🧰 Built-in helpers (always available)
 
 | Symbol | What it does |
 |---|---|
 | `print(…)` | Writes to the dark output pane |
 | `input(prompt)` | Asks in the console, then re-runs the script with the answer |
+| `time.sleep(s)` · `os.system('clear')` | Animation: a pause and a new frame, played back after the run |
 | `Object(**kw)` | Simple attribute holder. Pair with `bound=` to show a live card |
 | `show(obj, title=None)` | Renders `obj` as a card below the output |
 | `show.clear()` | Removes all cards |
