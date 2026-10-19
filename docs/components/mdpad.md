@@ -2,7 +2,8 @@
 
 The pad is where a learner **builds**: Markdown on one side, the living
 page on the other, updated as they type. Seed it with a fence; what they
-write is theirs.
+write is theirs. Markdown itself — headings, lists, tables, footnotes —
+is on the [✍️ Text](text) page, with its own playground.
 
 ## 👀 See it in action
 

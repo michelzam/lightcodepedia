@@ -1523,3 +1523,28 @@ def step_verbs_order(context, fid, names):
 
 
 
+
+
+@when('I edit the "{col}" cell of "{name}" in "{gid}" to "{text}"')
+def step_edit_plain_cell(context, col, name, gid, text):
+    """a plain grid's cell (no class): contenteditable on double click"""
+    r = row_of(context, gid, name)
+    heads = [re.sub(r"\s*[↑↓]$", "", t.strip()).lower() for t in grid(context, gid).locator("thead th").all_inner_texts()]
+    cell = r.locator("td").nth(heads.index(col))
+    cell.dblclick()
+    expect(cell).to_have_attribute("contenteditable", "true", timeout=T)
+    context.page.keyboard.press("Control+A")
+    context.page.keyboard.type(text)
+    context.page.keyboard.press("Enter")
+
+
+@then('the table "{tbl}" now has "{dog}" walked by "{who}", saved through its name')
+def step_unl_saved_walker(context, tbl, dog, who):
+    for _ in range(50):
+        if any(r.get("dog") == dog and r.get("walker") == who for r in context.unl["tables"][tbl]["rows"]):
+            break
+        context.page.wait_for_timeout(200)
+    rows = context.unl["tables"][tbl]["rows"]
+    assert [(r["dog"], r["walker"]) for r in rows] == [(dog, who)], rows
+    saves = [a for f, a in context.unl["calls"] if f == "lc_save"]
+    assert saves and saves[-1]["share"] == "5f2c9a01b7e3", saves

@@ -43,6 +43,13 @@ class Walk(Object):
 No SQL, no address, no connection code: the [class](dataset#a-class-as-source--the-list-dressed)
 is the whole contract.
 
+**No class needed, either.** A plain dataset can name a table of the
+database by itself — `[the walks](…://shelter/walk)` on a `.dataset` line
+— and a [datagrid](datagrid) on it reads the rows, edits them when
+`editable="true"`, and 💾 saves them through the same unlisted name; a
+button can `append` a row. The class adds types, defaults, verbs and the
+shape of the table; the list alone is already shared.
+
 ## 🧰 What the door does
 
 - **A table per class.** The class makes its table on the author's device

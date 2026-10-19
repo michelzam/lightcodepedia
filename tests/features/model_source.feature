@@ -757,6 +757,41 @@ Feature: A class wears a dataset — the grid dresses the rows
     And the page asked for nothing under "walks"
     And the database was read with the page's name and the key from databases.yml, never from the page
 
+  Scenario: A lone dataset on a .database — no class: the table read as a list, a cell edited, saved by 💾
+    Michel, 2026-10-19: "Database should also work directly with datasets or
+    datagrids, therefore without classes. Right?" — it does: the link names
+    the database and its table, the grid edits, 💾 saves through the name.
+
+    Given a database with the Lightcode setup and no author yet
+    And the shelter database holds a "walk" table with "Biscuit"
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/lone_db.md" with the document:
+      """
+      # Walks, no class
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      [the walks](supabase://shelter/walk)
+      {: .dataset #walks unlisted="5f2c9a01b7e3" }
+
+      [the walks](#)
+      {: .datagrid source="walks" #walk_grid editable="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/lone_db.md"
+    And I wait for the page to be interactive
+    # the id column shows: a plain list keeps the table's columns as they are
+    Then the row "Biscuit" of "walk_grid" shows "Ana" in "walker"
+    And the page asked for nothing under "walk_grid"
+    When I edit the "walker" cell of "Biscuit" in "walk_grid" to "Ben"
+    And I press Save under "walk_grid"
+    Then the table "walk" now has "Biscuit" walked by "Ben", saved through its name
+
   Scenario: On the author's device, a .database without its name says which one to put
     Given a database with the Lightcode setup and no author yet
     And the GitHub contents API serves "courses/demo/databases.yml" with the document:

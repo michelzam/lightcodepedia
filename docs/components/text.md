@@ -3,6 +3,8 @@
 Every page on this site is a plain text file written in Markdown[^md] — the lightweight format that turns `**bold**` into **bold** and `## Heading` into a big header. This page is your cheat sheet and playground.
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
+The playground below is a **pad**; the pad's own page — bench, versions,
+replay, builder, knobs — is [✍️ Pad](mdpad).
 
 There's one lightcodepedia twist: any `[^footnote]` reference becomes a hover/tap popover[^pop]. Try hovering the blue numbers above.
 
