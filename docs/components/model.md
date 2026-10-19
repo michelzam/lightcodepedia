@@ -156,10 +156,39 @@ Feature: The model renders from its own source
 ```
 {: .feature tags="lifecycle" status="passing" }
 
+## 🧥 The classes you write
+
+The same runtime hosts **your** classes: a `python` fence decorated
+`{: .model }` declares them, and the page dresses them — a grid on the
+class, a card with its verbs, a diagram of it. What a class can say:
+
+- **Attributes**, typed: `name = Attr(str)`, `laps = Attr(int)`,
+  `hour = Attr(datetime)`; `ro=True` for one nobody types; `enum=`,
+  `min=`, `max=`, `unit=`, `hint=`.
+- **A default** — a value or a **function given by its name**, run when
+  the object is born (➕ New, or `Walk(dog=rex, walker="Ana")` in your
+  code) and never when a row is read back: `Attr(datetime, datetime.now)`.
+- **A state and its verbs**: `stage = State("asked", "met", "home")`,
+  `@transition("asked", "met")` on the method that moves it; the grid shows
+  the stage as a chip, the card's buttons are live or grey by it.
+- **Plain verbs**: any public method is a button, listed in the order
+  written, the base class first.
+- **A computed column**: `@property`; with a `.setter`, one you can edit.
+- **A reference**: `dog = Attr(Dog)` — picked by name, stored by id.
+- **Inheritance**: `class Sprint(Walk)` adds its own attributes and verbs;
+  ➕ New offers both kinds.
+- **Where the rows live**: `class Family(Object, source="calls")` wears a
+  list on the page; `{: .model source="shelter" }` puts every class in a
+  [database](database), a table each.
+
+Worked examples on the [dataset page](dataset#a-class-as-source--the-list-dressed).
+
 ## 🔗 Related components & examples
 
 ```
 /components/diagram
+/components/dataset
+/components/database
 ```
 {: .related }
 

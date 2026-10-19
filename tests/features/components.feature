@@ -55,6 +55,23 @@ Feature: Component gallery behaviors
     And I wait for the page to be interactive
     Then the markdown pad shows an editor and a rendered preview
 
+  Scenario: The pad has its own page, with a live pad and its proof
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    Then the markdown pad shows an editor and a rendered preview
+    When I run the feature "pad_proof"
+    Then the feature "pad_proof" is green
+
+  Scenario: The database page lists the door's capabilities and invites a conversation, with no key
+    Michel, 2026-10-19: "Don't share keys or specific providers nor a full
+    working example, but list potential capabilities. Say this is an
+    advanced enterprise grade feature and invite people to contact us."
+
+    When I navigate to "/components/database"
+    And I wait for the page to be interactive
+    Then the page says "enterprise-grade" and "Talk to us"
+    And the page names no key and no provider
+
   Scenario: The custom-class example shows a live Python editor
     When I navigate to "/components/examples/custom-class"
     And I wait for the page to be interactive

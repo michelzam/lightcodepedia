@@ -744,6 +744,15 @@ def step_inspector_no_error(context, elid):
     assert err.count() == 0, err.first.inner_text()
 
 
+@then("no confetti has burst while the race plays")
+def step_no_confetti_yet(context):
+    """Michel, 2026-10-19: "Confetti should only appear at the end of the
+    race" — the burst used to fire when the verb's Python finished, before
+    the console had played a single frame."""
+    n = context.page.evaluate("() => document.querySelectorAll('.lc-confetti, .lc-confetti-quiet').length")
+    assert n == 0, "confetti burst while the race was still playing (%d pieces)" % n
+
+
 @then('the "{elid}" inspector bursts with confetti')
 def step_inspector_confetti(context, elid):
     # the burst lands on the card's parent (the card itself redraws after a verb)
@@ -1126,3 +1135,17 @@ def step_deco_library_alive(context):
     assert not context.deco_dead, (
         "%d of %d library components stayed text in the decorated preview: %s"
         % (len(context.deco_dead), len(_LIBRARY), ", ".join(context.deco_dead)))
+
+
+@then('the page says "{a}" and "{b}"')
+def step_page_says_two(context, a, b):
+    body = context.page.locator("body")
+    expect(body).to_contain_text(a, timeout=15_000)
+    expect(body).to_contain_text(b)
+
+
+@then("the page names no key and no provider")
+def step_no_key_no_provider(context):
+    text = context.page.locator("body").inner_text().lower()
+    for word in ("supabase", "sb_publishable", "eyj", "apikey=", "databricks", "snowflake"):
+        assert word not in text, "the page names " + word

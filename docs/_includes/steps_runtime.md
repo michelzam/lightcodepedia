@@ -4208,14 +4208,23 @@ _inject_store()
        play in this console, like the editor's (pyrun.md, FRAMES) */
     if (fr && window.LC_FRAMES_ON) { try { runPy(mp, window.LC_FRAMES_ON); } catch (e) {} }
     if (host) host._lcHold = true;
+    /* a verb's confetti waits for its last frame too (Michel, 2026-10-19:
+       "Confetti should only appear at the end of the race") — the burst
+       is queued while the verb runs and fired on release */
+    var realBurst = window.lcConfetti, bursts = [];
+    if (realBurst) window.lcConfetti = function (el) { bursts.push(el); };
+    var released = false;
     function release() {
-      if (!host) return;
+      if (!host || released) return;
+      released = true;
       host._lcHold = false;
       var p = host._lcPending;
       host._lcPending = null;
       if (p) window._lcInspectorRender(host.getAttribute("data-lc-inspector"), p);
+      if (realBurst) bursts.forEach(function (el) { try { realBurst(el); } catch (e) {} });
     }
     try { runPy(mp, code); } catch (e) { release(); throw e; } finally {
+      if (realBurst) window.lcConfetti = realBurst;
       if (fr && window.LC_FRAMES_OFF) { try { runPy(mp, window.LC_FRAMES_OFF); } catch (e) {} }
       window._lcMpyOut = null;
     }

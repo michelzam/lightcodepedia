@@ -108,6 +108,16 @@ Chat-style LLM panel that calls GitHub Models from the browser. Each learner use
 
 [Open →](agent)
 
+### ✍️ Pad
+A learner's page in the making: Markdown beside its living preview, saved in their own bench, with versions, replay and a builder beside it.
+
+[Open →](mdpad)
+
+### 🗄 Database
+A class becomes a table in a real database the whole room writes in — advanced, enterprise-grade, set up with you.
+
+[Open →](database)
+
 ### 🗒️ Pages
 Your custom pages here.
  
