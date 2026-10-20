@@ -97,3 +97,30 @@ def step_tab_grid_says(context, n, gid, text):
 
 
 
+
+
+@when('in tab {n:d} I retype the model block of the "{pad_id}" pad three times')
+def step_retype_model(context, n, pad_id):
+    page = _tab(context, n)
+    sel = "[data-lc-id='" + pad_id + "'] .lc-mdpad-in"
+    expect(page.locator(sel)).to_be_attached(timeout=T)
+    for k in range(3):
+        base = page.evaluate("s => document.querySelector(s).value", sel)
+        anchor = "        self.count += 1\n"
+        assert anchor in base, base[:400]
+        page.evaluate("""([s, v]) => { const ta = document.querySelector(s); ta.value = v;
+          ta.dispatchEvent(new Event('input', { bubbles: true })); }""",
+          [sel, base.replace(anchor, anchor + "    # again " + str(k) + "\n", 1)])
+        page.wait_for_timeout(2500)
+    page.wait_for_timeout(1500)
+
+
+@then('after {secs:d} seconds, in tab {n:d} the grid "{gid}" lists one "{a}" and one "{b}"')
+def step_traffic_once(context, secs, n, gid, a, b):
+    page = _tab(context, n)
+    page.wait_for_timeout(secs * 1000)
+    rows = _grid(page, gid).locator("tbody tr").all_inner_texts()
+    fa = [r for r in rows if a in r]
+    fb = [r for r in rows if b in r]
+    assert len(fa) == 1, "follow listed %d times: %s" % (len(fa), rows)
+    assert len(fb) == 1, "bump listed %d times: %s" % (len(fb), rows)

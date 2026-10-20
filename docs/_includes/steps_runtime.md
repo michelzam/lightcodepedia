@@ -4699,15 +4699,23 @@ _inject_store()
     if (el._lcExport) return;
     var name = m[1], funcs = [];
     code.replace(/^def\s+([A-Za-z]\w*)\s*\(/mg, function (_, f) { funcs.push(f); return _; });
+    /* ONE EXPORTER PER NAME PER PAGE (Michel, 2026-10-20: "each bump adds 8"):
+       a pad or the editor re-renders its model block, and every render had
+       opened one more channel on the same name — a verb then ran once per
+       stale listener. The newest render takes the name; the old one closes. */
+    var reg = window._lcExports = window._lcExports || {};
+    if (reg[name]) { try { reg[name].ch.close(); } catch (e) {} document.removeEventListener("lc-model-changed", reg[name].onChange); }
     var ch = lcChan(name); el._lcExport = ch;
     el.setAttribute("data-lc-export", name);
-    var said = 0;
+    var said = (reg[name] && reg[name].said) || 0, seen = (reg[name] && reg[name].seen) || {};
     function traffic(what, from) {
-      /* a dataset #traffic on the server page, when there is one, lists every request */
+      /* a dataset #traffic on the server page, when there is one, lists every
+         request: follow once per client, then its verbs, edits and calls —
+         the heartbeat (ping) is never listed; the last 50 rows stay */
       if (!window.lcDatasets || !Array.isArray(window.lcDatasets.traffic)) return;
       var rows = window.lcDatasets.traffic.filter(function (r) { return r && !r["⚠️"]; });
       rows.push({ n: ++said, from: from || "", what: what });
-      window.lcSetDataset("traffic", rows);
+      window.lcSetDataset("traffic", rows.slice(-50));
     }
     function spec() {
       var classes = {}, rows = {};
@@ -4726,10 +4734,14 @@ _inject_store()
     }
     var L = window.lcDatasetListeners = window.lcDatasetListeners || {};
     names.forEach(function (n) { var f = function () { push(); }; f._lcEl = el; (L[n] = L[n] || []).push(f); });
-    document.addEventListener("lc-model-changed", function () { push(); });
+    var onChange = function () { push(); };
+    document.addEventListener("lc-model-changed", onChange);
+    reg[name] = { ch: ch, onChange: onChange, el: el, said: said, seen: seen };
     ch.onmessage = function (ev) {
+      if (reg[name] && reg[name].ch !== ch) { try { ch.close(); } catch (e) {} return; }   /* replaced */
       var d = ev.data || {}, from = d.from || "";
-      if (d.t === "follow") { traffic("follow", from); push(true); return; }
+      if (d.t === "ping") { try { ch.postMessage({ t: "pong", name: name }); } catch (e) {} return; }
+      if (d.t === "follow") { if (!seen[from]) { seen[from] = 1; traffic("follow", from); } push(true); return; }
       if (d.t === "verb") { traffic(d.cls + "." + d.obj + "." + d.verb + "()", from);
         pySend("_lc_verb(" + JSON.stringify(d.cls) + "," + JSON.stringify(d.obj) + "," + JSON.stringify(d.verb) + ")"); return; }
       if (d.t === "new") { traffic("new " + (d.kind || d.cls), from);
@@ -4760,6 +4772,7 @@ _inject_store()
     }
     ch.onmessage = function (ev) {
       var d = ev.data || {};
+      if (d.t === "pong" && d.name === name) { clearTimeout(quiet); el.removeAttribute("data-lc-nobody"); return; }
       if (d.t === "spec" && d.name === name) {
         clearTimeout(quiet); el.removeAttribute("data-lc-nobody");
         var j = JSON.stringify(d); if (j === lastSpec) return; lastSpec = j;
@@ -4791,6 +4804,11 @@ _inject_store()
       try { ch.postMessage({ t: "follow", from: me }); } catch (e) {}
       clearTimeout(quiet); quiet = setTimeout(nobody, 1500);
     }
+    function ping() {
+      /* the heartbeat: a server that left answers nothing; one that is there says pong, no spec */
+      try { ch.postMessage({ t: "ping", from: me }); } catch (e) {}
+      clearTimeout(quiet); quiet = setTimeout(nobody, 1500);
+    }
     window.lcRemoteOps = window.lcRemoteOps || {};
     window.lcRemoteOps[prefix] = {
       send: function (msg) { msg.from = me; try { ch.postMessage(msg); } catch (e) {} },
@@ -4798,7 +4816,7 @@ _inject_store()
     };
     follow();
     /* a server that leaves says no goodbye: ask again now and then; silence says it */
-    var tick = setInterval(function () { if (!el.isConnected) { clearInterval(tick); return; } follow(); }, 4000);
+    var tick = setInterval(function () { if (!el.isConnected) { clearInterval(tick); return; } if (el.hasAttribute("data-lc-nobody")) follow(); else ping(); }, 4000);
   }
 
   if (window.lcRegisterUpgrader) {

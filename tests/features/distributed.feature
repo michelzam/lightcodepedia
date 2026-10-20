@@ -77,3 +77,50 @@ Feature: Two tabs, one server — a page exports a class and a function, another
     Then in tab 3 the grid "grid" shows "visits" with count "1"
     When I close tab 1
     Then in tab 2 the grid "grid" says "nobody serves lc://demo"
+
+  Scenario: A server re-rendered in a pad keeps one exporter — a bump counts once; the heartbeat is not traffic
+    Michel, 2026-10-20: "Why each bump from client adds 8?" — a pad or the
+    editor re-renders its model block; every render had opened one more
+    channel, and a verb ran once per stale listener. And "not clear who
+    fills #traffic and when": the heartbeat was listed as a follow.
+
+    Given the GitHub contents API serves "courses/demo/dist/server_pad.md" with the document:
+      """
+      # The server, in a pad
+
+      `````markdown
+      ```csv
+      name,count
+      visits,0
+      ```
+      {: .dataset #tally }
+
+      ```python
+      class Tally(Object, source="tally"):
+          def bump(self):
+              self.count += 1
+      ```
+      {: .model export="lc://demo" }
+
+      [the tally](#)
+      {: .datagrid source="Tally" #server_grid }
+
+      ```csv
+      n,from,what
+      ```
+      {: .dataset #traffic }
+
+      [what was asked](#)
+      {: .datagrid source="traffic" #traffic_grid }
+      `````
+      {: .mdpad #srv decorations="true" rows="20" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/dist/server_pad.md"
+    And I wait for the page to be interactive
+    And I open "/run.html#src=gh:acme/demo/courses/demo/dist/client.md" in tab 2
+    Then in tab 2 the grid "grid" shows "visits" with count "0"
+    When in tab 1 I retype the model block of the "srv" pad three times
+    And in tab 2 I press "bump" in the gutter of "visits" in "grid"
+    Then in tab 1 the grid "server_grid" shows "visits" with count "1"
+    And in tab 2 the grid "grid" shows "visits" with count "1"
+    And after 9 seconds, in tab 1 the grid "traffic_grid" lists one "follow" and one "bump"
