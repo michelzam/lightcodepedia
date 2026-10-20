@@ -1537,6 +1537,8 @@ Auto-included by docs/_layouts/default.html.
          ➕ New, never "No data" */
       /* a class whose list failed to load: the list's own words, not a row */
       var mdl0 = (window.lcModels || {})[bindId];
+      /* a class that came through a link (lc://): ↻ asks its server again (Michel, 2026-10-20) */
+      if (!roRemote && mdl0 && mdl0.remote) roRemote = "lc:" + bindId;
       var srcErr = mdl0 && mdl0.src && (window.lcDatasets[mdl0.src] || [])[0] && window.lcDatasets[mdl0.src][0]["⚠️"];
       if (srcErr) data = [];
       var emptyModel = (!data || !data.length) && (window.lcModels || {})[bindId];
@@ -2126,7 +2128,11 @@ Auto-included by docs/_layouts/default.html.
         });
       }
       var roBtn = el.querySelector(".lc-dg-roreload");
-      if (roBtn) roBtn.addEventListener("click", function (e) { e.stopPropagation(); window.lcRemoteReload(roRemote); });
+      if (roBtn) roBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var mm = (window.lcModels || {})[bindId], ops = mm && mm.remote && (window.lcRemoteOps || {})[mm.remote.prefix];
+        if (ops) ops.send({ t: "follow" }); else window.lcRemoteReload(roRemote);
+      });
       var tidyBtn = el.querySelector(".lc-dg-tidy");
       if (tidyBtn) tidyBtn.addEventListener("click", function (e) { e.stopPropagation(); window.lcStructPanel(dbSrc); });
       if (rf) rf.addEventListener("click", function (e) {

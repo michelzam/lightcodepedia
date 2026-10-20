@@ -4648,7 +4648,7 @@ _inject_store()
           (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
           document.dispatchEvent(new CustomEvent("lc-model-changed"));
           if (window.lcWarn) window.lcWarn(el, srcWarn);
-          if (el.getAttribute("export")) exportModel(el, names, code);
+          el._lcModelNames = names; el._lcModelCode = code;    /* a .server reads them */
           return;
         } catch (e) { names.forEach(function (n) { delete by[n]; }); }
       }
@@ -4670,7 +4670,7 @@ _inject_store()
         names.forEach(function (n) { by[n] = code; });
         document.dispatchEvent(new CustomEvent("lc-model-changed"));
         if (window.lcWarn) window.lcWarn(el, srcWarn);
-        if (el.getAttribute("export")) exportModel(el, names, code);
+        el._lcModelNames = names; el._lcModelCode = code;      /* a .server reads them */
       } catch (e) {
         names.forEach(function (n) { delete by[n]; });
         console.error("[lc-model]", e);
@@ -4682,50 +4682,73 @@ _inject_store()
     }).catch(function (e) { console.error("[lc-model]", e); });
   }
 
-  /* ── EXPORT / IMPORT: two running pages, one browser (Michel, 2026-10-20;
+  /* ── SERVER / CLIENT: two running pages, one browser (Michel, 2026-10-20;
      hq/architecture/distributed.md, "The simplest example"). Inside a page an
-     id is free for its neighbours; reaching OTHER pages is an explicit intent:
-     export="lc://demo" on a model. The server page joins a channel of that
-     name and serves — spec and rows on follow and on every change; new, set,
-     verb and a function call through the same door its own grid uses. A
-     client imports with a link: its grids, forms and buttons never know where
-     the object lives. The server is one loop, one queue, in order. Transport
-     today: the browser's own channel (same site, same browser); the same six
-     sentences travel over a relay tomorrow. */
+     id is free for its neighbours; reaching OTHER pages is an explicit
+     intent, a line of its own: [the demo](lc://demo) {: .server #demo
+     model="tally_model" }. The server joins a channel of that name and
+     serves the model's classes and functions — spec and rows on follow and
+     on every change; new, set, verb and a function call through the same
+     door its own grid uses. Its id is a dataset: one row per request, the
+     monitor is a grid on it. A client imports with the same link on a
+     .model: its grids, forms and buttons never know where the object lives.
+     One server per name: a newcomer claims, the holder says taken, the
+     newcomer stands by. One loop, one queue, in order. Transport today: the
+     browser's own channel (same site, same browser). */
   function lcChan(name) { return new BroadcastChannel("lc://" + name); }
-  function exportModel(el, names, code) {
-    var m = /^lc:\/\/([\w.-]+)$/.exec(el.getAttribute("export") || "");
-    if (!m) { if (window.lcWarn) window.lcWarn(el, 'export names an address: export="lc://<name>"'); return; }
-    if (el._lcExport) return;
-    var name = m[1], funcs = [];
-    code.replace(/^def\s+([A-Za-z]\w*)\s*\(/mg, function (_, f) { funcs.push(f); return _; });
-    /* ONE EXPORTER PER NAME PER PAGE (Michel, 2026-10-20: "each bump adds 8"):
-       a pad or the editor re-renders its model block, and every render had
-       opened one more channel on the same name — a verb then ran once per
-       stale listener. The newest render takes the name; the old one closes. */
+  function upgradeServer(el) {
+    if (el.dataset.lcServerDone) return;
+    el.dataset.lcServerDone = "1";
+    var lnk = el.querySelector("a[href^='lc://']"), m = lnk && /^lc:\/\/([\w.-]+)$/.exec(lnk.getAttribute("href") || "");
+    if (!m) { if (window.lcWarn) window.lcWarn(el, "a server is a link: [the demo](lc://<name>) {: .server #id model=\"<model id>\" }"); return; }
+    var sid = el.id || ("_server" + (++INS_N));
+    el.setAttribute("data-lc-id", sid); el.classList.add("lc-server");
+    var want = el.getAttribute("model") || "";
+    var modelOf = function () {
+      if (want) return document.querySelector(".lc-model[data-lc-id='" + want + "']");
+      var all = [].slice.call(document.querySelectorAll(".lc-model")).filter(function (e) { return !e.hasAttribute("data-lc-remote") && e.isConnected; });
+      return all[0] || null;
+    };
+    window.lcSetDataset(sid, []);
+    var tries = 0;
+    (function wait() {
+      var me = modelOf();
+      if (me && me._lcModelNames) { serveModel(el, m[1], sid, modelOf); return; }
+      if (++tries > 60) { if (window.lcWarn) window.lcWarn(el, "no model to serve" + (want ? ": #" + want : "") + " — a .model on this page, ready"); return; }
+      setTimeout(wait, 250);
+    })();
+  }
+  function serveModel(el, name, sid, modelOf) {
+    /* ONE SERVER PER NAME PER PAGE (Michel, 2026-10-20: "each bump adds 8"):
+       a pad or the editor re-renders its blocks, and every render had opened
+       one more channel on the same name — a verb then ran once per stale
+       listener. The newest render takes the name; the old one closes. */
     var reg = window._lcExports = window._lcExports || {};
     if (reg[name]) { try { reg[name].ch.close(); } catch (e) {} document.removeEventListener("lc-model-changed", reg[name].onChange); }
-    var ch = lcChan(name); el._lcExport = ch;
+    var ch = lcChan(name), me = "srv-" + Math.random().toString(36).slice(2, 7);
+    el._lcExport = ch;
     el.setAttribute("data-lc-export", name);
-    var said = (reg[name] && reg[name].said) || 0, seen = (reg[name] && reg[name].seen) || {};
+    var said = (reg[name] && reg[name].said) || 0, seen = (reg[name] && reg[name].seen) || {}, standby = false;
     function traffic(what, from) {
-      /* a dataset #traffic on the server page, when there is one, lists every
-         request: follow once per client, then its verbs, edits and calls —
-         the heartbeat (ping) is never listed; the last 50 rows stay */
-      if (!window.lcDatasets || !Array.isArray(window.lcDatasets.traffic)) return;
-      var rows = window.lcDatasets.traffic.filter(function (r) { return r && !r["⚠️"]; });
+      /* the server's id is a dataset: one row per request — follow once per
+         client, then its verbs, edits, New and calls; the heartbeat (ping)
+         never; the last 50 rows stay */
+      var rows = (window.lcDatasets[sid] || []).filter(function (r) { return r && !r["⚠️"]; });
       rows.push({ n: ++said, from: from || "", what: what });
-      window.lcSetDataset("traffic", rows.slice(-50));
+      reg[name] && (reg[name].said = said);
+      window.lcSetDataset(sid, rows.slice(-50));
     }
+    function funcsOf(code) { var f = []; String(code || "").replace(/^def\s+([A-Za-z]\w*)\s*\(/mg, function (_, n) { f.push(n); return _; }); return f; }
     function spec() {
-      var classes = {}, rows = {};
+      var mEl = modelOf(), names = (mEl && mEl._lcModelNames) || [], classes = {}, rows = {};
       names.forEach(function (n) {
         if ((window.lcModels || {})[n]) { classes[n] = window.lcModels[n]; rows[n] = (window.lcDatasets || {})[n] || []; }
       });
-      return { t: "spec", name: name, classes: classes, funcs: funcs, rows: rows };
+      return { t: "spec", name: name, classes: classes, funcs: funcsOf(mEl && mEl._lcModelCode), rows: rows };
     }
     var soon = null, last = "";
     function push(force) {
+      if (standby) return;
       clearTimeout(soon);
       soon = setTimeout(function () {
         var s = spec(), j = JSON.stringify(s);
@@ -4733,13 +4756,30 @@ _inject_store()
       }, 40);
     }
     var L = window.lcDatasetListeners = window.lcDatasetListeners || {};
-    names.forEach(function (n) { var f = function () { push(); }; f._lcEl = el; (L[n] = L[n] || []).push(f); });
-    var onChange = function () { push(); };
+    var hook = function () { push(); }; hook._lcEl = el;
+    (modelOf() && modelOf()._lcModelNames || []).forEach(function (n) { (L[n] = L[n] || []).push(hook); });
+    var onChange = function () {
+      /* the model re-rendered (a pad): its new classes get the hook too */
+      (modelOf() && modelOf()._lcModelNames || []).forEach(function (n) { if ((L[n] || []).indexOf(hook) < 0) (L[n] = L[n] || []).push(hook); });
+      push();
+    };
     document.addEventListener("lc-model-changed", onChange);
-    reg[name] = { ch: ch, onChange: onChange, el: el, said: said, seen: seen };
+    reg[name] = { ch: ch, onChange: onChange, el: el, said: said, seen: seen, me: me };
+    function standDown() {
+      standby = true;
+      el.setAttribute("data-lc-standby", "1");
+      if (reg[name] && reg[name].ch === ch) delete reg[name];
+      document.removeEventListener("lc-model-changed", onChange);
+      try { ch.close(); } catch (e) {}
+      window.lcSetDataset(sid, [{ n: 0, from: "", what: "stands by — lc://" + name + " is served by another page" }]);
+      if (window.lcWarn) window.lcWarn(el, "lc://" + name + " is served by another page — this one stands by");
+    }
     ch.onmessage = function (ev) {
+      if (standby) return;
       if (reg[name] && reg[name].ch !== ch) { try { ch.close(); } catch (e) {} return; }   /* replaced */
       var d = ev.data || {}, from = d.from || "";
+      if (d.t === "claim") { try { ch.postMessage({ t: "taken", to: from, name: name }); } catch (e) {} return; }
+      if (d.t === "taken" && d.to === me) { standDown(); return; }
       if (d.t === "ping") { try { ch.postMessage({ t: "pong", name: name }); } catch (e) {} return; }
       if (d.t === "follow") { if (!seen[from]) { seen[from] = 1; traffic("follow", from); } push(true); return; }
       if (d.t === "verb") { traffic(d.cls + "." + d.obj + "." + d.verb + "()", from);
@@ -4751,7 +4791,9 @@ _inject_store()
       if (d.t === "call") { traffic(d.fn + "(" + (d.args || []).map(function (a) { return JSON.stringify(a); }).join(", ") + ")", from);
         pySend("_lc_export_call(" + JSON.stringify(name) + "," + JSON.stringify(d.id) + "," + JSON.stringify(d.fn) + "," + JSON.stringify(JSON.stringify(d.args || [])) + ")"); return; }
     };
-    push(true);
+    /* the claim: a holder answers taken within the moment; else the name is ours */
+    try { ch.postMessage({ t: "claim", from: me }); } catch (e) {}
+    setTimeout(function () { if (!standby) push(true); }, 300);
   }
   /* python answers a call through here: done with the result, or refused with the words */
   window.lcExportAnswer = function (name, id, ok, result) {
@@ -4822,6 +4864,7 @@ _inject_store()
   if (window.lcRegisterUpgrader) {
     window.lcRegisterUpgrader(".highlighter-rouge.inspector, pre.inspector", upgradeInspector);
     window.lcRegisterUpgrader(".highlighter-rouge.model, pre.model, p.model", upgradeModel);
+    window.lcRegisterUpgrader("p.server", upgradeServer);
     window.lcAdoptRows = upgradeRows;   /* dataset.md delegates of= here — one grammar */
     window.lcPySend = pySend;           /* console bridges hand verdicts to page python */
   }

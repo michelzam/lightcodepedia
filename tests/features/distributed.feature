@@ -1,11 +1,12 @@
-Feature: Two tabs, one server — a page exports a class and a function, another imports them
+Feature: Two tabs, one server — a page serves a class and a function, another imports them
   Michel, 2026-10-20 (hq/architecture/distributed.md, "The simplest
-  example"): reaching other running pages is an explicit intent, one word
-  on the model that offers itself — export="lc://demo". A client imports
-  with a link, [the demo](lc://demo) {: .model #m }, writes no Python, and
+  example"): reaching other running pages is an explicit intent, a line of
+  its own — [the demo](lc://demo) {: .server #demo model="tally_model" }.
+  A client imports with the same link on a .model, writes no Python, and
   its grid, gutter and buttons work as for a local class: the object acts
-  where it lives, the rows come back. One server, one loop, in order; the
-  browser's own channel is the wire.
+  where it lives, the rows come back. The server's id is a dataset of its
+  requests. One server per name, one loop, in order; the browser's own
+  channel is the wire.
 
   Background:
     Given I have a clean browser page
@@ -27,18 +28,16 @@ Feature: Two tabs, one server — a page exports a class and a function, another
       def hello(name="world"):
           return "hello " + name
       ```
-      {: .model export="lc://demo" }
+      {: .model #tally_model }
+
+      [the demo](lc://demo)
+      {: .server #demo model="tally_model" }
 
       [the tally](#)
       {: .datagrid source="Tally" #server_grid }
 
-      ```csv
-      n,from,what
-      ```
-      {: .dataset #traffic }
-
       [what was asked](#)
-      {: .datagrid source="traffic" #traffic_grid }
+      {: .datagrid source="demo" #traffic_grid }
       """
     And the GitHub contents API serves "courses/demo/dist/client.md" with the document:
       """
@@ -63,6 +62,10 @@ Feature: Two tabs, one server — a page exports a class and a function, another
       """
 
   Scenario: The client follows, bumps through the server, calls its function; a second client sees it; the server gone, the client says so
+    The server is an explicit line, its id a dataset of requests (Michel,
+    2026-10-20: "#traffic is a bit obscure… an explicit server with a knob to
+    model… offering a #serverID we could use as a dataset").
+
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/dist/server.md"
     And I wait for the page to be interactive
     And I open "/run.html#src=gh:acme/demo/courses/demo/dist/client.md" in tab 2
@@ -73,12 +76,13 @@ Feature: Two tabs, one server — a page exports a class and a function, another
     And in tab 1 the grid "traffic_grid" lists "follow" and "Tally.tally_1.bump()"
     When in tab 2 I press the button "hi"
     Then in tab 2 the grid "answer" shows "hello Michel"
+    And in tab 2 the grid "grid" wears ↻ in its corner
     When I open "/run.html#src=gh:acme/demo/courses/demo/dist/client.md" in tab 3
     Then in tab 3 the grid "grid" shows "visits" with count "1"
     When I close tab 1
     Then in tab 2 the grid "grid" says "nobody serves lc://demo"
 
-  Scenario: A server re-rendered in a pad keeps one exporter — a bump counts once; the heartbeat is not traffic
+  Scenario: A server re-rendered in a pad keeps one channel — a bump counts once; the heartbeat is not traffic
     Michel, 2026-10-20: "Why each bump from client adds 8?" — a pad or the
     editor re-renders its model block; every render had opened one more
     channel, and a verb ran once per stale listener. And "not clear who
@@ -100,18 +104,16 @@ Feature: Two tabs, one server — a page exports a class and a function, another
           def bump(self):
               self.count += 1
       ```
-      {: .model export="lc://demo" }
+      {: .model #tally_model }
+
+      [the demo](lc://demo)
+      {: .server #demo model="tally_model" }
 
       [the tally](#)
       {: .datagrid source="Tally" #server_grid }
 
-      ```csv
-      n,from,what
-      ```
-      {: .dataset #traffic }
-
       [what was asked](#)
-      {: .datagrid source="traffic" #traffic_grid }
+      {: .datagrid source="demo" #traffic_grid }
       `````
       {: .mdpad #srv decorations="true" rows="20" }
       """
@@ -124,3 +126,19 @@ Feature: Two tabs, one server — a page exports a class and a function, another
     Then in tab 1 the grid "server_grid" shows "visits" with count "1"
     And in tab 2 the grid "grid" shows "visits" with count "1"
     And after 9 seconds, in tab 1 the grid "traffic_grid" lists one "follow" and one "bump"
+
+  Scenario: A second server of the same name stands by — one server per name
+    Michel, 2026-10-20: "a second server can listen as well… they are both
+    propagated to the clients but not to each other". The rule: one owner
+    per source. A newcomer claims the name; the holder says taken; the
+    newcomer stands by and serves nothing.
+
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/dist/server.md"
+    And I wait for the page to be interactive
+    And I open "/run.html#src=gh:acme/demo/courses/demo/dist/server.md" in tab 2
+    Then in tab 2 the server "demo" stands by
+    And in tab 2 the grid "traffic_grid" shows "stands by"
+    When I open "/run.html#src=gh:acme/demo/courses/demo/dist/client.md" in tab 3
+    And in tab 3 I press "bump" in the gutter of "visits" in "grid"
+    Then in tab 1 the grid "server_grid" shows "visits" with count "1"
+    And in tab 2 the grid "server_grid" shows "visits" with count "0"

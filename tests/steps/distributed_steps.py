@@ -124,3 +124,13 @@ def step_traffic_once(context, secs, n, gid, a, b):
     fb = [r for r in rows if b in r]
     assert len(fa) == 1, "follow listed %d times: %s" % (len(fa), rows)
     assert len(fb) == 1, "bump listed %d times: %s" % (len(fb), rows)
+
+
+@then('in tab {n:d} the grid "{gid}" wears ↻ in its corner')
+def step_tab_refresh_corner(context, n, gid):
+    expect(_grid(_tab(context, n), gid).locator(".lc-dg-corner .lc-dg-roreload")).to_be_attached(timeout=T)
+
+
+@then('in tab {n:d} the server "{sid}" stands by')
+def step_tab_standby(context, n, sid):
+    expect(_tab(context, n).locator(".lc-server[data-lc-id='" + sid + "']")).to_have_attribute("data-lc-standby", "1", timeout=T)
