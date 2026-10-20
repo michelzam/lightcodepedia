@@ -2088,8 +2088,24 @@ Auto-included by docs/_layouts/default.html.
       dataset: [["count", "how many rows"], ["empty", "no row at all"]],
       query: [["count", "how many rows"], ["empty", "no row at all"]],
       feature: [["passing", "the check is green"], ["status", "passing, failing…"]],
-      quiz: [["passed", "answered right"], ["graded", "answered"]]
+      quiz: [["passed", "answered right"], ["graded", "answered"]],
+      /* a server and an imported model offer what hangs under them (Michel, 2026-10-20) */
+      server: [["traffic", "the requests"], ["clients", "who follows"], ["contract", "what is served"]],
+      model: [["contract", "what is imported"]]
     };
+    /* what an imported model names at run time: its classes and functions */
+    function remoteMembers(id) {
+      var sp = (window.lcRemoteSpec || {})[id]; if (!sp) return [];
+      return sp.classes.map(function (c) { return [c, "a class, served"]; }).concat(sp.funcs.map(function (f) { return [f, "a function, served"]; }));
+    }
+    /* "demo.traffic" and "m.Tally" are datasets: their members follow */
+    function membersOf(path) {
+      var parts = path.split("."), base = idsInPad().filter(function (d) { return d.id === parts[0]; })[0];
+      if (!base) return [];
+      if (parts.length === 1) return (CELL_MEMBERS[base.cls] || []).concat(base.cls === "model" ? remoteMembers(base.id) : []);
+      if (parts.length === 2 && (base.cls === "server" || base.cls === "model")) return CELL_MEMBERS.dataset;
+      return [];
+    }
     function idsInPad() {
       var out = [];
       ta.value.split("\n").forEach(function (l, i) {
@@ -2137,7 +2153,7 @@ Auto-included by docs/_layouts/default.html.
       /* INSIDE A CELL {= … } the words are ids and what they offer (Michel,
          2026-10-13: "code completion doesn't work there for cell expressions") */
       if (/\{=[^}]*$/.test(pre)) {
-        if ((m = pre.match(/([\w-]+)\.(\w*)$/))) return { kind: "member", of: m[1], prefix: m[2], at: c - m[2].length };
+        if ((m = pre.match(/([\w.-]+)\.(\w*)$/))) return { kind: "member", of: m[1], prefix: m[2], at: c - m[2].length };
         if ((m = pre.match(/(?:\{=|[^\w.])\s*([\w-]*)$/)) && (force || m[1].length)) return { kind: "cellid", prefix: m[1], at: c - m[1].length };
         return null;
       }
@@ -2162,7 +2178,12 @@ Auto-included by docs/_layouts/default.html.
           var vals = [], kb = cx.knob;
           if (ASSOC[kb] || kb === "source" || kb === "bind" || kb === "master" || kb === "target") {
             var want = ASSOC[kb] || [];
-            idsInPad().forEach(function (d) { if (!want.length || want.indexOf(d.cls) >= 0) vals.push({ v: d.id, icon: "#", detail: d.cls }); });
+            idsInPad().forEach(function (d) {
+              if (!want.length || want.indexOf(d.cls) >= 0) vals.push({ v: d.id, icon: "#", detail: d.cls });
+              /* what hangs under a server or an imported model is a source too */
+              if (d.cls === "server") CELL_MEMBERS.server.forEach(function (x) { vals.push({ v: d.id + "." + x[0], icon: "#", detail: x[1] }); });
+              if (d.cls === "model") remoteMembers(d.id).concat(CELL_MEMBERS.model).forEach(function (x) { vals.push({ v: d.id + "." + x[0], icon: "#", detail: x[1] }); });
+            });
           } else if ((kb === "x" || kb === "y") && /source="([\w-]+)"/.test(cx.line)) {
             columnsOf(cx.line.match(/source="([\w-]+)"/)[1]).forEach(function (c) { vals.push({ v: c, icon: "▥", detail: "a column" }); });
           } else if (VALUES[kb]) VALUES[kb].forEach(function (x) { vals.push({ v: x, icon: "•" }); });
@@ -2175,8 +2196,7 @@ Auto-included by docs/_layouts/default.html.
         } else if (cx.kind === "cellid") {
           idsInPad().forEach(function (d) { if (starts(d.id)) out.push({ icon: "#", label: d.id, detail: d.cls, insert: d.id }); });
         } else if (cx.kind === "member") {
-          var of = idsInPad().filter(function (d) { return d.id === cx.of; })[0];
-          (CELL_MEMBERS[of ? of.cls : ""] || []).forEach(function (x) {
+          membersOf(cx.of).forEach(function (x) {
             if (starts(x[0])) out.push({ icon: "•", label: x[0], detail: x[1], insert: x[0] });
           });
         } else if (cx.kind === "part") Object.keys(parts).forEach(function (k) {

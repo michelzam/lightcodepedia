@@ -37,7 +37,13 @@ Feature: Two tabs, one server — a page serves a class and a function, another 
       {: .datagrid source="Tally" #server_grid }
 
       [what was asked](#)
-      {: .datagrid source="demo" #traffic_grid }
+      {: .datagrid source="demo.traffic" #traffic_grid }
+
+      [who follows](#)
+      {: .datagrid source="demo.clients" #clients_grid }
+
+      [what is served](#)
+      {: .datagrid source="demo.contract" #contract_grid }
       """
     And the GitHub contents API serves "courses/demo/dist/client.md" with the document:
       """
@@ -59,6 +65,9 @@ Feature: Two tabs, one server — a page serves a class and a function, another 
 
       [the answer](#)
       {: .datagrid source="m.hello" #answer }
+
+      [what was imported](#)
+      {: .datagrid source="m.contract" #contract }
       """
 
   Scenario: The client follows, bumps through the server, calls its function; a second client sees it; the server gone, the client says so
@@ -77,6 +86,15 @@ Feature: Two tabs, one server — a page serves a class and a function, another 
     When in tab 2 I press the button "hi"
     Then in tab 2 the grid "answer" shows "hello Michel"
     And in tab 2 the grid "grid" wears ↻ in its corner
+    # born with the server: clients, contract — on both sides; the server as a python object
+    And in tab 1 the grid "clients_grid" has 1 row, with 2 or more requests
+    And in tab 1 the grid "contract_grid" lists "Tally.bump" and "function"
+    And in tab 2 the grid "contract" lists "Tally.bump" and "function"
+    And in tab 1 the python "Page().demo.traffic.count" gives "3"
+    # a reload is the same tab, not a new client
+    When I reload tab 2
+    Then in tab 2 the grid "grid" shows "visits" with count "1"
+    And in tab 1 the grid "clients_grid" has 1 row, with 2 or more requests
     When I open "/run.html#src=gh:acme/demo/courses/demo/dist/client.md" in tab 3
     Then in tab 3 the grid "grid" shows "visits" with count "1"
     When I close tab 1
@@ -113,7 +131,9 @@ Feature: Two tabs, one server — a page serves a class and a function, another 
       {: .datagrid source="Tally" #server_grid }
 
       [what was asked](#)
-      {: .datagrid source="demo" #traffic_grid }
+      {: .datagrid source="demo.traffic" #traffic_grid }
+
+      {= demo.
       `````
       {: .mdpad #srv decorations="true" rows="20" }
       """
@@ -126,6 +146,8 @@ Feature: Two tabs, one server — a page serves a class and a function, another 
     Then in tab 1 the grid "server_grid" shows "visits" with count "1"
     And in tab 2 the grid "grid" shows "visits" with count "1"
     And after 9 seconds, in tab 1 the grid "traffic_grid" lists one "follow" and one "bump"
+    # completion knows what hangs under a server (Michel, 2026-10-20: "code completion should help")
+    And in tab 1 completion in the "srv" pad after "{= demo." offers "traffic, clients, contract"
 
   Scenario: A second server of the same name stands by — one server per name
     Michel, 2026-10-20: "a second server can listen as well… they are both

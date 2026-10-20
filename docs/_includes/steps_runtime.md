@@ -2893,15 +2893,15 @@ class Page(Object):
         if name.startswith("_"):
             raise AttributeError(name)
         _LC_TOUCHED.append(name)
+        # a server or a remote model imported with a link: self.page.demo.traffic, self.page.m.Tally
+        if name in _LC_REMOTE:
+            return _LC_REMOTE[name]
         el = js.window.document.querySelector("[data-lc-id='" + name + "']")
         if el:
             return _wrap(el)
         ds = getattr(js.window, "lcDatasets", None)
         if ds and getattr(ds, name, None) is not None:
             return Dataset(name)
-        # a remote model imported with a link: self.page.m.Tally, self.page.m.hello
-        if name in _LC_REMOTE:
-            return _LC_REMOTE[name]
         # cross-page persisted state: Page().<node>.<component>.<field>
         st = _store_tree()
         if name in st and isinstance(st[name], dict):
@@ -3620,6 +3620,27 @@ class _RemoteModel:
         if ds is not None and getattr(ds, self._prefix + "." + k, None) is not None:
             return Dataset(self._prefix + "." + k)
         raise AttributeError("lc://" + self._name + " exports no " + k)
+
+
+class _ServerObject:
+    """What a .server gives the page's Python: demo.traffic, demo.clients,
+    demo.contract — born with it, as delete() is born with an Object."""
+    def __init__(self, sid, name):
+        self._sid, self._name = sid, name
+
+    def __getattr__(self, k):
+        if k.startswith("_"):
+            raise AttributeError(k)
+        if k in ("traffic", "clients", "contract"):
+            return Dataset(self._sid + "." + k)
+        raise AttributeError("a server has traffic, clients and contract — not " + k)
+
+
+def _lc_server_bind(sid, name):
+    r = _LC_REMOTE.get(sid)
+    if r is None or not isinstance(r, _ServerObject):
+        r = _LC_REMOTE[sid] = _ServerObject(sid, name)
+    globals()[sid] = r
 
 
 def _lc_remote_bind(prefix, name, classes_json, funcs_json):
@@ -4709,7 +4730,10 @@ _inject_store()
       var all = [].slice.call(document.querySelectorAll(".lc-model")).filter(function (e) { return !e.hasAttribute("data-lc-remote") && e.isConnected; });
       return all[0] || null;
     };
-    window.lcSetDataset(sid, []);
+    /* born with the server, like delete() with an Object: demo.traffic,
+       demo.clients, demo.contract (Michel, 2026-10-20: "the traffic dataset
+       remains implicit and this bugs me") */
+    ["traffic", "clients", "contract"].forEach(function (k) { window.lcSetDataset(sid + "." + k, []); });
     var tries = 0;
     (function wait() {
       var me = modelOf();
@@ -4729,22 +4753,51 @@ _inject_store()
     el._lcExport = ch;
     el.setAttribute("data-lc-export", name);
     var said = (reg[name] && reg[name].said) || 0, seen = (reg[name] && reg[name].seen) || {}, standby = false;
-    function traffic(what, from) {
-      /* the server's id is a dataset: one row per request — follow once per
-         client, then its verbs, edits, New and calls; the heartbeat (ping)
-         never; the last 50 rows stay */
-      var rows = (window.lcDatasets[sid] || []).filter(function (r) { return r && !r["⚠️"]; });
-      rows.push({ n: ++said, from: from || "", what: what });
-      reg[name] && (reg[name].said = said);
-      window.lcSetDataset(sid, rows.slice(-50));
+    var hhmm = function () { var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; }; return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); };
+    function client(from) {
+      /* demo.clients: who follows, since when, last seen, how many requests */
+      if (!from) return;
+      var rows = (window.lcDatasets[sid + ".clients"] || []).filter(function (r) { return r && !r["⚠️"]; }).slice();
+      var hit = rows.filter(function (r) { return r.id === from; })[0];
+      if (!hit) { hit = { id: from, since: hhmm(), seen: hhmm(), requests: 0 }; rows.push(hit); }
+      hit = Object.assign({}, hit, { seen: hhmm(), requests: (hit.requests || 0) + 1 });
+      window.lcSetDataset(sid + ".clients", rows.map(function (r) { return r.id === from ? hit : r; }));
     }
-    function funcsOf(code) { var f = []; String(code || "").replace(/^def\s+([A-Za-z]\w*)\s*\(/mg, function (_, n) { f.push(n); return _; }); return f; }
+    function traffic(what, from) {
+      /* demo.traffic: one row per request — follow once per client, then its
+         verbs, edits, New and calls; the heartbeat (ping) never; the last 50 rows stay */
+      var rows = (window.lcDatasets[sid + ".traffic"] || []).filter(function (r) { return r && !r["⚠️"]; });
+      rows.push({ n: ++said, at: hhmm(), from: from || "", what: what });
+      reg[name] && (reg[name].said = said);
+      window.lcSetDataset(sid + ".traffic", rows.slice(-50));
+      client(from);
+    }
+    function funcsOf(code) {
+      var f = [];
+      String(code || "").replace(/^def\s+([A-Za-z]\w*)\s*\(([^)]*)\)/mg, function (_, n, args) { f.push({ n: n, sig: n + "(" + args.trim() + ")" }); return _; });
+      return f;
+    }
+    function contractOf(classes, funcs) {
+      /* demo.contract: what is served — name · kind · signature · doc — the
+         interface without the implementation; the client mirrors it as m.contract */
+      var rows = [], doc = function (c, v) { var d = window.lcDocOf ? window.lcDocOf(c, v) : null; return (d && d.text) || ""; };
+      Object.keys(classes).forEach(function (c) {
+        var m = classes[c], fields = (m.order || Object.keys(m.fields || {})).filter(function (k) { return m.fields[k] && !m.fields[k].hidden; });
+        rows.push({ name: c, kind: "class", signature: c + "(" + fields.join(", ") + ")", doc: doc(c) });
+        Object.keys(m.transitions || {}).forEach(function (v) { rows.push({ name: c + "." + v, kind: "verb", signature: c + "." + v + "()  " + (m.transitions[v].pre || []).join("/") + " → " + (m.transitions[v].post || ""), doc: doc(c, v) }); });
+        (m.verbs || []).forEach(function (v) { rows.push({ name: c + "." + v, kind: "verb", signature: c + "." + v + "()", doc: doc(c, v) }); });
+      });
+      funcs.forEach(function (f) { rows.push({ name: f.n, kind: "function", signature: f.sig, doc: "" }); });
+      return rows;
+    }
     function spec() {
       var mEl = modelOf(), names = (mEl && mEl._lcModelNames) || [], classes = {}, rows = {};
       names.forEach(function (n) {
         if ((window.lcModels || {})[n]) { classes[n] = window.lcModels[n]; rows[n] = (window.lcDatasets || {})[n] || []; }
       });
-      return { t: "spec", name: name, classes: classes, funcs: funcsOf(mEl && mEl._lcModelCode), rows: rows };
+      var funcs = funcsOf(mEl && mEl._lcModelCode), contract = contractOf(classes, funcs);
+      window.lcSetDataset(sid + ".contract", contract);
+      return { t: "spec", name: name, classes: classes, funcs: funcs.map(function (f) { return f.n; }), contract: contract, rows: rows };
     }
     var soon = null, last = "";
     function push(force) {
@@ -4771,7 +4824,7 @@ _inject_store()
       if (reg[name] && reg[name].ch === ch) delete reg[name];
       document.removeEventListener("lc-model-changed", onChange);
       try { ch.close(); } catch (e) {}
-      window.lcSetDataset(sid, [{ n: 0, from: "", what: "stands by — lc://" + name + " is served by another page" }]);
+      window.lcSetDataset(sid + ".traffic", [{ n: 0, at: hhmm(), from: "", what: "stands by — lc://" + name + " is served by another page" }]);
       if (window.lcWarn) window.lcWarn(el, "lc://" + name + " is served by another page — this one stands by");
     }
     ch.onmessage = function (ev) {
@@ -4794,6 +4847,12 @@ _inject_store()
     /* the claim: a holder answers taken within the moment; else the name is ours */
     try { ch.postMessage({ t: "claim", from: me }); } catch (e) {}
     setTimeout(function () { if (!standby) push(true); }, 300);
+    mpReady().then(function (mp) {
+      var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
+      var pre = window._lcModelPreIn === mp ? "" : preamble + "\n";
+      runPy(mp, pre + "_lc_server_bind(" + JSON.stringify(sid) + "," + JSON.stringify(name) + ")");
+      window._lcModelPreIn = mp;
+    }).catch(function () {});
   }
   /* python answers a call through here: done with the result, or refused with the words */
   window.lcExportAnswer = function (name, id, ok, result) {
@@ -4803,7 +4862,11 @@ _inject_store()
   function importModel(el, href) {
     var m = /^lc:\/\/([\w.-]+)$/.exec(href);
     if (!m) { if (window.lcWarn) window.lcWarn(el, "a remote model is a link: lc://<name>"); return; }
-    var name = m[1], prefix = el.id || "m", ch = lcChan(name), me = "tab-" + Math.random().toString(36).slice(2, 7);
+    var name = m[1], prefix = el.id || "m", ch = lcChan(name), me = "";
+    /* the tab's id survives a reload: the same tab reads as the same client
+       (Michel, 2026-10-20: "why a refresh on a tab would create a new entry") */
+    try { me = sessionStorage.getItem("lc_tab") || ""; if (!me) { me = "tab-" + Math.random().toString(36).slice(2, 7); sessionStorage.setItem("lc_tab", me); } }
+    catch (e) { me = "tab-" + Math.random().toString(36).slice(2, 7); }
     el.setAttribute("data-lc-id", prefix); el.setAttribute("data-lc-remote", name); el.classList.add("lc-model");
     var known = [], quiet = null, lastSpec = "";
     function nobody() {
@@ -4819,6 +4882,8 @@ _inject_store()
         clearTimeout(quiet); el.removeAttribute("data-lc-nobody");
         var j = JSON.stringify(d); if (j === lastSpec) return; lastSpec = j;
         window.lcModels = window.lcModels || {};
+        (window.lcRemoteSpec = window.lcRemoteSpec || {})[prefix] = { classes: Object.keys(d.classes), funcs: d.funcs || [] };
+        window.lcSetDataset(prefix + ".contract", d.contract || []);     /* m.contract — what was imported */
         Object.keys(d.classes).forEach(function (n) {
           var s = d.classes[n]; s.remote = { name: name, cls: n, prefix: prefix };
           window.lcModels[prefix + "." + n] = s;

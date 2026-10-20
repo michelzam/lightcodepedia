@@ -134,3 +134,53 @@ def step_tab_refresh_corner(context, n, gid):
 @then('in tab {n:d} the server "{sid}" stands by')
 def step_tab_standby(context, n, sid):
     expect(_tab(context, n).locator(".lc-server[data-lc-id='" + sid + "']")).to_have_attribute("data-lc-standby", "1", timeout=T)
+
+
+@then('in tab {n:d} the grid "{gid}" has {k:d} row, with {r:d} or more requests')
+def step_clients(context, n, gid, k, r):
+    page = _tab(context, n)
+    g = _grid(page, gid)
+    expect(g.locator("tbody tr")).to_have_count(k, timeout=T)
+    page.wait_for_timeout(500)
+    got = int(g.locator("tbody tr").first.locator("td").nth(_col(page, gid, "requests")).inner_text().strip() or "0")
+    assert got >= r, got
+
+
+@then('in tab {n:d} the python "{code}" gives "{want}"')
+def step_tab_python(context, n, code, want):
+    page = _tab(context, n)
+    page.evaluate("() => { window.__dbg = 'unset'; }")
+    page.evaluate("c => window.lcPySend(c)", "import js\ntry:\n    js.window.__dbg = str(" + code + ")\nexcept Exception as e:\n    js.window.__dbg = 'ERR ' + repr(e)")
+    for _ in range(20):
+        got = page.evaluate("() => window.__dbg")
+        if got == want:
+            return
+        page.wait_for_timeout(300)
+    assert got == want, got
+
+
+@when("I reload tab {n:d}")
+def step_reload_tab(context, n):
+    page = _tab(context, n)
+    page.reload()
+    page.wait_for_load_state("load")
+
+
+@then('in tab {n:d} completion in the "{pad_id}" pad after "{text}" offers "{names}"')
+def step_pad_completion(context, n, pad_id, text, names):
+    page = _tab(context, n)
+    sel = "[data-lc-id='" + pad_id + "'] .lc-mdpad-in"
+    ok = page.evaluate("""([s, t, pid]) => {
+      const ta = document.querySelector(s); const i = ta.value.lastIndexOf(t);
+      if (i < 0) return 'no such text';
+      ta.focus(); ta.setSelectionRange(i + t.length, i + t.length);
+      const w = document.querySelector("[data-lc-id='" + pid + "']");
+      if (!w._lcComplete) return 'no completion'; w._lcComplete(); return 'ok';
+    }""", [sel, text, pad_id])
+    assert ok == "ok", ok
+    loc = page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-comp .l")
+    expect(loc.first).to_be_visible(timeout=5_000)
+    labels = loc.all_inner_texts()
+    want = [x.strip() for x in names.split(",")]
+    for w in want:
+        assert w in labels, "%s not offered: %s" % (w, labels)
