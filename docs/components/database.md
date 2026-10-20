@@ -62,6 +62,12 @@ shape of the table; the list alone is already shared.
   **⚠** refused (tap to try again). No Save button to forget.
 - **Reads the others'.** **↻** fetches what classmates saved since; a
   refresh of the page comes back to the same rows.
+- **Live, when the line says so.** `live="true"` on the database line and
+  the others' changes arrive by themselves: every table tells the room
+  when a row changes, and each list reads itself again. A green **●** in
+  the grid's corner says the line holds; grey, with a word under the grid,
+  says it is down and ↻ still works. Off by default: a page that moves
+  under the reader's hands says so, in one word.
 - **The table keeps its own notes.** When a row last changed, how, and
   from where, in `_`-prefixed columns the page never shows and never
   sends — an audit trail for free.

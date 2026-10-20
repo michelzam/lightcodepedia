@@ -98,6 +98,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-dg-cbtn.lc-dg-refresh.lc-dg-pending { opacity: 1; position: relative; color: #0066cc; border-color: #93c5fd; }
 .lc-dg-cbtn.lc-dg-refresh.lc-dg-pending::after { content: ""; position: absolute; top: -2px; right: -2px; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
 .lc-dg-cbtn.lc-dg-st-ok { color: #16a34a; border-color: #bbf7d0; }
+/* live tables: the line's mark, always shown — green holds, grey is down (Michel, 2026-10-20) */
+.lc-dg-cbtn.lc-dg-live { border: 0; background: transparent; cursor: default; font-size: .8em; }
+.lc-dg-cbtn.lc-dg-live.lc-dg-live-on { color: #16a34a; }
+.lc-dg-cbtn.lc-dg-live.lc-dg-live-off { color: #9ca3af; }
 .lc-dg-cbtn.lc-dg-st-dirty { color: #b45309; border-color: #fcd34d; }
 .lc-dg-cbtn.lc-dg-st-saving { color: #0066cc; }
 .lc-dg-cbtn.lc-dg-st-saving span { display: inline-block; animation: lc-dg-spin 1s linear infinite; }
@@ -621,7 +625,10 @@ Auto-included by docs/_layouts/default.html.
     el.classList.add("lc-database");
     el.hidden = true;
     window.lcDatabases[id] = { el: el, kind: m ? m[1] : "", name: m ? m[2] : "",
-                               unlisted: el.getAttribute("unlisted") || "", title: a ? (a.textContent || "").trim() : id };
+                               unlisted: el.getAttribute("unlisted") || "", title: a ? (a.textContent || "").trim() : id,
+                               live: el.getAttribute("live") === "true" };
+    /* the line changed its mind (live on, live off): the socket follows */
+    if (!window.lcDatabases[id].live && window._lcLive && window._lcLive[id]) window._lcLive[id].stop();
     /* THE LINE CHANGED, ITS TABLES FOLLOW (Michel, 2026-10-17: "did that,
        but the grid is dirty with the key!"): a pad redraws only the block
        that changed — the class's tables were read with the old line. Each
@@ -663,6 +670,92 @@ Auto-included by docs/_layouts/default.html.
     window._lcDbTableEls[dsid] = p;
     upgradeDataset(p);
     return dsid;
+  };
+  /* LIVE TABLES (Michel, 2026-10-20: "live is the table's business, no server
+     or client line; live="true" on the database line, default off; the
+     trigger always on"). One socket per database line, to the platform's
+     realtime door, joined to the topic the setup SQL broadcasts on — "lc-"
+     and the unlisted name, the name is the secret. A change arriving names
+     its table: every list of that table reads itself again, through the
+     same door ↻ uses, so the rows, the counts and the forms follow with no
+     second code path. Nothing is applied while a version replays, while a
+     structure change waits for 🔄, or while a cell is open: it comes a beat
+     later. The socket dropped says so in the grid's corner and under it,
+     the broken-wire style; back, every table of the line is read again. */
+  window._lcLive = window._lcLive || {};
+  function liveFollow(U, dsId, base, key, share) {
+    var dbId = U.db, d = window.lcDatabases[dbId];
+    if (!dbId || !d || !d.live || !share) return;
+    var L = window._lcLive[dbId];
+    if (L && (L.share !== share || L.base !== base)) { L.stop(); L = null; }
+    if (!L) {
+      L = window._lcLive[dbId] = { share: share, base: base, key: key, lists: {}, on: false, ws: null, tries: 0, stopped: false, ref: 0 };
+      L.say = function (on) {
+        if (L.on === on) return;
+        L.on = on;
+        Object.keys(L.lists).forEach(function (id) { document.dispatchEvent(new CustomEvent("lc-remote-state", { detail: id })); });
+      };
+      L.stop = function () {
+        L.stopped = true; clearInterval(L.beat); clearTimeout(L.again);
+        try { if (L.ws) L.ws.close(); } catch (e) {}
+        L.ws = null; L.say(false); delete window._lcLive[dbId];
+      };
+      L.reread = function (table) {
+        Object.keys(L.lists).forEach(function (id) {
+          var r = window.lcRemote[id];
+          if (!r || !r.unl || (table && r.unl.tbl !== table)) return;
+          (function later(n) {
+            if (ST.travelling() || ST.frozen(id)) return;            /* the next ↻ or 🔄 reads it */
+            var busy = document.querySelector(".lc-datagrid .lc-dg-typing, .lc-form .lc-dg-typing");
+            if (busy && n > 0) { setTimeout(function () { later(n - 1); }, 1500); return; }
+            r.pull();
+          })(20);
+        });
+      };
+      L.open = function () {
+        if (L.stopped || L.ws) return;
+        var host = base.replace(/^https:/, "wss:").split("/rest/v1")[0];
+        var ws;
+        try { ws = new WebSocket(host + "/realtime/v1/websocket?apikey=" + encodeURIComponent(key) + "&vsn=1.0.0"); }
+        catch (e) { L.again = setTimeout(L.open, 5000); return; }
+        L.ws = ws;
+        var topic = "realtime:lc-" + share;
+        var send = function (t, ev, payload) { try { ws.send(JSON.stringify({ topic: t, event: ev, payload: payload || {}, ref: String(++L.ref) })); } catch (e) {} };
+        ws.onopen = function () {
+          send(topic, "phx_join", { config: { broadcast: { self: false }, presence: { key: "" }, postgres_changes: [], private: false } });
+          clearInterval(L.beat);
+          L.beat = setInterval(function () { send("phoenix", "heartbeat", {}); }, 30000);
+        };
+        ws.onmessage = function (m) {
+          var f; try { f = JSON.parse(m.data); } catch (e) { return; }
+          if (f.event === "phx_reply" && f.topic === topic) {
+            var okJoin = f.payload && f.payload.status === "ok";
+            if (okJoin) { var back = L.tries > 0; L.tries = 0; L.say(true); if (back) L.reread(); }
+            return;
+          }
+          if (f.event === "broadcast" && f.topic === topic) {
+            var p = f.payload && f.payload.payload;
+            if (!p || !p.table) return;
+            document.dispatchEvent(new CustomEvent("lc-live", { detail: { db: dbId, table: p.table, op: p.op, id: p.id } }));
+            clearTimeout(L.soon);
+            L.soon = setTimeout(function () { L.reread(p.table); }, 250);
+          }
+        };
+        ws.onclose = ws.onerror = function () {
+          if (L.ws !== ws) return;
+          L.ws = null; clearInterval(L.beat); L.say(false);
+          if (L.stopped) return;
+          L.tries++;
+          L.again = setTimeout(L.open, Math.min(30000, 1000 * Math.pow(2, Math.min(L.tries, 5))));
+        };
+      };
+      L.open();
+    }
+    L.lists[dsId] = 1;
+  }
+  window.lcLiveOf = function (dsId) {
+    var r = window.lcRemote[dsId], U = r && r.unl, L = U && U.db && window._lcLive[U.db];
+    return L && L.lists[dsId] ? L : null;
   };
   function dbWhen(dbId, tries) {
     return new Promise(function (res, rej) {
@@ -1093,6 +1186,7 @@ Auto-included by docs/_layouts/default.html.
                 window.lcSetDataset(id, shapeData(rows, el));
                 /* same rows, other state (a name now known, a hint gone): the grids repaint */
                 document.dispatchEvent(new CustomEvent("lc-remote-state", { detail: id }));
+                liveFollow(U, id, uBase, dbKey, sh);
               });
             }).catch(function (e) {
               if (/no list by that name/.test(e.message || "")) U.need = true;
@@ -1713,7 +1807,10 @@ Auto-included by docs/_layouts/default.html.
       var rfTip = pending.length ? "↻ adds the column" + (pending.length > 1 ? "s " : " ") + pending.join(", ") + " to the table, then reads it" : "read the database again";
       /* the corner, right to left (Michel, 2026-10-17): ＋, the save state
          (always there), ↻ (on hover) — so nothing leaves a hole */
-      var corner = (dbR && !frozen && tidyN ? "<button class='lc-dg-cbtn lc-dg-tidy' type='button' title='" + esc(tidyN + " leftover(s) to tidy — tap to review") + "' aria-label='review the leftovers'>🧹<b>" + tidyN + "</b></button>" : "")
+      var liveL = dbR && dbR.unl && window.lcLiveOf ? window.lcLiveOf(dbSrc) : null;
+      var liveMark = liveL ? "<span class='lc-dg-cbtn lc-dg-live " + (liveL.on ? "lc-dg-live-on" : "lc-dg-live-off") + "' title='"
+        + (liveL.on ? "live — the others&#39; changes arrive by themselves" : "live, but the line is down — the others&#39; changes are not arriving") + "' aria-label='live'>●</span>" : "";
+      var corner = liveMark + (dbR && !frozen && tidyN ? "<button class='lc-dg-cbtn lc-dg-tidy' type='button' title='" + esc(tidyN + " leftover(s) to tidy — tap to review") + "' aria-label='review the leftovers'>🧹<b>" + tidyN + "</b></button>" : "")
         + (dbR && frozen ? "<button class='lc-dg-cbtn lc-dg-refresh lc-dg-struct' type='button' title='" + esc("the code changed the table: " + sPlan.length + " step(s) — tap to review and apply") + "' aria-label='review the structure changes'>🔄<b>" + sPlan.length + "</b></button>"
            : dbR ? "<button class='lc-dg-cbtn lc-dg-refresh" + (pending.length ? " lc-dg-pending" : "") + "' type='button' title='" + esc(rfTip) + "' aria-label='" + esc(rfTip) + "'>↻</button>" : "")
         + (dbR ? ""
@@ -1756,6 +1853,7 @@ Auto-included by docs/_layouts/default.html.
       else if (U && dbR.error) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(dbR.error) + "</p>";
       /* why ⚠ — said under the grid, not in a tooltip a finger never sees */
       else if (st === "error" && dbR.saveErr) html += "<p class='lc-dg-say' role='status'>⚠️ not saved: " + esc(dbR.saveErr) + "</p>";
+      if (liveL && !liveL.on && !srcErr && !(U && dbR.error)) html += "<p class='lc-dg-say lc-dg-live-say' role='status'>🔌 live, but the line is down — the others&#39; changes are not arriving; ↻ reads the table</p>";
       if (corner) html = "<div class='lc-dg-corner'>" + corner + "</div>" + html;
       html += unlBar;
       if (pages > 1) {
