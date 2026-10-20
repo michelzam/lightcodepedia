@@ -1453,7 +1453,10 @@ def step_every_gutter(context, gid):
 
 
 def _hhmm(context):
-    return context.page.evaluate("() => { const d = new Date(); const p = n => String(n).padStart(2, '0'); return [p(d.getHours()) + ':' + p(d.getMinutes()), p(d.getHours()) + ':' + p((d.getMinutes() + 59) % 60)]; }")
+    # "Oct 20 10:15": the date always, today included (Michel, 2026-10-20)
+    return context.page.evaluate("() => { const d = new Date(); const p = n => String(n).padStart(2, '0');"
+                                 " const day = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getDate() + ' ';"
+                                 " return [day + p(d.getHours()) + ':' + p(d.getMinutes()), day + p(d.getHours()) + ':' + p((d.getMinutes() + 59) % 60)]; }")
 
 
 def _col(context, gid, name):

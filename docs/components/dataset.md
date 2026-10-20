@@ -497,7 +497,7 @@ attribute's type like a typed-in value.
 
 `datetime` is on the page, the standard name on the device's clock
 (`now()`, the fields, `strftime("%H:%M")`, `isoformat()`; no f-string
-format spec — MicroPython has none); a `datetime` attribute shows as a time — `13:15` today, `Oct 18 13:15` before —
+format spec — MicroPython has none); a `datetime` attribute shows as `Oct 18 13:15`, its date always —
 and its column holds ISO text. `ro=True` keeps it stamped: born, displayed,
 never typed.
 

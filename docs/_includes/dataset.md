@@ -1585,13 +1585,15 @@ Auto-included by docs/_layouts/default.html.
          to follow the UX decided in page 3" — "Gutter?") — stages or not */
       var gut = !!model;
       /* not lcWhen (topbar.md): that one reads a UTC stamp with its zone; a
-         datetime attribute is local, zoneless, and reads as a time */
+         datetime attribute is local, zoneless, and reads as "Oct 20 10:15" —
+         its date always, today included: a column where one row says
+         "15:35" and the next "Oct 19 10:15" reads as two formats
+         (Michel, 2026-10-20, the walk log) */
       window.lcTimeShort = window.lcTimeShort || function (iso) {
         var s = String(iso == null ? "" : iso), m = /^(\d{4})-(\d\d)-(\d\d)[T ](\d\d):(\d\d)/.exec(s);
         if (!m) return s;
-        var now = new Date(), today = now.getFullYear() === +m[1] && now.getMonth() + 1 === +m[2] && now.getDate() === +m[3];
         var mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+m[2] - 1];
-        return (today ? "" : mon + " " + (+m[3]) + " ") + m[4] + ":" + m[5];
+        return mon + " " + (+m[3]) + " " + m[4] + ":" + m[5];
       };
       var gutTd = function (idx) {
         var r = sorted[idx] || {}, kd = r._kind && window.lcDocOf ? window.lcDocOf(r._kind) : null;
@@ -1626,7 +1628,7 @@ Auto-included by docs/_layouts/default.html.
           return "<td class='lc-dg-refcell' data-col='" + c + "' data-row='" + idx + "' data-ref='" + esc(f.ref) + "' title='pick a " + esc(f.ref) + "'>"
             + "<span class='lc-dg-refval'>" + esc(shown) + "</span><span class='lc-dg-caret'>⌄</span></td>";
         }
-        /* a datetime reads as a time: 13:15 today, Oct 18 13:15 before (Michel, 2026-10-19) */
+        /* a datetime reads as Oct 18 13:15, its date always (Michel, 2026-10-20; time-only today until then) */
         if (f && f.t === "datetime") v = window.lcTimeShort(v);
         if (!f || f.ro || editSaid === "false") return "<td>" + esc(v) + "</td>";
         if (f.enum)
