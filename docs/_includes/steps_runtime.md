@@ -2899,6 +2899,9 @@ class Page(Object):
         ds = getattr(js.window, "lcDatasets", None)
         if ds and getattr(ds, name, None) is not None:
             return Dataset(name)
+        # a remote model imported with a link: self.page.m.Tally, self.page.m.hello
+        if name in _LC_REMOTE:
+            return _LC_REMOTE[name]
         # cross-page persisted state: Page().<node>.<component>.<field>
         st = _store_tree()
         if name in st and isinstance(st[name], dict):
@@ -3575,6 +3578,71 @@ def _lc_cell(f, v):
     if f.t == "datetime":
         return v.isoformat() if _lc_isdt(v) else ("" if v is None else v)
     return v
+
+
+# ════════════════════════ export / import across pages ════════════════════
+# The server page exports classes and functions at lc://<name>; a client
+# page imports them with a link. Here: what the CLIENT's Python sees (m.Tally
+# is the rows as a dataset, m.hello(...) a call whose answer lands in the
+# dataset m.hello) and what the SERVER runs on a call (Michel, 2026-10-20).
+try:
+    _LC_REMOTE        # the preamble runs again before every button: keep the imports
+except NameError:
+    _LC_REMOTE = {}
+
+
+class _RemoteCall:
+    def __init__(self, prefix, fn):
+        self._p, self._f = prefix, fn
+
+    def __call__(self, *args):
+        ops = getattr(js.window.lcRemoteOps, self._p, None)
+        if ops is None:
+            raise RuntimeError("nobody serves " + self._p + " yet")
+        ops.call(self._f, js.JSON.parse(json.dumps(list(args))))
+        return None     # the answer arrives as one row: m.<fn>.first.result
+
+
+class _RemoteModel:
+    """What a link-shaped model gives the page's Python: m.<Class> as a
+    dataset (count, values…), m.<function>(…) as a call."""
+    def __init__(self, prefix, name):
+        self._prefix, self._name, self._classes, self._funcs = prefix, name, [], []
+
+    def __getattr__(self, k):
+        if k.startswith("_"):
+            raise AttributeError(k)
+        if k in self._classes:
+            return Dataset(self._prefix + "." + k)
+        if k in self._funcs:
+            return _RemoteCall(self._prefix, k)
+        ds = getattr(js.window, "lcDatasets", None)
+        if ds is not None and getattr(ds, self._prefix + "." + k, None) is not None:
+            return Dataset(self._prefix + "." + k)
+        raise AttributeError("lc://" + self._name + " exports no " + k)
+
+
+def _lc_remote_bind(prefix, name, classes_json, funcs_json):
+    r = _LC_REMOTE.get(prefix)
+    if r is None:
+        r = _LC_REMOTE[prefix] = _RemoteModel(prefix, name)
+    r._classes = json.loads(classes_json)
+    r._funcs = json.loads(funcs_json)
+    globals()[prefix] = r
+
+
+def _lc_export_call(name, cid, fn, args_json):
+    """The server runs an exported function for a client and answers."""
+    f = globals().get(fn)
+    try:
+        if not callable(f) or isinstance(f, type) or fn.startswith("_"):
+            raise NameError("lc://" + name + " exports no function " + fn)
+        res = f(*json.loads(args_json))
+        if not (res is None or isinstance(res, (str, int, float, bool))):
+            res = str(res)
+        js.window.lcExportAnswer(name, cid, True, res)
+    except Exception as e:
+        js.window.lcExportAnswer(name, cid, False, str(e))
 
 
 def _lc_push_obj(obj):
@@ -4485,6 +4553,11 @@ _inject_store()
   function upgradeModel(el) {
     if (el.dataset.lcModelDone) return;
     el.dataset.lcModelDone = "1";
+    /* THE REMOTE MODEL IS A LINK (Michel, 2026-10-20): [the demo](lc://demo)
+       {: .model #m } imports the classes and functions another running page
+       exports — no Python on this side */
+    var lnk = el.tagName !== "PRE" && el.querySelector("a[href^='lc://']");
+    if (lnk) { importModel(el, lnk.getAttribute("href")); return; }
     var code = (el.querySelector("code") || el).textContent;
     var mid = el.id || ("_model" + (++INS_N));
     el.setAttribute("data-lc-id", mid);
@@ -4575,6 +4648,7 @@ _inject_store()
           (window._lcModelReady = window._lcModelReady || {})[mid] = 1;
           document.dispatchEvent(new CustomEvent("lc-model-changed"));
           if (window.lcWarn) window.lcWarn(el, srcWarn);
+          if (el.getAttribute("export")) exportModel(el, names, code);
           return;
         } catch (e) { names.forEach(function (n) { delete by[n]; }); }
       }
@@ -4596,6 +4670,7 @@ _inject_store()
         names.forEach(function (n) { by[n] = code; });
         document.dispatchEvent(new CustomEvent("lc-model-changed"));
         if (window.lcWarn) window.lcWarn(el, srcWarn);
+        if (el.getAttribute("export")) exportModel(el, names, code);
       } catch (e) {
         names.forEach(function (n) { delete by[n]; });
         console.error("[lc-model]", e);
@@ -4607,9 +4682,128 @@ _inject_store()
     }).catch(function (e) { console.error("[lc-model]", e); });
   }
 
+  /* ── EXPORT / IMPORT: two running pages, one browser (Michel, 2026-10-20;
+     hq/architecture/distributed.md, "The simplest example"). Inside a page an
+     id is free for its neighbours; reaching OTHER pages is an explicit intent:
+     export="lc://demo" on a model. The server page joins a channel of that
+     name and serves — spec and rows on follow and on every change; new, set,
+     verb and a function call through the same door its own grid uses. A
+     client imports with a link: its grids, forms and buttons never know where
+     the object lives. The server is one loop, one queue, in order. Transport
+     today: the browser's own channel (same site, same browser); the same six
+     sentences travel over a relay tomorrow. */
+  function lcChan(name) { return new BroadcastChannel("lc://" + name); }
+  function exportModel(el, names, code) {
+    var m = /^lc:\/\/([\w.-]+)$/.exec(el.getAttribute("export") || "");
+    if (!m) { if (window.lcWarn) window.lcWarn(el, 'export names an address: export="lc://<name>"'); return; }
+    if (el._lcExport) return;
+    var name = m[1], funcs = [];
+    code.replace(/^def\s+([A-Za-z]\w*)\s*\(/mg, function (_, f) { funcs.push(f); return _; });
+    var ch = lcChan(name); el._lcExport = ch;
+    el.setAttribute("data-lc-export", name);
+    var said = 0;
+    function traffic(what, from) {
+      /* a dataset #traffic on the server page, when there is one, lists every request */
+      if (!window.lcDatasets || !Array.isArray(window.lcDatasets.traffic)) return;
+      var rows = window.lcDatasets.traffic.filter(function (r) { return r && !r["⚠️"]; });
+      rows.push({ n: ++said, from: from || "", what: what });
+      window.lcSetDataset("traffic", rows);
+    }
+    function spec() {
+      var classes = {}, rows = {};
+      names.forEach(function (n) {
+        if ((window.lcModels || {})[n]) { classes[n] = window.lcModels[n]; rows[n] = (window.lcDatasets || {})[n] || []; }
+      });
+      return { t: "spec", name: name, classes: classes, funcs: funcs, rows: rows };
+    }
+    var soon = null, last = "";
+    function push(force) {
+      clearTimeout(soon);
+      soon = setTimeout(function () {
+        var s = spec(), j = JSON.stringify(s);
+        if (force || j !== last) { last = j; try { ch.postMessage(s); } catch (e) {} }
+      }, 40);
+    }
+    var L = window.lcDatasetListeners = window.lcDatasetListeners || {};
+    names.forEach(function (n) { var f = function () { push(); }; f._lcEl = el; (L[n] = L[n] || []).push(f); });
+    document.addEventListener("lc-model-changed", function () { push(); });
+    ch.onmessage = function (ev) {
+      var d = ev.data || {}, from = d.from || "";
+      if (d.t === "follow") { traffic("follow", from); push(true); return; }
+      if (d.t === "verb") { traffic(d.cls + "." + d.obj + "." + d.verb + "()", from);
+        pySend("_lc_verb(" + JSON.stringify(d.cls) + "," + JSON.stringify(d.obj) + "," + JSON.stringify(d.verb) + ")"); return; }
+      if (d.t === "new") { traffic("new " + (d.kind || d.cls), from);
+        pySend("_lc_new(" + JSON.stringify(d.cls) + (d.kind && d.kind !== d.cls ? "," + JSON.stringify(d.kind) : "") + ")"); return; }
+      if (d.t === "set") { traffic(d.cls + "." + d.obj + "." + d.col + " = " + JSON.stringify(d.val), from);
+        pySend("_lc_set(" + JSON.stringify(d.cls) + "," + JSON.stringify(d.obj) + "," + JSON.stringify(d.col) + "," + JSON.stringify(d.val) + ")"); return; }
+      if (d.t === "call") { traffic(d.fn + "(" + (d.args || []).map(function (a) { return JSON.stringify(a); }).join(", ") + ")", from);
+        pySend("_lc_export_call(" + JSON.stringify(name) + "," + JSON.stringify(d.id) + "," + JSON.stringify(d.fn) + "," + JSON.stringify(JSON.stringify(d.args || [])) + ")"); return; }
+    };
+    push(true);
+  }
+  /* python answers a call through here: done with the result, or refused with the words */
+  window.lcExportAnswer = function (name, id, ok, result) {
+    var el = document.querySelector("[data-lc-export='" + name + "']");
+    if (el && el._lcExport) el._lcExport.postMessage({ t: ok ? "done" : "refused", id: id, result: result });
+  };
+  function importModel(el, href) {
+    var m = /^lc:\/\/([\w.-]+)$/.exec(href);
+    if (!m) { if (window.lcWarn) window.lcWarn(el, "a remote model is a link: lc://<name>"); return; }
+    var name = m[1], prefix = el.id || "m", ch = lcChan(name), me = "tab-" + Math.random().toString(36).slice(2, 7);
+    el.setAttribute("data-lc-id", prefix); el.setAttribute("data-lc-remote", name); el.classList.add("lc-model");
+    var known = [], quiet = null, lastSpec = "";
+    function nobody() {
+      el.setAttribute("data-lc-nobody", "1");
+      document.querySelectorAll(".lc-datagrid[data-bind^='" + prefix + ".']").forEach(function (g) {
+        if (window.lcGridSay) window.lcGridSay(g.getAttribute("data-bind"), "🔌 nobody serves lc://" + name + " — open its server page");
+      });
+    }
+    ch.onmessage = function (ev) {
+      var d = ev.data || {};
+      if (d.t === "spec" && d.name === name) {
+        clearTimeout(quiet); el.removeAttribute("data-lc-nobody");
+        var j = JSON.stringify(d); if (j === lastSpec) return; lastSpec = j;
+        window.lcModels = window.lcModels || {};
+        Object.keys(d.classes).forEach(function (n) {
+          var s = d.classes[n]; s.remote = { name: name, cls: n, prefix: prefix };
+          window.lcModels[prefix + "." + n] = s;
+          if (known.indexOf(n) < 0) known.push(n);
+          window.lcSetDataset(prefix + "." + n, d.rows[n] || []);
+        });
+        mpReady().then(function (mp) {
+          /* a client page may run no Python of its own yet: the runtime goes in first, once */
+          var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
+          var pre = window._lcModelPreIn === mp ? "" : preamble + "\n";
+          runPy(mp, pre + "_lc_remote_bind(" + JSON.stringify(prefix) + "," + JSON.stringify(name) + "," +
+            JSON.stringify(JSON.stringify(Object.keys(d.classes))) + "," + JSON.stringify(JSON.stringify(d.funcs || [])) + ")");
+          window._lcModelPreIn = mp;
+        }).catch(function (e) { console.error("[lc-model import]", e); });
+        document.dispatchEvent(new CustomEvent("lc-model-changed"));
+        return;
+      }
+      if ((d.t === "done" || d.t === "refused") && typeof d.id === "string" && d.id.indexOf(me + "#") === 0) {
+        var fn = d.id.slice(me.length + 1);
+        /* a function's answer is one row anyone can read: a grid, a cell, a proof */
+        window.lcSetDataset(prefix + "." + fn, [{ result: d.t === "done" ? d.result : "", error: d.t === "refused" ? d.result : "" }]);
+      }
+    };
+    function follow() {
+      try { ch.postMessage({ t: "follow", from: me }); } catch (e) {}
+      clearTimeout(quiet); quiet = setTimeout(nobody, 1500);
+    }
+    window.lcRemoteOps = window.lcRemoteOps || {};
+    window.lcRemoteOps[prefix] = {
+      send: function (msg) { msg.from = me; try { ch.postMessage(msg); } catch (e) {} },
+      call: function (fn, args) { var id = me + "#" + fn; this.send({ t: "call", fn: fn, args: args, id: id }); return id; }
+    };
+    follow();
+    /* a server that leaves says no goodbye: ask again now and then; silence says it */
+    var tick = setInterval(function () { if (!el.isConnected) { clearInterval(tick); return; } follow(); }, 4000);
+  }
+
   if (window.lcRegisterUpgrader) {
     window.lcRegisterUpgrader(".highlighter-rouge.inspector, pre.inspector", upgradeInspector);
-    window.lcRegisterUpgrader(".highlighter-rouge.model, pre.model", upgradeModel);
+    window.lcRegisterUpgrader(".highlighter-rouge.model, pre.model, p.model", upgradeModel);
     window.lcAdoptRows = upgradeRows;   /* dataset.md delegates of= here — one grammar */
     window.lcPySend = pySend;           /* console bridges hand verdicts to page python */
   }

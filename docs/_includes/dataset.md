@@ -246,6 +246,14 @@ Auto-included by docs/_layouts/default.html.
     setTimeout(function () { document.addEventListener("click", outside, true); }, 0);
     return menu;
   };
+  /* ONE DOOR for New, an edit and a verb: the page's runtime — or, when the
+     class came through a link (lc://), the channel to the page that owns it
+     (Michel, 2026-10-20). The grid and the form never knew the difference. */
+  window.lcModelOp = function (cls, op, code) {
+    var m = (window.lcModels || {})[cls], ops = m && m.remote && (window.lcRemoteOps || {})[m.remote.prefix];
+    if (ops) { op.cls = m.remote.cls; ops.send(op); return; }
+    if (window.lcPySend) window.lcPySend(code);
+  };
   window.lcGridSay = function (cls, msg) {
     /* …and under a grid of its base class (a Sprint in the walks), and under
        a form showing one (Michel, 2026-10-18: "when I click run in the form,
@@ -1819,7 +1827,8 @@ Auto-included by docs/_layouts/default.html.
             if (!row) return;
             var col = td.getAttribute("data-col"), txt = (td.textContent || "").trim();
             if (String(row[col] == null ? "" : row[col]) === txt) return;
-            py("_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(col) + "," + JSON.stringify(txt) + ")");
+            window.lcModelOp(bindId, { t: "set", obj: String(row.obj), col: col, val: txt },
+              "_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(col) + "," + JSON.stringify(txt) + ")");
           };
           td.addEventListener("click", function () {
             var tr = td.parentNode;
@@ -1858,7 +1867,8 @@ Auto-included by docs/_layouts/default.html.
             selKey = key;
             window.lcPickMenu(cell, rr.map(function (r) { return { v: String(r.obj), label: nameOf(r), cur: String(r.obj) === String(row[col]) }; }),
               function (v) {
-                py("_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(col) + "," + JSON.stringify(v) + ")");
+                window.lcModelOp(bindId, { t: "set", obj: String(row.obj), col: col, val: v },
+                  "_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(col) + "," + JSON.stringify(v) + ")");
               },
               function () { if (pub) window.lcMasterDetail.publish(lcId, pub); });
           });
@@ -1866,7 +1876,8 @@ Auto-included by docs/_layouts/default.html.
         el.querySelectorAll("select.lc-dg-pick").forEach(function (sel) {
           sel.addEventListener("change", function () {
             var row = sorted[parseInt(sel.getAttribute("data-row"), 10)];
-            if (row) py("_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(sel.getAttribute("data-col")) + "," + JSON.stringify(sel.value) + ")");
+            if (row) window.lcModelOp(bindId, { t: "set", obj: String(row.obj), col: sel.getAttribute("data-col"), val: sel.value },
+              "_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(sel.getAttribute("data-col")) + "," + JSON.stringify(sel.value) + ")");
           });
         });
         /* the ⌄: the row's verbs — a transition is live when the row's state
@@ -1950,7 +1961,8 @@ Auto-included by docs/_layouts/default.html.
                   if (!window.confirm("Delete this " + (kdoc && kdoc.icon ? kdoc.icon + " " : "") + kind + (seen.length ? ": " + seen.join(" · ") : "") + "?")) return;
                 }
                 closeMenu();
-                py("_lc_verb(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(verb) + ")");
+                window.lcModelOp(bindId, { t: "verb", obj: String(row.obj), verb: verb },
+                  "_lc_verb(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(verb) + ")");
               });
             });
             setTimeout(function () { document.addEventListener("click", closeMenu, { once: true }); }, 0);
@@ -1969,7 +1981,8 @@ Auto-included by docs/_layouts/default.html.
           pendingNew = {};
           (window.lcDatasets[bindId] || []).forEach(function (r) { pendingNew[String(r.obj)] = 1; });
           setTimeout(function () { pendingNew = null; }, 4000);
-          py("_lc_new(" + JSON.stringify(bindId) + (kind && kind !== bindId ? "," + JSON.stringify(kind) : "") + ")");
+          window.lcModelOp(bindId, { t: "new", kind: kind && kind !== bindId ? kind : "" },
+            "_lc_new(" + JSON.stringify(bindId) + (kind && kind !== bindId ? "," + JSON.stringify(kind) : "") + ")");
         };
         if (nb) nb.addEventListener("click", function (e) {
           e.stopPropagation();

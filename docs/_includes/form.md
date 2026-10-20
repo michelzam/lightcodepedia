@@ -448,7 +448,8 @@ Auto-included by docs/_layouts/default.html.
       b.title = (dd && dd.text) || it.hint;
       b.addEventListener("click", function () {
         if (!it.ok) { if (window.lcGridSay) window.lcGridSay(cls, "⛔ " + it.n + " " + it.hint); return; }
-        if (window.lcPySend) window.lcPySend("_lc_verb(" + JSON.stringify(cls) + "," + JSON.stringify(objName) + "," + JSON.stringify(it.n) + ")");
+        if (window.lcModelOp) window.lcModelOp(cls, { t: "verb", obj: String(objName), verb: it.n },
+          "_lc_verb(" + JSON.stringify(cls) + "," + JSON.stringify(objName) + "," + JSON.stringify(it.n) + ")");
       });
       bar.appendChild(b);
     });
@@ -772,7 +773,8 @@ Auto-included by docs/_layouts/default.html.
                the derived copy), then the grid repaints */
             onChange: function(o, k, v){
               if (model && refs[k]) v = refs[k][v] || "";   /* a dog's name → the dog */
-              if (model) { if (window.lcPySend) window.lcPySend("_lc_set(" + JSON.stringify(cls) + "," + JSON.stringify(String(objName)) + "," + JSON.stringify(k) + "," + JSON.stringify(v) + ")"); return; }
+              if (model) { if (window.lcModelOp) window.lcModelOp(cls, { t: "set", obj: String(objName), col: k, val: v },
+                "_lc_set(" + JSON.stringify(cls) + "," + JSON.stringify(String(objName)) + "," + JSON.stringify(k) + "," + JSON.stringify(v) + ")"); return; }
               if (shown !== row && k) row[k] = v;
               window.lcMasterDetail.refreshGrid(bound);
             }

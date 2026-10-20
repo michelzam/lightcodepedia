@@ -327,26 +327,9 @@ def before_scenario(context, scenario):
         )
     else:
         context.page = _browser.new_page(viewport={"width": 1280, "height": 800})
-    _stub_marked(context.page)  # LOCAL HARNESS ONLY (no-op when MARKED_JS unset)
-    _stub_micropython(context.page)  # LOCAL HARNESS ONLY (no-op when MPY_DIR unset)
-    _stub_ag_grid(context.page)  # LOCAL HARNESS ONLY (no-op when AG_GRID_DIR unset)
-    _stub_js_yaml(context.page)  # LOCAL HARNESS ONLY (no-op when JS_YAML unset)
-    _stub_three(context.page)  # LOCAL HARNESS ONLY (no-op when THREE_DIR unset)
-    _stub_mermaid(context.page)  # LOCAL HARNESS ONLY (no-op when MERMAID_STUB unset)
-    _stub_maplibre(context.page)  # LOCAL HARNESS ONLY (no-op when MAPLIBRE_DIR unset)
-    _stub_script(context.page,  # LOCAL HARNESS ONLY (no-op when CHART_JS unset)
-                 "https://cdn.jsdelivr.net/npm/chart.js@*/dist/chart.umd.min.js",
-                 _CHART_BODY)
-    _stub_script(context.page,  # LOCAL HARNESS ONLY (no-op when ALASQL_JS unset)
-                 "https://cdn.jsdelivr.net/npm/alasql@*/dist/alasql.min.js",
-                 _ALASQL_BODY)
-    _stub_script(context.page,  # LOCAL HARNESS ONLY (no-op when AXE_JS unset)
-                 "https://cdn.jsdelivr.net/npm/axe-core@*/axe.min.js",
-                 _AXE_BODY)
-    for _n, _b in _PRISM.items():  # LOCAL HARNESS ONLY (empty when PRISM_DIR unset)
-        _stub_script(context.page,
-                     "https://cdn.jsdelivr.net/npm/prismjs@*/components/" + _n, _b)
-    context.page.set_default_timeout(15_000)
+    _stub_all(context.page)
+    # a scenario that opens a second tab (distributed_steps) dresses it the same
+    context.stub_page = _stub_all
     context.lc_console_errors = 0
     context.page.on(
         "console",
@@ -355,6 +338,29 @@ def before_scenario(context, scenario):
             context.lc_console_errors + (1 if msg.type == "error" else 0),
         ),
     )
+
+
+def _stub_all(page):
+    _stub_marked(page)  # LOCAL HARNESS ONLY (no-op when MARKED_JS unset)
+    _stub_micropython(page)  # LOCAL HARNESS ONLY (no-op when MPY_DIR unset)
+    _stub_ag_grid(page)  # LOCAL HARNESS ONLY (no-op when AG_GRID_DIR unset)
+    _stub_js_yaml(page)  # LOCAL HARNESS ONLY (no-op when JS_YAML unset)
+    _stub_three(page)  # LOCAL HARNESS ONLY (no-op when THREE_DIR unset)
+    _stub_mermaid(page)  # LOCAL HARNESS ONLY (no-op when MERMAID_STUB unset)
+    _stub_maplibre(page)  # LOCAL HARNESS ONLY (no-op when MAPLIBRE_DIR unset)
+    _stub_script(page,  # LOCAL HARNESS ONLY (no-op when CHART_JS unset)
+                 "https://cdn.jsdelivr.net/npm/chart.js@*/dist/chart.umd.min.js",
+                 _CHART_BODY)
+    _stub_script(page,  # LOCAL HARNESS ONLY (no-op when ALASQL_JS unset)
+                 "https://cdn.jsdelivr.net/npm/alasql@*/dist/alasql.min.js",
+                 _ALASQL_BODY)
+    _stub_script(page,  # LOCAL HARNESS ONLY (no-op when AXE_JS unset)
+                 "https://cdn.jsdelivr.net/npm/axe-core@*/axe.min.js",
+                 _AXE_BODY)
+    for _n, _b in _PRISM.items():  # LOCAL HARNESS ONLY (empty when PRISM_DIR unset)
+        _stub_script(page,
+                     "https://cdn.jsdelivr.net/npm/prismjs@*/components/" + _n, _b)
+    page.set_default_timeout(15_000)
 
 
 def after_scenario(context, scenario):

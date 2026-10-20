@@ -50,9 +50,13 @@ def step_stub_contents_doc(context, path):
     def fulfill(route):
         route.fulfill(status=200, content_type="text/plain; charset=utf-8",
                       body=body)
-    context.page.route("**/api.github.com/repos/**/contents/" + path + "*", fulfill)
-    context.page.route("**/raw.githubusercontent.com/**/" + path + "*", fulfill)
-    context.page.route("**/raw.githubusercontent.com//main/" + path + "*", fulfill)
+    pats = ["**/api.github.com/repos/**/contents/" + path + "*",
+            "**/raw.githubusercontent.com/**/" + path + "*",
+            "**/raw.githubusercontent.com//main/" + path + "*"]
+    for pat in pats:
+        context.page.route(pat, fulfill)
+    # a second tab (distributed_steps) wears the same stubs
+    context.stub_routes = getattr(context, "stub_routes", []) + [(pat, fulfill) for pat in pats]
 
 
 @then("the runner render partitions into {n:d} slides")
