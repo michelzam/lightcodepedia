@@ -25,6 +25,19 @@ Feature: The pad types like a text field, painted
     When I type "\n{: .server " at the end of the "playground" pad
     Then completion in the "playground" pad after "{: .server " offers "beside, model"
 
+  Scenario: Ctrl+Space inside a python fence offers the runtime's words, the pad's classes, and after self. their attributes
+    Michel, 2026-10-21: "should python code also accept code completion in
+    the fence? Doable?"
+
+    When I type "\n[the shelter](supabase://shelter)\n{: .database #shelter }\n```python\nclass Family(Object):\n    stage = State(\"asked\", \"met\")\n    def meet(self):\n        self." at the end of the "playground" pad
+    Then completion in the "playground" pad after "        self." includes "stage, meet, page, new, delete"
+    When I type "page." at the end of the "playground" pad
+    Then completion in the "playground" pad after "self.page." includes "shelter"
+    When I type "\n        Fa" at the end of the "playground" pad
+    Then completion in the "playground" pad after "        Fa" includes "Family"
+    When I type "\n        St" at the end of the "playground" pad
+    Then completion in the "playground" pad after "        St" includes "State"
+
   Scenario: A run of typing undoes as one, and the mirror follows the text
     When I type "  # hello" at the end of the "playground" pad
     Then the "playground" pad ends with "  # hello"

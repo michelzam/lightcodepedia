@@ -2134,18 +2134,51 @@ Auto-included by docs/_layouts/default.html.
       }
       return String(body[0] || "").split(/[,\t]/).map(function (c) { return c.trim(); }).filter(Boolean);
     }
-    function inFence(lines, n) {
-      var f = null;
-      for (var i = 0; i < n; i++) { var m = lines[i].match(/^\s*(`{3,}|~{3,})/); if (m) f = f ? null : m[1]; }
-      return !!f;
+    function inFence(lines, n) { return fenceOf(lines, n) !== null; }
+    /* the fence the caret is in, and its language ("" for none) — null outside */
+    function fenceOf(lines, n) {
+      var f = null, lang = "";
+      for (var i = 0; i < n; i++) { var m = lines[i].match(/^\s*(`{3,}|~{3,})\s*(\w*)/); if (m) { f = f ? null : m[1]; lang = f ? m[2].toLowerCase() : ""; } }
+      return f ? lang : null;
+    }
+    /* PYTHON IN A FENCE (Michel, 2026-10-21: "should python code also accept
+       code completion in the fence?"): the words the runtime gives a class,
+       the pad's own classes, their attributes and verbs after self., the
+       page's ids after self.page. — Ctrl+Space, or a dot */
+    var PY_WORDS = [
+      ["Object", "the base of every class"], ["Attr", "a typed attribute: Attr(str), Attr(int, 0)"],
+      ["State", "the stage, in order: State(\"asked\", \"met\")"], ["transition", "@transition(\"asked\", \"met\") on a verb"],
+      ["property", "@property — a value worked out on read"], ["datetime", "the clock: datetime.now"],
+      ["weekday", "today's day, short"], ["clock", "the time, hh:mm"], ["PreconditionError", "a verb refused, caught in a check"],
+      ["self", "this object"], ["def", "a verb"], ["class", "a class"], ["return", ""], ["if", ""], ["else", ""], ["elif", ""],
+      ["for", ""], ["in", ""], ["not", ""], ["and", ""], ["or", ""], ["assert", "a check"], ["raise", ""], ["try", ""], ["except", ""],
+      ["True", ""], ["False", ""], ["None", ""], ["str", ""], ["int", ""], ["float", ""], ["len", ""], ["range", ""], ["print", ""]
+    ];
+    function padClasses() {
+      var out = {}, cur = null;
+      ta.value.split("\n").forEach(function (l) {
+        var c = l.match(/^class\s+(\w+)/); if (c) { cur = out[c[1]] = { attrs: [], verbs: [] }; return; }
+        if (!cur) return;
+        if (/^\S/.test(l) && l.trim()) { cur = null; return; }
+        var a = l.match(/^\s+(\w+)\s*=\s*(Attr|State)\(/); if (a) cur.attrs.push([a[1], a[2] === "State" ? "the stage" : "an attribute"]);
+        var d = l.match(/^\s+def\s+(\w+)\s*\(/); if (d && d[1] !== "__init__") cur.verbs.push([d[1], "a verb"]);
+      });
+      return out;
     }
     /* what is being typed, and what fits there */
     function context(force) {
       var v = ta.value, c = ta.selectionStart, ls = v.lastIndexOf("\n", c - 1) + 1, le = v.indexOf("\n", c);
       if (le < 0) le = v.length;
       var line = v.slice(ls, le), pre = v.slice(ls, c), lines = v.split("\n"), n = v.slice(0, ls).split("\n").length - 1;
-      if (inFence(lines, n)) return null;
-      var m;
+      var fl = fenceOf(lines, n), m;
+      if (fl !== null) {
+        if (fl !== "python" && fl !== "py") return null;
+        if ((m = pre.match(/self\.page\.(\w*)$/))) return { kind: "pyid", prefix: m[1], at: c - m[1].length };
+        if ((m = pre.match(/self\.(\w*)$/))) return { kind: "pyattr", prefix: m[1], at: c - m[1].length };
+        if (force && (m = pre.match(/(?:^|[^\w.])([A-Za-z_]\w*)$/))) return { kind: "py", prefix: m[1], at: c - m[1].length };
+        if (force && /(?:^|[^\w.])$/.test(pre)) return { kind: "py", prefix: "", at: c };
+        return null;
+      }
       if (/^\s*\{:/.test(line)) {
         var cls = (line.match(/(?:^|\s)\.([\w-]+)/) || [])[1] || "";
         if ((m = pre.match(/\{:\s*(?:[^}]*\s)?\.([\w-]*)$/))) return { kind: "class", prefix: m[1], at: c - m[1].length };
@@ -2196,6 +2229,17 @@ Auto-included by docs/_layouts/default.html.
             else if (k.d != null && k.d !== "") vals.push({ v: String(k.d), icon: "•", detail: "default" });
           }
           vals.forEach(function (x) { if (starts(x.v)) out.push({ icon: x.icon, label: x.v, detail: x.detail || "", insert: x.v, value: true }); });
+        } else if (cx.kind === "py" || cx.kind === "pyattr" || cx.kind === "pyid") {
+          var pc = padClasses(), seen = {};
+          var add = function (w, d, ic) { if (!seen[w] && starts(w)) { seen[w] = 1; out.push({ icon: ic || "•", label: w, detail: d || "", insert: w }); } };
+          if (cx.kind === "pyid") idsInPad().forEach(function (d) { add(d.id, d.cls, "#"); });
+          else if (cx.kind === "pyattr") {
+            Object.keys(pc).forEach(function (k) { pc[k].attrs.forEach(function (a) { add(a[0], a[1], "🔤"); }); pc[k].verbs.forEach(function (x) { add(x[0], x[1], "▸"); }); });
+            add("page", "the page, and its ids", "📄"); add("new", "born: Family.new()", "▸"); add("delete", "gone from the list", "▸");
+          } else {
+            Object.keys(pc).forEach(function (k) { add(k, "a class in this pad", "🏛️"); });
+            PY_WORDS.forEach(function (w) { add(w[0], w[1], "🐍"); });
+          }
         } else if (cx.kind === "cellid") {
           idsInPad().forEach(function (d) { if (starts(d.id)) out.push({ icon: "#", label: d.id, detail: d.cls, insert: d.id }); });
         } else if (cx.kind === "member") {

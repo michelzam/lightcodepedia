@@ -628,8 +628,15 @@ Auto-included by docs/_layouts/default.html.
     window.lcDatabases[id] = { el: el, kind: m ? m[1] : "", name: m ? m[2] : "",
                                unlisted: el.getAttribute("unlisted") || "", title: a ? (a.textContent || "").trim() : id,
                                live: el.getAttribute("live") === "true" };
-    /* the line changed its mind (live on, live off): the socket follows */
+    /* the line changed its mind (live on, live off): the socket follows —
+       on, the tables already read start listening now, not at the next ↻
+       (Michel, 2026-10-21: "if I add a live="true", there is no instant
+       activation. why?") */
     if (!window.lcDatabases[id].live && window._lcLive && window._lcLive[id]) window._lcLive[id].stop();
+    if (window.lcDatabases[id].live) Object.keys(window.lcRemote || {}).forEach(function (dsid) {
+      var r = window.lcRemote[dsid], u = r && r.unl;
+      if (u && u.db === id && u.share) liveFollow(u, dsid, u.base, u.key, u.share);
+    });
     /* THE LINE CHANGED, ITS TABLES FOLLOW (Michel, 2026-10-17: "did that,
        but the grid is dirty with the key!"): a pad redraws only the block
        that changed — the class's tables were read with the old line. Each
@@ -1109,7 +1116,7 @@ Auto-included by docs/_layouts/default.html.
           var uBase = href.split("/rest/v1/")[0] + "/rest/v1";
           var U = { tbl: uTbl, akey: "lc_author_" + uProj, skey: "lc_unlisted_" + uProj + "_" + uTbl,
                     share: "", author: false, need: false, newKey: "", fixed: unlFixed, hint: "",
-                    db: el.getAttribute("data-db") || "", proj: uProj };
+                    db: el.getAttribute("data-db") || "", proj: uProj, base: uBase, key: dbKey };
           U.rpc = function (fn, body) {
             return fetch(uBase + "/rpc/" + fn, { method: "POST", cache: "no-store",
                                                  headers: dbHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) })
@@ -1954,13 +1961,27 @@ Auto-included by docs/_layouts/default.html.
               var sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(r);
             } catch (e) {}
           };
-          var shut = function () { td.removeAttribute("contenteditable"); td.classList.remove("lc-dg-typing"); };
+          var changing = false;
+          var shut = function () {
+            td.removeAttribute("contenteditable"); td.classList.remove("lc-dg-typing");
+            /* the cell closes with nothing typed (Enter, Escape, a tap away): a
+               row born with values (a stamped hour) still has its save to make,
+               and the autosave only woke on a change (Michel, 2026-10-21:
+               "given the default values, I do have data in that row, the row
+               is not saved") — a change renders by itself */
+            if (!changing && dbR) setTimeout(function () {
+              var ch = window.lcDatasetChanges(dbSrc);
+              if (ch && ch.n && !el.querySelector(".lc-dg-typing")) window.lcSetDataset(dbSrc, window.lcDatasets[dbSrc] || []);
+            }, 0);
+          };
           var commit = function () {
             if (!td.isContentEditable) return;
-            shut();
             var row = sorted[parseInt(td.getAttribute("data-row"), 10)];
-            if (!row) return;
             var col = td.getAttribute("data-col"), txt = (td.textContent || "").trim();
+            changing = !!row && String(row[col] == null ? "" : row[col]) !== txt;
+            shut();
+            changing = false;
+            if (!row) return;
             if (String(row[col] == null ? "" : row[col]) === txt) return;
             window.lcModelOp(bindId, { t: "set", obj: String(row.obj), col: col, val: txt },
               "_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(col) + "," + JSON.stringify(txt) + ")");
