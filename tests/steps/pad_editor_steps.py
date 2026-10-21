@@ -16,7 +16,7 @@ def step_pad_type(context, text, pad_id):
     ta = _ta(context, pad_id)
     ta.click()
     context.page.keyboard.press("Control+End")
-    context.page.keyboard.type(text)
+    context.page.keyboard.type(text.replace("\\n", "\n"))     # "\n" in the feature is a new line
 
 
 @when('I undo in the "{pad_id}" pad')
@@ -609,3 +609,24 @@ def step_pad_indented(context, pad_id, line):
     assert ("\n    " + line) in v, repr(v)
     picked = p.evaluate("s => { const t = document.querySelector(s); return t.value.slice(t.selectionStart, t.selectionEnd); }", sel)
     assert picked == "", "Tab jumped to " + repr(picked)
+
+
+@then('completion in the "{pad_id}" pad after "{text}" offers "{names}"')
+def step_pad_completion_offers(context, pad_id, text, names):
+    # the same door the distributed suite opens, on one page: the caret after
+    # the text, Ctrl+Space, the labels of the list in order
+    sel = "[data-lc-id='" + pad_id + "'] .lc-mdpad-in"
+    ok = context.page.evaluate("""([s, t, pid]) => {
+      const ta = document.querySelector(s); const i = ta.value.lastIndexOf(t);
+      if (i < 0) return 'no such text';
+      ta.focus(); ta.setSelectionRange(i + t.length, i + t.length);
+      const w = document.querySelector("[data-lc-id='" + pid + "']");
+      if (!w._lcComplete) return 'no completion'; w._lcComplete(); return 'ok';
+    }""", [sel, text, pad_id])
+    assert ok == "ok", ok
+    loc = context.page.locator("[data-lc-id='" + pad_id + "'] .lc-mdpad-comp .l")
+    expect(loc.first).to_be_visible(timeout=5_000)
+    labels = sorted(loc.all_inner_texts())
+    want = sorted(n.strip() for n in names.split(","))
+    assert labels == want, "offered %s, wanted %s" % (labels, want)
+    context.page.keyboard.press("Escape")

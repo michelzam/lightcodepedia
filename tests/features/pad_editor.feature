@@ -9,6 +9,22 @@ Feature: The pad types like a text field, painted
     And I wait for the page to be interactive
     And I wait for the selector "[data-lc-id='playground'] .lc-mdpad-in"
 
+  Scenario: Ctrl+Space after a class offers that component's knobs — live on the database line
+    Michel, 2026-10-20: "check the ctrl-space in the editor to offer the right
+    knobs in the right components. For instance, live should be offered in
+    database, right?" — the knobs ride the registry, one list for the pad's
+    completion, the x-ray and the editor; the three lines that had none
+    (database, server, diagram) have theirs.
+
+    When I type "\n[the shelter](supabase://shelter)\n{: .database " at the end of the "playground" pad
+    Then completion in the "playground" pad after "{: .database " offers "beside, live, unlisted"
+    When I type "\n{: .mdpad " at the end of the "playground" pad
+    Then completion in the "playground" pad after "{: .mdpad " offers "beside, comment, decorations, demo, folded, layout, numbers, piano, replay, rows, save"
+    When I type "\n{: .datagrid " at the end of the "playground" pad
+    Then completion in the "playground" pad after "{: .datagrid " offers "autocomplete, beside, columns, editable, empty, filter, format, height, hints, master, save, sort, source, title"
+    When I type "\n{: .server " at the end of the "playground" pad
+    Then completion in the "playground" pad after "{: .server " offers "beside, model"
+
   Scenario: A run of typing undoes as one, and the mirror follows the text
     When I type "  # hello" at the end of the "playground" pad
     Then the "playground" pad ends with "  # hello"

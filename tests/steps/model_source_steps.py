@@ -687,6 +687,10 @@ def step_unl_db(context):
         a = _j.loads(req.post_data or "{}")
         st["calls"].append((fn, a))
         st["keys"].append(req.headers.get("apikey"))
+        if st.get("setup") is False:        # no Lightcode setup in this project: PostgREST knows no lc_* function
+            return route.fulfill(status=404, content_type="application/json",
+                                 headers={"Access-Control-Allow-Origin": "*"},
+                                 body=_j.dumps({"message": "Could not find the function public." + fn}))
 
         def ok(v):
             route.fulfill(status=200, content_type="application/json",
@@ -695,6 +699,8 @@ def step_unl_db(context):
         def no(msg):
             route.fulfill(status=400, content_type="application/json",
                           headers={"Access-Control-Allow-Origin": "*"}, body=_j.dumps({"message": "lc: " + msg}))
+        if fn == "lc_version":
+            return ok(st.get("version", 2))
         if fn == "lc_claim":
             if not st["authors"]:
                 st["authors"].append(a["token"])

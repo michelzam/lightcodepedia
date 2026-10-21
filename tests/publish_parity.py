@@ -182,7 +182,13 @@ def main():
         print("\n%d published step(s) with no definition in pedia. "
               "Move the step to a module that ships (e.g. common_steps.py)."
               % len(problems))
-    if problems or travellers or strays or lonely:
+    import subprocess
+    stale = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "component_model.py"), "--check"],
+                           capture_output=True, text=True).returncode != 0
+    if stale:
+        print("docs/assets/component-model.json is older than the registry in steps_runtime.md — "
+              "run python3 tools/component_model.py and commit it (the pad's completion and the x-ray read it).")
+    if problems or travellers or strays or lonely or stale:
         return 1
     print("publish parity: every published feature's steps ship with it, "
           "no lab-only page is tested abroad, and no verdict travels")

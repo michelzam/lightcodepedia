@@ -135,6 +135,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-ds-key input { flex: 1 1 16em; font: inherit; padding: .3em .5em; border: 1px solid #cbd5e1; border-radius: 6px; }
 .lc-ds-key button { font: inherit; font-weight: 500; padding: .3em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
 .lc-dg-unl { display: flex; flex-wrap: wrap; align-items: center; gap: .4em .6em; margin-top: .4em; font-size: .9em; }
+.lc-dg-unl textarea.lc-dg-unl-sql { flex: 1 1 100%; font: .8em ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid #c7d2e0; border-radius: 6px; padding: .4em; }
 .lc-dg-unl code { user-select: all; }
 .lc-dg-unl input { font: inherit; padding: .2em .4em; border: 1px solid #cbd5e1; border-radius: 4px; min-width: 12em; }
 .lc-dg-unl-me { background: none; border: 0; color: #2563eb; cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
@@ -1108,7 +1109,7 @@ Auto-included by docs/_layouts/default.html.
           var uBase = href.split("/rest/v1/")[0] + "/rest/v1";
           var U = { tbl: uTbl, akey: "lc_author_" + uProj, skey: "lc_unlisted_" + uProj + "_" + uTbl,
                     share: "", author: false, need: false, newKey: "", fixed: unlFixed, hint: "",
-                    db: el.getAttribute("data-db") || "" };
+                    db: el.getAttribute("data-db") || "", proj: uProj };
           U.rpc = function (fn, body) {
             return fetch(uBase + "/rpc/" + fn, { method: "POST", cache: "no-store",
                                                  headers: dbHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) })
@@ -1116,7 +1117,7 @@ Auto-included by docs/_layouts/default.html.
                 return x.text().then(function (t) {
                   var j = null; try { j = JSON.parse(t); } catch (e) {}
                   if (x.ok) return j;
-                  if (x.status === 404) throw new Error("this database has no Lightcode setup yet — run the setup SQL once");
+                  if (x.status === 404) { U.setup = "none"; throw new Error("this database has no Lightcode setup yet — 📋 the setup SQL below, pasted once in the project's SQL Editor"); }
                   if (x.status === 401 || x.status === 403) throw new Error("the database refused the key — check apikey=\"…\"");
                   throw new Error(((j && j.message) || ("HTTP " + x.status)).replace(/^lc: /, ""));
                 });
@@ -1133,6 +1134,20 @@ Auto-included by docs/_layouts/default.html.
             var seen = window._lcTblSeen = window._lcTblSeen || {};
             if (!U.tcols && seen[id]) U.tcols = seen[id];
             var ensure = author && (!seen[id] || (opts && opts.ensure));
+            /* THE SETUP HAS A VERSION (Michel, 2026-10-20: "where to run it? not
+               clear"): the author's device asks once per visit; older than the
+               engine's, or missing, the grid offers the script to copy */
+            var want = window.lcSetupVersion || 2, vk = window._lcSetupSeen = window._lcSetupSeen || {};
+            if (author && !vk[uProj]) {
+              /* the answer is the project's, kept per project: a pad redraws
+                 the class block and rebuilds the table's link, so the record
+                 asked is not always the record drawn */
+              vk[uProj] = { setup: "" };
+              U.rpc("lc_version", {}).then(function (v) {
+                vk[uProj].setup = (+v || 0) < want ? "old" : "";
+                if (vk[uProj].setup) document.dispatchEvent(new CustomEvent("lc-remote-state", { detail: id }));
+              }).catch(function () { vk[uProj].setup = "old"; document.dispatchEvent(new CustomEvent("lc-remote-state", { detail: id })); });
+            }
             var step = ensure
               ? unlColsSoon(id, 40).then(function (cols) {
                   /* a database set up before _sub refuses it: the rest of the class still goes in */
@@ -1558,6 +1573,19 @@ Auto-included by docs/_layouts/default.html.
     var masterRow = null, lastData = null, publishedFirst = false;
     var lastPubJson = null;   /* the selected row as last re-published after a repaint */
     var selKey = null;   /* the selected row's identity (obj name, else its index) */
+    /* THE ROW YOU WERE ON, FOUND AGAIN BY WHAT IT HOLDS (Michel, 2026-10-20:
+       "after inserting a line in a datagrid, the newly created line should
+       remain the selected one"): a new row is saved, the table is read
+       again and its objects are born anew with the table's ids — the old
+       identity is gone, the content is not. Its signature: the values,
+       without id, obj and the table's own notes. */
+    var selSig = null;
+    var sigOf = function (r) {
+      if (!r) return null;
+      var o = {};
+      Object.keys(r).sort().forEach(function (k) { if (k !== "obj" && k !== "id" && k.charAt(0) !== "_") o[k] = String(r[k] == null ? "" : r[k]); });
+      return JSON.stringify(o);
+    };
     var touched = null;  /* the row a button just wrote — next() walks on from it */
     var filterKeys = null;
     if (masterId && filterExpr) {
@@ -1841,6 +1869,11 @@ Auto-included by docs/_layouts/default.html.
         if (U.newKey)
           unlBar += "<span class='lc-dg-unl-key'>🔑 your author key, shown once — keep it: <code>" + esc(U.newKey) + "</code></span>"
             + "<button class='lc-dg-btn lc-dg-unl-copy lc-dg-unl-keycopy' type='button' data-copy='" + esc(U.newKey) + "'>📋 Copy</button>";
+        var setupSt = U.setup || (((window._lcSetupSeen || {})[U.proj] || {}).setup) || "";
+        if (setupSt && (U.author || lsGet(U.akey)))
+          unlBar += "<span class='lc-dg-unl-setup'>🔧 " + (setupSt === "none" ? "no Lightcode setup in this project yet" : "this project's setup is older than the engine")
+            + " — paste it in the project's SQL Editor, Run, then ↻</span>"
+            + "<button class='lc-dg-btn lc-dg-unl-setupcopy' type='button' title='the setup SQL, to paste once in the SQL Editor'>📋 Copy the setup SQL</button>";
         if (U.need)
           unlBar += "<span class='lc-dg-unl-ask'><input class='lc-dg-unl-name' type='text' autocomplete='off' spellcheck='false' placeholder='🔗 the list&#39;s name' aria-label='the list&#39;s unlisted name'>"
             + "<button class='lc-dg-btn lc-dg-unl-ok' type='button'>OK</button></span>"
@@ -2203,6 +2236,26 @@ Auto-included by docs/_layouts/default.html.
             window.lcRemoteReload(dbSrc, { ensure: true });   /* the new author's class makes its table */
           }).catch(function (err) { if (window.lcGridSay) window.lcGridSay(bindId, "⚠️ " + err.message); });
         });
+        el.querySelectorAll(".lc-dg-unl-setupcopy").forEach(function (b) {
+          b.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var url = "{{ '/assets/lc_setup.sql' | relative_url }}";
+            b.textContent = "⏳";
+            fetch(url, { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : Promise.reject(new Error("HTTP " + r.status)); })
+              .then(function (sql) {
+                return (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(sql) : Promise.reject(new Error("no clipboard")))
+                  .then(function () { b.textContent = "✓ Copied — paste it in the SQL Editor"; },
+                        function () {
+                          /* the clipboard refused (a frame, a phone): the script sits here, selected — ⌘C */
+                          b.textContent = "select all, copy — paste it in the SQL Editor";
+                          var ta = b.parentNode.querySelector("textarea.lc-dg-unl-sql");
+                          if (!ta) { ta = document.createElement("textarea"); ta.className = "lc-dg-unl-sql"; ta.rows = 6; ta.setAttribute("aria-label", "the setup SQL"); b.parentNode.appendChild(ta); }
+                          ta.value = sql; ta.focus(); ta.select();
+                        });
+              })
+              .catch(function (err) { b.textContent = "⚠️ " + err.message; });
+          });
+        });
         el.querySelectorAll(".lc-dg-unl-copy").forEach(function (b) {
           b.addEventListener("click", function (e) {
             e.stopPropagation();
@@ -2386,6 +2439,7 @@ Auto-included by docs/_layouts/default.html.
             if (slice[ni].obj != null && !pendingNew[String(slice[ni].obj)]) {
               pendingNew = null;
               selKey = keyOf(slice[ni]);
+              selSig = sigOf(slice[ni]);
               lastPubJson = JSON.stringify(slice[ni]);
               publishedFirst = true;
               trs.forEach(function (x) { x.classList.remove("lc-dg-selected"); });
@@ -2414,6 +2468,7 @@ Auto-included by docs/_layouts/default.html.
           slice.forEach(function (r, i) {
             if ((keyOf(r) || "i:" + i) === selKey && trs[i]) {
               stillThere = true;
+              selSig = sigOf(r);
               trs[i].classList.add("lc-dg-selected");
               /* a verb moved the object and the table repainted: the bound
                  form must show the row as it is now, not as it was clicked.
@@ -2426,9 +2481,25 @@ Auto-included by docs/_layouts/default.html.
               }
             }
           });
+          /* the same row under a new identity (saved, read back): found by
+             its content, it stays selected and the card follows */
+          if (!stillThere && selSig) {
+            for (var si = 0; si < slice.length; si++) {
+              if (sigOf(slice[si]) === selSig && trs[si]) {
+                stillThere = true;
+                selKey = keyOf(slice[si]) || "i:" + si;
+                trs[si].classList.add("lc-dg-selected");
+                if (model && lcId && window.lcMasterDetail) {
+                  var pj2 = JSON.stringify(slice[si]);
+                  if (pj2 !== lastPubJson) { lastPubJson = pj2; window.lcMasterDetail.publish(lcId, slice[si]); }
+                }
+                break;
+              }
+            }
+          }
           /* the selected row is gone (deleted): the first row takes the
              selection and the bound card follows, never a ghost */
-          if (!stillThere) { selKey = null; publishedFirst = false; lastPubJson = null; }
+          if (!stillThere) { selKey = null; selSig = null; publishedFirst = false; lastPubJson = null; }
         }
         /* a master with data selects its first row at once, like the AG
            road — a bound form should never sit empty waiting for a click */

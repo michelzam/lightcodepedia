@@ -90,6 +90,22 @@ shape of the table; the list alone is already shared.
   grid, as a line, never as a fake row; a wrong name on the author's
   device says which one to put.
 
+## 🔧 The setup, once per project
+
+The door is a short SQL script, the engine's own, served at
+[`/assets/lc_setup.sql`](/assets/lc_setup.sql): a private schema, the
+`lc_*` functions that are the only way in, and the trigger that lets a
+table tell the room. It holds no key and no name. It runs in **one
+place**, the only one that can create functions: your project's
+dashboard, **SQL Editor**, a new query, paste the whole file, Run. Once
+per project, and safe to run again.
+
+The author's device never has to remember it. When the door is missing
+or older than the engine, the grid says so under its rows, with one
+button: **📋 Copy the setup SQL**. Copy, paste in the SQL Editor, Run,
+↻. A version line in the script and a `lc_version()` function tell the
+engine which setup a project holds.
+
 ## 🧭 What it is for
 
 A class register that the whole room writes in. A shared log on a shop

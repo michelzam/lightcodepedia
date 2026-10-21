@@ -972,7 +972,12 @@ Model = Object
 
 # ════════════════════════ data + leaf wrappers ══════════════════════════════
 
-@component(icon="🛢️", attrs=[{"n": "loaded", "t": "bool"}, {"n": "count", "t": "int"}])
+# THE KNOBS A LINE CAN WEAR ride the registry (Michel, 2026-10-20: "offer the right
+# knobs in the right components"): data=True and attr=<the knob> — the pad's Ctrl+Space,
+# the x-ray and tools/component_model.py read this one list; the include that reads
+# the attribute stays the behaviour's home.
+@component(icon="🛢️", attrs=[{"n": "loaded", "t": "bool"}, {"n": "count", "t": "int"},
+                             {"n": "format", "t": "str", "data": True, "attr": "format", "d": 'csv'}, {"n": "path", "t": "str", "data": True, "attr": "path"}, {"n": "refresh", "t": "int", "data": True, "attr": "refresh"}, {"n": "unlisted", "t": "str", "data": True, "attr": "unlisted"}, {"n": "sheet", "t": "str", "data": True, "attr": "sheet"}, {"n": "write", "t": "bool", "data": True, "attr": "write"}])
 class Dataset(Object):
     def __init__(self, id):
         self._el = None
@@ -1136,8 +1141,9 @@ class Bar(Object):
 @component(icon="▦",
            attrs=[{"n": "row_count", "t": "int"},
                   {"n": "headers", "t": "str", "list": True},
-                  {"n": "rows", "t": "ref", "list": True}],
-           assoc=[{"n": "source", "target": "Dataset"}],
+                  {"n": "rows", "t": "ref", "list": True},
+                  {"n": "title", "t": "str", "data": True, "attr": "title"}, {"n": "height", "t": "int", "data": True, "attr": "height", "d": 400}, {"n": "format", "t": "str", "data": True, "attr": "format", "d": 'yaml'}, {"n": "editable", "t": "bool", "data": True, "attr": "editable"}, {"n": "filter", "t": "str", "data": True, "attr": "filter"}, {"n": "save", "t": "str", "data": True, "attr": "save"}, {"n": "empty", "t": "str", "data": True, "attr": "empty"}, {"n": "hints", "t": "str", "data": True, "attr": "hints"}, {"n": "sort", "t": "str", "data": True, "attr": "sort"}, {"n": "columns", "t": "str", "data": True, "attr": "columns"}, {"n": "autocomplete", "t": "bool", "data": True, "attr": "autocomplete"}],
+           assoc=[{"n": "source", "target": "Dataset"}, {"n": "master", "target": "Datagrid"}],
            methods=["header", "select", "next"])
 class Datagrid(Block):
     # THE SELECTED ROW, READ AND WRITTEN (Michel, 2026-10-09, Module 05:
@@ -1276,9 +1282,11 @@ class Datagrid(Block):
                   {"n": "x", "t": "str", "data": True, "d": ""},
                   {"n": "y", "t": "str", "data": True, "d": ""},
                   {"n": "bar_count", "t": "int"},
-                  {"n": "point_count", "t": "int"}],
+                  {"n": "point_count", "t": "int"},
+                  {"n": "height", "t": "int", "data": True, "attr": "height", "d": 300}, {"n": "bars", "t": "str", "data": True, "attr": "bars"}, {"n": "series", "t": "str", "data": True, "attr": "series"}, {"n": "empty", "t": "str", "data": True, "attr": "empty"}],
            assoc=[{"n": "source", "target": "Dataset"},
                   {"n": "master", "target": "Datagrid"},
+                  {"n": "bind", "target": "Datagrid"},
                   {"n": "bars", "target": "Bar", "list": True}])
 class Chart(Block):
     @property
@@ -1314,10 +1322,12 @@ class Chart(Block):
 
 
 @component(icon="🦄",
-           attrs=[{"n": "title", "t": "str"}, {"n": "status", "t": "str"}],
-           assoc=[{"n": "flow", "target": "EventFlow"}],
+           attrs=[{"n": "title", "t": "str"}, {"n": "status", "t": "str"},
+                  {"n": "tags", "t": "str", "data": True, "attr": "tags"}, {"n": "visible", "t": "bool", "data": True, "attr": "visible"}, {"n": "celebration", "t": "bool", "data": True, "attr": "celebration"}, {"n": "pace", "t": "str", "data": True, "attr": "pace"}, {"n": "saves", "t": "str", "data": True, "attr": "saves"}, {"n": "src", "t": "str", "data": True, "attr": "src"}],
+           assoc=[{"n": "flow", "target": "EventFlow"}, {"n": "grades", "target": "Mdpad"}],
            methods=["run"])
 class Feature(Block):
+    _lc_keep = ("tags",)
     @property
     def flow(self):
         """The event flow this feature checks (flow= knob) — Given is the
@@ -1489,7 +1499,8 @@ class Dropdown(Block):
 @component(icon="📁",
            attrs=[{"n": "cols", "t": "str", "data": True, "d": "auto"},
                   {"n": "show_private", "t": "bool", "data": True,
-                   "attr": "data-show-private"}])
+                   "attr": "data-show-private"},
+                  {"n": "view", "t": "str", "data": True, "attr": "view"}, {"n": "path", "t": "str", "data": True, "attr": "path"}, {"n": "parent", "t": "bool", "data": True, "attr": "parent"}, {"n": "open", "t": "str", "data": True, "attr": "open"}, {"n": "sort", "t": "str", "data": True, "attr": "sort"}, {"n": "title", "t": "str", "data": True, "attr": "title"}])
 class Folder(Block):
     pass
 
@@ -1506,7 +1517,9 @@ class Grid(Block):
            attrs=[{"n": "lat", "t": "float", "data": True, "d": 48.86},
                   {"n": "lng", "t": "float", "data": True, "d": 2.35},
                   {"n": "zoom", "t": "int", "data": True, "d": 12},
-                  {"n": "height", "t": "int", "data": True, "d": 350}],
+                  {"n": "height", "t": "int", "data": True, "d": 350},
+                  {"n": "tiles", "t": "str", "data": True, "attr": "tiles", "d": 'positron'}, {"n": "bindicon", "t": "str", "data": True, "attr": "bindicon"}, {"n": "bearing", "t": "float", "data": True, "attr": "bearing"}, {"n": "pitch", "t": "float", "data": True, "attr": "pitch"}, {"n": "fit", "t": "bool", "data": True, "attr": "fit"}, {"n": "radius", "t": "float", "data": True, "attr": "radius"}],
+           assoc=[{"n": "source", "target": "Dataset"}, {"n": "bind", "target": "Datagrid"}],
            methods=["pan_to", "set_zoom"])
 class Map(Block):
     def pan_to(self, lat, lng):
@@ -1698,8 +1711,9 @@ class _Attrs(object):
 @component(icon="☷",
            attrs=[{"n": "title", "t": "str", "data": True, "d": ""},
                   {"n": "format", "t": "str", "data": True, "d": "yaml"},
-                  {"n": "editable", "t": "bool", "data": True, "d": False}],
-           assoc=[{"n": "master", "target": "Datagrid"}],
+                  {"n": "editable", "t": "bool", "data": True, "d": False},
+                  {"n": "compute", "t": "str", "data": True, "attr": "compute"}, {"n": "persist", "t": "str", "data": True, "attr": "persist"}, {"n": "sliders", "t": "bool", "data": True, "attr": "sliders"}, {"n": "options", "t": "str", "data": True, "attr": "options"}, {"n": "min", "t": "float", "data": True, "attr": "min"}, {"n": "max", "t": "float", "data": True, "attr": "max"}, {"n": "step", "t": "float", "data": True, "attr": "step"}],
+           assoc=[{"n": "master", "target": "Datagrid"}, {"n": "source", "target": "Dataset"}],
            methods=["submit", "set"])
 class Form(Block):
     def __setattr__(self, name, value):
@@ -1822,6 +1836,7 @@ class Code(Block):
                    "attr": "data-max-tokens"},
                   {"n": "intro", "t": "str", "data": True, "d": ""},
                   {"n": "placeholder", "t": "str", "data": True, "d": "Ask anything..."},
+                  {"n": "bot", "t": "str", "data": True, "attr": "bot"}, {"n": "name", "t": "str", "data": True, "attr": "name"}, {"n": "rows", "t": "int", "data": True, "attr": "rows", "d": 3},
                   {"n": "replies", "t": "list"},
                   {"n": "last", "t": "str"},
                   {"n": "asked", "t": "int"}],
@@ -2117,13 +2132,15 @@ class Scene3d(Block):
 
 
 @component(icon="🗣️",
-           attrs=[{"n": "size", "t": "int"},
+           attrs=[{"n": "size", "t": "int", "data": True, "attr": "size", "d": 180},
                   {"n": "playing", "t": "bool"},
-                  {"n": "speech", "t": "str"}],
+                  {"n": "speech", "t": "str"},
+                  {"n": "dock", "t": "bool", "data": True, "attr": "dock"}, {"n": "autoplay", "t": "bool", "data": True, "attr": "autoplay"}, {"n": "story", "t": "str", "data": True, "attr": "story"}, {"n": "pick", "t": "str", "data": True, "attr": "pick"}, {"n": "src", "t": "str", "data": True, "attr": "src"}],
            assoc=[{"n": "points", "target": "Block", "list": True}],
            methods=["play", "stop", "video"],
            states=["idle", "speaking"])
 class Avatar(Block):
+    _lc_keep = ("size",)
     def _reg(self):
         regs = getattr(js.window, "_lcAvatars", None)
         aid = self.id
@@ -2235,6 +2252,7 @@ class Vitals(Block):
 
 
 @component(icon="✍️", attrs=[{"n": "rows", "t": "int", "data": True},
+                             {"n": "save", "t": "str", "data": True, "attr": "save"}, {"n": "comment", "t": "bool", "data": True, "attr": "comment"}, {"n": "replay", "t": "float", "data": True, "attr": "replay", "d": 1.5}, {"n": "decorations", "t": "bool", "data": True, "attr": "decorations"}, {"n": "piano", "t": "bool", "data": True, "attr": "piano"}, {"n": "numbers", "t": "bool", "data": True, "attr": "numbers"}, {"n": "folded", "t": "bool", "data": True, "attr": "folded"}, {"n": "layout", "t": "str", "data": True, "attr": "layout", "d": 'cols'}, {"n": "demo", "t": "str", "data": True, "attr": "demo"},
                              {"n": "rendered", "t": "str"},
                              {"n": "source", "t": "str"},
                              {"n": "titles", "t": "list"},
@@ -2249,6 +2267,7 @@ class Vitals(Block):
                              {"n": "versions", "t": "list"},
                              {"n": "replayed", "t": "int"}])
 class Mdpad(Block):
+    _lc_keep = ("folded", "numbers", "replay")
     # The preview half IS the document being made — every property reads it,
     # so a rubric feature can grade what the learner typed without any js.
     def _preview_texts(self, css):
@@ -2629,8 +2648,30 @@ class EventFlow(Block):
                 for o in self._qq(".lc-ef-el")]
 
 
+@component(icon="🗄️", attrs=[{"n": "unlisted", "t": "str", "data": True, "attr": "unlisted"}, {"n": "live", "t": "bool", "data": True, "attr": "live"}])
+class Database(Block):
+    """The database line (.database): a link whose scheme says the kind, an
+    unlisted name that opens its tables, live="true" to hear their changes."""
+    pass
+
+
+@component(icon="📡", assoc=[{"n": "model", "target": "Model"}])
+class Server(Block):
+    """The server line (.server): serves a model at lc://<name>; what it
+    knows hangs under its id — traffic, clients, contract."""
+    pass
+
+
+@component(icon="🗺", attrs=[{"n": "scope", "t": "str", "data": True, "attr": "scope"}, {"n": "states", "t": "bool", "data": True, "attr": "states", "d": True}])
+class Diagram(Block):
+    """The model, drawn (.diagram): scope= a class, a package or *; states=
+    off hides the state machines."""
+    pass
+
+
 @component(icon="🏛️",
-           attrs=[{"n": "classes", "t": "str"}])
+           attrs=[{"n": "classes", "t": "str"}],
+           assoc=[{"n": "source", "target": "Database"}])
 class Model(Block):
     """The page's declarations (.model) — classes and singletons, invisible
     on the page like a dataset: structure, not ink. Widgets point at it
@@ -2742,6 +2783,7 @@ _WRAP = [
     ("lc-persona", Persona), ("lc-pitch", Pitch), ("lc-imap", ImpactMap),
     ("lc-event-flow", EventFlow), ("lc-inspector", Inspector),
     ("lc-model", Model), ("lc-cell", Cell),
+    ("lc-database", Database), ("lc-server", Server),
 ]
 
 
