@@ -529,6 +529,24 @@ Auto-included by docs/_layouts/default.html.
     };
   }
 
+  /* THE REQUEST AN AGENT SENDS, built from its settings and the ring — one
+     place, read by the chat panel, by the proof runtime (ask) and by a crew's
+     members, which are agents without a panel (Michel, 2026-10-23: "data-driven
+     dynamic instances"). null when the ring holds no key for its engine. */
+  function agentRequest(cfg, userText) {
+    var eng = resolveEngine(cfg), tok = getSharedToken(eng.id);
+    if (!eng.base || !tok) return null;
+    var body = { model: eng.model, messages: [
+      { role: 'system', content: String(cfg.system || DEFAULTS.system) },
+      { role: 'user', content: String(userText) } ] };
+    if (cfg.temperature != null) body.temperature = parseFloat(cfg.temperature);
+    if (cfg.max_tokens != null) body.max_tokens = parseInt(cfg.max_tokens, 10);
+    if (cfg.reasoning_effort) body.reasoning_effort = String(cfg.reasoning_effort);
+    return { url: eng.base + '/chat/completions', token: tok,
+             pid: eng.id || '', model: eng.model || '', body: JSON.stringify(body) };
+  }
+  window.lcAgentRequest = function (cfg, userText) { return agentRequest(cfg || {}, userText); };
+
   // ===== bots: superprompt + knowledge as repo markdown (SSOT) =====
   // A bot is a file: docs/bots/<name>.md — the markdown body IS the system
   // prompt; one yaml fence inside it carries settings (model, temperature,
@@ -1618,18 +1636,7 @@ Auto-included by docs/_layouts/default.html.
        (Michel, 2026-10-01: Disturb Your Agent — ask, then assert.) */
     panel.setAttribute('data-bound-expr', boundExpr || '');
     panel._lcAgent = {
-      request: function (userText) {
-        var eng = resolveEngine(cfg), tok = myToken();
-        if (!eng.base || !tok) return null;
-        var body = { model: eng.model, messages: [
-          { role: 'system', content: String(cfg.system) },
-          { role: 'user', content: String(userText) } ] };
-        if (cfg.temperature != null) body.temperature = parseFloat(cfg.temperature);
-        if (cfg.max_tokens != null) body.max_tokens = parseInt(cfg.max_tokens, 10);
-        if (cfg.reasoning_effort) body.reasoning_effort = String(cfg.reasoning_effort);
-        return { url: eng.base + '/chat/completions', token: tok,
-                 pid: eng.id || '', model: eng.model || '', body: JSON.stringify(body) };
-      },
+      request: function (userText) { return agentRequest(cfg, userText); },
       record: function (question, text) {
         response.innerHTML =
           '<div class="lc-agent-msg-user">' + escapeHtml(question) + '</div>' +

@@ -2663,6 +2663,41 @@ class Server(Block):
     pass
 
 
+@component(icon="🧑‍🤝‍🧑",
+           attrs=[{"n": "lanes", "t": "str", "data": True, "attr": "lanes"},
+                  {"n": "tries", "t": "int", "data": True, "attr": "tries", "d": 2},
+                  {"n": "budget", "t": "int", "data": True, "attr": "budget", "d": 6},
+                  {"n": "fallback", "t": "str", "data": True, "attr": "fallback"},
+                  {"n": "text", "t": "str", "data": True, "attr": "text", "d": "message"}],
+           assoc=[{"n": "members", "target": "Dataset"}, {"n": "inbox", "target": "Dataset"}],
+           methods=["run"])
+class Crew(Block):
+    """A crew (.crew): agents as the rows of a dataset (members=), run over
+    an inbox with clear bounds — tries= per message, budget= AI asks in all,
+    fallback= for what stays open. It writes <id>.sorted and <id>.log and
+    acts on nothing else."""
+    @property
+    def sorted(self):
+        return Dataset(str(self.id) + ".sorted")
+
+    @property
+    def log(self):
+        return Dataset(str(self.id) + ".log")
+
+    @property
+    def asks(self):
+        return int(self._attr("data-asks") or 0)
+
+    @property
+    def done(self):
+        return self._attr("data-state") == "done"
+
+    def run(self):
+        """Press ▶ Run, as a person would; the crew works on, the page repaints."""
+        self._tap(".lc-crew-run")
+        return self
+
+
 @component(icon="🗺", attrs=[{"n": "scope", "t": "str", "data": True, "attr": "scope"}, {"n": "states", "t": "bool", "data": True, "attr": "states", "d": True}])
 class Diagram(Block):
     """The model, drawn (.diagram): scope= a class, a package or *; states=
@@ -2784,7 +2819,7 @@ _WRAP = [
     ("lc-persona", Persona), ("lc-pitch", Pitch), ("lc-imap", ImpactMap),
     ("lc-event-flow", EventFlow), ("lc-inspector", Inspector),
     ("lc-model", Model), ("lc-cell", Cell),
-    ("lc-database", Database), ("lc-server", Server),
+    ("lc-database", Database), ("lc-server", Server), ("lc-crew", Crew),
 ]
 
 
@@ -3707,6 +3742,18 @@ def _lc_export_call(name, cid, fn, args_json):
         js.window.lcExportAnswer(name, cid, True, res)
     except Exception as e:
         js.window.lcExportAnswer(name, cid, False, str(e))
+
+
+def _lc_crew_rule(cid, fn, text):
+    """A crew's rules member: the page's own function answers a lane, or None."""
+    f = globals().get(fn)
+    try:
+        if not callable(f) or isinstance(f, type) or fn.startswith("_"):
+            raise NameError("no function " + fn + " on this page")
+        res = f(text)
+        js.window.lcCrewAnswer(cid, True, "" if res is None else str(res))
+    except Exception as e:
+        js.window.lcCrewAnswer(cid, False, str(e))
 
 
 def _lc_push_obj(obj):
