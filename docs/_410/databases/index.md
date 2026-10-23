@@ -40,7 +40,7 @@ stories:
     - Module 06 turns around, from reading a design to drawing one, starting with the top of UWM's new map.
     - Module 07 finishes UWM's map with many-to-many, and builds it in MySQL Workbench, one iteration at a time.
     - Module 08 shows one SQL injection, then turns you into an auditor of database designs, yours first.
-    - Module 09 changes data safely with TILT, a transaction that fails on purpose and rolls back.
+    - Module 09 changes data safely with TILT, on a tiny shop database: a transaction that fails on purpose and rolls back.
     - Open module 01 to begin, or browse the folder to see everything at once.
 ```
 {: .avatar #guide dock="true" size="115" }
