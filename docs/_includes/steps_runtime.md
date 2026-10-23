@@ -2668,7 +2668,8 @@ class Server(Block):
                   {"n": "tries", "t": "int", "data": True, "attr": "tries", "d": 2},
                   {"n": "budget", "t": "int", "data": True, "attr": "budget", "d": 6},
                   {"n": "fallback", "t": "str", "data": True, "attr": "fallback"},
-                  {"n": "text", "t": "str", "data": True, "attr": "text", "d": "message"}],
+                  {"n": "text", "t": "str", "data": True, "attr": "text", "d": "message"},
+                  {"n": "pace", "t": "float", "data": True, "attr": "pace", "d": 0.5}],
            assoc=[{"n": "members", "target": "Dataset"}, {"n": "inbox", "target": "Dataset"}],
            methods=["run"])
 class Crew(Block):
@@ -2687,6 +2688,10 @@ class Crew(Block):
     @property
     def asks(self):
         return int(self._attr("data-asks") or 0)
+
+    @property
+    def tokens(self):
+        return int(self._attr("data-tokens") or 0)
 
     @property
     def done(self):

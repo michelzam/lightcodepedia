@@ -1488,6 +1488,23 @@ Auto-included by docs/_layouts/default.html.
        never shown in the bubble, never read aloud by browser TTS. The RAW
        say (tags included) stays the line's identity for studio recordings. */
     var shown = String(line.say || "").replace(/<break\b[^>]*\/?>/gi, " ").replace(/  +/g, " ").trim();
+    /* A LINE THAT READS THE PAGE (Michel, 2026-10-23: "can an avatar read some
+       data from the page? For instance, personae's name"): {= expr } in a say
+       is a cell, evaluated as it is spoken, through the page's own cells —
+       the line waits for its values, then plays. The script keeps its words. */
+    if (av._liveFor === line) { shown = av._liveSay; av._liveFor = null; }
+    else if (/\{=[^}]*\}/.test(shown) && window.lcCellEval) {
+      var cells = shown.match(/\{=[^}]*\}/g);
+      av.idx--;
+      Promise.all(cells.map(function (c) { return window.lcCellEval(c.slice(2, -1).trim()).catch(function () { return ""; }); }))
+        .then(function (vals) {
+          var said = shown;
+          cells.forEach(function (c, i) { said = said.replace(c, String(vals[i] == null ? "" : vals[i])); });
+          av._liveFor = line; av._liveSay = said;
+          nextLine(id);
+        });
+      return;
+    }
     /* effective step for THIS line: the line's own step overrides the avatar's */
     av._curStep = (line.step != null) ? !!line.step : !!av.step;
     av._waiting = false;       /* set when paused at a step boundary, click advances */

@@ -22,7 +22,8 @@ def step_stub_crew_ai(context):
         else:
             text = "VERDICT: VISIT" if "disagreed" in user else "VERDICT: PAY"
         route.fulfill(status=200, content_type="application/json",
-                      body=json.dumps({"choices": [{"message": {"content": text}}]}))
+                      body=json.dumps({"choices": [{"message": {"content": text}}],
+                                       "usage": {"prompt_tokens": 9, "completion_tokens": 3, "total_tokens": 12}}))
     context.page.route("**/chat/completions*", answer)
 
 
@@ -71,4 +72,33 @@ def step_second_ask(context):
     assert len(reads) == 2, reads
     assert "no visit is booked" in reads[1]["user"], reads[1]["user"]
 
+
+
+
+
+@then('the crew "{cid}" shows its {n:d} messages, none sorted yet')
+def step_crew_upfront(context, cid, n):
+    context.page.wait_for_function("([id, n]) => ((window.lcDatasets || {})[id] || []).length === n", arg=[cid + ".sorted", n], timeout=T)
+    rows = _rows(context, cid + ".sorted")
+    assert all(r.get("lane") == "" for r in rows), rows
+    expect(context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tbody tr")).to_have_count(n, timeout=T)
+
+
+@then('the crew "{cid}" spent {n:d} tokens, {k:d} on each AI step')
+def step_crew_tokens(context, cid, n, k):
+    got = int(_crew(context, cid).get_attribute("data-tokens") or 0)
+    assert got == n, "%d tokens, expected %d" % (got, n)
+    steps = [r for r in _rows(context, cid + ".log") if r.get("kind") in ("reader", "checker")]
+    assert steps and all(int(r.get("tokens")) == k for r in steps), steps
+    expect(_crew(context, cid).locator(".lc-crew-status")).to_contain_text(str(n) + " tokens")
+
+
+@then('the grid of the crew "{cid}" has "{who}" selected')
+def step_crew_selected(context, cid, who):
+    expect(context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tr.lc-dg-selected")).to_contain_text(who, timeout=T)
+
+
+@when('I press the trigger of the avatar "{aid}"')
+def step_press_trigger(context, aid):
+    context.page.locator("[target='" + aid + "'], [data-target='" + aid + "']").first.click()
 

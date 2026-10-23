@@ -35,6 +35,10 @@ Chuck,checker,"You check a verdict against the dog cards: a family pays only aft
 {: .dataset #members }
 
 ```python
+class Member(Object, source="members"):
+    """An agent of the crew: a name, a kind, a brief. Its rows are its storage."""
+
+
 def sort(message):
     m = message.lower()
     if "already" in m:
@@ -48,25 +52,55 @@ def sort(message):
 {: .model }
 
 [The front desk](#)
-{: .crew members="members" inbox="inbox" lanes="VISIT, PAY, CALL" tries="2" budget="6" fallback="CALL" #desk }
+{: .crew members="Member" inbox="inbox" lanes="VISIT, PAY, CALL" tries="2" budget="6" fallback="CALL" #desk }
 
-[Where each message went](#)
-{: .datagrid source="desk.sorted" columns="family, lane, tries" #desk_lanes }
+[The messages, and where each went](#)
+{: .datagrid source="desk.sorted" columns="family, message, lane, tries, tokens" #desk_lanes }
 
-[Every step](#)
-{: .datagrid source="desk.log" columns="n, who, kind, out" #desk_log height="200" }
+```
+### 🧑‍🤝‍🧑 The crew — who can do what
+[the members](#)
+{: .datagrid source="Member" columns="name, kind, brief, checked_by, reads" #crew_grid }
+
+[one member](#)
+{: .form master="crew_grid" #crew_form }
+
+### 📜 Every step — who said what, and what it cost
+[the log](#)
+{: .datagrid source="desk.log" columns="n, who, kind, out, tokens" #desk_log height="220" }
+```
+{: .accordion }
+
+The agents are **objects** of a class, `Member`, and their storage is
+**data**: the three rows above. Pick one in the grid, the form shows it; a
+row more is a member more.
+
+```yaml
+script:
+  - at: desk
+    say: "{= Member.count } members, one row each. {= Member.first.name } goes first: rules are free."
+stories: {}
+```
+{: .avatar #crew_guide size="90" }
+
+Meet the crew
+{: .avatar_trigger target="crew_guide" }
+
+A guide's line can read the page: `{= Member.first.name }` in a `say:` is a
+[cell](/components/cells), read as the line is spoken.
 
 ## 🎛️ Knobs
 
 | Knob | Meaning |
 |---|---|
-| `members` | the dataset whose rows are the members (`name`, `kind`, `brief`, `checked_by`, `reads`) |
+| `members` | the dataset — or the class — whose rows are the members (`name`, `kind`, `brief`, `checked_by`, `reads`) |
 | `inbox` | the dataset to work through, one row a message |
 | `text` | the inbox column that holds the message (default `message`) |
 | `lanes` | the answers a message can get, comma-separated |
 | `tries` | at most this many reads a message (default 2) |
 | `budget` | at most this many AI asks in all (default 6) |
 | `fallback` | the lane for what stays open — a person, never a guess |
+| `pace` | seconds between steps, so the work is seen a row at a time (default 0.5; 0 runs flat out) |
 
 ## 🧑‍🤝‍🧑 The members — one row each
 
@@ -87,8 +121,9 @@ the checker's words, and it tries again. It stops at `tries` for the
 message or `budget` for the crew, and what is still open takes `fallback`.
 
 The crew writes two datasets and touches nothing else:
-- `desk.sorted`: each message, its `lane` and its `tries`;
-- `desk.log`: every step, `who` said what (`in`, `out`).
+- `desk.sorted`: every message from the start, then its `lane`, its `tries` and its `tokens` (the row at work is selected, ⏳);
+- `desk.log`: every step, `who` said what (`in`, `out`) and its `tokens`;
+- the crew's line, and `desk.asks` · `desk.tokens` in a proof: the totals.
 
 The members ask with **your own key**, the one every agent panel uses.
 
@@ -104,7 +139,7 @@ Feature: The desk sorts the inbox within its bounds
     Given the desk ran over the inbox
     :::python
     self.desk = self.page.desk
-    assert self.desk.sorted.count == 3, f"{self.desk.sorted.count} of 3 messages sorted — press ▶ Run on the desk first"
+    assert self.desk.done, "press ▶ Run on the desk first"
     :::
     Then the rules sorted the plain ones for free
     :::python

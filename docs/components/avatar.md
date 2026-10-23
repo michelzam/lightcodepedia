@@ -81,7 +81,7 @@ A line is a plain string (the character wanders) or an object:
 | Key | What it does |
 |---|---|
 | `at:` | The **id** of the component (or heading) to walk to — scroll there, park beside it, **spotlight** it |
-| `say:` | The line — spoken, and shown in the speech bubble |
+| `say:` | The line — spoken, and shown in the speech bubble. A `{= expr }` in it is a [cell](/components/cells), read from the page as the line is spoken: `say: "Meet {= Member.first.name }."` |
 | `audio:` | URL of a pre-recorded audio file — plays instead of TTS; the mouth follows the real waveform |
 | `video:` | `true` / URL — play the recorded character clip **with sound** for this line (real face, real voice) |
 | `cues:` | Inside one recorded take: `[{ t: seconds, at:, say:, slide: next\|prev\|start\|exit }]` — fire as the clip crosses each time |
