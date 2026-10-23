@@ -90,7 +90,7 @@ Feature: The pad renders what is typed
 |---|---|---|
 | `rows="N"` | `12` | editor height in text rows |
 | `save="cv.md"` | — | the learner's copy, beside the lesson in their bench; `/my/…` at the bench root |
-| `save="here:site.md"` | — | the file on the host that served this page: 💾 writes it there when the host takes saves, the old copy stamped in `__backup/`; 🕘 Versions lists those copies |
+| `save="here:site.md"` | — | the file on the host that served this page: 💾 writes it there when the host takes saves (`--edit`), the old copy stamped in `__backup/`; 🕘 Versions lists those copies. On a read-only host no 💾 is offered — the bar says “read-only” — and the gear offers nothing on the page |
 | `comment="true"` | off | 💾 Save… asks for one line, the version's name |
 | `replay="1.5"` | `1.5` | seconds per frame in 🎞 Replay |
 | `decorations="true"` | off | the preview runs the site's pipeline: components come alive |

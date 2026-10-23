@@ -187,6 +187,8 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
        files — there is nothing here to edit. The gear offers the SLOT
        (the .folder line in the page source), never its derivatives. */
     if (el.closest("[data-lc-derived]")) return null;
+    /* a read-only HOST's page: no bench, no key — no margin either */
+    if (el.closest('.lc-run[data-lc-readonly="host"]')) return null;
     var comp = el.closest("[data-lc-id]");
     if (comp && MAIN.contains(comp)) return comp;
     var blk = el.closest(BLOCK_SEL);
@@ -986,7 +988,8 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
        repo and key are a PAIR set together at join; if the key does not
        cover the repo, the write error below says so by name. */
     target: function (fromEl, path) {
-      if (HERE.test(path || "")) return { repo: "here", pat: "here", here: true };   /* the host is the space */
+      /* the host is the space — when it takes saves (started with --edit) */
+      if (HERE.test(path || "")) return { repo: "here", pat: "here", here: true, readonly: !document.querySelector('meta[name="lc-host-edit"]') };
       var repo = "", pat = "", paired = "";
       try {
         repo = localStorage.getItem("lc_ed_repo") || "";

@@ -54,9 +54,10 @@ window.lcFrameApply = function () {
      machine; the page stands alone, its heading kept */
   if (document.querySelector('meta[name="lc-host-serves"]')) {
     root.classList.add("lc-hosted");
-    /* its own links go to the host it came from: the page is based on the
-       site, so "/" or "visitor" would leave the host (Michel, 2026-10-22:
-       "a fixed index page … with click navigation to all examples") */
+    /* its own links go to the host it came from, read from the page's own
+       address — "server" on /dashboard/ is /dashboard/server, not the base's
+       /server (Michel, 2026-10-22: "a fixed index page … with click
+       navigation to all examples") */
     if (!window._lcHostedLinks) {
       window._lcHostedLinks = true;
       document.addEventListener("click", function (e) {

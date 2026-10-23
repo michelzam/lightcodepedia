@@ -751,6 +751,12 @@ Auto-included by docs/_layouts/default.html.
          title says why, so off is never mute. */
       var refreshBench = function () {
         var t = window.lcBench ? window.lcBench.target(wrap, benchPath) : {};
+        /* a read-only host takes no save, so 💾 is not offered (Michel, 2026-10-23) */
+        if (t.readonly) {
+          saveBtn.hidden = true;
+          if (mineTag) { mineTag.textContent = "📖 on the host — read-only"; mineTag.hidden = false; }
+          return;
+        }
         var why = !window.lcBench ? "Saving needs a newer engine"
                 : !t.pat || !t.repo ? "Join the course (connect your key) to keep your work"
                 : ta.value === bOrigin ? "Nothing changed since your last save" : "";

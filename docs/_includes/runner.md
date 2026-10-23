@@ -533,6 +533,10 @@ files a learner is already working in.
        xray refuses to edit it (a learner has no write access anyway, but the
        editor must not even offer it). */
     if (/-vault$/.test(root.dataset.lcSrcRepo)) root.dataset.lcReadonly = "1";
+    /* a file of a read-only host (started without --edit): nothing on it is
+       offered for saving — no gear, no 💾 (Michel, 2026-10-23) */
+    else if (src.indexOf(location.origin + "/_md/") === 0 && document.querySelector('meta[name="lc-host-serves"]') &&
+             !document.querySelector('meta[name="lc-host-edit"]')) root.dataset.lcReadonly = "host";
     else delete root.dataset.lcReadonly;
     var barSt = { repo: root.dataset.lcSrcRepo, path: root.dataset.lcSrcPath, src: src, loading: true };
     if (bar) { pageTitle(bar.parentNode, true); paintBar(bar, barSt); }
