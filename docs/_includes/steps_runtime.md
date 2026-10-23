@@ -5029,18 +5029,32 @@ _inject_store()
     try { me = sessionStorage.getItem("lc_tab") || ""; if (!me) { me = "tab-" + Math.random().toString(36).slice(2, 7); sessionStorage.setItem("lc_tab", me); } }
     catch (e) { me = "tab-" + Math.random().toString(36).slice(2, 7); }
     el.setAttribute("data-lc-id", prefix); el.setAttribute("data-lc-remote", name); el.classList.add("lc-model");
-    var known = [], quiet = null, lastSpec = "";
+    var known = [], quiet = null, lastSpec = "", gone = false, tick = null;
+    /* ONE IMPORT PER NAME ON A PAGE (Michel, 2026-10-22, Safari: "nobody
+       serves lc://site" three seconds after load, rows from the host on
+       screen). A pad redraws its preview and every redraw imported again,
+       each with its own stream to the host; Safari keeps six connections
+       per host, so the heartbeat waited behind the streams and missed its
+       moment. The newest import of a prefix takes it; the one before closes
+       at once and says nothing more. */
+    var live = window._lcImports = window._lcImports || {};
+    if (live[prefix]) live[prefix]();
+    var stop = function () { gone = true; clearTimeout(quiet); if (tick) clearInterval(tick); try { ch.close(); } catch (e) {} };
+    live[prefix] = stop;
+    /* the network's answer takes a round trip, the tab's a moment */
+    var patience = m[1] ? 3000 : 1500;
     function nobody() {
       /* a line the page re-rendered away (a pad redraws its preview) is not
          the page's import any more: it says nothing over the live one's grids
          (Michel, 2026-10-22: "nobody serves lc://site" under rows from the host) */
-      if (!el.isConnected) return;
+      if (gone || !el.isConnected) return;
       el.setAttribute("data-lc-nobody", "1");
       document.querySelectorAll(".lc-datagrid[data-bind^='" + prefix + ".']").forEach(function (g) {
         if (window.lcGridSay) window.lcGridSay(g.getAttribute("data-bind"), "🔌 nobody serves lc://" + name + " — open its server page");
       });
     }
     ch.onmessage = function (ev) {
+      if (gone) return;
       var d = ev.data || {};
       if (d.t === "pong" && d.name === name) { clearTimeout(quiet); el.removeAttribute("data-lc-nobody"); return; }
       if (d.t === "spec" && d.name === name) {
@@ -5084,12 +5098,12 @@ _inject_store()
     };
     function follow() {
       try { ch.postMessage({ t: "follow", from: me }); } catch (e) {}
-      clearTimeout(quiet); quiet = setTimeout(nobody, 1500);
+      clearTimeout(quiet); quiet = setTimeout(nobody, patience);
     }
     function ping() {
       /* the heartbeat: a server that left answers nothing; one that is there says pong, no spec */
       try { ch.postMessage({ t: "ping", from: me }); } catch (e) {}
-      clearTimeout(quiet); quiet = setTimeout(nobody, 1500);
+      clearTimeout(quiet); quiet = setTimeout(nobody, patience);
     }
     window.lcRemoteOps = window.lcRemoteOps || {};
     var asked = {};
@@ -5108,7 +5122,7 @@ _inject_store()
     };
     follow();
     /* a server that leaves says no goodbye: ask again now and then; silence says it */
-    var tick = setInterval(function () { if (!el.isConnected) { clearInterval(tick); try { ch.close(); } catch (e) {} return; } if (el.hasAttribute("data-lc-nobody")) follow(); else ping(); }, 4000);
+    tick = setInterval(function () { if (gone) return; if (!el.isConnected) { live[prefix] && live[prefix] === stop && delete live[prefix]; stop(); return; } if (el.hasAttribute("data-lc-nobody")) follow(); else ping(); }, 4000);
   }
 
   if (window.lcRegisterUpgrader) {
