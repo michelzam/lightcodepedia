@@ -4767,6 +4767,18 @@ _inject_store()
     if (!m) { if (window.lcWarn) window.lcWarn(el, "a server is a link: [the demo](lc://<name>) {: .server #id model=\"<model id>\" }"); return; }
     var sid = el.id || ("_server" + (++INS_N));
     el.setAttribute("data-lc-id", sid); el.classList.add("lc-server");
+    /* THE HOST ALREADY RUNS IT (Michel, 2026-10-22: "how come on site.md I
+       see 6 grids? They are NOT in the source"). A page a host serves names
+       the servers that host runs; this line is one of them, so it stands by
+       — no second server in the tab, no lc:// link a browser cannot open —
+       and says where it runs. The page shows as it is written. */
+    var hostRuns = document.querySelector('meta[name="lc-host-serves"]');
+    if (hostRuns && ("," + hostRuns.getAttribute("content") + ",").indexOf("," + m[1] + ",") >= 0) {
+      el.setAttribute("data-lc-hosted", "1");
+      el.textContent = "📡 lc://" + m[1] + " — served by this host";
+      el.title = (lnk.textContent || m[1]) + ": runs on the host this page came from, not in this tab";
+      return;
+    }
     var want = el.getAttribute("model") || "";
     var modelOf = function () {
       if (want) return document.querySelector(".lc-model[data-lc-id='" + want + "']");
