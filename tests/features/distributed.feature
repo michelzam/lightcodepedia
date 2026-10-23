@@ -256,6 +256,12 @@ Feature: Two tabs, one server — a page serves a class and a function, another 
     And in tab 2 the server "annex" serves
     And in tab 3 the shelf "shelf" shows the cards "🏠 Home, 🐕 Walks, 📁 📎 The annex"
     And in tab 3 the grid "visits" shows "/" with count "0"
+    # a bump sends the spec again, the shelf's rows with it: still one sort bar (Michel, 2026-10-22)
+    When in tab 3 I press "bump" in the gutter of "/" in "visits"
+    Then in tab 3 the grid "visits" shows "/" with count "1"
+    When in tab 3 I press "bump" in the gutter of "/" in "visits"
+    Then in tab 3 the grid "visits" shows "/" with count "2"
+    And in tab 3 the shelf "shelf" wears one sort bar
     # a page row: the server names the file, the browser lands on it
     When in tab 3 I tap the card "Walks" of "shelf"
     Then in tab 3 the page heading reads "The walks page"

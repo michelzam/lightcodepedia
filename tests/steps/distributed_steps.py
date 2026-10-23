@@ -198,6 +198,17 @@ def _shelf(page, sid):
     return page.locator(".lc-cards[data-lc-id='" + sid + "']")
 
 
+@then('in tab {n:d} the shelf "{sid}" wears one sort bar')
+def step_tab_shelf_one_bar(context, n, sid):
+    # every spec from the server sets the shelf's rows again (a bump too):
+    # one bar above the cards, never one more per spec
+    page = _tab(context, n)
+    page.wait_for_timeout(600)
+    bars = page.evaluate("""sid => { var w = document.querySelector(".lc-cards[data-lc-id='" + sid + "']");
+        return w ? w.parentNode.querySelectorAll(':scope > .lc-card-filter').length : -1; }""", sid)
+    assert bars == 1, "the shelf wears %d sort bars" % bars
+
+
 @then('in tab {n:d} the shelf "{sid}" shows the cards "{titles}"')
 def step_tab_shelf_cards(context, n, sid, titles):
     page = _tab(context, n)

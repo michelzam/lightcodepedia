@@ -1558,8 +1558,17 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         if (!note) { note = document.createElement("div"); note.className = "lc-folder-note"; note.style.cssText = "padding:0.4em 0.2em;color:#b45309;font-size:0.9em"; wrap.parentNode.insertBefore(note, wrap.nextSibling); }
         note.textContent = text || ""; note.style.display = text ? "" : "none";
       };
+      var lastRows = null;
       var fromSource = function () {
         var rows = ((window.lcDatasets || {})[srcId] || []).filter(function (r) { return r && !r["⚠️"] && r.path != null; });
+        /* every spec the server sends sets s.pages again — a bump too: the
+           same rows keep the shelf as it is, and a redraw takes its old bar
+           with it (Michel, 2026-10-22: two bumps, three Sort lines) */
+        var j = JSON.stringify(rows);
+        if (j === lastRows) return;
+        lastRows = j;
+        if (_bar && _bar.parentNode) _bar.parentNode.removeChild(_bar);
+        _bar = null;
         var items = rows.map(function (r) {
           var p = "/" + String(r.path || "").replace(/^\/+/, ""), f = String(r.file || "").trim();
           var folder = /\/$/.test(f) || /^lc:\/\//.test(f);
