@@ -1,3 +1,5 @@
 node_modules/
 *.tgz
 package-lock.json
+# a host started with --edit keeps stamped copies beside a saved page: local history, never committed
+__backup/

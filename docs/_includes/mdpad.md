@@ -477,6 +477,8 @@ Auto-included by docs/_layouts/default.html.
     var saveKnob = el.getAttribute("save") || "";
     var benchPath = saveKnob && saveKnob !== "true" ? saveKnob : "";
     if (benchPath) wrap.setAttribute("data-lc-save", benchPath);   /* named in a proof's verdict */
+    /* save="here:<file>": the file on the host that served this page — no bench, no frame (Michel, 2026-10-22) */
+    var hereSave = /^here:/.test(benchPath);
     var saveWrap = null, saveBtn = null, resetBtn = null, mineTag = null, histBtn = null;
     var pace = parseFloat(el.getAttribute("replay")) || 1.5;   /* seconds per replay frame */
     var paceSet = !!parseFloat(el.getAttribute("replay"));
@@ -511,7 +513,7 @@ Auto-included by docs/_layouts/default.html.
         mineTag = document.createElement("span");
         mineTag.className = "lc-mdpad-mine";
         mineTag.hidden = true;
-        mineTag.textContent = "✓ yours — saved in your space";
+        mineTag.textContent = hereSave ? "✓ on the host" : "✓ yours — saved in your space";
         histBtn = document.createElement("button");
         histBtn.type = "button";
         histBtn.className = "lc-mdpad-hist";
@@ -528,6 +530,7 @@ Auto-included by docs/_layouts/default.html.
         saveWrap.appendChild(mineTag);
         saveWrap.appendChild(histBtn);
         saveWrap.appendChild(resetBtn);   /* moves into 🕘 Versions' head once that panel is attached */
+        if (hereSave) resetBtn.hidden = true;   /* no lesson starter on a host: 🕘 Versions brings an old copy back */
       }
       saveBtn = document.createElement("button");
       saveBtn.type = "button";
@@ -736,7 +739,7 @@ Auto-included by docs/_layouts/default.html.
     if (saveWrap) wrap.parentNode.insertBefore(saveWrap, wrap.nextSibling);
     /* the stripe goes round BOTH the pad and its keep bar, so the frame
        reads as one owned thing rather than a box with a bar loose under it */
-    if (benchPath && window.lcBenchFrame) {
+    if (benchPath && !hereSave && window.lcBenchFrame) {
       frame = window.lcBenchFrame(wrap, { path: benchPath, id: id, mine: false });
       if (frame && saveWrap) frame.el.appendChild(saveWrap);
     }
@@ -747,12 +750,13 @@ Auto-included by docs/_layouts/default.html.
          nothing changed, ↺ while the editor already holds the starter. The
          title says why, so off is never mute. */
       var refreshBench = function () {
-        var t = window.lcBench ? window.lcBench.target(wrap) : {};
+        var t = window.lcBench ? window.lcBench.target(wrap, benchPath) : {};
         var why = !window.lcBench ? "Saving needs a newer engine"
                 : !t.pat || !t.repo ? "Join the course (connect your key) to keep your work"
                 : ta.value === bOrigin ? "Nothing changed since your last save" : "";
         saveBtn.disabled = !!why || !!commentBox;
-        saveBtn.title = why || (askComment ? "Keep this in your own space — and say in one line what you just did"
+        saveBtn.title = why || (hereSave ? "Save on the host (" + window.lcBench.resolve(benchPath, wrap) + ") — the old copy is kept in __backup/"
+                              : askComment ? "Keep this in your own space — and say in one line what you just did"
                               : "Keep this in your own space (" +
           (window.lcBench ? window.lcBench.resolve(benchPath, wrap) : benchPath) + ")");
         if (resetBtn) {
@@ -824,7 +828,7 @@ Auto-included by docs/_layouts/default.html.
             wrap._lcHist.unshift(String(message || "").replace(/^✍️\s*/, ""));
             wrap.setAttribute("data-lc-versions", String(wrap._lcHist.length));
             closeVersions();                     /* the list just grew — re-open it fresh */
-            window.lcxToast && window.lcxToast("Saved to your space ✓", true);
+            window.lcxToast && window.lcxToast(hereSave ? "Saved on the host ✓ — the old copy in __backup/" : "Saved to your space ✓", true);
           })
           .catch(function (e) {
             window.lcxToast && window.lcxToast("Save failed: " + (e.message || e), false);
