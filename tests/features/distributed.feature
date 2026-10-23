@@ -164,3 +164,116 @@ Feature: Two tabs, one server — a page serves a class and a function, another 
     And in tab 3 I press "bump" in the gutter of "visits" in "grid"
     Then in tab 1 the grid "server_grid" shows "visits" with count "1"
     And in tab 2 the grid "server_grid" shows "visits" with count "0"
+
+  Scenario: The simplest server serves pages — a shelf on the client, a tap lands where the server says, a folder gives its index, a server asks another server
+    Michel, 2026-10-22: "the simplest case should be just: I serve some
+    pages". pages= names rows of path and file; a folder's path answers with
+    its index.md, like today's site; a file that is another server (lc://)
+    is asked in turn. The client's shelf is a folder on s.pages — no repo, no
+    manifest — and a tap asks the server where the page is. A refusal is a
+    line under the shelf.
+
+    Given the GitHub contents API serves "courses/demo/dist/site.md" with the document:
+      """
+      # The site
+
+      ```csv
+      path,file,title
+      /,courses/demo/dist/site/,🏠 Home
+      /walks,courses/demo/dist/site/walks.md,🐕 Walks
+      /annex,lc://annex,📎 The annex
+      ```
+      {: .dataset #site_pages }
+
+      ```csv
+      page,count
+      /,0
+      ```
+      {: .dataset #visits }
+
+      ```python
+      class Visit(Object, source="visits"):
+          def bump(self):
+              self.count += 1
+      ```
+      {: .model #site_model }
+
+      [the site](lc://site)
+      {: .server #site model="site_model" pages="site_pages" }
+
+      [the pages served](#)
+      {: .datagrid source="site.pages" #pages_grid }
+
+      [what was asked](#)
+      {: .datagrid source="site.traffic" #traffic_grid }
+      """
+    And the GitHub contents API serves "courses/demo/dist/annex.md" with the document:
+      """
+      # The annex
+
+      ```csv
+      path,file
+      /,courses/demo/dist/annex/
+      ```
+      {: .dataset #annex_pages }
+
+      [the annex](lc://annex)
+      {: .server #annex pages="annex_pages" }
+
+      [what was asked](#)
+      {: .datagrid source="annex.traffic" #traffic_grid }
+      """
+    And the GitHub contents API serves "courses/demo/dist/visitor.md" with the document:
+      """
+      # A visitor
+
+      [the site](lc://site)
+      {: .model #s }
+
+      [the pages](#)
+      {: .folder source="s.pages" #shelf }
+
+      [the visits](#)
+      {: .datagrid source="s.Visit" #visits }
+      """
+    And the GitHub contents API serves "courses/demo/dist/site/index.md" with the document:
+      """
+      # Home of the site
+      """
+    And the GitHub contents API serves "courses/demo/dist/site/walks.md" with the document:
+      """
+      # The walks page
+      """
+    And the GitHub contents API serves "courses/demo/dist/annex/index.md" with the document:
+      """
+      # Home of the annex
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/dist/site.md"
+    And I wait for the page to be interactive
+    And I open "/run.html#src=gh:acme/demo/courses/demo/dist/annex.md" in tab 2
+    And I open "/run.html#src=gh:acme/demo/courses/demo/dist/visitor.md" in tab 3
+    Then in tab 1 the grid "pages_grid" lists "/walks" and "lc://annex"
+    And in tab 3 the shelf "shelf" shows the cards "🏠 Home, 🐕 Walks, 📁 📎 The annex"
+    And in tab 3 the grid "visits" shows "/" with count "0"
+    # a page row: the server names the file, the browser lands on it
+    When in tab 3 I tap the card "Walks" of "shelf"
+    Then in tab 3 the page heading reads "The walks page"
+    And in tab 1 the grid "traffic_grid" lists "follow" and "page /walks"
+    # a folder row: / answers with its index.md
+    When in tab 3 I go back
+    And in tab 3 I tap the card "Home" of "shelf"
+    Then in tab 3 the page heading reads "Home of the site"
+    # a server row: the site asks the annex, the annex's folder answers
+    When in tab 3 I go back
+    And in tab 3 I tap the card "The annex" of "shelf"
+    Then in tab 3 the page heading reads "Home of the annex"
+    And in tab 1 the grid "traffic_grid" lists "page /annex" and "page /walks"
+    And in tab 2 the grid "traffic_grid" lists "page /" and "page /"
+    # the annex gone: the site says so, the shelf shows it
+    When in tab 3 I go back
+    And I close tab 2
+    And in tab 3 I tap the card "The annex" of "shelf"
+    Then in tab 3 the shelf "shelf" says "lc://annex answers nothing"
+    And in tab 1 the python "Page().site.pages.count" gives "3"
+    # the root folder row catches every path under it (found 2026-10-22 in run mode: it read "/" and caught nothing)
+    And in tab 3 asking the site for "/deep" answers the file "courses/demo/dist/site/deep.md"

@@ -184,3 +184,47 @@ def step_pad_completion(context, n, pad_id, text, names):
     want = [x.strip() for x in names.split(",")]
     for w in want:
         assert w in labels, "%s not offered: %s" % (w, labels)
+
+
+# ── pages served (Michel, 2026-10-22): the shelf on s.pages, the tap, the landing ──
+def _shelf(page, sid):
+    return page.locator(".lc-cards[data-lc-id='" + sid + "']")
+
+
+@then('in tab {n:d} the shelf "{sid}" shows the cards "{titles}"')
+def step_tab_shelf_cards(context, n, sid, titles):
+    page = _tab(context, n)
+    for t in [x.strip() for x in titles.split(",")]:
+        expect(_shelf(page, sid).locator(".lc-card h3", has_text=t).first).to_be_visible(timeout=T)
+
+
+@when('in tab {n:d} I tap the card "{title}" of "{sid}"')
+def step_tab_tap_card(context, n, title, sid):
+    page = _tab(context, n)
+    _shelf(page, sid).locator(".lc-card h3 a", has_text=title).first.click()
+
+
+@then('in tab {n:d} the page heading reads "{text}"')
+def step_tab_heading(context, n, text):
+    page = _tab(context, n)
+    expect(page.locator("#lc-run h1, h1", has_text=text).first).to_be_visible(timeout=T)
+
+
+@when("in tab {n:d} I go back")
+def step_tab_back(context, n):
+    page = _tab(context, n)
+    page.go_back()
+    page.wait_for_load_state("load")
+
+
+@then('in tab {n:d} the shelf "{sid}" says "{text}"')
+def step_tab_shelf_says(context, n, sid, text):
+    page = _tab(context, n)
+    expect(page.locator(".lc-folder-note", has_text=text).first).to_be_visible(timeout=T)
+
+
+@then('in tab {n:d} asking the site for "{path}" answers the file "{file}"')
+def step_tab_ask_page(context, n, path, file):
+    page = _tab(context, n)
+    got = page.evaluate("(p) => window.lcRemoteOps.s.page(p).then(d => d.file, e => 'refused: ' + e.message)", path)
+    assert got == file, f"asked {path}: {got!r}, wanted {file!r}"

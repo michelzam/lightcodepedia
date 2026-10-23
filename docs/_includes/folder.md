@@ -1544,6 +1544,52 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         else
           wrap.innerHTML = "<div class='lc-card' style='color:#c00'>⚠️ " + escapeHtml(e.message) + "</div>";
     }
+    /* A SHELF OF SERVED PAGES (Michel, 2026-10-22): source="s.pages" lists
+       what a server serves — rows of path and file — as cards, no repo and no
+       manifest. A tap asks the server for the path and lands where it says;
+       a refusal is a line under the shelf, never a broken link. The same
+       cards, the same sort and chips; the repo tools stay off. Last in the
+       upgrade, so every helper above is defined when the rows arrive. */
+    var srcId = el.getAttribute("source") || "";
+    if (srcId) {
+      var srcPrefix = srcId.split(".")[0];
+      var note = null;
+      var say = function (text) {
+        if (!note) { note = document.createElement("div"); note.className = "lc-folder-note"; note.style.cssText = "padding:0.4em 0.2em;color:#b45309;font-size:0.9em"; wrap.parentNode.insertBefore(note, wrap.nextSibling); }
+        note.textContent = text || ""; note.style.display = text ? "" : "none";
+      };
+      var fromSource = function () {
+        var rows = ((window.lcDatasets || {})[srcId] || []).filter(function (r) { return r && !r["⚠️"] && r.path != null; });
+        var items = rows.map(function (r) {
+          var p = "/" + String(r.path || "").replace(/^\/+/, ""), f = String(r.file || "").trim();
+          var folder = /\/$/.test(f) || /^lc:\/\//.test(f);
+          var leaf = p.replace(/\/+$/, "").split("/").pop() || "home";
+          var pretty = leaf.replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+          /* the card's own link is the host's path on THIS origin — a served
+             page carries the site as its base, and a bare path would resolve
+             there (Michel, 2026-10-23: the site's /visitor, a 404) */
+          return { title: (folder ? "📁 " : "") + (r.title || pretty), snippet: f, url: location.origin + p, path: p, served: true, features: [], rawHrefs: [], quizzes: 0 };
+        });
+        try { renderItems(items); }
+        catch (e) { console.error("[lc-folder source]", e); say("⚠️ " + (e && e.message ? e.message : String(e))); }
+      };
+      var LL = window.lcDatasetListeners = window.lcDatasetListeners || {};
+      var srcHook = function () { fromSource(); }; srcHook._lcEl = wrap;
+      (LL[srcId] = LL[srcId] || []).push(srcHook);
+      wrap.addEventListener("click", function (e) {
+        var link = e.target.closest && e.target.closest(".lc-card a[href]");
+        if (!link || !wrap.contains(link)) return;
+        e.preventDefault(); e.stopPropagation();
+        var card = link.closest(".lc-card"), want = (card && card.getAttribute("data-path")) || link.getAttribute("href"), ops = (window.lcRemoteOps || {})[srcPrefix];
+        say("");
+        /* no server to ask: say so and stay — never a bare link that the page's base sends elsewhere */
+        if (!ops || !ops.page) { say("🔌 nobody serves " + srcId.split(".")[0] + " yet — open its server page"); return; }
+        ops.page(want).then(function (d) { location.href = d.url; })
+          .catch(function (err) { say("🔌 " + (err && err.message ? err.message : String(err))); });
+      }, true);
+      fromSource();
+      return;
+    }
     (window.lcResolveKnob ? window.lcResolveKnob(_rawAttr) : Promise.resolve(_rawAttr))
       .then(function (_resolved) {
         if (!_resolved) {                 // an unset node variable, no default — gentle, never an error

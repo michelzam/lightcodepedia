@@ -2093,8 +2093,8 @@ Auto-included by docs/_layouts/default.html.
       feature: [["passing", "the check is green"], ["status", "passing, failing…"]],
       quiz: [["passed", "answered right"], ["graded", "answered"]],
       /* a server and an imported model offer what hangs under them (Michel, 2026-10-20) */
-      server: [["traffic", "the requests"], ["clients", "who follows"], ["contract", "what is served"]],
-      model: [["contract", "what is imported"]]
+      server: [["traffic", "the requests"], ["clients", "who follows"], ["contract", "what is served"], ["pages", "the pages served"]],
+      model: [["contract", "what is imported"], ["pages", "the pages served"], ["page", "the last page asked"]]
     };
     /* what an imported model names at run time: its classes and functions */
     function remoteMembers(id) {

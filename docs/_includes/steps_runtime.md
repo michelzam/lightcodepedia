@@ -2655,10 +2655,11 @@ class Database(Block):
     pass
 
 
-@component(icon="📡", assoc=[{"n": "model", "target": "Model"}])
+@component(icon="📡", assoc=[{"n": "model", "target": "Model"}, {"n": "pages", "target": "Dataset"}])
 class Server(Block):
-    """The server line (.server): serves a model at lc://<name>; what it
-    knows hangs under its id — traffic, clients, contract."""
+    """The server line (.server): serves a model at lc://<name>, and the
+    pages a dataset lists (pages=, rows of path and file); what it knows
+    hangs under its id — traffic, clients, contract, pages."""
     pass
 
 
@@ -3673,9 +3674,9 @@ class _ServerObject:
     def __getattr__(self, k):
         if k.startswith("_"):
             raise AttributeError(k)
-        if k in ("traffic", "clients", "contract"):
+        if k in ("traffic", "clients", "contract", "pages"):
             return Dataset(self._sid + "." + k)
-        raise AttributeError("a server has traffic, clients and contract — not " + k)
+        raise AttributeError("a server has traffic, clients, contract and pages — not " + k)
 
 
 def _lc_server_bind(sid, name):
@@ -4775,16 +4776,58 @@ _inject_store()
     /* born with the server, like delete() with an Object: demo.traffic,
        demo.clients, demo.contract (Michel, 2026-10-20: "the traffic dataset
        remains implicit and this bugs me") */
-    ["traffic", "clients", "contract"].forEach(function (k) { window.lcSetDataset(sid + "." + k, []); });
+    ["traffic", "clients", "contract", "pages"].forEach(function (k) { window.lcSetDataset(sid + "." + k, []); });
+    /* THE SIMPLEST SERVER SERVES PAGES (Michel, 2026-10-22): pages="<dataset id>"
+       names rows of path and file; with it, no model is needed — the server
+       stands with an empty contract and answers paths. */
+    var pagesId = el.getAttribute("pages") || "";
     var tries = 0;
     (function wait() {
       var me = modelOf();
-      if (me && me._lcModelNames) { serveModel(el, m[1], sid, modelOf); return; }
-      if (++tries > 60) { if (window.lcWarn) window.lcWarn(el, "no model to serve" + (want ? ": #" + want : "") + " — a .model on this page, ready"); return; }
+      if (me && me._lcModelNames) { serveModel(el, m[1], sid, modelOf, pagesId); return; }
+      if (++tries > 60) {
+        if (pagesId) { serveModel(el, m[1], sid, function () { return null; }, pagesId); return; }
+        if (window.lcWarn) window.lcWarn(el, "no model to serve" + (want ? ": #" + want : "") + " — a .model on this page, ready");
+        return;
+      }
+      if (!want && !me && pagesId && tries > 4) { serveModel(el, m[1], sid, function () { return null; }, pagesId); return; }
       setTimeout(wait, 250);
     })();
   }
-  function serveModel(el, name, sid, modelOf) {
+  /* THE PAGES A SERVER SERVES (Michel, 2026-10-22): rows of path and file,
+     like today's site — a path is a page, or a folder whose index.md answers
+     the folder itself; a file is a repo path to the markdown (served as the
+     site serves it, or through the runner when the server runs there), or
+     another server (lc://<name>), which is asked in turn. */
+  function pageRows(pagesId) {
+    return ((window.lcDatasets || {})[pagesId] || []).filter(function (r) { return r && !r["⚠️"] && r.path != null; });
+  }
+  function resolvePage(rows, path) {
+    var p = "/" + String(path || "").replace(/^\/+/, "");
+    var best = null, bestLen = -1;
+    rows.forEach(function (r) {
+      var rp = ("/" + String(r.path || "").replace(/^\/+/, "")).replace(/\/+$/, ""), f = String(r.file || "").trim();   /* the root row reads "" */
+      var folder = /\/$/.test(f) || /^lc:\/\/[\w.-]+$/.test(f);
+      if (!folder && p.replace(/\/+$/, "") === rp) { if (rp.length > bestLen) { best = { file: f, rest: "" }; bestLen = rp.length; } return; }
+      if (folder && (p === rp || p === rp + "/" || p.indexOf(rp + "/") === 0 || rp === "")) {
+        var rest = rp === "" ? p.slice(1) : p.slice(rp.length + 1);
+        if (rp.length >= bestLen) { best = { file: f, rest: rest }; bestLen = rp.length; }
+      }
+    });
+    if (!best) return null;
+    if (/^lc:\/\//.test(best.file)) return { via: best.file.replace(/^lc:\/\//, ""), path: "/" + best.rest };
+    var f = best.file;
+    if (/\/$/.test(f)) f += (best.rest === "" || /\/$/.test(best.rest)) ? best.rest + "index.md" : best.rest + (/\.md$/i.test(best.rest) ? "" : ".md");
+    return { file: f };
+  }
+  function pageUrl(file) {
+    /* the file as the browser reaches it: the runner's door when the server
+       page runs there (a private repo), else the site's own path */
+    var run = document.querySelector(".lc-run[data-lc-src-repo]");
+    if (run && run.getAttribute("data-lc-src-repo")) return "/run.html#src=gh:" + run.getAttribute("data-lc-src-repo") + "/" + file;
+    return "/" + file.replace(/^docs\//, "").replace(/\.md$/i, "");
+  }
+  function serveModel(el, name, sid, modelOf, pagesId) {
     /* ONE SERVER PER NAME PER PAGE (Michel, 2026-10-20: "each bump adds 8"):
        a pad or the editor re-renders its blocks, and every render had opened
        one more channel on the same name — a verb then ran once per stale
@@ -4839,7 +4882,29 @@ _inject_store()
       });
       var funcs = funcsOf(mEl && mEl._lcModelCode), contract = contractOf(classes, funcs);
       window.lcSetDataset(sid + ".contract", contract);
-      return { t: "spec", name: name, classes: classes, funcs: funcs.map(function (f) { return f.n; }), contract: contract, rows: rows };
+      var pages = pagesId ? pageRows(pagesId) : [];
+      var mine = JSON.stringify(pages);
+      if (JSON.stringify((window.lcDatasets || {})[sid + ".pages"] || []) !== mine) window.lcSetDataset(sid + ".pages", JSON.parse(mine));
+      return { t: "spec", name: name, classes: classes, funcs: funcs.map(function (f) { return f.n; }), contract: contract, rows: rows, pages: pages };
+    }
+    function servePage(d, from) {
+      /* a client asks a path; the answer names the file and where the
+         browser reaches it — or says what is not served. A file that is
+         another server is asked in turn, the answer relayed as is. */
+      traffic("page " + d.path, from);
+      var hit = pagesId ? resolvePage(pageRows(pagesId), d.path) : null;
+      var answer = function (ok, msg) { try { ch.postMessage(Object.assign({ t: ok ? "served" : "refused", id: d.id, path: d.path }, msg)); } catch (e) {} };
+      if (!hit) { answer(false, { result: "lc://" + name + " serves no page " + d.path }); return; }
+      if (!hit.via) { answer(true, { file: hit.file, url: pageUrl(hit.file) }); return; }
+      var up = lcChan(hit.via), id = me + "#page#" + Math.random().toString(36).slice(2, 7), done = false;
+      var quiet = setTimeout(function () { if (done) return; done = true; try { up.close(); } catch (e) {} answer(false, { result: "lc://" + hit.via + " answers nothing for " + hit.path }); }, 1500);
+      up.onmessage = function (ev) {
+        var r = ev.data || {};
+        if (r.id !== id || done) return;
+        done = true; clearTimeout(quiet); try { up.close(); } catch (e) {}
+        answer(r.t === "served", r.t === "served" ? { file: r.file, url: r.url, via: hit.via } : { result: r.result });
+      };
+      try { up.postMessage({ t: "page", path: hit.path, id: id, from: me }); } catch (e) {}
     }
     var soon = null, last = "";
     function push(force) {
@@ -4853,6 +4918,7 @@ _inject_store()
     var L = window.lcDatasetListeners = window.lcDatasetListeners || {};
     var hook = function () { push(); }; hook._lcEl = el;
     (modelOf() && modelOf()._lcModelNames || []).forEach(function (n) { (L[n] = L[n] || []).push(hook); });
+    if (pagesId) (L[pagesId] = L[pagesId] || []).push(hook);     /* a page added to the list is served at once */
     var onChange = function () {
       /* the model re-rendered (a pad): its new classes get the hook too */
       (modelOf() && modelOf()._lcModelNames || []).forEach(function (n) { if ((L[n] || []).indexOf(hook) < 0) (L[n] = L[n] || []).push(hook); });
@@ -4877,6 +4943,7 @@ _inject_store()
       if (d.t === "taken" && d.to === me) { standDown(); return; }
       if (d.t === "ping") { try { ch.postMessage({ t: "pong", name: name }); } catch (e) {} return; }
       if (d.t === "follow") { if (!seen[from]) { seen[from] = 1; traffic("follow", from); } push(true); return; }
+      if (d.t === "page") { servePage(d, from); return; }
       if (d.t === "verb") { traffic(d.cls + "." + d.obj + "." + d.verb + "()", from);
         pySend("_lc_verb(" + JSON.stringify(d.cls) + "," + JSON.stringify(d.obj) + "," + JSON.stringify(d.verb) + ")"); return; }
       if (d.t === "new") { traffic("new " + (d.kind || d.cls), from);
@@ -4901,10 +4968,40 @@ _inject_store()
     var el = document.querySelector("[data-lc-export='" + name + "']");
     if (el && el._lcExport) el._lcExport.postMessage({ t: ok ? "done" : "refused", id: id, result: result });
   };
+  /* THE CARRIER IS PICKED FROM THE ADDRESS (Michel, 2026-10-22, lc-host run
+     mode): lc://<name> is the browser's own channel, same device, as above;
+     lc://<host:port>/<name> is a host on the network (lc-host serve), and
+     "here" is the origin this page was served from. Same messages, same
+     answers — one request per message, the spec on a stream — so a client
+     page never knows which carrier it rides. */
+  function lcNetChan(where, name) {
+    var base = (where === "here" ? location.origin : (/^https?:\/\//.test(where) ? where : location.protocol + "//" + where)) + "/lc/" + name;
+    var self = { onmessage: null, closed: false }, es = null, origin = base.replace(/\/lc\/[\w.-]+$/, "");
+    var deliver = function (d) {
+      /* a page the host serves lives on the host: its path resolves there, not
+         against the site the served page is based on (Michel, 2026-10-23: the
+         annex card opened the site's /annex, a 404) */
+      if (d && d.t === "served" && typeof d.url === "string" && d.url.charAt(0) === "/") d.url = origin + d.url;
+      if (!self.closed && self.onmessage && d) self.onmessage({ data: d });
+    };
+    function listen() {
+      try { es = new EventSource(base + "/events"); } catch (e) { es = null; return; }
+      es.onmessage = function (ev) { try { deliver(JSON.parse(ev.data)); } catch (e) {} };
+      es.onerror = function () {};   /* a host away answers nothing: the client says so by itself */
+    }
+    self.postMessage = function (msg) {
+      if (self.closed) return;
+      if (msg.t === "follow" && !es) listen();
+      fetch(base, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msg) })
+        .then(function (r) { return r.json(); }).then(deliver).catch(function () {});
+    };
+    self.close = function () { self.closed = true; if (es) { try { es.close(); } catch (e) {} es = null; } };
+    return self;
+  }
   function importModel(el, href) {
-    var m = /^lc:\/\/([\w.-]+)$/.exec(href);
-    if (!m) { if (window.lcWarn) window.lcWarn(el, "a remote model is a link: lc://<name>"); return; }
-    var name = m[1], prefix = el.id || "m", ch = lcChan(name), me = "";
+    var m = /^lc:\/\/(?:([\w.-]+(?::\d+)?)\/)?([\w.-]+)$/.exec(href);
+    if (!m) { if (window.lcWarn) window.lcWarn(el, "a remote model is a link: lc://<name>, or lc://<host:port>/<name> for a host on the network"); return; }
+    var name = m[2], prefix = el.id || "m", ch = m[1] ? lcNetChan(m[1], name) : lcChan(name), me = "";
     /* the tab's id survives a reload: the same tab reads as the same client
        (Michel, 2026-10-20: "why a refresh on a tab would create a new entry") */
     try { me = sessionStorage.getItem("lc_tab") || ""; if (!me) { me = "tab-" + Math.random().toString(36).slice(2, 7); sessionStorage.setItem("lc_tab", me); } }
@@ -4926,6 +5023,7 @@ _inject_store()
         window.lcModels = window.lcModels || {};
         (window.lcRemoteSpec = window.lcRemoteSpec || {})[prefix] = { classes: Object.keys(d.classes), funcs: d.funcs || [] };
         window.lcSetDataset(prefix + ".contract", d.contract || []);     /* m.contract — what was imported */
+        window.lcSetDataset(prefix + ".pages", d.pages || []);           /* m.pages — what the server serves as pages */
         Object.keys(d.classes).forEach(function (n) {
           var s = d.classes[n]; s.remote = { name: name, cls: n, prefix: prefix };
           window.lcModels[prefix + "." + n] = s;
@@ -4941,6 +5039,15 @@ _inject_store()
           window._lcModelPreIn = mp;
         }).catch(function (e) { console.error("[lc-model import]", e); });
         document.dispatchEvent(new CustomEvent("lc-model-changed"));
+        return;
+      }
+      if ((d.t === "served" || d.t === "refused") && typeof d.id === "string" && d.id.indexOf(me + "#page#") === 0) {
+        /* a page's answer: where the browser reaches it, or why not — one row
+           anyone can read (m.page), and the promise the asker holds */
+        var ok = d.t === "served";
+        window.lcSetDataset(prefix + ".page", [{ path: d.path || "", file: ok ? (d.file || "") : "", url: ok ? (d.url || "") : "", via: d.via || "", error: ok ? "" : (d.result || "") }]);
+        var w = asked[d.id]; delete asked[d.id];
+        if (w) { clearTimeout(w.quiet); ok ? w.ok(d) : w.no(new Error(d.result || "not served")); }
         return;
       }
       if ((d.t === "done" || d.t === "refused") && typeof d.id === "string" && d.id.indexOf(me + "#") === 0) {
@@ -4959,9 +5066,19 @@ _inject_store()
       clearTimeout(quiet); quiet = setTimeout(nobody, 1500);
     }
     window.lcRemoteOps = window.lcRemoteOps || {};
+    var asked = {};
     window.lcRemoteOps[prefix] = {
       send: function (msg) { msg.from = me; try { ch.postMessage(msg); } catch (e) {} },
-      call: function (fn, args) { var id = me + "#" + fn; this.send({ t: "call", fn: fn, args: args, id: id }); return id; }
+      call: function (fn, args) { var id = me + "#" + fn; this.send({ t: "call", fn: fn, args: args, id: id }); return id; },
+      page: function (path) {
+        /* ask the server for a path: a promise of {file, url} — refused, or
+           nobody answering within the moment, rejects with the words */
+        var self = this, id = me + "#page#" + Math.random().toString(36).slice(2, 7);
+        return new Promise(function (ok, no) {
+          asked[id] = { ok: ok, no: no, quiet: setTimeout(function () { delete asked[id]; no(new Error("nobody serves lc://" + name + " — open its server page")); }, 2500) };
+          self.send({ t: "page", path: path, id: id });
+        });
+      }
     };
     follow();
     /* a server that leaves says no goodbye: ask again now and then; silence says it */
