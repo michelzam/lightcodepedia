@@ -52,7 +52,23 @@ window.lcFrameApply = function () {
      appropriate anymore!", "actually the whole menu is useless"): the bar is
      the public site's — its menu, its key — and the host is someone's own
      machine; the page stands alone, its heading kept */
-  if (document.querySelector('meta[name="lc-host-serves"]')) root.classList.add("lc-hosted");
+  if (document.querySelector('meta[name="lc-host-serves"]')) {
+    root.classList.add("lc-hosted");
+    /* its own links go to the host it came from: the page is based on the
+       site, so "/" or "visitor" would leave the host (Michel, 2026-10-22:
+       "a fixed index page … with click navigation to all examples") */
+    if (!window._lcHostedLinks) {
+      window._lcHostedLinks = true;
+      document.addEventListener("click", function (e) {
+        var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+        if (!a || e.defaultPrevented || a.target === "_blank" || e.metaKey || e.ctrlKey) return;
+        var h = a.getAttribute("href") || "";
+        if (!h || h.charAt(0) === "#" || /^[\w+.-]+:/.test(h)) return;
+        e.preventDefault();
+        location.href = new URL(h, location.origin + location.pathname).href;
+      });
+    }
+  }
   var focus = flag("focus", false);
   if (focus) root.classList.add("lc-focus-mode");
   /* editable: explicit wins everywhere — that is how a focused page keeps its
