@@ -932,6 +932,50 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
   window.lcAuthorPair = AUTHOR_PAIR;
   var SANDBOX = "__sandbox";
 
+  /* A FILE ON THE HOST THIS PAGE CAME FROM (Michel, 2026-10-22: "--edit
+     accepts save with stamped copy in __backup"). save="here:<file>" names
+     the file on the host that served the page — no key, no repo: read and
+     written over plain HTTP at /_md/<file>, the version it started from in
+     If-Match, its versions the host's own stamped copies. The host decides
+     whether it takes a save at all (read-only unless started to edit), and
+     a file changed since it was read is refused, never overwritten. */
+  var HERE = /^here:/;
+  var here = {
+    file: function (p) { return String(p).replace(HERE, "").replace(/^\/+/, ""); },
+    url: function (p) { return location.origin + "/_md/" + here.file(p); },
+    said: function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) { throw new Error(j.error || ("HTTP " + r.status)); });
+    },
+    read: function (p) {
+      return fetch(here.url(p), { cache: "no-store" }).then(function (r) {
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        var tag = (r.headers.get("ETag") || "").replace(/"/g, "");
+        return r.text().then(function (text) { return { text: text, sha: tag }; });
+      });
+    },
+    history: function (p) {
+      return fetch(location.origin + "/_backups/" + here.file(p), { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
+    },
+    readAt: function (p, sha) {
+      var f = here.file(p), dir = f.indexOf("/") >= 0 ? f.replace(/\/[^\/]*$/, "/") : "";
+      return fetch(sha === "current" ? here.url(p) : location.origin + "/_md/" + dir + sha, { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.text() : null; }).catch(function () { return null; });
+    },
+    write: function (p, text, message, sha) {
+      return fetch(here.url(p), { method: "PUT", headers: { "Content-Type": "application/json", "If-Match": '"' + (sha || "") + '"' },
+                                  body: JSON.stringify({ text: text, message: message || "" }) })
+        .then(function (r) {
+          if (!r.ok) return here.said(r);
+          return r.json().then(function (j) {
+            if (j.warning && window.lcxToast) window.lcxToast(j.warning, false);
+            return j.etag || "";
+          });
+        });
+    }
+  };
+
   window.lcBench = {
     /* WHICH bench? The learner's OWN connected space — ALWAYS, and never the
        repo the page happens to render from. Canvas gives the whole class ONE
@@ -941,7 +985,8 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
        root — reverted 2026-08-03 after exactly that Canvas failure.) The
        repo and key are a PAIR set together at join; if the key does not
        cover the repo, the write error below says so by name. */
-    target: function (fromEl) {
+    target: function (fromEl, path) {
+      if (HERE.test(path || "")) return { repo: "here", pat: "here", here: true };   /* the host is the space */
       var repo = "", pat = "", paired = "";
       try {
         repo = localStorage.getItem("lc_ed_repo") || "";
@@ -1033,6 +1078,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
        lesson folder, so relative falls back to the bench root. */
     resolve: function (path, fromEl) {
       path = String(path || "").trim();
+      if (HERE.test(path)) return here.file(path);
       var abs = path.charAt(0) === "/";
       var runRoot = fromEl && fromEl.closest ? fromEl.closest(".lc-run[data-lc-src-path]") : null;
       /* A NODE NOT YET IN THE PAGE HAS NO ANCESTORS (2026-08-13). Components
@@ -1102,6 +1148,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
       });
     },
     read: function (path, fromEl) {    /* → {text, sha} | null (no file yet) */
+      if (HERE.test(path || "")) return here.read(path);
       var t = this.target(fromEl);
       path = this.resolve(path, fromEl);
       if (!t.repo || !t.pat) return Promise.resolve(null);
@@ -1126,6 +1173,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
        word (and an audit can see that they iterated, which no screenshot
        can fake). */
     history: function (path, fromEl, limit) {   /* → [{sha, when, message}] */
+      if (HERE.test(path || "")) return here.history(path);
       var t = this.target(fromEl);
       if (!t.repo || !t.pat) return Promise.resolve([]);
       var p = this.resolve(path, fromEl);
@@ -1143,6 +1191,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         .catch(function () { return []; });
     },
     readAt: function (path, sha, fromEl) {      /* → text | null */
+      if (HERE.test(path || "")) return here.readAt(path, sha);
       var t = this.target(fromEl);
       if (!t.repo || !t.pat) return Promise.resolve(null);
       var p = this.resolve(path, fromEl);
@@ -1154,6 +1203,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         .catch(function () { return null; });
     },
     write: function (path, text, message, sha, fromEl, _retried) {   /* → new sha */
+      if (HERE.test(path || "")) return here.write(path, text, message, sha);
       var t = this.target(fromEl), self = this;
       if (!t.repo || !t.pat) return Promise.reject(new Error("no bench connected"));
       path = this.resolve(path, fromEl);
