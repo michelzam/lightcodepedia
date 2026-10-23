@@ -67,6 +67,7 @@ Each object becomes a row; its keys become the column headers. Header labels are
 | `#id` | Optional — auto-assigned if omitted; add one only to bind or reference this grid |
 | `title="…"` | Title bar shown above the grid |
 | `height="400"` | Grid height in pixels (default 400) |
+| `dates="time, city_time@tz"` | These columns print as a date and an hour, `Oct 23 12:00 PM`: a time written without a zone as written, one with a zone on the reader's clock — or, with `@tz`, in the zone the row's `tz` column names (`Europe/London`) |
 | `format="yaml"` | `yaml` (default), `json`, or `csv` |
 | `editable="true"` | Double-click a cell to edit in place — see below |
 | `master="<id>"` | Filter this grid by the selected row in another grid — see below |

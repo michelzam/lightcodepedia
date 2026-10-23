@@ -1549,6 +1549,35 @@ Auto-included by docs/_layouts/default.html.
        reads every field (Michel, 2026-10-04, the stories example). */
     var shownCols = (el.getAttribute("columns") || "").split(",")
       .map(function (c) { return c.trim(); }).filter(Boolean);
+    /* dates="time": those columns print as a date and an hour, "Oct 23 12:00 PM" — a time
+       written without a zone (a service's local hours) as written, one with a zone on the
+       reader's clock (Michel, 2026-10-22: "the time should displayed in local time just like:
+       Oct 23 12:00 PM") */
+    /* city_time@tz: that column in the zone the row's tz column names (Europe/London) —
+       the city's own clock beside the reader's (Michel, 2026-10-22: "both") */
+    var dateCols = [], dateZone = {};
+    (el.getAttribute("dates") || "").split(",").forEach(function (c) {
+      var p = c.trim().split("@"); if (!p[0]) return;
+      dateCols.push(p[0].trim()); if (p[1]) dateZone[p[0].trim()] = p[1].trim();
+    });
+    var dateText = function (v, zone) {
+      var s = String(v == null ? "" : v), m = /^(\d{4})-(\d\d)-(\d\d)[T ](\d\d):(\d\d)(?::\d\d(?:\.\d+)?)?(Z|[+-]\d\d:?\d\d)?$/.exec(s);
+      if (!m) return null;
+      var mo = +m[2], d = +m[3], h = +m[4], mi = m[5];
+      if (m[6]) {
+        var t = new Date(s); if (isNaN(t.getTime())) return null;
+        if (zone) {
+          try {
+            var parts = {};
+            new Intl.DateTimeFormat("en-US", { timeZone: zone, month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", hourCycle: "h23" })
+              .formatToParts(t).forEach(function (x) { parts[x.type] = x.value; });
+            mo = +parts.month; d = +parts.day; h = +parts.hour % 24; mi = parts.minute;
+          } catch (e) { return null; }   /* a zone the browser does not know: the raw value shows */
+        } else { mo = t.getMonth() + 1; d = t.getDate(); h = t.getHours(); mi = ("0" + t.getMinutes()).slice(-2); }
+      }
+      var mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][mo - 1];
+      return mon + " " + d + " " + ((h % 12) || 12) + ":" + mi + " " + (h < 12 ? "AM" : "PM");
+    };
     /* A TITLE BAR LIKE THE FORM'S (Michel, 2026-10-10: "the grid's header
        should be as big as the Form one"): ▦ and the words of the link that
        declared it — [The dogs](#) — or title="…". The table goes under it. */
@@ -1817,6 +1846,8 @@ Auto-included by docs/_layouts/default.html.
                   var v = row[c] !== undefined ? row[c] : "";
                   /* a UTC stamp prints on the reader's clock, UTC on hover;
                      an editable cell keeps the raw value it will write back */
+                  var dt = !editable && dateCols.indexOf(c) >= 0 ? dateText(v, dateZone[c] ? row[dateZone[c]] : "") : null;
+                  if (dt) return "<td title='" + v + "'>" + dt + "</td>";
                   var w = !editable && window.lcWhen ? window.lcWhen(v) : null;
                   if (w) return "<td title='" + w.utc + "'>" + w.text + "</td>";
                   if (!editable) return "<td>" + v + "</td>";

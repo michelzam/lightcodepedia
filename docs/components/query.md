@@ -148,6 +148,48 @@ SELECT name FROM ghost
 [The grid downstream waits too](#)
 {: .datagrid source="ghost_q" #ghost_grid height="120" empty="Nothing arrives here — no dataset on this page is called ghost." }
 
+## 👆 A query that follows a pick
+
+`{grid.row.column}` in the SQL is the row picked in that grid — its first
+row until a pick — the way a dataset's address reads it. Write it inside
+quotes; a new pick runs the query again.
+
+```csv
+city,tz
+Paris,Europe/Paris
+London,Europe/London
+```
+{: .dataset #picked_cities }
+
+[Pick a city](#)
+{: .datagrid source="picked_cities" #picked_grid height="120" }
+
+```sql
+SELECT '{picked_grid.row.city}' AS city, '{picked_grid.row.tz}' AS zone
+```
+{: .query source="picked_cities" #picked_q }
+
+[What the query read](#)
+{: .datagrid source="picked_q" #picked_out height="90" }
+
+```gherkin
+Feature: A query follows the pick
+  Scenario: The first row until a pick, then the row picked
+    Given the query read the first city
+    :::python
+    assert str(self.page.picked_q.values("city")[0]) == "Paris", self.page.picked_q.values("city")
+    :::
+    When London is picked
+    :::python
+    self.page.picked_grid.select(2)
+    :::
+    Then the query reads London and its zone
+    :::python
+    assert str(self.page.picked_q.values("zone")[0]) == "Europe/London", self.page.picked_q.values("zone")
+    :::
+```
+{: .feature #picked_proof visible="true" status="pending" tags="query" }
+
 ## 🔗 Related components & examples
 
 ```

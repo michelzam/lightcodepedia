@@ -124,8 +124,33 @@ Auto-included by docs/_layouts/default.html.
       chip.textContent = "🔎 ⚠ " + String(msg).slice(0, 70);
       if (window.lcSetDataset) window.lcSetDataset(outId, []);
     }
+    /* A QUERY THAT FOLLOWS A SELECTION (Michel, 2026-10-22, the weather by city: "a computed
+       column city's local time"): {city_grid.row.tz} in the SQL is the grid's picked row — its
+       first row until a pick — as a dataset's address already reads it; written inside quotes
+       by the author ('{city_grid.row.tz}'), a quote in the value doubled; a new pick runs it again */
+    var tplRe = /\{\s*(\w+)\.row\.(\w+)\s*\}/g;
+    function rowOf(gid) {
+      var md = window.lcMasterDetail, r = md && md._last && md._last[gid];
+      if (!r) { var g = document.querySelector(".lc-datagrid[data-lc-id='" + gid + "']"), rr = g ? (window.lcDatasets || {})[g.getAttribute("data-bind")] : null; r = Array.isArray(rr) ? rr[0] : null; }
+      return r;
+    }
     function run() {
-      var sql = currentSql();
+      var sql = currentSql(), gap = "";
+      if (tplRe.test(sql)) {
+        tplRe.lastIndex = 0;
+        sql = sql.replace(tplRe, function (_, g, c) {
+          var r = rowOf(g);
+          if (!r || r[c] == null) { gap = g + ".row." + c; return ""; }
+          return String(r[c]).replace(/'/g, "''");
+        });
+        if (gap) {
+          chip.className = "lc-query";
+          chip.setAttribute("data-waiting", gap);
+          chip.textContent = "⏳ waiting for " + gap;
+          return;
+        }
+      }
+      tplRe.lastIndex = 0;
       chip.setAttribute("data-query", sql);
       /* HALF THE INPUTS IS NO ANSWER. A source that has not been published
          yet used to become an empty table, and the join answered from it:
@@ -171,6 +196,8 @@ Auto-included by docs/_layouts/default.html.
       return chip.getAttribute("data-query") || "";
     };
 
+    /* a query that reads a pick runs again on every pick */
+    if (/\{\s*\w+\.row\.\w+\s*\}/.test(seed)) document.addEventListener("lc-selection", function () { if (chip.isConnected) run(); });
     /* reactive: re-run (with the current SQL) when any input changes */
     binds.forEach(function (id) {
       window.lcDatasetListeners[id] = window.lcDatasetListeners[id] || [];

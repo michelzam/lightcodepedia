@@ -21,7 +21,7 @@ Feature: The pad types like a text field, painted
     When I type "\n{: .mdpad " at the end of the "playground" pad
     Then completion in the "playground" pad after "{: .mdpad " offers "beside, comment, decorations, demo, folded, layout, numbers, piano, replay, rows, save"
     When I type "\n{: .datagrid " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .datagrid " offers "autocomplete, beside, columns, editable, empty, filter, format, height, hints, master, save, sort, source, title"
+    Then completion in the "playground" pad after "{: .datagrid " offers "autocomplete, beside, columns, dates, editable, empty, filter, format, height, hints, master, save, sort, source, title"
     When I type "\n{: .server " at the end of the "playground" pad
     Then completion in the "playground" pad after "{: .server " offers "beside, exports, model, pages"
 
