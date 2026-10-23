@@ -4173,6 +4173,8 @@ _inject_store()
    ink. The widgets that use it show it; the x-ray docks it (2026-08-24).
    The pre-upgrade selectors too, so the code never flashes before hiding. */
 .lc-model, .highlighter-rouge.model, pre.model { display: none; }
+/* a server line its host runs follows the host as a model, and still shows where it runs */
+.lc-server[data-lc-hosted] { display: block; }
 </style>
 
 <script>
@@ -5029,6 +5031,10 @@ _inject_store()
     el.setAttribute("data-lc-id", prefix); el.setAttribute("data-lc-remote", name); el.classList.add("lc-model");
     var known = [], quiet = null, lastSpec = "";
     function nobody() {
+      /* a line the page re-rendered away (a pad redraws its preview) is not
+         the page's import any more: it says nothing over the live one's grids
+         (Michel, 2026-10-22: "nobody serves lc://site" under rows from the host) */
+      if (!el.isConnected) return;
       el.setAttribute("data-lc-nobody", "1");
       document.querySelectorAll(".lc-datagrid[data-bind^='" + prefix + ".']").forEach(function (g) {
         if (window.lcGridSay) window.lcGridSay(g.getAttribute("data-bind"), "🔌 nobody serves lc://" + name + " — open its server page");
@@ -5102,7 +5108,7 @@ _inject_store()
     };
     follow();
     /* a server that leaves says no goodbye: ask again now and then; silence says it */
-    var tick = setInterval(function () { if (!el.isConnected) { clearInterval(tick); return; } if (el.hasAttribute("data-lc-nobody")) follow(); else ping(); }, 4000);
+    var tick = setInterval(function () { if (!el.isConnected) { clearInterval(tick); try { ch.close(); } catch (e) {} return; } if (el.hasAttribute("data-lc-nobody")) follow(); else ping(); }, 4000);
   }
 
   if (window.lcRegisterUpgrader) {
