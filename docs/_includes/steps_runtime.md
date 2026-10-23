@@ -4783,6 +4783,10 @@ _inject_store()
     var pagesId = el.getAttribute("pages") || "";
     var tries = 0;
     (function wait() {
+      /* pages= and no model=: a server of pages only — it never borrows the
+         page's first model (Michel, 2026-10-22: the annex repeated the site's
+         rows and contract), and it stands at once */
+      if (pagesId && !want) { serveModel(el, m[1], sid, function () { return null; }, pagesId); return; }
       var me = modelOf();
       if (me && me._lcModelNames) { serveModel(el, m[1], sid, modelOf, pagesId); return; }
       if (++tries > 60) {

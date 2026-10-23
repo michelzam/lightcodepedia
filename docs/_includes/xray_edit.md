@@ -1521,6 +1521,26 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
       return;
     }
 
+    /* A PAGE SERVED BY THE HOST IT CAME FROM (Michel, 2026-10-22: the gear's
+       Save asked a page of his own host to "create an account"): its source
+       is a file on this origin, so the block goes back there — the whole
+       file read with its version, the block replaced, written through the
+       here: door. A read-only host says so; a stale version is refused. */
+    var hereSrc = (runRoot && runRoot.dataset.lcSrc) || "";
+    if (hereSrc.indexOf(location.origin + "/_md/") === 0 && window.lcBench) {
+      var hp = "here:" + hereSrc.slice((location.origin + "/_md/").length);
+      window.lcBench.read(hp).then(function (f) {
+        if (!f) throw new Error("not on the host: " + hp.slice(5));
+        var next; try { next = xf(f.text); } catch (e) { next = null; }
+        if (next == null) { lcxToast("Couldn't safely locate this block in the page source — save it via the ✏️ page editor.", false); return; }
+        return window.lcBench.write(hp, next, "Inline edit: " + label, f.sha).then(function () {
+          lcxToast("Saved on the host ✓ — the old copy in __backup/", true);
+        });
+      }).catch(function (e) { lcxToast("Save failed: " + (e && e.message ? e.message : e), false); });
+      closeDlg();
+      return;
+    }
+
     if (pat && commitRepo && commitPath) {
       /* on confirmed commit, refresh the fence snapshot so the NEXT edit
          anchors on the committed content — without this a second Keep after

@@ -145,7 +145,12 @@ files a learner is already working in.
     try { ref = decodeURIComponent((location.hash || "").replace(/^#/, "")); }
     catch (e) { ref = (location.hash || "").replace(/^#/, ""); }
     var m = /^src=(.+)$/.exec(ref);
-    return m ? m[1] : "";
+    if (m) return m[1];
+    /* A PAGE A HOST SERVES (Michel, 2026-10-22: "why the url is so long and
+       redundant?"): the host names its file here instead of in the address,
+       so /site stays /site — no #src= repeating the host's own origin */
+    var named = document.querySelector('meta[name="lc-src"]');
+    return named ? location.origin + named.getAttribute("content") : "";
   }
 
   /* A link that names the source ALREADY on screen: unframed, the browser
