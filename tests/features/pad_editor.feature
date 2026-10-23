@@ -23,7 +23,7 @@ Feature: The pad types like a text field, painted
     When I type "\n{: .datagrid " at the end of the "playground" pad
     Then completion in the "playground" pad after "{: .datagrid " offers "autocomplete, beside, columns, editable, empty, filter, format, height, hints, master, save, sort, source, title"
     When I type "\n{: .server " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .server " offers "beside, model"
+    Then completion in the "playground" pad after "{: .server " offers "beside, model, pages"
 
   Scenario: Ctrl+Space inside a python fence offers the runtime's words, the pad's classes, and after self. their attributes
     Michel, 2026-10-21: "should python code also accept code completion in

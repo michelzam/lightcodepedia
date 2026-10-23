@@ -867,3 +867,21 @@ def step_key_saved(context):
 def step_holds_key(context, key):
     got = context.page.evaluate("() => localStorage.getItem('lc_ed_pat')")
     assert got == key, "the page holds %r" % got
+
+
+# the folded diagram's two steps live here, not in course_file_steps.py:
+# runner.feature reaches pedia, that module does not (parity, 2026-10-22)
+@then("the diagram in the open section waits for its classes")
+def step_open_diagram_waits(context):
+    pending = context.page.locator("details[open] .lc-diagram .lc-diagram-pending").first
+    expect(pending).to_be_visible(timeout=30_000)
+
+
+@then("the diagram in the open section names no framework class")
+def step_open_diagram_no_framework(context):
+    context.page.wait_for_timeout(1500)
+    text = context.page.evaluate(
+        """() => [...document.querySelectorAll('details[open] .lc-diagram')]
+                 .map(d => d.textContent).join(' ')""")
+    for name in ("Block", "Accordion", "Recorder", "Chart"):
+        assert name not in text, "the diagram shows the framework class %s" % name

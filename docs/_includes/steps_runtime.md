@@ -4968,9 +4968,9 @@ _inject_store()
     var el = document.querySelector("[data-lc-export='" + name + "']");
     if (el && el._lcExport) el._lcExport.postMessage({ t: ok ? "done" : "refused", id: id, result: result });
   };
-  /* THE CARRIER IS PICKED FROM THE ADDRESS (Michel, 2026-10-22, lc-host run
+  /* THE CARRIER IS PICKED FROM THE ADDRESS (Michel, 2026-10-22, the host's run
      mode): lc://<name> is the browser's own channel, same device, as above;
-     lc://<host:port>/<name> is a host on the network (lc-host serve), and
+     lc://<host:port>/<name> is a host on the network serving the page, and
      "here" is the origin this page was served from. Same messages, same
      answers — one request per message, the spec on a stream — so a client
      page never knows which carrier it rides. */

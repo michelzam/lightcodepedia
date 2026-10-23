@@ -253,6 +253,7 @@ Feature: Two tabs, one server — a page serves a class and a function, another 
     And I open "/run.html#src=gh:acme/demo/courses/demo/dist/annex.md" in tab 2
     And I open "/run.html#src=gh:acme/demo/courses/demo/dist/visitor.md" in tab 3
     Then in tab 1 the grid "pages_grid" lists "/walks" and "lc://annex"
+    And in tab 2 the server "annex" serves
     And in tab 3 the shelf "shelf" shows the cards "🏠 Home, 🐕 Walks, 📁 📎 The annex"
     And in tab 3 the grid "visits" shows "/" with count "0"
     # a page row: the server names the file, the browser lands on it

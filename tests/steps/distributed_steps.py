@@ -136,6 +136,13 @@ def step_tab_standby(context, n, sid):
     expect(_tab(context, n).locator(".lc-server[data-lc-id='" + sid + "']")).to_have_attribute("data-lc-standby", "1", timeout=T)
 
 
+@then('in tab {n:d} the server "{sid}" serves')
+def step_server_serves(context, n, sid):
+    # a server with pages and no model starts a moment after its page: a tap
+    # before that hears "answers nothing", rightly — the proof waits for it
+    expect(_tab(context, n).locator(".lc-server[data-lc-id='" + sid + "']")).to_have_attribute("data-lc-export", sid, timeout=T)
+
+
 @then('in tab {n:d} the grid "{gid}" has {k:d} row, with {r:d} or more requests')
 def step_clients(context, n, gid, k, r):
     page = _tab(context, n)
