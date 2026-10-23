@@ -89,6 +89,7 @@ The fenced block rows become map markers. An empty fenced block (no rows after t
 | `lat="N"` | `48.86` | Initial map centre latitude |
 | `lng="N"` | `2.35` | Initial map centre longitude |
 | `zoom="N"` | `12` | Initial zoom level (1 = world, 18 = street) |
+| `bind="grid_id"` | — | A marker follows the grid's selected row (or a form's lat/lon); bound to a grid, the map also flies to the row picked, at `zoom=` |
 | `height="N"` | `350` | Map height in pixels |
 | `tiles="name"` | `positron` | The look of the tiles: `positron` is quiet grey; `liberty` and `bright` colour the woods green and the water blue. All free (OpenFreeMap). |
 

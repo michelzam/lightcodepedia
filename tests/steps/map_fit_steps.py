@@ -45,6 +45,7 @@ def step_stub_maplibre(context):
           calls.fit.push({ pts: (b && b.pts) || [], opts: o || {} });
           return this;
         };
+        Map.prototype.flyTo = function (o) { (calls.fly = calls.fly || []).push(o || {}); return this; };
         Map.prototype.setBearing = Map.prototype.setPitch = function () { return this; };
         Map.prototype.getBearing = Map.prototype.getPitch = function () { return 0; };
         Map.prototype.getBounds = function () {
@@ -57,6 +58,7 @@ def step_stub_maplibre(context):
           Map: Map, Marker: Marker, LngLatBounds: Bounds,
           NavigationControl: function () {}, Popup: function () {
             this.setHTML = function () { return this; };
+            this.setText = function () { return this; };   // a marker's popup says its label (the real engine has both)
           }
         };
       })();

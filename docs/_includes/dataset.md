@@ -1037,6 +1037,13 @@ Auto-included by docs/_layouts/default.html.
       if (!/^(https?:\/\/|\/)/.test(href) && /^https?:\/\//.test((link.textContent || "").trim())) {
         href = link.textContent.trim();
       }
+      /* a file beside the page (data/sales.csv) on a page read from an http
+         source — a host serving its files: it resolves against that source,
+         not against the site the page is based on (Michel, 2026-10-22) */
+      var srcRoot = el.closest ? el.closest("[data-lc-src]") : null, srcBase = srcRoot ? srcRoot.dataset.lcSrc || "" : "";
+      if (/^https?:\/\//.test(srcBase) && href && !/^[\w+.-]+:/.test(href) && href.charAt(0) !== "/" && href.charAt(0) !== "#") {
+        try { href = new URL(href, srcBase).href; } catch (e) {}
+      }
       /* a table of a .database (db://<database>/<table>, made for a model's
          class) or a lone dataset naming its database (supabase://<name>/<table>):
          the address and key arrive from databases.yml, then the link is a

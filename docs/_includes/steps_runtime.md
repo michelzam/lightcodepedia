@@ -2655,7 +2655,7 @@ class Database(Block):
     pass
 
 
-@component(icon="📡", assoc=[{"n": "model", "target": "Model"}, {"n": "pages", "target": "Dataset"}])
+@component(icon="📡", attrs=[{"n": "exports", "t": "str", "data": True, "attr": "exports"}], assoc=[{"n": "model", "target": "Model"}, {"n": "pages", "target": "Dataset"}])
 class Server(Block):
     """The server line (.server): serves a model at lc://<name>, and the
     pages a dataset lists (pages=, rows of path and file); what it knows
@@ -4854,6 +4854,7 @@ _inject_store()
        a pad or the editor re-renders its blocks, and every render had opened
        one more channel on the same name — a verb then ran once per stale
        listener. The newest render takes the name; the old one closes. */
+    var exportsOf = function () { return String(el.getAttribute("exports") || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean); };
     var reg = window._lcExports = window._lcExports || {};
     if (reg[name]) { try { reg[name].ch.close(); } catch (e) {} document.removeEventListener("lc-model-changed", reg[name].onChange); }
     var ch = lcChan(name), me = "srv-" + Math.random().toString(36).slice(2, 7);
@@ -4903,11 +4904,17 @@ _inject_store()
         if ((window.lcModels || {})[n]) { classes[n] = window.lcModels[n]; rows[n] = (window.lcDatasets || {})[n] || []; }
       });
       var funcs = funcsOf(mEl && mEl._lcModelCode), contract = contractOf(classes, funcs);
+      /* exports="totals,cities": datasets and query results handed out by name, as on a host */
+      var datasets = {};
+      exportsOf().forEach(function (k) {
+        var r = (window.lcDatasets || {})[k]; datasets[k] = Array.isArray(r) ? r : [];
+        contract.push({ name: k, kind: "dataset", signature: k + "(" + Object.keys(datasets[k][0] || {}).join(", ") + ")", doc: "" });
+      });
       window.lcSetDataset(sid + ".contract", contract);
       var pages = pagesId ? pageRows(pagesId) : [];
       var mine = JSON.stringify(pages);
       if (JSON.stringify((window.lcDatasets || {})[sid + ".pages"] || []) !== mine) window.lcSetDataset(sid + ".pages", JSON.parse(mine));
-      return { t: "spec", name: name, classes: classes, funcs: funcs.map(function (f) { return f.n; }), contract: contract, rows: rows, pages: pages };
+      return { t: "spec", name: name, classes: classes, funcs: funcs.map(function (f) { return f.n; }), contract: contract, rows: rows, pages: pages, datasets: datasets };
     }
     function servePage(d, from) {
       /* a client asks a path; the answer names the file and where the
@@ -4941,6 +4948,7 @@ _inject_store()
     var hook = function () { push(); }; hook._lcEl = el;
     (modelOf() && modelOf()._lcModelNames || []).forEach(function (n) { (L[n] = L[n] || []).push(hook); });
     if (pagesId) (L[pagesId] = L[pagesId] || []).push(hook);     /* a page added to the list is served at once */
+    exportsOf().forEach(function (k) { (L[k] = L[k] || []).push(hook); });   /* an exported list that moves is sent again */
     var onChange = function () {
       /* the model re-rendered (a pad): its new classes get the hook too */
       (modelOf() && modelOf()._lcModelNames || []).forEach(function (n) { if ((L[n] || []).indexOf(hook) < 0) (L[n] = L[n] || []).push(hook); });
@@ -5067,6 +5075,8 @@ _inject_store()
         (window.lcRemoteSpec = window.lcRemoteSpec || {})[prefix] = { classes: Object.keys(d.classes), funcs: d.funcs || [] };
         window.lcSetDataset(prefix + ".contract", d.contract || []);     /* m.contract — what was imported */
         window.lcSetDataset(prefix + ".pages", d.pages || []);           /* m.pages — what the server serves as pages */
+        /* m.<name> — what the server exports by name: a dataset, a query's result (Michel, 2026-10-22) */
+        Object.keys(d.datasets || {}).forEach(function (k) { window.lcSetDataset(prefix + "." + k, d.datasets[k] || []); });
         Object.keys(d.classes).forEach(function (n) {
           var s = d.classes[n]; s.remote = { name: name, cls: n, prefix: prefix };
           window.lcModels[prefix + "." + n] = s;

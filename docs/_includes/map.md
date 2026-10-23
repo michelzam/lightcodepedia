@@ -89,7 +89,12 @@ Auto-included by docs/_layouts/default.html.
       var bm = L.marker([centerLat, centerLon], { icon: bicon }).addTo(map);
       var moveBound = function () {
         var p = boundPoint(bind);
-        if (p) bm.setLatLng([p.lat, p.lon]);
+        if (p) {
+          var moved = bm.getLatLng && (bm.getLatLng().lat !== p.lat || bm.getLatLng().lng !== p.lon);
+          bm.setLatLng([p.lat, p.lon]);
+          /* bound to a grid: a row picked takes the map there (bound to a form, only the marker moves) */
+          if (moved && document.querySelector(".lc-datagrid[data-lc-id='" + bind + "']")) map.setView([p.lat, p.lon], zoom);
+        }
       };
       followBound(bind, moveBound, wrap);
       moveBound();
@@ -330,9 +335,19 @@ Auto-included by docs/_layouts/default.html.
           didFit = true;
         }
 
+        var bindsGrid = function () { return !!document.querySelector(".lc-datagrid[data-lc-id='" + bind + "']") && !document.querySelector(".lc-form[data-lc-id='" + bind + "']"); };
         function moveBound() {
           var p = boundPoint(bind);
-          if (p) { ballLngLat = [p.lon, p.lat]; bmarker.setLngLat(ballLngLat); if (!didFit) fitAll(); }
+          if (p) {
+            var was = ballLngLat[0] + "," + ballLngLat[1];
+            ballLngLat = [p.lon, p.lat]; bmarker.setLngLat(ballLngLat);
+            /* BOUND TO A GRID, THE MAP GOES WHERE THE ROW IS (Michel, 2026-10-22: "a map to zoom on the
+               location during the selection" — "the map has already a knob to follow the grid: bind="):
+               a row picked flies the map there, at zoom=. Bound to a form (the fetch ball following
+               its sliders) only the marker moves. */
+            if (didFit && bindsGrid() && was !== ballLngLat[0] + "," + ballLngLat[1] && map.flyTo) map.flyTo({ center: ballLngLat, zoom: zoom, essential: true });
+            if (!didFit) fitAll();
+          }
           if (status) status.textContent = inPark() ? "🎯 In the park! Hit Fetch 🐕" : "Slide to move the ball 🎾";
         }
         followBound(bind, moveBound, wrap);
