@@ -5014,7 +5014,10 @@ _inject_store()
     self.postMessage = function (msg) {
       if (self.closed) return;
       if (msg.t === "follow" && !es) listen();
-      fetch(base, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msg) })
+      /* a request the network drops (a connection closed under it — Safari)
+         is sent once more before silence means nobody (Michel, 2026-10-22) */
+      var send = function () { return fetch(base, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msg) }); };
+      send().catch(function () { return send(); })
         .then(function (r) { return r.json(); }).then(deliver).catch(function () {});
     };
     self.close = function () { self.closed = true; if (es) { try { es.close(); } catch (e) {} es = null; } };
