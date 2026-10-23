@@ -48,6 +48,11 @@ window.lcFrameApply = function () {
   };
   var root = document.documentElement;
   if (q.get("embed") === "true") root.classList.add("lc-embed-mode");
+  /* A PAGE A HOST SERVES (Michel, 2026-10-22: "get started pill … is not
+     appropriate anymore!", "actually the whole menu is useless"): the bar is
+     the public site's — its menu, its key — and the host is someone's own
+     machine; the page stands alone, its heading kept */
+  if (document.querySelector('meta[name="lc-host-serves"]')) root.classList.add("lc-hosted");
   var focus = flag("focus", false);
   if (focus) root.classList.add("lc-focus-mode");
   /* editable: explicit wins everywhere — that is how a focused page keeps its
@@ -248,6 +253,8 @@ body {
 .lc-embed-mode #lc-topbar { display: none !important; }
 .lc-embed-mode body { padding-top: 0 !important; }
 .lc-embed-mode .markdown-body > h1:first-of-type { display: none !important; }
+.lc-hosted #lc-topbar { display: none !important; }
+.lc-hosted body { padding-top: 0 !important; }
 /* ── focus mode: the bar STAYS (a learner needs to know where they are) but
    nothing in it can be pressed — read-only context, not a way out. The bench
    bar and its 🏠 live inside #lc-topbar, so one rule covers both. */

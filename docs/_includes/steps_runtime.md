@@ -4771,12 +4771,16 @@ _inject_store()
        see 6 grids? They are NOT in the source"). A page a host serves names
        the servers that host runs; this line is one of them, so it stands by
        — no second server in the tab, no lc:// link a browser cannot open —
-       and says where it runs. The page shows as it is written. */
+       and says where it runs. The page shows as it is written, and its
+       books read the host: the line follows lc://here/<name> under its own
+       id, so site.pages, site.Visit, site.contract hold the host's rows
+       (Michel, 2026-10-22, "That's all?" → "go"). */
     var hostRuns = document.querySelector('meta[name="lc-host-serves"]');
     if (hostRuns && ("," + hostRuns.getAttribute("content") + ",").indexOf("," + m[1] + ",") >= 0) {
       el.setAttribute("data-lc-hosted", "1");
       el.textContent = "📡 lc://" + m[1] + " — served by this host";
       el.title = (lnk.textContent || m[1]) + ": runs on the host this page came from, not in this tab";
+      importModel(el, "lc://here/" + m[1]);
       return;
     }
     var want = el.getAttribute("model") || "";
