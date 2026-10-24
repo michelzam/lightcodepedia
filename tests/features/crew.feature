@@ -138,3 +138,5 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Then the run's event flow "desk_flow" tells "Ferraro / Chuck disagrees / budget spent / Ferraro → OPEN ⚠️ budget spent"
     When I run the feature "crew_proof"
     Then the feature "crew_proof" is green
+    # a try is a read and its check: the asks column adds up to the gauge (Michel, 2026-10-24: "the grid shows less")
+    And the asks of the crew "desk" add up to its gauge: 2

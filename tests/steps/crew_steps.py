@@ -270,3 +270,13 @@ def step_form_worker(context, who, gid, fid, what):
     context.page.locator(".lc-datagrid[data-lc-id='" + gid + "'] tbody tr", has_text=who).first.click()
     form = context.page.locator("[data-lc-id='" + fid + "']")
     expect(form).to_contain_text(what, timeout=T)
+
+
+@then('the asks of the crew "{cid}" add up to its gauge: {n:d}')
+def step_crew_asks_sum(context, cid, n):
+    rows = _rows(context, cid + ".sorted")
+    total = sum(int(r.get("asks") or 0) for r in rows)
+    assert total == n == int(_crew(context, cid).get_attribute("data-asks") or 0), (total, n, rows)
+    expect(_crew(context, cid).locator(".lc-crew-gauge")).to_contain_text("%d of" % n)
+    expect(context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] thead th", has_text="Asks")).to_have_count(1, timeout=T)
+

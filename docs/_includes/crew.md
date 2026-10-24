@@ -36,7 +36,7 @@ proposes, its checker checks; a DISAGREE goes back to the reader with the
 checker's words, until tries= per message or budget= AI asks in all; what
 is still open takes fallback= (OPEN by default) — a person, never a guess. The crew writes
 only its own datasets: <id>.sorted (each message with its next_stage, why,
-tries, tokens), <id>.flow (the run as an event flow, each step's cost and
+tries, asks — a try is a read and its check, two asks — tokens), <id>.flow (the run as an event flow, each step's cost and
 the result's confidence: ✅ a rule or a check, ⚠️ unchecked or open)
 and <id>.log (every step: who, what in, what out, its tokens); the inbox
 shows from the start and fills a row at a time, pace= seconds apart, the
@@ -211,7 +211,7 @@ Auto-included by docs/_layouts/default.html.
     /* the inbox shows from the start, its stages still open; the run fills them in */
     /* next_stage: where each message moves its family — module 06's stages, a
        state each; the run moves each message to its next one (Michel, 2026-10-24) */
-    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { next_stage: "", why: "", tries: "", tokens: "" }); }); };
+    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { next_stage: "", why: "", tries: "", asks: "", tokens: "" }); }); };
     window.lcSetDataset(id + ".sorted", unsorted());
     window.lcSetDataset(id + ".log", []);
     window.lcSetDataset(id + ".flow", []);
@@ -278,7 +278,7 @@ Auto-included by docs/_layouts/default.html.
           return Promise.resolve();
         }
         var row = inbox[i], text = String(row[textCol] == null ? "" : row[textCol]);
-        var stage = null, tried = 0, note = "", spent = tokens, why = "", trouble = "", broke = false, sure = false;
+        var stage = null, tried = 0, note = "", spent = tokens, asked0 = asks, why = "", trouble = "", broke = false, sure = false;
         var spentBeat = function () { if (!broke) { broke = true; beat("rule", "budget spent: " + asks + " of " + budget + " AI asks"); } };
         var who = row.family || row.name || ("#" + (i + 1));
         status.textContent = "… " + who;
@@ -338,7 +338,9 @@ Auto-included by docs/_layouts/default.html.
           if (!stage && why === "budget spent") spentBeat();
           var tk = tokens - spent;
           beat("event", who + " → " + (stage || fallback) + (sure ? " ✅" : " ⚠️ " + why) + (tk ? cost(tk) : " · free"));
-          out[i] = Object.assign({}, row, { next_stage: stage || fallback, why: why, tries: tried, tokens: tk });
+          /* asks per message: a try is a read and its check — two asks — so the
+             column adds up to the gauge (Michel, 2026-10-24: "the grid shows less") */
+          out[i] = Object.assign({}, row, { next_stage: stage || fallback, why: why, tries: tried, asks: asks - asked0, tokens: tk });
           window.lcSetDataset(id + ".sorted", out.slice());
           pick(who);
           return nap().then(function () { return step(i + 1); });

@@ -26,8 +26,8 @@ Ferraro,Biscuit,asked,We already met Biscuit last week. Can we pay now?
 ```csv
 name,kind,system,checked_by
 Sid,rules,sort,
-Rey,reader,"Read one family message. Where does it move the family? Answer one line — VERDICT: met (a visit), home (an adoption, paid) or asked (a question: it stays).",Chuck
-Chuck,checker,"You check a verdict against the message's row. A family moves one stage at a time: asked, then met, then home. Answer AGREE or DISAGREE, then why, in one line.",
+Rey,reader,"Read one family message: what does the family want to do next? Answer one line — VERDICT: met if they want to visit or see the dog, home if they want to pay or adopt, asked if they want neither and only need an answer.",Chuck
+Chuck,checker,"You check a verdict against the message's row. A family moves one stage at a time: asked, then met, then home — and stays where it is only when it wants neither a visit nor to pay. Answer AGREE or DISAGREE, then why, in one line.",
 ```
 {: .dataset #members }
 
@@ -58,7 +58,7 @@ def sort(message):
 {: .accordion }
 
 [The messages — each family's stage, and the next one the desk gives it](#)
-{: .datagrid source="desk.sorted" columns="family, dog, stage, message, next_stage, why, tries, tokens" #desk_stages }
+{: .datagrid source="desk.sorted" columns="family, dog, stage, message, next_stage, why, tries, asks, tokens" #desk_stages }
 
 ```
 ### 🎏 The run, as an event flow
@@ -144,7 +144,7 @@ message or `budget` for the crew, and what is still open takes `fallback`
 (`OPEN` by default).
 
 The crew writes three datasets and touches nothing else:
-- `desk.sorted`: every message from the start, then its `next_stage`, its `why`, its `tries` and its `tokens` (the row at work is selected, ⏳);
+- `desk.sorted`: every message from the start, then its `next_stage`, its `why`, its `tries`, its `asks` (a try is a read and its check: two asks, so the column adds up to the gauge) and its `tokens` (the row at work is selected, ⏳);
 - `desk.flow`: the run as an [event flow](/components/event_flow) — `{: .event_flow source="desk.flow" }` draws it, each ⚡ a message moving to its next stage, its cost, ✅ or ⚠️;
 - `desk.log`: every step, `who` said what (`in`, `out`) and its `tokens`;
 - the crew's lines — its tokens, the session's and this run's, and the engine's 🔋 asks and tokens left per day and per minute, as under every agent — and `desk.asks` · `desk.tokens` in a proof: the totals.
