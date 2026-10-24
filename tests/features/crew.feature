@@ -46,7 +46,8 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" shows the engine's 🔋 asks left, as an agent does
     # the run reads as an event flow, each step's cost, each result ✅ sure or ⚠️ not; its legend shown (Michel, 2026-10-24)
     When I open the accordion section "event flow"
-    Then the run's event flow "desk_flow" tells "Nguyen → met ✅ · free / Ferraro / Rey proposes home · 12 tokens / Chuck disagrees / Rey proposes met / Chuck agrees / Ferraro → met ✅ · 48 tokens"
+    # each beat names its worker by price: 🐍 Python, 🤖 the AI, 🧑 a person (Michel, 2026-10-24)
+    Then the run's event flow "desk_flow" tells "🐍 Sid: met / Nguyen → met ✅ · free / Ferraro / 🤖 Rey proposes home · 12 tokens / 🤖 Chuck disagrees / 🤖 Rey proposes met / 🤖 Chuck agrees / Ferraro → met ✅ · 48 tokens"
     And the event flow "desk_flow" shows its legend
     And the crew's log shows "Chuck" saying "DISAGREE"
     And Rey's second ask carried Chuck's words
@@ -143,7 +144,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" says why "Ferraro" went "OPEN": "budget spent"
     And the gauge of the crew "desk" reads "2 of 2 AI asks spent", spent
     When I open the accordion section "event flow"
-    Then the run's event flow "desk_flow" tells "Ferraro / Chuck disagrees / budget spent / Ferraro → OPEN ⚠️ budget spent"
+    Then the run's event flow "desk_flow" tells "Ferraro / Chuck disagrees / budget spent / Ferraro → 🧑 OPEN ⚠️ budget spent"
     When I run the feature "crew_proof"
     Then the feature "crew_proof" is green
     # a try is a read and its check: the asks column adds up to the gauge (Michel, 2026-10-24: "the grid shows less")
@@ -172,7 +173,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     # overloading is said: the cut answers, counted
     And the crew "desk" says "✂️ 2 answers cut at 1000 tokens per ask"
     When I open the accordion section "event flow"
-    Then the run's event flow "desk_flow" tells "Ferraro / Rey proposes home / Chuck gives no verdict · 12 tokens ✂️ cut at 1000 / Ferraro → OPEN ⚠️ no agreement in 2 tries"
+    Then the run's event flow "desk_flow" tells "Ferraro / Rey proposes home / Chuck gives no verdict · 12 tokens ✂️ cut at 1000 / Ferraro → 🧑 OPEN ⚠️ no agreement in 2 tries"
 
   Scenario: A checker that says "Agreed." agrees
     Michel, 2026-10-24, on Groq: Ferraro spent all ten asks in five rounds, the

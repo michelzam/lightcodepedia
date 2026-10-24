@@ -79,6 +79,10 @@ Auto-included by docs/_layouts/default.html.
   window._lcCrewReady = true;
 
   var ICON = { rules: "🐍", reader: "🤖", checker: "🧐" };
+  /* the three workers, by their price (Michel, 2026-10-24: "those 3 icons (py, ai,
+     human) on the event-flow"): 🐍 the page's Python, 🤖 an AI ask, 🧑 a person */
+  var WORKER = { rules: "🐍", reader: "🤖", checker: "🤖" }, HUMAN = "🧑";
+  var by = function (m) { return (WORKER[m.kind] || "") + " " + m.name; };
   var esc = function (s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -340,8 +344,8 @@ Auto-included by docs/_layouts/default.html.
             return rule(String(m.system || "").trim(), text).then(function (r) {
               say(m.name, "rules", text, r.error ? "⚠️ " + r.error : (r.stage || "—"));
               var l = stageIn(r.stage, stages); if (l) { stage = l; why = m.name + "'s rule"; sure = true; }
-              beat("command", m.name + " sorts it");
-              beat("event", l ? m.name + ": " + l : r.error ? "⚠️ " + r.error : m.name + ": no rule fits");
+              beat("command", by(m) + " sorts it");
+              beat("event", l ? by(m) + ": " + l : r.error ? "⚠️ " + r.error : by(m) + ": no rule fits");
             });
           });
         }, nap());
@@ -352,26 +356,26 @@ Auto-included by docs/_layouts/default.html.
           /* the reader reads the words; the checker checks them against the row */
           var context = reader.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(reader.reads)) : "";
           spend(1);
-          beat("command", reader.name + " reads it" + (note ? ", with " + (reader.checked_by || "the checker") + "'s words" : ""));
+          beat("command", by(reader) + " reads it" + (note ? ", with " + (reader.checked_by || "the checker") + "'s words" : ""));
           return ask(reader, text + note + context, crewCfg).then(function (a) {
             /* an ask that never left this device (no key) costs nothing: not counted */
             if (a.unsent) spend(-1);
             say(reader.name, "reader", text + note, a.error ? "⚠️ " + a.error : a.text, a.tokens, a);
             if (a.error) trouble = a.unsent ? "no AI key" : "the AI did not answer";
             var verdict = stageIn(a.text, stages);
-            beat("event", a.error ? "⚠️ " + (a.unsent ? "no AI key" : "the AI did not answer") : reader.name + " proposes " + (verdict || "no stage") + cost(a.tokens, a));
+            beat("event", a.error ? "⚠️ " + (a.unsent ? "no AI key" : "the AI did not answer") : by(reader) + " proposes " + (verdict || "no stage") + cost(a.tokens, a));
             if (!verdict) return a.error ? null : loop();
             var checker = reader.checked_by ? byName[reader.checked_by] : null;
             if (!checker) { stage = verdict; why = reader.name; return null; }
-            if (asks >= budget) { spentBeat(); beat("event", checker.name + " cannot check"); return null; }
+            if (asks >= budget) { spentBeat(); beat("event", by(checker) + " cannot check"); return null; }
             status.textContent = "… " + who + ": " + checker.name + " checks " + verdict;
-            beat("rule", checker.name + " checks " + verdict + " against " + who + "'s row" + (checker.reads ? " and " + checker.reads : ""));
+            beat("rule", by(checker) + " checks " + verdict + " against " + who + "'s row" + (checker.reads ? " and " + checker.reads : ""));
             var cctx = checker.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(checker.reads)) : "";
             spend(1);
             return ask(checker, "The message: " + text + "\nIts row: " + JSON.stringify(row) + "\nThe verdict: " + verdict + cctx, crewCfg).then(function (c) {
               say(checker.name, "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, c);
               var said = String(c.text).replace(/^\W*(DIS)?AGREE[DS]?\W*/i, "").slice(0, 90);
-              beat("event", c.error ? "⚠️ the AI did not answer" : (agrees(c.text) ? checker.name + " agrees: " + said : disagrees(c.text) ? checker.name + " disagrees: " + said : checker.name + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
+              beat("event", c.error ? "⚠️ the AI did not answer" : (agrees(c.text) ? by(checker) + " agrees: " + said : disagrees(c.text) ? by(checker) + " disagrees: " + said : by(checker) + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
               if (c.error) { trouble = "the AI did not answer"; return null; }
               if (!agrees(c.text)) {
                 /* the reader is told to answer AGAIN with the reason — a reader told only
@@ -392,7 +396,7 @@ Auto-included by docs/_layouts/default.html.
           if (!stage) why = !reader ? "no reader" : trouble || (asks >= budget ? "budget spent" : "no agreement in " + tried + " tr" + (tried === 1 ? "y" : "ies"));
           if (!stage && why === "budget spent") spentBeat();
           var tk = tokens - spent;
-          beat("event", who + " → " + (stage || fallback) + (sure ? " ✅" : " ⚠️ " + why) + (tk ? cost(tk) : " · free"));
+          beat("event", who + " → " + (stage || HUMAN + " " + fallback) + (sure ? " ✅" : " ⚠️ " + why) + (tk ? cost(tk) : " · free"));
           /* asks per message: a try is a read and its check — two asks — so the
              column adds up to the gauge (Michel, 2026-10-24: "the grid shows less") */
           out[i] = Object.assign({}, row, { next_stage: stage || fallback, why: why, tries: tried, asks: asks - asked0, tokens: tk });
