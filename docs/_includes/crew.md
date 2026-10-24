@@ -96,7 +96,8 @@ Auto-included by docs/_layouts/default.html.
     var w = waiting[cid]; delete waiting[cid];
     if (w) w(ok ? String(result || "") : "", ok ? "" : String(result || ""));
   };
-  function rule(fn, text) {
+  /* one call into the page's Python; it answers through lcCrewAnswer */
+  function py(call) {
     var mp = window._lcMpReady || (window.lcMpy ? (window._lcMpReady = window.lcMpy()) : null);
     if (!mp) return Promise.resolve({ stage: "", error: "no Python on this page" });
     return mp.then(function (m) {
@@ -105,10 +106,20 @@ Auto-included by docs/_layouts/default.html.
         waiting[cid] = function (stage, error) { ok({ stage: stage, error: error }); };
         var pre = window._lcModelPreIn === m ? "" : ((document.getElementById("lc-steps-preamble") || {}).textContent || "") + "\n";
         var run = m.runPython || m.exec || m.pyexec || m.run;
-        try { run.call(m, pre + "_lc_crew_rule(" + JSON.stringify(cid) + "," + JSON.stringify(fn) + "," + JSON.stringify(text) + ")"); window._lcModelPreIn = m; }
+        try { run.call(m, pre + call(JSON.stringify(cid))); window._lcModelPreIn = m; }
         catch (e) { delete waiting[cid]; ok({ stage: "", error: String(e && e.message || e) }); }
       });
     });
+  }
+  var J = JSON.stringify;
+  function rule(fn, text) { return py(function (cid) { return "_lc_crew_rule(" + cid + "," + J(fn) + "," + J(text) + ")"; }); }
+  /* A CHECKER IN PYTHON (Michel, 2026-10-24: "go python Chuck"): an exact rule
+     about the row — one stage at a time — is the page's Python, not an AI ask:
+     the same answer every time, at a rule run's price. Its function gets the
+     message, the verdict and the row; None agrees, a sentence is its reason. */
+  function pyCheck(fn, text, verdict, row) {
+    return py(function (cid) { return "_lc_crew_check(" + cid + "," + J(fn) + "," + J(text) + "," + J(verdict) + "," + J(J(row)) + ")"; })
+      .then(function (r) { return { text: r.stage, error: r.error, tokens: 0 }; });
   }
 
   /* an AI member: one ask, made as the agent panel makes it (lcAgentAsk:
@@ -236,7 +247,11 @@ Auto-included by docs/_layouts/default.html.
     /* the inbox shows from the start, its stages still open; the run fills them in */
     /* next_stage: where each message moves its family — module 06's stages, a
        state each; the run moves each message to its next one (Michel, 2026-10-24) */
-    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { next_stage: "", why: "", tries: "", asks: "", tokens: "" }); }); };
+    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { next_stage: "", changed: "", why: "", tries: "", asks: "", tokens: "" }); }); };
+    /* ≠ SINCE THE LAST RUN (Michel, 2026-10-24: "a second run with EXACTLY same
+       params is Sooooo different!! Why?" → "≠ marks"): the same knobs, the same
+       messages — a row whose next stage moved is marked with what it was */
+    var lastRun = null, changedN = 0;
     window.lcSetDataset(id + ".sorted", unsorted());
     window.lcSetDataset(id + ".log", []);
     window.lcSetDataset(id + ".flow", []);
@@ -257,7 +272,7 @@ Auto-included by docs/_layouts/default.html.
     var totals = function (log, rows, asks, tokens) {
       var runs = log.filter(function (r) { return r.kind === "rules"; }).length;
       var open = rows.filter(function (r) { return r.next_stage === fallback; }).length;
-      var t = { runs: runs, asks: asks, open: open, tokens: tokens, cost: runs * units[0] + asks * units[1] + open * units[2],
+      var t = { runs: runs, asks: asks, open: open, tokens: tokens, changed: changedN, cost: runs * units[0] + asks * units[1] + open * units[2],
                 done: box.getAttribute("data-state") === "done" };
       ["runs", "open", "cost"].forEach(function (k) { box.setAttribute("data-" + k, String(t[k])); });
       box.setAttribute("data-lc-value", JSON.stringify(t));
@@ -284,9 +299,13 @@ Auto-included by docs/_layouts/default.html.
     btn.addEventListener("click", function () {
       var ms = members(), byName = {};
       ms.forEach(function (m) { byName[m.name] = m; });
-      var rules = ms.filter(function (m) { return m.kind === "rules"; });
+      /* a rules member named in a reader's checked_by checks; the others sort */
+      var checks = {};
+      ms.forEach(function (m) { if (m.kind === "reader" && m.checked_by) checks[m.checked_by] = 1; });
+      var rules = ms.filter(function (m) { return m.kind === "rules" && !checks[m.name]; });
       var reader = ms.filter(function (m) { return m.kind === "reader"; })[0] || null;
       var inbox = rowsOf(inboxId), out = unsorted(), log = [], asks = 0, n = 0, tokens = 0, failed = 0, cuts = 0;
+      changedN = 0;
       var spend = function (d) { asks += d; box.setAttribute("data-asks", String(asks)); gauge(asks); };
       var say = function (who, kind, said, heard, tk, a) {
         tokens += tk || 0; session += tk || 0; box.setAttribute("data-tokens", String(tokens));
@@ -316,11 +335,15 @@ Auto-included by docs/_layouts/default.html.
       var step = function (i) {
         if (i >= inbox.length) {
           box.setAttribute("data-state", "done"); paintBounds();
+          box.setAttribute("data-changed", String(changedN));
           totals(log, out, asks, tokens);
           window.lcSetDataset(id + ".sorted", out.slice());     /* the cells read the totals once more, done */
           status.textContent = "✓ " + out.length + " sorted, " + asks + " of " + budget + " AI asks, " + tokens + " tokens" +
             (cuts ? " — ✂️ " + cuts + " answer" + (cuts === 1 ? "" : "s") + " cut at " + crewCfg.cap + " tokens per ask" : "") +
+            (lastRun ? " — ≠ " + changedN + " changed since the last run" : "") +
             (failed ? " — ⚠️ the AI did not answer " + failed + " time" + (failed === 1 ? "" : "s") + ": 🔑 your keys" : "");
+          lastRun = {};
+          out.forEach(function (r, k) { lastRun[inbox[k].family || inbox[k].name || ("#" + (k + 1))] = r.next_stage; });
           /* an engine that did not answer: the 🔑 is marked, the line says so — the
              keys unfold only when asked (Michel, 2026-10-24: "once the run is done,
              the key panel is unfolded. WHY?? It makes noise") */
@@ -367,17 +390,20 @@ Auto-included by docs/_layouts/default.html.
             if (!verdict) return a.error ? null : loop();
             var checker = reader.checked_by ? byName[reader.checked_by] : null;
             if (!checker) { stage = verdict; why = reader.name; return null; }
-            if (asks >= budget) { spentBeat(); beat("event", by(checker) + " cannot check"); return null; }
+            var inPy = checker.kind === "rules";
+            if (!inPy && asks >= budget) { spentBeat(); beat("event", by(checker) + " cannot check"); return null; }
             status.textContent = "… " + who + ": " + checker.name + " checks " + verdict;
             beat("rule", by(checker) + " checks " + verdict + " against " + who + "'s row" + (checker.reads ? " and " + checker.reads : ""));
             var cctx = checker.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(checker.reads)) : "";
-            spend(1);
-            return ask(checker, "The message: " + text + "\nIts row: " + JSON.stringify(row) + "\nThe verdict: " + verdict + cctx, crewCfg).then(function (c) {
-              say(checker.name, "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, c);
+            if (!inPy) spend(1);
+            var checked = inPy ? pyCheck(String(checker.system || "").trim(), text, verdict, row)
+              : ask(checker, "The message: " + text + "\nIts row: " + JSON.stringify(row) + "\nThe verdict: " + verdict + cctx, crewCfg);
+            return checked.then(function (c) {
+              say(checker.name, inPy ? "rules" : "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, inPy ? null : c);
               /* the whole reason, never cut (Michel, 2026-10-24: "some events are truncated") */
               var said = String(c.text).replace(/^\W*(DIS)?AGREE[DS]?\W*/i, "").replace(/\s+/g, " ").trim();
-              beat("event", c.error ? "⚠️ the AI did not answer" : (agrees(c.text) ? by(checker) + " agrees: " + said : disagrees(c.text) ? by(checker) + " disagrees: " + said : by(checker) + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
-              if (c.error) { trouble = "the AI did not answer"; return null; }
+              beat("event", c.error ? "⚠️ " + (inPy ? c.error : "the AI did not answer") : (agrees(c.text) ? by(checker) + " agrees: " + said : disagrees(c.text) ? by(checker) + " disagrees: " + said : by(checker) + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
+              if (c.error) { trouble = inPy ? "the check failed: " + c.error : "the AI did not answer"; return null; }
               if (!agrees(c.text)) {
                 /* the reader is told to answer AGAIN with the reason — a reader told only
                    what the family wants kept proposing it (Michel's run, 2026-10-24:
@@ -400,7 +426,10 @@ Auto-included by docs/_layouts/default.html.
           beat("event", who + " → " + (stage || HUMAN + " " + fallback) + (sure ? " ✅" : " ⚠️ " + why) + (tk ? cost(tk) : " · free"));
           /* asks per message: a try is a read and its check — two asks — so the
              column adds up to the gauge (Michel, 2026-10-24: "the grid shows less") */
-          out[i] = Object.assign({}, row, { next_stage: stage || fallback, why: why, tries: tried, asks: asks - asked0, tokens: tk });
+          var next = stage || fallback, was = lastRun ? lastRun[who] : undefined;
+          var moved = was !== undefined && was !== next;
+          if (moved) changedN++;
+          out[i] = Object.assign({}, row, { next_stage: next, changed: moved ? "≠ was " + was : "", why: why, tries: tried, asks: asks - asked0, tokens: tk });
           totals(log, out, asks, tokens);
           window.lcSetDataset(id + ".sorted", out.slice());
           pick(who);

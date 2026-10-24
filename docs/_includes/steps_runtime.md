@@ -2779,6 +2779,11 @@ class Crew(Agent):
         """💰 runs × 1 + asks × 30 + open × 900 — or the prices costs= gives."""
         return int(self._attr("data-cost") or 0)
 
+    @property
+    def changed(self):
+        """≠ The messages whose next stage moved since the run before."""
+        return int(self._attr("data-changed") or 0)
+
     def run(self):
         """Press ▶ Run, as a person would; the crew works on, the page repaints."""
         self._tap(".lc-crew-run")
@@ -3848,6 +3853,19 @@ def _lc_crew_rule(cid, fn, text):
             raise NameError("no function " + fn + " on this page")
         res = f(text)
         js.window.lcCrewAnswer(cid, True, "" if res is None else str(res))
+    except Exception as e:
+        js.window.lcCrewAnswer(cid, False, str(e))
+
+
+def _lc_crew_check(cid, fn, text, verdict, row_json):
+    """A crew's checker in Python: fn(message, verdict, row) returns None to
+    agree, or the reason it disagrees (Michel, 2026-10-24: "go python Chuck")."""
+    f = globals().get(fn)
+    try:
+        if not callable(f) or isinstance(f, type) or fn.startswith("_"):
+            raise NameError("no function " + fn + " on this page")
+        res = f(text, verdict, json.loads(row_json))
+        js.window.lcCrewAnswer(cid, True, "AGREE" if res is None or res is True else "DISAGREE — " + str(res))
     except Exception as e:
         js.window.lcCrewAnswer(cid, False, str(e))
 

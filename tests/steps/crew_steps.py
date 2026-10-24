@@ -71,17 +71,18 @@ def step_crew_log(context, who, text):
 def step_second_ask(context):
     reads = [a for a in context.crew_asks if "AGREE or DISAGREE" not in a["system"]]
     assert len(reads) == 2, reads
-    assert "no visit yet" in reads[1]["user"], reads[1]["user"]
+    assert ("no visit yet" in reads[1]["user"] or "one stage at a time" in reads[1]["user"]), reads[1]["user"]
     # …and is told to answer again with that reason (Michel, 2026-10-24: Rey said home five times)
     assert "Answer again, taking that reason into account" in reads[1]["user"], reads[1]["user"]
 
 
-@then("Rey read the words only, and Chuck checked them against the row")
+@then("Rey read the words only, and Chuck checked the row in Python")
 def step_row_to_checker(context):
-    reads = [a for a in context.crew_asks if "AGREE or DISAGREE" not in a["system"]]
-    checks = [a for a in context.crew_asks if "AGREE or DISAGREE" in a["system"]]
-    assert reads and all('"stage"' not in a["user"] for a in reads), reads
-    assert checks and '"stage":"asked"' in checks[0]["user"], checks[0]["user"]
+    assert context.crew_asks and all("AGREE or DISAGREE" not in a["system"] for a in context.crew_asks), "an AI ask carried a checker's instructions"
+    assert all('"stage"' not in a["user"] for a in context.crew_asks), context.crew_asks
+    checks = [r for r in _rows(context, "desk.log") if r.get("who") == "Chuck"]
+    assert checks and all(r.get("kind") == "rules" for r in checks), checks
+    assert "DISAGREE — the row says asked: one stage at a time" in str(checks[0].get("out")), checks[0]
 
 
 
@@ -352,3 +353,17 @@ def step_stub_crew_ai_words(context):
         route.fulfill(status=200, content_type="application/json",
                       body=json.dumps({"choices": [{"message": {"content": text}}], "usage": {"total_tokens": 12}}))
     context.page.route("**/chat/completions*", answer)
+
+
+@when("the AI changes its mind: Rey now answers asked")
+def step_ai_changes(context):
+    context.page.unroute("**/chat/completions*")
+    context.page.route("**/chat/completions*", lambda route: route.fulfill(status=200, content_type="application/json",
+        body=json.dumps({"choices": [{"message": {"content": "VERDICT: asked"}}], "usage": {"total_tokens": 12}})))
+
+
+@then('the grid of the crew "{cid}" marks "{family}" changed: "{mark}"')
+def step_crew_changed(context, cid, family, mark):
+    rows = [r for r in _rows(context, cid + ".sorted") if r.get("family") == family]
+    assert rows and rows[0].get("changed") == mark, rows
+    expect(context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tbody tr", has_text=family).first).to_contain_text(mark, timeout=T)
