@@ -9,7 +9,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
   consistent with the previous module" — each message's row carries its
   family's stage (asked, met, home), the crew writes its next_stage.
 
-  Scenario: The desk loops — Rey says home, Chuck (Python) disagrees, Rey says met; the rules sort the rest for free
+  Scenario: The desk loops — Rey says home, Chuck disagrees, Rey says met; the rules sort the rest for free
     Given I have a clean browser page
     And an energy key "AIza-crew-test" is already saved on this device
     And the AI answers as Rey and Chuck, Rey wrong the first time
@@ -27,42 +27,40 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" sorted "Nguyen" as "met" in 0 tries
     And the crew "desk" sorted "Okafor" as "home" in 0 tries
     And the crew "desk" sorted "Ferraro" as "met" in 2 tries
-    # Chuck is Python (Michel, 2026-10-24: "go python Chuck"): his checks cost no ask
-    And the crew "desk" asked the AI 2 times
+    And the crew "desk" asked the AI 4 times
     # tokens, globally and by step (Michel, 2026-10-23: "show the token consumption")
-    And the crew "desk" spent 24 tokens, 12 on each AI step
+    And the crew "desk" spent 48 tokens, 12 on each AI step
     # an agent's own token line, and the why of each stage (Michel, 2026-10-24)
-    And the crew "desk" shows its tokens as an agent does: "Session: 24 tokens · this run: 24"
+    And the crew "desk" shows its tokens as an agent does: "Session: 48 tokens · this run: 48"
     And the crew "desk" says why "Nguyen" went "met": "Sid's rule"
     And the crew "desk" says why "Ferraro" went "met": "Chuck agreed"
     # one grid: each family's stage beside its next one (Michel, 2026-10-24: "why 2 grids for the families?")
     And in tab 1 the grid "desk_stages" lists "Okafor" and "home"
     # each message names its dog (Michel, 2026-10-24: "I see no dog name there?")
     And in tab 1 the grid "desk_stages" lists "Ferraro" and "Biscuit"
-    # the reader reads the words; the checker checks them against the row, in Python — Chuck holds the stage, Rey does not
-    And Rey read the words only, and Chuck checked the row in Python
+    # the reader reads the words; the checker checks them against the row — Chuck holds the stage, Rey does not
+    And Rey read the words only, and Chuck checked them against the row
     # the cost, three workers: 🐍 × 1, 🤖 × 30, 🧑 × 900 (Michel, 2026-10-24: "a nice global score for the costs")
-    And the desk's cost reads 65: 5 rule runs, 2 AI asks, 0 left OPEN
+    And the desk's cost reads 123: 3 rule runs, 4 AI asks, 0 left OPEN
     # the crew is an agent: the engine's 🔋 asks and tokens per unit of time, as under any agent (Michel, 2026-10-24)
     And the crew "desk" shows the engine's 🔋 asks left, as an agent does
     # the run reads as an event flow, each step's cost, each result ✅ sure or ⚠️ not; its legend shown (Michel, 2026-10-24)
     When I open the accordion section "event flow"
     # each beat names its worker by price: 🐍 Python, 🤖 the AI, 🧑 a person (Michel, 2026-10-24)
-    Then the run's event flow "desk_flow" tells "🐍 Sid: met / Nguyen → met ✅ · free / Ferraro / 🤖 Rey proposes home · 12 tokens / 🐍 Chuck disagrees: the row says asked: one stage at a time / 🤖 Rey proposes met / 🐍 Chuck agrees / Ferraro → met ✅ · 24 tokens"
+    Then the run's event flow "desk_flow" tells "🐍 Sid: met / Nguyen → met ✅ · free / Ferraro / 🤖 Rey proposes home · 12 tokens / 🤖 Chuck disagrees: the row says asked: no visit yet, and a family moves one stage at a time, so it cannot go home before it has met the dog / 🤖 Rey proposes met / 🤖 Chuck agrees / Ferraro → met ✅ · 48 tokens"
     And the event flow "desk_flow" shows its legend
     And the crew's log shows "Chuck" saying "DISAGREE"
     And Rey's second ask carried Chuck's words
     When I run the feature "crew_proof"
     Then the feature "crew_proof" is green
-    # the same knobs, another answer: the rows that moved are marked ≠ (Michel, 2026-10-24: "a second run with EXACTLY same params is Sooooo different!! Why?")
+    # the same knobs, another answer — said on the cost only (Michel, 2026-10-24: "The change should be only on global score, to keep it simple")
     When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
-    And the crew "desk" says "≠ 0 changed since the last run"
+    And the desk's cost line says "123 — = the last run"
     When the AI changes its mind: Rey now answers asked
     And I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
-    And the crew "desk" says "≠ 1 changed since the last run"
-    And the grid of the crew "desk" marks "Ferraro" changed: "≠ was met"
+    And the desk's cost line says "63 — ≠ the last run: 123"
 
   Scenario: No key — the rules alone, the claim left OPEN for a person, nothing counted that was never sent
     Given I have a clean browser page
@@ -138,8 +136,8 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Michel, 2026-10-24: "make visible the constraints … play with the knob's
     values: tries and budget, maybe with jauges", then "Steppers? I don't
     see them!". The bounds carry − and +; a gauge shows the budget spent.
-    With a budget of 1, Ferraro's first read spends it: Chuck (Python, free)
-    says no, no ask is left for another read, Ferraro stays OPEN for a person.
+    With a budget of 2, Ferraro's read and check spend it all: Chuck says
+    no, no ask is left, Ferraro stays OPEN for a person.
 
     Given I have a clean browser page
     And an energy key "AIza-crew-test" is already saved on this device
@@ -147,19 +145,19 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I navigate to "/components/crew"
     Then the crew "desk" shows its bounds: 2 tries, a budget of 6
     And the gauge of the crew "desk" reads "0 of 6 AI asks spent", low
-    When I press "−" on the budget of the crew "desk" 5 times
-    Then the crew "desk" shows its bounds: 2 tries, a budget of 1
+    When I press "−" on the budget of the crew "desk" 4 times
+    Then the crew "desk" shows its bounds: 2 tries, a budget of 2
     When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
     And the crew "desk" says why "Ferraro" went "OPEN": "budget spent"
-    And the gauge of the crew "desk" reads "1 of 1 AI asks spent", spent
+    And the gauge of the crew "desk" reads "2 of 2 AI asks spent", spent
     When I open the accordion section "event flow"
     Then the run's event flow "desk_flow" tells "Ferraro / Chuck disagrees / budget spent / Ferraro → 🧑 OPEN ⚠️ budget spent"
     When I run the feature "crew_proof"
     Then the feature "crew_proof" is green
     # a try is a read and its check: the asks column adds up to the gauge (Michel, 2026-10-24: "the grid shows less")
-    And the asks of the crew "desk" add up to its gauge: 1
-    And the desk's cost reads 934: 4 rule runs, 1 AI asks, 1 left OPEN
+    And the asks of the crew "desk" add up to its gauge: 2
+    And the desk's cost reads 963: 3 rule runs, 2 AI asks, 1 left OPEN
 
   Scenario: A checker that runs out of words does not agree — every ask has an agent's allowance, said, and lowered only
     Michel, 2026-10-24, on Groq's gpt-oss (a model that thinks first): Ferraro
@@ -171,9 +169,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Given I have a clean browser page
     And an energy key "AIza-crew-test" is already saved on this device
     And the AI answers as Rey, and Chuck runs out of words
-    # an AI checker: the lesson served with Chuck as an AI ask (the engine keeps both kinds)
-    And the module 07 lesson "01bis_the_front_desk.md" is served with an AI Chuck
-    When I open the served lesson
+    When I navigate to "/components/crew"
     # the cap is said, and lowered only (Michel, 2026-10-24: "display the token limit … lowering it (but not increasing it)")
     Then the crew "desk" allows 2000 tokens per ask, and no more
     When I press "−" on the max_tokens of the crew "desk" 4 times
@@ -183,7 +179,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" says why "Ferraro" went "OPEN": "no agreement in 2 tries"
     And every ask of the crew allowed 1000 tokens
     # overloading is said: the cut answers, counted
-    And the crew "desk" says "✂️ 3 answers cut at 1000 tokens per ask"
+    And the crew "desk" says "✂️ 2 answers cut at 1000 tokens per ask"
     When I open the accordion section "event flow"
     Then the run's event flow "desk_flow" tells "Ferraro / Rey proposes home / Chuck gives no verdict · 12 tokens ✂️ cut at 1000 / Ferraro → 🧑 OPEN ⚠️ no agreement in 2 tries"
 
@@ -194,9 +190,27 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Given I have a clean browser page
     And an energy key "AIza-crew-test" is already saved on this device
     And the AI answers as Rey and Chuck, Rey wrong the first time, Chuck in his own words
-    And the module 07 lesson "01bis_the_front_desk.md" is served with an AI Chuck
-    When I open the served lesson
+    When I navigate to "/components/crew"
     And I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
     And the crew "desk" sorted "Ferraro" as "met" in 2 tries
     And the crew "desk" says why "Ferraro" went "met": "Chuck agreed"
+
+  Scenario: A checker in Python — an exact rule, free, the same every time
+    Michel, 2026-10-24: "go python Chuck", then "just one agent? I would like
+    to have 2": the lesson keeps Chuck an AI agent; the engine keeps a Python
+    checker for a rule that is exact — a rules member named in checked_by.
+
+    Given I have a clean browser page
+    And an energy key "AIza-crew-test" is already saved on this device
+    And the AI answers as Rey and Chuck, Rey wrong the first time
+    And the module 07 lesson "01bis_the_front_desk.md" is served with a Python Chuck
+    When I open the served lesson
+    And I press ▶ Run on the crew "desk"
+    Then the crew "desk" is done
+    And the crew "desk" says why "Ferraro" went "met": "Chuck agreed"
+    # Chuck's checks are rule runs: Rey alone asks — Ferraro, Lindqvist, Moreau: two reads each
+    And the crew "desk" asked the AI 6 times
+    And the desk's cost reads 192: 12 rule runs, 6 AI asks, 0 left OPEN
+    When I open the accordion section "event flow"
+    Then the run's event flow "desk_flow" tells "Ferraro / 🤖 Rey proposes home / 🐍 Chuck disagrees: no visit yet: met first / 🤖 Rey proposes met / 🐍 Chuck agrees / Ferraro → met ✅"

@@ -2779,11 +2779,6 @@ class Crew(Agent):
         """💰 runs × 1 + asks × 30 + open × 900 — or the prices costs= gives."""
         return int(self._attr("data-cost") or 0)
 
-    @property
-    def changed(self):
-        """≠ The messages whose next stage moved since the run before."""
-        return int(self._attr("data-changed") or 0)
-
     def run(self):
         """Press ▶ Run, as a person would; the crew works on, the page repaints."""
         self._tap(".lc-crew-run")

@@ -247,11 +247,11 @@ Auto-included by docs/_layouts/default.html.
     /* the inbox shows from the start, its stages still open; the run fills them in */
     /* next_stage: where each message moves its family — module 06's stages, a
        state each; the run moves each message to its next one (Michel, 2026-10-24) */
-    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { next_stage: "", changed: "", why: "", tries: "", asks: "", tokens: "" }); }); };
-    /* ≠ SINCE THE LAST RUN (Michel, 2026-10-24: "a second run with EXACTLY same
-       params is Sooooo different!! Why?" → "≠ marks"): the same knobs, the same
-       messages — a row whose next stage moved is marked with what it was */
-    var lastRun = null, changedN = 0;
+    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { next_stage: "", why: "", tries: "", asks: "", tokens: "" }); }); };
+    /* ≠ THE LAST RUN, ON THE COST ONLY (Michel, 2026-10-24: "a second run with
+       EXACTLY same params is Sooooo different!! Why?" → "The change should be
+       only on global score, to keep it simple"): vs_last says = or ≠, done */
+    var lastCost = null;
     window.lcSetDataset(id + ".sorted", unsorted());
     window.lcSetDataset(id + ".log", []);
     window.lcSetDataset(id + ".flow", []);
@@ -272,8 +272,9 @@ Auto-included by docs/_layouts/default.html.
     var totals = function (log, rows, asks, tokens) {
       var runs = log.filter(function (r) { return r.kind === "rules"; }).length;
       var open = rows.filter(function (r) { return r.next_stage === fallback; }).length;
-      var t = { runs: runs, asks: asks, open: open, tokens: tokens, changed: changedN, cost: runs * units[0] + asks * units[1] + open * units[2],
+      var t = { runs: runs, asks: asks, open: open, tokens: tokens, cost: runs * units[0] + asks * units[1] + open * units[2],
                 done: box.getAttribute("data-state") === "done" };
+      t.vs_last = !t.done || lastCost == null ? "" : t.cost === lastCost ? "— = the last run" : "— ≠ the last run: " + lastCost;
       ["runs", "open", "cost"].forEach(function (k) { box.setAttribute("data-" + k, String(t[k])); });
       box.setAttribute("data-lc-value", JSON.stringify(t));
       return t;
@@ -305,7 +306,6 @@ Auto-included by docs/_layouts/default.html.
       var rules = ms.filter(function (m) { return m.kind === "rules" && !checks[m.name]; });
       var reader = ms.filter(function (m) { return m.kind === "reader"; })[0] || null;
       var inbox = rowsOf(inboxId), out = unsorted(), log = [], asks = 0, n = 0, tokens = 0, failed = 0, cuts = 0;
-      changedN = 0;
       var spend = function (d) { asks += d; box.setAttribute("data-asks", String(asks)); gauge(asks); };
       var say = function (who, kind, said, heard, tk, a) {
         tokens += tk || 0; session += tk || 0; box.setAttribute("data-tokens", String(tokens));
@@ -335,15 +335,12 @@ Auto-included by docs/_layouts/default.html.
       var step = function (i) {
         if (i >= inbox.length) {
           box.setAttribute("data-state", "done"); paintBounds();
-          box.setAttribute("data-changed", String(changedN));
           totals(log, out, asks, tokens);
           window.lcSetDataset(id + ".sorted", out.slice());     /* the cells read the totals once more, done */
           status.textContent = "✓ " + out.length + " sorted, " + asks + " of " + budget + " AI asks, " + tokens + " tokens" +
             (cuts ? " — ✂️ " + cuts + " answer" + (cuts === 1 ? "" : "s") + " cut at " + crewCfg.cap + " tokens per ask" : "") +
-            (lastRun ? " — ≠ " + changedN + " changed since the last run" : "") +
             (failed ? " — ⚠️ the AI did not answer " + failed + " time" + (failed === 1 ? "" : "s") + ": 🔑 your keys" : "");
-          lastRun = {};
-          out.forEach(function (r, k) { lastRun[inbox[k].family || inbox[k].name || ("#" + (k + 1))] = r.next_stage; });
+          lastCost = +box.getAttribute("data-cost");
           /* an engine that did not answer: the 🔑 is marked, the line says so — the
              keys unfold only when asked (Michel, 2026-10-24: "once the run is done,
              the key panel is unfolded. WHY?? It makes noise") */
@@ -426,10 +423,7 @@ Auto-included by docs/_layouts/default.html.
           beat("event", who + " → " + (stage || HUMAN + " " + fallback) + (sure ? " ✅" : " ⚠️ " + why) + (tk ? cost(tk) : " · free"));
           /* asks per message: a try is a read and its check — two asks — so the
              column adds up to the gauge (Michel, 2026-10-24: "the grid shows less") */
-          var next = stage || fallback, was = lastRun ? lastRun[who] : undefined;
-          var moved = was !== undefined && was !== next;
-          if (moved) changedN++;
-          out[i] = Object.assign({}, row, { next_stage: next, changed: moved ? "≠ was " + was : "", why: why, tries: tried, asks: asks - asked0, tokens: tk });
+          out[i] = Object.assign({}, row, { next_stage: stage || fallback, why: why, tries: tried, asks: asks - asked0, tokens: tk });
           totals(log, out, asks, tokens);
           window.lcSetDataset(id + ".sorted", out.slice());
           pick(who);

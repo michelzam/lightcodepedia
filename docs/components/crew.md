@@ -27,7 +27,7 @@ Ferraro,Biscuit,asked,We already met Biscuit last week. Can we pay now?
 name,kind,system,checked_by
 Sid,rules,sort,
 Rey,reader,"Read one family message: which stage should the family move to next? Answer one line — VERDICT: met if they want to visit or see the dog, home if they want to pay or adopt, asked if they want neither and only need an answer. If a checker disagreed, follow its reason.",Chuck
-Chuck,rules,one_stage,
+Chuck,checker,"You check a verdict against the message's row. A family moves one stage at a time: asked, then met, then home — and stays where it is only when it wants neither a visit nor to pay. Answer AGREE or DISAGREE, then why, in one line.",
 ```
 {: .dataset #members }
 
@@ -41,16 +41,6 @@ def sort(message):
     if "pay" in m or "fee" in m:
         return "home"          # the fee: the dog goes home
     return None
-
-STAGES = ["asked", "met", "home"]
-
-def one_stage(message, verdict, row):
-    now, then = STAGES.index(row["stage"]), STAGES.index(verdict)
-    if then > now + 1:
-        return "the row says " + row["stage"] + ": one stage at a time"
-    if then < now:
-        return "the row says " + row["stage"] + ": a family never goes back"
-    return None                # it agrees
 ```
 {: .model }
 
@@ -68,9 +58,9 @@ def one_stage(message, verdict, row):
 {: .accordion }
 
 [The messages — each family's stage, and the next one the desk gives it](#)
-{: .datagrid source="desk.sorted" columns="family, dog, stage, message, next_stage, changed, why, tries, asks, tokens" #desk_stages }
+{: .datagrid source="desk.sorted" columns="family, dog, stage, message, next_stage, why, tries, asks, tokens" #desk_stages }
 
-💰 **The desk's cost: {= desk.cost }** = 🐍 {= desk.runs } rule runs × 1 + 🤖 {= desk.asks } AI asks × 30 + 🧑 {= desk.open } left `OPEN` for a person × 900
+💰 **The desk's cost: {= desk.cost }** {= desk.vs_last } = 🐍 {= desk.runs } rule runs × 1 + 🤖 {= desk.asks } AI asks × 30 + 🧑 {= desk.open } left `OPEN` for a person × 900
 
 ```
 ### 🎏 The run, as an event flow
@@ -136,9 +126,9 @@ A guide's line can read the page: `{= members.first.name }` in a `say:` is a
 | `rules` | the page's own Python function answers a stage, or `None` | the function's name | free |
 | `reader` | one AI ask on the message's words; its answer must name a stage | its instructions | one ask |
 | `checker` | one AI ask on a reader's verdict, with the message's whole row: `AGREE` or `DISAGREE`, and why | its instructions | one ask |
-| `rules`, named in a reader's `checked_by` | a **Python check**: the function gets the message, the verdict and the row, returns `None` to agree or the reason it disagrees — here Chuck's `one_stage` | the function's name | free, and the same answer every time |
+| `rules`, named in a reader's `checked_by` | a **Python check** instead: its function gets the message, the verdict and the row, returns `None` to agree or the reason it disagrees — for a rule that is exact | the function's name | free, the same answer every time |
 
-`checked_by` wires a reader to its checker — an AI one, or a Python one when the rule is exact (one stage at a time is: Chuck is Python here). The reader reads the words; the
+`checked_by` wires a reader to its checker. The reader reads the words; the
 checker checks them against the facts — the message's row (here, the
 family's `stage`). A `reads` column names a dataset whose rows travel with
 a member's ask too.
@@ -162,7 +152,7 @@ The crew writes three datasets and touches nothing else:
 - `desk.sorted`: every message from the start, then its `next_stage`, its `why`, its `tries`, its `asks` (a try is a read and its check: two asks, so the column adds up to the gauge) and its `tokens` (the row at work is selected, ⏳);
 - `desk.flow`: the run as an [event flow](/components/event_flow) — `{: .event_flow source="desk.flow" }` draws it, each ⚡ a message moving to its next stage, its cost, ✅ or ⚠️;
 - `desk.log`: every step, `who` said what (`in`, `out`) and its `tokens`;
-- `changed` in `desk.sorted`: ≠ and the stage a message had in the last run, when this run moved it — the same knobs, other AI words; `desk.changed` counts them;
+- `desk.vs_last`: after a run, `= the last run` or `≠ the last run: N` — the same knobs, other AI words, another cost;
 - `desk.cost`: the run's price — `desk.runs` rule runs, `desk.asks` AI asks, `desk.open` messages left for a person, each at its `costs=`: Python is the cheapest and the easiest to check, and rigid; the AI bends to any wording, at thirty times the price; a person is the most flexible and creative, and thirty times the AI. A [cell](/components/cells) under the grid shows it;
 - the crew's lines — its tokens, the session's and this run's, and the engine's 🔋 asks and tokens left per day and per minute, as under every agent — and `desk.asks` · `desk.tokens` in a proof: the totals.
 
