@@ -1,6 +1,8 @@
 {%- comment -%}
 QR — QR code with optional caption, activated from md + IAL:
 a code block (first line = text, rest = label) + {: .qr size="180" }
+here="true" encodes this page; ship="<app>" encodes the app's latest ship
+(the whole block is then the label).
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -34,6 +36,8 @@ Auto-included by docs/_layouts/default.html.
     var raw = (code ? code.textContent : el.textContent).trim();
     var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
     var here = (el.getAttribute("here") || "") === "true";
+    var ship = (el.getAttribute("ship") || "").trim();
+    if (ship) return shipQr(el, ship, lines);
     /* THE PAGE YOU ARE ON, NOT A URL YOU TYPED (Michel, 2026-08-12: *"the
        qr should be generated from the current page — present mode already
        does it, reuse it"*). Present mode's 📷 share encodes location.href;
@@ -66,6 +70,49 @@ Auto-included by docs/_layouts/default.html.
     loadQRCode(function() {
       new QRCode(qrDiv, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
     });
+  }
+
+  /* THE DEPLOYED APP, NOT THIS PAGE: ship="<app>" encodes the address the
+     🚀 button just made — resolved through the bay's ledger exactly like a
+     runner's src="ship:<app>", so a phone opens the public copy, keyless.
+     Before the first ship it waits, and redraws on every ship of its app. */
+  function shipQr(el, app, lines) {
+    var size = parseInt(el.getAttribute("size") || "180", 10);
+    var hostEl = el.closest && el.closest("[data-lc-src-repo]");
+    var host = (hostEl && hostEl.getAttribute("data-lc-src-repo")) || "";
+    var bay = el.getAttribute("bay") || "";
+    var wrap = document.createElement("div");
+    wrap.className = "lc-qr lc-qr-ship";
+    if (el.id) wrap.id = el.id;
+    var qrDiv = document.createElement("div");
+    var cap = document.createElement("div");
+    cap.className = "lc-qr-label";
+    wrap.appendChild(qrDiv); wrap.appendChild(cap);
+    el.parentNode.replaceChild(wrap, el);
+    var label = lines.join(" ").trim();
+    function draw() {
+      var resolve = window.lcResolveShip;
+      if (!resolve) { cap.textContent = "🚀 Nothing shipped yet"; return; }
+      resolve(app, bay, host).then(function (real) {
+        if (!real) {
+          qrDiv.innerHTML = ""; wrap.removeAttribute("data-lc-text");
+          cap.textContent = "🚀 Nothing shipped yet — press Ship, and the square appears.";
+          return;
+        }
+        var path = window.lcHref ? window.lcHref("/run.html") : "/run.html";
+        var text = location.origin + path + "#src=" + real;
+        wrap.setAttribute("data-lc-text", text);
+        cap.textContent = label;
+        loadQRCode(function () {
+          qrDiv.innerHTML = "";
+          new QRCode(qrDiv, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+        });
+      });
+    }
+    window.addEventListener("lc_shipped", function (e) {
+      if (e.detail && e.detail.app === app) draw();
+    });
+    draw();
   }
 
   /* ONE PLACE DRAWS A QR. The classroom console hands out preview links and

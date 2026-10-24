@@ -216,7 +216,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Given I have a clean browser page
     And an energy key "AIza-crew-test" is already saved on this device
     And the AI answers as Rey and Chuck, Rey wrong the first time
-    And the module 07 lesson "01bis_the_front_desk.md" is served with a Python Chuck
+    And the module 08 lesson "01_the_front_desk.md" is served with a Python Chuck
     When I open the served lesson
     And I press ▶ Run on the crew "desk"
     Then the crew "desk" is done

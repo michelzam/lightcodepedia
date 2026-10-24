@@ -424,6 +424,8 @@ files a learner is already working in.
       })
       .catch(function () { return null; });
   }
+  /* one resolver for every ship: reader — the qr draws the same address */
+  window.lcResolveShip = resolveShip;
 
   /* ── ONE ROAD TO A MARKDOWN FILE ─────────────────────────────────────────
      The page render, and anything on the page that needs ANOTHER file of

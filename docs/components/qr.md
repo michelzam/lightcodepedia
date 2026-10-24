@@ -52,6 +52,20 @@ link** — `share.lightcodepedia.org/s/` and five characters: the code carries
 it, and the caption prints it, so a slide or a whiteboard can carry it too.
 The share door mints it once per share; Refresh keeps it, Unshare removes it.
 
+## 🚀 The app you shipped
+
+With `ship="<app>"` the square carries **your deployed app** — the copy a
+[🚀 Ship](ship.md) button put in your public bay, resolved through the
+bay's ledger like a runner's `src="ship:<app>"`. Before the first ship it
+waits; each new ship redraws it. The fence holds only the caption.
+
+````markdown
+```
+Scan to open my app on your phone
+```
+{: .qr ship="follow_up" }
+````
+
 ## 🛠️ How to make one
 
 Put the URL (or any text) on the first line. An optional second line becomes a caption below the code.
@@ -79,6 +93,7 @@ https://example.com
 |-----------|---------|-------------|
 | `size="N"` | `180` | Width and height in pixels |
 | `here="true"` | — | Encode the page you are on instead of the fence's first line; the fence then holds only the caption |
+| `ship="app"` | — | Encode that app's latest ship (your bay, or `bay=`); waits before the first ship, the fence holds only the caption |
 
 **Larger code for easier scanning:**
 

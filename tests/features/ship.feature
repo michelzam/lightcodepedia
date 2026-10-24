@@ -128,3 +128,33 @@ Feature: 🚀 Ship — the author-designed deployment component
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
     And I wait for the page to be interactive
     Then the ship embed says nothing is shipped yet
+
+  Scenario: A ship qr carries the deployed app's address
+    Given the bay manifest points "spike_dogs" at "cafebabe12345678" with entry "_ship_app.md"
+    And the GitHub contents API serves "courses/demo/assignment.md" with the document:
+      """
+      # Assignment
+
+      ```
+      Scan to open my app
+      ```
+      {: .qr ship="spike_dogs" bay="acme/bay/bays" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
+    And I wait for the page to be interactive
+    Then the ship qr encodes "#src=gh:acme/bay/bays/spike_dogs_cafebabe12345678/_ship_app.md"
+
+  Scenario: Before any ship, the qr waits instead of drawing a dead square
+    Given the bay has no manifest
+    And the GitHub contents API serves "courses/demo/assignment.md" with the document:
+      """
+      # Assignment
+
+      ```
+      Scan to open my app
+      ```
+      {: .qr ship="spike_dogs" bay="acme/bay/bays" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
+    And I wait for the page to be interactive
+    Then the ship qr says nothing is shipped yet

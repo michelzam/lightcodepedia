@@ -7,6 +7,7 @@ the scenario can assert exactly what crossed the wire — the discipline of
 rt_save, applied to deployment.
 """
 import json
+import re
 
 from behave import given, when, then
 from playwright.sync_api import expect
@@ -181,3 +182,16 @@ def step_reason_foreign(context):
     text = context.page.locator(".lc-ship .lc-ship-status").first.inner_text()
     assert "michelzam/lightcodepedia" in text, text
     assert "join" in text.lower(), "no way back offered: %r" % text
+
+
+@then('the ship qr encodes "{tail}"')
+def step_ship_qr_encodes(context, tail):
+    qr = context.page.locator(".lc-qr-ship").first
+    expect(qr).to_have_attribute("data-lc-text", re.compile(".*" + re.escape(tail) + "$"), timeout=20_000)
+
+
+@then("the ship qr says nothing is shipped yet")
+def step_ship_qr_waiting(context):
+    qr = context.page.locator(".lc-qr-ship").first
+    expect(qr).to_contain_text("othing shipped yet", timeout=20_000)
+    assert qr.get_attribute("data-lc-text") is None, "no address before a ship"
