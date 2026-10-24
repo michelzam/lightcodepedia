@@ -116,7 +116,7 @@ Add another `### Section` → a new tab appears. Remove one → it's gone.
 
 - **One active tab at a time.** No multi-open accordion mode.
 - **Two-file requirement.** The content must live in a separate `.md` file in `docs/pages/`. You can't write tab content inline in the same page.
-- **No live components inside panels.** Python runners, datagrids etc. won't upgrade inside a tab panel fetched this way.
+- **Live components: inline tabs only.** In a `{: .tabs }` fence, a panel's components (runners, grids, maps, charts) come alive the first time the panel opens — the first tab at once — so a map or a chart is drawn at its real size. A panel fetched from a file stays plain markdown.
 - **Requires public repo.** Tab content is fetched from `raw.githubusercontent.com` — works on public repos without authentication.
 
 ## 🏁 Final exam — boss level

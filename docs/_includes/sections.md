@@ -217,15 +217,30 @@ Auto-included by docs/_layouts/default.html.
       var wrap = document.createElement("div");
       wrap.className = "lc-tabs";
       wrap.innerHTML = "<div class=\"lc-tab-bar\">" + bar + "</div>" + panels;
+      /* A PANEL'S COMPONENTS COME ALIVE WHEN IT OPENS (Michel, 2026-10-25:
+         an app of three tabs, each embedding module 00's apps — the runner
+         lines stayed text). Same pipeline as an accordion panel, and lazy
+         like one: the first tab at once, the others on their first click,
+         so a map or a chart is drawn at its real size, never while hidden. */
+      var scanPanel = function (panel) {
+        if (!panel || panel.dataset.lcReady || !window.lcScanElement) return;
+        panel.dataset.lcReady = "1";
+        window.lcScanElement(panel);
+        if (window.lcCellsRescan) window.lcCellsRescan();
+      };
+      var panelOf = function (b) { return wrap.querySelector("#" + (window.CSS && CSS.escape ? CSS.escape(b.dataset.tab) : b.dataset.tab)); };
       wrap.querySelectorAll(".lc-tab-btn").forEach(function(b){
         b.addEventListener("click", function(){
           wrap.querySelectorAll(".lc-tab-btn").forEach(function(x){x.classList.remove("active");});
           wrap.querySelectorAll(".lc-tab-panel").forEach(function(x){x.classList.remove("active");});
           b.classList.add("active");
-          document.getElementById(b.dataset.tab).classList.add("active");
+          var panel = panelOf(b);
+          panel.classList.add("active");
+          scanPanel(panel);
         });
       });
       el.parentNode.replaceChild(wrap, el);
+      scanPanel(wrap.querySelector(".lc-tab-panel.active"));
     });
   }
 

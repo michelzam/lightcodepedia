@@ -140,17 +140,54 @@ Auto-included by docs/_layouts/default.html.
        folder is named after the bench's HEAD, so every 💾 + 🚀 is a new,
        frozen copy at a new address. */
     var bench = window.lcBench, tgt = bench && bench.target ? bench.target(box) : {};
+    /* THE COURSE'S SHAPE, KEPT (Michel, 2026-10-25: "the app itself could
+       have 3 tabs, each embedding different existing pages and data from
+       previous modules"): an app embeds ../module_00/_app_dogs.md, so the
+       shipped copy keeps the files where they sit relative to each other —
+       below the folder, from their deepest common folder down. One file
+       beside the page lands as before: <app>_<sha>/<file>. */
+    var norm = function (p) {
+      var out = [];
+      ((ctx.dir ? ctx.dir + "/" : "") + p).split("/").forEach(function (g) {
+        if (!g || g === ".") return; if (g === "..") out.pop(); else out.push(g);
+      });
+      return out;
+    };
+    var segs = files.map(norm), common = segs[0].slice(0, -1);
+    segs.forEach(function (sg) {
+      var n = 0; while (n < common.length && n < sg.length - 1 && sg[n] === common[n]) n++;
+      common = common.slice(0, n);
+    });
+    var shaped = segs.map(function (sg) { return sg.slice(common.length).join("/"); });
     var shaRepo = (tgt && tgt.repo && !tgt.here) ? tgt.repo : ctx.repo;
     function fromBench(f) {
       if (!bench || !tgt || !tgt.repo || tgt.here) return Promise.resolve(null);
       return bench.read(f, box).then(function (got) { return got ? got.text : null; })
         .catch(function () { return null; });
     }
+    /* WHAT THE PAD SHOWS: a file the page itself seeds (a pad with that
+       save=) and the bench does not hold yet ships as the pad shows it —
+       the lesson keeps the app once, in its pad, with no twin file to drift */
+    function fromPad(f) {
+      var pads = document.querySelectorAll("[data-lc-save], .mdpad[save]");
+      for (var i = 0; i < pads.length; i++) {
+        var sp = pads[i].getAttribute("data-lc-save") || pads[i].getAttribute("save") || "";
+        if (sp !== f && sp.slice(-(f.length + 1)) !== "/" + f.replace(/^(\.\.\/)+/, "")) continue;
+        /* an upgraded pad says what it shows; a fence not upgraded yet holds the seed */
+        try { var v = JSON.parse(pads[i].getAttribute("data-lc-value") || "{}"); if (v && typeof v.source === "string") return v.source; } catch (e) {}
+        if (!pads[i].hasAttribute("data-lc-save")) return (pads[i].querySelector("code") || pads[i]).textContent.replace(/\n+$/, "");
+      }
+      return null;
+    }
     function fromPage(srcPath, f) {
+      var padText = fromPad(f);
+      if (padText != null) return Promise.resolve(padText);
       return fetch(API + ctx.repo + "/contents/" + srcPath,
                    { headers: hdrs({ Accept: "application/vnd.github.v3.raw" }), cache: "no-store" })
         .then(function (r) {
-          if (!r.ok) throw new Error(f + " is in neither your space nor the course (HTTP " + r.status + ") — 💾 it first");
+          if (!r.ok) throw new Error(tgt && tgt.stale
+            ? "this browser is not paired to your bench for this class — open ⚙️ Setup (or sign in as your course account), then come back"
+            : f + " is in neither your space nor the course (HTTP " + r.status + ") — 💾 it first");
           return r.text();
         });
     }
@@ -161,14 +198,15 @@ Auto-included by docs/_layouts/default.html.
         if (!sha) throw new Error("the source repo has no commits");
         folder = (bay.base ? bay.base + "/" : "") + app + "_" + sha;
         /* copy each named file: read from the source repo, write to the bay */
-        return files.reduce(function (chain, f) {
+        return files.reduce(function (chain, f, k) {
           return chain.then(function () {
             var srcPath = (ctx.dir ? ctx.dir + "/" : "") + f;
+            var dest = shaped[k];
             return fromBench(f)
               .then(function (text) { return text != null ? text : fromPage(srcPath, f); })
               .then(function (text) {
                 function put() {
-                  return fetch(API + bay.repo + "/contents/" + folder + "/" + f, {
+                  return fetch(API + bay.repo + "/contents/" + folder + "/" + dest, {
                     method: "PUT", headers: hdrs({ "Content-Type": "application/json" }),
                     body: JSON.stringify({ message: "🚀 " + app + " @ " + sha.slice(0, 7),
                                            content: b64utf8(text) })
@@ -205,7 +243,7 @@ Auto-included by docs/_layouts/default.html.
               try { current = JSON.parse(decodeURIComponent(escape(atob(env.content.replace(/\n/g, ""))))); }
               catch (e) {}
             }
-            current[app] = { sha: sha, entry: files[0], files: files,
+            current[app] = { sha: sha, entry: shaped[0], files: shaped,
                              at: new Date().toISOString() };
             var body = { message: "📒 manifest: " + app + " @ " + sha.slice(0, 7),
                          content: b64utf8(JSON.stringify(current, null, 1)) };
@@ -218,7 +256,7 @@ Auto-included by docs/_layouts/default.html.
       })
       .then(function () {
         var link = (window.lcHref ? window.lcHref("/run.html") : "/run.html") +
-                   "#src=gh:" + bay.repo + "/" + folder + "/" + files[0];
+                   "#src=gh:" + bay.repo + "/" + folder + "/" + shaped[0];
         status.innerHTML = "";
         var strong = document.createElement("strong");
         strong.textContent = "🚀 Shipped · " + sha.slice(0, 7) + " · ";

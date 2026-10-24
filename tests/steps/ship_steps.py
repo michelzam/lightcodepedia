@@ -122,7 +122,7 @@ def step_ship_reports(context):
 
 @then('the ship embed renders "{text}"')
 def step_ship_embed_renders(context, text):
-    inner = context.page.locator(".lc-runner-embed .lc-run").first
+    inner = context.page.locator(".lc-runner-embed .lc-run[data-lc-ship-bay]").first   # the ship: window, not an embed inside a pad
     expect(inner).to_contain_text(text, timeout=20_000)
 
 

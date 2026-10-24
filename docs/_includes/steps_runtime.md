@@ -3997,9 +3997,12 @@ def _in_editor(el):
     # the page editor renders a live preview of the page, so every component
     # exists twice (real page + #ed-drawer preview). Its copies must not count
     # toward page-level id checks, or features run in the editor falsely fail.
+    # A shipped app's window is another page too (Michel, 2026-10-25: the
+    # app in its pad and its shipped copy, side by side on Ship It): the
+    # deployed copy's ids belong to the deployed page.
     e = getattr(el, "_el", None)
     try:
-        return bool(e) and bool(e.closest("#ed-drawer"))
+        return bool(e) and bool(e.closest("#ed-drawer, .lc-run[data-lc-ship-bay]"))
     except Exception:
         return False
 
