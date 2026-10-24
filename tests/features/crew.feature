@@ -173,3 +173,16 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" says "✂️ 2 answers cut at 1000 tokens per ask"
     When I open the accordion section "event flow"
     Then the run's event flow "desk_flow" tells "Ferraro / Rey proposes home / Chuck gives no verdict · 12 tokens ✂️ cut at 1000 / Ferraro → OPEN ⚠️ no agreement in 2 tries"
+
+  Scenario: A checker that says "Agreed." agrees
+    Michel, 2026-10-24, on Groq: Ferraro spent all ten asks in five rounds, the
+    others left OPEN — a Chuck who answers "Agreed." was read as no verdict.
+
+    Given I have a clean browser page
+    And an energy key "AIza-crew-test" is already saved on this device
+    And the AI answers as Rey and Chuck, Rey wrong the first time, Chuck in his own words
+    When I navigate to "/components/crew"
+    And I press ▶ Run on the crew "desk"
+    Then the crew "desk" is done
+    And the crew "desk" sorted "Ferraro" as "met" in 2 tries
+    And the crew "desk" says why "Ferraro" went "met": "Chuck agreed"

@@ -139,8 +139,10 @@ Auto-included by docs/_layouts/default.html.
     return best;
   }
   /* a checker AGREES only by saying so: an empty or cut answer is no agreement */
-  var disagrees = function (text) { return /\bDISAGREE\b/i.test(text || ""); };
-  var agrees = function (text) { return /\bAGREE\b/i.test(text || "") && !disagrees(text); };
+  /* "Agreed." and "Disagrees" are verdicts too (Michel's run, 2026-10-24: Ferraro
+     spent five rounds on a Chuck who said Agreed, read as no verdict) */
+  var disagrees = function (text) { return /\bDISAGREE[DS]?\b/i.test(text || ""); };
+  var agrees = function (text) { return /\bAGREE[DS]?\b/i.test(text || "") && !disagrees(text); };
 
   function upgrade(el) {
     if (el.dataset.lcUpgraded) return;
@@ -368,8 +370,8 @@ Auto-included by docs/_layouts/default.html.
             spend(1);
             return ask(checker, "The message: " + text + "\nIts row: " + JSON.stringify(row) + "\nThe verdict: " + verdict + cctx, crewCfg).then(function (c) {
               say(checker.name, "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, c);
-              var said = String(c.text).replace(/^\s*(DIS)?AGREE\W*/i, "").slice(0, 90);
-              beat("event", c.error ? "⚠️ the AI did not answer" : (agrees(c.text) ? checker.name + " agrees: " + said : disagrees(c.text) ? checker.name + " disagrees: " + said : checker.name + " gives no verdict") + cost(c.tokens, c));
+              var said = String(c.text).replace(/^\W*(DIS)?AGREE[DS]?\W*/i, "").slice(0, 90);
+              beat("event", c.error ? "⚠️ the AI did not answer" : (agrees(c.text) ? checker.name + " agrees: " + said : disagrees(c.text) ? checker.name + " disagrees: " + said : checker.name + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
               if (c.error) { trouble = "the AI did not answer"; return null; }
               if (!agrees(c.text)) {
                 note = "\n\n" + checker.name + (disagrees(c.text) ? " disagreed with " + verdict + ": " + c.text : " did not agree with " + verdict + ".");

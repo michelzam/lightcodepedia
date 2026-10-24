@@ -334,3 +334,18 @@ def step_crew_cap_ceiling(context, cid, n):
 @then('the crew "{cid}" allows {n:d} tokens per ask')
 def step_crew_cap(context, cid, n):
     expect(_crew(context, cid).locator(".lc-crew-step[data-bound='max_tokens'] b")).to_have_text(str(n), timeout=T)
+
+
+@given("the AI answers as Rey and Chuck, Rey wrong the first time, Chuck in his own words")
+def step_stub_crew_ai_words(context):
+    """As the plain stub, but Chuck says "**Disagreed** …" and "Agreed." — the words a model uses."""
+    def answer(route):
+        body = json.loads(route.request.post_data or "{}")
+        system, user = body["messages"][0]["content"], body["messages"][1]["content"]
+        if "AGREE or DISAGREE" in system:
+            text = "**Disagreed** — the row says asked: no visit yet" if "The verdict: home" in user else "Agreed. One stage at a time."
+        else:
+            text = "VERDICT: met" if "disagreed" in user else "VERDICT: home"
+        route.fulfill(status=200, content_type="application/json",
+                      body=json.dumps({"choices": [{"message": {"content": text}}], "usage": {"total_tokens": 12}}))
+    context.page.route("**/chat/completions*", answer)
