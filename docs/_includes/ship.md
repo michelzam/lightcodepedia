@@ -20,9 +20,10 @@ by the TEACHER from the classroom console (⛵) with the org key — the
 learner never creates one, and the org never has to allow members to
 create public repositories.
 
-WHAT A SHIP IS: the learner's own key copies the named files from the
-rendered page's repo into the public bay, under <app>_<sha>/ — sha is the
-source repo's HEAD commit, so every ship is immutable, provenance-pinned
+WHAT A SHIP IS: the learner's own key copies the named files — from their
+bench when it holds them (as a save= block reads), else from the rendered
+page's repo — into the public bay, under <app>_<sha>/ — sha is the bench's
+HEAD commit (the page's repo without a bench), so every ship is immutable, provenance-pinned
 and enumerable by assignment. A manifest.json at the bay base records the
 latest sha per app; the runner's src="ship:<app>" embeds resolve through it.
 
@@ -131,7 +132,29 @@ Auto-included by docs/_layouts/default.html.
     btn.disabled = true;
     status.textContent = "Shipping…";
     var folder, sha;
-    fetch(API + ctx.repo + "/commits?per_page=1", { headers: hdrs(), cache: "no-store" })
+    /* THE LEARNER'S FILE, NOT THE COURSE'S SEED (zamm-student, 2026-10-25:
+       the course renders from the vault, the page saved on page one lives in
+       the bench — ship read the vault and found nothing). Each file is read
+       the way a save= block reads it: the bench first (an author's pairing
+       reads its __sandbox), the page's own repo as the fallback. And the
+       folder is named after the bench's HEAD, so every 💾 + 🚀 is a new,
+       frozen copy at a new address. */
+    var bench = window.lcBench, tgt = bench && bench.target ? bench.target(box) : {};
+    var shaRepo = (tgt && tgt.repo && !tgt.here) ? tgt.repo : ctx.repo;
+    function fromBench(f) {
+      if (!bench || !tgt || !tgt.repo || tgt.here) return Promise.resolve(null);
+      return bench.read(f, box).then(function (got) { return got ? got.text : null; })
+        .catch(function () { return null; });
+    }
+    function fromPage(srcPath, f) {
+      return fetch(API + ctx.repo + "/contents/" + srcPath,
+                   { headers: hdrs({ Accept: "application/vnd.github.v3.raw" }), cache: "no-store" })
+        .then(function (r) {
+          if (!r.ok) throw new Error(f + " is in neither your space nor the course (HTTP " + r.status + ") — 💾 it first");
+          return r.text();
+        });
+    }
+    fetch(API + shaRepo + "/commits?per_page=1", { headers: hdrs(), cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("cannot read the source history (HTTP " + r.status + ")"); return r.json(); })
       .then(function (j) {
         sha = j[0] && j[0].sha;
@@ -141,9 +164,8 @@ Auto-included by docs/_layouts/default.html.
         return files.reduce(function (chain, f) {
           return chain.then(function () {
             var srcPath = (ctx.dir ? ctx.dir + "/" : "") + f;
-            return fetch(API + ctx.repo + "/contents/" + srcPath,
-                         { headers: hdrs({ Accept: "application/vnd.github.v3.raw" }), cache: "no-store" })
-              .then(function (r) { if (!r.ok) throw new Error(f + " is not in the source (HTTP " + r.status + ")"); return r.text(); })
+            return fromBench(f)
+              .then(function (text) { return text != null ? text : fromPage(srcPath, f); })
               .then(function (text) {
                 function put() {
                   return fetch(API + bay.repo + "/contents/" + folder + "/" + f, {
