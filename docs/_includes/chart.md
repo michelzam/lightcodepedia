@@ -25,6 +25,10 @@ Dataset-bound (SVG) — re-renders on every dataset update:
     marks="col"   rows whose value is set become diamonds — a key point,
                   its text on hover
     hover="col"   extra text on every point's hover
+  and several measures (2026-10-25, the desk's attempts):
+    y="a, b"      one line per column, each its own colour, one scale
+    bars="col"    then reads on its own scale, at the right; a legend
+                  names every line and the bars
 
 upgradeChartInline owns the first two; upgradeChartBound the third — they
 were the duplicate `upgradeChart` pair split across code_chrome.md and
@@ -36,6 +40,9 @@ Auto-included by docs/_layouts/default.html.
 <style>
 .lc-chart { margin: 1em 0; position: relative; }
 .lc-chart svg { display: block; width: 100%; height: auto; }
+.lc-chart-legend { display: flex; flex-wrap: wrap; gap: 0.4em 1.1em; font-size: 0.8em; color: #374151; margin-top: 0.3em; }
+.lc-chart-legend span { display: inline-flex; align-items: center; gap: 0.35em; }
+.lc-chart-legend i { display: inline-block; width: 16px; border-radius: 2px; }
 .lc-chart-title { font-size: 0.82em; font-weight: 600; color: #374151; margin-bottom: 0.3em; }
 /* the hover legend: a browser's own <title> bubble is slow, and on some
    browsers never comes for a transparent hit circle (Michel, 2026-09-17:
@@ -260,7 +267,7 @@ Auto-included by docs/_layouts/default.html.
       if (!rows.length) { if (data && data.length === 0 && !painted) return; note(emptyMsg || "Nothing to draw yet."); return; }
       painted = true;
       paintTitle();
-      if (type === "line") renderLine(wrap, rows, xCol, yCol, knobs);
+      if (type === "line" || yCol.indexOf(",") >= 0) renderLine(wrap, rows, xCol, yCol, knobs);
       else                 renderBar(wrap, rows, xCol, yCol);
     }
 
@@ -370,25 +377,36 @@ Auto-included by docs/_layouts/default.html.
       transform: "rotate(-90,8," + (pT + cH / 2) + ")" }).textContent = yCol;
   }
 
+  /* several measures on one scale: the colours, in y= order */
+  var LINE_COLORS = ["#0066cc", "#059669", "#b45309", "#7c3aed"], BAR_COLOR = "#f9a8d4";
+
   function renderLine(el, data, xCol, yCol, o) {
     o = o || {};
+    var ys = String(yCol).split(",").map(function (c) { return c.trim(); }).filter(Boolean);
+    var multi = ys.length > 1;
     var W = Math.max(el.offsetWidth || 0, 300), H = 220;
-    var pL = 44, pB = 36, pT = 14, pR = 10;
+    var pL = 44, pB = 36, pT = 14, pR = o.bars ? 40 : 10;
     var cW = W - pL - pR, cH = H - pT - pB;
-    /* one x axis shared by every series: the sorted set of x values */
+    /* one x axis shared by every series: the sorted set of x values —
+       numbers in number order (run 10 after run 9, not after run 1) */
     var xs = [];
     data.forEach(function (d) { var x = String(d[xCol]); if (xs.indexOf(x) < 0) xs.push(x); });
-    xs.sort();
+    var numeric = xs.every(function (x) { return x !== "" && !isNaN(+x); });
+    var cmp = function (a, b) { return numeric ? +a - +b : (a < b ? -1 : a > b ? 1 : 0); };
+    xs.sort(cmp);
     var xi = {}; xs.forEach(function (x, i) { xi[x] = i; });
     var groups = {};
     data.forEach(function (d) { var g = o.series ? String(d[o.series]) : ""; (groups[g] = groups[g] || []).push(d); });
-    var vals = data.map(function (d) { return +d[yCol] || 0; });
+    var vals = [];
+    data.forEach(function (d) { ys.forEach(function (c) { vals.push(+d[c] || 0); }); });
     var maxV = Math.max.apply(null, vals), minV = Math.min.apply(null, vals);
-    if (o.bars || o.series) minV = Math.min(0, minV);
-    if (maxV === minV) { maxV += 1; if (!o.bars && !o.series) minV -= 1; }
-    var range = maxV - minV, step = cW / Math.max(xs.length - 1, 1);
+    if (o.bars || o.series || multi) minV = Math.min(0, minV);
+    if (maxV === minV) { maxV += 1; if (!o.bars && !o.series && !multi) minV -= 1; }
+    /* bars need room at both ends, or the first and last sit on the axes */
+    var inset = o.bars ? 14 : 0;
+    var range = maxV - minV, step = (cW - 2 * inset) / Math.max(xs.length - 1, 1);
     var s = chartSVG(el, W, H), svg = s.svg, NS = s.NS;
-    function X(d) { return pL + xi[String(d[xCol])] * step; }
+    function X(d) { return pL + inset + xi[String(d[xCol])] * step; }
     function Y(v) { return pT + cH - ((v - minV) / range) * cH; }
 
     /* grid lines */
@@ -398,38 +416,48 @@ Auto-included by docs/_layouts/default.html.
       svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" }).textContent = tickLabel(v, range);
     });
 
-    /* bars behind the line: a second measure on its own scale, for the
-       focused series only */
+    /* bars behind the line: a second measure on its own scale (its ticks at
+       the right), for the focused series only */
     if (o.bars) {
       var bmax = Math.max.apply(null, data.map(function (d) { return +d[o.bars] || 0; })) || 1;
+      /* the right scale tops at a round number, the tallest bar near 60–80 % */
+      var btop = bmax / 0.6, mag = Math.pow(10, Math.floor(Math.log10(btop)));
+      btop = [1, 2, 2.5, 5, 10].map(function (k) { return k * mag; }).filter(function (v) { return v >= bmax / 0.8; })[0] || btop;
       var bw = Math.max(3, Math.min(18, step * 0.5));
+      [0, 0.5, 1].forEach(function (f) {
+        svgEl(svg, NS, "text", { x: pL + cW + 4, y: pT + cH - f * cH + 4, "text-anchor": "start", "font-size": 9, fill: multi ? "#be185d" : "#3b82f6" })
+          .textContent = tickLabel(btop * f, btop);
+      });
       data.forEach(function (d) {
         if (o.series && o.focus != null && String(d[o.series]) !== o.focus) return;
         var v = +d[o.bars] || 0; if (!v) return;
-        var h = v / bmax * cH * 0.6;
-        var r = svgEl(svg, NS, "rect", { x: X(d) - bw / 2, y: pT + cH - h, width: bw, height: h, fill: "#93c5fd", opacity: 0.6, rx: 2, "data-bar": v });
+        var h = v / btop * cH;
+        var r = svgEl(svg, NS, "rect", { x: X(d) - bw / 2, y: pT + cH - h, width: bw, height: h,
+          fill: multi ? BAR_COLOR : "#93c5fd", opacity: 0.6, rx: 2, "data-bar": v });
         svgEl(r, NS, "title", {}).textContent = d[xCol] + " — " + o.bars + ": " + v + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
       });
     }
 
-    Object.keys(groups).sort().forEach(function (g) {
-      var rows = groups[g].slice().sort(function (a, b) { return String(a[xCol]) < String(b[xCol]) ? -1 : 1; });
-      var focused = !o.series || o.focus == null || g === o.focus;
-      var color = focused ? "#0066cc" : "#c7d2e0";
-      var pts = rows.map(function (d) { return X(d) + "," + Y(+d[yCol] || 0); });
-      var pl = svgEl(svg, NS, "polyline", { points: pts.join(" "), stroke: color, fill: "none",
-        "stroke-width": focused ? 2 : 1.2, "stroke-linejoin": "round", "data-series": g });
-      if (o.series) svgEl(pl, NS, "title", {}).textContent = g;
-      if (!focused) return;
-      /* dots (hover for the exact value); a key point is a diamond */
-      rows.forEach(function (d) {
-        var val = +d[yCol] || 0, x = X(d), y = Y(val);
-        var mark = o.marks ? String(d[o.marks] || "") : "";
-        if (mark) svgEl(svg, NS, "path", { d: "M" + x + "," + (y - 6) + " l6,6 l-6,6 l-6,-6 z", fill: "#b45309", "data-mark": mark });
-        else svgEl(svg, NS, "circle", { cx: x, cy: y, r: 3, fill: color });
-        var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent", "pointer-events": "all" });
-        svgEl(hit, NS, "title", {}).textContent = xCol + " " + d[xCol] + " — " + yCol + ": " + val
-          + (mark ? "\n" + mark : "") + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
+    ys.forEach(function (yc, yi) {
+      Object.keys(groups).sort().forEach(function (g) {
+        var rows = groups[g].slice().sort(function (a, b) { return cmp(String(a[xCol]), String(b[xCol])); });
+        var focused = !o.series || o.focus == null || g === o.focus;
+        var color = !focused ? "#c7d2e0" : LINE_COLORS[yi % LINE_COLORS.length];
+        var pts = rows.map(function (d) { return X(d) + "," + Y(+d[yc] || 0); });
+        var pl = svgEl(svg, NS, "polyline", { points: pts.join(" "), stroke: color, fill: "none",
+          "stroke-width": focused ? 2 : 1.2, "stroke-linejoin": "round", "data-series": o.series ? g : (multi ? yc : g) });
+        if (o.series) svgEl(pl, NS, "title", {}).textContent = g;
+        if (!focused) return;
+        /* dots (hover for the exact value); a key point is a diamond */
+        rows.forEach(function (d) {
+          var val = +d[yc] || 0, x = X(d), y = Y(val);
+          var mark = o.marks ? String(d[o.marks] || "") : "";
+          if (mark) svgEl(svg, NS, "path", { d: "M" + x + "," + (y - 6) + " l6,6 l-6,6 l-6,-6 z", fill: "#b45309", "data-mark": mark });
+          else svgEl(svg, NS, "circle", { cx: x, cy: y, r: 3, fill: color });
+          var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent", "pointer-events": "all" });
+          svgEl(hit, NS, "title", {}).textContent = xCol + " " + d[xCol] + " — " + yc + ": " + val
+            + (mark ? "\n" + mark : "") + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
+        });
       });
     });
 
@@ -437,12 +465,27 @@ Auto-included by docs/_layouts/default.html.
     var lblEvery = Math.max(1, Math.ceil(xs.length / Math.max(2, Math.floor(cW / 40))));
     xs.forEach(function (x, i) {
       if (i % lblEvery === 0 || i === xs.length - 1)
-        svgEl(svg, NS, "text", { x: pL + i * step, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
+        svgEl(svg, NS, "text", { x: pL + inset + i * step, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
           .textContent = xText(x, 10);
     });
 
-    svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af",
-      transform: "rotate(-90,8," + (pT + cH / 2) + ")" }).textContent = yCol;
+    if (!multi)
+      svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af",
+        transform: "rotate(-90,8," + (pT + cH / 2) + ")" }).textContent = yCol;
+
+    /* the legend: what each colour is — the lines on the left scale, the
+       bars on the right one */
+    if (multi) {
+      var lg = document.createElement("div");
+      lg.className = "lc-chart-legend";
+      var item = function (color, name, bar) {
+        return "<span data-legend='" + name.replace(/'/g, "") + "'><i style='background:" + color + ";" +
+          (bar ? "height:10px;opacity:.6" : "height:3px") + "'></i>" + name.replace(/</g, "&lt;") + "</span>";
+      };
+      lg.innerHTML = ys.map(function (c, i) { return item(LINE_COLORS[i % LINE_COLORS.length], c + " (left)"); }).join("") +
+        (o.bars ? item(BAR_COLOR, o.bars + " (right)", true) : "");
+      el.appendChild(lg);
+    }
   }
 
   /* ── boot ────────────────────────────────────────────── */

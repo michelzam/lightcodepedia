@@ -84,5 +84,14 @@ The full flow — armed button, files crossing to the bay, the manifest
 ledger, the `ship:` embed filling — is proven end to end in
 `tests/features/ship.feature`, with both sides of the wire stubbed.
 
-[in this folder](.)
-{: .folder parent="true" }
+## 🔗 Related components & examples
+
+```
+/components/runner
+/components/qr
+/components/prerequisite
+/components/feature
+```
+{: .related }
+
+Browse the [🧩 component gallery](/components/) and [🔬 live examples](/components/examples).

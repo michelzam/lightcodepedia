@@ -38,7 +38,9 @@ is still open takes fallback= (OPEN by default) — a person, never a guess. The
 only its own datasets: <id>.sorted (each message with its action, why,
 tries, asks — a try is a read and its check, two asks — tokens), <id>.flow (the run as an event flow, each step's cost and
 the result's confidence: ✅ a rule or a check, ⚠️ unchecked or open)
-and <id>.log (every step: who, what in, what out, its tokens); the inbox
+<id>.log (every step: who, what in, what out, its tokens) and <id>.runs
+(one row per finished run: tries, budget, asks, open, tokens, cost — kept
+in this browser, for a chart of attempts); the inbox
 shows from the start and fills a row at a time, pace= seconds apart, the
 row at work selected. The page acts on them;
 the crew acts on nothing (the tutor rule).
@@ -289,6 +291,22 @@ Auto-included by docs/_layouts/default.html.
        EXACTLY same params is Sooooo different!! Why?" → "The change should be
        only on global score, to keep it simple"): vs_last says = or ≠, done */
     var lastCost = null;
+    /* THE RUNS, KEPT (Michel, 2026-10-24: "store all the run results and show
+       in a chart the correlation input (tries, asks) and cost"): one row per
+       finished run — the knobs it ran with and what it cost — in <id>.runs,
+       saved in this browser for this page; ≠ the last run reads it too */
+    var runsKey = "lc_crew_runs:" + ((location.hash.match(/src=[^&]*/) || [location.pathname])[0]) + ":" + id;
+    var runs = [];
+    try { runs = JSON.parse(localStorage.getItem(runsKey) || "[]") || []; } catch (e) { runs = []; }
+    if (runs.length) lastCost = +runs[runs.length - 1].cost;
+    window.lcSetDataset(id + ".runs", runs.slice());
+    var keepRun = function (t) {
+      runs.push({ run: runs.length ? +runs[runs.length - 1].run + 1 : 1, tries: tries, budget: budget,
+                  asks: t.asks, open: t.open, tokens: t.tokens, cost: t.cost });
+      runs = runs.slice(-30);
+      try { localStorage.setItem(runsKey, JSON.stringify(runs)); } catch (e) {}
+      window.lcSetDataset(id + ".runs", runs.slice());
+    };
     window.lcSetDataset(id + ".sorted", unsorted());
     window.lcSetDataset(id + ".log", []);
     window.lcSetDataset(id + ".flow", []);
@@ -395,7 +413,7 @@ Auto-included by docs/_layouts/default.html.
       var step = function (i) {
         if (i >= inbox.length) {
           box.setAttribute("data-state", "done"); paintBounds();
-          totals(log, out, asks, tokens);
+          keepRun(totals(log, out, asks, tokens));
           window.lcSetDataset(id + ".sorted", out.slice());     /* the cells read the totals once more, done */
           status.textContent = "✓ " + out.length + " sorted, " + asks + " of " + budget + " AI asks, " + tokens + " tokens" +
             (cuts ? " — ✂️ " + cuts + " answer" + (cuts === 1 ? "" : "s") + " cut at " + crewCfg.cap + " tokens per ask" : "") +

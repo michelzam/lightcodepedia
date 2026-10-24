@@ -451,3 +451,22 @@ def step_log_parsed(context, action, why):
 def step_rey_second(context, text):
     reads = [a for a in context.crew_asks if "AGREE or DISAGREE" not in a["system"]]
     assert len(reads) >= 2 and text in reads[1]["user"], reads[1]["user"] if len(reads) > 1 else reads
+
+
+@then('the attempts chart "{cid}" draws the lines "{lines}" and the bars "{bars}"')
+def step_attempts_chart(context, cid, lines, bars):
+    chart = context.page.locator('.lc-chart[data-lc-id="%s"]' % cid)
+    want = [b.strip() for b in bars.split(",")]
+    expect(chart.locator("rect[data-bar]")).to_have_count(len(want), timeout=T)
+    got = chart.locator("rect[data-bar]").evaluate_all("rs => rs.map(r => r.getAttribute('data-bar'))")
+    assert got == want, got
+    for name in [n.strip() for n in lines.split(",")]:
+        expect(chart.locator('polyline[data-series="%s"]' % name)).to_have_count(1, timeout=T)
+
+
+@then('the attempts chart "{cid}" has the legend "{legend}"')
+def step_attempts_legend(context, cid, legend):
+    items = context.page.locator('.lc-chart[data-lc-id="%s"] .lc-chart-legend span' % cid)
+    want = [x.strip() for x in legend.split("·")]
+    expect(items).to_have_count(len(want), timeout=T)
+    assert [t.strip() for t in items.all_inner_texts()] == want, items.all_inner_texts()

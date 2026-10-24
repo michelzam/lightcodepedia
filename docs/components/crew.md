@@ -60,6 +60,10 @@ def sort(message):
 💰 **The desk's cost: {= desk.cost }** {= desk.vs_last } = 🐍 {= desk.runs } rule runs × 1 + 🤖 {= desk.asks } AI asks × 30 + 🧑 {= desk.open } left `OPEN` for the coordinator × 900 · beside it, {= desk.tokens } tokens
 
 ```
+### 📈 Your attempts — tries and budget, against the cost
+[attempts](#)
+{: .chart source="desk.runs" x="run" y="tries, budget" bars="cost" empty="Run the desk: each run adds a point." #desk_runs }
+
 ### 🎏 The run, as an event flow
 [the run](#)
 {: .event_flow source="desk.flow" #desk_flow }
@@ -142,7 +146,9 @@ ignores the shape.
 The crew writes only its own datasets — `desk.sorted` (each message, its
 action, why, tries, asks, tokens), `desk.flow`, `desk.log` — and its totals:
 `desk.cost`, `desk.runs`, `desk.asks`, `desk.open`, `desk.tokens`,
-`desk.vs_last` — and `desk.agents`, one live agent per worker.
+`desk.vs_last` — and `desk.agents`, one live agent per worker, and
+`desk.runs`, one row per finished run (kept in your browser), which the
+📈 chart draws: tries and budget on the left, the cost in bars on the right.
 
 ## 🧪 Proof
 

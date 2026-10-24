@@ -73,6 +73,14 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
     And the desk's cost line says "63 — ≠ the last run: 123"
+    # every run kept and drawn: tries and budget on the left, the cost in bars on the right (Michel, 2026-10-24: "store all the run results … 3 curves … legend")
+    When I open the accordion section "Your attempts"
+    Then the attempts chart "desk_runs" draws the lines "tries, budget" and the bars "123, 123, 63"
+    And the attempts chart "desk_runs" has the legend "tries (left) · budget (left) · cost (right)"
+    # kept in this browser: the page comes back with its runs
+    When I navigate to "/components/crew"
+    And I open the accordion section "Your attempts"
+    Then the attempts chart "desk_runs" draws the lines "tries, budget" and the bars "123, 123, 63"
 
   Scenario: No key — the rules alone, the claim left OPEN for a person, nothing counted that was never sent
     Given I have a clean browser page
