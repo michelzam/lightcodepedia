@@ -1993,23 +1993,47 @@ Auto-included by docs/_layouts/default.html.
        block's decoration; one the block has none of gets one that says only
        its layout, and loses it again with ⌃⌥← (Michel, 2026-10-13: the red
        toast on a cell's sentence). beside="true", the first spelling, goes. */
+    /* THE INNERMOST BLOCK (Michel, 2026-10-24: "when I'm in the accordion, on
+       the form … it is applied to the accordion, not the form"): a caret inside
+       a fence of markdown — an accordion, tabs, blocks — works on the blocks
+       inside it, line numbers kept; a ### heading opens a section, and a
+       block that starts one has nothing above it to stand by. */
+    function blocksAround(v, line) {
+      var L = v.split("\n"), bs = blocksOf(v), i = blockAt(bs, line), inSection = false;
+      for (;;) {
+        if (i < 0) break;
+        var b = bs[i], open = L[b.start].trim(), fm = open.match(/^(`{3,}|~{3,})\s*(markdown|md)?\s*$/);
+        if (!fm) break;
+        var close = -1;
+        for (var n = b.start + 1; n <= b.end; n++) { var t = L[n].trim(); if (t.charAt(0) === fm[1].charAt(0) && /^(`{3,}|~{3,})$/.test(t) && t.length >= fm[1].length) { close = n; break; } }
+        if (close < 0 || line <= b.start || line >= close) break;
+        var inner = blocksOf(L.slice(b.start + 1, close).join("\n")).map(function (x) {
+          return { start: x.start + b.start + 1, end: x.end + b.start + 1, head: x.head };
+        });
+        var j = blockAt(inner, line); if (j < 0) return { bs: inner, i: -1 };
+        bs = inner; i = j; inSection = true;
+      }
+      /* in a section, the first block of it has nothing above */
+      var first = i >= 0 && (i === 0 || (inSection && /^\s*#{1,6}\s/.test(L[bs[i].start])));
+      return { bs: bs, i: i, first: first };
+    }
     function layoutBlock(how) {
-      var v = ta.value, L = v.split("\n"), bs = blocksOf(v), st = lineStarts(v);
+      var v = ta.value, L = v.split("\n"), st = lineStarts(v);
       var line = v.slice(0, ta.selectionStart).split("\n").length - 1;
-      var i = blockAt(bs, line); if (i < 0) return false;
+      var around = blocksAround(v, line), bs = around.bs, i = around.i; if (i < 0) return false;
       var k = -1;
       for (var n = bs[i].end; n >= bs[i].start; n--) if (/^\s*\{:.*\}\s*$/.test(L[n])) { k = n; break; }
       var none = function () { window.lcxToast && window.lcxToast("Nothing above to stand " + how, false); return true; };
       if (k < 0) {
         if (!how) return true;
-        if (i === 0) return none();
+        if (around.first) return none();
         var endAt = st[bs[i].end] + L[bs[i].end].length, c0 = ta.selectionStart;
         editSpan(endAt, endAt, '\n{: layout="' + how + '" }', c0);
         return true;
       }
       var d = L[k], nd = d.replace(/\s+beside=("[^"]*"|\S+)/, "");
       if (how) {
-        if (i === 0) return none();
+        if (around.first) return none();
         nd = /\blayout=/.test(nd) ? nd.replace(/\blayout=("[^"]*"|\S+)/, 'layout="' + how + '"') : nd.replace(/\s*\}\s*$/, ' layout="' + how + '" }');
       } else nd = nd.replace(/\s+layout=("[^"]*"|\S+)/, "");
       if (nd === d) return true;

@@ -673,3 +673,10 @@ def step_pad_face(context, pad_id, front, back):
 @when('I press the pad "{pad_id}"\'s ✎')
 def step_pad_fold_btn(context, pad_id):
     _pad(context, pad_id).locator(".lc-mdpad-fold").click()
+
+
+
+@when('the "{pad_id}" pad\'s preview has caught up')
+def step_pad_caught_up(context, pad_id):
+    """the preview redraws a beat after the text changes (debounced)"""
+    context.page.wait_for_timeout(1500)

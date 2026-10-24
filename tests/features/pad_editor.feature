@@ -386,6 +386,55 @@ Feature: The pad types like a text field, painted
     When I press "Control+Alt+ArrowLeft" in the "wires" pad
     Then the "wires" pad holds '{: .form master="dog_grid" }'
 
+  Scenario: Inside an accordion, ⌃⌥↑ puts the form behind the grid of its section — not the accordion behind the block above
+    Michel, 2026-10-24: "when I'm in the accordion, on the form and I use the
+    keyboard shortcut for behind, it is applied to the accordion (outermost
+    block) not the innermost one (form) as expected".
+
+    Given the GitHub contents API serves "courses/demo/module_05/inner.md" with the document:
+      """
+      # Inner
+
+      `````markdown
+      # Dogs
+
+      ```csv
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      Intro words.
+
+      ```
+      ### 🐕 The dogs
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      ```
+      {: .accordion }
+      `````
+      {: .mdpad #inner decorations="true" rows="24" numbers="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/inner.md"
+    And I wait for the page to be interactive
+    And I put the caret in "dog_grid" of 'master="dog_grid"' in the "inner" pad
+    And I press "Control+Alt+ArrowUp" in the "inner" pad
+    Then the "inner" pad holds '{: .form master="dog_grid" layout="behind" }'
+    And the "inner" pad holds '{: .accordion }'
+    When the "inner" pad's preview has caught up
+    And I open the accordion section "The dogs"
+    Then the "inner" pad shows "The dog" behind "The dogs", as a tab
+    When I put the caret in "dog_grid" of '#dog_grid' in the "inner" pad
+    And I press "Control+Alt+ArrowUp" in the "inner" pad
+    # the first block of a section has nothing above it
+    Then the "inner" pad holds '{: .datagrid #dog_grid source="dogs" }'
+    When I put the caret in "dog_grid" of 'master="dog_grid"' in the "inner" pad
+    And I press "Control+Alt+ArrowLeft" in the "inner" pad
+    Then the "inner" pad holds '{: .form master="dog_grid" }'
+
   Scenario: A pad's own layout="behind" — one face at a time, the result in front, ✎ brings the source
     Michel, 2026-10-24: "a new knob layout … behind": the pad's source
     behind its preview, for a phone's width.
