@@ -26,7 +26,7 @@ Ferraro,Biscuit,asked,We already met Biscuit last week. Can we pay now?
 ```csv
 name,kind,system,checked_by
 Sid,rules,sort,
-Rey,reader,"Read one family message: what does the family want to do next? Answer one line — VERDICT: met if they want to visit or see the dog, home if they want to pay or adopt, asked if they want neither and only need an answer.",Chuck
+Rey,reader,"Read one family message: which stage should the family move to next? Answer one line — VERDICT: met if they want to visit or see the dog, home if they want to pay or adopt, asked if they want neither and only need an answer. If a checker disagreed, follow its reason.",Chuck
 Chuck,checker,"You check a verdict against the message's row. A family moves one stage at a time: asked, then met, then home — and stays where it is only when it wants neither a visit nor to pay. Answer AGREE or DISAGREE, then why, in one line.",
 ```
 {: .dataset #members }

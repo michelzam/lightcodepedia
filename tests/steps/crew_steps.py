@@ -71,6 +71,8 @@ def step_second_ask(context):
     reads = [a for a in context.crew_asks if "AGREE or DISAGREE" not in a["system"]]
     assert len(reads) == 2, reads
     assert "no visit yet" in reads[1]["user"], reads[1]["user"]
+    # …and is told to answer again with that reason (Michel, 2026-10-24: Rey said home five times)
+    assert "Answer again, taking that reason into account" in reads[1]["user"], reads[1]["user"]
 
 
 @then("Rey read the words only, and Chuck checked them against the row")

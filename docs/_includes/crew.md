@@ -374,7 +374,11 @@ Auto-included by docs/_layouts/default.html.
               beat("event", c.error ? "⚠️ the AI did not answer" : (agrees(c.text) ? checker.name + " agrees: " + said : disagrees(c.text) ? checker.name + " disagrees: " + said : checker.name + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
               if (c.error) { trouble = "the AI did not answer"; return null; }
               if (!agrees(c.text)) {
-                note = "\n\n" + checker.name + (disagrees(c.text) ? " disagreed with " + verdict + ": " + c.text : " did not agree with " + verdict + ".");
+                /* the reader is told to answer AGAIN with the reason — a reader told only
+                   what the family wants kept proposing it (Michel's run, 2026-10-24:
+                   Rey said home five times, Chuck disagreed five times) */
+                note = "\n\n" + checker.name + (disagrees(c.text) ? " disagreed with your verdict " + verdict + ": " + c.text : " did not agree with your verdict " + verdict + ".") +
+                       "\nAnswer again, taking that reason into account.";
                 return loop();
               }
               stage = verdict; why = checker.name + " agreed"; sure = true;
