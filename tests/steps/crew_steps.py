@@ -292,3 +292,45 @@ def step_crew_key_marked(context, cid):
 @when('I press the 🔑 of the crew "{cid}"')
 def step_crew_key_press(context, cid):
     _crew(context, cid).locator(".lc-crew-head .lc-agent-key").click()
+
+
+@then("the desk's cost reads {cost:d}: {runs:d} rule runs, {asks:d} AI asks, {open_:d} left OPEN")
+def step_desk_cost(context, cost, runs, asks, open_):
+    line = context.page.locator("p", has_text=__import__("re").compile("The desk.s cost")).first
+    expect(line).to_contain_text(__import__("re").compile("The desk.s cost: %d\\b" % cost), timeout=T)
+    expect(line).to_contain_text("%d rule runs" % runs)
+    expect(line).to_contain_text("%d AI asks" % asks)
+    expect(line).to_contain_text("%d left" % open_)
+
+
+@given("the AI answers as Rey, and Chuck runs out of words")
+def step_stub_chuck_cut(context):
+    """Rey always says home; Chuck's reply is cut before a word (finish_reason length)."""
+    context.crew_bodies = []
+
+    def answer(route):
+        body = json.loads(route.request.post_data or "{}")
+        context.crew_bodies.append(body)
+        chuck = "AGREE or DISAGREE" in body["messages"][0]["content"]
+        route.fulfill(status=200, content_type="application/json", body=json.dumps({
+            "choices": [{"message": {"content": "" if chuck else "VERDICT: home"}, "finish_reason": "length" if chuck else "stop"}],
+            "usage": {"total_tokens": 12}}))
+    context.page.route("**/chat/completions*", answer)
+
+
+@then("every ask of the crew allowed {n:d} tokens")
+def step_crew_allowance(context, n):
+    got = [b.get("max_tokens") for b in context.crew_bodies]
+    assert got and all(int(x) == n for x in got), got
+
+
+@then('the crew "{cid}" allows {n:d} tokens per ask, and no more')
+def step_crew_cap_ceiling(context, cid, n):
+    step = _crew(context, cid).locator(".lc-crew-step[data-bound='max_tokens']")
+    expect(step.locator("b")).to_have_text(str(n), timeout=T)
+    expect(step.locator("button[data-d='1']")).to_be_disabled()
+
+
+@then('the crew "{cid}" allows {n:d} tokens per ask')
+def step_crew_cap(context, cid, n):
+    expect(_crew(context, cid).locator(".lc-crew-step[data-bound='max_tokens'] b")).to_have_text(str(n), timeout=T)

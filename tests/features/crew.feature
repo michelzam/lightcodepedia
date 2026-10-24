@@ -40,6 +40,8 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And in tab 1 the grid "desk_stages" lists "Ferraro" and "Biscuit"
     # the reader reads the words; the checker checks them against the row — Chuck holds the stage, Rey does not
     And Rey read the words only, and Chuck checked them against the row
+    # the cost, three workers: 🐍 × 1, 🤖 × 30, 🧑 × 900 (Michel, 2026-10-24: "a nice global score for the costs")
+    And the desk's cost reads 123: 3 rule runs, 4 AI asks, 0 left OPEN
     # the crew is an agent: the engine's 🔋 asks and tokens per unit of time, as under any agent (Michel, 2026-10-24)
     And the crew "desk" shows the engine's 🔋 asks left, as an agent does
     # the run reads as an event flow, each step's cost, each result ✅ sure or ⚠️ not; its legend shown (Michel, 2026-10-24)
@@ -146,3 +148,28 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Then the feature "crew_proof" is green
     # a try is a read and its check: the asks column adds up to the gauge (Michel, 2026-10-24: "the grid shows less")
     And the asks of the crew "desk" add up to its gauge: 2
+    And the desk's cost reads 963: 3 rule runs, 2 AI asks, 1 left OPEN
+
+  Scenario: A checker that runs out of words does not agree — every ask has an agent's allowance, said, and lowered only
+    Michel, 2026-10-24, on Groq's gpt-oss (a model that thinks first): Ferraro
+    went home with "Chuck agreed", Lindqvist spent a try on nothing. Each ask
+    had 300 tokens, the thinking spent them, the replies came back empty or
+    cut — and an empty check read as agreement. Now every ask has 2000, as
+    any agent, and only a checker that says AGREE settles a message.
+
+    Given I have a clean browser page
+    And an energy key "AIza-crew-test" is already saved on this device
+    And the AI answers as Rey, and Chuck runs out of words
+    When I navigate to "/components/crew"
+    # the cap is said, and lowered only (Michel, 2026-10-24: "display the token limit … lowering it (but not increasing it)")
+    Then the crew "desk" allows 2000 tokens per ask, and no more
+    When I press "−" on the max_tokens of the crew "desk" 4 times
+    Then the crew "desk" allows 1000 tokens per ask
+    When I press ▶ Run on the crew "desk"
+    Then the crew "desk" is done
+    And the crew "desk" says why "Ferraro" went "OPEN": "no agreement in 2 tries"
+    And every ask of the crew allowed 1000 tokens
+    # overloading is said: the cut answers, counted
+    And the crew "desk" says "✂️ 2 answers cut at 1000 tokens per ask"
+    When I open the accordion section "event flow"
+    Then the run's event flow "desk_flow" tells "Ferraro / Rey proposes home / Chuck gives no verdict · 12 tokens ✂️ cut at 1000 / Ferraro → OPEN ⚠️ no agreement in 2 tries"

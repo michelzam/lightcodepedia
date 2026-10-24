@@ -45,7 +45,7 @@ def sort(message):
 {: .model }
 
 [The front desk](#)
-{: .crew members="members" inbox="inbox" stages="asked, met, home" tries="2" budget="6" #desk }
+{: .crew members="members" inbox="inbox" stages="asked, met, home" tries="2" budget="6" costs="1, 30, 900" #desk }
 
 ```
 ### 🧑‍🤝‍🧑 The crew — who does the job
@@ -59,6 +59,8 @@ def sort(message):
 
 [The messages — each family's stage, and the next one the desk gives it](#)
 {: .datagrid source="desk.sorted" columns="family, dog, stage, message, next_stage, why, tries, asks, tokens" #desk_stages }
+
+💰 **The desk's cost: {= desk.cost }** = 🐍 {= desk.runs } rule runs × 1 + 🤖 {= desk.asks } AI asks × 30 + 🧑 {= desk.open } left `OPEN` for a person × 900
 
 ```
 ### 🎏 The run, as an event flow
@@ -113,8 +115,9 @@ A guide's line can read the page: `{= members.first.name }` in a `say:` is a
 | `tries` | at most this many reads per message (default 2) — a read and its check, two asks — − and + on the crew change it |
 | `budget` | at most this many AI asks in total (default 6) — − and +, and a gauge of what the run spent |
 | `fallback` | the stage written for what stays open (default `OPEN`) — a person, never a guess |
+| `costs` | the price of a 🐍 rule run, a 🤖 AI ask and a 🧑 message left `OPEN` for a person (default `1, 30, 900`): `desk.cost` adds them up |
 | `pace` | seconds between steps, so the work is seen a row at a time (default 0.5; 0 runs flat out) |
-| `provider` · `model` · `temperature` · `max_tokens` | an [agent](/components/agent)'s own knobs: the crew **is** an agent, and these are its members' defaults (a member's own column wins) |
+| `provider` · `model` · `temperature` · `max_tokens` | an [agent](/components/agent)'s own knobs: the crew **is** an agent, and these are its members' defaults (a member's own column wins; `max_tokens` 2000, as any agent — a model that thinks spends it before answering; the crew's line says it, − lowers it, + never climbs past the page's own, and an answer cut at it is marked ✂️) |
 
 ## 🧑‍🤝‍🧑 The members — one row each
 
@@ -138,8 +141,9 @@ agreed — or what stopped the desk: the budget spent, no agreement in its
 tries, no key; then the message stays `OPEN`.
 
 For each message: the rules first, in order. If none answers, the reader
-proposes and its checker checks. A `DISAGREE` goes back to the reader with
-the checker's words, and it tries again. It stops at `tries` for the
+proposes and its checker checks. Only a checker that says `AGREE` settles
+it: a `DISAGREE` — or an answer with neither word, empty or cut — goes back
+to the reader with the checker's words, and it tries again. It stops at `tries` for the
 message or `budget` for the crew, and what is still open takes `fallback`
 (`OPEN` by default).
 
@@ -147,6 +151,7 @@ The crew writes three datasets and touches nothing else:
 - `desk.sorted`: every message from the start, then its `next_stage`, its `why`, its `tries`, its `asks` (a try is a read and its check: two asks, so the column adds up to the gauge) and its `tokens` (the row at work is selected, ⏳);
 - `desk.flow`: the run as an [event flow](/components/event_flow) — `{: .event_flow source="desk.flow" }` draws it, each ⚡ a message moving to its next stage, its cost, ✅ or ⚠️;
 - `desk.log`: every step, `who` said what (`in`, `out`) and its `tokens`;
+- `desk.cost`: the run's price — `desk.runs` rule runs, `desk.asks` AI asks, `desk.open` messages left for a person, each at its `costs=`: Python is the cheapest and the easiest to check, and rigid; the AI bends to any wording, at thirty times the price; a person is the most flexible and creative, and thirty times the AI. A [cell](/components/cells) under the grid shows it;
 - the crew's lines — its tokens, the session's and this run's, and the engine's 🔋 asks and tokens left per day and per minute, as under every agent — and `desk.asks` · `desk.tokens` in a proof: the totals.
 
 The crew is an [agent](/components/agent) made of agents: it has an agent's

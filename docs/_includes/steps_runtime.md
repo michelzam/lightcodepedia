@@ -2699,7 +2699,8 @@ class Server(Block):
                   {"n": "budget", "t": "int", "data": True, "attr": "budget", "d": 6},
                   {"n": "fallback", "t": "str", "data": True, "attr": "fallback"},
                   {"n": "text", "t": "str", "data": True, "attr": "text", "d": "message"},
-                  {"n": "pace", "t": "float", "data": True, "attr": "pace", "d": 0.5}],
+                  {"n": "pace", "t": "float", "data": True, "attr": "pace", "d": 0.5},
+                  {"n": "costs", "t": "str", "data": True, "attr": "costs", "d": "1, 30, 900"}],
            assoc=[{"n": "members", "target": "Agent", "list": True}, {"n": "inbox", "target": "Dataset"}],
            methods=["run"])
 class Crew(Agent):
@@ -2757,6 +2758,26 @@ class Crew(Agent):
     @property
     def done(self):
         return self._attr("data-state") == "done"
+
+    # THE COST, THREE WORKERS (Michel, 2026-10-24: "python code: the cheapest,
+    # the easier to verify, rigid too; ai: more flexible, but more expensive;
+    # human: the most flexible, creative, and expensive"): costs= gives each
+    # one's price — a rule run, an AI ask, a message left for a person
+    # the crew counts them, once (crew.md), and publishes them as a form does
+    @property
+    def runs(self):
+        """🐍 The rule runs of the last run: the cheapest worker."""
+        return int(self._attr("data-runs") or 0)
+
+    @property
+    def open(self):
+        """🧑 The messages the last run left for a person (its fallback stage)."""
+        return int(self._attr("data-open") or 0)
+
+    @property
+    def cost(self):
+        """💰 runs × 1 + asks × 30 + open × 900 — or the prices costs= gives."""
+        return int(self._attr("data-cost") or 0)
 
     def run(self):
         """Press ▶ Run, as a person would; the crew works on, the page repaints."""

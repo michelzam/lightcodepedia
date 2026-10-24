@@ -109,8 +109,9 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
        `{= pitch.benefit }` read a saved document exactly as a formula reads a
        typed field — which is how a later page shows a learner their own words
        back (Michel, 2026-08-10). */
+    /* …and a crew's totals: {= desk.cost } (Michel, 2026-10-24) */
     document.querySelectorAll(".lc-form[data-lc-value], .lc-mdpad[data-lc-value], "
-                            + ".lc-persona[data-lc-value], .lc-pitch[data-lc-value], .lc-imap[data-lc-value]").forEach(function (f) {
+                            + ".lc-persona[data-lc-value], .lc-pitch[data-lc-value], .lc-imap[data-lc-value], .lc-crew[data-lc-value]").forEach(function (f) {
       var id = f.getAttribute("data-lc-id") || "";
       var o;
       try { o = JSON.parse(f.getAttribute("data-lc-value")); } catch (e) { return; }

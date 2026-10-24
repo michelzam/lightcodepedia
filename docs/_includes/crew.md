@@ -117,9 +117,15 @@ Auto-included by docs/_layouts/default.html.
     return window.lcAgentAsk({
       system: member.system, provider: pick1(member.provider, crew.provider || ""), model: pick1(member.model, crew.model || ""),
       temperature: pick1(member.temperature, pick1(crew.temperature, 0)),
-      max_tokens: pick1(member.max_tokens, pick1(crew.max_tokens, 300)) }, text).then(function (r) {
+      /* 2000, as every agent: a model that thinks spends this same allowance
+         before it answers — 300 left Rey and Chuck with empty replies (Michel's
+         run, 2026-10-24: a wasted try, an empty check taken for agreement) */
+      /* the crew's cap is a ceiling: a member's own column may go lower, never higher */
+      max_tokens: Math.min(parseInt(pick1(member.max_tokens, crew.cap), 10) || crew.cap, crew.cap) }, text).then(function (r) {
         var u = r.usage || {};
-        return { text: String(r.text || ""), error: r.error ? String(r.error) : "", unsent: !!r.unsent, usage: r.usage || null, engine: r.engine || null,
+        /* the model's own words (a cut answer carries a notice, never a verdict), and whether it was cut */
+        return { text: String(r.clean != null ? r.clean : (r.text || "")), cut: !!r.truncated,
+                 error: r.error ? String(r.error) : "", unsent: !!r.unsent, usage: r.usage || null, engine: r.engine || null,
                  tokens: parseInt(u.total_tokens || ((u.prompt_tokens || 0) + (u.completion_tokens || 0)), 10) || 0 };
       }, function (e) { return { text: "", error: String(e && e.message || e), tokens: 0 }; });
   }
@@ -132,7 +138,9 @@ Auto-included by docs/_layouts/default.html.
     stages.forEach(function (l) { var m = new RegExp("\\b" + l.toUpperCase() + "\\b").exec(v); if (m && m.index < at) { at = m.index; best = l; } });
     return best;
   }
+  /* a checker AGREES only by saying so: an empty or cut answer is no agreement */
   var disagrees = function (text) { return /\bDISAGREE\b/i.test(text || ""); };
+  var agrees = function (text) { return /\bAGREE\b/i.test(text || "") && !disagrees(text); };
 
   function upgrade(el) {
     if (el.dataset.lcUpgraded) return;
@@ -146,6 +154,12 @@ Auto-included by docs/_layouts/default.html.
        as a stage someone chose (Michel, 2026-10-24: "open lane") */
     var fallback = knob("fallback", "OPEN");
     var crewCfg = { provider: knob("provider", ""), model: knob("model", ""), temperature: knob("temperature", ""), max_tokens: knob("max_tokens", "") };
+    /* TOKENS PER ASK, SAID AND LOWERED (Michel, 2026-10-24: "display the token
+       limit at least, display overloading, and maybe leave students lowering
+       it (but not increasing it)"): the page's max_tokens (2000, as any agent)
+       is the ceiling; − lowers it, + climbs back, never past it */
+    var cap0 = Math.max(250, parseInt(crewCfg.max_tokens, 10) || 2000), CAP_STEP = 250;
+    crewCfg.cap = cap0;
     /* pace= seconds between steps: the work is seen, a row at a time (Michel, 2026-10-23: "progressively sorted, with the selection and sleeps") */
     var pace = Math.max(0, parseFloat(knob("pace", "0.5")) || 0);
     var nap = function () { return new Promise(function (ok) { setTimeout(ok, pace * 1000); }); };
@@ -155,7 +169,7 @@ Auto-included by docs/_layouts/default.html.
     var box = document.createElement("div");
     box.className = "lc-crew";
     box.id = id; box.setAttribute("data-lc-id", id);
-    ["members", "inbox", "stages", "tries", "budget", "fallback", "text", "pace", "provider", "model", "temperature", "max_tokens"].forEach(function (k) { if (el.hasAttribute(k)) box.setAttribute(k, el.getAttribute(k)); });
+    ["members", "inbox", "stages", "tries", "budget", "fallback", "text", "pace", "costs", "provider", "model", "temperature", "max_tokens"].forEach(function (k) { if (el.hasAttribute(k)) box.setAttribute(k, el.getAttribute(k)); });
     box.innerHTML = "<div class='lc-crew-head'><span class='lc-crew-title'>" + esc(el.textContent.trim() || "The crew") + "</span>" +
       "<span class='lc-crew-members'></span><button type='button' class='lc-crew-run'>▶ Run</button></div>" +
       "<div class='lc-crew-bounds'></div>" +
@@ -184,19 +198,24 @@ Auto-included by docs/_layouts/default.html.
     };
     var paintBounds = function () {
       bounds.innerHTML = "stages " + esc(stages.join(" · ")) + " — " + stepper("tries", tries, "tr" + (tries === 1 ? "y" : "ies") + " per message") +
-        " — " + stepper("budget", budget, "AI ask" + (budget === 1 ? "" : "s") + " in total") + " — still open: " + esc(fallback) +
+        " — " + stepper("budget", budget, "AI ask" + (budget === 1 ? "" : "s") + " in total") +
+        " — " + stepper("max_tokens", crewCfg.cap, "tokens per ask") + " — still open: " + esc(fallback) +
         (desk ? " — asks " + esc(desk.engine()) : "");
       [].forEach.call(bounds.querySelectorAll("button"), function (b) {
-        var k = b.parentNode.getAttribute("data-bound"), v = k === "tries" ? tries : budget;
-        b.disabled = box.getAttribute("data-state") === "running" || (+b.getAttribute("data-d") < 0 && v <= (k === "tries" ? 1 : 0));
+        var k = b.parentNode.getAttribute("data-bound"), up = +b.getAttribute("data-d") > 0;
+        var v = k === "tries" ? tries : k === "budget" ? budget : crewCfg.cap;
+        var floor = k === "tries" ? 1 : k === "budget" ? 0 : CAP_STEP;
+        b.disabled = box.getAttribute("data-state") === "running" || (!up && v <= floor) || (up && k === "max_tokens" && v >= cap0);
       });
     };
     bounds.addEventListener("click", function (e) {
       var b = e.target.closest("button[data-d]");
       if (!b || b.disabled) return;
       var k = b.parentNode.getAttribute("data-bound"), d = +b.getAttribute("data-d");
-      if (k === "tries") tries = Math.max(1, tries + d); else budget = Math.max(0, budget + d);
-      box.setAttribute(k, String(k === "tries" ? tries : budget));
+      if (k === "tries") tries = Math.max(1, tries + d);
+      else if (k === "budget") budget = Math.max(0, budget + d);
+      else crewCfg.cap = Math.min(cap0, Math.max(CAP_STEP, crewCfg.cap + d * CAP_STEP));
+      box.setAttribute(k, String(k === "tries" ? tries : k === "budget" ? budget : crewCfg.cap));
       paintBounds(); gauge(+box.getAttribute("data-asks"));
     });
     var gaugeEl = box.querySelector(".lc-crew-gauge");
@@ -221,6 +240,24 @@ Auto-included by docs/_layouts/default.html.
     /* the crew is an agent: its tokens read as any agent's — the session, this
        run, who answered — and count in the day's total (Michel, 2026-10-24) */
     var usageEl = box.querySelector(".lc-agent-usage"), session = 0;
+    /* THE COST, THREE WORKERS (Michel, 2026-10-24: "python code: the cheapest,
+       the easier to verify, rigid too; ai: more flexible, but more expensive;
+       human: the most flexible, creative, and expensive"): costs= prices a 🐍
+       rule run, a 🤖 AI ask, a 🧑 message left for a person (1, 30, 900). The
+       crew publishes its totals as a form publishes its fields, so a cell
+       reads {= desk.cost } and a proof desk.cost — one count, here. */
+    var units = knob("costs", "1, 30, 900").split(/[\s,]+/).map(function (x) { return parseInt(x, 10); }).filter(function (n) { return !isNaN(n); });
+    units = units.concat([1, 30, 900].slice(units.length)).slice(0, 3);
+    var totals = function (log, rows, asks, tokens) {
+      var runs = log.filter(function (r) { return r.kind === "rules"; }).length;
+      var open = rows.filter(function (r) { return r.next_stage === fallback; }).length;
+      var t = { runs: runs, asks: asks, open: open, tokens: tokens, cost: runs * units[0] + asks * units[1] + open * units[2],
+                done: box.getAttribute("data-state") === "done" };
+      ["runs", "open", "cost"].forEach(function (k) { box.setAttribute("data-" + k, String(t[k])); });
+      box.setAttribute("data-lc-value", JSON.stringify(t));
+      return t;
+    };
+    totals([], [], 0, 0);
 
     /* the members, as the dataset says them now — a new row is a new member */
     var members = function () { return rowsOf(membersId).map(function (r) { return Object.assign({}, r, { kind: String(r.kind || "").trim().toLowerCase(), name: String(r.name || "").trim() }); }); };
@@ -243,7 +280,7 @@ Auto-included by docs/_layouts/default.html.
       ms.forEach(function (m) { byName[m.name] = m; });
       var rules = ms.filter(function (m) { return m.kind === "rules"; });
       var reader = ms.filter(function (m) { return m.kind === "reader"; })[0] || null;
-      var inbox = rowsOf(inboxId), out = unsorted(), log = [], asks = 0, n = 0, tokens = 0, failed = 0;
+      var inbox = rowsOf(inboxId), out = unsorted(), log = [], asks = 0, n = 0, tokens = 0, failed = 0, cuts = 0;
       var spend = function (d) { asks += d; box.setAttribute("data-asks", String(asks)); gauge(asks); };
       var say = function (who, kind, said, heard, tk, a) {
         tokens += tk || 0; session += tk || 0; box.setAttribute("data-tokens", String(tokens));
@@ -254,7 +291,10 @@ Auto-included by docs/_layouts/default.html.
           if (desk && desk.showQuota) desk.showQuota(a.engine && a.engine.pid);
         }
         if (kind !== "rules" && /^⚠️/.test(String(heard))) failed++;
-        log.push({ n: ++n, who: who, kind: kind, in: said, out: heard, tokens: tk || 0 }); window.lcSetDataset(id + ".log", log.slice());
+        if (a && a.cut) cuts++;
+        log.push({ n: ++n, who: who, kind: kind, in: said, out: heard, tokens: tk || 0 });
+        totals(log, out, asks, tokens);
+        window.lcSetDataset(id + ".log", log.slice());
       };
       /* THE RUN AS AN EVENT FLOW (Michel, 2026-10-24: "go flow"): who wrote, what
          each worker did, what governed it, and the event — a transition to a
@@ -263,14 +303,17 @@ Auto-included by docs/_layouts/default.html.
          ("I would add the cost and benefit"). .event_flow source="<id>.flow" draws it. */
       var flow = [];
       var beat = function (kind, text) { var r = {}; r[kind] = text; flow.push(r); window.lcSetDataset(id + ".flow", flow.slice()); };
-      var cost = function (tk) { return tk ? " · " + tk + " tokens" : ""; };
+      var cost = function (tk, a) { return (tk ? " · " + tk + " tokens" : "") + (a && a.cut ? " ✂️ cut at " + crewCfg.cap : ""); };
       window.lcSetDataset(id + ".flow", []);
       window.lcSetDataset(id + ".sorted", out.slice());
       btn.disabled = true; box.setAttribute("data-state", "running"); paintBounds(); gauge(0);
       var step = function (i) {
         if (i >= inbox.length) {
           box.setAttribute("data-state", "done"); paintBounds();
+          totals(log, out, asks, tokens);
+          window.lcSetDataset(id + ".sorted", out.slice());     /* the cells read the totals once more, done */
           status.textContent = "✓ " + out.length + " sorted, " + asks + " of " + budget + " AI asks, " + tokens + " tokens" +
+            (cuts ? " — ✂️ " + cuts + " answer" + (cuts === 1 ? "" : "s") + " cut at " + crewCfg.cap + " tokens per ask" : "") +
             (failed ? " — ⚠️ the AI did not answer " + failed + " time" + (failed === 1 ? "" : "s") + ": 🔑 your keys" : "");
           /* an engine that did not answer: the 🔑 is marked, the line says so — the
              keys unfold only when asked (Michel, 2026-10-24: "once the run is done,
@@ -314,7 +357,7 @@ Auto-included by docs/_layouts/default.html.
             say(reader.name, "reader", text + note, a.error ? "⚠️ " + a.error : a.text, a.tokens, a);
             if (a.error) trouble = a.unsent ? "no AI key" : "the AI did not answer";
             var verdict = stageIn(a.text, stages);
-            beat("event", a.error ? "⚠️ " + (a.unsent ? "no AI key" : "the AI did not answer") : reader.name + " proposes " + (verdict || "no stage") + cost(a.tokens));
+            beat("event", a.error ? "⚠️ " + (a.unsent ? "no AI key" : "the AI did not answer") : reader.name + " proposes " + (verdict || "no stage") + cost(a.tokens, a));
             if (!verdict) return a.error ? null : loop();
             var checker = reader.checked_by ? byName[reader.checked_by] : null;
             if (!checker) { stage = verdict; why = reader.name; return null; }
@@ -325,9 +368,13 @@ Auto-included by docs/_layouts/default.html.
             spend(1);
             return ask(checker, "The message: " + text + "\nIts row: " + JSON.stringify(row) + "\nThe verdict: " + verdict + cctx, crewCfg).then(function (c) {
               say(checker.name, "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, c);
-              beat("event", c.error ? "⚠️ the AI did not answer" : (disagrees(c.text) ? checker.name + " disagrees: " : checker.name + " agrees: ") + String(c.text).replace(/^\s*(DIS)?AGREE\W*/i, "").slice(0, 90) + cost(c.tokens));
+              var said = String(c.text).replace(/^\s*(DIS)?AGREE\W*/i, "").slice(0, 90);
+              beat("event", c.error ? "⚠️ the AI did not answer" : (agrees(c.text) ? checker.name + " agrees: " + said : disagrees(c.text) ? checker.name + " disagrees: " + said : checker.name + " gives no verdict") + cost(c.tokens, c));
               if (c.error) { trouble = "the AI did not answer"; return null; }
-              if (disagrees(c.text)) { note = "\n\n" + checker.name + " disagreed with " + verdict + ": " + c.text; return loop(); }
+              if (!agrees(c.text)) {
+                note = "\n\n" + checker.name + (disagrees(c.text) ? " disagreed with " + verdict + ": " + c.text : " did not agree with " + verdict + ".");
+                return loop();
+              }
               stage = verdict; why = checker.name + " agreed"; sure = true;
               return null;
             });
@@ -343,6 +390,7 @@ Auto-included by docs/_layouts/default.html.
           /* asks per message: a try is a read and its check — two asks — so the
              column adds up to the gauge (Michel, 2026-10-24: "the grid shows less") */
           out[i] = Object.assign({}, row, { next_stage: stage || fallback, why: why, tries: tried, asks: asks - asked0, tokens: tk });
+          totals(log, out, asks, tokens);
           window.lcSetDataset(id + ".sorted", out.slice());
           pick(who);
           return nap().then(function () { return step(i + 1); });
