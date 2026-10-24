@@ -27,6 +27,10 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" asked the AI 4 times
     # tokens, globally and by step (Michel, 2026-10-23: "show the token consumption")
     And the crew "desk" spent 48 tokens, 12 on each AI step
+    # an agent's own token line, and the why of each lane (Michel, 2026-10-24)
+    And the crew "desk" shows its tokens as an agent does: "Session: 48 tokens · this run: 48"
+    And the crew "desk" says why "Nguyen" went "VISIT": "Sid's rule"
+    And the crew "desk" says why "Ferraro" went "VISIT": "Chuck agreed"
     And the crew's log shows "Chuck" saying "DISAGREE"
     And Rey's second ask carried Chuck's words
     When I run the feature "crew_proof"
@@ -41,6 +45,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Then the crew "desk" is done
     And the crew "desk" sorted "Okafor" as "PAY" in 0 tries
     And the crew "desk" sorted "Ferraro" as "CALL" in 1 tries
+    And the crew "desk" says why "Ferraro" went "CALL": "no AI key"
     # an ask that never left the device is not counted against the budget
     And the crew "desk" asked the AI 0 times
     And the crew's log shows "Rey" saying "no AI key"

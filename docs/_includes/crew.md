@@ -28,7 +28,7 @@ THE LOOP, PER MESSAGE: the rules in order; if none answers, the reader
 proposes, its checker checks; a DISAGREE goes back to the reader with the
 checker's words, until tries= per message or budget= AI asks in all; what
 is still open takes fallback= — a person, never a guess. The crew writes
-only its own datasets: <id>.sorted (each message with its lane and tries)
+only its own datasets: <id>.sorted (each message with its lane, why, tries)
 and <id>.log (every step: who, what in, what out, its tokens); the inbox
 shows from the start and fills a row at a time, pace= seconds apart, the
 row at work selected. The page acts on them;
@@ -100,7 +100,7 @@ Auto-included by docs/_layouts/default.html.
       temperature: pick1(member.temperature, pick1(crew.temperature, 0)),
       max_tokens: pick1(member.max_tokens, pick1(crew.max_tokens, 300)) }, text).then(function (r) {
         var u = r.usage || {};
-        return { text: String(r.text || ""), error: r.error ? String(r.error) : "", unsent: !!r.unsent,
+        return { text: String(r.text || ""), error: r.error ? String(r.error) : "", unsent: !!r.unsent, usage: r.usage || null, engine: r.engine || null,
                  tokens: parseInt(u.total_tokens || ((u.prompt_tokens || 0) + (u.completion_tokens || 0)), 10) || 0 };
       }, function (e) { return { text: "", error: String(e && e.message || e), tokens: 0 }; });
   }
@@ -136,7 +136,8 @@ Auto-included by docs/_layouts/default.html.
     ["members", "inbox", "lanes", "tries", "budget", "fallback", "text", "pace", "provider", "model", "temperature", "max_tokens"].forEach(function (k) { if (el.hasAttribute(k)) box.setAttribute(k, el.getAttribute(k)); });
     box.innerHTML = "<div class='lc-crew-head'><span class='lc-crew-title'>" + esc(el.textContent.trim() || "The crew") + "</span>" +
       "<span class='lc-crew-members'></span><button type='button' class='lc-crew-run'>▶ Run</button></div>" +
-      "<div class='lc-crew-bounds'></div><div class='lc-crew-status'></div>";
+      "<div class='lc-crew-bounds'></div><div class='lc-crew-status'></div>" +
+      "<div class='lc-agent-usage'>Used 0 tokens this session.</div>";
     el.parentNode.replaceChild(box, el);
     var btn = box.querySelector(".lc-crew-run"), status = box.querySelector(".lc-crew-status");
     /* the crew is an agent: the agent's own desk — 🔑 and the ring of engines —
@@ -150,11 +151,14 @@ Auto-included by docs/_layouts/default.html.
       " a message, " + budget + " AI ask" + (budget === 1 ? "" : "s") + " in all — still open: " + fallback +
       (desk ? " — asks " + desk.engine() : "");
     /* the inbox shows from the start, its lanes still open; the run fills them in */
-    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { lane: "", tries: "", tokens: "" }); }); };
+    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { lane: "", why: "", tries: "", tokens: "" }); }); };
     window.lcSetDataset(id + ".sorted", unsorted());
     window.lcSetDataset(id + ".log", []);
     box.setAttribute("data-asks", "0");
     box.setAttribute("data-tokens", "0");
+    /* the crew is an agent: its tokens read as any agent's — the session, this
+       run, who answered — and count in the day's total (Michel, 2026-10-24) */
+    var usageEl = box.querySelector(".lc-agent-usage"), session = 0;
 
     /* the members, as the dataset says them now — a new row is a new member */
     var members = function () { return rowsOf(membersId).map(function (r) { return Object.assign({}, r, { kind: String(r.kind || "").trim().toLowerCase(), name: String(r.name || "").trim() }); }); };
@@ -178,8 +182,13 @@ Auto-included by docs/_layouts/default.html.
       var rules = ms.filter(function (m) { return m.kind === "rules"; });
       var reader = ms.filter(function (m) { return m.kind === "reader"; })[0] || null;
       var inbox = rowsOf(inboxId), out = unsorted(), log = [], asks = 0, n = 0, tokens = 0, failed = 0;
-      var say = function (who, kind, said, heard, tk) {
-        tokens += tk || 0; box.setAttribute("data-tokens", String(tokens));
+      var say = function (who, kind, said, heard, tk, a) {
+        tokens += tk || 0; session += tk || 0; box.setAttribute("data-tokens", String(tokens));
+        if (a && a.usage) {
+          if (window.lcTokens) window.lcTokens.add(a.usage);
+          var eng = a.engine ? " · " + (a.engine.name || a.engine.pid || "") + " · " + (a.engine.model || "") : "";
+          usageEl.textContent = "Session: " + session + " tokens · this run: " + tokens + eng + ".";
+        }
         if (kind !== "rules" && /^⚠️/.test(String(heard))) failed++;
         log.push({ n: ++n, who: who, kind: kind, in: said, out: heard, tokens: tk || 0 }); window.lcSetDataset(id + ".log", log.slice());
       };
@@ -196,7 +205,7 @@ Auto-included by docs/_layouts/default.html.
           return Promise.resolve();
         }
         var row = inbox[i], text = String(row[textCol] == null ? "" : row[textCol]);
-        var lane = null, tried = 0, note = "", spent = tokens;
+        var lane = null, tried = 0, note = "", spent = tokens, why = "", trouble = "";
         var who = row.family || row.name || ("#" + (i + 1));
         status.textContent = "… " + who;
         out[i] = Object.assign({}, out[i], { lane: "⏳" });
@@ -207,7 +216,7 @@ Auto-included by docs/_layouts/default.html.
             if (lane) return;
             return rule(String(m.system || "").trim(), text).then(function (r) {
               say(m.name, "rules", text, r.error ? "⚠️ " + r.error : (r.lane || "—"));
-              var l = laneIn(r.lane, lanes); if (l) lane = l;
+              var l = laneIn(r.lane, lanes); if (l) { lane = l; why = m.name + "'s rule"; }
             });
           });
         }, nap());
@@ -220,26 +229,30 @@ Auto-included by docs/_layouts/default.html.
           return ask(reader, text + note + context, crewCfg).then(function (a) {
             /* an ask that never left this device (no key) costs nothing: not counted */
             if (a.unsent) { asks--; box.setAttribute("data-asks", String(asks)); }
-            say(reader.name, "reader", text + note, a.error ? "⚠️ " + a.error : a.text, a.tokens);
+            say(reader.name, "reader", text + note, a.error ? "⚠️ " + a.error : a.text, a.tokens, a);
+            if (a.error) trouble = a.unsent ? "no AI key" : "the AI did not answer";
             var verdict = laneIn(a.text, lanes);
             if (!verdict) return a.error ? null : loop();
             var checker = reader.checked_by ? byName[reader.checked_by] : null;
-            if (!checker) { lane = verdict; return null; }
+            if (!checker) { lane = verdict; why = reader.name; return null; }
             if (asks >= budget) return null;
             status.textContent = "… " + who + ": " + checker.name + " checks " + verdict;
             var cctx = checker.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(checker.reads)) : "";
             asks++; box.setAttribute("data-asks", String(asks));
             return ask(checker, "The message: " + text + "\nThe verdict: " + verdict + cctx, crewCfg).then(function (c) {
-              say(checker.name, "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens);
-              if (c.error) return null;
+              say(checker.name, "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, c);
+              if (c.error) { trouble = "the AI did not answer"; return null; }
               if (disagrees(c.text)) { note = "\n\n" + checker.name + " disagreed with " + verdict + ": " + c.text; return loop(); }
-              lane = verdict;
+              lane = verdict; why = checker.name + " agreed";
               return null;
             });
           });
         };
         return byRules.then(loop).then(function () {
-          out[i] = Object.assign({}, row, { lane: lane || fallback, tries: tried, tokens: tokens - spent });
+          /* WHY, in words: who decided, or what stopped the desk (Michel, 2026-10-24:
+             "how come Lindqvist were classified as CALL instead of visit?") */
+          if (!lane) why = !reader ? "no reader" : trouble || (asks >= budget ? "budget spent" : "no agreement in " + tried + " tr" + (tried === 1 ? "y" : "ies"));
+          out[i] = Object.assign({}, row, { lane: lane || fallback, why: why, tries: tried, tokens: tokens - spent });
           window.lcSetDataset(id + ".sorted", out.slice());
           pick(who);
           return nap().then(function () { return step(i + 1); });

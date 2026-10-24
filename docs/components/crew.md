@@ -51,7 +51,7 @@ def sort(message):
 {: .crew members="members" inbox="inbox" lanes="VISIT, PAY, CALL" tries="2" budget="6" fallback="CALL" #desk }
 
 [The messages, and where each went](#)
-{: .datagrid source="desk.sorted" columns="family, message, lane, tries, tokens" #desk_lanes }
+{: .datagrid source="desk.sorted" columns="family, message, lane, why, tries, tokens" #desk_lanes }
 
 ```
 ### 🧑‍🤝‍🧑 The crew — who can do what
@@ -114,6 +114,13 @@ A guide's line can read the page: `{= members.first.name }` in a `say:` is a
 rows travel with the ask (here, the dog cards Chuck trusts).
 
 ## 🔁 The loop
+
+A **lane** is what the desk does next, not what the family asks for: `VISIT`
+books a visit, `PAY` sends the payment link, `CALL` hands the message to a
+person. Ferraro asks to pay, but the dog card shows no booked visit, and a
+family pays only after one: the desk's next step is `VISIT`. The `why`
+column says who decided — Sid's rule, Chuck agreed — or what stopped the
+desk: the budget spent, no agreement in its tries, no key.
 
 For each message: the rules first, in order. If none answers, the reader
 proposes and its checker checks. A `DISAGREE` goes back to the reader with

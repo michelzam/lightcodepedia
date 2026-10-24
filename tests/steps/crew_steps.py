@@ -187,3 +187,16 @@ def step_one_docked_guide(context):
 
 
 
+
+
+@then('the crew "{cid}" says why "{family}" went "{lane}": "{why}"')
+def step_crew_why(context, cid, family, lane, why):
+    rows = [r for r in _rows(context, cid + ".sorted") if r.get("family") == family]
+    assert rows and rows[0].get("lane") == lane and rows[0].get("why") == why, rows
+    grid = context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tbody tr", has_text=family).first
+    expect(grid).to_contain_text(why, timeout=T)
+
+
+@then('the crew "{cid}" shows its tokens as an agent does: "{text}"')
+def step_crew_usage(context, cid, text):
+    expect(_crew(context, cid).locator(".lc-agent-usage")).to_contain_text(text, timeout=T)
