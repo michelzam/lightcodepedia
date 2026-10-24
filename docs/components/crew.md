@@ -153,4 +153,4 @@ Feature: The desk sorts the inbox within its bounds
     assert self.desk.asks <= 6, f"{self.desk.asks} AI asks, the budget is 6"
     :::
 ```
-{: .feature #crew_proof }
+{: .feature #crew_proof visible="true" status="pending" tags="ai" }

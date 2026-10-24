@@ -140,3 +140,15 @@ def step_grid_text_size(context, gid):
         const cs = getComputedStyle(g);
         return cs.getPropertyValue('-webkit-text-size-adjust') || cs.getPropertyValue('text-size-adjust') || cs.webkitTextSizeAdjust || ''; }""", gid)
     assert got == "100%", "the grid's text-size-adjust is %r: a phone may enlarge its long columns" % got
+
+
+@then('the proof "{fid}" can be read on the page')
+def step_proof_seen(context, fid):
+    card = context.page.locator(".lc-feature[data-lc-id='" + fid + "']")
+    expect(card).to_be_visible(timeout=T)
+    expect(card.locator(".lc-feature-run")).to_be_visible(timeout=T)
+
+
+@then('the proof "{fid}" wears the tag "{tag}"')
+def step_proof_tag(context, fid, tag):
+    expect(context.page.locator(".lc-feature[data-lc-id='" + fid + "'] .lc-feature-tag", has_text=tag).first).to_be_visible(timeout=T)

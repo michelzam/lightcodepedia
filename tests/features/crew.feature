@@ -11,6 +11,9 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And an energy key "AIza-crew-test" is already saved on this device
     And the AI answers as Rey and Chuck, Rey wrong the first time
     When I navigate to "/components/crew"
+    # the page's proof is there to read and ▶ (Michel, 2026-10-24, on pedia: "the proof is empty…")
+    Then the proof "crew_proof" can be read on the page
+    And the proof "crew_proof" wears the tag "ai"
     # the whole inbox from the start, then a row at a time, the row at work selected (Michel, 2026-10-23)
     Then the crew "desk" shows its 3 messages, none sorted yet
     When I press ▶ Run on the crew "desk"
