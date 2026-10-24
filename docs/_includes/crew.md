@@ -132,6 +132,10 @@ Auto-included by docs/_layouts/default.html.
     return window.lcAgentAsk({
       system: member.system, provider: pick1(member.provider, crew.provider || ""), model: pick1(member.model, crew.model || ""),
       temperature: pick1(member.temperature, pick1(crew.temperature, 0)),
+      /* low, as Bill the Builder: a model that thinks thinks briefly — fewer tokens,
+         fewer engine limits hit, answers that settle (Michel, 2026-10-24: "This is
+         diverging! … I'm making too many runs and run out of my credits") */
+      reasoning_effort: pick1(member.reasoning_effort, crew.reasoning_effort || "low"),
       /* 2000, as every agent: a model that thinks spends this same allowance
          before it answers — 300 left Rey and Chuck with empty replies (Michel's
          run, 2026-10-24: a wasted try, an empty check taken for agreement) */
@@ -170,7 +174,7 @@ Auto-included by docs/_layouts/default.html.
     /* OPEN by default: what the desk could not settle reads as undecided, never
        as a stage someone chose (Michel, 2026-10-24: "open lane") */
     var fallback = knob("fallback", "OPEN");
-    var crewCfg = { provider: knob("provider", ""), model: knob("model", ""), temperature: knob("temperature", ""), max_tokens: knob("max_tokens", "") };
+    var crewCfg = { provider: knob("provider", ""), model: knob("model", ""), temperature: knob("temperature", ""), max_tokens: knob("max_tokens", ""), reasoning_effort: knob("reasoning_effort", "") };
     /* TOKENS PER ASK, SAID AND LOWERED (Michel, 2026-10-24: "display the token
        limit at least, display overloading, and maybe leave students lowering
        it (but not increasing it)"): the page's max_tokens (2000, as any agent)

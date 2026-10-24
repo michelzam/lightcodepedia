@@ -325,6 +325,9 @@ def step_stub_chuck_cut(context):
 def step_crew_allowance(context, n):
     got = [b.get("max_tokens") for b in context.crew_bodies]
     assert got and all(int(x) == n for x in got), got
+    # …and thinks briefly, as Bill does (Michel, 2026-10-24: "I'm making too many runs and run out of my credits")
+    efforts = [b.get("reasoning_effort") for b in context.crew_bodies]
+    assert all(e == "low" for e in efforts), efforts
 
 
 @then('the crew "{cid}" allows {n:d} tokens per ask, and no more')
