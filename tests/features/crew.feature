@@ -4,9 +4,12 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
   "go crew". The members are rows; .crew runs them over an inbox: the rules
   first, then a reader checked by a checker, a disagreement sent back with
   the checker's words, at most tries= a message and budget= AI asks, and
-  fallback= for what stays open. It writes <id>.lanes and <id>.log only.
+  fallback= for what stays open. It writes <id>.sorted, <id>.flow and
+  <id>.log only. Michel, 2026-10-24: "stage instead of lane, to remain
+  consistent with the previous module" — each message's row carries its
+  family's stage (asked, met, home), the crew writes its next_stage.
 
-  Scenario: The desk loops — Rey says PAY, Chuck disagrees, Rey says VISIT; the rules sort the rest for free
+  Scenario: The desk loops — Rey says home, Chuck disagrees, Rey says met; the rules sort the rest for free
     Given I have a clean browser page
     And an energy key "AIza-crew-test" is already saved on this device
     And the AI answers as Rey and Chuck, Rey wrong the first time
@@ -21,20 +24,26 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     # the crew is an agent: its desk, closed while a key is held (Michel, 2026-10-24)
     And the crew "desk" shows its desk, closed
     And the grid of the crew "desk" has "Ferraro" selected
-    And the crew "desk" sorted "Nguyen" as "VISIT" in 0 tries
-    And the crew "desk" sorted "Okafor" as "PAY" in 0 tries
-    And the crew "desk" sorted "Ferraro" as "VISIT" in 2 tries
+    And the crew "desk" sorted "Nguyen" as "met" in 0 tries
+    And the crew "desk" sorted "Okafor" as "home" in 0 tries
+    And the crew "desk" sorted "Ferraro" as "met" in 2 tries
     And the crew "desk" asked the AI 4 times
     # tokens, globally and by step (Michel, 2026-10-23: "show the token consumption")
     And the crew "desk" spent 48 tokens, 12 on each AI step
-    # an agent's own token line, and the why of each lane (Michel, 2026-10-24)
+    # an agent's own token line, and the why of each stage (Michel, 2026-10-24)
     And the crew "desk" shows its tokens as an agent does: "Session: 48 tokens · this run: 48"
-    And the crew "desk" says why "Nguyen" went "VISIT": "Sid's rule"
-    And the crew "desk" says why "Ferraro" went "VISIT": "Chuck agreed"
-    # the families' cards Chuck checks are on the page; the run reads as an event flow (Michel, 2026-10-24: "go flow")
-    And in tab 1 the grid "family_cards" lists "Okafor" and "VISIT"
+    And the crew "desk" says why "Nguyen" went "met": "Sid's rule"
+    And the crew "desk" says why "Ferraro" went "met": "Chuck agreed"
+    # one grid: each family's stage beside its next one (Michel, 2026-10-24: "why 2 grids for the families?")
+    And in tab 1 the grid "desk_stages" lists "Okafor" and "home"
+    # the reader reads the words; the checker checks them against the row — Chuck holds the stage, Rey does not
+    And Rey read the words only, and Chuck checked them against the row
+    # the crew is an agent: the engine's 🔋 asks and tokens per unit of time, as under any agent (Michel, 2026-10-24)
+    And the crew "desk" shows the engine's 🔋 asks left, as an agent does
+    # the run reads as an event flow, each step's cost, each result ✅ sure or ⚠️ not; its legend shown (Michel, 2026-10-24)
     When I open the accordion section "event flow"
-    Then the run's event flow "desk_flow" tells "Ferraro / Rey proposes PAY / Chuck disagrees / Rey proposes VISIT / Chuck agrees / Ferraro → VISIT"
+    Then the run's event flow "desk_flow" tells "Nguyen → met ✅ · free / Ferraro / Rey proposes home · 12 tokens / Chuck disagrees / Rey proposes met / Chuck agrees / Ferraro → met ✅ · 48 tokens"
+    And the event flow "desk_flow" shows its legend
     And the crew's log shows "Chuck" saying "DISAGREE"
     And Rey's second ask carried Chuck's words
     When I run the feature "crew_proof"
@@ -47,7 +56,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Then the crew "desk" shows its desk, open
     When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
-    And the crew "desk" sorted "Okafor" as "PAY" in 0 tries
+    And the crew "desk" sorted "Okafor" as "home" in 0 tries
     And the crew "desk" sorted "Ferraro" as "OPEN" in 1 tries
     And the crew "desk" says why "Ferraro" went "OPEN": "no AI key"
     # an ask that never left the device is not counted against the budget
@@ -62,7 +71,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
 
     Given I have a clean browser page
     When I navigate to "/components/crew"
-    And I open the accordion section "who can do what"
+    # the workers' grid stands above the messages, out of the accordion (Michel, 2026-10-24)
     Then in tab 1 the grid "crew_grid" lists "Sid" and "Chuck"
     # one guide, the little docked one — no second, bigger Doc in the page (Michel, 2026-10-24)
     And the page has one guide, docked small in its corner
@@ -80,11 +89,10 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I navigate to "/components/crew"
     And I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
-    And the crew "desk" sorted "Ferraro" as "VISIT" in 1 tries
+    And the crew "desk" sorted "Ferraro" as "met" in 1 tries
     And the crew healed onto "llama-3.1-8b-instant"
     # and on a phone, the long columns read at the size of the others (2026-10-23: "font type strange")
-    When I open the accordion section "who can do what"
-    Then the grid "crew_grid" keeps its text at one size on a phone
+    And the grid "crew_grid" keeps its text at one size on a phone
 
   Scenario: An engine that does not answer — the crew says so and opens its desk
     Michel, 2026-10-24: Rey's step read "Couldn't reach
@@ -100,3 +108,27 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" says "the AI did not answer"
     And the crew "desk" shows its desk, open
 
+
+  Scenario: The bounds, played with — − on the budget, the gauge fills, what stays open says why
+    Michel, 2026-10-24: "make visible the constraints … play with the knob's
+    values: tries and budget, maybe with jauges", then "Steppers? I don't
+    see them!". The bounds carry − and +; a gauge shows the budget spent.
+    With a budget of 2, Ferraro's read and check spend it all: Chuck says
+    no, no ask is left, Ferraro stays OPEN for a person.
+
+    Given I have a clean browser page
+    And an energy key "AIza-crew-test" is already saved on this device
+    And the AI answers as Rey and Chuck, Rey wrong the first time
+    When I navigate to "/components/crew"
+    Then the crew "desk" shows its bounds: 2 tries, a budget of 6
+    And the gauge of the crew "desk" reads "0 of 6 AI asks spent", low
+    When I press "−" on the budget of the crew "desk" 4 times
+    Then the crew "desk" shows its bounds: 2 tries, a budget of 2
+    When I press ▶ Run on the crew "desk"
+    Then the crew "desk" is done
+    And the crew "desk" says why "Ferraro" went "OPEN": "budget spent"
+    And the gauge of the crew "desk" reads "2 of 2 AI asks spent", spent
+    When I open the accordion section "event flow"
+    Then the run's event flow "desk_flow" tells "Ferraro / Chuck disagrees / budget spent / Ferraro → OPEN ⚠️ budget spent"
+    When I run the feature "crew_proof"
+    Then the feature "crew_proof" is green

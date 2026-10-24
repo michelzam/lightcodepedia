@@ -17,7 +17,7 @@ beats, and a beat begins with the command that person gives.
 - ui: week — this week's reservations
 - command: Count who is still waiting
 ```
-{: .event_flow #demo_flow legend="true" }
+{: .event_flow #demo_flow }
 
 ## The grammar
 
@@ -76,7 +76,7 @@ wall, for a page that wants the workshop rather than the sentence:
 | knob | meaning |
 |---|---|
 | `#id` | the flow's id (default `event_flow`) |
-| `legend="true"` | show the color legend under the sequence |
+| `legend="false"` | hide the color legend — shown by default, with the kinds the flow uses (each chip dims its kind) |
 | `notes="sticky"` | the workshop wall — cardboard notes instead of the default marked words |
 | `source="<dataset>"` | on a link line, `[the run](#) {: .event_flow source="desk.flow" }`: draw the rows a part writes (one key each, `{ command: "Rey reads it" }`), and draw again whenever they move |
 
@@ -84,7 +84,8 @@ The flow registers its steps under its id, so `{= demo_flow.count }`
 counts them and a proof reads the sequence. A flow is authored in YAML, or
 **generated**: a [crew](/components/crew) writes its run as `desk.flow` —
 who wrote, what each worker did, what governed it, and the ⚡ event, a
-message moving to its next lane (an event is a transition to a state).
+message moving to its next stage (an event is a transition to a state), with
+what it cost and how sure it is: ✅ a rule or a check said so, ⚠️ unchecked or left open.
 
 ## Proof
 

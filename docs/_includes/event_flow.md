@@ -8,7 +8,7 @@ Event flow — a page's story as an event-storming sequence.
   - event: A dog is named
   - ui: The meet card opens
   ```
-  {: .event_flow #adoption_flow legend="true" }
+  {: .event_flow #adoption_flow }
 
 One list, one key per step — the KEY is the sticky-note color, the value
 is the words. Kinds: user 👤🍦 · ui 🖥️🟩 · data 📦🟨 · command 🗣️🟦 ·
@@ -196,6 +196,14 @@ Auto-included by docs/_layouts/default.html.
            ICON[s.kind] + " " + escapeHtml(s.text) +
            (s.ref ? " <code class='lc-ef-ref'>" + escapeHtml(s.ref) + "</code>" : "") + "</span>";
   }
+  var LEGEND = [
+    ["user", "👤 user — a person"],
+    ["ui", "🖥️ ui — the screen they act on"],
+    ["data", "📦 data — what the beat is about"],
+    ["command", "🗣️ command — what they ask for"],
+    ["rule", "📏 rule — what governs it"],
+    ["event", "⚡ event — what became true"],
+    ["external", "🌐 external — beyond our walls"]];
   /* the flow, drawn from its steps — one place for a fence and a dataset */
   function htmlOf(steps, legend) {
     /* A RULE CANNOT MAKE A PERSON DO ANYTHING — a person does (Michel,
@@ -258,16 +266,15 @@ Auto-included by docs/_layouts/default.html.
                  escapeHtml(s.ref) + "</span>";
         }).join("") + "</div>";
     }
+    /* THE LEGEND, ON EVERY FLOW (Michel, 2026-10-24: "I would bring the legend
+       for any event_flow"): the kinds this flow uses, no more — legend="false"
+       takes it away */
     if (legend) {
-      html += "<div class='lc-ef-legend'>" +
-        "<span class='lc-ef-l-user' data-lk='user' role='button' aria-pressed='true'>👤 user — a person</span>" +
-        "<span class='lc-ef-l-ui' data-lk='ui' role='button' aria-pressed='true'>🖥️ ui — the screen they act on</span>" +
-        "<span class='lc-ef-l-data' data-lk='data' role='button' aria-pressed='true'>📦 data — what the beat is about</span>" +
-        "<span class='lc-ef-l-command' data-lk='command' role='button' aria-pressed='true'>🗣️ command — what they ask for</span>" +
-        "<span class='lc-ef-l-rule' data-lk='rule' role='button' aria-pressed='true'>📏 rule — what governs it</span>" +
-        "<span class='lc-ef-l-event' data-lk='event' role='button' aria-pressed='true'>⚡ event — what became true</span>" +
-        "<span class='lc-ef-l-external' data-lk='external' role='button' aria-pressed='true'>🌐 external — beyond our walls</span>" +
-        "</div>";
+      var used = {};
+      steps.forEach(function (s) { used[s.kind] = 1; });
+      html += "<div class='lc-ef-legend'>" + LEGEND.filter(function (l) { return used[l[0]]; }).map(function (l) {
+        return "<span class='lc-ef-l-" + l[0] + "' data-lk='" + l[0] + "' role='button' aria-pressed='true'>" + l[1] + "</span>";
+      }).join("") + "</div>";
     }
     return html;
   }
@@ -303,7 +310,7 @@ Auto-included by docs/_layouts/default.html.
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
     var raw = (el.querySelector("code") || {}).textContent || "";
-    var legend = el.getAttribute("legend") === "true";
+    var legend = el.getAttribute("legend") !== "false";
     parseData(raw, "yaml").then(function (rows) {
       var steps = stepsOf(rows);
       var box = boxFor(el);
@@ -328,7 +335,7 @@ Auto-included by docs/_layouts/default.html.
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
     var src = el.getAttribute("source") || "";
-    var legend = el.getAttribute("legend") === "true";
+    var legend = el.getAttribute("legend") !== "false";
     var box = boxFor(el);
     var paint = function () {
       var steps = stepsOf(((window.lcDatasets || {})[src] || []));

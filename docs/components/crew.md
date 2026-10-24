@@ -6,7 +6,9 @@ loud: how many tries a message gets, how many AI asks in all, and where
 what stays open goes. Add a row and the crew has one more member; the loop,
 the checks and the budget stay inside the component.
 
-**This page is the tutorial**: press **▶ Run** below. Without an AI key on
+**This page is the tutorial**: press **▶ Run** below; − and + on its
+bounds change the tries and the budget, and the gauge shows the budget
+spent. Without an AI key on
 this device, Sid sorts alone and the rest stays `OPEN`; with one, Rey reads
 and Chuck checks. The crew is the desk's **concierge**: it takes every
 message, hands it to the right worker, and answers for the result.
@@ -14,26 +16,18 @@ message, hands it to the right worker, and answers for the result.
 ## 👀 Try it now
 
 ```csv
-family,message
-Nguyen,We would like to visit Biscuit on Saturday
-Okafor,How do I pay the adoption fee?
-Ferraro,We already met Biscuit last week. Can we pay now?
+family,stage,message
+Nguyen,asked,We would like to visit Biscuit on Saturday
+Okafor,met,How do I pay the adoption fee?
+Ferraro,asked,We already met Biscuit last week. Can we pay now?
 ```
 {: .dataset #inbox }
 
 ```csv
-family,dog,previous_lane
-Nguyen,Biscuit,
-Okafor,Biscuit,VISIT
-Ferraro,Biscuit,
-```
-{: .dataset #families }
-
-```csv
-name,kind,system,checked_by,reads
-Sid,rules,sort,,
-Rey,reader,"Read one family message. Answer one line — VERDICT: VISIT, PAY or CALL.",Chuck,
-Chuck,checker,"You check a verdict against the family's card: a family can PAY only when its previous_lane is VISIT. Answer AGREE or DISAGREE, then why, in one line.",,families
+name,kind,system,checked_by
+Sid,rules,sort,
+Rey,reader,"Read one family message. Where does it move the family? Answer one line — VERDICT: met (a visit), home (an adoption, paid) or asked (a question: it stays).",Chuck
+Chuck,checker,"You check a verdict against the message's row. A family moves one stage at a time: asked, then met, then home. Answer AGREE or DISAGREE, then why, in one line.",
 ```
 {: .dataset #members }
 
@@ -43,31 +37,28 @@ def sort(message):
     if "already" in m:
         return None            # a claim to check: not for the rules
     if "visit" in m:
-        return "VISIT"
+        return "met"           # a visit: they meet the dog
     if "pay" in m or "fee" in m:
-        return "PAY"
+        return "home"          # the fee: the dog goes home
     return None
 ```
 {: .model }
 
 [The front desk](#)
-{: .crew members="members" inbox="inbox" lanes="VISIT, PAY, CALL" tries="2" budget="6" fallback="OPEN" #desk }
+{: .crew members="members" inbox="inbox" stages="asked, met, home" tries="2" budget="6" #desk }
 
-[The families' cards — where each family is now, what Chuck checks](#)
-{: .datagrid source="families" columns="family, dog, previous_lane" #family_cards }
+[The crew — who does the job](#)
+{: .datagrid source="members" columns="name, kind, system, checked_by" #crew_grid }
 
-[The messages — and the next lane the desk gives each](#)
-{: .datagrid source="desk.sorted" columns="family, message, next_lane, why, tries, tokens" #desk_lanes }
+[The messages — each family's stage, and the next one the desk gives it](#)
+{: .datagrid source="desk.sorted" columns="family, stage, message, next_stage, why, tries, tokens" #desk_stages }
 
 ```
 ### 🎏 The run, as an event flow
 [the run](#)
 {: .event_flow source="desk.flow" #desk_flow }
 
-### 🧑‍🤝‍🧑 The crew — who can do what
-[the members](#)
-{: .datagrid source="members" columns="name, kind, system, checked_by, reads" #crew_grid }
-
+### 🧑 One worker, as data
 [one member](#)
 {: .form master="crew_grid" #crew_form }
 
@@ -77,13 +68,16 @@ def sort(message):
 ```
 {: .accordion }
 
-A **lane** is a state: each family's card holds its `previous_lane` (where it
-is now), and the desk gives each message its `next_lane` (where it goes).
-Ferraro asks to pay, but the card shows no visit yet, and a family pays only
-after one: the next lane is `VISIT`. The `why` column says who decided, or
-what stopped the desk; what it could not settle stays `OPEN`, so an
-undecided message never reads as a decision. The event flow tells the same
-run beat by beat, each ⚡ a message moving to its next lane.
+A family moves from **stage** to stage, as in the
+[follow-up list](/components/model): `asked`, then `met`, then `home`. Each
+message's row says where its family is (`stage`); the desk gives it where it
+goes (`next_stage`). Ferraro asks to pay, but the row says `asked`: no visit
+yet, and a family moves one stage at a time, so the next stage is `met`.
+The `why` column says who decided, or what stopped the desk; what it could
+not settle stays `OPEN`, so an undecided message never reads as a decision.
+The event flow tells the same run beat by beat: each ⚡ a message moving to
+its next stage, with what it cost and how sure it is — ✅ a rule or a
+check said so, ⚠️ unchecked or left open.
 
 Each member is an **agent**, its attributes — `name`, `system`, and
 `model`, `temperature`… when a column sets them — read from its row: the
@@ -112,10 +106,10 @@ A guide's line can read the page: `{= members.first.name }` in a `say:` is a
 | `members` | the dataset whose rows are the members: each an agent (`name`, `system`, and `provider`, `model`, `temperature`, `max_tokens` if set), wired by `kind`, `checked_by`, `reads` |
 | `inbox` | the dataset to work through, one row a message |
 | `text` | the inbox column that holds the message (default `message`) |
-| `lanes` | the answers a message can get, comma-separated |
-| `tries` | at most this many reads a message (default 2) |
-| `budget` | at most this many AI asks in all (default 6) |
-| `fallback` | the lane for what stays open (default `OPEN`) — a person, never a guess |
+| `stages` | the stages a message can move its family to, comma-separated |
+| `tries` | at most this many reads a message (default 2) — − and + on the crew change it |
+| `budget` | at most this many AI asks in all (default 6) — − and +, and a gauge of what the run spent |
+| `fallback` | the stage written for what stays open (default `OPEN`) — a person, never a guess |
 | `pace` | seconds between steps, so the work is seen a row at a time (default 0.5; 0 runs flat out) |
 | `provider` · `model` · `temperature` · `max_tokens` | an [agent](/components/agent)'s own knobs: the crew **is** an agent, and these are its members' defaults (a member's own column wins) |
 
@@ -123,20 +117,22 @@ A guide's line can read the page: `{= members.first.name }` in a `say:` is a
 
 | `kind` | what it does | `system` | cost |
 |---|---|---|---|
-| `rules` | the page's own Python function answers a lane, or `None` | the function's name | free |
-| `reader` | one AI ask; its answer must name a lane | its instructions | one ask |
-| `checker` | one AI ask on a reader's verdict: `AGREE` or `DISAGREE`, and why | its instructions | one ask |
+| `rules` | the page's own Python function answers a stage, or `None` | the function's name | free |
+| `reader` | one AI ask on the message's words; its answer must name a stage | its instructions | one ask |
+| `checker` | one AI ask on a reader's verdict, with the message's whole row: `AGREE` or `DISAGREE`, and why | its instructions | one ask |
 
-`checked_by` wires a reader to its checker; `reads` names a dataset whose
-rows travel with the ask (here, the families' cards Chuck checks).
+`checked_by` wires a reader to its checker. The reader reads the words; the
+checker checks them against the facts — the message's row (here, the
+family's `stage`). A `reads` column names a dataset whose rows travel with
+a member's ask too.
 
 ## 🔁 The loop
 
-The lanes are the desk's next steps: `VISIT` books a visit, `PAY` sends the
-payment link, `CALL` hands the message to a person who must answer it. The
-`why` column says who decided — Sid's rule, Chuck agreed — or what stopped
-the desk: the budget spent, no agreement in its tries, no key; then the
-message stays `OPEN`.
+The stages are where a message moves its family: `met` books a visit,
+`home` sends the payment link, `asked` keeps it where it is — a question a
+person answers. The `why` column says who decided — Sid's rule, Chuck
+agreed — or what stopped the desk: the budget spent, no agreement in its
+tries, no key; then the message stays `OPEN`.
 
 For each message: the rules first, in order. If none answers, the reader
 proposes and its checker checks. A `DISAGREE` goes back to the reader with
@@ -145,10 +141,10 @@ message or `budget` for the crew, and what is still open takes `fallback`
 (`OPEN` by default).
 
 The crew writes three datasets and touches nothing else:
-- `desk.sorted`: every message from the start, then its `next_lane`, its `why`, its `tries` and its `tokens` (the row at work is selected, ⏳);
-- `desk.flow`: the run as an [event flow](/components/event_flow) — `{: .event_flow source="desk.flow" }` draws it, each ⚡ a message moving to its next lane;
+- `desk.sorted`: every message from the start, then its `next_stage`, its `why`, its `tries` and its `tokens` (the row at work is selected, ⏳);
+- `desk.flow`: the run as an [event flow](/components/event_flow) — `{: .event_flow source="desk.flow" }` draws it, each ⚡ a message moving to its next stage, its cost, ✅ or ⚠️;
 - `desk.log`: every step, `who` said what (`in`, `out`) and its `tokens`;
-- the crew's line, and `desk.asks` · `desk.tokens` in a proof: the totals.
+- the crew's lines — its tokens, the session's and this run's, and the engine's 🔋 asks and tokens left per day and per minute, as under every agent — and `desk.asks` · `desk.tokens` in a proof: the totals.
 
 The crew is an [agent](/components/agent) made of agents: it has an agent's
 **desk** — the 🔑 in its head opens the ring of engines, the same keys every
@@ -172,9 +168,9 @@ Feature: The desk sorts the inbox within its bounds
     :::
     Then the rules sorted the plain ones for free
     :::python
-    self.lanes = dict(zip(self.desk.sorted.values("family"), self.desk.sorted.values("next_lane")))
-    assert self.lanes["Nguyen"] == "VISIT", self.lanes
-    assert self.lanes["Okafor"] == "PAY", self.lanes
+    self.stages = dict(zip(self.desk.sorted.values("family"), self.desk.sorted.values("next_stage")))
+    assert self.stages["Nguyen"] == "met", self.stages
+    assert self.stages["Okafor"] == "home", self.stages
     :::
     And the crew is an agent made of agents
     :::python
@@ -184,8 +180,8 @@ Feature: The desk sorts the inbox within its bounds
     :::
     And the claim was never taken for a payment, and the bounds held
     :::python
-    assert self.lanes["Ferraro"] != "PAY", "Ferraro has no booked visit: not a payment"
-    assert self.desk.asks <= 6, f"{self.desk.asks} AI asks, the budget is 6"
+    assert self.stages["Ferraro"] != "home", "Ferraro is at asked: one stage at a time, a visit first"
+    assert self.desk.asks <= self.desk.budget, f"{self.desk.asks} AI asks, the budget is {self.desk.budget}"
     :::
 ```
 {: .feature #crew_proof visible="true" status="pending" tags="ai" }

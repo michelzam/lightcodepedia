@@ -1085,6 +1085,18 @@ Auto-included by docs/_layouts/default.html.
      "the crew should inherit from agent, and have like an agent a desk and a
      key"): the panel's own 🔑 and ring — the same keys, the same ★, kept in
      step with every desk on the page. Open by itself while no key is held. */
+  /* 🔋 the engine's limits, per unit of time — one sentence, every agent's */
+  function paintQuota(el, cfg, pid) {
+    if (!window.lcQuota) return;
+    var eng = resolveEngine(cfg);
+    pid = pid || eng.id;
+    var ring = PROVIDERS[pid] || {};
+    var text = window.lcQuota.line(pid, ring.name || eng.name, ring.limits);
+    el.textContent = text;
+    el.hidden = !text;
+    if (text) { el.setAttribute('data-provider', pid); }
+  }
+
   window.lcAgentDesk = function (cfg) {
     cfg = cfg || {};
     var key = document.createElement('button');
@@ -1101,7 +1113,12 @@ Auto-included by docs/_layouts/default.html.
     onSharedTokenChange(function () { paint(); if (held()) auth.hidden = true; });
     document.addEventListener('lc-providers', function () { paint(); auth.hidden = held(); });
     paint();
-    return { key: key, auth: auth, engine: function () { return resolveEngine(cfg).host; },
+    /* 🔋 the asks and tokens left per unit of time, as under every panel's usage line */
+    var quota = document.createElement('div');
+    quota.className = 'lc-agent-quota'; quota.hidden = true;
+    var showQuota = function (pid) { paintQuota(quota, cfg, pid); };
+    showQuota();
+    return { key: key, auth: auth, quota: quota, showQuota: showQuota, engine: function () { return resolveEngine(cfg).host; },
              open: function () { auth.hidden = false; paint(); } };
   };
 
@@ -1424,16 +1441,7 @@ Auto-included by docs/_layouts/default.html.
     quotaEl.className = 'lc-agent-quota';
     quotaEl.hidden = true;
     usage.parentNode.insertBefore(quotaEl, usage.nextSibling);
-    function showQuota(pid) {
-      if (!window.lcQuota) return;
-      var eng = resolveEngine(cfg);
-      pid = pid || eng.id;
-      var ring = PROVIDERS[pid] || {};
-      var text = window.lcQuota.line(pid, ring.name || eng.name, ring.limits);
-      quotaEl.textContent = text;
-      quotaEl.hidden = !text;
-      if (text) { quotaEl.setAttribute('data-provider', pid); }
-    }
+    function showQuota(pid) { paintQuota(quotaEl, cfg, pid); }
     showQuota();
 
     /* ===== 🎯 TODO-DRIVEN (Michel, 2026-10-06) =============================

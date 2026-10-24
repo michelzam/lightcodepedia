@@ -8,8 +8,8 @@ T = 20_000
 
 @given("the AI answers as Rey and Chuck, Rey wrong the first time")
 def step_stub_crew_ai(context):
-    """Rey (the reader) says PAY first, then VISIT once Chuck's words come back;
-    Chuck (the checker) disagrees with PAY and agrees with VISIT."""
+    """Rey (the reader) says home first, then met once Chuck's words come back;
+    Chuck (the checker), with the row, disagrees with home and agrees with met."""
     context.crew_asks = []
 
     def answer(route):
@@ -18,9 +18,9 @@ def step_stub_crew_ai(context):
         user = body["messages"][1]["content"]
         context.crew_asks.append({"system": system, "user": user})
         if "AGREE or DISAGREE" in system:
-            text = "DISAGREE — no visit is booked for Biscuit" if "The verdict: PAY" in user else "AGREE — a visit first"
+            text = "DISAGREE — the row says asked: no visit yet" if "The verdict: home" in user else "AGREE — one stage at a time"
         else:
-            text = "VERDICT: VISIT" if "disagreed" in user else "VERDICT: PAY"
+            text = "VERDICT: met" if "disagreed" in user else "VERDICT: home"
         route.fulfill(status=200, content_type="application/json",
                       body=json.dumps({"choices": [{"message": {"content": text}}],
                                        "usage": {"prompt_tokens": 9, "completion_tokens": 3, "total_tokens": 12}}))
@@ -47,11 +47,11 @@ def _rows(context, ds):
     return context.page.evaluate("id => (window.lcDatasets || {})[id] || []", ds)
 
 
-@then('the crew "{cid}" sorted "{family}" as "{lane}" in {tries:d} tries')
-def step_crew_sorted(context, cid, family, lane, tries):
+@then('the crew "{cid}" sorted "{family}" as "{stage}" in {tries:d} tries')
+def step_crew_sorted(context, cid, family, stage, tries):
     rows = [r for r in _rows(context, cid + ".sorted") if r.get("family") == family]
-    assert rows, "no lane for %s in %r" % (family, _rows(context, cid + ".sorted"))
-    assert rows[0]["next_lane"] == lane and int(rows[0]["tries"]) == tries, rows[0]
+    assert rows, "no stage for %s in %r" % (family, _rows(context, cid + ".sorted"))
+    assert rows[0]["next_stage"] == stage and int(rows[0]["tries"]) == tries, rows[0]
 
 
 @then('the crew "{cid}" asked the AI {n:d} times')
@@ -70,7 +70,15 @@ def step_crew_log(context, who, text):
 def step_second_ask(context):
     reads = [a for a in context.crew_asks if "AGREE or DISAGREE" not in a["system"]]
     assert len(reads) == 2, reads
-    assert "no visit is booked" in reads[1]["user"], reads[1]["user"]
+    assert "no visit yet" in reads[1]["user"], reads[1]["user"]
+
+
+@then("Rey read the words only, and Chuck checked them against the row")
+def step_row_to_checker(context):
+    reads = [a for a in context.crew_asks if "AGREE or DISAGREE" not in a["system"]]
+    checks = [a for a in context.crew_asks if "AGREE or DISAGREE" in a["system"]]
+    assert reads and all('"stage"' not in a["user"] for a in reads), reads
+    assert checks and '"stage":"asked"' in checks[0]["user"], checks[0]["user"]
 
 
 
@@ -80,7 +88,7 @@ def step_second_ask(context):
 def step_crew_upfront(context, cid, n):
     context.page.wait_for_function("([id, n]) => ((window.lcDatasets || {})[id] || []).length === n", arg=[cid + ".sorted", n], timeout=T)
     rows = _rows(context, cid + ".sorted")
-    assert all(r.get("next_lane") == "" for r in rows), rows
+    assert all(r.get("next_stage") == "" for r in rows), rows
     expect(context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tbody tr")).to_have_count(n, timeout=T)
 
 
@@ -119,7 +127,7 @@ def step_groq_retired(context):
                 "message": "The model `llama-3.3-70b-versatile` has been decommissioned and is no longer accessible.",
                 "type": "invalid_request_error", "code": "model_decommissioned"}}))
         system = body["messages"][0]["content"]
-        text = "AGREE — a visit first" if "AGREE or DISAGREE" in system else "VERDICT: VISIT"
+        text = "AGREE — one stage at a time" if "AGREE or DISAGREE" in system else "VERDICT: met"
         route.fulfill(status=200, content_type="application/json", body=json.dumps({
             "choices": [{"message": {"content": text}}], "usage": {"total_tokens": 10}}))
     context.page.route("**/api.groq.com/**/chat/completions*", chat)
@@ -189,10 +197,10 @@ def step_one_docked_guide(context):
 
 
 
-@then('the crew "{cid}" says why "{family}" went "{lane}": "{why}"')
-def step_crew_why(context, cid, family, lane, why):
+@then('the crew "{cid}" says why "{family}" went "{stage}": "{why}"')
+def step_crew_why(context, cid, family, stage, why):
     rows = [r for r in _rows(context, cid + ".sorted") if r.get("family") == family]
-    assert rows and rows[0].get("next_lane") == lane and rows[0].get("why") == why, rows
+    assert rows and rows[0].get("next_stage") == stage and rows[0].get("why") == why, rows
     grid = context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tbody tr", has_text=family).first
     expect(grid).to_contain_text(why, timeout=T)
 
@@ -216,3 +224,31 @@ def step_flow_tells(context, fid, beats):
         at = hit + 1
     assert chips[at - 1][0] == "event", "the last beat %r is a %s, not an event (orange)" % (texts[at - 1], chips[at - 1][0])
 
+
+
+@then('the crew "{cid}" shows its bounds: {tries:d} tries, a budget of {budget:d}')
+def step_crew_bounds(context, cid, tries, budget):
+    crew = _crew(context, cid)
+    expect(crew.locator(".lc-crew-step[data-bound='tries'] b")).to_have_text(str(tries), timeout=T)
+    expect(crew.locator(".lc-crew-step[data-bound='budget'] b")).to_have_text(str(budget), timeout=T)
+
+
+@when('I press "{sign}" on the {bound} of the crew "{cid}" {n:d} times')
+def step_crew_step(context, sign, bound, cid, n):
+    b = _crew(context, cid).locator(".lc-crew-step[data-bound='%s'] button[data-d='%s']" % (bound, "1" if sign == "+" else "-1"))
+    for _ in range(n):
+        b.click()
+
+
+@then('the gauge of the crew "{cid}" reads "{text}", {level}')
+def step_crew_gauge(context, cid, text, level):
+    g = _crew(context, cid).locator(".lc-crew-gauge")
+    expect(g).to_contain_text(text, timeout=T)
+    expect(g).to_have_attribute("data-level", level, timeout=T)
+
+
+@then('the crew "{cid}" shows the engine\'s 🔋 asks left, as an agent does')
+def step_crew_quota(context, cid):
+    q = _crew(context, cid).locator(".lc-agent-quota")
+    expect(q).to_be_visible(timeout=T)
+    expect(q).to_contain_text("🔋", timeout=T)
