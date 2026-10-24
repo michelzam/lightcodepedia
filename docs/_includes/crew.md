@@ -2,7 +2,7 @@
 🧑‍🤝‍🧑 Crew — agents as rows, a loop with its bounds, one line.
 
     ```csv
-    name,kind,brief,checked_by,reads
+    name,kind,system,checked_by,reads
     Sid,rules,sort,,
     Rey,reader,"One line — VERDICT: VISIT, PAY or CALL",Chuck,
     Chuck,checker,"The dog cards win — AGREE or DISAGREE",,dogs
@@ -14,10 +14,12 @@
 
 THE AGENTS ARE DATA (Michel, 2026-10-23: "data-driven dynamic instances
 initiated by a simple dataset … encapsulated, declarative, with clear
-bounds"). One row, one member; three kinds:
-- rules   — brief names a function of the page's .model; it answers a
+bounds"). One row, one member — an agent whose attributes are the
+columns (name, system, and provider, model, temperature, max_tokens if
+set); kind, checked_by and reads wire it into the crew. Three kinds:
+- rules   — system names a function of the page's .model; it answers a
             lane or None. Free.
-- reader  — an AI ask: brief is its instructions; it must name a lane.
+- reader  — an AI ask: system is its instructions; it must name a lane.
 - checker — an AI ask on a reader's verdict: AGREE or DISAGREE, with why.
 checked_by wires a reader to its checker; reads names a dataset whose rows
 travel with the ask (the cards a checker trusts).
@@ -94,7 +96,7 @@ Auto-included by docs/_layouts/default.html.
   function ask(member, text, crew) {
     if (!window.lcAgentAsk) return Promise.resolve({ text: "", error: "this page has no agent engine", tokens: 0, unsent: true });
     return window.lcAgentAsk({
-      system: member.brief, provider: pick1(member.provider, crew.provider || ""), model: pick1(member.model, crew.model || ""),
+      system: member.system, provider: pick1(member.provider, crew.provider || ""), model: pick1(member.model, crew.model || ""),
       temperature: pick1(member.temperature, pick1(crew.temperature, 0)),
       max_tokens: pick1(member.max_tokens, pick1(crew.max_tokens, 300)) }, text).then(function (r) {
         var u = r.usage || {};
@@ -160,7 +162,7 @@ Auto-included by docs/_layouts/default.html.
       var ms = members(), names = {};
       ms.forEach(function (m) { names[m.name] = m; });
       box.querySelector(".lc-crew-members").innerHTML = ms.map(function (m) {
-        return "<span class='lc-crew-member' title='" + esc(m.brief) + "'>" + (ICON[m.kind] || "❔") + " " + esc(m.name) +
+        return "<span class='lc-crew-member' title='" + esc(m.system) + "'>" + (ICON[m.kind] || "❔") + " " + esc(m.name) +
           (m.checked_by && names[m.checked_by] ? " ⇄ " + esc(m.checked_by) : "") + "</span>";
       }).join("");
       btn.disabled = !ms.length || !rowsOf(inboxId).length;
@@ -203,7 +205,7 @@ Auto-included by docs/_layouts/default.html.
         var byRules = rules.reduce(function (p, m) {
           return p.then(function () {
             if (lane) return;
-            return rule(String(m.brief || "").trim(), text).then(function (r) {
+            return rule(String(m.system || "").trim(), text).then(function (r) {
               say(m.name, "rules", text, r.error ? "⚠️ " + r.error : (r.lane || "—"));
               var l = laneIn(r.lane, lanes); if (l) lane = l;
             });

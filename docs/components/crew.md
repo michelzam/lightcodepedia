@@ -27,7 +27,7 @@ Biscuit,none booked
 {: .dataset #dogs }
 
 ```csv
-name,kind,brief,checked_by,reads
+name,kind,system,checked_by,reads
 Sid,rules,sort,,
 Rey,reader,"Read one family message. Answer one line — VERDICT: VISIT, PAY or CALL.",Chuck,
 Chuck,checker,"You check a verdict against the dog cards: a family pays only after a booked visit. Answer AGREE or DISAGREE, then why, in one line.",,dogs
@@ -35,10 +35,6 @@ Chuck,checker,"You check a verdict against the dog cards: a family pays only aft
 {: .dataset #members }
 
 ```python
-class Member(Object, source="members"):
-    """An agent of the crew: a name, a kind, a brief. Its rows are its storage."""
-
-
 def sort(message):
     m = message.lower()
     if "already" in m:
@@ -52,7 +48,7 @@ def sort(message):
 {: .model }
 
 [The front desk](#)
-{: .crew members="Member" inbox="inbox" lanes="VISIT, PAY, CALL" tries="2" budget="6" fallback="CALL" #desk }
+{: .crew members="members" inbox="inbox" lanes="VISIT, PAY, CALL" tries="2" budget="6" fallback="CALL" #desk }
 
 [The messages, and where each went](#)
 {: .datagrid source="desk.sorted" columns="family, message, lane, tries, tokens" #desk_lanes }
@@ -60,7 +56,7 @@ def sort(message):
 ```
 ### 🧑‍🤝‍🧑 The crew — who can do what
 [the members](#)
-{: .datagrid source="Member" columns="name, kind, brief, checked_by, reads" #crew_grid }
+{: .datagrid source="members" columns="name, kind, system, checked_by, reads" #crew_grid }
 
 [one member](#)
 {: .form master="crew_grid" #crew_form }
@@ -71,14 +67,17 @@ def sort(message):
 ```
 {: .accordion }
 
-The agents are **objects** of a class, `Member`, and their storage is
-**data**: the three rows above. Pick one in the grid, the form shows it; a
+Each member is an **agent**, its attributes — `name`, `system`, and
+`model`, `temperature`… when a column sets them — read from its row: the
+agents are **data**. Pick one in the grid, the form shows it; a row more is
+a member more. A crew **is** an agent too, and its `members` are a list of
+agents: the composite pattern — one day a member can be a crew itself. Pick one in the grid, the form shows it; a
 row more is a member more.
 
 ```yaml
 script:
   - at: desk
-    say: "{= Member.count } members, one row each. {= Member.first.name } goes first: rules are free."
+    say: "{= members.count } members, one row each. {= members.first.name } goes first: rules are free."
 stories: {}
 ```
 {: .avatar #crew_guide dock="true" size="115" }
@@ -86,14 +85,14 @@ stories: {}
 Meet the crew
 {: .avatar_trigger target="crew_guide" }
 
-A guide's line can read the page: `{= Member.first.name }` in a `say:` is a
+A guide's line can read the page: `{= members.first.name }` in a `say:` is a
 [cell](/components/cells), read as the line is spoken.
 
 ## 🎛️ Knobs
 
 | Knob | Meaning |
 |---|---|
-| `members` | the dataset — or the class — whose rows are the members (`name`, `kind`, `brief`, `checked_by`, `reads`) |
+| `members` | the dataset whose rows are the members: each an agent (`name`, `system`, and `provider`, `model`, `temperature`, `max_tokens` if set), wired by `kind`, `checked_by`, `reads` |
 | `inbox` | the dataset to work through, one row a message |
 | `text` | the inbox column that holds the message (default `message`) |
 | `lanes` | the answers a message can get, comma-separated |
@@ -105,7 +104,7 @@ A guide's line can read the page: `{= Member.first.name }` in a `say:` is a
 
 ## 🧑‍🤝‍🧑 The members — one row each
 
-| `kind` | what it does | `brief` | cost |
+| `kind` | what it does | `system` | cost |
 |---|---|---|---|
 | `rules` | the page's own Python function answers a lane, or `None` | the function's name | free |
 | `reader` | one AI ask; its answer must name a lane | its instructions | one ask |
@@ -151,6 +150,12 @@ Feature: The desk sorts the inbox within its bounds
     self.lanes = dict(zip(self.desk.sorted.values("family"), self.desk.sorted.values("lane")))
     assert self.lanes["Nguyen"] == "VISIT", self.lanes
     assert self.lanes["Okafor"] == "PAY", self.lanes
+    :::
+    And the crew is an agent made of agents
+    :::python
+    assert isinstance(self.desk, Agent), "a crew is an agent"
+    assert all(isinstance(m, Agent) for m in self.desk.members), "its members are agents"
+    assert [m.name for m in self.desk.members] == ["Sid", "Rey", "Chuck"], [m.name for m in self.desk.members]
     :::
     And the claim was never taken for a payment, and the bounds held
     :::python

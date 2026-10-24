@@ -183,3 +183,7 @@ def step_one_docked_guide(context):
     n = hosts.count()
     docked = context.page.locator(".lc-avatar-host.lc-avatar-docked").count()
     assert n >= 1 and docked == n, "%d guides on the page, %d docked: a guide floats in the page" % (n, docked)
+
+
+
+

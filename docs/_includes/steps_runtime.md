@@ -730,7 +730,12 @@ class Object:
 
     def _attr(self, name):
         if not self._el:
-            return None
+            # a part born from a row (a crew's member): its attributes are the row's columns
+            row = getattr(self, "_row", None)
+            if not row:
+                return None
+            v = row.get((name[5:] if name.startswith("data-") else name).replace("-", "_"))
+            return None if v is None or v == "" else str(v)
         v = self._el.getAttribute(name)
         return str(v) if v is not None else None
 
@@ -2670,12 +2675,12 @@ class Server(Block):
                   {"n": "fallback", "t": "str", "data": True, "attr": "fallback"},
                   {"n": "text", "t": "str", "data": True, "attr": "text", "d": "message"},
                   {"n": "pace", "t": "float", "data": True, "attr": "pace", "d": 0.5}],
-           assoc=[{"n": "members", "target": "Dataset"}, {"n": "inbox", "target": "Dataset"}],
+           assoc=[{"n": "members", "target": "Agent", "list": True}, {"n": "inbox", "target": "Dataset"}],
            methods=["run"])
 class Crew(Agent):
     """A crew (.crew) is an agent made of agents (Michel, 2026-10-24: "the
-    crew should inherit from agent"): the rows of a dataset or a class
-    (members=), run over an inbox with clear bounds — tries= per message,
+    crew should inherit from agent"): its members are agents, their
+    attributes the columns of a dataset (members=), run over an inbox with clear bounds — tries= per message,
     budget= AI asks in all, fallback= for what stays open. It has an agent's
     desk and key; its provider, model, temperature and max_tokens are its
     members' defaults. It writes <id>.sorted and <id>.log, nothing else."""
@@ -2696,6 +2701,18 @@ class Crew(Agent):
 
     def ask(self, prompt, wait=True):
         raise AssertionError("a crew works its inbox, not one question — put the message in the inbox, then run()")
+
+    @property
+    def members(self):
+        """Its members: a list of agents (Michel, 2026-10-24: "Crew's members
+        is a list of agents") — the composite: a crew is an agent made of
+        agents, so a member may one day be a crew itself (the tree)."""
+        ds = getattr(js.window, "lcDatasets", None)
+        arr = getattr(ds, self._attr("members") or "members", None) if ds else None
+        rows = json.loads(str(js.JSON.stringify(arr))) if arr else []
+        return [_lc_agent_of(r) for r in rows if isinstance(r, dict)]
+
+
     @property
     def sorted(self):
         return Dataset(str(self.id) + ".sorted")
@@ -2720,6 +2737,14 @@ class Crew(Agent):
         """Press ▶ Run, as a person would; the crew works on, the page repaints."""
         self._tap(".lc-crew-run")
         return self
+
+
+def _lc_agent_of(row):
+    """An agent whose attribute values come from a row — data-driven: a crew's
+    members are agents, their name, system, model… the columns of a csv."""
+    a = Agent(None)
+    a._row = row
+    return a
 
 
 @component(icon="🗺", attrs=[{"n": "scope", "t": "str", "data": True, "attr": "scope"}, {"n": "states", "t": "bool", "data": True, "attr": "states", "d": True}])
