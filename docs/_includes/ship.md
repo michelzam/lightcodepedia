@@ -187,7 +187,7 @@ Auto-included by docs/_layouts/default.html.
         .then(function (r) {
           if (!r.ok) throw new Error(tgt && tgt.stale
             ? "this browser is not paired to your bench for this class — open ⚙️ Setup (or sign in as your course account), then come back"
-            : f + " is in neither your space nor the course (HTTP " + r.status + ") — 💾 it first");
+            : f + " is not saved in your space yet — 💾 it in its own lesson first, then ship again");
           return r.text();
         });
     }

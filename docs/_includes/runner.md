@@ -542,7 +542,19 @@ files a learner is already working in.
     else delete root.dataset.lcReadonly;
     var barSt = { repo: root.dataset.lcSrcRepo, path: root.dataset.lcSrcPath, src: src, loading: true };
     if (bar) { pageTitle(bar.parentNode, true); paintBar(bar, barSt); }
-    loadMd(src)
+    /* A LEARNER'S FILE (Michel, 2026-10-25: the app's Author tab, "Hire
+       me!", shows the CV written in module 01): bench="true" reads the
+       reader's own bench first — the same path, the way a save= block reads
+       it — and the render's file after. In a shipped copy the reader has no
+       such file, so the shipped one shows. */
+    var benchFirst = function () {
+      var p = root.dataset.lcSrcPath;
+      if (!window.lcBench || !p) return loadMd(src);
+      return window.lcBench.read("/" + p, root)
+        .catch(function () { return null; })
+        .then(function (got) { return got ? got.text : loadMd(src); });
+    };
+    (root.dataset.lcBenchFirst ? benchFirst() : loadMd(src))
       .then(function (md) {
         /* strip optional YAML front matter */
         if (md.indexOf("---") === 0) {
@@ -600,6 +612,10 @@ files a learner is already working in.
         status.style.display = "";
         if (bar) { barSt.loading = false; paintBar(bar, barSt); }
         var st = err && err.status;
+        if (root.dataset.lcBenchFirst && st === 404) {
+          status.textContent = "📝 Not written yet — this shows your own file once you 💾 it in its lesson.";
+          return;
+        }
         var hasPat = false; try { hasPat = !!localStorage.getItem("lc_ed_pat"); } catch (e) {}
         if (err && err.gh && (st === 404 || st === 401) && !hasPat) {
           /* NO KEY IS NOT AN ERROR, IT IS A MISSING STEP — so say the steps
@@ -823,6 +839,7 @@ files a learner is already working in.
     if (winTitle !== null) paintWinTitle(wrap, root, winTitle, fixedSrc);
     /* a ship: embed needs its bay to resolve, and re-renders itself the
        moment the 🚀 on the same page reports a ship of its app */
+    if (el.getAttribute && el.getAttribute("bench") === "true") root.dataset.lcBenchFirst = "1";
     if (/^ship:/.test(fixedSrc || "")) {
       root.dataset.lcShipBay = el.getAttribute("bay") || "";
       /* the HOST page's repo, for the same foreign-pairing guard the ship
