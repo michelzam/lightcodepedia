@@ -55,7 +55,9 @@ def sort(message):
 [The messages — each family's current stage, and the action the desk recommends](#)
 {: .datagrid source="desk.sorted" columns="family, dog, current_stage, message, action, why, tries, asks, tokens" #desk_actions }
 
-💰 **The desk's cost: {= desk.cost }** {= desk.vs_last } = 🐍 {= desk.runs } rule runs × 1 + 🤖 {= desk.asks } AI asks × 30 + 🧑 {= desk.open } left `OPEN` for a person × 900
+🗂️ `meet` book a visit · `adopt` send the payment link · `call` a volunteer phones the family back · `OPEN` the coordinator reads and decides
+
+💰 **The desk's cost: {= desk.cost }** {= desk.vs_last } = 🐍 {= desk.runs } rule runs × 1 + 🤖 {= desk.asks } AI asks × 30 + 🧑 {= desk.open } left `OPEN` for the coordinator × 900 · beside it, {= desk.tokens } tokens
 
 ```
 ### 🎏 The run, as an event flow

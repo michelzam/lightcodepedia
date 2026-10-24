@@ -46,6 +46,10 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And Rey read the words only, and Chuck checked them against the row
     # the cost, three workers: 🐍 × 1, 🤖 × 30, 🧑 × 900 (Michel, 2026-10-24: "a nice global score for the costs")
     And the desk's cost reads 123: 3 rule runs, 4 AI asks, 0 left OPEN
+    # the tokens beside the score, not in it: they move a little every run (Michel, 2026-10-24: "go for Tokens beside")
+    And the desk's cost line says "beside it, 48 tokens"
+    # a legend says what each action means, and who does it (Michel, 2026-10-24: "make it clear with a legend")
+    And the desk's legend says "call a volunteer phones the family back"
     # the crew is an agent: the engine's 🔋 asks and tokens per unit of time, as under any agent (Michel, 2026-10-24)
     And the crew "desk" shows the engine's 🔋 asks left, as an agent does
     # the run reads as an event flow, each step's cost, each result ✅ sure or ⚠️ not; its legend shown (Michel, 2026-10-24)

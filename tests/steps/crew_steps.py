@@ -387,3 +387,8 @@ def step_crew_kinds(context, cid, py, a, b):
     for n in (a, b):
         c = next(x for x in got if x[0].split(" ")[1] == n)
         assert c[0].startswith("🤖") and c[1] == "ai" and c[2].startswith("AI agent"), got
+
+
+@then('the desk\'s legend says "{text}"')
+def step_desk_legend(context, text):
+    expect(context.page.locator("p", has_text="a volunteer phones").first).to_contain_text(text, timeout=T)
