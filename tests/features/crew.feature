@@ -51,3 +51,20 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I press the trigger of the avatar "crew_guide"
     Then the guide speaks "3 members, one row each. Sid goes first"
 
+  Scenario: A retired model heals — the crew asks as an agent panel does
+    Michel, 2026-10-23, on his phone: Rey's step read "⚠️ The model
+    `llama-3…` … not accessible". The crew asked the preset model with a
+    request of its own; it now asks through the panel's whole path: the
+    engine names what it serves, the next model on the ring answers.
+
+    Given I have a clean browser page
+    And a Groq key is saved on this device, and Groq has retired the preset model
+    When I navigate to "/components/crew"
+    And I press ▶ Run on the crew "desk"
+    Then the crew "desk" is done
+    And the crew "desk" sorted "Ferraro" as "VISIT" in 1 tries
+    And the crew healed onto "llama-3.1-8b-instant"
+    # and on a phone, the long columns read at the size of the others (2026-10-23: "font type strange")
+    When I open the accordion section "who can do what"
+    Then the grid "crew_grid" keeps its text at one size on a phone
+

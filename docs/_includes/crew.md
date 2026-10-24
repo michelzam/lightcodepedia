@@ -32,8 +32,8 @@ shows from the start and fills a row at a time, pace= seconds apart, the
 row at work selected. The page acts on them;
 the crew acts on nothing (the tutor rule).
 
-Members ask with the reader's own key, through the agent's own request
-(lcAgentRequest, agent.md) — no panel, the same ring. No key: the AI
+Members ask with the reader's own key, the way an agent panel asks
+(lcAgentAsk, agent.md: retries, a retired model healed) — no panel, the same ring. No key: the AI
 members are skipped and say so; the rules still work.
 
 Auto-included by docs/_layouts/default.html.
@@ -86,28 +86,18 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
-  /* an AI member: one ask, the agent's own request, one retry when the service wobbles */
+  /* an AI member: one ask, made as the agent panel makes it (lcAgentAsk:
+     the ring's key, a busy service retried, a retired model healed) */
   function ask(member, text) {
-    var req = window.lcAgentRequest ? window.lcAgentRequest({
+    if (!window.lcAgentAsk) return Promise.resolve({ text: "", error: "this page has no agent engine", tokens: 0, unsent: true });
+    return window.lcAgentAsk({
       system: member.brief, provider: member.provider || "", model: member.model || "",
       temperature: member.temperature != null && member.temperature !== "" ? member.temperature : 0,
-      max_tokens: member.max_tokens || 300 }, text) : null;
-    if (!req) return Promise.resolve({ text: "", error: "no AI key on this device", tokens: 0, unsent: true });
-    var once = function () {
-      return fetch(req.url, { method: "POST", headers: { "Authorization": "Bearer " + req.token, "Content-Type": "application/json" }, body: req.body })
-        .then(function (r) {
-          return r.json().catch(function () { return {}; }).then(function (j) {
-            if (!r.ok) throw { status: r.status, text: (j.error && j.error.message) || ("HTTP " + r.status) };
-            var t = j.choices && j.choices[0] && j.choices[0].message ? j.choices[0].message.content : "";
-            var u = j.usage || {};
-            return { text: String(t || ""), error: "", tokens: parseInt(u.total_tokens || ((u.prompt_tokens || 0) + (u.completion_tokens || 0)), 10) || 0 };
-          });
-        });
-    };
-    return once().catch(function (e) {
-      if (e && e.status >= 500) return once();
-      throw e;
-    }).catch(function (e) { return { text: "", error: (e && e.text) || String(e && e.message || e), tokens: 0 }; });
+      max_tokens: member.max_tokens || 300 }, text).then(function (r) {
+        var u = r.usage || {};
+        return { text: String(r.text || ""), error: r.error ? String(r.error) : "", unsent: !!r.unsent,
+                 tokens: parseInt(u.total_tokens || ((u.prompt_tokens || 0) + (u.completion_tokens || 0)), 10) || 0 };
+      }, function (e) { return { text: "", error: String(e && e.message || e), tokens: 0 }; });
   }
 
   /* the first lane an answer names, VERDICT: first */

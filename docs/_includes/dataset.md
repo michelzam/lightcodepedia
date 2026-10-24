@@ -26,7 +26,11 @@ Auto-included by docs/_layouts/default.html.
 .highlighter-rouge.dataset, .dataset { display: none !important; }
 
 /* ── datagrid ──────────────────────────────────────── */
-.lc-datagrid { margin: 1em 0; font-size: 0.88em; overflow-x: auto; }
+.lc-datagrid { margin: 1em 0; font-size: 0.88em; overflow-x: auto;
+  /* iPhone Safari enlarges the text of wide content it judges "too small" —
+     a long-text column read in a bigger font than its neighbours (Michel,
+     2026-10-23, the crew's members and log on his phone): one size for all */
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* a titled grid: the form's bar at the form's size (the grid's text is 0.88em) */
 .lc-datagrid .lc-dg-titlebar { font-size: 0.966em; }
 .lc-datagrid .lc-dg-titlebar .lc-datagrid-name { color: #222; font-weight: 600; }

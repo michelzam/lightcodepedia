@@ -530,9 +530,8 @@ Auto-included by docs/_layouts/default.html.
   }
 
   /* THE REQUEST AN AGENT SENDS, built from its settings and the ring — one
-     place, read by the chat panel, by the proof runtime (ask) and by a crew's
-     members, which are agents without a panel (Michel, 2026-10-23: "data-driven
-     dynamic instances"). null when the ring holds no key for its engine. */
+     place, read by the chat panel and by the proof runtime (ask). null when
+     the ring holds no key for its engine. */
   function agentRequest(cfg, userText) {
     var eng = resolveEngine(cfg), tok = getSharedToken(eng.id);
     if (!eng.base || !tok) return null;
@@ -545,7 +544,16 @@ Auto-included by docs/_layouts/default.html.
     return { url: eng.base + '/chat/completions', token: tok,
              pid: eng.id || '', model: eng.model || '', body: JSON.stringify(body) };
   }
-  window.lcAgentRequest = function (cfg, userText) { return agentRequest(cfg || {}, userText); };
+  /* THE WHOLE ASK, as a panel makes it — the ring's key, a busy service
+     retried, a retired model healed from the engine's own list, a fallback
+     engine the reader already allowed — for an agent with no panel (a crew's
+     members). Resolves { text, usage, error, unsent }. */
+  window.lcAgentAsk = function (cfg, userText) {
+    cfg = cfg || {};
+    var tok = getSharedToken(resolveEngine(cfg).id);
+    if (!tok) return Promise.resolve({ text: '', error: 'no AI key on this device', unsent: true });
+    return (window.lcProvidersReady || Promise.resolve()).then(function () { return ask(tok, cfg, userText, null); });
+  };
 
   // ===== bots: superprompt + knowledge as repo markdown (SSOT) =====
   // A bot is a file: docs/bots/<name>.md — the markdown body IS the system
@@ -1298,8 +1306,13 @@ Auto-included by docs/_layouts/default.html.
             return r2;
           });
         }
-        /* "no such model": heal once — the engine names what it serves */
-        if (res.status === 404 && !healed) {
+        /* "no such model": heal once — the engine names what it serves. Some
+           engines say it with a 400 whose words name the model as retired or
+           out of reach (Michel, 2026-10-23, the crew on his phone: "The model
+           `llama-3…` … not accessible") — the same healing */
+        var modelGone = res.status === 404 || (res.status === 400 && /model/i.test(res.error || '') &&
+          /decommission|not found|does not exist|not accessible|no access|not available/i.test(res.error || ''));
+        if (modelGone && !healed) {
           return discoverModel(eng, key).then(function (found) {
             if (!found) return res;
             var was = eng.model;

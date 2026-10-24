@@ -102,3 +102,41 @@ def step_crew_selected(context, cid, who):
 def step_press_trigger(context, aid):
     context.page.locator("[target='" + aid + "'], [data-target='" + aid + "']").first.click()
 
+
+
+@given("a Groq key is saved on this device, and Groq has retired the preset model")
+def step_groq_retired(context):
+    """Michel, 2026-10-23, on his phone: Rey's ask came back "The model `llama-3…` … not
+    accessible". The service names what it serves at /models; the healed model answers."""
+    context.page.add_init_script("localStorage.setItem('lc_ai_key_groq', 'gsk-crew-test');")
+    context.crew_models = []
+
+    def chat(route):
+        body = json.loads(route.request.post_data or "{}")
+        context.crew_models.append(body.get("model"))
+        if body.get("model") == "llama-3.3-70b-versatile":
+            return route.fulfill(status=400, content_type="application/json", body=json.dumps({"error": {
+                "message": "The model `llama-3.3-70b-versatile` has been decommissioned and is no longer accessible.",
+                "type": "invalid_request_error", "code": "model_decommissioned"}}))
+        system = body["messages"][0]["content"]
+        text = "AGREE — a visit first" if "AGREE or DISAGREE" in system else "VERDICT: VISIT"
+        route.fulfill(status=200, content_type="application/json", body=json.dumps({
+            "choices": [{"message": {"content": text}}], "usage": {"total_tokens": 10}}))
+    context.page.route("**/api.groq.com/**/chat/completions*", chat)
+    context.page.route("**/api.groq.com/**/models*", lambda r: r.fulfill(status=200, content_type="application/json",
+        body=json.dumps({"data": [{"id": "llama-3.1-8b-instant"}, {"id": "openai/gpt-oss-120b"}]})))
+
+
+@then('the crew healed onto "{model}"')
+def step_crew_healed(context, model):
+    assert "llama-3.3-70b-versatile" in context.crew_models, context.crew_models
+    assert context.crew_models[-1] == model, context.crew_models
+
+
+@then('the grid "{gid}" keeps its text at one size on a phone')
+def step_grid_text_size(context, gid):
+    got = context.page.evaluate("""id => { const g = document.querySelector(".lc-datagrid[data-lc-id='" + id + "']");
+        if (!g) return 'no grid';
+        const cs = getComputedStyle(g);
+        return cs.getPropertyValue('-webkit-text-size-adjust') || cs.getPropertyValue('text-size-adjust') || cs.webkitTextSizeAdjust || ''; }""", gid)
+    assert got == "100%", "the grid's text-size-adjust is %r: a phone may enlarge its long columns" % got
