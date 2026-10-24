@@ -18,7 +18,8 @@ def step_stub_crew_ai(context):
         user = body["messages"][1]["content"]
         context.crew_asks.append({"system": system, "user": user})
         if "AGREE or DISAGREE" in system:
-            text = "DISAGREE — the row says asked: no visit yet" if "The verdict: home" in user else "AGREE — one stage at a time"
+            text = ("DISAGREE — the row says asked: no visit yet, and a family moves one stage at a time, "
+                    "so it cannot go home before it has met the dog") if "The verdict: home" in user else "AGREE — one stage at a time"
         else:
             text = "VERDICT: met" if "disagreed" in user else "VERDICT: home"
         route.fulfill(status=200, content_type="application/json",

@@ -374,7 +374,8 @@ Auto-included by docs/_layouts/default.html.
             spend(1);
             return ask(checker, "The message: " + text + "\nIts row: " + JSON.stringify(row) + "\nThe verdict: " + verdict + cctx, crewCfg).then(function (c) {
               say(checker.name, "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, c);
-              var said = String(c.text).replace(/^\W*(DIS)?AGREE[DS]?\W*/i, "").slice(0, 90);
+              /* the whole reason, never cut (Michel, 2026-10-24: "some events are truncated") */
+              var said = String(c.text).replace(/^\W*(DIS)?AGREE[DS]?\W*/i, "").replace(/\s+/g, " ").trim();
               beat("event", c.error ? "⚠️ the AI did not answer" : (agrees(c.text) ? by(checker) + " agrees: " + said : disagrees(c.text) ? by(checker) + " disagrees: " + said : by(checker) + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
               if (c.error) { trouble = "the AI did not answer"; return null; }
               if (!agrees(c.text)) {

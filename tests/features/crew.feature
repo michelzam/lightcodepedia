@@ -47,7 +47,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     # the run reads as an event flow, each step's cost, each result ✅ sure or ⚠️ not; its legend shown (Michel, 2026-10-24)
     When I open the accordion section "event flow"
     # each beat names its worker by price: 🐍 Python, 🤖 the AI, 🧑 a person (Michel, 2026-10-24)
-    Then the run's event flow "desk_flow" tells "🐍 Sid: met / Nguyen → met ✅ · free / Ferraro / 🤖 Rey proposes home · 12 tokens / 🤖 Chuck disagrees / 🤖 Rey proposes met / 🤖 Chuck agrees / Ferraro → met ✅ · 48 tokens"
+    Then the run's event flow "desk_flow" tells "🐍 Sid: met / Nguyen → met ✅ · free / Ferraro / 🤖 Rey proposes home · 12 tokens / 🤖 Chuck disagrees: the row says asked: no visit yet, and a family moves one stage at a time, so it cannot go home before it has met the dog / 🤖 Rey proposes met / 🤖 Chuck agrees / Ferraro → met ✅ · 48 tokens"
     And the event flow "desk_flow" shows its legend
     And the crew's log shows "Chuck" saying "DISAGREE"
     And Rey's second ask carried Chuck's words
