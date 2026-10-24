@@ -239,12 +239,14 @@ class Attr:
 
     Knobs: min/max/step (numbers), enum (choices), ro (read-only from outside —
     only a behaviour may change it, via self._set), unit, hint (tooltip),
-    secret (render as password). Values live per-instance; writes validate.
+    secret (render as password), required (never blank). Values live
+    per-instance; writes validate.
     """
     _count = [0]
 
     def __init__(self, typ=str, default=None, min=None, max=None, step=None,
-                 enum=None, ro=False, unit="", hint="", secret=False, hidden=False, was=None):
+                 enum=None, ro=False, unit="", hint="", secret=False, hidden=False, was=None,
+                 required=False):
         Attr._count[0] += 1
         self._ord = Attr._count[0]
         self.t = typ if isinstance(typ, str) else getattr(typ, "__name__", "str")
@@ -275,6 +277,12 @@ class Attr:
         # was="old": the attribute's former name — its table column is renamed,
         # its data kept (Michel, 2026-10-17, register P5)
         self.was = was
+        # required=True: never blank (Michel, 2026-10-24: "default should be
+        # False (tolerant); only an explicit value would check"). A write of a
+        # blank is refused, Walk(...) without it is refused; a row read back
+        # blank is kept as it is and waits on the page, never saved blank; the
+        # table refuses blanks once every row has one (lc_ensure, setup v3)
+        self.required = bool(required)
         self.is_state = False
         self.n = None
 
@@ -290,7 +298,17 @@ class Attr:
                 pass
         return d
 
+    @staticmethod
+    def _blank(v):
+        return v is None or (isinstance(v, str) and not v.strip())
+
     def _coerce(self, v):
+        v = self._coerce0(v)
+        if self.required and Attr._blank(v):
+            raise ValueError(str(self.n) + " is required")
+        return v
+
+    def _coerce0(self, v):
         if self.ref:
             # accept an instance, a bound global name, or None ("" from the widget)
             if v is None or v == "":
@@ -342,6 +360,8 @@ class Attr:
         d = {"n": self.n, "t": t, "d": dv,
              "ro": self.ro, "unit": self.unit, "hint": self.hint, "secret": self.secret,
              "field": True, "state": self.is_state}
+        if self.required:
+            d["req"] = True
         if self.ref:
             d["ref"] = self.t
         if self.min is not None:
@@ -650,6 +670,17 @@ class Object:
                 self._v[f.n] = f._default()
             self._lc_elid = None
             self._js = None          # the list's own row, when the class wears a dataset
+            if kw:
+                fmap = getattr(cls, "_lc_fmap", None) or {}
+                for k, v in kw.items():
+                    f = fmap.get(k)
+                    if f is None:
+                        raise TypeError(cls.__name__ + " has no attribute " + k)
+                    self._v[k] = f._coerce(v)
+                # a required attribute is a required argument, as in any Python call
+                missing = [f.n for f in cls._lc_fields if getattr(f, "required", False) and Attr._blank(self._v.get(f.n))]
+                if missing:
+                    raise TypeError(cls.__name__ + "() needs " + ", ".join(missing))
             _LC_NEW.append(self)
             _LC_OBJS.append(self)
             # THE CONSTRUCTOR WITH KEYWORDS IS ➕ NEW (Michel, 2026-10-19: a walk
@@ -658,12 +689,6 @@ class Object:
             # defaults fill the rest, a database class saves by itself. A bare
             # Walk() is the engine's own path for rows read back.
             if kw:
-                fmap = getattr(cls, "_lc_fmap", None) or {}
-                for k, v in kw.items():
-                    f = fmap.get(k)
-                    if f is None:
-                        raise TypeError(cls.__name__ + " has no attribute " + k)
-                    self._v[k] = f._coerce(v)
                 cls._lc_born(self)
 
     # ── born verbs: every object can be made and unmade; a class that wears a
@@ -3281,7 +3306,8 @@ def _lc_model_spec_push(cls, subs=True):
         dbid = f.n == "id" and bool(getattr(f, "src", False))   # the table's own id: kept, never shown
         fields[f.n] = {"t": f.t, "enum": f.enum, "ro": f.ro or dbid, "state": f.is_state,
                        "src": bool(getattr(f, "src", False)), "hidden": dbid or bool(getattr(f, "hidden", False)),
-                       "ref": f.t if f.ref else None, "was": getattr(f, "was", None)}
+                       "ref": f.t if f.ref else None, "was": getattr(f, "was", None),
+                       "req": bool(getattr(f, "required", False))}
     # A COMPUTED COLUMN (Michel, 2026-10-17: "add an example of a computed
     # column — @property?"): each property is a read-only column, worked out
     # from the object, never stored

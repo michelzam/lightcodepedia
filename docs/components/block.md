@@ -45,7 +45,7 @@ Content on the right.
 - `.block` is shorthand for `.blocks cols="1"` — same component.
 - Nested components work inside blocks: `{: .video }`, `{: .quiz }`, `{: .run }`, `{: .button }`.
 - On small screens columns collapse to a single column automatically.
-- `beside="true"` on any part's decoration draws it next to the block above — the same row, without a fence to nest (see below).
+- `layout="beside"` on any part's decoration draws it next to the block above — the same row, without a fence to nest; `layout="behind"` puts it behind, as a tab (see below). `below` is the default, never written.
 
 ## 🖥 `title=` — the card becomes an app window
 
@@ -141,10 +141,15 @@ Feature: A fenced block becomes a bordered card
 ```
 {: .blocks cols="2" }
 
-## ↔️ `beside=` — next to the one above, no fence to nest
+## ↔️ `layout=` — beside the one above, or behind it, no fence to nest
 
-Any part can take `beside="true"` on its decoration line: it is drawn
-**next to the block above** instead of under it. Two or three in a row
+Any part can take `layout=` on its decoration line: `below` is where a
+part goes anyway (never written), `beside` draws it **next to the block
+above**, `behind` puts it **behind** the block above, as a tab.
+
+### ↔️ `layout="beside"` — in the same row
+
+A part with `layout="beside"` is drawn next to the block above instead of under it. Two or three in a row
 fold into one row of equal columns, the same row `.blocks cols=` makes —
 same gap, same stacking on a phone — and source order stays visual
 order. Nothing to nest: three parts, three decorations.
@@ -166,7 +171,7 @@ SELECT name, legs FROM pets_row WHERE legs > 0
 {: .query bind="pets_row" #walkers }
 
 [Legs](#)
-{: .chart source="walkers" type="bar" x="name" y="legs" beside="true" }
+{: .chart source="walkers" type="bar" x="name" y="legs" layout="beside" }
 
 ````markdown
 [Pets](#)
@@ -178,7 +183,7 @@ SELECT name, legs FROM pets_row WHERE legs > 0
 {: .query bind="pets_row" #walkers }
 
 [Legs](#)
-{: .chart source="walkers" type="bar" x="name" y="legs" beside="true" }
+{: .chart source="walkers" type="bar" x="name" y="legs" layout="beside" }
 ````
 
 A dataset or a query between them has no face, so "the block above" is
@@ -186,7 +191,7 @@ the last one that shows: the chart lands beside the table, and the query
 rides along inside the row, unseen.
 
 ```gherkin
-Feature: beside= draws a part next to the one above
+Feature: layout="beside" draws a part next to the one above
   As a learner laying out two faces of one dataset
   I want the chart beside the table with one word
   So that a row needs no fence inside a fence
@@ -213,6 +218,74 @@ Feature: beside= draws a part next to the one above
     :::
 ```
 {: .feature #beside_proof tags="ui" status="passing" }
+
+### 🗂️ `layout="behind"` — in the same place, as tabs
+
+`behind` puts a part **behind the block above**: the same place, as tabs,
+the block above in front. Each tab is named by its link words. Good for
+two faces of one thing when the page has no room for both side by side —
+a phone, a long table and its chart.
+
+```csv
+name,legs
+Rex,4
+Tweety,2
+Nemo,0
+```
+{: .dataset #pets_tabs }
+
+[the pets](#)
+{: .datagrid source="pets_tabs" #pets_tab_grid }
+
+[their legs](#)
+{: .chart source="pets_tabs" type="bar" x="name" y="legs" layout="behind" #pets_tab_chart }
+
+````markdown
+[the pets](#)
+{: .datagrid source="pets_tabs" }
+
+[their legs](#)
+{: .chart source="pets_tabs" type="bar" x="name" y="legs" layout="behind" }
+````
+
+In a pad, **⌃⌥→** puts the block under the caret beside the one above,
+**⌃⌥↑** behind it, **⌃⌥←** back below. A pad's own `layout=` says where its
+source stands against its preview: `beside` (the default), `below`,
+`behind` — see the [text pad](text).
+
+```gherkin
+Feature: layout="behind" stacks a part behind the one above, as tabs
+  As a learner with two faces of one list and little room
+  I want the chart behind the table with one word
+  So that the page shows one at a time, and a tap shows the other
+
+  Scenario: The table in front, the chart behind it, a tap swaps them
+    Given the table and the chart above
+    :::python
+    self.box = Object._all(".lc-behind[data-lc-behind]")[0]
+    self.tabs = self.box._el.querySelectorAll(".lc-behind-tab")
+    :::
+    Then two tabs, named by their links, the table's in front
+    :::python
+    assert int(self.tabs.length) == 2, int(self.tabs.length)
+    assert "the pets" in str(self.tabs.item(0).textContent), str(self.tabs.item(0).textContent)
+    assert "their legs" in str(self.tabs.item(1).textContent), str(self.tabs.item(1).textContent)
+    assert str(self.tabs.item(0).getAttribute("aria-selected")) == "true"
+    front = self.box._el.querySelector(".lc-behind-pane.lc-on")
+    assert front.querySelector("table") is not None, "the table is not in front"
+    :::
+    When the chart's tab is tapped
+    :::python
+    self.tabs.item(1).click()
+    :::
+    Then the chart comes in front
+    :::python
+    front = self.box._el.querySelector(".lc-behind-pane.lc-on")
+    assert front.querySelector(".lc-chart") is not None, "the chart is not in front"
+    self.tabs.item(0).click()
+    :::
+```
+{: .feature #behind_proof tags="ui" status="passing" }
 
 ## Example — weighted columns
 ```

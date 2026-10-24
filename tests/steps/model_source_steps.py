@@ -733,6 +733,13 @@ def step_unl_db(context):
                         except ValueError:
                             return no(c["n"] + " holds a value that is not " + typ + ", fix it in the grid, then ↻")
                 t["types"][c["n"]] = typ
+                # as Postgres, setup v3: required once every row has a value; not required, dropped
+                req = t.setdefault("req", set())
+                if c.get("req"):
+                    if all(str(r.get(c["n"]) if r.get(c["n"]) is not None else "").strip() for r in t["rows"]):
+                        req.add(c["n"])
+                else:
+                    req.discard(c["n"])
             return ok(st["space"])      # one unlisted name for the whole database
         if fn == "lc_drop":
             if a["token"] not in st["authors"]:
@@ -758,6 +765,14 @@ def step_unl_db(context):
                 for k, v in r.items():
                     if v == "" and t.get("types", {}).get(k) in ("int", "float", "bool"):
                         return no('invalid input syntax for type bigint: ""')
+            for r in a["ins"]:
+                for k in t.get("req", ()):
+                    if not str(r.get(k) if r.get(k) is not None else "").strip():
+                        return no('new row for relation violates check constraint "' + k + '_required"')
+            for u in a["upd"]:
+                for k in t.get("req", ()):
+                    if k in u and not str(u[k] if u[k] is not None else "").strip():
+                        return no('new row for relation violates check constraint "' + k + '_required"')
             for r in a["ins"]:
                 r = {k: v for k, v in r.items() if k in t["cols"]}
                 r["id"] = t["next"]; t["next"] += 1
@@ -1557,3 +1572,48 @@ def step_unl_saved_walker(context, tbl, dog, who):
     assert [(r["dog"], r["walker"]) for r in rows] == [(dog, who)], rows
     saves = [a for f, a in context.unl["calls"] if f == "lc_save"]
     assert saves and saves[-1]["share"] == "5f2c9a01b7e3", saves
+
+
+@given('the shelter\'s "{tbl}" table holds "{dog}" walked by "{who}", and "{dog2}" walked by nobody')
+def step_unl_two_walks(context, tbl, dog, who, dog2):
+    context.unl["tables"][tbl] = {"cols": ["dog", "walker"], "next": 3,
+                                  "rows": [{"id": 1, "dog": dog, "walker": who}, {"id": 2, "dog": dog2, "walker": None}]}
+
+
+@then('the grid "{gid}" heads its column "{label}", and marks the {col} of "{name}" as missing')
+def step_required_marked(context, gid, label, col, name):
+    expect(grid(context, gid).locator("thead th", has_text=label)).to_have_count(1, timeout=T)
+    expect(row_of(context, gid, name).locator("td[data-lc-missing]")).to_have_count(1, timeout=T)
+
+
+@then('the table "{tbl}" {does} refuse a blank "{col}"')
+def step_table_refuses(context, tbl, does, col):
+    want = does == "does"
+    for _ in range(50):
+        if (col in context.unl["tables"][tbl].get("req", set())) == want:
+            return
+        context.page.wait_for_timeout(200)
+    raise AssertionError("the table %s %s refuse a blank %s: %r" % (tbl, "does not" if want else "does", col, context.unl["tables"][tbl]))
+
+
+@then('the table "{tbl}" holds {n:d} rows')
+def step_table_rows(context, tbl, n):
+    context.page.wait_for_timeout(1500)
+    rows = context.unl["tables"][tbl]["rows"]
+    assert len(rows) == n, rows
+
+
+@when('the table "{tbl}" gets "{who}" as the walker of "{dog}", and I come back to the page')
+def step_fill_and_return(context, tbl, who, dog):
+    for r in context.unl["tables"][tbl]["rows"]:
+        if r.get("dog") == dog:
+            r["walker"] = who
+    context.page.reload()
+    context.execute_steps("When I wait for the page to be interactive")
+
+
+@then('the card "{fid}" labels "{label}", its blank value marked')
+def step_card_required(context, fid, label):
+    card = context.page.locator("[data-lc-id='" + fid + "']")
+    expect(card.locator(".lc-form-label-cell", has_text=label)).to_have_count(1, timeout=T)
+    expect(card.locator(".lc-form-missing")).to_have_count(1, timeout=T)

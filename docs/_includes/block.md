@@ -13,6 +13,15 @@ Auto-included by docs/_layouts/default.html.
 
 <style>
 .lc-blocks { display: grid; gap: 18px; margin: 1em 0; }
+/* layout="behind": the parts in one place, as tabs — every pane laid out in the
+   same cell, so a part behind keeps its size and draws right when it comes front */
+.lc-behind { display: grid; grid-template-columns: minmax(0, 1fr); margin: 1em 0; }
+.lc-behind > .lc-behind-bar { grid-row: 1; display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid #d0d7de; }
+.lc-behind > .lc-behind-pane, .lc-behind > :not(.lc-behind-bar) { grid-row: 2; grid-column: 1; min-width: 0; }
+.lc-behind > .lc-behind-pane:not(.lc-on) { visibility: hidden; pointer-events: none; }
+.lc-behind > .lc-behind-pane > * { margin-top: .6em; }
+.lc-behind-tab { font: inherit; font-size: .9em; padding: .4em .9em; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; background: none; color: #57606a; cursor: pointer; margin-bottom: -1px; }
+.lc-behind-tab[aria-selected="true"] { background: #fff; border-color: #d0d7de; color: #0066cc; font-weight: 600; }
 .lc-block { border: 1px solid #ddd; border-radius: 8px; padding: 1.5em 2em; background: #fff; overflow: hidden; }
 .lc-block > h3:first-child { margin-top: 0; margin-bottom: 0.6em; font-size: 1.1em; color: #222; display: flex; align-items: center; gap: 0.4em; }
 .lc-block img { max-width: 100%; border-radius: 4px; display: block; margin: 0.6em auto; }

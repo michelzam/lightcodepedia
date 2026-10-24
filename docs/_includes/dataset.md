@@ -59,6 +59,8 @@ Auto-included by docs/_layouts/default.html.
    legal ones live and the others grey; typed cells; ➕ New under the list. */
 .lc-datagrid { position: relative; }
 .lc-dg-table td.lc-dg-typed { border-bottom: 1px dashed #9db6d0; }
+/* a required value left blank: the row waits, unsaved */
+.lc-dg-table td[data-lc-missing] { background: #fff7ed; box-shadow: inset 3px 0 #f59e0b; }
 .lc-dg-table td.lc-dg-typed:focus { outline: 2px solid #0066cc; outline-offset: -2px; background: #fff; }
 .lc-dg-table td.lc-dg-state { white-space: nowrap; }
 /* the chip and the ⌄ sit on the row's own text line: an inline chip (its
@@ -324,13 +326,13 @@ Auto-included by docs/_layouts/default.html.
   var ST = window.lcStruct = window.lcStruct || { types: {}, seen: {}, log: {}, settle: {} };
   function stColsOf(id) {
     var M = window.lcModels || {}, cols = {}, subs = [];
-    (unlCols(id) || []).forEach(function (c) { cols[c.n] = { t: c.t, was: c.was || "" }; });
+    (unlCols(id) || []).forEach(function (c) { cols[c.n] = { t: c.t, was: c.was || "", req: !!c.req }; });
     Object.keys(M).forEach(function (n) { var m = M[n]; if (m && m.src === id) (m.subs || []).forEach(function (k) { if (subs.indexOf(k) < 0) subs.push(k); }); });
     subs.sort();
     return { cols: cols, subs: subs };
   }
   function stSig(x) {
-    return JSON.stringify([Object.keys(x.cols).sort().map(function (k) { return k + ":" + x.cols[k].t + ":" + x.cols[k].was; }), x.subs]);
+    return JSON.stringify([Object.keys(x.cols).sort().map(function (k) { return k + ":" + x.cols[k].t + ":" + x.cols[k].was + (x.cols[k].req ? ":req" : ""); }), x.subs]);
   }
   function stDiff(a, b) {
     var out = [];
@@ -340,6 +342,7 @@ Auto-included by docs/_layouts/default.html.
       if (!o && c.was && a.cols[c.was]) out.push("🔁 " + c.was + " → " + k + " (renamed, its data kept)");
       else if (!o) out.push("➕ " + k + " (" + c.t + ")");
       else if (o.t !== c.t) out.push("✏️ " + k + ": " + o.t + " → " + c.t);
+      if (o && !o.req !== !c.req) out.push(c.req ? "🔒 " + k + ": required" : "🔓 " + k + ": no longer required");
     });
     Object.keys(a.cols).forEach(function (k) {
       if (b.cols[k] || k === "_sub") return;
@@ -359,10 +362,16 @@ Auto-included by docs/_layouts/default.html.
   ST.plan = function (id) {
     var r = window.lcRemote[id], U = r && r.unl;
     if (!U || !U.read || !U.tcols || ST.travelling()) return [];
-    var cur = stColsOf(id), tc = U.tcols, ty = ST.types[id] || {}, out = [];
+    var cur = stColsOf(id), tc = U.tcols, ty = ST.types[id] || {}, rq = (ST.reqs || {})[id] || null, out = [];
     Object.keys(cur.cols).forEach(function (k) {
       var c = cur.cols[k];
-      if (tc[k]) { if (ty[k] && ty[k] !== c.t) out.push({ k: "retype", n: k, t: c.t, from: ty[k], say: "✏️ " + k + ": " + ty[k] + " → " + c.t }); return; }
+      if (tc[k]) {
+        if (ty[k] && ty[k] !== c.t) out.push({ k: "retype", n: k, t: c.t, from: ty[k], say: "✏️ " + k + ": " + ty[k] + " → " + c.t });
+        /* required, or no longer: the table refuses blanks once every row has one */
+        if (rq && !rq[k] !== !c.req) out.push({ k: "require", n: k, req: !!c.req,
+          say: c.req ? "🔒 " + k + ": required — a row without one waits on the page, unsaved" : "🔓 " + k + ": no longer required" });
+        return;
+      }
       if (k === "_sub") { out.push({ k: "add", n: k, say: "🏷 a column that says which subclass each row is" }); return; }
       if (c.was && tc[c.was]) out.push({ k: "rename", n: k, from: c.was, say: "🔁 " + c.was + " → " + k + " (its data kept)" });
       else out.push({ k: "add", n: k, t: c.t, say: "➕ " + k + " (" + c.t + ")" });
@@ -392,10 +401,11 @@ Auto-included by docs/_layouts/default.html.
   /* the table is as the code says (a read after 🔄, or a first read that
      needed nothing): the types it now has, and a clean log */
   ST.settled = function (id) {
-    var cur = stColsOf(id), ty = {};
-    Object.keys(cur.cols).forEach(function (k) { ty[k] = cur.cols[k].t; });
+    var cur = stColsOf(id), ty = {}, rq = {};
+    Object.keys(cur.cols).forEach(function (k) { ty[k] = cur.cols[k].t; if (cur.cols[k].req) rq[k] = 1; });
     var U = (window.lcRemote[id] || {}).unl;
-    if (!ST.types[id] || !ST.plan(id).length) ST.types[id] = ty;
+    ST.reqs = ST.reqs || {};
+    if (!ST.types[id] || !ST.plan(id).length) { ST.types[id] = ty; ST.reqs[id] = rq; }
     ST.seen[id] = cur; ST.log[id] = [];
     ST.settle[id] = performance.now();
     document.dispatchEvent(new CustomEvent("lc-struct", { detail: id }));
@@ -462,7 +472,8 @@ Auto-included by docs/_layouts/default.html.
       var author = lsGet(U.akey);
       /* the structure first, then the leftovers ticked, then the rows that waited */
       var go = U.rpc("lc_ensure", { token: author, tbl: U.tbl, cols: unlCols(id) || [] }).then(function () {
-            (unlCols(id) || []).forEach(function (c) { U.tcols[c.n] = 1; (ST.types[id] = ST.types[id] || {})[c.n] = c.t; });
+            ST.reqs = ST.reqs || {}; ST.reqs[id] = {};
+            (unlCols(id) || []).forEach(function (c) { U.tcols[c.n] = 1; (ST.types[id] = ST.types[id] || {})[c.n] = c.t; if (c.req) ST.reqs[id][c.n] = 1; });
           });
       go.then(function () { return drop.length ? U.rpc("lc_drop", { token: author, tbl: U.tbl, cols: drop }) : null; })
         .then(function () {
@@ -806,6 +817,7 @@ Auto-included by docs/_layouts/default.html.
         if (!out.some(function (c) { return c.n === f; })) {
           var col = { n: f, t: d.state ? "str" : (d.t || "str") };
           if (d.was) col.was = d.was;
+          if (d.req) col.req = true;
           out.push(col);
         }
       });
@@ -839,10 +851,21 @@ Auto-included by docs/_layouts/default.html.
     var keep = r.unl && r.unl.tcols && Object.keys(r.unl.tcols).length ? r.unl.tcols : null;
     var cut = function (o) { if (!keep) return o; var x = {}; for (var k in o) if (keep[k]) x[k] = o[k]; return x; };
     var keyOf = function (row) { return JSON.stringify(dbSame(cut(dbRow(row)))); };
+    /* A ROW MISSING A REQUIRED VALUE WAITS (Michel, 2026-10-24: "go required"):
+       on the page, marked, unsaved — the table never gets it blank */
+    var reqCols = (unlCols(id) || []).filter(function (c) { return c.req; }).map(function (c) { return c.n; });
+    var wait = 0, waitCols = [];
+    var waits = function (row) {
+      var miss = reqCols.filter(function (k) { return row[k] == null || String(row[k]).trim() === ""; });
+      miss.forEach(function (k) { if (waitCols.indexOf(k) < 0) waitCols.push(k); });
+      if (miss.length) wait++;
+      return miss.length > 0;
+    };
     arr.forEach(function (row) {
       if (row["⚠️"]) return;
       if (row.id == null || row.id === "") {
         /* new — no id yet: the table gives one */
+        if (waits(row)) return;
         var c = cut(dbRow(row)); delete c.id; ins.push(c); return;
       }
       /* a row with an id came from the table: never inserted again, even
@@ -851,7 +874,7 @@ Auto-included by docs/_layouts/default.html.
          every row look new) */
       if (!(String(row.id) in snap)) return;
       seen[String(row.id)] = 1;
-      if (snap[String(row.id)] !== keyOf(row)) upd.push(cut(dbRow(row)));
+      if (snap[String(row.id)] !== keyOf(row) && !waits(row)) upd.push(cut(dbRow(row)));
     });
     /* a row leaves the table only when it was deleted (obj.delete(), the
        🗑 verb) — a row that merely vanished from the page (a redraw, a page
@@ -859,7 +882,7 @@ Auto-included by docs/_layouts/default.html.
        "no data at all in the grid") */
     var okDel = (window._lcDelOk || {})[id] || {};
     var del = Object.keys(snap).filter(function (k) { return !seen[k] && okDel[k]; });
-    return { ins: ins, upd: upd, del: del, n: ins.length + upd.length + del.length };
+    return { ins: ins, upd: upd, del: del, n: ins.length + upd.length + del.length, wait: wait, waitCols: waitCols };
   };
   /* 💾 SAVE: the new rows in one insert, each changed row by its id, the
      gone ones by theirs — then the table is read again, its truth (ids,
@@ -884,7 +907,7 @@ Auto-included by docs/_layouts/default.html.
        its speed still blank sent "" to a number column — refused, and the
        Walk saved with it failed too) */
     var blank = function (row) { var o = {}; for (var k in row) o[k] = row[k] === "" ? null : row[k]; return o; };
-    ch = { n: ch.n, ins: ch.ins.map(blank), upd: ch.upd.map(blank), del: ch.del };
+    ch = { n: ch.n, ins: ch.ins.map(blank), upd: ch.upd.map(blank), del: ch.del, wait: ch.wait, waitCols: ch.waitCols };
     if (r.unl) {
       var u = r.unl, author = lsGet(u.akey);
       if (!u.share) return Promise.reject(new Error("paste the list's unlisted name first"));
@@ -1155,7 +1178,8 @@ Auto-included by docs/_layouts/default.html.
             /* THE SETUP HAS A VERSION (Michel, 2026-10-20: "where to run it? not
                clear"): the author's device asks once per visit; older than the
                engine's, or missing, the grid offers the script to copy */
-            var want = window.lcSetupVersion || 2, vk = window._lcSetupSeen = window._lcSetupSeen || {};
+            /* a class with a required attribute needs setup v3 (the table's blank check) */
+            var want = window.lcSetupVersion || ((unlCols(id) || []).some(function (c) { return c.req; }) ? 3 : 2), vk = window._lcSetupSeen = window._lcSetupSeen || {};
             if (author && !vk[uProj]) {
               /* the answer is the project's, kept per project: a pad redraws
                  the class block and rebuilds the table's link, so the record
@@ -1747,7 +1771,13 @@ Auto-included by docs/_layouts/default.html.
       }
       if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
       function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/'/g, "&#39;"); }
-      function dressedCell(row, c, idx) { return dressedCell0(row, c, idx); }
+      /* REQUIRED (Michel, 2026-10-24): a blank value of a required attribute is
+         marked, and its row waits — never saved blank, never refused on sight */
+      function dressedCell(row, c, idx) {
+        var td = dressedCell0(row, c, idx), f = model.fields[c];
+        if (!f || !f.req || !(row[c] == null || String(row[c]).trim() === "")) return td;
+        return td.replace(/^<td/, "<td data-lc-missing='1' title='" + esc(c) + " is required'");
+      }
       /* the gutter: ⋯ for a class with no state; a subclass's row wears its
          class's icon there (Michel, 2026-10-17) — a tap still opens its verbs */
       /* every class grid wears the gutter (Michel, 2026-10-18: "the grid in page 1 was not upgraded
@@ -1837,6 +1867,7 @@ Auto-included by docs/_layouts/default.html.
             var rf = model && model.fields[c] && model.fields[c].ref;
             var rdoc = rf && window.lcDocOf ? window.lcDocOf(rf) : null;
             if (rdoc && rdoc.icon) label = rdoc.icon + " " + label;
+            if (model && model.fields[c] && model.fields[c].req) label += " ✱";
             var cw = colW[c] ? " style='width:" + colW[c] + "px;min-width:" + colW[c] + "px'" : "";
             return "<th data-col='" + c + "'" + hint + cw + ">" + label + arrow + "<span class='lc-dg-grip' title='drag to resize'></span></th>";
           }).join("") + "</tr></thead><tbody>"
@@ -1935,6 +1966,9 @@ Auto-included by docs/_layouts/default.html.
       else if (U && dbR.error) html += "<p class='lc-dg-say' role='status'>⚠️ " + esc(dbR.error) + "</p>";
       /* why ⚠ — said under the grid, not in a tooltip a finger never sees */
       else if (st === "error" && dbR.saveErr) html += "<p class='lc-dg-say' role='status'>⚠️ not saved: " + esc(dbR.saveErr) + "</p>";
+      /* a row missing a required value: said under the grid as long as it waits */
+      if (dbCh && dbCh.wait) html += "<p class='lc-dg-say lc-dg-wait-say' role='status'>⏳ " + dbCh.wait + " row" + (dbCh.wait === 1 ? " waits" : "s wait") +
+        ", unsaved: " + esc(dbCh.waitCols.join(", ")) + " required</p>";
       if (liveL && !liveL.on && !srcErr && !(U && dbR.error)) html += "<p class='lc-dg-say lc-dg-live-say' role='status'>🔌 live, but the line is down — the others&#39; changes are not arriving; ↻ reads the table</p>";
       if (corner) html = "<div class='lc-dg-corner'>" + corner + "</div>" + html;
       html += unlBar;

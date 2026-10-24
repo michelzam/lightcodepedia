@@ -252,3 +252,21 @@ def step_crew_quota(context, cid):
     q = _crew(context, cid).locator(".lc-agent-quota")
     expect(q).to_be_visible(timeout=T)
     expect(q).to_contain_text("🔋", timeout=T)
+
+
+@then('the accordion section "{title}" comes before the grid "{gid}"')
+def step_section_before_grid(context, title, gid):
+    expect(context.page.locator(".lc-datagrid[data-lc-id='" + gid + "']")).to_be_attached(timeout=T)
+    ok = context.page.evaluate("""([t, id]) => {
+        const g = document.querySelector(".lc-datagrid[data-lc-id='" + id + "']");
+        const h = [...document.querySelectorAll(".lc-accordion details summary")].find(e => e.textContent.includes(t));
+        return !!(g && h && (h.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING));
+    }""", [title, gid])
+    assert ok, "the section %r is not above the grid %r" % (title, gid)
+
+
+@then('picking "{who}" in the grid "{gid}", the form "{fid}" shows its {what}')
+def step_form_worker(context, who, gid, fid, what):
+    context.page.locator(".lc-datagrid[data-lc-id='" + gid + "'] tbody tr", has_text=who).first.click()
+    form = context.page.locator("[data-lc-id='" + fid + "']")
+    expect(form).to_contain_text(what, timeout=T)

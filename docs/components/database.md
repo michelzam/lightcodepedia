@@ -104,7 +104,9 @@ The author's device never has to remember it. When the door is missing
 or older than the engine, the grid says so under its rows, with one
 button: **📋 Copy the setup SQL**. Copy, paste in the SQL Editor, Run,
 ↻. A version line in the script and a `lc_version()` function tell the
-engine which setup a project holds.
+engine which setup a project holds. Version 3 adds the check behind `required=True`
+(a [model](model)'s attribute that is never blank); a project without any
+required attribute is asked for nothing new.
 
 ## 🧭 What it is for
 

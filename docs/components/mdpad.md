@@ -97,7 +97,8 @@ Feature: The pad renders what is typed
 | `piano="true"` | off | blocks banded in two shades, the caret's in a third |
 | `numbers="true"` | off | line numbers and component icons in a gutter |
 | `folded="true"` | off | opens with the editor folded away |
-| `layout="rows"` | side by side | preview above the source |
+| `layout="below"` | `beside`, side by side | preview above the source |
+| `layout="behind"` | `beside`, side by side | one face at a time: the result in front, ✎ brings the source |
 
 ## 🔗 Related components & examples
 

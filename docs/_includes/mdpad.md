@@ -61,9 +61,11 @@ IAL knobs:
   ✎ Hide / Edit  one small button on every pad folds the editor away so the
                  preview takes the whole width, and brings it back
                  (Michel, 2026-10-09, on the phone); pad.fold()/unfold()
-  layout="rows"  preview ABOVE the source instead of beside it — for a
-              landscape document (a story in colour) that would be squeezed
-              in half a pane. DEFAULT: side by side (left/right).
+  layout=        where the source stands against its preview: beside (the
+                 DEFAULT, left/right), below (the preview above the source —
+                 a landscape document that half a pane would squeeze; "rows",
+                 the first spelling, still reads), behind (one face at a time,
+                 the result in front, ✎ brings the source — a phone's way)
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -167,8 +169,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-appbody { padding: 0.8em; overflow: auto; flex: 1; }
 /* phones: preview first, then the source under it — same order as wide */
 @media (max-width: 640px) { .lc-mdpad { flex-direction: column; } }
-/* layout="rows": the same stacking on every screen, for a landscape document */
+/* layout="below" (or "rows"): the same stacking on every screen, for a landscape document */
 .lc-mdpad.lc-mdpad-rows { flex-direction: column; }
+/* layout="behind": one face at a time — the result in front, ✎ brings the source */
+.lc-mdpad.lc-mdpad-srcfront > .lc-mdpad-out { display: none !important; }
+.lc-mdpad.lc-mdpad-srcfront > .lc-mdpad-src { flex: 1 1 auto !important; }
 .lc-mdpad-bar[hidden] { display: none; }
 .lc-mdpad-bar { margin: -0.4em 0 1em; display: flex; justify-content: flex-end; gap: 0.5em; align-items: center; }
 .lc-mdpad-mine { margin-right: auto; font-size: 0.78em; color: #2e7d32; }
@@ -422,7 +427,13 @@ Auto-included by docs/_layouts/default.html.
     var wrap = document.createElement("div");
     wrap.className = "lc-mdpad";
     if (deco) wrap.setAttribute("data-lc-decorations", "1");
-    if ((el.getAttribute("layout") || "") === "rows") wrap.classList.add("lc-mdpad-rows");
+    /* the pad's OWN layout= (Michel, 2026-10-24): where the source stands
+       against its preview — beside (the default), below ("rows", the first
+       spelling), behind: one face at a time, the result in front */
+    var padLayout = (el.getAttribute("layout") || "").trim().toLowerCase();
+    if (padLayout === "below" || padLayout === "rows") wrap.classList.add("lc-mdpad-rows");
+    var behind = padLayout === "behind";
+    if (behind) wrap.classList.add("lc-mdpad-behind");
     if (id) wrap.setAttribute("data-lc-id", id);
     /* a named pad is page data: it publishes {source} as a cell scope, so
        expressions can read what the learner typed — {=cv1.source} in prose,
@@ -558,7 +569,7 @@ Auto-included by docs/_layouts/default.html.
       /* in a replay the editor is already off screen, the diff pane in its
          place: nothing to slide over, fold at once (Michel, 2026-10-18:
          "trying to close the editor will fail") */
-      if (reduced || column || !out.animate || wrap.hasAttribute("data-lc-replay")) { setFold(on); return; }
+      if (behind || reduced || column || !out.animate || wrap.hasAttribute("data-lc-replay")) { setFold(on); return; }
       /* THE PREVIEW COVERS THE EDITOR (Michel, 2026-10-17, decision register
          P1): the editor never moves — its right edge stays, its text stays —
          while the preview's right edge slides over it, left to right, until
@@ -597,18 +608,21 @@ Auto-included by docs/_layouts/default.html.
     }
     function setFold(on) {
       wrap.classList.toggle("lc-mdpad-folded", !!on);
+      /* behind: unfolded is the source in front, the result behind it */
+      if (behind) wrap.classList.toggle("lc-mdpad-srcfront", !on);
       if (on) wrap.setAttribute("data-lc-folded", "1"); else wrap.removeAttribute("data-lc-folded");
-      foldBtn.textContent = on ? "✎" : "⇥";
+      foldBtn.textContent = on ? "✎" : behind ? "👁" : "⇥";
       foldBtn.setAttribute("aria-pressed", on ? "true" : "false");
-      foldBtn.setAttribute("aria-label", on ? "Edit — bring the editor back" : "Hide the editor");
-      foldBtn.title = on ? "Edit — bring the editor back" : "Hide the editor — the preview takes the whole width";
+      foldBtn.setAttribute("aria-label", on ? "Edit — bring the editor back" : behind ? "Show the result" : "Hide the editor");
+      foldBtn.title = on ? (behind ? "Edit — the source comes in front" : "Edit — bring the editor back")
+                         : behind ? "Show the result — the source goes behind it" : "Hide the editor — the preview takes the whole width";
       /* folded, there is nothing to save or replay (Michel, 2026-10-15) */
       if (saveWrap) saveWrap.hidden = !!on;
       if (split) placeSplit();
     }
     foldBtn.addEventListener("click", function () { drawer(!wrap.classList.contains("lc-mdpad-folded")); });
     /* folded="true": the pad opens on its screen alone; ✎ brings the editor */
-    setFold(el.getAttribute("folded") === "true");
+    setFold(behind || el.getAttribute("folded") === "true");
     var pills = document.createElement("div");
     pills.className = "lc-mdpad-pills";
     pills.appendChild(foldBtn);
@@ -670,7 +684,7 @@ Auto-included by docs/_layouts/default.html.
     function placeSplit() {
       var column = getComputedStyle(wrap).flexDirection === "column";
       var pane = src || ta;
-      split.hidden = column || wrap.classList.contains("lc-mdpad-folded") || !pane.offsetWidth;
+      split.hidden = column || behind || wrap.classList.contains("lc-mdpad-folded") || !pane.offsetWidth;
       if (split.hidden) return;
       var gap = pane.offsetLeft - (out.offsetLeft + out.offsetWidth);
       split.style.left = (out.offsetLeft + out.offsetWidth) + "px";
@@ -1349,14 +1363,21 @@ Auto-included by docs/_layouts/default.html.
       return { ids: ids, wires: wires };
     }
     var prevIds = {}, wiresEl = null;
-    /* one source block = one top-level element — except a beside= row, which
-       stands for as many blocks as it holds (the scan folded them) */
+    /* one source block = one top-level element — except a layout="beside"
+       row or a layout="behind" stack, which stands for as many blocks as it
+       holds (the scan folded them) */
     function blockEl(idx) {
       /* an incremental preview: one container per block (display: contents) */
       var bk = body.querySelectorAll(":scope > .lc-pad-blk");
       if (bk.length) { var c0 = bk[idx]; return c0 ? (c0.firstElementChild || c0) : null; }
       for (var i = 0; i < body.children.length; i++) {
-        var c = body.children[i], n = (c.classList.contains("lc-blocks") && c.hasAttribute("data-lc-beside")) ? c.children.length : 1;
+        var c = body.children[i];
+        if (c.classList.contains("lc-behind") && c.hasAttribute("data-lc-behind")) {
+          var held = [].filter.call(c.children, function (x) { return !x.classList.contains("lc-behind-bar"); });
+          if (idx < held.length) { var h = held[idx]; return h.classList.contains("lc-behind-pane") ? (h.firstElementChild || h) : h; }
+          idx -= held.length; continue;
+        }
+        var n = (c.classList.contains("lc-blocks") && c.hasAttribute("data-lc-beside")) ? c.children.length : 1;
         if (idx < n) return n === 1 ? c : c.children[idx];
         idx -= n;
       }
@@ -1422,7 +1443,7 @@ Auto-included by docs/_layouts/default.html.
          not touch keeps its container, so the preview changes where the
          text changed and nowhere else (Michel, 2026-10-19: "avoid a visual
          flick") */
-      var whole = /beside=|\.accordion|\.tabs\b|\[\^|^\s{0,3}\[[^\]]+\]:\s/m.test(v);
+      var whole = /beside=|\blayout="?(?:beside|behind)|\.accordion|\.tabs\b|\[\^|^\s{0,3}\[[^\]]+\]:\s/m.test(v);
       if (whole) {
         padCache = [];
         body.innerHTML = inline(window.marked.parse(norm));
@@ -1950,8 +1971,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     /* ⌥↑ ⌥↓ move the block under the caret past its neighbour — words and
-       decoration together, the gap kept; ⌃⌥→ puts it beside the block
-       before (beside="true" on its decoration), ⌃⌥← takes it out */
+       decoration together, the gap kept */
     function moveBlock(dir) {
       var v = ta.value, L = v.split("\n"), bs = blocksOf(v), st = lineStarts(v);
       var line = v.slice(0, ta.selectionStart).split("\n").length - 1;
@@ -1968,29 +1988,32 @@ Auto-included by docs/_layouts/default.html.
       flashAt(mine);
       return true;
     }
-    function besideBlock(on) {
+    /* ⌃⌥→ beside, ⌃⌥↑ behind, ⌃⌥← back below (Michel, 2026-10-24: "for the
+       layout behind, I would appreciate a key shortcut too"): layout= on the
+       block's decoration; one the block has none of gets one that says only
+       its layout, and loses it again with ⌃⌥← (Michel, 2026-10-13: the red
+       toast on a cell's sentence). beside="true", the first spelling, goes. */
+    function layoutBlock(how) {
       var v = ta.value, L = v.split("\n"), bs = blocksOf(v), st = lineStarts(v);
       var line = v.slice(0, ta.selectionStart).split("\n").length - 1;
       var i = blockAt(bs, line); if (i < 0) return false;
       var k = -1;
       for (var n = bs[i].end; n >= bs[i].start; n--) if (/^\s*\{:.*\}\s*$/.test(L[n])) { k = n; break; }
-      /* a block with no decoration of its own (a sentence, a cell) gets one
-         that says only beside — and loses it again with ⌃⌥← (Michel,
-         2026-10-13: the red toast on a cell's sentence) */
+      var none = function () { window.lcxToast && window.lcxToast("Nothing above to stand " + how, false); return true; };
       if (k < 0) {
-        if (!on) return true;
-        if (i === 0) { window.lcxToast && window.lcxToast("Nothing above to stand beside", false); return true; }
+        if (!how) return true;
+        if (i === 0) return none();
         var endAt = st[bs[i].end] + L[bs[i].end].length, c0 = ta.selectionStart;
-        editSpan(endAt, endAt, '\n{: beside="true" }', c0);
+        editSpan(endAt, endAt, '\n{: layout="' + how + '" }', c0);
         return true;
       }
-      var d = L[k], nd;
-      if (on) {
-        if (i === 0) { window.lcxToast && window.lcxToast("Nothing above to stand beside", false); return true; }
-        nd = /\bbeside=/.test(d) ? d.replace(/\bbeside=("[^"]*"|\S+)/, 'beside="true"') : d.replace(/\s*\}\s*$/, ' beside="true" }');
-      } else nd = d.replace(/\s+beside=("[^"]*"|\S+)/, "");
+      var d = L[k], nd = d.replace(/\s+beside=("[^"]*"|\S+)/, "");
+      if (how) {
+        if (i === 0) return none();
+        nd = /\blayout=/.test(nd) ? nd.replace(/\blayout=("[^"]*"|\S+)/, 'layout="' + how + '"') : nd.replace(/\s*\}\s*$/, ' layout="' + how + '" }');
+      } else nd = nd.replace(/\s+layout=("[^"]*"|\S+)/, "");
       if (nd === d) return true;
-      if (/^\s*\{:\s*\}\s*$/.test(nd)) {                       /* only beside was in it: the line goes */
+      if (/^\s*\{:\s*\}\s*$/.test(nd)) {                       /* only the layout was in it: the line goes */
         var la = st[k] - 1, lb = st[k] + d.length, c1 = ta.selectionStart;
         editSpan(la, lb, "", c1 > lb ? c1 - (lb - la) : Math.min(c1, la));
         return true;
@@ -2002,12 +2025,13 @@ Auto-included by docs/_layouts/default.html.
     ta.addEventListener("keydown", function (e) {
       if (e.key === "F2") { e.preventDefault(); renameOpen(); return; }
       if (!e.altKey || e.metaKey || e.shiftKey) return;
-      /* ⌥↑ ⌥↓ move; ⌃⌥→ ⌃⌥← beside — ⌥⇧ stays the system's word selection
-         (Michel, 2026-10-12: "they interfere with selecting words") */
+      /* ⌥↑ ⌥↓ move; ⌃⌥→ beside, ⌃⌥↑ behind, ⌃⌥← below — ⌥⇧ stays the
+         system's word selection (Michel, 2026-10-12: "they interfere with selecting words") */
       if (!e.ctrlKey && e.key === "ArrowUp") moveBlock(-1);
       else if (!e.ctrlKey && e.key === "ArrowDown") moveBlock(1);
-      else if (e.ctrlKey && e.key === "ArrowRight") besideBlock(true);
-      else if (e.ctrlKey && e.key === "ArrowLeft") besideBlock(false);
+      else if (e.ctrlKey && e.key === "ArrowRight") layoutBlock("beside");
+      else if (e.ctrlKey && e.key === "ArrowUp") layoutBlock("behind");
+      else if (e.ctrlKey && e.key === "ArrowLeft") layoutBlock("");
       else return;
       e.preventDefault();      /* a block at the edge stays put, the caret too */
     });
@@ -2489,7 +2513,7 @@ Auto-included by docs/_layouts/default.html.
         ["🔗", K.cmd.replace(/\+$/, "") + "-click on an id — jump to where it is declared; again — its uses"],
         ["✏️", "F2 on an id — rename it everywhere it is wired"],
         ["↕️", K.alt + "↑ " + K.alt + "↓ — move the block under the caret"],
-        ["◫", K.ctl + K.alt + "→ — beside the block above; " + K.ctl + K.alt + "← — back under it"],
+        ["◫", K.ctl + K.alt + "→ — beside the block above; " + K.ctl + K.alt + "↑ — behind it, as a tab; " + K.ctl + K.alt + "← — back under it"],
         ["↩️", K.cmd + "Z — undo, one move at a time"],
         ["🧩", "Hover an icon in the gutter — the component's name"],
         ["⇥", "Hide the editor; ✎ brings it back. Drag the line between the halves, or the bar under the pad"],

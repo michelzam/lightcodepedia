@@ -154,7 +154,8 @@ shows here only with your key.
 | `save="cv.md"` | The **two-repo contract**: the fence stays the author's seed; the reader's copy persists in *their own* connected repo — relative lands beside the lesson, `/my/cv.md` at the bench root — see below |
 | `decorations="true"` | The preview renders the way the site does: block decorations apply and component fences come alive — see below |
 | `save="<path>"` **+** `decorations="true"` | An **app screen**: the pad is a page of the learner's own app, so the preview wears app chrome — a title bar mirroring the page's `#` line (the file's name until there is one) |
-| `layout="rows"` | Preview **above** the source instead of beside it — for a landscape document (a story in colour) that half a pane would squeeze. Default: side by side |
+| `layout="below"` | Preview **above** the source instead of beside it — for a landscape document (a story in colour) that half a pane would squeeze. Default: `beside`, side by side |
+| `layout="behind"` | One face at a time: the result in front, **✎** brings the source, **👁** the result again — a phone's way |
 | `#id` | Optional — names the pad for X-ray |
 
 **About `save="true"`:** the button appears only when a save could actually work — you are connected, the page has a source file, and that source is not read-only. Otherwise it is disabled and says which of the three is missing, rather than failing after the click. It writes through the same path the x-ray **Keep** uses, so a block is committed one way, not two.
@@ -228,7 +229,7 @@ caret on the one you were on.
 | ⌘-click (Ctrl-click) on a wire | jumps to its `#id`; on the `#id`, walks its uses one by one |
 | F2 on a wire | renames the id everywhere it is wired — `#id`, `source="id"`, `FROM id`, `{= id… }` — prose untouched, one ⌘Z |
 | ⌥↑ / ⌥↓ | moves the block under the caret past its neighbour — words and decoration together |
-| ⌃⌥→ / ⌃⌥← | puts the block beside the one above (`beside="true"`), or takes it out |
+| ⌃⌥→ / ⌃⌥↑ / ⌃⌥← | puts the block beside the one above (`layout="beside"`), behind it as a tab (`layout="behind"`), or back below it |
 | Tab / ⇧Tab | outside a fence, the next (or previous) thing you can change — a part's title, its class, its `#id`, each knob's value; a value or a class opens its pick list. Inside a fence, Tab indents (two spaces in yaml). Esc, then Tab, leaves the editor |
 | Ctrl+Space | completes what fits the caret: a component after `{: .`, a knob, a knob's value (a `source=` offers the pad's datasets, an `x=` the source's columns); on an empty line, a whole part from the course's catalogue — Tab then jumps over its blanks |
 
@@ -365,12 +366,12 @@ Feature: A wire to nothing is drawn broken
     assert self.pad.broken == ["source «pets»"], self.pad.broken
     :::
 
-  Scenario: beside= works in the pad, and the caret still finds its block
+  Scenario: layout="beside" works in the pad, and the caret still finds its block
     Given the wires pad, whole, with a chart beside the grid
     :::python
     self.pad: Mdpad = self.page.wires_pad
     self.pad.source = self.was
-    self.pad.source = self.was + '\n\n```sql\nSELECT name, legs FROM pets WHERE legs > 0\n```\n{: .query bind="pets" #walkers }\n\n[Legs](#)\n{: .chart source="walkers" type="bar" x="name" y="legs" beside="true" }'
+    self.pad.source = self.was + '\n\n```sql\nSELECT name, legs FROM pets WHERE legs > 0\n```\n{: .query bind="pets" #walkers }\n\n[Legs](#)\n{: .chart source="walkers" type="bar" x="name" y="legs" layout="beside" }'
     :::
     Then the grid and the chart share one row — the faceless query between them rides along — and no wire is broken
     :::python

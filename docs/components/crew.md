@@ -16,10 +16,10 @@ message, hands it to the right worker, and answers for the result.
 ## 👀 Try it now
 
 ```csv
-family,stage,message
-Nguyen,asked,We would like to visit Biscuit on Saturday
-Okafor,met,How do I pay the adoption fee?
-Ferraro,asked,We already met Biscuit last week. Can we pay now?
+family,dog,stage,message
+Nguyen,Biscuit,asked,We would like to visit Biscuit on Saturday
+Okafor,Biscuit,met,How do I pay the adoption fee?
+Ferraro,Biscuit,asked,We already met Biscuit last week. Can we pay now?
 ```
 {: .dataset #inbox }
 
@@ -47,20 +47,23 @@ def sort(message):
 [The front desk](#)
 {: .crew members="members" inbox="inbox" stages="asked, met, home" tries="2" budget="6" #desk }
 
-[The crew — who does the job](#)
+```
+### 🧑‍🤝‍🧑 The crew — who does the job
+[the workers](#)
 {: .datagrid source="members" columns="name, kind, system, checked_by" #crew_grid }
 
+[one worker](#)
+{: .form master="crew_grid" #crew_form }
+```
+{: .accordion }
+
 [The messages — each family's stage, and the next one the desk gives it](#)
-{: .datagrid source="desk.sorted" columns="family, stage, message, next_stage, why, tries, tokens" #desk_stages }
+{: .datagrid source="desk.sorted" columns="family, dog, stage, message, next_stage, why, tries, tokens" #desk_stages }
 
 ```
 ### 🎏 The run, as an event flow
 [the run](#)
 {: .event_flow source="desk.flow" #desk_flow }
-
-### 🧑 One worker, as data
-[one member](#)
-{: .form master="crew_grid" #crew_form }
 
 ### 📜 Every step — who said what, and what it cost
 [the log](#)

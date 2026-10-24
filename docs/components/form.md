@@ -186,10 +186,10 @@ put it, row after row.
   breed: Poodle
   campus: Racine
 ```
-{: .datagrid #narrow_grid beside="true" }
+{: .datagrid #narrow_grid layout="beside" }
 
 [The dog](#)
-{: .form #narrow_form master="narrow_grid" beside="true" }
+{: .form #narrow_form master="narrow_grid" layout="beside" }
 
 ## ✏️🔗 Edit a grid row through the form
 

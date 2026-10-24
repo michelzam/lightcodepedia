@@ -338,9 +338,10 @@ Feature: The pad types like a text field, painted
     And I try F2 to "dog_grid" in the "wires" pad
     Then the "wires" pad's rename box says "#dog_grid is taken"
 
-  Scenario: ⌥↓ and ⌥↑ move a whole block; ⌃⌥→ puts it beside the one above, ⌃⌥← takes it out
+  Scenario: ⌥↓ and ⌥↑ move a whole block; ⌃⌥→ puts it beside the one above, ⌃⌥↑ behind it, ⌃⌥← takes it out
     Michel, 2026-10-11: "shortcuts to move/jump up/down (reverse order) and
-    another to put it beside next/previous" — for all blocks.
+    another to put it beside next/previous" — for all blocks. 2026-10-24:
+    "for the layout behind, I would appreciate a key shortcut too".
 
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
@@ -378,9 +379,35 @@ Feature: The pad types like a text field, painted
     Then in the "wires" pad "#by_campus" comes before "#dog_grid"
     When I put the caret in "dog_grid" of 'master="dog_grid"' in the "wires" pad
     And I press "Control+Alt+ArrowRight" in the "wires" pad
-    Then the "wires" pad holds '{: .form master="dog_grid" beside="true" }'
+    Then the "wires" pad holds '{: .form master="dog_grid" layout="beside" }'
+    When I press "Control+Alt+ArrowUp" in the "wires" pad
+    Then the "wires" pad holds '{: .form master="dog_grid" layout="behind" }'
+    And the "wires" pad shows "The dog" behind "The dogs", as a tab
     When I press "Control+Alt+ArrowLeft" in the "wires" pad
     Then the "wires" pad holds '{: .form master="dog_grid" }'
+
+  Scenario: A pad's own layout="behind" — one face at a time, the result in front, ✎ brings the source
+    Michel, 2026-10-24: "a new knob layout … behind": the pad's source
+    behind its preview, for a phone's width.
+
+    Given the GitHub contents API serves "courses/demo/module_05/behind.md" with the document:
+      """
+      # Behind
+
+      ```markdown
+      # My card
+
+      Hello from the result.
+      ```
+      {: .mdpad #face decorations="true" rows="8" layout="behind" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/behind.md"
+    And I wait for the page to be interactive
+    Then the "face" pad shows its result, its source behind it
+    When I press the pad "face"'s ✎
+    Then the "face" pad shows its source, its result behind it
+    When I press the pad "face"'s ✎
+    Then the "face" pad shows its result, its source behind it
 
   Scenario: On an empty line, a part completes; Tab flies over its blanks, each offering what fits
     Michel, 2026-10-11: "if it's an empty line and I start typing 'for', it
@@ -717,6 +744,6 @@ Feature: The pad types like a text field, painted
     When I press "Escape" in the "cells" pad
     And I put the caret at the start of the line holding "families are waiting" in the "cells" pad
     And I press "Control+Alt+ArrowRight" in the "cells" pad
-    Then the "cells" pad holds '{: beside="true" }'
+    Then the "cells" pad holds '{: layout="beside" }'
     When I press "Control+Alt+ArrowLeft" in the "cells" pad
     Then the "cells" pad does not contain "beside"

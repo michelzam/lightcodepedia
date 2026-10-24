@@ -165,6 +165,14 @@ class, a card with its verbs, a diagram of it. What a class can say:
 - **Attributes**, typed: `name = Attr(str)`, `laps = Attr(int)`,
   `hour = Attr(datetime)`; `ro=True` for one nobody types; `enum=`,
   `min=`, `max=`, `unit=`, `hint=`.
+- **A required attribute**: `walker = Attr(str, required=True)` — never
+  blank. Off by default: only what says so is checked. A blank written
+  over it is refused, and `Walk(dog="Rex")` without it says
+  `Walk() needs walker`, as any Python call missing an argument; the grid
+  and the card mark it ✱. A row read back blank stays as it is, marked;
+  a new one waits on the page, unsaved, until it has one. On a database,
+  🔄 says `🔒 walker: required`, and the table refuses blanks once every row
+  has a value (the [setup](database), version 3).
 - **A default** — a value or a **function given by its name**, run when
   the object is born (➕ New, or `Walk(dog=rex, walker="Ana")` in your
   code) and never when a row is read back: `Attr(datetime, datetime.now)`.

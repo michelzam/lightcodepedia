@@ -1410,3 +1410,81 @@ Feature: A class wears a dataset — the grid dresses the rows
     When I tidy the table under "walks", confirming
     Then the table "walk" calls the walk by "Cleo" by no class
     And the table "walk" holds "Lucky" once
+
+  Scenario: A required attribute — ✱ on the grid, a blank row waits unsaved, the table refuses blanks once every row has one
+    Michel, 2026-10-24: "a new named property for Attr for classes in
+    .models? We need NotNull? default should be False (tolerant); only an
+    explicit value would check and if different in the db, would apply the
+    integrity constraint there" → "go required". required=True: Python
+    refuses a blank write and a Walk(...) without it; a row read back blank
+    stays, marked; a new one waits on the page, never saved blank; the table
+    (setup v3) refuses blanks once every row has a value.
+
+    Given a database with the Lightcode setup and no author yet
+    And I am the shelter's author on this device
+    And the shelter's "walk" table holds "Biscuit" walked by "Ana", and "Pepper" walked by nobody
+    And the GitHub contents API serves "courses/demo/databases.yml" with the document:
+      """
+      shelter:
+        url: https://demo.supabase.co
+        key: sb_publishable_yml
+      """
+    And the GitHub contents API serves "courses/demo/module_06/required.md" with the document:
+      """
+      # Walks
+
+      [the shelter](supabase://shelter)
+      {: .database #shelter unlisted="5f2c9a01b7e3" }
+
+      ```python
+      class Walk(Object):
+          dog = Attr(str)
+          walker = Attr(str, required=True)
+      ```
+      {: .model source="shelter" }
+
+      [the walks](#)
+      {: .datagrid source="Walk" #walks }
+
+      [the walk](#)
+      {: .form master="walks" #walk_card }
+
+      ```gherkin
+      Feature: A walk has a walker
+        Scenario: Python refuses a walk without one
+          Given a walk made without a walker is refused
+          :::python
+          try:
+              Walk(dog="Rex")
+              raise AssertionError("a walk without a walker was made")
+          except TypeError as e:
+              assert "needs walker" in str(e), str(e)
+          :::
+          Then a blank written over a walker is refused
+          :::python
+          w = [o for o in _LC_OBJS if isinstance(o, Walk) and o.dog == "Biscuit"][0]
+          try:
+              w.walker = "  "
+              raise AssertionError("a blank walker was written")
+          except ValueError as e:
+              assert "walker is required" in str(e), str(e)
+          assert w.walker == "Ana", w.walker
+          :::
+      ```
+      {: .feature #walker_proof visible="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/required.md"
+    And I wait for the page to be interactive
+    Then the grid "walks" heads its column "Walker ✱", and marks the walker of "Pepper" as missing
+    When I click the row "Pepper" in "walks"
+    Then the card "walk_card" labels "Walker ✱", its blank value marked
+    # tolerant: a row already blank in the table is kept, and the table refuses nothing yet
+    And the table "walk" does not refuse a blank "walker"
+    When I add a "Walk" with New under "walks"
+    Then the grid "walks" says "1 row waits, unsaved: walker required"
+    And the table "walk" holds 2 rows
+    When I run the feature "walker_proof"
+    Then the feature "walker_proof" is green
+    # every row has a walker now: the author's next visit makes the table refuse blanks
+    When the table "walk" gets "Bo" as the walker of "Pepper", and I come back to the page
+    Then the table "walk" does refuse a blank "walker"

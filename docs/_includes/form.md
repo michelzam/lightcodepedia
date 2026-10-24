@@ -37,6 +37,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-form-grip { position: absolute; top: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 3; touch-action: none; }
 .lc-form-grip:hover, .lc-form-grip.lc-form-grip-on { background: linear-gradient(90deg, transparent 2px, #0066cc 2px, #0066cc 4px, transparent 4px); }
 .lc-form-grid .ag-cell.lc-form-label-cell { color: #0066cc; font-weight: 600; background: #fafbfc; }
+/* a required value left blank: marked, never refused on sight */
+.lc-form-grid .ag-cell.lc-form-missing { background: #fff7ed; box-shadow: inset 3px 0 #f59e0b; }
 .lc-form-grid .ag-cell.lc-form-label-cell:hover { background: #fafbfc !important; }
 .lc-form-grid .ag-row-hover .lc-form-label-cell { background: #fafbfc !important; }
 .lc-form-bool { display: flex; align-items: center; gap: 0.5em; height: 100%; }
@@ -462,8 +464,11 @@ Auto-included by docs/_layouts/default.html.
   function formSig(obj, opts) {
     var o = opts || {};
     return JSON.stringify([Object.keys(obj), !!o.editable, o.locked || [], o.chips || [],
-      o.options ? Object.keys(o.options) : [], o.sliders ? Object.keys(o.sliders) : [], o.refs || {}]);
+      o.options ? Object.keys(o.options) : [], o.sliders ? Object.keys(o.sliders) : [], o.refs || {}, o.required || []]);
   }
+  /* a required attribute wears ✱ on its label, and its blank value is marked
+     (Michel, 2026-10-24: "go required") */
+  function labelOf(k, opts) { return prettifyKey(k) + ((opts && opts.required || []).indexOf(k) >= 0 ? " ✱" : ""); }
   function renderFormBody(bodyEl, obj, opts) {
     opts = opts || {};
     /* A NEW ROW, THE SAME CARD (Michel, 2026-10-16: "changing lines in the
@@ -474,7 +479,7 @@ Auto-included by docs/_layouts/default.html.
         && bodyEl._lcSig === formSig(obj, opts) && bodyEl.querySelector(".lc-form-grid")) {
       bodyEl._lcCur = { obj: obj, opts: opts };
       var api0 = bodyEl._lcGridApi, rows0 = Object.keys(obj).map(function (k) {
-        return { _key: k, label: prettifyKey(k), value: obj[k], _type: typeOfValue(obj[k]) };
+        return { _key: k, label: labelOf(k, opts), value: obj[k], _type: typeOfValue(obj[k]) };
       });
       if (api0.setGridOption) api0.setGridOption("rowData", rows0); else api0.setRowData(rows0);
       var w0 = bodyEl.closest(".lc-form");
@@ -512,7 +517,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     var rows = keys.map(function(k){
-      return { _key: k, label: prettifyKey(k), value: obj[k], _type: typeOfValue(obj[k]) };
+      return { _key: k, label: labelOf(k, opts), value: obj[k], _type: typeOfValue(obj[k]) };
     });
 
     /* publish the live object on the wrapper so Python (Form.field) can read it */
@@ -581,6 +586,10 @@ Auto-included by docs/_layouts/default.html.
             return params.newValue;
           },
           cellRenderer: cellRenderer,
+          cellClassRules: { "lc-form-missing": function (p) {
+            var o = (bodyEl._lcCur || {}).opts || {};
+            return (o.required || []).indexOf(p.data._key) >= 0 && (p.value == null || String(p.value).trim() === "");
+          } },
           /* a long value is a paragraph, not a peephole: wrap and let the
              row grow (Michel, 2026-08-21: "it should appear as a long
              text in the form: multiple lines") */
@@ -732,7 +741,7 @@ Auto-included by docs/_layouts/default.html.
         var model = cls && row.obj != null ? (window.lcModels || {})[cls] : null;
         /* a subclass's object shows its own fields' rules and verbs */
         if (model && row._kind && (window.lcModels || {})[row._kind]) { cls = row._kind; model = window.lcModels[cls]; }
-        var locked = [], chips = [], picks = {}, refs = {}, refNames = {};
+        var locked = [], chips = [], picks = {}, refs = {}, refNames = {}, required = [];
         if (model) {
           /* the object's card: the state LAST, as a chip, beside its verbs;
              locked and state fields read-only; enum fields pick lists; the
@@ -744,6 +753,7 @@ Auto-included by docs/_layouts/default.html.
           Object.keys(model.fields).forEach(function (k) {
             var f = model.fields[k];
             if (f.ro || f.state) locked.push(k);
+            if (f.req) required.push(k);
             /* a read-only datetime shows as the grid does: Oct 18 13:15 */
             if (f.t === "datetime" && f.ro && k in row && window.lcTimeShort) row[k] = window.lcTimeShort(row[k]);
             if (f.enum && !f.ro && !f.state) picks[k] = f.enum.map(String);
@@ -767,7 +777,7 @@ Auto-included by docs/_layouts/default.html.
           if (mine !== turn) return;
           renderFormBody(body, shown, {
             editable: model ? editableSaid !== "false" : editable,
-            locked: locked, chips: chips, options: model ? picks : undefined,
+            locked: locked, chips: chips, options: model ? picks : undefined, required: required,
             refs: model ? refNames : undefined,
             /* an edit lands on the master's own row (the shown object may be
                the derived copy), then the grid repaints */

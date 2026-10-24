@@ -36,6 +36,8 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" says why "Ferraro" went "met": "Chuck agreed"
     # one grid: each family's stage beside its next one (Michel, 2026-10-24: "why 2 grids for the families?")
     And in tab 1 the grid "desk_stages" lists "Okafor" and "home"
+    # each message names its dog (Michel, 2026-10-24: "I see no dog name there?")
+    And in tab 1 the grid "desk_stages" lists "Ferraro" and "Biscuit"
     # the reader reads the words; the checker checks them against the row — Chuck holds the stage, Rey does not
     And Rey read the words only, and Chuck checked them against the row
     # the crew is an agent: the engine's 🔋 asks and tokens per unit of time, as under any agent (Michel, 2026-10-24)
@@ -71,8 +73,11 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
 
     Given I have a clean browser page
     When I navigate to "/components/crew"
-    # the workers' grid stands above the messages, out of the accordion (Michel, 2026-10-24)
+    # the workers — grid AND form — in their own accordion, above the messages (Michel, 2026-10-24)
+    Then the accordion section "who does the job" comes before the grid "desk_stages"
+    When I open the accordion section "who does the job"
     Then in tab 1 the grid "crew_grid" lists "Sid" and "Chuck"
+    And picking "Rey" in the grid "crew_grid", the form "crew_form" shows its reader
     # one guide, the little docked one — no second, bigger Doc in the page (Michel, 2026-10-24)
     And the page has one guide, docked small in its corner
     When I press the trigger of the avatar "crew_guide"
@@ -92,7 +97,8 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" sorted "Ferraro" as "met" in 1 tries
     And the crew healed onto "llama-3.1-8b-instant"
     # and on a phone, the long columns read at the size of the others (2026-10-23: "font type strange")
-    And the grid "crew_grid" keeps its text at one size on a phone
+    When I open the accordion section "who does the job"
+    Then the grid "crew_grid" keeps its text at one size on a phone
 
   Scenario: An engine that does not answer — the crew says so and opens its desk
     Michel, 2026-10-24: Rey's step read "Couldn't reach

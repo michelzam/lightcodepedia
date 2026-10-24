@@ -400,42 +400,120 @@
     });
   }
 
-  /* beside="true" — DRAW ME NEXT TO THE BLOCK ABOVE (Michel, 2026-10-09:
-     "simplify the way we express layout without having to nest fences").
-     Sugar over .blocks: consecutive beside= elements fold, with the block
-     before them, into the SAME .lc-blocks row the fence component makes —
-     equal columns, one gap, stacks on a phone — before any upgrader runs,
-     so each part is upgraded in place inside the row. Source order stays
-     visual order. data-lc-beside marks a row the pad's block map can see. */
+  /* layout= — WHERE A BLOCK STANDS AGAINST THE ONE ABOVE (Michel, 2026-10-09:
+     "simplify the way we express layout without having to nest fences";
+     2026-10-24: "beyond beside: behind … a new knob layout").
+       layout="below"   the default, never written
+       layout="beside"  the same row: consecutive ones fold, with the block
+                        before them, into the SAME .lc-blocks row the fence
+                        component makes — equal columns, one gap, stacks on
+                        a phone
+       layout="behind"  the same place, as tabs: the block above in front,
+                        each behind one a tab after it
+     before any upgrader runs, so each part is upgraded in place. Source order
+     stays visual order. data-lc-beside / data-lc-behind mark what the pad's
+     block map can see. beside="true", the first spelling, reads as beside.
+     A pad's own layout= is about its source and preview, never folded here. */
+  function _layoutOf(el) {
+    if (el.classList.contains("mdpad") || el.classList.contains("lc-mdpad")) return "";
+    var v = String(el.getAttribute("layout") || "").trim().toLowerCase();
+    if (!v && el.hasAttribute("beside")) {
+      var b = String(el.getAttribute("beside") || "").trim().toLowerCase();
+      v = b === "false" || b === "0" || b === "off" ? "" : "beside";
+    }
+    return v === "beside" || v === "behind" ? v : "";
+  }
+  /* a dataset or a query has no face: "the block above" is the last one that
+     shows (Michel, 2026-10-09). The faceless ones ride along, in source
+     order, so a pad's block map stays exact. */
+  function _faceless(n) {
+    return n.classList.contains("dataset") || n.classList.contains("lc-dataset") ||
+           (n.classList.contains("query") && n.getAttribute("editable") !== "true") || n.classList.contains("lc-query");
+  }
+  /* a tab's name: the part's link words ([the walks](#)), else its title,
+     else its kind; the kind's icon joins it when the component model lands */
+  var _LAYOUT_KINDS = ["datagrid", "form", "chart", "diagram", "query", "avatar", "feature", "event_flow", "crew", "mdpad", "agent", "map", "impact_map", "blocks"];
+  function _tabName(el) {
+    var a = el.querySelector && el.querySelector("a");
+    var t = (el.tagName === "P" && a ? a.textContent : el.getAttribute("title") || "").trim();
+    var kind = _LAYOUT_KINDS.filter(function (k) { return el.classList.contains(k); })[0] || "";
+    return { text: t || kind.replace(/_/g, " ") || "part", kind: kind };
+  }
+  function _behindTabs(box) {
+    var bar = box.querySelector(":scope > .lc-behind-bar");
+    var panes = [].filter.call(box.children, function (n) { return n.classList.contains("lc-behind-pane"); });
+    bar.innerHTML = "";
+    panes.forEach(function (p, i) {
+      var nm = p._lcTab || { text: "part", kind: "" }, b = document.createElement("button");
+      b.type = "button"; b.className = "lc-behind-tab"; b.setAttribute("role", "tab");
+      b.setAttribute("data-kind", nm.kind); b.textContent = nm.text;
+      var on = p.classList.contains("lc-on");
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.addEventListener("click", function () {
+        panes.forEach(function (q, j) { q.classList.toggle("lc-on", j === i); });
+        [].forEach.call(bar.children, function (x, j) { x.setAttribute("aria-selected", j === i ? "true" : "false"); });
+        /* a part drawn behind measures itself again once in front (a chart, a grid) */
+        try { window.dispatchEvent(new Event("resize")); } catch (e) {}
+      });
+      bar.appendChild(b);
+    });
+    if (window.lcComponentIcons) window.lcComponentIcons().then(function (ic) {
+      [].forEach.call(bar.children, function (b) {
+        var k = (b.getAttribute("data-kind") || "").replace(/_/g, "");
+        if (ic[k] && b.textContent.indexOf(ic[k]) !== 0) b.textContent = ic[k] + " " + b.textContent;
+      });
+    });
+  }
   function _foldBeside(root) {
-    root.querySelectorAll("[beside]").forEach(function (el) {
+    root.querySelectorAll("[beside], [layout]").forEach(function (el) {
       if (el.dataset.lcBeside) return;
-      var v = String(el.getAttribute("beside") || "").trim().toLowerCase();
-      if (v === "false" || v === "0" || v === "off") return;
+      var how = _layoutOf(el);
+      if (!how) return;
       el.dataset.lcBeside = "1";
-      /* a dataset or a query has no face: "the block above" is the last one
-         that shows (Michel, 2026-10-09). The faceless ones ride along inside
-         the row, in source order, so a pad's block map stays exact. */
-      var faceless = function (n) {
-        return n.classList.contains("dataset") || n.classList.contains("lc-dataset") ||
-               (n.classList.contains("query") && n.getAttribute("editable") !== "true") || n.classList.contains("lc-query");
-      };
       var between = [], prev = el.previousElementSibling;
-      while (prev && faceless(prev)) { between.unshift(prev); prev = prev.previousElementSibling; }
+      while (prev && _faceless(prev)) { between.unshift(prev); prev = prev.previousElementSibling; }
       if (!prev) return;
-      var row;
-      if (prev.classList.contains("lc-blocks") && prev.hasAttribute("data-lc-beside")) row = prev;
-      else {
-        row = document.createElement("div");
-        row.className = "lc-blocks";
-        row.setAttribute("data-lc-beside", "1");
-        prev.parentNode.insertBefore(row, prev);
-        row.appendChild(prev);
+      if (how === "beside") {
+        var row;
+        if (prev.classList.contains("lc-blocks") && prev.hasAttribute("data-lc-beside")) row = prev;
+        else {
+          row = document.createElement("div");
+          row.className = "lc-blocks";
+          row.setAttribute("data-lc-beside", "1");
+          prev.parentNode.insertBefore(row, prev);
+          row.appendChild(prev);
+        }
+        between.forEach(function (n) { row.appendChild(n); });
+        row.appendChild(el);
+        var faces = Array.prototype.filter.call(row.children, function (n) { return !_faceless(n); }).length;
+        row.style.gridTemplateColumns = "repeat(" + faces + ", 1fr)";
+        return;
       }
-      between.forEach(function (n) { row.appendChild(n); });
-      row.appendChild(el);
-      var faces = Array.prototype.filter.call(row.children, function (n) { return !faceless(n); }).length;
-      row.style.gridTemplateColumns = "repeat(" + faces + ", 1fr)";
+      /* behind: each face in a pane, all panes in one place, the first in front */
+      var pane = function (n, front) {
+        var p = document.createElement("div");
+        p.className = "lc-behind-pane" + (front ? " lc-on" : "");
+        p.setAttribute("role", "tabpanel");
+        p._lcTab = _tabName(n);
+        p.appendChild(n);
+        return p;
+      };
+      var box;
+      if (prev.classList.contains("lc-behind") && prev.hasAttribute("data-lc-behind")) box = prev;
+      else {
+        box = document.createElement("div");
+        box.className = "lc-behind";
+        box.setAttribute("data-lc-behind", "1");
+        prev.parentNode.insertBefore(box, prev);
+        box.appendChild(pane(prev, true));
+        var bar = document.createElement("div");
+        bar.className = "lc-behind-bar"; bar.setAttribute("role", "tablist");
+        box.appendChild(bar);
+      }
+      var barEl = box.querySelector(":scope > .lc-behind-bar");
+      between.forEach(function (n) { box.insertBefore(n, barEl); });
+      box.insertBefore(pane(el, false), barEl);
+      _behindTabs(box);
     });
   }
 

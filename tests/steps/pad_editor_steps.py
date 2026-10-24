@@ -649,3 +649,27 @@ def step_pad_completion_includes(context, pad_id, text, names):
     missing = [n.strip() for n in names.split(",") if n.strip() not in labels]
     assert not missing, "missing %s in %s" % (missing, labels)
     context.page.keyboard.press("Escape")
+
+
+@then('the "{pad_id}" pad shows "{back}" behind "{front}", as a tab')
+def step_pad_behind(context, pad_id, back, front):
+    box = _pad(context, pad_id).locator(".lc-mdpad-out .lc-behind[data-lc-behind]").first
+    expect(box).to_be_attached(timeout=15_000)
+    tabs = box.locator(".lc-behind-tab")
+    expect(tabs).to_have_count(2, timeout=15_000)
+    expect(tabs.nth(0)).to_contain_text(front)
+    expect(tabs.nth(1)).to_contain_text(back)
+    expect(tabs.nth(0)).to_have_attribute("aria-selected", "true")
+
+
+@then('the "{pad_id}" pad shows its {front}, its {back} behind it')
+def step_pad_face(context, pad_id, front, back):
+    pad = _pad(context, pad_id)
+    css = {"result": ".lc-mdpad-out", "source": ".lc-mdpad-src, .lc-mdpad-in"}
+    expect(pad.locator(css[front]).first).to_be_visible(timeout=15_000)
+    expect(pad.locator(css[back]).first).to_be_hidden(timeout=15_000)
+
+
+@when('I press the pad "{pad_id}"\'s ✎')
+def step_pad_fold_btn(context, pad_id):
+    _pad(context, pad_id).locator(".lc-mdpad-fold").click()
