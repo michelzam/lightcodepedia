@@ -19,9 +19,9 @@ def step_stub_crew_ai(context):
         context.crew_asks.append({"system": system, "user": user})
         if "AGREE or DISAGREE" in system:
             text = ("DISAGREE — the row says asked: no visit yet, and a family moves one stage at a time, "
-                    "so it cannot go home before it has met the dog") if "The verdict: home" in user else "AGREE — one stage at a time"
+                    "so it cannot go home before it has met the dog") if "The verdict: adopt" in user else "AGREE — one stage at a time"
         else:
-            text = "VERDICT: met" if "disagreed" in user else "VERDICT: home"
+            text = "VERDICT: meet" if "disagreed" in user else "VERDICT: adopt"
         route.fulfill(status=200, content_type="application/json",
                       body=json.dumps({"choices": [{"message": {"content": text}}],
                                        "usage": {"prompt_tokens": 9, "completion_tokens": 3, "total_tokens": 12}}))
@@ -52,7 +52,7 @@ def _rows(context, ds):
 def step_crew_sorted(context, cid, family, stage, tries):
     rows = [r for r in _rows(context, cid + ".sorted") if r.get("family") == family]
     assert rows, "no stage for %s in %r" % (family, _rows(context, cid + ".sorted"))
-    assert rows[0]["next_stage"] == stage and int(rows[0]["tries"]) == tries, rows[0]
+    assert rows[0]["action"] == stage and int(rows[0]["tries"]) == tries, rows[0]
 
 
 @then('the crew "{cid}" asked the AI {n:d} times')
@@ -81,7 +81,7 @@ def step_row_to_checker(context):
     reads = [a for a in context.crew_asks if "AGREE or DISAGREE" not in a["system"]]
     checks = [a for a in context.crew_asks if "AGREE or DISAGREE" in a["system"]]
     assert reads and all('"stage"' not in a["user"] for a in reads), reads
-    assert checks and '"stage":"asked"' in checks[0]["user"], checks[0]["user"]
+    assert checks and '"current_stage":"asked"' in checks[0]["user"], checks[0]["user"]
 
 
 
@@ -91,7 +91,7 @@ def step_row_to_checker(context):
 def step_crew_upfront(context, cid, n):
     context.page.wait_for_function("([id, n]) => ((window.lcDatasets || {})[id] || []).length === n", arg=[cid + ".sorted", n], timeout=T)
     rows = _rows(context, cid + ".sorted")
-    assert all(r.get("next_stage") == "" for r in rows), rows
+    assert all(r.get("action") == "" for r in rows), rows
     expect(context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tbody tr")).to_have_count(n, timeout=T)
 
 
@@ -99,7 +99,7 @@ def step_crew_upfront(context, cid, n):
 def step_crew_tokens(context, cid, n, k):
     got = int(_crew(context, cid).get_attribute("data-tokens") or 0)
     assert got == n, "%d tokens, expected %d" % (got, n)
-    steps = [r for r in _rows(context, cid + ".log") if r.get("kind") in ("reader", "checker")]
+    steps = [r for r in _rows(context, cid + ".log") if r.get("kind") == "ai"]
     assert steps and all(int(r.get("tokens")) == k for r in steps), steps
     expect(_crew(context, cid).locator(".lc-crew-status")).to_contain_text(str(n) + " tokens")
 
@@ -130,7 +130,7 @@ def step_groq_retired(context):
                 "message": "The model `llama-3.3-70b-versatile` has been decommissioned and is no longer accessible.",
                 "type": "invalid_request_error", "code": "model_decommissioned"}}))
         system = body["messages"][0]["content"]
-        text = "AGREE — one stage at a time" if "AGREE or DISAGREE" in system else "VERDICT: met"
+        text = "AGREE — one stage at a time" if "AGREE or DISAGREE" in system else "VERDICT: meet"
         route.fulfill(status=200, content_type="application/json", body=json.dumps({
             "choices": [{"message": {"content": text}}], "usage": {"total_tokens": 10}}))
     context.page.route("**/api.groq.com/**/chat/completions*", chat)
@@ -203,7 +203,7 @@ def step_one_docked_guide(context):
 @then('the crew "{cid}" says why "{family}" went "{stage}": "{why}"')
 def step_crew_why(context, cid, family, stage, why):
     rows = [r for r in _rows(context, cid + ".sorted") if r.get("family") == family]
-    assert rows and rows[0].get("next_stage") == stage and rows[0].get("why") == why, rows
+    assert rows and rows[0].get("action") == stage and rows[0].get("why") == why, rows
     grid = context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tbody tr", has_text=family).first
     expect(grid).to_contain_text(why, timeout=T)
 
@@ -316,7 +316,7 @@ def step_stub_chuck_cut(context):
         context.crew_bodies.append(body)
         chuck = "AGREE or DISAGREE" in body["messages"][0]["content"]
         route.fulfill(status=200, content_type="application/json", body=json.dumps({
-            "choices": [{"message": {"content": "" if chuck else "VERDICT: home"}, "finish_reason": "length" if chuck else "stop"}],
+            "choices": [{"message": {"content": "" if chuck else "VERDICT: adopt"}, "finish_reason": "length" if chuck else "stop"}],
             "usage": {"total_tokens": 12}}))
     context.page.route("**/chat/completions*", answer)
 
@@ -349,22 +349,22 @@ def step_stub_crew_ai_words(context):
         body = json.loads(route.request.post_data or "{}")
         system, user = body["messages"][0]["content"], body["messages"][1]["content"]
         if "AGREE or DISAGREE" in system:
-            text = "**Disagreed** — the row says asked: no visit yet" if "The verdict: home" in user else "Agreed. One stage at a time."
+            text = "**Disagreed** — the row says asked: no visit yet" if "The verdict: adopt" in user else "Agreed. One stage at a time."
         else:
-            text = "VERDICT: met" if "disagreed" in user else "VERDICT: home"
+            text = "VERDICT: meet" if "disagreed" in user else "VERDICT: adopt"
         route.fulfill(status=200, content_type="application/json",
                       body=json.dumps({"choices": [{"message": {"content": text}}], "usage": {"total_tokens": 12}}))
     context.page.route("**/chat/completions*", answer)
 
 
-@when("the AI changes its mind: Rey now answers asked")
+@when("the AI changes its mind: Rey now answers call")
 def step_ai_changes(context):
     """Rey says asked; an AI Chuck agrees with anything but home."""
     context.page.unroute("**/chat/completions*")
 
     def answer(route):
         system = json.loads(route.request.post_data or "{}")["messages"][0]["content"]
-        text = "AGREE — it stays" if "AGREE or DISAGREE" in system else "VERDICT: asked"
+        text = "AGREE — it stays" if "AGREE or DISAGREE" in system else "VERDICT: call"
         route.fulfill(status=200, content_type="application/json",
                       body=json.dumps({"choices": [{"message": {"content": text}}], "usage": {"total_tokens": 12}}))
     context.page.route("**/chat/completions*", answer)
@@ -374,3 +374,16 @@ def step_ai_changes(context):
 def step_cost_line(context, text):
     line = context.page.locator("p", has_text=__import__("re").compile("The desk.s cost")).first
     expect(line).to_contain_text(text, timeout=T)
+
+
+@then('the crew "{cid}" shows "{py}" as Python, "{a}" and "{b}" as AI agents')
+def step_crew_kinds(context, cid, py, a, b):
+    chips = _crew(context, cid).locator(".lc-crew-member")
+    expect(chips.first).to_be_visible(timeout=T)
+    got = chips.evaluate_all("els => els.map(e => [e.textContent.trim(), e.getAttribute('data-kind'), e.title])")
+    def chip(name):
+        return next(c for c in got if c[0].endswith(name) or (" " + name + " ") in (c[0] + " "))
+    assert chip(py)[0].startswith("🐍") and chip(py)[1] == "python" and chip(py)[2].startswith("Python"), got
+    for n in (a, b):
+        c = next(x for x in got if x[0].split(" ")[1] == n)
+        assert c[0].startswith("🤖") and c[1] == "ai" and c[2].startswith("AI agent"), got

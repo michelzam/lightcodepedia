@@ -2694,7 +2694,7 @@ class Server(Block):
 
 
 @component(icon="🧑‍🤝‍🧑",
-           attrs=[{"n": "stages", "t": "str", "data": True, "attr": "stages"},
+           attrs=[{"n": "actions", "t": "str", "data": True, "attr": "actions"},
                   {"n": "tries", "t": "int", "data": True, "attr": "tries", "d": 2},
                   {"n": "budget", "t": "int", "data": True, "attr": "budget", "d": 6},
                   {"n": "fallback", "t": "str", "data": True, "attr": "fallback"},
@@ -3841,7 +3841,7 @@ def _lc_export_call(name, cid, fn, args_json):
 
 
 def _lc_crew_rule(cid, fn, text):
-    """A crew's rules member: the page's own function answers a stage, or None."""
+    """A crew's rules member: the page's own function answers an action, or None."""
     f = globals().get(fn)
     try:
         if not callable(f) or isinstance(f, type) or fn.startswith("_"):

@@ -7,9 +7,11 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
   fallback= for what stays open. It writes <id>.sorted, <id>.flow and
   <id>.log only. Michel, 2026-10-24: "stage instead of lane, to remain
   consistent with the previous module" — each message's row carries its
-  family's stage (asked, met, home), the crew writes its next_stage.
+  family's current_stage (asked, met, home); then "the semantics of next
+  stage is recommendation" — the crew writes the action it recommends,
+  module 06's verbs: meet, adopt, call.
 
-  Scenario: The desk loops — Rey says home, Chuck disagrees, Rey says met; the rules sort the rest for free
+  Scenario: The desk loops — Rey says adopt, Chuck disagrees, Rey says meet; the rules sort the rest for free
     Given I have a clean browser page
     And an energy key "AIza-crew-test" is already saved on this device
     And the AI answers as Rey and Chuck, Rey wrong the first time
@@ -19,25 +21,27 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the proof "crew_proof" wears the tag "ai"
     # the whole inbox from the start, then a row at a time, the row at work selected (Michel, 2026-10-23)
     Then the crew "desk" shows its 3 messages, none sorted yet
+    # who is an AI agent, at a glance (Michel, 2026-10-24: "it's not clear which one is a LLM agent, specially for chuck!")
+    And the crew "desk" shows "Sid" as Python, "Rey" and "Chuck" as AI agents
     When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
     # the crew is an agent: its desk, closed while a key is held (Michel, 2026-10-24)
     And the crew "desk" shows its desk, closed
     And the grid of the crew "desk" has "Ferraro" selected
-    And the crew "desk" sorted "Nguyen" as "met" in 0 tries
-    And the crew "desk" sorted "Okafor" as "home" in 0 tries
-    And the crew "desk" sorted "Ferraro" as "met" in 2 tries
+    And the crew "desk" sorted "Nguyen" as "meet" in 0 tries
+    And the crew "desk" sorted "Okafor" as "adopt" in 0 tries
+    And the crew "desk" sorted "Ferraro" as "meet" in 2 tries
     And the crew "desk" asked the AI 4 times
     # tokens, globally and by step (Michel, 2026-10-23: "show the token consumption")
     And the crew "desk" spent 48 tokens, 12 on each AI step
     # an agent's own token line, and the why of each stage (Michel, 2026-10-24)
     And the crew "desk" shows its tokens as an agent does: "Session: 48 tokens · this run: 48"
-    And the crew "desk" says why "Nguyen" went "met": "Sid's rule"
-    And the crew "desk" says why "Ferraro" went "met": "Chuck agreed"
+    And the crew "desk" says why "Nguyen" went "meet": "Sid's rule"
+    And the crew "desk" says why "Ferraro" went "meet": "Chuck agreed"
     # one grid: each family's stage beside its next one (Michel, 2026-10-24: "why 2 grids for the families?")
-    And in tab 1 the grid "desk_stages" lists "Okafor" and "home"
+    And in tab 1 the grid "desk_actions" lists "Okafor" and "adopt"
     # each message names its dog (Michel, 2026-10-24: "I see no dog name there?")
-    And in tab 1 the grid "desk_stages" lists "Ferraro" and "Biscuit"
+    And in tab 1 the grid "desk_actions" lists "Ferraro" and "Biscuit"
     # the reader reads the words; the checker checks them against the row — Chuck holds the stage, Rey does not
     And Rey read the words only, and Chuck checked them against the row
     # the cost, three workers: 🐍 × 1, 🤖 × 30, 🧑 × 900 (Michel, 2026-10-24: "a nice global score for the costs")
@@ -47,7 +51,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     # the run reads as an event flow, each step's cost, each result ✅ sure or ⚠️ not; its legend shown (Michel, 2026-10-24)
     When I open the accordion section "event flow"
     # each beat names its worker by price: 🐍 Python, 🤖 the AI, 🧑 a person (Michel, 2026-10-24)
-    Then the run's event flow "desk_flow" tells "🐍 Sid: met / Nguyen → met ✅ · free / Ferraro / 🤖 Rey proposes home · 12 tokens / 🤖 Chuck disagrees: the row says asked: no visit yet, and a family moves one stage at a time, so it cannot go home before it has met the dog / 🤖 Rey proposes met / 🤖 Chuck agrees / Ferraro → met ✅ · 48 tokens"
+    Then the run's event flow "desk_flow" tells "🐍 Sid: meet / Nguyen → meet ✅ · free / Ferraro / 🤖 Rey proposes adopt · 12 tokens / 🤖 Chuck disagrees: the row says asked: no visit yet, and a family moves one stage at a time, so it cannot go home before it has met the dog / 🤖 Rey proposes meet / 🤖 Chuck agrees / Ferraro → meet ✅ · 48 tokens"
     And the event flow "desk_flow" shows its legend
     And the crew's log shows "Chuck" saying "DISAGREE"
     And Rey's second ask carried Chuck's words
@@ -57,7 +61,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
     And the desk's cost line says "123 — = the last run"
-    When the AI changes its mind: Rey now answers asked
+    When the AI changes its mind: Rey now answers call
     And I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
     And the desk's cost line says "63 — ≠ the last run: 123"
@@ -69,7 +73,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Then the crew "desk" shows its desk, open
     When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
-    And the crew "desk" sorted "Okafor" as "home" in 0 tries
+    And the crew "desk" sorted "Okafor" as "adopt" in 0 tries
     And the crew "desk" sorted "Ferraro" as "OPEN" in 1 tries
     And the crew "desk" says why "Ferraro" went "OPEN": "no AI key"
     # an ask that never left the device is not counted against the budget
@@ -85,10 +89,10 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Given I have a clean browser page
     When I navigate to "/components/crew"
     # the workers — grid AND form — in their own accordion, above the messages (Michel, 2026-10-24)
-    Then the accordion section "who does the job" comes before the grid "desk_stages"
+    Then the accordion section "who does the job" comes before the grid "desk_actions"
     When I open the accordion section "who does the job"
     Then in tab 1 the grid "crew_grid" lists "Sid" and "Chuck"
-    And picking "Rey" in the grid "crew_grid", the form "crew_form" shows its reader
+    And picking "Rey" in the grid "crew_grid", the form "crew_form" shows its ai
     # one guide, the little docked one — no second, bigger Doc in the page (Michel, 2026-10-24)
     And the page has one guide, docked small in its corner
     When I press the trigger of the avatar "crew_guide"
@@ -105,7 +109,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I navigate to "/components/crew"
     And I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
-    And the crew "desk" sorted "Ferraro" as "met" in 1 tries
+    And the crew "desk" sorted "Ferraro" as "meet" in 1 tries
     And the crew healed onto "llama-3.1-8b-instant"
     # a good run leaves the keys folded away (Michel, 2026-10-24: "once the run is done, the key panel is unfolded. WHY?? It makes noise")
     And the crew "desk" shows its desk, closed
@@ -181,7 +185,7 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     # overloading is said: the cut answers, counted
     And the crew "desk" says "✂️ 2 answers cut at 1000 tokens per ask"
     When I open the accordion section "event flow"
-    Then the run's event flow "desk_flow" tells "Ferraro / Rey proposes home / Chuck gives no verdict · 12 tokens ✂️ cut at 1000 / Ferraro → 🧑 OPEN ⚠️ no agreement in 2 tries"
+    Then the run's event flow "desk_flow" tells "Ferraro / Rey proposes adopt / Chuck gives no verdict · 12 tokens ✂️ cut at 1000 / Ferraro → 🧑 OPEN ⚠️ no agreement in 2 tries"
 
   Scenario: A checker that says "Agreed." agrees
     Michel, 2026-10-24, on Groq: Ferraro spent all ten asks in five rounds, the
@@ -193,8 +197,8 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I navigate to "/components/crew"
     And I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
-    And the crew "desk" sorted "Ferraro" as "met" in 2 tries
-    And the crew "desk" says why "Ferraro" went "met": "Chuck agreed"
+    And the crew "desk" sorted "Ferraro" as "meet" in 2 tries
+    And the crew "desk" says why "Ferraro" went "meet": "Chuck agreed"
 
   Scenario: A checker in Python — an exact rule, free, the same every time
     Michel, 2026-10-24: "go python Chuck", then "just one agent? I would like
@@ -208,9 +212,9 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I open the served lesson
     And I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
-    And the crew "desk" says why "Ferraro" went "met": "Chuck agreed"
+    And the crew "desk" says why "Ferraro" went "meet": "Chuck agreed"
     # Chuck's checks are rule runs: Rey alone asks — Ferraro, Lindqvist, Moreau: two reads each
     And the crew "desk" asked the AI 6 times
     And the desk's cost reads 192: 12 rule runs, 6 AI asks, 0 left OPEN
     When I open the accordion section "event flow"
-    Then the run's event flow "desk_flow" tells "Ferraro / 🤖 Rey proposes home / 🐍 Chuck disagrees: no visit yet: met first / 🤖 Rey proposes met / 🐍 Chuck agrees / Ferraro → met ✅"
+    Then the run's event flow "desk_flow" tells "Ferraro / 🤖 Rey proposes adopt / 🐍 Chuck disagrees: no visit yet: meet first / 🤖 Rey proposes meet / 🐍 Chuck agrees / Ferraro → meet ✅"

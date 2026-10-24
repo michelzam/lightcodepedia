@@ -10,32 +10,32 @@
     {: .dataset #members }
 
     [The front desk](#)
-    {: .crew members="members" inbox="inbox" stages="asked, met, home" tries="2" budget="6" #desk }
+    {: .crew members="members" inbox="inbox" actions="meet, adopt, call" tries="2" budget="6" #desk }
 
 THE AGENTS ARE DATA (Michel, 2026-10-23: "data-driven dynamic instances
 initiated by a simple dataset … encapsulated, declarative, with clear
 bounds"). One row, one member — an agent whose attributes are the
 columns (name, system, and provider, model, temperature, max_tokens if
-set); kind, checked_by and reads wire it into the crew. Three kinds:
-- rules   — system names a function of the page's .model; it answers a
-            stage or None. Free.
-- reader  — an AI ask: system is its instructions; it reads the message's
-            words only, and must name a stage.
-- checker — an AI ask on a reader's verdict, with the message's whole row
-            (the family's stage): AGREE or DISAGREE, with why.
-checked_by wires a reader to its checker; reads names a dataset whose rows
-travel with the ask too.
+set). kind says WHAT works (Michel, 2026-10-24: "from the page, it's not
+clear which one is a LLM agent"): python (🐍 a function of the page's
+.model, free) or ai (🤖 an AI agent, one ask); the wiring says the job:
+- a member named in another's checked_by CHECKS — python: fn(message,
+  verdict, row) returns None or its reason; ai: AGREE or DISAGREE, why;
+- a member with a checked_by READS — ai: it names an action;
+- the other python members SORT — fn(message) answers an action or None.
+The first spelling (rules, reader, checker) still reads. reads names a
+dataset whose rows travel with an ask too.
 
-STAGES, not lanes (Michel, 2026-10-24: "stage instead of lane, to remain
-consistent with the previous module"): module 06's families move from
-stage to stage; the inbox's row says where a family is, the crew writes
-where it goes next — next_stage.
+ACTIONS, not stages (Michel, 2026-10-24: "the semantics of next stage is
+recommendation, triage … met does not mean that they met the dog"): the
+crew recommends module 06's verbs — meet, adopt, call; the inbox's row says
+the family's current_stage. actions= lists them.
 
 THE LOOP, PER MESSAGE: the rules in order; if none answers, the reader
 proposes, its checker checks; a DISAGREE goes back to the reader with the
 checker's words, until tries= per message or budget= AI asks in total; what
 is still open takes fallback= (OPEN by default) — a person, never a guess. The crew writes
-only its own datasets: <id>.sorted (each message with its next_stage, why,
+only its own datasets: <id>.sorted (each message with its action, why,
 tries, asks — a try is a read and its check, two asks — tokens), <id>.flow (the run as an event flow, each step's cost and
 the result's confidence: ✅ a rule or a check, ⚠️ unchecked or open)
 and <id>.log (every step: who, what in, what out, its tokens); the inbox
@@ -78,11 +78,12 @@ Auto-included by docs/_layouts/default.html.
   if (window._lcCrewReady) return;
   window._lcCrewReady = true;
 
-  var ICON = { rules: "🐍", reader: "🤖", checker: "🧐" };
+  var ICON = { python: "🐍", ai: "🤖" };
+  var KIND = { rules: "python", reader: "ai", checker: "ai" };     /* the first spelling */
   /* the three workers, by their price (Michel, 2026-10-24: "those 3 icons (py, ai,
      human) on the event-flow"): 🐍 the page's Python, 🤖 an AI ask, 🧑 a person */
-  var WORKER = { rules: "🐍", reader: "🤖", checker: "🤖" }, HUMAN = "🧑";
-  var by = function (m) { return (WORKER[m.kind] || "") + " " + m.name; };
+  var HUMAN = "🧑";
+  var by = function (m) { return (ICON[m.kind] || "") + " " + m.name; };
   var esc = function (s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -150,7 +151,7 @@ Auto-included by docs/_layouts/default.html.
   }
 
   /* the first stage an answer names, VERDICT: first */
-  function stageIn(text, stages) {
+  function actionIn(text, stages) {
     var t = String(text || "").toUpperCase(), v = t.split("VERDICT:")[1] || t;
     var best = null, at = Infinity;
     /* a whole word: "met" is not in "METHOD" */
@@ -169,7 +170,8 @@ Auto-included by docs/_layouts/default.html.
     var id = el.id || ("crew" + (++nCall));
     var knob = function (k, d) { var v = el.getAttribute(k); return v == null || v === "" ? d : v; };
     var membersId = knob("members", "members"), inboxId = knob("inbox", "inbox"), textCol = knob("text", "message");
-    var stages = knob("stages", "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    /* the answers a message can get: actions= (stages=, the first spelling) */
+    var stages = knob("actions", knob("stages", "")).split(",").map(function (s) { return s.trim(); }).filter(Boolean);
     var tries = Math.max(1, parseInt(knob("tries", "2"), 10) || 2), budget = Math.max(0, parseInt(knob("budget", "6"), 10) || 0);
     /* OPEN by default: what the desk could not settle reads as undecided, never
        as a stage someone chose (Michel, 2026-10-24: "open lane") */
@@ -190,7 +192,7 @@ Auto-included by docs/_layouts/default.html.
     var box = document.createElement("div");
     box.className = "lc-crew";
     box.id = id; box.setAttribute("data-lc-id", id);
-    ["members", "inbox", "stages", "tries", "budget", "fallback", "text", "pace", "costs", "provider", "model", "temperature", "max_tokens"].forEach(function (k) { if (el.hasAttribute(k)) box.setAttribute(k, el.getAttribute(k)); });
+    ["members", "inbox", "actions", "stages", "tries", "budget", "fallback", "text", "pace", "costs", "provider", "model", "temperature", "max_tokens"].forEach(function (k) { if (el.hasAttribute(k)) box.setAttribute(k, el.getAttribute(k)); });
     box.innerHTML = "<div class='lc-crew-head'><span class='lc-crew-title'>" + esc(el.textContent.trim() || "The crew") + "</span>" +
       "<span class='lc-crew-members'></span><button type='button' class='lc-crew-run'>▶ Run</button></div>" +
       "<div class='lc-crew-bounds'></div>" +
@@ -218,7 +220,7 @@ Auto-included by docs/_layouts/default.html.
         "<b>" + v + "</b><button type='button' data-d='1' aria-label='" + k + " plus one'>+</button></span> " + unit;
     };
     var paintBounds = function () {
-      bounds.innerHTML = "stages " + esc(stages.join(" · ")) + " — " + stepper("tries", tries, "tr" + (tries === 1 ? "y" : "ies") + " per message") +
+      bounds.innerHTML = "actions " + esc(stages.join(" · ")) + " — " + stepper("tries", tries, "tr" + (tries === 1 ? "y" : "ies") + " per message") +
         " — " + stepper("budget", budget, "AI ask" + (budget === 1 ? "" : "s") + " in total") +
         " — " + stepper("max_tokens", crewCfg.cap, "tokens per ask") + " — still open: " + esc(fallback) +
         (desk ? " — asks " + esc(desk.engine()) : "");
@@ -248,10 +250,9 @@ Auto-included by docs/_layouts/default.html.
       gaugeEl.querySelector(".lc-crew-gauge-text").textContent = asks + " of " + budget + " AI asks spent";
     };
     paintBounds();
-    /* the inbox shows from the start, its stages still open; the run fills them in */
-    /* next_stage: where each message moves its family — module 06's stages, a
-       state each; the run moves each message to its next one (Michel, 2026-10-24) */
-    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { next_stage: "", why: "", tries: "", asks: "", tokens: "" }); }); };
+    /* the inbox shows from the start, its actions still open; the run fills them in:
+       the action the desk recommends — a command, not a state (Michel, 2026-10-24) */
+    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { action: "", why: "", tries: "", asks: "", tokens: "" }); }); };
     /* ≠ THE LAST RUN, ON THE COST ONLY (Michel, 2026-10-24: "a second run with
        EXACTLY same params is Sooooo different!! Why?" → "The change should be
        only on global score, to keep it simple"): vs_last says = or ≠, done */
@@ -274,8 +275,8 @@ Auto-included by docs/_layouts/default.html.
     var units = knob("costs", "1, 30, 900").split(/[\s,]+/).map(function (x) { return parseInt(x, 10); }).filter(function (n) { return !isNaN(n); });
     units = units.concat([1, 30, 900].slice(units.length)).slice(0, 3);
     var totals = function (log, rows, asks, tokens) {
-      var runs = log.filter(function (r) { return r.kind === "rules"; }).length;
-      var open = rows.filter(function (r) { return r.next_stage === fallback; }).length;
+      var runs = log.filter(function (r) { return r.kind === "python"; }).length;
+      var open = rows.filter(function (r) { return r.action === fallback; }).length;
       var t = { runs: runs, asks: asks, open: open, tokens: tokens, cost: runs * units[0] + asks * units[1] + open * units[2],
                 done: box.getAttribute("data-state") === "done" };
       t.vs_last = !t.done || lastCost == null ? "" : t.cost === lastCost ? "— = the last run" : "— ≠ the last run: " + lastCost;
@@ -286,12 +287,12 @@ Auto-included by docs/_layouts/default.html.
     totals([], [], 0, 0);
 
     /* the members, as the dataset says them now — a new row is a new member */
-    var members = function () { return rowsOf(membersId).map(function (r) { return Object.assign({}, r, { kind: String(r.kind || "").trim().toLowerCase(), name: String(r.name || "").trim() }); }); };
+    var members = function () { return rowsOf(membersId).map(function (r) { return Object.assign({}, r, { kind: (function (k) { return KIND[k] || k; })(String(r.kind || "").trim().toLowerCase()), name: String(r.name || "").trim() }); }); };
     var paint = function () {
       var ms = members(), names = {};
       ms.forEach(function (m) { names[m.name] = m; });
       box.querySelector(".lc-crew-members").innerHTML = ms.map(function (m) {
-        return "<span class='lc-crew-member' title='" + esc(m.system) + "'>" + (ICON[m.kind] || "❔") + " " + esc(m.name) +
+        return "<span class='lc-crew-member' data-kind='" + esc(m.kind) + "' title='" + (m.kind === "ai" ? "AI agent" : m.kind === "python" ? "Python" : esc(m.kind)) + " — " + esc(m.system) + "'>" + (ICON[m.kind] || "❔") + " " + esc(m.name) +
           (m.checked_by && names[m.checked_by] ? " ⇄ " + esc(m.checked_by) : "") + "</span>";
       }).join("");
       btn.disabled = !ms.length || !rowsOf(inboxId).length;
@@ -306,9 +307,9 @@ Auto-included by docs/_layouts/default.html.
       ms.forEach(function (m) { byName[m.name] = m; });
       /* a rules member named in a reader's checked_by checks; the others sort */
       var checks = {};
-      ms.forEach(function (m) { if (m.kind === "reader" && m.checked_by) checks[m.checked_by] = 1; });
-      var rules = ms.filter(function (m) { return m.kind === "rules" && !checks[m.name]; });
-      var reader = ms.filter(function (m) { return m.kind === "reader"; })[0] || null;
+      ms.forEach(function (m) { if (m.checked_by) checks[m.checked_by] = 1; });
+      var rules = ms.filter(function (m) { return m.kind === "python" && !checks[m.name]; });
+      var reader = ms.filter(function (m) { return m.kind === "ai" && !checks[m.name]; })[0] || null;
       var inbox = rowsOf(inboxId), out = unsorted(), log = [], asks = 0, n = 0, tokens = 0, failed = 0, cuts = 0;
       var spend = function (d) { asks += d; box.setAttribute("data-asks", String(asks)); gauge(asks); };
       var say = function (who, kind, said, heard, tk, a) {
@@ -319,7 +320,7 @@ Auto-included by docs/_layouts/default.html.
           usageEl.textContent = "Session: " + session + " tokens · this run: " + tokens + eng + ".";
           if (desk && desk.showQuota) desk.showQuota(a.engine && a.engine.pid);
         }
-        if (kind !== "rules" && /^⚠️/.test(String(heard))) failed++;
+        if (kind !== "python" && /^⚠️/.test(String(heard))) failed++;
         if (a && a.cut) cuts++;
         log.push({ n: ++n, who: who, kind: kind, in: said, out: heard, tokens: tk || 0 });
         totals(log, out, asks, tokens);
@@ -357,7 +358,7 @@ Auto-included by docs/_layouts/default.html.
         var spentBeat = function () { if (!broke) { broke = true; beat("rule", "budget spent: " + asks + " of " + budget + " AI asks"); } };
         var who = row.family || row.name || ("#" + (i + 1));
         status.textContent = "… " + who;
-        out[i] = Object.assign({}, out[i], { next_stage: "⏳" });
+        out[i] = Object.assign({}, out[i], { action: "⏳" });
         beat("user", who);
         beat("data", text);
         window.lcSetDataset(id + ".sorted", out.slice());
@@ -366,8 +367,8 @@ Auto-included by docs/_layouts/default.html.
           return p.then(function () {
             if (stage) return;
             return rule(String(m.system || "").trim(), text).then(function (r) {
-              say(m.name, "rules", text, r.error ? "⚠️ " + r.error : (r.stage || "—"));
-              var l = stageIn(r.stage, stages); if (l) { stage = l; why = m.name + "'s rule"; sure = true; }
+              say(m.name, "python", text, r.error ? "⚠️ " + r.error : (r.stage || "—"));
+              var l = actionIn(r.stage, stages); if (l) { stage = l; why = m.name + "'s rule"; sure = true; }
               beat("command", by(m) + " sorts it");
               beat("event", l ? by(m) + ": " + l : r.error ? "⚠️ " + r.error : by(m) + ": no rule fits");
             });
@@ -384,14 +385,14 @@ Auto-included by docs/_layouts/default.html.
           return ask(reader, text + note + context, crewCfg).then(function (a) {
             /* an ask that never left this device (no key) costs nothing: not counted */
             if (a.unsent) spend(-1);
-            say(reader.name, "reader", text + note, a.error ? "⚠️ " + a.error : a.text, a.tokens, a);
+            say(reader.name, "ai", text + note, a.error ? "⚠️ " + a.error : a.text, a.tokens, a);
             if (a.error) trouble = a.unsent ? "no AI key" : "the AI did not answer";
-            var verdict = stageIn(a.text, stages);
-            beat("event", a.error ? "⚠️ " + (a.unsent ? "no AI key" : "the AI did not answer") : by(reader) + " proposes " + (verdict || "no stage") + cost(a.tokens, a));
+            var verdict = actionIn(a.text, stages);
+            beat("event", a.error ? "⚠️ " + (a.unsent ? "no AI key" : "the AI did not answer") : by(reader) + " proposes " + (verdict || "no action") + cost(a.tokens, a));
             if (!verdict) return a.error ? null : loop();
             var checker = reader.checked_by ? byName[reader.checked_by] : null;
             if (!checker) { stage = verdict; why = reader.name; return null; }
-            var inPy = checker.kind === "rules";
+            var inPy = checker.kind === "python";
             if (!inPy && asks >= budget) { spentBeat(); beat("event", by(checker) + " cannot check"); return null; }
             status.textContent = "… " + who + ": " + checker.name + " checks " + verdict;
             beat("rule", by(checker) + " checks " + verdict + " against " + who + "'s row" + (checker.reads ? " and " + checker.reads : ""));
@@ -400,7 +401,7 @@ Auto-included by docs/_layouts/default.html.
             var checked = inPy ? pyCheck(String(checker.system || "").trim(), text, verdict, row)
               : ask(checker, "The message: " + text + "\nIts row: " + JSON.stringify(row) + "\nThe verdict: " + verdict + cctx, crewCfg);
             return checked.then(function (c) {
-              say(checker.name, inPy ? "rules" : "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, inPy ? null : c);
+              say(checker.name, inPy ? "python" : "ai", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, inPy ? null : c);
               /* the whole reason, never cut (Michel, 2026-10-24: "some events are truncated") */
               var said = String(c.text).replace(/^\W*(DIS)?AGREE[DS]?\W*/i, "").replace(/\s+/g, " ").trim();
               beat("event", c.error ? "⚠️ " + (inPy ? c.error : "the AI did not answer") : (agrees(c.text) ? by(checker) + " agrees: " + said : disagrees(c.text) ? by(checker) + " disagrees: " + said : by(checker) + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
@@ -427,7 +428,7 @@ Auto-included by docs/_layouts/default.html.
           beat("event", who + " → " + (stage || HUMAN + " " + fallback) + (sure ? " ✅" : " ⚠️ " + why) + (tk ? cost(tk) : " · free"));
           /* asks per message: a try is a read and its check — two asks — so the
              column adds up to the gauge (Michel, 2026-10-24: "the grid shows less") */
-          out[i] = Object.assign({}, row, { next_stage: stage || fallback, why: why, tries: tried, asks: asks - asked0, tokens: tk });
+          out[i] = Object.assign({}, row, { action: stage || fallback, why: why, tries: tried, asks: asks - asked0, tokens: tk });
           totals(log, out, asks, tokens);
           window.lcSetDataset(id + ".sorted", out.slice());
           pick(who);
