@@ -78,12 +78,13 @@ wall, for a page that wants the workshop rather than the sentence:
 | `#id` | the flow's id (default `event_flow`) |
 | `legend="true"` | show the color legend under the sequence |
 | `notes="sticky"` | the workshop wall — cardboard notes instead of the default marked words |
+| `source="<dataset>"` | on a link line, `[the run](#) {: .event_flow source="desk.flow" }`: draw the rows a part writes (one key each, `{ command: "Rey reads it" }`), and draw again whenever they move |
 
 The flow registers its steps under its id, so `{= demo_flow.count }`
-counts them and a proof reads the sequence. The YAML is authored today;
-the shape is chosen so a later version can *generate* the sequence from
-the page's own wiring — gates are policies, button handlers are
-commands.
+counts them and a proof reads the sequence. A flow is authored in YAML, or
+**generated**: a [crew](/components/crew) writes its run as `desk.flow` —
+who wrote, what each worker did, what governed it, and the ⚡ event, a
+message moving to its next lane (an event is a transition to a state).
 
 ## Proof
 

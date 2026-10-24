@@ -31,12 +31,16 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" shows its tokens as an agent does: "Session: 48 tokens · this run: 48"
     And the crew "desk" says why "Nguyen" went "VISIT": "Sid's rule"
     And the crew "desk" says why "Ferraro" went "VISIT": "Chuck agreed"
+    # the families' cards Chuck checks are on the page; the run reads as an event flow (Michel, 2026-10-24: "go flow")
+    And in tab 1 the grid "family_cards" lists "Okafor" and "VISIT"
+    When I open the accordion section "event flow"
+    Then the run's event flow "desk_flow" tells "Ferraro / Rey proposes PAY / Chuck disagrees / Rey proposes VISIT / Chuck agrees / Ferraro → VISIT"
     And the crew's log shows "Chuck" saying "DISAGREE"
     And Rey's second ask carried Chuck's words
     When I run the feature "crew_proof"
     Then the feature "crew_proof" is green
 
-  Scenario: No key — the rules alone, the claim to a person, nothing counted that was never sent
+  Scenario: No key — the rules alone, the claim left OPEN for a person, nothing counted that was never sent
     Given I have a clean browser page
     When I navigate to "/components/crew"
     # no key: the crew's desk is open, as an agent's is (Michel, 2026-10-24)
@@ -44,8 +48,8 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
     And the crew "desk" sorted "Okafor" as "PAY" in 0 tries
-    And the crew "desk" sorted "Ferraro" as "CALL" in 1 tries
-    And the crew "desk" says why "Ferraro" went "CALL": "no AI key"
+    And the crew "desk" sorted "Ferraro" as "OPEN" in 1 tries
+    And the crew "desk" says why "Ferraro" went "OPEN": "no AI key"
     # an ask that never left the device is not counted against the budget
     And the crew "desk" asked the AI 0 times
     And the crew's log shows "Rey" saying "no AI key"

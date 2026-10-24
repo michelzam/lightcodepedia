@@ -27,8 +27,9 @@ travel with the ask (the cards a checker trusts).
 THE LOOP, PER MESSAGE: the rules in order; if none answers, the reader
 proposes, its checker checks; a DISAGREE goes back to the reader with the
 checker's words, until tries= per message or budget= AI asks in all; what
-is still open takes fallback= — a person, never a guess. The crew writes
-only its own datasets: <id>.sorted (each message with its lane, why, tries)
+is still open takes fallback= (OPEN by default) — a person, never a guess. The crew writes
+only its own datasets: <id>.sorted (each message with its next_lane, why,
+tries), <id>.flow (the run as an event flow)
 and <id>.log (every step: who, what in, what out, its tokens); the inbox
 shows from the start and fills a row at a time, pace= seconds apart, the
 row at work selected. The page acts on them;
@@ -122,7 +123,9 @@ Auto-included by docs/_layouts/default.html.
     var membersId = knob("members", "members"), inboxId = knob("inbox", "inbox"), textCol = knob("text", "message");
     var lanes = knob("lanes", "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
     var tries = Math.max(1, parseInt(knob("tries", "2"), 10) || 2), budget = Math.max(0, parseInt(knob("budget", "6"), 10) || 0);
-    var fallback = knob("fallback", lanes[lanes.length - 1] || "CALL");
+    /* OPEN by default: what the desk could not settle reads as undecided, never
+       as a lane someone chose (Michel, 2026-10-24: "open lane") */
+    var fallback = knob("fallback", "OPEN");
     var crewCfg = { provider: knob("provider", ""), model: knob("model", ""), temperature: knob("temperature", ""), max_tokens: knob("max_tokens", "") };
     /* pace= seconds between steps: the work is seen, a row at a time (Michel, 2026-10-23: "progressively sorted, with the selection and sleeps") */
     var pace = Math.max(0, parseFloat(knob("pace", "0.5")) || 0);
@@ -151,9 +154,12 @@ Auto-included by docs/_layouts/default.html.
       " a message, " + budget + " AI ask" + (budget === 1 ? "" : "s") + " in all — still open: " + fallback +
       (desk ? " — asks " + desk.engine() : "");
     /* the inbox shows from the start, its lanes still open; the run fills them in */
-    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { lane: "", why: "", tries: "", tokens: "" }); }); };
+    /* next_lane: the desk's next step for each message — a lane is a state, and
+       the run moves each message to its next one (Michel, 2026-10-24) */
+    var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { next_lane: "", why: "", tries: "", tokens: "" }); }); };
     window.lcSetDataset(id + ".sorted", unsorted());
     window.lcSetDataset(id + ".log", []);
+    window.lcSetDataset(id + ".flow", []);
     box.setAttribute("data-asks", "0");
     box.setAttribute("data-tokens", "0");
     /* the crew is an agent: its tokens read as any agent's — the session, this
@@ -192,6 +198,12 @@ Auto-included by docs/_layouts/default.html.
         if (kind !== "rules" && /^⚠️/.test(String(heard))) failed++;
         log.push({ n: ++n, who: who, kind: kind, in: said, out: heard, tokens: tk || 0 }); window.lcSetDataset(id + ".log", log.slice());
       };
+      /* THE RUN AS AN EVENT FLOW (Michel, 2026-10-24: "go flow"): who wrote, what
+         each worker did, what governed it, and the event — a transition to a
+         state, the message's next lane. An .event_flow source="<id>.flow" draws it. */
+      var flow = [];
+      var beat = function (kind, text) { var r = {}; r[kind] = text; flow.push(r); window.lcSetDataset(id + ".flow", flow.slice()); };
+      window.lcSetDataset(id + ".flow", []);
       window.lcSetDataset(id + ".sorted", out.slice());
       btn.disabled = true; box.setAttribute("data-state", "running");
       var step = function (i) {
@@ -205,10 +217,13 @@ Auto-included by docs/_layouts/default.html.
           return Promise.resolve();
         }
         var row = inbox[i], text = String(row[textCol] == null ? "" : row[textCol]);
-        var lane = null, tried = 0, note = "", spent = tokens, why = "", trouble = "";
+        var lane = null, tried = 0, note = "", spent = tokens, why = "", trouble = "", broke = false;
+        var spentBeat = function () { if (!broke) { broke = true; beat("rule", "budget spent: " + asks + " of " + budget + " AI asks"); } };
         var who = row.family || row.name || ("#" + (i + 1));
         status.textContent = "… " + who;
-        out[i] = Object.assign({}, out[i], { lane: "⏳" });
+        out[i] = Object.assign({}, out[i], { next_lane: "⏳" });
+        beat("user", who);
+        beat("data", text);
         window.lcSetDataset(id + ".sorted", out.slice());
         pick(who);
         var byRules = rules.reduce(function (p, m) {
@@ -217,6 +232,8 @@ Auto-included by docs/_layouts/default.html.
             return rule(String(m.system || "").trim(), text).then(function (r) {
               say(m.name, "rules", text, r.error ? "⚠️ " + r.error : (r.lane || "—"));
               var l = laneIn(r.lane, lanes); if (l) { lane = l; why = m.name + "'s rule"; }
+              beat("command", m.name + " sorts it");
+              beat("event", l ? m.name + ": " + l : r.error ? "⚠️ " + r.error : m.name + ": no rule fits");
             });
           });
         }, nap());
@@ -226,21 +243,25 @@ Auto-included by docs/_layouts/default.html.
           status.textContent = "… " + who + ": " + reader.name + " reads";
           var context = reader.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(reader.reads)) : "";
           asks++; box.setAttribute("data-asks", String(asks));
+          beat("command", reader.name + " reads it" + (note ? ", with " + (reader.checked_by || "the checker") + "'s words" : ""));
           return ask(reader, text + note + context, crewCfg).then(function (a) {
             /* an ask that never left this device (no key) costs nothing: not counted */
             if (a.unsent) { asks--; box.setAttribute("data-asks", String(asks)); }
             say(reader.name, "reader", text + note, a.error ? "⚠️ " + a.error : a.text, a.tokens, a);
             if (a.error) trouble = a.unsent ? "no AI key" : "the AI did not answer";
             var verdict = laneIn(a.text, lanes);
+            beat("event", a.error ? "⚠️ " + (a.unsent ? "no AI key" : "the AI did not answer") : reader.name + " proposes " + (verdict || "no lane"));
             if (!verdict) return a.error ? null : loop();
             var checker = reader.checked_by ? byName[reader.checked_by] : null;
             if (!checker) { lane = verdict; why = reader.name; return null; }
-            if (asks >= budget) return null;
+            if (asks >= budget) { spentBeat(); beat("event", checker.name + " cannot check"); return null; }
             status.textContent = "… " + who + ": " + checker.name + " checks " + verdict;
+            beat("rule", checker.name + " checks " + verdict + (checker.reads ? " against " + checker.reads : ""));
             var cctx = checker.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(checker.reads)) : "";
             asks++; box.setAttribute("data-asks", String(asks));
             return ask(checker, "The message: " + text + "\nThe verdict: " + verdict + cctx, crewCfg).then(function (c) {
               say(checker.name, "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, c);
+              beat("event", c.error ? "⚠️ the AI did not answer" : (disagrees(c.text) ? checker.name + " disagrees: " : checker.name + " agrees: ") + String(c.text).replace(/^\s*(DIS)?AGREE\W*/i, "").slice(0, 90));
               if (c.error) { trouble = "the AI did not answer"; return null; }
               if (disagrees(c.text)) { note = "\n\n" + checker.name + " disagreed with " + verdict + ": " + c.text; return loop(); }
               lane = verdict; why = checker.name + " agreed";
@@ -252,7 +273,9 @@ Auto-included by docs/_layouts/default.html.
           /* WHY, in words: who decided, or what stopped the desk (Michel, 2026-10-24:
              "how come Lindqvist were classified as CALL instead of visit?") */
           if (!lane) why = !reader ? "no reader" : trouble || (asks >= budget ? "budget spent" : "no agreement in " + tried + " tr" + (tried === 1 ? "y" : "ies"));
-          out[i] = Object.assign({}, row, { lane: lane || fallback, why: why, tries: tried, tokens: tokens - spent });
+          if (!lane && why === "budget spent") spentBeat();
+          beat("event", who + " → " + (lane || fallback));
+          out[i] = Object.assign({}, row, { next_lane: lane || fallback, why: why, tries: tried, tokens: tokens - spent });
           window.lcSetDataset(id + ".sorted", out.slice());
           pick(who);
           return nap().then(function () { return step(i + 1); });

@@ -7,8 +7,9 @@ what stays open goes. Add a row and the crew has one more member; the loop,
 the checks and the budget stay inside the component.
 
 **This page is the tutorial**: press **▶ Run** below. Without an AI key on
-this device, Sid sorts alone and the rest goes to `CALL`; with one, Rey reads
-and Chuck checks.
+this device, Sid sorts alone and the rest stays `OPEN`; with one, Rey reads
+and Chuck checks. The crew is the desk's **concierge**: it takes every
+message, hands it to the right worker, and answers for the result.
 
 ## 👀 Try it now
 
@@ -21,16 +22,18 @@ Ferraro,We already met Biscuit last week. Can we pay now?
 {: .dataset #inbox }
 
 ```csv
-dog,visits
-Biscuit,none booked
+family,dog,previous_lane
+Nguyen,Biscuit,
+Okafor,Biscuit,VISIT
+Ferraro,Biscuit,
 ```
-{: .dataset #dogs }
+{: .dataset #families }
 
 ```csv
 name,kind,system,checked_by,reads
 Sid,rules,sort,,
 Rey,reader,"Read one family message. Answer one line — VERDICT: VISIT, PAY or CALL.",Chuck,
-Chuck,checker,"You check a verdict against the dog cards: a family pays only after a booked visit. Answer AGREE or DISAGREE, then why, in one line.",,dogs
+Chuck,checker,"You check a verdict against the family's card: a family can PAY only when its previous_lane is VISIT. Answer AGREE or DISAGREE, then why, in one line.",,families
 ```
 {: .dataset #members }
 
@@ -48,12 +51,19 @@ def sort(message):
 {: .model }
 
 [The front desk](#)
-{: .crew members="members" inbox="inbox" lanes="VISIT, PAY, CALL" tries="2" budget="6" fallback="CALL" #desk }
+{: .crew members="members" inbox="inbox" lanes="VISIT, PAY, CALL" tries="2" budget="6" fallback="OPEN" #desk }
 
-[The messages, and where each went](#)
-{: .datagrid source="desk.sorted" columns="family, message, lane, why, tries, tokens" #desk_lanes }
+[The families' cards — where each family is now, what Chuck checks](#)
+{: .datagrid source="families" columns="family, dog, previous_lane" #family_cards }
+
+[The messages — and the next lane the desk gives each](#)
+{: .datagrid source="desk.sorted" columns="family, message, next_lane, why, tries, tokens" #desk_lanes }
 
 ```
+### 🎏 The run, as an event flow
+[the run](#)
+{: .event_flow source="desk.flow" #desk_flow }
+
 ### 🧑‍🤝‍🧑 The crew — who can do what
 [the members](#)
 {: .datagrid source="members" columns="name, kind, system, checked_by, reads" #crew_grid }
@@ -67,12 +77,19 @@ def sort(message):
 ```
 {: .accordion }
 
+A **lane** is a state: each family's card holds its `previous_lane` (where it
+is now), and the desk gives each message its `next_lane` (where it goes).
+Ferraro asks to pay, but the card shows no visit yet, and a family pays only
+after one: the next lane is `VISIT`. The `why` column says who decided, or
+what stopped the desk; what it could not settle stays `OPEN`, so an
+undecided message never reads as a decision. The event flow tells the same
+run beat by beat, each ⚡ a message moving to its next lane.
+
 Each member is an **agent**, its attributes — `name`, `system`, and
 `model`, `temperature`… when a column sets them — read from its row: the
 agents are **data**. Pick one in the grid, the form shows it; a row more is
 a member more. A crew **is** an agent too, and its `members` are a list of
-agents: the composite pattern — one day a member can be a crew itself. Pick one in the grid, the form shows it; a
-row more is a member more.
+agents: the composite pattern — one day a member can be a crew itself.
 
 ```yaml
 script:
@@ -98,7 +115,7 @@ A guide's line can read the page: `{= members.first.name }` in a `say:` is a
 | `lanes` | the answers a message can get, comma-separated |
 | `tries` | at most this many reads a message (default 2) |
 | `budget` | at most this many AI asks in all (default 6) |
-| `fallback` | the lane for what stays open — a person, never a guess |
+| `fallback` | the lane for what stays open (default `OPEN`) — a person, never a guess |
 | `pace` | seconds between steps, so the work is seen a row at a time (default 0.5; 0 runs flat out) |
 | `provider` · `model` · `temperature` · `max_tokens` | an [agent](/components/agent)'s own knobs: the crew **is** an agent, and these are its members' defaults (a member's own column wins) |
 
@@ -111,24 +128,25 @@ A guide's line can read the page: `{= members.first.name }` in a `say:` is a
 | `checker` | one AI ask on a reader's verdict: `AGREE` or `DISAGREE`, and why | its instructions | one ask |
 
 `checked_by` wires a reader to its checker; `reads` names a dataset whose
-rows travel with the ask (here, the dog cards Chuck trusts).
+rows travel with the ask (here, the families' cards Chuck checks).
 
 ## 🔁 The loop
 
-A **lane** is what the desk does next, not what the family asks for: `VISIT`
-books a visit, `PAY` sends the payment link, `CALL` hands the message to a
-person. Ferraro asks to pay, but the dog card shows no booked visit, and a
-family pays only after one: the desk's next step is `VISIT`. The `why`
-column says who decided — Sid's rule, Chuck agreed — or what stopped the
-desk: the budget spent, no agreement in its tries, no key.
+The lanes are the desk's next steps: `VISIT` books a visit, `PAY` sends the
+payment link, `CALL` hands the message to a person who must answer it. The
+`why` column says who decided — Sid's rule, Chuck agreed — or what stopped
+the desk: the budget spent, no agreement in its tries, no key; then the
+message stays `OPEN`.
 
 For each message: the rules first, in order. If none answers, the reader
 proposes and its checker checks. A `DISAGREE` goes back to the reader with
 the checker's words, and it tries again. It stops at `tries` for the
-message or `budget` for the crew, and what is still open takes `fallback`.
+message or `budget` for the crew, and what is still open takes `fallback`
+(`OPEN` by default).
 
-The crew writes two datasets and touches nothing else:
-- `desk.sorted`: every message from the start, then its `lane`, its `tries` and its `tokens` (the row at work is selected, ⏳);
+The crew writes three datasets and touches nothing else:
+- `desk.sorted`: every message from the start, then its `next_lane`, its `why`, its `tries` and its `tokens` (the row at work is selected, ⏳);
+- `desk.flow`: the run as an [event flow](/components/event_flow) — `{: .event_flow source="desk.flow" }` draws it, each ⚡ a message moving to its next lane;
 - `desk.log`: every step, `who` said what (`in`, `out`) and its `tokens`;
 - the crew's line, and `desk.asks` · `desk.tokens` in a proof: the totals.
 
@@ -154,7 +172,7 @@ Feature: The desk sorts the inbox within its bounds
     :::
     Then the rules sorted the plain ones for free
     :::python
-    self.lanes = dict(zip(self.desk.sorted.values("family"), self.desk.sorted.values("lane")))
+    self.lanes = dict(zip(self.desk.sorted.values("family"), self.desk.sorted.values("next_lane")))
     assert self.lanes["Nguyen"] == "VISIT", self.lanes
     assert self.lanes["Okafor"] == "PAY", self.lanes
     :::

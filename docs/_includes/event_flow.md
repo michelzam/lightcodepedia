@@ -41,6 +41,7 @@ Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
 <style>
+.lc-ef-empty { color: #6b7280; font-style: italic; }
 .lc-event-flow { display: flex; flex-direction: column; gap: 1.4em; margin: 1em 0; padding: 1.1em 1.2em; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow-x: auto; }
 /* THE PERSON HEADS THEIR OWN BEATS. A single wrapping ribbon of notes made
    a ten-step story unreadable; putting the actor in a left column then read
@@ -164,140 +165,152 @@ Auto-included by docs/_layouts/default.html.
   };
   window.lcFlowIcon = function (kind) { return ICON[kind] || ""; };
 
+  /* THE TAIL IS THE BINDING (Michel, 2026-08-23). Any note may end with
+     an em-dash and a machine ref — "#roster3" a block, "Student" a class,
+     "Student.invite" a command, "Student[invited]" a state — and those
+     tails, collected, ARE the flow's elements: the cast the meta level
+     checks against the page's own artifacts. Only a ref-shaped tail is
+     lifted; an em-dash inside prose stays prose. */
+  var REF_RE = /^(#[\w-]+|[A-Za-z_]\w*(\[[\w-]+\]|\.\w+)?)$/;
+  function splitRef(text) {
+    var di = text.lastIndexOf("—");
+    if (di < 0) return { text: text, ref: "" };
+    var tail = text.slice(di + 1).trim();
+    if (!REF_RE.test(tail)) return { text: text, ref: "" };
+    return { text: text.slice(0, di).trim(), ref: tail };
+  }
+  /* rows of one key each — { command: "Rey reads" } — from a yaml fence or a dataset */
+  function stepsOf(rows) {
+    return (Array.isArray(rows) ? rows : []).map(function (r) {
+      if (r && typeof r === "object") {
+        var k = Object.keys(r).filter(function (x) { return x !== "⚠️"; })[0] || "", kind = ALIAS[k] || k;
+        var sr = splitRef(String(r[k] == null ? "" : r[k]));
+        return { kind: KINDS.indexOf(kind) >= 0 ? kind : "unknown", text: sr.text, ref: sr.ref };
+      }
+      return { kind: "unknown", text: String(r == null ? "" : r), ref: "" };
+    });
+  }
+  function chip(s) {
+    return "<span class='lc-ef-step lc-ef-" + s.kind + "' role='listitem' data-kind='" + s.kind + "'" +
+           (s.ref ? " data-ref='" + escapeHtml(s.ref) + "'" : "") + ">" +
+           ICON[s.kind] + " " + escapeHtml(s.text) +
+           (s.ref ? " <code class='lc-ef-ref'>" + escapeHtml(s.ref) + "</code>" : "") + "</span>";
+  }
+  /* the flow, drawn from its steps — one place for a fence and a dataset */
+  function htmlOf(steps, legend) {
+    /* A RULE CANNOT MAKE A PERSON DO ANYTHING — a person does (Michel,
+       2026-08-11). One beat is
+           ui|data → command → [rule →] event
+       under the user who gives the command. The splitting rule below is
+       the whole of it: an event closes the beat, and the next note opens
+       the next one. */
+    var groups = [], g = null, line = null, state = "start";
+    function newGroup(who) { g = { who: who, lines: [] }; groups.push(g); line = null; state = "start"; }
+    function newLine(s) { line = [s]; if (!g) newGroup(null); g.lines.push(line); state = "open"; }
+    steps.forEach(function (s) {
+      if (s.kind === "user") { newGroup(s); return; }
+      /* THE EVENT CLOSES THE BEAT, and a 🖥️ ui always OPENS one: it is
+         where the person sits to decide, not a consequence hung off the
+         end (Michel, 2026-08-11). So the next note after an event starts
+         the next line, whatever it is. */
+      if (state === "start") { newLine(s); return; }
+      line.push(s);
+      if (s.kind === "event") state = "start";
+    });
+    var html = groups.map(function (grp) {
+      /* one grid per group, so the commands line up under each other and
+         the events under those — a column you can read down */
+      var wide = grp.lines.reduce(function (n, l) { return Math.max(n, l.length); }, 0);
+      var cols = Math.max(1, wide * 2 - 1);
+      var cells = grp.lines.map(function (l) {
+        /* the line stays a real element (display:contents) so a reader,
+           and a scenario, can still ask "what is this beat?" while its
+           chips sit in the group's grid and line up */
+        var out = "";
+        for (var c = 0; c < wide; c++) {
+          if (c) out += l[c] ? "<span class='lc-ef-arrow' aria-hidden='true'>→</span>" : "<span></span>";
+          out += l[c] ? chip(l[c]) : "<span></span>";
+        }
+        return "<div class='lc-ef-line'>" + out + "</div>";
+      }).join("");
+      /* ONE BEAT NEEDS ONE LINE. Giving a person a heading and then a
+         single indented beat under it wastes a line and reads as if more
+         were coming (Michel, 2026-08-11). With one beat, the name sits at
+         the head of that beat. */
+      var solo = grp.lines.length === 1;
+      return "<div class='lc-ef-group" + (solo ? " lc-ef-solo" : "") + "'>" +
+             (grp.who ? "<span class='lc-ef-who'>" + chip(grp.who) + "</span>" : "") +
+             "<div class='lc-ef-beats' style='--lc-ef-cols:" + cols + "'>" + cells + "</div>" +
+             "</div>";
+    }).join("");
+    /* the cast, derived — never authored twice: distinct refs in story
+       order, each wearing its note's own color */
+    var els = [], elSeen = {};
+    steps.forEach(function (s) {
+      var k = s.kind + "|" + s.ref;
+      if (s.ref && !elSeen[k]) { elSeen[k] = 1; els.push(s); }
+    });
+    if (els.length) {
+      html += "<div class='lc-ef-elements'><span class='lc-ef-el-lead'>🧩 elements</span>" +
+        els.map(function (s) {
+          return "<span class='lc-ef-el lc-ef-" + s.kind + "' data-el-kind='" + s.kind +
+                 "' data-el-ref='" + escapeHtml(s.ref) + "'>" + ICON[s.kind] + " " +
+                 escapeHtml(s.ref) + "</span>";
+        }).join("") + "</div>";
+    }
+    if (legend) {
+      html += "<div class='lc-ef-legend'>" +
+        "<span class='lc-ef-l-user' data-lk='user' role='button' aria-pressed='true'>👤 user — a person</span>" +
+        "<span class='lc-ef-l-ui' data-lk='ui' role='button' aria-pressed='true'>🖥️ ui — the screen they act on</span>" +
+        "<span class='lc-ef-l-data' data-lk='data' role='button' aria-pressed='true'>📦 data — what the beat is about</span>" +
+        "<span class='lc-ef-l-command' data-lk='command' role='button' aria-pressed='true'>🗣️ command — what they ask for</span>" +
+        "<span class='lc-ef-l-rule' data-lk='rule' role='button' aria-pressed='true'>📏 rule — what governs it</span>" +
+        "<span class='lc-ef-l-event' data-lk='event' role='button' aria-pressed='true'>⚡ event — what became true</span>" +
+        "<span class='lc-ef-l-external' data-lk='external' role='button' aria-pressed='true'>🌐 external — beyond our walls</span>" +
+        "</div>";
+    }
+    return html;
+  }
+  /* the flow's box: its id, its map, and the legend's chips that dim a kind —
+     the reader picks the level of detail; the story's spine reflows into the gap */
+  function boxFor(el) {
+    var box = document.createElement("div");
+    /* PLAIN BY DEFAULT (Michel, 2026-08-11). The cardboard is beautiful on a
+       workshop wall and heavy inside a lesson; a flow should read as a
+       sentence unless a page asks for the wall. */
+    box.className = "lc-event-flow" + (el.getAttribute("notes") === "sticky" ? "" : " lc-ef-plain");
+    var id = el.id || "event_flow";
+    box.id = id;
+    box.setAttribute("data-lc-id", id);
+    /* map="<impact-map-id>": this story TELLS that map's impacts — the
+       x-ray pipes the two (Michel, 2026-08-24) */
+    var mapRef = el.getAttribute("map");
+    if (mapRef) box.setAttribute("data-map", mapRef);
+    box.setAttribute("role", "list");
+    box.setAttribute("aria-label", "event flow");
+    box.addEventListener("click", function (e) {
+      var chip = e.target.closest("[data-lk]");
+      if (!chip) return;
+      var kind = chip.getAttribute("data-lk");
+      var off = box.classList.toggle("lc-ef-hide-" + kind);
+      chip.classList.toggle("lc-ef-off", off);
+      chip.setAttribute("aria-pressed", off ? "false" : "true");
+    });
+    return box;
+  }
+
   function upgradeEventFlow(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
     var raw = (el.querySelector("code") || {}).textContent || "";
     var legend = el.getAttribute("legend") === "true";
-    /* PLAIN BY DEFAULT (Michel, 2026-08-11). The cardboard is beautiful on a
-       workshop wall and heavy inside a lesson; a flow should read as a
-       sentence unless a page asks for the wall. */
-    var sticky = el.getAttribute("notes") === "sticky";
-    /* THE TAIL IS THE BINDING (Michel, 2026-08-23). Any note may end with
-       an em-dash and a machine ref — "#roster3" a block, "Student" a class,
-       "Student.invite" a command, "Student[invited]" a state — and those
-       tails, collected, ARE the flow's elements: the cast the meta level
-       checks against the page's own artifacts. Only a ref-shaped tail is
-       lifted; an em-dash inside prose stays prose. */
-    var REF_RE = /^(#[\w-]+|[A-Za-z_]\w*(\[[\w-]+\]|\.\w+)?)$/;
-    function splitRef(text) {
-      var di = text.lastIndexOf("—");
-      if (di < 0) return { text: text, ref: "" };
-      var tail = text.slice(di + 1).trim();
-      if (!REF_RE.test(tail)) return { text: text, ref: "" };
-      return { text: text.slice(0, di).trim(), ref: tail };
-    }
     parseData(raw, "yaml").then(function (rows) {
-      var steps = (Array.isArray(rows) ? rows : []).map(function (r) {
-        if (r && typeof r === "object") {
-          var k = Object.keys(r)[0] || "", kind = ALIAS[k] || k;
-          var sr = splitRef(String(r[k] == null ? "" : r[k]));
-          return { kind: KINDS.indexOf(kind) >= 0 ? kind : "unknown", text: sr.text, ref: sr.ref };
-        }
-        return { kind: "unknown", text: String(r == null ? "" : r), ref: "" };
-      });
-      var box = document.createElement("div");
-      box.className = "lc-event-flow" + (sticky ? "" : " lc-ef-plain");
-      var id = el.id || "event_flow";
-      box.id = id;
-      box.setAttribute("data-lc-id", id);
-      /* map="<impact-map-id>": this story TELLS that map's impacts — the
-         x-ray pipes the two (Michel, 2026-08-24) */
-      var mapRef = el.getAttribute("map");
-      if (mapRef) box.setAttribute("data-map", mapRef);
-      box.setAttribute("role", "list");
-      box.setAttribute("aria-label", "event flow");
-      function chip(s) {
-        return "<span class='lc-ef-step lc-ef-" + s.kind + "' role='listitem' data-kind='" + s.kind + "'" +
-               (s.ref ? " data-ref='" + escapeHtml(s.ref) + "'" : "") + ">" +
-               ICON[s.kind] + " " + escapeHtml(s.text) +
-               (s.ref ? " <code class='lc-ef-ref'>" + escapeHtml(s.ref) + "</code>" : "") + "</span>";
-      }
-      /* A RULE CANNOT MAKE A PERSON DO ANYTHING — a person does (Michel,
-         2026-08-11). One beat is
-             ui|data → command → [rule →] event
-         under the user who gives the command. The splitting rule below is
-         the whole of it: an event closes the beat, and the next note opens
-         the next one. */
-      var groups = [], g = null, line = null, state = "start";
-      function newGroup(who) { g = { who: who, lines: [] }; groups.push(g); line = null; state = "start"; }
-      function newLine(s) { line = [s]; if (!g) newGroup(null); g.lines.push(line); state = "open"; }
-      steps.forEach(function (s) {
-        if (s.kind === "user") { newGroup(s); return; }
-        /* THE EVENT CLOSES THE BEAT, and a 🖥️ ui always OPENS one: it is
-           where the person sits to decide, not a consequence hung off the
-           end (Michel, 2026-08-11). So the next note after an event starts
-           the next line, whatever it is. */
-        if (state === "start") { newLine(s); return; }
-        line.push(s);
-        if (s.kind === "event") state = "start";
-      });
-      var html = groups.map(function (grp) {
-        /* one grid per group, so the commands line up under each other and
-           the events under those — a column you can read down */
-        var wide = grp.lines.reduce(function (n, l) { return Math.max(n, l.length); }, 0);
-        var cols = Math.max(1, wide * 2 - 1);
-        var cells = grp.lines.map(function (l) {
-          /* the line stays a real element (display:contents) so a reader,
-             and a scenario, can still ask "what is this beat?" while its
-             chips sit in the group's grid and line up */
-          var out = "";
-          for (var c = 0; c < wide; c++) {
-            if (c) out += l[c] ? "<span class='lc-ef-arrow' aria-hidden='true'>→</span>" : "<span></span>";
-            out += l[c] ? chip(l[c]) : "<span></span>";
-          }
-          return "<div class='lc-ef-line'>" + out + "</div>";
-        }).join("");
-        /* ONE BEAT NEEDS ONE LINE. Giving a person a heading and then a
-           single indented beat under it wastes a line and reads as if more
-           were coming (Michel, 2026-08-11). With one beat, the name sits at
-           the head of that beat. */
-        var solo = grp.lines.length === 1;
-        return "<div class='lc-ef-group" + (solo ? " lc-ef-solo" : "") + "'>" +
-               (grp.who ? "<span class='lc-ef-who'>" + chip(grp.who) + "</span>" : "") +
-               "<div class='lc-ef-beats' style='--lc-ef-cols:" + cols + "'>" + cells + "</div>" +
-               "</div>";
-      }).join("");
-      /* the cast, derived — never authored twice: distinct refs in story
-         order, each wearing its note's own color */
-      var els = [], elSeen = {};
-      steps.forEach(function (s) {
-        var k = s.kind + "|" + s.ref;
-        if (s.ref && !elSeen[k]) { elSeen[k] = 1; els.push(s); }
-      });
-      if (els.length) {
-        html += "<div class='lc-ef-elements'><span class='lc-ef-el-lead'>🧩 elements</span>" +
-          els.map(function (s) {
-            return "<span class='lc-ef-el lc-ef-" + s.kind + "' data-el-kind='" + s.kind +
-                   "' data-el-ref='" + escapeHtml(s.ref) + "'>" + ICON[s.kind] + " " +
-                   escapeHtml(s.ref) + "</span>";
-          }).join("") + "</div>";
-      }
-      if (legend) {
-        html += "<div class='lc-ef-legend'>" +
-          "<span class='lc-ef-l-user' data-lk='user' role='button' aria-pressed='true'>👤 user — a person</span>" +
-          "<span class='lc-ef-l-ui' data-lk='ui' role='button' aria-pressed='true'>🖥️ ui — the screen they act on</span>" +
-          "<span class='lc-ef-l-data' data-lk='data' role='button' aria-pressed='true'>📦 data — what the beat is about</span>" +
-          "<span class='lc-ef-l-command' data-lk='command' role='button' aria-pressed='true'>🗣️ command — what they ask for</span>" +
-          "<span class='lc-ef-l-rule' data-lk='rule' role='button' aria-pressed='true'>📏 rule — what governs it</span>" +
-          "<span class='lc-ef-l-event' data-lk='event' role='button' aria-pressed='true'>⚡ event — what became true</span>" +
-          "<span class='lc-ef-l-external' data-lk='external' role='button' aria-pressed='true'>🌐 external — beyond our walls</span>" +
-          "</div>";
-      }
-      box.innerHTML = html;
-      /* each legend chip dims its own kind — the reader picks the level
-         of detail; the story's spine (what stays) reflows into the gap */
-      box.addEventListener("click", function (e) {
-        var chip = e.target.closest("[data-lk]");
-        if (!chip) return;
-        var kind = chip.getAttribute("data-lk");
-        var off = box.classList.toggle("lc-ef-hide-" + kind);
-        chip.classList.toggle("lc-ef-off", off);
-        chip.setAttribute("aria-pressed", off ? "false" : "true");
-      });
+      var steps = stepsOf(rows);
+      var box = boxFor(el);
+      box.innerHTML = htmlOf(steps, legend);
       if (!el.parentNode) return;   /* its pad re-rendered meanwhile: a newer flow stands */
       el.parentNode.replaceChild(box, el);
-      if (window.lcSetDataset) window.lcSetDataset(id, steps);
+      if (window.lcSetDataset) window.lcSetDataset(box.id, steps);
     }).catch(function (e) {
       if (!el.parentNode) return;
       var d = document.createElement("div");
@@ -307,7 +320,31 @@ Auto-included by docs/_layouts/default.html.
     });
   }
 
-  if (window.lcRegisterUpgrader)
+  /* A FLOW READ FROM DATA (Michel, 2026-10-24: "generate an event flow to
+     explain the execution" → "go flow"): [the run](#) {: .event_flow
+     source="desk.flow" } draws the rows a part writes — a crew's run, beat
+     by beat — and draws again whenever they move. */
+  function upgradeEventFlowSource(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var src = el.getAttribute("source") || "";
+    var legend = el.getAttribute("legend") === "true";
+    var box = boxFor(el);
+    var paint = function () {
+      var steps = stepsOf(((window.lcDatasets || {})[src] || []));
+      box.innerHTML = steps.length ? htmlOf(steps, legend)
+        : "<div class='lc-ef-empty'>" + escapeHtml(el.textContent.trim() || "the flow") + " — nothing yet: it fills as " + escapeHtml(src) + " is written.</div>";
+      box.setAttribute("data-steps", String(steps.length));
+    };
+    el.parentNode.replaceChild(box, el);
+    paint();
+    var L = window.lcDatasetListeners = window.lcDatasetListeners || {};
+    (L[src] = L[src] || []).push(paint);
+  }
+
+  if (window.lcRegisterUpgrader) {
     window.lcRegisterUpgrader(".highlighter-rouge.event_flow, pre.event_flow", upgradeEventFlow);
+    window.lcRegisterUpgrader("p.event_flow", upgradeEventFlowSource);
+  }
 })();
 </script>

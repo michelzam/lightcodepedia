@@ -51,7 +51,7 @@ def _rows(context, ds):
 def step_crew_sorted(context, cid, family, lane, tries):
     rows = [r for r in _rows(context, cid + ".sorted") if r.get("family") == family]
     assert rows, "no lane for %s in %r" % (family, _rows(context, cid + ".sorted"))
-    assert rows[0]["lane"] == lane and int(rows[0]["tries"]) == tries, rows[0]
+    assert rows[0]["next_lane"] == lane and int(rows[0]["tries"]) == tries, rows[0]
 
 
 @then('the crew "{cid}" asked the AI {n:d} times')
@@ -80,7 +80,7 @@ def step_second_ask(context):
 def step_crew_upfront(context, cid, n):
     context.page.wait_for_function("([id, n]) => ((window.lcDatasets || {})[id] || []).length === n", arg=[cid + ".sorted", n], timeout=T)
     rows = _rows(context, cid + ".sorted")
-    assert all(r.get("lane") == "" for r in rows), rows
+    assert all(r.get("next_lane") == "" for r in rows), rows
     expect(context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tbody tr")).to_have_count(n, timeout=T)
 
 
@@ -192,7 +192,7 @@ def step_one_docked_guide(context):
 @then('the crew "{cid}" says why "{family}" went "{lane}": "{why}"')
 def step_crew_why(context, cid, family, lane, why):
     rows = [r for r in _rows(context, cid + ".sorted") if r.get("family") == family]
-    assert rows and rows[0].get("lane") == lane and rows[0].get("why") == why, rows
+    assert rows and rows[0].get("next_lane") == lane and rows[0].get("why") == why, rows
     grid = context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] tbody tr", has_text=family).first
     expect(grid).to_contain_text(why, timeout=T)
 
@@ -200,3 +200,19 @@ def step_crew_why(context, cid, family, lane, why):
 @then('the crew "{cid}" shows its tokens as an agent does: "{text}"')
 def step_crew_usage(context, cid, text):
     expect(_crew(context, cid).locator(".lc-agent-usage")).to_contain_text(text, timeout=T)
+
+
+@then('the run\'s event flow "{fid}" tells "{beats}"')
+def step_flow_tells(context, fid, beats):
+    """beats, in order, separated by " / " — each the text of a chip; the last an event."""
+    flow = context.page.locator(".lc-event-flow[data-lc-id='" + fid + "']")
+    expect(flow.locator(".lc-ef-step").first).to_be_attached(timeout=T)
+    chips = flow.locator(".lc-ef-step").evaluate_all("els => els.map(e => [e.getAttribute('data-kind'), e.textContent.trim()])")
+    texts = [t for _, t in chips]
+    at = 0
+    for b in beats.split(" / "):
+        hit = next((i for i in range(at, len(texts)) if b in texts[i]), None)
+        assert hit is not None, "the flow never says %r after chip %d: %r" % (b, at, texts)
+        at = hit + 1
+    assert chips[at - 1][0] == "event", "the last beat %r is a %s, not an event (orange)" % (texts[at - 1], chips[at - 1][0])
+
