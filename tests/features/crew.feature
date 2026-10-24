@@ -18,6 +18,8 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Then the crew "desk" shows its 3 messages, none sorted yet
     When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
+    # the crew is an agent: its desk, closed while a key is held (Michel, 2026-10-24)
+    And the crew "desk" shows its desk, closed
     And the grid of the crew "desk" has "Ferraro" selected
     And the crew "desk" sorted "Nguyen" as "VISIT" in 0 tries
     And the crew "desk" sorted "Okafor" as "PAY" in 0 tries
@@ -33,7 +35,9 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
   Scenario: No key — the rules alone, the claim to a person, nothing counted that was never sent
     Given I have a clean browser page
     When I navigate to "/components/crew"
-    And I press ▶ Run on the crew "desk"
+    # no key: the crew's desk is open, as an agent's is (Michel, 2026-10-24)
+    Then the crew "desk" shows its desk, open
+    When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
     And the crew "desk" sorted "Okafor" as "PAY" in 0 tries
     And the crew "desk" sorted "Ferraro" as "CALL" in 1 tries
@@ -51,6 +55,8 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I navigate to "/components/crew"
     And I open the accordion section "who can do what"
     Then in tab 1 the grid "crew_grid" lists "Sid" and "Chuck"
+    # one guide, the little docked one — no second, bigger Doc in the page (Michel, 2026-10-24)
+    And the page has one guide, docked small in its corner
     When I press the trigger of the avatar "crew_guide"
     Then the guide speaks "3 members, one row each. Sid goes first"
 
@@ -70,4 +76,18 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     # and on a phone, the long columns read at the size of the others (2026-10-23: "font type strange")
     When I open the accordion section "who can do what"
     Then the grid "crew_grid" keeps its text at one size on a phone
+
+  Scenario: An engine that does not answer — the crew says so and opens its desk
+    Michel, 2026-10-24: Rey's step read "Couldn't reach
+    generativelanguage.googleapis.com" and nothing on the crew let him fix
+    the key. The crew is an agent: its desk opens where the key is fixed.
+
+    Given I have a clean browser page
+    And an energy key is saved on this device, and its engine cannot be reached
+    When I navigate to "/components/crew"
+    Then the crew "desk" shows its desk, closed
+    When I press ▶ Run on the crew "desk"
+    Then the crew "desk" is done
+    And the crew "desk" says "the AI did not answer"
+    And the crew "desk" shows its desk, open
 

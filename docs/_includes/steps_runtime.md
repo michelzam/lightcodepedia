@@ -2672,11 +2672,30 @@ class Server(Block):
                   {"n": "pace", "t": "float", "data": True, "attr": "pace", "d": 0.5}],
            assoc=[{"n": "members", "target": "Dataset"}, {"n": "inbox", "target": "Dataset"}],
            methods=["run"])
-class Crew(Block):
-    """A crew (.crew): agents as the rows of a dataset (members=), run over
-    an inbox with clear bounds — tries= per message, budget= AI asks in all,
-    fallback= for what stays open. It writes <id>.sorted and <id>.log and
-    acts on nothing else."""
+class Crew(Agent):
+    """A crew (.crew) is an agent made of agents (Michel, 2026-10-24: "the
+    crew should inherit from agent"): the rows of a dataset or a class
+    (members=), run over an inbox with clear bounds — tries= per message,
+    budget= AI asks in all, fallback= for what stays open. It has an agent's
+    desk and key; its provider, model, temperature and max_tokens are its
+    members' defaults. It writes <id>.sorted and <id>.log, nothing else."""
+    @property
+    def asked(self):
+        """The AI asks this crew made, in its last run."""
+        return self.asks
+
+    @property
+    def replies(self):
+        """What its members said, step by step, in its last run."""
+        return [str(v) for v in self.log.values("out")]
+
+    @property
+    def last(self):
+        r = self.replies
+        return r[-1] if r else ""
+
+    def ask(self, prompt, wait=True):
+        raise AssertionError("a crew works its inbox, not one question — put the message in the inbox, then run()")
     @property
     def sorted(self):
         return Dataset(str(self.id) + ".sorted")

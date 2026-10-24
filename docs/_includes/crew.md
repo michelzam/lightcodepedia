@@ -88,12 +88,15 @@ Auto-included by docs/_layouts/default.html.
 
   /* an AI member: one ask, made as the agent panel makes it (lcAgentAsk:
      the ring's key, a busy service retried, a retired model healed) */
-  function ask(member, text) {
+  /* a member's own column wins, else the crew's knob (the crew is an agent:
+     provider, model, temperature, max_tokens), else the crew's defaults */
+  var pick1 = function (v, d) { return v != null && String(v).trim() !== "" ? v : d; };
+  function ask(member, text, crew) {
     if (!window.lcAgentAsk) return Promise.resolve({ text: "", error: "this page has no agent engine", tokens: 0, unsent: true });
     return window.lcAgentAsk({
-      system: member.brief, provider: member.provider || "", model: member.model || "",
-      temperature: member.temperature != null && member.temperature !== "" ? member.temperature : 0,
-      max_tokens: member.max_tokens || 300 }, text).then(function (r) {
+      system: member.brief, provider: pick1(member.provider, crew.provider || ""), model: pick1(member.model, crew.model || ""),
+      temperature: pick1(member.temperature, pick1(crew.temperature, 0)),
+      max_tokens: pick1(member.max_tokens, pick1(crew.max_tokens, 300)) }, text).then(function (r) {
         var u = r.usage || {};
         return { text: String(r.text || ""), error: r.error ? String(r.error) : "", unsent: !!r.unsent,
                  tokens: parseInt(u.total_tokens || ((u.prompt_tokens || 0) + (u.completion_tokens || 0)), 10) || 0 };
@@ -118,6 +121,7 @@ Auto-included by docs/_layouts/default.html.
     var lanes = knob("lanes", "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
     var tries = Math.max(1, parseInt(knob("tries", "2"), 10) || 2), budget = Math.max(0, parseInt(knob("budget", "6"), 10) || 0);
     var fallback = knob("fallback", lanes[lanes.length - 1] || "CALL");
+    var crewCfg = { provider: knob("provider", ""), model: knob("model", ""), temperature: knob("temperature", ""), max_tokens: knob("max_tokens", "") };
     /* pace= seconds between steps: the work is seen, a row at a time (Michel, 2026-10-23: "progressively sorted, with the selection and sleeps") */
     var pace = Math.max(0, parseFloat(knob("pace", "0.5")) || 0);
     var nap = function () { return new Promise(function (ok) { setTimeout(ok, pace * 1000); }); };
@@ -127,14 +131,22 @@ Auto-included by docs/_layouts/default.html.
     var box = document.createElement("div");
     box.className = "lc-crew";
     box.id = id; box.setAttribute("data-lc-id", id);
-    ["members", "inbox", "lanes", "tries", "budget", "fallback", "text", "pace"].forEach(function (k) { if (el.hasAttribute(k)) box.setAttribute(k, el.getAttribute(k)); });
+    ["members", "inbox", "lanes", "tries", "budget", "fallback", "text", "pace", "provider", "model", "temperature", "max_tokens"].forEach(function (k) { if (el.hasAttribute(k)) box.setAttribute(k, el.getAttribute(k)); });
     box.innerHTML = "<div class='lc-crew-head'><span class='lc-crew-title'>" + esc(el.textContent.trim() || "The crew") + "</span>" +
       "<span class='lc-crew-members'></span><button type='button' class='lc-crew-run'>▶ Run</button></div>" +
       "<div class='lc-crew-bounds'></div><div class='lc-crew-status'></div>";
     el.parentNode.replaceChild(box, el);
     var btn = box.querySelector(".lc-crew-run"), status = box.querySelector(".lc-crew-status");
+    /* the crew is an agent: the agent's own desk — 🔑 and the ring of engines —
+       in its head, open while no key is held, the engine named beside the bounds */
+    var desk = window.lcAgentDesk ? window.lcAgentDesk(crewCfg) : null;
+    if (desk) {
+      box.querySelector(".lc-crew-head").insertBefore(desk.key, btn);
+      box.insertBefore(desk.auth, box.querySelector(".lc-crew-bounds"));
+    }
     box.querySelector(".lc-crew-bounds").textContent = "lanes " + lanes.join(" · ") + " — at most " + tries + " tr" + (tries === 1 ? "y" : "ies") +
-      " a message, " + budget + " AI ask" + (budget === 1 ? "" : "s") + " in all — still open: " + fallback;
+      " a message, " + budget + " AI ask" + (budget === 1 ? "" : "s") + " in all — still open: " + fallback +
+      (desk ? " — asks " + desk.engine() : "");
     /* the inbox shows from the start, its lanes still open; the run fills them in */
     var unsorted = function () { return rowsOf(inboxId).map(function (r) { return Object.assign({}, r, { lane: "", tries: "", tokens: "" }); }); };
     window.lcSetDataset(id + ".sorted", unsorted());
@@ -163,9 +175,10 @@ Auto-included by docs/_layouts/default.html.
       ms.forEach(function (m) { byName[m.name] = m; });
       var rules = ms.filter(function (m) { return m.kind === "rules"; });
       var reader = ms.filter(function (m) { return m.kind === "reader"; })[0] || null;
-      var inbox = rowsOf(inboxId), out = unsorted(), log = [], asks = 0, n = 0, tokens = 0;
+      var inbox = rowsOf(inboxId), out = unsorted(), log = [], asks = 0, n = 0, tokens = 0, failed = 0;
       var say = function (who, kind, said, heard, tk) {
         tokens += tk || 0; box.setAttribute("data-tokens", String(tokens));
+        if (kind !== "rules" && /^⚠️/.test(String(heard))) failed++;
         log.push({ n: ++n, who: who, kind: kind, in: said, out: heard, tokens: tk || 0 }); window.lcSetDataset(id + ".log", log.slice());
       };
       window.lcSetDataset(id + ".sorted", out.slice());
@@ -173,7 +186,10 @@ Auto-included by docs/_layouts/default.html.
       var step = function (i) {
         if (i >= inbox.length) {
           box.setAttribute("data-state", "done");
-          status.textContent = "✓ " + out.length + " sorted, " + asks + " of " + budget + " AI asks, " + tokens + " tokens";
+          status.textContent = "✓ " + out.length + " sorted, " + asks + " of " + budget + " AI asks, " + tokens + " tokens" +
+            (failed ? " — ⚠️ the AI did not answer " + failed + " time" + (failed === 1 ? "" : "s") + ": 🔑 your keys" : "");
+          /* an engine that did not answer: the desk opens, where the key is fixed */
+          if (failed && desk) desk.open();
           btn.disabled = false;
           return Promise.resolve();
         }
@@ -199,7 +215,7 @@ Auto-included by docs/_layouts/default.html.
           status.textContent = "… " + who + ": " + reader.name + " reads";
           var context = reader.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(reader.reads)) : "";
           asks++; box.setAttribute("data-asks", String(asks));
-          return ask(reader, text + note + context).then(function (a) {
+          return ask(reader, text + note + context, crewCfg).then(function (a) {
             /* an ask that never left this device (no key) costs nothing: not counted */
             if (a.unsent) { asks--; box.setAttribute("data-asks", String(asks)); }
             say(reader.name, "reader", text + note, a.error ? "⚠️ " + a.error : a.text, a.tokens);
@@ -211,7 +227,7 @@ Auto-included by docs/_layouts/default.html.
             status.textContent = "… " + who + ": " + checker.name + " checks " + verdict;
             var cctx = checker.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(checker.reads)) : "";
             asks++; box.setAttribute("data-asks", String(asks));
-            return ask(checker, "The message: " + text + "\nThe verdict: " + verdict + cctx).then(function (c) {
+            return ask(checker, "The message: " + text + "\nThe verdict: " + verdict + cctx, crewCfg).then(function (c) {
               say(checker.name, "checker", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens);
               if (c.error) return null;
               if (disagrees(c.text)) { note = "\n\n" + checker.name + " disagreed with " + verdict + ": " + c.text; return loop(); }

@@ -1081,6 +1081,30 @@ Auto-included by docs/_layouts/default.html.
     if (warn) warn.textContent = '⚠ Calls ' + resolveEngine(cfg).host + ' directly with your key. Use a key made for this, nothing broader.';
   }
 
+  /* THE DESK, for a part that is an agent without a chat (Michel, 2026-10-24:
+     "the crew should inherit from agent, and have like an agent a desk and a
+     key"): the panel's own 🔑 and ring — the same keys, the same ★, kept in
+     step with every desk on the page. Open by itself while no key is held. */
+  window.lcAgentDesk = function (cfg) {
+    cfg = cfg || {};
+    var key = document.createElement('button');
+    key.type = 'button'; key.className = 'lc-agent-key'; key.textContent = '🔑';
+    key.title = 'Your AI keys'; key.setAttribute('aria-label', 'Your AI keys');
+    var auth = document.createElement('div');
+    auth.className = 'lc-agent-auth';
+    auth.innerHTML = '<p>Paste a key for any engine below. One is enough; the ★ one answers first. Keys stay on this device, sent to their own engine only.</p>' +
+      '<div class="lc-agent-ring"></div>';
+    var held = function () { return !!firstHeld(cfg.provider || DEFAULT_PROVIDER); };
+    var paint = function () { paintRing(auth, cfg); };
+    auth.hidden = held();
+    key.addEventListener('click', function () { auth.hidden = !auth.hidden; paint(); });
+    onSharedTokenChange(function () { paint(); if (held()) auth.hidden = true; });
+    document.addEventListener('lc-providers', function () { paint(); auth.hidden = held(); });
+    paint();
+    return { key: key, auth: auth, engine: function () { return resolveEngine(cfg).host; },
+             open: function () { auth.hidden = false; paint(); } };
+  };
+
   // ===== API call =====
   /* ONE attempt at ONE engine. The ladder that decides which engine, and how
      many times, is ask() below. */

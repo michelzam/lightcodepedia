@@ -81,7 +81,7 @@ script:
     say: "{= Member.count } members, one row each. {= Member.first.name } goes first: rules are free."
 stories: {}
 ```
-{: .avatar #crew_guide size="90" }
+{: .avatar #crew_guide dock="true" size="115" }
 
 Meet the crew
 {: .avatar_trigger target="crew_guide" }
@@ -101,6 +101,7 @@ A guide's line can read the page: `{= Member.first.name }` in a `say:` is a
 | `budget` | at most this many AI asks in all (default 6) |
 | `fallback` | the lane for what stays open — a person, never a guess |
 | `pace` | seconds between steps, so the work is seen a row at a time (default 0.5; 0 runs flat out) |
+| `provider` · `model` · `temperature` · `max_tokens` | an [agent](/components/agent)'s own knobs: the crew **is** an agent, and these are its members' defaults (a member's own column wins) |
 
 ## 🧑‍🤝‍🧑 The members — one row each
 
@@ -125,7 +126,11 @@ The crew writes two datasets and touches nothing else:
 - `desk.log`: every step, `who` said what (`in`, `out`) and its `tokens`;
 - the crew's line, and `desk.asks` · `desk.tokens` in a proof: the totals.
 
-The members ask with **your own key**, the one every agent panel uses.
+The crew is an [agent](/components/agent) made of agents: it has an agent's
+**desk** — the 🔑 in its head opens the ring of engines, the same keys every
+agent panel uses, open by itself while none is held — and when an engine
+does not answer, the crew says so and opens it. The members ask with **your
+own key**, as a panel does: a busy engine retried, a retired model healed.
 
 ## 🧪 Proof
 

@@ -152,3 +152,34 @@ def step_proof_seen(context, fid):
 @then('the proof "{fid}" wears the tag "{tag}"')
 def step_proof_tag(context, fid, tag):
     expect(context.page.locator(".lc-feature[data-lc-id='" + fid + "'] .lc-feature-tag", has_text=tag).first).to_be_visible(timeout=T)
+
+
+@then('the crew "{cid}" shows its desk, {state}')
+def step_crew_desk(context, cid, state):
+    crew = _crew(context, cid)
+    expect(crew.locator(".lc-crew-head .lc-agent-key")).to_be_visible(timeout=T)
+    ring = crew.locator(".lc-agent-auth")
+    if state == "open":
+        expect(ring).to_be_visible(timeout=T)
+        expect(ring.locator(".lc-agent-ring-row").first).to_be_visible(timeout=T)
+    else:
+        expect(ring).to_be_hidden(timeout=T)
+
+
+@given("an energy key is saved on this device, and its engine cannot be reached")
+def step_engine_unreachable(context):
+    context.page.add_init_script("localStorage.setItem('lc_ai_key_gemini', 'AIza-crew-test');")
+    context.page.route("**/chat/completions*", lambda r: r.abort())
+
+
+@then('the crew "{cid}" says "{text}"')
+def step_crew_says(context, cid, text):
+    expect(_crew(context, cid).locator(".lc-crew-status")).to_contain_text(text, timeout=T)
+
+
+@then("the page has one guide, docked small in its corner")
+def step_one_docked_guide(context):
+    hosts = context.page.locator(".lc-avatar-host")
+    n = hosts.count()
+    docked = context.page.locator(".lc-avatar-host.lc-avatar-docked").count()
+    assert n >= 1 and docked == n, "%d guides on the page, %d docked: a guide floats in the page" % (n, docked)
