@@ -2,7 +2,7 @@
 
 A **crew** is a few agents working one inbox together. The agents are the
 **rows of a dataset**; one line runs them, with its **bounds** said out
-loud: how many tries a message gets, how many AI asks in all, and where
+loud: how many tries per message, how many AI asks in total, and where
 what stays open goes. Add a row and the crew has one more member; the loop,
 the checks and the budget stay inside the component.
 
@@ -110,8 +110,8 @@ A guide's line can read the page: `{= members.first.name }` in a `say:` is a
 | `inbox` | the dataset to work through, one row a message |
 | `text` | the inbox column that holds the message (default `message`) |
 | `stages` | the stages a message can move its family to, comma-separated |
-| `tries` | at most this many reads a message (default 2) — − and + on the crew change it |
-| `budget` | at most this many AI asks in all (default 6) — − and +, and a gauge of what the run spent |
+| `tries` | at most this many reads per message (default 2) — a read and its check, two asks — − and + on the crew change it |
+| `budget` | at most this many AI asks in total (default 6) — − and +, and a gauge of what the run spent |
 | `fallback` | the stage written for what stays open (default `OPEN`) — a person, never a guess |
 | `pace` | seconds between steps, so the work is seen a row at a time (default 0.5; 0 runs flat out) |
 | `provider` · `model` · `temperature` · `max_tokens` | an [agent](/components/agent)'s own knobs: the crew **is** an agent, and these are its members' defaults (a member's own column wins) |
@@ -152,7 +152,7 @@ The crew writes three datasets and touches nothing else:
 The crew is an [agent](/components/agent) made of agents: it has an agent's
 **desk** — the 🔑 in its head opens the ring of engines, the same keys every
 agent panel uses, open by itself while none is held — and when an engine
-does not answer, the crew says so and opens it. The members ask with **your
+does not answer, the crew says so and marks its 🔑: the keys unfold when you press it. The members ask with **your
 own key**, as a panel does: a busy engine retried, a retired model healed.
 
 ## 🧪 Proof

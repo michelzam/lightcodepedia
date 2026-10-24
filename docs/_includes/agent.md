@@ -95,6 +95,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-peek pre { margin: 0.3em 0 0; max-height: 14em; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.95em; }
 .lc-agent-peek-now { margin-top: 0.4em; }
 .lc-agent-key { background: white; border: 1px solid #ddd; color: #777; padding: 0.2em 0.5em; cursor: pointer; border-radius: 4px; font-size: 0.95em; line-height: 1; }
+/* a key that needs a look (an engine did not answer): marked, never unfolded by itself */
+.lc-agent-key.lc-agent-key-alert { border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, .35); }
 .lc-agent-key:hover { background: #f0f0f0; color: #444; }
 .lc-agent-auth, .lc-agent-body { padding: 0.9em 1em; }
 .lc-agent-auth p { margin: 0 0 0.6em; color: #555; font-size: 0.92em; }
@@ -1109,9 +1111,10 @@ Auto-included by docs/_layouts/default.html.
     var held = function () { return !!firstHeld(cfg.provider || DEFAULT_PROVIDER); };
     var paint = function () { paintRing(auth, cfg); };
     auth.hidden = held();
-    key.addEventListener('click', function () { auth.hidden = !auth.hidden; paint(); });
+    key.addEventListener('click', function () { auth.hidden = !auth.hidden; key.classList.remove('lc-agent-key-alert'); paint(); });
     onSharedTokenChange(function () { paint(); if (held()) auth.hidden = true; });
-    document.addEventListener('lc-providers', function () { paint(); auth.hidden = held(); });
+    /* the ring arriving late folds a desk that holds a key; it never unfolds one */
+    document.addEventListener('lc-providers', function () { paint(); if (held()) auth.hidden = true; });
     paint();
     /* 🔋 the asks and tokens left per unit of time, as under every panel's usage line */
     var quota = document.createElement('div');
@@ -1119,7 +1122,9 @@ Auto-included by docs/_layouts/default.html.
     var showQuota = function (pid) { paintQuota(quota, cfg, pid); };
     showQuota();
     return { key: key, auth: auth, quota: quota, showQuota: showQuota, engine: function () { return resolveEngine(cfg).host; },
-             open: function () { auth.hidden = false; paint(); } };
+             open: function () { auth.hidden = false; paint(); },
+             alert: function (on) { key.classList.toggle('lc-agent-key-alert', !!on);
+               key.title = on ? 'Your AI keys — an engine did not answer' : 'Your AI keys'; } };
   };
 
   // ===== API call =====

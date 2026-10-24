@@ -280,3 +280,15 @@ def step_crew_asks_sum(context, cid, n):
     expect(_crew(context, cid).locator(".lc-crew-gauge")).to_contain_text("%d of" % n)
     expect(context.page.locator(".lc-datagrid[data-bind='" + cid + ".sorted'] thead th", has_text="Asks")).to_have_count(1, timeout=T)
 
+
+
+@then('the 🔑 of the crew "{cid}" is marked, its keys folded')
+def step_crew_key_marked(context, cid):
+    crew = _crew(context, cid)
+    expect(crew.locator(".lc-agent-auth")).to_be_hidden(timeout=T)
+    expect(crew.locator(".lc-crew-head .lc-agent-key")).to_have_class(__import__("re").compile(r"\blc-agent-key-alert\b"), timeout=T)
+
+
+@when('I press the 🔑 of the crew "{cid}"')
+def step_crew_key_press(context, cid):
+    _crew(context, cid).locator(".lc-crew-head .lc-agent-key").click()

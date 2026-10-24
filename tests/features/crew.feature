@@ -96,14 +96,18 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     Then the crew "desk" is done
     And the crew "desk" sorted "Ferraro" as "met" in 1 tries
     And the crew healed onto "llama-3.1-8b-instant"
+    # a good run leaves the keys folded away (Michel, 2026-10-24: "once the run is done, the key panel is unfolded. WHY?? It makes noise")
+    And the crew "desk" shows its desk, closed
     # and on a phone, the long columns read at the size of the others (2026-10-23: "font type strange")
     When I open the accordion section "who does the job"
     Then the grid "crew_grid" keeps its text at one size on a phone
 
-  Scenario: An engine that does not answer — the crew says so and opens its desk
+  Scenario: An engine that does not answer — the crew says so and marks its 🔑, the keys stay folded
     Michel, 2026-10-24: Rey's step read "Couldn't reach
     generativelanguage.googleapis.com" and nothing on the crew let him fix
-    the key. The crew is an agent: its desk opens where the key is fixed.
+    the key — the crew is an agent, its 🔑 is where the key is fixed. Then:
+    "once the run is done, the key panel is unfolded. WHY?? It makes noise":
+    the 🔑 is marked, the keys unfold only when it is pressed.
 
     Given I have a clean browser page
     And an energy key is saved on this device, and its engine cannot be reached
@@ -112,7 +116,9 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     When I press ▶ Run on the crew "desk"
     Then the crew "desk" is done
     And the crew "desk" says "the AI did not answer"
-    And the crew "desk" shows its desk, open
+    And the 🔑 of the crew "desk" is marked, its keys folded
+    When I press the 🔑 of the crew "desk"
+    Then the crew "desk" shows its desk, open
 
 
   Scenario: The bounds, played with — − on the budget, the gauge fills, what stays open says why

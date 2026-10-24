@@ -33,7 +33,7 @@ where it goes next — next_stage.
 
 THE LOOP, PER MESSAGE: the rules in order; if none answers, the reader
 proposes, its checker checks; a DISAGREE goes back to the reader with the
-checker's words, until tries= per message or budget= AI asks in all; what
+checker's words, until tries= per message or budget= AI asks in total; what
 is still open takes fallback= (OPEN by default) — a person, never a guess. The crew writes
 only its own datasets: <id>.sorted (each message with its next_stage, why,
 tries, asks — a try is a read and its check, two asks — tokens), <id>.flow (the run as an event flow, each step's cost and
@@ -183,8 +183,8 @@ Auto-included by docs/_layouts/default.html.
         "<b>" + v + "</b><button type='button' data-d='1' aria-label='" + k + " plus one'>+</button></span> " + unit;
     };
     var paintBounds = function () {
-      bounds.innerHTML = "stages " + esc(stages.join(" · ")) + " — " + stepper("tries", tries, "tr" + (tries === 1 ? "y" : "ies") + " a message") +
-        " — " + stepper("budget", budget, "AI ask" + (budget === 1 ? "" : "s") + " in all") + " — still open: " + esc(fallback) +
+      bounds.innerHTML = "stages " + esc(stages.join(" · ")) + " — " + stepper("tries", tries, "tr" + (tries === 1 ? "y" : "ies") + " per message") +
+        " — " + stepper("budget", budget, "AI ask" + (budget === 1 ? "" : "s") + " in total") + " — still open: " + esc(fallback) +
         (desk ? " — asks " + esc(desk.engine()) : "");
       [].forEach.call(bounds.querySelectorAll("button"), function (b) {
         var k = b.parentNode.getAttribute("data-bound"), v = k === "tries" ? tries : budget;
@@ -272,8 +272,10 @@ Auto-included by docs/_layouts/default.html.
           box.setAttribute("data-state", "done"); paintBounds();
           status.textContent = "✓ " + out.length + " sorted, " + asks + " of " + budget + " AI asks, " + tokens + " tokens" +
             (failed ? " — ⚠️ the AI did not answer " + failed + " time" + (failed === 1 ? "" : "s") + ": 🔑 your keys" : "");
-          /* an engine that did not answer: the desk opens, where the key is fixed */
-          if (failed && desk) desk.open();
+          /* an engine that did not answer: the 🔑 is marked, the line says so — the
+             keys unfold only when asked (Michel, 2026-10-24: "once the run is done,
+             the key panel is unfolded. WHY?? It makes noise") */
+          if (desk && desk.alert) desk.alert(!!failed);
           btn.disabled = false;
           return Promise.resolve();
         }

@@ -2706,7 +2706,7 @@ class Crew(Agent):
     """A crew (.crew) is an agent made of agents (Michel, 2026-10-24: "the
     crew should inherit from agent"): its members are agents, their
     attributes the columns of a dataset (members=), run over an inbox with clear bounds — tries= per message,
-    budget= AI asks in all, fallback= for what stays open. It has an agent's
+    budget= AI asks in total, fallback= for what stays open. It has an agent's
     desk and key; its provider, model, temperature and max_tokens are its
     members' defaults. It writes <id>.sorted and <id>.log, nothing else."""
     @property
