@@ -44,6 +44,10 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And in tab 1 the grid "desk_actions" lists "Ferraro" and "Biscuit"
     # the reader reads the words; the checker checks them against the row — Chuck holds the stage, Rey does not
     And Rey read the words only, and Chuck checked them against the row
+    # the workers, instantiated: each row a live agent with its own count, tokens, last answer (Michel, 2026-10-24: "go workers")
+    When I open the accordion section "who does the job"
+    Then the live agent "Rey" of the crew "desk" asked 2 times, 24 tokens, last said "VERDICT: meet"
+    And the live agent "Sid" of the crew "desk" ran 3 times
     # the cost, three workers: 🐍 × 1, 🤖 × 30, 🧑 × 900 (Michel, 2026-10-24: "a nice global score for the costs")
     And the desk's cost reads 123: 3 rule runs, 4 AI asks, 0 left OPEN
     # the tokens beside the score, not in it: they move a little every run (Michel, 2026-10-24: "go for Tokens beside")
@@ -222,3 +226,21 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the desk's cost reads 192: 12 rule runs, 6 AI asks, 0 left OPEN
     When I open the accordion section "event flow"
     Then the run's event flow "desk_flow" tells "Ferraro / 🤖 Rey proposes adopt / 🐍 Chuck disagrees: no visit yet: meet first / 🤖 Rey proposes meet / 🐍 Chuck agrees / Ferraro → meet ✅"
+
+  Scenario: Answers as objects — the crew asks for JSON and reads it, the page's instructions say the role only
+    Michel, 2026-10-24: "structured answers… objects instantiated from that
+    json BUT encapsulated, so I don't want more complexity in the example".
+
+    Given I have a clean browser page
+    And an energy key "AIza-crew-test" is already saved on this device
+    And the AI answers in JSON, Rey wrong the first time
+    When I navigate to "/components/crew"
+    And I press ▶ Run on the crew "desk"
+    Then the crew "desk" is done
+    And the crew "desk" sorted "Ferraro" as "meet" in 2 tries
+    And the crew "desk" says why "Ferraro" went "meet": "Chuck agreed"
+    And Rey was asked for an object: {"action": …, "why": …}
+    And the crew's log reads Rey's first answer as the action "adopt", why "they want to pay"
+    And Rey's second ask said "It allows meet."
+    When I open the accordion section "event flow"
+    Then the run's event flow "desk_flow" tells "Ferraro / 🤖 Rey proposes adopt / 🤖 Chuck disagrees: the stage is asked — allows meet / 🤖 Rey proposes meet / 🤖 Chuck agrees: one stage at a time / Ferraro → meet ✅"

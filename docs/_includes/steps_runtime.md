@@ -1890,8 +1890,18 @@ class Agent(Block):
 
     @property
     def asked(self):
-        """How many questions the learner asked this agent, on this page."""
+        """How many questions the learner asked this agent, on this page —
+        or, for a crew's worker, how many asks it made in the last run."""
+        row = getattr(self, "_row", None)
+        if self._el is None and row is not None:
+            return int(row.get("asks") or 0)
         return _lc_did(self, "ask")
+
+    @property
+    def tokens(self):
+        """A crew's worker: the tokens its asks spent in the last run."""
+        row = getattr(self, "_row", None)
+        return int(row.get("tokens") or 0) if row is not None else 0
 
     @property
     def response(self):
@@ -1942,6 +1952,9 @@ class Agent(Block):
 
     @property
     def last(self):
+        row = getattr(self, "_row", None)
+        if self._el is None and row is not None:
+            return str(row.get("last") or "")
         r = self.replies
         return r[-1] if r else ""
 
@@ -2732,9 +2745,12 @@ class Crew(Agent):
     def members(self):
         """Its members: a list of agents (Michel, 2026-10-24: "Crew's members
         is a list of agents") — the composite: a crew is an agent made of
-        agents, so a member may one day be a crew itself (the tree)."""
+        agents, so a member may one day be a crew itself (the tree). Each is
+        the live instance of its row: .asked, .tokens, .last after a run."""
         ds = getattr(js.window, "lcDatasets", None)
-        arr = getattr(ds, self._attr("members") or "members", None) if ds else None
+        arr = getattr(ds, str(self.id) + ".agents", None) if ds else None
+        if not arr:
+            arr = getattr(ds, self._attr("members") or "members", None) if ds else None
         rows = json.loads(str(js.JSON.stringify(arr))) if arr else []
         return [_lc_agent_of(r) for r in rows if isinstance(r, dict)]
 

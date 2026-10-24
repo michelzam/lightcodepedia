@@ -392,3 +392,62 @@ def step_crew_kinds(context, cid, py, a, b):
 @then('the desk\'s legend says "{text}"')
 def step_desk_legend(context, text):
     expect(context.page.locator("p", has_text="a volunteer phones").first).to_contain_text(text, timeout=T)
+
+
+def _agent(context, cid, name):
+    rows = [r for r in _rows(context, cid + ".agents") if r.get("name") == name]
+    assert rows, _rows(context, cid + ".agents")
+    return rows[0]
+
+
+@then('the live agent "{name}" of the crew "{cid}" asked {n:d} times, {tk:d} tokens, last said "{text}"')
+def step_live_agent(context, name, cid, n, tk, text):
+    a = _agent(context, cid, name)
+    assert int(a["asks"]) == n and int(a["tokens"]) == tk and text in str(a["last"]), a
+    expect(context.page.locator(".lc-datagrid[data-lc-id='crew_grid'] tbody tr", has_text=name).first).to_contain_text(text, timeout=T)
+
+
+@then('the live agent "{name}" of the crew "{cid}" ran {n:d} times')
+def step_live_agent_runs(context, name, cid, n):
+    a = _agent(context, cid, name)
+    assert int(a["runs"]) == n and int(a["asks"]) == 0, a
+
+
+@given("the AI answers in JSON, Rey wrong the first time")
+def step_stub_json(context):
+    context.crew_asks = []
+
+    def answer(route):
+        body = json.loads(route.request.post_data or "{}")
+        system, user = body["messages"][0]["content"], body["messages"][1]["content"]
+        context.crew_asks.append({"system": system, "user": user})
+        if "AGREE or DISAGREE" in system:
+            o = ({"verdict": "DISAGREE", "why": "the stage is asked", "action": "meet"} if "The verdict: adopt" in user
+                 else {"verdict": "AGREE", "why": "one stage at a time"})
+            text = json.dumps(o)
+        else:
+            o = {"action": "meet", "why": "a visit first"} if "disagreed" in user else {"action": "adopt", "why": "they want to pay"}
+            text = "```json\n" + json.dumps(o) + "\n```"
+        route.fulfill(status=200, content_type="application/json",
+                      body=json.dumps({"choices": [{"message": {"content": text}}], "usage": {"total_tokens": 12}}))
+    context.page.route("**/chat/completions*", answer)
+
+
+@then('Rey was asked for an object: {{"action": …, "why": …}}')
+def step_rey_shape(context):
+    reads = [a for a in context.crew_asks if "AGREE or DISAGREE" not in a["system"]]
+    assert reads and all('Answer with one line of JSON only: {"action": "meet or adopt or call"' in a["system"] for a in reads), reads[0]["system"]
+    assert "VERDICT" not in reads[0]["system"], reads[0]["system"]
+
+
+@then('the crew\'s log reads Rey\'s first answer as the action "{action}", why "{why}"')
+def step_log_parsed(context, action, why):
+    rows = [r for r in _rows(context, "desk.log") if r.get("who") == "Rey"]
+    assert rows and rows[0].get("action") == action and rows[0].get("why") == why, rows[0]
+    assert rows[0].get("out") == action + " — " + why, rows[0]
+
+
+@then('Rey\'s second ask said "{text}"')
+def step_rey_second(context, text):
+    reads = [a for a in context.crew_asks if "AGREE or DISAGREE" not in a["system"]]
+    assert len(reads) >= 2 and text in reads[1]["user"], reads[1]["user"] if len(reads) > 1 else reads

@@ -21,8 +21,8 @@ Ferraro,Biscuit,asked,We already met Biscuit last week. Can we pay now?
 ```csv
 name,kind,system,checked_by
 Sid,python,sort,
-Rey,ai,"Name the action this family message asks for. One line: VERDICT: meet, adopt or call. meet = they want to visit or see the dog. adopt = they want to pay or adopt. call = they only ask a question, a person calls them back. Examples: Can we visit Rex on Monday? → VERDICT: meet. How do we pay for Rex? → VERDICT: adopt. Is Rex good with cats? → VERDICT: call. If a checker disagreed, answer the action it allows.",Chuck
-Chuck,ai,"Check a proposed action against the family's current_stage. meet only when it is asked; adopt only when it is met; call at any stage. Answer AGREE or DISAGREE, in one line; when you disagree, name the action the row allows.",
+Rey,ai,"Name the action this family message asks for. meet: they want to visit or see the dog. adopt: they want to pay or adopt. call: they only ask a question, a volunteer phones them back. Examples: Can we visit Rex on Monday? meet. How do we pay for Rex? adopt. Is Rex good with cats? call. If a checker disagreed, take the action it allows.",Chuck
+Chuck,ai,"Check a proposed action against the family's current_stage: meet only when it is asked, adopt only when it is met, call at any stage.",
 ```
 {: .dataset #members }
 
@@ -45,7 +45,7 @@ def sort(message):
 ```
 ### 🧑‍🤝‍🧑 The crew — who does the job
 [the workers](#)
-{: .datagrid source="members" columns="name, kind, system, checked_by" #crew_grid }
+{: .datagrid source="desk.agents" columns="name, kind, runs, asks, tokens, last, system" #crew_grid }
 
 [one worker](#)
 {: .form master="crew_grid" #crew_form }
@@ -70,8 +70,9 @@ def sort(message):
 ```
 {: .accordion }
 
-Each worker is an **agent** whose attributes are its row: data, not code. A
-row more, a worker more. A crew **is** an agent too, so one day a worker can
+Each worker is a row — data that persists — and each row becomes a live
+**agent** on the page: its own asks, tokens and last answer, in the grid
+above after a run (`desk.members` in Python). A row more, a worker more. A crew **is** an agent too, so one day a worker can
 be a crew.
 
 ```yaml
@@ -133,10 +134,15 @@ a budget tuned by hand.
 | **read** (has a `checked_by`) | — | one ask on the words: an action |
 | **check** (named in a `checked_by`) | its function gets the message, the action and the row: `None`, or its reason | one ask with the row: `AGREE` or `DISAGREE`, and why |
 
+An AI worker's instructions say its role only: the crew adds the answer's
+shape itself and reads it back as an object — a proposal `{action, why}`, a
+judgment `{verdict, why, action}` — and still reads prose when an engine
+ignores the shape.
+
 The crew writes only its own datasets — `desk.sorted` (each message, its
 action, why, tries, asks, tokens), `desk.flow`, `desk.log` — and its totals:
 `desk.cost`, `desk.runs`, `desk.asks`, `desk.open`, `desk.tokens`,
-`desk.vs_last`.
+`desk.vs_last` — and `desk.agents`, one live agent per worker.
 
 ## 🧪 Proof
 
@@ -163,6 +169,11 @@ Feature: The desk sorts the inbox within its bounds
     assert isinstance(self.desk, Agent), "a crew is an agent"
     assert all(isinstance(m, Agent) for m in self.desk.members), "its members are agents"
     assert [m.name for m in self.desk.members] == ["Sid", "Rey", "Chuck"], [m.name for m in self.desk.members]
+    :::
+    And each member is a live agent: Rey's asks, tokens and last answer are his own
+    :::python
+    rey = [m for m in self.desk.members if m.name == "Rey"][0]
+    assert rey.asked >= 1 and rey.tokens >= 1 and rey.last, (rey.asked, rey.tokens, rey.last)
     :::
     And the claim was never taken for a payment, and the bounds held
     :::python

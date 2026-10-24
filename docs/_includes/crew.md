@@ -128,10 +128,10 @@ Auto-included by docs/_layouts/default.html.
   /* a member's own column wins, else the crew's knob (the crew is an agent:
      provider, model, temperature, max_tokens), else the crew's defaults */
   var pick1 = function (v, d) { return v != null && String(v).trim() !== "" ? v : d; };
-  function ask(member, text, crew) {
+  function ask(member, text, crew, format) {
     if (!window.lcAgentAsk) return Promise.resolve({ text: "", error: "this page has no agent engine", tokens: 0, unsent: true });
     return window.lcAgentAsk({
-      system: member.system, provider: pick1(member.provider, crew.provider || ""), model: pick1(member.model, crew.model || ""),
+      system: String(member.system || "") + (format || ""), provider: pick1(member.provider, crew.provider || ""), model: pick1(member.model, crew.model || ""),
       temperature: pick1(member.temperature, pick1(crew.temperature, 0)),
       /* low, as Bill the Builder: a model that thinks thinks briefly — fewer tokens,
          fewer engine limits hit, answers that settle (Michel, 2026-10-24: "This is
@@ -161,8 +161,40 @@ Auto-included by docs/_layouts/default.html.
   /* a checker AGREES only by saying so: an empty or cut answer is no agreement */
   /* "Agreed." and "Disagrees" are verdicts too (Michel's run, 2026-10-24: Ferraro
      spent five rounds on a Chuck who said Agreed, read as no verdict) */
+  /* STRUCTURED ANSWERS, ENCAPSULATED (Michel, 2026-10-24: "objects to be
+     instantiated from that json BUT encapsulated, so I don't want more
+     complexity in the example itself"): the crew adds the answer's shape to an
+     agent's instructions itself, reads the JSON into an object — a proposal
+     {action, why}, a judgment {agree, why, action} — and falls back to the
+     words when an engine answers in prose. The page's instructions say the
+     role only. */
+  var asJson = function (text) {
+    var m = String(text || "").match(/\{[\s\S]*\}/);
+    if (!m) return null;
+    try { var o = JSON.parse(m[0]); return o && typeof o === "object" ? o : null; } catch (e) { return null; }
+  };
+  var shapeRead = function (stages) {
+    return "\n\nAnswer with one line of JSON only: {\"action\": \"" + stages.join(" or ") + "\", \"why\": \"a few words\"}";
+  };
+  var SHAPE_CHECK = "\n\nAnswer with one line of JSON only: {\"verdict\": \"AGREE or DISAGREE\", \"why\": \"a few words\", \"action\": \"the action the row allows\"}";
   var disagrees = function (text) { return /\bDISAGREE[DS]?\b/i.test(text || ""); };
   var agrees = function (text) { return /\bAGREE[DS]?\b/i.test(text || "") && !disagrees(text); };
+  var proposal = function (text, stages) {
+    var o = asJson(text), act = o && o.action != null ? actionIn(String(o.action), stages) : null;
+    return act ? { action: act, why: String(o.why || ""), said: act + (o.why ? " — " + o.why : "") }
+               : { action: actionIn(text, stages), why: "", said: String(text || "") };
+  };
+  var judgment = function (text, stages) {
+    var o = asJson(text);
+    if (o && (o.verdict != null || typeof o.agree === "boolean")) {
+      var v = typeof o.agree === "boolean" ? (o.agree ? "AGREE" : "DISAGREE") : String(o.verdict);
+      var j = { agree: agrees(v), disagree: disagrees(v), why: String(o.why || ""), action: o.action != null ? actionIn(String(o.action), stages) : null };
+      j.said = (j.agree ? "AGREE" : j.disagree ? "DISAGREE" : v) + (j.why ? " — " + j.why : "");
+      return j;
+    }
+    return { agree: agrees(text), disagree: disagrees(text), action: null, said: String(text || ""),
+             why: String(text || "").replace(/^\W*(DIS)?AGREE[DS]?\W*/i, "").replace(/\s+/g, " ").trim() };
+  };
 
   function upgrade(el) {
     if (el.dataset.lcUpgraded) return;
@@ -288,8 +320,24 @@ Auto-included by docs/_layouts/default.html.
 
     /* the members, as the dataset says them now — a new row is a new member */
     var members = function () { return rowsOf(membersId).map(function (r) { return Object.assign({}, r, { kind: (function (k) { return KIND[k] || k; })(String(r.kind || "").trim().toLowerCase()), name: String(r.name || "").trim() }); }); };
+    /* THE WORKERS, INSTANTIATED (Michel, 2026-10-24: "workers are persistent
+       values which should be instantiated as agents — an Agent class reading a
+       dataset and creating instances"): the members' rows are the definition;
+       each becomes a live agent on the page — <id>.agents, one row each, what
+       it did in the last run: rule runs, asks, tokens, its last answer.
+       desk.members in Python reads these instances. */
+    var live = {};
+    var agentsOf = function () {
+      return members().map(function (m) {
+        var a = live[m.name] || {};
+        return { name: m.name, kind: m.kind, system: m.system || "", checked_by: m.checked_by || "",
+                 runs: a.runs || 0, asks: a.asks || 0, tokens: a.tokens || 0, last: a.last || "" };
+      });
+    };
+    var publishAgents = function () { window.lcSetDataset(id + ".agents", agentsOf()); };
     var paint = function () {
       var ms = members(), names = {};
+      if (box.getAttribute("data-state") !== "running") publishAgents();
       ms.forEach(function (m) { names[m.name] = m; });
       box.querySelector(".lc-crew-members").innerHTML = ms.map(function (m) {
         return "<span class='lc-crew-member' data-kind='" + esc(m.kind) + "' title='" + (m.kind === "ai" ? "AI agent" : m.kind === "python" ? "Python" : esc(m.kind)) + " — " + esc(m.system) + "'>" + (ICON[m.kind] || "❔") + " " + esc(m.name) +
@@ -312,7 +360,9 @@ Auto-included by docs/_layouts/default.html.
       var reader = ms.filter(function (m) { return m.kind === "ai" && !checks[m.name]; })[0] || null;
       var inbox = rowsOf(inboxId), out = unsorted(), log = [], asks = 0, n = 0, tokens = 0, failed = 0, cuts = 0;
       var spend = function (d) { asks += d; box.setAttribute("data-asks", String(asks)); gauge(asks); };
-      var say = function (who, kind, said, heard, tk, a) {
+      live = {};
+      publishAgents();
+      var say = function (who, kind, said, heard, tk, a, parsed) {
         tokens += tk || 0; session += tk || 0; box.setAttribute("data-tokens", String(tokens));
         if (a && a.usage) {
           if (window.lcTokens) window.lcTokens.add(a.usage);
@@ -322,7 +372,12 @@ Auto-included by docs/_layouts/default.html.
         }
         if (kind !== "python" && /^⚠️/.test(String(heard))) failed++;
         if (a && a.cut) cuts++;
-        log.push({ n: ++n, who: who, kind: kind, in: said, out: heard, tokens: tk || 0 });
+        log.push(Object.assign({ n: ++n, who: who, kind: kind, in: said, out: heard, tokens: tk || 0 }, parsed || {}));
+        /* the live agent who spoke: its count, its tokens, its last answer */
+        var ag = live[who] = live[who] || { runs: 0, asks: 0, tokens: 0, last: "" };
+        if (kind === "python") ag.runs++; else if (!(a && a.unsent)) ag.asks++;
+        ag.tokens += tk || 0; ag.last = String(heard);
+        publishAgents();
         totals(log, out, asks, tokens);
         window.lcSetDataset(id + ".log", log.slice());
       };
@@ -382,12 +437,13 @@ Auto-included by docs/_layouts/default.html.
           var context = reader.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(reader.reads)) : "";
           spend(1);
           beat("command", by(reader) + " reads it" + (note ? ", with " + (reader.checked_by || "the checker") + "'s words" : ""));
-          return ask(reader, text + note + context, crewCfg).then(function (a) {
+          return ask(reader, text + note + context, crewCfg, shapeRead(stages)).then(function (a) {
             /* an ask that never left this device (no key) costs nothing: not counted */
             if (a.unsent) spend(-1);
-            say(reader.name, "ai", text + note, a.error ? "⚠️ " + a.error : a.text, a.tokens, a);
+            var p = proposal(a.text, stages);
+            say(reader.name, "ai", text + note, a.error ? "⚠️ " + a.error : p.said, a.tokens, a, { action: p.action || "", why: p.why });
             if (a.error) trouble = a.unsent ? "no AI key" : "the AI did not answer";
-            var verdict = actionIn(a.text, stages);
+            var verdict = p.action;
             beat("event", a.error ? "⚠️ " + (a.unsent ? "no AI key" : "the AI did not answer") : by(reader) + " proposes " + (verdict || "no action") + cost(a.tokens, a));
             if (!verdict) return a.error ? null : loop();
             var checker = reader.checked_by ? byName[reader.checked_by] : null;
@@ -399,18 +455,21 @@ Auto-included by docs/_layouts/default.html.
             var cctx = checker.reads ? "\n\nWhat you know:\n" + JSON.stringify(rowsOf(checker.reads)) : "";
             if (!inPy) spend(1);
             var checked = inPy ? pyCheck(String(checker.system || "").trim(), text, verdict, row)
-              : ask(checker, "The message: " + text + "\nIts row: " + JSON.stringify(row) + "\nThe verdict: " + verdict + cctx, crewCfg);
+              : ask(checker, "The message: " + text + "\nIts row: " + JSON.stringify(row) + "\nThe verdict: " + verdict + cctx, crewCfg, SHAPE_CHECK);
             return checked.then(function (c) {
-              say(checker.name, inPy ? "python" : "ai", verdict, c.error ? "⚠️ " + c.error : c.text, c.tokens, inPy ? null : c);
+              var j = judgment(c.text, stages);
+              say(checker.name, inPy ? "python" : "ai", verdict, c.error ? "⚠️ " + c.error : j.said, c.tokens, inPy ? null : c,
+                  { action: j.action || "", why: j.why });
               /* the whole reason, never cut (Michel, 2026-10-24: "some events are truncated") */
-              var said = String(c.text).replace(/^\W*(DIS)?AGREE[DS]?\W*/i, "").replace(/\s+/g, " ").trim();
-              beat("event", c.error ? "⚠️ " + (inPy ? c.error : "the AI did not answer") : (agrees(c.text) ? by(checker) + " agrees: " + said : disagrees(c.text) ? by(checker) + " disagrees: " + said : by(checker) + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
+              var said = j.why + (j.disagree && j.action && j.action !== verdict ? " — allows " + j.action : "");
+              beat("event", c.error ? "⚠️ " + (inPy ? c.error : "the AI did not answer") : (j.agree ? by(checker) + " agrees: " + said : j.disagree ? by(checker) + " disagrees: " + said : by(checker) + " gives no verdict" + (said.trim() ? ": " + said : "")) + cost(c.tokens, c));
               if (c.error) { trouble = inPy ? "the check failed: " + c.error : "the AI did not answer"; return null; }
-              if (!agrees(c.text)) {
+              if (!j.agree) {
                 /* the reader is told to answer AGAIN with the reason — a reader told only
                    what the family wants kept proposing it (Michel's run, 2026-10-24:
                    Rey said home five times, Chuck disagreed five times) */
-                note = "\n\n" + checker.name + (disagrees(c.text) ? " disagreed with your verdict " + verdict + ": " + c.text : " did not agree with your verdict " + verdict + ".") +
+                note = "\n\n" + checker.name + (j.disagree ? " disagreed with your action " + verdict + ": " + (j.why || c.text) + (j.action && j.action !== verdict ? " It allows " + j.action + "." : "")
+                                                  : " did not agree with your action " + verdict + ".") +
                        "\nAnswer again, taking that reason into account.";
                 return loop();
               }
