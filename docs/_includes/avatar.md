@@ -1213,7 +1213,9 @@ Auto-included by docs/_layouts/default.html.
           : '<circle cx="50" cy="50" r="50" fill="url(#' + g + ')"/>')
       + '<ellipse cx="50" cy="93" rx="42" ry="15" fill="rgba(60,40,20,0.06)"/>'
       + (zoom !== 1 ? '<g transform="translate(50 52) scale(' + zoom + ') translate(-50 -52)">' : '');
-    if (hair === "full") svg += '<path d="M8 40 Q10 12 50 10 Q90 12 92 40 Q70 20 50 20 Q30 20 8 40 Z" fill="' + hairC + '"/>';
+    /* full: a real head of hair — the crown and a fringe (Michel, 2026-10-26:
+       the old thin cap read as bald) */
+    if (hair === "full") svg += '<path d="M4 54 Q1 -1 50 -1 Q99 -1 96 54 Q91 31 79 25 Q64 33 50 25 Q36 33 21 25 Q9 31 4 54 Z" fill="' + hairC + '"/>';
     if (hair === "sides") svg += '<path d="M4 46 Q2 72 22 86 Q10 66 14 47 Z" fill="' + hairC + '"/>'
       + '<path d="M96 46 Q98 72 78 86 Q90 66 86 47 Z" fill="' + hairC + '"/>';
     if (cfg.blush !== false) svg += '<circle cx="26" cy="62" r="6.5" fill="#f4978e" opacity="0.4"/>'
