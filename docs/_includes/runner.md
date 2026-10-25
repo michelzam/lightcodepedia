@@ -73,6 +73,12 @@ files a learner is already working in.
 .lc-app-bar .lc-app-copy { color: #64748b; font-family: ui-monospace, Menlo, monospace; }
 .lc-app-bar .lc-app-author { font-weight: 600; }
 html.lc-app-mode #lc-topbar, html.lc-app-mode .lc-run-bar, html.lc-app-mode #lc-engine { display: none !important; }
+/* A SHIPPED COPY IS FROZEN (Michel, 2026-10-25: "go hide save, as well as
+   edit in the mode pill"): no save frame, no save bar, no editor — the
+   reader sees exactly what was shipped */
+.lc-run[data-lc-app] .lc-bench-head, .lc-run[data-lc-app] .lc-dg-savebar,
+.lc-run[data-lc-app] .lc-mdpad-keep, html.lc-app-mode #lc-bl-edit-btn, html.lc-app-mode #ed-fab { display: none !important; }
+.lc-run[data-lc-app] .lc-bench-slot { border: 0; padding: 0; margin: 0; background: none; box-shadow: none; }
 html.lc-app-mode body { padding-top: 52px !important; }
 html.lc-app-mode .markdown-body { padding-top: 0; }
 html.lc-app-mode .lc-run > section:first-child > :first-child { margin-top: 0; }
@@ -607,7 +613,15 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
           if (!e) return;
           if (e.at && e.sha && e.sha.indexOf(m[3]) === 0)
             copy.textContent += " · shipped " + new Date(e.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-          else if (e.sha && e.sha.indexOf(m[3]) !== 0) copy.textContent += " · a newer copy exists";
+          else if (e.sha && e.sha.indexOf(m[3]) !== 0) {
+            /* this link is an older frozen copy: say so, and open the latest */
+            var newer = document.createElement("a");
+            newer.className = "lc-app-newer";
+            newer.href = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + repo + "/" + m[1] + m[2] + "_" + e.sha + "/" + e.entry;
+            newer.textContent = "🆕 A newer copy exists — open it";
+            copy.insertAdjacentElement("afterend", newer);
+            newer.addEventListener("click", function () { setTimeout(function () { location.reload(); }, 0); });
+          }
           if (e.by) {
             var img = appBar.querySelector(".lc-app-by");
             img.src = "https://github.com/" + encodeURIComponent(e.by) + ".png?size=64";

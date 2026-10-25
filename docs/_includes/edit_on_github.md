@@ -742,6 +742,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
      explicit always does. Returns the reason, or "" when editing is open. */
   window.lcEditLocked = function () {
     if (window.lcFrame && window.lcFrame.editable === false) return "editing is off in this frame";
+    if (document.documentElement.classList.contains("lc-app-mode")) return "this is a shipped copy — it stays as it was shipped";
     if (document.documentElement.classList.contains("lc-editable")) return "";
     var framed = window.lcFrame && (window.lcFrame.crumb || window.lcFrame.focus);
     var ghSrc = /#src=gh(:|%3[Aa])/.test(location.hash || "");

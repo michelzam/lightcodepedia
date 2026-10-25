@@ -189,6 +189,8 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
     if (el.closest("[data-lc-derived]")) return null;
     /* a read-only HOST's page: no bench, no key — no margin either */
     if (el.closest('.lc-run[data-lc-readonly="host"]')) return null;
+    /* a shipped copy is frozen: nothing on it is edited or annotated */
+    if (el.closest('.lc-run[data-lc-app]')) return null;
     var comp = el.closest("[data-lc-id]");
     if (comp && MAIN.contains(comp)) return comp;
     var blk = el.closest(BLOCK_SEL);
@@ -988,6 +990,9 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
        repo and key are a PAIR set together at join; if the key does not
        cover the repo, the write error below says so by name. */
     target: function (fromEl, path) {
+      /* A SHIPPED COPY HAS NO BENCH: it shows what was shipped, to everyone,
+         and saves nowhere (Michel, 2026-10-25) */
+      if (fromEl && fromEl.closest && fromEl.closest(".lc-run[data-lc-app]")) return { repo: "", pat: "", frozen: true };
       /* the host is the space — when it takes saves (started with --edit) */
       if (HERE.test(path || "")) return { repo: "here", pat: "here", here: true, readonly: !document.querySelector('meta[name="lc-host-edit"]') };
       var repo = "", pat = "", paired = "";

@@ -50,6 +50,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-ship button:disabled { background: #e5e7eb; border-color: #d1d5db; color: #9ca3af; cursor: default; }
 .lc-ship .lc-ship-status { font-size: 0.9em; color: #6b7280; flex: 1; min-width: 200px; }
 .lc-ship .lc-ship-status a { color: #0066cc; font-weight: 600; text-decoration: none; }
+.lc-ship .lc-ship-versions { flex-basis: 100%; font-size: 0.85em; color: #6b7280; border-top: 1px dashed #e6d3ae; padding-top: 0.6em; }
+.lc-ship .lc-ship-versions a { color: #0066cc; font-weight: 600; text-decoration: none; font-family: ui-monospace, Menlo, monospace; }
+.lc-ship .lc-ship-all summary { cursor: pointer; margin-top: 0.4em; color: #92400e; font-weight: 600; }
+.lc-ship .lc-ship-all ol { margin: 0.4em 0 0 1.2em; padding: 0; line-height: 1.7; }
+.lc-ship .lc-ship-all b { color: #15803d; font-size: 0.85em; }
 @media print { .lc-ship { display: none; } }
 </style>
 
@@ -257,8 +262,15 @@ Auto-included by docs/_layouts/default.html.
             }
             var by = "";
             try { by = (JSON.parse(localStorage.getItem("lc_gh_user") || "null") || {}).login || ""; } catch (e) {}
+            /* EVERY COPY STAYS FINDABLE (Michel, 2026-10-25: "how to access all
+               the versions shipped of a given app?"): the ledger keeps the
+               latest per app and, under it, every earlier copy, newest first */
+            var prev = current[app] || null, now = new Date().toISOString();
+            var history = (prev && prev.history) ? prev.history.slice() : (prev && prev.sha ? [{ sha: prev.sha, at: prev.at, entry: prev.entry }] : []);
+            history = history.filter(function (h) { return h.sha !== sha; });
+            history.unshift({ sha: sha, at: now, entry: shaped[0] });
             current[app] = { sha: sha, entry: shaped[0], files: shaped, by: by || undefined,
-                             at: new Date().toISOString() };
+                             at: now, history: history.slice(0, 50) };
             var body = { message: "📒 manifest: " + app + " @ " + sha.slice(0, 7),
                          content: b64utf8(JSON.stringify(current, null, 1)) };
             if (env && env.sha) body.sha = env.sha;
@@ -282,6 +294,7 @@ Auto-included by docs/_layouts/default.html.
           (skipped.length ? " Not shipped, not written yet: " + skipped.join(", ") + " — 💾 it in its own lesson, then ship again." : "");
         status.appendChild(strong); status.appendChild(a); status.appendChild(note);
         btn.disabled = false;
+        showVersions(box, bay, app);
         /* the same-page ship: embeds re-render themselves on this */
         try { window.dispatchEvent(new CustomEvent("lc_shipped", { detail: { app: app } })); } catch (e) {}
       })
@@ -289,6 +302,40 @@ Auto-included by docs/_layouts/default.html.
         status.textContent = "⚠️ " + (err && err.message || "the ship did not complete");
         btn.disabled = false;
       });
+  }
+
+  /* THE SHIPPED COPIES, UNDER THE BUTTON (Michel, 2026-10-25: "the ship
+     button should have a nice little panel to access them, especially the
+     last one after a refresh in canvas"): the last copy, one click away, and
+     the earlier ones folded under it — read from the bay's ledger. */
+  function copyLink(bay, app, h) {
+    return (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + bay.repo + "/" +
+      (bay.base ? bay.base + "/" : "") + app + "_" + h.sha + "/" + h.entry;
+  }
+  function when(at) {
+    try { return new Date(at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
+    catch (e) { return ""; }
+  }
+  function showVersions(box, bay, app) {
+    var mPath = (bay.base ? bay.base + "/" : "") + "manifest.json";
+    fetch(API + bay.repo + "/contents/" + mPath, { headers: hdrs({ Accept: "application/vnd.github.v3.raw" }), cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (man) {
+        var e = man && man[app];
+        var panel = box.querySelector(".lc-ship-versions");
+        if (!e || !e.sha) { if (panel) panel.remove(); return; }
+        var list = e.history && e.history.length ? e.history : [{ sha: e.sha, at: e.at, entry: e.entry }];
+        if (!panel) { panel = document.createElement("div"); panel.className = "lc-ship-versions"; box.appendChild(panel); }
+        var row = function (h, i) {
+          return "<li><a href='" + copyLink(bay, app, h) + "' target='_blank' rel='noopener'>" +
+            (i === 0 ? "🆕 " : "📦 ") + h.sha.slice(0, 7) + "</a> <span>" + when(h.at) + "</span>" +
+            (i === 0 ? " <b>latest</b>" : "") + "</li>";
+        };
+        panel.innerHTML = "<div class='lc-ship-last'>Last shipped " + when(list[0].at) + " · " +
+          "<a href='" + copyLink(bay, app, list[0]) + "' target='_blank' rel='noopener'>open " + list[0].sha.slice(0, 7) + " ↗</a></div>" +
+          (list.length > 1 ? "<details class='lc-ship-all'><summary>🗂 All " + list.length + " copies</summary><ol>" +
+            list.map(row).join("") + "</ol></details>" : "");
+      }).catch(function () {});
   }
 
   function upgradeShip(el) {
@@ -325,6 +372,7 @@ Auto-included by docs/_layouts/default.html.
 
     status.textContent = "Ships " + files.join(", ") + " to " + bay.repo + " — publicly.";
     btn.addEventListener("click", function () { shipIt(box, btn, status, ctx, bay, app, files); });
+    showVersions(box, bay, app);
   }
 
   if (window.lcRegisterUpgrader) window.lcRegisterUpgrader("p.ship", upgradeShip);
