@@ -71,34 +71,50 @@ files a learner is already working in.
 .lc-app-bar .lc-app-menu > button, .lc-app-bar .lc-app-menu > a { cursor: pointer; }
 .lc-app-bar .lc-app-menu > button:hover, .lc-app-bar .lc-app-menu > a:hover { background: #f1f5f9; }
 .lc-app-bar .lc-app-copy { color: #64748b; font-family: ui-monospace, Menlo, monospace; }
+.lc-app-bar .lc-app-author { font-weight: 600; }
 html.lc-app-mode #lc-topbar, html.lc-app-mode .lc-run-bar, html.lc-app-mode #lc-engine { display: none !important; }
+/* A SHIPPED COPY IS FROZEN (Michel, 2026-10-25: "go hide save, as well as
+   edit in the mode pill"): no save frame, no save bar, no editor — the
+   reader sees exactly what was shipped */
+.lc-run[data-lc-app] .lc-bench-head, .lc-run[data-lc-app] .lc-dg-savebar,
+.lc-run[data-lc-app] .lc-mdpad-keep, html.lc-app-mode #lc-bl-edit-btn, html.lc-app-mode #ed-fab { display: none !important; }
+.lc-run[data-lc-app] .lc-bench-slot { border: 0; padding: 0; margin: 0; background: none; box-shadow: none; }
 html.lc-app-mode body { padding-top: 52px !important; }
 html.lc-app-mode .markdown-body { padding-top: 0; }
 html.lc-app-mode .lc-run > section:first-child > :first-child { margin-top: 0; }
-/* the app's menu (its first tabs) never scrolls: under the bar on a
-   computer, a thumb bar at the bottom on a phone */
-html.lc-app-mode .lc-run > .lc-tabs, html.lc-app-mode .lc-run > section > .lc-tabs { overflow: visible; border: 0; }
-html.lc-app-mode .lc-run > .lc-tabs > .lc-tab-bar,
-html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar { position: sticky; top: 52px; z-index: 60; border-radius: 0 0 8px 8px; }
+/* the app's menu: its first tabs, moved into the bar on a computer; on a
+   phone the same buttons are a thumb bar at the bottom */
+html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
+.lc-app-bar .lc-app-nav { display: flex; align-self: stretch; }
+.lc-app-bar:not(.lc-app-has-nav) .lc-app-nav { display: none; }
+@media (min-width: 701px) {
+  .lc-app-bar.lc-app-has-nav .lc-app-title { flex: 0 1 auto; margin-right: 0.6em; }
+  .lc-app-bar.lc-app-has-nav .lc-app-nav { flex: 1; }
+}
+.lc-app-bar .lc-app-nav .lc-tab-bar { display: flex; background: transparent; border: 0; }
+.lc-app-bar .lc-app-nav .lc-tab-btn { color: #cbd5e1; border: 0; background: transparent; font-size: 0.82em; font-weight: 600; padding: 0 1em; height: 100%; }
+.lc-app-bar .lc-app-nav .lc-tab-btn:hover { background: #334155; color: #fff; }
+.lc-app-bar .lc-app-nav .lc-tab-btn.active { color: #fff; background: transparent; box-shadow: inset 0 -3px 0 #60a5fa; }
 @media (max-width: 700px) {
   html.lc-app-mode body { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
-  html.lc-app-mode .lc-run > .lc-tabs > .lc-tab-bar,
-  html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar {
-    position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 1001; border-radius: 0;
-    background: #fff; border-top: 1px solid #e2e8f0; border-bottom: 0; box-shadow: 0 -4px 14px rgba(15,23,42,.08);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  html.lc-app-mode .lc-run > .lc-tabs > .lc-tab-bar > .lc-tab-btn,
-  html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar > .lc-tab-btn {
-    flex: 1; min-height: 60px; border-right: 0; font-size: 0.78em; line-height: 1.25; padding: 0.5em 0.2em; box-shadow: none;
-  }
-  html.lc-app-mode .lc-run > .lc-tabs > .lc-tab-bar > .lc-tab-btn.active,
-  html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar > .lc-tab-btn.active { box-shadow: inset 0 3px 0 #0066cc; background: #f8fbff; }
   html.lc-app-mode .markdown-body { padding-left: 0.6rem; padding-right: 0.6rem; }
   html.lc-app-mode .lc-tabs > .lc-tab-panel { padding: 0.8em 0.1em; }
-  html.lc-app-mode .lc-guide-seed { bottom: calc(76px + env(safe-area-inset-bottom)); }
-  html.lc-app-mode .lc-guide-menu, html.lc-app-mode .lc-guide-ask { bottom: calc(130px + env(safe-area-inset-bottom)); }
-  html.lc-app-mode .lc-guide-hello { bottom: calc(82px + env(safe-area-inset-bottom)); }
+  .lc-app-bar .lc-app-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 1001;
+    background: #fff; border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 14px rgba(15,23,42,.08);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .lc-app-bar .lc-app-nav .lc-tab-bar { flex: 1; }
+  .lc-app-bar .lc-app-nav .lc-tab-btn {
+    flex: 1; height: auto; min-height: 60px; color: #475569; font-size: 0.78em; line-height: 1.25; padding: 0.5em 0.2em;
+  }
+  .lc-app-bar .lc-app-nav .lc-tab-btn:hover { background: #f8fbff; color: #0f172a; }
+  .lc-app-bar .lc-app-nav .lc-tab-btn.active { color: #0066cc; background: #f8fbff; box-shadow: inset 0 3px 0 #0066cc; }
+  /* the floaters stand above the thumb bar, on top of it: gear left, Doc right */
+  html.lc-app-mode .lc-slides-fab { bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 1002; }
+  html.lc-app-mode .lc-guide-seed { bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 1002; }
+  html.lc-app-mode .lc-guide-menu, html.lc-app-mode .lc-guide-ask { bottom: calc(130px + env(safe-area-inset-bottom)); z-index: 1003; }
+  html.lc-app-mode .lc-guide-hello { bottom: calc(82px + env(safe-area-inset-bottom)); z-index: 1003; }
 }
 /* in a lesson, the shipped window and the pad keep the app's tabs under
    their bar while the body scrolls */
@@ -579,8 +595,9 @@ html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar { position: sticky; 
     var m = /^(.*?)([^\/]+)_([0-9a-f]{7,40})\//.exec(path || "");
     var appBar = document.createElement("div");
     appBar.className = "lc-app-bar";
-    appBar.innerHTML = '<span class="lc-app-title"></span><img class="lc-app-by" alt="" hidden>' +
+    appBar.innerHTML = '<span class="lc-app-title"></span><nav class="lc-app-nav"></nav><img class="lc-app-by" alt="" hidden>' +
       '<details class="lc-app-more"><summary aria-label="More">⋯</summary><div class="lc-app-menu">' +
+      '<a class="lc-app-author" target="_blank" rel="noopener" hidden></a>' +
       '<div class="lc-app-copy"></div>' +
       '<button type="button" class="lc-app-refresh">🔄 Refresh</button>' +
       '<a href="https://lightcodepedia.org" target="_blank" rel="noopener">✨ Made with Lightcode</a></div></details>';
@@ -596,12 +613,24 @@ html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar { position: sticky; 
           if (!e) return;
           if (e.at && e.sha && e.sha.indexOf(m[3]) === 0)
             copy.textContent += " · shipped " + new Date(e.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-          else if (e.sha && e.sha.indexOf(m[3]) !== 0) copy.textContent += " · a newer copy exists";
+          else if (e.sha && e.sha.indexOf(m[3]) !== 0) {
+            /* this link is an older frozen copy: say so, and open the latest */
+            var newer = document.createElement("a");
+            newer.className = "lc-app-newer";
+            newer.href = (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + repo + "/" + m[1] + m[2] + "_" + e.sha + "/" + e.entry;
+            newer.textContent = "🆕 A newer copy exists — open it";
+            copy.insertAdjacentElement("afterend", newer);
+            newer.addEventListener("click", function () { setTimeout(function () { location.reload(); }, 0); });
+          }
           if (e.by) {
             var img = appBar.querySelector(".lc-app-by");
             img.src = "https://github.com/" + encodeURIComponent(e.by) + ".png?size=64";
             img.alt = img.title = "by " + e.by;
             img.hidden = false;
+            var who = appBar.querySelector(".lc-app-author");
+            who.textContent = "🙋 Made by @" + e.by;
+            who.href = "https://github.com/" + encodeURIComponent(e.by);
+            who.hidden = false;
           }
         }).catch(function () {});
     }
@@ -686,8 +715,20 @@ html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar { position: sticky; 
           var appH1 = bar && root.dataset.lcApp ? root.querySelector("h1") : null;
           if (bar) document.documentElement.classList.toggle("lc-app-mode", !!root.dataset.lcApp);
           if (appH1) {
-            root.parentNode.insertBefore(appBarFor(appH1.textContent, root.dataset.lcSrcRepo, root.dataset.lcSrcPath), root);
+            var appBarEl = appBarFor(appH1.textContent, root.dataset.lcSrcRepo, root.dataset.lcSrcPath);
+            root.parentNode.insertBefore(appBarEl, root);
             appH1.remove();
+            /* THE APP'S TABS ARE ITS MENU (Michel, 2026-10-25: "I would merge
+               the tabs there as top menu options… that would match with the
+               thumbs menu for the phone"): the first top-level tabs move into
+               the bar — on a phone the same buttons drop to the thumb bar.
+               Tabs upgrade a beat after the render, so wait for them. */
+            var tries = 0;
+            (function adopt() {
+              var tb = root.querySelector(":scope > .lc-tabs > .lc-tab-bar, :scope > section > .lc-tabs > .lc-tab-bar");
+              if (tb) { tb.parentNode.classList.add("lc-app-tabs"); appBarEl.querySelector(".lc-app-nav").appendChild(tb); appBarEl.classList.add("lc-app-has-nav"); return; }
+              if (++tries < 60) setTimeout(adopt, 100);
+            })();
           }
           if (window.lcApplyIAL)    window.lcApplyIAL(root);
           /* Parity with the page-level scan: auto-id class-carrying fences and
