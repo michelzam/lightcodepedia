@@ -229,12 +229,16 @@ Auto-included by docs/_layouts/default.html.
         if (window.lcCellsRescan) window.lcCellsRescan();
       };
       var panelOf = function (b) { return wrap.querySelector("#" + (window.CSS && CSS.escape ? CSS.escape(b.dataset.tab) : b.dataset.tab)); };
-      wrap.querySelectorAll(".lc-tab-btn").forEach(function(b){
+      /* the bar is held, not looked up: an app moves it into its own top
+         bar (or a phone's thumb bar), and its buttons must still switch */
+      var tabBar = wrap.querySelector(".lc-tab-bar");
+      tabBar.querySelectorAll(".lc-tab-btn").forEach(function(b){
         b.addEventListener("click", function(){
-          wrap.querySelectorAll(".lc-tab-btn").forEach(function(x){x.classList.remove("active");});
+          tabBar.querySelectorAll(".lc-tab-btn").forEach(function(x){x.classList.remove("active");});
           wrap.querySelectorAll(".lc-tab-panel").forEach(function(x){x.classList.remove("active");});
           b.classList.add("active");
           var panel = panelOf(b);
+          if (document.documentElement.classList.contains("lc-app-mode")) window.scrollTo(0, 0);
           panel.classList.add("active");
           scanPanel(panel);
         });
