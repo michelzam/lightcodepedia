@@ -497,18 +497,36 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
       if (bench) { repo = bench + "-bay"; base = ""; }
     }
     if (!repo) return Promise.resolve(null);
-    var url = "https://raw.githubusercontent.com/" + repo + "/main/" +
-              (base ? base + "/" : "") + "manifest.json";
-    return fetch(url, { cache: "no-store" })
-      .then(function (r) { return r.ok ? r.json() : null; })
+    return readLedger(repo, base)
       .then(function (m) {
         var e = m && m[name];
         if (!e || !e.sha || !e.entry) return null;
-        return "gh:" + repo + "/" + (base ? base + "/" : "") +
-               name + "_" + e.sha + "/" + e.entry;
+        /* a copy picked in the ship panel's versions (or the time machine)
+           shows instead of the latest, until "latest" is picked again */
+        var pick = window.lcShipPicked && window.lcShipPicked[name];
+        var sha = pick ? pick.sha : e.sha, entry = pick ? pick.entry : e.entry;
+        return "gh:" + repo + "/" + (base ? base + "/" : "") + name + "_" + sha + "/" + entry;
       })
       .catch(function () { return null; });
   }
+  /* THE LEDGER, FRESH (Michel, 2026-10-25: right after a ship, ⋯ said "a
+     newer copy exists" and opened an OLDER one): the raw file host caches a
+     file for minutes, so the bay's manifest is read through the contents
+     API — no cache, the reader's key if any, keyless otherwise — and only
+     falls back to the raw host, cache-busted, when the API says no. */
+  function readLedger(repo, base) {
+    var path = (base ? base + "/" : "") + "manifest.json";
+    var h = { Accept: "application/vnd.github.v3.raw", "X-GitHub-Api-Version": "2022-11-28" };
+    var k = edKey(); if (k) h.Authorization = "Bearer " + k;
+    var raw = function () {
+      return fetch("https://raw.githubusercontent.com/" + repo + "/main/" + path + "?t=" + Date.now(), { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; });
+    };
+    return fetch("https://api.github.com/repos/" + repo + "/contents/" + path, { headers: h, cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : (r.status === 404 ? null : raw()); })
+      .catch(function () { return raw(); });
+  }
+  window.lcShipLedger = readLedger;
   /* one resolver for every ship: reader — the qr draws the same address */
   window.lcResolveShip = resolveShip;
 
@@ -606,14 +624,16 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
     var copy = appBar.querySelector(".lc-app-copy");
     copy.textContent = m ? "📦 This copy: " + m[3].slice(0, 7) : "";
     if (m && repo) {
-      fetch("https://raw.githubusercontent.com/" + repo + "/main/" + m[1] + "manifest.json", { cache: "no-store" })
-        .then(function (r) { return r.ok ? r.json() : null; })
+      readLedger(repo, m[1].replace(/\/$/, ""))
         .then(function (man) {
           var e = man && man[m[2]];
           if (!e) return;
-          if (e.at && e.sha && e.sha.indexOf(m[3]) === 0)
-            copy.textContent += " · shipped " + new Date(e.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-          else if (e.sha && e.sha.indexOf(m[3]) !== 0) {
+          var mine = (e.history || []).filter(function (h) { return h.sha.indexOf(m[3]) === 0; })[0] ||
+                     (e.sha && e.sha.indexOf(m[3]) === 0 ? e : null);
+          if (mine && mine.at)
+            copy.textContent += " · shipped " + new Date(mine.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+          /* newer by DATE: a ledger that lags can never call an older copy newer */
+          if (e.sha && e.sha.indexOf(m[3]) !== 0 && (!mine || !mine.at || (e.at && e.at > mine.at))) {
             /* this link is an older frozen copy: say so, and open the latest */
             var newer = document.createElement("a");
             newer.className = "lc-app-newer";
@@ -1011,6 +1031,10 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
       root.dataset.lcShipHost = (hostEl && hostEl.getAttribute("data-lc-src-repo")) || "";
       var shipName = fixedSrc.slice(5);
       window.addEventListener("lc_shipped", function (e) {
+        if (e.detail && e.detail.app === shipName) render(status, root, fixedSrc, bar);
+      });
+      /* a copy picked in the ship panel's versions — or the time machine */
+      window.addEventListener("lc_ship_pick", function (e) {
         if (e.detail && e.detail.app === shipName) render(status, root, fixedSrc, bar);
       });
     }

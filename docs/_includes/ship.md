@@ -55,6 +55,13 @@ Auto-included by docs/_layouts/default.html.
 .lc-ship .lc-ship-all summary { cursor: pointer; margin-top: 0.4em; color: #92400e; font-weight: 600; }
 .lc-ship .lc-ship-all ol { margin: 0.4em 0 0 1.2em; padding: 0; line-height: 1.7; }
 .lc-ship .lc-ship-all b { color: #15803d; font-size: 0.85em; }
+.lc-ship .lc-ship-all li { border-radius: 6px; padding: 0 0.3em; }
+.lc-ship .lc-ship-all li.lc-ship-on { background: #fef3c7; }
+.lc-ship .lc-ship-pick { font: inherit; border: 0; background: none; cursor: pointer; color: #0066cc; font-weight: 600;
+  font-family: ui-monospace, Menlo, monospace; padding: 0.1em 0; }
+.lc-ship .lc-ship-pick span { color: #6b7280; font-weight: 400; font-family: system-ui, sans-serif; }
+.lc-ship .lc-ship-replay { font: inherit; font-size: 0.95em; margin: 0.4em 0 0.1em; padding: 0.25em 0.8em; border-radius: 6px;
+  border: 1px solid #e6d3ae; background: #fff; color: #92400e; cursor: pointer; font-weight: 600; }
 @media print { .lc-ship { display: none; } }
 </style>
 
@@ -164,7 +171,7 @@ Auto-included by docs/_layouts/default.html.
       common = common.slice(0, n);
     });
     var shaped = segs.map(function (sg) { return sg.slice(common.length).join("/"); });
-    var skipped = [];
+    var skipped = [], unchanged = [];
     var shaRepo = (tgt && tgt.repo && !tgt.here) ? tgt.repo : ctx.repo;
     function fromBench(f) {
       if (!bench || !tgt || !tgt.repo || tgt.here) return Promise.resolve(null);
@@ -231,6 +238,19 @@ Auto-included by docs/_layouts/default.html.
                 }
                 return put().then(function (r) {
                   if (r.ok) return;
+                  /* 422 = THIS COPY IS ALREADY THERE (Michel, 2026-10-25: a
+                     second 🚀 with no 💾 between): a copy is named after the
+                     save it was made from, and it never changes. Same text:
+                     nothing to do. Changed text: it needs a new save first. */
+                  if (r.status === 422) {
+                    return fetch(API + bay.repo + "/contents/" + folder + "/" + dest,
+                                 { headers: hdrs({ Accept: "application/vnd.github.v3.raw" }), cache: "no-store" })
+                      .then(function (g) { return g.ok ? g.text() : null; })
+                      .then(function (was) {
+                        if (was === text) { unchanged.push(dest); return; }
+                        throw new Error("this copy (" + sha.slice(0, 7) + ") is already shipped, and your app changed since — 💾 save it, then ship again");
+                      });
+                  }
                   /* 404 on a write = no push. The grant may be a pending
                      invitation — accept it with this same key and go again */
                   if (r.status !== 404 && r.status !== 403)
@@ -285,7 +305,10 @@ Auto-included by docs/_layouts/default.html.
                    "#src=gh:" + bay.repo + "/" + folder + "/" + shaped[0];
         status.innerHTML = "";
         var strong = document.createElement("strong");
-        strong.textContent = "🚀 Shipped · " + sha.slice(0, 7) + " · ";
+        var same = unchanged.length && unchanged.length === shaped.length - skipped.length;
+        strong.textContent = same ? "✓ Already shipped, unchanged since your last 💾 · " + sha.slice(0, 7) + " · "
+                                  : "🚀 Shipped · " + sha.slice(0, 7) + " · ";
+        if (window.lcShipPicked) delete window.lcShipPicked[app];   /* a new ship shows the latest */
         var a = document.createElement("a");
         a.href = link; a.target = "_blank"; a.rel = "noopener";
         a.textContent = "open your deployed app";
@@ -326,15 +349,49 @@ Auto-included by docs/_layouts/default.html.
         if (!e || !e.sha) { if (panel) panel.remove(); return; }
         var list = e.history && e.history.length ? e.history : [{ sha: e.sha, at: e.at, entry: e.entry }];
         if (!panel) { panel = document.createElement("div"); panel.className = "lc-ship-versions"; box.appendChild(panel); }
+        var wasOpen = !!(panel.querySelector(".lc-ship-all") || {}).open;
+        /* THE COPIES AS A VERSION PANE (Michel, 2026-10-25: "show the list of
+           shippings as in the version pane of a mdpad and refresh them when
+           selected, including with the time machine"): picking a copy shows
+           it in this page's window and square; 🆕 goes back to the latest;
+           🎞 plays them oldest to newest */
+        var picked = (window.lcShipPicked || {})[app];
         var row = function (h, i) {
-          return "<li><a href='" + copyLink(bay, app, h) + "' target='_blank' rel='noopener'>" +
-            (i === 0 ? "🆕 " : "📦 ") + h.sha.slice(0, 7) + "</a> <span>" + when(h.at) + "</span>" +
-            (i === 0 ? " <b>latest</b>" : "") + "</li>";
+          var on = picked ? picked.sha === h.sha : i === 0;
+          return "<li class='" + (on ? "lc-ship-on" : "") + "'><button type='button' class='lc-ship-pick' data-i='" + i + "'>" +
+            (i === 0 ? "🆕 " : "📦 ") + h.sha.slice(0, 7) + " <span>" + when(h.at) + "</span>" +
+            (i === 0 ? " <b>latest</b>" : "") + "</button> <a href='" + copyLink(bay, app, h) +
+            "' target='_blank' rel='noopener' title='open this copy on its own'>↗</a></li>";
         };
         panel.innerHTML = "<div class='lc-ship-last'>Last shipped " + when(list[0].at) + " · " +
           "<a href='" + copyLink(bay, app, list[0]) + "' target='_blank' rel='noopener'>open " + list[0].sha.slice(0, 7) + " ↗</a></div>" +
-          (list.length > 1 ? "<details class='lc-ship-all'><summary>🗂 All " + list.length + " copies</summary><ol>" +
+          (list.length > 1 ? "<details class='lc-ship-all'" + (wasOpen ? " open" : "") + "><summary>🗂 All " + list.length + " copies</summary>" +
+            "<button type='button' class='lc-ship-replay'>🎞 Time machine</button><ol>" +
             list.map(row).join("") + "</ol></details>" : "");
+        var pick = function (i) {
+          window.lcShipPicked = window.lcShipPicked || {};
+          if (i === 0) delete window.lcShipPicked[app];
+          else window.lcShipPicked[app] = { sha: list[i].sha, entry: list[i].entry };
+          [].forEach.call(panel.querySelectorAll(".lc-ship-all li"), function (li, k) { li.classList.toggle("lc-ship-on", k === i); });
+          try { window.dispatchEvent(new CustomEvent("lc_ship_pick", { detail: { app: app, sha: list[i].sha } })); } catch (er) {}
+        };
+        [].forEach.call(panel.querySelectorAll(".lc-ship-pick"), function (b) {
+          b.addEventListener("click", function () { stopReplay(); pick(+b.getAttribute("data-i")); });
+        });
+        var timer = null;
+        var stopReplay = function () { if (timer) { clearInterval(timer); timer = null; } };
+        var rb = panel.querySelector(".lc-ship-replay");
+        if (rb) rb.addEventListener("click", function () {
+          stopReplay();
+          var i = list.length - 1;
+          pick(i);
+          timer = setInterval(function () {
+            i -= 1;
+            if (i < 0) { stopReplay(); return; }
+            pick(i);
+            if (i === 0) stopReplay();
+          }, +(box.getAttribute("data-replay") || 2500));
+        });
       }).catch(function () {});
   }
 
@@ -372,6 +429,8 @@ Auto-included by docs/_layouts/default.html.
 
     status.textContent = "Ships " + files.join(", ") + " to " + bay.repo + " — publicly.";
     btn.addEventListener("click", function () { shipIt(box, btn, status, ctx, bay, app, files); });
+    var rp = parseFloat(el.getAttribute("replay") || "");   /* the time machine's seconds per copy */
+    if (rp > 0) box.setAttribute("data-replay", String(Math.round(rp * 1000)));
     showVersions(box, bay, app);
   }
 

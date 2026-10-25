@@ -1065,7 +1065,15 @@ Auto-included by docs/_layouts/default.html.
 
       /* dock="true" (or face knob dock: true): the page declares its guide —
          a small seed in the bottom-right, zero moves from the learner */
-      if (el.getAttribute('dock') === 'true' || cfg.dock === true) buildSeed(elId, av);
+      /* THE APP'S OWN GUIDE (Michel, 2026-10-25: "Doc should be one added by
+         the student for the runtime from inside the app"): a shipped app
+         opened on its own has no course key, so no course tutor — the tour the
+         learner wrote into the app takes the corner instead. Only there: in
+         the lesson, the lesson's own guide keeps it. */
+      var inApp = document.documentElement.classList.contains('lc-app-mode') &&
+        !!((av.host && av.host.closest && av.host.closest('.lc-run[data-lc-app]')) ||
+           (el.closest && el.closest('.lc-run[data-lc-app]')));
+      if (el.getAttribute('dock') === 'true' || cfg.dock === true || inApp) buildSeed(elId, av);
 
       /* idle saccades keep the built-in face alive */
       av._idleT = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);

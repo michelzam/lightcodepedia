@@ -57,7 +57,9 @@ def step_bay_manifest(context, app, sha, entry):
 
     def fulfill(route):
         route.fulfill(status=200, content_type="application/json", body=body)
+    # the ledger is read through the contents API (fresh), the raw host as the fallback
     context.page.route("**/raw.githubusercontent.com/acme/bay/**/manifest.json*", fulfill)
+    context.page.route("**/api.github.com/repos/acme/bay/contents/**/manifest.json*", fulfill)
 
 
 @given("the bay has no manifest")
@@ -65,6 +67,7 @@ def step_bay_no_manifest(context):
     def fulfill(route):
         route.fulfill(status=404, content_type="text/plain", body="404")
     context.page.route("**/raw.githubusercontent.com/acme/bay/**/manifest.json*", fulfill)
+    context.page.route("**/api.github.com/repos/acme/bay/contents/**/manifest.json*", fulfill)
 
 
 @given('the bay serves "{path}" with the document')

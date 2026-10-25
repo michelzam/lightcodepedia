@@ -112,6 +112,9 @@ Auto-included by docs/_layouts/default.html.
     window.addEventListener("lc_shipped", function (e) {
       if (e.detail && e.detail.app === app) draw();
     });
+    window.addEventListener("lc_ship_pick", function (e) {
+      if (e.detail && e.detail.app === app) draw();
+    });
     draw();
   }
 
