@@ -329,7 +329,16 @@ Auto-included by docs/_layouts/default.html.
             var prev = current[app] || null, now = new Date().toISOString();
             var history = (prev && prev.history) ? prev.history.slice() : (prev && prev.sha ? [{ sha: prev.sha, at: prev.at, entry: prev.entry }] : []);
             history = history.filter(function (h) { return h.sha !== sha; });
-            history.unshift({ sha: sha, at: now, entry: shaped[0], engine: ENGINE });
+            /* WHAT THE COPY HOLDS, IN TWO WORDS (Michel, 2026-10-26: "those 2
+               steps … should be 2 shippings, tested in the proof"): the parts
+               the app uses (its IAL classes) and the TODO_ markers still in it,
+               so a proof can tell a pasted-as-is copy from a finished one */
+            var parts = [], todo = (String(entryText || "").match(/TODO_/g) || []).length;
+            String(entryText || "").replace(/\{:([^}\n]*)\}/g, function (m, body) {
+              body.replace(/(?:^|\s)\.([A-Za-z][\w-]*)/g, function (x, c) { if (parts.indexOf(c) < 0) parts.push(c); return x; });
+              return m;
+            });
+            history.unshift({ sha: sha, at: now, entry: shaped[0], engine: ENGINE, parts: parts, todo: todo });
             current[app] = { sha: sha, entry: shaped[0], files: shaped, by: by || undefined, engine: ENGINE,
                              at: now, history: history.slice(0, 50) };
             var body = { message: "📒 manifest: " + app + " @ " + sha.slice(0, 7),
@@ -389,6 +398,10 @@ Auto-included by docs/_layouts/default.html.
         var panel = box.querySelector(".lc-ship-versions");
         if (!e || !e.sha) { if (panel) panel.remove(); return; }
         var list = e.history && e.history.length ? e.history : [{ sha: e.sha, at: e.at, entry: e.entry }];
+        /* the copies, newest first, as a proof reads them: Object._all(".lc-ship")[0]._attr("data-lc-copies") */
+        box.setAttribute("data-lc-copies", JSON.stringify(list.map(function (h) {
+          return { sha: h.sha, at: h.at || "", parts: h.parts || [], todo: h.todo == null ? -1 : h.todo };
+        })));
         if (!panel) { panel = document.createElement("div"); panel.className = "lc-ship-versions"; box.appendChild(panel); }
         var wasOpen = !!(panel.querySelector(".lc-ship-all") || {}).open;
         /* THE COPIES AS A VERSION PANE (Michel, 2026-10-25: "show the list of
