@@ -454,7 +454,13 @@ Auto-included by docs/_layouts/default.html.
     }
 
     /* ── Review before save ── */
+    /* THE PAGE'S PROOF READS THE TAKES: a lesson's camera is not "done" for
+       being on the page (module 07 · 03 was green untouched — Michel,
+       2026-10-25). Every reviewed take bumps data-lc-takes on the widget;
+       the suite hands a blob straight to the review through lcReview. */
+    wrap.lcReview = showReview;
     function showReview(blob) {
+      wrap.dataset.lcTakes = String((parseInt(wrap.dataset.lcTakes || "0", 10) || 0) + 1);
       var url = URL.createObjectURL(blob);
       var ts  = new Date().toISOString().slice(0,19).replace(/:/g,"-");
       var fname = "recording-" + ts + "." + ext;
