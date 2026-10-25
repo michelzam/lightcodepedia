@@ -61,6 +61,18 @@ zooms. They carry no cursor and no focus, and screen readers skip them — a
 control that looks like a control and does nothing is a lie told to a
 beginner. Everything pressable stays inside the window.
 
+**A learner's own file**: `bench="true"` reads the reader's bench first —
+the same path, the way a `save=` block reads it — and the rendered file
+after. A course app's *Hire me!* tab shows the CV each learner wrote; in a
+shipped copy, where the reader has no such file, the shipped one shows.
+Nothing saved and nothing shipped: the window says it is not written yet.
+
+```
+[My CV](#)
+{: .runner src="../module_01/cv.md" bench="true" title="" }
+```
+{: .code }
+
 **Images**: a relative `![…](pic.png)` in a rendered page resolves against
 the rendered file's folder and is fetched with your key — so pictures in a
 private course render like anywhere else. Site-absolute and external image
