@@ -1074,6 +1074,11 @@ Auto-included by docs/_layouts/default.html.
         !!((av.host && av.host.closest && av.host.closest('.lc-run[data-lc-app]')) ||
            (el.closest && el.closest('.lc-run[data-lc-app]')));
       if (el.getAttribute('dock') === 'true' || cfg.dock === true || inApp) buildSeed(elId, av);
+      /* AN APP'S GUIDE INSIDE A LESSON STAYS PUT (Michel, 2026-10-26: its big
+         face floated over the page): in a pad's preview or an embedded window
+         it waits docked, out of the way, until its Play button calls it */
+      else if (el.closest && el.closest('.lc-mdpad-out, .lc-runner-embed'))   /* the face lives on body: ask its source */
+        av.host.classList.add('lc-avatar-docked');
 
       /* idle saccades keep the built-in face alive */
       av._idleT = setInterval(function () { if (!av.playing) lookIdle(av); }, 3200);
