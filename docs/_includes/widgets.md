@@ -545,9 +545,37 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
     var d = _lcDetails(el, arg);
     return d.length ? (d[0].querySelector("summary") || d[0]) : null;
   }
+  /* A TAB OPENS BY NAME OR NUMBER (Michel, 2026-10-25: a tour that walks to
+     the Author tab — "select the multitab and send a verb to select a tab by
+     name or index"): open on a .tabs menu presses that tab's button, the
+     same path a click takes. with: "Author" (its label contains it) or 3. */
+  function _lcTabBtn(el, arg) {
+    if (arg == null || arg === "") return null;
+    var menus = el
+      ? [el.closest && el.closest(".lc-tabs") || (el.classList && el.classList.contains("lc-tabs") ? el : null) ||
+         (el.querySelector && el.querySelector(".lc-tabs"))].filter(Boolean)
+      : Array.prototype.slice.call(document.querySelectorAll(".lc-tabs"));
+    for (var i = 0; i < menus.length; i++) {
+      var bar = menus[i]._lcTabBar || menus[i].querySelector(".lc-tab-bar");
+      var btns = bar ? Array.prototype.slice.call(bar.querySelectorAll(".lc-tab-btn")) : [];
+      var n = parseInt(arg, 10);
+      var hit = String(n) === String(arg).trim() ? btns[n - 1]
+        : btns.filter(function (b) { return b.textContent.toLowerCase().indexOf(String(arg).toLowerCase()) >= 0; })[0];
+      if (hit) return hit;
+    }
+    return null;
+  }
+  /* with at: the part decides (a menu → its tab); with none, sections first
+     — a tour written for an accordion keeps meaning what it meant */
   window.lcVerbs.register("open", function (el, arg) {
-    var d = _lcDetails(el, arg); d.forEach(function (x) { x.open = true; }); return d.length > 0;
-  }, _lcDetailsSubject);
+    var d = _lcDetails(el, arg);
+    var tab = (el || !d.length) ? _lcTabBtn(el, arg) : null;
+    if (tab) { tab.click(); return true; }
+    d.forEach(function (x) { x.open = true; }); return d.length > 0;
+  }, function (el, arg) {
+    var d = _lcDetailsSubject(el, arg);
+    return ((el || !d) ? _lcTabBtn(el, arg) : null) || d;
+  });
   window.lcVerbs.register("close", function (el, arg) {
     var d = _lcDetails(el, arg); d.forEach(function (x) { x.open = false; }); return d.length > 0;
   }, _lcDetailsSubject);

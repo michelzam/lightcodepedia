@@ -216,6 +216,9 @@ Auto-included by docs/_layouts/default.html.
       }).join("");
       var wrap = document.createElement("div");
       wrap.className = "lc-tabs";
+      /* an id the author gave is an address: a tour's at: and the open verb
+         reach this menu by it ({: .tabs #menu }) */
+      if (el.id) { wrap.id = el.id; wrap.setAttribute("data-lc-id", el.id); }
       wrap.innerHTML = "<div class=\"lc-tab-bar\">" + bar + "</div>" + panels;
       /* A PANEL'S COMPONENTS COME ALIVE WHEN IT OPENS (Michel, 2026-10-25:
          an app of three tabs, each embedding module 00's apps — the runner
@@ -232,6 +235,7 @@ Auto-included by docs/_layouts/default.html.
       /* the bar is held, not looked up: an app moves it into its own top
          bar (or a phone's thumb bar), and its buttons must still switch */
       var tabBar = wrap.querySelector(".lc-tab-bar");
+      wrap._lcTabBar = tabBar;   /* the open verb finds the buttons wherever the bar went */
       tabBar.querySelectorAll(".lc-tab-btn").forEach(function(b){
         b.addEventListener("click", function(){
           tabBar.querySelectorAll(".lc-tab-btn").forEach(function(x){x.classList.remove("active");});
