@@ -207,15 +207,36 @@ Auto-included by docs/_layouts/default.html.
          three shelters, not a hand-tuned centre-and-zoom that drifts the
          moment a fourth is added. lat/lng/zoom stay the fallback for a map
          with no markers (or one), and fit="false" opts out. */
-      if (markers.length > 1 && (el.getAttribute("fit") || "") !== "false") {
-        map.once("load", function () {
-          try {
-            var fb = new maplibregl.LngLatBounds(
-              [markers[0].lon, markers[0].lat], [markers[0].lon, markers[0].lat]);
-            markers.forEach(function (m) { fb.extend([m.lon, m.lat]); });
-            map.fitBounds(fb, { padding: 48, maxZoom: 15, duration: 0 });
-          } catch (e) {}
+      var fitsMarkers = markers.length > 1 && (el.getAttribute("fit") || "") !== "false";
+      var fitMarkers = function () {
+        try {
+          var fb = new maplibregl.LngLatBounds(
+            [markers[0].lon, markers[0].lat], [markers[0].lon, markers[0].lat]);
+          markers.forEach(function (m) { fb.extend([m.lon, m.lat]); });
+          map.fitBounds(fb, { padding: 48, maxZoom: 15, duration: 0 });
+        } catch (e) {}
+      };
+      if (fitsMarkers) map.once("load", fitMarkers);
+      /* A MAP DRAWN BEFORE ITS BOX HAD ITS SIZE (Michel, 2026-10-25: the
+         shipped app's campuses map, centred on the Caribbean, no pins): a map
+         made inside a panel, a window or a tab still being laid out fits its
+         markers into the wrong box. When the box changes size the map takes
+         the new size and frames its markers again — unless the reader has
+         already moved it. */
+      var moved = false;
+      map.on("dragstart", function () { moved = true; });
+      map.on("zoomstart", function (e) { if (e && e.originalEvent) moved = true; });
+      if (window.ResizeObserver) {
+        var lastW = wrap.offsetWidth, lastH = wrap.offsetHeight;
+        var ro = new ResizeObserver(function () {
+          var w = wrap.offsetWidth, hh = wrap.offsetHeight;
+          if ((w === lastW && hh === lastH) || !w || !hh) return;
+          lastW = w; lastH = hh;
+          try { map.resize(); } catch (e) {}
+          if (fitsMarkers && !moved) fitMarkers();
         });
+        ro.observe(wrap);
+        if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function () { try { ro.disconnect(); } catch (e) {} });
       }
       if (window.lcRegisterCleanup) window.lcRegisterCleanup(wrap, function() { try { map.remove(); } catch(e) {} });
 

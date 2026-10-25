@@ -159,6 +159,7 @@ Auto-included by docs/_layouts/default.html.
       common = common.slice(0, n);
     });
     var shaped = segs.map(function (sg) { return sg.slice(common.length).join("/"); });
+    var skipped = [];
     var shaRepo = (tgt && tgt.repo && !tgt.here) ? tgt.repo : ctx.repo;
     function fromBench(f) {
       if (!bench || !tgt || !tgt.repo || tgt.here) return Promise.resolve(null);
@@ -202,9 +203,20 @@ Auto-included by docs/_layouts/default.html.
           return chain.then(function () {
             var srcPath = (ctx.dir ? ctx.dir + "/" : "") + f;
             var dest = shaped[k];
+            /* THE APP SHIPS EVEN IF A LEARNER IS LATE (Michel, 2026-10-25:
+               "everyone can see their app on their phone, even if they are
+               late with homework"): only the app itself (the first file) must
+               be there; a piece not written yet is left out, said so, and the
+               app's window on it says "not written yet" until the next ship */
             return fromBench(f)
               .then(function (text) { return text != null ? text : fromPage(srcPath, f); })
+              .catch(function (err) {
+                if (k === 0 || (tgt && tgt.stale)) throw err;
+                skipped.push(f.split("/").pop());
+                return null;
+              })
               .then(function (text) {
+                if (text == null) return;
                 function put() {
                   return fetch(API + bay.repo + "/contents/" + folder + "/" + dest, {
                     method: "PUT", headers: hdrs({ "Content-Type": "application/json" }),
@@ -243,7 +255,9 @@ Auto-included by docs/_layouts/default.html.
               try { current = JSON.parse(decodeURIComponent(escape(atob(env.content.replace(/\n/g, ""))))); }
               catch (e) {}
             }
-            current[app] = { sha: sha, entry: shaped[0], files: shaped,
+            var by = "";
+            try { by = (JSON.parse(localStorage.getItem("lc_gh_user") || "null") || {}).login || ""; } catch (e) {}
+            current[app] = { sha: sha, entry: shaped[0], files: shaped, by: by || undefined,
                              at: new Date().toISOString() };
             var body = { message: "📒 manifest: " + app + " @ " + sha.slice(0, 7),
                          content: b64utf8(JSON.stringify(current, null, 1)) };
@@ -264,7 +278,8 @@ Auto-included by docs/_layouts/default.html.
         a.href = link; a.target = "_blank"; a.rel = "noopener";
         a.textContent = "open your deployed app";
         var note = document.createElement("span");
-        note.textContent = " — public: anyone with this link can see it.";
+        note.textContent = " — public: anyone with this link can see it." +
+          (skipped.length ? " Not shipped, not written yet: " + skipped.join(", ") + " — 💾 it in its own lesson, then ship again." : "");
         status.appendChild(strong); status.appendChild(a); status.appendChild(note);
         btn.disabled = false;
         /* the same-page ship: embeds re-render themselves on this */

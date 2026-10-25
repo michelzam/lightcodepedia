@@ -212,5 +212,5 @@ def step_ship_frames(context, part, inner):
 def step_ship_sticky_title(context, title):
     h1 = context.page.locator(".lc-app-bar").first
     expect(h1).to_contain_text(title, timeout=20_000)
-    assert h1.evaluate("e => getComputedStyle(e).position") == "sticky", "the app's title scrolls away"
+    assert h1.evaluate("e => getComputedStyle(e).position") == "fixed", "the app's title scrolls away"
     expect(context.page.locator(".lc-run[data-lc-app] h1")).to_have_count(0)

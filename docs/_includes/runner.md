@@ -52,13 +52,59 @@ files a learner is already working in.
    body; the page a phone opens pins the app's own title as that bar, under
    the site's top bar (none when embedded). */
 .lc-runner-win:has(> .lc-run[data-lc-app]) > .lc-run { max-height: 75vh; overflow: auto; }
+/* the app's own bar, fixed on top; the site's bar and footer step aside */
 .lc-app-bar {
-  position: sticky; top: 48px; z-index: 50; margin: 0 0 0.8em;
-  padding: 0.55em 0.9em; border-radius: 10px;
-  background: #1e293b; color: #f8fafc; font-size: 1.15em; font-weight: 600;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1001; height: 52px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 0.7em; padding: 0 max(1em, env(safe-area-inset-left));
+  background: #1e293b; color: #f8fafc; font-size: 1.1em; font-weight: 600;
 }
-.lc-embed-mode .lc-app-bar, .lc-hosted .lc-app-bar { top: 0; }
-.lc-crumb-mode .lc-app-bar { top: 50px; }
+.lc-app-bar .lc-app-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-app-bar .lc-app-by { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #475569; }
+.lc-app-bar .lc-app-more { position: relative; }
+.lc-app-bar .lc-app-more > summary { list-style: none; cursor: pointer; padding: 0.1em 0.5em; border-radius: 8px; font-size: 1.2em; line-height: 1; }
+.lc-app-bar .lc-app-more > summary::-webkit-details-marker { display: none; }
+.lc-app-bar .lc-app-more[open] > summary { background: #334155; }
+.lc-app-bar .lc-app-menu { position: absolute; right: 0; top: 2.4em; min-width: 230px; background: #fff; color: #1f2937;
+  border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 10px 30px rgba(15,23,42,.2); padding: 0.4em; font-size: 0.8em; font-weight: 500; }
+.lc-app-bar .lc-app-menu > * { display: block; width: 100%; text-align: left; padding: 0.55em 0.7em; border: 0; background: none;
+  font: inherit; color: inherit; text-decoration: none; border-radius: 6px; box-sizing: border-box; }
+.lc-app-bar .lc-app-menu > button, .lc-app-bar .lc-app-menu > a { cursor: pointer; }
+.lc-app-bar .lc-app-menu > button:hover, .lc-app-bar .lc-app-menu > a:hover { background: #f1f5f9; }
+.lc-app-bar .lc-app-copy { color: #64748b; font-family: ui-monospace, Menlo, monospace; }
+html.lc-app-mode #lc-topbar, html.lc-app-mode .lc-run-bar, html.lc-app-mode #lc-engine { display: none !important; }
+html.lc-app-mode body { padding-top: 52px !important; }
+html.lc-app-mode .markdown-body { padding-top: 0; }
+html.lc-app-mode .lc-run > section:first-child > :first-child { margin-top: 0; }
+/* the app's menu (its first tabs) never scrolls: under the bar on a
+   computer, a thumb bar at the bottom on a phone */
+html.lc-app-mode .lc-run > .lc-tabs, html.lc-app-mode .lc-run > section > .lc-tabs { overflow: visible; border: 0; }
+html.lc-app-mode .lc-run > .lc-tabs > .lc-tab-bar,
+html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar { position: sticky; top: 52px; z-index: 60; border-radius: 0 0 8px 8px; }
+@media (max-width: 700px) {
+  html.lc-app-mode body { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
+  html.lc-app-mode .lc-run > .lc-tabs > .lc-tab-bar,
+  html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar {
+    position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 1001; border-radius: 0;
+    background: #fff; border-top: 1px solid #e2e8f0; border-bottom: 0; box-shadow: 0 -4px 14px rgba(15,23,42,.08);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  html.lc-app-mode .lc-run > .lc-tabs > .lc-tab-bar > .lc-tab-btn,
+  html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar > .lc-tab-btn {
+    flex: 1; min-height: 60px; border-right: 0; font-size: 0.78em; line-height: 1.25; padding: 0.5em 0.2em; box-shadow: none;
+  }
+  html.lc-app-mode .lc-run > .lc-tabs > .lc-tab-bar > .lc-tab-btn.active,
+  html.lc-app-mode .lc-run > section > .lc-tabs > .lc-tab-bar > .lc-tab-btn.active { box-shadow: inset 0 3px 0 #0066cc; background: #f8fbff; }
+  html.lc-app-mode .markdown-body { padding-left: 0.6rem; padding-right: 0.6rem; }
+  html.lc-app-mode .lc-tabs > .lc-tab-panel { padding: 0.8em 0.1em; }
+  html.lc-app-mode .lc-guide-seed { bottom: calc(76px + env(safe-area-inset-bottom)); }
+  html.lc-app-mode .lc-guide-menu, html.lc-app-mode .lc-guide-ask { bottom: calc(130px + env(safe-area-inset-bottom)); }
+  html.lc-app-mode .lc-guide-hello { bottom: calc(82px + env(safe-area-inset-bottom)); }
+}
+/* in a lesson, the shipped window and the pad keep the app's tabs under
+   their bar while the body scrolls */
+.lc-run[data-lc-ship-bay] .lc-tabs, .lc-mdpad-appbody .lc-tabs { overflow: visible; }
+.lc-run[data-lc-ship-bay] > .lc-tabs > .lc-tab-bar, .lc-run[data-lc-ship-bay] > section > .lc-tabs > .lc-tab-bar,
+.lc-mdpad-appbody .lc-tabs > .lc-tab-bar { position: sticky; top: 0; z-index: 6; }
 @media print { .lc-runner-embed { background: #fff; } }
 
 /* ── title="…" — the injected file wears a window ─────────────────────────
@@ -523,6 +569,45 @@ files a learner is already working in.
     return src ? loadMd(src) : Promise.reject({ status: 0 });
   };
 
+  /* APP MODE (Michel, 2026-10-25: "the new app menu/title replaces the gray
+     one … the tabs should not scroll, but stay on top on the computer and
+     become static thumbs on a phone"). A shipped app opened on its own wears
+     only its own bar: its title, who made it, and a ⋯ with the rest — this
+     frozen copy's name and date, Refresh, and where it was made. The site's
+     bar and footer step aside (CSS, html.lc-app-mode). */
+  function appBarFor(title, repo, path) {
+    var m = /^(.*?)([^\/]+)_([0-9a-f]{7,40})\//.exec(path || "");
+    var appBar = document.createElement("div");
+    appBar.className = "lc-app-bar";
+    appBar.innerHTML = '<span class="lc-app-title"></span><img class="lc-app-by" alt="" hidden>' +
+      '<details class="lc-app-more"><summary aria-label="More">⋯</summary><div class="lc-app-menu">' +
+      '<div class="lc-app-copy"></div>' +
+      '<button type="button" class="lc-app-refresh">🔄 Refresh</button>' +
+      '<a href="https://lightcodepedia.org" target="_blank" rel="noopener">✨ Made with Lightcode</a></div></details>';
+    appBar.querySelector(".lc-app-title").textContent = title;
+    appBar.querySelector(".lc-app-refresh").addEventListener("click", function () { location.reload(); });
+    var copy = appBar.querySelector(".lc-app-copy");
+    copy.textContent = m ? "📦 This copy: " + m[3].slice(0, 7) : "";
+    if (m && repo) {
+      fetch("https://raw.githubusercontent.com/" + repo + "/main/" + m[1] + "manifest.json", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (man) {
+          var e = man && man[m[2]];
+          if (!e) return;
+          if (e.at && e.sha && e.sha.indexOf(m[3]) === 0)
+            copy.textContent += " · shipped " + new Date(e.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+          else if (e.sha && e.sha.indexOf(m[3]) !== 0) copy.textContent += " · a newer copy exists";
+          if (e.by) {
+            var img = appBar.querySelector(".lc-app-by");
+            img.src = "https://github.com/" + encodeURIComponent(e.by) + ".png?size=64";
+            img.alt = img.title = "by " + e.by;
+            img.hidden = false;
+          }
+        }).catch(function () {});
+    }
+    return appBar;
+  }
+
   /* src comes from the IAL attribute (embedded examples) or the page hash
      (the /run page). Attribute wins, so a component page can host a live demo. */
   function render(status, root, fixedSrc, bar) {
@@ -599,11 +684,9 @@ files a learner is already working in.
           var oldBar = root.previousElementSibling;
           if (oldBar && oldBar.classList.contains("lc-app-bar")) oldBar.remove();
           var appH1 = bar && root.dataset.lcApp ? root.querySelector("h1") : null;
+          if (bar) document.documentElement.classList.toggle("lc-app-mode", !!root.dataset.lcApp);
           if (appH1) {
-            var appBar = document.createElement("div");
-            appBar.className = "lc-app-bar";
-            appBar.textContent = appH1.textContent;
-            root.parentNode.insertBefore(appBar, root);
+            root.parentNode.insertBefore(appBarFor(appH1.textContent, root.dataset.lcSrcRepo, root.dataset.lcSrcPath), root);
             appH1.remove();
           }
           if (window.lcApplyIAL)    window.lcApplyIAL(root);

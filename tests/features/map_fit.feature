@@ -80,3 +80,4 @@ Feature: A map frames its own markers
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/green.md"
     And I wait for the page to be interactive
     Then the map was made with the "liberty" style
+

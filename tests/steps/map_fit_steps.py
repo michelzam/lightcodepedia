@@ -53,6 +53,7 @@ def step_stub_maplibre(context):
         };
         Map.prototype.getCenter = function () { return { lng: 0, lat: 0 }; };
         Map.prototype.remove = function () {};
+        Map.prototype.resize = function () { calls.resize = (calls.resize || 0) + 1; return this; };
         Map.prototype.dragPan = { disable: function () {}, enable: function () {} };
         window.maplibregl = {
           Map: Map, Marker: Marker, LngLatBounds: Bounds,
@@ -96,3 +97,10 @@ def step_style(context, name):
         "() => window.__lcMapCalls && window.__lcMapCalls.made > 0", timeout=15_000)
     style = context.page.evaluate("() => window.__lcMapCalls.styles[0]")
     assert style == "https://tiles.openfreemap.org/styles/" + name, style
+
+
+@then("the map took its new size and framed its markers again")
+def step_refit(context):
+    context.page.wait_for_function(
+        "() => window.__lcMapCalls && (window.__lcMapCalls.resize || 0) > 0 && window.__lcMapCalls.fit.length > 1",
+        timeout=15_000)
