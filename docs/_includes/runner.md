@@ -36,6 +36,29 @@ files a learner is already working in.
 /* the injected file's own H1 names it for someone opening it alone; inside a
    lesson the lesson's heading already said it */
 .lc-runner-embed > .lc-run > h1 { display: none; }
+/* ONE APP, ONE FRAME (Michel, 2026-10-25: "the moment I ship an app is
+   exactly the moment to define the scope — a frame for the whole app; inside
+   it I pick things, and it is my responsibility as designer"). Inside an app
+   — the decorated pad's app chrome, a shipped copy (its window, or the page
+   a phone opens) — an embed WITHOUT a title is a part of the app: no box of
+   its own. With a title it is an app inside the app: it keeps its window. */
+.lc-mdpad-app .lc-runner-embed:not(.lc-runner-win),
+.lc-run[data-lc-app] .lc-runner-embed:not(.lc-runner-win) {
+  border: 0; border-radius: 0; padding: 0; margin: 0.9em 0; background: transparent;
+}
+/* THE FRAME STAYS, THE CONTENT SCROLLS (Michel, 2026-10-25: "that outer
+   frame to remain a stable fixed menu on top, with the content scrolling
+   inside"). A shipped app's window in a lesson keeps its bar and scrolls its
+   body; the page a phone opens pins the app's own title as that bar, under
+   the site's top bar (none when embedded). */
+.lc-runner-win:has(> .lc-run[data-lc-app]) > .lc-run { max-height: 75vh; overflow: auto; }
+.lc-app-bar {
+  position: sticky; top: 48px; z-index: 50; margin: 0 0 0.8em;
+  padding: 0.55em 0.9em; border-radius: 10px;
+  background: #1e293b; color: #f8fafc; font-size: 1.15em; font-weight: 600;
+}
+.lc-embed-mode .lc-app-bar, .lc-hosted .lc-app-bar { top: 0; }
+.lc-crumb-mode .lc-app-bar { top: 50px; }
 @media print { .lc-runner-embed { background: #fff; } }
 
 /* ── title="…" — the injected file wears a window ─────────────────────────
@@ -531,6 +554,9 @@ files a learner is already working in.
         rw = /^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/[^\/]+\/(.+)$/.exec(src);
     root.dataset.lcSrcRepo = gm ? gm[1] + "/" + gm[2] : (rw ? rw[1] + "/" + rw[2] : "");
     root.dataset.lcSrcPath = gm ? gm[3] : (rw ? rw[3] : (src.charAt(0) === "/" ? "docs" + src : ""));
+    /* a shipped copy is an app: its folder is <app>_<sha>/ (ship.md) */
+    if (/(^|\/)[^\/]+_[0-9a-f]{7,40}\//.test(root.dataset.lcSrcPath)) root.dataset.lcApp = "1";
+    else delete root.dataset.lcApp;
     /* the vault is the LIBRARY — read-only for everyone. Mark the render so
        xray refuses to edit it (a learner has no write access anyway, but the
        editor must not even offer it). */
@@ -567,6 +593,19 @@ files a learner is already working in.
           var norm = window.lcNormIAL(md).trim();   /* fences stay verbatim */
           if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
           root.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
+          /* a shipped app opened on its own: its title is the app's bar,
+             pinned above the content (the content is cut into slide
+             sections, and a sticky heading inside one would leave with it) */
+          var oldBar = root.previousElementSibling;
+          if (oldBar && oldBar.classList.contains("lc-app-bar")) oldBar.remove();
+          var appH1 = bar && root.dataset.lcApp ? root.querySelector("h1") : null;
+          if (appH1) {
+            var appBar = document.createElement("div");
+            appBar.className = "lc-app-bar";
+            appBar.textContent = appH1.textContent;
+            root.parentNode.insertBefore(appBar, root);
+            appH1.remove();
+          }
           if (window.lcApplyIAL)    window.lcApplyIAL(root);
           /* Parity with the page-level scan: auto-id class-carrying fences and
              snapshot them BEFORE upgraders replace them, so xray edits inside

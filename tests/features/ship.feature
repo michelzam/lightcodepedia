@@ -158,3 +158,46 @@ Feature: 🚀 Ship — the author-designed deployment component
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
     And I wait for the page to be interactive
     Then the ship qr says nothing is shipped yet
+
+  Scenario: Inside a shipped app, a part has no frame; a titled window keeps its own
+    Given the bay manifest points "spike_dogs" at "cafebabe12345678" with entry "_ship_app.md"
+    And the bay serves "bays/spike_dogs_cafebabe12345678/_ship_app.md" with the document:
+      """
+      # 🐕 Spike dogs
+
+      [Part](#)
+      {: .runner src="_part.md" }
+
+      [Inner app](#)
+      {: .runner src="_inner.md" title="Inner app" }
+      """
+    And the bay serves "bays/spike_dogs_cafebabe12345678/_part.md" with the document:
+      """
+      A part of the app.
+      """
+    And the bay serves "bays/spike_dogs_cafebabe12345678/_inner.md" with the document:
+      """
+      An app inside the app.
+      """
+    And the GitHub contents API serves "courses/demo/assignment.md" with the document:
+      """
+      # Assignment
+
+      [My shipped app](#)
+      {: .runner src="ship:spike_dogs" bay="acme/bay/bays" title="" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
+    And I wait for the page to be interactive
+    Then the ship embed renders "An app inside the app."
+    And inside the shipped app "A part of the app." has no frame and "An app inside the app." keeps its window
+
+  Scenario: A shipped app opened on its own pins its title on top, the content scrolls under it
+    Given the bay serves "bays/spike_dogs_cafebabe12345678/_ship_app.md" with the document:
+      """
+      # 🐕 Spike dogs
+
+      Twelve dogs, none invisible.
+      """
+    When I navigate to "/run.html#src=gh:acme/bay/bays/spike_dogs_cafebabe12345678/_ship_app.md"
+    And I wait for the page to be interactive
+    Then the shipped app's title "Spike dogs" stays on top as the page scrolls

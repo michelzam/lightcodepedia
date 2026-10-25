@@ -167,6 +167,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-apphead .lc-mdpad-appdots { display: inline-flex; gap: 4px; margin-right: 0.2em; }
 .lc-mdpad-apphead .lc-mdpad-appdots i { width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block; }
 .lc-mdpad-appbody { padding: 0.8em; overflow: auto; flex: 1; }
+/* the app's bar stays, its body scrolls (Michel, 2026-10-25) */
+.lc-mdpad-app { max-height: 80vh; }
 /* phones: preview first, then the source under it — same order as wide */
 @media (max-width: 640px) { .lc-mdpad { flex-direction: column; } }
 /* layout="below" (or "rows"): the same stacking on every screen, for a landscape document */

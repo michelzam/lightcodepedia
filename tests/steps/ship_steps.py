@@ -195,3 +195,22 @@ def step_ship_qr_waiting(context):
     qr = context.page.locator(".lc-qr-ship").first
     expect(qr).to_contain_text("othing shipped yet", timeout=20_000)
     assert qr.get_attribute("data-lc-text") is None, "no address before a ship"
+
+
+@then('inside the shipped app "{part}" has no frame and "{inner}" keeps its window')
+def step_ship_frames(context, part, inner):
+    app = context.page.locator(".lc-run[data-lc-ship-bay]").first
+    p = app.locator(".lc-runner-embed", has_text=part).last
+    i = app.locator(".lc-runner-embed", has_text=inner).last
+    expect(p).to_be_visible(timeout=20_000)
+    assert p.evaluate("e => getComputedStyle(e).borderTopWidth") == "0px", "a part drew its own box"
+    expect(i.locator(".lc-win-bar")).to_have_count(1)
+    assert i.evaluate("e => getComputedStyle(e).borderTopWidth") != "0px", "a titled window lost its frame"
+
+
+@then('the shipped app\'s title "{title}" stays on top as the page scrolls')
+def step_ship_sticky_title(context, title):
+    h1 = context.page.locator(".lc-app-bar").first
+    expect(h1).to_contain_text(title, timeout=20_000)
+    assert h1.evaluate("e => getComputedStyle(e).position") == "sticky", "the app's title scrolls away"
+    expect(context.page.locator(".lc-run[data-lc-app] h1")).to_have_count(0)
