@@ -71,6 +71,10 @@ Auto-included by docs/_layouts/default.html.
   window._lcShipReady = true;
 
   var API = "https://api.github.com/repos/";
+  /* the engine that ships a copy is stamped on it (Michel, 2026-10-25: "go
+     engine stamp"): a copy from the past is drawn by today's engine, and
+     the copy can say which one it was made with */
+  var ENGINE = {{ site.github.build_revision | default: "local" | slice: 0, 7 | jsonify }};
   function edKey() { try { return localStorage.getItem("lc_ed_pat") || ""; } catch (e) { return ""; } }
   function hdrs(extra) {
     var h = { "X-GitHub-Api-Version": "2022-11-28" };
@@ -141,6 +145,7 @@ Auto-included by docs/_layouts/default.html.
   }
 
   function shipIt(box, btn, status, ctx, bay, app, files) {
+    files = files.slice();   /* this ship's own list: the app's embeds join it below */
     btn.disabled = true;
     status.textContent = "Shipping…";
     var folder, sha;
@@ -165,13 +170,38 @@ Auto-included by docs/_layouts/default.html.
       });
       return out;
     };
-    var segs = files.map(norm), common = segs[0].slice(0, -1);
-    segs.forEach(function (sg) {
-      var n = 0; while (n < common.length && n < sg.length - 1 && sg[n] === common[n]) n++;
-      common = common.slice(0, n);
-    });
-    var shaped = segs.map(function (sg) { return sg.slice(common.length).join("/"); });
-    var skipped = [], unchanged = [];
+    var shaped = [];
+    var shapeAll = function () {
+      var segs = files.map(norm), common = segs[0].slice(0, -1);
+      segs.forEach(function (sg) {
+        var n = 0; while (n < common.length && n < sg.length - 1 && sg[n] === common[n]) n++;
+        common = common.slice(0, n);
+      });
+      shaped = segs.map(function (sg) { return sg.slice(common.length).join("/"); });
+    };
+    /* THE APP SAYS WHAT SHIPS (Michel, 2026-10-25: "go auto-files"): every
+       window the app embeds by a relative address ({: .runner src="…" })
+       ships with it, so a new embed can never be left behind and break in
+       the copy. files= names the app (first) and any extras. One level: the
+       app's own windows. */
+    var embedsOf = function (text, entry) {
+      var dir = entry.split("/").slice(0, -1), found = [];
+      String(text || "").replace(/\{:[^}\n]*\}/g, function (ial) {
+        if (!/(^|\s)\.runner(\s|$)/.test(ial.slice(2, -1))) return ial;
+        var m = /\bsrc="([^"]+)"/.exec(ial);
+        var src = m ? m[1].trim() : "";
+        if (!src || /^[a-z]+:/i.test(src) || src.charAt(0) === "/") return ial;
+        var out = dir.slice();
+        src.split("/").forEach(function (g) {
+          if (!g || g === ".") return;
+          if (g === ".." && out.length && out[out.length - 1] !== "..") out.pop(); else out.push(g);
+        });
+        found.push(out.join("/"));
+        return ial;
+      });
+      return found;
+    };
+    var skipped = [], unchanged = [], entryText = null;
     var shaRepo = (tgt && tgt.repo && !tgt.here) ? tgt.repo : ctx.repo;
     function fromBench(f) {
       if (!bench || !tgt || !tgt.repo || tgt.here) return Promise.resolve(null);
@@ -204,7 +234,18 @@ Auto-included by docs/_layouts/default.html.
           return r.text();
         });
     }
-    fetch(API + shaRepo + "/commits?per_page=1", { headers: hdrs(), cache: "no-store" })
+    var entryPath = (ctx.dir ? ctx.dir + "/" : "") + files[0];
+    fromBench(files[0])
+      .then(function (t) { return t != null ? t : fromPage(entryPath, files[0]); })
+      .then(function (t) {
+        entryText = t;
+        embedsOf(t, files[0]).forEach(function (f) {
+          var key = norm(f).join("/");
+          if (!files.some(function (g) { return norm(g).join("/") === key; })) files.push(f);
+        });
+        shapeAll();
+        return fetch(API + shaRepo + "/commits?per_page=1", { headers: hdrs(), cache: "no-store" });
+      })
       .then(function (r) { if (!r.ok) throw new Error("cannot read the source history (HTTP " + r.status + ")"); return r.json(); })
       .then(function (j) {
         sha = j[0] && j[0].sha;
@@ -220,7 +261,7 @@ Auto-included by docs/_layouts/default.html.
                late with homework"): only the app itself (the first file) must
                be there; a piece not written yet is left out, said so, and the
                app's window on it says "not written yet" until the next ship */
-            return fromBench(f)
+            return (k === 0 && entryText != null ? Promise.resolve(entryText) : fromBench(f))
               .then(function (text) { return text != null ? text : fromPage(srcPath, f); })
               .catch(function (err) {
                 if (k === 0 || (tgt && tgt.stale)) throw err;
@@ -288,8 +329,8 @@ Auto-included by docs/_layouts/default.html.
             var prev = current[app] || null, now = new Date().toISOString();
             var history = (prev && prev.history) ? prev.history.slice() : (prev && prev.sha ? [{ sha: prev.sha, at: prev.at, entry: prev.entry }] : []);
             history = history.filter(function (h) { return h.sha !== sha; });
-            history.unshift({ sha: sha, at: now, entry: shaped[0] });
-            current[app] = { sha: sha, entry: shaped[0], files: shaped, by: by || undefined,
+            history.unshift({ sha: sha, at: now, entry: shaped[0], engine: ENGINE });
+            current[app] = { sha: sha, entry: shaped[0], files: shaped, by: by || undefined, engine: ENGINE,
                              at: now, history: history.slice(0, 50) };
             var body = { message: "📒 manifest: " + app + " @ " + sha.slice(0, 7),
                          content: b64utf8(JSON.stringify(current, null, 1)) };

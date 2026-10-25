@@ -70,7 +70,7 @@ files a learner is already working in.
   font: inherit; color: inherit; text-decoration: none; border-radius: 6px; box-sizing: border-box; }
 .lc-app-bar .lc-app-menu > button, .lc-app-bar .lc-app-menu > a { cursor: pointer; }
 .lc-app-bar .lc-app-menu > button:hover, .lc-app-bar .lc-app-menu > a:hover { background: #f1f5f9; }
-.lc-app-bar .lc-app-copy { color: #64748b; font-family: ui-monospace, Menlo, monospace; }
+.lc-app-bar .lc-app-copy, .lc-app-bar .lc-app-engine { color: #64748b; font-family: ui-monospace, Menlo, monospace; }
 .lc-app-bar .lc-app-author { font-weight: 600; }
 html.lc-app-mode #lc-topbar, html.lc-app-mode .lc-run-bar, html.lc-app-mode #lc-engine { display: none !important; }
 /* A SHIPPED COPY IS FROZEN (Michel, 2026-10-25: "go hide save, as well as
@@ -609,6 +609,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
      only its own bar: its title, who made it, and a ⋯ with the rest — this
      frozen copy's name and date, Refresh, and where it was made. The site's
      bar and footer step aside (CSS, html.lc-app-mode). */
+  var ENGINE_NOW = {{ site.github.build_revision | default: "local" | slice: 0, 7 | jsonify }};
   function appBarFor(title, repo, path) {
     var m = /^(.*?)([^\/]+)_([0-9a-f]{7,40})\//.exec(path || "");
     var appBar = document.createElement("div");
@@ -632,6 +633,16 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
                      (e.sha && e.sha.indexOf(m[3]) === 0 ? e : null);
           if (mine && mine.at)
             copy.textContent += " · shipped " + new Date(mine.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+          /* the engine it was shipped with — and, when today's differs, say who draws it now */
+          if (mine && mine.engine) {
+            copy.textContent += " · engine " + mine.engine;
+            if (ENGINE_NOW && mine.engine !== ENGINE_NOW) {
+              var drawn = document.createElement("div");
+              drawn.className = "lc-app-engine";
+              drawn.textContent = "⚙️ Drawn today by engine " + ENGINE_NOW;
+              copy.insertAdjacentElement("afterend", drawn);
+            }
+          }
           /* newer by DATE: a ledger that lags can never call an older copy newer */
           if (e.sha && e.sha.indexOf(m[3]) !== 0 && (!mine || !mine.at || (e.at && e.at > mine.at))) {
             /* this link is an older frozen copy: say so, and open the latest */
@@ -733,12 +744,21 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
             status.style.display = "none";
             /* fade in once the app's own windows have their content too, so
                nothing inside flashes "Loading…" (a second at most) */
-            var waits = 0;
+            var waits = 0, tabAt = root.dataset.lcTab;
             (function settle() {
+              /* the tab that was open, opened again once the menu is there */
+              if (tabAt != null) {
+                var btns = root.querySelectorAll(".lc-tabs > .lc-tab-bar .lc-tab-btn");
+                if (btns.length) {
+                  var b = btns[Math.min(+tabAt, btns.length - 1)];
+                  if (b && !b.classList.contains("active")) b.click();
+                  tabAt = null;
+                } else if (++waits < 12) { setTimeout(settle, 100); return; }
+              }
               var busy = [].some.call(root.querySelectorAll(".lc-runner-embed > .lc-run-status"), function (s) {
                 return s.offsetParent !== null && /Loading|Looking up/.test(s.textContent || "");
               });
-              if (busy && ++waits < 12) { setTimeout(settle, 100); return; }
+              if (busy && ++waits < 15) { setTimeout(settle, 100); return; }
               root.style.opacity = "";
             })();
           }
@@ -1049,16 +1069,14 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
       var hostEl = el.closest && el.closest("[data-lc-src-repo]");
       root.dataset.lcShipHost = (hostEl && hostEl.getAttribute("data-lc-src-repo")) || "";
       var shipName = fixedSrc.slice(5);
-      window.addEventListener("lc_shipped", function (e) {
-        if (e.detail && e.detail.app === shipName) render(status, root, fixedSrc, bar);
-      });
-      /* a copy picked in the ship panel's versions — or the time machine.
-         A MORPH, NOT A FLASH (Michel, 2026-10-25: "a bit flashy … the height
-         is not fixed, it also dances the qrcode up and down"): the window
-         keeps the tallest height it has shown, the copy on screen fades
-         while the next one loads, and the next one fades in over it. */
-      window.addEventListener("lc_ship_pick", function (e) {
+      /* a copy picked in the ship panel's versions, the time machine, or a
+         new ship. A MORPH, NOT A FLASH (Michel, 2026-10-25: "a bit flashy …
+         the height is not fixed, it also dances the qrcode up and down"):
+         the window keeps the tallest height it has shown, the copy on screen
+         fades while the next one loads, and the next one fades in over it. */
+      var morph = function (e) {
         if (!(e.detail && e.detail.app === shipName)) return;
+        if (!root.firstElementChild) { render(status, root, fixedSrc, bar); return; }   /* nothing on screen yet */
         var hold = Math.max(root.offsetHeight, +(root.dataset.lcHold || 0));
         root.dataset.lcHold = String(hold);
         root.style.boxSizing = "border-box";   /* the held height is the outer one: padding counted once */
@@ -1066,8 +1084,17 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
         root.style.transition = "opacity 0.3s ease";
         root.style.opacity = "0.15";
         root.dataset.lcMorph = "1";
+        /* THE OPEN TAB STAYS OPEN (Michel, 2026-10-25: "if I select the author
+           tab, I would like to see the changes on that tab during timetravel"):
+           which tab of the app's menu was open, by position, reopened on the
+           next copy before it fades in */
+        var openTab = root.querySelector(".lc-tabs > .lc-tab-bar .lc-tab-btn.active");
+        if (openTab) root.dataset.lcTab = String([].indexOf.call(openTab.parentNode.children, openTab));
+        else delete root.dataset.lcTab;
         setTimeout(function () { render(status, root, fixedSrc, bar); }, 220);
-      });
+      };
+      window.addEventListener("lc_ship_pick", morph);
+      window.addEventListener("lc_shipped", morph);
     }
     render(status, root, fixedSrc, bar);
     /* A CARD CLICK IS A NAVIGATION, so it must land at the top of the new

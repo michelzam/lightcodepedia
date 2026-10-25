@@ -90,10 +90,13 @@ Auto-included by docs/_layouts/default.html.
     wrap.appendChild(qrDiv); wrap.appendChild(cap);
     el.parentNode.replaceChild(wrap, el);
     var label = lines.join(" ").trim();
+    var asked = 0;   /* only the latest request draws: a slower, older answer is dropped */
     function draw() {
       var resolve = window.lcResolveShip;
       if (!resolve) { cap.textContent = "🚀 Nothing shipped yet"; return; }
+      var mine = ++asked;
       resolve(app, bay, host).then(function (real) {
+        if (mine !== asked) return;
         if (!real) {
           qrDiv.innerHTML = ""; wrap.removeAttribute("data-lc-text");
           cap.textContent = "🚀 Nothing shipped yet — press Ship, and the square appears.";
