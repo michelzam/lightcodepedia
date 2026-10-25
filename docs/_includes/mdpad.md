@@ -90,6 +90,13 @@ Auto-included by docs/_layouts/default.html.
 /* folded, the ✎ pill sits where the app title's own buttons end (🔄, ✓): the title keeps
    clear of it, or the pill eats the tap (caught 2026-10-20 by the walk log's reconcile) */
 .lc-mdpad.lc-mdpad-folded .lc-mdpad-apphead { padding-right: 3em; }
+/* FOLDED, THE WAY IN SAYS ITS NAME (Michel, 2026-10-25: "no way to save
+   student's copy in their bench … to make changes" — the ✎ was a faint
+   grey dot on the app's dark bar): a labelled, solid ✎ Edit */
+.lc-mdpad.lc-mdpad-folded .lc-mdpad-pills > .lc-mdpad-fold { opacity: 1; background: #fff; color: #0066cc; border-color: #93c5fd;
+  font-weight: 600; padding: 0 0.7em; }
+.lc-mdpad.lc-mdpad-folded .lc-mdpad-pills > .lc-mdpad-fold::after { content: " Edit"; }
+.lc-mdpad.lc-mdpad-folded .lc-mdpad-apphead { padding-right: 5.5em; }
 .lc-mdpad-ghost { position: absolute; left: 0.6em; right: 0.6em; height: 0; border-top: 1.5px dashed rgba(100, 116, 139, 0.55);
   pointer-events: none; z-index: 2; }
 .lc-mdpad-ghost span { position: absolute; right: 0; top: -0.75em; font-size: 0.72em; padding: 0.05em 0.5em; border-radius: 999px;
@@ -774,11 +781,15 @@ Auto-included by docs/_layouts/default.html.
           if (mineTag) { mineTag.textContent = "📖 on the host — read-only"; mineTag.hidden = false; }
           return;
         }
+        /* THE LESSON'S COPY CAN BE KEPT AS IT IS (Michel, 2026-10-25): 💾 on
+           an unchanged starter makes it the learner's — then it is theirs to
+           change. "Nothing changed" only applies to a copy already saved. */
         var why = !window.lcBench ? "Saving needs a newer engine"
                 : !t.pat || !t.repo ? "Join the course (connect your key) to keep your work"
-                : ta.value === bOrigin ? "Nothing changed since your last save" : "";
+                : ta.value === bOrigin && bSha ? "Nothing changed since your last save" : "";
         saveBtn.disabled = !!why || !!commentBox;
-        saveBtn.title = why || (hereSave ? "Save on the host (" + window.lcBench.resolve(benchPath, wrap) + ") — the old copy is kept in __backup/"
+        saveBtn.title = why || (!bSha && ta.value === bOrigin && !hereSave ? "Keep the lesson's copy in your space — then it is yours to change"
+                              : hereSave ? "Save on the host (" + window.lcBench.resolve(benchPath, wrap) + ") — the old copy is kept in __backup/"
                               : askComment ? "Keep this in your own space — and say in one line what you just did"
                               : "Keep this in your own space (" +
           (window.lcBench ? window.lcBench.resolve(benchPath, wrap) : benchPath) + ")");
@@ -831,7 +842,7 @@ Auto-included by docs/_layouts/default.html.
            from nothing. Written on the first save, never on load: a reader
            who never edits leaves no commits at all. Never allowed to block
            the real save. */
-        var first = !bSha;
+        var first = !bSha && ta.value !== seed;   /* the starter kept as it is: one write, not two */
         (first
           ? window.lcBench.write(benchPath, seed, window.lcStarterMsg, null, wrap)
               .then(function (sha) { bSha = sha || bSha; })

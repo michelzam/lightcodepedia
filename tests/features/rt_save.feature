@@ -1002,11 +1002,13 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     Then the bench received no commit
     And the diary pad's save button is on again
 
-  Scenario: Buttons that would do nothing are off
+  Scenario: Buttons that would do nothing are off — and keeping the lesson's copy is something
+    Michel, 2026-10-25: "no way to save student's copy in their bench ... to make changes" —
+    on a starter 💾 keeps the lesson's copy; start-over, which would do nothing, stays off.
     Given a connected bench whose "courses/demo/mod/diary.md" does not exist yet
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
     And I wait for the page to be interactive
-    Then the diary pad's save and start-over buttons are off, each saying why
+    Then the diary pad's start-over is off, saying why, and its save keeps the lesson's copy
     When I type "# Diary — changed" into the diary pad
     Then the diary pad's save and start-over buttons are on
 

@@ -1027,14 +1027,15 @@ def step_diary_save_on(context):
     expect(_diary_bar(context).locator(".lc-mdpad-save")).to_be_enabled(timeout=5_000)
 
 
-@then("the diary pad's save and start-over buttons are off, each saying why")
+@then("the diary pad's start-over is off, saying why, and its save keeps the lesson's copy")
 def step_diary_buttons_off(context):
     bar = _diary_bar(context)
     save, reset = bar.locator(".lc-mdpad-save"), _open_versions(context, ".lc-mdpad[data-lc-id='diary']")
-    expect(save).to_be_disabled(timeout=10_000)
-    expect(reset).to_be_disabled()
-    assert "nothing changed" in (save.get_attribute("title") or "").lower(), save.get_attribute("title")
+    expect(reset).to_be_disabled(timeout=10_000)
     assert "starter" in (reset.get_attribute("title") or "").lower(), reset.get_attribute("title")
+    # the starter can be kept as it is (Michel, 2026-10-25): 💾 is on, and says so
+    expect(save).to_be_enabled()
+    assert "lesson's copy" in (save.get_attribute("title") or ""), save.get_attribute("title")
 
 
 @then("the diary pad's save and start-over buttons are on")
