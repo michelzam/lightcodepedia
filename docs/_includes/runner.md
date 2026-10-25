@@ -662,7 +662,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
   function render(status, root, fixedSrc, bar) {
     var shipM = fixedSrc && /^ship:(.+)$/.exec(fixedSrc);
     if (shipM) {
-      status.style.display = ""; status.textContent = "Looking up your latest ship…";
+      if (!root.dataset.lcMorph) { status.style.display = ""; status.textContent = "Looking up your latest ship…"; }
       resolveShip(shipM[1], root.dataset.lcShipBay, root.dataset.lcShipHost).then(function (real) {
         if (real) return render(status, root, real, bar);
         root.innerHTML = "";
@@ -678,7 +678,8 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
       if (bar) { bar.style.display = "none"; pageTitle(bar.parentNode, false); }
       return;
     }
-    status.style.display = ""; status.textContent = "Loading…"; root.innerHTML = "";
+    /* a morph keeps the copy on screen (faded) until the next one is in */
+    if (!root.dataset.lcMorph) { status.style.display = ""; status.textContent = "Loading…"; root.innerHTML = ""; }
     var spec = resolveSrc(src);
     root.dataset.lcSrc = src;   /* what a relative path on this page means (relSrc) */
     /* Advertise the source on the render root so editors (xray) commit to the
@@ -727,6 +728,20 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
           var norm = window.lcNormIAL(md).trim();   /* fences stay verbatim */
           if (window.lcClientFootnotes) norm = window.lcClientFootnotes(norm);
           root.innerHTML = (window.lcInlineIAL || function (h) { return h; })(marked.parse(norm));
+          if (root.dataset.lcMorph) {
+            delete root.dataset.lcMorph;
+            status.style.display = "none";
+            /* fade in once the app's own windows have their content too, so
+               nothing inside flashes "Loading…" (a second at most) */
+            var waits = 0;
+            (function settle() {
+              var busy = [].some.call(root.querySelectorAll(".lc-runner-embed > .lc-run-status"), function (s) {
+                return s.offsetParent !== null && /Loading|Looking up/.test(s.textContent || "");
+              });
+              if (busy && ++waits < 12) { setTimeout(settle, 100); return; }
+              root.style.opacity = "";
+            })();
+          }
           /* a shipped app opened on its own: its title is the app's bar,
              pinned above the content (the content is cut into slide
              sections, and a sticky heading inside one would leave with it) */
@@ -793,6 +808,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
       })
       .catch(function (err) {
         status.style.display = "";
+        if (root.dataset.lcMorph) { delete root.dataset.lcMorph; root.style.opacity = ""; }
         if (bar) { barSt.loading = false; paintBar(bar, barSt); }
         var st = err && err.status;
         if (root.dataset.lcBenchFirst && st === 404) {
@@ -981,11 +997,14 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
     if (given) { el.textContent = given; return; }
     var fallback = (src || "").split("/").pop().replace(/\.md$/i, "").replace(/^_+/, "");
     el.textContent = fallback;
+    /* the name follows every render, not only the first: a shipped app's
+       window shows each copy picked in its versions (Michel, 2026-10-25:
+       "changes in the title … only displayed in the deployed app") */
     var obs = new MutationObserver(function () {
       var h = root.querySelector("h1");
       if (!h) return;
       var t = (h.textContent || "").trim();
-      if (t) { el.textContent = t; obs.disconnect(); }
+      if (t && el.textContent !== t) el.textContent = t;
     });
     obs.observe(root, { childList: true, subtree: true });
   }
@@ -1033,9 +1052,21 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
       window.addEventListener("lc_shipped", function (e) {
         if (e.detail && e.detail.app === shipName) render(status, root, fixedSrc, bar);
       });
-      /* a copy picked in the ship panel's versions — or the time machine */
+      /* a copy picked in the ship panel's versions — or the time machine.
+         A MORPH, NOT A FLASH (Michel, 2026-10-25: "a bit flashy … the height
+         is not fixed, it also dances the qrcode up and down"): the window
+         keeps the tallest height it has shown, the copy on screen fades
+         while the next one loads, and the next one fades in over it. */
       window.addEventListener("lc_ship_pick", function (e) {
-        if (e.detail && e.detail.app === shipName) render(status, root, fixedSrc, bar);
+        if (!(e.detail && e.detail.app === shipName)) return;
+        var hold = Math.max(root.offsetHeight, +(root.dataset.lcHold || 0));
+        root.dataset.lcHold = String(hold);
+        root.style.boxSizing = "border-box";   /* the held height is the outer one: padding counted once */
+        root.style.minHeight = hold + "px";
+        root.style.transition = "opacity 0.3s ease";
+        root.style.opacity = "0.15";
+        root.dataset.lcMorph = "1";
+        setTimeout(function () { render(status, root, fixedSrc, bar); }, 220);
       });
     }
     render(status, root, fixedSrc, bar);
