@@ -162,6 +162,7 @@ That's the whole syntax. The page upgrades the static code block into a live edi
 | `# ---` in the code | Split marker: code above runs as init (hidden); code below is the editable body |
 | `silent="true"` | No UI at all — runs once on page load, stdout swallowed, errors go to the console |
 | `expected="…"` | After ▶ Run, compare printed output to this string. ✓ if it matches; counts toward the 🏆 score |
+| `mypy="true"` | A 🩺 Dr. mypy (lite) button: the type hints checked, strict, in mypy's words — `"loose"` forgives missing hints |
 
 **Q:** You want the editor to start collapsed so it doesn't intimidate beginners. Which attribute do you add?
 
@@ -281,9 +282,9 @@ print(o)
 > "Your data has a face now" — it clicks for visual learners.
 {: .speaker-note }
 
-## 🧪 Doctests — click 🧪 Test
+## 🧪 Doctests — click 🧪 Test, or call doctest
 
-Every runner has a **🧪 Test** button next to ▶ Run. It finds `>>> expr` lines inside docstrings, runs each expression, and compares `repr(value)` to the expected line below it.
+Every runner has a **🧪 Test** button next to ▶ Run. It runs every `>>>` example in every docstring — doctest's way: each docstring in its own namespace, a statement (`>>> p = Pet("Luna")`) expects nothing, an expression's `repr` (or what it prints) is compared with the lines below it — and shows one ✅ or ❌ row per example.
 
 ```python
 def fact(n):
@@ -306,14 +307,71 @@ def greet(name):
 ```
 {: .run #doctests_demo rows="18" }
 
-Hit **▶ Run** first (so the functions exist), then **🧪 Test**. Try breaking a return value to see a red failure row.
+Hit **🧪 Test**. Try breaking a return value to see a red failure row.
+
+**The course's files run as written.** The browser Python[^wasm] keeps no docstrings and has no `doctest` module, so the runner reads them from the program's text: `import doctest` and `doctest.testmod()` print CPython's report (silent when all pass, *Expected / Got* when not), `verbose=True` prints every *Trying / Expecting / ok* and the summary, and `__doc__`, `jump.__doc__`, `help(jump)` answer as in a terminal.
+
+```python
+"""
+For an anxious coder
+Who wants to be sure to check his code before sharing
+"""
+
+
+def jump(start: int, leap: int) -> int:
+    """
+    Makes an absolute jump from start.
+
+    >>> jump(2, 3)
+    5
+    >>> jump(1, -1)
+    2
+    """
+    return start + leap
+
+
+if __name__ == "__main__":
+    print(__doc__)
+    import doctest
+    doctest.testmod()
+    help(jump)
+```
+{: .run #doctest_module }
 
 **Doctest rules in brief:**
 
-- Tests live inside `"""…"""` docstrings.
-- Each test is `>>> expression` followed by one line of expected output.
-- Expected output is compared against `repr(value)` — strings need their quotes: `'Lucky!'` not `Lucky!`.
-- `None`-returning calls need no expected line (or a blank line).
+- Examples live inside `"""…"""` docstrings — a module's, a class's, a function's, a method's.
+- `>>> statement` lines (`p = Pet("Luna")`) expect nothing; `... ` continues a line.
+- The expected lines follow, up to a blank line — strings with their quotes: `'Lucky!'` not `Lucky!`.
+- An expected `Traceback (most recent call last):` matches when the last line names the same error.
+
+## 🩺 Dr. mypy (lite) — type hints, checked in the page
+
+`mypy` cannot run in the browser, so the runner carries a small one that reads the hints from the text and answers in mypy's own words and codes: a `def` without its hints (`--strict`: *Function is missing a return type annotation  [no-untyped-def]*), a `return` against its hint (*Incompatible return value type*, *Return value expected*, *No return value expected*, *Missing return statement*), a literal argument against its parameter (*Argument 1 to "jump" has incompatible type "str"; expected "int"*). It never guesses: what is not written as a literal is not judged.
+
+Two doors. `import mypy.api` and `mypy.api.run(["--strict", "--pretty", __file__])` return `(out, err, status)` as the real one does, so the PythonAnywhere recipe runs unchanged. And `mypy="true"` on a runner adds a **🩺 Dr. mypy** button: the verdict without running the program.
+
+```python
+def cut_budget(budget: float, cut: float):
+    """ Cuts budget by cut%
+
+    >>> cut_budget(100, .10)
+    90.0
+    """
+    new_budget = budget * (1 - cut)
+    return new_budget
+
+
+if __name__ == "__main__":
+    print("New budget: ", cut_budget(100, .1))
+
+    import mypy.api
+    out, err, status = mypy.api.run(["--strict", "--pretty", __file__])
+    print("✅ Dr. mypy: no type errors" if status == 0 else f"❌ Dr. mypy:\n{out or err}")
+```
+{: .run #mypy_demo mypy="true" }
+
+Press 🩺 Dr. mypy, then add `-> float` to the `def` line and press it again. A [✍️ pad](/components/mdpad) wears the same check on its python fences with `mypy="true"`: ⚠ on the line, mypy's words beside it.
 
 ## ⌨️ REPL — line-by-line exploration
 
@@ -430,6 +488,7 @@ console when a verb animates.
 ## ⚠️ Limits worth knowing
 
 - **Slim stdlib.** The browser Python[^wasm] has `json`, `math`, `re`, `collections`, `itertools` and more — but no `numpy`, `pandas`, `requests`, or any C extension. For the full Python ecosystem you'd switch to Pyodide (~10 MB).
+- **No real `doctest` or `mypy`.** The runner stands in for both from the program's text (above): `testmod()` and its report, `__doc__`, `help()`, and the type checks a beginner meets first. `importlib`-based recipes do not run here.
 - **No filesystem.** `open()` doesn't work. Use `yaml.load()`, inline strings, or `show()` for data.
 - **Single thread.** No `threading`, no `asyncio`. Code blocks the tab while running (fast scripts only). That's why `input()` re-runs the script instead of waiting — see above.
 - **No persistence.** Variables reset between page loads. Use `bound=` to keep state visible between runs within the same session.

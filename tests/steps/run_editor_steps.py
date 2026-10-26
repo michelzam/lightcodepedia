@@ -98,3 +98,78 @@ def step_console_last_frame(context, run_id, text, gone):
         "el => !el.hasAttribute('data-lc-playing')", arg=out.element_handle(), timeout=20_000)
     got = out.inner_text()
     assert text in got and gone not in got, got
+
+
+@then('the "{run_id}" editor\'s output shows:')
+@then('the "{run_id}" editor\'s output shows')   # behave 1.2.6 (pedia) strips the colon before a docstring; 1.3 keeps it
+def step_output_shows_block(context, run_id):
+    out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
+    expect(out).to_contain_text(context.text, timeout=30_000)
+
+
+@then('the "{run_id}" editor\'s output shows "{text}"')
+def step_output_shows(context, run_id, text):
+    out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
+    expect(out).to_contain_text(text.replace('\\"', '"'), timeout=30_000)
+
+
+@when('I click Test in the "{run_id}" editor')
+def step_click_test(context, run_id):
+    context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-test").click()
+
+
+@when('I press Dr. mypy in the "{run_id}" editor')
+def step_click_mypy(context, run_id):
+    context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-mypy").click()
+
+
+@then('the "{run_id}" editor\'s tests read "{text}"')
+def step_tests_read(context, run_id, text):
+    summary = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-test-summary")
+    expect(summary).to_have_text(text, timeout=30_000)
+
+
+@when('I replace "{old}" with "{new}" in the "{run_id}" editor')
+def step_replace_in_editor(context, old, new, run_id):
+    ta = _ta(context, run_id)
+    v = ta.input_value()
+    assert old in v, "no %r in the editor" % old
+    ta.evaluate("(el, v) => { el.value = v; el.dispatchEvent(new Event('input')); }", v.replace(old, new, 1))
+
+
+@then("the page carries the doctest stand-in")
+def step_has_pycheck(context):
+    ok = context.page.evaluate("() => !!(window.lcPyBefore && window.LC_PY_SHIM && window.lcDrMypy)")
+    assert ok, "pycheck.md did not load: no doctest, no Dr. mypy on this page"
+
+
+@then('the engine file "{path}" uses no regex lookbehind')
+def step_no_lookbehind(context, path):
+    import os, re
+    root = os.path.join(os.path.dirname(__file__), "..", "..")
+    src = open(os.path.join(root, path), encoding="utf-8").read()
+    hits = [n + 1 for n, l in enumerate(src.split("\n")) if re.search(r"\(\?<[=!]", l)]
+    assert not hits, "lookbehind on line(s) %s — older Safari refuses the whole script" % hits
+
+
+@then('the "{pad_id}" pad counts "{tally}" examples passing')
+def step_pad_tally(context, pad_id, tally):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    expect(pad).to_have_attribute("data-lc-doctest", tally, timeout=30_000)
+
+
+@when('I replace "{old}" with "{new}" in the "{pad_id}" pad')
+def step_replace_in_pad(context, old, new, pad_id):
+    ta = context.page.locator("[data-lc-id='" + pad_id + "'] textarea.lc-mdpad-in")
+    old, new = old.replace("\\n", "\n"), new.replace("\\n", "\n")
+    v = ta.input_value()
+    assert old in v, "no %r in the pad" % old
+    ta.evaluate("(el, v) => { el.value = v; el.dispatchEvent(new Event('input')); }", v.replace(old, new, 1))
+
+
+@then('the "{pad_id}" pad marks no line as an error')
+def step_pad_clean(context, pad_id):
+    pad = context.page.locator("[data-lc-id='" + pad_id + "']")
+    context.page.wait_for_function(
+        "p => { const e = document.querySelector(\"[data-lc-id='\" + p + \"']\"); return e && !e.hasAttribute('data-lc-errors'); }",
+        arg=pad_id, timeout=30_000)

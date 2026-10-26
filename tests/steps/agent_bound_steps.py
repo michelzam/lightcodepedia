@@ -989,3 +989,16 @@ def step_editor_changed(context, run_id, code):
 @then("the model was asked {n:d} times")
 def step_model_asked_n(context, n):
     assert len(context.model_asks) == n, "the model was asked %d times, not %d" % (len(context.model_asks), n)
+
+
+@then('the "{agent_id}" agent\'s areas read "{direction}" and "{question}" with no stray stars')
+def step_areas_no_stars(context, agent_id, direction, question):
+    bot = context.page.locator('[data-lc-id="' + agent_id + '"] .lc-agent-msg-bot.lc-agent-tutor').first
+    expect(bot).to_be_visible(timeout=10_000)
+    d = bot.locator(".lc-agent-direction").inner_text()
+    q = bot.locator(".lc-agent-question").inner_text()
+    assert direction in d, "direction area: %r" % d
+    assert question in q, "question area: %r" % q
+    for area in (d, q):
+        assert "**" not in area, "stray stars: %r" % area
+    assert "Direction –" not in d and "Question back –" not in q, "the label stayed in the sentence: %r / %r" % (d, q)

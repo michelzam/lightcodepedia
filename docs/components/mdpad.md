@@ -73,6 +73,53 @@ Feature: The pad renders what is typed
 - **Errors in the gutter.** A fence that never closes, a decoration
   without its `}`, a Python fence that does not compile: ⚠ on the line, one
   sentence under the pad.
+- **Type hints, checked.** `mypy="true"` lets Dr. mypy (lite) read every
+  Python fence too — a `def` without its hints, a `return` or a literal
+  argument against them — ⚠ on the line in mypy's own words, as the
+  [🐍 runner](run)'s 🩺 Dr. mypy says them. `"loose"` forgives a missing
+  hint and checks only the ones written.
+
+````markdown
+## 🐶 A typed pet
+
+```python
+class Pet:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def greet(self):
+        return f"Hello, I am {self.name}!"
+```
+````
+{: .mdpad #typed_pad mypy="true" numbers="true" rows="10" }
+
+  `greet` gives back a `str` and does not say so: line 8 wears the ⚠.
+  Type `-> str` before its colon and the ⚠ goes.
+- **Examples, run as you write.** `doctest="true"`: every Python fence
+  runs its own `>>>` examples — no `if __name__ == "__main__":`, no
+  `doctest.testmod()` — and a failing one wears ⚠ on its `>>>` line:
+  *got 0, expected 2*. A fence runs again only when its own text changes.
+
+````markdown
+## 🦘 jump
+
+```python
+def jump(start: int, leap: int) -> int:
+    """
+    Makes an absolute jump from start.
+
+    >>> jump(2, 3)
+    5
+    >>> jump(1, -1)
+    2
+    """
+    return start + leap
+```
+````
+{: .mdpad #doctest_pad doctest="true" mypy="true" numbers="true" rows="14" }
+
+  Line 10 wears the ⚠: `jump(1, -1)` gives `0`. Fix the example (or the
+  code) and the gutter clears.
 - **Keys and the phone.** ⌘↑/↓ jumps between blocks, ⌥ moves one, ⇥ folds
   the editor away so the preview takes the whole width (✎ brings it back);
   `folded="true"` opens that way. `?` on the pad lists the keys of this
@@ -96,6 +143,8 @@ Feature: The pad renders what is typed
 | `decorations="true"` | off | the preview runs the site's pipeline: components come alive |
 | `piano="true"` | off | blocks banded in two shades, the caret's in a third |
 | `numbers="true"` | off | line numbers and component icons in a gutter |
+| `doctest="true"` | off | each Python fence runs its own `>>>` examples as you write; a failing one is marked ⚠ on its line |
+| `mypy="true"` | off | Dr. mypy (lite) reads the Python fences: missing hints and wrong types, ⚠ on the line (`"loose"`: written hints only) |
 | `folded="true"` | off | opens with the editor folded away |
 | `layout="below"` | `beside`, side by side | preview above the source |
 | `layout="behind"` | `beside`, side by side | one face at a time: the result in front, ✎ brings the source |

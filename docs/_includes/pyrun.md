@@ -132,50 +132,6 @@ Auto-included by docs/_layouts/default.html.
   var loadPrism  = window.lcLoadPrism;
   var loadJsYaml = window.lcLoadJsYaml;
 
-  function parseDoctests(source) {
-    var tests = [];
-    var lines = source.split("\n");
-    var inDoc = false, quote = "", pending = null;
-    for (var i = 0; i < lines.length; i++) {
-      var L = lines[i];
-      if (!inDoc) {
-        var dm = L.match(/("""|''')/);
-        if (dm) {
-          quote = dm[1];
-          var after = L.substring(L.indexOf(quote) + 3);
-          // Skip single-line docstrings like """one-liner"""
-          if (after.indexOf(quote) >= 0) continue;
-          inDoc = true;
-        }
-        continue;
-      }
-      // Inside a docstring
-      if (L.indexOf(quote) >= 0) {
-        if (pending) { tests.push(pending); pending = null; }
-        inDoc = false;
-        continue;
-      }
-      var em = L.match(/^\s*>>>\s*(.*)$/);
-      if (em) {
-        if (pending) { tests.push(pending); }
-        pending = { expr: em[1], expected: "", lineno: i + 1 };
-        continue;
-      }
-      if (pending) {
-        var t = L.replace(/^\s+/, "").replace(/\s+$/, "");
-        if (t === "" || /^\s*>>>/.test(L)) {
-          tests.push(pending);
-          pending = null;
-          if (em) { pending = { expr: em[1], expected: "", lineno: i + 1 }; }
-        } else if (pending.expected === "") {
-          pending.expected = t;
-        }
-      }
-    }
-    if (pending) tests.push(pending);
-    return tests;
-  }
-
   /* ONE MicroPython per page. The wasm build is a singleton: a second
      loadMicroPython silently kills the first (every later call throws
      "NULL object"). Features, editors, cells, buttons, diagrams and the
@@ -193,10 +149,17 @@ Auto-included by docs/_layouts/default.html.
              component's own docs teach, could never match (found while
              building input(), 2026-09-02). Put the newline back, unless a
              build ever hands one over. */
-          stdout: function (t) { if (window._lcMpyOut) window._lcMpyOut(/\n$/.test(t) ? t : t + "\n"); },
+          /* a doctest example's own prints are its result, not the
+             program's: pycheck.md's stand-in holds them in _lcMpyCap */
+          stdout: function (t) {
+            var line = /\n$/.test(t) ? t : t + "\n";
+            if (typeof window._lcMpyCap === "string") window._lcMpyCap += line;
+            else if (window._lcMpyOut) window._lcMpyOut(line);
+          },
           stderr: function (t) {
             var line = /\n$/.test(t) ? t : t + "\n";
-            if (window._lcMpyOut) window._lcMpyOut(line);
+            if (typeof window._lcMpyCap === "string") window._lcMpyCap += line;
+            else if (window._lcMpyOut) window._lcMpyOut(line);
             else if (window.console) console.warn("[lc mpy stderr]", t);
           }
         });
@@ -764,7 +727,9 @@ Auto-included by docs/_layouts/default.html.
       try { m.runPython("_lc_load_answers()"); } catch (e) { }
       try { m.runPython(window.LC_FRAMES_ON); } catch (e) { }
       try {
-        m.runPython(desugarFstrings(codeEl.value));
+        /* the deck's files run as written: doctest, __doc__, help(),
+           mypy.api — read from the program's text (pycheck.md) */
+        m.runPython(desugarFstrings(window.lcPyBefore ? window.lcPyBefore(m, codeEl.value, ID + ".py") : codeEl.value));
         if (window.lcFrames.has(buf)) {
           /* an animation: play it, and keep the last screen as THE output */
           var raw = buf;
@@ -829,9 +794,25 @@ Auto-included by docs/_layouts/default.html.
             status.textContent = "error in code";
             return;
           }
-          var tests = parseDoctests(codeEl.value);
+          /* the doctests are doctest's own (pycheck.md): every docstring's
+             >>> lines, in their own namespace, statements included */
           clearTests();
-          if (tests.length === 0) {
+          var rows = [];
+          try {
+            window._lcMpyOut = function (t) { buf += t; };
+            window._lcDtRows = "[]";
+            try { m.runPython("import js as _lc_js\n_lc_js.window._lcDtRows = _lc_dt_rows()"); rows = JSON.parse(String(window._lcDtRows)); }
+            finally { window._lcMpyOut = null; }
+          } catch (e) {
+            var bad = document.createElement("div");
+            bad.className = "lc-pyrun-test-row lc-pyrun-test-fail";
+            bad.textContent = "Test runner error: " + (e.message || String(e));
+            testsEl.appendChild(bad);
+            status.textContent = "test error";
+            repaintBound();
+            return;
+          }
+          if (!rows.length) {
             var empty = document.createElement("div");
             empty.className = "lc-pyrun-test-row lc-pyrun-test-empty";
             empty.textContent = "No doctests found. Add >>> lines inside a triple-quoted docstring.";
@@ -840,62 +821,38 @@ Auto-included by docs/_layouts/default.html.
             repaintBound();
             return;
           }
-          var driver = [
-            "from js import document",
-            "_tests_el = document.getElementById('lc-pyrun-" + ID + "-tests')",
-            "_tests_el.innerHTML = ''",
-            "_summary = document.createElement('div')",
-            "_summary.className = 'lc-pyrun-test-summary'",
-            "_summary.textContent = 'running…'",
-            "_tests_el.appendChild(_summary)",
-            "_pass = 0",
-            "_fail = 0",
-            "def _doctest(expr, expected, lineno):",
-            "    global _pass, _fail",
-            "    try:",
-            "        v = eval(expr)",
-            "        actual = '' if v is None else repr(v)",
-            "        err = None",
-            "    except Exception as e:",
-            "        actual = ''",
-            "        err = type(e).__name__ + ': ' + str(e)",
-            "    passed = err is None and actual == expected",
-            "    row = document.createElement('div')",
-            "    row.className = 'lc-pyrun-test-row ' + ('lc-pyrun-test-pass' if passed else 'lc-pyrun-test-fail')",
-            "    icon = '✅' if passed else '❌'",
-            "    if passed:",
-            "        _pass += 1",
-            "        row.textContent = icon + ' line ' + str(lineno) + '  ' + expr",
-            "    else:",
-            "        _fail += 1",
-            "        if err:",
-            "            row.textContent = icon + ' line ' + str(lineno) + '  ' + expr + '  →  raised ' + err",
-            "        else:",
-            "            row.textContent = icon + ' line ' + str(lineno) + '  ' + expr + '  →  got ' + (actual or '(no value)') + ', expected ' + expected",
-            "    _tests_el.appendChild(row)"
-          ].join("\n");
-          var calls = tests.map(function(t){
-            return "_doctest(" + JSON.stringify(desugarFstrings(t.expr)) + ", " + JSON.stringify(t.expected) + ", " + t.lineno + ")";
-          }).join("\n");
-          var finish = "_summary.textContent = str(_pass) + ' passed, ' + str(_fail) + ' failed'";
-          try {
-            window._lcMpyOut = function (t) { buf += t; };
-            try { m.runPython(BOOTSTRAP); } catch (e2) { }
-            try {
-            m.runPython(driver + "\n" + calls + "\n" + finish);
-            } finally { window._lcMpyOut = null; }
-            status.textContent = "tests done";
-          } catch (e) {
+          var summary = document.createElement("div");
+          summary.className = "lc-pyrun-test-summary";
+          testsEl.appendChild(summary);
+          var passed = 0;
+          rows.forEach(function (r) {
             var row = document.createElement("div");
-            row.className = "lc-pyrun-test-row lc-pyrun-test-fail";
-            row.textContent = "Test runner error: " + (e.message || String(e));
+            var expr = r.source.split("\n").join(" ⏎ ");
+            row.className = "lc-pyrun-test-row " + (r.ok ? "lc-pyrun-test-pass" : "lc-pyrun-test-fail");
+            if (r.ok) { passed++; row.textContent = "✅ line " + r.line + "  " + expr; }
+            else if (r.err) row.textContent = "❌ line " + r.line + "  " + expr + "  →  raised " + r.err;
+            else row.textContent = "❌ line " + r.line + "  " + expr + "  →  got " + (r.got || "(nothing)") + ", expected " + (r.want || "nothing");
             testsEl.appendChild(row);
-            status.textContent = "test error";
-          }
+          });
+          summary.textContent = passed + " passed, " + (rows.length - passed) + " failed";
+          status.textContent = "tests done";
           repaintBound();
         }).catch(function(e){
           setOut("Failed to load MicroPython: " + (e.message || String(e)), true);
         });
+      });
+    }
+
+    /* 🩺 Dr. mypy (lite) — the hints read from the text, mypy's words
+       (pycheck.md); nothing runs, so it answers before the runtime loads */
+    var mypyBtn = root.querySelector(".lc-pyrun-mypy");
+    if (mypyBtn && window.lcDrMypy) {
+      mypyBtn.addEventListener("click", function () {
+        clearTests();
+        var r = window.lcDrMypy(codeEl.value, { file: ID + ".py", strict: opts.mypy !== "loose", pretty: true });
+        setOut(r.status === 0 ? "✅ Dr. mypy (lite): no type errors" : "❌ Dr. mypy (lite):\n" + r.out.replace(/\n$/, ""), r.status !== 0);
+        root.setAttribute("data-lc-mypy", r.status === 0 ? "clean" : String(r.problems.filter(function (p) { return p.severity === "error"; }).length));
+        status.textContent = r.status === 0 ? "types clean" : "type errors";
       });
     }
 
@@ -928,7 +885,7 @@ Auto-included by docs/_layouts/default.html.
       html += '<div class="lc-pyrun-title">🐍 <span>Python runner</span><span class="lc-pyrun-lang">python</span></div>';
     }
     html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false" aria-label="Python editor"></textarea></div></div>';
-    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-test">🧪 Test</button><button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
+    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-test">🧪 Test</button>' + (opts.mypy && opts.mypy !== "false" ? '<button class="lc-pyrun-mypy" title="Dr. mypy (lite): type hints checked in the page">🩺 Dr. mypy</button>' : '') + '<button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
     html += '<pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>';
     html += '<div class="lc-pyrun-view" id="lc-pyrun-' + id + '-view"></div>';
     html += '<div class="lc-pyrun-tests" id="lc-pyrun-' + id + '-tests"></div>';
@@ -1135,7 +1092,8 @@ Auto-included by docs/_layouts/default.html.
       init: el.getAttribute("init") || initFromCode || "",
       rows: parseInt(el.getAttribute("rows"), 10) || 0,   /* 0: the editor fits its program */
       folded: el.hasAttribute("folded") && el.getAttribute("folded") !== "false",
-      expected: el.getAttribute("expected") || ""
+      expected: el.getAttribute("expected") || "",
+      mypy: el.getAttribute("mypy") || ""     /* "true": a 🩺 Dr. mypy (lite) button, strict as the deck runs it */
     };
     var runner = buildRunner(opts);
     el.parentNode.replaceChild(runner, el);

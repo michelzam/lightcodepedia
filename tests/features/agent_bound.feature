@@ -946,3 +946,52 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When the "buggy" editor is changed to "print('hello world')"
     And I ask the "tutor" agent "help me fix it"
     Then the model was asked 2 times
+
+  Scenario Outline: An inline label leaves no stars behind — <shape>
+    Michel, 2026-10-26, Ari on the Module 9 page: "why are those stars after
+    Direction and Question back in Ari's response?", then "worst:" — "** Look
+    at the functions…". The model spells its labels many ways; the label
+    goes whole, a bold it never closed loses its stray stars.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with this text:
+      """
+      <direction> Put the expected printed text on the line right after the >>> call (Module 9).
+
+      <question> What exact string does your function print when it runs? (Module 9)
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "coach" agent with key "test-key"
+    And I ask the "coach" agent "how to doctest a print?"
+    Then the "coach" agent's areas read "Put the expected printed text" and "What exact string does your function print" with no stray stars
+
+    Examples:
+      | shape                 | direction          | question                 |
+      | bold, dash            | **Direction** –    | **Question back** –      |
+      | emoji inside, colon   | **🧭 Direction:**  | **❓ Question back:**     |
+      | emoji outside, dash   | 🧭 **Direction** — | ❓ **Question back** —    |
+      | bold never closed     | **Direction:** **  | **Question back:** **    |
+      | plain, colon          | 🧭 Direction:      | ❓ Question back:         |
+
+  Scenario: A label on its own line, then a sentence opened in bold and never closed
+    Michel's second screenshot: DIRECTION and YOUR TURN in place, each
+    sentence starting "** Look at…", "** Which function…".
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with this text:
+      """
+      **🧭 Direction**
+      ** Put the expected printed text on the line right after the >>> call (Module 9).
+
+      **❓ Question back**
+      ** What exact string does your function print when it runs? (Module 9)
+      """
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "coach" agent with key "test-key"
+    And I ask the "coach" agent "how to doctest a print?"
+    Then the "coach" agent's areas read "Put the expected printed text" and "What exact string does your function print" with no stray stars
+

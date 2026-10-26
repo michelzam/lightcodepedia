@@ -1522,14 +1522,35 @@ Auto-included by docs/_layouts/default.html.
       /* a model often writes the markers as headings ("## 🧭 Direction",
          "**Example**"): the heading is the area's own label, so it goes */
       var LABEL = /^\s*(?:#{1,6}\s*|\*\*)?\s*(?:🧭|❓|🧩)?\s*(?:Direction|Question back|Question|Example|Your turn)\s*:?\s*(?:\*\*)?\s*$/i;
+      /* …or INLINE, the label leading its own sentence: "**Direction** –
+         Put…", "Question back: What…" (Michel, 2026-10-26: "why are those
+         stars after Direction and Question back?" — the opening ** went with
+         the label, the closing ** stayed). The label goes, the sentence
+         lands in its area; an inline Example label just goes. */
+      var INLINE = /^\s*(?:#{1,6}\s*)?(?:(?:🧭|❓|🧩)?\s*\*\*\s*(?:🧭|❓|🧩)?\s*(Direction|Question back|Question|Example|Your turn)\s*:?\s*\*\*\s*[:–—-]?|(?:🧭|❓|🧩)?\s*(Direction|Question back|Question|Example|Your turn)\s*[:–—-])\s*(?=\S)/i;
       prose.split('\n').forEach(function (l) {
         if (LABEL.test(l)) { if (/❓|Question/i.test(l)) question.push(''); return; }
+        var im = INLINE.exec(l);
+        if (im) {
+          var kind = (im[1] || im[2]).toLowerCase(), rest = l.slice(im[0].length);
+          if (kind.indexOf('question') === 0) { question.push(rest); return; }
+          if (kind === 'direction') { direction.push(rest); return; }
+          l = rest;
+        }
         var bare = l.replace(/^\s*(?:#{1,6}\s*|\*\*\s*)?/, '');
         if (/^❓/.test(bare)) question.push(bare.replace(/^❓\s*/, ''));
         else if (question.length && l.trim() && !/^🧭/.test(bare)) question.push(l);
         else direction.push(bare.replace(/^🧭\s*/, ''));
       });
-      var d = direction.join('\n').trim(), q = question.join('\n').trim();
+      /* a bold the model opened and never closed (or whose other half went
+         with a label) would print as stars: an odd ** count loses its stray */
+      function unstar(x) {
+        if ((x.match(/\*\*/g) || []).length % 2 === 0) return x;
+        if (/^\s*\*\*/.test(x)) return x.replace(/^\s*\*\*\s*/, '');
+        var i = x.lastIndexOf('**');
+        return (x.slice(0, i) + x.slice(i + 2)).trim();
+      }
+      var d = unstar(direction.join('\n').trim()), q = unstar(question.join('\n').trim());
       if (!q) {
         var m = d.match(/(?:^|\n)([^\n]*\?)\s*$/);
         if (m) { q = m[1].trim(); d = d.slice(0, d.length - m[0].length).trim(); }

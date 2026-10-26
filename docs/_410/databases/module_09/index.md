@@ -201,17 +201,21 @@ fails. With ROLLBACK, what stays in the database?
 
 Time to see atomicity with your own eyes, on shopdb.
 
-**First, the two Workbench toggles.** In the SQL editor's toolbar, switch
-**off** both of these:
+**First, two settings — in the Query menu.** Open **Query** in
+Workbench's menu bar and look at the checkmarks:
 
-[The two toggles — OFF × 2](_slides/m09_toggles.jpg)
+- **Stop Script Execution on Errors** — **checked** ✓, so a script
+  stops at its first error instead of running on blindly.
+- **Auto-Commit Transactions** — **unchecked** (no ✓), so nothing is
+  final until you say COMMIT. Click it once if it shows a ✓.
+
+[The Query menu — Stop on Errors checked, Auto-Commit unchecked](_slides/m09_query_menu.jpg)
 {: .embed image="true" width="100%" }
 
-- **Continue after failed statements** — off, so a script **stops** at
-  its first error instead of running on blindly.
-- **Autocommit** — off, so nothing is final until you say COMMIT.
-  (START TRANSACTION also pauses autocommit — the toggle makes it the
-  rule for the whole tab.)
+Open the menu once more to check both. (The same two switches exist as
+tiny icons in the editor's toolbar — the menu's checkmarks are easier
+to read. And START TRANSACTION pauses auto-commit by itself anyway, until
+COMMIT or ROLLBACK.)
 
 **Then run the blocks below one at a time**: select the lines of one
 block with the mouse, click ⚡ (it runs only the selection), read the
@@ -265,14 +269,14 @@ SELECT CustomerID, CustomerName, City FROM Customers WHERE CustomerID = 2;
 You should see: **3** orders and Ana back in **México D.F.** All or
 nothing — here, nothing. 🎉
 
-Leave autocommit **off** for the rest of the week, and remember what it
+Leave Auto-Commit **unchecked** for the rest of the week, and remember what it
 means: from now on, a change you want to keep needs its **COMMIT**.
 
 **If ④ shows 4 orders and Monterrey**, the changes were already
 committed: autocommit was on, or START TRANSACTION was skipped. Each
 statement became final as it ran, and ROLLBACK had nothing left to
-cancel. Run the step 0 script to rebuild shopdb, switch autocommit off,
-and try again.
+cancel. Run the step 0 script to rebuild shopdb, uncheck **Query ›
+Auto-Commit Transactions**, and try again.
 
 **Q:** In block ③, why does your session already see 4 orders?
 
@@ -593,7 +597,7 @@ script:
     say: "Step two. A transaction groups changes into one unit: all or nothing. COMMIT makes them final together. ROLLBACK cancels them all."
   - at: run_it
     do: open
-    say: "Step three. Switch off the two toggles, then run the blocks one at a time. The last insert fails on purpose. Look inside, then roll back. Three orders, and Ana back in Mexico City."
+    say: "Step three. In the Query menu, check Stop Script Execution on Errors and uncheck Auto-Commit Transactions. Then run the blocks one at a time. The last insert fails on purpose. Look inside, then roll back. Three orders, and Ana back in Mexico City."
   - at: integrity
     do: open
     say: "Step four. The keys are guards. A missing parent, a parent still in use, a repeated key: three refusals, three error codes."
@@ -623,7 +627,7 @@ stories:
     - 'You might wonder: why does rollback do nothing'
     - ROLLBACK only cancels changes that are not committed yet.
     - With autocommit on and no START TRANSACTION, each statement is final as it runs.
-    - Run the step zero script to rebuild shopdb, switch autocommit off, and try again.
+    - Run the step zero script to rebuild shopdb, uncheck Auto-Commit Transactions in the Query menu, and try again.
 ```
 {: .avatar #guide dock="true" size="115" }
 

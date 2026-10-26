@@ -66,6 +66,10 @@ IAL knobs:
                  a landscape document that half a pane would squeeze; "rows",
                  the first spelling, still reads), behind (one face at a time,
                  the result in front, ✎ brings the source — a phone's way)
+  mypy="true"    Dr. mypy (lite) reads every python fence: a def without its
+                 hints, a return or a literal argument against them, marked ⚠
+                 on its line in mypy's words ("loose": hints checked, missing
+                 ones forgiven). pycheck.md holds the checker.
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -454,6 +458,15 @@ Auto-included by docs/_layouts/default.html.
     var ta = document.createElement("textarea");
     ta.className = "lc-mdpad-in";
     var piano = el.getAttribute("piano") === "true", numbers = el.getAttribute("numbers") === "true";
+    /* mypy="true": Dr. mypy (lite) reads each python fence too, strict as the
+       Python course runs it; "loose" skips the untyped-def rule (Michel,
+       2026-10-26: "mypy lite capability would be great for the mdpad too") */
+    var padMypy = el.getAttribute("mypy") || "";
+    if (padMypy === "false") padMypy = "";
+    /* doctest="true": each python fence runs its own >>> examples, no main
+       block, no testmod() — a failing one wears ⚠ on its >>> line (Michel,
+       2026-10-26: "doctest in the gutter") */
+    var padDoctest = el.getAttribute("doctest") === "true";
     var src = null, keysEl = null;
     /* the mirror ALWAYS exists now: it carries the colours (2026-10-08);
        the piano's bands and the numbers stay the knobs they were */
@@ -1593,6 +1606,7 @@ Auto-included by docs/_layouts/default.html.
     var pyLint = {}, errsEl = null;
     function lintLines(lines) {
       var e = {}, fence = null, at = -1, info = "", body = [];
+      dtTally = padDoctest ? { pass: 0, total: 0 } : null;
       lines.forEach(function (l, n) {
         var m = FENCE_RE.exec(l), t = l.trim();
         if (fence === null && m) { fence = m[1]; at = n; info = t.slice(m[1].length).trim().toLowerCase(); body = []; return; }
@@ -1609,6 +1623,9 @@ Auto-included by docs/_layouts/default.html.
         }
       });
       if (fence !== null) e[at] = "this fence never closes: " + fence + " alone on a line ends it";
+      /* the examples' tally, for a proof and a screen reader: "3/4" passed */
+      if (dtTally && dtTally.total) wrap.setAttribute("data-lc-doctest", dtTally.pass + "/" + dtTally.total);
+      else wrap.removeAttribute("data-lc-doctest");
       return e;
     }
     function pyCheck(body, first, e) {
@@ -1629,7 +1646,45 @@ Auto-included by docs/_layouts/default.html.
         });
         return;
       }
-      if (r) e[first + Math.min(Math.max(r.line, 1), Math.max(body.length, 1)) - 1] = r.msg;
+      if (r) { e[first + Math.min(Math.max(r.line, 1), Math.max(body.length, 1)) - 1] = r.msg; return; }
+      if (padDoctest) dtCheck(code, first, e);
+      if (padMypy && window.lcTypeLint) {
+        window.lcTypeLint(code, { strict: padMypy !== "loose" }).forEach(function (p) {
+          var at = first + p.line - 1;
+          if (p.severity === "error" && e[at] === undefined) e[at] = "mypy: " + p.msg + (p.code ? "  [" + p.code + "]" : "");
+        });
+      }
+    }
+    /* doctest per fence: a fence's text runs once it has rested 400 ms,
+       its verdict kept by its text — typing elsewhere reruns nothing */
+    var dtRes = {}, dtWait = {}, dtTally = null;
+    function dtCheck(code, first, e) {
+      if (code.indexOf(">>>") < 0 || !window.lcPyDoctestFence) return;
+      var r = dtRes[code];
+      if (r === undefined) {
+        var w = dtWait[first];
+        if (w) { clearTimeout(w.t); if (dtRes[w.code] === null) delete dtRes[w.code]; }
+        dtRes[code] = null;
+        dtWait[first] = { code: code, t: setTimeout(function () {
+          delete dtWait[first];
+          var mpP = window.lcMpy ? window.lcMpy() : window._lcMpReady;
+          if (mpP) mpP.then(function (mp) { dtRes[code] = window.lcPyDoctestFence(mp, code); paintPiano(); });
+        }, 400) };
+        return;
+      }
+      if (!r) return;
+      if (!Array.isArray(r)) {
+        if (e[first] === undefined) e[first] = "doctest: the code stops before its examples — " + r.error;
+        return;
+      }
+      r.forEach(function (row) {
+        if (dtTally) { dtTally.total++; if (row.ok) dtTally.pass++; }
+        if (row.ok) return;
+        var at = first + row.line - 1, what = row.source.split("\n")[0];
+        if (e[at] !== undefined) return;
+        e[at] = "doctest: " + what + (row.err ? " → raised " + row.err
+          : " → got " + (row.got || "nothing") + ", expected " + (row.want || "nothing"));
+      });
     }
     function showErrs(e) {
       var ns = Object.keys(e).map(Number).sort(function (a, b) { return a - b; });
