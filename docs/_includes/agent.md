@@ -321,6 +321,14 @@ Auto-included by docs/_layouts/default.html.
     return lines.join('\n');
   }
 
+  /* a short fingerprint of what the model would be asked — the whole prompt,
+     document and question — so the same ask is known as the same ask */
+  function fingerprint(text) {
+    var h = 5381, str = String(text || '');
+    for (var i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+    return str.length + ':' + (h >>> 0).toString(16);
+  }
+
   function buildAugmentedPrompt(boundId, userQuestion, proofId) {
     var proof = proofSummary(proofId);
     if (!boundId) return proof ? proof + '\n\nThe learner asks:\n\n' + userQuestion : userQuestion;
@@ -1763,6 +1771,7 @@ Auto-included by docs/_layouts/default.html.
       sendBtn.disabled = true;
       sendBtn.textContent = '… thinking';
       status.innerHTML = '';
+      var shown = response.innerHTML;
       response.innerHTML = '';
 
       /* expression binding evaluates NOW — the model reads the document
@@ -1774,6 +1783,20 @@ Auto-included by docs/_layouts/default.html.
         : Promise.resolve(buildAugmentedPrompt(boundId, userText, cfg.proof));
 
       promptP.then(function (fullPrompt) {
+        /* THE VERDICT HOLDS WHILE NOTHING CHANGED (the struggle read,
+           2026-10-26: 31 of the cohort's 38 verbatim re-asks hit Module 03's
+           reviewer — pulled like a slot machine, DRIFT after DRIFT). The same
+           words over the same document are not a new question: no call, no
+           credit spent, the last answer stays, one line says why. Change the
+           page or the question, and it asks. */
+        var fp = fingerprint(fullPrompt);
+        if (panel._lcLastAsk && panel._lcLastAsk === fp) {
+          sendBtn.disabled = false;
+          sendBtn.textContent = '▶ Ask';
+          response.innerHTML = shown;
+          status.innerHTML = '<span class="lc-agent-note lc-agent-held">✋ Nothing changed since my last read — same question, same page. Change something, then ask again.</span>';
+          return null;
+        }
         return ask(myToken(), cfg, fullPrompt, function (eng, failure) {
           /* the offer, in the desk itself: one sentence about who is busy,
              one button naming who would answer and on whose key */
@@ -1789,8 +1812,9 @@ Auto-included by docs/_layouts/default.html.
             yes.addEventListener('click', function () { status.innerHTML = ''; resolve(true); });
             no.addEventListener('click', function () { resolve(false); });
           });
-        });
+        }).then(function (r) { if (r && !r.error) panel._lcLastAsk = fp; return r; });
       }).then(function(result){
+        if (!result) return;                      /* the verdict held */
         sendBtn.disabled = false;
         sendBtn.textContent = '▶ Ask';
         if (result.error) {

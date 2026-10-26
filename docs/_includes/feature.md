@@ -303,14 +303,24 @@ Registers with window.lcScanElement so the editor preview also renders cards.
   function rememberResult(card, status) {
     if (!status || status === "pending") return;   /* mid-run is not a result */
     if (!cardName(card)) return;
-    /* A GREEN OVER UNSAVED DATA IS NOT BOOKED. The record is what the
-       desk counts; booking it now would let the bench hold a green proof
-       over data it does not contain (Michel, 2026-09-16). The card shows
-       the green and says what to save; the save re-runs and books. */
-    if (status === "passing" && card.getAttribute("data-unsaved")) return;
     try {
-      var all = loadResults();
-      all[resultKey(card)] = { status: status, ts: new Date().toISOString() };
+      var all = loadResults(), key = resultKey(card), was = all[key] || {};
+      /* EVERY RUN IS COUNTED, booked or not (the struggle read, 2026-10-26):
+         a red run that changes nothing leaves no save, so ten reds and one
+         green read as one red in the bench. The record carries red/green
+         run counts per page; they travel on the next save or leave. A
+         status restored on load is not a run. */
+      var runs = { red: (was.runs || {}).red || 0, green: (was.runs || {}).green || 0 };
+      if (!card._lcRestoring) { if (status === "passing") runs.green++; else if (status === "failing") runs.red++; }
+      /* A GREEN OVER UNSAVED DATA IS NOT BOOKED. The record is what the
+         desk counts; booking it now would let the bench hold a green proof
+         over data it does not contain (Michel, 2026-09-16). The card shows
+         the green and says what to save; the save re-runs and books. */
+      if (status === "passing" && card.getAttribute("data-unsaved")) {
+        all[key] = { status: was.status || "", ts: was.ts || "", runs: runs };
+      } else {
+        all[key] = { status: status, ts: new Date().toISOString(), runs: runs };
+      }
       localStorage.setItem("lc_features", JSON.stringify(all));
       /* same as a quiz: the bench copy follows on the next save (progress.md) */
       document.dispatchEvent(new CustomEvent("lc-feature-result"));
@@ -323,7 +333,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     var rec = loadResults()[resultKey(card)];
     if (rec && rec.status) {
       card.setAttribute("data-lc-remembered", "1");
-      setCardStatus(card, rec.status);
+      card._lcRestoring = true;
+      try { setCardStatus(card, rec.status); } finally { card._lcRestoring = false; }
     }
   }
   window.lcFeatureResults = { all: loadResults, restore: restoreResult };

@@ -928,3 +928,21 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I connect the "helper" agent with key "test-key"
     And I ask the "helper" agent "help"
     Then the "helper" part shows ⚠️ explaining "on_response lines failed"
+
+  Scenario: The same question over the same page is not asked twice — the verdict holds
+    The struggle read, 2026-10-26: 31 of the cohort's 38 verbatim re-asks hit
+    Module 03's reviewer, pulled like a slot machine. The same words over the
+    same document cost no call; a changed page or question asks again.
+
+    Given I have a clean browser page
+    And a builder key is connected
+    And the recording model endpoint replies with a python fix "print('fixed')"
+    When I navigate to "/components/agent"
+    And I wait for the page to be interactive
+    And I connect the "tutor" agent with key "test-key"
+    And I ask the "tutor" agent "help me fix it"
+    And I ask the "tutor" agent "help me fix it" again, nothing changed
+    Then the "tutor" agent held its verdict: one model call, and it says "Nothing changed since my last read"
+    When the "buggy" editor is changed to "print('hello world')"
+    And I ask the "tutor" agent "help me fix it"
+    Then the model was asked 2 times

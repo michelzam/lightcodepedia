@@ -960,3 +960,32 @@ def step_card_add(context, card_id):
 def step_bot_reads(context, file, text):
     got = context.page.evaluate("f => window.lcBotText(f)", file)
     assert text in got, "the bot came from elsewhere: %r" % got[:200]
+
+
+@when('I ask the "{agent_id}" agent "{prompt}" again, nothing changed')
+def step_ask_again_unchanged(context, agent_id, prompt):
+    panel = context.page.locator('[data-lc-id="' + agent_id + '"]')
+    panel.locator(".lc-agent-prompt").fill(prompt)
+    panel.locator(".lc-agent-send").click()
+    expect(panel.locator(".lc-agent-held")).to_be_visible(timeout=10_000)
+
+
+@then('the "{agent_id}" agent held its verdict: one model call, and it says "{text}"')
+def step_held_verdict(context, agent_id, text):
+    panel = context.page.locator('[data-lc-id="' + agent_id + '"]')
+    expect(panel.locator(".lc-agent-held")).to_contain_text(text)
+    assert len(context.model_asks) == 1, "the model was asked %d times for the same question" % len(context.model_asks)
+    expect(panel.locator(".lc-agent-msg-bot")).to_be_visible()        # the last answer stays on show
+    expect(panel.locator(".lc-agent-log-entry")).to_have_count(1)     # the ledger took no second entry
+
+
+@when('the "{run_id}" editor is changed to "{code}"')
+def step_editor_changed(context, run_id, code):
+    ta = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code")
+    ta.fill(code)
+    ta.dispatch_event("input")
+
+
+@then("the model was asked {n:d} times")
+def step_model_asked_n(context, n):
+    assert len(context.model_asks) == n, "the model was asked %d times, not %d" % (len(context.model_asks), n)

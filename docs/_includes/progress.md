@@ -52,7 +52,8 @@ Auto-included by docs/_layouts/default.html.
      course mirror, a hub, or pedia. His own test progression stays his. */
   var FILE = "/__progress.txt";        /* bench root: it outlives one lesson */
   var WAS  = "/progress.txt";          /* pre-dunder benches — read, never written */
-  var HEAD = "# lc-progress v2";       /* v2: a fifth column, the bench each row was earned in */
+  var HEAD = "# lc-progress v2";       /* v2: a fifth column, the bench each row was earned in;
+                                          since 2026-10-26 a sixth, red/green proof runs (the struggle read) */
 
   /* A ROW HAS AN OWNER (Michel, 2026-09-17). Students' benches held HIS
      record — components pages from June, another class's modules — line
@@ -122,15 +123,17 @@ Auto-included by docs/_layouts/default.html.
     try { feats = JSON.parse(localStorage.getItem("lc_features") || "{}"); } catch (e) {}
     Object.keys(scores).forEach(function (k) {
       var s = scores[k] || {};
-      out[k] = { won: s.won || 0, total: s.total || 0, green: 0, feats: 0, ts: s.ts || "" };
+      out[k] = { won: s.won || 0, total: s.total || 0, green: 0, feats: 0, ts: s.ts || "", red_runs: 0, green_runs: 0 };
     });
     Object.keys(feats).forEach(function (k) {
       var cut = k.lastIndexOf("#");
       if (cut < 0) return;
       var page = k.slice(0, cut), rec = feats[k] || {};
-      var r = out[page] || (out[page] = { won: 0, total: 0, green: 0, feats: 0, ts: "" });
+      var r = out[page] || (out[page] = { won: 0, total: 0, green: 0, feats: 0, ts: "", red_runs: 0, green_runs: 0 });
       r.feats++;
       if (rec.status === "passing") r.green++;
+      r.red_runs += (rec.runs || {}).red || 0;
+      r.green_runs += (rec.runs || {}).green || 0;
       if (rec.ts && rec.ts > r.ts) r.ts = rec.ts;
     });
     return out;
@@ -140,7 +143,8 @@ Auto-included by docs/_layouts/default.html.
     var lines = [HEAD];
     Object.keys(map).sort().forEach(function (k) {
       var r = map[k];
-      lines.push([k, r.won + "/" + r.total, r.green + "/" + r.feats, r.ts || "", r.bench || bench || ""].join("\t"));
+      lines.push([k, r.won + "/" + r.total, r.green + "/" + r.feats, r.ts || "", r.bench || bench || "",
+                  (r.red_runs || 0) + "/" + (r.green_runs || 0)].join("\t"));
     });
     var body = lines.join("\n") + "\n";
     return body + "crc " + crc32(body) + "\n";
@@ -157,10 +161,10 @@ Auto-included by docs/_layouts/default.html.
       if (line.charAt(0) === "#") return;
       var p = line.split("\t");
       if (p.length < 3) return;
-      var q = (p[1] || "0/0").split("/"), f = (p[2] || "0/0").split("/");
+      var q = (p[1] || "0/0").split("/"), f = (p[2] || "0/0").split("/"), u = (p[5] || "0/0").split("/");
       map[p[0]] = { won: +q[0] || 0, total: +q[1] || 0,
                     green: +f[0] || 0, feats: +f[1] || 0, ts: (p[3] || "").trim(),
-                    bench: (p[4] || "").trim() };
+                    bench: (p[4] || "").trim(), red_runs: +u[0] || 0, green_runs: +u[1] || 0 };
     });
     var recomputed = crc32(body.join("\n") + "\n");
     return { map: map, intact: !crcSaid || crcSaid === recomputed };
@@ -173,9 +177,11 @@ Auto-included by docs/_layouts/default.html.
     var out = {};
     [a, b].forEach(function (src) {
       Object.keys(src || {}).forEach(function (k) {
-        var r = out[k] || (out[k] = { won: 0, total: 0, green: 0, feats: 0, ts: "", bench: "" });
+        var r = out[k] || (out[k] = { won: 0, total: 0, green: 0, feats: 0, ts: "", bench: "", red_runs: 0, green_runs: 0 });
         var s = src[k];
         if (s.bench && !r.bench) r.bench = s.bench;
+        r.red_runs = Math.max(r.red_runs, s.red_runs || 0);
+        r.green_runs = Math.max(r.green_runs, s.green_runs || 0);
         r.won = Math.max(r.won, s.won || 0);
         r.total = Math.max(r.total, s.total || 0);
         r.green = Math.max(r.green, s.green || 0);
