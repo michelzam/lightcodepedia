@@ -34,13 +34,9 @@ in the browser from our micropython examples so we can play a song".
     el.setAttribute("data-lc-last-note", String(name));
   }
   /* one note on the block's queue: it starts when the previous one ends */
-  window.lcPlayNote = function (id, name, seconds, wave) {
-    if (window._lcPlayMuted === id) return 0;      /* under 🧪 Test the program runs silent */
-    mark(id, name);
+  function schedule(id, name, seconds, wave) {
     var c = context();
-    seconds = Math.max(0.02, Number(seconds) || 0.25);
-    if (!c) return seconds;
-    if (c.state === "suspended") { try { c.resume(); } catch (e) {} }
+    if (!c) return;
     var q = queues[id] || (queues[id] = { at: 0 });
     var start = Math.max(q.at, c.currentTime + 0.02);
     var f = hz(name);
@@ -57,7 +53,27 @@ in the browser from our micropython examples so we can play a song".
       (q.nodes || (q.nodes = [])).push(osc);
     }
     q.at = start + seconds;
+  }
+  window.lcPlayNote = function (id, name, seconds, wave) {
+    if (window._lcPlayMuted === id) return 0;      /* under 🧪 Test the program runs silent */
+    mark(id, name);
+    seconds = Math.max(0.02, Number(seconds) || 0.25);
+    var c = context();
+    if (!c) return seconds;
+    /* SCHEDULE AT ONCE, NEVER WAIT (2026-10-27, Mac Safari went silent when
+       a note waited for resume() to settle — on Safari that promise can stay
+       pending): the nodes are queued on the context's own clock whatever its
+       state; the click's unlock (lcPlayWarm) is what makes it run, and a
+       resume is asked again here, fire and forget. This is the first
+       jingles' path, the one that rang. */
+    if (c.state !== "running") { try { c.resume(); } catch (e) {} }
+    schedule(id, name, seconds, wave);
     return seconds;
+  };
+  /* what the page's suite and a curious author may ask: the context's state and what was queued */
+  window.lcPlayState = function () {
+    var q = {}; Object.keys(queues).forEach(function (k) { q[k] = (queues[k].nodes || []).length; });
+    return { state: ctx ? ctx.state : "none", queued: q };
   };
   /* SAFARI AND THE IPHONE PLAY NOTHING SCHEDULED OUTSIDE A GESTURE (Michel,
      2026-10-27: "why the sound doesn't ring anymore in safari or in my
@@ -66,8 +82,15 @@ in the browser from our micropython examples so we can play a song".
      resumed inside the gesture — so what the program queues later plays. */
   window.lcPlayWarm = function () {
     var c = context();
-    if (c && c.state === "suspended") { try { c.resume(); } catch (e) {} }
-    return !!c;
+    if (!c) return false;
+    try { c.resume(); } catch (e) {}
+    /* the classic unlock: one silent sample played inside the gesture is what
+       Safari (Mac and iOS) counts as "this page may make sound" */
+    try {
+      var b = c.createBuffer(1, 1, 22050), src = c.createBufferSource();
+      src.buffer = b; src.connect(c.destination); src.start(0);
+    } catch (e) {}
+    return true;
   };
   /* silence the block's queue; a new run starts from now */
   window.lcPlayStop = function (id) {

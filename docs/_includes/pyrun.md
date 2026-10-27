@@ -1126,8 +1126,9 @@ Auto-included by docs/_layouts/default.html.
       }
     }
 
+    runBtn.addEventListener("pointerdown", function () { if (window.lcPlayWarm) window.lcPlayWarm(); });
     runBtn.addEventListener("click", function(){
-      if (window.lcPlayWarm) window.lcPlayWarm();      /* inside the click: Safari and iOS allow sound from here only */
+      if (window.lcPlayWarm) window.lcPlayWarm();      /* inside the gesture: Safari and iOS allow sound from here only */
       window._lcPlayMuted = null;
       loadMp().then(function(m){
         clearTests();

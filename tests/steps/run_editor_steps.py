@@ -439,3 +439,13 @@ def step_punct_ops(context, run_id):
     cols = context.page.evaluate("""(id) => { const q = s => { const e = document.querySelector('#lc-pyrun-' + id + ' .lc-pyrun-hl ' + s); return e && getComputedStyle(e).color; };
         return [q('.token.punctuation'), q('.token.operator'), q('.token.keyword')]; }""", run_id)
     assert cols[0] and cols[1] and len(set(cols)) == 3, cols
+
+
+@then('the audio context is running, with {n:d} oscillators queued for "{run_id}"')
+def step_audio_state(context, n, run_id):
+    """the click unlocks the context and the notes are scheduled at once (2026-10-27, Safari went silent
+    when a note waited for resume()): the state the page reports, and the nodes it created"""
+    st = context.page.evaluate("() => window.lcPlayState ? window.lcPlayState() : null")
+    assert st, "song.md exposes no state"
+    assert st["state"] == "running", "the audio context is %s" % st["state"]
+    assert st["queued"].get(run_id) == n, st
